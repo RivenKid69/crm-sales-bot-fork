@@ -85,13 +85,37 @@ class ResponseGenerator:
         return self._clean(response)
     
     def _clean(self, text: str) -> str:
-        """Убираем лишнее"""
+        """Убираем лишнее и фильтруем нерусский текст"""
+        import re
+
         text = text.strip()
-        
+
+        # Убираем префиксы
         for prefix in ["Ответ:", "Вы:", "Менеджер:"]:
             if text.startswith(prefix):
                 text = text[len(prefix):].strip()
-        
+
+        # Удаляем китайские/японские/корейские символы (Qwen иногда переключается)
+        text = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff]+', '', text)
+
+        # Удаляем строки начинающиеся с извинений на китайском
+        lines = text.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            line = line.strip()
+            # Пропускаем пустые строки и строки с "..."
+            if not line or line == '...':
+                continue
+            # Пропускаем строки которые начинаются с китайского извинения
+            if '对不起' in line or '抱歉' in line:
+                continue
+            cleaned_lines.append(line)
+
+        text = '\n'.join(cleaned_lines)
+
+        # Убираем лишние пробелы
+        text = re.sub(r'\s+', ' ', text).strip()
+
         return text
 
 
