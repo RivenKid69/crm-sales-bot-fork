@@ -183,7 +183,7 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 
 ### Гибридная классификация:
 1. **Быстрый поиск по корням слов** — основной метод
-2. **Fallback на pymorphy2** — если корни не сработали
+2. **Fallback на pymorphy3** (или pymorphy2) — если корни не сработали
 
 ### Извлечение данных:
 - `company_size` — regex паттерны ("нас 10", "команда из 5", "8 официантов")
@@ -214,10 +214,10 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 
 ## База знаний (knowledge/)
 
-- **data.py** — факты о продуктах Wipon (CRM, Kassa, мобильное приложение, тарифы)
+- **data.py** — факты о продуктах Wipon (учёт товаров, касса, мобильное приложение, тарифы)
 - **retriever.py** — гибридный поиск:
   1. Keyword search по категориям
-  2. Fallback на RuBERT embeddings
+  2. Fallback на rubert-tiny2 embeddings (опционально)
 
 ## Тестирование
 
@@ -253,7 +253,13 @@ python scripts/stress_test_knowledge.py
 
 ## Зависимости
 
-- `ollama` + модель `qwen2.5:7b`
-- `pymorphy2` — морфология русского языка
-- `sentence-transformers` — embeddings для базы знаний
+- `ollama` + модель `qwen2.5:7b` — локальная LLM
+- `pymorphy3` — морфология русского языка (fallback на pymorphy2)
+- `sentence-transformers` — embeddings для базы знаний (опционально)
+- `requests` — HTTP-клиент для Ollama API
 - `pytest` — тестирование
+
+Установка:
+```bash
+pip install -r requirements.txt
+```

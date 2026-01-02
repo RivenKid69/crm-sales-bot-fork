@@ -34,15 +34,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 # Импорты компонентов бота
 try:
-    from src.knowledge.retriever import KnowledgeRetriever, get_retriever
-    from src.knowledge.data import WIPON_KNOWLEDGE
-    from src.bot.intent_classifier import classify_intent
-    from src.bot.state_machine import ConversationStateMachine, ConversationState
-    from src.bot.pain_extractor import extract_pains
+    from knowledge.retriever import KnowledgeRetriever, get_retriever
+    from knowledge.data import WIPON_KNOWLEDGE
+    from classifier import HybridClassifier, DataExtractor
+    from state_machine import StateMachine
     HAS_BOT_COMPONENTS = True
 except ImportError as e:
     print(f"⚠️  Не все компоненты доступны: {e}")
@@ -777,6 +777,15 @@ class BotStressTester:
             random.seed(seed)
 
         self.retriever = KnowledgeRetriever(use_embeddings=False)
+
+        # Инициализация классификатора и экстрактора
+        if HAS_BOT_COMPONENTS:
+            self.classifier = HybridClassifier()
+            self.extractor = DataExtractor()
+        else:
+            self.classifier = None
+            self.extractor = None
+
         self.results = {
             "intent": {"passed": 0, "failed": 0, "failures": []},
             "knowledge": {"passed": 0, "failed": 0, "failures": []},
@@ -849,7 +858,7 @@ class BotStressTester:
 
         for message, expected_intent in INTENT_TEST_CASES:
             try:
-                result = classify_intent(message)
+                result = self.classifier.classify(message, {})
                 actual_intent = result.get("intent", "unknown")
 
                 if actual_intent == expected_intent:
@@ -1106,8 +1115,14 @@ class BotStressTester:
 
         for message, expected_pains in PAIN_TEST_CASES:
             try:
-                pains = extract_pains(message)
-                pains_lower = [p.lower() for p in pains]
+                extracted = self.extractor.extract(message, {})
+                # Собираем все извлечённые данные
+                pains = []
+                if extracted.get("pain_point"):
+                    pains.append(extracted["pain_point"])
+                if extracted.get("pain_impact"):
+                    pains.append(extracted["pain_impact"])
+                pains_lower = [p.lower() for p in pains if p]
 
                 found = any(
                     any(ep in p for p in pains_lower)
