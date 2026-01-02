@@ -441,10 +441,10 @@ class MessageVariator:
             result = self.apply_typos(result, 0.2)
             result = self.apply_emotions(result, 0.4)
         elif persona == "silent":
-            # Укоротить сообщение
+            # Укоротить сообщение, но сохранить минимум 2 слова для контекста
             words = result.split()
             if len(words) > 3:
-                result = " ".join(words[:random.randint(1, 3)])
+                result = " ".join(words[:random.randint(2, 3)])
         else:
             result = self.apply_typos(result, 0.2)
             result = self.apply_synonyms(result, 0.3)
