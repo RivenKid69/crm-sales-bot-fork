@@ -3,7 +3,7 @@ State Machine — управление состояниями диалога
 """
 
 from typing import Tuple, Dict
-from config import SALES_STATES
+from config import SALES_STATES, QUESTION_INTENTS
 
 
 class StateMachine:
@@ -24,26 +24,43 @@ class StateMachine:
     def apply_rules(self, intent: str) -> Tuple[str, str]:
         """
         Определяем действие и следующее состояние
-        
+
         Returns: (action, next_state)
         """
         config = SALES_STATES.get(self.state, {})
-        
+
         # Финальное состояние
         if config.get("is_final"):
             return "final", self.state
-        
+
+        # =====================================================================
+        # ПРИОРИТЕТ 0: Вопросы требуют ответа!
+        # Если клиент задаёт вопрос — сначала отвечаем, потом продолжаем
+        # =====================================================================
+        if intent in QUESTION_INTENTS:
+            # Определяем следующее состояние (переход происходит, но с ответом)
+            transitions = config.get("transitions", {})
+            if intent in transitions:
+                next_state = transitions[intent]
+            else:
+                next_state = self.state  # остаёмся в текущем если нет перехода
+
+            # Возвращаем действие "answer_question" которое:
+            # 1. Отвечает на вопрос из базы знаний
+            # 2. Задаёт уточняющий вопрос для квалификации
+            return "answer_question", next_state
+
         # Приоритет 1: Специальные правила
         rules = config.get("rules", {})
         if intent in rules:
             return rules[intent], self.state
-        
+
         # Приоритет 2: Переходы по интенту
         transitions = config.get("transitions", {})
         if intent in transitions:
             next_state = transitions[intent]
             return f"transition_to_{next_state}", next_state
-        
+
         # Приоритет 3: Все данные собраны?
         required = config.get("required_data", [])
         if required:
@@ -51,12 +68,12 @@ class StateMachine:
             if not missing and "data_complete" in transitions:
                 next_state = transitions["data_complete"]
                 return f"transition_to_{next_state}", next_state
-        
+
         # Приоритет 4: Автопереход (для greeting)
         if "any" in transitions:
             next_state = transitions["any"]
             return f"transition_to_{next_state}", next_state
-        
+
         # Дефолт
         return "continue_current_goal", self.state
     
