@@ -50,6 +50,26 @@ class ResponseGenerator:
         import re
         return bool(re.search(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff]', text))
 
+    def _has_english(self, text: str) -> bool:
+        """Проверяем есть ли английские слова (минимум 2 буквы подряд)"""
+        import re
+        # Ищем английские слова (минимум 2 латинские буквы подряд)
+        # Исключаем: CRM, API, OK, ID и подобные аббревиатуры
+        allowed_english = {'crm', 'api', 'ok', 'id', 'ip', 'sms', 'email', 'excel', 'whatsapp', 'telegram', 'hr'}
+
+        # Находим все английские слова
+        english_words = re.findall(r'\b[a-zA-Z]{2,}\b', text)
+
+        # Проверяем есть ли недопустимые английские слова
+        for word in english_words:
+            if word.lower() not in allowed_english:
+                return True
+        return False
+
+    def _has_foreign_language(self, text: str) -> bool:
+        """Проверяем есть ли иностранный текст (китайский или английский)"""
+        return self._has_chinese(text) or self._has_english(text)
+
     def generate(self, action: str, context: Dict, max_retries: int = 3) -> str:
         """Генерируем ответ с retry при китайских символах"""
 
@@ -89,8 +109,8 @@ class ResponseGenerator:
         for attempt in range(max_retries):
             response = self.llm.generate(prompt)
 
-            # Если нет китайских символов — сразу возвращаем
-            if not self._has_chinese(response):
+            # Если нет иностранного текста — сразу возвращаем
+            if not self._has_foreign_language(response):
                 return self._clean(response)
 
             # Иначе чистим и сохраняем лучший результат
@@ -102,7 +122,7 @@ class ResponseGenerator:
             if attempt == 0:
                 prompt = prompt.replace(
                     "Ответ на русском",
-                    "ВАЖНО: Отвечай ТОЛЬКО на русском языке, без китайских символов!\nОтвет на русском"
+                    "ВАЖНО: Отвечай ТОЛЬКО на русском языке, без китайских символов и английских слов!\nОтвет на русском"
                 )
 
         # Возвращаем лучший результат из попыток
@@ -122,6 +142,17 @@ class ResponseGenerator:
         # Удаляем китайские/японские/корейские символы и пунктуацию (Qwen иногда переключается)
         # Иероглифы + китайская пунктуация (。，！？：；「」『』【】)
         text = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\u3000-\u303f\uff00-\uffef]+', '', text)
+
+        # Удаляем английские слова (кроме разрешённых)
+        allowed_english = {'crm', 'api', 'ok', 'id', 'ip', 'sms', 'email', 'excel', 'whatsapp', 'telegram', 'hr'}
+
+        def replace_english(match):
+            word = match.group(0)
+            if word.lower() in allowed_english:
+                return word
+            return ''
+
+        text = re.sub(r'\b[a-zA-Z]{2,}\b', replace_english, text)
 
         # Удаляем строки начинающиеся с извинений на китайском
         lines = text.split('\n')
