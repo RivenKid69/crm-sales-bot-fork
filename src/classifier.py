@@ -117,14 +117,10 @@ TYPO_FIXES: Dict[str, str] = {
     "пжлст": "пожалуйста",
     "пжл": "пожалуйста",
     "пж": "пожалуйста",
-    "да": "да",
     "дап": "да",
     "ага": "да",
     "угу": "да",
-    "ахах": "да",
-    "не": "нет",
     "неа": "нет",
-    "нет": "нет",
     "непа": "нет",
     "нету": "нет",
     "ну": "ну",
@@ -299,8 +295,7 @@ SPLIT_PATTERNS: List[Tuple[str, str]] = [
     (r'что(\w{3,})', r'что \1'),
     (r'как(\w{3,})', r'как \1'),
 
-    # Союзы и предлоги (минимум 3 буквы после)
-    (r'да(\w{4,})', r'да \1'),
+    # Убран паттерн для "да" - он ломал "давайте" → "да вайте"
 ]
 
 
@@ -321,8 +316,8 @@ class TextNormalizer:
         self.split_patterns = SPLIT_PATTERNS
         # Предкомпилированные regex для производительности
         self._compiled_splits = [(re.compile(p), r) for p, r in self.split_patterns]
-        # Regex для повторяющихся букв (3+ подряд → 2)
-        self._repeated_chars = re.compile(r'(.)\1{2,}')
+        # Regex для повторяющихся БУКВ (3+ подряд → 2), НЕ цифр!
+        self._repeated_chars = re.compile(r'([а-яёa-z])\1{2,}', re.IGNORECASE)
         # Regex для множественных пробелов
         self._multiple_spaces = re.compile(r'\s+')
 
@@ -387,8 +382,8 @@ class TextNormalizer:
         normalized_words = []
 
         for word in words:
-            # Пробуем варианты с одинарными буквами
-            single_char = re.sub(r'(.)\1+', r'\1', word)
+            # Пробуем варианты с одинарными буквами (только буквы, не цифры!)
+            single_char = re.sub(r'([а-яёa-z])\1+', r'\1', word, flags=re.IGNORECASE)
 
             # Если слово в словаре опечаток — берём его
             if single_char in self.typo_fixes:
@@ -501,12 +496,80 @@ from config import (
 )
 
 
+# =============================================================================
+# ПРИОРИТЕТНЫЕ ПАТТЕРНЫ (проверяются ПЕРЕД обычной классификацией)
+# =============================================================================
+# Эти паттерны решают проблему когда "не интересно" ловится как "agreement"
+# из-за корня "интересн", хотя по смыслу это rejection
+
+PRIORITY_PATTERNS: List[Tuple[str, str, float]] = [
+    # (pattern, intent, confidence)
+
+    # === REJECTION (отказы с отрицанием) ===
+    # "не интересно", "неинтересно"
+    (r'не\s*интересн', "rejection", 0.9),
+    (r'неинтересн', "rejection", 0.9),
+    # "не нужно", "ненужно"
+    (r'не\s*нужн', "rejection", 0.9),
+    (r'ненужн', "rejection", 0.9),
+    # "не надо", "ненадо"
+    (r'не\s*надо', "rejection", 0.9),
+    (r'ненадо', "rejection", 0.9),
+    # "не хочу", "не хотим"
+    (r'не\s*хо[чт]', "rejection", 0.85),
+    # "не буду", "не будем"
+    (r'не\s*буд', "rejection", 0.85),
+    # "нет спасибо", "нет, спасибо"
+    (r'нет,?\s*спасибо', "rejection", 0.9),
+    # "спасибо не надо/нужно"
+    (r'спасибо,?\s*не\s*(?:надо|нужн)', "rejection", 0.9),
+
+    # === OBJECTION_PRICE (возражения по цене) ===
+    # "нет бюджета", "бюджета нет"
+    (r'нет\s*бюджет', "objection_price", 0.9),
+    (r'бюджет\w*\s*нет', "objection_price", 0.9),
+    # "без бюджета", "не заложено в бюджет"
+    (r'без\s*бюджет', "objection_price", 0.85),
+    (r'не\s*залож\w*\s*(?:в\s*)?бюджет', "objection_price", 0.85),
+    # "денег нет", "нет денег"
+    (r'денег\s*нет', "objection_price", 0.9),
+    (r'нет\s*денег', "objection_price", 0.9),
+    # "не потянем", "не потянуть"
+    (r'не\s*потян', "objection_price", 0.85),
+
+    # === AGREEMENT (согласие) ===
+    # "давайте попробуем", "давай попробуем"
+    (r'давай\w*\s*попробу', "agreement", 0.9),
+    # "хочу попробовать"
+    (r'хочу\s*попробо', "agreement", 0.9),
+    # "да, интересно", "да интересно"
+    (r'да,?\s*интересн', "agreement", 0.9),
+    # "да, давайте"
+    (r'да,?\s*давайте', "agreement", 0.9),
+    # "расскажите подробнее"
+    (r'расскажите\s*подробн', "agreement", 0.85),
+    # "хочу демо", "хотим демо"
+    (r'хо[чт]\w*\s*демо', "agreement", 0.9),
+
+    # === OBJECTION_NO_TIME ===
+    # "нет времени"
+    (r'нет\s*времен', "objection_no_time", 0.9),
+    # "сейчас не могу"
+    (r'сейчас\s*не\s*мог', "objection_no_time", 0.85),
+]
+
+# Компилируем паттерны для производительности
+_COMPILED_PRIORITY_PATTERNS = [(re.compile(p, re.IGNORECASE), intent, conf)
+                                for p, intent, conf in PRIORITY_PATTERNS]
+
+
 class RootClassifier:
     """Быстрая классификация по корням слов"""
 
     def __init__(self):
         self.roots = INTENT_ROOTS
         self.config = CLASSIFIER_CONFIG
+        self.priority_patterns = _COMPILED_PRIORITY_PATTERNS
 
     def classify(self, message: str) -> Tuple[str, float, Dict[str, int]]:
         """
@@ -516,6 +579,14 @@ class RootClassifier:
             (intent, confidence, scores_dict)
         """
         message_lower = message.lower()
+
+        # ШАГ 0: Проверяем приоритетные паттерны
+        # Это решает проблему "не интересно" → rejection (а не agreement)
+        for pattern, intent, confidence in self.priority_patterns:
+            if pattern.search(message_lower):
+                return intent, confidence, {intent: 3}  # высокий score
+
+        # ШАГ 1: Обычная классификация по корням
         scores: Dict[str, int] = {}
 
         for intent, roots in self.roots.items():
@@ -1063,9 +1134,14 @@ class DataExtractor:
         # Телефон (если email не найден)
         if "contact_info" not in extracted:
             phone_patterns = [
-                r'\+7[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}',
-                r'8[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}',
-                r'\d{3}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}',
+                # +7 с разными разделителями: +7 999 123-45-67, +7(999)123-45-67, +79991234567
+                r'\+7[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{2}[\s\-\.]?\d{2}',
+                # 8 с разными разделителями: 8 999 123-45-67, 8(999)123-45-67
+                r'8[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{2}[\s\-\.]?\d{2}',
+                # 10 цифр подряд (без кода страны): 9991234567
+                r'\b\d{10}\b',
+                # Формат XXX-XXX-XX-XX или XXX XXX XX XX
+                r'\d{3}[\s\-\.]\d{3}[\s\-\.]\d{2}[\s\-\.]\d{2}',
             ]
             for pattern in phone_patterns:
                 phone_match = re.search(pattern, message)
