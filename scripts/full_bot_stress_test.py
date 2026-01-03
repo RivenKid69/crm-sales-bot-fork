@@ -15,11 +15,15 @@
     --mode random   : только случайные сценарии (уникальны каждый раз)
     --mode mixed    : фиксированные + случайные (по умолчанию)
 
+SEED:
+    Если --seed не указан, генерируется автоматически (уникальный для каждого запуска).
+    Сгенерированный seed выводится в начале теста для воспроизводимости.
+
 Запуск:
-    python scripts/full_bot_stress_test.py                    # mixed mode
+    python scripts/full_bot_stress_test.py                    # mixed mode, авто-seed
     python scripts/full_bot_stress_test.py --mode random -n 50  # 50 случайных сценариев
     python scripts/full_bot_stress_test.py --verbose
-    python scripts/full_bot_stress_test.py --seed 42          # воспроизводимый тест
+    python scripts/full_bot_stress_test.py --seed 12345       # воспроизводимый тест
 """
 
 import sys
@@ -1256,9 +1260,17 @@ def main():
         "--seed", "-s",
         type=int,
         default=None,
-        help="Seed для воспроизводимых случайных тестов"
+        help="Seed для воспроизводимых случайных тестов (если не указан - генерируется автоматически)"
     )
     args = parser.parse_args()
+
+    # Автогенерация seed если не указан
+    if args.seed is None:
+        # Используем комбинацию time + random для уникальности
+        import time as time_module
+        args.seed = int(time_module.time() * 1000) % (2**31) ^ random.randint(0, 2**31)
+        print(f"🎲 Сгенерирован seed: {args.seed}")
+        print(f"   Для воспроизведения: --seed {args.seed}\n")
 
     tester = BotStressTester(
         verbose=args.verbose,
