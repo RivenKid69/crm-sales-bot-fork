@@ -1,72 +1,110 @@
 """
-Test Text-to-Speech with Piper TTS
-Generates speech from text using local Russian voice model
+Test Text-to-Speech with XTTS-ru-ipa
+Russian-optimized TTS using IPA transcription
 """
 import time
-import wave
-import subprocess
+import torch
 import sounddevice as sd
 import soundfile as sf
 from pathlib import Path
 
+from TTS.tts.configs.xtts_config import XttsConfig
+from TTS.tts.models.xtts import Xtts
+from omogre import Transcriptor
+
 AUDIO_DIR = Path(__file__).parent / "audio"
 AUDIO_DIR.mkdir(exist_ok=True)
 
-MODEL_DIR = Path(__file__).parent / "models"
-MODEL_PATH = MODEL_DIR / "ru_RU-irina-medium.onnx"
+MODEL_DIR = Path(__file__).parent / "models" / "xtts-ru-ipa"
+REFERENCE_AUDIO = MODEL_DIR / "reference_audio.wav"
 
 
-def synthesize_speech(text: str, output_file: str = "output.wav") -> tuple[Path, float]:
-    """Generate speech from text using Piper"""
-    output_path = AUDIO_DIR / output_file
+class XTTSRussian:
+    """XTTS wrapper for Russian TTS with IPA transcription"""
 
-    start_time = time.time()
+    def __init__(self, model_path: Path = MODEL_DIR):
+        print("📥 Loading XTTS-ru-ipa model...")
+        start = time.time()
 
-    # Run piper via subprocess
-    cmd = [
-        "piper",
-        "--model", str(MODEL_PATH),
-        "--output_file", str(output_path)
-    ]
+        # Get device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"   Device: {self.device}")
 
-    process = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    stdout, stderr = process.communicate(input=text.encode("utf-8"))
+        # Load config and model
+        config = XttsConfig()
+        config.load_json(str(model_path / "config.json"))
 
-    elapsed = time.time() - start_time
+        self.model = Xtts.init_from_config(config)
+        self.model.load_checkpoint(
+            config,
+            checkpoint_dir=str(model_path),
+            checkpoint_path=str(model_path / "model.pth"),
+            vocab_path=str(model_path / "vocab.json"),
+            eval=True,
+            use_deepspeed=False
+        )
+        self.model.to(self.device)
 
-    if process.returncode != 0:
-        print(f"Error: {stderr.decode()}")
-        return None, elapsed
+        # Load transcriptor for IPA
+        print("   Loading IPA transcriptor...")
+        self.transcriptor = Transcriptor()
 
-    return output_path, elapsed
+        # Compute speaker latents from reference audio
+        print("   Computing speaker latents...")
+        self.gpt_cond_latent, self.speaker_embedding = self.model.get_conditioning_latents(
+            audio_path=[str(REFERENCE_AUDIO)]
+        )
+
+        print(f"✅ Model loaded in {time.time() - start:.2f}s")
+
+    def transcribe_to_ipa(self, text: str) -> str:
+        """Convert Russian text to IPA"""
+        return self.transcriptor([text])[0]
+
+    def synthesize(self, text: str, output_path: Path = None) -> tuple:
+        """Generate speech from Russian text"""
+        # Convert to IPA
+        ipa_text = self.transcribe_to_ipa(text)
+        print(f"   IPA: {ipa_text}")
+
+        start = time.time()
+
+        # Generate audio
+        out = self.model.inference(
+            text=ipa_text,
+            language="ru",
+            gpt_cond_latent=self.gpt_cond_latent,
+            speaker_embedding=self.speaker_embedding,
+            temperature=0.7,
+            enable_text_splitting=True
+        )
+
+        audio = out["wav"]
+        sample_rate = 24000  # XTTS default
+
+        elapsed = time.time() - start
+
+        if output_path:
+            sf.write(output_path, audio, sample_rate)
+
+        return audio, sample_rate, elapsed
 
 
-def play_audio(audio_path: Path):
-    """Play audio file"""
-    print(f"🔊 Playing: {audio_path.name}")
-    data, samplerate = sf.read(audio_path)
-    sd.play(data, samplerate)
+def play_audio(audio, sample_rate: int):
+    """Play audio"""
+    print("🔊 Playing...")
+    sd.play(audio, sample_rate)
     sd.wait()
 
 
 def test_tts():
     """Main test function"""
     print("=" * 50)
-    print("🔊 TTS Test (Piper)")
+    print("🔊 TTS Test (XTTS-ru-ipa)")
     print("=" * 50)
 
-    # Check model
-    if not MODEL_PATH.exists():
-        print(f"❌ Model not found: {MODEL_PATH}")
-        print("   Run: ./setup.sh to download the model")
-        return
-
-    print(f"✅ Model: {MODEL_PATH.name}")
+    # Initialize
+    tts = XTTSRussian()
 
     # Test texts
     texts = [
@@ -81,15 +119,10 @@ def test_tts():
         print(f"\n📝 Text {i+1}: {text}")
         print("🔄 Synthesizing...")
 
-        output_path, elapsed = synthesize_speech(text, f"tts_test_{i+1}.wav")
+        output_path = AUDIO_DIR / f"xtts_test_{i+1}.wav"
+        audio, sr, elapsed = tts.synthesize(text, output_path)
 
-        if output_path is None:
-            print("❌ Synthesis failed")
-            continue
-
-        # Get audio duration
-        data, sr = sf.read(output_path)
-        duration = len(data) / sr
+        duration = len(audio) / sr
 
         print(f"✅ Generated in {elapsed:.2f}s")
         print(f"📈 Audio duration: {duration:.2f}s")
@@ -103,10 +136,7 @@ def test_tts():
         })
 
         # Play audio
-        play_audio(output_path)
-
-    if not results:
-        return
+        play_audio(audio, sr)
 
     # Summary
     print("\n" + "=" * 50)
@@ -119,7 +149,7 @@ def test_tts():
     if avg_rtf < 1.0:
         print("✅ TTS is faster than real-time!")
     else:
-        print("⚠️  TTS is slower than real-time")
+        print("⚠️  TTS is slower than real-time (consider GPU)")
 
     return results
 

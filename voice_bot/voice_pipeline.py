@@ -1,9 +1,9 @@
 """
 Full Voice Bot Pipeline: STT -> LLM -> TTS
-Real-time voice conversation with timing metrics
+Real-time voice conversation with XTTS-ru-ipa
 """
 import time
-import subprocess
+import torch
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -12,14 +12,17 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from faster_whisper import WhisperModel
+from TTS.tts.configs.xtts_config import XttsConfig
+from TTS.tts.models.xtts import Xtts
+from omogre import Transcriptor
 
 
 SAMPLE_RATE = 16000
 AUDIO_DIR = Path(__file__).parent / "audio"
 AUDIO_DIR.mkdir(exist_ok=True)
 
-MODEL_DIR = Path(__file__).parent / "models"
-PIPER_MODEL = MODEL_DIR / "ru_RU-irina-medium.onnx"
+MODEL_DIR = Path(__file__).parent / "models" / "xtts-ru-ipa"
+REFERENCE_AUDIO = MODEL_DIR / "reference_audio.wav"
 
 
 @dataclass
@@ -45,11 +48,11 @@ class PipelineMetrics:
         print(f"⏱️  Total pipeline:     {self.total_time:.2f}s")
         print(f"🎤 Input audio:        {self.audio_input_duration:.2f}s")
         print(f"🔊 Output audio:       {self.audio_output_duration:.2f}s")
-        print(f"⚡ Latency (to first): {self.stt_time + self.llm_first_token:.2f}s")
+        print(f"⚡ Latency (to speech): {self.stt_time + self.llm_time + self.tts_time:.2f}s")
 
 
 class VoicePipeline:
-    """Full voice conversation pipeline"""
+    """Full voice conversation pipeline with XTTS-ru-ipa"""
 
     def __init__(
         self,
@@ -57,10 +60,12 @@ class VoicePipeline:
         llm_model: str = "qwen2.5:7b",
     ):
         self.llm_model = llm_model
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         print("=" * 60)
         print("🚀 Initializing Voice Pipeline")
         print("=" * 60)
+        print(f"   Device: {self.device}")
 
         # Initialize STT
         print("\n📥 Loading Whisper model...")
@@ -72,10 +77,34 @@ class VoicePipeline:
         )
         print(f"   ✅ Whisper loaded in {time.time() - stt_start:.2f}s")
 
-        # Check Piper model
-        if not PIPER_MODEL.exists():
-            raise FileNotFoundError(f"Piper model not found: {PIPER_MODEL}")
-        print(f"   ✅ Piper model: {PIPER_MODEL.name}")
+        # Initialize TTS (XTTS-ru-ipa)
+        print("\n📥 Loading XTTS-ru-ipa model...")
+        tts_start = time.time()
+
+        config = XttsConfig()
+        config.load_json(str(MODEL_DIR / "config.json"))
+
+        self.tts = Xtts.init_from_config(config)
+        self.tts.load_checkpoint(
+            config,
+            checkpoint_dir=str(MODEL_DIR),
+            checkpoint_path=str(MODEL_DIR / "model.pth"),
+            vocab_path=str(MODEL_DIR / "vocab.json"),
+            eval=True,
+            use_deepspeed=False
+        )
+        self.tts.to(self.device)
+
+        # Load transcriptor for IPA
+        print("   Loading IPA transcriptor...")
+        self.transcriptor = Transcriptor()
+
+        # Compute speaker latents
+        print("   Computing speaker latents...")
+        self.gpt_cond_latent, self.speaker_embedding = self.tts.get_conditioning_latents(
+            audio_path=[str(REFERENCE_AUDIO)]
+        )
+        print(f"   ✅ XTTS loaded in {time.time() - tts_start:.2f}s")
 
         # System prompt
         self.system_prompt = """Ты голосовой ассистент. Отвечай кратко и естественно, как в разговоре.
@@ -114,32 +143,30 @@ class VoicePipeline:
 
         return text, elapsed
 
-    def text_to_speech(self, text: str) -> tuple[np.ndarray, float]:
-        """Convert text to speech using Piper"""
-        output_path = AUDIO_DIR / "temp_output.wav"
+    def text_to_speech(self, text: str) -> tuple[np.ndarray, int, float]:
+        """Convert text to speech using XTTS-ru-ipa"""
+        # Convert to IPA
+        ipa_text = self.transcriptor([text])[0]
 
         start = time.time()
 
-        cmd = [
-            "piper",
-            "--model", str(PIPER_MODEL),
-            "--output_file", str(output_path)
-        ]
-
-        process = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+        out = self.tts.inference(
+            text=ipa_text,
+            language="ru",
+            gpt_cond_latent=self.gpt_cond_latent,
+            speaker_embedding=self.speaker_embedding,
+            temperature=0.7,
+            enable_text_splitting=True
         )
-        process.communicate(input=text.encode("utf-8"))
+
+        audio = out["wav"]
+        sample_rate = 24000
 
         elapsed = time.time() - start
 
-        audio, sr = sf.read(output_path)
-        return audio, sr, elapsed
+        return audio, sample_rate, elapsed
 
-    def play_audio(self, audio: np.ndarray, sample_rate: int = 22050):
+    def play_audio(self, audio: np.ndarray, sample_rate: int = 24000):
         """Play audio"""
         sd.play(audio, sample_rate)
         sd.wait()
@@ -206,7 +233,7 @@ class VoicePipeline:
 def main():
     """Interactive voice bot"""
     print("\n" + "=" * 60)
-    print("🎙️  Voice Bot Pipeline Test")
+    print("🎙️  Voice Bot Pipeline (XTTS-ru-ipa)")
     print("=" * 60)
 
     # Initialize pipeline
