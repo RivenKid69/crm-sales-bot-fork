@@ -17,7 +17,7 @@ AUDIO_DIR.mkdir(exist_ok=True)
 
 # F5-TTS Russian model
 F5TTS_MODEL_PATH = VOICE_BOT_DIR / "checkpoints" / "F5TTS_v1_Base_v2" / "model_last_inference.safetensors"
-REFERENCE_AUDIO = AUDIO_DIR / "reference_ru_female.wav"
+REFERENCE_AUDIO = AUDIO_DIR / "reference_voice.wav"
 REFERENCE_TEXT = "говно не смотрю уже очень давно я без понятия там уже сезона этак третьего чисто контент для говноедов я второй еле досмотрел еле-еле"
 
 
