@@ -273,15 +273,17 @@ class TestSPINEdgeCases:
         assert result["next_state"] in ["spin_need_payoff", "presentation"]
 
     def test_price_question_deflects_in_spin(self):
-        """Вопрос о цене в SPIN-фазе отклоняется"""
+        """Вопрос о цене в SPIN-фазе мягко отклоняется через deflect_and_continue"""
         # Переходим в spin_situation
         self.sm.process("agreement", {})
 
         # Спрашиваем о цене
         result = self.sm.process("price_question", {})
 
-        # Должен остаться в spin_situation и ответить на вопрос
-        assert result["action"] == "answer_question"
+        # Должен остаться в spin_situation и мягко перенаправить разговор
+        # (rules имеют приоритет над QUESTION_INTENTS)
+        assert result["action"] == "deflect_and_continue"
+        assert result["next_state"] == "spin_situation"
 
     def test_combined_situation_data(self):
         """Одно сообщение может содержать несколько данных о ситуации"""

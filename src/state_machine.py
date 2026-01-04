@@ -86,90 +86,109 @@ class StateMachine:
                 return True
         return False
 
+    def _is_spin_phase_progression(self, intent_phase: str, current_phase: str) -> bool:
+        """
+        Проверяет, является ли intent_phase прогрессом относительно current_phase.
+
+        Args:
+            intent_phase: Фаза из интента (situation, problem, etc.)
+            current_phase: Текущая SPIN-фаза
+
+        Returns:
+            True если intent_phase соответствует текущей или следующей фазе
+        """
+        if intent_phase not in SPIN_PHASES or current_phase not in SPIN_PHASES:
+            return False
+
+        intent_idx = SPIN_PHASES.index(intent_phase)
+        current_idx = SPIN_PHASES.index(current_phase)
+
+        return intent_idx >= current_idx
+
     def apply_rules(self, intent: str) -> Tuple[str, str]:
         """
-        Определяем действие и следующее состояние
+        Определяем действие и следующее состояние.
 
-        Returns: (action, next_state)
+        Порядок приоритетов:
+        0. Финальное состояние
+        1. Rejection — критический интент
+        2. State-specific rules (включая deflect_and_continue для SPIN)
+        3. Общий обработчик вопросов (QUESTION_INTENTS)
+        4. SPIN-специфичная логика
+        5. Переходы по интенту
+        6. Автопереход по data_complete
+        7. Автопереход по "any"
+        8. Default — оставаться в текущем состоянии
+
+        Returns:
+            Tuple[str, str]: (action, next_state)
         """
         config = SALES_STATES.get(self.state, {})
+        transitions = config.get("transitions", {})
+        rules = config.get("rules", {})
+        spin_phase = self._get_current_spin_phase()
 
-        # Финальное состояние
+        # =====================================================================
+        # ПРИОРИТЕТ 0: Финальное состояние
+        # =====================================================================
         if config.get("is_final"):
             return "final", self.state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 0: Вопросы требуют ответа!
-        # Если клиент задаёт вопрос — сначала отвечаем, потом продолжаем
-        # =====================================================================
-        if intent in QUESTION_INTENTS:
-            transitions = config.get("transitions", {})
-            if intent in transitions:
-                next_state = transitions[intent]
-            else:
-                next_state = self.state
-
-            return "answer_question", next_state
 
         # =====================================================================
         # ПРИОРИТЕТ 1: Rejection — всегда обрабатываем немедленно
         # =====================================================================
         if intent == "rejection":
-            transitions = config.get("transitions", {})
             if "rejection" in transitions:
                 next_state = transitions["rejection"]
                 return f"transition_to_{next_state}", next_state
 
         # =====================================================================
-        # ПРИОРИТЕТ 2: SPIN-специфичная логика
+        # ПРИОРИТЕТ 2: State-specific rules
+        # Позволяет состояниям переопределять поведение для конкретных интентов,
+        # например deflect_and_continue для вопросов о цене в SPIN-фазах
         # =====================================================================
-        spin_phase = self._get_current_spin_phase()
+        if intent in rules:
+            return rules[intent], self.state
 
+        # =====================================================================
+        # ПРИОРИТЕТ 3: Общий обработчик вопросов
+        # Если клиент задаёт вопрос — сначала отвечаем, потом продолжаем
+        # =====================================================================
+        if intent in QUESTION_INTENTS:
+            next_state = transitions.get(intent, self.state)
+            return "answer_question", next_state
+
+        # =====================================================================
+        # ПРИОРИТЕТ 4: SPIN-специфичная логика
+        # =====================================================================
         if spin_phase:
-            # Проверяем SPIN-специфичные интенты для перехода
             if intent in SPIN_PROGRESS_INTENTS:
                 intent_phase = SPIN_PROGRESS_INTENTS[intent]
-                # Если интент соответствует текущей или следующей фазе — это прогресс
-                if intent_phase == spin_phase or \
-                   (SPIN_PHASES.index(intent_phase) > SPIN_PHASES.index(spin_phase) if intent_phase in SPIN_PHASES and spin_phase in SPIN_PHASES else False):
-                    # Проверяем можно ли перейти дальше
-                    transitions = config.get("transitions", {})
+                if self._is_spin_phase_progression(intent_phase, spin_phase):
                     if intent in transitions:
                         next_state = transitions[intent]
                         return f"transition_to_{next_state}", next_state
 
-            # Автоматический переход если данные собраны
             if self._check_spin_data_complete(config):
-                transitions = config.get("transitions", {})
                 if "data_complete" in transitions:
                     next_state = transitions["data_complete"]
-                    # Проверяем можно ли пропустить следующую фазу
                     next_config = SALES_STATES.get(next_state, {})
                     next_phase = next_config.get("spin_phase")
                     if next_phase and self._should_skip_spin_phase(next_phase):
-                        # Пропускаем и идём дальше
                         skip_transitions = next_config.get("transitions", {})
                         if "data_complete" in skip_transitions:
                             next_state = skip_transitions["data_complete"]
                     return f"transition_to_{next_state}", next_state
 
         # =====================================================================
-        # ПРИОРИТЕТ 2: Специальные правила текущего состояния
+        # ПРИОРИТЕТ 5: Переходы по интенту
         # =====================================================================
-        rules = config.get("rules", {})
-        if intent in rules:
-            return rules[intent], self.state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 3: Переходы по интенту
-        # =====================================================================
-        transitions = config.get("transitions", {})
         if intent in transitions:
             next_state = transitions[intent]
             return f"transition_to_{next_state}", next_state
 
         # =====================================================================
-        # ПРИОРИТЕТ 4: Проверка data_complete для non-SPIN состояний
+        # ПРИОРИТЕТ 6: Проверка data_complete для non-SPIN состояний
         # =====================================================================
         required = config.get("required_data", [])
         if required:
@@ -179,16 +198,15 @@ class StateMachine:
                 return f"transition_to_{next_state}", next_state
 
         # =====================================================================
-        # ПРИОРИТЕТ 5: Автопереход (для greeting)
+        # ПРИОРИТЕТ 7: Автопереход (для greeting)
         # =====================================================================
         if "any" in transitions:
             next_state = transitions["any"]
             return f"transition_to_{next_state}", next_state
 
         # =====================================================================
-        # Дефолт: остаёмся в текущем состоянии
+        # ПРИОРИТЕТ 8: Default — остаёмся в текущем состоянии
         # =====================================================================
-        # Для SPIN состояний используем соответствующий промпт
         if spin_phase:
             return self.state, self.state
 

@@ -464,5 +464,322 @@ class TestParameterizedContextClassification:
             f"last_action={last_action}, message='{message}' expected {expected_intent}, got {result['intent']}"
 
 
+# =============================================================================
+# ТЕСТЫ ДЛЯ RETRIEVER SINGLETON — ИЗМЕНЕНИЕ ПАРАМЕТРОВ
+# =============================================================================
+
+class TestRetrieverSingletonParameterChange:
+    """
+    Тесты для проверки что singleton retriever пересоздаётся при изменении параметров.
+
+    Проблема: если первый вызов get_retriever(False), все последующие вызовы
+    get_retriever(True) возвращали retriever без эмбеддингов.
+    Параметр игнорировался после первой инициализации.
+    """
+
+    @pytest.fixture(autouse=True)
+    def reset_singleton(self):
+        """Сбрасываем singleton перед и после каждого теста."""
+        from knowledge.retriever import reset_retriever
+        reset_retriever()
+        yield
+        reset_retriever()
+
+    def test_parameter_change_creates_new_instance(self):
+        """
+        При изменении use_embeddings должен создаваться новый экземпляр.
+        """
+        from knowledge.retriever import get_retriever
+
+        # Первый вызов с use_embeddings=False
+        retriever1 = get_retriever(use_embeddings=False)
+        assert retriever1.use_embeddings is False
+
+        # Второй вызов с use_embeddings=True — должен создать новый экземпляр
+        retriever2 = get_retriever(use_embeddings=True)
+        assert retriever2.use_embeddings is True
+
+        # Это должны быть разные объекты
+        assert retriever1 is not retriever2
+
+    def test_same_parameter_returns_same_instance(self):
+        """
+        При одинаковых параметрах должен возвращаться тот же экземпляр (singleton).
+        """
+        from knowledge.retriever import get_retriever
+
+        retriever1 = get_retriever(use_embeddings=False)
+        retriever2 = get_retriever(use_embeddings=False)
+
+        assert retriever1 is retriever2
+
+    def test_reset_retriever_clears_singleton(self):
+        """
+        reset_retriever() должен сбрасывать singleton.
+        """
+        from knowledge.retriever import get_retriever, reset_retriever
+
+        retriever1 = get_retriever(use_embeddings=False)
+        reset_retriever()
+        retriever2 = get_retriever(use_embeddings=False)
+
+        # После сброса это должны быть разные объекты
+        assert retriever1 is not retriever2
+
+    def test_multiple_parameter_switches(self):
+        """
+        Многократное переключение параметров работает корректно.
+        """
+        from knowledge.retriever import get_retriever
+
+        r1 = get_retriever(use_embeddings=False)
+        r2 = get_retriever(use_embeddings=True)
+        r3 = get_retriever(use_embeddings=False)
+        r4 = get_retriever(use_embeddings=False)
+
+        assert r1.use_embeddings is False
+        assert r2.use_embeddings is True
+        assert r3.use_embeddings is False
+
+        # r3 и r4 должны быть одним объектом (одинаковые параметры)
+        assert r3 is r4
+        # r1, r2, r3 должны быть разными объектами
+        assert r1 is not r2
+        assert r2 is not r3
+
+    def test_original_bug_scenario(self):
+        """
+        Воспроизведение оригинальной ошибки:
+        get_retriever(False) → get_retriever(True) должен вернуть retriever С эмбеддингами.
+        """
+        from knowledge.retriever import get_retriever
+
+        # Первый вызов без эмбеддингов
+        first = get_retriever(use_embeddings=False)
+        assert first.use_embeddings is False
+
+        # Второй вызов С эмбеддингами — должен работать корректно
+        second = get_retriever(use_embeddings=True)
+        assert second.use_embeddings is True, \
+            "REGRESSION: get_retriever(True) should return retriever with embeddings enabled"
+
+
+# =============================================================================
+# ТЕСТЫ ДЛЯ STATE MACHINE — ПРИОРИТЕТ RULES И DEFLECT_AND_CONTINUE
+# =============================================================================
+
+class TestStateMachineRulesPriority:
+    """
+    Тесты для проверки приоритета rules над QUESTION_INTENTS.
+
+    Проблема: price_question входит в QUESTION_INTENTS и обрабатывался
+    в ПРИОРИТЕТ 0, возвращая "answer_question". Rules с "deflect_and_continue"
+    никогда не достигались для вопросов в SPIN-состояниях.
+    """
+
+    @pytest.fixture
+    def state_machine(self):
+        from state_machine import StateMachine
+        return StateMachine()
+
+    def test_deflect_and_continue_in_spin_situation(self, state_machine):
+        """
+        В spin_situation price_question должен возвращать deflect_and_continue,
+        а не answer_question.
+        """
+        # Переходим в spin_situation
+        state_machine.process("agreement", {})
+        assert state_machine.state == "spin_situation"
+
+        # Теперь price_question должен вернуть deflect_and_continue
+        result = state_machine.process("price_question", {})
+
+        assert result["action"] == "deflect_and_continue", \
+            f"Expected 'deflect_and_continue' but got '{result['action']}'"
+        assert result["next_state"] == "spin_situation"
+
+    def test_deflect_and_continue_in_spin_problem(self, state_machine):
+        """
+        В spin_problem price_question тоже должен deflect_and_continue.
+        """
+        # Setup: переходим в spin_problem
+        state_machine.process("agreement", {})
+        state_machine.process("info_provided", {"company_size": 10})
+        assert state_machine.state == "spin_problem"
+
+        result = state_machine.process("price_question", {})
+
+        assert result["action"] == "deflect_and_continue"
+        assert result["next_state"] == "spin_problem"
+
+    def test_deflect_and_continue_in_spin_implication(self, state_machine):
+        """
+        В spin_implication price_question тоже должен deflect_and_continue.
+        """
+        # Setup: переходим в spin_implication
+        state_machine.process("agreement", {})
+        state_machine.process("info_provided", {"company_size": 10})
+        state_machine.process("info_provided", {"pain_point": "теряем клиентов"})
+        assert state_machine.state == "spin_implication"
+
+        result = state_machine.process("price_question", {})
+
+        assert result["action"] == "deflect_and_continue"
+
+    def test_deflect_and_continue_in_spin_need_payoff(self, state_machine):
+        """
+        В spin_need_payoff price_question тоже должен deflect_and_continue.
+        """
+        # Setup: переходим в spin_need_payoff
+        state_machine.process("agreement", {})
+        state_machine.process("info_provided", {"company_size": 10})
+        state_machine.process("info_provided", {"pain_point": "теряем клиентов"})
+        state_machine.process("agreement", {})
+        assert state_machine.state == "spin_need_payoff"
+
+        result = state_machine.process("price_question", {})
+
+        assert result["action"] == "deflect_and_continue"
+
+    def test_answer_question_in_presentation(self, state_machine):
+        """
+        В presentation (где нет rule для price_question) должен возвращать answer_question.
+        """
+        # Симулируем прямой переход в presentation (для теста)
+        state_machine.state = "presentation"
+
+        result = state_machine.process("price_question", {})
+
+        # В presentation нет rule для price_question, поэтому
+        # сработает общий обработчик QUESTION_INTENTS → answer_question
+        # Но в presentation есть rule "answer_with_facts", проверим конфиг
+        from config import SALES_STATES
+        presentation_rules = SALES_STATES.get("presentation", {}).get("rules", {})
+
+        if "price_question" in presentation_rules:
+            assert result["action"] == presentation_rules["price_question"]
+        else:
+            assert result["action"] == "answer_question"
+
+    def test_other_question_intents_work_when_no_rule(self, state_machine):
+        """
+        Вопросы без rule в конфиге должны обрабатываться как answer_question.
+        """
+        # Переходим в spin_situation
+        state_machine.process("agreement", {})
+
+        # question_features не имеет rule в spin_situation
+        result = state_machine.process("question_features", {})
+
+        assert result["action"] == "answer_question"
+
+
+# =============================================================================
+# ТЕСТЫ ДЛЯ STATE MACHINE — _is_spin_phase_progression
+# =============================================================================
+
+class TestSpinPhaseProgression:
+    """
+    Тесты для нового метода _is_spin_phase_progression.
+
+    Этот метод заменяет сложную inline проверку для определения
+    прогресса в SPIN-фазах.
+    """
+
+    @pytest.fixture
+    def state_machine(self):
+        from state_machine import StateMachine
+        return StateMachine()
+
+    def test_same_phase_is_progression(self, state_machine):
+        """Та же фаза считается прогрессом."""
+        assert state_machine._is_spin_phase_progression("situation", "situation") is True
+        assert state_machine._is_spin_phase_progression("problem", "problem") is True
+
+    def test_next_phase_is_progression(self, state_machine):
+        """Следующая фаза считается прогрессом."""
+        assert state_machine._is_spin_phase_progression("problem", "situation") is True
+        assert state_machine._is_spin_phase_progression("implication", "problem") is True
+        assert state_machine._is_spin_phase_progression("need_payoff", "implication") is True
+
+    def test_previous_phase_not_progression(self, state_machine):
+        """Предыдущая фаза НЕ считается прогрессом."""
+        assert state_machine._is_spin_phase_progression("situation", "problem") is False
+        assert state_machine._is_spin_phase_progression("problem", "implication") is False
+
+    def test_invalid_phase_not_progression(self, state_machine):
+        """Невалидные фазы возвращают False."""
+        assert state_machine._is_spin_phase_progression("invalid", "situation") is False
+        assert state_machine._is_spin_phase_progression("situation", "invalid") is False
+        assert state_machine._is_spin_phase_progression("invalid", "invalid") is False
+
+    def test_none_phase_not_progression(self, state_machine):
+        """None фазы возвращают False без ошибок."""
+        # Метод должен безопасно обрабатывать None
+        # В текущей реализации None не входит в SPIN_PHASES, поэтому вернёт False
+        assert state_machine._is_spin_phase_progression(None, "situation") is False
+        assert state_machine._is_spin_phase_progression("situation", None) is False
+
+
+# =============================================================================
+# ТЕСТЫ ДЛЯ STATE MACHINE — ПРИОРИТЕТ КОММЕНТАРИЕВ
+# =============================================================================
+
+class TestStateMachinePriorityOrder:
+    """
+    Тесты для проверки корректного порядка приоритетов в apply_rules.
+
+    Проверяем что:
+    1. Финальное состояние имеет высший приоритет
+    2. Rejection обрабатывается сразу
+    3. Rules проверяются до QUESTION_INTENTS
+    4. SPIN-логика работает корректно
+    """
+
+    @pytest.fixture
+    def state_machine(self):
+        from state_machine import StateMachine
+        return StateMachine()
+
+    def test_final_state_has_highest_priority(self, state_machine):
+        """Финальное состояние всегда возвращает 'final'."""
+        state_machine.state = "success"
+        result = state_machine.process("agreement", {})
+        assert result["action"] == "final"
+
+        state_machine.state = "soft_close"
+        result = state_machine.process("agreement", {})
+        assert result["action"] == "final"
+
+    def test_rejection_has_high_priority(self, state_machine):
+        """Rejection обрабатывается немедленно в любом состоянии."""
+        states_with_rejection = ["greeting", "spin_situation", "spin_problem", "presentation"]
+
+        for state in states_with_rejection:
+            state_machine.reset()
+            state_machine.state = state
+            result = state_machine.process("rejection", {})
+
+            assert "soft_close" in result["next_state"] or result["action"] == "final", \
+                f"Rejection in {state} should lead to soft_close"
+
+    def test_rules_checked_before_question_intents(self, state_machine):
+        """
+        Rules проверяются ДО QUESTION_INTENTS.
+        Это критично для deflect_and_continue в SPIN-состояниях.
+        """
+        from config import QUESTION_INTENTS
+
+        # Переходим в spin_situation где есть rule для price_question
+        state_machine.process("agreement", {})
+
+        # price_question входит в QUESTION_INTENTS
+        assert "price_question" in QUESTION_INTENTS
+
+        # Но в spin_situation есть rule → должен сработать rule, а не answer_question
+        result = state_machine.process("price_question", {})
+        assert result["action"] == "deflect_and_continue"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

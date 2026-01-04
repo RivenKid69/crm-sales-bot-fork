@@ -459,12 +459,41 @@ KnowledgeRetriever = CascadeRetriever
 
 
 # Singleton для совместимости с текущим API
-_retriever = None
+_retriever: Optional[CascadeRetriever] = None
+_retriever_config: Optional[dict] = None
 
 
 def get_retriever(use_embeddings: bool = True) -> CascadeRetriever:
-    """Получить инстанс retriever'а."""
-    global _retriever
-    if _retriever is None:
+    """
+    Получить инстанс retriever'а.
+
+    При изменении параметров создаётся новый экземпляр.
+    Для явного сброса используйте reset_retriever().
+
+    Args:
+        use_embeddings: Использовать ли семантический поиск с эмбеддингами.
+
+    Returns:
+        CascadeRetriever: Singleton-экземпляр retriever'а.
+    """
+    global _retriever, _retriever_config
+
+    current_config = {"use_embeddings": use_embeddings}
+
+    if _retriever is None or _retriever_config != current_config:
         _retriever = CascadeRetriever(use_embeddings=use_embeddings)
+        _retriever_config = current_config
+
     return _retriever
+
+
+def reset_retriever() -> None:
+    """
+    Сбросить singleton-экземпляр retriever'а.
+
+    Следующий вызов get_retriever() создаст новый экземпляр.
+    Полезно для тестирования или при изменении конфигурации.
+    """
+    global _retriever, _retriever_config
+    _retriever = None
+    _retriever_config = None
