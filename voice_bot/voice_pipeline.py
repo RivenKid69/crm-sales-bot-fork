@@ -1,11 +1,8 @@
 """
 Full Voice Bot Pipeline: STT -> LLM -> TTS
-Real-time voice conversation with OpenAudio S1-mini TTS
+Real-time voice conversation with F5-TTS Russian
 """
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""  # Force CPU mode
-
-import sys
 import time
 import torch
 import numpy as np
@@ -15,27 +12,18 @@ import ollama
 from pathlib import Path
 from dataclasses import dataclass
 
-# Setup paths
-VOICE_BOT_DIR = Path(__file__).parent
-sys.path.insert(0, str(VOICE_BOT_DIR / "fish-speech"))
-
 from faster_whisper import WhisperModel
-
-# Fish Speech / OpenAudio imports
-from fish_speech.inference_engine import TTSInferenceEngine
-from fish_speech.models.dac.inference import load_model as load_decoder_model
-from fish_speech.models.text2semantic.inference import launch_thread_safe_queue
-from fish_speech.utils.schema import ServeTTSRequest, ServeReferenceAudio
-from fish_speech.utils.file import audio_to_bytes, read_ref_text
+from f5_tts.api import F5TTS
 
 
 SAMPLE_RATE = 16000
+VOICE_BOT_DIR = Path(__file__).parent
 AUDIO_DIR = VOICE_BOT_DIR / "audio"
 AUDIO_DIR.mkdir(exist_ok=True)
 
-# OpenAudio S1-mini paths
-OPENAUDIO_MODEL_DIR = VOICE_BOT_DIR / "checkpoints" / "openaudio-s1-mini"
-OPENAUDIO_REF_AUDIO = VOICE_BOT_DIR / "audio" / "reference_ru_female.wav"
+# F5-TTS Russian model path
+F5TTS_MODEL_PATH = VOICE_BOT_DIR / "checkpoints" / "F5TTS_v1_Base_v2" / "model_last_inference.safetensors"
+F5TTS_REF_AUDIO = VOICE_BOT_DIR / "audio" / "reference_ru_female.wav"
 
 
 @dataclass
@@ -65,20 +53,26 @@ class PipelineMetrics:
 
 
 class VoicePipeline:
-    """Full voice conversation pipeline with OpenAudio S1-mini TTS"""
+    """Full voice conversation pipeline with F5-TTS Russian"""
 
     def __init__(
         self,
         whisper_model: str = "large-v3-turbo",
         llm_model: str = "qwen3:8b-fast",
+        device: str = None,
     ):
         self.llm_model = llm_model
-        self.device = "cpu"
-        self.precision = torch.bfloat16
+
+        # Auto-detect device
+        if device is None:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = device
 
         print("=" * 60)
-        print("Initializing Voice Pipeline (OpenAudio S1-mini)")
+        print("Initializing Voice Pipeline (F5-TTS Russian)")
         print("=" * 60)
+        print(f"Device: {self.device}")
 
         # Initialize STT
         print("\nLoading Whisper model...")
@@ -90,50 +84,26 @@ class VoicePipeline:
         )
         print(f"   Whisper loaded in {time.time() - stt_start:.2f}s")
 
-        # Initialize OpenAudio S1-mini TTS
-        print("\nLoading OpenAudio S1-mini model...")
+        # Initialize F5-TTS with Russian model
+        print("\nLoading F5-TTS Russian model...")
         tts_start = time.time()
 
-        # Load LLAMA model (text to semantic)
-        print("   Loading LLAMA model...")
-        self.llama_queue = launch_thread_safe_queue(
-            checkpoint_path=str(OPENAUDIO_MODEL_DIR),  # Directory path
-            device=self.device,
-            precision=self.precision,
-            compile=False,
-        )
-
-        # Load decoder model (DAC)
-        print("   Loading decoder model...")
-        self.decoder_model = load_decoder_model(
-            config_name="modded_dac_vq",
-            checkpoint_path=str(OPENAUDIO_MODEL_DIR / "codec.pth"),
+        self.tts = F5TTS(
+            model="F5TTS_v1_Base",
+            ckpt_file=str(F5TTS_MODEL_PATH),
             device=self.device,
         )
+        self.tts_sample_rate = self.tts.target_sample_rate
 
-        # Create TTS engine
-        self.tts_engine = TTSInferenceEngine(
-            llama_queue=self.llama_queue,
-            decoder_model=self.decoder_model,
-            precision=self.precision,
-            compile=False,
-        )
-
-        # Get sample rate from decoder
-        if hasattr(self.decoder_model, "spec_transform"):
-            self.tts_sample_rate = self.decoder_model.spec_transform.sample_rate
-        else:
-            self.tts_sample_rate = self.decoder_model.sample_rate
-
-        print(f"   OpenAudio loaded in {time.time() - tts_start:.2f}s")
+        print(f"   F5-TTS loaded in {time.time() - tts_start:.2f}s")
         print(f"   Sample rate: {self.tts_sample_rate}Hz")
 
-        # Load reference audio for voice cloning
-        self.ref_audio_bytes = None
-        self.ref_text = ""
-        if OPENAUDIO_REF_AUDIO.exists():
-            print(f"   Loading reference audio: {OPENAUDIO_REF_AUDIO.name}")
-            self.ref_audio_bytes = audio_to_bytes(str(OPENAUDIO_REF_AUDIO))
+        # Reference audio for voice cloning
+        self.ref_audio = None
+        self.ref_text = "говно не смотрю уже очень давно я без понятия там уже сезона этак третьего чисто контент для говноедов я второй еле досмотрел еле-еле"
+        if F5TTS_REF_AUDIO.exists():
+            print(f"   Reference audio: {F5TTS_REF_AUDIO.name}")
+            self.ref_audio = str(F5TTS_REF_AUDIO)
 
         # System prompt
         self.system_prompt = """Ты голосовой ассистент. ВСЕГДА отвечай ТОЛЬКО на русском языке.
@@ -174,57 +144,30 @@ class VoicePipeline:
         return text, elapsed
 
     def text_to_speech(self, text: str) -> tuple[np.ndarray, int, float]:
-        """Convert text to speech using OpenAudio S1-mini"""
+        """Convert text to speech using F5-TTS Russian"""
         output_path = AUDIO_DIR / "temp_output.wav"
 
         start = time.time()
 
-        # Prepare references for voice cloning
-        references = []
-        if self.ref_audio_bytes:
-            references.append(
-                ServeReferenceAudio(
-                    audio=self.ref_audio_bytes,
-                    text=self.ref_text
-                )
+        try:
+            # Generate speech with F5-TTS
+            audio_data, sample_rate, _ = self.tts.infer(
+                ref_file=self.ref_audio,
+                ref_text=self.ref_text,
+                gen_text=text,
+                file_wave=str(output_path),
+                show_info=lambda x: None,  # Suppress progress output
+                nfe_step=32,
+                speed=1.0,
             )
 
-        # Create TTS request
-        request = ServeTTSRequest(
-            text=text,
-            references=references,
-            reference_id=None,
-            max_new_tokens=1024,
-            chunk_length=200,
-            top_p=0.7,
-            repetition_penalty=1.2,
-            temperature=0.7,
-            format="wav",
-            streaming=False,
-        )
+            elapsed = time.time() - start
+            return audio_data, sample_rate, elapsed
 
-        # Generate speech
-        audio_data = None
-        sample_rate = self.tts_sample_rate
-
-        for result in self.tts_engine.inference(request):
-            if result.code == "final":
-                if isinstance(result.audio, tuple):
-                    sample_rate, audio_data = result.audio
-            elif result.code == "error":
-                print(f"TTS Error: {result.error}")
-                return np.zeros(1000), sample_rate, time.time() - start
-
-        elapsed = time.time() - start
-
-        if audio_data is None:
-            print("No audio generated")
-            return np.zeros(1000), sample_rate, elapsed
-
-        # Save to file
-        sf.write(output_path, audio_data, sample_rate)
-
-        return audio_data, sample_rate, elapsed
+        except Exception as e:
+            print(f"TTS Error: {e}")
+            elapsed = time.time() - start
+            return np.zeros(1000), self.tts_sample_rate, elapsed
 
     def play_audio(self, audio: np.ndarray, sample_rate: int = 24000):
         """Play audio"""
@@ -294,13 +237,13 @@ class VoicePipeline:
 def main():
     """Interactive voice bot"""
     print("\n" + "=" * 60)
-    print("Voice Bot Pipeline (OpenAudio S1-mini TTS)")
+    print("Voice Bot Pipeline (F5-TTS Russian)")
     print("=" * 60)
 
     # Initialize pipeline
     pipeline = VoicePipeline(
         whisper_model="large-v3-turbo",
-        llm_model="qwen3:8b"
+        llm_model="qwen3:8b",
     )
 
     print("\n" + "=" * 60)
