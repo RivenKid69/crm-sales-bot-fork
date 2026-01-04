@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple, Set
 from enum import Enum
 
 from .base import KnowledgeSection, KnowledgeBase
-from .data import WIPON_KNOWLEDGE
+from .loader import load_knowledge_base
 from .lemmatizer import get_lemmatizer, Lemmatizer
 
 
@@ -71,13 +71,13 @@ class CascadeRetriever:
         Инициализация retriever.
 
         Args:
-            knowledge_base: База знаний (по умолчанию WIPON_KNOWLEDGE)
+            knowledge_base: База знаний (по умолчанию загружается из YAML)
             use_embeddings: Использовать ли семантический поиск
             exact_threshold: Минимальный score для exact match
             lemma_threshold: Минимальный score для lemma match
             semantic_threshold: Минимальный score для semantic match
         """
-        self.kb = knowledge_base or WIPON_KNOWLEDGE
+        self.kb = knowledge_base if knowledge_base is not None else load_knowledge_base()
         self.use_embeddings = use_embeddings
         self.exact_threshold = exact_threshold
         self.lemma_threshold = lemma_threshold

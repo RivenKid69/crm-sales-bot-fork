@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import pytest
 from knowledge.retriever import KnowledgeRetriever
 from knowledge.base import KnowledgeBase, KnowledgeSection
-from knowledge.data import WIPON_KNOWLEDGE
+from knowledge import WIPON_KNOWLEDGE
 
 
 class TestKnowledgeBase:

@@ -1,0 +1,65 @@
+# Метаданные базы знаний Wipon
+# Автоматически сгенерировано из data.py
+
+company:
+  name: Wipon
+  description: Казахстанская IT-компания, разработчик решений для автоматизации торговли
+    и учёта с 2014 года. 50,000+ клиентов.
+stats:
+  total_sections: 446
+  last_updated: '2026-01-04'
+  categories:
+  - name: tis
+    count: 132
+  - name: support
+    count: 70
+  - name: equipment
+    count: 60
+  - name: analytics
+    count: 27
+  - name: integrations
+    count: 24
+  - name: pricing
+    count: 24
+  - name: inventory
+    count: 21
+  - name: employees
+    count: 21
+  - name: stability
+    count: 14
+  - name: products
+    count: 10
+  - name: promotions
+    count: 10
+  - name: fiscal
+    count: 7
+  - name: mobile
+    count: 5
+  - name: regions
+    count: 4
+  - name: features
+    count: 3
+  - name: faq
+    count: 3
+  - name: audience
+    count: 1
+  - name: benefits
+    count: 1
+  - name: competitors
+    count: 1
+  - name: getting_started
+    count: 1
+  - name: contacts
+    count: 1
+  - name: partnership
+    count: 1
+  - name: updates
+    count: 1
+  - name: cases
+    count: 1
+  - name: requirements
+    count: 1
+  - name: security
+    count: 1
+  - name: migration
+    count: 1

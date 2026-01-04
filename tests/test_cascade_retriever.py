@@ -19,7 +19,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from knowledge.retriever import CascadeRetriever, MatchStage, SearchResult, get_retriever
-from knowledge.data import WIPON_KNOWLEDGE
+from knowledge import WIPON_KNOWLEDGE
 
 
 class TestExactMatch:
