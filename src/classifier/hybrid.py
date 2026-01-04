@@ -54,38 +54,48 @@ class HybridClassifier:
         # 0. Нормализация текста (опечатки, слипшиеся слова, ё→е и т.д.)
         message = self.normalizer.normalize(message)
         message_lower = message.lower().strip()
+        context = context or {}
+
+        # Определяем короткое ли сообщение (1-3 слова)
+        words = message_lower.split()
+        is_short_message = len(words) <= 3
 
         # =================================================================
-        # КРИТИЧЕСКИЕ ПРИОРИТЕТНЫЕ ПАТТЕРНЫ (проверяются первыми!)
+        # ПРИОРИТЕТ 0: КОНТЕКСТНАЯ КЛАССИФИКАЦИЯ КОРОТКИХ ОТВЕТОВ
+        # =================================================================
+        # Короткие ответы ("да", "нет", "ок") требуют контекста для правильной
+        # интерпретации. Если есть контекст (last_action, spin_phase, state),
+        # используем его ПЕРЕД обычными паттернами.
+        if is_short_message:
+            has_context = (
+                context.get("last_action") or
+                context.get("spin_phase") or
+                context.get("state")
+            )
+            if has_context:
+                context_result = self._classify_short_answer(message_lower, context)
+                if context_result:
+                    # Извлекаем данные с учётом контекстного интента
+                    extracted = self.data_extractor.extract(message, context)
+                    return {
+                        "intent": context_result["intent"],
+                        "confidence": context_result["confidence"],
+                        "extracted_data": extracted,
+                        "method": "context"
+                    }
+
+        # =================================================================
+        # КРИТИЧЕСКИЕ ПРИОРИТЕТНЫЕ ПАТТЕРНЫ
         # =================================================================
         for pattern, intent, confidence in COMPILED_PRIORITY_PATTERNS:
             if pattern.search(message_lower):
                 # Извлекаем данные для найденного интента
-                extracted = self.data_extractor.extract(message, context) if context else {}
+                extracted = self.data_extractor.extract(message, context)
                 return {
                     "intent": intent,
                     "confidence": confidence,
                     "extracted_data": extracted,
                     "method": "priority_pattern"
-                }
-
-        # =================================================================
-        # КОНТЕКСТНАЯ КЛАССИФИКАЦИЯ КОРОТКИХ ОТВЕТОВ
-        # =================================================================
-        # Короткие ответы (1-3 слова) требуют контекста для правильной интерпретации
-        words = message_lower.split()
-        is_short_message = len(words) <= 3
-
-        if is_short_message and context:
-            context_result = self._classify_short_answer(message_lower, context)
-            if context_result:
-                # Извлекаем данные с учётом контекстного интента
-                extracted = self.data_extractor.extract(message, context)
-                return {
-                    "intent": context_result["intent"],
-                    "confidence": context_result["confidence"],
-                    "extracted_data": extracted,
-                    "method": "context"
                 }
 
         # 1. Извлекаем данные (с учётом контекста и SPIN-фазы)
@@ -209,7 +219,8 @@ class HybridClassifier:
         Контекстная классификация коротких ответов.
 
         Короткие ответы типа "да", "нет", "ок", "понял" интерпретируются
-        в зависимости от контекста: что спросил бот, в какой фазе диалог.
+        в зависимости от контекста: что сделал бот (last_action),
+        на какой интент отвечал (last_intent), в какой фазе диалог.
 
         Args:
             message: Нормализованное сообщение (lowercase)
@@ -218,9 +229,10 @@ class HybridClassifier:
         Returns:
             {"intent": str, "confidence": float} или None если не определено
         """
-        last_bot_intent = context.get("last_bot_intent")
+        last_action = context.get("last_action")
+        last_intent = context.get("last_intent")
         spin_phase = context.get("spin_phase")
-        current_state = context.get("current_state")
+        state = context.get("state")
         missing_data = context.get("missing_data", [])
 
         # =================================================================
@@ -274,28 +286,73 @@ class HybridClassifier:
         # ИНТЕРПРЕТАЦИЯ В ЗАВИСИМОСТИ ОТ КОНТЕКСТА
         # =================================================================
 
-        # Если бот предложил демо и клиент согласился
-        if last_bot_intent in ["offer_demo", "ask_demo", "demo_question"]:
+        # -----------------------------------------------------------------
+        # ПРИОРИТЕТ 1: По last_action (что бот сделал в прошлый раз)
+        # -----------------------------------------------------------------
+
+        # Бот в фазе закрытия (предлагает демо/контакт)
+        if last_action in ["close", "transition_to_close"]:
             if is_positive:
-                return {"intent": "demo_request", "confidence": 0.9}
+                return {"intent": "agreement", "confidence": 0.9}
             if is_negative:
                 return {"intent": "rejection", "confidence": 0.85}
 
-        # Если бот предложил созвониться
-        if last_bot_intent in ["offer_call", "ask_callback", "callback_question"]:
-            if is_positive:
-                return {"intent": "callback_request", "confidence": 0.9}
-            if is_negative:
-                return {"intent": "rejection", "confidence": 0.8}
-
-        # Если бот задавал вопрос о цене и ждёт реакции
-        if last_bot_intent in ["price_answer", "pricing_provided"]:
+        # Бот презентовал продукт
+        if last_action in ["presentation", "transition_to_presentation"]:
             if is_positive:
                 return {"intent": "agreement", "confidence": 0.85}
             if is_negative:
-                return {"intent": "objection_price", "confidence": 0.8}
+                return {"intent": "rejection", "confidence": 0.8}
 
-        # В SPIN-фазах
+        # Бот отработал возражение
+        if last_action == "handle_objection":
+            if is_positive:
+                return {"intent": "agreement", "confidence": 0.85}
+            if is_negative:
+                return {"intent": "rejection", "confidence": 0.8}
+
+        # Бот ответил на вопрос — смотрим какой был вопрос (last_intent)
+        if last_action == "answer_question" and last_intent:
+            # Ответили на вопрос о цене
+            if last_intent in ["price_question", "pricing_details"]:
+                if is_positive:
+                    return {"intent": "agreement", "confidence": 0.85}
+                if is_negative:
+                    return {"intent": "objection_price", "confidence": 0.8}
+            # Ответили на вопрос о функциях/интеграциях
+            if last_intent in ["question_features", "question_integrations"]:
+                if is_positive:
+                    return {"intent": "agreement", "confidence": 0.8}
+                if is_negative:
+                    return {"intent": "unclear", "confidence": 0.6}
+
+        # Бот отложил вопрос о цене (deflect)
+        if last_action == "deflect_and_continue":
+            if is_positive:
+                return {"intent": "agreement", "confidence": 0.8}
+            if is_negative:
+                return {"intent": "objection_price", "confidence": 0.75}
+
+        # -----------------------------------------------------------------
+        # ПРИОРИТЕТ 2: По state (текущее состояние диалога)
+        # -----------------------------------------------------------------
+
+        # В фазе закрытия
+        if state == "close" or "contact_info" in missing_data:
+            if is_positive:
+                return {"intent": "agreement", "confidence": 0.85}
+            if is_negative:
+                return {"intent": "rejection", "confidence": 0.85}
+
+        # В фазе soft_close (мягкое закрытие после rejection)
+        if state == "soft_close":
+            if is_positive:
+                return {"intent": "agreement", "confidence": 0.8}
+
+        # -----------------------------------------------------------------
+        # ПРИОРИТЕТ 3: По spin_phase (SPIN-фаза диалога)
+        # -----------------------------------------------------------------
+
         if spin_phase == "situation":
             if is_positive:
                 return {"intent": "situation_provided", "confidence": 0.7}
@@ -317,26 +374,32 @@ class HybridClassifier:
             if is_negative:
                 return {"intent": "no_need", "confidence": 0.7}
 
-        # Если в фазе закрытия и спрашивали контакт
-        if current_state == "close" or "contact_info" in missing_data:
-            if is_positive:
-                return {"intent": "agreement", "confidence": 0.85}
-            if is_negative:
-                return {"intent": "rejection", "confidence": 0.85}
+        # -----------------------------------------------------------------
+        # ПРИОРИТЕТ 4: По last_action для SPIN-фаз
+        # -----------------------------------------------------------------
 
-        # Если бот спрашивал о проблемах/болях
-        if last_bot_intent in ["ask_problem", "ask_pain", "problem_question"]:
+        # Бот спрашивал о проблемах
+        if last_action in ["spin_problem", "transition_to_spin_problem"]:
             if is_positive:
                 return {"intent": "problem_revealed", "confidence": 0.75}
             if is_negative:
                 return {"intent": "no_problem", "confidence": 0.7}
 
-        # Если бот презентовал продукт
-        if last_bot_intent in ["presentation", "feature_presentation", "value_proposition"]:
+        # Бот спрашивал о последствиях
+        if last_action in ["spin_implication", "transition_to_spin_implication"]:
             if is_positive:
-                return {"intent": "agreement", "confidence": 0.85}
+                return {"intent": "implication_acknowledged", "confidence": 0.8}
+
+        # Бот спрашивал о ценности
+        if last_action in ["spin_need_payoff", "transition_to_spin_need_payoff"]:
+            if is_positive:
+                return {"intent": "need_expressed", "confidence": 0.85}
             if is_negative:
-                return {"intent": "rejection", "confidence": 0.8}
+                return {"intent": "no_need", "confidence": 0.7}
+
+        # -----------------------------------------------------------------
+        # ПРИОРИТЕТ 5: Общие случаи
+        # -----------------------------------------------------------------
 
         # "Надо подумать" и похожие — objection_think
         if is_neutral:

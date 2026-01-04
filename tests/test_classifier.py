@@ -591,58 +591,137 @@ class TestDataExtractor:
 
 
 class TestShortAnswerClassification:
-    """Тесты для контекстной классификации коротких ответов"""
+    """Тесты для контекстной классификации коротких ответов
+
+    Контекстная классификация использует:
+    - last_action: действие бота на предыдущем шаге (close, presentation, answer_question, etc.)
+    - last_intent: интент пользователя, на который бот отвечал (price_question, etc.)
+    - state: текущее состояние диалога
+    - spin_phase: фаза SPIN-продаж
+    """
 
     def setup_method(self):
         self.classifier = HybridClassifier()
 
     # =========================================================================
-    # DEMO CONTEXT
+    # CLOSE CONTEXT (бот предложил демо/контакт)
     # =========================================================================
 
-    def test_short_yes_after_demo_offer(self):
-        """Да после предложения демо → demo_request"""
-        context = {"last_bot_intent": "offer_demo"}
+    def test_short_yes_after_close(self):
+        """Да после закрытия → agreement"""
+        context = {"last_action": "close"}
         result = self.classifier.classify("Да", context)
-        assert result["intent"] == "demo_request"
+        assert result["intent"] == "agreement"
 
-    def test_short_no_after_demo_offer(self):
-        """Нет после предложения демо → rejection"""
-        context = {"last_bot_intent": "offer_demo"}
+    def test_short_no_after_close(self):
+        """Нет после закрытия → rejection"""
+        context = {"last_action": "close"}
         result = self.classifier.classify("Нет", context)
         assert result["intent"] == "rejection"
 
-    # =========================================================================
-    # CALLBACK CONTEXT
-    # =========================================================================
-
-    def test_short_yes_after_callback_offer(self):
-        """Да после предложения созвона → callback_request"""
-        context = {"last_bot_intent": "offer_call"}
+    def test_short_yes_after_transition_to_close(self):
+        """Да после перехода к закрытию → agreement"""
+        context = {"last_action": "transition_to_close"}
         result = self.classifier.classify("Да", context)
-        assert result["intent"] == "callback_request"
+        assert result["intent"] == "agreement"
 
-    def test_short_no_after_callback_offer(self):
-        """Нет после предложения созвона → rejection"""
-        context = {"last_bot_intent": "offer_call"}
+    # =========================================================================
+    # PRESENTATION CONTEXT (бот презентовал продукт)
+    # =========================================================================
+
+    def test_short_yes_after_presentation(self):
+        """Да после презентации → agreement"""
+        context = {"last_action": "presentation"}
+        result = self.classifier.classify("Понятно", context)
+        assert result["intent"] == "agreement"
+
+    def test_short_no_after_presentation(self):
+        """Нет после презентации → rejection"""
+        context = {"last_action": "presentation"}
         result = self.classifier.classify("Нет", context)
         assert result["intent"] == "rejection"
 
+    def test_short_yes_after_transition_to_presentation(self):
+        """Да после перехода к презентации → agreement"""
+        context = {"last_action": "transition_to_presentation"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "agreement"
+
     # =========================================================================
-    # PRICE CONTEXT
+    # PRICE CONTEXT (бот ответил на вопрос о цене)
     # =========================================================================
 
-    def test_short_yes_after_price(self):
-        """Да после озвучивания цены → agreement"""
-        context = {"last_bot_intent": "price_answer"}
+    def test_short_yes_after_price_answer(self):
+        """Да после ответа на вопрос о цене → agreement"""
+        context = {"last_action": "answer_question", "last_intent": "price_question"}
         result = self.classifier.classify("Хорошо", context)
         assert result["intent"] == "agreement"
 
-    def test_short_no_after_price(self):
-        """Нет после озвучивания цены → objection_price"""
-        context = {"last_bot_intent": "price_answer"}
+    def test_short_no_after_price_answer(self):
+        """Нет после ответа на вопрос о цене → objection_price"""
+        context = {"last_action": "answer_question", "last_intent": "price_question"}
         result = self.classifier.classify("Нет", context)
         assert result["intent"] == "objection_price"
+
+    def test_short_yes_after_pricing_details(self):
+        """Да после ответа о деталях цены → agreement"""
+        context = {"last_action": "answer_question", "last_intent": "pricing_details"}
+        result = self.classifier.classify("Ок", context)
+        assert result["intent"] == "agreement"
+
+    # =========================================================================
+    # OBJECTION HANDLING (бот отработал возражение)
+    # =========================================================================
+
+    def test_short_yes_after_handle_objection(self):
+        """Да после отработки возражения → agreement"""
+        context = {"last_action": "handle_objection"}
+        result = self.classifier.classify("Хорошо", context)
+        assert result["intent"] == "agreement"
+
+    def test_short_no_after_handle_objection(self):
+        """Нет после отработки возражения → rejection"""
+        context = {"last_action": "handle_objection"}
+        result = self.classifier.classify("Нет", context)
+        assert result["intent"] == "rejection"
+
+    # =========================================================================
+    # DEFLECT CONTEXT (бот отложил вопрос о цене)
+    # =========================================================================
+
+    def test_short_yes_after_deflect(self):
+        """Да после deflect → agreement"""
+        context = {"last_action": "deflect_and_continue"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "agreement"
+
+    def test_short_no_after_deflect(self):
+        """Нет после deflect → objection_price"""
+        context = {"last_action": "deflect_and_continue"}
+        result = self.classifier.classify("Нет", context)
+        assert result["intent"] == "objection_price"
+
+    # =========================================================================
+    # STATE CONTEXT (по текущему состоянию диалога)
+    # =========================================================================
+
+    def test_short_yes_in_close_state(self):
+        """Да в состоянии close → agreement"""
+        context = {"state": "close"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "agreement"
+
+    def test_short_no_in_close_state(self):
+        """Нет в состоянии close → rejection"""
+        context = {"state": "close"}
+        result = self.classifier.classify("Нет", context)
+        assert result["intent"] == "rejection"
+
+    def test_short_yes_in_soft_close_state(self):
+        """Да в состоянии soft_close → agreement (передумал)"""
+        context = {"state": "soft_close"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "agreement"
 
     # =========================================================================
     # SPIN PHASES
@@ -678,32 +757,67 @@ class TestShortAnswerClassification:
         result = self.classifier.classify("Да", context)
         assert result["intent"] == "need_expressed"
 
+    def test_short_no_in_need_payoff_phase(self):
+        """Нет в фазе need_payoff → no_need"""
+        context = {"spin_phase": "need_payoff"}
+        result = self.classifier.classify("Нет", context)
+        assert result["intent"] == "no_need"
+
+    # =========================================================================
+    # SPIN ACTIONS (по last_action для SPIN)
+    # =========================================================================
+
+    def test_short_yes_after_spin_problem(self):
+        """Да после вопроса о проблемах → problem_revealed"""
+        context = {"last_action": "spin_problem"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "problem_revealed"
+
+    def test_short_no_after_spin_problem(self):
+        """Нет после вопроса о проблемах → no_problem"""
+        context = {"last_action": "spin_problem"}
+        result = self.classifier.classify("Нет", context)
+        assert result["intent"] == "no_problem"
+
+    def test_short_yes_after_spin_implication(self):
+        """Да после вопроса о последствиях → implication_acknowledged"""
+        context = {"last_action": "spin_implication"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "implication_acknowledged"
+
+    def test_short_yes_after_spin_need_payoff(self):
+        """Да после вопроса о ценности → need_expressed"""
+        context = {"last_action": "spin_need_payoff"}
+        result = self.classifier.classify("Да", context)
+        assert result["intent"] == "need_expressed"
+
     # =========================================================================
     # NEUTRAL / THINK
     # =========================================================================
 
     def test_short_maybe(self):
-        """Может быть → objection_think (если сообщение очень короткое)"""
-        # Короткие нейтральные ответы в контекстной классификации
+        """Может быть → objection_think"""
         result = self.classifier.classify("может быть", {})
-        # Без контекста может быть разное поведение
         assert result["intent"] in ["objection_think", "agreement", "info_provided", "unclear", "question_features"]
 
     def test_short_need_to_think(self):
-        """Подумаю → objection_think (если сообщение очень короткое)"""
+        """Подумаю → objection_think"""
         result = self.classifier.classify("подумаю", {})
-        # Без контекста может быть разное поведение
         assert result["intent"] in ["objection_think", "info_provided", "unclear"]
 
     # =========================================================================
-    # PRESENTATION CONTEXT
+    # GENERAL FALLBACK
     # =========================================================================
 
-    def test_short_yes_after_presentation(self):
-        """Да после презентации → agreement"""
-        context = {"last_bot_intent": "presentation"}
-        result = self.classifier.classify("Понятно", context)
+    def test_short_yes_no_context(self):
+        """Да без контекста → agreement"""
+        result = self.classifier.classify("да", {})
         assert result["intent"] == "agreement"
+
+    def test_short_no_no_context(self):
+        """Нет без контекста → rejection"""
+        result = self.classifier.classify("нет", {})
+        assert result["intent"] == "rejection"
 
 
 class TestClarificationPatterns:
@@ -809,9 +923,10 @@ class TestIntegration:
         result_no_context = self.classifier.classify("да")
         assert result_no_context["intent"] == "agreement"
 
-        # "да" с контекстом demo_offer → demo_request
-        result_with_context = self.classifier.classify("да", {"last_bot_intent": "offer_demo"})
-        assert result_with_context["intent"] == "demo_request"
+        # "да" с контекстом close → agreement (высокая уверенность)
+        result_with_context = self.classifier.classify("да", {"last_action": "close"})
+        assert result_with_context["intent"] == "agreement"
+        assert result_with_context["confidence"] >= 0.9  # выше чем без контекста
 
 
 if __name__ == "__main__":

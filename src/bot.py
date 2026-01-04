@@ -14,14 +14,19 @@ class SalesBot:
         self.state_machine = StateMachine()
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
+        # Контекст предыдущего хода для классификации коротких ответов
+        self.last_action: str = None
+        self.last_intent: str = None  # Интент пользователя, на который бот отвечал
 
     def reset(self):
         """Сброс для нового диалога"""
         self.state_machine.reset()
         self.history = []
+        self.last_action = None
+        self.last_intent = None
 
     def _get_classification_context(self) -> Dict:
-        """Получить контекст для классификатора (включая SPIN-фазу)"""
+        """Получить контекст для классификатора (включая SPIN-фазу и контекст предыдущего хода)"""
         from config import SALES_STATES
 
         state_config = SALES_STATES.get(self.state_machine.state, {})
@@ -38,6 +43,9 @@ class SalesBot:
             "collected_data": collected.copy(),
             "missing_data": missing,
             "spin_phase": spin_phase,
+            # Контекст предыдущего хода для интерпретации коротких ответов
+            "last_action": self.last_action,
+            "last_intent": self.last_intent,
         }
 
     def process(self, user_message: str) -> Dict:
@@ -75,6 +83,10 @@ class SalesBot:
             "user": user_message,
             "bot": response
         })
+
+        # 5. Сохраняем контекст для следующего хода (классификация коротких ответов)
+        self.last_action = sm_result["action"]
+        self.last_intent = intent
 
         return {
             "response": response,
