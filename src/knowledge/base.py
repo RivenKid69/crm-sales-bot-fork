@@ -9,7 +9,7 @@
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Set
 
 
 @dataclass
@@ -23,6 +23,8 @@ class KnowledgeSection:
 
     # Для эмбеддингов (заполняется автоматически)
     embedding: Optional[List[float]] = field(default=None, repr=False)
+    # Лемматизированные keywords (заполняется CascadeRetriever при инициализации)
+    lemmatized_keywords: Set[str] = field(default_factory=set)
 
 
 @dataclass
