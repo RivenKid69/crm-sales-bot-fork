@@ -11,7 +11,7 @@ from rich.text import Text
 console = Console()
 
 
-def test_llm_basic(model: str = "qwen2.5:7b"):
+def test_llm_basic(model: str = "qwen3:8b"):
     """Test basic LLM response"""
     print("=" * 50)
     print(f"🤖 LLM Test (Ollama - {model})")
@@ -50,7 +50,7 @@ def test_llm_basic(model: str = "qwen2.5:7b"):
     return text, elapsed
 
 
-def test_llm_streaming(model: str = "qwen2.5:7b"):
+def test_llm_streaming(model: str = "qwen3:8b"):
     """Test streaming LLM response"""
     print("\n" + "=" * 50)
     print(f"🌊 LLM Streaming Test (Ollama - {model})")
@@ -109,7 +109,7 @@ def test_llm():
         print(f"   - {m.model}")
 
     # Use available model
-    model = "qwen2.5:7b"
+    model = "qwen3:8b"
 
     # Run tests
     test_llm_basic(model)

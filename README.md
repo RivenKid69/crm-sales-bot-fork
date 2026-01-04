@@ -34,7 +34,7 @@ cd src && python bot.py
          │
          ▼
 ┌─────────────────┐
-│   LLM (Ollama)  │  ← Qwen2.5 генерирует финальный ответ
+│   LLM (Ollama)  │  ← Qwen3 генерирует финальный ответ
 └────────┬────────┘
          │
          ▼
@@ -253,7 +253,7 @@ python scripts/stress_test_knowledge.py
 
 ## Зависимости
 
-- `ollama` + модель `qwen2.5:7b` — локальная LLM
+- `ollama` + модель `qwen3:8b` — локальная LLM
 - `pymorphy3` — морфология русского языка (fallback на pymorphy2)
 - `sentence-transformers` — embeddings для базы знаний (опционально)
 - `requests` — HTTP-клиент для Ollama API

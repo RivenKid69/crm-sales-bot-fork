@@ -1,7 +1,7 @@
 import requests
 
 class OllamaLLM:
-    def __init__(self, model: str = "qwen2.5:7b"):
+    def __init__(self, model: str = "qwen3:8b"):
         self.model = model
         self.base_url = "http://localhost:11434"
     

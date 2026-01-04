@@ -1,9 +1,9 @@
 """
 Full Voice Bot Pipeline: STT -> LLM -> TTS
-Real-time voice conversation with F5-TTS
+Real-time voice conversation with CosyVoice 3.0 TTS
 """
+import sys
 import time
-import torch
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -11,16 +11,23 @@ import ollama
 from pathlib import Path
 from dataclasses import dataclass
 
+# Add CosyVoice to path
+VOICE_BOT_DIR = Path(__file__).parent
+sys.path.insert(0, str(VOICE_BOT_DIR / "CosyVoice"))
+sys.path.insert(0, str(VOICE_BOT_DIR / "CosyVoice" / "third_party" / "Matcha-TTS"))
+
 from faster_whisper import WhisperModel
-from f5_tts.api import F5TTS
+from cosyvoice.cli.cosyvoice import AutoModel
+import torchaudio
 
 
 SAMPLE_RATE = 16000
-AUDIO_DIR = Path(__file__).parent / "audio"
+AUDIO_DIR = VOICE_BOT_DIR / "audio"
 AUDIO_DIR.mkdir(exist_ok=True)
 
-# Optional reference audio for voice cloning
-REFERENCE_AUDIO = AUDIO_DIR / "reference.wav"
+# CosyVoice paths
+COSYVOICE_MODEL_DIR = VOICE_BOT_DIR / "CosyVoice" / "pretrained_models" / "Fun-CosyVoice3-0.5B"
+COSYVOICE_REF_AUDIO = VOICE_BOT_DIR / "CosyVoice" / "asset" / "cross_lingual_prompt.wav"
 
 
 @dataclass
@@ -36,66 +43,65 @@ class PipelineMetrics:
 
     def print_summary(self):
         print("\n" + "=" * 60)
-        print("📊 Pipeline Metrics")
+        print("Pipeline Metrics")
         print("=" * 60)
-        print(f"🎤 STT time:           {self.stt_time:.2f}s")
-        print(f"🤖 LLM first token:    {self.llm_first_token:.2f}s")
-        print(f"🤖 LLM total time:     {self.llm_time:.2f}s")
-        print(f"🔊 TTS time:           {self.tts_time:.2f}s")
+        print(f"STT time:           {self.stt_time:.2f}s")
+        print(f"LLM first token:    {self.llm_first_token:.2f}s")
+        print(f"LLM total time:     {self.llm_time:.2f}s")
+        print(f"TTS time:           {self.tts_time:.2f}s")
         print("-" * 60)
-        print(f"⏱️  Total pipeline:     {self.total_time:.2f}s")
-        print(f"🎤 Input audio:        {self.audio_input_duration:.2f}s")
-        print(f"🔊 Output audio:       {self.audio_output_duration:.2f}s")
-        print(f"⚡ Latency (to speech): {self.stt_time + self.llm_time + self.tts_time:.2f}s")
+        print(f"Total pipeline:     {self.total_time:.2f}s")
+        print(f"Input audio:        {self.audio_input_duration:.2f}s")
+        print(f"Output audio:       {self.audio_output_duration:.2f}s")
+        print(f"Latency (to speech): {self.stt_time + self.llm_time + self.tts_time:.2f}s")
 
 
 class VoicePipeline:
-    """Full voice conversation pipeline with F5-TTS"""
+    """Full voice conversation pipeline with CosyVoice 3.0 TTS"""
 
     def __init__(
         self,
-        whisper_model: str = "base",
-        llm_model: str = "qwen2.5:7b",
+        whisper_model: str = "large-v3-turbo",
+        llm_model: str = "qwen3:8b",
     ):
         self.llm_model = llm_model
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         print("=" * 60)
-        print("🚀 Initializing Voice Pipeline")
+        print("Initializing Voice Pipeline")
         print("=" * 60)
-        print(f"   Device: {self.device}")
 
         # Initialize STT
-        print("\n📥 Loading Whisper model...")
+        print("\nLoading Whisper model...")
         stt_start = time.time()
         self.stt = WhisperModel(
             whisper_model,
             device="cpu",
             compute_type="int8"
         )
-        print(f"   ✅ Whisper loaded in {time.time() - stt_start:.2f}s")
+        print(f"   Whisper loaded in {time.time() - stt_start:.2f}s")
 
-        # Initialize TTS (F5-TTS)
-        print("\n📥 Loading F5-TTS model...")
+        # Initialize CosyVoice TTS
+        print("\nLoading CosyVoice 3.0 model...")
         tts_start = time.time()
-        self.tts = F5TTS(device=self.device)
-        print(f"   ✅ F5-TTS loaded in {time.time() - tts_start:.2f}s")
-
-        # Reference audio for voice cloning (optional)
-        self.ref_audio = str(REFERENCE_AUDIO) if REFERENCE_AUDIO.exists() else None
-        if self.ref_audio:
-            print(f"   Using reference voice: {REFERENCE_AUDIO.name}")
+        self.tts = AutoModel(model_dir=str(COSYVOICE_MODEL_DIR))
+        self.tts_sample_rate = self.tts.sample_rate
+        print(f"   CosyVoice loaded in {time.time() - tts_start:.2f}s")
+        print(f"   Sample rate: {self.tts_sample_rate}Hz")
 
         # System prompt
-        self.system_prompt = """Ты голосовой ассистент. Отвечай кратко и естественно, как в разговоре.
+        self.system_prompt = """Ты голосовой ассистент. ВСЕГДА отвечай ТОЛЬКО на русском языке.
+Отвечай кратко и естественно, как в разговоре.
 Избегай длинных списков и сложных конструкций. Говори просто и понятно.
-Отвечай максимум 2-3 предложениями."""
+Отвечай максимум 2-3 предложениями. Никогда не используй другие языки кроме русского."""
 
-        print("\n✅ Pipeline ready!")
+        # TTS prompt for Russian (slow speed)
+        self.tts_prompt = "You are a helpful assistant. Говори по-русски медленно и чётко.<|endofprompt|>"
+
+        print("\nPipeline ready!")
 
     def record_audio(self, duration: float = 5.0) -> np.ndarray:
         """Record audio from microphone"""
-        print(f"\n🎤 Recording ({duration}s)... Speak now!")
+        print(f"\nRecording ({duration}s)... Speak now!")
         audio = sd.rec(
             int(duration * SAMPLE_RATE),
             samplerate=SAMPLE_RATE,
@@ -103,7 +109,7 @@ class VoicePipeline:
             dtype=np.float32
         )
         sd.wait()
-        print("✅ Recording complete")
+        print("Recording complete")
         return audio.flatten()
 
     def speech_to_text(self, audio: np.ndarray) -> tuple[str, float]:
@@ -124,19 +130,29 @@ class VoicePipeline:
         return text, elapsed
 
     def text_to_speech(self, text: str) -> tuple[np.ndarray, int, float]:
-        """Convert text to speech using F5-TTS"""
+        """Convert text to speech using CosyVoice 3.0"""
+        output_path = AUDIO_DIR / "temp_output.wav"
+
         start = time.time()
 
-        audio, sample_rate, _ = self.tts.infer(
-            ref_file=self.ref_audio,
-            ref_text="",
-            gen_text=text,
-            seed=-1,
-        )
+        # Generate speech with CosyVoice
+        audio_tensor = None
+        for output in self.tts.inference_instruct2(
+            text,
+            self.tts_prompt,
+            str(COSYVOICE_REF_AUDIO),
+            stream=False
+        ):
+            audio_tensor = output['tts_speech']
+
+        # Save to file
+        torchaudio.save(str(output_path), audio_tensor, self.tts_sample_rate)
 
         elapsed = time.time() - start
 
-        return audio, sample_rate, elapsed
+        # Load as numpy array
+        audio, sr = sf.read(output_path)
+        return audio, sr, elapsed
 
     def play_audio(self, audio: np.ndarray, sample_rate: int = 24000):
         """Play audio"""
@@ -153,17 +169,17 @@ class VoicePipeline:
         metrics.audio_input_duration = record_duration
 
         # Step 2: STT
-        print("\n🔄 Transcribing...")
+        print("\nTranscribing...")
         user_text, stt_time = self.speech_to_text(audio_input)
         metrics.stt_time = stt_time
-        print(f"📝 You said: {user_text}")
+        print(f"You said: {user_text}")
 
         if not user_text.strip():
-            print("⚠️  No speech detected")
+            print("No speech detected")
             return metrics
 
         # Step 3: LLM (with streaming output)
-        print("\n🤖 Assistant: ", end="", flush=True)
+        print("\nAssistant: ", end="", flush=True)
         llm_start = time.time()
         first_token_time = None
         full_response = ""
@@ -189,13 +205,13 @@ class VoicePipeline:
         metrics.llm_time = time.time() - llm_start
 
         # Step 4: TTS
-        print("\n🔊 Synthesizing speech...")
+        print("\nSynthesizing speech...")
         audio_output, sr, tts_time = self.text_to_speech(full_response)
         metrics.tts_time = tts_time
         metrics.audio_output_duration = len(audio_output) / sr
 
         # Step 5: Play
-        print("▶️  Playing response...")
+        print("Playing response...")
         self.play_audio(audio_output, sr)
 
         metrics.total_time = time.time() - pipeline_start
@@ -205,25 +221,25 @@ class VoicePipeline:
 def main():
     """Interactive voice bot"""
     print("\n" + "=" * 60)
-    print("🎙️  Voice Bot Pipeline (F5-TTS)")
+    print("Voice Bot Pipeline (CosyVoice 3.0 TTS)")
     print("=" * 60)
 
     # Initialize pipeline
     pipeline = VoicePipeline(
-        whisper_model="base",
-        llm_model="qwen2.5:7b"
+        whisper_model="large-v3-turbo",
+        llm_model="qwen3:8b"
     )
 
     print("\n" + "=" * 60)
-    print("📢 Ready for conversation!")
+    print("Ready for conversation!")
     print("   Press Enter to start recording (5 seconds)")
     print("   Type 'q' to quit")
     print("=" * 60)
 
     while True:
-        user_input = input("\n⏎ Press Enter to speak (or 'q' to quit): ")
+        user_input = input("\nPress Enter to speak (or 'q' to quit): ")
         if user_input.lower() == 'q':
-            print("👋 Goodbye!")
+            print("Goodbye!")
             break
 
         metrics = pipeline.run_conversation(record_duration=5.0)
