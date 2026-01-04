@@ -112,8 +112,8 @@ class CascadeRetriever:
             from sentence_transformers import SentenceTransformer
             import numpy as np
             self.np = np
-            # Маленькая русская модель ~100MB
-            self.embedder = SentenceTransformer('cointegrated/rubert-tiny2')
+            # Русская модель высокого качества (ruMTEB score ~60 vs 39 у tiny2)
+            self.embedder = SentenceTransformer('ai-forever/ru-en-RoSBERTa')
 
             # Индексируем все секции
             texts = [s.facts for s in self.kb.sections]
