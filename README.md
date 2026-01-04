@@ -46,7 +46,18 @@ cd src && python bot.py
 ```
 src/
 ├── bot.py              # Главный класс, координирует компоненты
-├── classifier.py       # Классификация интентов + извлечение SPIN-данных
+├── classifier/         # Пакет классификации интентов
+│   ├── __init__.py     # Публичный API пакета
+│   ├── normalizer.py   # Нормализация текста (опечатки, сленг)
+│   ├── hybrid.py       # HybridClassifier — главный класс
+│   ├── intents/        # Подпакет классификации интентов
+│   │   ├── __init__.py
+│   │   ├── patterns.py        # Приоритетные паттерны (214 шт)
+│   │   ├── root_classifier.py # Быстрая классификация по корням
+│   │   └── lemma_classifier.py # Fallback через pymorphy
+│   └── extractors/     # Подпакет извлечения данных
+│       ├── __init__.py
+│       └── data_extractor.py  # Извлечение структурированных данных
 ├── state_machine.py    # Управление состояниями диалога (SPIN flow)
 ├── generator.py        # Генерация ответов через LLM
 ├── config.py           # Интенты, состояния, SPIN-промпты
@@ -57,8 +68,9 @@ src/
     └── base.py         # Структуры данных
 
 tests/
-├── test_knowledge.py   # Тесты базы знаний (24 теста)
-└── test_spin.py        # Тесты SPIN-методологии (27 тестов)
+├── test_knowledge.py   # Тесты базы знаний
+├── test_spin.py        # Тесты SPIN-методологии
+└── test_classifier.py  # Тесты классификатора (100+ тестов)
 ```
 
 ## SPIN Selling Methodology
@@ -179,11 +191,33 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 | `transition_to_spin_need_payoff` | I→N | Переход к ценности |
 | `transition_to_presentation` | N→Pres | Персонализированная презентация |
 
-## Classifier (classifier.py)
+## Classifier (classifier/)
+
+Пакет классификации разбит на модули для удобства поддержки:
+
+```
+classifier/
+├── __init__.py          # API: HybridClassifier, TextNormalizer, DataExtractor
+├── normalizer.py        # TYPO_FIXES (663 шт), SPLIT_PATTERNS (170 шт)
+├── hybrid.py            # HybridClassifier — оркестратор
+├── intents/
+│   ├── patterns.py      # PRIORITY_PATTERNS (214 шт) для "не интересно" и т.д.
+│   ├── root_classifier.py   # Быстрая классификация по корням
+│   └── lemma_classifier.py  # Fallback через pymorphy2/3
+└── extractors/
+    └── data_extractor.py    # Извлечение structured data
+```
+
+### Публичный API:
+```python
+from classifier import HybridClassifier, TextNormalizer, DataExtractor
+from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
+```
 
 ### Гибридная классификация:
-1. **Быстрый поиск по корням слов** — основной метод
-2. **Fallback на pymorphy3** (или pymorphy2) — если корни не сработали
+1. **Приоритетные паттерны** — "не интересно" → rejection (не agreement)
+2. **Быстрый поиск по корням слов** — основной метод
+3. **Fallback на pymorphy3** (или pymorphy2) — если корни не сработали
 
 ### Извлечение данных:
 - `company_size` — regex паттерны ("нас 10", "команда из 5", "8 официантов")
@@ -192,6 +226,10 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 - `business_type` — розница, общепит, опт, услуги
 - `pain_impact` — количественные потери ("10 клиентов", "3 часа в день")
 - `desired_outcome` — желаемые результаты ("автоматизировать", "упростить")
+
+### Нормализация текста:
+- **TYPO_FIXES** — 663 автозамены опечаток ("прайс" → "цена", "скок" → "сколько")
+- **SPLIT_PATTERNS** — 170 паттернов слитного текста ("сколькостоит" → "сколько стоит")
 
 ### Контекстная классификация:
 Классификатор учитывает текущую SPIN-фазу:
@@ -222,13 +260,16 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 ## Тестирование
 
 ```bash
-# Все тесты (51 тест)
+# Все тесты (145 тестов)
 pytest tests/ -v
 
-# Только SPIN-тесты (27 тестов)
+# Только тесты классификатора (100+ тестов)
+pytest tests/test_classifier.py -v
+
+# Только SPIN-тесты
 pytest tests/test_spin.py -v
 
-# Только тесты базы знаний (24 теста)
+# Только тесты базы знаний
 pytest tests/test_knowledge.py -v
 
 # Стресс-тест бота
