@@ -8,10 +8,16 @@
 """
 
 import re
+import sys
 import time
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Set
 from enum import Enum
+from pathlib import Path
+
+# Добавляем родительскую директорию для импорта settings
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from settings import settings
 
 from .base import KnowledgeSection, KnowledgeBase
 from .loader import load_knowledge_base
@@ -62,13 +68,14 @@ class CascadeRetriever:
     def __init__(
         self,
         knowledge_base: KnowledgeBase = None,
-        use_embeddings: bool = True,
-        exact_threshold: float = 1.0,
-        lemma_threshold: float = 0.15,
-        semantic_threshold: float = 0.5
+        use_embeddings: bool = None,
+        exact_threshold: float = None,
+        lemma_threshold: float = None,
+        semantic_threshold: float = None
     ):
         """
         Инициализация retriever.
+        Параметры берутся из settings.yaml если не указаны явно.
 
         Args:
             knowledge_base: База знаний (по умолчанию загружается из YAML)
@@ -78,10 +85,12 @@ class CascadeRetriever:
             semantic_threshold: Минимальный score для semantic match
         """
         self.kb = knowledge_base if knowledge_base is not None else load_knowledge_base()
-        self.use_embeddings = use_embeddings
-        self.exact_threshold = exact_threshold
-        self.lemma_threshold = lemma_threshold
-        self.semantic_threshold = semantic_threshold
+
+        # Параметры из settings (с возможностью переопределения)
+        self.use_embeddings = use_embeddings if use_embeddings is not None else settings.retriever.use_embeddings
+        self.exact_threshold = exact_threshold if exact_threshold is not None else settings.retriever.thresholds.exact
+        self.lemma_threshold = lemma_threshold if lemma_threshold is not None else settings.retriever.thresholds.lemma
+        self.semantic_threshold = semantic_threshold if semantic_threshold is not None else settings.retriever.thresholds.semantic
 
         # Лемматизатор
         self.lemmatizer = get_lemmatizer()
@@ -112,8 +121,9 @@ class CascadeRetriever:
             from sentence_transformers import SentenceTransformer
             import numpy as np
             self.np = np
-            # Русская модель высокого качества (ruMTEB score ~60 vs 39 у tiny2)
-            self.embedder = SentenceTransformer('ai-forever/ru-en-RoSBERTa')
+            # Модель из settings (по умолчанию: ai-forever/ru-en-RoSBERTa)
+            embedder_model = settings.retriever.embedder_model
+            self.embedder = SentenceTransformer(embedder_model)
 
             # Индексируем все секции
             texts = [s.facts for s in self.kb.sections]
@@ -131,7 +141,7 @@ class CascadeRetriever:
         message: str,
         intent: str = None,
         state: str = None,
-        top_k: int = 2
+        top_k: int = None
     ) -> str:
         """
         Найти релевантные факты (совместимость с текущим API).
@@ -140,13 +150,17 @@ class CascadeRetriever:
             message: Сообщение пользователя
             intent: Классифицированный интент (для фильтрации категорий)
             state: Текущее состояние (не используется, для совместимости)
-            top_k: Максимум секций для возврата
+            top_k: Максимум секций для возврата (по умолчанию из settings)
 
         Returns:
             Строка с фактами, разделёнными "---", или пустая строка
         """
         if not message or not message.strip():
             return ""
+
+        # Используем default_top_k из settings если не указано
+        if top_k is None:
+            top_k = settings.retriever.default_top_k
 
         # Определяем категории по интенту
         categories = None

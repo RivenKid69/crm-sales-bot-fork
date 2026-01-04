@@ -2,6 +2,8 @@
 Конфигурация: состояния, интенты, база знаний, шаблоны
 """
 
+from settings import settings
+
 # =============================================================================
 # ИНТЕНТЫ: КОРНИ СЛОВ (быстрая проверка)
 # =============================================================================
@@ -711,13 +713,13 @@ INTENT_PHRASES = {
     ],
 }
 
-# Веса для разных методов классификации
+# Веса для разных методов классификации (из settings.yaml)
 CLASSIFIER_CONFIG = {
-    "root_match_weight": 1.0,      # Вес совпадения по корню
-    "phrase_match_weight": 2.0,    # Вес точного совпадения фразы
-    "lemma_match_weight": 1.5,     # Вес совпадения по лемме
-    "high_confidence_threshold": 0.7,  # Порог для быстрого возврата
-    "min_confidence": 0.3,         # Минимальная уверенность для unclear
+    "root_match_weight": settings.classifier.weights.root_match,
+    "phrase_match_weight": settings.classifier.weights.phrase_match,
+    "lemma_match_weight": settings.classifier.weights.lemma_match,
+    "high_confidence_threshold": settings.classifier.thresholds.high_confidence,
+    "min_confidence": settings.classifier.thresholds.min_confidence,
 }
 
 # =============================================================================

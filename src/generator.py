@@ -5,11 +5,17 @@
 from typing import Dict, List
 from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from knowledge.retriever import get_retriever
+from settings import settings
 
 
 class ResponseGenerator:
     def __init__(self, llm):
         self.llm = llm
+        # Параметры из settings
+        self.max_retries = settings.generator.max_retries
+        self.history_length = settings.generator.history_length
+        self.retriever_top_k = settings.generator.retriever_top_k
+        self.allowed_english = set(settings.generator.allowed_english_words)
     
     def get_facts(self, company_size: int = None) -> str:
         """Получить факты о продукте"""
@@ -37,9 +43,10 @@ class ResponseGenerator:
         """Форматируем историю"""
         if not history:
             return "(начало разговора)"
-        
+
         lines = []
-        for turn in history[-4:]:
+        # Используем параметр из settings
+        for turn in history[-self.history_length:]:
             lines.append(f"Клиент: {turn.get('user', '')}")
             if turn.get("bot"):
                 lines.append(f"Вы: {turn['bot']}")
@@ -55,15 +62,14 @@ class ResponseGenerator:
         """Проверяем есть ли английские слова (минимум 2 буквы подряд)"""
         import re
         # Ищем английские слова (минимум 2 латинские буквы подряд)
-        # Исключаем: CRM, API, OK, ID и подобные аббревиатуры
-        allowed_english = {'crm', 'api', 'ok', 'id', 'ip', 'sms', 'email', 'excel', 'whatsapp', 'telegram', 'hr'}
+        # Исключаем: CRM, API, OK, ID и подобные аббревиатуры из settings
 
         # Находим все английские слова
         english_words = re.findall(r'\b[a-zA-Z]{2,}\b', text)
 
         # Проверяем есть ли недопустимые английские слова
         for word in english_words:
-            if word.lower() not in allowed_english:
+            if word.lower() not in self.allowed_english:
                 return True
         return False
 
@@ -71,8 +77,12 @@ class ResponseGenerator:
         """Проверяем есть ли иностранный текст (китайский или английский)"""
         return self._has_chinese(text) or self._has_english(text)
 
-    def generate(self, action: str, context: Dict, max_retries: int = 3) -> str:
+    def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""
+
+        # Используем параметр из settings если не указано явно
+        if max_retries is None:
+            max_retries = self.max_retries
 
         # НОВОЕ: Получаем релевантные факты из базы знаний
         retriever = get_retriever()
@@ -84,7 +94,7 @@ class ResponseGenerator:
             message=user_message,
             intent=intent,
             state=state,
-            top_k=2
+            top_k=self.retriever_top_k
         )
 
         # Выбираем шаблон
@@ -175,12 +185,10 @@ class ResponseGenerator:
         # Иероглифы + китайская пунктуация (。，！？：；「」『』【】)
         text = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\u3000-\u303f\uff00-\uffef]+', '', text)
 
-        # Удаляем английские слова (кроме разрешённых)
-        allowed_english = {'crm', 'api', 'ok', 'id', 'ip', 'sms', 'email', 'excel', 'whatsapp', 'telegram', 'hr'}
-
+        # Удаляем английские слова (кроме разрешённых из settings)
         def replace_english(match):
             word = match.group(0)
-            if word.lower() in allowed_english:
+            if word.lower() in self.allowed_english:
                 return word
             return ''
 
