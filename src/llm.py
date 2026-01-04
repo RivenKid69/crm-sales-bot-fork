@@ -1,7 +1,7 @@
 import requests
 
 class OllamaLLM:
-    def __init__(self, model: str = "qwen3:8b"):
+    def __init__(self, model: str = "qwen3:8b-fast"):
         self.model = model
         self.base_url = "http://localhost:11434"
     
@@ -11,7 +11,8 @@ class OllamaLLM:
             json={
                 "model": self.model,
                 "prompt": prompt,
-                "stream": False
+                "stream": False,
+                "think": False  # Отключаем thinking mode для скорости
             },
             timeout=60
         )

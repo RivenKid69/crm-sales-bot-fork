@@ -1,9 +1,13 @@
 """
 Full Voice Bot Pipeline: STT -> LLM -> TTS
-Real-time voice conversation with CosyVoice 3.0 TTS
+Real-time voice conversation with OpenAudio S1-mini TTS
 """
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""  # Force CPU mode
+
 import sys
 import time
+import torch
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -11,23 +15,27 @@ import ollama
 from pathlib import Path
 from dataclasses import dataclass
 
-# Add CosyVoice to path
+# Setup paths
 VOICE_BOT_DIR = Path(__file__).parent
-sys.path.insert(0, str(VOICE_BOT_DIR / "CosyVoice"))
-sys.path.insert(0, str(VOICE_BOT_DIR / "CosyVoice" / "third_party" / "Matcha-TTS"))
+sys.path.insert(0, str(VOICE_BOT_DIR / "fish-speech"))
 
 from faster_whisper import WhisperModel
-from cosyvoice.cli.cosyvoice import AutoModel
-import torchaudio
+
+# Fish Speech / OpenAudio imports
+from fish_speech.inference_engine import TTSInferenceEngine
+from fish_speech.models.dac.inference import load_model as load_decoder_model
+from fish_speech.models.text2semantic.inference import launch_thread_safe_queue
+from fish_speech.utils.schema import ServeTTSRequest, ServeReferenceAudio
+from fish_speech.utils.file import audio_to_bytes, read_ref_text
 
 
 SAMPLE_RATE = 16000
 AUDIO_DIR = VOICE_BOT_DIR / "audio"
 AUDIO_DIR.mkdir(exist_ok=True)
 
-# CosyVoice paths
-COSYVOICE_MODEL_DIR = VOICE_BOT_DIR / "CosyVoice" / "pretrained_models" / "Fun-CosyVoice3-0.5B"
-COSYVOICE_REF_AUDIO = VOICE_BOT_DIR / "CosyVoice" / "asset" / "cross_lingual_prompt.wav"
+# OpenAudio S1-mini paths
+OPENAUDIO_MODEL_DIR = VOICE_BOT_DIR / "checkpoints" / "openaudio-s1-mini"
+OPENAUDIO_REF_AUDIO = VOICE_BOT_DIR / "audio" / "reference_ru_female.wav"
 
 
 @dataclass
@@ -57,17 +65,19 @@ class PipelineMetrics:
 
 
 class VoicePipeline:
-    """Full voice conversation pipeline with CosyVoice 3.0 TTS"""
+    """Full voice conversation pipeline with OpenAudio S1-mini TTS"""
 
     def __init__(
         self,
         whisper_model: str = "large-v3-turbo",
-        llm_model: str = "qwen3:8b",
+        llm_model: str = "qwen3:8b-fast",
     ):
         self.llm_model = llm_model
+        self.device = "cpu"
+        self.precision = torch.bfloat16
 
         print("=" * 60)
-        print("Initializing Voice Pipeline")
+        print("Initializing Voice Pipeline (OpenAudio S1-mini)")
         print("=" * 60)
 
         # Initialize STT
@@ -80,22 +90,56 @@ class VoicePipeline:
         )
         print(f"   Whisper loaded in {time.time() - stt_start:.2f}s")
 
-        # Initialize CosyVoice TTS
-        print("\nLoading CosyVoice 3.0 model...")
+        # Initialize OpenAudio S1-mini TTS
+        print("\nLoading OpenAudio S1-mini model...")
         tts_start = time.time()
-        self.tts = AutoModel(model_dir=str(COSYVOICE_MODEL_DIR))
-        self.tts_sample_rate = self.tts.sample_rate
-        print(f"   CosyVoice loaded in {time.time() - tts_start:.2f}s")
+
+        # Load LLAMA model (text to semantic)
+        print("   Loading LLAMA model...")
+        self.llama_queue = launch_thread_safe_queue(
+            checkpoint_path=str(OPENAUDIO_MODEL_DIR),  # Directory path
+            device=self.device,
+            precision=self.precision,
+            compile=False,
+        )
+
+        # Load decoder model (DAC)
+        print("   Loading decoder model...")
+        self.decoder_model = load_decoder_model(
+            config_name="modded_dac_vq",
+            checkpoint_path=str(OPENAUDIO_MODEL_DIR / "codec.pth"),
+            device=self.device,
+        )
+
+        # Create TTS engine
+        self.tts_engine = TTSInferenceEngine(
+            llama_queue=self.llama_queue,
+            decoder_model=self.decoder_model,
+            precision=self.precision,
+            compile=False,
+        )
+
+        # Get sample rate from decoder
+        if hasattr(self.decoder_model, "spec_transform"):
+            self.tts_sample_rate = self.decoder_model.spec_transform.sample_rate
+        else:
+            self.tts_sample_rate = self.decoder_model.sample_rate
+
+        print(f"   OpenAudio loaded in {time.time() - tts_start:.2f}s")
         print(f"   Sample rate: {self.tts_sample_rate}Hz")
+
+        # Load reference audio for voice cloning
+        self.ref_audio_bytes = None
+        self.ref_text = ""
+        if OPENAUDIO_REF_AUDIO.exists():
+            print(f"   Loading reference audio: {OPENAUDIO_REF_AUDIO.name}")
+            self.ref_audio_bytes = audio_to_bytes(str(OPENAUDIO_REF_AUDIO))
 
         # System prompt
         self.system_prompt = """Ты голосовой ассистент. ВСЕГДА отвечай ТОЛЬКО на русском языке.
 Отвечай кратко и естественно, как в разговоре.
 Избегай длинных списков и сложных конструкций. Говори просто и понятно.
 Отвечай максимум 2-3 предложениями. Никогда не используй другие языки кроме русского."""
-
-        # TTS prompt for Russian (slow speed)
-        self.tts_prompt = "You are a helpful assistant. Говори по-русски медленно и чётко.<|endofprompt|>"
 
         print("\nPipeline ready!")
 
@@ -130,29 +174,57 @@ class VoicePipeline:
         return text, elapsed
 
     def text_to_speech(self, text: str) -> tuple[np.ndarray, int, float]:
-        """Convert text to speech using CosyVoice 3.0"""
+        """Convert text to speech using OpenAudio S1-mini"""
         output_path = AUDIO_DIR / "temp_output.wav"
 
         start = time.time()
 
-        # Generate speech with CosyVoice
-        audio_tensor = None
-        for output in self.tts.inference_instruct2(
-            text,
-            self.tts_prompt,
-            str(COSYVOICE_REF_AUDIO),
-            stream=False
-        ):
-            audio_tensor = output['tts_speech']
+        # Prepare references for voice cloning
+        references = []
+        if self.ref_audio_bytes:
+            references.append(
+                ServeReferenceAudio(
+                    audio=self.ref_audio_bytes,
+                    text=self.ref_text
+                )
+            )
 
-        # Save to file
-        torchaudio.save(str(output_path), audio_tensor, self.tts_sample_rate)
+        # Create TTS request
+        request = ServeTTSRequest(
+            text=text,
+            references=references,
+            reference_id=None,
+            max_new_tokens=1024,
+            chunk_length=200,
+            top_p=0.7,
+            repetition_penalty=1.2,
+            temperature=0.7,
+            format="wav",
+            streaming=False,
+        )
+
+        # Generate speech
+        audio_data = None
+        sample_rate = self.tts_sample_rate
+
+        for result in self.tts_engine.inference(request):
+            if result.code == "final":
+                if isinstance(result.audio, tuple):
+                    sample_rate, audio_data = result.audio
+            elif result.code == "error":
+                print(f"TTS Error: {result.error}")
+                return np.zeros(1000), sample_rate, time.time() - start
 
         elapsed = time.time() - start
 
-        # Load as numpy array
-        audio, sr = sf.read(output_path)
-        return audio, sr, elapsed
+        if audio_data is None:
+            print("No audio generated")
+            return np.zeros(1000), sample_rate, elapsed
+
+        # Save to file
+        sf.write(output_path, audio_data, sample_rate)
+
+        return audio_data, sample_rate, elapsed
 
     def play_audio(self, audio: np.ndarray, sample_rate: int = 24000):
         """Play audio"""
@@ -190,7 +262,8 @@ class VoicePipeline:
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": user_text}
             ],
-            stream=True
+            stream=True,
+            think=False
         )
 
         for chunk in stream:
@@ -221,7 +294,7 @@ class VoicePipeline:
 def main():
     """Interactive voice bot"""
     print("\n" + "=" * 60)
-    print("Voice Bot Pipeline (CosyVoice 3.0 TTS)")
+    print("Voice Bot Pipeline (OpenAudio S1-mini TTS)")
     print("=" * 60)
 
     # Initialize pipeline
