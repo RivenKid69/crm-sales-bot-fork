@@ -103,7 +103,7 @@ class CascadeRetriever:
         self._index_lemmas()
 
         # Инициализируем эмбеддинги если нужно
-        if use_embeddings:
+        if self.use_embeddings:
             self._init_embeddings()
 
     def _index_lemmas(self):

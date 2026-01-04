@@ -233,7 +233,7 @@ class HybridClassifier:
         last_intent = context.get("last_intent")
         spin_phase = context.get("spin_phase")
         state = context.get("state")
-        missing_data = context.get("missing_data", [])
+        missing_data = context.get("missing_data") or []
 
         # =================================================================
         # УТВЕРДИТЕЛЬНЫЕ КОРОТКИЕ ОТВЕТЫ
