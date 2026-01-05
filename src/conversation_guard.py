@@ -1,0 +1,360 @@
+"""
+Conversation Guard для CRM Sales Bot.
+
+Защита от зацикливания, тупиков и превышения лимитов.
+
+Обнаруживает:
+- Loops: одинаковые состояния/сообщения подряд
+- Dead-ends: застревание в фазе
+- Timeout: превышение времени
+- Exhaustion: слишком много попыток
+
+Использование:
+    from conversation_guard import ConversationGuard
+
+    guard = ConversationGuard()
+    can_continue, intervention = guard.check("spin_situation", "сообщение", {})
+
+    if not can_continue:
+        # Мягко завершить диалог
+        pass
+    elif intervention:
+        # Применить fallback указанного уровня
+        pass
+"""
+
+import time
+from collections import Counter
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+from logger import logger
+
+
+@dataclass
+class GuardConfig:
+    """Конфигурация лимитов ConversationGuard"""
+    # Основные лимиты
+    max_turns: int = 25                    # Средний sales диалог: 8-15 turns
+    max_phase_attempts: int = 3            # LivePerson recommendation
+    max_same_state: int = 4                # Loop detection
+    max_same_message: int = 2              # Exact repeat detection
+    timeout_seconds: int = 1800            # 30 минут
+
+    # Пороги прогресса
+    progress_check_interval: int = 5       # Каждые 5 turns проверяем прогресс
+    min_unique_states_for_progress: int = 2  # Минимум уникальных состояний за интервал
+
+    # Frustration thresholds
+    high_frustration_threshold: int = 7    # Порог высокого раздражения
+
+    @classmethod
+    def default(cls) -> "GuardConfig":
+        """Дефолтная конфигурация"""
+        return cls()
+
+    @classmethod
+    def strict(cls) -> "GuardConfig":
+        """Строгая конфигурация (для коротких диалогов)"""
+        return cls(
+            max_turns=15,
+            max_phase_attempts=2,
+            max_same_state=3,
+            timeout_seconds=900,  # 15 минут
+        )
+
+    @classmethod
+    def relaxed(cls) -> "GuardConfig":
+        """Расслабленная конфигурация (для сложных диалогов)"""
+        return cls(
+            max_turns=40,
+            max_phase_attempts=5,
+            max_same_state=6,
+            timeout_seconds=3600,  # 1 час
+        )
+
+
+@dataclass
+class GuardState:
+    """Состояние ConversationGuard"""
+    turn_count: int = 0
+    state_history: List[str] = field(default_factory=list)
+    message_history: List[str] = field(default_factory=list)
+    phase_attempts: Dict[str, int] = field(default_factory=lambda: Counter())
+    start_time: Optional[float] = None
+    last_progress_turn: int = 0
+    collected_data_count: int = 0
+    frustration_level: int = 0
+
+
+class ConversationGuard:
+    """
+    Защита от зацикливания, тупиков и превышения лимитов.
+
+    Обнаруживает:
+    - Loops: одинаковые состояния/сообщения подряд
+    - Dead-ends: застревание в фазе без прогресса
+    - Timeout: превышение времени диалога
+    - Exhaustion: слишком много попыток в одной фазе
+    - Frustration: накопленное раздражение клиента
+
+    Returns:
+        Tuple[can_continue, intervention_action]
+        - can_continue: True если можно продолжать
+        - intervention_action: None или tier (fallback_tier_1, ..., soft_close)
+    """
+
+    # Уровни интервенций
+    TIER_1 = "fallback_tier_1"  # Переформулировать вопрос
+    TIER_2 = "fallback_tier_2"  # Предложить варианты (кнопки)
+    TIER_3 = "fallback_tier_3"  # Предложить skip
+    TIER_4 = "soft_close"       # Мягко завершить
+
+    def __init__(self, config: Optional[GuardConfig] = None):
+        self.config = config or GuardConfig.default()
+        self._state = GuardState()
+
+    def reset(self) -> None:
+        """Сбросить состояние для нового диалога"""
+        self._state = GuardState()
+        logger.debug("ConversationGuard reset")
+
+    @property
+    def turn_count(self) -> int:
+        """Текущий номер хода"""
+        return self._state.turn_count
+
+    @property
+    def state_history(self) -> List[str]:
+        """История состояний"""
+        return self._state.state_history.copy()
+
+    @property
+    def phase_attempts(self) -> Dict[str, int]:
+        """Счётчик попыток по фазам"""
+        return dict(self._state.phase_attempts)
+
+    def set_frustration_level(self, level: int) -> None:
+        """
+        Установить уровень раздражения клиента.
+        Используется ToneAnalyzer'ом извне.
+        """
+        self._state.frustration_level = max(0, min(10, level))
+
+    def check(
+        self,
+        state: str,
+        message: str,
+        collected_data: Dict,
+        frustration_level: Optional[int] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Проверить состояние диалога и определить нужна ли интервенция.
+
+        Args:
+            state: Текущее состояние FSM
+            message: Сообщение клиента
+            collected_data: Собранные данные о клиенте
+            frustration_level: Уровень раздражения (0-10), если None - используется внутренний
+
+        Returns:
+            Tuple[can_continue, intervention_action]
+            - can_continue: True если можно продолжать диалог
+            - intervention_action: None или уровень fallback
+        """
+        # Инициализация времени старта
+        if self._state.start_time is None:
+            self._state.start_time = time.time()
+
+        # Обновляем состояние
+        self._state.turn_count += 1
+        self._state.state_history.append(state)
+        self._state.message_history.append(self._normalize_message(message))
+        self._state.phase_attempts[state] += 1
+
+        # Обновляем frustration если передан
+        if frustration_level is not None:
+            self._state.frustration_level = frustration_level
+
+        # Проверки в порядке критичности
+
+        # 1. Проверка timeout
+        elapsed = time.time() - self._state.start_time
+        if elapsed > self.config.timeout_seconds:
+            logger.warning(
+                "Conversation timeout",
+                turns=self._state.turn_count,
+                elapsed_seconds=int(elapsed)
+            )
+            return False, self.TIER_4
+
+        # 2. Проверка max turns
+        if self._state.turn_count > self.config.max_turns:
+            logger.warning(
+                "Max turns exceeded",
+                turns=self._state.turn_count,
+                limit=self.config.max_turns
+            )
+            return False, self.TIER_4
+
+        # 3. Проверка высокого раздражения
+        if self._state.frustration_level >= self.config.high_frustration_threshold:
+            logger.warning(
+                "High frustration level",
+                frustration_level=self._state.frustration_level,
+                turns=self._state.turn_count
+            )
+            # Не прерываем, но рекомендуем мягкий подход
+            return True, self.TIER_3
+
+        # 4. Проверка повторяющихся сообщений (exact loop)
+        if self._check_message_loop():
+            logger.warning(
+                "Message loop detected",
+                user_message=message[:50],
+                turns=self._state.turn_count
+            )
+            return True, self.TIER_2  # Предложить варианты
+
+        # 5. Проверка застревания в состоянии
+        same_state_count = self._count_recent_same_state(state)
+        if same_state_count >= self.config.max_same_state:
+            logger.warning(
+                "State loop detected",
+                state=state,
+                count=same_state_count
+            )
+            return True, self.TIER_3  # Предложить skip
+
+        # 6. Проверка попыток в фазе (но только если нет прогресса в данных)
+        phase_attempts = self._state.phase_attempts[state]
+        if phase_attempts > self.config.max_phase_attempts:
+            new_data_count = len(collected_data)
+            if new_data_count <= self._state.collected_data_count:
+                logger.warning(
+                    "Phase exhausted without progress",
+                    state=state,
+                    attempts=phase_attempts,
+                    data_count=new_data_count
+                )
+                return True, self.TIER_2
+
+        # Обновляем счётчик собранных данных
+        self._state.collected_data_count = len(collected_data)
+
+        # 7. Проверка общего прогресса
+        turns_since_progress = self._state.turn_count - self._state.last_progress_turn
+        if turns_since_progress >= self.config.progress_check_interval:
+            if not self._has_progress():
+                logger.warning(
+                    "No progress detected",
+                    turns_since_progress=turns_since_progress
+                )
+                return True, self.TIER_1
+
+        return True, None
+
+    def record_progress(self) -> None:
+        """
+        Отметить что был прогресс в диалоге.
+        Вызывается когда собраны новые данные или сменилось состояние.
+        """
+        self._state.last_progress_turn = self._state.turn_count
+        logger.debug(
+            "Progress recorded",
+            turn=self._state.turn_count
+        )
+
+    def _normalize_message(self, message: str) -> str:
+        """Нормализация сообщения для сравнения"""
+        return message.lower().strip()
+
+    def _check_message_loop(self) -> bool:
+        """Проверка на повторяющиеся сообщения клиента"""
+        history = self._state.message_history
+        if len(history) < self.config.max_same_message:
+            return False
+
+        # Проверяем последние N сообщений на идентичность
+        recent = history[-self.config.max_same_message:]
+        return len(set(recent)) == 1
+
+    def _count_recent_same_state(self, state: str) -> int:
+        """Считаем последние подряд идущие одинаковые состояния"""
+        count = 0
+        for s in reversed(self._state.state_history):
+            if s == state:
+                count += 1
+            else:
+                break
+        return count
+
+    def _has_progress(self) -> bool:
+        """Проверка есть ли прогресс по состояниям"""
+        if len(self._state.state_history) < 2:
+            return True
+
+        # Берём последние N состояний
+        interval = self.config.progress_check_interval
+        recent_states = self._state.state_history[-interval:]
+        unique_recent = len(set(recent_states))
+
+        return unique_recent >= self.config.min_unique_states_for_progress
+
+    def get_stats(self) -> Dict:
+        """Получить статистику диалога"""
+        elapsed = 0.0
+        if self._state.start_time:
+            elapsed = time.time() - self._state.start_time
+
+        return {
+            "turn_count": self._state.turn_count,
+            "elapsed_seconds": round(elapsed, 1),
+            "phase_attempts": dict(self._state.phase_attempts),
+            "unique_states": len(set(self._state.state_history)),
+            "last_state": self._state.state_history[-1] if self._state.state_history else None,
+            "frustration_level": self._state.frustration_level,
+            "collected_data_count": self._state.collected_data_count,
+        }
+
+
+# =============================================================================
+# CLI для демонстрации
+# =============================================================================
+
+if __name__ == "__main__":
+    import json
+
+    print("=" * 60)
+    print("CONVERSATION GUARD DEMO")
+    print("=" * 60)
+
+    guard = ConversationGuard()
+
+    # Симулируем диалог
+    test_cases = [
+        ("greeting", "Привет", {}),
+        ("spin_situation", "10 человек", {"company_size": 10}),
+        ("spin_problem", "Теряем клиентов", {"company_size": 10, "problem": "churn"}),
+        ("spin_problem", "Теряем клиентов", {"company_size": 10, "problem": "churn"}),  # Repeat
+        ("spin_problem", "Теряем клиентов", {"company_size": 10, "problem": "churn"}),  # Repeat again
+    ]
+
+    print("\n--- Simulating conversation ---")
+    for state, message, data in test_cases:
+        can_continue, intervention = guard.check(state, message, data)
+        status = "OK" if can_continue else "STOP"
+        intervention_str = intervention or "none"
+        print(f"Turn {guard.turn_count}: state={state}, {status}, intervention={intervention_str}")
+
+    print("\n--- Guard Stats ---")
+    print(json.dumps(guard.get_stats(), indent=2, ensure_ascii=False))
+
+    # Тест timeout
+    print("\n--- Testing timeout detection ---")
+    guard2 = ConversationGuard(GuardConfig(timeout_seconds=0))  # Immediate timeout
+    time.sleep(0.1)
+    can_continue, intervention = guard2.check("test", "test", {})
+    print(f"Timeout test: can_continue={can_continue}, intervention={intervention}")
+
+    print("\n" + "=" * 60)
