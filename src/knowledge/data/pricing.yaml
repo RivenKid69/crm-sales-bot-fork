@@ -721,15 +721,16 @@ sections:
     • Wipon Cashback
     • ТИС, Розничный налог и СНР 2026
 - topic: pricing_wipon_pro_module_431
-  priority: 9
+  priority: 10
   keywords:
   - wipon pro модуль
   - wipon pro стоит
   - pro модуль цена
-  - акцизная продукция
-  - маркировка модуль
-  - "12000 год"
-  - модуль pro
+  - акцизная продукция wipon
+  - маркировка модуль wipon
+  - модуль акцизной продукции
+  - "12000 год модуль"
+  - модуль pro wipon
   facts: |-
     Wipon Pro (модуль) — 12 000 ₸/год.
     Модуль для акцизной продукции и маркировки.
@@ -763,14 +764,15 @@ sections:
   priority: 10
   keywords:
   - wipon triple цена
-  - triple стоимость
+  - triple стоимость wipon
   - сколько стоит wipon triple
-  - triple прайс
-  - "330000 triple"
+  - triple прайс wipon
+  - "330000 triple wipon"
   - "27500 месяц triple"
-  - triple рассрочка kaspi
-  - triple за сколько купить
-  - цена на triple моноблок
+  - triple рассрочка kaspi wipon
+  - triple за сколько купить wipon
+  - цена triple wipon
+  - triple 330000 тенге
   facts: |-
     Кассовый моноблок Wipon Triple — 330 000 ₸.
     Рассрочка Kaspi 0-0-12: 27 500 ₸/мес.
@@ -790,14 +792,15 @@ sections:
   priority: 10
   keywords:
   - умные весы wipon цена
-  - умные весы стоимость
+  - умные весы wipon стоимость
   - сколько стоят умные весы wipon
   - весы wipon прайс
   - "100000 весы wipon"
   - "8333 месяц весы"
   - весы wipon рассрочка kaspi
   - цена умных весов wipon
-  - весы за сколько купить
+  - весы wipon за сколько купить
+  - весы 100000 тенге wipon
   facts: |-
     Умные весы WIPON — 100 000 ₸.
     Рассрочка Kaspi 0-0-12: 8 333 ₸/мес.
