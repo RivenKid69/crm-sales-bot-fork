@@ -1,6 +1,6 @@
 # База знаний: integrations
 # Категория: integrations
-# Секций: 50
+# Секций: 53
 
 sections:
 - topic: marketplaces
@@ -991,3 +991,37 @@ sections:
   - много pos терминалов
   facts: |-
     Да, можно подключить несколько POS-терминалов к одной системе Wipon.
+
+- topic: integrations_kaspi_halyk_704
+  priority: 9
+  keywords:
+  - продавать kaspi
+  - продавать halyk market
+  - kaspi.kz интеграция
+  - halyk market интеграция
+  - онлайн продажи
+  - маркетплейс казахстан
+  facts: |-
+    Да. Есть интеграция с Kaspi.kz и Halyk Market, онлайн-продажи и оплаты автоматически попадают в систему.
+
+- topic: integrations_ozon_wildberries_722
+  priority: 8
+  keywords:
+  - ozon
+  - wildberries
+  - озон
+  - вайлдберриз
+  - российские маркетплейсы
+  facts: |-
+    Пока нет. Эти площадки не относятся к ТИС. Поддерживаем интеграции с Kaspi и Halyk Market.
+
+- topic: integrations_marketplaces_744
+  priority: 9
+  keywords:
+  - подключить маркетплейсы
+  - wipon маркетплейсы
+  - интеграция маркетплейсы
+  - kaspi halyk заказы
+  - автоматические заказы
+  facts: |-
+    Да. Интеграции с Kaspi.kz и Halyk Market уже есть. Заказы и оплаты попадают в систему автоматически.
