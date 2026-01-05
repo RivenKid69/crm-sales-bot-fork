@@ -1,11 +1,312 @@
 """
 Генератор ответов — собирает промпт и вызывает LLM
+
+Включает:
+- ResponseGenerator: генерация ответов через LLM
+- PersonalizationEngine: персонализация на основе собранных данных
 """
 
-from typing import Dict, List
-from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
+from typing import Dict, List, Optional
+from config import SYSTEM_PROMPT, SYSTEM_PROMPT_BASE, PROMPT_TEMPLATES, KNOWLEDGE
 from knowledge.retriever import get_retriever
 from settings import settings
+from logger import logger
+
+
+# =============================================================================
+# PERSONALIZATION ENGINE
+# =============================================================================
+
+class PersonalizationEngine:
+    """
+    Персонализация ответов на основе собранных данных о клиенте.
+
+    Учитывает:
+    - Размер компании (micro, small, medium, large)
+    - Тип бизнеса/отрасль
+    - Выявленные боли (pain_points)
+
+    Использование:
+        engine = PersonalizationEngine()
+        context = engine.get_context(collected_data)
+        # context содержит персонализированные поля для промптов
+    """
+
+    # Контексты по размеру компании
+    BUSINESS_CONTEXTS: Dict[str, Dict[str, str]] = {
+        "micro": {  # 1-5 человек
+            "size_label": "небольшая команда",
+            "pain_focus": "простота и экономия времени",
+            "value_prop": "всё в одном месте, без сложных настроек",
+            "objection_counter": "окупается за счёт сэкономленного времени",
+            "demo_pitch": "покажу как работает — займёт 15 минут",
+        },
+        "small": {  # 6-15 человек
+            "size_label": "растущая команда",
+            "pain_focus": "контроль и координация команды",
+            "value_prop": "видите работу каждого сотрудника",
+            "objection_counter": "стоимость на человека ниже чем у конкурентов",
+            "demo_pitch": "покажу как следить за командой — это удобно",
+        },
+        "medium": {  # 16-50 человек
+            "size_label": "средний бизнес",
+            "pain_focus": "масштабирование и автоматизация",
+            "value_prop": "автоматизация рутины, аналитика в реальном времени",
+            "objection_counter": "enterprise функции по цене малого бизнеса",
+            "demo_pitch": "покажу автоматизацию и отчёты — экономит часы",
+        },
+        "large": {  # 50+ человек
+            "size_label": "крупная компания",
+            "pain_focus": "интеграция и кастомизация",
+            "value_prop": "API, кастомные отчёты, dedicated поддержка",
+            "objection_counter": "гибкие условия, индивидуальные тарифы",
+            "demo_pitch": "обсудим ваши требования — подготовлю предложение",
+        },
+    }
+
+    # Контексты по отрасли
+    INDUSTRY_CONTEXTS: Dict[str, Dict[str, List[str]]] = {
+        "retail": {
+            "keywords": ["магазин", "розница", "торговля", "товар"],
+            "examples": ["учёт товаров", "остатки", "поставщики"],
+            "pain_examples": ["пересортица", "недостачи", "списания"],
+        },
+        "services": {
+            "keywords": ["услуг", "сервис", "салон", "студия", "клиник"],
+            "examples": ["запись клиентов", "расписание", "услуги"],
+            "pain_examples": ["пропущенные записи", "накладки", "забытые клиенты"],
+        },
+        "horeca": {
+            "keywords": ["ресторан", "кафе", "общепит", "бар", "доставка еды"],
+            "examples": ["столики", "заказы", "меню"],
+            "pain_examples": ["потерянные заказы", "очереди", "учёт продуктов"],
+        },
+        "b2b": {
+            "keywords": ["опт", "b2b", "дилер", "дистрибут", "поставщик"],
+            "examples": ["контракты", "отгрузки", "дебиторка"],
+            "pain_examples": ["долгие сделки", "потерянные контакты", "забытые follow-up"],
+        },
+        "real_estate": {
+            "keywords": ["недвижимост", "риелтор", "застройщик", "агентство недвиж"],
+            "examples": ["объекты", "показы", "сделки"],
+            "pain_examples": ["потерянные лиды", "забытые показы", "конкуренция"],
+        },
+        "it": {
+            "keywords": ["it", "разработ", "софт", "digital", "агентство"],
+            "examples": ["проекты", "задачи", "клиенты"],
+            "pain_examples": ["срывы сроков", "потеря контекста", "нет прозрачности"],
+        },
+    }
+
+    # Размерные категории
+    SIZE_THRESHOLDS = {
+        "micro": (1, 5),
+        "small": (6, 15),
+        "medium": (16, 50),
+        "large": (51, float("inf")),
+    }
+
+    @classmethod
+    def get_size_category(cls, company_size: int) -> str:
+        """Определить категорию размера компании"""
+        for category, (min_size, max_size) in cls.SIZE_THRESHOLDS.items():
+            if min_size <= company_size <= max_size:
+                return category
+        return "small"  # default
+
+    @classmethod
+    def detect_industry(cls, collected_data: Dict) -> Optional[str]:
+        """Определить отрасль по собранным данным"""
+        # Проверяем business_type
+        business_type = collected_data.get("business_type") or ""
+        if isinstance(business_type, str):
+            business_type = business_type.lower()
+        else:
+            business_type = ""
+
+        for industry, data in cls.INDUSTRY_CONTEXTS.items():
+            for keyword in data["keywords"]:
+                if keyword in business_type:
+                    return industry
+
+        # Проверяем pain_point
+        pain_point = collected_data.get("pain_point") or ""
+        if isinstance(pain_point, str):
+            pain_point = pain_point.lower()
+        else:
+            pain_point = ""
+
+        for industry, data in cls.INDUSTRY_CONTEXTS.items():
+            for pain_example in data["pain_examples"]:
+                if pain_example in pain_point:
+                    return industry
+
+        return None
+
+    @classmethod
+    def get_context(cls, collected_data: Dict) -> Dict:
+        """
+        Возвращает контекст для персонализации промпта.
+
+        Args:
+            collected_data: Собранные данные о клиенте
+
+        Returns:
+            Словарь с полями для персонализации:
+            - business_context: контекст по размеру
+            - industry_context: контекст по отрасли (если определена)
+            - pain_reference: ссылка на боль клиента
+            - size_category: категория размера
+            - personalized_value_prop: персонализированное ценностное предложение
+        """
+        context: Dict = {}
+
+        # По размеру компании
+        company_size = collected_data.get("company_size")
+        if company_size is None:
+            company_size = 0
+        elif isinstance(company_size, str):
+            try:
+                company_size = int(company_size)
+            except ValueError:
+                company_size = 0
+        elif not isinstance(company_size, (int, float)):
+            company_size = 0
+
+        size_category = cls.get_size_category(int(company_size)) if company_size > 0 else "small"
+        context["size_category"] = size_category
+        context["business_context"] = cls.BUSINESS_CONTEXTS.get(size_category, cls.BUSINESS_CONTEXTS["small"])
+
+        # По отрасли
+        industry = cls.detect_industry(collected_data)
+        if industry:
+            context["industry"] = industry
+            context["industry_context"] = cls.INDUSTRY_CONTEXTS[industry]
+        else:
+            context["industry"] = None
+            context["industry_context"] = None
+
+        # Ссылка на боль
+        pain_point = collected_data.get("pain_point")
+        if pain_point:
+            context["pain_reference"] = f"Вы упоминали про {pain_point}"
+            context["has_pain_point"] = True
+        else:
+            context["pain_reference"] = ""
+            context["has_pain_point"] = False
+
+        # Персонализированное ценностное предложение
+        context["personalized_value_prop"] = cls._build_value_prop(
+            size_category, industry, pain_point
+        )
+
+        logger.debug(
+            "Personalization context built",
+            size_category=size_category,
+            industry=industry,
+            has_pain_point=bool(pain_point)
+        )
+
+        return context
+
+    @classmethod
+    def _build_value_prop(
+        cls,
+        size_category: str,
+        industry: Optional[str],
+        pain_point: Optional[str]
+    ) -> str:
+        """Собирает персонализированное ценностное предложение"""
+        parts: List[str] = []
+
+        # Базовое предложение по размеру
+        business_ctx = cls.BUSINESS_CONTEXTS.get(size_category, cls.BUSINESS_CONTEXTS["small"])
+        parts.append(business_ctx["value_prop"])
+
+        # Добавляем отраслевую специфику
+        if industry and industry in cls.INDUSTRY_CONTEXTS:
+            industry_ctx = cls.INDUSTRY_CONTEXTS[industry]
+            example = industry_ctx["examples"][0] if industry_ctx["examples"] else None
+            if example:
+                parts.append(f"включая {example}")
+
+        return ", ".join(parts) if parts else ""
+
+    @classmethod
+    def get_objection_counter(cls, collected_data: Dict, objection_type: str = "price") -> str:
+        """
+        Возвращает контраргумент для возражения.
+
+        Args:
+            collected_data: Собранные данные
+            objection_type: Тип возражения (price, competitor, no_time, etc.)
+
+        Returns:
+            Контраргумент, персонализированный под клиента
+        """
+        company_size = collected_data.get("company_size", 0)
+        if isinstance(company_size, str):
+            try:
+                company_size = int(company_size)
+            except ValueError:
+                company_size = 0
+
+        size_category = cls.get_size_category(company_size) if company_size > 0 else "small"
+        business_ctx = cls.BUSINESS_CONTEXTS.get(size_category, cls.BUSINESS_CONTEXTS["small"])
+
+        if objection_type == "price":
+            return business_ctx["objection_counter"]
+        elif objection_type == "no_time":
+            return business_ctx["demo_pitch"]
+        else:
+            return business_ctx["value_prop"]
+
+    @classmethod
+    def format_prompt_with_personalization(
+        cls,
+        prompt_template: str,
+        collected_data: Dict,
+        **kwargs
+    ) -> str:
+        """
+        Форматирует промпт с персонализированными данными.
+
+        Args:
+            prompt_template: Шаблон промпта
+            collected_data: Собранные данные о клиенте
+            **kwargs: Дополнительные переменные для форматирования
+
+        Returns:
+            Отформатированный промпт
+        """
+        context = cls.get_context(collected_data)
+
+        # Объединяем все переменные
+        variables = {
+            **kwargs,
+            "size_category": context["size_category"],
+            "pain_reference": context["pain_reference"],
+            "personalized_value_prop": context["personalized_value_prop"],
+        }
+
+        # Добавляем business_context поля
+        if context["business_context"]:
+            for key, value in context["business_context"].items():
+                variables[f"bc_{key}"] = value
+
+        # Добавляем industry_context поля
+        if context["industry_context"]:
+            for key, value in context["industry_context"].items():
+                if isinstance(value, list):
+                    variables[f"ic_{key}"] = ", ".join(value)
+                else:
+                    variables[f"ic_{key}"] = value
+
+        try:
+            return prompt_template.format(**variables)
+        except KeyError as e:
+            logger.warning(f"Missing variable in personalization: {e}")
+            return prompt_template
 
 
 class ResponseGenerator:
@@ -103,6 +404,14 @@ class ResponseGenerator:
         else:
             template_key = action
 
+        # Для SPIN-фаз: если action == "continue_current_goal" и есть spin_phase,
+        # используем специфический SPIN-шаблон вместо generic continue_current_goal
+        spin_phase = context.get("spin_phase", "")
+        if template_key == "continue_current_goal" and spin_phase:
+            spin_template_key = f"spin_{spin_phase}"
+            if spin_template_key in PROMPT_TEMPLATES:
+                template_key = spin_template_key
+
         template = PROMPT_TEMPLATES.get(template_key, PROMPT_TEMPLATES["continue_current_goal"])
 
         # Собираем переменные
@@ -117,8 +426,15 @@ class ResponseGenerator:
         desired_outcome = collected.get("desired_outcome", "не сформулирован")
         spin_phase = context.get("spin_phase", "")
 
+        # Tone instruction из контекста (Phase 2: Естественность диалога)
+        tone_instruction = context.get("tone_instruction", "")
+
+        # Формируем SYSTEM_PROMPT с tone_instruction
+        # Если tone_instruction пустой - используем пустую строку
+        system_prompt = SYSTEM_PROMPT.format(tone_instruction=tone_instruction)
+
         variables = {
-            "system": SYSTEM_PROMPT,
+            "system": system_prompt,
             "user_message": user_message,
             "history": self.format_history(context.get("history", [])),
             "goal": context.get("goal", ""),
@@ -137,6 +453,8 @@ class ResponseGenerator:
             "financial_impact": financial_impact,
             "desired_outcome": desired_outcome,
             "spin_phase": spin_phase,
+            # Phase 2: Tone instruction (для обратной совместимости в шаблонах)
+            "tone_instruction": tone_instruction,
         }
 
         # Подставляем в шаблон
