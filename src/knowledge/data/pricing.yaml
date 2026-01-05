@@ -777,14 +777,16 @@ sections:
     Кассовый моноблок Wipon Triple — 330 000 ₸.
     Рассрочка Kaspi 0-0-12: 27 500 ₸/мес.
 - topic: pricing_kit_pro_435
-  priority: 9
+  priority: 10
   keywords:
-  - кассовый комплект pro
-  - комплект pro цена
-  - сколько стоит комплект pro
-  - "360000"
-  - "30000 месяц комплект"
-  - комплект pro рассрочка
+  - кассовый комплект pro wipon
+  - комплект pro wipon цена
+  - сколько стоит комплект pro wipon
+  - "360000 комплект"
+  - "360000 комплект pro"
+  - "30000 месяц комплект pro"
+  - комплект pro wipon рассрочка
+  - комплект pro 360000 wipon
   facts: |-
     Кассовый комплект PRO — 360 000 ₸.
     Рассрочка Kaspi 0-0-12: 30 000 ₸/мес.
@@ -817,46 +819,56 @@ sections:
     Денежный ящик WIPON — 21 000 ₸.
     Рассрочка Kaspi 0-0-12: 1 750 ₸/мес.
 - topic: pricing_scales_rongta_438
-  priority: 9
+  priority: 10
   keywords:
-  - весы rongta
-  - rongta цена
-  - сколько стоят весы rongta
-  - "200000 весы"
-  - "16666 месяц"
-  - rongta рассрочка
+  - весы rongta wipon
+  - rongta wipon цена
+  - сколько стоят весы rongta wipon
+  - "200000 весы rongta"
+  - "200000 rongta"
+  - "16666 месяц rongta"
+  - rongta wipon рассрочка
+  - rongta весы 200000 wipon
   facts: |-
     Весы Rongta — 200 000 ₸.
     Рассрочка Kaspi 0-0-12: 16 666 ₸/мес.
 - topic: pricing_stand_zebra_439
-  priority: 8
+  priority: 10
   keywords:
-  - подставка zebra
-  - подставка для сканера zebra
-  - zebra подставка цена
-  - "10000 подставка"
-  - "833 месяц"
+  - подставка zebra wipon
+  - подставка для сканера zebra wipon
+  - zebra подставка wipon цена
+  - "10000 подставка zebra"
+  - "10000 zebra"
+  - "833 месяц zebra"
+  - zebra wipon 10000
+  - подставка zebra 10000 wipon
   facts: |-
     Подставка для сканера ZEBRA — 10 000 ₸.
     Рассрочка Kaspi 0-0-12: 833 ₸/мес.
 - topic: pricing_stand_simple_440
-  priority: 7
+  priority: 10
   keywords:
-  - подставка для сканера
-  - простая подставка
-  - подставка цена
-  - "3000 подставка"
+  - простая подставка wipon
+  - подставка wipon 3000
+  - простая подставка 3000 wipon
+  - "3000 подставка простая"
+  - "3000 простая wipon"
+  - подставка простая wipon цена
+  - подставка 3000 тенге wipon
   facts: |-
     Подставка для сканера — 3 000 ₸.
 - topic: pricing_scanner_wp7600l_441
-  priority: 9
+  priority: 10
   keywords:
-  - сканер wp7600l
-  - стационарный сканер wp7600l
-  - сколько стоит wp7600l
-  - "30000 сканер"
-  - "2500 месяц сканер"
-  - wp7600l рассрочка
+  - сканер wp7600l wipon
+  - стационарный сканер wp7600l wipon
+  - сколько стоит wp7600l wipon
+  - "30000 сканер wp7600l"
+  - "30000 wp7600l"
+  - "2500 месяц wp7600l"
+  - wp7600l wipon рассрочка
+  - wp7600l 30000 wipon
   facts: |-
     Сканер стационарный WP7600L — 30 000 ₸.
     Рассрочка Kaspi 0-0-12: 2 500 ₸/мес.
