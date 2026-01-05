@@ -10,6 +10,7 @@
 import re
 import sys
 import time
+import threading
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Set
 from enum import Enum
@@ -22,18 +23,69 @@ from settings import settings
 from .base import KnowledgeSection, KnowledgeBase
 from .loader import load_knowledge_base
 from .lemmatizer import get_lemmatizer, Lemmatizer
+from .reranker import get_reranker
 
 
-# Маппинг интентов на категории (совместимость с предыдущим API)
+# Маппинг интентов на категории базы знаний
+# Принцип: каждый интент связан с категориями, которые могут содержать релевантные факты
+# Пустой список [] означает, что для этого интента не нужен поиск по базе знаний
 INTENT_TO_CATEGORY = {
+    # =================================================================
+    # ВОПРОСЫ О ПРОДУКТЕ/ЦЕНЕ (требуют информации из базы)
+    # =================================================================
     "price_question": ["pricing"],
-    "question_features": ["features", "products"],
+    "pricing_details": ["pricing", "promotions"],
+    "question_features": ["features", "products", "tis", "analytics", "inventory"],
     "question_integrations": ["integrations"],
-    "objection_competitor": ["competitors", "benefits"],
-    "objection_price": ["pricing", "benefits"],
-    "agreement": ["pricing", "support", "contacts"],
+    "comparison": ["competitors", "benefits", "features"],
+
+    # =================================================================
+    # ВОЗРАЖЕНИЯ (требуют аргументов из базы)
+    # =================================================================
+    "objection_competitor": ["competitors", "benefits", "features"],
+    "objection_price": ["pricing", "benefits", "promotions"],
+    "objection_no_time": ["support", "getting_started", "mobile"],  # быстрый старт, мобильность
+    "objection_think": ["benefits", "cases", "support"],  # преимущества, кейсы успеха
+
+    # =================================================================
+    # ЗАПРОСЫ НА ДЕЙСТВИЕ (требуют контактной информации)
+    # =================================================================
+    "callback_request": ["support", "contacts"],
+    "demo_request": ["support", "getting_started", "products"],
+    "consultation_request": ["support", "features", "products"],
+    "contact_provided": ["support", "contacts"],
+
+    # =================================================================
+    # СОГЛАСИЕ/ИНТЕРЕС (общая информация)
+    # =================================================================
+    "agreement": ["pricing", "support", "contacts", "getting_started"],
+
+    # =================================================================
+    # SPIN ИНТЕНТЫ
+    # =================================================================
+    # situation_provided: клиент рассказывает о себе - факты не нужны
+    "situation_provided": [],
+    # problem_revealed: клиент озвучивает проблемы - факты не нужны
+    "problem_revealed": [],
+    # implication_acknowledged: клиент признает последствия - факты не нужны
+    "implication_acknowledged": [],
+    # need_expressed: клиент хочет решение - можно показать преимущества
+    "need_expressed": ["features", "benefits", "products"],
+    # no_problem/no_need: отрицание проблемы/потребности - можно показать кейсы
+    "no_problem": ["cases", "benefits"],
+    "no_need": ["cases", "benefits"],
+    # info_provided: общая информация от клиента
+    "info_provided": [],
+
+    # =================================================================
+    # НЕЙТРАЛЬНЫЕ ИНТЕНТЫ (факты не нужны)
+    # =================================================================
     "greeting": [],
     "rejection": [],
+    "farewell": [],
+    "gratitude": [],
+    "small_talk": [],
+    "unclear": [],
 }
 
 
@@ -99,6 +151,23 @@ class CascadeRetriever:
         self.embedder = None
         self.np = None
 
+        # Reranker параметры из settings
+        self.reranker_enabled = getattr(
+            getattr(settings, 'reranker', None),
+            'enabled',
+            False
+        )
+        self.rerank_threshold = getattr(
+            getattr(settings, 'reranker', None),
+            'threshold',
+            0.5
+        )
+        self.rerank_candidates = getattr(
+            getattr(settings, 'reranker', None),
+            'candidates_count',
+            10
+        )
+
         # Предвычисляем леммы для всех keywords
         self._index_lemmas()
 
@@ -146,6 +215,8 @@ class CascadeRetriever:
         """
         Найти релевантные факты (совместимость с текущим API).
 
+        При низком score использует reranker для переоценки кандидатов.
+
         Args:
             message: Сообщение пользователя
             intent: Классифицированный интент (для фильтрации категорий)
@@ -169,13 +240,28 @@ class CascadeRetriever:
             if intent_categories:
                 categories = intent_categories
 
-        # Ищем
-        results = self.search(message, categories=categories, top_k=top_k)
+        # Если reranker включён — берём больше кандидатов
+        search_top_k = self.rerank_candidates if self.reranker_enabled else top_k
 
-        # Формируем строку
+        # Ищем
+        results = self.search(message, categories=categories, top_k=search_top_k)
+
         if not results:
             return ""
 
+        # Проверяем нужен ли reranking
+        if self.reranker_enabled and results[0].score < self.rerank_threshold:
+            # Низкий score — используем reranker
+            reranker = get_reranker()
+            if reranker.is_available():
+                results = reranker.rerank(message, results, top_k)
+            else:
+                results = results[:top_k]
+        else:
+            # Высокий score — берём как есть
+            results = results[:top_k]
+
+        # Формируем строку
         facts = [r.section.facts.strip() for r in results]
         return "\n\n---\n\n".join(facts)
 
@@ -458,17 +544,30 @@ class CascadeRetriever:
 KnowledgeRetriever = CascadeRetriever
 
 
-# Singleton для совместимости с текущим API
+# =============================================================================
+# Thread-safe Singleton для retriever
+# =============================================================================
+# Используем Double-Checked Locking pattern для эффективности:
+# - Первая проверка без lock для быстрого возврата в случае если уже инициализировано
+# - Lock только при необходимости инициализации
+# - Вторая проверка внутри lock для защиты от race condition
+# =============================================================================
+
 _retriever: Optional[CascadeRetriever] = None
 _retriever_config: Optional[dict] = None
+_retriever_lock = threading.Lock()
 
 
 def get_retriever(use_embeddings: bool = True) -> CascadeRetriever:
     """
-    Получить инстанс retriever'а.
+    Получить инстанс retriever'а (thread-safe).
 
     При изменении параметров создаётся новый экземпляр.
     Для явного сброса используйте reset_retriever().
+
+    Thread Safety:
+        Использует Double-Checked Locking pattern для безопасной
+        инициализации при многопоточном доступе.
 
     Args:
         use_embeddings: Использовать ли семантический поиск с эмбеддингами.
@@ -480,20 +579,32 @@ def get_retriever(use_embeddings: bool = True) -> CascadeRetriever:
 
     current_config = {"use_embeddings": use_embeddings}
 
-    if _retriever is None or _retriever_config != current_config:
-        _retriever = CascadeRetriever(use_embeddings=use_embeddings)
-        _retriever_config = current_config
+    # Fast path: если уже инициализировано с правильной конфигурацией
+    if _retriever is not None and _retriever_config == current_config:
+        return _retriever
 
-    return _retriever
+    # Slow path: нужна инициализация или переконфигурация
+    with _retriever_lock:
+        # Повторная проверка внутри lock (другой поток мог инициализировать)
+        if _retriever is None or _retriever_config != current_config:
+            _retriever = CascadeRetriever(use_embeddings=use_embeddings)
+            _retriever_config = current_config
+
+        return _retriever
 
 
 def reset_retriever() -> None:
     """
-    Сбросить singleton-экземпляр retriever'а.
+    Сбросить singleton-экземпляр retriever'а (thread-safe).
 
     Следующий вызов get_retriever() создаст новый экземпляр.
     Полезно для тестирования или при изменении конфигурации.
+
+    Thread Safety:
+        Использует lock для безопасного сброса при многопоточном доступе.
     """
     global _retriever, _retriever_config
-    _retriever = None
-    _retriever_config = None
+
+    with _retriever_lock:
+        _retriever = None
+        _retriever_config = None
