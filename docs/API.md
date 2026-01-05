@@ -50,6 +50,8 @@ bot.reset()
 | `state_machine` | `StateMachine` | Управление состояниями |
 | `generator` | `ResponseGenerator` | Генерация ответов |
 | `history` | `List[Dict]` | История диалога |
+| `last_action` | `str` | Последнее действие (для контекста) |
+| `last_intent` | `str` | Последний интент пользователя |
 
 ---
 
@@ -100,6 +102,8 @@ result = classifier.classify(
 | `state` | `str` | Текущее состояние диалога |
 | `collected_data` | `Dict` | Уже собранные данные |
 | `missing_data` | `List[str]` | Недостающие поля |
+| `last_action` | `str` | Последнее действие бота |
+| `last_intent` | `str` | Последний интент пользователя |
 
 ---
 
@@ -198,6 +202,7 @@ result = sm.process(
 # Возвращает:
 {
     "action": "spin_situation",          # Действие для генератора
+    "prev_state": "greeting",            # Предыдущее состояние
     "next_state": "spin_situation",      # Следующее состояние
     "is_final": False,                   # Диалог завершён?
     "collected_data": {"company_size": 10},
@@ -216,12 +221,21 @@ result = sm.process(
 sm.reset()
 ```
 
+##### `update_data(data: Dict)`
+
+Обновляет собранные данные.
+
+```python
+sm.update_data({"company_size": 15, "pain_point": "потеря клиентов"})
+```
+
 #### Атрибуты
 
 | Атрибут | Тип | Описание |
 |---------|-----|----------|
 | `state` | `str` | Текущее состояние |
 | `collected_data` | `Dict` | Собранные данные |
+| `spin_phase` | `str` | Текущая SPIN-фаза |
 
 ---
 
@@ -274,24 +288,53 @@ response = generator.generate(
 | `handle_objection` | Работа с возражением |
 | `close` | Запрос контакта |
 | `soft_close` | Вежливое завершение |
+| `deflect_and_continue` | Уход от цены к ситуации |
+| `continue_current_goal` | Продолжение текущей цели |
+
+#### Атрибуты
+
+| Атрибут | Тип | Описание |
+|---------|-----|----------|
+| `max_retries` | `int` | Количество retry при иностранном тексте |
+| `history_length` | `int` | Количество сообщений в контексте |
+| `retriever_top_k` | `int` | Количество фактов из базы знаний |
+| `allowed_english` | `Set[str]` | Разрешённые английские слова |
 
 ---
 
-### KnowledgeRetriever
+### CascadeRetriever
 
-Поиск по базе знаний.
+3-этапный поиск по базе знаний.
 
 ```python
-from knowledge import KnowledgeRetriever
+from knowledge import get_retriever, CascadeRetriever
 
-retriever = KnowledgeRetriever()
+# Singleton (рекомендуется)
+retriever = get_retriever()
+
+# Или создать напрямую
+retriever = CascadeRetriever(use_embeddings=True)
 ```
 
 #### Методы
 
-##### `search(query: str, top_k: int = 3) -> List[SearchResult]`
+##### `retrieve(message: str, intent: str = None, state: str = None, top_k: int = None) -> str`
 
-Поиск релевантных секций.
+Получить релевантные факты для LLM контекста.
+
+```python
+facts = retriever.retrieve(
+    message="сколько стоит Wipon",
+    intent="price_question",
+    top_k=2
+)
+
+# → "Тарифы Wipon:\n| Тариф | Торговых точек |..."
+```
+
+##### `search(query: str, category: str = None, categories: List[str] = None, top_k: int = 3) -> List[SearchResult]`
+
+Поиск с детальными результатами.
 
 ```python
 results = retriever.search("тарифы Wipon", top_k=3)
@@ -299,23 +342,143 @@ results = retriever.search("тарифы Wipon", top_k=3)
 # Возвращает:
 [
     SearchResult(
-        section=KnowledgeSection(id="pricing_basic", ...),
+        section=KnowledgeSection(topic="tariffs", ...),
         score=0.95,
-        match_type="keyword"
+        stage=MatchStage.EXACT,
+        matched_keywords=["тариф"]
     ),
     ...
 ]
 ```
 
-##### `get_context(query: str, max_tokens: int = 500) -> str`
+##### `search_with_stats(query: str, top_k: int = 3) -> Tuple[List[SearchResult], dict]`
 
-Получить контекст для LLM.
+Поиск со статистикой (для отладки и мониторинга).
 
 ```python
-context = retriever.get_context("какие есть интеграции?")
+results, stats = retriever.search_with_stats("какие есть интеграции?")
 
-# → "Wipon интегрируется с 1С, Telegram, WhatsApp..."
+# stats:
+{
+    "stage_used": "exact",
+    "exact_time_ms": 1.2,
+    "lemma_time_ms": 0,
+    "semantic_time_ms": 0,
+    "total_time_ms": 1.5
+}
 ```
+
+##### `get_company_info() -> str`
+
+Получить базовую информацию о компании.
+
+```python
+info = retriever.get_company_info()
+# → "Wipon: Казахстанская IT-компания, разработчик решений..."
+```
+
+#### Функции модуля
+
+##### `get_retriever(use_embeddings: bool = True) -> CascadeRetriever`
+
+Получить singleton-экземпляр retriever'а.
+
+```python
+from knowledge import get_retriever
+
+retriever = get_retriever(use_embeddings=True)
+```
+
+##### `reset_retriever() -> None`
+
+Сбросить singleton для создания нового экземпляра.
+
+```python
+from knowledge.retriever import reset_retriever
+
+reset_retriever()
+```
+
+---
+
+### SearchResult
+
+Результат поиска.
+
+```python
+from knowledge import SearchResult, MatchStage
+
+@dataclass
+class SearchResult:
+    section: KnowledgeSection     # Найденная секция
+    score: float                  # Оценка релевантности
+    stage: MatchStage             # EXACT, LEMMA, SEMANTIC, NONE
+    matched_keywords: List[str]   # Совпавшие keywords (для exact)
+    matched_lemmas: Set[str]      # Совпавшие леммы (для lemma)
+```
+
+---
+
+### KnowledgeSection
+
+Один раздел знаний.
+
+```python
+from knowledge import KnowledgeSection
+
+@dataclass
+class KnowledgeSection:
+    category: str           # "pricing", "features", "integrations", etc.
+    topic: str              # Уникальный идентификатор темы
+    keywords: List[str]     # Ключевые слова для поиска
+    facts: str              # Текст с фактами
+    priority: int = 5       # 1-10, выше = важнее
+    embedding: List[float]  # Эмбеддинг (заполняется автоматически)
+    lemmatized_keywords: Set[str]  # Леммы keywords (заполняется автоматически)
+```
+
+---
+
+### KnowledgeBase
+
+База знаний целиком.
+
+```python
+from knowledge import KnowledgeBase, WIPON_KNOWLEDGE
+
+# Глобальный экземпляр (ленивая загрузка)
+kb = WIPON_KNOWLEDGE
+
+# Или загрузить явно
+from knowledge import load_knowledge_base
+kb = load_knowledge_base()
+```
+
+#### Методы
+
+##### `get_by_category(category: str) -> List[KnowledgeSection]`
+
+Получить все разделы категории.
+
+```python
+pricing_sections = kb.get_by_category("pricing")
+```
+
+##### `get_by_topic(topic: str) -> Optional[KnowledgeSection]`
+
+Получить раздел по теме.
+
+```python
+tariffs = kb.get_by_topic("tariffs")
+```
+
+#### Атрибуты
+
+| Атрибут | Тип | Описание |
+|---------|-----|----------|
+| `company_name` | `str` | Название компании ("Wipon") |
+| `company_description` | `str` | Описание компании |
+| `sections` | `List[KnowledgeSection]` | Все секции (446 шт) |
 
 ---
 
@@ -326,7 +489,9 @@ context = retriever.get_context("какие есть интеграции?")
 ```python
 from llm import OllamaLLM
 
-llm = OllamaLLM(model="qwen3:8b", base_url="http://localhost:11434")
+llm = OllamaLLM()
+# или с параметрами:
+llm = OllamaLLM(model="qwen3:8b-fast", base_url="http://localhost:11434")
 ```
 
 #### Методы
@@ -340,6 +505,57 @@ response = llm.generate(
     prompt="Ответь на вопрос клиента: сколько стоит CRM?",
     system="Ты — продавец CRM-системы Wipon."
 )
+```
+
+---
+
+### Settings
+
+Настройки из settings.yaml.
+
+```python
+from settings import settings
+
+# Доступ через точку
+model = settings.llm.model
+threshold = settings.retriever.thresholds.lemma
+
+# Получение по пути
+value = settings.get_nested("retriever.thresholds.semantic")
+```
+
+#### Функции модуля
+
+##### `get_settings() -> DotDict`
+
+Получить глобальные настройки (singleton).
+
+```python
+from settings import get_settings
+
+s = get_settings()
+```
+
+##### `reload_settings() -> DotDict`
+
+Перезагрузить настройки из файла.
+
+```python
+from settings import reload_settings
+
+s = reload_settings()
+```
+
+##### `validate_settings(settings: DotDict) -> List[str]`
+
+Валидация настроек. Возвращает список ошибок.
+
+```python
+from settings import validate_settings, get_settings
+
+errors = validate_settings(get_settings())
+if errors:
+    print("Ошибки:", errors)
 ```
 
 ---
@@ -386,19 +602,23 @@ SALES_STATES = {
         "optional_data": ["current_tools", "business_type"],
         "transitions": {
             "situation_provided": "spin_problem",
+            "data_complete": "spin_problem",
             "rejection": "soft_close"
+        },
+        "rules": {
+            "price_question": "deflect_and_continue"
         }
     },
     # ...
 }
 ```
 
-### PROMPTS
+### PROMPT_TEMPLATES
 
 Шаблоны промптов для LLM.
 
 ```python
-PROMPTS = {
+PROMPT_TEMPLATES = {
     "spin_situation": """
     Ты — консультант Wipon. Задай вопрос о текущей ситуации клиента.
     История: {history}
@@ -408,30 +628,16 @@ PROMPTS = {
 }
 ```
 
----
+### QUESTION_INTENTS
 
-## Типы данных
-
-### SearchResult
+Интенты-вопросы (всегда отвечаем).
 
 ```python
-@dataclass
-class SearchResult:
-    section: KnowledgeSection
-    score: float
-    match_type: str  # "keyword" или "embedding"
-```
-
-### KnowledgeSection
-
-```python
-@dataclass
-class KnowledgeSection:
-    id: str
-    category: str
-    title: str
-    content: str
-    keywords: List[str]
+QUESTION_INTENTS = [
+    "price_question",
+    "question_features",
+    "question_integrations",
+]
 ```
 
 ---
@@ -486,16 +692,55 @@ print(f"Data: {result['extracted_data']}")  # → {"company_size": 10}
 ### Поиск по базе знаний
 
 ```python
-from knowledge import KnowledgeRetriever
+from knowledge import get_retriever
 
-retriever = KnowledgeRetriever()
+retriever = get_retriever()
 
-# Поиск секций
-results = retriever.search("интеграция с 1С")
+# Получить факты для LLM
+facts = retriever.retrieve("интеграция с 1С", intent="question_integrations")
+print(facts)
+
+# Детальный поиск
+results = retriever.search("какие есть тарифы?", category="pricing")
 for r in results:
-    print(f"{r.section.title}: {r.score:.2f}")
+    print(f"{r.section.topic}: {r.score:.2f} ({r.stage.value})")
 
-# Получение контекста для LLM
-context = retriever.get_context("какие есть тарифы?")
-print(context)
+# Поиск со статистикой
+results, stats = retriever.search_with_stats("цены на Wipon")
+print(f"Использован этап: {stats['stage_used']}")
+print(f"Время: {stats['total_time_ms']:.2f}ms")
+```
+
+### Работа с настройками
+
+```python
+from settings import settings, reload_settings
+
+# Чтение
+print(f"Модель: {settings.llm.model}")
+print(f"Порог lemma: {settings.retriever.thresholds.lemma}")
+
+# После изменения settings.yaml
+reload_settings()
+```
+
+### Прямое использование базы знаний
+
+```python
+from knowledge import WIPON_KNOWLEDGE
+
+# Информация о компании
+print(WIPON_KNOWLEDGE.company_name)
+print(WIPON_KNOWLEDGE.company_description)
+
+# Все секции
+print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")
+
+# По категории
+pricing = WIPON_KNOWLEDGE.get_by_category("pricing")
+print(f"Секций о тарифах: {len(pricing)}")
+
+# По теме
+tariffs = WIPON_KNOWLEDGE.get_by_topic("tariffs")
+print(tariffs.facts)
 ```

@@ -6,6 +6,7 @@
 1. **Нормализацию текста** — исправление опечаток, сленга, слитного текста
 2. **Классификацию интентов** — определение намерения пользователя
 3. **Извлечение данных** — структурированные данные из сообщения
+4. **Контекстную классификацию** — учёт SPIN-фазы и истории диалога
 
 ## Структура пакета
 
@@ -185,7 +186,7 @@ Fallback через pymorphy2/3:
 
 ```python
 # Когда используется:
-# - RootClassifier дал низкую уверенность (< 0.6)
+# - RootClassifier дал низкую уверенность (< threshold)
 # - Слова в необычных формах
 
 # Пример:
@@ -239,7 +240,7 @@ Fallback через pymorphy2/3:
 
 ## Контекстная классификация
 
-Классификатор учитывает текущую SPIN-фазу:
+Классификатор учитывает текущую SPIN-фазу и историю диалога:
 
 ```python
 # Без контекста
@@ -263,6 +264,37 @@ classifier.classify("теряем клиентов", context={"spin_phase": "pro
 | `problem` | `info_provided` + pain | `problem_revealed` |
 | `implication` | `info_provided` + impact | `implication_acknowledged` |
 | `need_payoff` | `info_provided` + desire | `need_expressed` |
+
+**Контекст предыдущего хода:**
+
+Для интерпретации коротких ответов используется:
+- `last_action` — последнее действие бота
+- `last_intent` — последний интент пользователя
+
+```python
+# Бот спросил "Сколько человек в команде?"
+# Пользователь ответил "10"
+context = {
+    "spin_phase": "situation",
+    "last_action": "spin_situation"
+}
+classifier.classify("10", context)
+# → intent: "situation_provided", extracted_data: {"company_size": 10}
+```
+
+## Веса и пороги (из settings.yaml)
+
+```yaml
+classifier:
+  weights:
+    root_match: 1.0       # Совпадение по корню слова
+    phrase_match: 2.0     # Точное совпадение фразы
+    lemma_match: 1.5      # Совпадение по лемме
+
+  thresholds:
+    high_confidence: 0.7  # Порог для быстрого возврата
+    min_confidence: 0.3   # Минимальная уверенность (ниже = unclear)
+```
 
 ## Расширение
 
@@ -331,6 +363,17 @@ TYPO_FIXES = {
 }
 ```
 
+### Добавление слитного паттерна
+
+В `normalizer.py` в список `SPLIT_PATTERNS`:
+
+```python
+SPLIT_PATTERNS = [
+    # ...
+    ("новыйслитныйтекст", "новый слитный текст"),
+]
+```
+
 ## Тестирование
 
 ```bash
@@ -339,6 +382,9 @@ pytest tests/test_classifier.py -v
 
 # Конкретный тест
 pytest tests/test_classifier.py::test_rejection_priority -v
+
+# Тесты с покрытием
+pytest tests/test_classifier.py --cov=classifier --cov-report=html
 ```
 
 ## Производительность
@@ -354,4 +400,14 @@ pytest tests/test_classifier.py::test_rejection_priority -v
 Рекомендации:
 - RootClassifier покрывает 90%+ случаев
 - LemmaClassifier используется только при низкой уверенности
-- Для максимальной скорости можно отключить fallback в config
+- Для максимальной скорости можно увеличить `high_confidence` порог в settings
+
+## Статистика
+
+| Компонент | Количество |
+|-----------|------------|
+| TYPO_FIXES | 663 записи |
+| SPLIT_PATTERNS | 170 паттернов |
+| PRIORITY_PATTERNS | 214 паттернов |
+| Интенты в INTENT_ROOTS | ~15 интентов |
+| Экстракторы в DataExtractor | 10 полей |

@@ -5,9 +5,17 @@
 ## Быстрый старт
 
 ```bash
+# Активация виртуального окружения
 source venv/bin/activate
+
+# Запуск бота
 cd src && python bot.py
 ```
+
+**Требования:**
+- Python 3.11+
+- Ollama с моделью `qwen3:8b-fast`
+- (опционально) sentence-transformers для семантического поиска
 
 ## Архитектура
 
@@ -28,50 +36,122 @@ cd src && python bot.py
          │
          ▼
 ┌─────────────────┐      ┌─────────────────┐
-│   Generator     │ ───► │ Knowledge Base  │  ← Факты о продуктах Wipon
-│                 │ ◄─── │   (Retriever)   │    (тарифы, функции, интеграции)
+│   Generator     │ ───► │ Knowledge Base  │  ← 446 секций о продуктах Wipon
+│                 │ ◄─── │ (CascadeRetriever)│   в YAML-файлах
 └────────┬────────┘      └─────────────────┘
          │
          ▼
 ┌─────────────────┐
-│   LLM (Ollama)  │  ← Qwen3 генерирует финальный ответ
+│   LLM (Ollama)  │  ← Qwen3:8b-fast генерирует финальный ответ
 └────────┬────────┘
          │
          ▼
     Ответ бота
 ```
 
-## Структура файлов
+## Структура проекта
 
 ```
 src/
-├── bot.py              # Главный класс, координирует компоненты
-├── classifier/         # Пакет классификации интентов
-│   ├── __init__.py     # Публичный API пакета
-│   ├── normalizer.py   # Нормализация текста (опечатки, сленг)
-│   ├── hybrid.py       # HybridClassifier — главный класс
-│   ├── intents/        # Подпакет классификации интентов
-│   │   ├── __init__.py
-│   │   ├── patterns.py        # Приоритетные паттерны (214 шт)
-│   │   ├── root_classifier.py # Быстрая классификация по корням
-│   │   └── lemma_classifier.py # Fallback через pymorphy
-│   └── extractors/     # Подпакет извлечения данных
-│       ├── __init__.py
-│       └── data_extractor.py  # Извлечение структурированных данных
-├── state_machine.py    # Управление состояниями диалога (SPIN flow)
-├── generator.py        # Генерация ответов через LLM
-├── config.py           # Интенты, состояния, SPIN-промпты
-├── llm.py              # Интеграция с Ollama
-└── knowledge/
-    ├── data.py         # База знаний о продуктах Wipon
-    ├── retriever.py    # Гибридный поиск (keywords + embeddings)
-    └── base.py         # Структуры данных
+├── bot.py                  # Главный класс SalesBot, координирует компоненты
+├── settings.yaml           # Конфигурация (LLM, retriever, classifier)
+├── settings.py             # Загрузчик настроек с DotDict
+├── config.py               # Интенты, состояния, SPIN-промпты
+├── llm.py                  # Интеграция с Ollama
+├── state_machine.py        # Управление состояниями диалога (SPIN flow)
+├── generator.py            # Генерация ответов через LLM
+│
+├── classifier/             # Пакет классификации интентов
+│   ├── __init__.py         # Публичный API пакета
+│   ├── normalizer.py       # Нормализация текста (опечатки, сленг)
+│   ├── hybrid.py           # HybridClassifier — главный класс
+│   ├── intents/            # Подпакет классификации интентов
+│   │   ├── patterns.py     # Приоритетные паттерны (214 шт)
+│   │   ├── root_classifier.py   # Быстрая классификация по корням
+│   │   └── lemma_classifier.py  # Fallback через pymorphy
+│   └── extractors/         # Подпакет извлечения данных
+│       └── data_extractor.py    # Извлечение структурированных данных
+│
+└── knowledge/              # База знаний о продуктах Wipon
+    ├── __init__.py         # Публичный API (WIPON_KNOWLEDGE, get_retriever)
+    ├── base.py             # Структуры данных (KnowledgeSection, KnowledgeBase)
+    ├── loader.py           # Загрузчик YAML файлов
+    ├── lemmatizer.py       # Лемматизация для поиска
+    ├── retriever.py        # CascadeRetriever (3-этапный поиск)
+    └── data/               # YAML-файлы базы знаний (446 секций)
+        ├── _meta.yaml      # Метаданные (company, stats)
+        ├── pricing.yaml    # Тарифы (24 секции)
+        ├── products.yaml   # Продукты (10 секций)
+        ├── features.yaml   # Функции (3 секции)
+        ├── integrations.yaml   # Интеграции (24 секции)
+        ├── support.yaml    # Техподдержка (70 секций)
+        ├── equipment.yaml  # Оборудование (60 секций)
+        ├── tis.yaml        # Товарно-информационная система (132 секции)
+        ├── analytics.yaml  # Аналитика (27 секций)
+        ├── inventory.yaml  # Складской учёт (21 секция)
+        ├── employees.yaml  # Управление персоналом (21 секция)
+        ├── fiscal.yaml     # Фискализация (7 секций)
+        ├── mobile.yaml     # Мобильное приложение (5 секций)
+        ├── promotions.yaml # Акции и скидки (10 секций)
+        ├── stability.yaml  # Стабильность (14 секций)
+        ├── regions.yaml    # Регионы (4 секции)
+        ├── faq.yaml        # Часто задаваемые вопросы (3 секции)
+        └── other.yaml      # Прочее (11 секций)
 
-tests/
-├── test_knowledge.py   # Тесты базы знаний
-├── test_spin.py        # Тесты SPIN-методологии
-└── test_classifier.py  # Тесты классификатора (100+ тестов)
+tests/                      # 294 теста
+├── test_classifier.py      # Тесты классификатора
+├── test_spin.py            # Тесты SPIN-методологии
+├── test_knowledge.py       # Тесты базы знаний
+├── test_cascade_retriever.py   # Тесты CascadeRetriever
+├── test_cascade_advanced.py    # Продвинутые тесты каскадного поиска
+├── test_knowledge_yaml.py  # Валидация YAML файлов
+├── test_settings.py        # Тесты настроек
+└── test_bug_fixes.py       # Регрессионные тесты
+
+scripts/                    # Вспомогательные скрипты
+├── full_bot_stress_test.py     # Стресс-тест бота
+├── stress_test_knowledge.py    # Стресс-тест базы знаний
+└── validate_knowledge_yaml.py  # Валидация YAML
 ```
+
+## Конфигурация (settings.yaml)
+
+Все параметры вынесены в `src/settings.yaml`:
+
+```yaml
+# LLM (Language Model)
+llm:
+  model: "qwen3:8b-fast"
+  base_url: "http://localhost:11434"
+  timeout: 60
+
+# Retriever (Поиск по базе знаний)
+retriever:
+  use_embeddings: true
+  embedder_model: "ai-forever/ru-en-RoSBERTa"
+  thresholds:
+    exact: 1.0      # Точное совпадение keyword
+    lemma: 0.15     # Совпадение по леммам
+    semantic: 0.5   # Косинусное сходство эмбеддингов
+
+# Generator (Генерация ответов)
+generator:
+  max_retries: 3
+  history_length: 4
+  retriever_top_k: 2
+
+# Classifier (Классификация интентов)
+classifier:
+  weights:
+    root_match: 1.0
+    phrase_match: 2.0
+    lemma_match: 1.5
+  thresholds:
+    high_confidence: 0.7
+    min_confidence: 0.3
+```
+
+Подробнее: [docs/SETTINGS.md](docs/SETTINGS.md)
 
 ## SPIN Selling Methodology
 
@@ -166,30 +246,43 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 | `value_acknowledged` | Признание ценности | Need-Payoff | true/false |
 | `high_interest` | Высокий интерес | Любая | true (позволяет пропустить I/N) |
 
-## Промпт-шаблоны (config.py)
+## База знаний (knowledge/)
 
-### Базовые:
-| Шаблон | Когда используется |
-|--------|-------------------|
-| `greet_back` | Ответ на приветствие |
-| `answer_question` | Ответ на вопрос клиента |
-| `deflect_and_continue` | Уход от цены к ситуации |
-| `presentation` | Презентация решения |
-| `handle_objection` | Возражение "дорого" |
-| `soft_close` | Вежливое завершение |
-| `close` | Запрос контакта |
+База знаний содержит **446 секций** в **18 YAML файлах**:
 
-### SPIN-специфичные:
-| Шаблон | Фаза | Задача |
-|--------|------|--------|
-| `spin_situation` | S | Спросить о ситуации |
-| `spin_problem` | P | Выявить проблемы |
-| `spin_implication` | I | Осознать последствия |
-| `spin_need_payoff` | N | Сформулировать ценность |
-| `transition_to_spin_problem` | S→P | Переход к проблемам |
-| `transition_to_spin_implication` | P→I | Переход к последствиям |
-| `transition_to_spin_need_payoff` | I→N | Переход к ценности |
-| `transition_to_presentation` | N→Pres | Персонализированная презентация |
+| Категория | Секций | Описание |
+|-----------|--------|----------|
+| tis | 132 | Товарно-информационная система |
+| support | 70 | Техподдержка |
+| equipment | 60 | Оборудование |
+| analytics | 27 | Аналитика |
+| pricing | 24 | Тарифы |
+| integrations | 24 | Интеграции |
+| inventory | 21 | Складской учёт |
+| employees | 21 | Управление персоналом |
+| stability | 14 | Стабильность |
+| products | 10 | Продукты |
+| promotions | 10 | Акции |
+| fiscal | 7 | Фискализация |
+| mobile | 5 | Мобильное приложение |
+| regions | 4 | Регионы |
+| features | 3 | Функции |
+| faq | 3 | FAQ |
+| other | 11 | Прочее |
+
+### CascadeRetriever — 3-этапный поиск
+
+```
+1. Exact Match    ─── keyword как подстрока в запросе
+       │
+       ▼ (если не найдено)
+2. Lemma Match    ─── сравнение лемматизированных множеств
+       │
+       ▼ (если не найдено)
+3. Semantic Match ─── cosine similarity эмбеддингов (ai-forever/ru-en-RoSBERTa)
+```
+
+Подробнее: [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)
 
 ## Classifier (classifier/)
 
@@ -219,24 +312,14 @@ from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
 2. **Быстрый поиск по корням слов** — основной метод
 3. **Fallback на pymorphy3** (или pymorphy2) — если корни не сработали
 
-### Извлечение данных:
-- `company_size` — regex паттерны ("нас 10", "команда из 5", "8 официантов")
-- `pain_point` — 50+ паттернов ("теряем клиентов", "низкие продажи")
-- `current_tools` — Excel, 1С, вручную, блокнот
-- `business_type` — розница, общепит, опт, услуги
-- `pain_impact` — количественные потери ("10 клиентов", "3 часа в день")
-- `desired_outcome` — желаемые результаты ("автоматизировать", "упростить")
-
-### Нормализация текста:
-- **TYPO_FIXES** — 663 автозамены опечаток ("прайс" → "цена", "скок" → "сколько")
-- **SPLIT_PATTERNS** — 170 паттернов слитного текста ("сколькостоит" → "сколько стоит")
-
 ### Контекстная классификация:
 Классификатор учитывает текущую SPIN-фазу:
 - В фазе `situation` → информация классифицируется как `situation_provided`
 - В фазе `problem` → боль классифицируется как `problem_revealed`
 - В фазе `implication` → последствия как `implication_acknowledged`
 - В фазе `need_payoff` → желания как `need_expressed`
+
+Подробнее: [docs/CLASSIFIER.md](docs/CLASSIFIER.md)
 
 ## State Machine (state_machine.py)
 
@@ -250,20 +333,13 @@ from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
 ### Умное пропускание фаз:
 При `high_interest = True` можно пропустить Implication и Need-Payoff фазы.
 
-## База знаний (knowledge/)
-
-- **data.py** — факты о продуктах Wipon (учёт товаров, касса, мобильное приложение, тарифы)
-- **retriever.py** — гибридный поиск:
-  1. Keyword search по категориям
-  2. Fallback на rubert-tiny2 embeddings (опционально)
-
 ## Тестирование
 
 ```bash
-# Все тесты (145 тестов)
+# Все тесты (294 теста)
 pytest tests/ -v
 
-# Только тесты классификатора (100+ тестов)
+# Только тесты классификатора
 pytest tests/test_classifier.py -v
 
 # Только SPIN-тесты
@@ -271,6 +347,9 @@ pytest tests/test_spin.py -v
 
 # Только тесты базы знаний
 pytest tests/test_knowledge.py -v
+
+# Тесты каскадного retriever
+pytest tests/test_cascade_retriever.py -v
 
 # Стресс-тест бота
 python scripts/full_bot_stress_test.py
@@ -294,13 +373,24 @@ python scripts/stress_test_knowledge.py
 
 ## Зависимости
 
-- `ollama` + модель `qwen3:8b` — локальная LLM
-- `pymorphy3` — морфология русского языка (fallback на pymorphy2)
-- `sentence-transformers` — embeddings для базы знаний (опционально)
-- `requests` — HTTP-клиент для Ollama API
-- `pytest` — тестирование
+| Пакет | Назначение |
+|-------|------------|
+| `ollama` + `qwen3:8b-fast` | Локальная LLM |
+| `pymorphy3` | Морфология русского языка (fallback на pymorphy2) |
+| `sentence-transformers` | Эмбеддинги (ai-forever/ru-en-RoSBERTa) |
+| `requests` | HTTP-клиент для Ollama API |
+| `pyyaml` | Парсинг YAML конфигурации и базы знаний |
+| `pytest` | Тестирование |
 
 Установка:
 ```bash
 pip install -r requirements.txt
 ```
+
+## Документация
+
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — архитектура системы
+- [API.md](docs/API.md) — справочник по API
+- [CLASSIFIER.md](docs/CLASSIFIER.md) — документация классификатора
+- [KNOWLEDGE.md](docs/KNOWLEDGE.md) — документация базы знаний
+- [SETTINGS.md](docs/SETTINGS.md) — описание настроек
