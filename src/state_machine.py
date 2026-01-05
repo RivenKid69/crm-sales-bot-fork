@@ -169,7 +169,11 @@ class StateMachine:
                         next_state = transitions[intent]
                         return f"transition_to_{next_state}", next_state
 
-            if self._check_spin_data_complete(config):
+            # Автопереход по data_complete только если:
+            # 1. Данные собраны
+            # 2. Интент НЕ определён явно в transitions (no_need, no_problem и т.д.)
+            # Это позволяет явным интентам иметь приоритет над автопереходом
+            if intent not in transitions and self._check_spin_data_complete(config):
                 if "data_complete" in transitions:
                     next_state = transitions["data_complete"]
                     next_config = SALES_STATES.get(next_state, {})
@@ -224,6 +228,13 @@ class StateMachine:
 
         # Обновляем spin_phase
         self.spin_phase = self._get_current_spin_phase()
+
+        # Устанавливаем probed-флаги при ВХОДЕ в соответствующие SPIN-фазы
+        # Это означает что бот сейчас задаст I или N вопрос
+        if next_state == "spin_implication" and prev_state != "spin_implication":
+            self.collected_data["implication_probed"] = True
+        if next_state == "spin_need_payoff" and prev_state != "spin_need_payoff":
+            self.collected_data["need_payoff_probed"] = True
 
         config = SALES_STATES.get(self.state, {})
         required = config.get("required_data", [])

@@ -299,5 +299,183 @@ class TestSPINEdgeCases:
         assert extracted.get("business_type") == "розничная торговля"
 
 
+class TestNoProblemNoNeedIntents:
+    """Тесты для интентов no_problem и no_need (проблема #1)"""
+
+    def setup_method(self):
+        self.sm = StateMachine()
+        self.classifier = HybridClassifier()
+
+    def test_no_problem_in_spin_problem_transitions_to_implication(self):
+        """При 'нет' в фазе problem (no_problem) переходим в implication"""
+        # Setup: переходим в spin_problem
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        assert self.sm.state == "spin_problem"
+
+        # Клиент говорит "нет проблем"
+        result = self.sm.process("no_problem", {})
+
+        # Должен перейти в spin_implication (чтобы показать скрытые последствия)
+        assert result["next_state"] == "spin_implication"
+        assert result["spin_phase"] == "implication"
+
+    def test_no_need_in_spin_need_payoff_transitions_to_soft_close(self):
+        """При 'нет' в фазе need_payoff (no_need) переходим в soft_close"""
+        # Setup: полный путь до spin_need_payoff
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        self.sm.process("implication_acknowledged", {"pain_impact": "5 клиентов"})
+        assert self.sm.state == "spin_need_payoff"
+
+        # Клиент не видит ценности
+        result = self.sm.process("no_need", {})
+
+        # Должен перейти в soft_close (мягкое завершение)
+        assert result["next_state"] == "soft_close"
+
+    def test_no_problem_classified_correctly_in_problem_phase(self):
+        """Классификатор возвращает no_problem при 'нет' в фазе problem"""
+        context = {"spin_phase": "problem"}
+        result = self.classifier.classify("нет", context)
+
+        assert result["intent"] == "no_problem"
+
+    def test_no_need_classified_correctly_in_need_payoff_phase(self):
+        """Классификатор возвращает no_need при 'нет' в фазе need_payoff"""
+        context = {"spin_phase": "need_payoff"}
+        result = self.classifier.classify("нет", context)
+
+        assert result["intent"] == "no_need"
+
+
+class TestSpinPhaseNotSkipped:
+    """Тесты что spin_implication и spin_need_payoff не пропускаются (проблема #2)"""
+
+    def setup_method(self):
+        self.sm = StateMachine()
+
+    def test_unclear_in_spin_implication_stays_in_phase(self):
+        """При unclear в spin_implication остаёмся в фазе"""
+        # Setup: переходим в spin_implication
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        assert self.sm.state == "spin_implication"
+
+        # Клиент даёт неясный ответ
+        result = self.sm.process("unclear", {})
+
+        # Должен остаться в spin_implication и переспросить
+        assert result["next_state"] == "spin_implication"
+        assert result["action"] == "probe_implication"
+
+    def test_unclear_in_spin_need_payoff_stays_in_phase(self):
+        """При unclear в spin_need_payoff остаёмся в фазе"""
+        # Setup: полный путь до spin_need_payoff
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        self.sm.process("implication_acknowledged", {"pain_impact": "5 клиентов"})
+        assert self.sm.state == "spin_need_payoff"
+
+        # Клиент даёт неясный ответ
+        result = self.sm.process("unclear", {})
+
+        # Должен остаться в spin_need_payoff и переспросить
+        assert result["next_state"] == "spin_need_payoff"
+        assert result["action"] == "probe_need_payoff"
+
+    def test_small_talk_in_spin_implication_stays_in_phase(self):
+        """При small_talk в spin_implication остаёмся в фазе"""
+        # Setup: переходим в spin_implication
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        assert self.sm.state == "spin_implication"
+
+        # Клиент отклоняется на small talk
+        result = self.sm.process("small_talk", {})
+
+        # Должен остаться в spin_implication
+        assert result["next_state"] == "spin_implication"
+        assert result["action"] == "small_talk_and_continue"
+
+    def test_gratitude_in_spin_need_payoff_stays_in_phase(self):
+        """При gratitude в spin_need_payoff остаёмся в фазе"""
+        # Setup: полный путь до spin_need_payoff
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        self.sm.process("implication_acknowledged", {"pain_impact": "5 клиентов"})
+        assert self.sm.state == "spin_need_payoff"
+
+        # Клиент выражает благодарность
+        result = self.sm.process("gratitude", {})
+
+        # Должен остаться в spin_need_payoff
+        assert result["next_state"] == "spin_need_payoff"
+        assert result["action"] == "acknowledge_and_continue"
+
+
+class TestProbedFlagsSet:
+    """Тесты что probed-флаги устанавливаются при входе в SPIN-фазы"""
+
+    def setup_method(self):
+        self.sm = StateMachine()
+
+    def test_implication_probed_set_on_entering_spin_implication(self):
+        """implication_probed устанавливается при входе в spin_implication"""
+        # Setup: переходим в spin_implication
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+
+        # До перехода флаг не установлен
+        assert "implication_probed" not in self.sm.collected_data
+
+        # Переходим в spin_implication
+        result = self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+
+        # Флаг должен быть установлен
+        assert result["next_state"] == "spin_implication"
+        assert self.sm.collected_data.get("implication_probed") == True
+
+    def test_need_payoff_probed_set_on_entering_spin_need_payoff(self):
+        """need_payoff_probed устанавливается при входе в spin_need_payoff"""
+        # Setup: полный путь до spin_implication
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        assert self.sm.state == "spin_implication"
+
+        # До перехода флаг не установлен
+        assert "need_payoff_probed" not in self.sm.collected_data
+
+        # Переходим в spin_need_payoff
+        result = self.sm.process("implication_acknowledged", {"pain_impact": "5 клиентов"})
+
+        # Флаг должен быть установлен
+        assert result["next_state"] == "spin_need_payoff"
+        assert self.sm.collected_data.get("need_payoff_probed") == True
+
+    def test_implication_probed_allows_data_complete_transition(self):
+        """После установки implication_probed можно перейти по data_complete"""
+        # Setup: переходим в spin_implication
+        self.sm.process("agreement", {})
+        self.sm.process("info_provided", {"company_size": 10})
+        self.sm.process("info_provided", {"pain_point": "теряем клиентов"})
+        assert self.sm.state == "spin_implication"
+
+        # Флаг установлен
+        assert self.sm.collected_data.get("implication_probed") == True
+
+        # Теперь любой интент без явного правила перейдёт по data_complete
+        # (потому что implication_probed в required_data и он установлен)
+        result = self.sm.process("agreement", {})
+
+        assert result["next_state"] == "spin_need_payoff"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
