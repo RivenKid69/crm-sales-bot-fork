@@ -4,10 +4,12 @@ State Machine — управление состояниями диалога
 Поддерживает:
 - Базовый flow: greeting → qualification → presentation → close
 - SPIN Selling flow: greeting → spin_situation → spin_problem → spin_implication → spin_need_payoff → presentation → close
+- Circular Flow: возврат назад по фазам (с защитой от злоупотреблений)
 """
 
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, List
 from config import SALES_STATES, QUESTION_INTENTS
+from logger import logger
 
 
 # SPIN-фазы и их порядок
@@ -29,17 +31,119 @@ SPIN_PROGRESS_INTENTS = {
     "need_expressed": "need_payoff",
 }
 
+# Интенты для возврата назад
+GO_BACK_INTENTS = ["go_back", "correct_info"]
+
+
+class CircularFlowManager:
+    """
+    Управление возвратами назад с защитой от злоупотреблений.
+
+    Позволяет клиенту вернуться к предыдущей фазе SPIN,
+    но ограничивает количество возвратов для предотвращения зацикливания.
+
+    Attributes:
+        goback_count: Количество совершённых возвратов
+        goback_history: История возвратов (from_state, to_state)
+        MAX_GOBACKS: Максимально допустимое количество возвратов
+    """
+
+    MAX_GOBACKS = 2  # Максимум возвратов за диалог
+
+    # Разрешённые переходы назад
+    ALLOWED_GOBACKS: Dict[str, str] = {
+        "spin_problem": "spin_situation",
+        "spin_implication": "spin_problem",
+        "spin_need_payoff": "spin_implication",
+        "presentation": "spin_need_payoff",
+        "close": "presentation",
+        "handle_objection": "presentation",
+    }
+
+    def __init__(self):
+        """Инициализация менеджера"""
+        self.reset()
+
+    def reset(self) -> None:
+        """Сброс для нового разговора"""
+        self.goback_count: int = 0
+        self.goback_history: List[tuple] = []
+
+    def can_go_back(self, current_state: str) -> bool:
+        """
+        Проверить можно ли вернуться назад.
+
+        Args:
+            current_state: Текущее состояние
+
+        Returns:
+            True если возврат возможен
+        """
+        if self.goback_count >= self.MAX_GOBACKS:
+            logger.info(
+                "Go back limit reached",
+                current=current_state,
+                count=self.goback_count
+            )
+            return False
+
+        return current_state in self.ALLOWED_GOBACKS
+
+    def go_back(self, current_state: str) -> Optional[str]:
+        """
+        Выполнить возврат назад.
+
+        Args:
+            current_state: Текущее состояние
+
+        Returns:
+            Предыдущее состояние или None если возврат невозможен
+        """
+        if not self.can_go_back(current_state):
+            return None
+
+        prev_state = self.ALLOWED_GOBACKS.get(current_state)
+        if prev_state:
+            self.goback_count += 1
+            self.goback_history.append((current_state, prev_state))
+            logger.info(
+                "Go back executed",
+                from_state=current_state,
+                to_state=prev_state,
+                remaining=self.MAX_GOBACKS - self.goback_count
+            )
+
+        return prev_state
+
+    def get_remaining_gobacks(self) -> int:
+        """Получить оставшееся количество возвратов"""
+        return max(0, self.MAX_GOBACKS - self.goback_count)
+
+    def get_history(self) -> List[tuple]:
+        """Получить историю возвратов"""
+        return self.goback_history.copy()
+
+    def get_stats(self) -> Dict:
+        """Получить статистику для аналитики"""
+        return {
+            "goback_count": self.goback_count,
+            "remaining": self.get_remaining_gobacks(),
+            "history": self.goback_history,
+        }
+
 
 class StateMachine:
     def __init__(self):
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None  # Текущая SPIN-фаза (если в SPIN flow)
+        self.circular_flow = CircularFlowManager()  # Менеджер возвратов
 
     def reset(self):
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None
+        self.circular_flow.reset()
 
     def update_data(self, data: Dict):
         """Сохраняем извлечённые данные"""
@@ -143,6 +247,15 @@ class StateMachine:
                 return f"transition_to_{next_state}", next_state
 
         # =====================================================================
+        # ПРИОРИТЕТ 1.5: Go Back — возврат назад по фазам
+        # =====================================================================
+        if intent in GO_BACK_INTENTS:
+            prev_state = self.circular_flow.go_back(self.state)
+            if prev_state:
+                return "go_back", prev_state
+            # Если возврат невозможен — продолжаем обычную обработку
+
+        # =====================================================================
         # ПРИОРИТЕТ 2: State-specific rules
         # Позволяет состояниям переопределять поведение для конкретных интентов,
         # например deflect_and_continue для вопросов о цене в SPIN-фазах
@@ -211,9 +324,8 @@ class StateMachine:
         # =====================================================================
         # ПРИОРИТЕТ 8: Default — остаёмся в текущем состоянии
         # =====================================================================
-        if spin_phase:
-            return self.state, self.state
-
+        # Всегда возвращаем валидный action, а не имя состояния
+        # generator.py использует spin_phase из контекста для выбора нужного шаблона
         return "continue_current_goal", self.state
 
     def process(self, intent: str, extracted_data: Dict = None) -> Dict:
@@ -254,6 +366,7 @@ class StateMachine:
             "optional_data": optional_missing,
             "is_final": config.get("is_final", False),
             "spin_phase": self.spin_phase,
+            "circular_flow": self.circular_flow.get_stats(),
         }
 
 
