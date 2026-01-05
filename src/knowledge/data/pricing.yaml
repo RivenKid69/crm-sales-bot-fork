@@ -760,15 +760,17 @@ sections:
     Второй экран Wipon Screen — 60 000 ₸.
     Рассрочка Kaspi 0-0-12: 5 000 ₸/мес.
 - topic: pricing_triple_434
-  priority: 9
+  priority: 10
   keywords:
-  - wipon triple
-  - triple цена
-  - кассовый моноблок triple
-  - сколько стоит triple
-  - "330000"
-  - "27500 месяц"
-  - triple рассрочка
+  - wipon triple цена
+  - triple стоимость
+  - сколько стоит wipon triple
+  - triple прайс
+  - "330000 triple"
+  - "27500 месяц triple"
+  - triple рассрочка kaspi
+  - triple за сколько купить
+  - цена на triple моноблок
   facts: |-
     Кассовый моноблок Wipon Triple — 330 000 ₸.
     Рассрочка Kaspi 0-0-12: 27 500 ₸/мес.
@@ -785,14 +787,17 @@ sections:
     Кассовый комплект PRO — 360 000 ₸.
     Рассрочка Kaspi 0-0-12: 30 000 ₸/мес.
 - topic: pricing_smart_scales_436
-  priority: 9
+  priority: 10
   keywords:
-  - умные весы wipon
-  - умные весы цена
-  - сколько стоят умные весы
-  - "100000 весы"
+  - умные весы wipon цена
+  - умные весы стоимость
+  - сколько стоят умные весы wipon
+  - весы wipon прайс
+  - "100000 весы wipon"
   - "8333 месяц весы"
-  - весы wipon рассрочка
+  - весы wipon рассрочка kaspi
+  - цена умных весов wipon
+  - весы за сколько купить
   facts: |-
     Умные весы WIPON — 100 000 ₸.
     Рассрочка Kaspi 0-0-12: 8 333 ₸/мес.
