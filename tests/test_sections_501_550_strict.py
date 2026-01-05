@@ -587,8 +587,8 @@ class TestNewSections501_550:
                 print(f"    Expected: {f['expected']}")
                 print(f"    Got: {f['got']}")
 
-        # Требуем 80%+ точность (с учётом существующих пересекающихся секций)
-        assert accuracy >= 80.0, f"Top-1 accuracy {accuracy:.1f}% < 80%"
+        # Требуем 86%+ точность (с учётом существующих общих секций с короткими keywords)
+        assert accuracy >= 86.0, f"Top-1 accuracy {accuracy:.1f}% < 86%"
 
 
 class TestKeywordUniqueness:
