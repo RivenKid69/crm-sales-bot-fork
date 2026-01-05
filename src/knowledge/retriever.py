@@ -405,7 +405,9 @@ class CascadeRetriever:
 
                 # Проверяем: keyword является подстрокой query
                 if keyword_lower in query_lower:
-                    score += 1.0
+                    # Бонус за длину: длинные фразы-ключевые слова важнее коротких
+                    word_count = len(keyword.split())
+                    score += 1.0 + (word_count - 1) * 0.5
                     matched_keywords.append(keyword)
 
                     # Бонус если keyword — целое слово/фраза (не часть другого слова)
