@@ -1139,35 +1139,52 @@ sections:
     Да, при подключении банковского терминала с NFC можно принимать Apple Pay, Google Pay и другие бесконтактные оплаты.
 
 - topic: integrations_kaspi_store_1052
-  priority: 9
+  priority: 10
   keywords:
-  - интеграция kaspi магазин
-  - kaspi магазин подключить
-  - заказы с kaspi
-  - автоматически kaspi
-  - kaspi интеграция
+  - интеграция kaspi магазин wipon
+  - kaspi магазин wipon заказы автоматически
+  - wipon kaspi магазин синхронизация
+  - каспи магазин wipon интеграция
+  - wipon kaspi магазин данные продажи
+  - kaspi магазин подключить wipon
+  - заказы с kaspi wipon
+  - автоматически kaspi wipon
+  - kaspi интеграция wipon
+  - wipon kaspi магазин подключить
   facts: |-
     Да, есть интеграция. Заказы и оплаты с Kaspi автоматически попадают в программу.
 
 - topic: integrations_halyk_pos_1055
-  priority: 9
+  priority: 10
   keywords:
-  - халык pos интеграция
-  - halyk терминал
-  - halyk bank терминал
-  - интеграция с халык
-  - терминал halyk подключить
+  - халык pos терминал wipon сумма автоматически
+  - halyk терминал wipon интеграция
+  - wipon интеграция halyk bank терминал
+  - терминал халык wipon сумма передаётся
+  - wipon halyk pos терминал подключить
+  - халык pos интеграция wipon
+  - halyk терминал wipon
+  - halyk bank терминал wipon
+  - интеграция с халык wipon
+  - терминал halyk подключить wipon
+  - wipon халык терминал интеграция
   facts: |-
     Да, поддерживаем. Сумма автоматически передаётся на терминал Halyk Bank.
 
 - topic: integrations_marketplaces_1061
-  priority: 9
+  priority: 10
   keywords:
-  - интеграция маркетплейсы
-  - kaspi halyk market
-  - заказы с маркетплейсов
-  - автоматический учёт заказов
-  - онлайн площадки
+  - wipon интеграции kaspi halyk market
+  - маркетплейсы wipon заказы автоматически
+  - kaspi halyk market wipon синхронизация
+  - wipon интеграция маркетплейсы заказы чеки
+  - онлайн площадки wipon интеграция
+  - интеграция маркетплейсы wipon
+  - kaspi halyk market wipon
+  - заказы с маркетплейсов wipon
+  - автоматический учёт заказов wipon
+  - онлайн площадки wipon
+  - wipon маркетплейсы kaspi halyk
   facts: |-
     Интеграции с Kaspi и Halyk Market. Заказы и чеки попадают в систему автоматически.
 
@@ -1216,12 +1233,17 @@ sections:
     Да, можно подключить терминалы от разных банков и выбирать, через какой принимать оплату.
 
 - topic: integrations_api_1091
-  priority: 8
+  priority: 10
   keywords:
-  - api интеграция
-  - интеграция по api
-  - своя интеграция
-  - api wipon
-  - подключить api
+  - wipon api документация есть
+  - интегрировать wipon api
+  - wipon api по запросу
+  - api интеграция wipon
+  - интеграция по api wipon
+  - своя интеграция wipon api
+  - api wipon документация
+  - подключить api wipon
+  - wipon api доступен
+  - wipon api интеграция другие системы
   facts: |-
     Да, есть API. Можно интегрировать Wipon с другими системами по документации.
