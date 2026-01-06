@@ -3209,3 +3209,74 @@ sections:
   - сдать отчёт wipon
   facts: |-
     Сделаем под ключ. Напишите номер формы и период, проверю данные и подготовлю к сдаче.
+
+- topic: support_installation_kz_1447
+  priority: 8
+  keywords:
+  - орнату өздеріңіз
+  - орнатуға келесіздер
+  - астана алматы шымкент орнату
+  - қашықтан қосу
+  facts: |-
+    Астана, Алматы, Шымкентте орнатамыз. Басқа қалаларда қашықтан қосамыз.
+
+- topic: support_training_kz_1454
+  priority: 8
+  keywords:
+  - оқыту кіреді
+  - оқыту бар ма
+  - lite standard pro оқу
+  - mini бөлек оқыту
+  facts: |-
+    Иә. Тариф Lite, Standard, Pro тарифтерінде оқу бар. Mini бөлек.
+
+- topic: support_training_purchase_kz_1473
+  priority: 8
+  keywords:
+  - сатып алсам оқыту
+  - оқыту бар ма сатып алсам
+  - lite standard pro оқу кіреді
+  - mini бөлек
+  facts: |-
+    Иә. Тариф Lite, тариф Standard, тариф Pro тарифтерінде оқу кіреді. Mini бөлек.
+
+- topic: support_installation_regions_kz_1474
+  priority: 8
+  keywords:
+  - орнатып бересіздер
+  - орнату астана алматы шымкент
+  - өңір қашықтан қосу
+  facts: |-
+    Астана, Алматы, Шымкентте орнатамыз. Басқа өңірлерде қашықтан қосамыз.
+
+- topic: support_training_included_1495
+  priority: 8
+  keywords:
+  - обучение wipon
+  - обучение работе программой
+  - включено в тариф обучение
+  - lite standard pro обучение
+  facts: |-
+    Да. Включено в тарифы Lite, Standard, Pro.
+
+- topic: support_installation_time_1498
+  priority: 7
+  keywords:
+  - время установки
+  - сколько занимает установка
+  - установка программы время
+  - 30 минут час
+  facts: |-
+    Обычно от 30 минут до часа.
+
+- topic: support_demo_version_1499
+  priority: 9
+  keywords:
+  - демо версия
+  - демо-версия
+  - демо доступ
+  - пробная версия
+  - тестовый доступ
+  - console wipon kz
+  facts: |-
+    Да. Демо доступ на https://console.wipon.kz/login, логин +7 777 777 77 77, пароль 12345678.

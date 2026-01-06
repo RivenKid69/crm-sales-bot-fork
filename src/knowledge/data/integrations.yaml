@@ -1,6 +1,6 @@
 # База знаний: integrations
 # Категория: integrations
-# Секций: 71
+# Секций: 75
 
 sections:
 - topic: marketplaces
@@ -1321,3 +1321,41 @@ sections:
   - алкоголь с кодами datamatrix
   facts: |-
     Да, можно. Система поддерживает учёт алкоголя и работу с маркировкой DataMatrix.
+
+- topic: integrations_pos_terminal_kz_1462
+  priority: 9
+  keywords:
+  - pos терминал
+  - pos терминал арқылы
+  - kaspi halyk терминал
+  - төлем қабылдау pos
+  facts: |-
+    Иә. Kaspi, Halyk және басқа терминалдармен жұмыс істейді.
+
+- topic: integrations_1c_1476
+  priority: 9
+  keywords:
+  - интеграция 1с
+  - 1с wipon
+  - подключить 1с
+  facts: |-
+    Да. Интеграция с 1С доступна.
+
+- topic: integrations_shopify_1478
+  priority: 6
+  keywords:
+  - shopify интеграция
+  - интернет магазин shopify
+  - экспорт импорт shopify
+  facts: |-
+    Прямой интеграции нет. Возможен экспорт продаж и импорт остатков вручную.
+
+- topic: integrations_kaspi_pay_1482
+  priority: 9
+  keywords:
+  - эквайринг kaspi pay
+  - kaspi pay касса
+  - halyk pos терминалы
+  - настройка kaspi
+  facts: |-
+    Поддерживаем Kaspi и Halyk POS-терминалы. Настройку сделаем через поддержку после оплаты тарифа.

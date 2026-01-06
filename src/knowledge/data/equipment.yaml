@@ -1,6 +1,6 @@
 # База знаний: equipment
 # Категория: equipment
-# Секций: 267
+# Секций: 268
 
 sections:
 - topic: hardware
@@ -4374,3 +4374,15 @@ sections:
   - цветы оборудование
   facts: |-
     Да. Комплекты STANDARD, STANDARD+, PRO, моноблоки POS DUO и Premium. Совместимо с Wipon, доставка по Алматы, рассрочка без переплаты.
+
+- topic: equipment_pos_duo_kz_1440
+  priority: 9
+  keywords:
+  - pos duo қазақша
+  - pos duo туралы
+  - екі экран pos duo
+  - кассир клиент экран
+  - pos duo бағасы
+  - бөліп төлеу pos duo
+  facts: |-
+    Екі экран: кассирге 15.6", клиентке 11". Бағасы 220 000 ₸. Бөліп төлеу 0-0-12 айына 18 333 ₸.

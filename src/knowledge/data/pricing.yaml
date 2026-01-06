@@ -1,6 +1,6 @@
 # База знаний: pricing
 # Категория: pricing
-# Секций: 159
+# Секций: 165
 
 sections:
 - topic: tariffs
@@ -2577,3 +2577,67 @@ sections:
   facts: |-
     • Небольшая точка — Mini 5 000 ₸ в месяц
     • Нужен склад и штрихкоды — Standard 220 000 ₸ в год плюс сканер и принтер
+
+- topic: pricing_cafe_almaty_1413
+  priority: 9
+  keywords:
+  - кафе алматы
+  - кафе тариф алматы
+  - lite standard кафе
+  - без калькуляции кафе алматы
+  - рецептуры кухня не подходит
+  facts: |-
+    Кафе без калькуляции — тариф Lite или тариф Standard. Если рецептуры и кухня — Wipon не подходит.
+
+- topic: pricing_free_program_kz_1437
+  priority: 10
+  keywords:
+  - бағдарлама тегін
+  - тегін бағдарлама
+  - бағдарлама тегін бе
+  - mini айына 5000
+  facts: |-
+    Жоқ. Ең төменгі тариф Mini айына 5 000 ₸.
+
+- topic: pricing_clothing_kz_1442
+  priority: 9
+  keywords:
+  - киім дүкені тариф
+  - киім standard
+  - өлшем түс қойма есебі
+  - жылына 220000
+  facts: |-
+    Standard жылына 220 000 ₸. Өлшем, түс, қойма есебі бар.
+
+- topic: pricing_tariffs_kz_1449
+  priority: 10
+  keywords:
+  - бағдарлама бағасы
+  - тариф бағасы қазақша
+  - mini lite standard pro бағасы
+  - айына жылына тариф
+  facts: |-
+    • Тариф Mini — 5 000 ₸ айына
+    • Тариф Lite — 150 000 ₸ жылына
+    • Тариф Standard — 220 000 ₸ жылына
+    • Тариф Pro — 500 000 ₸ жылына
+
+- topic: pricing_two_prices_kz_1471
+  priority: 9
+  keywords:
+  - екі түрлі баға
+  - розница опт баға
+  - standard pro розница опт
+  - бөлшек көтерме баға
+  facts: |-
+    Иә. Standard және Pro тарифтерінде розница және опт бағалары бөлек қойылады.
+
+- topic: pricing_seasonal_trade_1492
+  priority: 8
+  keywords:
+  - сезонная торговля
+  - сезонная торговля wipon
+  - помесячно wipon
+  - mini помесячно 5000
+  facts: |-
+    Да. Можно платить помесячно, Mini стоит 5 000 ₸ в месяц.
