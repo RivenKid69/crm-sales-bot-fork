@@ -168,12 +168,14 @@ data = extractor.extract("нас 10 человек, теряем примерн�
 | `current_tools` | `str` | Текущие инструменты |
 | `business_type` | `str` | Тип бизнеса |
 | `pain_point` | `str` | Боль клиента |
+| `pain_category` | `str` | Категория боли (`losing_clients`, `no_control`, `manual_work`) |
 | `pain_impact` | `str` | Количественные потери |
 | `financial_impact` | `str` | Финансовые потери |
 | `desired_outcome` | `str` | Желаемый результат |
 | `value_acknowledged` | `bool` | Признание ценности |
 | `contact_info` | `Dict` | Контакт (phone/email) |
 | `high_interest` | `bool` | Высокий интерес |
+| `option_index` | `int` | Индекс выбранного варианта (0-3) |
 
 ---
 
@@ -533,7 +535,7 @@ tariffs = kb.get_by_topic("tariffs")
 |---------|-----|----------|
 | `company_name` | `str` | Название компании ("Wipon") |
 | `company_description` | `str` | Описание компании |
-| `sections` | `List[KnowledgeSection]` | Все секции (1239 шт) |
+| `sections` | `List[KnowledgeSection]` | Все секции (1722 шт) |
 
 ---
 
@@ -999,11 +1001,11 @@ print(WIPON_KNOWLEDGE.company_name)
 print(WIPON_KNOWLEDGE.company_description)
 
 # Все секции
-print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 1239
+print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 1722
 
 # По категории
 pricing = WIPON_KNOWLEDGE.get_by_category("pricing")
-print(f"Секций о тарифах: {len(pricing)}")  # 104
+print(f"Секций о тарифах: {len(pricing)}")  # 184
 
 # По теме
 tariffs = WIPON_KNOWLEDGE.get_by_topic("tariffs")

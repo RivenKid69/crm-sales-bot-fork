@@ -49,7 +49,7 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 │    (llm.py)       │   │   (knowledge/)      │   │    (config.py)    │
 │                   │   │                     │   │                   │
 │ • qwen3:8b-fast   │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
-│ • /no_think mode  │   │ • 1239 YAML секций  │   │ • SALES_STATES    │
+│ • /no_think mode  │   │ • 1722 YAML секции  │   │ • SALES_STATES    │
 │ • Streaming       │   │ • ru-en-RoSBERTa    │   │ • Промпт-шаблоны  │
 │ • Retry + Circuit │   │ • CategoryRouter    │   │                   │
 │   Breaker         │   │ • Reranker          │   │                   │
@@ -122,6 +122,34 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 │ • Priority calc   │ • Price objection │ • Timing optimization   │
 │                   │ • Time objection  │                         │
 └───────────────────┴───────────────────┴─────────────────────────┘
+```
+
+### Фаза 4: Intent Disambiguation
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Phase 4                                  │
+├─────────────────────────────────────────────────────────────────┤
+│   classifier/ (intent_disambiguation)                           │
+│                                                                 │
+│ • Уточнение при близких scores                                  │
+│ • Контекстная disambiguition                                    │
+│ • Запрос уточнения у пользователя                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Фаза 5: Dynamic CTA Fallback
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Phase 5                                  │
+├─────────────────────────────┬───────────────────────────────────┤
+│   fallback_handler.py       │   data_extractor.py               │
+│                             │                                   │
+│ • DYNAMIC_CTA_OPTIONS       │ • PAIN_CATEGORY_KEYWORDS          │
+│ • Контекстные подсказки     │ • pain_category extraction        │
+│ • Приоритеты: competitor(10)│ • losing_clients                  │
+│   pain(8), intent(7)        │ • no_control                      │
+│   company_size(5)           │ • manual_work                     │
+└─────────────────────────────┴───────────────────────────────────┘
 ```
 
 ## Поток данных
@@ -241,14 +269,14 @@ State Machine обрабатывает интенты в порядке прио
 ```
 classifier/
 ├── __init__.py          # Публичный API
-├── normalizer.py        # TextNormalizer, TYPO_FIXES (663), SPLIT_PATTERNS (170)
+├── normalizer.py        # TextNormalizer, TYPO_FIXES (699+), SPLIT_PATTERNS (170)
 ├── hybrid.py            # HybridClassifier (оркестратор)
 ├── intents/
 │   ├── patterns.py      # PRIORITY_PATTERNS (214 паттернов)
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy
 └── extractors/
-    └── data_extractor.py    # Извлечение structured data
+    └── data_extractor.py    # Извлечение данных + pain_category
 ```
 
 Подробнее: [CLASSIFIER.md](./CLASSIFIER.md)
@@ -264,38 +292,38 @@ knowledge/
 ├── retriever.py        # CascadeRetriever (3-этапный поиск)
 ├── category_router.py  # LLM-классификация категорий
 ├── reranker.py         # Cross-encoder переоценка
-└── data/               # 17 YAML файлов (1239 секций)
+└── data/               # 18 YAML файлов (1722 секции)
     ├── _meta.yaml      # Метаданные
-    ├── equipment.yaml  # Оборудование (183)
-    ├── tis.yaml        # Товарно-информационная система (166)
-    ├── support.yaml    # Техподдержка (156)
-    ├── products.yaml   # Продукты (116)
-    ├── pricing.yaml    # Тарифы (104)
-    ├── inventory.yaml  # Складской учёт (97)
-    ├── integrations.yaml   # Интеграции (71)
-    ├── regions.yaml    # Регионы (60)
-    ├── features.yaml   # Функции (59)
-    ├── analytics.yaml  # Аналитика (52)
-    ├── employees.yaml  # Управление персоналом (43)
-    ├── fiscal.yaml     # Фискализация (41)
-    ├── stability.yaml  # Стабильность (31)
-    ├── mobile.yaml     # Мобильное приложение (31)
-    ├── promotions.yaml # Акции и скидки (19)
+    ├── equipment.yaml  # Оборудование (275)
+    ├── products.yaml   # Продукты (253)
+    ├── tis.yaml        # Товарно-информационная система (192)
+    ├── support.yaml    # Техподдержка (189)
+    ├── pricing.yaml    # Тарифы (184)
+    ├── inventory.yaml  # Складской учёт (103)
+    ├── features.yaml   # Функции (93)
+    ├── integrations.yaml   # Интеграции (83)
+    ├── regions.yaml    # Регионы (75)
+    ├── analytics.yaml  # Аналитика (62)
+    ├── employees.yaml  # Управление персоналом (56)
+    ├── fiscal.yaml     # Фискализация (46)
+    ├── stability.yaml  # Стабильность (42)
+    ├── mobile.yaml     # Мобильное приложение (35)
+    ├── promotions.yaml # Акции и скидки (24)
     ├── competitors.yaml # Конкуренты (7)
-    └── faq.yaml        # FAQ (3)
+    └── faq.yaml        # FAQ (4)
 ```
 
 **Категории знаний (по размеру):**
-- `equipment` — Оборудование (183 секции)
-- `tis` — Товарно-информационная система (166 секций)
-- `support` — Техподдержка (156 секций)
-- `products` — Продукты (116 секций)
-- `pricing` — Тарифы (104 секции)
-- `inventory` — Складской учёт (97 секций)
-- `integrations` — Интеграции (71 секция)
-- `regions` — Регионы (60 секций)
-- `features` — Функции (59 секций)
-- `analytics` — Аналитика (52 секции)
+- `equipment` — Оборудование (275 секций)
+- `products` — Продукты (253 секции)
+- `tis` — Товарно-информационная система (192 секции)
+- `support` — Техподдержка (189 секций)
+- `pricing` — Тарифы (184 секции)
+- `inventory` — Складской учёт (103 секции)
+- `features` — Функции (93 секции)
+- `integrations` — Интеграции (83 секции)
+- `regions` — Регионы (75 секций)
+- `analytics` — Аналитика (62 секции)
 
 Подробнее: [KNOWLEDGE.md](./KNOWLEDGE.md)
 
@@ -353,7 +381,7 @@ knowledge/
 - Фильтрация нерусского текста из ответа
 - ResponseVariations для вариативности (если включено)
 
-### Модули Phase 0-3
+### Модули Phase 0-5
 
 | Модуль | Фаза | Назначение | Флаг |
 |--------|------|------------|------|
@@ -367,6 +395,9 @@ knowledge/
 | lead_scoring.py | 3 | Скоринг лидов | `lead_scoring` |
 | objection_handler.py | 3 | Обработка возражений | `objection_handler` |
 | cta_generator.py | 3 | Call-to-Action | `cta_generator` |
+| classifier/ | 4 | Intent Disambiguation | `intent_disambiguation` |
+| fallback_handler.py | 5 | Dynamic CTA Fallback | `dynamic_cta_fallback` |
+| data_extractor.py | 5 | Pain category extraction | — (всегда включено) |
 
 ### settings.py + settings.yaml — Конфигурация
 
@@ -533,7 +564,7 @@ if is_enabled("new_feature"):
 ## Тестирование
 
 ```bash
-# Все тесты (1056+)
+# Все тесты (1285+)
 pytest tests/ -v
 
 # Тесты классификатора

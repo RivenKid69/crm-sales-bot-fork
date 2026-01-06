@@ -214,6 +214,42 @@ Fallback через pymorphy2/3:
 | `value_acknowledged` | Признание ценности | true/false |
 | `contact_info` | Контакт клиента | телефон, email |
 | `high_interest` | Высокий интерес | true/false |
+| `pain_category` | Категория боли | `losing_clients`, `no_control`, `manual_work` |
+| `option_index` | Индекс выбранного варианта | 0-3 (для numbered responses) |
+
+### pain_category — Категоризация боли
+
+DataExtractor автоматически определяет категорию боли на основе ключевых слов:
+
+```python
+PAIN_CATEGORY_KEYWORDS = {
+    "losing_clients": [  # Потеря клиентов, продаж
+        "теря", "клиент", "отток", "упуска", "сделк", "продаж",
+        "выручк", "конверси", "воронк", "недовольн"
+    ],
+    "no_control": [      # Отсутствие контроля
+        "контрол", "вид", "прозрачн", "хаос", "статистик",
+        "аналитик", "отчёт", "kpi", "руковод"
+    ],
+    "manual_work": [     # Ручная работа
+        "excel", "эксел", "рутин", "вручную", "времен",
+        "долго", "дубл", "ошиб", "путаниц"
+    ]
+}
+```
+
+Пример:
+```python
+extractor = DataExtractor()
+result = extractor.extract("Мы теряем клиентов")
+# → {"pain_point": "потеря клиентов", "pain_category": "losing_clients"}
+
+result = extractor.extract("Нет контроля над менеджерами")
+# → {"pain_point": "нет контроля", "pain_category": "no_control"}
+
+result = extractor.extract("Всё ведём в Excel")
+# → {"pain_point": "работа в Excel", "pain_category": "manual_work"}
+```
 
 **Примеры извлечения:**
 
@@ -406,8 +442,10 @@ pytest tests/test_classifier.py --cov=classifier --cov-report=html
 
 | Компонент | Количество |
 |-----------|------------|
-| TYPO_FIXES | 663 записи |
+| TYPO_FIXES | 699+ записей |
 | SPLIT_PATTERNS | 170 паттернов |
 | PRIORITY_PATTERNS | 214 паттернов |
+| pain_patterns | 240+ паттернов |
+| PAIN_CATEGORY_KEYWORDS | 3 категории, 30+ ключевых слов |
 | Интенты в INTENT_ROOTS | ~15 интентов |
-| Экстракторы в DataExtractor | 10 полей |
+| Экстракторы в DataExtractor | 12+ полей |

@@ -356,6 +356,117 @@ cta = generator.adaptive(
 
 ---
 
+## Фаза 4: Intent Disambiguation
+
+**Цель:** Уточнять намерение пользователя при неоднозначных ответах.
+
+### Компоненты
+
+| Модуль | Флаг | Описание |
+|--------|------|----------|
+| `classifier/` | `intent_disambiguation` | Уточнение при близких scores |
+
+### Функциональность
+
+При нескольких интентах с близкими scores система может:
+1. Запросить уточнение у пользователя
+2. Использовать контекст для disambiguition
+3. Применить более сложную классификацию
+
+---
+
+## Фаза 5: Dynamic CTA Fallback
+
+**Цель:** Контекстно-зависимые подсказки в fallback_tier_2 на основе собранных данных.
+
+### Компоненты
+
+| Модуль | Флаг | Описание |
+|--------|------|----------|
+| `fallback_handler.py` | `dynamic_cta_fallback` | Динамические подсказки |
+| `data_extractor.py` | — | Категоризация боли (pain_category) |
+
+### DYNAMIC_CTA_OPTIONS
+
+8 типов контекстных подсказок с приоритетами:
+
+```python
+DYNAMIC_CTA_OPTIONS = {
+    "competitor_mentioned": {      # Приоритет 10
+        "options": ["Сравнить с {competitor}", "Узнать отличия", ...],
+        "priority": 10
+    },
+    "pain_losing_clients": {       # Приоритет 8
+        "options": ["Как Wipon помогает удерживать клиентов", ...],
+        "priority": 8
+    },
+    "pain_no_control": {           # Приоритет 8
+        "options": ["Какие отчёты есть в Wipon", ...],
+        "priority": 8
+    },
+    "pain_manual_work": {          # Приоритет 8
+        "options": ["Что можно автоматизировать", ...],
+        "priority": 8
+    },
+    "after_price_question": {      # Приоритет 7
+        "options": ["Узнать про рассрочку", "Что входит в тариф", ...],
+        "priority": 7
+    },
+    "after_features_question": {   # Приоритет 7
+        "options": ["Записаться на демо", "Какие интеграции есть", ...],
+        "priority": 7
+    },
+    "large_company": {             # Приоритет 5 (>20 сотрудников)
+        "options": ["Enterprise возможности", "Мультифилиальность", ...],
+        "priority": 5
+    },
+    "small_company": {             # Приоритет 5 (≤5 сотрудников)
+        "options": ["Базовый тариф", "Быстрый старт", ...],
+        "priority": 5
+    }
+}
+```
+
+### Категоризация боли (pain_category)
+
+DataExtractor автоматически определяет категорию боли по ключевым словам:
+
+```python
+PAIN_CATEGORY_KEYWORDS = {
+    "losing_clients": ["теря", "клиент", "отток", "упуска", "продаж", ...],
+    "no_control": ["контрол", "вид", "прозрачн", "хаос", "статистик", ...],
+    "manual_work": ["excel", "рутин", "вручную", "времен", "дубл", ...]
+}
+```
+
+Пример:
+```python
+extractor = DataExtractor()
+result = extractor.extract("Мы теряем клиентов")
+# result: {"pain_point": "потеря клиентов", "pain_category": "losing_clients"}
+```
+
+### Использование
+
+```python
+from fallback_handler import FallbackHandler
+
+handler = FallbackHandler()
+context = {
+    "collected_data": {
+        "competitor_mentioned": True,
+        "competitor_name": "Битрикс",
+        "pain_category": "losing_clients"
+    },
+    "last_intent": "price_question"
+}
+
+response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
+# Вернёт подсказки про сравнение с Битрикс (приоритет 10)
+```
+
+---
+
 ## Статус фаз
 
 | Фаза | Компонент | Флаг | Статус |
@@ -371,6 +482,8 @@ cta = generator.adaptive(
 | 3 | Circular flow | `circular_flow` | ⏸️ Risky |
 | 3 | Возражения | `objection_handler` | ⏸️ Testing |
 | 3 | CTA | `cta_generator` | ⏸️ Development |
+| 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
+| 5 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Testing |
 
 **Легенда:**
 - ✅ Production — включено в production

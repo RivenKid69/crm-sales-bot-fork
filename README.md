@@ -25,6 +25,8 @@ cd src && python bot.py
 - **LLM-маршрутизация** — CategoryRouter для интеллектуальной классификации категорий
 - **Голосовой интерфейс** — Voice Bot с STT (Whisper) и TTS (F5-TTS)
 - **Модульные фазы** — постепенное включение новых возможностей через feature flags
+- **Dynamic CTA** — контекстно-зависимые подсказки при fallback на основе собранных данных
+- **Категоризация болей** — автоматическое определение типа боли (losing_clients, no_control, manual_work)
 
 ## Архитектура
 
@@ -45,7 +47,7 @@ cd src && python bot.py
          │
          ▼
 ┌─────────────────┐      ┌─────────────────┐
-│   Generator     │ ───► │ Knowledge Base  │  ← 1239 секций о продуктах Wipon
+│   Generator     │ ───► │ Knowledge Base  │  ← 1722 секции о продуктах Wipon
 │                 │ ◄─── │ (CascadeRetriever)│   в YAML-файлах
 └────────┬────────┘      └─────────────────┘
          │
@@ -107,7 +109,7 @@ src/
     ├── retriever.py        # CascadeRetriever (3-этапный поиск)
     ├── category_router.py  # LLM-классификация категорий
     ├── reranker.py         # Cross-encoder переоценка результатов
-    └── data/               # YAML-файлы базы знаний (1239 секций)
+    └── data/               # YAML-файлы базы знаний (1722 секции)
         ├── _meta.yaml      # Метаданные (company, stats)
         ├── equipment.yaml  # Оборудование (183 секции)
         ├── tis.yaml        # Товарно-информационная система (166 секций)
@@ -135,7 +137,7 @@ voice_bot/                  # Голосовой интерфейс
 ├── models/                 # XTTS-RU-IPA модели
 └── test_*.py               # Тесты компонентов (STT, TTS, LLM)
 
-tests/                      # 1056+ тестов в 33 файлах
+tests/                      # 1285+ тестов в 34 файлах
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
@@ -280,6 +282,7 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 |------|----------|--------|
 | `company_size` | Размер команды | "10 человек" → 10 |
 | `pain_point` | Боль клиента | "теряем клиентов" |
+| `pain_category` | Категория боли | `losing_clients`, `no_control`, `manual_work` |
 | `contact_info` | Контакт клиента | телефон, email |
 
 ### SPIN-специфичные:
@@ -295,27 +298,27 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 
 ## База знаний (knowledge/)
 
-База знаний содержит **1239 секций** в **17 YAML файлах**:
+База знаний содержит **1722 секции** в **18 YAML файлах**:
 
 | Категория | Секций | Описание |
 |-----------|--------|----------|
-| equipment | 183 | Оборудование (кассы, принтеры, сканеры) |
-| tis | 166 | Товарно-информационная система |
-| support | 156 | Техподдержка и обслуживание |
-| products | 116 | Продукты Wipon |
-| pricing | 104 | Тарифы и стоимость |
-| inventory | 97 | Складской учёт |
-| integrations | 71 | Интеграции (1С, Kaspi, Telegram) |
-| regions | 60 | Регионы Казахстана |
-| features | 59 | Функции системы |
-| analytics | 52 | Аналитика и отчёты |
-| employees | 43 | Управление персоналом |
-| fiscal | 41 | Фискализация |
-| stability | 31 | Стабильность и надёжность |
-| mobile | 31 | Мобильное приложение |
-| promotions | 19 | Акции и скидки |
+| equipment | 275 | Оборудование (кассы, принтеры, сканеры) |
+| products | 253 | Продукты Wipon |
+| tis | 192 | Товарно-информационная система |
+| support | 189 | Техподдержка и обслуживание |
+| pricing | 184 | Тарифы и стоимость |
+| inventory | 103 | Складской учёт |
+| features | 93 | Функции системы |
+| integrations | 83 | Интеграции (1С, Kaspi, Telegram) |
+| regions | 75 | Регионы Казахстана |
+| analytics | 62 | Аналитика и отчёты |
+| employees | 56 | Управление персоналом |
+| fiscal | 46 | Фискализация |
+| stability | 42 | Стабильность и надёжность |
+| mobile | 35 | Мобильное приложение |
+| promotions | 24 | Акции и скидки |
 | competitors | 7 | Конкуренты |
-| faq | 3 | Часто задаваемые вопросы |
+| faq | 4 | Часто задаваемые вопросы |
 
 ### CascadeRetriever — 3-этапный поиск
 
@@ -405,6 +408,8 @@ from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
 | 3 | Скоринг | `lead_scoring` | ⏸️ Выключено |
 | 3 | Возражения | `objection_handler` | ⏸️ Выключено |
 | 3 | CTA | `cta_generator` | ⏸️ Выключено |
+| 4 | Disambig | `intent_disambiguation` | ⏸️ Выключено |
+| 5 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Выключено |
 
 Подробнее: [docs/PHASES.md](docs/PHASES.md)
 
@@ -504,13 +509,15 @@ pip install -r requirements.txt
 ## Метрики проекта
 
 ```
-Модулей Python:           17+ в src/
-Тестов:                   1056+ в 33 файлах
-Секций в базе знаний:     1239 в 17 YAML файлах
+Модулей Python:           18+ в src/
+Тестов:                   1285+ в 34 файлах
+Секций в базе знаний:     1722 в 18 YAML файлах
 Интентов:                 50+ в INTENT_ROOTS
-Паттернов опечаток:       663 в TYPO_FIXES
+Паттернов опечаток:       699+ в TYPO_FIXES
 Паттернов разделения:     170 в SPLIT_PATTERNS
 Приоритетных паттернов:   214 в PRIORITY_PATTERNS
+Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17
+Feature Flags:            12 флагов
 ```
