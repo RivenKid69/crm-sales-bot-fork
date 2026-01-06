@@ -7,7 +7,9 @@
 """
 
 import re
-from typing import Dict
+from typing import Dict, Set, Optional
+
+from src.knowledge.lemmatizer import get_lemmatizer, Lemmatizer
 
 
 class DataExtractor:
@@ -35,9 +37,76 @@ class DataExtractor:
         ]
     }
 
+    # Ключевые слова для определения срочности (для lemma fallback)
+    URGENCY_KEYWORDS = {
+        "very_urgent": [
+            "срочно", "горит", "сейчас", "немедленно", "asap", "асап",
+            "экстренно", "критично", "аварийно", "дедлайн", "вчера",
+            "кровь", "нос", "цена"
+        ],
+        "urgent": [
+            "быстро", "скорее", "быстрее", "раньше", "важно", "необходимо",
+            "неделя", "месяц", "квартал", "терпит", "побыстрее", "поскорее"
+        ],
+        "not_urgent": [
+            "удобно", "торопиться", "спешить", "присматриваться", "изучать",
+            "сравнивать", "будущее", "планировать", "думать", "рассматривать",
+            "интересоваться", "смотреть"
+        ]
+    }
+
+    # Ключевые слова для определения роли (для lemma fallback)
+    ROLE_KEYWORDS = {
+        "director": ["директор", "генеральный", "гендиректор"],
+        "owner": ["собственник", "владелец", "основатель", "учредитель"],
+        "head": ["руководитель", "начальник", "глава", "руководить"],
+        "top_manager": ["управляющий", "управленец", "топ-менеджер"],
+        "sales_head": ["роп", "rop", "отдел продаж"],
+        "commercial_director": ["коммерческий директор", "комдир"],
+        "employee": ["менеджер", "специалист", "сотрудник"],
+        "sales": ["продавец", "продажник", "сейлз", "sales"],
+        "marketing": ["маркетолог", "smm", "пиарщик"],
+        "finance": ["бухгалтер", "финансист", "экономист"],
+        "hr": ["hr", "эйчар", "кадровик", "рекрутер"],
+        "it": ["айтишник", "программист", "разработчик"],
+        "admin": ["администратор", "секретарь", "ассистент"],
+        "decision_maker": ["принимать", "решение", "отвечать", "закупка", "выбор"],
+        "researcher": ["изучать", "сравнивать", "собирать", "информация", "поручить"]
+    }
+
+    def __init__(self):
+        """Инициализация с лемматизатором и предварительной лемматизацией keywords."""
+        self._lemmatizer: Lemmatizer = get_lemmatizer()
+
+        # Предварительно лемматизируем все keywords для быстрого fallback
+        self._pain_category_lemmas: Dict[str, Set[str]] = {}
+        for category, keywords in self.PAIN_CATEGORY_KEYWORDS.items():
+            lemmas = set()
+            for kw in keywords:
+                lemmas.update(self._lemmatizer.lemmatize_to_set(kw, remove_stop_words=False))
+            self._pain_category_lemmas[category] = lemmas
+
+        self._urgency_lemmas: Dict[str, Set[str]] = {}
+        for category, keywords in self.URGENCY_KEYWORDS.items():
+            lemmas = set()
+            for kw in keywords:
+                lemmas.update(self._lemmatizer.lemmatize_to_set(kw, remove_stop_words=False))
+            self._urgency_lemmas[category] = lemmas
+
+        self._role_lemmas: Dict[str, Set[str]] = {}
+        for category, keywords in self.ROLE_KEYWORDS.items():
+            lemmas = set()
+            for kw in keywords:
+                lemmas.update(self._lemmatizer.lemmatize_to_set(kw, remove_stop_words=False))
+            self._role_lemmas[category] = lemmas
+
     def _categorize_pain_point(self, pain_text: str) -> str | None:
         """
         Определяет категорию боли на основе текста pain_point.
+
+        Использует двухэтапный подход:
+        1. Exact match - поиск подстроки (быстрый путь)
+        2. Lemma fallback - если exact не сработал, сравнение лемм
 
         Returns:
             Одна из категорий: "losing_clients", "no_control", "manual_work"
@@ -48,18 +117,27 @@ class DataExtractor:
 
         pain_lower = pain_text.lower()
 
-        # Подсчитываем совпадения для каждой категории
+        # Этап 1: Exact match (поиск подстроки)
         scores = {}
         for category, keywords in self.PAIN_CATEGORY_KEYWORDS.items():
             score = sum(1 for kw in keywords if kw in pain_lower)
             if score > 0:
                 scores[category] = score
 
-        if not scores:
-            return None
+        if scores:
+            return max(scores, key=scores.get)
 
-        # Возвращаем категорию с максимальным количеством совпадений
-        return max(scores, key=scores.get)
+        # Этап 2: Lemma fallback
+        pain_lemmas = self._lemmatizer.lemmatize_to_set(pain_text, remove_stop_words=False)
+        for category, category_lemmas in self._pain_category_lemmas.items():
+            overlap = pain_lemmas & category_lemmas
+            if overlap:
+                scores[category] = len(overlap)
+
+        if scores:
+            return max(scores, key=scores.get)
+
+        return None
 
     def extract(self, message: str, context: Dict = None) -> Dict:
         """
@@ -1724,6 +1802,17 @@ class DataExtractor:
                 extracted["urgency"] = urgency
                 break
 
+        # Lemma fallback для urgency
+        if "urgency" not in extracted:
+            msg_lemmas = self._lemmatizer.lemmatize_to_set(message, remove_stop_words=False)
+            urgency_scores = {}
+            for category, category_lemmas in self._urgency_lemmas.items():
+                overlap = msg_lemmas & category_lemmas
+                if overlap:
+                    urgency_scores[category] = len(overlap)
+            if urgency_scores:
+                extracted["urgency"] = max(urgency_scores, key=urgency_scores.get)
+
         # =================================================================
         # БЮДЖЕТ (budget_range)
         # =================================================================
@@ -1798,6 +1887,17 @@ class DataExtractor:
             if re.search(pattern, message_lower):
                 extracted["role"] = role
                 break
+
+        # Lemma fallback для role
+        if "role" not in extracted:
+            msg_lemmas = self._lemmatizer.lemmatize_to_set(message, remove_stop_words=False)
+            role_scores = {}
+            for category, category_lemmas in self._role_lemmas.items():
+                overlap = msg_lemmas & category_lemmas
+                if overlap:
+                    role_scores[category] = len(overlap)
+            if role_scores:
+                extracted["role"] = max(role_scores, key=role_scores.get)
 
         # =================================================================
         # ПРЕДПОЧИТАЕМЫЙ КАНАЛ СВЯЗИ (preferred_channel)
