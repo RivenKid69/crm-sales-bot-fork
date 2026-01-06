@@ -1,6 +1,6 @@
 # База знаний: integrations
 # Категория: integrations
-# Секций: 75
+# Секций: 77
 
 sections:
 - topic: marketplaces
@@ -1347,3 +1347,21 @@ sections:
   - kaspi halyk касса
   facts: |-
     Поддерживаем Kaspi и Halyk POS-терминалы. Настройку сделаем через поддержку после оплаты тарифа.
+- topic: integrations_multi_pos_1502
+  priority: 8
+  keywords:
+  - несколько pos терминалов
+  - несколько терминалов одна касса
+  - терминалы разных банков
+  - pos терминалы подключить
+  facts: |-
+    Да. Поддерживаются несколько терминалов разных банков.
+- topic: integrations_esf_snt_1510
+  priority: 9
+  keywords:
+  - эсф и снт wipon
+  - работать с эсф
+  - работать с снт
+  - электронные счёт фактуры
+  facts: |-
+    Да. Поддерживаются ЭСФ и СНТ.

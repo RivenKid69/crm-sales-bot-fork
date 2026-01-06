@@ -1,6 +1,6 @@
 # База знаний: promotions
 # Категория: promotions
-# Секций: 22
+# Секций: 23
 
 sections:
 - topic: promotions_time_discount_001
@@ -313,3 +313,12 @@ sections:
   - cashback система
   facts: |-
     Да. Модуль Wipon Cashback позволяет начислять и списывать бонусы.
+- topic: promotions_discount_setup_1506
+  priority: 8
+  keywords:
+  - настроить скидки
+  - как настроить скидки
+  - товары маркетинг скидка
+  - процент срок действия
+  facts: |-
+    В Товары или Маркетинг задайте процент и срок действия.
