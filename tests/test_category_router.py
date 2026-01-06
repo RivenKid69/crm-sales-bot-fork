@@ -97,7 +97,7 @@ class TestJsonParsing:
         router = CategoryRouter(llm, top_k=3)
         result = router.route("Цена?")
 
-        assert result == ["other", "faq"]  # fallback
+        assert result == ["faq", "features"]  # fallback
 
     def test_parse_empty_response(self):
         """Пустой ответ возвращает fallback."""
@@ -105,7 +105,7 @@ class TestJsonParsing:
         router = CategoryRouter(llm, top_k=3)
         result = router.route("Цена?")
 
-        assert result == ["other", "faq"]  # fallback
+        assert result == ["faq", "features"]  # fallback
 
 
 # =============================================================================
@@ -130,7 +130,7 @@ class TestCategoryValidation:
         router = CategoryRouter(llm, top_k=3)
         result = router.route("Цена?")
 
-        assert result == ["other", "faq"]
+        assert result == ["faq", "features"]
 
     def test_all_categories_are_valid(self):
         """Проверка что все CATEGORIES валидны."""
@@ -138,8 +138,8 @@ class TestCategoryValidation:
         router = CategoryRouter(llm)
 
         expected_categories = [
-            "analytics", "employees", "equipment", "faq", "features",
-            "fiscal", "integrations", "inventory", "mobile", "other",
+            "analytics", "competitors", "employees", "equipment", "faq", "features",
+            "fiscal", "integrations", "inventory", "mobile",
             "pricing", "products", "promotions", "regions", "stability",
             "support", "tis"
         ]
@@ -165,7 +165,7 @@ class TestTopK:
 
     def test_top_k_limits_results(self):
         """top_k ограничивает количество категорий."""
-        llm = MockLLM('["pricing", "products", "faq", "other", "support"]')
+        llm = MockLLM('["pricing", "products", "faq", "competitors", "support"]')
         router = CategoryRouter(llm, top_k=2)
         result = router.route("Цена?")
 
@@ -201,8 +201,8 @@ class TestFallback:
         llm = MockLLM()
         router = CategoryRouter(llm, top_k=3)
 
-        assert router.route("") == ["other", "faq"]
-        assert router.route("   ") == ["other", "faq"]
+        assert router.route("") == ["faq", "features"]
+        assert router.route("   ") == ["faq", "features"]
         assert llm.call_count == 0  # LLM не вызывался
 
     def test_llm_error_returns_fallback(self):
@@ -211,7 +211,7 @@ class TestFallback:
         router = CategoryRouter(llm, top_k=3)
         result = router.route("Сколько стоит?")
 
-        assert result == ["other", "faq"]
+        assert result == ["faq", "features"]
 
     def test_custom_fallback_categories(self):
         """Кастомные fallback категории."""

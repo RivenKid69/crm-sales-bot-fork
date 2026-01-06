@@ -22,9 +22,9 @@ class TestKnowledgeLoading:
         assert hasattr(kb, "company_name")
 
     def test_sections_count(self):
-        """Проверка количества секций"""
+        """Проверка количества секций (минимум 1700 после расширения базы знаний)"""
         kb = load_knowledge_base()
-        assert len(kb.sections) == 446, f"Ожидалось 446, получено {len(kb.sections)}"
+        assert len(kb.sections) >= 1700, f"Ожидалось >= 1700, получено {len(kb.sections)}"
 
     def test_all_sections_are_knowledge_section(self):
         """Проверка типов секций"""
@@ -91,7 +91,7 @@ class TestKnowledgeAPI:
         kb = load_knowledge_base()
 
         pricing = kb.get_by_category("pricing")
-        assert len(pricing) == 24
+        assert len(pricing) >= 100, f"Ожидалось >= 100 секций pricing, получено {len(pricing)}"
         assert all(s.category == "pricing" for s in pricing)
 
     def test_get_by_category_empty(self):
@@ -125,8 +125,8 @@ class TestBackwardsCompatibility:
         assert WIPON_KNOWLEDGE is not None
 
     def test_global_sections(self):
-        """Проверка доступа к sections"""
-        assert len(WIPON_KNOWLEDGE.sections) == 446
+        """Проверка доступа к sections (минимум 1700 после расширения)"""
+        assert len(WIPON_KNOWLEDGE.sections) >= 1700
 
     def test_global_methods(self):
         """Проверка методов глобального объекта"""
