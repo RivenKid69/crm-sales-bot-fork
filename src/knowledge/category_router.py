@@ -77,7 +77,7 @@ class CategoryRouter:
         """
         self.llm = llm
         self.top_k = top_k
-        self.fallback_categories = fallback_categories or ["other", "faq"]
+        self.fallback_categories = fallback_categories or ["faq", "features"]
 
         # Валидация fallback категорий
         for cat in self.fallback_categories:

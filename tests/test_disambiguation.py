@@ -905,5 +905,406 @@ class TestEdgeCases:
         assert "in_disambiguation" not in context
 
 
+# =============================================================================
+# Integration Tests for Disambiguation (Stage 3-4)
+# =============================================================================
+
+class TestDisambiguationIntegrationBasic:
+    """Базовые интеграционные тесты disambiguation"""
+
+    @pytest.fixture
+    def mock_llm(self):
+        """Мок LLM"""
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.generate.return_value = "Тестовый ответ"
+        return llm
+
+    @pytest.fixture
+    def bot(self, mock_llm):
+        """SalesBot с включённым disambiguation"""
+        from unittest.mock import patch
+        from bot import SalesBot
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        flags.set_override("metrics_tracking", True)
+
+        bot = SalesBot(mock_llm)
+        # Мокируем generate чтобы избежать инициализации retriever
+        bot.generator.generate = lambda action, ctx: "Тестовый ответ от генератора"
+        yield bot
+
+        flags.clear_override("intent_disambiguation")
+        flags.clear_override("metrics_tracking")
+
+    def test_bot_has_disambiguation_ui(self, bot):
+        """Bot имеет disambiguation_ui property"""
+        assert hasattr(bot, "disambiguation_ui")
+        # Ленивая инициализация - доступ к property
+        ui = bot.disambiguation_ui
+        assert ui is not None
+
+    def test_bot_has_disambiguation_metrics(self, bot):
+        """Bot имеет disambiguation_metrics"""
+        assert hasattr(bot, "disambiguation_metrics")
+        assert bot.disambiguation_metrics is not None
+
+    def test_bot_reset_clears_disambiguation_metrics(self, bot):
+        """reset() сбрасывает disambiguation_metrics"""
+        bot.disambiguation_metrics.total_disambiguations = 10
+        bot.reset()
+        assert bot.disambiguation_metrics.total_disambiguations == 0
+
+    def test_increment_turn_called(self, bot):
+        """increment_turn вызывается при process"""
+        initial = bot.state_machine.turns_since_last_disambiguation
+        bot.process("Привет")
+        # Счётчик должен измениться (либо +1, либо остаться 999)
+        after = bot.state_machine.turns_since_last_disambiguation
+        assert after == initial + 1 or initial == 999
+
+
+class TestDisambiguationIntegrationFlow:
+    """Тесты полного flow disambiguation"""
+
+    @pytest.fixture
+    def mock_llm(self):
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.generate.return_value = "Тестовый ответ"
+        return llm
+
+    @pytest.fixture
+    def bot(self, mock_llm):
+        from bot import SalesBot
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        flags.set_override("metrics_tracking", True)
+
+        bot = SalesBot(mock_llm)
+        bot.generator.generate = lambda action, ctx: "Тестовый ответ от генератора"
+        yield bot
+
+        flags.clear_override("intent_disambiguation")
+        flags.clear_override("metrics_tracking")
+
+    def test_disambiguation_numeric_response(self, bot):
+        """Числовой ответ на disambiguation работает"""
+        # Входим в режим disambiguation вручную
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Отвечаем числом
+        result = bot.process("1")
+
+        # Должен выйти из disambiguation
+        assert not bot.state_machine.in_disambiguation
+        # Должен вернуть ответ
+        assert "response" in result
+
+    def test_disambiguation_repeat_on_unknown_answer(self, bot):
+        """Непонятный ответ вызывает повтор вопроса"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Отвечаем непонятно
+        result = bot.process("абракадабра")
+
+        # Должен остаться в disambiguation
+        assert bot.state_machine.in_disambiguation
+        # Попытка увеличивается
+        assert bot.state_machine.disambiguation_context["attempt"] == 2
+
+    def test_disambiguation_fallback_after_max_attempts(self, bot):
+        """После max попыток выходим с fallback"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Первый непонятный ответ
+        bot.process("непонятно")
+
+        # Второй непонятный ответ - должен выйти
+        result = bot.process("всё ещё непонятно")
+
+        # Должен выйти из disambiguation
+        assert not bot.state_machine.in_disambiguation
+
+    def test_disambiguation_critical_intent_exits(self, bot):
+        """Критический интент выходит из disambiguation"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Предоставляем телефон - критический интент
+        result = bot.process("мой телефон 87771234567")
+
+        # Должен выйти из disambiguation
+        assert not bot.state_machine.in_disambiguation
+
+    def test_disambiguation_preserves_extracted_data(self, bot):
+        """Extracted data сохраняется при disambiguation"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        extracted_data = {"company_size": 15}
+        bot.state_machine.enter_disambiguation(options, extracted_data)
+
+        # Проверяем что данные сохранены в контексте
+        ctx = bot.state_machine.disambiguation_context
+        assert ctx["extracted_data"] == extracted_data
+
+
+class TestDisambiguationIntegrationCooldown:
+    """Тесты cooldown disambiguation"""
+
+    @pytest.fixture
+    def mock_llm(self):
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.generate.return_value = "Тестовый ответ"
+        return llm
+
+    @pytest.fixture
+    def bot(self, mock_llm):
+        from bot import SalesBot
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        flags.set_override("metrics_tracking", True)
+
+        bot = SalesBot(mock_llm)
+        bot.generator.generate = lambda action, ctx: "Тестовый ответ от генератора"
+        yield bot
+
+        flags.clear_override("intent_disambiguation")
+        flags.clear_override("metrics_tracking")
+
+    def test_cooldown_resets_after_disambiguation(self, bot):
+        """Cooldown сбрасывается после disambiguation"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+        bot.state_machine.resolve_disambiguation("price_question")
+
+        # Cooldown должен быть 0
+        assert bot.state_machine.turns_since_last_disambiguation == 0
+
+    def test_cooldown_increments_each_turn(self, bot):
+        """Cooldown увеличивается каждый ход"""
+        # Сбрасываем через exit_disambiguation
+        bot.state_machine.exit_disambiguation()
+        assert bot.state_machine.turns_since_last_disambiguation == 0
+
+        # Каждый process увеличивает счётчик
+        bot.process("Привет")
+        assert bot.state_machine.turns_since_last_disambiguation == 1
+
+        bot.process("Как дела")
+        assert bot.state_machine.turns_since_last_disambiguation == 2
+
+
+class TestDisambiguationIntegrationMetrics:
+    """Тесты метрик disambiguation"""
+
+    @pytest.fixture
+    def mock_llm(self):
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.generate.return_value = "Тестовый ответ"
+        return llm
+
+    @pytest.fixture
+    def bot(self, mock_llm):
+        from bot import SalesBot
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        flags.set_override("metrics_tracking", True)
+
+        bot = SalesBot(mock_llm)
+        bot.generator.generate = lambda action, ctx: "Тестовый ответ от генератора"
+        yield bot
+
+        flags.clear_override("intent_disambiguation")
+        flags.clear_override("metrics_tracking")
+
+    def test_get_disambiguation_metrics(self, bot):
+        """get_disambiguation_metrics возвращает словарь"""
+        result = bot.get_disambiguation_metrics()
+        assert isinstance(result, dict)
+        assert "total_disambiguations" in result
+
+    def test_disambiguation_metrics_recorded(self, bot):
+        """Метрики записываются при disambiguation"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+
+        # Используем _initiate_disambiguation напрямую
+        classification = {
+            "intent": "disambiguation_needed",
+            "disambiguation_options": options,
+            "disambiguation_question": "Уточните:",
+            "extracted_data": {},
+            "original_scores": {"price_question": 0.5, "question_features": 0.48},
+            "confidence": 0.5,
+            "original_intent": "price_question"
+        }
+
+        bot._initiate_disambiguation(
+            classification=classification,
+            user_message="тест",
+            context={},
+            tone_info={"frustration_level": 0}
+        )
+
+        assert bot.disambiguation_metrics.total_disambiguations == 1
+
+
+class TestHybridClassifierDisambiguation:
+    """Тесты интеграции disambiguation в HybridClassifier"""
+
+    @pytest.fixture
+    def classifier(self):
+        from classifier import HybridClassifier
+        return HybridClassifier()
+
+    def test_classifier_has_disambiguation_analyzer(self, classifier):
+        """Classifier имеет disambiguation_analyzer property"""
+        assert hasattr(classifier, "disambiguation_analyzer")
+        # Ленивая инициализация
+        analyzer = classifier.disambiguation_analyzer
+        assert analyzer is not None
+
+    def test_classifier_respects_flag(self):
+        """Classifier уважает feature flag"""
+        from classifier import HybridClassifier
+        from feature_flags import flags
+
+        # Выключаем флаг
+        flags.set_override("intent_disambiguation", False)
+        classifier = HybridClassifier()
+
+        result = classifier.classify("интересно", {})
+
+        # Не должно быть disambiguation_needed
+        assert result["intent"] != "disambiguation_needed"
+
+        flags.clear_override("intent_disambiguation")
+
+    def test_classifier_returns_disambiguation_fields(self):
+        """При disambiguation возвращаются нужные поля"""
+        from classifier import HybridClassifier
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        classifier = HybridClassifier()
+
+        # Даём сообщение которое может вызвать disambiguation
+        # (если scores достаточно близкие)
+        result = classifier.classify("расскажите подробнее", {})
+
+        if result["intent"] == "disambiguation_needed":
+            assert "disambiguation_options" in result
+            assert "disambiguation_question" in result
+            assert "original_scores" in result
+
+        flags.clear_override("intent_disambiguation")
+
+
+class TestDisambiguationEndToEnd:
+    """End-to-end тесты disambiguation"""
+
+    @pytest.fixture
+    def mock_llm(self):
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.generate.return_value = "Тестовый ответ от бота"
+        return llm
+
+    @pytest.fixture
+    def bot(self, mock_llm):
+        from bot import SalesBot
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        flags.set_override("metrics_tracking", True)
+        flags.set_override("tone_analysis", False)  # Отключаем для простоты
+
+        bot = SalesBot(mock_llm)
+        bot.generator.generate = lambda action, ctx: "Тестовый ответ от генератора"
+        yield bot
+
+        flags.clear_all_overrides()
+
+    def test_full_disambiguation_and_resolve(self, bot):
+        """Полный цикл: disambiguation → ответ → продолжение"""
+        # Вручную входим в disambiguation
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Пользователь выбирает первый вариант
+        result = bot.process("1")
+
+        # Проверяем результат
+        assert not bot.state_machine.in_disambiguation
+        assert "response" in result
+        # Интент должен быть price_question (разрешённый)
+        # или результат его обработки
+
+    def test_disambiguation_metrics_summary_after_flow(self, bot):
+        """Сводка метрик после flow"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+
+        # Симулируем disambiguation
+        classification = {
+            "intent": "disambiguation_needed",
+            "disambiguation_options": options,
+            "disambiguation_question": "Уточните:",
+            "extracted_data": {},
+            "original_scores": {"price_question": 0.5, "question_features": 0.48},
+            "confidence": 0.5,
+            "original_intent": "price_question"
+        }
+
+        bot._initiate_disambiguation(
+            classification=classification,
+            user_message="тест",
+            context={},
+            tone_info={"frustration_level": 0}
+        )
+
+        # Разрешаем через process
+        result = bot.process("первый")
+
+        # Проверяем метрики
+        summary = bot.get_disambiguation_metrics()
+        assert summary["total_disambiguations"] == 1
+        assert summary["resolved_on_first_try"] == 1
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

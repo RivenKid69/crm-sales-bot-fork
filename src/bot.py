@@ -1,32 +1,148 @@
 """
-Главный класс бота — объединяет все компоненты
+Главный класс бота — объединяет все компоненты Фаз 0-3.
+
+Интегрированные компоненты:
+- Phase 0: Logger, FeatureFlags, Metrics
+- Phase 1: ConversationGuard, FallbackHandler, LLM Resilience
+- Phase 2: ToneAnalyzer, ResponseVariations, Personalization
+- Phase 3: LeadScorer, CircularFlow, ObjectionHandler, CTAGenerator
+
+Архитектурные принципы:
+1. FAIL-SAFE: Любой сбой → graceful degradation, не crash
+2. PROGRESSIVE: Feature flags для постепенного включения
+3. OBSERVABLE: Логи, метрики, трейсы с первого дня
+4. TESTABLE: Каждый модуль с тестами сразу
+5. REVERSIBLE: Возможность отката любого изменения
 """
 
-from typing import Dict, List
+import uuid
+from typing import Dict, List, Optional
+
 from classifier import HybridClassifier
 from state_machine import StateMachine
 from generator import ResponseGenerator
 
+# Phase 0: Infrastructure
+from logger import logger
+from feature_flags import flags
+from metrics import ConversationMetrics, ConversationOutcome, DisambiguationMetrics
+
+# Phase 1: Protection and Reliability
+from conversation_guard import ConversationGuard
+from fallback_handler import FallbackHandler
+
+# Phase 2: Natural Dialogue
+from tone_analyzer import ToneAnalyzer, Tone
+
+# Phase 3: SPIN Flow Optimization
+from lead_scoring import LeadScorer, get_signal_from_intent
+from objection_handler import ObjectionHandler
+from cta_generator import CTAGenerator
+from response_variations import variations
+
 
 class SalesBot:
-    def __init__(self, llm):
+    """
+    CRM Sales Bot с полной интеграцией всех компонентов.
+
+    Использует feature flags для постепенного включения функций.
+    Все ошибки обрабатываются gracefully без падения бота.
+    """
+
+    def __init__(self, llm, conversation_id: Optional[str] = None):
+        """
+        Инициализация бота со всеми компонентами.
+
+        Args:
+            llm: LLM клиент (OllamaLLM или другой)
+            conversation_id: Уникальный ID диалога (генерируется если не указан)
+        """
+        # Генерируем ID диалога для трейсинга
+        self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
+        logger.set_conversation(self.conversation_id)
+
+        # Core components (always active)
         self.classifier = HybridClassifier()
         self.state_machine = StateMachine()
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
-        # Контекст предыдущего хода для классификации коротких ответов
-        self.last_action: str = None
-        self.last_intent: str = None  # Интент пользователя, на который бот отвечал
+
+        # Context from previous turn
+        self.last_action: Optional[str] = None
+        self.last_intent: Optional[str] = None
+
+        # Phase 0: Metrics (controlled by feature flag)
+        self.metrics = ConversationMetrics(self.conversation_id)
+
+        # Phase 1: Protection (controlled by feature flags)
+        self.guard = ConversationGuard()
+        self.fallback = FallbackHandler()
+
+        # Phase 2: Natural Dialogue (controlled by feature flags)
+        self.tone_analyzer = ToneAnalyzer()
+
+        # Phase 3: SPIN Flow Optimization (controlled by feature flags)
+        self.lead_scorer = LeadScorer()
+        self.objection_handler = ObjectionHandler()
+        self.cta_generator = CTAGenerator()
+
+        # Phase 4: Intent Disambiguation (controlled by feature flag)
+        self._disambiguation_ui = None
+        self.disambiguation_metrics = DisambiguationMetrics()
+
+        logger.info(
+            "SalesBot initialized",
+            conversation_id=self.conversation_id,
+            enabled_flags=list(flags.get_enabled_flags())
+        )
 
     def reset(self):
-        """Сброс для нового диалога"""
+        """Сброс для нового диалога."""
+        # Логируем завершение предыдущего диалога
+        if self.metrics.turns > 0:
+            self._finalize_metrics(ConversationOutcome.ABANDONED)
+
+        # Генерируем новый ID
+        self.conversation_id = str(uuid.uuid4())[:8]
+        logger.set_conversation(self.conversation_id)
+
+        # Reset core
         self.state_machine.reset()
         self.history = []
         self.last_action = None
         self.last_intent = None
 
+        # Reset Phase 0
+        self.metrics = ConversationMetrics(self.conversation_id)
+
+        # Reset Phase 1
+        self.guard.reset()
+        self.fallback.reset()
+
+        # Reset Phase 2
+        self.tone_analyzer.reset()
+        variations.reset()
+
+        # Reset Phase 3
+        self.lead_scorer.reset()
+        self.objection_handler.reset()
+        self.cta_generator.reset()
+
+        # Reset Phase 4
+        self.disambiguation_metrics = DisambiguationMetrics()
+
+        logger.info("SalesBot reset", conversation_id=self.conversation_id)
+
+    @property
+    def disambiguation_ui(self):
+        """Lazy initialization of DisambiguationUI."""
+        if self._disambiguation_ui is None:
+            from disambiguation_ui import DisambiguationUI
+            self._disambiguation_ui = DisambiguationUI()
+        return self._disambiguation_ui
+
     def _get_classification_context(self) -> Dict:
-        """Получить контекст для классификатора (включая SPIN-фазу и контекст предыдущего хода)"""
+        """Получить контекст для классификатора."""
         from config import SALES_STATES
 
         state_config = SALES_STATES.get(self.state_machine.state, {})
@@ -34,76 +150,844 @@ class SalesBot:
         collected = self.state_machine.collected_data
 
         missing = [f for f in required if not collected.get(f)]
-
-        # SPIN-фаза для контекстной классификации
         spin_phase = state_config.get("spin_phase")
 
-        return {
+        context = {
             "state": self.state_machine.state,
             "collected_data": collected.copy(),
             "missing_data": missing,
             "spin_phase": spin_phase,
-            # Контекст предыдущего хода для интерпретации коротких ответов
             "last_action": self.last_action,
             "last_intent": self.last_intent,
+            "turns_since_last_disambiguation": self.state_machine.turns_since_last_disambiguation,
         }
 
+        # Добавляем флаг disambiguation если активен
+        if self.state_machine.in_disambiguation:
+            context["in_disambiguation"] = True
+
+        return context
+
+    def _analyze_tone(self, user_message: str) -> Dict:
+        """
+        Анализировать тон сообщения (Phase 2).
+
+        Returns:
+            Dict с tone_instruction и guidance
+        """
+        if not flags.tone_analysis:
+            return {
+                "tone_instruction": "",
+                "frustration_level": 0,
+                "should_apologize": False,
+                "should_offer_exit": False,
+            }
+
+        try:
+            analysis = self.tone_analyzer.analyze(user_message)
+            guidance = self.tone_analyzer.get_response_guidance(analysis)
+
+            # Синхронизируем frustration с ConversationGuard
+            if flags.conversation_guard:
+                self.guard.set_frustration_level(analysis.frustration_level)
+
+            logger.debug(
+                "Tone analyzed",
+                tone=analysis.tone.value,
+                frustration=analysis.frustration_level,
+                style=analysis.style.value
+            )
+
+            return {
+                "tone_instruction": guidance.get("tone_instruction", ""),
+                "frustration_level": analysis.frustration_level,
+                "should_apologize": guidance.get("should_apologize", False),
+                "should_offer_exit": guidance.get("should_offer_exit", False),
+                "max_words": guidance.get("max_words", 50),
+                "tone": analysis.tone.value,
+                "style": analysis.style.value,
+            }
+        except Exception as e:
+            logger.error("Tone analysis failed", error=str(e))
+            return {
+                "tone_instruction": "",
+                "frustration_level": 0,
+                "should_apologize": False,
+                "should_offer_exit": False,
+            }
+
+    def _check_guard(
+        self,
+        state: str,
+        message: str,
+        collected_data: Dict,
+        frustration_level: int
+    ) -> Optional[str]:
+        """
+        Проверить ConversationGuard (Phase 1).
+
+        Returns:
+            None если всё OK, иначе intervention action
+        """
+        if not flags.conversation_guard:
+            return None
+
+        try:
+            can_continue, intervention = self.guard.check(
+                state=state,
+                message=message,
+                collected_data=collected_data,
+                frustration_level=frustration_level
+            )
+
+            if not can_continue:
+                logger.warning(
+                    "Guard stopped conversation",
+                    intervention=intervention,
+                    state=state
+                )
+                return intervention
+
+            if intervention:
+                logger.info(
+                    "Guard intervention",
+                    intervention=intervention,
+                    state=state
+                )
+                return intervention
+
+            return None
+        except Exception as e:
+            logger.error("Guard check failed", error=str(e))
+            return None
+
+    def _apply_fallback(
+        self,
+        intervention: str,
+        state: str,
+        context: Dict
+    ) -> Dict:
+        """
+        Применить fallback response (Phase 1).
+
+        Returns:
+            Dict с response и опциональным next_state
+        """
+        if not flags.multi_tier_fallback:
+            return {"response": None, "next_state": None}
+
+        try:
+            fallback_response = self.fallback.get_fallback(
+                tier=intervention,
+                state=state,
+                context=context
+            )
+
+            # Записываем в метрики
+            if flags.metrics_tracking:
+                self.metrics.record_fallback(intervention)
+
+            logger.info(
+                "Fallback applied",
+                tier=intervention,
+                action=fallback_response.action
+            )
+
+            return {
+                "response": fallback_response.message,
+                "options": fallback_response.options,
+                "action": fallback_response.action,
+                "next_state": fallback_response.next_state,
+            }
+        except Exception as e:
+            logger.error("Fallback application failed", error=str(e))
+            return {"response": None, "next_state": None}
+
+    def _check_objection(self, user_message: str, collected_data: Dict) -> Optional[Dict]:
+        """
+        Проверить и обработать возражение (Phase 3).
+
+        Returns:
+            None если нет возражения, иначе Dict с стратегией
+        """
+        if not flags.objection_handler:
+            return None
+
+        try:
+            result = self.objection_handler.handle_objection(
+                message=user_message,
+                collected_data=collected_data
+            )
+
+            if result.objection_type is None:
+                return None
+
+            # Записываем в метрики
+            if flags.metrics_tracking:
+                self.metrics.record_objection(
+                    objection_type=result.objection_type.value,
+                    resolved=not result.should_soft_close
+                )
+
+            logger.info(
+                "Objection handled",
+                type=result.objection_type.value,
+                attempt=result.attempt_number,
+                soft_close=result.should_soft_close
+            )
+
+            return {
+                "objection_type": result.objection_type.value,
+                "strategy": result.strategy,
+                "should_soft_close": result.should_soft_close,
+                "response_parts": result.response_parts,
+            }
+        except Exception as e:
+            logger.error("Objection handling failed", error=str(e))
+            return None
+
+    def _update_lead_score(self, intent: str) -> None:
+        """Обновить lead score на основе интента (Phase 3)."""
+        if not flags.lead_scoring:
+            return
+
+        try:
+            signal = get_signal_from_intent(intent)
+            if signal:
+                score = self.lead_scorer.add_signal(signal)
+
+                if flags.metrics_tracking:
+                    self.metrics.record_lead_score(
+                        score=score.score,
+                        temperature=score.temperature.value,
+                        signal=signal
+                    )
+
+                logger.debug(
+                    "Lead score updated",
+                    signal=signal,
+                    score=score.score,
+                    temperature=score.temperature.value
+                )
+        except Exception as e:
+            logger.error("Lead scoring failed", error=str(e))
+
+    def _apply_cta(
+        self,
+        response: str,
+        state: str,
+        context: Dict
+    ) -> str:
+        """Добавить CTA к ответу если уместно (Phase 3)."""
+        if not flags.cta_generator:
+            return response
+
+        try:
+            self.cta_generator.increment_turn()
+            result = self.cta_generator.append_cta(response, state, context)
+            return result
+        except Exception as e:
+            logger.error("CTA generation failed", error=str(e))
+            return response
+
+    def _record_turn_metrics(
+        self,
+        state: str,
+        intent: str,
+        tone: Optional[str],
+        fallback_used: bool,
+        fallback_tier: Optional[str]
+    ) -> None:
+        """Записать метрики хода (Phase 0)."""
+        if not flags.metrics_tracking:
+            return
+
+        try:
+            self.metrics.record_turn(
+                state=state,
+                intent=intent,
+                tone=tone,
+                fallback_used=fallback_used,
+                fallback_tier=fallback_tier
+            )
+        except Exception as e:
+            logger.error("Metrics recording failed", error=str(e))
+
+    def _finalize_metrics(self, outcome: ConversationOutcome) -> None:
+        """Финализировать метрики диалога."""
+        if not flags.metrics_tracking:
+            return
+
+        try:
+            self.metrics.set_outcome(outcome)
+            summary = self.metrics.to_log_dict()
+
+            logger.info(
+                "Conversation finished",
+                **summary
+            )
+        except Exception as e:
+            logger.error("Metrics finalization failed", error=str(e))
+
     def process(self, user_message: str) -> Dict:
-        """Обработать сообщение"""
+        """
+        Обработать сообщение клиента.
 
-        # Получаем текущий контекст для классификатора
+        Полный pipeline с интеграцией всех компонентов:
+        1. Start metrics timer
+        2. Analyze tone (Phase 2)
+        3. Check guard (Phase 1)
+        4. Classify intent
+        5. Check objection (Phase 3)
+        6. Update lead score (Phase 3)
+        7. Run state machine
+        8. Generate response
+        9. Apply CTA (Phase 3)
+        10. Record metrics (Phase 0)
+
+        Args:
+            user_message: Сообщение от клиента
+
+        Returns:
+            Dict с response, intent, action, state, is_final и др.
+        """
+        # Phase 4: Increment turn counter for disambiguation cooldown
+        self.state_machine.increment_turn()
+
+        # Start metrics timer
+        if flags.metrics_tracking:
+            self.metrics.start_turn_timer()
+
+        # =================================================================
+        # Phase 4: Handle disambiguation response if in disambiguation mode
+        # =================================================================
+        if self.state_machine.in_disambiguation:
+            return self._handle_disambiguation_response(user_message)
+
+        # Get current context
         current_context = self._get_classification_context()
+        current_state = self.state_machine.state
+        collected_data = self.state_machine.collected_data
 
-        # 1. Классификация (с контекстом для понимания коротких ответов)
+        # Phase 2: Analyze tone
+        tone_info = self._analyze_tone(user_message)
+        frustration_level = tone_info.get("frustration_level", 0)
+
+        # Phase 1: Check guard for intervention
+        intervention = self._check_guard(
+            state=current_state,
+            message=user_message,
+            collected_data=collected_data,
+            frustration_level=frustration_level
+        )
+
+        fallback_used = False
+        fallback_tier = None
+        fallback_response = None
+
+        if intervention:
+            fallback_used = True
+            fallback_tier = intervention
+
+            # Apply fallback
+            fb_result = self._apply_fallback(
+                intervention=intervention,
+                state=current_state,
+                context={"collected_data": collected_data}
+            )
+
+            if fb_result.get("response"):
+                fallback_response = fb_result
+
+                # If fallback action is "close" or "skip", update state
+                if fb_result.get("action") == "close":
+                    self._record_turn_metrics(
+                        state=current_state,
+                        intent="fallback_close",
+                        tone=tone_info.get("tone"),
+                        fallback_used=True,
+                        fallback_tier=intervention
+                    )
+
+                    self.history.append({
+                        "user": user_message,
+                        "bot": fb_result["response"]
+                    })
+
+                    self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
+
+                    return {
+                        "response": fb_result["response"],
+                        "intent": "fallback_close",
+                        "action": "soft_close",
+                        "state": "soft_close",
+                        "is_final": True,
+                        "fallback_used": True,
+                        "fallback_tier": intervention,
+                        "options": fb_result.get("options"),
+                    }
+
+        # 1. Classify intent
         classification = self.classifier.classify(user_message, current_context)
         intent = classification["intent"]
         extracted = classification["extracted_data"]
 
-        # 2. State Machine
+        # =================================================================
+        # Phase 4: Handle disambiguation_needed intent
+        # =================================================================
+        if intent == "disambiguation_needed":
+            options = classification.get("disambiguation_options", [])
+            if not options:
+                # Fallback to original intent if no options
+                intent = classification.get("original_intent", "unclear")
+                classification["intent"] = intent
+            else:
+                return self._initiate_disambiguation(
+                    classification=classification,
+                    user_message=user_message,
+                    context=current_context,
+                    tone_info=tone_info
+                )
+
+        # Phase 3: Check for objection
+        objection_info = self._check_objection(user_message, collected_data)
+
+        # Phase 3: Update lead score
+        self._update_lead_score(intent)
+
+        # 2. Run state machine
         sm_result = self.state_machine.process(intent, extracted)
 
-        # 3. Генерация ответа
+        # Build context for response generation
         context = {
             "user_message": user_message,
-            "intent": intent,  # Для retriever'а базы знаний
+            "intent": intent,
             "state": sm_result["next_state"],
             "history": self.history,
             "goal": sm_result["goal"],
             "collected_data": sm_result["collected_data"],
             "missing_data": sm_result["missing_data"],
-            # SPIN-специфичный контекст
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
+            # Phase 2: Tone instruction
+            "tone_instruction": tone_info.get("tone_instruction", ""),
+            "frustration_level": frustration_level,
+            "should_apologize": tone_info.get("should_apologize", False),
+            "should_offer_exit": tone_info.get("should_offer_exit", False),
+            # Phase 3: Objection info
+            "objection_info": objection_info,
+            # For CTA
+            "last_action": self.last_action,
         }
 
-        response = self.generator.generate(sm_result["action"], context)
+        # Determine action
+        action = sm_result["action"]
 
-        # 4. Сохраняем в историю
+        # If objection detected and needs soft close
+        if objection_info and objection_info.get("should_soft_close"):
+            action = "soft_close"
+            response = objection_info["response_parts"].get("message", "")
+        else:
+            # 3. Generate response
+            if fallback_response:
+                response = fallback_response["response"]
+            else:
+                response = self.generator.generate(action, context)
+
+        # Phase 3: Apply CTA if appropriate
+        if not fallback_response and not (objection_info and objection_info.get("should_soft_close")):
+            response = self._apply_cta(
+                response=response,
+                state=sm_result["next_state"],
+                context={
+                    "frustration_level": frustration_level,
+                    "last_action": self.last_action,
+                }
+            )
+
+        # 4. Save to history
         self.history.append({
             "user": user_message,
             "bot": response
         })
 
-        # 5. Сохраняем контекст для следующего хода (классификация коротких ответов)
-        self.last_action = sm_result["action"]
+        # 5. Save context for next turn
+        self.last_action = action
         self.last_intent = intent
+
+        # 6. Record metrics
+        self._record_turn_metrics(
+            state=sm_result["next_state"],
+            intent=intent,
+            tone=tone_info.get("tone"),
+            fallback_used=fallback_used,
+            fallback_tier=fallback_tier
+        )
+
+        # Record collected data in metrics
+        if flags.metrics_tracking:
+            for key, value in extracted.items():
+                if value:
+                    self.metrics.record_collected_data(key, value)
+
+        # Check if final
+        is_final = sm_result["is_final"]
+        if is_final:
+            if intent == "rejection":
+                self._finalize_metrics(ConversationOutcome.REJECTED)
+            elif "contact_provided" in self.metrics.intents_sequence:
+                self._finalize_metrics(ConversationOutcome.SUCCESS)
+            elif "demo_request" in self.metrics.intents_sequence:
+                self._finalize_metrics(ConversationOutcome.DEMO_SCHEDULED)
+            else:
+                self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
+
+        # Record progress if state changed or data collected
+        if sm_result["prev_state"] != sm_result["next_state"] or extracted:
+            self.guard.record_progress()
 
         return {
             "response": response,
             "intent": intent,
-            "action": sm_result["action"],
+            "action": action,
             "state": sm_result["next_state"],
-            "is_final": sm_result["is_final"],
+            "is_final": is_final,
             "spin_phase": sm_result.get("spin_phase"),
+            # Additional info
+            "fallback_used": fallback_used,
+            "fallback_tier": fallback_tier,
+            "tone": tone_info.get("tone"),
+            "frustration_level": frustration_level,
+            "lead_score": self.lead_scorer.current_score if flags.lead_scoring else None,
+            "objection_detected": objection_info is not None,
+            "options": fallback_response.get("options") if fallback_response else None,
+        }
+
+    def get_metrics_summary(self) -> Dict:
+        """Получить сводку метрик текущего диалога."""
+        if flags.metrics_tracking:
+            return self.metrics.get_summary()
+        return {}
+
+    def get_lead_score(self) -> Dict:
+        """Получить текущий lead score."""
+        if flags.lead_scoring:
+            return self.lead_scorer.get_summary()
+        return {}
+
+    def get_guard_stats(self) -> Dict:
+        """Получить статистику ConversationGuard."""
+        if flags.conversation_guard:
+            return self.guard.get_stats()
+        return {}
+
+    def get_disambiguation_metrics(self) -> Dict:
+        """Получить метрики disambiguation."""
+        return self.disambiguation_metrics.get_summary()
+
+    # =========================================================================
+    # Phase 4: Disambiguation Methods
+    # =========================================================================
+
+    def _initiate_disambiguation(
+        self,
+        classification: Dict,
+        user_message: str,
+        context: Dict,
+        tone_info: Dict
+    ) -> Dict:
+        """
+        Инициировать режим disambiguation.
+
+        Args:
+            classification: Результат классификации с disambiguation_options
+            user_message: Исходное сообщение пользователя
+            context: Текущий контекст
+            tone_info: Информация о тоне
+
+        Returns:
+            Dict с ответом disambiguation
+        """
+        options = classification["disambiguation_options"]
+        question = classification.get("disambiguation_question", "")
+        extracted_data = classification.get("extracted_data", {})
+
+        # Входим в режим disambiguation
+        self.state_machine.enter_disambiguation(
+            options=options,
+            extracted_data=extracted_data
+        )
+
+        # Форматируем вопрос пользователю
+        response = self.disambiguation_ui.format_question(
+            question=question,
+            options=options,
+            context={
+                **context,
+                "frustration_level": tone_info.get("frustration_level", 0)
+            }
+        )
+
+        # Сохраняем в историю
+        self.history.append({
+            "user": user_message,
+            "bot": response,
+            "disambiguation": True,
+        })
+
+        # Записываем метрики
+        self.disambiguation_metrics.record_disambiguation(
+            options=[o["intent"] for o in options],
+            scores=classification.get("original_scores", {})
+        )
+
+        # Логируем
+        logger.info(
+            "Disambiguation triggered",
+            options=[o["intent"] for o in options],
+            top_confidence=classification.get("confidence"),
+            original_intent=classification.get("original_intent")
+        )
+
+        return {
+            "response": response,
+            "intent": "disambiguation_needed",
+            "action": "ask_clarification",
+            "state": self.state_machine.state,
+            "is_final": False,
+            "disambiguation_options": options,
+        }
+
+    def _handle_disambiguation_response(self, user_message: str) -> Dict:
+        """
+        Обработать ответ пользователя в режиме disambiguation.
+
+        Args:
+            user_message: Ответ пользователя
+
+        Returns:
+            Dict с результатом обработки
+        """
+        context = self.state_machine.disambiguation_context
+        if not context:
+            # Guard: если контекста нет, выходим из disambiguation
+            self.state_machine.exit_disambiguation()
+            logger.warning("Disambiguation context is None, exiting")
+            return self._continue_with_classification({
+                "intent": "unclear",
+                "confidence": 0.3,
+                "extracted_data": {},
+                "method": "disambiguation_error"
+            })
+
+        options = context["options"]
+        extracted_data = context.get("extracted_data", {})
+        attempt = context.get("attempt", 1)
+
+        # Сначала проверяем критические интенты (контакт, отказ, демо)
+        # Они имеют приоритет над disambiguation
+        current_context = self._get_classification_context()
+        current_context["in_disambiguation"] = True
+
+        quick_check = self.classifier.classify(user_message, current_context)
+
+        if quick_check["intent"] in ["contact_provided", "rejection", "demo_request"]:
+            # Критический интент - выходим из disambiguation и обрабатываем
+            self.state_machine.exit_disambiguation()
+            merged_extracted = {**extracted_data, **quick_check.get("extracted_data", {})}
+            quick_check["extracted_data"] = merged_extracted
+
+            logger.info(
+                "Disambiguation interrupted by critical intent",
+                intent=quick_check["intent"]
+            )
+
+            return self._continue_with_classification(quick_check)
+
+        # Пробуем распознать ответ на disambiguation
+        resolved_intent = self.disambiguation_ui.parse_answer(
+            answer=user_message,
+            options=options
+        )
+
+        if resolved_intent:
+            # Успешно распознали ответ
+            current_state, intent = self.state_machine.resolve_disambiguation(resolved_intent)
+
+            self.disambiguation_metrics.record_resolution(
+                resolved_intent=resolved_intent,
+                attempt=attempt,
+                success=True
+            )
+
+            logger.info(
+                "Disambiguation resolved",
+                resolved_intent=resolved_intent,
+                attempt=attempt
+            )
+
+            return self._continue_with_classification({
+                "intent": resolved_intent,
+                "confidence": 0.9,
+                "extracted_data": extracted_data,
+                "method": "disambiguation_resolved"
+            })
+        else:
+            # Не удалось распознать ответ
+            context["attempt"] = attempt + 1
+
+            if context["attempt"] > 2:
+                # Превышен лимит попыток - выходим
+                return self._fallback_from_disambiguation()
+            else:
+                # Повторяем вопрос
+                return self._repeat_disambiguation_question(context)
+
+    def _continue_with_classification(self, classification: Dict) -> Dict:
+        """
+        Продолжить обработку с заданной классификацией.
+
+        Args:
+            classification: Результат классификации
+
+        Returns:
+            Dict с результатом обработки
+        """
+        intent = classification["intent"]
+        extracted = classification.get("extracted_data", {})
+        confidence = classification.get("confidence", 0.5)
+
+        # Обновляем собранные данные
+        if extracted:
+            self.state_machine.update_data(extracted)
+
+        # Обрабатываем через state machine
+        sm_result = self.state_machine.process(intent, extracted)
+
+        # Контекст для генерации ответа
+        context = {
+            "user_message": "",  # Уже обработано в disambiguation
+            "intent": intent,
+            "state": sm_result["next_state"],
+            "history": self.history,
+            "goal": sm_result["goal"],
+            "collected_data": sm_result["collected_data"],
+            "missing_data": sm_result["missing_data"],
+            "spin_phase": sm_result.get("spin_phase"),
+            "optional_data": sm_result.get("optional_data", []),
+        }
+
+        action = sm_result["action"]
+        response = self.generator.generate(action, context)
+
+        # Сохраняем в историю
+        self.history.append({
+            "user": "",  # Пользователь ответил в disambiguation
+            "bot": response,
+            "intent": intent,
+            "action": action,
+        })
+
+        # Обновляем контекст
+        self.last_action = action
+        self.last_intent = intent
+
+        # Записываем метрики
+        self._record_turn_metrics(
+            state=sm_result["next_state"],
+            intent=intent,
+            tone=None,
+            fallback_used=False,
+            fallback_tier=None
+        )
+
+        # Проверяем финальное состояние
+        is_final = sm_result["is_final"]
+        if is_final:
+            if intent == "rejection":
+                self._finalize_metrics(ConversationOutcome.REJECTED)
+            elif "contact_provided" in self.metrics.intents_sequence:
+                self._finalize_metrics(ConversationOutcome.SUCCESS)
+            elif "demo_request" in self.metrics.intents_sequence:
+                self._finalize_metrics(ConversationOutcome.DEMO_SCHEDULED)
+            else:
+                self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
+
+        return {
+            "response": response,
+            "intent": intent,
+            "confidence": confidence,
+            "action": action,
+            "state": sm_result["next_state"],
+            "extracted_data": extracted,
+            "is_final": is_final,
+            "spin_phase": sm_result.get("spin_phase"),
+        }
+
+    def _fallback_from_disambiguation(self) -> Dict:
+        """
+        Выйти из disambiguation с fallback на unclear.
+
+        Returns:
+            Dict с результатом
+        """
+        context = self.state_machine.disambiguation_context
+        extracted_data = context.get("extracted_data", {}) if context else {}
+        attempt = context.get("attempt", 0) if context else 0
+
+        self.disambiguation_metrics.record_resolution(
+            resolved_intent="unclear",
+            attempt=attempt,
+            success=False
+        )
+
+        logger.warning(
+            "Disambiguation failed, falling back to unclear",
+            attempts=attempt
+        )
+
+        self.state_machine.exit_disambiguation()
+
+        return self._continue_with_classification({
+            "intent": "unclear",
+            "confidence": 0.3,
+            "extracted_data": extracted_data,
+            "method": "disambiguation_fallback"
+        })
+
+    def _repeat_disambiguation_question(self, context: Dict) -> Dict:
+        """
+        Повторить вопрос disambiguation.
+
+        Args:
+            context: Контекст disambiguation
+
+        Returns:
+            Dict с повторным вопросом
+        """
+        options = context["options"]
+        response = self.disambiguation_ui.format_repeat_question(options)
+
+        logger.info(
+            "Disambiguation repeat",
+            attempt=context.get("attempt", 2)
+        )
+
+        return {
+            "response": response,
+            "intent": "disambiguation_needed",
+            "action": "repeat_clarification",
+            "state": self.state_machine.state,
+            "is_final": False,
         }
 
 
 def run_interactive(bot: SalesBot):
-    """Интерактивный режим"""
-    print("\n" + "="*50)
-    print("CRM Sales Bot")
-    print("Команды: /reset /status /quit")
-    print("="*50 + "\n")
+    """Интерактивный режим для тестирования."""
+    print("\n" + "=" * 60)
+    print("CRM Sales Bot (Phase 4 Integration)")
+    print("Команды: /reset /status /metrics /lead /flags /quit")
+    print("=" * 60 + "\n")
 
     while True:
         try:
@@ -123,14 +1007,41 @@ def run_interactive(bot: SalesBot):
             if user_input == "/status":
                 sm = bot.state_machine
                 print(f"\nСостояние: {sm.state}")
-                print(f"Данные: {sm.collected_data}\n")
+                print(f"Данные: {sm.collected_data}")
+                print(f"Guard: {bot.get_guard_stats()}\n")
+                continue
+
+            if user_input == "/metrics":
+                print(f"\nМетрики: {bot.get_metrics_summary()}\n")
+                continue
+
+            if user_input == "/lead":
+                print(f"\nLead Score: {bot.get_lead_score()}\n")
+                continue
+
+            if user_input == "/flags":
+                print(f"\nEnabled flags: {list(flags.get_enabled_flags())}\n")
                 continue
 
             result = bot.process(user_input)
 
             print(f"Бот: {result['response']}")
-            spin_info = f" (SPIN: {result['spin_phase']})" if result.get('spin_phase') else ""
-            print(f"  [{result['state']}] {result['action']}{spin_info}\n")
+
+            # Status line
+            status_parts = [f"[{result['state']}]", result['action']]
+            if result.get('spin_phase'):
+                status_parts.append(f"SPIN:{result['spin_phase']}")
+            if result.get('fallback_used'):
+                status_parts.append(f"FB:{result['fallback_tier']}")
+            if result.get('tone'):
+                status_parts.append(f"Tone:{result['tone']}")
+            if result.get('lead_score') is not None:
+                status_parts.append(f"Score:{result['lead_score']}")
+
+            print(f"  {' | '.join(status_parts)}\n")
+
+            if result.get("options"):
+                print(f"  Варианты: {result['options']}\n")
 
             if result["is_final"]:
                 print("[Диалог завершён]")
@@ -146,6 +1057,12 @@ def run_interactive(bot: SalesBot):
 
 if __name__ == "__main__":
     from llm import OllamaLLM
+
+    # Enable all flags for testing
+    flags.enable_group("phase_0")
+    flags.enable_group("phase_1")
+    flags.enable_group("phase_2")
+    flags.enable_group("phase_3")
 
     llm = OllamaLLM()
     bot = SalesBot(llm)

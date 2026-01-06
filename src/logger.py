@@ -212,6 +212,82 @@ logger = StructuredLogger("crm_sales_bot")
 
 
 # =============================================================================
+# Disambiguation Logging Helpers
+# =============================================================================
+
+def log_disambiguation_triggered(
+    conversation_id: str,
+    options: list,
+    scores: dict,
+    top_confidence: float,
+    score_gap: float
+) -> None:
+    """
+    Логирование срабатывания disambiguation.
+
+    Args:
+        conversation_id: ID диалога
+        options: Список опций
+        scores: Merged scores
+        top_confidence: Confidence top интента
+        score_gap: Разница между top-1 и top-2
+    """
+    logger.info(
+        "Disambiguation triggered",
+        conversation_id=conversation_id,
+        options=options,
+        top_confidence=top_confidence,
+        score_gap=score_gap,
+        scores=scores,
+    )
+
+
+def log_disambiguation_resolved(
+    conversation_id: str,
+    resolved_intent: str,
+    attempt: int,
+    user_answer: str
+) -> None:
+    """
+    Логирование успешного разрешения disambiguation.
+
+    Args:
+        conversation_id: ID диалога
+        resolved_intent: Выбранный интент
+        attempt: Номер попытки
+        user_answer: Ответ пользователя
+    """
+    logger.info(
+        "Disambiguation resolved",
+        conversation_id=conversation_id,
+        resolved_intent=resolved_intent,
+        attempt=attempt,
+        user_answer=user_answer,
+    )
+
+
+def log_disambiguation_failed(
+    conversation_id: str,
+    attempts: int,
+    last_answer: str
+) -> None:
+    """
+    Логирование неудачного disambiguation (fallback).
+
+    Args:
+        conversation_id: ID диалога
+        attempts: Количество попыток
+        last_answer: Последний ответ пользователя
+    """
+    logger.warning(
+        "Disambiguation failed",
+        conversation_id=conversation_id,
+        attempts=attempts,
+        last_answer=last_answer,
+    )
+
+
+# =============================================================================
 # Утилиты для тестирования
 # =============================================================================
 

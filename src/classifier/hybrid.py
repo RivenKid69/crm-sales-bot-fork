@@ -6,12 +6,14 @@
 - RootClassifier: быстрая классификация по корням
 - LemmaClassifier: fallback через pymorphy
 - DataExtractor: извлечение структурированных данных
+- DisambiguationAnalyzer: уточнение намерения при близких scores
 """
 
 import re
 from typing import Dict, Optional
 
 from config import CLASSIFIER_CONFIG
+from feature_flags import flags
 from .normalizer import TextNormalizer
 from .intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
 from .extractors import DataExtractor
@@ -34,6 +36,15 @@ class HybridClassifier:
         self.lemma_classifier = LemmaClassifier()
         self.data_extractor = DataExtractor()
         self.config = CLASSIFIER_CONFIG
+        self._disambiguation_analyzer = None
+
+    @property
+    def disambiguation_analyzer(self):
+        """Lazy initialization of DisambiguationAnalyzer."""
+        if self._disambiguation_analyzer is None:
+            from .disambiguation import DisambiguationAnalyzer
+            self._disambiguation_analyzer = DisambiguationAnalyzer(self.config)
+        return self._disambiguation_analyzer
 
     def classify(self, message: str, context: Dict = None) -> Dict:
         """
@@ -66,13 +77,14 @@ class HybridClassifier:
         # Короткие ответы ("да", "нет", "ок") требуют контекста для правильной
         # интерпретации. Если есть контекст (last_action, spin_phase, state),
         # используем его ПЕРЕД обычными паттернами.
+        # НО: пропускаем если в режиме disambiguation (ответ обрабатывается отдельно)
         if is_short_message:
             has_context = (
                 context.get("last_action") or
                 context.get("spin_phase") or
                 context.get("state")
             )
-            if has_context:
+            if has_context and not context.get("in_disambiguation"):
                 context_result = self._classify_short_answer(message_lower, context)
                 if context_result:
                     # Извлекаем данные с учётом контекстного интента
@@ -186,6 +198,33 @@ class HybridClassifier:
         # 3. Fallback на лемматизацию
         lemma_intent, lemma_conf, lemma_scores = self.lemma_classifier.classify(message)
 
+        # =================================================================
+        # ПРИОРИТЕТ 8: DISAMBIGUATION
+        # =================================================================
+        # Если feature flag включён и мы НЕ в режиме disambiguation,
+        # проверяем нужно ли уточнить намерение пользователя
+        if flags.intent_disambiguation:
+            if not context.get("in_disambiguation"):
+                disambiguation_result = self.disambiguation_analyzer.analyze(
+                    root_scores=root_scores,
+                    lemma_scores=lemma_scores,
+                    context=context
+                )
+
+                if disambiguation_result.needs_disambiguation:
+                    return {
+                        "intent": "disambiguation_needed",
+                        "confidence": disambiguation_result.top_confidence,
+                        "extracted_data": extracted,
+                        "method": "disambiguation",
+                        "disambiguation_options": disambiguation_result.options,
+                        "disambiguation_question": disambiguation_result.question,
+                        "original_scores": disambiguation_result.merged_scores,
+                        "original_intent": (
+                            root_intent if root_conf > lemma_conf else lemma_intent
+                        ),
+                    }
+
         # 4. Выбираем лучший результат
         if lemma_conf > root_conf:
             return {
@@ -229,6 +268,10 @@ class HybridClassifier:
         Returns:
             {"intent": str, "confidence": float} или None если не определено
         """
+        # Не обрабатываем короткие ответы в режиме disambiguation
+        if context.get("in_disambiguation"):
+            return None
+
         last_action = context.get("last_action")
         last_intent = context.get("last_intent")
         spin_phase = context.get("spin_phase")

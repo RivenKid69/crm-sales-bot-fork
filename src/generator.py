@@ -327,7 +327,7 @@ class ResponseGenerator:
                 top_k=settings.get_nested("category_router.top_k", 3),
                 fallback_categories=settings.get_nested(
                     "category_router.fallback_categories",
-                    ["other", "faq"]
+                    ["faq", "features"]
                 )
             )
             logger.info("CategoryRouter initialized", top_k=self.category_router.top_k)
