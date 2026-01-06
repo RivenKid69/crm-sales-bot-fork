@@ -521,5 +521,335 @@ class TestSpecificStates:
         )
 
 
+class TestDynamicCTAOptions:
+    """Tests for Dynamic CTA text suggestions in Tier 2"""
+
+    def setup_method(self):
+        from feature_flags import flags
+        flags.set_override("dynamic_cta_fallback", True)
+        self.handler = FallbackHandler()
+
+    def teardown_method(self):
+        from feature_flags import flags
+        flags.clear_override("dynamic_cta_fallback")
+
+    def test_competitor_mentioned_shows_comparison_options(self):
+        """Упоминание конкурента → подсказки про сравнение"""
+        context = {
+            "collected_data": {
+                "competitor_mentioned": True,
+                "competitor_name": "Битрикс",
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        assert "Сравнить" in response.message
+        assert "Битрикс" in response.message
+        assert "1." in response.message  # Нумерованный список
+
+    def test_competitor_name_substituted(self):
+        """Имя конкурента подставляется в шаблон"""
+        context = {
+            "collected_data": {
+                "competitor_mentioned": True,
+                "competitor_name": "iiko",
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        assert "iiko" in response.message
+
+    def test_pain_point_losing_clients(self):
+        """Pain point про потерю клиентов → релевантные подсказки"""
+        context = {
+            "collected_data": {
+                "pain_point": "теряем клиентов",
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        assert any(word in response.message.lower() for word in ["напоминания", "контроль", "аналитика"])
+
+    def test_large_company_options(self):
+        """Большая компания → enterprise подсказки"""
+        context = {
+            "collected_data": {
+                "company_size": 50,
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_situation", context)
+
+        assert any(word in response.message.lower() for word in ["интеграци", "масштаб", "права"])
+
+    def test_small_company_options(self):
+        """Маленькая компания → простые подсказки"""
+        context = {
+            "collected_data": {
+                "company_size": 3,
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_situation", context)
+
+        assert any(word in response.message.lower() for word in ["базов", "быстр", "бесплатн"])
+
+    def test_after_price_question(self):
+        """После вопроса о цене → подсказки про оплату"""
+        context = {
+            "collected_data": {},
+            "last_intent": "price_question",
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "presentation", context)
+
+        assert any(word in response.message.lower() for word in ["оплат", "тариф", "пробн"])
+
+    def test_competitor_beats_pain_point_priority(self):
+        """Competitor (priority 10) важнее pain_point (priority 8)"""
+        context = {
+            "collected_data": {
+                "competitor_mentioned": True,
+                "competitor_name": "AmoCRM",
+                "pain_point": "нет контроля",
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        # Должны быть подсказки про конкурента, не про контроль
+        assert "AmoCRM" in response.message or "Сравнить" in response.message
+
+    def test_max_four_options(self):
+        """Не больше 4 вариантов"""
+        context = {
+            "collected_data": {"competitor_mentioned": True},
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        # Считаем номера в сообщении
+        assert "5." not in response.message
+        assert response.options is None or len(response.options) <= 4
+
+    def test_includes_input_hint(self):
+        """Сообщение содержит подсказку про ввод"""
+        context = {
+            "collected_data": {"competitor_mentioned": True},
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        assert "номер" in response.message.lower() or "своими словами" in response.message.lower()
+
+    def test_fallback_to_static_when_no_context(self):
+        """Пустой контекст → статичные подсказки"""
+        context = {"collected_data": {}}
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_situation", context)
+
+        # Статичные подсказки для spin_situation (с нумерацией)
+        assert "1." in response.message  # Нумерованный список
+        assert "человек" in response.message.lower()
+
+    def test_fallback_to_static_when_flag_disabled(self):
+        """Flag выключен → статичные подсказки"""
+        from feature_flags import flags
+        flags.set_override("dynamic_cta_fallback", False)
+
+        context = {
+            "collected_data": {"competitor_mentioned": True},
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_situation", context)
+
+        # Не должно быть competitor-специфичных подсказок
+        assert "Сравнить" not in response.message
+
+    def test_stats_track_dynamic_cta_type(self):
+        """Статистика записывает тип динамических подсказок"""
+        context = {
+            "collected_data": {"competitor_mentioned": True},
+        }
+
+        self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        stats = self.handler.get_stats_dict()
+        assert stats["dynamic_cta_counts"].get("competitor_mentioned", 0) >= 1
+
+    def test_pain_no_control_options(self):
+        """Pain point про контроль → релевантные подсказки"""
+        context = {
+            "collected_data": {
+                "pain_point": "нет контроля",
+            },
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        assert any(word in response.message.lower() for word in ["контроль", "задач", "отчёт"])
+
+    def test_after_features_question(self):
+        """После вопроса о функциях → подсказки про функции"""
+        context = {
+            "collected_data": {},
+            "last_intent": "question_features",
+        }
+
+        response = self.handler.get_fallback("fallback_tier_2", "presentation", context)
+
+        assert any(word in response.message.lower() for word in ["автоматиз", "аналитик", "интеграци", "демо"])
+
+
+class TestDynamicCTAStats:
+    """Tests for Dynamic CTA statistics in FallbackStats"""
+
+    def test_stats_includes_dynamic_cta_counts(self):
+        """FallbackStats includes dynamic_cta_counts"""
+        stats = FallbackStats()
+        assert hasattr(stats, 'dynamic_cta_counts')
+        assert stats.dynamic_cta_counts == {}
+
+    def test_get_stats_dict_includes_dynamic_cta_counts(self):
+        """get_stats_dict includes dynamic_cta_counts"""
+        from feature_flags import flags
+        flags.set_override("dynamic_cta_fallback", True)
+
+        handler = FallbackHandler()
+        context = {"collected_data": {"competitor_mentioned": True}}
+        handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        stats = handler.get_stats_dict()
+        assert "dynamic_cta_counts" in stats
+
+        flags.clear_override("dynamic_cta_fallback")
+
+
+class TestCompetitorExtraction:
+    """Tests for competitor name extraction in SalesBot"""
+
+    def setup_method(self):
+        # Import here to avoid circular imports
+        import sys
+        sys.path.insert(0, 'src')
+
+    def test_extract_bitrix(self):
+        """Извлечение Битрикс"""
+        from bot import SalesBot
+
+        class MockLLM:
+            def generate(self, *args, **kwargs):
+                return "Test"
+
+        bot = SalesBot(MockLLM())
+
+        assert bot._extract_competitor_name("у нас сейчас битрикс") == "Битрикс"
+        assert bot._extract_competitor_name("используем bitrix24") == "Битрикс"
+        assert bot._extract_competitor_name("работаем с Bitrix") == "Битрикс"
+
+    def test_extract_amocrm(self):
+        """Извлечение AmoCRM"""
+        from bot import SalesBot
+
+        class MockLLM:
+            def generate(self, *args, **kwargs):
+                return "Test"
+
+        bot = SalesBot(MockLLM())
+
+        assert bot._extract_competitor_name("пользуемся амо") == "AmoCRM"
+        assert bot._extract_competitor_name("у нас amocrm") == "AmoCRM"
+        assert bot._extract_competitor_name("сидим на amo crm") == "AmoCRM"
+
+    def test_extract_iiko(self):
+        """Извлечение iiko"""
+        from bot import SalesBot
+
+        class MockLLM:
+            def generate(self, *args, **kwargs):
+                return "Test"
+
+        bot = SalesBot(MockLLM())
+
+        assert bot._extract_competitor_name("работаем с iiko") == "iiko"
+        assert bot._extract_competitor_name("у нас ийко") == "iiko"
+
+    def test_extract_1c(self):
+        """Извлечение 1С"""
+        from bot import SalesBot
+
+        class MockLLM:
+            def generate(self, *args, **kwargs):
+                return "Test"
+
+        bot = SalesBot(MockLLM())
+
+        assert bot._extract_competitor_name("используем 1с") == "1С"
+        assert bot._extract_competitor_name("у нас 1C") == "1С"
+
+    def test_extract_megaplan(self):
+        """Извлечение Мегаплан"""
+        from bot import SalesBot
+
+        class MockLLM:
+            def generate(self, *args, **kwargs):
+                return "Test"
+
+        bot = SalesBot(MockLLM())
+
+        assert bot._extract_competitor_name("работаем в мегаплане") == "Мегаплан"
+        assert bot._extract_competitor_name("megaplan у нас") == "Мегаплан"
+
+    def test_no_competitor(self):
+        """Нет конкурента в сообщении"""
+        from bot import SalesBot
+
+        class MockLLM:
+            def generate(self, *args, **kwargs):
+                return "Test"
+
+        bot = SalesBot(MockLLM())
+
+        assert bot._extract_competitor_name("нам нужна CRM") is None
+        assert bot._extract_competitor_name("хотим автоматизировать") is None
+
+
+class TestFormattedOptions:
+    """Tests for formatted options output"""
+
+    def test_options_have_numbered_list(self):
+        """Options are formatted as numbered list"""
+        from feature_flags import flags
+        flags.set_override("dynamic_cta_fallback", True)
+
+        handler = FallbackHandler()
+        context = {"collected_data": {"competitor_mentioned": True}}
+        response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        # Проверяем что есть нумерация
+        assert "1." in response.message
+        assert "2." in response.message
+        assert "3." in response.message
+        assert "4." in response.message
+
+        flags.clear_override("dynamic_cta_fallback")
+
+    def test_options_have_footer_hint(self):
+        """Options include footer hint"""
+        from feature_flags import flags
+        flags.set_override("dynamic_cta_fallback", True)
+
+        handler = FallbackHandler()
+        context = {"collected_data": {"competitor_mentioned": True}}
+        response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
+
+        assert "Напишите номер" in response.message or "своими словами" in response.message
+
+        flags.clear_override("dynamic_cta_fallback")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

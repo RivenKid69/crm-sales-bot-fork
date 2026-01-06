@@ -589,6 +589,60 @@ class TestDataExtractor:
         # Может извлечься как company_size или users_count
         assert result.get("users_count") == 25 or result.get("company_size") == 25
 
+    # =========================================================================
+    # OPTION INDEX (ответ номером на варианты fallback)
+    # =========================================================================
+
+    def test_extract_option_index_digit_1(self):
+        """Цифра 1 → option_index=0"""
+        result = self.extractor.extract("1")
+        assert result.get("option_index") == 0
+
+    def test_extract_option_index_digit_2(self):
+        """Цифра 2 → option_index=1"""
+        result = self.extractor.extract("2")
+        assert result.get("option_index") == 1
+
+    def test_extract_option_index_digit_3(self):
+        """Цифра 3 → option_index=2"""
+        result = self.extractor.extract("3")
+        assert result.get("option_index") == 2
+
+    def test_extract_option_index_digit_4(self):
+        """Цифра 4 → option_index=3"""
+        result = self.extractor.extract("4")
+        assert result.get("option_index") == 3
+
+    def test_extract_option_index_word_first(self):
+        """Слово первый → option_index=0"""
+        result = self.extractor.extract("первый")
+        assert result.get("option_index") == 0
+
+    def test_extract_option_index_word_second(self):
+        """Слово второй → option_index=1"""
+        result = self.extractor.extract("второй")
+        assert result.get("option_index") == 1
+
+    def test_extract_option_index_word_third(self):
+        """Слово третий → option_index=2"""
+        result = self.extractor.extract("третий")
+        assert result.get("option_index") == 2
+
+    def test_extract_option_index_word_fourth(self):
+        """Слово четвёртый → option_index=3"""
+        result = self.extractor.extract("четвёртый")
+        assert result.get("option_index") == 3
+
+    def test_extract_option_index_word_one(self):
+        """Слово один → option_index=0"""
+        result = self.extractor.extract("один")
+        assert result.get("option_index") == 0
+
+    def test_extract_option_index_no_match(self):
+        """Обычный текст не извлекает option_index"""
+        result = self.extractor.extract("Мне нужна помощь")
+        assert result.get("option_index") is None
+
 
 class TestShortAnswerClassification:
     """Тесты для контекстной классификации коротких ответов

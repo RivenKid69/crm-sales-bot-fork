@@ -346,6 +346,23 @@ class SalesBot:
             logger.error("Objection handling failed", error=str(e))
             return None
 
+    def _extract_competitor_name(self, message: str) -> Optional[str]:
+        """Extract competitor name from message."""
+        competitors = {
+            "Битрикс": ["битрикс", "bitrix", "bitrix24"],
+            "AmoCRM": ["амо", "amocrm", "amo crm", "амосрм"],
+            "iiko": ["iiko", "ийко", "айко"],
+            "Poster": ["poster", "постер"],
+            "1С": ["1с", "1c", "1с:crm"],
+            "Мегаплан": ["мегаплан", "megaplan"],
+            "R-Keeper": ["r-keeper", "r_keeper", "ркипер"],
+        }
+        msg_lower = message.lower()
+        for display_name, patterns in competitors.items():
+            if any(p in msg_lower for p in patterns):
+                return display_name
+        return None
+
     def _update_lead_score(self, intent: str) -> None:
         """Обновить lead score на основе интента (Phase 3)."""
         if not flags.lead_scoring:
@@ -493,7 +510,12 @@ class SalesBot:
             fb_result = self._apply_fallback(
                 intervention=intervention,
                 state=current_state,
-                context={"collected_data": collected_data}
+                context={
+                    "collected_data": collected_data,
+                    "last_intent": self.last_intent,
+                    "last_action": self.last_action,
+                    "frustration_level": frustration_level,
+                }
             )
 
             if fb_result.get("response"):
@@ -531,6 +553,13 @@ class SalesBot:
         classification = self.classifier.classify(user_message, current_context)
         intent = classification["intent"]
         extracted = classification["extracted_data"]
+
+        # Track competitor mention for dynamic CTA
+        if intent == "objection_competitor":
+            self.state_machine.collected_data["competitor_mentioned"] = True
+            competitor_name = self._extract_competitor_name(user_message)
+            if competitor_name:
+                self.state_machine.collected_data["competitor_name"] = competitor_name
 
         # =================================================================
         # Phase 4: Handle disambiguation_needed intent

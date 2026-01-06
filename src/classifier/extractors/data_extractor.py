@@ -27,6 +27,18 @@ class DataExtractor:
         missing_data = context.get("missing_data", [])
         spin_phase = context.get("spin_phase")
 
+        # Распознавание номерных ответов для fallback options
+        number_responses = {
+            "1": 0, "первое": 0, "первый": 0, "один": 0,
+            "2": 1, "второе": 1, "второй": 1, "два": 1,
+            "3": 2, "третье": 2, "третий": 2, "три": 2,
+            "4": 3, "четвёртое": 3, "четвертое": 3, "четвёртый": 3, "четвертый": 3, "четыре": 3,
+        }
+
+        msg_stripped = message_lower.strip()
+        if msg_stripped in number_responses:
+            extracted["option_index"] = number_responses[msg_stripped]
+
         # === Размер компании ===
         size_patterns = [
             r'(\d+)\s*(?:человек|чел\.?|менеджер|сотрудник|продаж|продавц|официант|повар|работник|кассир)',

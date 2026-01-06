@@ -57,6 +57,9 @@ class FeatureFlags:
 
         # Фаза 4: Intent Disambiguation
         "intent_disambiguation": False,   # Уточнение намерения при близких scores
+
+        # Фаза 5: Dynamic CTA Fallback
+        "dynamic_cta_fallback": False,    # Динамические подсказки в fallback tier_2
     }
 
     # Группы флагов для удобного управления
@@ -64,7 +67,7 @@ class FeatureFlags:
         "phase_0": ["structured_logging", "metrics_tracking"],
         "phase_1": ["multi_tier_fallback", "conversation_guard"],
         "phase_2": ["tone_analysis", "response_variations", "personalization"],
-        "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator"],
+        "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
         "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard"],
         "risky": ["circular_flow", "lead_scoring"],
     }
@@ -245,6 +248,11 @@ class FeatureFlags:
     def intent_disambiguation(self) -> bool:
         """Включено ли уточнение намерения при близких scores"""
         return self.is_enabled("intent_disambiguation")
+
+    @property
+    def dynamic_cta_fallback(self) -> bool:
+        """Включены ли динамические подсказки в fallback tier_2"""
+        return self.is_enabled("dynamic_cta_fallback")
 
 
 # Singleton экземпляр

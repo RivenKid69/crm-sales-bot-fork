@@ -42,6 +42,8 @@ class FallbackStats:
     state_counts: Dict[str, int] = field(default_factory=dict)
     last_tier: Optional[str] = None
     last_state: Optional[str] = None
+    # Dynamic CTA tracking
+    dynamic_cta_counts: Dict[str, int] = field(default_factory=dict)
 
 
 class FallbackHandler:
@@ -124,6 +126,115 @@ class FallbackHandler:
             "options": ["Как работает", "Сколько стоит", "Как внедрить", "Показать демо"]
         },
     }
+
+    # Динамические подсказки по контексту (priority descending)
+    DYNAMIC_CTA_OPTIONS: Dict[str, Dict[str, Any]] = {
+        "competitor_mentioned": {
+            "question": "Что важнее всего при выборе системы?",
+            "options": [
+                "Сравнить функции с {competitor}",
+                "Узнать о переходе с {competitor}",
+                "Посмотреть демо",
+                "Узнать цены"
+            ],
+            "priority": 10
+        },
+        "pain_losing_clients": {
+            "question": "Что поможет решить эту проблему?",
+            "options": [
+                "Автоматические напоминания клиентам",
+                "Контроль работы менеджеров",
+                "Аналитика по клиентам",
+                "Посмотреть как это работает"
+            ],
+            "priority": 8
+        },
+        "pain_no_control": {
+            "question": "Какой контроль для вас важнее?",
+            "options": [
+                "Видеть всех клиентов в одном месте",
+                "Контроль задач и сроков",
+                "Отчёты и аналитика",
+                "Посмотреть как это работает"
+            ],
+            "priority": 8
+        },
+        "pain_manual_work": {
+            "question": "Что хотелось бы автоматизировать?",
+            "options": [
+                "Напоминания и follow-up",
+                "Отчёты и документы",
+                "Распределение заявок",
+                "Посмотреть возможности"
+            ],
+            "priority": 8
+        },
+        "large_company": {
+            "question": "Что важнее для вашей команды?",
+            "options": [
+                "Интеграции с другими системами",
+                "Права доступа и роли",
+                "Масштабируемость",
+                "Запланировать демо"
+            ],
+            "priority": 5
+        },
+        "small_company": {
+            "question": "С чего хотите начать?",
+            "options": [
+                "Узнать базовые функции",
+                "Быстрый старт за 15 минут",
+                "Узнать стоимость",
+                "Попробовать бесплатно"
+            ],
+            "priority": 5
+        },
+        "after_price_question": {
+            "question": "Что ещё хотите узнать?",
+            "options": [
+                "Условия оплаты",
+                "Есть ли пробный период",
+                "Что входит в тариф",
+                "Запланировать демо"
+            ],
+            "priority": 7
+        },
+        "after_features_question": {
+            "question": "Какие функции интересуют больше всего?",
+            "options": [
+                "Автоматизация рутины",
+                "Аналитика и отчёты",
+                "Интеграции",
+                "Показать всё на демо"
+            ],
+            "priority": 6
+        },
+    }
+
+    # Маппинг pain_point → тип динамических подсказок
+    PAIN_POINT_MAPPING: Dict[str, str] = {
+        "потеря клиентов": "pain_losing_clients",
+        "теряем клиентов": "pain_losing_clients",
+        "клиенты уходят": "pain_losing_clients",
+        "отток": "pain_losing_clients",
+        "упускаем сделки": "pain_losing_clients",
+        "теряем заявки": "pain_losing_clients",
+        "лиды остывают": "pain_losing_clients",
+        "нет контроля": "pain_no_control",
+        "нет видимости": "pain_no_control",
+        "не вижу": "pain_no_control",
+        "хаос": "pain_no_control",
+        "бардак": "pain_no_control",
+        "excel": "pain_no_control",
+        "в головах": "pain_no_control",
+        "ручная работа": "pain_manual_work",
+        "много рутины": "pain_manual_work",
+        "трачу время": "pain_manual_work",
+        "долго": "pain_manual_work",
+    }
+
+    # Подпись для текстовых вариантов
+    OPTIONS_FOOTER = "\nНапишите номер или ответьте своими словами."
 
     # Tier 3: Предложить skip
     SKIP_TEMPLATES: List[str] = [
@@ -230,19 +341,168 @@ class FallbackHandler:
         )
 
     def _tier_2_options(self, state: str, context: Dict) -> FallbackResponse:
-        """Tier 2: Предложить варианты (кнопки)"""
+        """
+        Tier 2: Предложить варианты (текстовые подсказки).
+
+        Динамические подсказки на основе контекста:
+        1. competitor_mentioned → сравнение и переход
+        2. pain_point → решение конкретной проблемы
+        3. last_intent → релевантные follow-up
+        4. company_size → масштаб решения
+        5. Fallback к статичным если контекст пуст
+        """
+        from feature_flags import flags
+
+        if not flags.is_enabled("dynamic_cta_fallback"):
+            return self._get_static_tier_2_options(state, context)
+
+        collected = context.get("collected_data", {})
+        last_intent = context.get("last_intent")
+
+        best = self._select_dynamic_options(collected, last_intent, state)
+
+        if best:
+            option_type = best.get("_type", "unknown")
+            self._stats.dynamic_cta_counts[option_type] = \
+                self._stats.dynamic_cta_counts.get(option_type, 0) + 1
+
+            logger.info("Dynamic CTA selected", option_type=option_type, state=state)
+
+            # Форматируем сообщение с нумерованными вариантами
+            message = self._format_options_message(
+                question=best["question"],
+                options=best["options"][:4],
+                collected_data=collected
+            )
+
+            return FallbackResponse(
+                message=message,
+                options=best["options"][:4],  # Сохраняем для аналитики
+                action="continue",
+                next_state=None
+            )
+
+        return self._get_static_tier_2_options(state, context)
+
+    def _get_static_tier_2_options(self, state: str, context: Dict) -> FallbackResponse:
+        """Статичные варианты (оригинальное поведение)."""
         template = self.OPTIONS_TEMPLATES.get(state)
 
         if template:
+            collected = context.get("collected_data", {})
+            message = self._format_options_message(
+                question=template["question"],
+                options=template["options"],
+                collected_data=collected
+            )
             return FallbackResponse(
-                message=template["question"],
+                message=message,
                 options=template["options"].copy(),
                 action="continue",
                 next_state=None
             )
 
-        # Fallback к tier_1 если нет опций для этого состояния
         return self._tier_1_rephrase(state, context)
+
+    def _format_options_message(
+        self,
+        question: str,
+        options: List[str],
+        collected_data: Dict
+    ) -> str:
+        """
+        Форматирует сообщение с нумерованными вариантами.
+
+        Пример вывода:
+            Что важнее всего при выборе системы?
+
+            1. Сравнить функции с Битрикс
+            2. Узнать о переходе
+            3. Посмотреть демо
+            4. Узнать цены
+
+            Напишите номер или ответьте своими словами.
+        """
+        # Подставляем имя конкурента если есть placeholder
+        competitor_name = collected_data.get("competitor_name", "текущей системой")
+        formatted_options = []
+
+        for i, opt in enumerate(options, 1):
+            formatted_opt = opt.format(competitor=competitor_name)
+            formatted_options.append(f"{i}. {formatted_opt}")
+
+        options_text = "\n".join(formatted_options)
+
+        return f"{question}\n\n{options_text}{self.OPTIONS_FOOTER}"
+
+    def _select_dynamic_options(
+        self,
+        collected: Dict,
+        last_intent: Optional[str],
+        state: str
+    ) -> Optional[Dict]:
+        """
+        Выбрать лучшие динамические подсказки по приоритету.
+
+        Приоритеты:
+            10 - competitor_mentioned (самый высокий)
+             8 - pain_point
+             7 - last_intent (price, features)
+             5 - company_size
+        """
+        candidates = []
+
+        # Priority 10: Competitor
+        if collected.get("competitor_mentioned"):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("competitor_mentioned")
+            if opt:
+                candidates.append({**opt, "_type": "competitor_mentioned"})
+
+        # Priority 8: Pain point
+        pain = collected.get("pain_point", "")
+        if pain:
+            pain_lower = pain.lower()
+            for keyword, option_key in self.PAIN_POINT_MAPPING.items():
+                if keyword in pain_lower:
+                    opt = self.DYNAMIC_CTA_OPTIONS.get(option_key)
+                    if opt:
+                        candidates.append({**opt, "_type": option_key})
+                    break
+
+        # Priority 7: Last intent
+        if last_intent:
+            if last_intent in ["price_question", "pricing_details", "objection_price"]:
+                opt = self.DYNAMIC_CTA_OPTIONS.get("after_price_question")
+                if opt:
+                    candidates.append({**opt, "_type": "after_price_question"})
+            elif last_intent in ["question_features", "question_integrations", "question_how_works"]:
+                opt = self.DYNAMIC_CTA_OPTIONS.get("after_features_question")
+                if opt:
+                    candidates.append({**opt, "_type": "after_features_question"})
+
+        # Priority 5: Company size
+        size = collected.get("company_size", 0)
+        if isinstance(size, str):
+            try:
+                size = int(size)
+            except ValueError:
+                size = 0
+
+        if size > 20:
+            opt = self.DYNAMIC_CTA_OPTIONS.get("large_company")
+            if opt:
+                candidates.append({**opt, "_type": "large_company"})
+        elif 0 < size <= 5:
+            opt = self.DYNAMIC_CTA_OPTIONS.get("small_company")
+            if opt:
+                candidates.append({**opt, "_type": "small_company"})
+
+        # Сортируем по приоритету и возвращаем лучший
+        if candidates:
+            candidates.sort(key=lambda x: x.get("priority", 0), reverse=True)
+            return candidates[0]
+
+        return None
 
     def _tier_3_skip(self, state: str, context: Dict) -> FallbackResponse:
         """Tier 3: Предложить skip"""
@@ -304,6 +564,7 @@ class FallbackHandler:
             "state_counts": self._stats.state_counts.copy(),
             "last_tier": self._stats.last_tier,
             "last_state": self._stats.last_state,
+            "dynamic_cta_counts": self._stats.dynamic_cta_counts.copy(),
         }
 
     def escalate_tier(self, current_tier: str) -> str:
