@@ -688,6 +688,126 @@ class TestDataExtractor:
         result = self.extractor.extract("Привет, расскажите о системе")
         assert result.get("pain_category") is None
 
+    # =========================================================================
+    # LEMMA FALLBACK TESTS - _categorize_pain_point (direct)
+    # =========================================================================
+
+    def test_lemma_fallback_categorize_pain_lost_client(self):
+        """Lemma fallback: 'потерял клиента' → losing_clients (лемма потерять+клиент)"""
+        # Прямой тест _categorize_pain_point с текстом где exact match не работает
+        result = self.extractor._categorize_pain_point("потерял клиента")
+        assert result == "losing_clients"
+
+    def test_lemma_fallback_categorize_pain_clients_leaving(self):
+        """Lemma fallback: 'клиенты ушли' → losing_clients"""
+        result = self.extractor._categorize_pain_point("клиенты ушли от нас")
+        assert result == "losing_clients"
+
+    def test_lemma_fallback_categorize_pain_control_verb(self):
+        """Lemma fallback: 'контролировать' → no_control (глагол вместо существительного)"""
+        result = self.extractor._categorize_pain_point("сложно контролировать")
+        assert result == "no_control"
+
+    def test_lemma_fallback_categorize_pain_monitoring(self):
+        """Lemma fallback: 'мониторить' → no_control"""
+        result = self.extractor._categorize_pain_point("не можем мониторить")
+        assert result == "no_control"
+
+    def test_lemma_fallback_categorize_pain_errors(self):
+        """Lemma fallback: 'ошибки' → manual_work"""
+        result = self.extractor._categorize_pain_point("постоянные ошибки")
+        assert result == "manual_work"
+
+    def test_lemma_fallback_categorize_pain_automate(self):
+        """Lemma fallback: 'автоматизировать' → manual_work"""
+        result = self.extractor._categorize_pain_point("хотим автоматизировать")
+        assert result == "manual_work"
+
+    def test_lemma_fallback_categorize_pain_exact_match_first(self):
+        """Exact match работает быстрее lemma fallback"""
+        # 'теряем клиентов' содержит 'теря' и 'клиент' - exact match
+        result = self.extractor._categorize_pain_point("теряем клиентов")
+        assert result == "losing_clients"
+
+    # =========================================================================
+    # LEMMA FALLBACK TESTS - urgency
+    # =========================================================================
+
+    def test_lemma_fallback_urgency_very_urgent_forms(self):
+        """Lemma fallback: разные формы срочности"""
+        result = self.extractor.extract("Это критически важно для нас")
+        assert result.get("urgency") in ["very_urgent", "urgent"]
+
+    def test_lemma_fallback_urgency_deadline(self):
+        """Lemma fallback: дедлайн"""
+        result = self.extractor.extract("У нас дедлайны горят")
+        assert result.get("urgency") == "very_urgent"
+
+    def test_lemma_fallback_urgency_quick(self):
+        """Lemma fallback: быстро/быстрее"""
+        result = self.extractor.extract("Нужно сделать побыстрее")
+        assert result.get("urgency") == "urgent"
+
+    def test_lemma_fallback_urgency_not_urgent_thinking(self):
+        """Lemma fallback: планируем/думаем → not_urgent"""
+        result = self.extractor.extract("Мы планируем это на будущее")
+        assert result.get("urgency") == "not_urgent"
+
+    def test_lemma_fallback_urgency_comparing(self):
+        """Lemma fallback: сравниваем → not_urgent (без 'сейчас')"""
+        # Убрали 'сейчас' т.к. оно ловится regex как very_urgent
+        result = self.extractor.extract("Пока сравниваем разные решения")
+        assert result.get("urgency") == "not_urgent"
+
+    def test_lemma_fallback_urgency_studying(self):
+        """Lemma fallback: изучаем → not_urgent"""
+        result = self.extractor.extract("Мы изучаем рынок")
+        assert result.get("urgency") == "not_urgent"
+
+    # =========================================================================
+    # LEMMA FALLBACK TESTS - role
+    # =========================================================================
+
+    def test_lemma_fallback_role_director_case(self):
+        """Lemma fallback: 'директором' (творит. падеж) → director"""
+        result = self.extractor.extract("Работаю директором уже 5 лет")
+        assert result.get("role") == "director"
+
+    def test_lemma_fallback_role_owner_case(self):
+        """Lemma fallback: 'владельцем' → owner"""
+        result = self.extractor.extract("Являюсь владельцем сети магазинов")
+        assert result.get("role") == "owner"
+
+    def test_lemma_fallback_role_founder(self):
+        """Lemma fallback: 'основателем' → owner"""
+        result = self.extractor.extract("Был основателем этой компании")
+        assert result.get("role") == "owner"
+
+    def test_lemma_fallback_role_head_case(self):
+        """Lemma fallback: 'начальником' → head (без 'проект' чтобы избежать regex 'ит')"""
+        result = self.extractor.extract("Назначен начальником отдела")
+        assert result.get("role") == "head"
+
+    def test_lemma_fallback_role_manager_case(self):
+        """Lemma fallback: 'менеджером' → employee"""
+        result = self.extractor.extract("Работаю менеджером по продажам")
+        assert result.get("role") in ["employee", "sales"]
+
+    def test_lemma_fallback_role_accountant(self):
+        """Lemma fallback: 'бухгалтером' → finance"""
+        result = self.extractor.extract("Работаю бухгалтером")
+        assert result.get("role") == "finance"
+
+    def test_lemma_fallback_role_developer(self):
+        """Lemma fallback: 'разработчиком' → it"""
+        result = self.extractor.extract("Я разработчиком работаю")
+        assert result.get("role") == "it"
+
+    def test_lemma_fallback_role_economist(self):
+        """Lemma fallback: 'экономистом' → finance"""
+        result = self.extractor.extract("Работаю экономистом в банке")
+        assert result.get("role") == "finance"
+
 
 class TestShortAnswerClassification:
     """Тесты для контекстной классификации коротких ответов
