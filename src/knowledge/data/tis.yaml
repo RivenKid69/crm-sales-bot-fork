@@ -1,6 +1,6 @@
 # База знаний: tis
 # Категория: tis
-# Секций: 197
+# Секций: 199
 
 sections:
 - topic: tis_what_is_180
@@ -4587,3 +4587,37 @@ sections:
   - смена налоговой ставки
   facts: |-
     В настройках системы можно изменить ставку налога.
+- topic: tis_standard_support_1879
+  priority: 10
+  keywords:
+  - тис в тарифе standard
+  - standard поддерживает тис
+  - тис standard
+  - режим розничного налога standard
+  - тіс standard тариф
+  - tis standard plan
+  - standard тис қосу
+  - тис подключить standard
+  - розничный налог standard
+  - standard тарифі тіс
+  - тис доступен standard
+  - standard тис режим
+  facts: |-
+    Да. Standard поддерживает ТИС и режим розничного налога.
+- topic: tis_enable_kz_1881
+  priority: 10
+  keywords:
+  - бағдарламада тіс қосу
+  - тіс қосу
+  - тіс standard pro
+  - тіс жұмыс істейді
+  - tis enable kz
+  - тіс қосылу
+  - тіс баптау
+  - тіс активация
+  - тіс подключить казахский
+  - тіс функциясы
+  - тіс режимі
+  - тіс толық жұмыс
+  facts: |-
+    Иә. ТИС Standard және Pro тарифтерінде толық жұмыс істейді.
