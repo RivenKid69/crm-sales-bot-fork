@@ -13,6 +13,54 @@ from typing import Dict
 class DataExtractor:
     """Извлекаем структурированные данные из сообщения (включая SPIN-данные)"""
 
+    # Ключевые слова для категоризации pain_point
+    PAIN_CATEGORY_KEYWORDS = {
+        "losing_clients": [
+            "теря", "клиент", "ухо", "ушёл", "ушли", "отток", "утечк",
+            "упуска", "сделк", "заявк", "лид", "остыва", "пропуска",
+            "продаж", "выручк", "конверси", "воронк", "сливают", "уводят",
+            "недовольн", "жалу", "возвращ"
+        ],
+        "no_control": [
+            "контрол", "вид", "прозрачн", "понима", "чёрн", "черн", "ящик",
+            "отслежива", "мониторим", "непонятн", "хаос", "бардак", "беспоряд",
+            "не знаю", "не понимаю", "статистик", "аналитик", "отчёт", "kpi",
+            "метрик", "вслепую", "руковод"
+        ],
+        "manual_work": [
+            "excel", "эксел", "табличк", "google", "гугл", "блокнот", "записк",
+            "вручную", "руками", "ручн", "рутин", "времен", "долго", "медленн",
+            "неэффективн", "автоматиз", "систематиз", "дубл", "ошиб", "путаниц",
+            "хаос в данн", "разброс", "каждый ведёт", "каждый ведет"
+        ]
+    }
+
+    def _categorize_pain_point(self, pain_text: str) -> str | None:
+        """
+        Определяет категорию боли на основе текста pain_point.
+
+        Returns:
+            Одна из категорий: "losing_clients", "no_control", "manual_work"
+            или None если категория не определена
+        """
+        if not pain_text:
+            return None
+
+        pain_lower = pain_text.lower()
+
+        # Подсчитываем совпадения для каждой категории
+        scores = {}
+        for category, keywords in self.PAIN_CATEGORY_KEYWORDS.items():
+            score = sum(1 for kw in keywords if kw in pain_lower)
+            if score > 0:
+                scores[category] = score
+
+        if not scores:
+            return None
+
+        # Возвращаем категорию с максимальным количеством совпадений
+        return max(scores, key=scores.get)
+
     def extract(self, message: str, context: Dict = None) -> Dict:
         """
         Извлекаем данные из сообщения
@@ -1817,6 +1865,12 @@ class DataExtractor:
             if re.search(pattern, message_lower):
                 extracted["timeline"] = timeline
                 break
+
+        # Добавляем категорию боли, если есть pain_point
+        if "pain_point" in extracted:
+            category = self._categorize_pain_point(extracted["pain_point"])
+            if category:
+                extracted["pain_category"] = category
 
         return extracted
 

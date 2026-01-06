@@ -211,28 +211,6 @@ class FallbackHandler:
         },
     }
 
-    # Маппинг pain_point → тип динамических подсказок
-    PAIN_POINT_MAPPING: Dict[str, str] = {
-        "потеря клиентов": "pain_losing_clients",
-        "теряем клиентов": "pain_losing_clients",
-        "клиенты уходят": "pain_losing_clients",
-        "отток": "pain_losing_clients",
-        "упускаем сделки": "pain_losing_clients",
-        "теряем заявки": "pain_losing_clients",
-        "лиды остывают": "pain_losing_clients",
-        "нет контроля": "pain_no_control",
-        "нет видимости": "pain_no_control",
-        "не вижу": "pain_no_control",
-        "хаос": "pain_no_control",
-        "бардак": "pain_no_control",
-        "excel": "pain_no_control",
-        "в головах": "pain_no_control",
-        "ручная работа": "pain_manual_work",
-        "много рутины": "pain_manual_work",
-        "трачу время": "pain_manual_work",
-        "долго": "pain_manual_work",
-    }
-
     # Подпись для текстовых вариантов
     OPTIONS_FOOTER = "\nНапишите номер или ответьте своими словами."
 
@@ -458,16 +436,13 @@ class FallbackHandler:
             if opt:
                 candidates.append({**opt, "_type": "competitor_mentioned"})
 
-        # Priority 8: Pain point
-        pain = collected.get("pain_point", "")
-        if pain:
-            pain_lower = pain.lower()
-            for keyword, option_key in self.PAIN_POINT_MAPPING.items():
-                if keyword in pain_lower:
-                    opt = self.DYNAMIC_CTA_OPTIONS.get(option_key)
-                    if opt:
-                        candidates.append({**opt, "_type": option_key})
-                    break
+        # Priority 8: Pain point (используем pain_category из data_extractor)
+        pain_category = collected.get("pain_category")
+        if pain_category:
+            option_key = f"pain_{pain_category}"
+            opt = self.DYNAMIC_CTA_OPTIONS.get(option_key)
+            if opt:
+                candidates.append({**opt, "_type": option_key})
 
         # Priority 7: Last intent
         if last_intent:

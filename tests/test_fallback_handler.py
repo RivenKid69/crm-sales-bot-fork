@@ -566,6 +566,7 @@ class TestDynamicCTAOptions:
         context = {
             "collected_data": {
                 "pain_point": "теряем клиентов",
+                "pain_category": "losing_clients",
             },
         }
 
@@ -615,6 +616,7 @@ class TestDynamicCTAOptions:
                 "competitor_mentioned": True,
                 "competitor_name": "AmoCRM",
                 "pain_point": "нет контроля",
+                "pain_category": "no_control",
             },
         }
 
@@ -685,6 +687,7 @@ class TestDynamicCTAOptions:
         context = {
             "collected_data": {
                 "pain_point": "нет контроля",
+                "pain_category": "no_control",
             },
         }
 

@@ -32,6 +32,8 @@ if CUDNN_PATH.exists():
 
 from faster_whisper import WhisperModel
 from f5_tts.api import F5TTS
+from ruaccent import RUAccent
+from num2words import num2words
 
 
 SAMPLE_RATE = 16000
@@ -50,6 +52,7 @@ class PipelineMetrics:
     stt_time: float = 0.0
     llm_time: float = 0.0
     llm_first_token: float = 0.0
+    accent_time: float = 0.0
     tts_time: float = 0.0
     total_time: float = 0.0
     audio_input_duration: float = 0.0
@@ -62,6 +65,7 @@ class PipelineMetrics:
         print(f"STT time:           {self.stt_time:.2f}s")
         print(f"LLM first token:    {self.llm_first_token:.2f}s")
         print(f"LLM total time:     {self.llm_time:.2f}s")
+        print(f"Accent time:        {self.accent_time*1000:.1f}ms")
         print(f"TTS time:           {self.tts_time:.2f}s")
         print("-" * 60)
         print(f"Total pipeline:     {self.total_time:.2f}s")
@@ -141,18 +145,39 @@ class VoicePipeline:
 
         # Reference audio for voice cloning
         self.ref_audio = None
-        self.ref_text = "говно не смотрю уже очень давно я без понятия там уже сезона этак третьего чисто контент для говноедов я второй еле досмотрел еле-еле"
+        self.ref_text = "Покупатели видят свои покупки и итоговую сумму, а также вашу рекламу. Экономия на чековой ленте. Чек можно просто сфотографировать на телефон. Вам не нужно покупать принтер чеков"
         if F5TTS_REF_AUDIO.exists():
             print(f"   Reference audio: {F5TTS_REF_AUDIO.name}")
             self.ref_audio = str(F5TTS_REF_AUDIO)
 
         # System prompt
-        self.system_prompt = """Ты голосовой ассистент. ВСЕГДА отвечай ТОЛЬКО на русском языке.
+        self.system_prompt = """Ты голосовой ассистент. СТРОГО отвечай ТОЛЬКО на русском языке.
 Отвечай кратко и естественно, как в разговоре.
 Избегай длинных списков и сложных конструкций. Говори просто и понятно.
-Отвечай максимум 2-3 предложениями. Никогда не используй другие языки кроме русского."""
+Отвечай максимум 2-3 предложениями.
+
+КРИТИЧЕСКИ ВАЖНО:
+- НИКОГДА не используй английские слова - переводи их на русский
+- НИКОГДА не используй китайские иероглифы
+- НИКОГДА не используй латиницу
+- Все технические термины пиши по-русски или транслитерируй кириллицей"""
 
         print(f"   Streaming TTS: {'enabled' if self.use_streaming else 'disabled'}")
+
+        # Initialize RUAccent for stress marks
+        print("\nLoading RUAccent (stress marks)...")
+        accent_start = time.time()
+        self.accentizer = RUAccent()
+        # Custom dictionary for stress corrections
+        custom_stress = {
+            "готов": "гот+ов",
+            "готова": "гот+ова",
+            "готово": "гот+ово",
+            "готовы": "гот+овы",
+        }
+        self.accentizer.load(omograph_model_size='turbo', use_dictionary=True, custom_dict=custom_stress)
+        print(f"   RUAccent loaded in {time.time() - accent_start:.2f}s")
+
         print("\nPipeline ready!")
 
     def record_audio(self, duration: float = 5.0) -> np.ndarray:
@@ -185,35 +210,106 @@ class VoicePipeline:
 
         return text, elapsed
 
-    def text_to_speech(self, text: str) -> tuple[np.ndarray, int, float]:
-        """Convert text to speech using F5-TTS Russian"""
+    def filter_foreign_text(self, text: str) -> str:
+        """Remove or transliterate foreign characters for TTS"""
+        # Remove Chinese/Japanese/Korean characters
+        text = re.sub(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]+', '', text)
+
+        # Simple English to Russian transliteration for common words
+        translit_map = {
+            'a': 'а', 'b': 'б', 'c': 'с', 'd': 'д', 'e': 'е', 'f': 'ф',
+            'g': 'г', 'h': 'х', 'i': 'и', 'j': 'дж', 'k': 'к', 'l': 'л',
+            'm': 'м', 'n': 'н', 'o': 'о', 'p': 'п', 'q': 'к', 'r': 'р',
+            's': 'с', 't': 'т', 'u': 'у', 'v': 'в', 'w': 'в', 'x': 'кс',
+            'y': 'й', 'z': 'з',
+        }
+
+        def transliterate(match):
+            word = match.group(0).lower()
+            result = ''
+            for char in word:
+                result += translit_map.get(char, char)
+            return result
+
+        # Transliterate Latin words to Cyrillic
+        text = re.sub(r'[a-zA-Z]+', transliterate, text)
+
+        # Clean up extra spaces
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+
+    def numbers_to_words(self, text: str) -> str:
+        """Convert numbers to Russian words for TTS"""
+        def replace_number(match):
+            num_str = match.group(0)
+            try:
+                # Handle decimals
+                if '.' in num_str or ',' in num_str:
+                    num_str = num_str.replace(',', '.')
+                    return num2words(float(num_str), lang='ru')
+                else:
+                    return num2words(int(num_str), lang='ru')
+            except:
+                return num_str
+
+        # Match integers and decimals
+        return re.sub(r'\d+[.,]?\d*', replace_number, text)
+
+    def add_stress_marks(self, text: str) -> str:
+        """Add stress marks to Russian text using RUAccent"""
+        try:
+            return self.accentizer.process_all(text)
+        except Exception as e:
+            print(f"RUAccent error: {e}")
+            return text
+
+    def text_to_speech(self, text: str) -> tuple[np.ndarray, int, float, float]:
+        """Convert text to speech using F5-TTS Russian
+        Returns: (audio_data, sample_rate, tts_time, accent_time)
+        """
         output_path = AUDIO_DIR / "temp_output.wav"
+
+        # Filter foreign text, convert numbers, add stress marks
+        accent_start = time.time()
+        text_filtered = self.filter_foreign_text(text)
+        text_with_words = self.numbers_to_words(text_filtered)
+        text_with_stress = self.add_stress_marks(text_with_words)
+        # Add trailing punctuation if missing
+        if text_with_stress and text_with_stress[-1] not in '.!?':
+            text_with_stress += '.'
+        accent_time = time.time() - accent_start
 
         start = time.time()
 
         try:
             # Generate speech with F5-TTS
-            # nfe_step=16 activates EPSS (Empirically Pruned Step Sampling)
-            # which gives ~2x speedup with minimal quality loss
+            # Using default parameters for best quality
             audio_data, sample_rate, _ = self.tts.infer(
                 ref_file=self.ref_audio,
                 ref_text=self.ref_text,
-                gen_text=text,
+                gen_text=text_with_stress,
                 file_wave=str(output_path),
                 show_info=lambda x: None,  # Suppress progress output
-                nfe_step=16,  # EPSS-optimized (was 32, now 2x faster)
-                cfg_strength=1.7,  # Lower = more expressive (default 2.0)
+                nfe_step=32,  # Default, best quality
+                cfg_strength=2.5,  # Higher for more expressive output
                 sway_sampling_coef=-1.0,  # Enable sway sampling for better quality
-                speed=0.85,  # Slower, clearer pronunciation
+                cross_fade_duration=0.15,  # Smooth transitions between segments
+                speed=1.0,  # Natural speed
+                seed=281499361696202514,  # Best seed from search
             )
 
+            # Add silence padding at the end to prevent cutoff (0.3 seconds)
+            silence_samples = int(sample_rate * 0.3)
+            silence = np.zeros(silence_samples, dtype=audio_data.dtype)
+            audio_data = np.concatenate([audio_data, silence])
+
             elapsed = time.time() - start
-            return audio_data, sample_rate, elapsed
+            return audio_data, sample_rate, elapsed, accent_time
 
         except Exception as e:
             print(f"TTS Error: {e}")
             elapsed = time.time() - start
-            return np.zeros(1000), self.tts_sample_rate, elapsed
+            return np.zeros(1000), self.tts_sample_rate, elapsed, accent_time
 
     def play_audio(self, audio: np.ndarray, sample_rate: int = 24000):
         """Play audio"""
@@ -228,7 +324,7 @@ class VoicePipeline:
                 audio_queue.put(None)
                 break
             if text.strip():
-                audio, sr, _ = self.text_to_speech(text)
+                audio, sr, _, _ = self.text_to_speech(text)
                 audio_queue.put((audio, sr))
             text_queue.task_done()
 
@@ -298,8 +394,9 @@ class VoicePipeline:
 
         # Step 4: TTS (after LLM completes)
         tts_start = time.time()
-        audio, sr, _ = self.text_to_speech(full_response)
+        audio, sr, _, accent_time = self.text_to_speech(full_response)
         metrics.tts_time = time.time() - tts_start
+        metrics.accent_time = accent_time
 
         # Step 5: Play
         self.play_audio(audio, sr)
@@ -385,6 +482,22 @@ def main():
         whisper_model="large-v3-turbo",
         llm_model="qwen3:1.7b",
     )
+
+    # Startup greeting text (50 words)
+    startup_text = """Добрый день! Я ваш голосовой помощник для работы с системой управления продажами.
+Я могу помочь вам с информацией о товарах, клиентах и заказах. Задавайте любые вопросы
+о функциях системы, аналитике продаж или технической поддержке. Готов ответить на ваши
+вопросы и помочь в работе с си эр эм системой."""
+
+    print("\n" + "=" * 60)
+    print("Playing startup greeting...")
+    print("=" * 60)
+    print(f"\nGreeting: {startup_text}\n")
+
+    # Synthesize and play startup greeting
+    audio, sr, tts_time, _ = pipeline.text_to_speech(startup_text)
+    print(f"TTS time: {tts_time:.2f}s, Audio duration: {len(audio)/sr:.2f}s")
+    pipeline.play_audio(audio, sr)
 
     print("\n" + "=" * 60)
     print("Ready for conversation!")

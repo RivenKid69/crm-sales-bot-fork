@@ -643,6 +643,51 @@ class TestDataExtractor:
         result = self.extractor.extract("Мне нужна помощь")
         assert result.get("option_index") is None
 
+    # =========================================================================
+    # PAIN_CATEGORY (категоризация боли)
+    # =========================================================================
+
+    def test_extract_pain_category_losing_clients(self):
+        """Боль про потерю клиентов → losing_clients"""
+        result = self.extractor.extract("Мы теряем клиентов")
+        assert result.get("pain_point") is not None
+        assert result.get("pain_category") == "losing_clients"
+
+    def test_extract_pain_category_losing_sales(self):
+        """Боль про падение продаж → losing_clients"""
+        result = self.extractor.extract("У нас упали продажи и снизилась конверсия")
+        assert result.get("pain_point") is not None
+        assert result.get("pain_category") == "losing_clients"
+
+    def test_extract_pain_category_no_control(self):
+        """Боль про отсутствие контроля → no_control"""
+        result = self.extractor.extract("Нет контроля над менеджерами")
+        assert result.get("pain_point") is not None
+        assert result.get("pain_category") == "no_control"
+
+    def test_extract_pain_category_no_visibility(self):
+        """Боль про непрозрачность → no_control"""
+        result = self.extractor.extract("Не понимаю что происходит, нет статистики")
+        assert result.get("pain_point") is not None
+        assert result.get("pain_category") == "no_control"
+
+    def test_extract_pain_category_manual_work_excel(self):
+        """Боль про Excel → manual_work"""
+        result = self.extractor.extract("Всё ведём в Excel")
+        assert result.get("pain_point") is not None
+        assert result.get("pain_category") == "manual_work"
+
+    def test_extract_pain_category_manual_work_routine(self):
+        """Боль про рутину → manual_work"""
+        result = self.extractor.extract("Много рутинной работы вручную")
+        assert result.get("pain_point") is not None
+        assert result.get("pain_category") == "manual_work"
+
+    def test_extract_pain_category_none_for_non_pain(self):
+        """Обычный текст не имеет pain_category"""
+        result = self.extractor.extract("Привет, расскажите о системе")
+        assert result.get("pain_category") is None
+
 
 class TestShortAnswerClassification:
     """Тесты для контекстной классификации коротких ответов
