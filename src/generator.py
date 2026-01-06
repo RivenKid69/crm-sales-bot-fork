@@ -317,6 +317,20 @@ class ResponseGenerator:
         self.history_length = settings.generator.history_length
         self.retriever_top_k = settings.generator.retriever_top_k
         self.allowed_english = set(settings.generator.allowed_english_words)
+
+        # CategoryRouter: LLM-классификация категорий перед поиском
+        self.category_router = None
+        if settings.get_nested("category_router.enabled", False):
+            from knowledge.category_router import CategoryRouter
+            self.category_router = CategoryRouter(
+                llm=llm,
+                top_k=settings.get_nested("category_router.top_k", 3),
+                fallback_categories=settings.get_nested(
+                    "category_router.fallback_categories",
+                    ["other", "faq"]
+                )
+            )
+            logger.info("CategoryRouter initialized", top_k=self.category_router.top_k)
     
     def get_facts(self, company_size: int = None) -> str:
         """Получить факты о продукте"""
@@ -385,16 +399,28 @@ class ResponseGenerator:
         if max_retries is None:
             max_retries = self.max_retries
 
-        # НОВОЕ: Получаем релевантные факты из базы знаний
+        # Получаем релевантные факты из базы знаний
         retriever = get_retriever()
         intent = context.get("intent", "")
         state = context.get("state", "")
         user_message = context.get("user_message", "")
 
+        # Определяем категории через LLM (если CategoryRouter включён)
+        categories = None
+        if self.category_router and user_message:
+            categories = self.category_router.route(user_message)
+            logger.debug(
+                "CategoryRouter selected categories",
+                categories=categories,
+                query=user_message[:50]
+            )
+
+        # Вызываем retriever с категориями
         retrieved_facts = retriever.retrieve(
             message=user_message,
             intent=intent,
             state=state,
+            categories=categories,
             top_k=self.retriever_top_k
         )
 

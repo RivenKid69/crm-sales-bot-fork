@@ -210,6 +210,7 @@ class CascadeRetriever:
         message: str,
         intent: str = None,
         state: str = None,
+        categories: List[str] = None,
         top_k: int = None
     ) -> str:
         """
@@ -219,8 +220,9 @@ class CascadeRetriever:
 
         Args:
             message: Сообщение пользователя
-            intent: Классифицированный интент (для фильтрации категорий)
+            intent: Классифицированный интент (для fallback на INTENT_TO_CATEGORY)
             state: Текущее состояние (не используется, для совместимости)
+            categories: Список категорий для поиска (приоритет над intent)
             top_k: Максимум секций для возврата (по умолчанию из settings)
 
         Returns:
@@ -233,12 +235,14 @@ class CascadeRetriever:
         if top_k is None:
             top_k = settings.retriever.default_top_k
 
-        # Определяем категории по интенту
-        categories = None
-        if intent and intent in INTENT_TO_CATEGORY:
-            intent_categories = INTENT_TO_CATEGORY[intent]
-            if intent_categories:
-                categories = intent_categories
+        # ИЗМЕНЕНИЕ: Приоритет categories > intent
+        # Если categories переданы явно (от CategoryRouter), используем их
+        # Иначе fallback на старый маппинг INTENT_TO_CATEGORY
+        if categories is None:
+            if intent and intent in INTENT_TO_CATEGORY:
+                intent_categories = INTENT_TO_CATEGORY[intent]
+                if intent_categories:
+                    categories = intent_categories
 
         # Если reranker включён — берём больше кандидатов
         search_top_k = self.rerank_candidates if self.reranker_enabled else top_k
