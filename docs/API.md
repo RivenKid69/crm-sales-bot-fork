@@ -401,6 +401,61 @@ reset_retriever()
 
 ---
 
+### CategoryRouter
+
+LLM-классификация категорий для улучшения поиска.
+
+```python
+from knowledge.category_router import CategoryRouter
+
+router = CategoryRouter()
+```
+
+#### Методы
+
+##### `classify(query: str, context: Dict = None) -> List[str]`
+
+Классифицирует запрос и возвращает релевантные категории.
+
+```python
+categories = router.classify("как подключить 1С?")
+# → ["integrations", "features", "support"]
+
+# С контекстом
+categories = router.classify(
+    "сколько стоит?",
+    context={"spin_phase": "situation"}
+)
+```
+
+---
+
+### Reranker
+
+Cross-encoder для переоценки результатов поиска.
+
+```python
+from knowledge.reranker import Reranker
+
+reranker = Reranker()
+```
+
+#### Методы
+
+##### `rerank(query: str, candidates: List[SearchResult]) -> List[SearchResult]`
+
+Переранжирует кандидатов с использованием cross-encoder.
+
+```python
+candidates = retriever.search("интеграция", top_k=10)
+reranked = reranker.rerank("как подключить интеграцию с 1С?", candidates)
+
+for r in reranked[:3]:
+    print(f"{r.section.topic}: {r.score:.2f}")
+```
+
+---
+
 ### SearchResult
 
 Результат поиска.
@@ -478,7 +533,7 @@ tariffs = kb.get_by_topic("tariffs")
 |---------|-----|----------|
 | `company_name` | `str` | Название компании ("Wipon") |
 | `company_description` | `str` | Описание компании |
-| `sections` | `List[KnowledgeSection]` | Все секции (446 шт) |
+| `sections` | `List[KnowledgeSection]` | Все секции (1239 шт) |
 
 ---
 
@@ -505,6 +560,202 @@ response = llm.generate(
     prompt="Ответь на вопрос клиента: сколько стоит CRM?",
     system="Ты — продавец CRM-системы Wipon."
 )
+```
+
+---
+
+## Модули Phase 0-3
+
+### FeatureFlags
+
+Управление feature flags.
+
+```python
+from feature_flags import is_enabled, get_all_flags, FeatureFlags
+
+# Проверка флага
+if is_enabled("tone_analysis"):
+    # использовать функционал
+
+# Все флаги
+flags = get_all_flags()
+
+# Декоратор
+@FeatureFlags.require("lead_scoring")
+def calculate_score(data):
+    pass
+```
+
+---
+
+### Logger
+
+Структурированное логирование.
+
+```python
+from logger import get_logger, LogContext
+
+logger = get_logger(__name__)
+
+# Обычное логирование
+logger.info("Сообщение", user_id="123")
+
+# Контекстное
+with LogContext(conversation_id="conv_123"):
+    logger.info("Внутри контекста")
+```
+
+---
+
+### MetricsTracker
+
+Трекинг метрик диалогов.
+
+```python
+from metrics import MetricsTracker
+
+tracker = MetricsTracker()
+
+tracker.start_conversation("conv_123")
+tracker.track_intent("price_question")
+tracker.track_state_transition("greeting", "spin_situation")
+tracker.end_conversation("conv_123", outcome="success")
+
+stats = tracker.get_stats()
+```
+
+---
+
+### FallbackHandler
+
+4-уровневый fallback при ошибках.
+
+```python
+from fallback_handler import FallbackHandler
+
+handler = FallbackHandler()
+
+response = handler.get_fallback(
+    action="answer_question",
+    context={"user_message": "сколько стоит?"},
+    error=Exception("LLM timeout")
+)
+```
+
+---
+
+### ConversationGuard
+
+Защита от зацикливания.
+
+```python
+from conversation_guard import ConversationGuard
+
+guard = ConversationGuard(max_turns=50, max_same_state=5)
+
+if guard.should_stop(history):
+    return "Давайте начнём сначала."
+
+guard.update(state="spin_situation", intent="situation_provided")
+
+if guard.detect_loop():
+    guard.break_loop()
+```
+
+---
+
+### ToneAnalyzer
+
+Анализ тона клиента.
+
+```python
+from tone_analyzer import ToneAnalyzer
+
+analyzer = ToneAnalyzer()
+
+result = analyzer.analyze("Это слишком дорого!")
+# {
+#     "sentiment": "negative",
+#     "frustration": 0.7,
+#     "urgency": 0.3,
+#     "interest": 0.2
+# }
+```
+
+---
+
+### ResponseVariations
+
+Вариативность ответов.
+
+```python
+from response_variations import ResponseVariations
+
+variations = ResponseVariations()
+
+greeting = variations.get("greeting")
+greeting = variations.get("greeting", history=["Здравствуйте!"])
+```
+
+---
+
+### LeadScorer
+
+Скоринг лидов.
+
+```python
+from lead_scoring import LeadScorer, LeadCategory
+
+scorer = LeadScorer()
+
+score = scorer.calculate(
+    collected_data={"company_size": 10, "pain_point": "теряем клиентов"},
+    conversation_history=history,
+    intents=["situation_provided", "problem_revealed"]
+)
+# {
+#     "score": 75,
+#     "category": LeadCategory.WARM,
+#     "factors": {...}
+# }
+```
+
+---
+
+### ObjectionHandler
+
+Обработка возражений.
+
+```python
+from objection_handler import ObjectionHandler
+
+handler = ObjectionHandler()
+
+objection = handler.classify("Это слишком дорого")
+strategy = handler.get_strategy(objection, context)
+response = handler.generate_response(objection, strategy, llm)
+```
+
+---
+
+### CTAGenerator
+
+Генерация Call-to-Action.
+
+```python
+from cta_generator import CTAGenerator
+
+generator = CTAGenerator()
+
+cta = generator.generate(
+    state="presentation",
+    collected_data=data,
+    lead_score=75
+)
+# {
+#     "primary": "Давайте запишу вас на демо?",
+#     "secondary": "Или могу отправить презентацию"
+# }
 ```
 
 ---
@@ -724,6 +975,20 @@ print(f"Порог lemma: {settings.retriever.thresholds.lemma}")
 reload_settings()
 ```
 
+### Использование Feature Flags
+
+```python
+from feature_flags import is_enabled
+
+if is_enabled("tone_analysis"):
+    from tone_analyzer import ToneAnalyzer
+    analyzer = ToneAnalyzer()
+    tone = analyzer.analyze(message)
+
+    if tone["frustration"] > 0.5:
+        # Адаптировать ответ
+```
+
 ### Прямое использование базы знаний
 
 ```python
@@ -734,11 +999,11 @@ print(WIPON_KNOWLEDGE.company_name)
 print(WIPON_KNOWLEDGE.company_description)
 
 # Все секции
-print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")
+print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 1239
 
 # По категории
 pricing = WIPON_KNOWLEDGE.get_by_category("pricing")
-print(f"Секций о тарифах: {len(pricing)}")
+print(f"Секций о тарифах: {len(pricing)}")  # 104
 
 # По теме
 tariffs = WIPON_KNOWLEDGE.get_by_topic("tariffs")

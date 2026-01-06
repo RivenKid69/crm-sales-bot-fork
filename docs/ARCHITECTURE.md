@@ -4,6 +4,13 @@
 
 CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. Использует методологию SPIN Selling для квалификации клиентов и ведёт диалог от приветствия до закрытия сделки.
 
+**Архитектурные принципы:**
+1. **FAIL-SAFE** — любой сбой → graceful degradation, не crash
+2. **PROGRESSIVE** — feature flags для постепенного включения фич
+3. **OBSERVABLE** — логи, метрики, трейсы с первого дня
+4. **TESTABLE** — каждый модуль с тестами сразу
+5. **REVERSIBLE** — возможность отката любого изменения
+
 ## Компоненты системы
 
 ```
@@ -11,6 +18,7 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 │                              SalesBot                                        │
 │                             (bot.py)                                         │
 │      Оркестрация: classifier → state_machine → generator                     │
+│      + Feature Flags + Metrics + Logger                                      │
 └─────────────────┬───────────────────────────────┬───────────────────────────┘
                   │                               │
     ┌─────────────▼─────────────┐   ┌─────────────▼─────────────┐
@@ -31,6 +39,7 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
                   │ • Промпт-инжиниринг по action                 │
                   │ • Интеграция с базой знаний                   │
                   │ • Retry при иностранном тексте                │
+                  │ • ResponseVariations (вариативность)          │
                   └────────────────┬──────────────────────────────┘
                                    │
           ┌────────────────────────┼────────────────────────┐
@@ -40,8 +49,10 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 │    (llm.py)       │   │   (knowledge/)      │   │    (config.py)    │
 │                   │   │                     │   │                   │
 │ • qwen3:8b-fast   │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
-│ • /no_think mode  │   │ • 446 YAML секций   │   │ • SALES_STATES    │
+│ • /no_think mode  │   │ • 1239 YAML секций  │   │ • SALES_STATES    │
 │ • Streaming       │   │ • ru-en-RoSBERTa    │   │ • Промпт-шаблоны  │
+│ • Retry + Circuit │   │ • CategoryRouter    │   │                   │
+│   Breaker         │   │ • Reranker          │   │                   │
 └───────────────────┘   └─────────────────────┘   └───────────────────┘
           │                        │
           │              ┌─────────▼─────────┐
@@ -50,8 +61,67 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
           │              │                   │
           │              │ • LLM параметры   │
           │              │ • Retriever пороги│
-          │              │ • Classifier веса │
+          │              │ • Feature Flags   │
           └──────────────┴───────────────────┘
+```
+
+## Фазы разработки (Phase 0-3)
+
+### Фаза 0: Инфраструктура
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Phase 0                                  │
+├──────────────────┬──────────────────┬──────────────────────────┤
+│   logger.py      │   metrics.py     │   feature_flags.py       │
+│                  │                  │                          │
+│ • JSON логи      │ • Метрики        │ • Управление фичами      │
+│ • Readable логи  │   диалогов       │ • Env override           │
+│ • Context        │ • Conversion     │ • Hot reload             │
+│   tracking       │   tracking       │                          │
+└──────────────────┴──────────────────┴──────────────────────────┘
+```
+
+### Фаза 1: Защита и надёжность
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Phase 1                                  │
+├─────────────────────────────────┬───────────────────────────────┤
+│   fallback_handler.py           │   conversation_guard.py       │
+│                                 │                               │
+│ • 4-уровневый fallback          │ • Защита от зацикливания      │
+│   1. Knowledge base             │ • Loop detection              │
+│   2. Company facts              │ • Max turns limit             │
+│   3. Generic response           │ • State repetition check      │
+│   4. Apology                    │                               │
+└─────────────────────────────────┴───────────────────────────────┘
+```
+
+### Фаза 2: Естественность диалога
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Phase 2                                  │
+├─────────────────────────────────┬───────────────────────────────┤
+│   tone_analyzer.py              │   response_variations.py      │
+│                                 │                               │
+│ • Анализ тона клиента           │ • Вариативность ответов       │
+│ • Sentiment detection           │ • Template variations         │
+│ • Urgency level                 │ • Anti-repetition             │
+│ • Frustration detection         │                               │
+└─────────────────────────────────┴───────────────────────────────┘
+```
+
+### Фаза 3: Оптимизация SPIN Flow
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Phase 3                                  │
+├───────────────────┬───────────────────┬─────────────────────────┤
+│  lead_scoring.py  │ objection_handler │  cta_generator.py       │
+│                   │       .py         │                         │
+│ • Скоринг лидов   │ • Обработка       │ • Call-to-Action        │
+│ • Hot/Warm/Cold   │   возражений      │ • Персонализация        │
+│ • Priority calc   │ • Price objection │ • Timing optimization   │
+│                   │ • Time objection  │                         │
+└───────────────────┴───────────────────┴─────────────────────────┘
 ```
 
 ## Поток данных
@@ -114,6 +184,9 @@ template = PROMPT_TEMPLATES["spin_problem"]
 
 # 3. Подстановка контекста + LLM генерация
 response = "Понял, команда из 10 человек. Расскажите подробнее — как именно теряете клиентов?"
+
+# 4. ResponseVariations (если включено)
+response = variations.apply(response, action)
 ```
 
 ## SPIN Selling Flow
@@ -189,27 +262,40 @@ knowledge/
 ├── loader.py           # Загрузчик YAML файлов
 ├── lemmatizer.py       # Лемматизация для поиска
 ├── retriever.py        # CascadeRetriever (3-этапный поиск)
-└── data/               # 18 YAML файлов (446 секций)
+├── category_router.py  # LLM-классификация категорий
+├── reranker.py         # Cross-encoder переоценка
+└── data/               # 17 YAML файлов (1239 секций)
     ├── _meta.yaml      # Метаданные
-    ├── pricing.yaml    # Тарифы
-    ├── products.yaml   # Продукты
-    ├── tis.yaml        # Товарно-информационная система (132)
-    ├── support.yaml    # Техподдержка (70)
-    ├── equipment.yaml  # Оборудование (60)
-    └── ...
+    ├── equipment.yaml  # Оборудование (183)
+    ├── tis.yaml        # Товарно-информационная система (166)
+    ├── support.yaml    # Техподдержка (156)
+    ├── products.yaml   # Продукты (116)
+    ├── pricing.yaml    # Тарифы (104)
+    ├── inventory.yaml  # Складской учёт (97)
+    ├── integrations.yaml   # Интеграции (71)
+    ├── regions.yaml    # Регионы (60)
+    ├── features.yaml   # Функции (59)
+    ├── analytics.yaml  # Аналитика (52)
+    ├── employees.yaml  # Управление персоналом (43)
+    ├── fiscal.yaml     # Фискализация (41)
+    ├── stability.yaml  # Стабильность (31)
+    ├── mobile.yaml     # Мобильное приложение (31)
+    ├── promotions.yaml # Акции и скидки (19)
+    ├── competitors.yaml # Конкуренты (7)
+    └── faq.yaml        # FAQ (3)
 ```
 
-**Категории знаний (топ-10 по размеру):**
-- `tis` — Товарно-информационная система (132 секции)
-- `support` — Техподдержка (70 секций)
-- `equipment` — Оборудование (60 секций)
-- `analytics` — Аналитика (27 секций)
-- `pricing` — Тарифы (24 секции)
-- `integrations` — Интеграции (24 секции)
-- `inventory` — Складской учёт (21 секция)
-- `employees` — Управление персоналом (21 секция)
-- `stability` — Стабильность (14 секций)
-- `products` — Продукты (10 секций)
+**Категории знаний (по размеру):**
+- `equipment` — Оборудование (183 секции)
+- `tis` — Товарно-информационная система (166 секций)
+- `support` — Техподдержка (156 секций)
+- `products` — Продукты (116 секций)
+- `pricing` — Тарифы (104 секции)
+- `inventory` — Складской учёт (97 секций)
+- `integrations` — Интеграции (71 секция)
+- `regions` — Регионы (60 секций)
+- `features` — Функции (59 секций)
+- `analytics` — Аналитика (52 секции)
 
 Подробнее: [KNOWLEDGE.md](./KNOWLEDGE.md)
 
@@ -234,6 +320,18 @@ knowledge/
 ┌────────────────────┐
 │  3. Semantic Match │  cosine similarity эмбеддингов
 │  (score >= 0.5)    │  ai-forever/ru-en-RoSBERTa
+└────────┬───────────┘
+         │ низкий score
+         ▼
+┌────────────────────┐
+│  4. CategoryRouter │  LLM-классификация категорий
+│  (fallback)        │  Qwen3:8b-fast определяет категории
+└────────┬───────────┘
+         │ при необходимости
+         ▼
+┌────────────────────┐
+│  5. Reranker       │  Cross-encoder переоценка
+│  (BAAI/bge-v2-m3)  │  Переранжирование top-k результатов
 └────────────────────┘
 ```
 
@@ -253,6 +351,22 @@ knowledge/
 - Вызов LLM (Ollama/Qwen3:8b-fast)
 - Retry при китайских символах или английском тексте (max 3 попытки)
 - Фильтрация нерусского текста из ответа
+- ResponseVariations для вариативности (если включено)
+
+### Модули Phase 0-3
+
+| Модуль | Фаза | Назначение | Флаг |
+|--------|------|------------|------|
+| logger.py | 0 | Структурированное логирование | `structured_logging` |
+| metrics.py | 0 | Трекинг метрик диалогов | `metrics_tracking` |
+| feature_flags.py | 0 | Управление фичами | всегда включен |
+| fallback_handler.py | 1 | 4-уровневый fallback | `multi_tier_fallback` |
+| conversation_guard.py | 1 | Защита от зацикливания | `conversation_guard` |
+| tone_analyzer.py | 2 | Анализ тона клиента | `tone_analysis` |
+| response_variations.py | 2 | Вариативность ответов | `response_variations` |
+| lead_scoring.py | 3 | Скоринг лидов | `lead_scoring` |
+| objection_handler.py | 3 | Обработка возражений | `objection_handler` |
+| cta_generator.py | 3 | Call-to-Action | `cta_generator` |
 
 ### settings.py + settings.yaml — Конфигурация
 
@@ -272,6 +386,15 @@ retriever:
     lemma: 0.15
     semantic: 0.5
 
+reranker:
+  enabled: true
+  model: "BAAI/bge-reranker-v2-m3"
+  threshold: 0.5
+
+category_router:
+  enabled: true
+  top_k: 3
+
 generator:
   max_retries: 3
   history_length: 4
@@ -285,6 +408,17 @@ classifier:
   thresholds:
     high_confidence: 0.7
     min_confidence: 0.3
+
+feature_flags:
+  structured_logging: true
+  metrics_tracking: true
+  multi_tier_fallback: true
+  conversation_guard: true
+  tone_analysis: false
+  response_variations: true
+  lead_scoring: false
+  objection_handler: false
+  cta_generator: false
 ```
 
 Подробнее: [SETTINGS.md](./SETTINGS.md)
@@ -299,6 +433,26 @@ classifier:
 - `SYSTEM_PROMPT` — системный промпт
 - `KNOWLEDGE` — встроенные факты о тарифах
 - `QUESTION_INTENTS` — интенты-вопросы
+
+## Voice Bot (voice_bot/)
+
+Голосовой интерфейс для разговорного взаимодействия:
+
+```
+┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐
+│   faster-whisper  │ ──► │    SalesBot       │ ──► │   F5-TTS Russian  │
+│   (STT)           │     │   (text mode)     │     │   + RUAccent      │
+└───────────────────┘     └───────────────────┘     └───────────────────┘
+      Голос клиента              Обработка               Голос бота
+```
+
+Компоненты:
+- **STT** (Speech-to-Text): faster-whisper с GPU поддержкой
+- **LLM**: Ollama (Qwen3:8b-fast)
+- **TTS** (Text-to-Speech): F5-TTS Russian + RUAccent для ударений
+- Обработка audio: sounddevice, soundfile, numpy
+
+Подробнее: [VOICE.md](./VOICE.md)
 
 ## Расширение системы
 
@@ -349,6 +503,24 @@ sections:
 2. Обновить `_meta.yaml` — увеличить `total_sections`
 3. Запустить валидацию: `python scripts/validate_knowledge_yaml.py`
 
+### Добавление нового Feature Flag
+
+1. Добавить флаг в `settings.yaml`:
+```yaml
+feature_flags:
+  new_feature: false
+```
+
+2. Использовать в коде:
+```python
+from feature_flags import is_enabled
+
+if is_enabled("new_feature"):
+    # новая функциональность
+```
+
+3. Переопределить через env: `FF_NEW_FEATURE=true`
+
 ### Изменение параметров
 
 Все параметры вынесены в `settings.yaml`:
@@ -356,11 +528,12 @@ sections:
 - Пороги retriever'а
 - Веса классификатора
 - Длина истории и количество retry
+- Feature flags
 
 ## Тестирование
 
 ```bash
-# Все тесты (294)
+# Все тесты (1056+)
 pytest tests/ -v
 
 # Тесты классификатора
@@ -375,8 +548,14 @@ pytest tests/test_knowledge.py -v
 # Тесты каскадного retriever
 pytest tests/test_cascade_retriever.py tests/test_cascade_advanced.py -v
 
+# Тесты CategoryRouter
+pytest tests/test_category_router*.py -v
+
 # Тесты настроек
 pytest tests/test_settings.py -v
+
+# Тесты фаз 0-4
+pytest tests/test_phase*_integration.py -v
 ```
 
 ## Зависимости
@@ -389,3 +568,12 @@ pytest tests/test_settings.py -v
 | `requests` | HTTP-клиент |
 | `pyyaml` | Парсинг YAML |
 | `pytest` | Тестирование |
+
+Voice Bot:
+| Пакет | Назначение |
+|-------|------------|
+| `faster-whisper` | Speech-to-Text |
+| `f5-tts` | Text-to-Speech |
+| `RUAccent` | Расстановка ударений |
+| `sounddevice` | Работа с аудио |
+| `torch` | GPU поддержка |

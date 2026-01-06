@@ -5,8 +5,8 @@
 База знаний содержит структурированную информацию о продуктах и услугах Wipon. Используется для предоставления точных ответов на вопросы клиентов.
 
 **Статистика:**
-- **446 секций** в **18 YAML файлах**
-- **27 категорий** знаний
+- **1239 секций** в **17 YAML файлах**
+- **17 категорий** знаний
 - Компания: Wipon (Казахстанская IT-компания с 2014 года, 50,000+ клиентов)
 
 ## Структура модуля
@@ -18,58 +18,50 @@ knowledge/
 ├── loader.py           # Загрузчик YAML файлов
 ├── lemmatizer.py       # Лемматизация для поиска
 ├── retriever.py        # CascadeRetriever (3-этапный поиск)
+├── category_router.py  # LLM-классификация категорий
+├── reranker.py         # Cross-encoder переоценка результатов
 └── data/               # YAML-файлы базы знаний
     ├── _meta.yaml      # Метаданные (company, stats)
-    ├── pricing.yaml    # Тарифы (24 секции)
-    ├── products.yaml   # Продукты (10 секций)
-    ├── features.yaml   # Функции (3 секции)
-    ├── integrations.yaml   # Интеграции (24 секции)
-    ├── support.yaml    # Техподдержка (70 секций)
-    ├── equipment.yaml  # Оборудование (60 секций)
-    ├── tis.yaml        # Товарно-информационная система (132 секции)
-    ├── analytics.yaml  # Аналитика (27 секций)
-    ├── inventory.yaml  # Складской учёт (21 секция)
-    ├── employees.yaml  # Управление персоналом (21 секция)
-    ├── fiscal.yaml     # Фискализация (7 секций)
-    ├── mobile.yaml     # Мобильное приложение (5 секций)
-    ├── promotions.yaml # Акции и скидки (10 секций)
-    ├── stability.yaml  # Стабильность (14 секций)
-    ├── regions.yaml    # Регионы (4 секции)
-    ├── faq.yaml        # Часто задаваемые вопросы (3 секции)
-    └── other.yaml      # Прочее (11 секций)
+    ├── equipment.yaml  # Оборудование (183 секции)
+    ├── tis.yaml        # Товарно-информационная система (166 секций)
+    ├── support.yaml    # Техподдержка (156 секций)
+    ├── products.yaml   # Продукты (116 секций)
+    ├── pricing.yaml    # Тарифы (104 секции)
+    ├── inventory.yaml  # Складской учёт (97 секций)
+    ├── integrations.yaml   # Интеграции (71 секция)
+    ├── regions.yaml    # Регионы (60 секций)
+    ├── features.yaml   # Функции (59 секций)
+    ├── analytics.yaml  # Аналитика (52 секции)
+    ├── employees.yaml  # Управление персоналом (43 секции)
+    ├── fiscal.yaml     # Фискализация (41 секция)
+    ├── stability.yaml  # Стабильность (31 секция)
+    ├── mobile.yaml     # Мобильное приложение (31 секция)
+    ├── promotions.yaml # Акции и скидки (19 секций)
+    ├── competitors.yaml # Конкуренты (7 секций)
+    └── faq.yaml        # Часто задаваемые вопросы (3 секции)
 ```
 
 ## Категории знаний
 
 | Категория | Секций | Описание |
 |-----------|--------|----------|
-| tis | 132 | Товарно-информационная система (ТИС) |
-| support | 70 | Техподдержка и обслуживание |
-| equipment | 60 | Оборудование (кассы, принтеры, сканеры) |
-| analytics | 27 | Аналитика и отчёты |
-| pricing | 24 | Тарифы и стоимость |
-| integrations | 24 | Интеграции (1С, Kaspi, Telegram) |
-| inventory | 21 | Складской учёт |
-| employees | 21 | Управление персоналом |
-| stability | 14 | Стабильность и надёжность |
-| products | 10 | Продукты Wipon |
-| promotions | 10 | Акции и скидки |
-| fiscal | 7 | Фискализация |
-| mobile | 5 | Мобильное приложение |
-| regions | 4 | Регионы присутствия |
-| features | 3 | Функции системы |
+| equipment | 183 | Оборудование (кассы, принтеры, сканеры) |
+| tis | 166 | Товарно-информационная система (ТИС) |
+| support | 156 | Техподдержка и обслуживание |
+| products | 116 | Продукты Wipon |
+| pricing | 104 | Тарифы и стоимость |
+| inventory | 97 | Складской учёт |
+| integrations | 71 | Интеграции (1С, Kaspi, Telegram) |
+| regions | 60 | Регионы Казахстана |
+| features | 59 | Функции системы |
+| analytics | 52 | Аналитика и отчёты |
+| employees | 43 | Управление персоналом |
+| fiscal | 41 | Фискализация |
+| stability | 31 | Стабильность и надёжность |
+| mobile | 31 | Мобильное приложение |
+| promotions | 19 | Акции и скидки |
+| competitors | 7 | Конкуренты |
 | faq | 3 | Часто задаваемые вопросы |
-| audience | 1 | Целевая аудитория |
-| benefits | 1 | Преимущества |
-| competitors | 1 | Конкуренты |
-| getting_started | 1 | Начало работы |
-| contacts | 1 | Контакты |
-| partnership | 1 | Партнёрство |
-| updates | 1 | Обновления |
-| cases | 1 | Кейсы |
-| requirements | 1 | Требования |
-| security | 1 | Безопасность |
-| migration | 1 | Миграция |
 
 ## Формат YAML секции
 
@@ -142,6 +134,18 @@ sections:
 ┌────────────────────┐
 │  3. Semantic Match │  cosine similarity эмбеддингов
 │  (score >= 0.5)    │  Модель: ai-forever/ru-en-RoSBERTa
+└────────┬───────────┘
+         │ низкий score
+         ▼
+┌────────────────────┐
+│  4. CategoryRouter │  LLM-классификация категорий (опционально)
+│  (fallback)        │  Qwen3:8b-fast определяет релевантные категории
+└────────┬───────────┘
+         │ при необходимости
+         ▼
+┌────────────────────┐
+│  5. Reranker       │  Cross-encoder переоценка (опционально)
+│  (BAAI/bge-v2-m3)  │  Переранжирование top-k результатов
 └────────────────────┘
 ```
 
@@ -190,6 +194,41 @@ sections:
 # Если score >= 0.5 → секция включается в результаты
 ```
 
+### Этап 4: CategoryRouter (LLM-классификация)
+
+При низком score или сложных запросах включается LLM-классификатор:
+
+```python
+# Запрос: "как подключить 1С к Wipon?"
+# CategoryRouter (Qwen3:8b-fast) определяет: ["integrations", "features"]
+# Поиск сужается до релевантных категорий
+# Результаты переоцениваются в контексте определённых категорий
+
+# Настройки (settings.yaml):
+category_router:
+  enabled: true
+  top_k: 3  # количество возвращаемых категорий
+  fallback_categories:
+    - "faq"
+```
+
+### Этап 5: Reranker (Cross-encoder)
+
+При низком score результаты переоцениваются cross-encoder моделью:
+
+```python
+# Модель: BAAI/bge-reranker-v2-m3 (мультиязычный)
+# Берём top-k кандидатов и переранжируем
+# Cross-encoder учитывает взаимодействие query и document
+
+# Настройки (settings.yaml):
+reranker:
+  enabled: true
+  model: "BAAI/bge-reranker-v2-m3"
+  threshold: 0.5  # порог ниже которого включается
+  candidates_count: 10  # сколько кандидатов переоценивать
+```
+
 ## Публичный API
 
 ### Использование WIPON_KNOWLEDGE
@@ -202,11 +241,11 @@ print(WIPON_KNOWLEDGE.company_name)  # "Wipon"
 print(WIPON_KNOWLEDGE.company_description)
 
 # Все секции
-print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 446
+print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 1239
 
 # По категории
 pricing = WIPON_KNOWLEDGE.get_by_category("pricing")
-print(f"Секций о тарифах: {len(pricing)}")  # 24
+print(f"Секций о тарифах: {len(pricing)}")  # 104
 
 # По теме
 tariffs = WIPON_KNOWLEDGE.get_by_topic("tariffs")
@@ -236,6 +275,40 @@ print(f"Этап: {stats['stage_used']}")
 print(f"Время: {stats['total_time_ms']:.2f}ms")
 ```
 
+### Использование CategoryRouter
+
+```python
+from knowledge.category_router import CategoryRouter
+
+router = CategoryRouter()
+
+# Классификация запроса
+categories = router.classify("как подключить 1С?")
+print(categories)  # ['integrations', 'features', 'support']
+
+# С учётом контекста
+categories = router.classify(
+    "сколько стоит?",
+    context={"spin_phase": "situation"}
+)
+```
+
+### Использование Reranker
+
+```python
+from knowledge.reranker import Reranker
+
+reranker = Reranker()
+
+# Переоценка результатов
+query = "как настроить интеграцию?"
+candidates = retriever.search(query, top_k=10)
+reranked = reranker.rerank(query, candidates)
+
+for r in reranked[:3]:
+    print(f"{r.section.topic}: {r.score:.2f}")
+```
+
 ## Добавление новых секций
 
 ### 1. Выбрать файл или создать новый
@@ -261,12 +334,15 @@ print(f"Время: {stats['total_time_ms']:.2f}ms")
 
 ### 3. Обновить метаданные
 
-В `_meta.yaml` увеличить `total_sections`:
+В `_meta.yaml` увеличить `total_sections` и обновить count категории:
 
 ```yaml
 stats:
-  total_sections: 447  # было 446
-  last_updated: '2026-01-05'
+  total_sections: 1240  # было 1239
+  last_updated: '2026-01-06'
+  categories:
+  - name: support
+    count: 157  # было 156
 ```
 
 ### 4. Проверить валидность
@@ -327,6 +403,30 @@ retriever:
 
   # Количество результатов по умолчанию
   default_top_k: 2
+
+reranker:
+  # Включить reranker fallback
+  enabled: true
+
+  # Модель cross-encoder
+  model: "BAAI/bge-reranker-v2-m3"
+
+  # Порог score ниже которого включается reranker
+  threshold: 0.5
+
+  # Сколько кандидатов брать для reranking
+  candidates_count: 10
+
+category_router:
+  # Включить LLM-классификацию категорий
+  enabled: true
+
+  # Количество категорий для возврата
+  top_k: 3
+
+  # Категории по умолчанию при ошибке LLM
+  fallback_categories:
+    - "faq"
 ```
 
 ## Маппинг интентов на категории
@@ -363,6 +463,12 @@ pytest tests/test_cascade_retriever.py -v
 # Продвинутые тесты каскадного поиска
 pytest tests/test_cascade_advanced.py -v
 
+# Тесты CategoryRouter
+pytest tests/test_category_router*.py -v
+
+# Тесты Reranker
+pytest tests/test_reranker.py -v
+
 # Стресс-тест базы знаний
 python scripts/stress_test_knowledge.py
 ```
@@ -381,10 +487,11 @@ python scripts/stress_test_knowledge.py
 python scripts/validate_knowledge_yaml.py
 
 # Вывод:
-# [OK] pricing.yaml: 24 секции
-# [OK] products.yaml: 10 секций
+# [OK] equipment.yaml: 183 секции
+# [OK] tis.yaml: 166 секций
+# [OK] support.yaml: 156 секций
 # ...
-# [OK] Всего: 446 секций (ожидалось: 446)
+# [OK] Всего: 1239 секций (ожидалось: 1239)
 ```
 
 ## Производительность
@@ -392,12 +499,25 @@ python scripts/validate_knowledge_yaml.py
 | Операция | Время |
 |----------|-------|
 | Загрузка базы знаний | ~100ms |
-| Индексация эмбеддингов | ~30s (один раз при старте) |
+| Индексация эмбеддингов | ~60s (один раз при старте, 1239 секций) |
 | Exact search (1 запрос) | ~1ms |
 | Lemma search (1 запрос) | ~5ms |
 | Semantic search (1 запрос) | ~50ms |
+| CategoryRouter (1 запрос) | ~500ms (LLM call) |
+| Reranker (10 кандидатов) | ~100ms |
 
 Рекомендации:
 - Exact match покрывает 70%+ запросов
 - Для ускорения старта: `use_embeddings: false`
-- Для максимальной точности: оставить все 3 этапа
+- Для максимальной точности: включить все этапы + reranker
+- CategoryRouter включать при сложных запросах
+
+## История изменений
+
+| Дата | Секций | Изменения |
+|------|--------|-----------|
+| 2026-01-06 | 1239 | Добавлены секции 1100-1200, competitors вместо other |
+| 2026-01-05 | 1100 | Оптимизация keywords для 83%+ точности |
+| 2026-01-04 | 1000 | Добавлен CategoryRouter (98.8% точность) |
+| 2026-01-03 | 900 | Добавлены секции 800-900 |
+| ... | ... | ... |

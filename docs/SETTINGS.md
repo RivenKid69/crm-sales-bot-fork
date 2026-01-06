@@ -36,6 +36,24 @@ retriever:
   default_top_k: 2
 
 # -----------------------------------------------------------------------------
+# RERANKER (Переоценка результатов при низком score)
+# -----------------------------------------------------------------------------
+reranker:
+  enabled: true
+  model: "BAAI/bge-reranker-v2-m3"
+  threshold: 0.5
+  candidates_count: 10
+
+# -----------------------------------------------------------------------------
+# CATEGORY ROUTER (LLM-классификация категорий)
+# -----------------------------------------------------------------------------
+category_router:
+  enabled: true
+  top_k: 3
+  fallback_categories:
+    - "faq"
+
+# -----------------------------------------------------------------------------
 # GENERATOR (Генерация ответов)
 # -----------------------------------------------------------------------------
 generator:
@@ -76,6 +94,29 @@ logging:
   level: "INFO"
   log_llm_requests: false
   log_retriever_results: false
+
+# -----------------------------------------------------------------------------
+# FEATURE FLAGS (Управление фичами)
+# -----------------------------------------------------------------------------
+feature_flags:
+  # Фаза 0: Инфраструктура
+  structured_logging: true
+  metrics_tracking: true
+
+  # Фаза 1: Защита и надёжность
+  multi_tier_fallback: true
+  conversation_guard: true
+
+  # Фаза 2: Естественность диалога
+  tone_analysis: false
+  response_variations: true
+  personalization: false
+
+  # Фаза 3: Оптимизация SPIN Flow
+  lead_scoring: false
+  circular_flow: false
+  objection_handler: false
+  cta_generator: false
 
 # -----------------------------------------------------------------------------
 # DEVELOPMENT (Режим разработки)
@@ -122,6 +163,27 @@ development:
 - `ai-forever/ru-en-RoSBERTa` — русско-английская модель (рекомендуется)
 - `cointegrated/rubert-tiny2` — компактная русская модель (быстрее)
 
+### RERANKER (Переоценка результатов)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `enabled` | bool | `true` | Включить reranker fallback |
+| `model` | string | `"BAAI/bge-reranker-v2-m3"` | Модель cross-encoder |
+| `threshold` | float | `0.5` | Порог score ниже которого включается |
+| `candidates_count` | int | `10` | Сколько кандидатов переоценивать |
+
+**Модели reranker:**
+- `BAAI/bge-reranker-v2-m3` — мультиязычный, высокое качество (рекомендуется)
+- `cross-encoder/ms-marco-MiniLM-L-6-v2` — быстрый, английский
+
+### CATEGORY ROUTER (LLM-классификация)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `enabled` | bool | `true` | Включить LLM-классификацию |
+| `top_k` | int | `3` | Количество возвращаемых категорий |
+| `fallback_categories` | list | `["faq"]` | Категории по умолчанию при ошибке |
+
 ### GENERATOR (Генерация ответов)
 
 | Параметр | Тип | По умолчанию | Описание |
@@ -158,6 +220,35 @@ development:
 | `log_retriever_results` | bool | `false` | Логировать результаты retriever |
 
 **Уровни:** `DEBUG`, `INFO`, `WARNING`, `ERROR`
+
+### FEATURE FLAGS (Управление фичами)
+
+Feature flags позволяют постепенно включать новые возможности без изменения кода.
+
+| Флаг | Фаза | По умолчанию | Описание |
+|------|------|--------------|----------|
+| `structured_logging` | 0 | `true` | JSON логи для production |
+| `metrics_tracking` | 0 | `true` | Трекинг метрик диалогов |
+| `multi_tier_fallback` | 1 | `true` | 4-уровневый fallback |
+| `conversation_guard` | 1 | `true` | Защита от зацикливания |
+| `tone_analysis` | 2 | `false` | Анализ тона клиента |
+| `response_variations` | 2 | `true` | Вариативность ответов |
+| `personalization` | 2 | `false` | Персонализация |
+| `lead_scoring` | 3 | `false` | Скоринг лидов |
+| `circular_flow` | 3 | `false` | Возврат назад по фазам |
+| `objection_handler` | 3 | `false` | Обработка возражений |
+| `cta_generator` | 3 | `false` | Call-to-Action |
+
+**Переопределение через env:**
+```bash
+# Включить tone_analysis
+FF_TONE_ANALYSIS=true python bot.py
+
+# Выключить metrics_tracking
+FF_METRICS_TRACKING=false python bot.py
+```
+
+Подробнее: [PHASES.md](./PHASES.md)
 
 ### DEVELOPMENT (Режим разработки)
 
@@ -211,6 +302,21 @@ if errors:
         print(f"Ошибка: {err}")
 ```
 
+### Использование Feature Flags
+
+```python
+from feature_flags import is_enabled, get_all_flags
+
+# Проверка флага
+if is_enabled("tone_analysis"):
+    analyzer = ToneAnalyzer()
+    tone = analyzer.analyze(message)
+
+# Получить все флаги
+flags = get_all_flags()
+print(flags)  # {"structured_logging": True, "tone_analysis": False, ...}
+```
+
 ## Значения по умолчанию
 
 Если параметр не указан в `settings.yaml`, используются значения по умолчанию из `settings.py`:
@@ -234,6 +340,17 @@ DEFAULTS = {
         },
         "default_top_k": 2,
     },
+    "reranker": {
+        "enabled": True,
+        "model": "BAAI/bge-reranker-v2-m3",
+        "threshold": 0.5,
+        "candidates_count": 10,
+    },
+    "category_router": {
+        "enabled": True,
+        "top_k": 3,
+        "fallback_categories": ["faq"],
+    },
     # ...
 }
 ```
@@ -245,6 +362,12 @@ DEFAULTS = {
 ```yaml
 retriever:
   use_embeddings: false
+
+reranker:
+  enabled: false
+
+category_router:
+  enabled: false
 
 development:
   skip_embeddings: true
@@ -264,8 +387,36 @@ retriever:
     semantic: 0.4    # Понизить порог
   default_top_k: 3   # Больше результатов
 
+reranker:
+  enabled: true
+  candidates_count: 15
+
+category_router:
+  enabled: true
+  top_k: 5
+
 generator:
   retriever_top_k: 3
+```
+
+### Production
+
+```yaml
+logging:
+  level: "WARNING"
+  log_llm_requests: false
+  log_retriever_results: false
+
+feature_flags:
+  structured_logging: true
+  metrics_tracking: true
+  multi_tier_fallback: true
+  conversation_guard: true
+  response_variations: true
+  # Остальные выключены
+
+development:
+  debug: false
 ```
 
 ### Режим отладки
@@ -309,8 +460,8 @@ cd src && python settings.py
 # Тесты настроек
 pytest tests/test_settings.py -v
 
-# Проверка валидации
-python scripts/validate_settings.py
+# Тесты feature flags
+pytest tests/test_feature_flags.py -v
 ```
 
 ## Миграция настроек

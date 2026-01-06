@@ -17,6 +17,15 @@ cd src && python bot.py
 - Ollama с моделью `qwen3:8b-fast`
 - (опционально) sentence-transformers для семантического поиска
 
+## Возможности
+
+- **SPIN Selling** — структурированный подход к продажам (Situation → Problem → Implication → Need-Payoff)
+- **Гибридная классификация** — 214 приоритетных паттернов + поиск по корням + лемматизация
+- **Каскадный поиск** — 3-этапный retriever (exact → lemma → semantic)
+- **LLM-маршрутизация** — CategoryRouter для интеллектуальной классификации категорий
+- **Голосовой интерфейс** — Voice Bot с STT (Whisper) и TTS (F5-TTS)
+- **Модульные фазы** — постепенное включение новых возможностей через feature flags
+
 ## Архитектура
 
 ```
@@ -36,7 +45,7 @@ cd src && python bot.py
          │
          ▼
 ┌─────────────────┐      ┌─────────────────┐
-│   Generator     │ ───► │ Knowledge Base  │  ← 446 секций о продуктах Wipon
+│   Generator     │ ───► │ Knowledge Base  │  ← 1239 секций о продуктах Wipon
 │                 │ ◄─── │ (CascadeRetriever)│   в YAML-файлах
 └────────┬────────┘      └─────────────────┘
          │
@@ -54,12 +63,30 @@ cd src && python bot.py
 ```
 src/
 ├── bot.py                  # Главный класс SalesBot, координирует компоненты
-├── settings.yaml           # Конфигурация (LLM, retriever, classifier)
+├── settings.yaml           # Конфигурация (LLM, retriever, classifier, feature_flags)
 ├── settings.py             # Загрузчик настроек с DotDict
 ├── config.py               # Интенты, состояния, SPIN-промпты
 ├── llm.py                  # Интеграция с Ollama
 ├── state_machine.py        # Управление состояниями диалога (SPIN flow)
 ├── generator.py            # Генерация ответов через LLM
+│
+├── # Фаза 0: Инфраструктура
+├── logger.py               # Структурированное логирование (JSON/readable)
+├── metrics.py              # Трекинг метрик диалогов
+├── feature_flags.py        # Управление фичами без переразвертывания
+│
+├── # Фаза 1: Защита и надёжность
+├── fallback_handler.py     # 4-уровневый fallback при ошибках
+├── conversation_guard.py   # Защита от зацикливания
+│
+├── # Фаза 2: Естественность диалога
+├── tone_analyzer.py        # Анализ тона клиента
+├── response_variations.py  # Вариативность ответов
+│
+├── # Фаза 3: Оптимизация SPIN Flow
+├── lead_scoring.py         # Скоринг лидов
+├── objection_handler.py    # Продвинутая обработка возражений
+├── cta_generator.py        # Генерация Call-to-Action
 │
 ├── classifier/             # Пакет классификации интентов
 │   ├── __init__.py         # Публичный API пакета
@@ -78,35 +105,49 @@ src/
     ├── loader.py           # Загрузчик YAML файлов
     ├── lemmatizer.py       # Лемматизация для поиска
     ├── retriever.py        # CascadeRetriever (3-этапный поиск)
-    └── data/               # YAML-файлы базы знаний (446 секций)
+    ├── category_router.py  # LLM-классификация категорий
+    ├── reranker.py         # Cross-encoder переоценка результатов
+    └── data/               # YAML-файлы базы знаний (1239 секций)
         ├── _meta.yaml      # Метаданные (company, stats)
-        ├── pricing.yaml    # Тарифы (24 секции)
-        ├── products.yaml   # Продукты (10 секций)
-        ├── features.yaml   # Функции (3 секции)
-        ├── integrations.yaml   # Интеграции (24 секции)
-        ├── support.yaml    # Техподдержка (70 секций)
-        ├── equipment.yaml  # Оборудование (60 секций)
-        ├── tis.yaml        # Товарно-информационная система (132 секции)
-        ├── analytics.yaml  # Аналитика (27 секций)
-        ├── inventory.yaml  # Складской учёт (21 секция)
-        ├── employees.yaml  # Управление персоналом (21 секция)
-        ├── fiscal.yaml     # Фискализация (7 секций)
-        ├── mobile.yaml     # Мобильное приложение (5 секций)
-        ├── promotions.yaml # Акции и скидки (10 секций)
-        ├── stability.yaml  # Стабильность (14 секций)
-        ├── regions.yaml    # Регионы (4 секции)
-        ├── faq.yaml        # Часто задаваемые вопросы (3 секции)
-        └── other.yaml      # Прочее (11 секций)
+        ├── equipment.yaml  # Оборудование (183 секции)
+        ├── tis.yaml        # Товарно-информационная система (166 секций)
+        ├── support.yaml    # Техподдержка (156 секций)
+        ├── products.yaml   # Продукты (116 секций)
+        ├── pricing.yaml    # Тарифы (104 секции)
+        ├── inventory.yaml  # Складской учёт (97 секций)
+        ├── integrations.yaml   # Интеграции (71 секция)
+        ├── regions.yaml    # Регионы (60 секций)
+        ├── features.yaml   # Функции (59 секций)
+        ├── analytics.yaml  # Аналитика (52 секции)
+        ├── employees.yaml  # Управление персоналом (43 секции)
+        ├── fiscal.yaml     # Фискализация (41 секция)
+        ├── stability.yaml  # Стабильность (31 секция)
+        ├── mobile.yaml     # Мобильное приложение (31 секция)
+        ├── promotions.yaml # Акции и скидки (19 секций)
+        ├── competitors.yaml # Конкуренты (7 секций)
+        └── faq.yaml        # Часто задаваемые вопросы (3 секции)
 
-tests/                      # 294 теста
+voice_bot/                  # Голосовой интерфейс
+├── voice_pipeline.py       # Полный pipeline: STT → LLM → TTS
+├── CosyVoice/              # Синтез речи (submodule)
+├── fish-speech/            # Speech synthesis (submodule)
+├── checkpoints/            # Модели F5-TTS, OpenAudio
+├── models/                 # XTTS-RU-IPA модели
+└── test_*.py               # Тесты компонентов (STT, TTS, LLM)
+
+tests/                      # 1056+ тестов в 33 файлах
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
 ├── test_cascade_retriever.py   # Тесты CascadeRetriever
 ├── test_cascade_advanced.py    # Продвинутые тесты каскадного поиска
-├── test_knowledge_yaml.py  # Валидация YAML файлов
-├── test_settings.py        # Тесты настроек
-└── test_bug_fixes.py       # Регрессионные тесты
+├── test_category_router*.py    # Тесты LLM-маршрутизации
+├── test_reranker.py        # Тесты переоценки результатов
+├── test_phase*_integration.py  # Интеграционные тесты фаз 0-4
+├── test_feature_flags.py   # Тесты feature flags
+├── test_logger.py          # Тесты логирования
+├── test_metrics.py         # Тесты метрик
+└── ...
 
 scripts/                    # Вспомогательные скрипты
 ├── full_bot_stress_test.py     # Стресс-тест бота
@@ -134,21 +175,27 @@ retriever:
     lemma: 0.15     # Совпадение по леммам
     semantic: 0.5   # Косинусное сходство эмбеддингов
 
-# Generator (Генерация ответов)
-generator:
-  max_retries: 3
-  history_length: 4
-  retriever_top_k: 2
+# Reranker (Переоценка при низком score)
+reranker:
+  enabled: true
+  model: "BAAI/bge-reranker-v2-m3"
+  threshold: 0.5
 
-# Classifier (Классификация интентов)
-classifier:
-  weights:
-    root_match: 1.0
-    phrase_match: 2.0
-    lemma_match: 1.5
-  thresholds:
-    high_confidence: 0.7
-    min_confidence: 0.3
+# Category Router (LLM-классификация категорий)
+category_router:
+  enabled: true
+  top_k: 3
+
+# Feature Flags (Управление фичами)
+feature_flags:
+  structured_logging: true    # JSON логи
+  metrics_tracking: true      # Трекинг метрик
+  multi_tier_fallback: true   # 4-уровневый fallback
+  conversation_guard: true    # Защита от зацикливания
+  tone_analysis: false        # Анализ тона (выключен)
+  response_variations: true   # Вариативность ответов
+  lead_scoring: false         # Скоринг лидов (выключен)
+  objection_handler: false    # Обработка возражений (выключен)
 ```
 
 Подробнее: [docs/SETTINGS.md](docs/SETTINGS.md)
@@ -248,27 +295,27 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 
 ## База знаний (knowledge/)
 
-База знаний содержит **446 секций** в **18 YAML файлах**:
+База знаний содержит **1239 секций** в **17 YAML файлах**:
 
 | Категория | Секций | Описание |
 |-----------|--------|----------|
-| tis | 132 | Товарно-информационная система |
-| support | 70 | Техподдержка |
-| equipment | 60 | Оборудование |
-| analytics | 27 | Аналитика |
-| pricing | 24 | Тарифы |
-| integrations | 24 | Интеграции |
-| inventory | 21 | Складской учёт |
-| employees | 21 | Управление персоналом |
-| stability | 14 | Стабильность |
-| products | 10 | Продукты |
-| promotions | 10 | Акции |
-| fiscal | 7 | Фискализация |
-| mobile | 5 | Мобильное приложение |
-| regions | 4 | Регионы |
-| features | 3 | Функции |
-| faq | 3 | FAQ |
-| other | 11 | Прочее |
+| equipment | 183 | Оборудование (кассы, принтеры, сканеры) |
+| tis | 166 | Товарно-информационная система |
+| support | 156 | Техподдержка и обслуживание |
+| products | 116 | Продукты Wipon |
+| pricing | 104 | Тарифы и стоимость |
+| inventory | 97 | Складской учёт |
+| integrations | 71 | Интеграции (1С, Kaspi, Telegram) |
+| regions | 60 | Регионы Казахстана |
+| features | 59 | Функции системы |
+| analytics | 52 | Аналитика и отчёты |
+| employees | 43 | Управление персоналом |
+| fiscal | 41 | Фискализация |
+| stability | 31 | Стабильность и надёжность |
+| mobile | 31 | Мобильное приложение |
+| promotions | 19 | Акции и скидки |
+| competitors | 7 | Конкуренты |
+| faq | 3 | Часто задаваемые вопросы |
 
 ### CascadeRetriever — 3-этапный поиск
 
@@ -280,6 +327,16 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
        │
        ▼ (если не найдено)
 3. Semantic Match ─── cosine similarity эмбеддингов (ai-forever/ru-en-RoSBERTa)
+```
+
+### CategoryRouter — LLM-маршрутизация
+
+При низком score или сложных запросах включается LLM-классификатор категорий:
+
+```python
+# Запрос: "как подключить 1С?"
+# CategoryRouter определяет: ["integrations", "features"]
+# Поиск сужается до релевантных категорий
 ```
 
 Подробнее: [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)
@@ -333,10 +390,42 @@ from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
 ### Умное пропускание фаз:
 При `high_interest = True` можно пропустить Implication и Need-Payoff фазы.
 
+## Feature Flags (Фазы разработки)
+
+Система использует feature flags для постепенного включения функциональности:
+
+| Фаза | Компонент | Флаг | Статус |
+|------|-----------|------|--------|
+| 0 | Логирование | `structured_logging` | ✅ Включено |
+| 0 | Метрики | `metrics_tracking` | ✅ Включено |
+| 1 | Fallback | `multi_tier_fallback` | ✅ Включено |
+| 1 | Guard | `conversation_guard` | ✅ Включено |
+| 2 | Тон | `tone_analysis` | ⏸️ Выключено |
+| 2 | Вариации | `response_variations` | ✅ Включено |
+| 3 | Скоринг | `lead_scoring` | ⏸️ Выключено |
+| 3 | Возражения | `objection_handler` | ⏸️ Выключено |
+| 3 | CTA | `cta_generator` | ⏸️ Выключено |
+
+Подробнее: [docs/PHASES.md](docs/PHASES.md)
+
+## Voice Bot (voice_bot/)
+
+Голосовой интерфейс для разговорного взаимодействия:
+
+```
+┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐
+│   faster-whisper  │ ──► │   LLM (Ollama)    │ ──► │   F5-TTS Russian  │
+│   (STT)           │     │   Qwen3:8b-fast   │     │   + RUAccent      │
+└───────────────────┘     └───────────────────┘     └───────────────────┘
+      Голос клиента              Текст                   Голос бота
+```
+
+Подробнее: [docs/VOICE.md](docs/VOICE.md)
+
 ## Тестирование
 
 ```bash
-# Все тесты (294 теста)
+# Все тесты (1056+ тестов)
 pytest tests/ -v
 
 # Только тесты классификатора
@@ -350,6 +439,12 @@ pytest tests/test_knowledge.py -v
 
 # Тесты каскадного retriever
 pytest tests/test_cascade_retriever.py -v
+
+# Тесты CategoryRouter
+pytest tests/test_category_router*.py -v
+
+# Тесты фаз 0-4
+pytest tests/test_phase*_integration.py -v
 
 # Стресс-тест бота
 python scripts/full_bot_stress_test.py
@@ -382,6 +477,15 @@ python scripts/stress_test_knowledge.py
 | `pyyaml` | Парсинг YAML конфигурации и базы знаний |
 | `pytest` | Тестирование |
 
+Для голосового интерфейса:
+| Пакет | Назначение |
+|-------|------------|
+| `faster-whisper` | Speech-to-Text с GPU |
+| `f5-tts` | Text-to-Speech на русском |
+| `RUAccent` | Расстановка ударений |
+| `sounddevice` | Работа с аудио |
+| `torch` | GPU поддержка |
+
 Установка:
 ```bash
 pip install -r requirements.txt
@@ -394,3 +498,19 @@ pip install -r requirements.txt
 - [CLASSIFIER.md](docs/CLASSIFIER.md) — документация классификатора
 - [KNOWLEDGE.md](docs/KNOWLEDGE.md) — документация базы знаний
 - [SETTINGS.md](docs/SETTINGS.md) — описание настроек
+- [PHASES.md](docs/PHASES.md) — фазы разработки (0-3)
+- [VOICE.md](docs/VOICE.md) — голосовой интерфейс
+
+## Метрики проекта
+
+```
+Модулей Python:           17+ в src/
+Тестов:                   1056+ в 33 файлах
+Секций в базе знаний:     1239 в 17 YAML файлах
+Интентов:                 50+ в INTENT_ROOTS
+Паттернов опечаток:       663 в TYPO_FIXES
+Паттернов разделения:     170 в SPLIT_PATTERNS
+Приоритетных паттернов:   214 в PRIORITY_PATTERNS
+Состояний диалога:        10 основных
+Категорий знаний:         17
+```
