@@ -1,6 +1,6 @@
 # База знаний: integrations
 # Категория: integrations
-# Секций: 77
+# Секций: 83
 
 sections:
 - topic: marketplaces
@@ -1535,3 +1535,68 @@ sections:
   - терминалы поддерживаемые
   facts: |-
     Да. Поддерживаем Halyk, Kaspi, Forte и другие терминалы.
+- topic: integrations_bank_terminals_1708
+  priority: 9
+  keywords:
+  - банковские терминалы
+  - подключить терминал банка
+  - kaspi halyk forte терминал
+  - банк терминалы қосу
+  - эквайринг подключить
+  - pos терминал банк
+  facts: |-
+    Да. Поддерживаем терминалы Kaspi, Halyk, Forte и других банков.
+- topic: integrations_1c_export_1716
+  priority: 8
+  keywords:
+  - интеграция с 1с
+  - 1с выгрузка
+  - экспорт в 1с
+  - 1с байланыс
+  - 1с интеграциясы
+  - данные в 1с
+  facts: |-
+    Прямой интеграции нет, но есть экспорт данных в формате для загрузки в 1С.
+- topic: integrations_crm_api_1717
+  priority: 8
+  keywords:
+  - интеграция с crm
+  - crm система
+  - api для crm
+  - crm байланыс
+  - crm интеграция
+  - внешняя crm
+  facts: |-
+    Прямой интеграции нет, но есть API для подключения внешних систем.
+- topic: integrations_scales_connect_1732
+  priority: 8
+  keywords:
+  - подключение весов
+  - весы интеграция
+  - электронные весы
+  - таразы қосу
+  - весы к кассе
+  - совместимые весы
+  facts: |-
+    Да. Поддерживаем совместимые электронные весы со стандартным протоколом.
+- topic: integrations_marketplace_sync_1735
+  priority: 7
+  keywords:
+  - синхронизация с маркетплейсами
+  - kaspi магазин интеграция
+  - маркетплейс синхронизация
+  - маркетплейспен синхрондау
+  - интеграция kaspi shop
+  facts: |-
+    Прямой интеграции с маркетплейсами пока нет.
+- topic: integrations_developer_api_1767
+  priority: 8
+  keywords:
+  - api для разработчиков
+  - api wipon
+  - api интеграция
+  - әзірлеушілерге api
+  - developer api
+  - внешнее api
+  facts: |-
+    Да. Есть API для интеграции с внешними системами.

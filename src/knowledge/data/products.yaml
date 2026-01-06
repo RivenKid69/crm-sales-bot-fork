@@ -1,6 +1,6 @@
 # База знаний: products
 # Категория: products
-# Секций: 228
+# Секций: 229
 
 sections:
 - topic: overview
@@ -4593,6 +4593,17 @@ sections:
   - пекарня b2b продажи
   facts: |-
     Да. Standard и Pro поддерживают розничные и оптовые цены.
+- topic: products_kids_clothing_1713
+  priority: 8
+  keywords:
+  - магазин детской одежды
+  - детская одежда учёт
+  - размеры детская одежда
+  - балалар киімі дүкені
+  - kids clothing store
+  - детский магазин одежды
+  facts: |-
+    Да. Учёт размеров, цветов и остатков детской одежды.
 - topic: products_cafe_starter_1683
   priority: 8
   keywords:
