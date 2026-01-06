@@ -22,10 +22,10 @@ sections:
   - kaspi magnum
   facts: |-
     Интеграции с маркетплейсами:
-
+    
     • **Kaspi.kz** — синхронизация товаров, заказов, остатков
     • **Halyk Market** — автоматическая выгрузка каталога
-
+    
     Заказы с маркетплейсов попадают в систему автоматически.
     Остатки обновляются в реальном времени.
 - topic: payments
@@ -40,12 +40,12 @@ sections:
   - карта
   facts: |-
     Интеграция с банками и POS-терминалами:
-
+    
     • Поддержка POS-терминалов всех казахстанских банков
     • Интернет-эквайринг
     • Автоматическая сверка оплат
     • Выбор банка с минимальной комиссией
-
+    
     Оплата сразу передаётся на терминал и в ОФД.
 - topic: marking
   priority: 7
@@ -58,12 +58,12 @@ sections:
   - сканер
   facts: |-
     Работа с маркировкой:
-
+    
     • Поддержка маркировки товаров (обязательная маркировка РК)
     • Сканирование QR и штрихкодов
     • Прослеживаемость товаров
     • Автоматическая проверка при продаже
-
+    
     Интегрировано с системой маркировки Казахстана.
 - topic: 1c
   priority: 7
@@ -90,12 +90,12 @@ sections:
   - передавать данные
   facts: |-
     Интеграция с 1С:
-
+    
     • Выгрузка данных в 1С
     • Импорт справочников из 1С
     • Синхронизация остатков и продаж
     • Упрощение бухгалтерского учёта
-
+    
     Не требует отдельного программиста для настройки.
 - topic: integrations_marketplace_online_001
   priority: 8
@@ -356,7 +356,7 @@ sections:
     • Подаём заявку
     • Проходим модерацию
     • Настраиваем права
-
+    
     Можем всё сделать за вас под ключ.
 - topic: integrations_snt_not_passing_336
   priority: 9
@@ -494,7 +494,7 @@ sections:
   - банки интеграция wipon
   facts: |-
     Работаем с POS-терминалами банков РК: сумма уходит на терминал, чек и платёж сохраняются.
-
+    
     Поддерживаемые банки: Forte, Halyk, Kaspi, Jýsan, BCC и др.
 - topic: integrations_banks_kz_424
   priority: 9
@@ -507,7 +507,6 @@ sections:
   - чек және төлем
   facts: |-
     Wipon барлық банктердің POS-терминалдарымен жұмыс істейді. Сома терминалға автоматты жіберіледі, чек және төлем деректері сақталады.
-
 - topic: integrations_modules_489
   priority: 10
   keywords:
@@ -522,7 +521,6 @@ sections:
   - интегрируется учёт продаж модулями
   facts: |-
     Да, все модули — склад, финансы, закупки и касса — работают вместе. Данные обновляются автоматически и формируют единую картину бизнеса.
-
 - topic: integrations_marking_what_511
   priority: 10
   keywords:
@@ -540,7 +538,6 @@ sections:
   - что такое маркировка wipon
   facts: |-
     Это модуль, который помогает вести учёт маркированных товаров в соответствии с требованиями законодательства РК. Он автоматизирует списание кодов из кабинета ISMET.
-
 - topic: integrations_marking_purpose_512
   priority: 10
   keywords:
@@ -558,7 +555,6 @@ sections:
   - зачем нужна маркировка товаров
   facts: |-
     Маркировка — это нанесение на товары уникальных кодов Data Matrix, позволяющих отслеживать путь продукции от производителя до покупателя. Это обязательная мера против контрафакта и теневого оборота.
-
 - topic: integrations_marking_ismet_513
   priority: 10
   keywords:
@@ -580,7 +576,6 @@ sections:
   - маркировка через платформу црпт
   facts: |-
     Она реализуется через государственную платформу ISMET, которая является частью инфраструктуры ЦРПТ.
-
 - topic: integrations_marking_benefits_514
   priority: 10
   keywords:
@@ -597,7 +592,6 @@ sections:
   - преимущества wipon pro маркировка
   facts: |-
     Быстрая проверка кодов, автоматическое заполнение данных из ISMET и полное соответствие законодательству.
-
 - topic: integrations_marking_auto_515
   priority: 10
   keywords:
@@ -614,7 +608,6 @@ sections:
   - автоматизация ввода маркировки
   facts: |-
     Нет, всё сканируется и автоматически обрабатывается системой. Это экономит время и снижает риск ошибок.
-
 - topic: integrations_marking_modules_516
   priority: 10
   keywords:
@@ -627,7 +620,6 @@ sections:
   - встроена маркировка wipon
   facts: |-
     Да, она встроена в склад, кассу, продажи, закупки и аналитику. Вы всегда видите движение товара и соблюдаете закон.
-
 - topic: integrations_marking_check_518
   priority: 10
   keywords:
@@ -648,7 +640,6 @@ sections:
   - проверка валидности data matrix
   facts: |-
     Достаточно отсканировать Data Matrix через кассовое ПО и сканер — система сразу проверит его валидность.
-
 - topic: integrations_marking_legal_519
   priority: 10
   keywords:
@@ -661,7 +652,6 @@ sections:
   - легальность маркировки wipon
   facts: |-
     Да, все операции проходят через фискальный модуль и фиксируются надлежащим образом.
-
 - topic: integrations_marking_control_520
   priority: 10
   keywords:
@@ -674,7 +664,6 @@ sections:
   - поступил хранится реализован маркировка
   facts: |-
     Да, система показывает, какой товар поступил, где он хранится и как был реализован.
-
 - topic: integrations_bank_how_works_535
   priority: 10
   keywords:
@@ -690,7 +679,6 @@ sections:
   - как работает интеграция банков
   facts: |-
     При оплате картой сумма автоматически передаётся на POS-терминал банка, и кассиру не нужно вводить её вручную.
-
 - topic: integrations_bank_list_536
   priority: 10
   keywords:
@@ -712,7 +700,6 @@ sections:
   - список поддерживаемых банков
   facts: |-
     Система поддерживает POS-терминалы ForteBank, Halyk Bank, Kaspi Bank, Jýsan Bank, BCC и других банков второго уровня.
-
 - topic: integrations_bank_saved_537
   priority: 8
   keywords:
@@ -724,7 +711,6 @@ sections:
   - фиксируется платёж
   facts: |-
     Фиксируются сумма, способ оплаты, дата и время транзакции, смена, кассир и статус платежа.
-
 - topic: integrations_bank_no_manual_538
   priority: 10
   keywords:
@@ -737,7 +723,6 @@ sections:
   - ускоряет обслуживание оплата
   facts: |-
     Нет, сумма уходит автоматически, что исключает ошибки и ускоряет обслуживание.
-
 - topic: integrations_bank_connect_539
   priority: 10
   keywords:
@@ -758,7 +743,6 @@ sections:
   - настройка банковского терминала wipon
   facts: |-
     Достаточно один раз настроить терминал в системе. После этого он будет работать синхронно и без дополнительных действий.
-
 - topic: integrations_bank_reconcile_540
   priority: 10
   keywords:
@@ -779,7 +763,6 @@ sections:
   - сверить оплаты pos терминал банк
   facts: |-
     Да, все оплаты автоматически фиксируются и отображаются в аналитике и отчётности. Вы всегда можете сверить их с банковскими поступлениями.
-
 - topic: integrations_bank_benefits_541
   priority: 10
   keywords:
@@ -800,7 +783,6 @@ sections:
   - интеграция с банками преимущества
   facts: |-
     Быстрая оплата без ручного ввода, синхронизация чеков и платежей, удобство для кассира и прозрачность для бухгалтера.
-
 - topic: integrations_nfc_payment_542
   priority: 10
   keywords:
@@ -821,7 +803,6 @@ sections:
   - смартфон оплата wipon можно
   facts: |-
     Да, если POS-терминал банка поддерживает оплату через NFC, клиент может оплачивать смартфоном или картой.
-
 - topic: integrations_bank_terminal_611
   priority: 10
   keywords:
@@ -849,7 +830,6 @@ sections:
   - карты принимать через терминал
   facts: |-
     Да, Wipon работает с POS-терминалами всех казахстанских банков. Сумма передаётся автоматически.
-
 - topic: integrations_marking_618
   priority: 10
   keywords:
@@ -875,7 +855,6 @@ sections:
   - маркированные товары продавать
   facts: |-
     Да, Wipon поддерживает обязательную маркировку товаров. Интеграция с ISMET для автоматического списания кодов.
-
 - topic: integrations_online_store_631
   priority: 10
   keywords:
@@ -900,7 +879,6 @@ sections:
   - онлайн заказы принимать
   facts: |-
     Wipon интегрируется с Kaspi Магазин и Halyk Market. Заказы и чеки синхронизируются автоматически.
-
 - topic: integrations_supported_banks_640
   priority: 10
   keywords:
@@ -922,7 +900,6 @@ sections:
   - терминал какого банка подключить
   facts: |-
     Поддерживаем POS-терминалы ForteBank, Halyk Bank, Kaspi Bank, Jýsan Bank, BCC и других банков РК.
-
 - topic: integrations_cashless_657
   priority: 10
   keywords:
@@ -947,7 +924,6 @@ sections:
   - картой платить через кассу
   facts: |-
     Да, Wipon поддерживает безналичные платежи. Интеграция с POS-терминалами, сумма передаётся автоматически.
-
 - topic: integrations_esf_668
   priority: 10
   keywords:
@@ -970,7 +946,6 @@ sections:
   - эсф выписывать можно?
   facts: |-
     Да, Wipon интегрирован с ИС ЭСФ. Можно формировать и отправлять электронные счета-фактуры из системы.
-
 - topic: integrations_multiple_terminals_674
   priority: 10
   keywords:
@@ -991,7 +966,6 @@ sections:
   - много pos терминалов
   facts: |-
     Да, можно подключить несколько POS-терминалов к одной системе Wipon.
-
 - topic: integrations_kaspi_halyk_704
   priority: 10
   keywords:
@@ -1015,7 +989,6 @@ sections:
   - подключение к халык маркет
   facts: |-
     Да. Есть интеграция с Kaspi.kz и Halyk Market, онлайн-продажи и оплаты автоматически попадают в систему.
-
 - topic: integrations_ozon_wildberries_722
   priority: 10
   keywords:
@@ -1031,7 +1004,6 @@ sections:
   - wbay ozon подключение
   facts: |-
     Пока нет. Эти площадки не относятся к ТИС. Поддерживаем интеграции с Kaspi и Halyk Market.
-
 - topic: integrations_marketplaces_744
   priority: 10
   keywords:
@@ -1056,7 +1028,6 @@ sections:
   - торговля через интернет платформы
   facts: |-
     Да. Интеграции с Kaspi.kz и Halyk Market уже есть. Заказы и оплаты попадают в систему автоматически.
-
 - topic: integrations_marking_814
   priority: 10
   keywords:
@@ -1071,7 +1042,6 @@ sections:
   - маркированные товары
   facts: |-
     Да, программа работает с маркировкой — товары сканируются и учитываются по требованиям законодательства.
-
 - topic: integrations_bank_851
   priority: 10
   keywords:
@@ -1085,7 +1055,6 @@ sections:
   - банковский терминал
   facts: |-
     Да, поддерживается интеграция с банками: Kaspi, Halyk, Jusan и другие. Оплата автоматически фиксируется в системе.
-
 - topic: integrations_which_banks_852
   priority: 10
   keywords:
@@ -1099,7 +1068,6 @@ sections:
   - с какими банками работает
   facts: |-
     Интеграции доступны с Kaspi, Halyk, Jusan и рядом других банков.
-
 - topic: integrations_terminal_no_manual_853
   priority: 10
   keywords:
@@ -1112,7 +1080,6 @@ sections:
   - кассир вводит сумму
   facts: |-
     При интеграции с банком сумма передаётся на терминал автоматически — кассиру не нужно вводить вручную.
-
 - topic: integrations_bank_benefits_854
   priority: 10
   keywords:
@@ -1126,7 +1093,6 @@ sections:
   - польза банковской интеграции
   facts: |-
     Автоматическая передача суммы, меньше ошибок, быстрее обслуживание, все оплаты фиксируются в системе.
-
 - topic: integrations_smartphone_payment_855
   priority: 10
   keywords:
@@ -1137,7 +1103,6 @@ sections:
   - бесконтактная оплата
   facts: |-
     Да, при подключении банковского терминала с NFC можно принимать Apple Pay, Google Pay и другие бесконтактные оплаты.
-
 - topic: integrations_kaspi_store_1052
   priority: 10
   keywords:
@@ -1153,7 +1118,6 @@ sections:
   - wipon kaspi магазин подключить
   facts: |-
     Да, есть интеграция. Заказы и оплаты с Kaspi автоматически попадают в программу.
-
 - topic: integrations_halyk_pos_1055
   priority: 10
   keywords:
@@ -1170,7 +1134,6 @@ sections:
   - wipon халык терминал интеграция
   facts: |-
     Да, поддерживаем. Сумма автоматически передаётся на терминал Halyk Bank.
-
 - topic: integrations_marketplaces_1061
   priority: 10
   keywords:
@@ -1187,7 +1150,6 @@ sections:
   - wipon маркетплейсы kaspi halyk
   facts: |-
     Интеграции с Kaspi и Halyk Market. Заказы и чеки попадают в систему автоматически.
-
 - topic: integrations_online_shop_1065
   priority: 9
   keywords:
@@ -1198,7 +1160,6 @@ sections:
   - заказы онлайн
   facts: |-
     Да, можно. Есть интеграции с Kaspi и Halyk Market. Заказы синхронизируются автоматически.
-
 - topic: integrations_kaspi_red_1076
   priority: 9
   keywords:
@@ -1209,7 +1170,6 @@ sections:
   - kaspi рассрочка
   facts: |-
     Да, можно оплатить через Kaspi Red. Сумма передаётся автоматически, рассрочка оформляется через приложение Kaspi.
-
 - topic: integrations_multi_terminals_1080
   priority: 8
   keywords:
@@ -1220,7 +1180,6 @@ sections:
   - подключить несколько терминалов
   facts: |-
     Да, можно подключить несколько POS-терминалов к одной системе.
-
 - topic: integrations_multi_acquiring_1085
   priority: 9
   keywords:
@@ -1231,7 +1190,6 @@ sections:
   - два банка эквайринг
   facts: |-
     Да, можно подключить терминалы от разных банков и выбирать, через какой принимать оплату.
-
 - topic: integrations_api_1091
   priority: 10
   keywords:
@@ -1247,7 +1205,6 @@ sections:
   - wipon api интеграция другие системы
   facts: |-
     Да, есть API. Можно интегрировать Wipon с другими системами по документации.
-
 - topic: integrations_marking_support_1167
   priority: 10
   keywords:
@@ -1265,7 +1222,6 @@ sections:
   - маркированные товары система
   facts: |-
     Да, поддерживает маркировку товаров: алкоголь, табак және басқа өнімдер.
-
 - topic: integrations_kaspi_qr_1173
   priority: 10
   keywords:
@@ -1284,7 +1240,6 @@ sections:
   - kaspi qr код
   facts: |-
     Да, касса поддерживает оплату через Kaspi QR.
-
 - topic: integrations_online_shop_manual_1177
   priority: 8
   keywords:
@@ -1301,7 +1256,6 @@ sections:
   - подключить программу к интернет-магазину
   facts: |-
     Пока нет прямой интеграции, но можно выгружать данные вручную.
-
 - topic: integrations_alcohol_datamatrix_1179
   priority: 10
   keywords:
@@ -1321,7 +1275,6 @@ sections:
   - алкоголь с кодами datamatrix
   facts: |-
     Да, можно. Система поддерживает учёт алкоголя и работу с маркировкой DataMatrix.
-
 - topic: integrations_pos_terminal_kz_1462
   priority: 9
   keywords:
@@ -1329,27 +1282,53 @@ sections:
   - pos терминал арқылы
   - kaspi halyk терминал
   - төлем қабылдау pos
+  - pos терминал қазақша
+  - терминал қосу
+  - kaspi терминал қосу
+  - halyk терминал қосу
+  - банк терминалы
+  - эквайринг қазақша
+  - терминал wipon қосу
+  - төлем терминал
+  - терминал интеграция қазақша
+  - банк терминал қосу
   facts: |-
     Иә. Kaspi, Halyk және басқа терминалдармен жұмыс істейді.
-
 - topic: integrations_1c_1476
   priority: 9
   keywords:
   - интеграция 1с
   - 1с wipon
   - подключить 1с
+  - 1с интеграция wipon
+  - 1с подключить
+  - 1с синхронизация
+  - 1с выгрузка
+  - 1с бухгалтерия wipon
+  - интеграция бухгалтерия 1с
+  - 1с обмен данными
+  - wipon 1c
+  - 1с экспорт
+  - 1с загрузка
   facts: |-
     Да. Интеграция с 1С доступна.
-
 - topic: integrations_shopify_1478
   priority: 6
   keywords:
   - shopify интеграция
   - интернет магазин shopify
   - экспорт импорт shopify
+  - шопифай интеграция
+  - shopify wipon
+  - shopify синхронизация
+  - shopify экспорт
+  - shopify импорт
+  - shopify остатки
+  - shopify продажи
+  - shopify нет интеграции
+  - shopify вручную
   facts: |-
     Прямой интеграции нет. Возможен экспорт продаж и импорт остатков вручную.
-
 - topic: integrations_kaspi_pay_1482
   priority: 9
   keywords:
@@ -1357,5 +1336,14 @@ sections:
   - kaspi pay касса
   - halyk pos терминалы
   - настройка kaspi
+  - kaspi pay подключить
+  - kaspi эквайринг
+  - kaspi терминал wipon
+  - kaspi настройка
+  - kaspi оплата wipon
+  - каспи терминал
+  - каспи пей подключить
+  - kaspi pos wipon
+  - kaspi halyk касса
   facts: |-
     Поддерживаем Kaspi и Halyk POS-терминалы. Настройку сделаем через поддержку после оплаты тарифа.

@@ -52,32 +52,32 @@ sections:
   - абарудование
   facts: |-
     Совместимое оборудование Wipon:
-
+    
     **Сканеры штрихкодов:**
     • Проводные USB-сканеры (любые HID-совместимые)
     • Беспроводные Bluetooth-сканеры
     • Встроенная камера телефона для сканирования
     • Рекомендуем: Honeywell, Symbol, Datalogic
-
+    
     **Принтеры чеков:**
     • Термопринтеры 58мм и 80мм
     • USB, Bluetooth, Wi-Fi подключение
     • Рекомендуем: АТОЛ, Rongta, Xprinter, Epson
     • Поддержка ESC/POS команд
-
+    
     **Весы:**
     • Торговые весы с интерфейсом RS-232/USB
     • Весы-регистраторы
     • Рекомендуем: CAS, Масса-К
-
+    
     **POS-терминалы:**
     • Все банковские терминалы Казахстана
     • Интеграция с Kaspi Pay, Halyk
-
+    
     **ТСД (терминалы сбора данных):**
     • Android-устройства с камерой
     • Специализированные ТСД (Urovo, Zebra)
-
+    
     Wipon работает на любом устройстве с браузером — специальное оборудование не обязательно.
 - topic: equipment_scanner_support_001
   priority: 7
@@ -216,8 +216,8 @@ sections:
   - мало места на кассе
   - wipon 5 в 1 цена
   - один корпус
-  - '260000'
-  - '21666'
+  - 260000
+  - 21666
   - рассрочка моноблок
   facts: |-
     Решение Wipon 5 в 1. Один корпус вместо нескольких устройств. Цена 260 000 ₸, рассрочка 21 666 ₸ в месяц.
@@ -255,7 +255,7 @@ sections:
   - тянуть провода
   - wipon 5 в 1
   - одна розетка
-  - '260000'
+  - 260000
   facts: |-
     Wipon 5 в 1 занимает одну розетку. В корпусе уже есть касса, сканер, чековый принтер и дисплей. Цена 260 000 ₸ или 21 666 ₸ в месяц.
 - topic: equipment_cooling_133
@@ -277,8 +277,8 @@ sections:
   - новое оборудование
   - протестированное
   - стабильно под нагрузкой
-  - '140000'
-  - '300000'
+  - 140000
+  - 300000
   facts: |-
     Оборудование новое и протестированное. Модели от 140 000 ₸ до 300 000 ₸ работают стабильно под нагрузкой.
 - topic: equipment_integrated_135
@@ -588,13 +588,13 @@ sections:
   - что внутри стоит
   facts: |-
     Характеристики моноблоков:
-
+    
     • POS i 3: процессор i3, 4 ГБ RAM, SSD 64 ГБ, экран 1024×768, Wi-Fi 2.4 и LAN
     • POS i 5: процессор i5, 8 ГБ RAM, SSD 128 ГБ, экран 1024×768, Wi-Fi 2.4 и LAN
     • DUO: процессор i5, 8 ГБ RAM, SSD 128 ГБ, два экрана 1366×768
     • Premium: процессор i5 4-поколения, 4 ГБ RAM, SSD 128 ГБ, экраны 1920×1080 и 1024×600, встроенный принтер, Wi-Fi 2.4/5 и LAN
     • 5 в 1: процессор i5 4-поколения, 4 ГБ RAM, SSD 128 ГБ, экраны 1366×768 и 800×480, встроенные принтер и сканер, Wi-Fi 2.4/5 и LAN
-
+    
     Все поддерживают USB-периферию.
 - topic: equipment_scanner_specs_166
   priority: 8
@@ -621,14 +621,14 @@ sections:
   - большой поток сканер
   facts: |-
     Характеристики сканеров:
-
+    
     • Проводной: 300 скан/сек, USB
     • Беспроводной: 2.4G/BT, 300 скан/сек
     • Zebra: повышенная точность и ресурс
     • Стационарный: до 1650 скан/сек
     • ТСД Pocket: 640×480, до 80 м, батарея 900 мАч
     • ТСД Smart: 640×480, батарея 3999 мАч
-
+    
     Все читают 1D и 2D коды.
 - topic: equipment_printer_specs_167
   priority: 9
@@ -658,7 +658,7 @@ sections:
   - принтер тормозит
   facts: |-
     Характеристики принтеров:
-
+    
     • X-printer 58 IINT: 58 мм, 90 мм/сек, 203 dpi, USB
     • X-printer H 200 N: 80 мм, 230 мм/сек, 203 dpi, автоотрез, USB+LAN
     • Принтер этикеток: 203 dpi, 127 мм/сек, ширина до 80 мм, USB
@@ -800,7 +800,7 @@ sections:
     • Экран покупателя
     • Встроенный сканер
     • Встроенный чековый принтер
-
+    
     Всё в одном корпусе.
 - topic: equipment_scales_how_work_178
   priority: 9
@@ -907,7 +907,7 @@ sections:
   facts: |-
     • Premium i5 с двумя экранами и принтером — 300 000 ₸
     • 5-в-1 компакт с сенсорным экраном, принтером и сканером — 260 000 ₸, со скидкой 220 000 ₸
-
+    
     Оба полностью совместимы с Wipon.
 - topic: equipment_production_381
   priority: 6
@@ -929,7 +929,7 @@ sections:
   - дуо
   - два экрана
   - экран покупателя
-  - '15.6'
+  - 15.6
   - 11 дюймов
   - моноблок duo
   facts: |-
@@ -939,10 +939,10 @@ sections:
     • 8 ГБ RAM
     • SSD 128 ГБ
     • Wi-Fi 2.4/5 ГГц
-
+    
     Цена: 220 000 ₸
     Рассрочка Kaspi: 18 333 ₸/мес.
-
+    
     Стильно и быстро.
 - topic: equipment_cafe_384
   priority: 10
@@ -991,7 +991,7 @@ sections:
     • Принтер чеков
     • Сканер
     • Денежный ящик
-
+    
     Полная совместимость с Wipon. Готовое место кассира «из коробки».
 - topic: equipment_pro_387
   priority: 10
@@ -1017,10 +1017,10 @@ sections:
     • Принтер этикеток XP 420 B
     • Стационарный сканер WP 7600 L
     • Денежный ящик
-
+    
     Цена: 360 000 ₸
     Рассрочка: 30 000 ₸/мес.
-
+    
     Плюс Wipon для учёта и отчётности.
 - topic: equipment_smart_scales_392
   priority: 9
@@ -1074,7 +1074,7 @@ sections:
     • SSD 128 ГБ
     • Чек-принтер 58 мм
     • Кіріктірілген таразы 30 кг
-
+    
     Бағасы: 330 000 ₸
     Бөліп төлеу: 27 500 ₸/ай.
 - topic: equipment_triple_398
@@ -1102,7 +1102,7 @@ sections:
     • SSD 128 ГБ
     • Принтер 58 мм
     • Весы до 30 кг
-
+    
     Цена: 330 000 ₸
     Рассрочка: 27 500 ₸/мес.
 - topic: equipment_quadro_411
@@ -1116,8 +1116,8 @@ sections:
   - всё в одном
   - quadro цена
   - quadro характеристики
-  - "365000"
-  - "30417"
+  - 365000
+  - 30417
   - экран покупателя 12
   - весы 30 кг
   facts: |-
@@ -1128,10 +1128,9 @@ sections:
     • Принтер 58 мм
     • Весы 30 кг
     • Экран покупателя 12″
-
+    
     Цена: 365 000 ₸
     Рассрочка Kaspi 0-0-12: 30 417 ₸/мес.
-
 - topic: equipment_wipon_kassa_461
   priority: 10
   keywords:
@@ -1149,7 +1148,6 @@ sections:
   - нужно для wipon kassa
   facts: |-
     Можно работать с любого устройства. При необходимости подключаются сканеры и принтеры.
-
 - topic: equipment_scales_integration_543
   priority: 10
   keywords:
@@ -1166,7 +1164,6 @@ sections:
   - подключение умных весов wipon
   facts: |-
     Да, система полностью работает с умными весами WIPON и весами Rongta для автоматизации продаж весового товара.
-
 - topic: equipment_smart_scales_work_544
   priority: 10
   keywords:
@@ -1188,7 +1185,6 @@ sections:
   - весы wipon сумма автоматически
   facts: |-
     Кассир выбирает товар в интерфейсе, ставит его на весы, и вес автоматически отображается в кассе. Система сразу считает итоговую сумму и чек.
-
 - topic: equipment_scales_no_manual_545
   priority: 10
   keywords:
@@ -1201,7 +1197,6 @@ sections:
   - исключает ошибки весы
   facts: |-
     Нет, все данные передаются автоматически, что исключает ошибки и ускоряет работу.
-
 - topic: equipment_scales_models_546
   priority: 10
   keywords:
@@ -1222,7 +1217,6 @@ sections:
   - весы rongta wipon интегрируются
   facts: |-
     Система интегрируется с весами WIPON и Rongta.
-
 - topic: equipment_rongta_assortment_547
   priority: 10
   keywords:
@@ -1235,7 +1229,6 @@ sections:
   - lf код весы rongta
   facts: |-
     Для товаров до 100 позиций можно закрепить их на горячие клавиши, а для большего ассортимента использовать LF-код.
-
 - topic: equipment_rongta_labels_548
   priority: 10
   keywords:
@@ -1248,7 +1241,6 @@ sections:
   - управление весами rongta
   facts: |-
     Да, весы Rongta позволяют формировать этикетки и управлять выгрузкой PLU через меню «Управление весами».
-
 - topic: equipment_scales_benefits_549
   priority: 10
   keywords:
@@ -1261,7 +1253,6 @@ sections:
   - без ошибок ручной ввод
   facts: |-
     Автоматическая передача веса и суммы, отсутствие ошибок при ручном вводе, снижение нагрузки на персонал и ускорение обслуживания.
-
 - topic: equipment_scales_selfservice_550
   priority: 10
   keywords:
@@ -1282,7 +1273,6 @@ sections:
   - весы в магазине самообслуживания
   facts: |-
     Да, весы WIPON и Rongta можно использовать как в рознице, так и в магазинах с самообслуживанием.
-
 - topic: equipment_label_printing_551
   priority: 10
   keywords:
@@ -1320,7 +1310,6 @@ sections:
   - этикетирование товаров
   facts: |-
     Да, печать доступна прямо из карточки товара или во время приёмки новой партии.
-
 - topic: equipment_label_content_552
   priority: 10
   keywords:
@@ -1357,7 +1346,6 @@ sections:
   - ярлык товара
   facts: |-
     На этикетке указываются название товара, штрихкод, цена продажи, внутренний артикул и при необходимости старая цена.
-
 - topic: equipment_label_format_553
   priority: 10
   keywords:
@@ -1390,7 +1378,6 @@ sections:
   - формат ценника
   facts: |-
     Да, можно выбрать размер шрифта, форму (прямоугольная или для ювелирных изделий) и стандартные размеры, например 43×25 мм.
-
 - topic: equipment_label_printers_554
   priority: 10
   keywords:
@@ -1427,7 +1414,6 @@ sections:
   - для ценников оборудование нужно
   facts: |-
     Система работает с термопринтерами для печати этикеток.
-
 - topic: equipment_label_bulk_555
   priority: 10
   keywords:
@@ -1459,7 +1445,6 @@ sections:
   - много наклеек за один раз
   facts: |-
     Да, можно указать количество и распечатать этикетки поштучно или сразу всей партией.
-
 - topic: equipment_label_preview_556
   priority: 10
   keywords:
@@ -1489,7 +1474,6 @@ sections:
   - ярлыка перед печатью
   facts: |-
     Да, встроенный предпросмотр показывает, как будет выглядеть этикетка, что исключает ошибки.
-
 - topic: equipment_label_convenience_557
   priority: 10
   keywords:
@@ -1523,7 +1507,6 @@ sections:
   - автоматических этикеток плюсы
   facts: |-
     Все данные подставляются автоматически из карточки товара, печать возможна сразу при поступлении и не требует ручных шаблонов.
-
 - topic: equipment_scales_spices_600
   priority: 10
   keywords:
@@ -1558,7 +1541,6 @@ sections:
   - мелких товаров весы
   facts: |-
     Да, есть. Подойдут наши умные торговые весы с высокой точностью. Они взвешивают от 20 грамм, автоматически передают данные в систему учёта и отлично подходят для развесных товаров — специй, орехов или трав.
-
 - topic: equipment_self_install_645
   priority: 8
   keywords:
@@ -1575,7 +1557,6 @@ sections:
   - как обычный компьютер
   facts: |-
     Да, конечно. Всё просто — подключается как обычный компьютер. Если что-то не получается, наши специалисты помогут по телефону или удалённо.
-
 - topic: equipment_pricetag_printing_650
   priority: 9
   keywords:
@@ -1591,7 +1572,6 @@ sections:
   - этикетки печатать wipon
   facts: |-
     Да, можно. Wipon работает с принтерами этикеток, так что ценники и наклейки печатаете прямо из программы за пару кликов.
-
 - topic: equipment_customer_display_654
   priority: 8
   keywords:
@@ -1606,7 +1586,6 @@ sections:
   - дисплей для клиента
   facts: |-
     Да, можно. Подключается дисплей покупателя, где видно корзину, сумму к оплате и сдачу. Удобно и прозрачно.
-
 - topic: equipment_scanner_laptop_665
   priority: 8
   keywords:
@@ -1620,7 +1599,6 @@ sections:
   - подключение сканера
   facts: |-
     Да. Обычный сканер штрихкодов подключается по USB и работает с десктоп-версией без сложных настроек.
-
 - topic: equipment_rented_679
   priority: 7
   keywords:
@@ -1633,7 +1611,6 @@ sections:
   - не своё оборудование
   facts: |-
     Да. Wipon корректно работает и с собственным, и с арендованным кассовым оборудованием.
-
 - topic: equipment_scales_label_print_683
   priority: 9
   keywords:
@@ -1646,7 +1623,6 @@ sections:
   - подключить весы с печатью
   facts: |-
     Да, можно. Система работает с электронными весами и поддерживает печать этикеток для фасованных товаров.
-
 - topic: equipment_pricetag_sticker_700
   priority: 9
   keywords:
@@ -1659,7 +1635,6 @@ sections:
   - ценники wipon печать
   facts: |-
     Да, конечно. Подключаете принтер этикеток и печатаете ценники прямо из карточки товара или списка.
-
 - topic: equipment_kaspi_kassa_703
   priority: 10
   keywords:
@@ -1683,7 +1658,6 @@ sections:
   - каспи касса вместо вашего оборудования
   facts: |-
     Нет. Для работы с Wipon нужна онлайн-касса Wipon. Текущую кассу нужно будет снять с учёта и подключить нашу.
-
 - topic: equipment_terminal_only_708
   priority: 10
   keywords:
@@ -1708,7 +1682,6 @@ sections:
   - обязательно ли покупать кассу
   facts: |-
     Нет. Для корректного учёта и налогов нужна онлайн-касса Wipon. Терминал сам по себе кассу не заменяет.
-
 - topic: equipment_market_stall_718
   priority: 10
   keywords:
@@ -1733,7 +1706,6 @@ sections:
   - небольшой прилавок на рынке
   facts: |-
     Да. Вам подойдёт Wipon Mini. Это простая и доступная онлайн-касса, которая быстро запускается и не требует сложных настроек.
-
 - topic: equipment_scales_connect_723
   priority: 10
   keywords:
@@ -1752,7 +1724,6 @@ sections:
   - настройка связи с весами
   facts: |-
     Да. Торговые весы интегрируются с Wipon, вес автоматически подставляется в чек, кассиру остаётся подтвердить позицию.
-
 - topic: equipment_pricetag_print_727
   priority: 10
   keywords:
@@ -1772,7 +1743,6 @@ sections:
   - массовая печать этикеток
   facts: |-
     Да, можно. Печать ценников и этикеток доступна из карточки товара и при приёмке. Пару кликов, и всё готово.
-
 - topic: equipment_kiosk_736
   priority: 10
   keywords:
@@ -1792,14 +1762,8 @@ sections:
   - точка в проходе какую кассу
   - мини формат торговли
   - компактное рабочее место кассира
-  failing_keywords:
-  - торговый павильон касса
-  - островок в тц оборудование
-  - точка в проходе какую кассу
-  - мини формат торговли
   facts: |-
     Да, подойдёт. Есть компактные решения, например Wipon 5 в 1. Это удобно, когда место на кассе ограничено.
-
 - topic: equipment_fair_742
   priority: 10
   keywords:
@@ -1818,7 +1782,6 @@ sections:
   - оборудование для уличной торговли
   facts: |-
     Да, можно. С переносным оборудованием и мобильным приложением вы комфортно работаете на ярмарках и выездных точках.
-
 - topic: equipment_scales_system_748
   priority: 10
   keywords:
@@ -1843,7 +1806,6 @@ sections:
   - весы и кассовый модуль связать
   facts: |-
     Да, можно. Торговые весы интегрируются с Wipon, вес автоматически подтягивается в чек. Кассиру остаётся подтвердить позицию.
-
 - topic: equipment_mobile_trade_755
   priority: 10
   keywords:
@@ -1868,7 +1830,6 @@ sections:
   - торговля на выезде какую кассу
   facts: |-
     Да, подойдёт. Есть переносные решения и мобильное приложение — удобно для выездной торговли и ярмарок.
-
 - topic: equipment_smart_scales_kz_767
   priority: 10
   keywords:
@@ -1881,7 +1842,6 @@ sections:
   - автоматты салмақ енгізу
   facts: |-
     WIPON Ақылды таразылар – 30 кг-ға дейін өлшейді, дәлдігі 100 грамнан басталады. Wipon жүйесіне тікелей қосылған, сондықтан өлшеу нәтижесі автоматты түрде кассаға түседі. Кассир тек тауарды таңдайды, ал салмақ пен сома бірден есептеледі. Бағасы – 100 000 ₸, Kaspi арқылы (0-0-12) бөліп төлеу – айына 8 333 ₸.
-
 - topic: equipment_monitor_grocery_768
   priority: 10
   keywords:
@@ -1901,15 +1861,8 @@ sections:
   - моноблок i3 i5 для магазина
   - сенсорный экран для кассира
   - оборудование для продуктового
-  failing_keywords:
-  - касса с дисплеем для продуктового
-  - pos система для минимаркета
-  - моноблок i3 i5 для магазина
-  - сенсорный экран для кассира
-  - оборудование для продуктового
   facts: |-
     У нас есть POS-моноблоки на любой формат магазина: Wipon POS i 3, i 5, DUO, Premium, DUO Lite и 5 в 1. Подберём под ваш бюджет и объём продаж, чтобы работать было удобно.
-
 - topic: equipment_pos_overview_769
   priority: 10
   keywords:
@@ -1930,14 +1883,8 @@ sections:
   - линейка касс и периферии
   - сканеры принтеры моноблоки цены
   - выбор оборудования для магазина
-  failing_keywords:
-  - каталог оборудования wipon
-  - комплектация рабочего места кассира
-  - линейка касс и периферии
-  - выбор оборудования для магазина
   facts: |-
     У нас большой выбор кассового оборудования: POS-моноблоки, кассы-комплекты, сканеры, принтеры чеков и этикеток, весы, ТСД и аксессуары. Всё совместимо с Wipon и подходит под разные форматы магазинов.
-
 - topic: equipment_smart_scales_773
   priority: 10
   keywords:
@@ -1953,14 +1900,8 @@ sections:
   - автовзвешивание товара
   - весы и касса в связке
   - подключение весов инструкция
-  failing_keywords:
-  - весы с передачей данных в кассу
-  - автовзвешивание товара
-  - весы и касса в связке
-  - подключение весов инструкция
   facts: |-
     Умные весы Wipon подключаются прямо к кассе. Кассир выбирает товар, ставит на весы, и сумма сразу отображается в программе. Всё автоматически и без ручного ввода.
-
 - topic: equipment_5in1_783
   priority: 10
   keywords:
@@ -1972,7 +1913,7 @@ sections:
   - экран кассира покупателя
   - принтер сканер
   - минимаркет
-  - "220000"
+  - 220000
   - моноблок всё в одном корпусе
   - касса принтер сканер в одном
   - компактное решение 5 в 1
@@ -1980,7 +1921,6 @@ sections:
   - всё встроено в одну кассу
   facts: |-
     Wipon 5 в 1 — компактная касса «всё в одном»: экран кассира и покупателя, принтер чеков, сканер штрих-кодов и Wi-Fi. Работает быстро, подключается просто, идеально для минимаркетов. Цена 220 000 ₸ по акции.
-
 - topic: equipment_keyboard_790
   priority: 10
   keywords:
@@ -1994,14 +1934,8 @@ sections:
   - виртуальная клавиатура на экране
   - нужно ли подключать клавиатуру
   - ввод данных через тачскрин
-  failing_keywords:
-  - сенсорный ввод на моноблоке
-  - виртуальная клавиатура на экране
-  - нужно ли подключать клавиатуру
-  - ввод данных через тачскрин
   facts: |-
     Нет, не нужно. В моноблоке есть экранная клавиатура, всё вводится с экрана.
-
 - topic: equipment_dual_screen_side_791
   priority: 10
   keywords:
@@ -2017,14 +1951,8 @@ sections:
   - двусторонний моноблок как устроен
   - ориентация экранов в моноблоке
   - кассир и покупатель видят своё
-  failing_keywords:
-  - какой экран для кассира какой для клиента
-  - расположение дисплеев моноблока
-  - двусторонний моноблок как устроен
-  - ориентация экранов в моноблоке
   facts: |-
     Кассир работает со своей стороны, а у покупателя отдельный экран.
-
 - topic: equipment_cashier_input_792
   priority: 10
   keywords:
@@ -2042,15 +1970,8 @@ sections:
   - ввод товара без сканера
   - поиск товара при продаже
   - добавить товар вручную в чек
-  failing_keywords:
-  - добавление позиций в чек
-  - выбор товара на экране
-  - ввод товара без сканера
-  - поиск товара при продаже
-  - добавить товар вручную в чек
   facts: |-
     На сенсорном экране — через встроенную клавиатуру.
-
 - topic: equipment_dual_screen_models_793
   priority: 10
   keywords:
@@ -2059,8 +1980,8 @@ sections:
   - pos premium цена
   - wipon 5 в 1 цена
   - pos duo цена
-  - "260000"
-  - "220000"
+  - 260000
+  - 220000
   - цены на моноблоки с двумя экранами
   - pos premium duo 5в1 цены
   - моноблоки с экраном покупателя
@@ -2074,7 +1995,6 @@ sections:
     • POS Premium — 260 000 ₸
     • Wipon 5 в 1 — 220 000 ₸
     • POS DUO — 220 000 ₸
-
 - topic: equipment_customer_display_794
   priority: 10
   keywords:
@@ -2096,7 +2016,6 @@ sections:
     • POS Premium — 260 000 ₸
     • Wipon 5 в 1 — 220 000 ₸
     • POS DUO — 220 000 ₸
-
 - topic: equipment_rongta_scales_795
   priority: 10
   keywords:
@@ -2112,7 +2031,6 @@ sections:
   - ронгта интеграция пошагово
   facts: |-
     Весы Rongta подключаются к Wipon и передают вес прямо в кассу. Можно привязать товары, печатать этикетки и управлять через раздел «Весы».
-
 - topic: equipment_online_kassa_797
   priority: 10
   keywords:
@@ -2130,7 +2048,6 @@ sections:
   - современная касса с чеками онлайн
   facts: |-
     Используется Wipon Kassa — это централизованное кассовое решение для малого и среднего бизнеса в Казахстане. Позволяет принимать оплату, пробивать фискальные чеки, управлять торговыми точками и синхронизировать данные с учётной системой и налоговой.
-
 - topic: equipment_quick_connect_798
   priority: 10
   keywords:
@@ -2148,7 +2065,6 @@ sections:
   - начать работу сразу после покупки
   facts: |-
     Регистрация и подключение занимают несколько минут — можно сразу начинать пробивать чеки.
-
 - topic: equipment_scanner_connect_813
   priority: 10
   keywords:
@@ -2162,7 +2078,6 @@ sections:
   - сканер hid usb настройка
   facts: |-
     Да, поддерживаются сканеры HID (USB) — подключаются как клавиатура.
-
 - topic: equipment_monoblocks_models_815
   priority: 10
   keywords:
@@ -2182,7 +2097,6 @@ sections:
     • Wipon 5 в 1
     • POS Premium
     • Wipon Quadro
-
 - topic: equipment_wipon_5in1_816
   priority: 10
   keywords:
@@ -2197,7 +2111,6 @@ sections:
   - wipon 5в1 five in one
   facts: |-
     Wipon 5 в 1 включает моноблок, принтер, сканер, денежный ящик и программу в одном комплекте.
-
 - topic: equipment_scales_labels_817
   priority: 10
   keywords:
@@ -2211,7 +2124,6 @@ sections:
   - rongta rls этикетки
   facts: |-
     Да, модели Rongta RLS печатают этикетки с весом и ценой.
-
 - topic: equipment_scanner_models_818
   priority: 10
   keywords:
@@ -2225,7 +2137,6 @@ sections:
   - модели сканеров проводной беспроводной
   facts: |-
     Поддерживаются Honeywell, Атол, Sunmi и другие. Проводные и беспроводные.
-
 - topic: equipment_printer_models_819
   priority: 10
   keywords:
@@ -2237,7 +2148,6 @@ sections:
   - термопринтер модели
   facts: |-
     Рекомендуем XPrinter и Rongta RP. Поддерживаются большинство моделей.
-
 - topic: equipment_kassa_recommendation_820
   priority: 10
   keywords:
@@ -2248,7 +2158,6 @@ sections:
   - с чего начать оборудование
   facts: |-
     Зависит от задач. POS i3 — для небольших точек, POS Premium — для высокой нагрузки. Напишите, что за бизнес — подберём.
-
 - topic: equipment_kit_recommendation_821
   priority: 10
   keywords:
@@ -2263,7 +2172,6 @@ sections:
   - старт комплект wipon
   facts: |-
     Для старта подойдёт комплект Standard: моноблок, сканер, принтер. Для опта и сети — комплект Pro.
-
 - topic: equipment_scanner_recommendation_822
   priority: 10
   keywords:
@@ -2276,7 +2184,6 @@ sections:
   - сканер для магазина рекомендация
   facts: |-
     Для магазина рекомендуем Honeywell Youjie 4600 или беспроводной Sunmi.
-
 - topic: equipment_monoblock_recommendation_823
   priority: 10
   keywords:
@@ -2289,7 +2196,6 @@ sections:
   - моноблок выбрать рекомендация
   facts: |-
     Для продуктового магазина подойдёт POS i3 или POS DUO. Для кафе с большим потоком — POS Premium.
-
 - topic: equipment_scales_recommendation_824
   priority: 10
   keywords:
@@ -2302,7 +2208,6 @@ sections:
   - лучшие весы wipon рекомендация
   facts: |-
     Рекомендуем Rongta RLS — есть печать этикеток и интеграция с Wipon.
-
 - topic: equipment_printer_recommendation_825
   priority: 10
   keywords:
@@ -2315,7 +2220,6 @@ sections:
   - термопринтер выбор
   facts: |-
     Для небольшой точки — XPrinter 58мм. Для высокого потока — Rongta RP80 или аналоги 80мм.
-
 - topic: equipment_start_recommendation_826
   priority: 10
   keywords:
@@ -2329,7 +2233,6 @@ sections:
   - с чего начать оборудование
   facts: |-
     Минимальный набор: моноблок + сканер + принтер чеков. Денежный ящик и весы — по необходимости.
-
 - topic: equipment_compact_kassa_827
   priority: 10
   keywords:
@@ -2342,7 +2245,6 @@ sections:
   - маленькая торговая точка
   facts: |-
     Для небольших точек подойдёт Wipon Quadro или планшет с Wipon Kassa — компактно и функционально.
-
 - topic: equipment_customer_display_828
   priority: 10
   keywords:
@@ -2356,7 +2258,6 @@ sections:
   - pos duo экран
   facts: |-
     POS DUO имеет второй экран для покупателя, где отображается сумма и товары.
-
 - topic: equipment_high_traffic_829
   priority: 10
   keywords:
@@ -2370,7 +2271,6 @@ sections:
   - много покупателей
   facts: |-
     Для магазинов с большим потоком рекомендуем POS Premium — быстрый процессор и большой экран.
-
 - topic: equipment_wireless_scanner_830
   priority: 10
   keywords:
@@ -2384,7 +2284,6 @@ sections:
   - сканер wifi беспроводной
   facts: |-
     Рекомендуем беспроводной Sunmi или Атол SB2109 — работают по Bluetooth.
-
 - topic: equipment_cash_drawer_831
   priority: 9
   keywords:
@@ -2394,7 +2293,6 @@ sections:
   - касса с ящиком
   facts: |-
     Ящики подключаются через принтер чеков. Рекомендуем Атол CD-330 или аналоги.
-
 - topic: equipment_self_service_scales_832
   priority: 9
   keywords:
@@ -2404,7 +2302,6 @@ sections:
   - этикетка самообслуживание
   facts: |-
     Для самообслуживания подойдут Rongta RLS с печатью этикеток — покупатель сам взвешивает и клеит.
-
 - topic: equipment_modern_kassa_833
   priority: 10
   keywords:
@@ -2418,7 +2315,6 @@ sections:
   - дизайн кассы
   facts: |-
     POS Premium и Wipon Quadro имеют современный дизайн и отлично смотрятся в любом интерьере.
-
 - topic: equipment_full_kit_834
   priority: 10
   keywords:
@@ -2433,7 +2329,6 @@ sections:
   - купить всё сразу оборудование
   facts: |-
     Все комплекты доступны к заказу. После оплаты отправляем в течение 1–3 дней.
-
 - topic: equipment_budget_alternative_843
   priority: 10
   keywords:
@@ -2447,7 +2342,6 @@ sections:
   - что дешевле
   facts: |-
     Есть комплект Standard — дешевле, но включает основное оборудование для работы.
-
 - topic: equipment_budget_monoblock_844
   priority: 10
   keywords:
@@ -2461,7 +2355,6 @@ sections:
   - бюджетный моноблок
   facts: |-
     Альтернатива — POS i5 или POS DUO. Дешевле, но с хорошим функционалом.
-
 - topic: equipment_budget_scales_846
   priority: 10
   keywords:
@@ -2475,7 +2368,6 @@ sections:
   - весы попроще
   facts: |-
     Есть модели без печати этикеток — дешевле. Или можно взять весы другого бренда.
-
 - topic: equipment_budget_scanner_847
   priority: 10
   keywords:
@@ -2489,7 +2381,6 @@ sections:
   - сканер попроще
   facts: |-
     Проводные сканеры дешевле. Honeywell Youjie — отличный бюджетный вариант.
-
 - topic: equipment_pos_duo_alternative_849
   priority: 9
   keywords:
@@ -2499,7 +2390,6 @@ sections:
   - дешевле pos duo
   facts: |-
     Альтернатива — POS i3 или POS i5. Без второго экрана, но дешевле.
-
 - topic: equipment_standard_alternative_850
   priority: 10
   keywords:
@@ -2513,7 +2403,6 @@ sections:
   - бюджетный комплект стандарт
   facts: |-
     Можно взять комплект Lite — базовый набор для старта по минимальной цене.
-
 - topic: equipment_wipon_quadro_857
   priority: 10
   keywords:
@@ -2524,7 +2413,6 @@ sections:
   - квадро характеристики
   facts: |-
     Wipon Quadro — компактный моноблок с сенсорным экраном. Подходит для небольших точек и кафе. Уточните детали у менеджера.
-
 - topic: equipment_scales_monoblock_kz_859
   priority: 9
   keywords:
@@ -2534,7 +2422,6 @@ sections:
   - бірге жүре ме
   facts: |-
     Иә, таразы мен моноблок бірге жұмыс істейді. Wipon арқылы қосылады.
-
 - topic: equipment_scales_monoblock_860
   priority: 10
   keywords:
@@ -2548,7 +2435,6 @@ sections:
   - моноблок и весы
   facts: |-
     Да, весы и моноблок работают вместе. Весы подключаются к системе Wipon.
-
 - topic: equipment_monoblock_printer_861
   priority: 9
   keywords:
@@ -2558,7 +2444,6 @@ sections:
   - комплект с принтером
   facts: |-
     В комплектах моноблок и принтер идут отдельно. В Wipon 5 в 1 принтер уже встроен.
-
 - topic: equipment_monoblock_scanner_862
   priority: 9
   keywords:
@@ -2568,7 +2453,6 @@ sections:
   - моноблок с сканером
   facts: |-
     Сканер идёт отдельно, подключается к моноблоку через USB или Bluetooth.
-
 - topic: equipment_combo_863
   priority: 10
   keywords:
@@ -2582,7 +2466,6 @@ sections:
   - готовое решение
   facts: |-
     Да, есть готовые комплекты: Standard, Standard+, Pro. Включают моноблок, сканер, принтер и ящик.
-
 - topic: equipment_combo_list_864
   priority: 9
   keywords:
@@ -2595,7 +2478,6 @@ sections:
     • Standard — базовый набор
     • Standard+ — расширенный набор
     • Pro — полный набор с весами и доп. оборудованием
-
 - topic: equipment_beer_shop_960
   priority: 9
   keywords:
@@ -2608,7 +2490,6 @@ sections:
   - разливное пиво касса
   facts: |-
     Подойдёт Wipon POS DUO. Два экрана, быстрый расчёт и наглядность для покупателя.
-
 - topic: equipment_meat_shop_961
   priority: 9
   keywords:
@@ -2621,7 +2502,6 @@ sections:
   - какое оборудование нужно для мяса
   facts: |-
     Рекомендуем Wipon Quadro. Встроенные весы до 30 кг, чековый принтер и второй экран для клиента. Вес передаётся в кассу автоматически, чек печатается сразу.
-
 - topic: equipment_minimarket_962
   priority: 9
   keywords:
@@ -2634,7 +2514,6 @@ sections:
   - для минимаркета какое оборудование
   facts: |-
     Для старта берите комплект Wipon Standard. Если есть весовой товар, удобен Wipon Quadro со встроенными весами. Нужен вариант без второго экрана с весами — выбирайте Wipon Triple.
-
 - topic: equipment_grocery_963
   priority: 9
   keywords:
@@ -2646,7 +2525,6 @@ sections:
   - продуктовый оборудование wipon
   facts: |-
     Стартовый вариант — Wipon Standard. Если нужны деньги в ящике и максимум удобства, берите Standard+. При весовом товаре лучше подойдёт Quadro или Triple.
-
 - topic: equipment_clothing_964
   priority: 9
   keywords:
@@ -2659,7 +2537,6 @@ sections:
   - касса для магазина одежды wipon
   facts: |-
     Wipon POS DUO. Кассиру работать удобно, покупатель всё видит на отдельном экране.
-
 - topic: equipment_construction_965
   priority: 9
   keywords:
@@ -2672,7 +2549,6 @@ sections:
   - строительный wipon комплект
   facts: |-
     Подойдёт комплект Wipon Standard+. В наборе моноблок, сканер, чековый принтер и денежный ящик. При необходимости добавим принтер этикеток.
-
 - topic: equipment_cosmetics_966
   priority: 9
   keywords:
@@ -2684,7 +2560,6 @@ sections:
   - косметика оборудование wipon
   facts: |-
     Оптимально взять Wipon Standard+. Если хотите современный формат, смотрите Wipon POS DUO и добавьте сканер, денежный ящик, чековый принтер и принтер этикеток.
-
 - topic: equipment_autoparts_967
   priority: 9
   keywords:
@@ -2696,7 +2571,6 @@ sections:
   - автозапчасти оборудование wipon
   facts: |-
     Рекомендуем Wipon Standard+. Удобно работать с крупным ассортиментом. Для маркировки мелких деталей добавьте принтер этикеток.
-
 - topic: equipment_flower_shop_968
   priority: 9
   keywords:
@@ -2708,7 +2582,6 @@ sections:
   - цветочный wipon комплект
   facts: |-
     Для быстрого запуска подойдёт Wipon Standard. Если нужен запас по мощности и стиль, выбирайте Wipon POS Premium.
-
 - topic: equipment_jewelry_969
   priority: 9
   keywords:
@@ -2722,7 +2595,6 @@ sections:
   - ювелирный касса wipon
   facts: |-
     Выбирайте Wipon 5 в 1 для компактного формата или Wipon POS Premium для премиальной подачи и высокой нагрузки.
-
 - topic: equipment_pharmacy_970
   priority: 10
   keywords:
@@ -2738,7 +2610,6 @@ sections:
     • Комплект STANDARD+ — сенсорный моноблок, сканер, принтер чеков, денежный ящик и принтер этикеток.
     • Комплект PRO — для высокого потока клиентов, включает стационарный сканер.
     • Комплект STANDARD — для небольшой аптеки с базовыми задачами.
-
 - topic: equipment_coffee_shop_971
   priority: 8
   keywords:
@@ -2750,7 +2621,6 @@ sections:
   - кафе касса wipon подойдёт
   facts: |-
     Мы не подходим для кафе и кофеен, если нужен учёт рецептов и ингредиентов. Если калькуляция не требуется, можно обсудить базовый кассовый сценарий.
-
 - topic: equipment_household_972
   priority: 9
   keywords:
@@ -2762,7 +2632,6 @@ sections:
   - оборудование для магазина бытовой химии
   facts: |-
     Берите Wipon Standard+ для готового старта. Если хотите второй экран для клиента, подойдёт Wipon POS DUO. Для маркировки добавьте принтер этикеток.
-
 - topic: equipment_furniture_973
   priority: 9
   keywords:
@@ -2774,7 +2643,6 @@ sections:
   - мебельный wipon комплект
   facts: |-
     Wipon POS Premium справится с крупными чеками и большим каталогом. Более бюджетно — комплект Wipon Standard+.
-
 - topic: equipment_bookstore_974
   priority: 9
   keywords:
@@ -2787,7 +2655,6 @@ sections:
   - книжный касса wipon
   facts: |-
     Удобен Wipon 5 в 1. В одном корпусе моноблок, сканер, чековый принтер и экран покупателя.
-
 - topic: equipment_kids_store_975
   priority: 9
   keywords:
@@ -2799,7 +2666,6 @@ sections:
   - детский магазин комплект касса
   facts: |-
     Подойдёт комплект Wipon Standard+. Если нужен запас по мощности, обсудим конфигурацию на базе POS Premium.
-
 - topic: equipment_electronics_976
   priority: 9
   keywords:
@@ -2813,7 +2679,6 @@ sections:
   - электроника касса wipon
   facts: |-
     Стартовый набор — Wipon Standard. Для высокого потока и статуса возьмите Wipon POS Premium.
-
 - topic: equipment_village_store_977
   priority: 9
   keywords:
@@ -2826,7 +2691,6 @@ sections:
   - сельпо оборудование wipon
   facts: |-
     Удобен Wipon 5 в 1. Если много весового товара, лучше Wipon Triple со встроенными весами.
-
 - topic: equipment_market_978
   priority: 9
   keywords:
@@ -2839,7 +2703,6 @@ sections:
   - рынок касса wipon комплект
   facts: |-
     Берите Wipon 5 в 1 для компактности. При весовом товаре подойдёт Wipon Triple. Всё быстро разворачивается и легко обслуживать очередь.
-
 - topic: equipment_scales_auto_price_992
   priority: 9
   keywords:
@@ -2852,7 +2715,6 @@ sections:
   - весы цена автоматом
   facts: |-
     Весы передают вес прямо в программу. Кассир выбирает товар, система сама считает цену, вручную вводить не нужно.
-
 - topic: equipment_247_operation_993
   priority: 9
   keywords:
@@ -2866,7 +2728,6 @@ sections:
   - касса ночью работает
   facts: |-
     Да. Моноблоки рассчитаны на круглосуточную работу и стабильно держат нагрузку.
-
 - topic: equipment_cold_conditions_994
   priority: 9
   keywords:
@@ -2880,7 +2741,6 @@ sections:
   - касса зимой павильон
   facts: |-
     Да. Оборудование работает стабильно в неотапливаемых помещениях и подходит для павильонов и складов.
-
 - topic: equipment_offline_mode_995
   priority: 9
   keywords:
@@ -2893,7 +2753,6 @@ sections:
   - касса работает офлайн
   facts: |-
     Можно работать без интернета. Чеки пробиваются, после появления сети данные синхронизируются с системой.
-
 - topic: equipment_product_photos_996
   priority: 8
   keywords:
@@ -2906,7 +2765,6 @@ sections:
   - фото товара wipon
   facts: |-
     Да. К каждому товару можно прикрепить фото, это ускоряет работу кассира и помогает в учёте.
-
 - topic: equipment_training_997
   priority: 8
   keywords:
@@ -2919,7 +2777,6 @@ sections:
   - обучение wipon кассе
   facts: |-
     Обучение не входит в стоимость. По запросу проведём обучение и покажем, как правильно работать с программой и кассой.
-
 - topic: equipment_start_kit_1012
   priority: 9
   keywords:
@@ -2930,7 +2787,6 @@ sections:
   - для начала что купить
   facts: |-
     Для старта нужны касса, сканер и принтер чеков. Можно взять готовый комплект — всё настроено и сразу работает.
-
 - topic: equipment_banknote_counter_1036
   priority: 8
   keywords:
@@ -2941,7 +2797,6 @@ sections:
   - wipon счётчик
   facts: |-
     Да, у нас есть счётчики банкнот. Работают быстро, подходят для кассовых операций.
-
 - topic: equipment_offer_list_1037
   priority: 9
   keywords:
@@ -2952,7 +2807,6 @@ sections:
   - что можно купить
   facts: |-
     Моноблоки, сканеры, принтеры чеков, принтеры этикеток, весы, денежные ящики, ТСД. Всё можно взять в рассрочку.
-
 - topic: equipment_ready_kits_1038
   priority: 10
   keywords:
@@ -2969,7 +2823,6 @@ sections:
   - wipon standard комплект готовый
   facts: |-
     Есть два комплекта — Standard и Standard+. Оба включают моноблок, сканер, принтер и всё необходимое. Готовы к работе из коробки.
-
 - topic: equipment_popular_1039
   priority: 8
   keywords:
@@ -2980,7 +2833,6 @@ sections:
   - самый ходовой
   facts: |-
     Чаще всего берут комплект Standard — касса, сканер и принтер чеков. Подходит большинству магазинов.
-
 - topic: equipment_veggies_1048
   priority: 9
   keywords:
@@ -2991,7 +2843,6 @@ sections:
   - оборудование для овощей
   facts: |-
     Для магазина овощей и фруктов подойдут весы Wipon, касса и сканер. Весы передают вес прямо в программу.
-
 - topic: equipment_quiet_1056
   priority: 8
   keywords:
@@ -3002,7 +2853,6 @@ sections:
   - тихий принтер
   facts: |-
     Да, есть тихие моноблоки и принтеры. Хорошо подходят для кофеен и других мест, где важна тишина.
-
 - topic: equipment_rental_1083
   priority: 8
   keywords:
@@ -3013,7 +2863,6 @@ sections:
   - попробовать и вернуть
   facts: |-
     Аренды нет. Можно взять в рассрочку на 12 месяцев без переплат через Kaspi.
-
 - topic: equipment_scales_weigh_1088
   priority: 9
   keywords:
@@ -3024,7 +2873,6 @@ sections:
   - весы интеграция
   facts: |-
     Да, у нас есть весы. Они передают вес прямо в программу, цена считается автоматически.
-
 - topic: equipment_customer_screen_1090
   priority: 8
   keywords:
@@ -3035,7 +2883,6 @@ sections:
   - дисплей для клиента
   facts: |-
     Да, есть второй экран для покупателей. Покупатель видит товары и сумму, это удобно и повышает доверие.
-
 - topic: equipment_cold_storage_1095
   priority: 8
   keywords:
@@ -3046,7 +2893,6 @@ sections:
   - морозильный склад
   facts: |-
     Оборудование работает стабильно в холодных помещениях. Подходит для складов и павильонов.
-
 - topic: equipment_scanner_pistol_1125
   priority: 8
   keywords:
@@ -3056,7 +2902,6 @@ sections:
   - стационарный сканер
   facts: |-
     Есть сканеры-пистолеты и стационарные. Подберём под ваши задачи.
-
 - topic: equipment_scanner_compatibility_1129
   priority: 8
   keywords:
@@ -3066,7 +2911,6 @@ sections:
   - сканер другой программы
   facts: |-
     Если сканер работает как USB или Bluetooth HID-устройство, скорее всего подойдёт. Проверим совместимость.
-
 - topic: equipment_customer_screen_1175
   priority: 8
   keywords:
@@ -3075,7 +2919,6 @@ sections:
   - дисплей покупателя
   facts: |-
     Да, можно. Второй экран подключается к моноблокам Duo, Premium и Quadro.
-
 - topic: equipment_smart_scales_kz_1182
   priority: 9
   keywords:
@@ -3084,7 +2927,6 @@ sections:
   - таразы мен монитор
   facts: |-
     Иә, Wipon ақылды таразыларында монитор мен кіріктірілген принтер бар. Wipon Triple және Quadro модельдерінде.
-
 - topic: equipment_smart_scales_why_1183
   priority: 8
   keywords:
@@ -3093,7 +2935,6 @@ sections:
   - в чём фишка весов
   facts: |-
     Умные весы передают вес в программу автоматически. Не нужно вводить вручную — меньше ошибок и быстрее обслуживание.
-
 - topic: equipment_scales_brands_1185
   priority: 8
   keywords:
@@ -3102,7 +2943,6 @@ sections:
   - совместимость весов
   facts: |-
     Система работает с весами WIPON и Rongta. Другие бренды под вопросом — уточняйте совместимость.
-
 - topic: equipment_kit_standard_1292
   priority: 10
   keywords:
@@ -3111,7 +2951,7 @@ sections:
   - комплект стандарт состав
   - pos i3 сканер принтер
   - комплект за 168000
-  - "168000 комплект"
+  - 168000 комплект
   - standard комплект wipon
   - оборудование комплект standard
   - кассовое оборудование standard
@@ -3122,7 +2962,6 @@ sections:
     • Сканер штрихкодов
     • Принтер чеков
     • Стоимость: 168 000 ₸
-
 - topic: equipment_kit_standard_plus_1293
   priority: 10
   keywords:
@@ -3130,7 +2969,7 @@ sections:
   - кассовый комплект standard+
   - pos duo сканер принтер
   - комплект за 248000
-  - "248000 комплект"
+  - 248000 комплект
   - стандарт плюс комплект
   - standard+ комплект wipon
   - оборудование комплект standard+
@@ -3142,7 +2981,6 @@ sections:
     • Сканер штрихкодов
     • Принтер чеков
     • Стоимость: 248 000 ₸
-
 - topic: equipment_kit_cheaper_1294
   priority: 10
   keywords:
@@ -3153,7 +2991,6 @@ sections:
   - комплект подешевле
   facts: |-
     Самый доступный — комплект Standard за 168 000 ₸.
-
 - topic: equipment_kit_chain_1295
   priority: 10
   keywords:
@@ -3169,7 +3006,6 @@ sections:
   - сетевой комплект wipon
   facts: |-
     Для сети рекомендуем Standard+ с POS DUO — экран для покупателя повышает доверие и ускоряет обслуживание.
-
 - topic: equipment_kit_custom_1296
   priority: 9
   keywords:
@@ -3180,7 +3016,6 @@ sections:
   - свой набор оборудования
   facts: |-
     Да, можете выбрать компоненты отдельно и собрать комплект под свои нужды.
-
 - topic: equipment_kit_setup_included_1297
   priority: 10
   keywords:
@@ -3196,14 +3031,13 @@ sections:
   - комплект обучение настройка
   facts: |-
     Да, настройка оборудования и обучение включены в стоимость комплекта.
-
 - topic: equipment_kit_warranty_1298
   priority: 10
   keywords:
   - гарантия на комплекты
   - сколько гарантия оборудование
   - гарантийный срок комплекта
-  - "12 месяцев гарантия"
+  - 12 месяцев гарантия
   - гарантия wipon оборудование
   - гарантия кассовый комплект
   - сколько месяцев гарантия
@@ -3212,7 +3046,6 @@ sections:
   - год гарантии оборудование
   facts: |-
     Гарантия на оборудование — 12 месяцев.
-
 - topic: equipment_kit_installment_1299
   priority: 10
   keywords:
@@ -3228,7 +3061,6 @@ sections:
   - рассрочка кассовый комплект
   facts: |-
     Да, рассрочка на оборудование доступна. Уточняйте условия у менеджера.
-
 - topic: equipment_kit_grocery_1300
   priority: 10
   keywords:
@@ -3244,7 +3076,6 @@ sections:
   - для продуктов комплект лучше
   facts: |-
     Для продуктового магазина подойдёт Standard или Standard+ — выбор зависит от масштаба и потребности в экране для покупателя.
-
 - topic: equipment_kit_pro_1300
   priority: 9
   keywords:
@@ -3263,7 +3094,6 @@ sections:
   - ссылка комплект pro
   facts: |-
     Комплект PRO — это полный набор оборудования для быстрого обслуживания покупателей. Стоимость — 360 000 ₸, рассрочка Kaspi 0-0-12 — 30 000 ₸ в месяц.
-
 - topic: equipment_wipon_5in1_1301
   priority: 9
   keywords:
@@ -3283,7 +3113,6 @@ sections:
   - ссылка 5 в 1
   facts: |-
     Кассовый моноблок Wipon 5 в 1 — компактное устройство «всё в одном» для небольших магазинов. В нём сенсорный экран для кассира и покупателя, встроенный сканер и принтер чеков. Цена со скидкой — 220 000 ₸ вместо 260 000 ₸.
-
 - topic: equipment_wipon_5in1_photo_1302
   priority: 8
   keywords:
@@ -3299,7 +3128,6 @@ sections:
   - фото в сборе 5в1
   facts: |-
     Wipon 5 в 1 — это кассовое решение с сенсорным экраном, встроенным сканером и принтером чеков. Стоимость со скидкой — 220 000 ₸, экономия 40 000 ₸.
-
 - topic: equipment_wipon_5in1_link_1303
   priority: 8
   keywords:
@@ -3314,7 +3142,6 @@ sections:
   - страница моноблок 5в1
   facts: |-
     Кассовый моноблок Wipon 5 в 1 объединяет экран для кассира и покупателя, сканер и принтер чеков. Цена — 220 000 ₸ вместо 260 000 ₸.
-
 - topic: equipment_pos_duo_link_1304
   priority: 9
   keywords:
@@ -3333,7 +3160,6 @@ sections:
   - экран кассира и покупателя
   facts: |-
     Кассовый моноблок Wipon POS DUO — современное решение с двумя экранами: для кассира и покупателя. Удобство, прозрачность и стильный дизайн. Цена — 220 000 ₸, рассрочка Kaspi 0-0-12 — 18 333 ₸ в месяц.
-
 - topic: equipment_pos_duo_video_1305
   priority: 8
   keywords:
@@ -3348,7 +3174,6 @@ sections:
   - ролик pos duo
   facts: |-
     Wipon POS DUO — это моноблок с двумя экранами. Подходит для магазинов, где важна скорость и удобство. Стоимость — 220 000 ₸, рассрочка 18 333 ₸ в месяц.
-
 - topic: equipment_pos_duo_photo_1306
   priority: 8
   keywords:
@@ -3362,7 +3187,6 @@ sections:
   - фото wipon duo
   facts: |-
     Wipon POS DUO — стильный кассовый моноблок с двумя экранами. Цена — 220 000 ₸, рассрочка 18 333 ₸ в месяц.
-
 - topic: equipment_pos_premium_view_1307
   priority: 9
   keywords:
@@ -3380,7 +3204,6 @@ sections:
   - принтер 80мм
   facts: |-
     Это современный моноблок с двумя экранами для кассира и покупателя и принтером чеков 80 мм с автообрезкой. Работает быстро, аккуратно смотрится на кассе и подходит для большого потока. Могу отправить фото и короткое видео, а также показать на онлайн демо. Цена 300 000 ₸, рассрочка Kaspi 0-0-12 по 25 000 ₸ в месяц.
-
 - topic: equipment_pos_premium_photo_1308
   priority: 8
   keywords:
@@ -3394,7 +3217,6 @@ sections:
   - фотографии pos premium
   facts: |-
     Да, пришлю реальные фото и снимки в сборе. POS PREMIUM имеет два экрана и встроенный принтер 80 мм с автообрезкой, выглядит стильно и экономит место. Цена 300 000 ₸, рассрочка Kaspi 0-0-12 по 25 000 ₸ в месяц.
-
 - topic: equipment_pos_premium_send_photo_1309
   priority: 8
   keywords:
@@ -3408,7 +3230,6 @@ sections:
   - скиньте снимки premium
   facts: |-
     Конечно, вышлю крупные фото и короткое видео. Модель с двумя экранами и принтером 80 мм, быстрый отклик и аккуратный дизайн. Стоимость 300 000 ₸, рассрочка Kaspi 0-0-12 по 25 000 ₸ в месяц.
-
 - topic: equipment_quadro_video_1310
   priority: 9
   keywords:
@@ -3425,7 +3246,6 @@ sections:
   - ролик quadro моноблок
   facts: |-
     Да, отправлю короткий ролик. Wipon Quadro объединяет кассу, встроенные весы и экран для покупателя, работает со штучным и весовым товаром без доп оборудования. Цена 360 000 ₸, рассрочка Kaspi 0-0-12 по 30 000 ₸ в месяц.
-
 - topic: equipment_quadro_demo_1311
   priority: 8
   keywords:
@@ -3440,7 +3260,6 @@ sections:
   - работа quadro с весами
   facts: |-
     Да, есть. На видео видно, как Quadro взвешивает, пробивает и печатает чек за один шаг. Удобно для магазинов с весовым товаром. Цена 360 000 ₸, рассрочка Kaspi 0-0-12 по 30 000 ₸ в месяц.
-
 - topic: equipment_quadro_appearance_1312
   priority: 8
   keywords:
@@ -3454,7 +3273,6 @@ sections:
   - фото wipon quadro
   facts: |-
     Могу прислать фото и короткое демо. Устройство компактное, в одном корпусе касса, весы и дисплей покупателя. Цена 360 000 ₸, рассрочка Kaspi 0-0-12 по 30 000 ₸ в месяц.
-
 - topic: equipment_triple_live_1313
   priority: 9
   keywords:
@@ -3470,7 +3288,6 @@ sections:
   - покажите triple с весами
   facts: |-
     Да, организую онлайн показ. Wipon Triple это касса с весами до 30 кг и чековым принтером в одном корпусе, вес сразу попадает в систему, чек печатается без задержек. Цена 330 000 ₸, рассрочка Kaspi 0-0-12 по 27 500 ₸ в месяц.
-
 - topic: equipment_triple_link_1314
   priority: 8
   keywords:
@@ -3485,7 +3302,6 @@ sections:
   - ссылка triple wipon
   facts: |-
     Скину фото и краткий обзор. Triple объединяет кассу, весы до 30 кг и принтер, удобен для продуктовых точек и экономит место. Цена 330 000 ₸, рассрочка Kaspi 0-0-12 по 27 500 ₸ в месяц.
-
 - topic: equipment_triple_view_1315
   priority: 8
   keywords:
@@ -3499,7 +3315,6 @@ sections:
   - фото wipon triple
   facts: |-
     Пришлю живые фото и видео. Моноблок аккуратный, всё в одном, вес сразу передается в систему, чек печатается моментально. Цена 330 000 ₸, рассрочка Kaspi 0-0-12 по 27 500 ₸ в месяц.
-
 - topic: equipment_pos_i3_video_1316
   priority: 9
   keywords:
@@ -3517,7 +3332,6 @@ sections:
   - ролик моноблок i3
   facts: |-
     Да, подготовлю короткий ролик. POS i 3 это надежная модель для малого и среднего бизнеса, стабильная работа кассы, простое подключение, цвет корпуса черный или белый. Для высокой нагрузки есть POS i 5 с более мощным железом и быстрым Wi Fi, тоже в черном или белом цвете.
-
 - topic: equipment_pos_i3_overview_1317
   priority: 8
   keywords:
@@ -3532,7 +3346,6 @@ sections:
   - стабильность i3
   facts: |-
     Отправлю видео с демонстрацией. POS i 3 показывает стабильность и простоту запуска, доступен в черном и белом цвете. Если нужен запас по мощности, подойдет POS i 5 со скоростным Wi Fi.
-
 - topic: equipment_pos_i3_photo_1318
   priority: 8
   keywords:
@@ -3546,7 +3359,6 @@ sections:
   - фото pos i3
   facts: |-
     С радостью, пришлю фото крупным планом. POS i 3 компактный и аккуратный, подключается быстро, доступен в черном и белом цвете. Для большей нагрузки рассмотрите POS i 5.
-
 - topic: equipment_pos_i5_link_1319
   priority: 8
   keywords:
@@ -3561,7 +3373,6 @@ sections:
   - ссылка моноблок i5
   facts: |-
     Пришлю фото и краткий обзор. POS i 5 мощнее, быстро открывает документы и отчеты, стабильный Wi Fi, цвета корпуса черный и белый. Хороший вариант для потока покупателей.
-
 - topic: equipment_pos_i3_i5_view_1320
   priority: 8
   keywords:
@@ -3576,7 +3387,6 @@ sections:
   - фото i3 и i5
   facts: |-
     Отправлю набор фото обеих моделей. POS i 3 компактный и доступный, POS i 5 быстрее и мощнее. Оба варианта есть в черном и белом цвете.
-
 - topic: equipment_pos_i3_i5_demo_1321
   priority: 8
   keywords:
@@ -3591,7 +3401,6 @@ sections:
   - увидеть работу i3 i5
   facts: |-
     Да, проведем онлайн демонстрацию в удобное время. Покажу корпуса, работу интерфейса и подключение периферии, отвечу на вопросы.
-
 - topic: equipment_wipon_screen_live_1322
   priority: 9
   keywords:
@@ -3607,7 +3416,6 @@ sections:
   - экран покупателя wipon демо
   facts: |-
     Да, покажу на видео и пришлю фото. Wipon Screen выводит покупателю товары и сумму в реальном времени, компактный, яркий, легко регулируется по углу и высоте. Цена 60 000 ₸, рассрочка Kaspi 0-0-12 по 5 000 ₸ в месяц.
-
 - topic: equipment_wipon_screen_video_1323
   priority: 8
   keywords:
@@ -3621,7 +3429,6 @@ sections:
   - экран покупателя на видео
   facts: |-
     Есть короткое видео. Экран показывает позиции и суммы, помогает избежать ошибок на кассе и повышает доверие покупателя. Цена 60 000 ₸, рассрочка Kaspi 0-0-12 по 5 000 ₸ в месяц.
-
 - topic: equipment_wipon_screen_photo_1324
   priority: 8
   keywords:
@@ -3635,7 +3442,6 @@ sections:
   - фото wipon screen
   facts: |-
     Отправлю детальные фото. Компактный корпус, яркая матрица, удобная регулировка. Стоимость 60 000 ₸, рассрочка Kaspi 0-0-12 по 5 000 ₸ в месяц.
-
 - topic: equipment_xprinter_58_photo_1325
   priority: 8
   keywords:
@@ -3653,7 +3459,6 @@ sections:
   - фото xprinter 58
   facts: |-
     Конечно, пришлю фото. X-printer 58 IINT печатает чеки шириной 58 мм, подключается по USB, термопечать надежная и тихая. Хорош для небольших точек. Цена 15 000 ₸, рассрочка Kaspi 0-0-12 по 1 250 ₸ в месяц.
-
 - topic: equipment_xprinter_58_view_1326
   priority: 8
   keywords:
@@ -3668,7 +3473,6 @@ sections:
   - принтер 58 компактный
   facts: |-
     Пришлю фото и краткий обзор. X-printer 58 IINT компактный, легко ставится рядом с кассой, печатает 58 мм чеки, подключается по USB. Цена 15 000 ₸, рассрочка Kaspi 0-0-12 по 1 250 ₸ в месяц.
-
 - topic: equipment_xprinter_58_send_1327
   priority: 8
   keywords:
@@ -3683,7 +3487,6 @@ sections:
   - установка xprinter
   facts: |-
     Да, отправлю снимки с разных ракурсов. Модель 58 IINT компактная и простая в установке, термопечать четкая. Стоимость 15 000 ₸, рассрочка Kaspi 0-0-12 по 1 250 ₸ в месяц.
-
 - topic: equipment_xprinter_e200l_video_1330
   priority: 8
   keywords:
@@ -3701,7 +3504,6 @@ sections:
   - принтер 80мм видеообзор
   facts: |-
     Да, покажу на видео X-printer E 200 L. Он печатает до 230 мм в секунду, чек 80 мм, без картриджей, есть автоотрез и подключение USB и LAN. Цена 25 000 ₸, рассрочка Kaspi 0-0-12 по 2 083 ₸ в месяц.
-
 - topic: equipment_xprinter_e200l_photo_1331
   priority: 8
   keywords:
@@ -3715,7 +3517,6 @@ sections:
   - фото xprinter e200l
   facts: |-
     Скину фото модели E 200 L. Быстрая печать до 230 мм в секунду, ширина 80 мм, автоотрез, USB и LAN. Стоимость 25 000 ₸, рассрочка Kaspi 0-0-12 по 2 083 ₸ в месяц.
-
 - topic: equipment_xprinter_compare_1332
   priority: 8
   keywords:
@@ -3729,7 +3530,6 @@ sections:
   - сравнение xprinter 58 e200l
   facts: |-
     Пришлю сравнение 58 IINT и E 200 L на фото. 58 IINT для 58 мм чеков, компактный, E 200 L быстрее и печатает 80 мм. Выберем по задачам. E 200 L стоит 25 000 ₸, 58 IINT стоит 15 000 ₸.
-
 - topic: equipment_xp420b_photo_1333
   priority: 8
   keywords:
@@ -3745,7 +3545,6 @@ sections:
   - штрихкоды принтер
   facts: |-
     Да, отправлю. XP 420 B печатает этикетки и штрихкоды без чернил, удобен для магазинов, аптек и складов. Цена 50 000 ₸, рассрочка Kaspi 0-0-12 по 4 166 ₸ в месяц.
-
 - topic: equipment_xp420b_assembled_1334
   priority: 8
   keywords:
@@ -3760,7 +3559,6 @@ sections:
   - фото в сборе xp420b
   facts: |-
     Пришлю фото на рабочем месте и отдельные кадры. Удобная загрузка рулона, четкая печать ценников и кодов. Стоимость 50 000 ₸, рассрочка Kaspi 0-0-12 по 4 166 ₸ в месяц.
-
 - topic: equipment_xp420b_closeup_1335
   priority: 8
   keywords:
@@ -3774,7 +3572,6 @@ sections:
   - этикетки xp420b
   facts: |-
     С радостью. Покажу крупные планы корпуса и примеры этикеток. Цена 50 000 ₸, рассрочка Kaspi 0-0-12 по 4 166 ₸ в месяц.
-
 - topic: equipment_scanner_wireless_wpb930_1336
   priority: 9
   keywords:
@@ -3792,7 +3589,6 @@ sections:
   - сканер падения 1.2м
   facts: |-
     Да, пришлю фото. Wipon WPB 930 быстро считывает 2 D коды, до 300 сканов в секунду, работает по радиоканалу, выдерживает падения до 1.2 м. Цена 17 000 ₸, рассрочка Kaspi 0-0-12 по 1 417 ₸ в месяц.
-
 - topic: equipment_scanner_wpb930_live_1337
   priority: 8
   keywords:
@@ -3807,7 +3603,6 @@ sections:
   - сканер для зала wpb930
   facts: |-
     Организую короткое видео. Модель WPB 930 легкая, мобильная, дальность работы удобна для зала. Стоимость 17 000 ₸, рассрочка Kaspi 0-0-12 по 1 417 ₸ в месяц.
-
 - topic: equipment_scanner_wpb930_link_1340
   priority: 8
   keywords:
@@ -3821,7 +3616,6 @@ sections:
   - характеристики wpb930
   facts: |-
     Пришлю фото и спецификацию. WPB 930 работает с 1 D и 2 D кодами, подтверждает считывание звуком, выдерживает рабочие падения. Цена 17 000 ₸, рассрочка Kaspi 0-0-12 по 1 417 ₸ в месяц.
-
 - topic: equipment_scanner_wp930z_photo_1341
   priority: 8
   keywords:
@@ -3837,7 +3631,6 @@ sections:
   - фото wp930z сканер
   facts: |-
     Конечно, пришлю. WP 930 Z читает 1 D и 2 D коды до 300 сканов в секунду, подключение по USB, есть звуковая индикация. Цена 10 000 ₸, рассрочка Kaspi 0-0-12 по 833 ₸ в месяц.
-
 - topic: equipment_scanner_wp930z_video_1342
   priority: 8
   keywords:
@@ -3851,7 +3644,6 @@ sections:
   - скорость сканирования wp930z
   facts: |-
     Да, покажу на видео скорость и считывание мелких кодов. Подключение USB, простая настройка. Стоимость 10 000 ₸, рассрочка Kaspi 0-0-12 по 833 ₸ в месяц.
-
 - topic: equipment_scanner_wp930z_closeup_1343
   priority: 8
   keywords:
@@ -3864,7 +3656,6 @@ sections:
   - удобный сканер wp930z
   facts: |-
     Скину крупные фото. Удобная рукоятка, надежный корпус, читает 1 D и 2 D коды быстро и стабильно. Цена 10 000 ₸, рассрочка Kaspi 0-0-12 по 833 ₸ в месяц.
-
 - topic: equipment_scanner_wpb930_detail_1344
   priority: 8
   keywords:
@@ -3877,7 +3668,6 @@ sections:
   - компактный сканер беспроводной
   facts: |-
     Отправлю детализацию по WPB 930. Компактный, быстрый, выдерживает падения до 1.2 м, удобен для активной торговли. Стоимость 17 000 ₸, рассрочка Kaspi 0-0-12 по 1 417 ₸ в месяц.
-
 - topic: equipment_scanner_wpb930_overview_1345
   priority: 8
   keywords:
@@ -3891,7 +3681,6 @@ sections:
   - скорость wpb930
   facts: |-
     Да, есть короткий обзор. Покажу скорость считывания, работу на расстоянии и подтверждение сигналом. Цена 17 000 ₸, рассрочка Kaspi 0-0-12 по 1 417 ₸ в месяц.
-
 - topic: equipment_scanner_wpb930_workplace_1348
   priority: 8
   keywords:
@@ -3905,7 +3694,6 @@ sections:
   - рабочая зона сканер
   facts: |-
     Пришлю фото в рабочей зоне на кассе. Устройство мобильное и прочное, удобно для магазина с залом. Стоимость 17 000 ₸, рассрочка Kaspi 0-0-12 по 1 417 ₸ в месяц.
-
 - topic: equipment_scanner_zebra_ds2208_1349
   priority: 9
   keywords:
@@ -3923,7 +3711,6 @@ sections:
   - сканер гарантия 4 года zebra
   facts: |-
     Да, пришлю. ZEBRA DS 2208 точно читает даже мелкие и поврежденные коды, корпус легкий, защита IP 42, официальная гарантия 4 года. Цена 45 000 ₸, рассрочка Kaspi 0-0-12 по 3 750 ₸ в месяц.
-
 - topic: equipment_scanner_zebra_live_1350
   priority: 8
   keywords:
@@ -3937,7 +3724,6 @@ sections:
   - демонстрация zebra ds2208
   facts: |-
     Организую короткое видео. Показать, как DS 2208 быстро читает коды и удобно лежит в руке. Стоимость 45 000 ₸, рассрочка Kaspi 0-0-12 по 3 750 ₸ в месяц.
-
 - topic: equipment_scanner_zebra_video_1351
   priority: 8
   keywords:
@@ -3951,7 +3737,6 @@ sections:
   - мелкие коды zebra
   facts: |-
     Да, отправлю. На видео видно качество считывания и работу с мелкими кодами, защита IP 42. Цена 45 000 ₸, рассрочка Kaspi 0-0-12 по 3 750 ₸ в месяц.
-
 - topic: equipment_scanner_stationary_wipon_1352
   priority: 9
   keywords:
@@ -3968,7 +3753,6 @@ sections:
   - фото стационарный сканер
   facts: |-
     С радостью. Стационарный сканер считывает при простом наведении, до 1650 сканов в секунду, есть звуковая индикация. Ускоряет работу кассира на потоке. Цена 24 000 ₸, рассрочка Kaspi 0-0-12 по 2 000 ₸ в месяц.
-
 - topic: equipment_scanner_stationary_assembled_1353
   priority: 8
   keywords:
@@ -3983,7 +3767,6 @@ sections:
   - стационарный сканер на столе
   facts: |-
     Пришлю фото на кассовом месте. Устройство фиксируется на столе, освобождает руки, сканирует автоматически при поднесении товара. Стоимость 24 000 ₸, рассрочка Kaspi 0-0-12 по 2 000 ₸ в месяц.
-
 - topic: equipment_scanner_stationary_video_1354
   priority: 8
   keywords:
@@ -3996,7 +3779,6 @@ sections:
   - удобство стационарный
   facts: |-
     Да, есть ролик. Показана скорость сканирования и удобство на потоке. Стоимость 24 000 ₸, рассрочка Kaspi 0-0-12 по 2 000 ₸ в месяц.
-
 - topic: equipment_scanner_wp7600l_link_1357
   priority: 9
   keywords:
@@ -4012,7 +3794,6 @@ sections:
   - стационарный сканер гипермаркет
   facts: |-
     Скину фото и спецификацию. Модель WP 7600 L выполняет до 1650 сканов в секунду, есть звуковая индикация, удобно для гипермаркетов и больших очередей. Цена 30 000 ₸, рассрочка Kaspi 0-0-12 по 2 500 ₸ в месяц.
-
 - topic: equipment_scanner_wp7600l_photo_1360
   priority: 8
   keywords:
@@ -4026,7 +3807,6 @@ sections:
   - фото wp7600l сканер
   facts: |-
     Пришлю снимки в кассовой зоне. Устройство ускоряет продажи, освобождает руки и стабильно считывает коды. Стоимость 30 000 ₸, рассрочка Kaspi 0-0-12 по 2 500 ₸ в месяц.
-
 - topic: equipment_scanner_wp7600l_video_1361
   priority: 8
   keywords:
@@ -4039,7 +3819,6 @@ sections:
   - подносят товар wp7600l
   facts: |-
     Да, подготовлю видео. Видно, как сканер работает без кнопок, достаточно поднести товар, скорость высокая. Цена 30 000 ₸, рассрочка Kaspi 0-0-12 по 2 500 ₸ в месяц.
-
 - topic: equipment_scanner_stand_1364
   priority: 7
   keywords:
@@ -4054,7 +3833,6 @@ sections:
   - подставка сканер стандартная фото
   facts: |-
     Пришлю фото стандартной подставки. Конструкция устойчивая, из прочного пластика, освобождает руки кассира и ускоряет обслуживание. Стоимость 3 000 ₸.
-
 - topic: equipment_scanner_stand_link_1365
   priority: 7
   keywords:
@@ -4066,7 +3844,6 @@ sections:
   - ссылка подставка сканера
   facts: |-
     Скину карточку товара и фото. Подставка совместима с большинством ручных сканеров, компактная и надежная. Цена 3 000 ₸.
-
 - topic: equipment_scanner_stand_video_1368
   priority: 7
   keywords:
@@ -4080,7 +3857,6 @@ sections:
   - ускорение работы подставка
   facts: |-
     Да, покажу короткое видео на кассе. Товар подносят к сканеру, руки свободны, работа идет быстрее. Стоимость 3 000 ₸.
-
 - topic: equipment_scanner_stand_zebra_1369
   priority: 8
   keywords:
@@ -4094,7 +3870,6 @@ sections:
   - устойчивая подставка zebra
   facts: |-
     Пришлю оригинальную подставку ZEBRA. Совместима с серией DS, устойчива и рассчитана на интенсивное использование. Цена 10 000 ₸, рассрочка Kaspi 0-0-12 по 833 ₸ в месяц.
-
 - topic: equipment_scanner_stand_zebra_video_1372
   priority: 7
   keywords:
@@ -4106,7 +3881,6 @@ sections:
   - ускоряет работу подставка zebra
   facts: |-
     Есть. На видео видно, как подставка ZEBRA ускоряет процесс на кассе и освобождает руки. Стоимость 10 000 ₸, рассрочка Kaspi 0-0-12 по 833 ₸ в месяц.
-
 - topic: equipment_scanner_stand_demo_1373
   priority: 7
   keywords:
@@ -4120,7 +3894,6 @@ sections:
   - считывания с подставкой
   facts: |-
     Да, проведем короткий показ. Поставлю сканер в подставку и покажу процесс считывания на примере. Цена 10 000 ₸, рассрочка Kaspi 0-0-12 по 833 ₸ в месяц.
-
 - topic: equipment_cash_drawer_wipon_1374
   priority: 9
   keywords:
@@ -4138,7 +3911,6 @@ sections:
   - ящик с замком касса
   facts: |-
     Пришлю фото внутри и снаружи. 5 отделений для купюр, 3 для монет, отдельный отсек для чеков и документов, автооткрытие при продаже, надежный замок. Цена 21 000 ₸, рассрочка Kaspi 0-0-12 по 1 750 ₸ в месяц.
-
 - topic: equipment_cash_drawer_video_1375
   priority: 8
   keywords:
@@ -4152,7 +3924,6 @@ sections:
   - ящик открывается автоматически
   facts: |-
     Да, есть ролик с автоматическим открытием и организацией отделений. Корпус прочный, удобно на кассе. Цена 21 000 ₸, рассрочка Kaspi 0-0-12 по 1 750 ₸ в месяц.
-
 - topic: equipment_cash_drawer_overview_1376
   priority: 8
   keywords:
@@ -4166,7 +3937,6 @@ sections:
   - ящик подключение видео
   facts: |-
     Конечно, пришлю. Показано подключение к кассе и работа в смене. Стоимость 21 000 ₸, рассрочка Kaspi 0-0-12 по 1 750 ₸ в месяц.
-
 - topic: equipment_scales_rongta_1377
   priority: 9
   keywords:
@@ -4182,7 +3952,6 @@ sections:
   - продуктовые секции весы
   facts: |-
     Отправлю фото и примеры этикеток. Весы с печатью этикеток, удобны для продуктовых секций, поддерживают большой ассортимент. Цена 200 000 ₸, рассрочка Kaspi 0-0-12 по 16 666 ₸ в месяц.
-
 - topic: equipment_scales_rongta_video_1378
   priority: 8
   keywords:
@@ -4196,7 +3965,6 @@ sections:
   - работа весы rongta
   facts: |-
     Да, пришлю короткий обзор. На видео печать ценников и работа с большим ассортиментом. Стоимость 200 000 ₸, рассрочка Kaspi 0-0-12 по 16 666 ₸ в месяц.
-
 - topic: equipment_scales_rongta_photo_1379
   priority: 8
   keywords:
@@ -4210,7 +3978,6 @@ sections:
   - фото rongta прилавок
   facts: |-
     Пришлю фото на прилавке и крупные планы печатающих узлов. Цена 200 000 ₸, рассрочка Kaspi 0-0-12 по 16 666 ₸ в месяц.
-
 - topic: equipment_scales_smart_wipon_1380
   priority: 9
   keywords:
@@ -4227,7 +3994,6 @@ sections:
   - умные весы wipon фото
   facts: |-
     Скину фото и короткое видео. Весы передают вес прямо в систему Wipon, кассиру не нужно вводить вручную, поддержка до 30 кг, точность от 100 г. Цена 100 000 ₸, рассрочка Kaspi 0-0-12 по 8 333 ₸ в месяц.
-
 - topic: equipment_scales_smart_assembled_1381
   priority: 8
   keywords:
@@ -4240,7 +4006,6 @@ sections:
   - умные весы кассовая зона фото
   facts: |-
     Да, пришлю снимки в кассовой зоне. Вес сразу попадает в чек, это ускоряет обслуживание и снижает ошибки. Стоимость 100 000 ₸, рассрочка Kaspi 0-0-12 по 8 333 ₸ в месяц.
-
 - topic: equipment_scales_smart_closeup_1382
   priority: 8
   keywords:
@@ -4254,7 +4019,6 @@ sections:
   - точность 100г весы фото
   facts: |-
     Отправлю крупные планы платформы, дисплея и кабелей. Поддержка до 30 кг, точность от 100 г. Цена 100 000 ₸, рассрочка Kaspi 0-0-12 по 8 333 ₸ в месяц.
-
 - topic: equipment_pocket_scanner_1383
   priority: 9
   keywords:
@@ -4272,7 +4036,6 @@ sections:
   - карманный сканер wipon фото
   facts: |-
     Пришлю фото. Pocket Scanner помещается в ладонь, подключение USB, Bluetooth или 2.4 G, дальность до 30 м. Удобен для магазина, склада и выездной торговли. Цена 25 000 ₸, рассрочка Kaspi 0-0-12 по 2 083 ₸ в месяц.
-
 - topic: equipment_pocket_scanner_live_1384
   priority: 8
   keywords:
@@ -4286,7 +4049,6 @@ sections:
   - скорость pocket scanner
   facts: |-
     Да, запишу короткий ролик в работе. Показать скорость считывания и мобильность. Стоимость 25 000 ₸, рассрочка Kaspi 0-0-12 по 2 083 ₸ в месяц.
-
 - topic: equipment_pocket_scanner_video_1385
   priority: 8
   keywords:
@@ -4300,7 +4062,6 @@ sections:
   - работа на расстоянии pocket
   facts: |-
     Есть, отправлю. Видно подключение по USB, Bluetooth и 2.4 G, а также работу на расстоянии. Цена 25 000 ₸, рассрочка Kaspi 0-0-12 по 2 083 ₸ в месяц.
-
 - topic: equipment_smart_scanner_1386
   priority: 9
   keywords:
@@ -4314,7 +4075,6 @@ sections:
   - умный сканер smart
   facts: |-
     Пришлю фото. Smart Scanner быстро и точно читает коды, работает по Bluetooth, USB и 2.4 G, аккумулятор 3000 mAh держит долго. Цена 30 000 ₸, рассрочка Kaspi 0-0-12 по 2 500 ₸ в месяц.
-
 - topic: equipment_smart_scanner_link_1387
   priority: 8
   keywords:
@@ -4328,7 +4088,6 @@ sections:
   - ссылка smart scanner wipon
   facts: |-
     Скину карточку и спецификацию. Дальность до 30 м, удобно для зала и склада, батарея 3000 mAh. Стоимость 30 000 ₸, рассрочка Kaspi 0-0-12 по 2 500 ₸ в месяц.
-
 - topic: equipment_smart_scanner_video_1388
   priority: 8
   keywords:
@@ -4341,7 +4100,6 @@ sections:
   - скорость smart scanner
   facts: |-
     Да, пришлю видео. Показаны скорость, дальность и автономность. Цена 30 000 ₸, рассрочка Kaspi 0-0-12 по 2 500 ₸ в месяц.
-
 - topic: equipment_pos_duo_specs_1398
   priority: 10
   keywords:
@@ -4359,7 +4117,6 @@ sections:
   - экраны pos duo
   facts: |-
     POS DUO. Два экрана 15.6″ кассир и 11″ покупатель, процессор i 5, 8 ГБ ОЗУ, SSD 128 ГБ. Цена 220 000 ₸, рассрочка 0 0 12 по 18 333 ₸.
-
 - topic: equipment_flower_shop_1402
   priority: 8
   keywords:
@@ -4374,7 +4131,6 @@ sections:
   - цветы оборудование
   facts: |-
     Да. Комплекты STANDARD, STANDARD+, PRO, моноблоки POS DUO и Premium. Совместимо с Wipon, доставка по Алматы, рассрочка без переплаты.
-
 - topic: equipment_pos_duo_kz_1440
   priority: 9
   keywords:
@@ -4384,5 +4140,15 @@ sections:
   - кассир клиент экран
   - pos duo бағасы
   - бөліп төлеу pos duo
+  - pos duo қазақ
+  - pos duo екі экран
+  - кассир экран 15.6
+  - клиент экран 11
+  - pos duo құны
+  - pos duo бөліп төлеу
+  - pos duo рассрочка қазақша
+  - pos duo айлық төлем
+  - pos duo моноблок қазақша
+  - екі экранды касса
   facts: |-
     Екі экран: кассирге 15.6", клиентке 11". Бағасы 220 000 ₸. Бөліп төлеу 0-0-12 айына 18 333 ₸.
