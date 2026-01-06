@@ -32,7 +32,7 @@ FILE_TO_CATEGORY = {
     "features.yaml": "features",
     "faq.yaml": "faq",
     "regions.yaml": "regions",
-    # other.yaml содержит category в каждой секции
+    "competitors.yaml": "competitors",
 }
 
 
