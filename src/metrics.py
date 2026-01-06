@@ -321,6 +321,152 @@ class ConversationMetrics:
 
 
 # =============================================================================
+# Disambiguation Metrics
+# =============================================================================
+
+class DisambiguationMetrics:
+    """
+    Метрики для отслеживания эффективности disambiguation.
+
+    Собирает:
+    - Количество срабатываний
+    - Успешность разрешения
+    - Количество попыток
+    - Распределение по интентам
+    """
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self) -> None:
+        """Сбросить все метрики."""
+        self.total_disambiguations: int = 0
+        self.resolved_on_first_try: int = 0
+        self.resolved_on_second_try: int = 0
+        self.fallback_to_unclear: int = 0
+        self.user_provided_new_info: int = 0
+
+        self.disambiguation_by_intent: Dict[str, int] = {}
+        self.resolution_by_intent: Dict[str, Dict[str, int]] = {}
+        self.score_gaps: List[float] = []
+
+    def record_disambiguation(self, options: List[str], scores: Dict) -> None:
+        """
+        Записать срабатывание disambiguation.
+
+        Args:
+            options: Список интентов в опциях
+            scores: Merged scores всех интентов
+        """
+        self.total_disambiguations += 1
+
+        # Записываем score gap
+        sorted_scores = sorted(scores.values(), reverse=True)
+        if len(sorted_scores) >= 2:
+            gap = sorted_scores[0] - sorted_scores[1]
+            self.score_gaps.append(gap)
+
+        # Записываем какие интенты были в disambiguation
+        for intent in options:
+            self.disambiguation_by_intent[intent] = \
+                self.disambiguation_by_intent.get(intent, 0) + 1
+
+    def record_resolution(
+        self,
+        resolved_intent: str,
+        attempt: int,
+        success: bool
+    ) -> None:
+        """
+        Записать разрешение disambiguation.
+
+        Args:
+            resolved_intent: Выбранный интент
+            attempt: Номер попытки (1 или 2)
+            success: Успешно ли разрешён
+        """
+        if success:
+            if attempt == 1:
+                self.resolved_on_first_try += 1
+            else:
+                self.resolved_on_second_try += 1
+        else:
+            self.fallback_to_unclear += 1
+
+        # Записываем статистику по интентам
+        if resolved_intent not in self.resolution_by_intent:
+            self.resolution_by_intent[resolved_intent] = {"resolved": 0, "failed": 0}
+
+        key = "resolved" if success else "failed"
+        self.resolution_by_intent[resolved_intent][key] += 1
+
+    def get_effectiveness_rate(self) -> float:
+        """
+        Получить процент успешных disambiguation.
+
+        Returns:
+            Процент (0.0 - 1.0)
+        """
+        if self.total_disambiguations == 0:
+            return 0.0
+        resolved = self.resolved_on_first_try + self.resolved_on_second_try
+        return resolved / self.total_disambiguations
+
+    def get_first_try_rate(self) -> float:
+        """Получить процент разрешения с первой попытки."""
+        if self.total_disambiguations == 0:
+            return 0.0
+        return self.resolved_on_first_try / self.total_disambiguations
+
+    def get_fallback_rate(self) -> float:
+        """Получить процент fallback в unclear."""
+        if self.total_disambiguations == 0:
+            return 0.0
+        return self.fallback_to_unclear / self.total_disambiguations
+
+    def get_average_score_gap(self) -> float:
+        """Получить средний score gap при disambiguation."""
+        if not self.score_gaps:
+            return 0.0
+        return sum(self.score_gaps) / len(self.score_gaps)
+
+    def to_log_dict(self) -> Dict:
+        """
+        Получить словарь для логирования.
+
+        Returns:
+            Словарь с ключевыми метриками
+        """
+        return {
+            "total_disambiguations": self.total_disambiguations,
+            "effectiveness_rate": self.get_effectiveness_rate(),
+            "first_try_rate": self.get_first_try_rate(),
+            "fallback_rate": self.get_fallback_rate(),
+            "avg_score_gap": self.get_average_score_gap(),
+        }
+
+    def get_summary(self) -> Dict:
+        """
+        Получить полную сводку метрик.
+
+        Returns:
+            Словарь со всеми метриками
+        """
+        return {
+            "total_disambiguations": self.total_disambiguations,
+            "resolved_on_first_try": self.resolved_on_first_try,
+            "resolved_on_second_try": self.resolved_on_second_try,
+            "fallback_to_unclear": self.fallback_to_unclear,
+            "effectiveness_rate": self.get_effectiveness_rate(),
+            "first_try_rate": self.get_first_try_rate(),
+            "fallback_rate": self.get_fallback_rate(),
+            "avg_score_gap": self.get_average_score_gap(),
+            "disambiguation_by_intent": self.disambiguation_by_intent,
+            "resolution_by_intent": self.resolution_by_intent,
+        }
+
+
+# =============================================================================
 # Агрегированные метрики (для нескольких диалогов)
 # =============================================================================
 

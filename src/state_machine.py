@@ -8,7 +8,7 @@ State Machine — управление состояниями диалога
 """
 
 from typing import Tuple, Dict, Optional, List
-from config import SALES_STATES, QUESTION_INTENTS
+from config import SALES_STATES, QUESTION_INTENTS, DISAMBIGUATION_CONFIG
 from logger import logger
 
 
@@ -139,17 +139,124 @@ class StateMachine:
         self.spin_phase = None  # Текущая SPIN-фаза (если в SPIN flow)
         self.circular_flow = CircularFlowManager()  # Менеджер возвратов
 
+        # Disambiguation state
+        self.in_disambiguation: bool = False
+        self.disambiguation_context: Optional[Dict] = None
+        self.pre_disambiguation_state: Optional[str] = None
+        self.turns_since_last_disambiguation: int = 999  # Большое число = давно не было
+
+        # Для контекстной классификации
+        self.last_action: Optional[str] = None
+        self.last_intent: Optional[str] = None
+
     def reset(self):
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None
         self.circular_flow.reset()
 
+        # Reset disambiguation state
+        self.in_disambiguation = False
+        self.disambiguation_context = None
+        self.pre_disambiguation_state = None
+        self.turns_since_last_disambiguation = 999
+
+        self.last_action = None
+        self.last_intent = None
+
     def update_data(self, data: Dict):
         """Сохраняем извлечённые данные"""
         for key, value in data.items():
             if value:
                 self.collected_data[key] = value
+
+    # =========================================================================
+    # Disambiguation Methods
+    # =========================================================================
+
+    def increment_turn(self) -> None:
+        """
+        Вызывать в начале каждого process() для отслеживания cooldown.
+        """
+        if self.turns_since_last_disambiguation < 999:
+            self.turns_since_last_disambiguation += 1
+
+    def enter_disambiguation(
+        self,
+        options: List[Dict],
+        extracted_data: Optional[Dict] = None
+    ) -> None:
+        """
+        Войти в режим disambiguation.
+
+        Args:
+            options: Список вариантов для пользователя
+            extracted_data: Извлечённые данные для сохранения
+        """
+        self.pre_disambiguation_state = self.state
+        self.in_disambiguation = True
+        self.disambiguation_context = {
+            "options": options,
+            "original_state": self.state,
+            "extracted_data": extracted_data or {},
+            "attempt": 1,
+        }
+
+    def resolve_disambiguation(self, resolved_intent: str) -> Tuple[str, str]:
+        """
+        Разрешить disambiguation с выбранным интентом.
+
+        Args:
+            resolved_intent: Выбранный пользователем интент
+
+        Returns:
+            Tuple[current_state, resolved_intent]
+        """
+        current_state = self.state
+        self._exit_disambiguation_internal()
+        return current_state, resolved_intent
+
+    def exit_disambiguation(self) -> None:
+        """Выйти из режима disambiguation без разрешения."""
+        self._exit_disambiguation_internal()
+
+    def _exit_disambiguation_internal(self) -> None:
+        """Внутренний метод для выхода из disambiguation."""
+        self.in_disambiguation = False
+        self.disambiguation_context = None
+        self.pre_disambiguation_state = None
+        self.turns_since_last_disambiguation = 0
+
+    def get_context(self) -> Dict:
+        """
+        Получить контекст для классификатора.
+
+        Returns:
+            Dict с текущим контекстом состояния
+        """
+        context = {
+            "state": self.state,
+            "last_action": self.last_action,
+            "last_intent": self.last_intent,
+            "spin_phase": self.spin_phase,
+            "missing_data": self._get_missing_data(),
+            "turns_since_last_disambiguation": self.turns_since_last_disambiguation,
+        }
+
+        if self.in_disambiguation:
+            context["in_disambiguation"] = True
+
+        return context
+
+    def _get_missing_data(self) -> List[str]:
+        """Получить список недостающих обязательных данных."""
+        config = SALES_STATES.get(self.state, {})
+        required = config.get("required_data", [])
+        return [f for f in required if not self.collected_data.get(f)]
+
+    # =========================================================================
+    # SPIN Methods
+    # =========================================================================
 
     def _get_current_spin_phase(self) -> Optional[str]:
         """Определяем текущую SPIN-фазу по состоянию"""

@@ -1,0 +1,909 @@
+"""
+Тесты для модулей disambiguation (этапы 1 и 2).
+
+Покрытие:
+- DisambiguationAnalyzer: анализ scores и принятие решений
+- DisambiguationUI: форматирование вопросов и парсинг ответов
+- DisambiguationMetrics: метрики эффективности
+- StateMachine: disambiguation флаги и методы
+- intent_labels: маппинг интентов на labels
+- feature_flags: intent_disambiguation flag
+- config: DISAMBIGUATION_CONFIG
+"""
+
+import pytest
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from classifier.disambiguation import DisambiguationAnalyzer, DisambiguationResult
+from disambiguation_ui import DisambiguationUI
+from metrics import DisambiguationMetrics
+from state_machine import StateMachine
+from constants.intent_labels import INTENT_LABELS, get_label
+from feature_flags import FeatureFlags
+from config import DISAMBIGUATION_CONFIG, CLASSIFIER_CONFIG
+
+
+# =============================================================================
+# DisambiguationAnalyzer Tests
+# =============================================================================
+
+class TestDisambiguationAnalyzerBasic:
+    """Базовые тесты DisambiguationAnalyzer"""
+
+    @pytest.fixture
+    def analyzer(self):
+        return DisambiguationAnalyzer()
+
+    def test_create_analyzer(self, analyzer):
+        """Создание экземпляра DisambiguationAnalyzer"""
+        assert analyzer is not None
+        assert analyzer.config is not None
+        assert analyzer.disambiguation_config is not None
+
+    def test_analyze_returns_result(self, analyzer):
+        """analyze возвращает DisambiguationResult"""
+        result = analyzer.analyze(
+            root_scores={"greeting": 3},
+            lemma_scores={}
+        )
+        assert isinstance(result, DisambiguationResult)
+
+    def test_empty_scores_returns_unclear(self, analyzer):
+        """Пустые scores возвращают unclear"""
+        result = analyzer.analyze(
+            root_scores={},
+            lemma_scores={}
+        )
+        assert not result.needs_disambiguation
+        assert result.fallback_intent == "unclear"
+        assert result.merged_scores == {}
+
+    def test_high_confidence_no_disambiguation(self, analyzer):
+        """Высокий confidence не требует disambiguation"""
+        result = analyzer.analyze(
+            root_scores={"greeting": 3},
+            lemma_scores={"greeting": 4.0}
+        )
+        assert not result.needs_disambiguation
+        assert result.top_confidence > 0
+
+    def test_low_confidence_returns_unclear(self, analyzer):
+        """Низкий confidence возвращает unclear"""
+        result = analyzer.analyze(
+            root_scores={"unclear": 1},
+            lemma_scores={}
+        )
+        assert not result.needs_disambiguation
+        assert result.fallback_intent == "unclear"
+
+
+class TestDisambiguationAnalyzerLogic:
+    """Тесты логики disambiguation"""
+
+    @pytest.fixture
+    def analyzer(self):
+        return DisambiguationAnalyzer()
+
+    def test_close_scores_triggers_disambiguation(self, analyzer):
+        """Близкие scores вызывают disambiguation"""
+        result = analyzer.analyze(
+            root_scores={"price_question": 2, "question_features": 2},
+            lemma_scores={"price_question": 2.0, "question_features": 2.0}
+        )
+        assert result.needs_disambiguation
+        assert len(result.options) >= 2
+
+    def test_large_gap_no_disambiguation(self, analyzer):
+        """Большой разрыв между scores не требует disambiguation"""
+        result = analyzer.analyze(
+            root_scores={"greeting": 3, "agreement": 1},
+            lemma_scores={"greeting": 3.0}
+        )
+        assert not result.needs_disambiguation
+
+    def test_bypass_intents_no_disambiguation(self, analyzer):
+        """Bypass интенты не требуют disambiguation"""
+        # rejection в bypass_disambiguation_intents
+        result = analyzer.analyze(
+            root_scores={"rejection": 2, "agreement": 2},
+            lemma_scores={}
+        )
+        assert not result.needs_disambiguation
+
+    def test_contact_provided_bypass(self, analyzer):
+        """contact_provided в bypass интентах"""
+        result = analyzer.analyze(
+            root_scores={"contact_provided": 2, "agreement": 2},
+            lemma_scores={}
+        )
+        assert not result.needs_disambiguation
+
+    def test_demo_request_bypass(self, analyzer):
+        """demo_request в bypass интентах"""
+        result = analyzer.analyze(
+            root_scores={"demo_request": 2, "agreement": 2},
+            lemma_scores={}
+        )
+        assert not result.needs_disambiguation
+
+
+class TestDisambiguationAnalyzerCooldown:
+    """Тесты cooldown механизма"""
+
+    @pytest.fixture
+    def analyzer(self):
+        return DisambiguationAnalyzer()
+
+    def test_cooldown_prevents_disambiguation(self, analyzer):
+        """Cooldown предотвращает повторный disambiguation"""
+        result = analyzer.analyze(
+            root_scores={"price_question": 2, "question_features": 2},
+            lemma_scores={},
+            context={"turns_since_last_disambiguation": 1}
+        )
+        assert not result.needs_disambiguation
+
+    def test_no_cooldown_after_threshold(self, analyzer):
+        """После cooldown threshold disambiguation разрешён"""
+        result = analyzer.analyze(
+            root_scores={"price_question": 2, "question_features": 2},
+            lemma_scores={},
+            context={"turns_since_last_disambiguation": 999}
+        )
+        # Может быть disambiguation если scores близкие
+        assert isinstance(result.needs_disambiguation, bool)
+
+    def test_none_context_handled(self, analyzer):
+        """None context обрабатывается корректно"""
+        result = analyzer.analyze(
+            root_scores={"price_question": 2, "question_features": 2},
+            lemma_scores={},
+            context=None
+        )
+        assert isinstance(result.needs_disambiguation, bool)
+
+
+class TestDisambiguationAnalyzerMergeScores:
+    """Тесты слияния scores"""
+
+    @pytest.fixture
+    def analyzer(self):
+        return DisambiguationAnalyzer()
+
+    def test_merge_only_root_scores(self, analyzer):
+        """Слияние только root scores"""
+        result = analyzer._merge_scores(
+            root_scores={"greeting": 3},
+            lemma_scores={}
+        )
+        assert "greeting" in result
+        assert result["greeting"] > 0
+        assert result["greeting"] <= 1.0
+
+    def test_merge_both_scores(self, analyzer):
+        """Слияние root и lemma scores"""
+        result = analyzer._merge_scores(
+            root_scores={"greeting": 2},
+            lemma_scores={"greeting": 2.0}
+        )
+        assert "greeting" in result
+        # Должен быть взвешенное среднее
+        assert result["greeting"] > 0
+
+    def test_merge_different_intents(self, analyzer):
+        """Слияние с разными интентами"""
+        result = analyzer._merge_scores(
+            root_scores={"greeting": 2},
+            lemma_scores={"agreement": 2.0}
+        )
+        assert "greeting" in result
+        assert "agreement" in result
+
+
+class TestDisambiguationAnalyzerBuildOptions:
+    """Тесты построения опций"""
+
+    @pytest.fixture
+    def analyzer(self):
+        return DisambiguationAnalyzer()
+
+    def test_build_options_excludes_unclear(self, analyzer):
+        """build_options исключает unclear"""
+        options = analyzer._build_options([
+            ("unclear", 0.5),
+            ("price_question", 0.5),
+            ("question_features", 0.5)
+        ])
+        intents = [o["intent"] for o in options]
+        assert "unclear" not in intents
+
+    def test_build_options_excludes_small_talk(self, analyzer):
+        """build_options исключает small_talk"""
+        options = analyzer._build_options([
+            ("small_talk", 0.5),
+            ("price_question", 0.5),
+            ("question_features", 0.5)
+        ])
+        intents = [o["intent"] for o in options]
+        assert "small_talk" not in intents
+
+    def test_build_options_max_limit(self, analyzer):
+        """build_options ограничивает количество опций"""
+        max_opts = analyzer.disambiguation_config["max_options"]
+        options = analyzer._build_options([
+            ("price_question", 0.5),
+            ("question_features", 0.5),
+            ("agreement", 0.5),
+            ("greeting", 0.5),
+            ("demo_request", 0.5)
+        ])
+        assert len(options) <= max_opts
+
+    def test_build_options_min_confidence(self, analyzer):
+        """build_options отфильтровывает низкий confidence"""
+        min_conf = analyzer.disambiguation_config["min_option_confidence"]
+        options = analyzer._build_options([
+            ("price_question", 0.5),
+            ("question_features", 0.1)  # Ниже порога
+        ])
+        for opt in options:
+            assert opt["confidence"] >= min_conf
+
+    def test_build_options_has_labels(self, analyzer):
+        """build_options добавляет labels"""
+        options = analyzer._build_options([
+            ("price_question", 0.5),
+            ("question_features", 0.5)
+        ])
+        for opt in options:
+            assert "label" in opt
+            assert opt["label"] is not None
+
+
+# =============================================================================
+# DisambiguationUI Tests
+# =============================================================================
+
+class TestDisambiguationUIBasic:
+    """Базовые тесты DisambiguationUI"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_create_ui(self, ui):
+        """Создание экземпляра DisambiguationUI"""
+        assert ui is not None
+
+    def test_format_question_returns_string(self, ui):
+        """format_question возвращает строку"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        result = ui.format_question("", options, {})
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+
+class TestDisambiguationUIParseNumeric:
+    """Тесты парсинга числовых ответов"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_parse_number_1(self, ui):
+        """Парсинг числа 1"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("1", options) == "price_question"
+
+    def test_parse_number_2(self, ui):
+        """Парсинг числа 2"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("2", options) == "question_features"
+
+    def test_parse_number_3(self, ui):
+        """Парсинг числа 3"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"},
+            {"intent": "agreement", "label": "Продолжить"}
+        ]
+        assert ui.parse_answer("3", options) == "agreement"
+
+
+class TestDisambiguationUIParseWord:
+    """Тесты парсинга словесных номеров"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_parse_first(self, ui):
+        """Парсинг 'первый'"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("первый", options) == "price_question"
+
+    def test_parse_second(self, ui):
+        """Парсинг 'второй'"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("второе", options) == "question_features"
+
+    def test_parse_first_partial(self, ui):
+        """Парсинг 'перв...'"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("перв", options) == "price_question"
+
+
+class TestDisambiguationUIParseKeyword:
+    """Тесты парсинга ключевых слов"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_parse_price_keyword(self, ui):
+        """Парсинг ключевого слова 'цена'"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("про цену", options) == "price_question"
+
+    def test_parse_features_keyword(self, ui):
+        """Парсинг ключевого слова 'функции'"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("какие функции", options) == "question_features"
+
+    def test_parse_keyword_only_in_options(self, ui):
+        """Ключевое слово работает только для интентов в options"""
+        options = [
+            {"intent": "agreement", "label": "Продолжить"},
+            {"intent": "greeting", "label": "Приветствие"}
+        ]
+        # "цена" не должна сработать, т.к. price_question нет в options
+        result = ui.parse_answer("цена", options)
+        assert result is None
+
+
+class TestDisambiguationUIParseEmpty:
+    """Тесты парсинга пустых ответов"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_parse_empty_string(self, ui):
+        """Пустая строка возвращает None"""
+        options = [{"intent": "price_question", "label": "Цена"}]
+        assert ui.parse_answer("", options) is None
+
+    def test_parse_whitespace(self, ui):
+        """Пробелы возвращают None"""
+        options = [{"intent": "price_question", "label": "Цена"}]
+        assert ui.parse_answer("   ", options) is None
+
+    def test_parse_none(self, ui):
+        """None возвращает None"""
+        options = [{"intent": "price_question", "label": "Цена"}]
+        # Это может вызвать ошибку, нужна проверка
+        result = ui.parse_answer(None, options)  # type: ignore
+        assert result is None
+
+
+class TestDisambiguationUIFormat:
+    """Тесты форматирования вопросов"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_format_two_options_inline(self, ui):
+        """Два варианта форматируются inline"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        result = ui.format_question("", options, {})
+        assert "или" in result
+        assert "1." not in result
+
+    def test_format_three_options_numbered(self, ui):
+        """Три варианта форматируются с номерами"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"},
+            {"intent": "agreement", "label": "Продолжить"}
+        ]
+        result = ui.format_question("", options, {})
+        assert "1." in result
+        assert "2." in result
+        assert "3." in result
+
+    def test_format_handles_missing_label(self, ui):
+        """Форматирование с отсутствующим label"""
+        options = [
+            {"intent": "unknown_intent"},
+            {"intent": "another_unknown"}
+        ]
+        result = ui.format_question("", options, {})
+        # Должен использовать intent как label
+        assert "unknown_intent" in result or "another_unknown" in result
+
+
+class TestDisambiguationUIGetOptionLabel:
+    """Тесты _get_option_label"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_get_option_label_explicit(self, ui):
+        """Явно указанный label"""
+        label = ui._get_option_label({"intent": "test", "label": "Test Label"})
+        assert label == "Test Label"
+
+    def test_get_option_label_from_mapping(self, ui):
+        """Label из INTENT_LABELS"""
+        label = ui._get_option_label({"intent": "price_question"})
+        assert label == "Узнать стоимость"
+
+    def test_get_option_label_fallback(self, ui):
+        """Fallback на intent name"""
+        label = ui._get_option_label({"intent": "unknown_xyz"})
+        assert label == "unknown_xyz"
+
+    def test_get_option_label_never_returns_none(self, ui):
+        """_get_option_label никогда не возвращает None"""
+        # Различные варианты опций
+        test_cases = [
+            {"intent": "test", "label": "Test"},
+            {"intent": "price_question"},
+            {"intent": "unknown_intent"},
+            {"intent": ""},
+        ]
+        for opt in test_cases:
+            result = ui._get_option_label(opt)
+            assert result is not None
+
+
+class TestDisambiguationUIRepeatQuestion:
+    """Тесты format_repeat_question"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_format_repeat_question(self, ui):
+        """format_repeat_question возвращает строку"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        result = ui.format_repeat_question(options)
+        assert isinstance(result, str)
+        assert "Не совсем понял" in result
+
+
+# =============================================================================
+# DisambiguationMetrics Tests
+# =============================================================================
+
+class TestDisambiguationMetricsBasic:
+    """Базовые тесты DisambiguationMetrics"""
+
+    @pytest.fixture
+    def metrics(self):
+        return DisambiguationMetrics()
+
+    def test_create_metrics(self, metrics):
+        """Создание экземпляра DisambiguationMetrics"""
+        assert metrics is not None
+        assert metrics.total_disambiguations == 0
+
+    def test_reset_metrics(self, metrics):
+        """reset сбрасывает все метрики"""
+        metrics.total_disambiguations = 10
+        metrics.resolved_on_first_try = 5
+        metrics.reset()
+        assert metrics.total_disambiguations == 0
+        assert metrics.resolved_on_first_try == 0
+
+
+class TestDisambiguationMetricsRecording:
+    """Тесты записи метрик"""
+
+    @pytest.fixture
+    def metrics(self):
+        return DisambiguationMetrics()
+
+    def test_record_disambiguation(self, metrics):
+        """record_disambiguation увеличивает счётчик"""
+        metrics.record_disambiguation(
+            options=["price_question", "question_features"],
+            scores={"price_question": 0.5, "question_features": 0.45}
+        )
+        assert metrics.total_disambiguations == 1
+        assert len(metrics.score_gaps) == 1
+
+    def test_record_disambiguation_by_intent(self, metrics):
+        """record_disambiguation записывает по интентам"""
+        metrics.record_disambiguation(
+            options=["price_question", "question_features"],
+            scores={}
+        )
+        assert metrics.disambiguation_by_intent.get("price_question") == 1
+        assert metrics.disambiguation_by_intent.get("question_features") == 1
+
+    def test_record_resolution_first_try(self, metrics):
+        """record_resolution первая попытка"""
+        metrics.record_disambiguation(["a", "b"], {})
+        metrics.record_resolution("a", attempt=1, success=True)
+        assert metrics.resolved_on_first_try == 1
+        assert metrics.resolved_on_second_try == 0
+
+    def test_record_resolution_second_try(self, metrics):
+        """record_resolution вторая попытка"""
+        metrics.record_disambiguation(["a", "b"], {})
+        metrics.record_resolution("a", attempt=2, success=True)
+        assert metrics.resolved_on_first_try == 0
+        assert metrics.resolved_on_second_try == 1
+
+    def test_record_resolution_failed(self, metrics):
+        """record_resolution неудача"""
+        metrics.record_disambiguation(["a", "b"], {})
+        metrics.record_resolution("unclear", attempt=3, success=False)
+        assert metrics.fallback_to_unclear == 1
+
+
+class TestDisambiguationMetricsCalculations:
+    """Тесты вычисления метрик"""
+
+    @pytest.fixture
+    def metrics(self):
+        m = DisambiguationMetrics()
+        # 10 disambiguations: 6 first try, 2 second try, 2 failed
+        for _ in range(6):
+            m.record_disambiguation(["a", "b"], {"a": 0.5, "b": 0.45})
+            m.record_resolution("a", 1, True)
+        for _ in range(2):
+            m.record_disambiguation(["a", "b"], {"a": 0.5, "b": 0.45})
+            m.record_resolution("a", 2, True)
+        for _ in range(2):
+            m.record_disambiguation(["a", "b"], {"a": 0.5, "b": 0.45})
+            m.record_resolution("unclear", 3, False)
+        return m
+
+    def test_effectiveness_rate(self, metrics):
+        """get_effectiveness_rate вычисляет правильно"""
+        # (6 + 2) / 10 = 0.8
+        assert metrics.get_effectiveness_rate() == 0.8
+
+    def test_first_try_rate(self, metrics):
+        """get_first_try_rate вычисляет правильно"""
+        # 6 / 10 = 0.6
+        assert metrics.get_first_try_rate() == 0.6
+
+    def test_fallback_rate(self, metrics):
+        """get_fallback_rate вычисляет правильно"""
+        # 2 / 10 = 0.2
+        assert metrics.get_fallback_rate() == 0.2
+
+    def test_average_score_gap(self, metrics):
+        """get_average_score_gap вычисляет правильно"""
+        # Все gaps одинаковые: 0.5 - 0.45 = 0.05
+        assert metrics.get_average_score_gap() == pytest.approx(0.05)
+
+    def test_zero_disambiguations(self):
+        """Нулевые disambiguations возвращают 0"""
+        m = DisambiguationMetrics()
+        assert m.get_effectiveness_rate() == 0.0
+        assert m.get_first_try_rate() == 0.0
+        assert m.get_fallback_rate() == 0.0
+        assert m.get_average_score_gap() == 0.0
+
+
+class TestDisambiguationMetricsOutput:
+    """Тесты вывода метрик"""
+
+    @pytest.fixture
+    def metrics(self):
+        m = DisambiguationMetrics()
+        m.record_disambiguation(["a", "b"], {"a": 0.5, "b": 0.45})
+        m.record_resolution("a", 1, True)
+        return m
+
+    def test_to_log_dict(self, metrics):
+        """to_log_dict возвращает словарь"""
+        result = metrics.to_log_dict()
+        assert isinstance(result, dict)
+        assert "total_disambiguations" in result
+        assert "effectiveness_rate" in result
+
+    def test_get_summary(self, metrics):
+        """get_summary возвращает полный словарь"""
+        result = metrics.get_summary()
+        assert isinstance(result, dict)
+        assert "total_disambiguations" in result
+        assert "resolved_on_first_try" in result
+        assert "disambiguation_by_intent" in result
+
+
+# =============================================================================
+# StateMachine Disambiguation Tests
+# =============================================================================
+
+class TestStateMachineDisambiguationInit:
+    """Тесты инициализации disambiguation в StateMachine"""
+
+    def test_init_disambiguation_state(self):
+        """StateMachine инициализирует disambiguation state"""
+        sm = StateMachine()
+        assert sm.in_disambiguation is False
+        assert sm.disambiguation_context is None
+        assert sm.pre_disambiguation_state is None
+        assert sm.turns_since_last_disambiguation == 999
+
+    def test_reset_clears_disambiguation(self):
+        """reset очищает disambiguation state"""
+        sm = StateMachine()
+        sm.in_disambiguation = True
+        sm.disambiguation_context = {"test": "data"}
+        sm.turns_since_last_disambiguation = 5
+
+        sm.reset()
+
+        assert sm.in_disambiguation is False
+        assert sm.disambiguation_context is None
+        assert sm.turns_since_last_disambiguation == 999
+
+
+class TestStateMachineDisambiguationMethods:
+    """Тесты методов disambiguation в StateMachine"""
+
+    @pytest.fixture
+    def sm(self):
+        return StateMachine()
+
+    def test_increment_turn(self, sm):
+        """increment_turn увеличивает счётчик"""
+        sm.turns_since_last_disambiguation = 5
+        sm.increment_turn()
+        assert sm.turns_since_last_disambiguation == 6
+
+    def test_increment_turn_max_value(self, sm):
+        """increment_turn не увеличивает при 999"""
+        sm.turns_since_last_disambiguation = 999
+        sm.increment_turn()
+        assert sm.turns_since_last_disambiguation == 999
+
+    def test_enter_disambiguation(self, sm):
+        """enter_disambiguation устанавливает state"""
+        options = [{"intent": "a"}, {"intent": "b"}]
+        sm.enter_disambiguation(options, {"key": "value"})
+
+        assert sm.in_disambiguation is True
+        assert sm.pre_disambiguation_state == "greeting"
+        assert sm.disambiguation_context["options"] == options
+        assert sm.disambiguation_context["extracted_data"] == {"key": "value"}
+        assert sm.disambiguation_context["attempt"] == 1
+
+    def test_resolve_disambiguation(self, sm):
+        """resolve_disambiguation возвращает state и intent"""
+        sm.enter_disambiguation([{"intent": "a"}])
+        state, intent = sm.resolve_disambiguation("a")
+
+        assert state == "greeting"
+        assert intent == "a"
+        assert sm.in_disambiguation is False
+        assert sm.turns_since_last_disambiguation == 0
+
+    def test_exit_disambiguation(self, sm):
+        """exit_disambiguation очищает state"""
+        sm.enter_disambiguation([{"intent": "a"}])
+        sm.exit_disambiguation()
+
+        assert sm.in_disambiguation is False
+        assert sm.disambiguation_context is None
+        assert sm.turns_since_last_disambiguation == 0
+
+
+class TestStateMachineGetContext:
+    """Тесты get_context в StateMachine"""
+
+    @pytest.fixture
+    def sm(self):
+        return StateMachine()
+
+    def test_get_context_basic(self, sm):
+        """get_context возвращает базовый контекст"""
+        context = sm.get_context()
+        assert "state" in context
+        assert "turns_since_last_disambiguation" in context
+
+    def test_get_context_with_disambiguation(self, sm):
+        """get_context включает in_disambiguation"""
+        sm.enter_disambiguation([{"intent": "a"}])
+        context = sm.get_context()
+        assert context.get("in_disambiguation") is True
+
+    def test_get_context_without_disambiguation(self, sm):
+        """get_context без in_disambiguation когда не активен"""
+        context = sm.get_context()
+        assert "in_disambiguation" not in context
+
+
+# =============================================================================
+# Intent Labels Tests
+# =============================================================================
+
+class TestIntentLabels:
+    """Тесты для INTENT_LABELS и get_label"""
+
+    def test_intent_labels_is_dict(self):
+        """INTENT_LABELS это словарь"""
+        assert isinstance(INTENT_LABELS, dict)
+
+    def test_intent_labels_has_values(self):
+        """INTENT_LABELS содержит значения"""
+        assert len(INTENT_LABELS) > 0
+
+    def test_intent_labels_common_intents(self):
+        """INTENT_LABELS содержит основные интенты"""
+        assert "price_question" in INTENT_LABELS
+        assert "question_features" in INTENT_LABELS
+        assert "agreement" in INTENT_LABELS
+        assert "rejection" in INTENT_LABELS
+        assert "greeting" in INTENT_LABELS
+
+    def test_get_label_known_intent(self):
+        """get_label возвращает label для известного интента"""
+        label = get_label("price_question")
+        assert label == "Узнать стоимость"
+
+    def test_get_label_unknown_intent(self):
+        """get_label возвращает intent для неизвестного"""
+        label = get_label("unknown_xyz_123")
+        assert label == "unknown_xyz_123"
+
+
+# =============================================================================
+# Feature Flags Tests
+# =============================================================================
+
+class TestIntentDisambiguationFlag:
+    """Тесты для intent_disambiguation flag"""
+
+    def test_flag_in_defaults(self):
+        """intent_disambiguation в DEFAULTS"""
+        assert "intent_disambiguation" in FeatureFlags.DEFAULTS
+
+    def test_flag_default_false(self):
+        """intent_disambiguation по умолчанию False"""
+        assert FeatureFlags.DEFAULTS["intent_disambiguation"] is False
+
+    def test_flag_property_exists(self):
+        """Property intent_disambiguation существует"""
+        ff = FeatureFlags()
+        assert hasattr(ff, "intent_disambiguation")
+
+    def test_flag_property_returns_bool(self):
+        """Property intent_disambiguation возвращает bool"""
+        ff = FeatureFlags()
+        assert isinstance(ff.intent_disambiguation, bool)
+
+    def test_flag_override_works(self):
+        """Override для intent_disambiguation работает"""
+        ff = FeatureFlags()
+        ff.set_override("intent_disambiguation", True)
+        assert ff.intent_disambiguation is True
+        ff.clear_override("intent_disambiguation")
+
+
+# =============================================================================
+# Config Tests
+# =============================================================================
+
+class TestDisambiguationConfig:
+    """Тесты для DISAMBIGUATION_CONFIG"""
+
+    def test_config_exists(self):
+        """DISAMBIGUATION_CONFIG существует"""
+        assert DISAMBIGUATION_CONFIG is not None
+        assert isinstance(DISAMBIGUATION_CONFIG, dict)
+
+    def test_config_min_confidence_threshold(self):
+        """min_confidence_threshold настроен"""
+        assert "min_confidence_threshold" in DISAMBIGUATION_CONFIG
+        assert isinstance(DISAMBIGUATION_CONFIG["min_confidence_threshold"], (int, float))
+
+    def test_config_max_score_gap(self):
+        """max_score_gap настроен"""
+        assert "max_score_gap" in DISAMBIGUATION_CONFIG
+        assert isinstance(DISAMBIGUATION_CONFIG["max_score_gap"], (int, float))
+
+    def test_config_max_options(self):
+        """max_options настроен"""
+        assert "max_options" in DISAMBIGUATION_CONFIG
+        assert isinstance(DISAMBIGUATION_CONFIG["max_options"], int)
+
+    def test_config_excluded_intents(self):
+        """excluded_intents настроен"""
+        assert "excluded_intents" in DISAMBIGUATION_CONFIG
+        assert isinstance(DISAMBIGUATION_CONFIG["excluded_intents"], list)
+        assert "unclear" in DISAMBIGUATION_CONFIG["excluded_intents"]
+
+    def test_config_bypass_intents(self):
+        """bypass_disambiguation_intents настроен"""
+        assert "bypass_disambiguation_intents" in DISAMBIGUATION_CONFIG
+        assert isinstance(DISAMBIGUATION_CONFIG["bypass_disambiguation_intents"], list)
+        assert "rejection" in DISAMBIGUATION_CONFIG["bypass_disambiguation_intents"]
+
+    def test_config_cooldown_turns(self):
+        """cooldown_turns настроен"""
+        assert "cooldown_turns" in DISAMBIGUATION_CONFIG
+        assert isinstance(DISAMBIGUATION_CONFIG["cooldown_turns"], int)
+
+
+# =============================================================================
+# Edge Cases Tests
+# =============================================================================
+
+class TestEdgeCases:
+    """Тесты краевых случаев"""
+
+    def test_analyzer_with_custom_config(self):
+        """Analyzer с кастомным config"""
+        custom_config = {"root_match_weight": 2.0}
+        analyzer = DisambiguationAnalyzer(config=custom_config)
+        assert analyzer.config["root_match_weight"] == 2.0
+
+    def test_ui_empty_options(self):
+        """UI с пустыми options"""
+        ui = DisambiguationUI()
+        result = ui.parse_answer("1", [])
+        assert result is None
+
+    def test_metrics_multiple_intents(self):
+        """Metrics с множественными интентами"""
+        m = DisambiguationMetrics()
+        for i in range(5):
+            m.record_disambiguation(
+                [f"intent_{i}", "common"],
+                {f"intent_{i}": 0.5, "common": 0.4}
+            )
+        assert len(m.disambiguation_by_intent) > 1
+        assert m.disambiguation_by_intent.get("common") == 5
+
+    def test_state_machine_disambiguation_context_none(self):
+        """StateMachine с None disambiguation_context"""
+        sm = StateMachine()
+        # Не вызываем enter_disambiguation
+        context = sm.get_context()
+        assert "in_disambiguation" not in context
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

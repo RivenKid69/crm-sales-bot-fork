@@ -54,6 +54,9 @@ class FeatureFlags:
         "personalization": False,         # Персонализация на основе данных
         "objection_handler": False,       # Продвинутая обработка возражений
         "cta_generator": False,           # Генерация Call-to-Action
+
+        # Фаза 4: Intent Disambiguation
+        "intent_disambiguation": False,   # Уточнение намерения при близких scores
     }
 
     # Группы флагов для удобного управления
@@ -237,6 +240,11 @@ class FeatureFlags:
     def cta_generator(self) -> bool:
         """Включена ли генерация Call-to-Action"""
         return self.is_enabled("cta_generator")
+
+    @property
+    def intent_disambiguation(self) -> bool:
+        """Включено ли уточнение намерения при близких scores"""
+        return self.is_enabled("intent_disambiguation")
 
 
 # Singleton экземпляр
