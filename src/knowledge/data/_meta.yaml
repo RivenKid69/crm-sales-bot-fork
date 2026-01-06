@@ -3,25 +3,25 @@ company:
   description: Казахстанская IT-компания, разработчик решений для автоматизации торговли
     и учёта с 2014 года. 50,000+ клиентов.
 stats:
-  total_sections: 1340
+  total_sections: 1421
   last_updated: '2026-01-06'
   categories:
   - name: equipment
-    count: 193
+    count: 256
   - name: tis
-    count: 184
-  - name: support
-    count: 156
-  - name: products
-    count: 121
+    count: 185
   - name: pricing
-    count: 148
+    count: 159
+  - name: support
+    count: 158
+  - name: products
+    count: 124
   - name: inventory
     count: 97
-  - name: integrations
-    count: 71
   - name: regions
     count: 72
+  - name: integrations
+    count: 71
   - name: features
     count: 59
   - name: analytics
@@ -39,4 +39,4 @@ stats:
   - name: competitors
     count: 7
   - name: faq
-    count: 3
+    count: 4
