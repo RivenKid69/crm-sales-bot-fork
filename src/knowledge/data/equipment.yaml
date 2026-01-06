@@ -1,6 +1,6 @@
 # База знаний: equipment
 # Категория: equipment
-# Секций: 107
+# Секций: 139
 
 sections:
 - topic: hardware
@@ -2148,3 +2148,370 @@ sections:
   - начать работу сразу после покупки
   facts: |-
     Регистрация и подключение занимают несколько минут — можно сразу начинать пробивать чеки.
+
+- topic: equipment_scanner_connect_813
+  priority: 10
+  keywords:
+  - подключить сканер штрихкодов
+  - сканер к кассе
+  - сканер штрихкодов wipon
+  - сканер подключается
+  - hid usb scanner
+  facts: |-
+    Да, поддерживаются сканеры HID (USB) — подключаются как клавиатура.
+
+- topic: equipment_monoblocks_models_815
+  priority: 10
+  keywords:
+  - модели моноблоков
+  - кассовые моноблоки wipon
+  - pos i3
+  - pos i5
+  - pos duo
+  - wipon 5 в 1
+  - pos premium
+  - wipon quadro
+  - какие моноблоки есть
+  facts: |-
+    Моноблоки:
+    • POS i3
+    • POS i5
+    • POS DUO
+    • Wipon 5 в 1
+    • POS Premium
+    • Wipon Quadro
+
+- topic: equipment_wipon_5in1_816
+  priority: 10
+  keywords:
+  - wipon 5 в 1
+  - отличие от моноблока
+  - 5 в 1 чем отличается
+  - что входит 5 в 1
+  - wipon 5в1
+  - five in one
+  facts: |-
+    Wipon 5 в 1 включает моноблок, принтер, сканер, денежный ящик и программу в одном комплекте.
+
+- topic: equipment_scales_labels_817
+  priority: 10
+  keywords:
+  - весы печать этикеток
+  - весы с этикеткой
+  - весы печатают этикетки
+  - самоклеящиеся этикетки весы
+  - rongta rls
+  facts: |-
+    Да, модели Rongta RLS печатают этикетки с весом и ценой.
+
+- topic: equipment_scanner_models_818
+  priority: 10
+  keywords:
+  - какие сканеры подключить
+  - сканеры штрихкодов какие
+  - модели сканеров
+  - honeywell
+  - атол
+  - sunmi
+  - проводной сканер
+  - беспроводной сканер
+  facts: |-
+    Поддерживаются Honeywell, Атол, Sunmi и другие. Проводные и беспроводные.
+
+- topic: equipment_printer_models_819
+  priority: 10
+  keywords:
+  - какие принтеры чеков
+  - модели принтеров
+  - xprinter
+  - rongta rp
+  - принтер чеков какой
+  - термопринтер модели
+  facts: |-
+    Рекомендуем XPrinter и Rongta RP. Поддерживаются большинство моделей.
+
+- topic: equipment_kassa_recommendation_820
+  priority: 10
+  keywords:
+  - какую кассу посоветуете
+  - что лучше взять
+  - какую кассу выбрать
+  - рекомендация по кассе
+  - с чего начать оборудование
+  facts: |-
+    Зависит от задач. POS i3 — для небольших точек, POS Premium — для высокой нагрузки. Напишите, что за бизнес — подберём.
+
+- topic: equipment_kit_recommendation_821
+  priority: 10
+  keywords:
+  - какой комплект лучше
+  - лучший комплект для начала
+  - комплект оборудования wipon
+  - старт комплект
+  - набор оборудования wipon
+  facts: |-
+    Для старта подойдёт комплект Standard: моноблок, сканер, принтер. Для опта и сети — комплект Pro.
+
+- topic: equipment_scanner_recommendation_822
+  priority: 10
+  keywords:
+  - какой сканер посоветуете
+  - лучший сканер штрихкодов
+  - сканер для магазина
+  - выбрать сканер
+  facts: |-
+    Для магазина рекомендуем Honeywell Youjie 4600 или беспроводной Sunmi.
+
+- topic: equipment_monoblock_recommendation_823
+  priority: 10
+  keywords:
+  - какой моноблок для магазина
+  - моноблок выбрать
+  - рекомендация по моноблоку
+  - моноблок для продуктового
+  facts: |-
+    Для продуктового магазина подойдёт POS i3 или POS DUO. Для кафе с большим потоком — POS Premium.
+
+- topic: equipment_scales_recommendation_824
+  priority: 10
+  keywords:
+  - какие весы подключить
+  - весы рекомендация
+  - весы для магазина
+  - лучшие весы wipon
+  facts: |-
+    Рекомендуем Rongta RLS — есть печать этикеток и интеграция с Wipon.
+
+- topic: equipment_printer_recommendation_825
+  priority: 10
+  keywords:
+  - какой принтер чеков взять
+  - принтер рекомендация
+  - лучший принтер чеков
+  - термопринтер выбор
+  facts: |-
+    Для небольшой точки — XPrinter 58мм. Для высокого потока — Rongta RP80 или аналоги 80мм.
+
+- topic: equipment_start_recommendation_826
+  priority: 9
+  keywords:
+  - оборудование для старта
+  - минимальный набор
+  - что нужно для начала
+  - с чего начать оборудование
+  facts: |-
+    Минимальный набор: моноблок + сканер + принтер чеков. Денежный ящик и весы — по необходимости.
+
+- topic: equipment_compact_kassa_827
+  priority: 9
+  keywords:
+  - касса мало места
+  - компактная касса
+  - небольшое помещение
+  - маленькая торговая точка
+  facts: |-
+    Для небольших точек подойдёт Wipon Quadro или планшет с Wipon Kassa — компактно и функционально.
+
+- topic: equipment_customer_display_828
+  priority: 9
+  keywords:
+  - экран для покупателя
+  - дисплей покупателя
+  - касса с экраном покупателя
+  - pos duo экран
+  facts: |-
+    POS DUO имеет второй экран для покупателя, где отображается сумма и товары.
+
+- topic: equipment_high_traffic_829
+  priority: 9
+  keywords:
+  - большой поток покупателей
+  - супермаркет касса
+  - высокая нагрузка
+  - много покупателей
+  facts: |-
+    Для магазинов с большим потоком рекомендуем POS Premium — быстрый процессор и большой экран.
+
+- topic: equipment_wireless_scanner_830
+  priority: 9
+  keywords:
+  - беспроводной сканер
+  - сканер без проводов
+  - bluetooth сканер
+  - сканер wifi
+  facts: |-
+    Рекомендуем беспроводной Sunmi или Атол SB2109 — работают по Bluetooth.
+
+- topic: equipment_cash_drawer_831
+  priority: 9
+  keywords:
+  - денежный ящик
+  - какой ящик выбрать
+  - ящик для денег
+  - касса с ящиком
+  facts: |-
+    Ящики подключаются через принтер чеков. Рекомендуем Атол CD-330 или аналоги.
+
+- topic: equipment_self_service_scales_832
+  priority: 9
+  keywords:
+  - весы самообслуживания
+  - весы для покупателей
+  - взвесить и наклеить
+  - этикетка самообслуживание
+  facts: |-
+    Для самообслуживания подойдут Rongta RLS с печатью этикеток — покупатель сам взвешивает и клеит.
+
+- topic: equipment_modern_kassa_833
+  priority: 9
+  keywords:
+  - современная касса
+  - касса выглядит красиво
+  - стильный моноблок
+  - дизайн кассы
+  facts: |-
+    POS Premium и Wipon Quadro имеют современный дизайн и отлично смотрятся в любом интерьере.
+
+- topic: equipment_full_kit_834
+  priority: 9
+  keywords:
+  - всё в наличии сразу
+  - комплект в наличии
+  - готовый комплект
+  - купить всё сразу
+  facts: |-
+    Все комплекты доступны к заказу. После оплаты отправляем в течение 1–3 дней.
+
+- topic: equipment_budget_alternative_843
+  priority: 9
+  keywords:
+  - комплект pro дорого
+  - дешевле чем pro
+  - бюджетная альтернатива
+  - что дешевле
+  facts: |-
+    Есть комплект Standard — дешевле, но включает основное оборудование для работы.
+
+- topic: equipment_budget_monoblock_844
+  priority: 9
+  keywords:
+  - premium дороговат
+  - моноблок дешевле
+  - альтернатива premium
+  - бюджетный моноблок
+  facts: |-
+    Альтернатива — POS i5 или POS DUO. Дешевле, но с хорошим функционалом.
+
+- topic: equipment_budget_scales_846
+  priority: 9
+  keywords:
+  - весы rongta дорого
+  - бюджетные весы
+  - дешёвые весы
+  - весы попроще
+  facts: |-
+    Есть модели без печати этикеток — дешевле. Или можно взять весы другого бренда.
+
+- topic: equipment_budget_scanner_847
+  priority: 9
+  keywords:
+  - беспроводной сканер дорого
+  - проводной дешевле
+  - бюджетный сканер
+  - сканер попроще
+  facts: |-
+    Проводные сканеры дешевле. Honeywell Youjie — отличный бюджетный вариант.
+
+- topic: equipment_pos_duo_alternative_849
+  priority: 9
+  keywords:
+  - pos duo дорого
+  - альтернатива pos duo
+  - замена pos duo
+  - дешевле pos duo
+  facts: |-
+    Альтернатива — POS i3 или POS i5. Без второго экрана, но дешевле.
+
+- topic: equipment_standard_alternative_850
+  priority: 9
+  keywords:
+  - комплект standard дорого
+  - альтернатива standard
+  - что дешевле standard
+  - бюджетный комплект
+  facts: |-
+    Можно взять комплект Lite — базовый набор для старта по минимальной цене.
+
+- topic: equipment_wipon_quadro_857
+  priority: 10
+  keywords:
+  - wipon quadro
+  - квадро моноблок
+  - моноблок quadro
+  - quadro цена
+  - квадро характеристики
+  facts: |-
+    Wipon Quadro — компактный моноблок с сенсорным экраном. Подходит для небольших точек и кафе. Уточните детали у менеджера.
+
+- topic: equipment_scales_monoblock_kz_859
+  priority: 9
+  keywords:
+  - таразы моноблок
+  - весы моноблок казахский
+  - таразы мен моноблок
+  - бірге жүре ме
+  facts: |-
+    Иә, таразы мен моноблок бірге жұмыс істейді. Wipon арқылы қосылады.
+
+- topic: equipment_scales_monoblock_860
+  priority: 9
+  keywords:
+  - весы и моноблок вместе
+  - весы с моноблоком
+  - комплект с весами
+  - моноблок и весы
+  facts: |-
+    Да, весы и моноблок работают вместе. Весы подключаются к системе Wipon.
+
+- topic: equipment_monoblock_printer_861
+  priority: 9
+  keywords:
+  - моноблок и принтер вместе
+  - принтер в моноблоке
+  - моноблок с принтером
+  - комплект с принтером
+  facts: |-
+    В комплектах моноблок и принтер идут отдельно. В Wipon 5 в 1 принтер уже встроен.
+
+- topic: equipment_monoblock_scanner_862
+  priority: 9
+  keywords:
+  - моноблок и сканер вместе
+  - сканер в моноблоке
+  - комплект со сканером
+  - моноблок с сканером
+  facts: |-
+    Сканер идёт отдельно, подключается к моноблоку через USB или Bluetooth.
+
+- topic: equipment_combo_863
+  priority: 9
+  keywords:
+  - комбо оборудование
+  - набор всё вместе
+  - комплект всё включено
+  - готовое решение
+  facts: |-
+    Да, есть готовые комплекты: Standard, Standard+, Pro. Включают моноблок, сканер, принтер и ящик.
+
+- topic: equipment_combo_list_864
+  priority: 9
+  keywords:
+  - какие комбо есть
+  - какие комплекты оборудования
+  - список комплектов
+  - варианты комплектов
+  facts: |-
+    Комплекты:
+    • Standard — базовый набор
+    • Standard+ — расширенный набор
+    • Pro — полный набор с весами и доп. оборудованием

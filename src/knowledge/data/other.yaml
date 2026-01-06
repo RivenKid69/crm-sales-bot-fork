@@ -1,6 +1,6 @@
 # База знаний: Прочие категории
 # Категории с малым количеством секций
-# Секций: 13
+# Секций: 26
 
 sections:
 - topic: who_is_it_for
@@ -523,3 +523,149 @@ sections:
   category: other
   facts: |-
     Нет, кредиты не предоставляем. Но можем рассказать про рассрочку на оборудование и тарифы Wipon.
+
+- topic: competitors_umag_865
+  priority: 9
+  keywords:
+  - чем лучше umag
+  - umag сравнение
+  - wipon vs umag
+  - отличие от umag
+  - юмаг
+  category: competitors
+  facts: |-
+    Wipon — облачная система с интеграцией ТИС, банков и маркетплейсов. Простой интерфейс, поддержка 7 дней в неделю. Бесплатный перенос данных при переходе.
+
+- topic: competitors_umag_switch_866
+  priority: 9
+  keywords:
+  - перейти с umag
+  - у меня umag хочу к вам
+  - миграция с umag
+  - сменить umag на wipon
+  category: competitors
+  facts: |-
+    Перенесём вашу базу товаров и остатков бесплатно. Wipon проще в использовании, с поддержкой ТИС и интеграциями.
+
+- topic: competitors_beksar_867
+  priority: 9
+  keywords:
+  - чем отличается от beksar
+  - beksar сравнение
+  - wipon vs beksar
+  - бексар
+  category: competitors
+  facts: |-
+    Wipon — облачная система с интеграцией ТИС, Kaspi и банков. Не требует отдельного сервера. Бесплатная касса входит в тариф.
+
+- topic: competitors_1c_868
+  priority: 9
+  keywords:
+  - почему не 1с
+  - wipon vs 1с
+  - отличие от 1с
+  - лучше чем 1с
+  - зачем wipon если есть 1с
+  category: competitors
+  facts: |-
+    Wipon не требует программиста для настройки. Работает из браузера и телефона. Бесплатная касса включена. Интеграции с Kaspi и ТИС из коробки.
+
+- topic: competitors_paloma_869
+  priority: 9
+  keywords:
+  - перейти с paloma
+  - paloma сравнение
+  - wipon vs paloma
+  - отличие от paloma
+  - палома
+  category: competitors
+  facts: |-
+    Wipon — облачная система с ТИС, без привязки к оборудованию. Перенос данных бесплатно. Поддержка 7 дней в неделю.
+
+- topic: competitors_general_870
+  priority: 9
+  keywords:
+  - почему выбрать wipon
+  - чем лучше других систем
+  - преимущества wipon
+  - зачем wipon
+  category: competitors
+  facts: |-
+    Wipon — облачная система учёта и касса в одном. Интеграции с Kaspi, банками, ТИС. Поддержка 7/7. Бесплатная онлайн-касса входит в тариф.
+
+- topic: company_about_894
+  priority: 8
+  keywords:
+  - о компании wipon
+  - что за компания wipon
+  - кто такие wipon
+  - история wipon
+  category: company
+  facts: |-
+    Wipon — казахстанская компания, работающая с 2014 года. 50,000+ клиентов по всему Казахстану. Офисы в Алматы, Астане и Шымкенте.
+
+- topic: company_experience_895
+  priority: 8
+  keywords:
+  - сколько лет wipon
+  - опыт работы wipon
+  - давно ли работаете
+  - когда основана
+  category: company
+  facts: |-
+    Компания работает с 2014 года. Более 10 лет опыта автоматизации бизнеса в Казахстане.
+
+- topic: company_clients_896
+  priority: 8
+  keywords:
+  - сколько клиентов
+  - кто пользуется wipon
+  - клиенты wipon
+  - популярность wipon
+  category: company
+  facts: |-
+    Более 50,000 клиентов по всему Казахстану: магазины, аптеки, кафе, рестораны и оптовые компании.
+
+- topic: company_offices_897
+  priority: 8
+  keywords:
+  - где офисы wipon
+  - офис wipon
+  - представительства wipon
+  - адрес офиса
+  category: company
+  facts: |-
+    Офисы расположены в Алматы, Астане и Шымкенте. Адреса уточняйте у менеджера.
+
+- topic: company_team_898
+  priority: 8
+  keywords:
+  - команда wipon
+  - сколько сотрудников
+  - поддержка команда
+  - специалисты wipon
+  category: company
+  facts: |-
+    Команда из 100+ специалистов: разработчики, поддержка, консультанты и инженеры.
+
+- topic: company_trust_899
+  priority: 8
+  keywords:
+  - можно ли доверять wipon
+  - надёжная компания
+  - доверять wipon
+  - wipon надёжный
+  category: company
+  facts: |-
+    Wipon — сертифицированный оператор ОФД в Казахстане. 10+ лет на рынке, 50,000+ клиентов. Официальный партнёр КГД МФ РК.
+
+- topic: company_legal_900
+  priority: 8
+  keywords:
+  - юридическое лицо wipon
+  - официальный договор
+  - работаете официально
+  - бин wipon
+  category: company
+  facts: |-
+    Да, работаем официально. Заключаем договор, выдаём чеки и АВР. Полная прозрачность работы.
