@@ -43,6 +43,7 @@ class CategoryRouter:
     # Все доступные категории базы знаний
     CATEGORIES = [
         "analytics",     # Аналитика и отчёты
+        "competitors",   # Сравнение с конкурентами
         "employees",     # Сотрудники и кадры
         "equipment",     # Оборудование и периферия
         "faq",           # Общие частые вопросы
@@ -51,7 +52,6 @@ class CategoryRouter:
         "integrations",  # Интеграции
         "inventory",     # Товары и склад
         "mobile",        # Мобильное приложение
-        "other",         # Прочее
         "pricing",       # Цены и тарифы
         "products",      # Продукты Wipon
         "promotions",    # Акции и скидки

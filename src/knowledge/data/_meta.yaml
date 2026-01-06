@@ -11,17 +11,17 @@ stats:
   - name: tis
     count: 164
   - name: support
-    count: 152
+    count: 158
   - name: products
-    count: 106
+    count: 115
   - name: pricing
-    count: 103
+    count: 104
   - name: inventory
     count: 98
   - name: integrations
     count: 71
   - name: regions
-    count: 60
+    count: 61
   - name: features
     count: 59
   - name: analytics
@@ -30,13 +30,13 @@ stats:
     count: 43
   - name: fiscal
     count: 39
+  - name: stability
+    count: 29
   - name: mobile
     count: 29
-  - name: stability
-    count: 27
-  - name: other
-    count: 26
   - name: promotions
     count: 18
+  - name: competitors
+    count: 7
   - name: faq
     count: 3
