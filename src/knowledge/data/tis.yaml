@@ -4602,6 +4602,16 @@ sections:
   - standard тарифі тіс
   - тис доступен standard
   - standard тис режим
+  - standard тарифте тіс бар
+  - tis available standard
+  - стандарт тіс қолдайды
+  - тис включён standard
+  - тіс режимі standard
+  - standard plan tis support
+  - розничный налог тариф стандарт
+  - standard тіс толық
+  - тис стандарт тариф работает
+  - tis retail tax standard
   facts: |-
     Да. Standard поддерживает ТИС и режим розничного налога.
 - topic: tis_enable_kz_1881
@@ -4619,5 +4629,15 @@ sections:
   - тіс функциясы
   - тіс режимі
   - тіс толық жұмыс
+  - тіс қосу қазақша
+  - enable tis kazakh
+  - тіс standard pro қолдау
+  - бағдарламада тіс активация
+  - тіс қалай қосу
+  - tis setup kazakh
+  - тіс қосу жолдары
+  - тіс бастау қазақша
+  - тіс қосылу тарифтер
+  - tis activation kz
   facts: |-
     Иә. ТИС Standard және Pro тарифтерінде толық жұмыс істейді.

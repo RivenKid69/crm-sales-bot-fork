@@ -3350,6 +3350,16 @@ sections:
   - mini подходит
   - базовая программа
   - mini тариф цена
+  - mini бастапқы баға
+  - cheap accounting program
+  - арзан бағдарлама
+  - mini айлық 5000
+  - недорогая программа учёта
+  - mini monthly 5000 tenge
+  - mini базовый тариф
+  - 5000 теңге бағдарлама
+  - стартовая цена mini
+  - mini entry price
   facts: |-
     Это Wipon Mini. Стоимость 5 000 ₸ в месяц. Подходит для одной точки и простых продаж.
 - topic: pricing_mini_small_store_1814
@@ -3367,6 +3377,16 @@ sections:
   - шағын дүкен mini
   - mini маленькая точка
   - mini простой магазин
+  - mini кіші бизнес
+  - small business mini plan
+  - шағын сауда mini
+  - mini для небольшой точки
+  - кішкентай дүкен mini
+  - mini for small shop
+  - mini базовая касса
+  - бір нүкте mini
+  - mini одна розница
+  - single location mini
   facts: |-
     Да. Mini создан для маленьких точек. Продажи, чеки и касса включены.
 - topic: pricing_upgrade_from_mini_1815
@@ -3384,6 +3404,16 @@ sections:
   - перейти тариф
   - mini апгрейд
   - сохранение данных переход
+  - mini ден жоғары тариф
+  - switch from mini
+  - mini standard өту
+  - переход mini lite standard
+  - деректер сақталады mini
+  - mini to lite upgrade
+  - mini тарифтен ауысу
+  - смена с mini
+  - mini жаңарту тариф
+  - upgrade mini plan
   facts: |-
     Да. Перейти на Lite или Standard можно в любой момент. Данные сохранятся.
 - topic: pricing_monthly_mini_only_1819
@@ -3401,6 +3431,16 @@ sections:
   - только mini помесячно
   - mini monthly
   - раз в месяц оплата
+  - айлық жазылым mini
+  - monthly subscription mini
+  - mini айына төлем
+  - басқа тарифтер жылдық
+  - mini only monthly
+  - ай сайын mini тариф
+  - остальные тарифы год
+  - mini айлық опция
+  - помесячная подписка mini
+  - mini month payment only
   facts: |-
     Да. Помесячно доступен только Mini. Остальные оплачиваются за год.
 - topic: pricing_training_included_1823
@@ -3418,6 +3458,16 @@ sections:
   - обучение lite standard
   - mini обучение отдельно
   - обучение бесплатно
+  - оқыту тарифке кіреді
+  - free training tariff
+  - тегін оқыту lite standard
+  - обучение в цене тарифа
+  - pro оқыту кіреді
+  - training included lite standard
+  - mini оқыту жеке
+  - обучение без доплаты
+  - тариф бағасында оқыту
+  - included training plan
   facts: |-
     Да. В Lite Standard и Pro обучение включено. В Mini по запросу.
 - topic: pricing_kaspi_payment_1827
@@ -3435,6 +3485,16 @@ sections:
   - оплата kaspi номер
   - выставим счёт
   - kaspi перевод
+  - kaspi шот жіберу
+  - pay via kaspi
+  - ресми шот ЖШС
+  - kaspi business payment
+  - ТОО ресми шот
+  - kaspi pay wipon
+  - kaspi арқылы бағдарлама
+  - оплата wipon kaspi
+  - kaspi invoice payment
+  - ЖШС шот kaspi
   facts: |-
     Да. Отправим счёт на Kaspi номер или выставим официальный счёт для ТОО.
 - topic: pricing_free_delivery_1838
@@ -3452,6 +3512,16 @@ sections:
   - подключение включено
   - обучение включено
   - всё бесплатно
+  - delivery without fee
+  - қосылу тегін
+  - құрылғы жеткізу ақысыз
+  - free setup included
+  - бесплатное обслуживание старт
+  - қазақстан бойынша тегін
+  - комплект установка бесплатно
+  - no shipping cost
+  - доставка по всей стране
+  - тегін қосу оқыту
   facts: |-
     При покупке комплекта доставка по Казахстану бесплатна. Подключение и обучение тоже бесплатно.
 - topic: pricing_payment_methods_1849
@@ -3469,6 +3539,16 @@ sections:
   - kaspi карта счёт
   - официальный счёт ТОО
   - банк перевод
+  - pay wipon program
+  - төлем варианттары
+  - kaspi gold оплата
+  - invoice for business
+  - шот ЖШС үшін
+  - банк аударым
+  - карта төлем
+  - payment options
+  - реквизиты оплата
+  - халык банк перевод
   facts: |-
     Перевод на Kaspi, оплата по счёту или картой банка. Для ТОО выставим официальный счёт.
 - topic: pricing_kaspi_payment_kz_1850
@@ -3486,6 +3566,17 @@ sections:
   - kaspi qr төлем
   - касса оплата kaspi
   - kaspi перевод
+  - kaspi аударым қабылдаймыз
+  - kaspi gold payment kz
+  - касса төлеу каспи
+  - kaspi қабылданады
+  - қр код төлем касpi
+  - касада kaspi
+  - kaspi шот жіберу
+  - pay through kaspi kz
+  - каспи голд төлем
+  - kaspi банк төлем
+  - kaspi app payment
   facts: |-
     Иә. Kaspi арқылы төлем қабылдаймыз жеке шот немесе QR арқылы.
 - topic: pricing_installment_1851
@@ -3503,6 +3594,17 @@ sections:
   - төлемді бөлу
   - рассрочка без процентов
   - kaspi 0-0-12
+  - рассрочка касса wipon
+  - бөліп төлем kaspi
+  - ноль процентов рассрочка
+  - installment plan kaspi
+  - 12 месяц рассрочка касса
+  - kaspi бөліп төлеу
+  - программа рассрочка
+  - беспроцентная рассрочка
+  - kaspi red қызметі
+  - рассрочка оплата тариф
+  - төлемді 12 айға бөлу
   facts: |-
     Да. Доступна рассрочка Kaspi 0 0 12 без переплаты.
 - topic: pricing_extend_advance_1867
@@ -3520,6 +3622,18 @@ sections:
   - предоплата продление
   - срок обновится
   - мерзім жаңарады
+  - extend before expiry
+  - тариф заранее оплатить
+  - алдын ала төлеу
+  - продлить раньше срока
+  - тариф мерзім ұзарту
+  - renew in advance
+  - предоплата тариф wipon
+  - ерте ұзарту тариф
+  - продление срок сохранение
+  - срок активный ұзарту
+  - подписка заранее
+  - тариф жаңарту алдын
   facts: |-
     Да. Продлить можно в любое время, срок обновится от текущей даты окончания.
 - topic: pricing_tariffs_overview_1869
@@ -3537,6 +3651,17 @@ sections:
   - четыре тарифа
   - тариф выбор
   - wipon plans
+  - wipon тарифтер тізімі
+  - all tariffs wipon
+  - тариф бағалар wipon
+  - төрт тариф бар
+  - wipon pricing list
+  - mini lite standard pro бағасы
+  - тарифы программа касса
+  - wipon барлық тарифтер
+  - ценовая линейка wipon
+  - тариф опциялары
+  - wipon tariff prices
   facts: |-
     Четыре тарифа: Mini 5 000 ₸ в месяц, Lite 150 000 ₸ в год, Standard 220 000 ₸ в год, Pro 500 000 ₸ в год.
 - topic: pricing_mini_description_kz_1870
@@ -3554,6 +3679,17 @@ sections:
   - айына 5000
   - mini түсіндірме
   - шағын бизнес mini
+  - mini tariff kz
+  - кіші дүкен тарифі
+  - mini что включено kz
+  - базалық тариф қазақша
+  - mini сату есеп
+  - бастапқы тариф wipon
+  - mini арзан тариф
+  - mini small shop kz
+  - қарапайым касса mini
+  - mini айлық жазылым
+  - mini тариф сипаттамасы
   facts: |-
     Mini кіші дүкендерге арналған базалық тариф. Айына 5 000 ₸, сату және чек шығару бар.
 - topic: pricing_lite_vs_standard_1871
@@ -3571,6 +3707,17 @@ sections:
   - сколько складов lite
   - сколько складов standard
   - lite standard сравнение
+  - lite standard compare
+  - бір қойма lite
+  - үш қойма standard
+  - lite standard нені таңдау
+  - разница тарифов lite standard
+  - lite standard warehouse
+  - lite standard функционал разница
+  - lite standard қызметкерлер
+  - lite standard features compare
+  - қайсысы жақсы lite standard
+  - lite standard бағасы салыстыру
   facts: |-
     Lite для одной точки и одного склада. Standard до трех складов, больше функций и сотрудников.
 - topic: pricing_pro_target_1872
@@ -3588,6 +3735,17 @@ sections:
   - pro тариф кімге
   - pro функционал
   - pro аналитика
+  - pro tariff audience
+  - pro кімге арналған
+  - сеть магазинов pro
+  - wholesale business pro
+  - pro көтерме тариф
+  - pro extended analytics
+  - бес қойма аналитика
+  - pro тариф кімдерге
+  - pro для крупного бизнеса
+  - pro сеть оптовик
+  - pro мақсатты аудитория
   facts: |-
     Для сетей и оптовиков. До пяти складов и расширенная аналитика.
 - topic: pricing_one_seller_1873
@@ -3605,6 +3763,17 @@ sections:
   - один кассир
   - mini для одного продавца
   - жеке сатушы
+  - one cashier tariff
+  - mini жеке бизнес
+  - solo seller mini
+  - бір касса тариф
+  - mini single pos
+  - жеке кәсіпкер mini
+  - один человек магазин
+  - mini ИП тариф
+  - single store mini
+  - жеке дүкен mini
+  - mini минимум функции
   facts: |-
     Mini. Оптимально для одной кассы и простого учета.
 - topic: pricing_change_tariff_1874
@@ -3622,6 +3791,17 @@ sections:
   - апгрейд тариф
   - downgrade тариф
   - тариф өзгерту
+  - switch tariff anytime
+  - тарифті ауыстыру
+  - upgrade downgrade тариф
+  - переход на другой план
+  - тариф жоғарылату
+  - change plan data safe
+  - тариф төмендету
+  - смена подписки wipon
+  - тариф өзгерту деректер
+  - flexible tariff change
+  - тариф кез келген уақытта
   facts: |-
     Да. Перейти на другой тариф можно в любой момент, данные сохранятся.
 - topic: pricing_monthly_payment_kz_1875
@@ -3639,6 +3819,17 @@ sections:
   - mini monthly kz
   - тариф төлем жиілігі
   - айлық жазылым
+  - monthly vs yearly payment kz
+  - mini ай сайынғы
+  - жылдық тарифтер
+  - mini айлық төлем қазақша
+  - ай сайын төлеу мүмкіндігі
+  - mini only monthly kz
+  - жылына бір рет төлем
+  - тариф төлем жиілігі қз
+  - mini жазылым кезеңі
+  - payment frequency kz
+  - қалған тарифтер жыл
   facts: |-
     Иә. Mini ай сайын төленеді, қалған тарифтер жылына бір рет.
 - topic: pricing_lite_price_kz_1876
@@ -3656,6 +3847,17 @@ sections:
   - lite функциялары
   - lite құны
   - lite жылдық баға
+  - lite annual price kz
+  - lite 150 мың тенге
+  - lite негізгі мүмкіндіктер
+  - lite price kazakh
+  - lite тариф жыл қаншаға
+  - 150000 tenge lite
+  - lite құрамы функция
+  - lite тариф толық
+  - lite жылдық бағасы қз
+  - lite all features price
+  - lite жазылым бағасы
   facts: |-
     150 000 ₸ жылына. Негізгі функциялардың бәрі кіреді.
 - topic: pricing_standard_features_kz_1877
@@ -3673,6 +3875,17 @@ sections:
   - standard функциялары
   - standard тариф ерекшелігі
   - standard бағасы
+  - standard features kz price
+  - үш қойма қызметкер
+  - standard 220 мың тенге
+  - standard кеңейтілген есеп
+  - standard tariff advantages kz
+  - standard қазақша түсіндірме
+  - 220000 tenge standard
+  - standard сипаттамасы толық
+  - standard тариф ерекшеліктері қз
+  - standard multi warehouse kz
+  - standard extended reporting
   facts: |-
     Үш қоймаға дейін, көбірек қызметкер және кеңейтілген есеп. Бағасы 220 000 ₸ жылына.
 - topic: pricing_pro_advantages_kz_1878
@@ -3690,6 +3903,17 @@ sections:
   - pro аналитика
   - pro опт бағалар
   - pro тариф ерекшеліктері
+  - pro advantages kz full
+  - бес қойма персонал
+  - pro толық мүмкіндіктер
+  - pro tariff benefits kz
+  - pro опт бағалары қз
+  - pro аналитика персонал
+  - pro premium features kz
+  - pro тариф сипаттамасы
+  - pro wholesale pricing kz
+  - про тариф артықшылықтары
+  - pro full analytics staff
   facts: |-
     Бес қоймаға дейін, толық аналитика, үш опт бағасы және персонал есебі.
 - topic: pricing_multi_year_discount_1880
@@ -3707,6 +3931,17 @@ sections:
   - скидка долгосрочно
   - оплата за годы
   - бірнеше жыл төлем
+  - long term discount
+  - екі жылға жеңілдік
+  - бес жылға жеңілдік
+  - скидка долгосрочная оплата
+  - 350000 two years
+  - 500000 five years
+  - оплата вперёд скидка
+  - алдын ала төлем жеңілдік
+  - multi year savings
+  - долгосрочная подписка выгода
+  - жыл бойы экономия
   facts: |-
     Да. За 2 года 350 000 ₸, за 5 лет 500 000 ₸.
 - topic: pricing_installment_parts_1882
@@ -3724,6 +3959,17 @@ sections:
   - без процентов рассрочка
   - тариф бөліп
   - kaspi рассрочка тариф
+  - tariff installment parts
+  - тариф бөлшектеп төлеу
+  - рассрочка программа учёта
+  - pay tariff in parts
+  - тариф 12 ай бөліп
+  - рассрочка без процентов тариф
+  - installment 0 percent tariff
+  - бөліп төлем жеңілдік
+  - тариф төлем рассрочка касса
+  - zero interest installment
+  - рассрочка wipon программа
   facts: |-
     Да. Доступна рассрочка 0 0 12 без переплаты.
 - topic: pricing_six_months_1883
@@ -3741,6 +3987,17 @@ sections:
   - шесть месяцев тариф
   - полугодовая оплата
   - продление автоматическое
+  - six months tariff option
+  - жарты жыл төлем
+  - полугодовой тариф
+  - 6 months payment option
+  - 6 ай тариф
+  - алты ай төлем
+  - за год выгоднее wipon
+  - жылдық экономия
+  - шесть месяцев подписка
+  - yearly better value
+  - полгода или год
   facts: |-
     Можно. Но выгоднее оплатить за год, продление будет автоматическим.
 - topic: pricing_mini_includes_1884
@@ -3758,6 +4015,17 @@ sections:
   - mini интеграция pos
   - mini фискализация
   - mini возможности
+  - mini tariff contents
+  - mini кіреді не
+  - mini онлайн касса фискал
+  - mini includes features
+  - mini pos интеграция
+  - mini құрамы толық
+  - mini fiscal receipt
+  - mini чек фискал
+  - mini sales tracking
+  - mini сату есеп
+  - mini pos terminal integration
   facts: |-
     Онлайн касса, фискализация чеков, учет продаж и интеграция с POS терминалами.
 - topic: pricing_lite_includes_1885
@@ -3775,6 +4043,17 @@ sections:
   - lite обучение
   - lite банки
   - lite возможности
+  - lite tariff contents
+  - lite кіреді не
+  - lite касса склад отчёты
+  - lite includes features
+  - lite банк интеграция
+  - lite құрамы толық
+  - lite warehouse reports
+  - lite қойма есеп
+  - lite training included
+  - lite оқыту кіреді
+  - lite bank integration
   facts: |-
     Касса, склад, отчеты, обучение и интеграция с банками.
 - topic: pricing_standard_includes_1886
@@ -3792,6 +4071,17 @@ sections:
   - standard қызметкерлер
   - standard тіс
   - standard аналитика
+  - standard tariff contents
+  - standard кіреді не
+  - standard қойма пайдаланушылар
+  - standard includes features
+  - standard тіс аналитика
+  - standard құрамы толық
+  - standard multi user
+  - standard бірнеше қызметкер
+  - standard warehouse analytics
+  - standard үш қойма кіреді
+  - standard full package
   facts: |-
     Складской учет, несколько пользователей, аналитика, ТИС и до трех складов в одном кабинете.
 - topic: pricing_pro_training_1887
@@ -3809,6 +4099,17 @@ sections:
   - pro полный пакет
   - обучение pro кіреді
   - pro комплексное обслуживание
+  - pro training support included
+  - pro оқыту қолдау кіреді
+  - pro обучение бесплатно тариф
+  - pro all inclusive
+  - pro бағаға оқыту
+  - pro full service
+  - pro комплект оқыту
+  - pro training in price
+  - pro қолдау тегін
+  - pro поддержка в стоимости
+  - pro complete package
   facts: |-
     Да. В Pro обучение и поддержка входят в стоимость.
 - topic: pricing_mini_without_pos_1888
@@ -3826,6 +4127,17 @@ sections:
   - mini офд подключение
   - mini чеки отправка
   - mini без железа
+  - mini software only
+  - mini тек бағдарлама
+  - mini без оборудования касса
+  - mini without hardware
+  - mini фискализация офд
+  - mini бағдарлама ғана
+  - mini just program
+  - mini ОФД қосылу
+  - mini fiscal connection
+  - mini құрылғысыз қолдану
+  - mini pos не нужен
   facts: |-
     Да. Главное подключить фискализацию, чтобы чеки уходили в ОФД.
 - topic: pricing_data_after_expiry_1889
@@ -3843,6 +4155,17 @@ sections:
   - тариф бітсе
   - данные не пропадут
   - сохранение после истечения
+  - data safe after expiry
+  - деректер жоғалмайды
+  - данные сохранятся после окончания
+  - data retention expiry
+  - тариф бітсе деректер
+  - все данные останутся
+  - продление без потерь данных
+  - data preserved renewal
+  - мәліметтер сақталады
+  - информация сохраняется
+  - no data loss expiry
   facts: |-
     Да. Данные останутся, после продления продолжите работу без потерь.
 - topic: pricing_kaspi_qr_1891
@@ -3860,6 +4183,17 @@ sections:
   - qr код төлем
   - отправим qr
   - qr номер kaspi
+  - kaspi qr pay tariff
+  - қр код арқылы төлеу
+  - kaspi быстрый платеж
+  - qr payment wipon
+  - kaspi qr жіберу
+  - оплата qr кодом тариф
+  - kaspi qr scan pay
+  - қр сканер төлем
+  - kaspi qr instant
+  - kaspi номер жіберу
+  - быстрая оплата qr
   facts: |-
     Да. Отправим QR или Kaspi номер для быстрой оплаты.
 - topic: pricing_simplest_start_1892
@@ -3877,6 +4211,17 @@ sections:
   - mini базовый
   - для начала mini
   - стартовый тариф
+  - simplest tariff start
+  - бастауға қарапайым
+  - mini начальный тариф
+  - easiest plan
+  - жаңадан бастау mini
+  - mini entry level
+  - начинающий предприниматель mini
+  - бастаушыларға тариф
+  - mini for beginners
+  - ең қарапайым тариф
+  - mini starter pack
   facts: |-
     Mini. Базовый набор для начала торговли.
 - topic: pricing_two_stores_1893
@@ -3894,6 +4239,17 @@ sections:
   - мультимагазин тариф
   - две точки продаж
   - общий склад точки
+  - two stores which plan
+  - екі дүкен қай тариф
+  - несколько магазинов тариф
+  - multi store tariff
+  - бірнеше нүкте тариф
+  - standard pro несколько точек
+  - two locations plan
+  - екі орналасу тариф
+  - chain store tariff
+  - желі дүкен тариф
+  - several stores plan
   facts: |-
     Standard или Pro. Оба поддерживают несколько точек и общий учет.
 - topic: pricing_refund_not_used_1895
@@ -3911,6 +4267,17 @@ sections:
   - деньги вернуть тариф
   - не подошёл возврат
   - возврат до использования
+  - refund before activation
+  - активациядан бұрын қайтару
+  - деньги назад тариф
+  - money back tariff
+  - тариф ақшасын қайтару
+  - возврат средств программа
+  - refund policy wipon
+  - қайтару саясаты
+  - возврат оплаты тариф
+  - ақша қайтару мүмкін
+  - refund unused tariff
   facts: |-
     Если не было активации да, возврат возможен. После активации нет.
 - topic: pricing_mini_training_1896
@@ -3928,6 +4295,17 @@ sections:
   - mini без обучения
   - mini тренинг
   - обучение доплата mini
+  - mini training extra
+  - mini оқыту қосымша төлем
+  - обучение mini платное
+  - training cost mini
+  - mini оқыту ақылы
+  - mini обучение дополнительно
+  - lite standard pro free training
+  - lite standard pro оқыту тегін
+  - mini no free training
+  - mini оқытусыз
+  - training not included mini
   facts: |-
     Нет. Для Mini обучение отдельно. В Lite, Standard и Pro бесплатно.
 - topic: pricing_standard_renewal_1897
@@ -3945,6 +4323,17 @@ sections:
   - без перерыва работы
   - заранее продлить
   - standard мерзім ұзарту
+  - standard renewal price
+  - standard ұзарту бағасы
+  - продлить standard 220000
+  - renew standard tariff
+  - standard жаңарту құны
+  - standard годовое продление
+  - standard yearly renewal
+  - standard жылдық ұзарту
+  - продление standard без остановки
+  - standard continuous service
+  - standard қызмет жалғасы
   facts: |-
     220 000 ₸ в год. Можно оплатить заранее без перерыва в работе.
 - topic: pricing_block_on_expiry_1898
@@ -3962,6 +4351,17 @@ sections:
   - функции вернутся
   - данные доступны
   - блокировка программы
+  - block expiry unpaid
+  - төлемсіз бұғаттау
+  - программа блокировка неоплата
+  - access restricted unpaid
+  - төленбесе шектеу
+  - ограниченный доступ неоплата
+  - data access block
+  - деректер қолжетімді бұғат
+  - функции вернутся оплата
+  - auto restore payment
+  - төлем жасалса қайтады
   facts: |-
     Доступ к данным сохраняется, но редактирование ограничится. После оплаты все функции вернутся автоматически.
 - topic: pricing_choose_tariff_1899
@@ -3979,6 +4379,17 @@ sections:
   - рекомендация тариф
   - тариф по формату
   - тариф для меня
+  - choose right tariff
+  - дұрыс тариф таңдау
+  - какой тариф подходит
+  - which plan suits
+  - қай тариф сәйкес
+  - подбор тарифа бизнес
+  - tariff recommendation
+  - тариф ұсынысы бизнес
+  - тариф по размеру бизнеса
+  - business size tariff
+  - бизнес көлеміне тариф
   facts: |-
     Зависит от формата. Mini для одной точки, Lite для малого бизнеса, Standard для нескольких точек, Pro для сети и опта.
 - topic: pricing_change_during_year_1900
@@ -3996,5 +4407,16 @@ sections:
   - тариф жыл ішінде
   - апгрейд в году
   - данные сохраняются переход
+  - change tariff year
+  - жыл ішінде ауыстыру
+  - переход тариф посреди года
+  - mid year tariff change
+  - тариф ортасында ауыстыру
+  - смена плана год
+  - tariff switch anytime
+  - тариф кез келген кезде
+  - данные сохраняются смена
+  - data safe switch
+  - деректер қауіпсіз ауысу
   facts: |-
     Да. Переход возможен в любой момент без потери данных.
