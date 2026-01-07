@@ -611,11 +611,22 @@ class SalesBot:
 
         # Determine action
         action = sm_result["action"]
+        next_state = sm_result["next_state"]
+        is_final = sm_result["is_final"]
 
-        # If objection detected and needs soft close
+        # If objection detected and needs soft close - override state machine result
         if objection_info and objection_info.get("should_soft_close"):
             action = "soft_close"
-            response = objection_info["response_parts"].get("message", "")
+            next_state = "soft_close"  # Синхронизируем состояние с action
+            is_final = True  # soft_close - финальное состояние
+            # Безопасный доступ к response_parts с fallback
+            response_parts = objection_info.get("response_parts") or {}
+            response = response_parts.get("message") or "Хорошо, свяжитесь когда будет удобно."
+            logger.info(
+                "Soft close triggered by objection handler",
+                objection_type=objection_info.get("objection_type"),
+                attempt_number=objection_info.get("attempt_number")
+            )
         else:
             # 3. Generate response
             if fallback_response:
@@ -627,7 +638,7 @@ class SalesBot:
         if not fallback_response and not (objection_info and objection_info.get("should_soft_close")):
             response = self._apply_cta(
                 response=response,
-                state=sm_result["next_state"],
+                state=next_state,  # Используем локальную переменную
                 context={
                     "frustration_level": frustration_level,
                     "last_action": self.last_action,
@@ -646,7 +657,7 @@ class SalesBot:
 
         # 6. Record metrics
         self._record_turn_metrics(
-            state=sm_result["next_state"],
+            state=next_state,  # Используем локальную переменную
             intent=intent,
             tone=tone_info.get("tone"),
             fallback_used=fallback_used,
@@ -659,8 +670,7 @@ class SalesBot:
                 if value:
                     self.metrics.record_collected_data(key, value)
 
-        # Check if final
-        is_final = sm_result["is_final"]
+        # Check if final (is_final уже определён выше, не переопределяем)
         if is_final:
             if intent == "rejection":
                 self._finalize_metrics(ConversationOutcome.REJECTED)
@@ -672,14 +682,14 @@ class SalesBot:
                 self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
 
         # Record progress if state changed or data collected
-        if sm_result["prev_state"] != sm_result["next_state"] or extracted:
+        if sm_result["prev_state"] != next_state or extracted:
             self.guard.record_progress()
 
         return {
             "response": response,
             "intent": intent,
             "action": action,
-            "state": sm_result["next_state"],
+            "state": next_state,  # Используем локальную переменную
             "is_final": is_final,
             "spin_phase": sm_result.get("spin_phase"),
             # Additional info
@@ -802,12 +812,15 @@ class SalesBot:
             # Guard: если контекста нет, выходим из disambiguation
             self.state_machine.exit_disambiguation()
             logger.warning("Disambiguation context is None, exiting")
-            return self._continue_with_classification({
-                "intent": "unclear",
-                "confidence": 0.3,
-                "extracted_data": {},
-                "method": "disambiguation_error"
-            })
+            return self._continue_with_classification(
+                classification={
+                    "intent": "unclear",
+                    "confidence": 0.3,
+                    "extracted_data": {},
+                    "method": "disambiguation_error"
+                },
+                user_message=user_message  # Передаём сообщение пользователя
+            )
 
         options = context["options"]
         extracted_data = context.get("extracted_data", {})
@@ -831,7 +844,10 @@ class SalesBot:
                 intent=quick_check["intent"]
             )
 
-            return self._continue_with_classification(quick_check)
+            return self._continue_with_classification(
+                classification=quick_check,
+                user_message=user_message
+            )
 
         # Пробуем распознать ответ на disambiguation
         resolved_intent = self.disambiguation_ui.parse_answer(
@@ -855,29 +871,37 @@ class SalesBot:
                 attempt=attempt
             )
 
-            return self._continue_with_classification({
-                "intent": resolved_intent,
-                "confidence": 0.9,
-                "extracted_data": extracted_data,
-                "method": "disambiguation_resolved"
-            })
+            return self._continue_with_classification(
+                classification={
+                    "intent": resolved_intent,
+                    "confidence": 0.9,
+                    "extracted_data": extracted_data,
+                    "method": "disambiguation_resolved"
+                },
+                user_message=user_message
+            )
         else:
             # Не удалось распознать ответ
             context["attempt"] = attempt + 1
 
             if context["attempt"] > 2:
                 # Превышен лимит попыток - выходим
-                return self._fallback_from_disambiguation()
+                return self._fallback_from_disambiguation(user_message=user_message)
             else:
                 # Повторяем вопрос
                 return self._repeat_disambiguation_question(context)
 
-    def _continue_with_classification(self, classification: Dict) -> Dict:
+    def _continue_with_classification(
+        self,
+        classification: Dict,
+        user_message: str = ""
+    ) -> Dict:
         """
         Продолжить обработку с заданной классификацией.
 
         Args:
             classification: Результат классификации
+            user_message: Сообщение пользователя (для истории)
 
         Returns:
             Dict с результатом обработки
@@ -895,7 +919,7 @@ class SalesBot:
 
         # Контекст для генерации ответа
         context = {
-            "user_message": "",  # Уже обработано в disambiguation
+            "user_message": user_message,  # Передаём сообщение для контекста
             "intent": intent,
             "state": sm_result["next_state"],
             "history": self.history,
@@ -909,9 +933,9 @@ class SalesBot:
         action = sm_result["action"]
         response = self.generator.generate(action, context)
 
-        # Сохраняем в историю
+        # Сохраняем в историю (с реальным сообщением пользователя)
         self.history.append({
-            "user": "",  # Пользователь ответил в disambiguation
+            "user": user_message,  # Сохраняем ответ пользователя на disambiguation
             "bot": response,
             "intent": intent,
             "action": action,
@@ -953,9 +977,12 @@ class SalesBot:
             "spin_phase": sm_result.get("spin_phase"),
         }
 
-    def _fallback_from_disambiguation(self) -> Dict:
+    def _fallback_from_disambiguation(self, user_message: str = "") -> Dict:
         """
         Выйти из disambiguation с fallback на unclear.
+
+        Args:
+            user_message: Последнее сообщение пользователя (для истории)
 
         Returns:
             Dict с результатом
@@ -977,12 +1004,15 @@ class SalesBot:
 
         self.state_machine.exit_disambiguation()
 
-        return self._continue_with_classification({
-            "intent": "unclear",
-            "confidence": 0.3,
-            "extracted_data": extracted_data,
-            "method": "disambiguation_fallback"
-        })
+        return self._continue_with_classification(
+            classification={
+                "intent": "unclear",
+                "confidence": 0.3,
+                "extracted_data": extracted_data,
+                "method": "disambiguation_fallback"
+            },
+            user_message=user_message
+        )
 
     def _repeat_disambiguation_question(self, context: Dict) -> Dict:
         """

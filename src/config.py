@@ -815,6 +815,16 @@ CLASSIFIER_CONFIG = {
     "lemma_match_weight": settings.classifier.weights.lemma_match,
     "high_confidence_threshold": settings.classifier.thresholds.high_confidence,
     "min_confidence": settings.classifier.thresholds.min_confidence,
+    # Веса для слияния результатов классификаторов (disambiguation)
+    # root_classifier_weight + lemma_classifier_weight должны = 1.0
+    "root_classifier_weight": getattr(
+        getattr(settings.classifier, "merge_weights", None),
+        "root_classifier", 0.6
+    ) if hasattr(settings.classifier, "merge_weights") else 0.6,
+    "lemma_classifier_weight": getattr(
+        getattr(settings.classifier, "merge_weights", None),
+        "lemma_classifier", 0.4
+    ) if hasattr(settings.classifier, "merge_weights") else 0.4,
 }
 
 # =============================================================================
@@ -995,8 +1005,8 @@ SALES_STATES = {
     "spin_implication": {
         "goal": "Помочь осознать последствия и масштаб проблемы",
         "spin_phase": "implication",
-        # ВАЖНО: implication_probed устанавливается после первого I-вопроса
-        # Это предотвращает пропуск фазы при первом неясном ответе
+        # ВАЖНО: implication_probed устанавливается при ВХОДЕ в фазу (state_machine.py:608)
+        # Семантика: "мы вошли в I-фазу", предотвращает пропуск фазы при первом неясном ответе
         "required_data": ["implication_probed"],
         "optional_data": ["pain_impact", "financial_impact"],
         "transitions": {
@@ -1036,8 +1046,8 @@ SALES_STATES = {
     "spin_need_payoff": {
         "goal": "Помочь клиенту сформулировать ценность решения",
         "spin_phase": "need_payoff",
-        # ВАЖНО: need_payoff_probed устанавливается после первого N-вопроса
-        # Это предотвращает пропуск фазы при первом неясном ответе
+        # ВАЖНО: need_payoff_probed устанавливается при ВХОДЕ в фазу (state_machine.py:610)
+        # Семантика: "мы вошли в N-фазу", предотвращает пропуск фазы при первом неясном ответе
         "required_data": ["need_payoff_probed"],
         "optional_data": ["desired_outcome", "value_acknowledged"],
         "transitions": {

@@ -117,6 +117,12 @@ classifier:
     phrase_match: 2.0     # Точное совпадение фразы
     lemma_match: 1.5      # Совпадение по лемме
 
+  # Веса для слияния результатов classifiers (disambiguation)
+  # root_weight + lemma_weight должны = 1.0
+  merge_weights:
+    root_classifier: 0.6   # Вес результатов RootClassifier
+    lemma_classifier: 0.4  # Вес результатов LemmaClassifier
+
   # Пороги уверенности
   thresholds:
     # Порог для быстрого возврата (высокая уверенность)

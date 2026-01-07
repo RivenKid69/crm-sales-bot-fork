@@ -182,6 +182,10 @@ class DisambiguationAnalyzer:
         all_intents = set(root_scores.keys()) | set(lemma_scores.keys())
         root_weight = self.config.get("root_match_weight", 1.0)
 
+        # Веса для слияния из конфигурации (с fallback на 60/40)
+        root_classifier_weight = self.config.get("root_classifier_weight", 0.6)
+        lemma_classifier_weight = self.config.get("lemma_classifier_weight", 0.4)
+
         for intent in all_intents:
             # Нормализация root score
             root_raw = root_scores.get(intent, 0)
@@ -191,8 +195,11 @@ class DisambiguationAnalyzer:
             lemma_raw = lemma_scores.get(intent, 0.0)
             lemma_norm = min(lemma_raw / 4, 1.0)
 
-            # Взвешенное среднее: 60% root, 40% lemma
-            merged[intent] = root_norm * 0.6 + lemma_norm * 0.4
+            # Взвешенное среднее (веса настраиваются через CLASSIFIER_CONFIG)
+            merged[intent] = (
+                root_norm * root_classifier_weight +
+                lemma_norm * lemma_classifier_weight
+            )
 
         return merged
 

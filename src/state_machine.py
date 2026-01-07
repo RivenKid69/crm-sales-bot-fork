@@ -492,7 +492,24 @@ class StateMachine:
                 return f"transition_to_{next_state}", next_state
 
         # Сбрасываем счётчик последовательных возражений при положительных интентах
-        if intent in ["agreement", "demo_request", "callback_request", "contact_provided"]:
+        # Полный список включает:
+        # - Явное согласие и запросы: agreement, demo_request, callback_request, contact_provided
+        # - SPIN-прогресс: situation_provided, problem_revealed, implication_acknowledged, need_expressed
+        # - Информационные: info_provided, consultation_request
+        # - Вопросы (показывают интерес): question_features, question_integrations, price_question, comparison
+        POSITIVE_INTENTS = {
+            # Явное согласие и запросы
+            "agreement", "demo_request", "callback_request", "contact_provided",
+            "consultation_request",
+            # SPIN-прогресс (клиент даёт информацию = прогресс)
+            "situation_provided", "problem_revealed", "implication_acknowledged",
+            "need_expressed", "info_provided",
+            # Вопросы показывают интерес (хотя слабее чем agreement)
+            "question_features", "question_integrations", "comparison",
+            # Благодарность и приветствие тоже не должны считаться возражениями
+            "greeting", "gratitude",
+        }
+        if intent in POSITIVE_INTENTS:
             self.objection_flow.reset_consecutive()
 
         # =====================================================================
@@ -581,12 +598,17 @@ class StateMachine:
         # Обновляем spin_phase
         self.spin_phase = self._get_current_spin_phase()
 
-        # Устанавливаем probed-флаги при ВХОДЕ в соответствующие SPIN-фазы
-        # Это означает что бот сейчас задаст I или N вопрос
+        # Устанавливаем phase-флаги при ВХОДЕ в соответствующие SPIN-фазы
+        # Эти флаги означают: "мы вошли в эту фазу и бот задаст вопрос"
+        # Используются для:
+        # 1. Предотвращения пропуска фазы при первом неясном ответе
+        # 2. Определения data_complete (required_data в config.py)
+        # 3. Отслеживания прогресса через SPIN для аналитики
+        # NOTE: Название "_probed" историческое, семантически означает "phase_entered"
         if next_state == "spin_implication" and prev_state != "spin_implication":
-            self.collected_data["implication_probed"] = True
+            self.collected_data["implication_probed"] = True  # = implication_phase_entered
         if next_state == "spin_need_payoff" and prev_state != "spin_need_payoff":
-            self.collected_data["need_payoff_probed"] = True
+            self.collected_data["need_payoff_probed"] = True  # = need_payoff_phase_entered
 
         config = SALES_STATES.get(self.state, {})
         required = config.get("required_data", [])

@@ -354,7 +354,9 @@ INTENT_TO_SIGNAL: Dict[str, str] = {
 
     # Средний интент
     "problem_revealed": LeadSignal.EXPLICIT_PROBLEM.value,
-    "objection_competitor": LeadSignal.COMPETITOR_COMPARISON.value,
+    # NOTE: objection_competitor - это возражение, маппится на негативный сигнал
+    # COMPETITOR_COMPARISON (+12) используется для comparison интента (сравнение без возражения)
+    "comparison": LeadSignal.COMPETITOR_COMPARISON.value,
 
     # Низкий интент
     "question_features": LeadSignal.FEATURES_QUESTION.value,
@@ -362,11 +364,14 @@ INTENT_TO_SIGNAL: Dict[str, str] = {
     "price_question": LeadSignal.PRICE_QUESTION.value,
     "agreement": LeadSignal.GENERAL_INTEREST.value,
 
-    # Негативные
+    # Негативные сигналы (снижают score)
+    "objection_competitor": LeadSignal.OBJECTION_COMPETITOR.value,
     "objection_price": LeadSignal.OBJECTION_PRICE.value,
     "objection_no_time": LeadSignal.OBJECTION_NO_TIME.value,
     "objection_think": LeadSignal.OBJECTION_THINK.value,
     "rejection": LeadSignal.REJECTION_SOFT.value,
+    "no_need": LeadSignal.OBJECTION_NO_NEED.value,
+    "no_problem": LeadSignal.OBJECTION_NO_NEED.value,  # Аналогично no_need
 }
 
 

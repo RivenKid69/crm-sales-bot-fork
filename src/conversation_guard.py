@@ -227,6 +227,8 @@ class ConversationGuard:
             return True, self.TIER_3  # Предложить skip
 
         # 6. Проверка попыток в фазе (но только если нет прогресса в данных)
+        # NOTE: Используем > (не >=) для консистентности с max_turns:
+        # max_phase_attempts=3 означает "разрешить 3 попытки, на 4й сработать"
         phase_attempts = self._state.phase_attempts[state]
         if phase_attempts > self.config.max_phase_attempts:
             new_data_count = len(collected_data)

@@ -334,7 +334,9 @@ class ResponseGenerator:
     
     def get_facts(self, company_size: int = None) -> str:
         """Получить факты о продукте"""
-        if company_size:
+        # Явная проверка на None, чтобы 0 не считался False
+        # (хотя бизнес с 0 сотрудников нереален, лучше быть явным)
+        if company_size is not None and company_size > 0:
             # Подбираем тариф
             if company_size <= 5:
                 tariff = KNOWLEDGE["pricing"]["basic"]
