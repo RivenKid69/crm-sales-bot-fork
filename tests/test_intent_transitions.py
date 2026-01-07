@@ -417,7 +417,7 @@ class TestAllStatesHaveRequiredTransitions:
 
     @pytest.mark.parametrize("state", [
         "greeting", "spin_situation", "spin_problem",
-        "spin_implication", "spin_need_payoff", "qualification"
+        "spin_implication", "spin_need_payoff"
     ])
     def test_early_states_have_demo_request_transition(self, state):
         """Все ранние состояния имеют переход для demo_request"""
@@ -427,7 +427,7 @@ class TestAllStatesHaveRequiredTransitions:
 
     @pytest.mark.parametrize("state", [
         "greeting", "spin_situation", "spin_problem",
-        "spin_implication", "spin_need_payoff", "qualification"
+        "spin_implication", "spin_need_payoff"
     ])
     def test_early_states_have_callback_request_transition(self, state):
         """Все ранние состояния имеют переход для callback_request"""
@@ -438,7 +438,7 @@ class TestAllStatesHaveRequiredTransitions:
     @pytest.mark.parametrize("state", [
         "greeting", "spin_situation", "spin_problem",
         "spin_implication", "spin_need_payoff", "presentation",
-        "handle_objection", "close", "qualification"
+        "handle_objection", "close"
     ])
     def test_states_have_farewell_transition(self, state):
         """Все состояния имеют переход для farewell"""
@@ -448,7 +448,7 @@ class TestAllStatesHaveRequiredTransitions:
 
     @pytest.mark.parametrize("state", [
         "spin_situation", "spin_problem", "spin_implication",
-        "spin_need_payoff", "presentation", "qualification"
+        "spin_need_payoff", "presentation"
     ])
     def test_spin_and_presentation_states_handle_comparison(self, state):
         """SPIN состояния и presentation обрабатывают comparison через rules"""

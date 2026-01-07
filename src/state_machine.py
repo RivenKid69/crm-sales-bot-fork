@@ -2,8 +2,9 @@
 State Machine — управление состояниями диалога
 
 Поддерживает:
-- Базовый flow: greeting → qualification → presentation → close
 - SPIN Selling flow: greeting → spin_situation → spin_problem → spin_implication → spin_need_payoff → presentation → close
+- Обработка возражений: handle_objection
+- Финальные состояния: success, soft_close
 - Circular Flow: возврат назад по фазам (с защитой от злоупотреблений)
 """
 

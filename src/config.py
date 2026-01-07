@@ -919,6 +919,8 @@ SALES_STATES = {
         "optional_data": ["current_tools", "business_type"],
         "transitions": {
             "data_complete": "spin_problem",
+            # SPIN progress: клиент рассказал о ситуации — переходим к проблемам
+            "situation_provided": "spin_problem",
             "rejection": "soft_close",
             # Клиент сразу хочет демо или звонок — переходим в close
             "demo_request": "close",
@@ -948,6 +950,8 @@ SALES_STATES = {
         "required_data": ["pain_point"],
         "transitions": {
             "data_complete": "spin_implication",
+            # SPIN progress: клиент раскрыл проблему — переходим к последствиям
+            "problem_revealed": "spin_implication",
             "rejection": "soft_close",
             # Если клиент уже явно выразил интерес — можно пропустить I и N
             "agreement": "presentation",
@@ -1047,33 +1051,6 @@ SALES_STATES = {
         }
     },
 
-    # Legacy: старое состояние qualification для обратной совместимости
-    "qualification": {
-        "goal": "Узнать размер компании и боль клиента",
-        "required_data": ["company_size", "pain_point"],
-        "transitions": {
-            "data_complete": "presentation",
-            "rejection": "soft_close",
-            # Клиент хочет демо или звонок — переходим в close
-            "demo_request": "close",
-            "callback_request": "close",
-            # Прощание — мягко завершаем
-            "farewell": "soft_close",
-            # Возражения — мягко завершаем
-            "objection_no_time": "soft_close",
-            "objection_think": "soft_close",
-        },
-        "rules": {
-            "price_question": "deflect_and_continue",
-            "pricing_details": "deflect_and_continue",
-            "comparison": "answer_and_continue",
-            "consultation_request": "acknowledge_and_continue",
-            "small_talk": "small_talk_and_continue",
-            "gratitude": "acknowledge_and_continue",
-            "unclear": "probe_qualification",
-        }
-    },
-
     "presentation": {
         "goal": "Показать ценность продукта",
         "required_data": [],
@@ -1140,6 +1117,8 @@ SALES_STATES = {
         "required_data": ["contact_info"],
         "transitions": {
             "data_complete": "success",
+            # Клиент предоставил контакт — успешное завершение
+            "contact_provided": "success",
             "rejection": "soft_close",
             # Прощание без контакта — мягко завершаем
             "farewell": "soft_close",
@@ -1362,21 +1341,6 @@ PROMPT_TEMPLATES = {
 Клиент: "{user_message}"
 
 Ответ на русском (1-2 предложения):""",
-
-    "qualification": """{system}
-
-Клиент проявил интерес к продукту. Задача: понять его ситуацию.
-
-Диалог:
-{history}
-
-Клиент: "{user_message}"
-
-Сначала кратко отреагируй на слова клиента (покажи что услышал),
-потом естественно спроси сколько человек в команде продаж/работает с клиентами.
-
-Пример: "Интересно, расскажу подробнее. А сколько человек у вас занимается продажами?"
-Задай ОДИН вопрос. Ответ на русском (2 предложения):""",
 
     "deflect_and_continue": """{system}
 
