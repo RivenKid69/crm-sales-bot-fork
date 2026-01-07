@@ -29,6 +29,11 @@ from .reranker import get_reranker
 # Маппинг интентов на категории базы знаний
 # Принцип: каждый интент связан с категориями, которые могут содержать релевантные факты
 # Пустой список [] означает, что для этого интента не нужен поиск по базе знаний
+#
+# ВАЖНО: Используйте только существующие категории из knowledge/data/:
+# equipment, products, tis, support, pricing, inventory, features, regions,
+# integrations, analytics, employees, fiscal, stability, mobile, promotions,
+# competitors, faq
 INTENT_TO_CATEGORY = {
     # =================================================================
     # ВОПРОСЫ О ПРОДУКТЕ/ЦЕНЕ (требуют информации из базы)
@@ -37,28 +42,28 @@ INTENT_TO_CATEGORY = {
     "pricing_details": ["pricing", "promotions"],
     "question_features": ["features", "products", "tis", "analytics", "inventory"],
     "question_integrations": ["integrations"],
-    "comparison": ["competitors", "benefits", "features"],
+    "comparison": ["competitors", "products", "features"],
 
     # =================================================================
     # ВОЗРАЖЕНИЯ (требуют аргументов из базы)
     # =================================================================
-    "objection_competitor": ["competitors", "benefits", "features"],
-    "objection_price": ["pricing", "benefits", "promotions"],
-    "objection_no_time": ["support", "getting_started", "mobile"],  # быстрый старт, мобильность
-    "objection_think": ["benefits", "cases", "support"],  # преимущества, кейсы успеха
+    "objection_competitor": ["competitors", "products", "features"],
+    "objection_price": ["pricing", "products", "promotions"],
+    "objection_no_time": ["support", "mobile"],  # быстрый старт в support, мобильность
+    "objection_think": ["products", "features", "support"],  # преимущества в products/features
 
     # =================================================================
     # ЗАПРОСЫ НА ДЕЙСТВИЕ (требуют контактной информации)
     # =================================================================
-    "callback_request": ["support", "contacts"],
-    "demo_request": ["support", "getting_started", "products"],
+    "callback_request": ["support", "regions"],  # контакты в support и regions
+    "demo_request": ["support", "products"],
     "consultation_request": ["support", "features", "products"],
-    "contact_provided": ["support", "contacts"],
+    "contact_provided": ["support", "regions"],
 
     # =================================================================
     # СОГЛАСИЕ/ИНТЕРЕС (общая информация)
     # =================================================================
-    "agreement": ["pricing", "support", "contacts", "getting_started"],
+    "agreement": ["pricing", "support", "products"],
 
     # =================================================================
     # SPIN ИНТЕНТЫ
@@ -70,10 +75,10 @@ INTENT_TO_CATEGORY = {
     # implication_acknowledged: клиент признает последствия - факты не нужны
     "implication_acknowledged": [],
     # need_expressed: клиент хочет решение - можно показать преимущества
-    "need_expressed": ["features", "benefits", "products"],
-    # no_problem/no_need: отрицание проблемы/потребности - можно показать кейсы
-    "no_problem": ["cases", "benefits"],
-    "no_need": ["cases", "benefits"],
+    "need_expressed": ["features", "products"],
+    # no_problem/no_need: отрицание проблемы/потребности - показать ценность продукта
+    "no_problem": ["products", "features"],
+    "no_need": ["products", "features"],
     # info_provided: общая информация от клиента
     "info_provided": [],
 
