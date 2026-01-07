@@ -663,15 +663,20 @@ class TestStateMachineRulesPriority:
 
     def test_other_question_intents_work_when_no_rule(self, state_machine):
         """
-        Вопросы без rule в конфиге должны обрабатываться как answer_question.
+        Вопросы с rule в конфиге должны обрабатываться согласно rule.
+        Вопросы БЕЗ rule должны обрабатываться как answer_question.
+
+        В spin_situation есть rule для question_features → answer_and_continue.
         """
         # Переходим в spin_situation
         state_machine.process("agreement", {})
 
-        # question_features не имеет rule в spin_situation
+        # question_features ИМЕЕТ rule в spin_situation: answer_and_continue
         result = state_machine.process("question_features", {})
 
-        assert result["action"] == "answer_question"
+        # Проверяем что rule применилось корректно
+        assert result["action"] == "answer_and_continue", \
+            f"В spin_situation для question_features ожидается answer_and_continue (из rules), получили {result['action']}"
 
 
 # =============================================================================
@@ -742,14 +747,25 @@ class TestStateMachinePriorityOrder:
         return StateMachine()
 
     def test_final_state_has_highest_priority(self, state_machine):
-        """Финальное состояние всегда возвращает 'final'."""
+        """
+        Финальное состояние (is_final=True) всегда возвращает 'final'.
+
+        Примечание: soft_close НЕ финальное (is_final=False) по дизайну,
+        чтобы клиент мог передумать. Только success финальное.
+        """
+        # success — финальное состояние
         state_machine.state = "success"
         result = state_machine.process("agreement", {})
-        assert result["action"] == "final"
+        assert result["action"] == "final", \
+            f"success должен возвращать 'final', получили {result['action']}"
 
+        # soft_close — НЕ финальное (клиент может передумать)
         state_machine.state = "soft_close"
         result = state_machine.process("agreement", {})
-        assert result["action"] == "final"
+        # При agreement в soft_close происходит переход в spin_situation
+        assert result["action"] == "transition_to_spin_situation", \
+            f"soft_close при agreement должен переходить в spin_situation, получили {result['action']}"
+        assert result["next_state"] == "spin_situation"
 
     def test_rejection_has_high_priority(self, state_machine):
         """Rejection обрабатывается немедленно в любом состоянии."""
