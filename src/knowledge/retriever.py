@@ -19,6 +19,7 @@ from pathlib import Path
 # Добавляем родительскую директорию для импорта settings
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from settings import settings
+from logger import logger
 
 from .base import KnowledgeSection, KnowledgeBase
 from .loader import load_knowledge_base
@@ -250,10 +251,19 @@ class CascadeRetriever:
         # Если categories переданы явно (от CategoryRouter), используем их
         # Иначе fallback на старый маппинг INTENT_TO_CATEGORY
         if categories is None:
-            if intent and intent in INTENT_TO_CATEGORY:
-                intent_categories = INTENT_TO_CATEGORY[intent]
-                if intent_categories:
-                    categories = intent_categories
+            if intent:
+                if intent in INTENT_TO_CATEGORY:
+                    intent_categories = INTENT_TO_CATEGORY[intent]
+                    if intent_categories:
+                        categories = intent_categories
+                else:
+                    # Неизвестный интент — логируем и используем fallback категории
+                    logger.warning(
+                        "Unknown intent for INTENT_TO_CATEGORY mapping",
+                        intent=intent,
+                        fallback="using default categories: faq, features"
+                    )
+                    categories = ["faq", "features"]  # Fallback категории
 
         # Если reranker включён — берём больше кандидатов
         search_top_k = self.rerank_candidates if self.reranker_enabled else top_k

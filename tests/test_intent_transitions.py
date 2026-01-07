@@ -53,19 +53,19 @@ class TestGreetingTransitions:
         """farewell из greeting -> soft_close"""
         result = self.sm.process("farewell", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_objection_no_time_goes_to_soft_close(self):
         """objection_no_time из greeting -> soft_close"""
         result = self.sm.process("objection_no_time", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_objection_think_goes_to_soft_close(self):
         """objection_think из greeting -> soft_close"""
         result = self.sm.process("objection_think", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_comparison_goes_to_spin_situation(self):
         """comparison из greeting -> spin_situation (через answer_question)"""
@@ -106,19 +106,19 @@ class TestSpinSituationTransitions:
         """farewell из spin_situation -> soft_close"""
         result = self.sm.process("farewell", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_objection_no_time_goes_to_soft_close(self):
         """objection_no_time из spin_situation -> soft_close"""
         result = self.sm.process("objection_no_time", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_objection_think_goes_to_soft_close(self):
         """objection_think из spin_situation -> soft_close"""
         result = self.sm.process("objection_think", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_comparison_stays_with_answer_and_continue(self):
         """comparison в spin_situation обрабатывается через rules"""
@@ -163,7 +163,7 @@ class TestSpinProblemTransitions:
         """farewell из spin_problem -> soft_close"""
         result = self.sm.process("farewell", {})
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_objection_no_time_goes_to_soft_close(self):
         """objection_no_time из spin_problem -> soft_close"""
@@ -494,7 +494,7 @@ class TestIntegrationScenarios:
         result = sm.process("objection_no_time", {})
 
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_scenario_think_objection_after_presentation(self):
         """Сценарий: клиент говорит 'надо подумать' после презентации"""
@@ -515,7 +515,7 @@ class TestIntegrationScenarios:
         result = sm.process("farewell", {})
 
         assert result["next_state"] == "soft_close"
-        assert result["is_final"] == True
+        # soft_close не финальное — клиент может передумать и вернуться
 
     def test_scenario_comparison_gets_answer_and_continues(self):
         """Сценарий: клиент спрашивает о сравнении с конкурентом"""

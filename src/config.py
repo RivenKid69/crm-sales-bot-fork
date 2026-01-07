@@ -878,7 +878,6 @@ SALES_STATES = {
             "question_integrations": "spin_situation",
             "agreement": "spin_situation",
             "info_provided": "spin_situation",
-            "objection_competitor": "spin_situation",
             # Сравнение и детали по цене — тоже вопросы, переходим в SPIN
             "comparison": "spin_situation",
             "pricing_details": "spin_situation",
@@ -891,7 +890,9 @@ SALES_STATES = {
             "rejection": "soft_close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
-            # Возражения по времени и "надо подумать" — мягко завершаем
+            # Возражения — цена и конкурент можно отработать, время/думать → мягкое закрытие
+            "objection_price": "handle_objection",
+            "objection_competitor": "handle_objection",
             "objection_no_time": "soft_close",
             "objection_think": "soft_close",
         },
@@ -921,13 +922,17 @@ SALES_STATES = {
             "data_complete": "spin_problem",
             # SPIN progress: клиент рассказал о ситуации — переходим к проблемам
             "situation_provided": "spin_problem",
+            # info_provided тоже переводит на следующую фазу (унификация с situation_provided)
+            "info_provided": "spin_problem",
             "rejection": "soft_close",
             # Клиент сразу хочет демо или звонок — переходим в close
             "demo_request": "close",
             "callback_request": "close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
-            # Возражения — обрабатываем мягко, пытаемся продолжить
+            # Возражения — обрабатываем: цена и конкурент → handle_objection, время/думать → soft_close
+            "objection_price": "handle_objection",
+            "objection_competitor": "handle_objection",
             "objection_no_time": "soft_close",
             "objection_think": "soft_close",
         },
@@ -936,6 +941,8 @@ SALES_STATES = {
             "pricing_details": "deflect_and_continue",
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
+            "question_features": "answer_and_continue",
+            "question_integrations": "answer_and_continue",
             # При неясных ответах — переспрашиваем о ситуации
             "unclear": "probe_situation",
             "small_talk": "small_talk_and_continue",
@@ -952,6 +959,8 @@ SALES_STATES = {
             "data_complete": "spin_implication",
             # SPIN progress: клиент раскрыл проблему — переходим к последствиям
             "problem_revealed": "spin_implication",
+            # info_provided с pain_point тоже переводит на следующую фазу
+            "info_provided": "spin_implication",
             "rejection": "soft_close",
             # Если клиент уже явно выразил интерес — можно пропустить I и N
             "agreement": "presentation",
@@ -962,7 +971,9 @@ SALES_STATES = {
             "callback_request": "close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
-            # Возражения — обрабатываем мягко
+            # Возражения — обрабатываем: цена и конкурент → handle_objection, время/думать → soft_close
+            "objection_price": "handle_objection",
+            "objection_competitor": "handle_objection",
             "objection_no_time": "soft_close",
             "objection_think": "soft_close",
         },
@@ -971,6 +982,8 @@ SALES_STATES = {
             "pricing_details": "deflect_and_continue",
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
+            "question_features": "answer_and_continue",
+            "question_integrations": "answer_and_continue",
             # Если клиент неясно ответил — переспрашиваем о проблемах
             "unclear": "probe_problem",
             "small_talk": "small_talk_and_continue",
@@ -999,7 +1012,9 @@ SALES_STATES = {
             "callback_request": "close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
-            # Возражения — обрабатываем мягко
+            # Возражения — обрабатываем: цена и конкурент → handle_objection, время/думать → soft_close
+            "objection_price": "handle_objection",
+            "objection_competitor": "handle_objection",
             "objection_no_time": "soft_close",
             "objection_think": "soft_close",
         },
@@ -1008,6 +1023,8 @@ SALES_STATES = {
             "pricing_details": "deflect_and_continue",
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
+            "question_features": "answer_and_continue",
+            "question_integrations": "answer_and_continue",
             # При неясных ответах — переспрашиваем о последствиях
             "unclear": "probe_implication",
             "small_talk": "small_talk_and_continue",
@@ -1035,7 +1052,9 @@ SALES_STATES = {
             "callback_request": "close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
-            # Возражения — обрабатываем мягко
+            # Возражения — обрабатываем: цена и конкурент → handle_objection, время/думать → soft_close
+            "objection_price": "handle_objection",
+            "objection_competitor": "handle_objection",
             "objection_no_time": "soft_close",
             "objection_think": "soft_close",
         },
@@ -1044,6 +1063,8 @@ SALES_STATES = {
             "pricing_details": "deflect_and_continue",
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
+            "question_features": "answer_and_continue",
+            "question_integrations": "answer_and_continue",
             # При неясных ответах — переспрашиваем о ценности
             "unclear": "probe_need_payoff",
             "small_talk": "small_talk_and_continue",
@@ -1150,8 +1171,28 @@ SALES_STATES = {
     },
 
     "soft_close": {
-        "goal": "Вежливо завершить",
-        "is_final": True
+        "goal": "Вежливо завершить, но дать возможность вернуться",
+        "is_final": False,  # Не финальное — клиент может передумать
+        "transitions": {
+            # Если клиент передумал — даём новый шанс
+            "agreement": "spin_situation",
+            "demo_request": "close",
+            "callback_request": "close",
+            # Если клиент сам хочет вернуться
+            "go_back": "greeting",
+            "correct_info": "greeting",
+            # Если твёрдо отказывается — остаёмся (но не бесконечно)
+            "rejection": "soft_close",
+            "farewell": "soft_close",
+        },
+        "rules": {
+            # На вопросы — отвечаем и предлагаем продолжить
+            "price_question": "answer_and_offer_continue",
+            "question_features": "answer_and_offer_continue",
+            "question_integrations": "answer_and_offer_continue",
+            "gratitude": "acknowledge_farewell",
+            "small_talk": "polite_farewell",
+        }
     }
 }
 

@@ -35,6 +35,114 @@ SPIN_PROGRESS_INTENTS = {
 # Интенты для возврата назад
 GO_BACK_INTENTS = ["go_back", "correct_info"]
 
+# Интенты возражений
+OBJECTION_INTENTS = [
+    "objection_price",
+    "objection_competitor",
+    "objection_no_time",
+    "objection_think",
+]
+
+
+class ObjectionFlowManager:
+    """
+    Управление возражениями с защитой от зацикливания.
+
+    Ограничивает количество последовательных возражений,
+    после которых переходим в soft_close.
+
+    Attributes:
+        objection_count: Количество возражений в текущей серии
+        total_objections: Общее количество возражений за диалог
+        objection_history: История возражений (тип, состояние)
+        MAX_CONSECUTIVE_OBJECTIONS: Максимум последовательных возражений
+        MAX_TOTAL_OBJECTIONS: Максимум возражений за диалог
+    """
+
+    MAX_CONSECUTIVE_OBJECTIONS = 3  # Максимум подряд
+    MAX_TOTAL_OBJECTIONS = 5        # Максимум за весь диалог
+
+    def __init__(self):
+        """Инициализация менеджера"""
+        self.reset()
+
+    def reset(self) -> None:
+        """Сброс для нового разговора"""
+        self.objection_count: int = 0
+        self.total_objections: int = 0
+        self.objection_history: List[tuple] = []
+        self.last_state_before_objection: Optional[str] = None
+
+    def record_objection(self, objection_type: str, state: str) -> None:
+        """
+        Записать возражение.
+
+        Args:
+            objection_type: Тип возражения (objection_price, etc.)
+            state: Состояние в котором было возражение
+        """
+        self.objection_count += 1
+        self.total_objections += 1
+        self.objection_history.append((objection_type, state))
+
+        if self.last_state_before_objection is None:
+            self.last_state_before_objection = state
+
+        logger.info(
+            "Objection recorded",
+            type=objection_type,
+            consecutive=self.objection_count,
+            total=self.total_objections
+        )
+
+    def reset_consecutive(self) -> None:
+        """Сбросить счётчик последовательных возражений (при положительном интенте)"""
+        self.objection_count = 0
+        self.last_state_before_objection = None
+
+    def should_soft_close(self) -> bool:
+        """
+        Проверить нужно ли мягко закрывать диалог.
+
+        Returns:
+            True если превышен лимит возражений
+        """
+        if self.objection_count >= self.MAX_CONSECUTIVE_OBJECTIONS:
+            logger.info(
+                "Consecutive objection limit reached",
+                count=self.objection_count,
+                limit=self.MAX_CONSECUTIVE_OBJECTIONS
+            )
+            return True
+
+        if self.total_objections >= self.MAX_TOTAL_OBJECTIONS:
+            logger.info(
+                "Total objection limit reached",
+                total=self.total_objections,
+                limit=self.MAX_TOTAL_OBJECTIONS
+            )
+            return True
+
+        return False
+
+    def get_return_state(self) -> Optional[str]:
+        """
+        Получить состояние для возврата после успешной отработки возражения.
+
+        Returns:
+            Состояние до начала возражений или None
+        """
+        return self.last_state_before_objection
+
+    def get_stats(self) -> Dict:
+        """Получить статистику для аналитики"""
+        return {
+            "consecutive_objections": self.objection_count,
+            "total_objections": self.total_objections,
+            "history": self.objection_history,
+            "return_state": self.last_state_before_objection,
+        }
+
 
 class CircularFlowManager:
     """
@@ -59,6 +167,8 @@ class CircularFlowManager:
         "presentation": "spin_need_payoff",
         "close": "presentation",
         "handle_objection": "presentation",
+        # Из soft_close можно вернуться в greeting для новой попытки
+        "soft_close": "greeting",
     }
 
     def __init__(self):
@@ -139,6 +249,7 @@ class StateMachine:
         self.collected_data = {}
         self.spin_phase = None  # Текущая SPIN-фаза (если в SPIN flow)
         self.circular_flow = CircularFlowManager()  # Менеджер возвратов
+        self.objection_flow = ObjectionFlowManager()  # Менеджер возражений
 
         # Disambiguation state
         self.in_disambiguation: bool = False
@@ -155,6 +266,7 @@ class StateMachine:
         self.collected_data = {}
         self.spin_phase = None
         self.circular_flow.reset()
+        self.objection_flow.reset()
 
         # Reset disambiguation state
         self.in_disambiguation = False
@@ -364,6 +476,26 @@ class StateMachine:
             # Если возврат невозможен — продолжаем обычную обработку
 
         # =====================================================================
+        # ПРИОРИТЕТ 1.7: Возражения с защитой от зацикливания
+        # =====================================================================
+        if intent in OBJECTION_INTENTS:
+            # Записываем возражение
+            self.objection_flow.record_objection(intent, self.state)
+
+            # Проверяем лимит возражений
+            if self.objection_flow.should_soft_close():
+                return "objection_limit_reached", "soft_close"
+
+            # Иначе обрабатываем через transitions (handle_objection или soft_close)
+            if intent in transitions:
+                next_state = transitions[intent]
+                return f"transition_to_{next_state}", next_state
+
+        # Сбрасываем счётчик последовательных возражений при положительных интентах
+        if intent in ["agreement", "demo_request", "callback_request", "contact_provided"]:
+            self.objection_flow.reset_consecutive()
+
+        # =====================================================================
         # ПРИОРИТЕТ 2: State-specific rules
         # Позволяет состояниям переопределять поведение для конкретных интентов,
         # например deflect_and_continue для вопросов о цене в SPIN-фазах
@@ -475,6 +607,7 @@ class StateMachine:
             "is_final": config.get("is_final", False),
             "spin_phase": self.spin_phase,
             "circular_flow": self.circular_flow.get_stats(),
+            "objection_flow": self.objection_flow.get_stats(),
         }
 
 
