@@ -49,7 +49,7 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 │    (llm.py)       │   │   (knowledge/)      │   │    (config.py)    │
 │                   │   │                     │   │                   │
 │ • qwen3:8b-fast   │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
-│ • /no_think mode  │   │ • 1722 YAML секции  │   │ • SALES_STATES    │
+│ • /no_think mode  │   │ • 1969 YAML секций  │   │ • SALES_STATES    │
 │ • Streaming       │   │ • ru-en-RoSBERTa    │   │ • Промпт-шаблоны  │
 │ • Retry + Circuit │   │ • CategoryRouter    │   │                   │
 │   Breaker         │   │ • Reranker          │   │                   │
@@ -270,6 +270,7 @@ State Machine обрабатывает интенты в порядке прио
 classifier/
 ├── __init__.py          # Публичный API
 ├── normalizer.py        # TextNormalizer, TYPO_FIXES (699+), SPLIT_PATTERNS (170)
+├── disambiguation.py    # IntentDisambiguator для уточнения интентов
 ├── hybrid.py            # HybridClassifier (оркестратор)
 ├── intents/
 │   ├── patterns.py      # PRIORITY_PATTERNS (214 паттернов)
@@ -292,38 +293,41 @@ knowledge/
 ├── retriever.py        # CascadeRetriever (3-этапный поиск)
 ├── category_router.py  # LLM-классификация категорий
 ├── reranker.py         # Cross-encoder переоценка
-└── data/               # 18 YAML файлов (1722 секции)
+└── data/               # 17 YAML файлов (1969 секций)
     ├── _meta.yaml      # Метаданные
-    ├── equipment.yaml  # Оборудование (275)
-    ├── products.yaml   # Продукты (253)
-    ├── tis.yaml        # Товарно-информационная система (192)
-    ├── support.yaml    # Техподдержка (189)
-    ├── pricing.yaml    # Тарифы (184)
-    ├── inventory.yaml  # Складской учёт (103)
-    ├── features.yaml   # Функции (93)
-    ├── integrations.yaml   # Интеграции (83)
-    ├── regions.yaml    # Регионы (75)
-    ├── analytics.yaml  # Аналитика (62)
-    ├── employees.yaml  # Управление персоналом (56)
-    ├── fiscal.yaml     # Фискализация (46)
-    ├── stability.yaml  # Стабильность (42)
+    ├── equipment.yaml  # Оборудование (316)
+    ├── pricing.yaml    # Тарифы (286)
+    ├── products.yaml   # Продукты (273)
+    ├── support.yaml    # Техподдержка (201)
+    ├── tis.yaml        # Товарно-информационная система (191)
+    ├── regions.yaml    # Регионы (130)
+    ├── inventory.yaml  # Складской учёт (93)
+    ├── features.yaml   # Функции (90)
+    ├── integrations.yaml   # Интеграции (86)
+    ├── fiscal.yaml     # Фискализация (68)
+    ├── analytics.yaml  # Аналитика (63)
+    ├── employees.yaml  # Управление персоналом (55)
+    ├── stability.yaml  # Стабильность (45)
     ├── mobile.yaml     # Мобильное приложение (35)
-    ├── promotions.yaml # Акции и скидки (24)
+    ├── promotions.yaml # Акции и скидки (26)
     ├── competitors.yaml # Конкуренты (7)
     └── faq.yaml        # FAQ (4)
 ```
 
 **Категории знаний (по размеру):**
-- `equipment` — Оборудование (275 секций)
-- `products` — Продукты (253 секции)
-- `tis` — Товарно-информационная система (192 секции)
-- `support` — Техподдержка (189 секций)
-- `pricing` — Тарифы (184 секции)
-- `inventory` — Складской учёт (103 секции)
-- `features` — Функции (93 секции)
-- `integrations` — Интеграции (83 секции)
-- `regions` — Регионы (75 секций)
-- `analytics` — Аналитика (62 секции)
+- `equipment` — Оборудование (316 секций)
+- `pricing` — Тарифы (286 секций)
+- `products` — Продукты (273 секции)
+- `support` — Техподдержка (201 секция)
+- `tis` — Товарно-информационная система (191 секция)
+- `regions` — Регионы (130 секций)
+- `inventory` — Складской учёт (93 секции)
+- `features` — Функции (90 секций)
+- `integrations` — Интеграции (86 секций)
+- `fiscal` — Фискализация (68 секций)
+- `analytics` — Аналитика (63 секции)
+- `employees` — Управление персоналом (55 секций)
+- `stability` — Стабильность (45 секций)
 
 Подробнее: [KNOWLEDGE.md](./KNOWLEDGE.md)
 
@@ -564,7 +568,7 @@ if is_enabled("new_feature"):
 ## Тестирование
 
 ```bash
-# Все тесты (1285+)
+# Все тесты (1379+)
 pytest tests/ -v
 
 # Тесты классификатора

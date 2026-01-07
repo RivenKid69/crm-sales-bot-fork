@@ -239,9 +239,65 @@ variations.add("spin_situation", [
 
 | Модуль | Флаг | Описание |
 |--------|------|----------|
+| `state_machine.py` | — | CircularFlowManager + ObjectionFlowManager |
 | `lead_scoring.py` | `lead_scoring` | Скоринг лидов |
 | `objection_handler.py` | `objection_handler` | Обработка возражений |
 | `cta_generator.py` | `cta_generator` | Call-to-Action |
+
+### CircularFlowManager — Возврат назад по фазам
+
+Позволяет клиенту вернуться к предыдущей SPIN-фазе с защитой от зацикливания:
+
+```python
+from state_machine import CircularFlowManager
+
+flow = CircularFlowManager()
+
+# Проверка возможности возврата
+if flow.can_go_back("spin_problem"):
+    prev_state = flow.go_back("spin_problem")  # → "spin_situation"
+
+# Лимиты
+flow.MAX_GOBACKS = 2  # Максимум 2 возврата за диалог
+
+# Разрешённые переходы
+ALLOWED_GOBACKS = {
+    "spin_problem": "spin_situation",
+    "spin_implication": "spin_problem",
+    "spin_need_payoff": "spin_implication",
+    "presentation": "spin_need_payoff",
+    "close": "presentation",
+}
+```
+
+### ObjectionFlowManager — Обработка возражений
+
+Управление последовательными возражениями с защитой от зацикливания:
+
+```python
+from state_machine import ObjectionFlowManager
+
+manager = ObjectionFlowManager()
+
+# Запись возражения
+manager.record_objection("objection_price", "presentation")
+
+# Проверка лимитов
+if manager.should_soft_close():
+    # Переход в soft_close
+    pass
+
+# Лимиты
+manager.MAX_CONSECUTIVE_OBJECTIONS = 3  # Максимум 3 подряд
+manager.MAX_TOTAL_OBJECTIONS = 5        # Максимум 5 за диалог
+
+# Сброс при положительном интенте
+manager.reset_consecutive()
+
+# Статистика
+stats = manager.get_stats()
+# {"consecutive_objections": 2, "total_objections": 3, "history": [...]}
+```
 
 ### lead_scoring.py — Скоринг лидов
 
@@ -478,8 +534,10 @@ response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
 | 2 | Тон | `tone_analysis` | ⏸️ Testing |
 | 2 | Вариации | `response_variations` | ✅ Production |
 | 2 | Персонализация | `personalization` | ⏸️ Development |
+| 3 | CircularFlowManager | — | ✅ Production |
+| 3 | ObjectionFlowManager | — | ✅ Production |
 | 3 | Скоринг | `lead_scoring` | ⏸️ Calibration |
-| 3 | Circular flow | `circular_flow` | ⏸️ Risky |
+| 3 | Circular flow (flag) | `circular_flow` | ⏸️ Risky |
 | 3 | Возражения | `objection_handler` | ⏸️ Testing |
 | 3 | CTA | `cta_generator` | ⏸️ Development |
 | 4 | Disambig | `intent_disambiguation` | ⏸️ Development |

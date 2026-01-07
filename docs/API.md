@@ -238,6 +238,115 @@ sm.update_data({"company_size": 15, "pain_point": "потеря клиентов
 | `state` | `str` | Текущее состояние |
 | `collected_data` | `Dict` | Собранные данные |
 | `spin_phase` | `str` | Текущая SPIN-фаза |
+| `circular_flow` | `CircularFlowManager` | Менеджер возвратов назад |
+| `objection_flow` | `ObjectionFlowManager` | Менеджер возражений |
+| `in_disambiguation` | `bool` | В режиме уточнения интента |
+
+---
+
+### CircularFlowManager
+
+Управление возвратами назад по SPIN-фазам с защитой от зацикливания.
+
+```python
+from state_machine import CircularFlowManager
+
+flow = CircularFlowManager()
+```
+
+#### Методы
+
+##### `can_go_back(current_state: str) -> bool`
+
+Проверяет, можно ли вернуться назад.
+
+```python
+flow.can_go_back("spin_problem")  # → True
+flow.can_go_back("greeting")      # → False (нет предыдущего)
+```
+
+##### `go_back(current_state: str) -> Optional[str]`
+
+Выполняет возврат назад.
+
+```python
+prev_state = flow.go_back("spin_problem")  # → "spin_situation"
+```
+
+##### `get_stats() -> Dict`
+
+Статистика для аналитики.
+
+```python
+stats = flow.get_stats()
+# → {"goback_count": 1, "remaining": 1, "history": [("spin_problem", "spin_situation")]}
+```
+
+#### Атрибуты
+
+| Атрибут | Значение | Описание |
+|---------|----------|----------|
+| `MAX_GOBACKS` | `2` | Максимум возвратов за диалог |
+| `goback_count` | `int` | Текущее количество возвратов |
+
+---
+
+### ObjectionFlowManager
+
+Управление возражениями с защитой от зацикливания.
+
+```python
+from state_machine import ObjectionFlowManager
+
+manager = ObjectionFlowManager()
+```
+
+#### Методы
+
+##### `record_objection(objection_type: str, state: str)`
+
+Записывает возражение.
+
+```python
+manager.record_objection("objection_price", "presentation")
+```
+
+##### `should_soft_close() -> bool`
+
+Проверяет, нужно ли мягко завершить диалог.
+
+```python
+if manager.should_soft_close():
+    # Переход в soft_close
+    pass
+```
+
+##### `reset_consecutive()`
+
+Сбрасывает счётчик последовательных возражений.
+
+```python
+# При положительном интенте (agreement, demo_request, etc.)
+manager.reset_consecutive()
+```
+
+##### `get_stats() -> Dict`
+
+Статистика для аналитики.
+
+```python
+stats = manager.get_stats()
+# → {"consecutive_objections": 2, "total_objections": 3, "history": [...]}
+```
+
+#### Атрибуты
+
+| Атрибут | Значение | Описание |
+|---------|----------|----------|
+| `MAX_CONSECUTIVE_OBJECTIONS` | `3` | Максимум подряд |
+| `MAX_TOTAL_OBJECTIONS` | `5` | Максимум за диалог |
+| `objection_count` | `int` | Текущее количество подряд |
+| `total_objections` | `int` | Общее количество |
 
 ---
 
@@ -535,7 +644,7 @@ tariffs = kb.get_by_topic("tariffs")
 |---------|-----|----------|
 | `company_name` | `str` | Название компании ("Wipon") |
 | `company_description` | `str` | Описание компании |
-| `sections` | `List[KnowledgeSection]` | Все секции (1722 шт) |
+| `sections` | `List[KnowledgeSection]` | Все секции (1969 шт) |
 
 ---
 
@@ -1001,11 +1110,11 @@ print(WIPON_KNOWLEDGE.company_name)
 print(WIPON_KNOWLEDGE.company_description)
 
 # Все секции
-print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 1722
+print(f"Всего секций: {len(WIPON_KNOWLEDGE.sections)}")  # 1969
 
 # По категории
 pricing = WIPON_KNOWLEDGE.get_by_category("pricing")
-print(f"Секций о тарифах: {len(pricing)}")  # 184
+print(f"Секций о тарифах: {len(pricing)}")  # 286
 
 # По теме
 tariffs = WIPON_KNOWLEDGE.get_by_topic("tariffs")

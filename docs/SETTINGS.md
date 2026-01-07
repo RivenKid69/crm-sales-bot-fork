@@ -52,6 +52,7 @@ category_router:
   top_k: 3
   fallback_categories:
     - "faq"
+    - "features"
 
 # -----------------------------------------------------------------------------
 # GENERATOR (Генерация ответов)
@@ -182,7 +183,7 @@ development:
 |----------|-----|--------------|----------|
 | `enabled` | bool | `true` | Включить LLM-классификацию |
 | `top_k` | int | `3` | Количество возвращаемых категорий |
-| `fallback_categories` | list | `["faq"]` | Категории по умолчанию при ошибке |
+| `fallback_categories` | list | `["faq", "features"]` | Категории по умолчанию при ошибке |
 
 ### GENERATOR (Генерация ответов)
 
@@ -349,7 +350,7 @@ DEFAULTS = {
     "category_router": {
         "enabled": True,
         "top_k": 3,
-        "fallback_categories": ["faq"],
+        "fallback_categories": ["faq", "features"],
     },
     # ...
 }
