@@ -1,6 +1,6 @@
 # База знаний: pricing
 # Категория: pricing
-# Секций: 271
+# Секций: 282
 
 sections:
 - topic: tariffs
@@ -6327,3 +6327,198 @@ sections:
   - сканер тірегі бағасы
   facts: |-
     Стоимость подставки для сканера: 3 000 ₸.
+- topic: pricing_scanner_stand_zebra_2201
+  priority: 8
+  keywords:
+  - подставка сканер zebra
+  - подставка zebra цена
+  - zebra подставка стоимость
+  - подставка для сканера зебра
+  - зебра подставка сканер
+  - zebra stand price
+  - подставка зебра 10000
+  - тұғыр zebra бағасы
+  - подставка сканер zebra рассрочка
+  - зебра штатив сканера
+  - zebra holder price
+  - подставка для зебра сканера
+  facts: |-
+    Стоимость подставки для сканера ZEBRA:
+    • Цена: 10 000 ₸
+    • Рассрочка Kaspi (0-0-12): 833 ₸/мес
+- topic: pricing_cash_drawer_wipon_2202
+  priority: 8
+  keywords:
+  - денежный ящик wipon
+  - денежный ящик цена
+  - ящик для денег стоимость
+  - wipon денежный ящик
+  - касса ящик цена
+  - кассовый ящик wipon
+  - ақша жәшігі бағасы
+  - cash drawer wipon price
+  - денежный ящик 21000
+  - ящик для кассы wipon
+  - денежный ящик рассрочка
+  - wipon cash drawer
+  facts: |-
+    Стоимость денежного ящика WIPON:
+    • Цена: 21 000 ₸
+    • Рассрочка Kaspi (0-0-12): 1 750 ₸/мес
+- topic: pricing_scales_rongta_label_2203
+  priority: 8
+  keywords:
+  - весы rongta
+  - весы с печатью этикеток
+  - rongta весы цена
+  - весы ронгта стоимость
+  - весы с этикетками цена
+  - таразы rongta бағасы
+  - весы принтер этикеток
+  - rongta scales price
+  - весы rongta 200000
+  - rongta этикетки весы
+  - таразы этикеткамен
+  - весы с печатью рассрочка
+  facts: |-
+    Стоимость весов Rongta с печатью этикеток:
+    • Цена: 200 000 ₸
+    • Рассрочка Kaspi (0-0-12): 16 666 ₸/мес
+- topic: pricing_scales_wipon_smart_2204
+  priority: 8
+  keywords:
+  - умные весы wipon
+  - весы wipon цена
+  - wipon весы стоимость
+  - смарт весы wipon
+  - весы wipon smart
+  - ақылды таразы wipon
+  - wipon scales price
+  - весы wipon 100000
+  - умные весы цена
+  - wipon smart scales
+  - таразы wipon бағасы
+  - весы wipon рассрочка
+  facts: |-
+    Стоимость умных весов WIPON:
+    • Цена: 100 000 ₸
+    • Рассрочка Kaspi (0-0-12): 8 333 ₸/мес
+- topic: pricing_tariffs_wipon_2205
+  priority: 10
+  keywords:
+  - тарифы wipon
+  - сколько стоят тарифы
+  - wipon mini цена
+  - wipon lite цена
+  - wipon standard цена
+  - wipon pro цена
+  - тариф wipon стоимость
+  - подписка wipon
+  - wipon тарифтер бағасы
+  - wipon tariffs price
+  - месячный тариф wipon
+  - годовой тариф wipon
+  - wipon subscription
+  - тариф мини лайт стандарт про
+  facts: |-
+    Тарифы Wipon:
+    • Wipon Mini — 5 000 ₸ в месяц
+    • Wipon Lite — 150 000 ₸ в год
+    • Wipon Standard — 220 000 ₸ в год
+    • Wipon Pro — 500 000 ₸ в год
+- topic: pricing_pocket_scanner_2206
+  priority: 8
+  keywords:
+  - wipon pocket scanner
+  - pocket scanner цена
+  - карманный сканер wipon
+  - сканер pocket стоимость
+  - pocket scanner 25000
+  - қалта сканер wipon
+  - pocket scanner price
+  - мини сканер wipon
+  - портативный сканер wipon
+  - pocket сканер цена
+  - wipon қалта сканері
+  facts: |-
+    Стоимость Wipon Pocket Scanner: 25 000 ₸
+- topic: pricing_smart_scanner_2207
+  priority: 8
+  keywords:
+  - wipon smart scanner
+  - smart scanner цена
+  - смарт сканер wipon
+  - сканер smart стоимость
+  - smart scanner 30000
+  - ақылды сканер wipon
+  - smart scanner price
+  - умный сканер wipon
+  - wipon смарт сканер
+  - smart сканер цена
+  - wipon ақылды сканері
+  facts: |-
+    Стоимость Wipon Smart Scanner: 30 000 ₸
+- topic: pricing_pos_i3_monoblock_2208
+  priority: 9
+  keywords:
+  - pos i3 цена
+  - моноблок pos i3 стоимость
+  - кассовый моноблок i3
+  - pos i3 140000
+  - моноблок i3 цена
+  - pos i3 бағасы
+  - касса моноблок i3
+  - pos i3 price
+  - wipon pos i3 цена
+  - кассовый аппарат pos i3
+  - моноблок касса i3
+  facts: |-
+    Стоимость кассового моноблока POS i3: 140 000 ₸
+- topic: pricing_pos_i5_monoblock_2209
+  priority: 9
+  keywords:
+  - pos i5 цена
+  - моноблок pos i5 стоимость
+  - кассовый моноблок i5
+  - pos i5 160000
+  - моноблок i5 цена
+  - pos i5 бағасы
+  - касса моноблок i5
+  - pos i5 price
+  - wipon pos i5 цена
+  - кассовый аппарат pos i5
+  - моноблок касса i5
+  facts: |-
+    Стоимость кассового моноблока POS i5: 160 000 ₸
+- topic: pricing_wipon_quadro_2210
+  priority: 9
+  keywords:
+  - wipon quadro цена
+  - моноблок quadro стоимость
+  - кассовый моноблок quadro
+  - quadro 365000
+  - wipon quadro бағасы
+  - quadro price
+  - касса quadro цена
+  - моноблок квадро
+  - wipon квадро стоимость
+  - quadro моноблок цена
+  - кассовый аппарат quadro
+  facts: |-
+    Стоимость кассового моноблока Wipon Quadro: 365 000 ₸
+- topic: pricing_wipon_triple_2211
+  priority: 9
+  keywords:
+  - wipon triple цена
+  - моноблок triple стоимость
+  - кассовый моноблок triple
+  - triple 330000
+  - wipon triple бағасы
+  - triple price
+  - касса triple цена
+  - моноблок трипл
+  - wipon трипл стоимость
+  - triple моноблок цена
+  - кассовый аппарат triple
+  facts: |-
+    Стоимость кассового моноблока Wipon Triple: 330 000 ₸
