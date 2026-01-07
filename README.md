@@ -20,7 +20,7 @@ cd src && python bot.py
 ## Возможности
 
 - **SPIN Selling** — структурированный подход к продажам (Situation → Problem → Implication → Need-Payoff)
-- **Гибридная классификация** — 214 приоритетных паттернов + поиск по корням + лемматизация
+- **Гибридная классификация** — 212 приоритетных паттернов + поиск по корням + лемматизация
 - **Каскадный поиск** — 3-этапный retriever (exact → lemma → semantic)
 - **LLM-маршрутизация** — CategoryRouter для интеллектуальной классификации категорий
 - **Голосовой интерфейс** — Voice Bot с STT (Whisper) и TTS (F5-TTS)
@@ -95,7 +95,7 @@ src/
 │   ├── normalizer.py       # Нормализация текста (опечатки, сленг)
 │   ├── hybrid.py           # HybridClassifier — главный класс
 │   ├── intents/            # Подпакет классификации интентов
-│   │   ├── patterns.py     # Приоритетные паттерны (214 шт)
+│   │   ├── patterns.py     # Приоритетные паттерны (212 шт)
 │   │   ├── root_classifier.py   # Быстрая классификация по корням
 │   │   └── lemma_classifier.py  # Fallback через pymorphy
 │   └── extractors/         # Подпакет извлечения данных
@@ -351,10 +351,10 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 ```
 classifier/
 ├── __init__.py          # API: HybridClassifier, TextNormalizer, DataExtractor
-├── normalizer.py        # TYPO_FIXES (663 шт), SPLIT_PATTERNS (170 шт)
+├── normalizer.py        # TYPO_FIXES (692 шт), SPLIT_PATTERNS (176 шт)
 ├── hybrid.py            # HybridClassifier — оркестратор
 ├── intents/
-│   ├── patterns.py      # PRIORITY_PATTERNS (214 шт) для "не интересно" и т.д.
+│   ├── patterns.py      # PRIORITY_PATTERNS (212 шт) для "не интересно" и т.д.
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy2/3
 └── extractors/
@@ -520,12 +520,12 @@ pip install -r requirements.txt
 
 ```
 Модулей Python:           20+ в src/
-Тестов:                   1379+ в 39 файлах
+Тестов:                   1379 в 39 файлах
 Секций в базе знаний:     1969 в 17 YAML файлах
-Интентов:                 50+ в INTENT_ROOTS
-Паттернов опечаток:       699+ в TYPO_FIXES
-Паттернов разделения:     170 в SPLIT_PATTERNS
-Приоритетных паттернов:   214 в PRIORITY_PATTERNS
+Интентов:                 58 в INTENT_ROOTS
+Паттернов опечаток:       692 в TYPO_FIXES
+Паттернов разделения:     176 в SPLIT_PATTERNS
+Приоритетных паттернов:   212 в PRIORITY_PATTERNS
 Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17

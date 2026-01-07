@@ -269,11 +269,11 @@ State Machine обрабатывает интенты в порядке прио
 ```
 classifier/
 ├── __init__.py          # Публичный API
-├── normalizer.py        # TextNormalizer, TYPO_FIXES (699+), SPLIT_PATTERNS (170)
+├── normalizer.py        # TextNormalizer, TYPO_FIXES (692), SPLIT_PATTERNS (176)
 ├── disambiguation.py    # IntentDisambiguator для уточнения интентов
 ├── hybrid.py            # HybridClassifier (оркестратор)
 ├── intents/
-│   ├── patterns.py      # PRIORITY_PATTERNS (214 паттернов)
+│   ├── patterns.py      # PRIORITY_PATTERNS (212 паттернов)
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy
 └── extractors/
@@ -568,7 +568,7 @@ if is_enabled("new_feature"):
 ## Тестирование
 
 ```bash
-# Все тесты (1379+)
+# Все тесты (1379)
 pytest tests/ -v
 
 # Тесты классификатора
