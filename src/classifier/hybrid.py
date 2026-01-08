@@ -110,6 +110,22 @@ class HybridClassifier:
                     "method": "priority_pattern"
                 }
 
+        # =================================================================
+        # ПРИОРИТЕТ 0.5: ДЕТЕКЦИЯ ПАТТЕРНОВ ИЗ ИСТОРИИ (Context Window)
+        # =================================================================
+        # Используем историю интентов для детекции повторных вопросов,
+        # застревания и осцилляций
+        pattern_result = self._check_history_patterns(message_lower, context)
+        if pattern_result:
+            extracted = self.data_extractor.extract(message, context)
+            return {
+                "intent": pattern_result["intent"],
+                "confidence": pattern_result["confidence"],
+                "extracted_data": extracted,
+                "method": "history_pattern",
+                "pattern_type": pattern_result.get("pattern_type"),
+            }
+
         # 1. Извлекаем данные (с учётом контекста и SPIN-фазы)
         extracted = self.data_extractor.extract(message, context)
 
@@ -455,4 +471,120 @@ class HybridClassifier:
             return {"intent": "rejection", "confidence": 0.7}
 
         # Не удалось определить
+        return None
+
+    def _check_history_patterns(self, message: str, context: Dict) -> Optional[Dict]:
+        """
+        Проверить паттерны из истории диалога (Context Window).
+
+        Детектирует:
+        1. Повторные вопросы (клиент спрашивает одно и то же)
+        2. Застревание (3+ unclear подряд)
+        3. Осцилляцию (колебание между позитивным и негативным)
+
+        Args:
+            message: Сообщение пользователя (lowercase)
+            context: Контекст с историей интентов
+
+        Returns:
+            {"intent": str, "confidence": float, "pattern_type": str} или None
+        """
+        intent_history = context.get("intent_history", [])
+
+        # Нужна хотя бы минимальная история
+        if len(intent_history) < 2:
+            return None
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 1: Повторный вопрос
+        # -----------------------------------------------------------------
+        # Если клиент уже задавал этот тип вопроса — это повторный запрос
+        repeated_question = context.get("repeated_question")
+        if repeated_question:
+            # Проверяем что текущее сообщение похоже на вопрос
+            question_markers = ["сколько", "как", "что", "какой", "какая", "почему", "зачем", "?"]
+            is_question = any(marker in message for marker in question_markers)
+
+            if is_question:
+                # Повторный вопрос — нужно ответить, а не откладывать
+                return {
+                    "intent": repeated_question,
+                    "confidence": 0.85,
+                    "pattern_type": "repeated_question",
+                }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 2: Застревание на unclear
+        # -----------------------------------------------------------------
+        # Если 3+ unclear подряд — классификатор не понимает клиента
+        is_stuck = context.get("is_stuck", False)
+        unclear_count = context.get("unclear_count", 0)
+
+        if is_stuck and unclear_count >= 3:
+            # Нужно предложить варианты или уточнить
+            return {
+                "intent": "needs_clarification",
+                "confidence": 0.9,
+                "pattern_type": "stuck_unclear",
+            }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 3: Осцилляция (колебание)
+        # -----------------------------------------------------------------
+        # objection → agreement → objection — клиент не уверен, а не соглашается
+        has_oscillation = context.get("has_oscillation", False)
+
+        if has_oscillation:
+            # Проверяем последние интенты
+            last_intents = intent_history[-3:] if len(intent_history) >= 3 else intent_history
+
+            # Если последний был "agreement" но до этого были возражения
+            objection_intents = {
+                "objection_price", "objection_competitor", "objection_no_time",
+                "objection_think", "objection_timing", "objection_complexity"
+            }
+
+            recent_objections = sum(1 for i in last_intents if i in objection_intents)
+
+            if recent_objections >= 1 and last_intents[-1] == "agreement":
+                # Это не настоящее согласие — клиент колеблется
+                # Снижаем уверенность но не меняем интент
+                # (это будет учтено в state machine)
+                pass  # Пока не меняем, чтобы не сломать flow
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 4: Много возражений подряд
+        # -----------------------------------------------------------------
+        objection_count = context.get("objection_count", 0)
+
+        if objection_count >= 3:
+            # Проверяем, не пытается ли клиент снова возразить
+            objection_markers = [
+                "дорого", "дороговато", "бюджет",
+                "подумать", "подумаю", "позже",
+                "не нужно", "не надо", "не интересно",
+                "уже есть", "используем", "конкурент"
+            ]
+
+            if any(marker in message for marker in objection_markers):
+                # Много возражений — возможно надо soft close
+                # Но конкретный тип определит основной классификатор
+                return None  # Даём основному классификатору определить тип
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 5: Повторный запрос цены после deflect
+        # -----------------------------------------------------------------
+        action_history = context.get("action_history", [])
+
+        if "deflect_and_continue" in action_history:
+            price_markers = ["цен", "стои", "сколько", "прайс", "тариф"]
+            if any(marker in message for marker in price_markers):
+                # Клиент снова спрашивает про цену после deflect
+                # Это повторный запрос — надо ответить
+                return {
+                    "intent": "price_question",
+                    "confidence": 0.9,
+                    "pattern_type": "repeated_price_after_deflect",
+                }
+
         return None

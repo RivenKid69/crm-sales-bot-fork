@@ -40,6 +40,9 @@ from objection_handler import ObjectionHandler
 from cta_generator import CTAGenerator
 from response_variations import variations
 
+# Context Window for enhanced classification
+from context_window import ContextWindow
+
 
 class SalesBot:
     """
@@ -90,6 +93,10 @@ class SalesBot:
         self._disambiguation_ui = None
         self.disambiguation_metrics = DisambiguationMetrics()
 
+        # Context Window: расширенный контекст для классификатора
+        # Хранит последние 5 ходов с полной информацией (intent, action, confidence)
+        self.context_window = ContextWindow(max_size=5)
+
         logger.info(
             "SalesBot initialized",
             conversation_id=self.conversation_id,
@@ -131,6 +138,9 @@ class SalesBot:
         # Reset Phase 4
         self.disambiguation_metrics = DisambiguationMetrics()
 
+        # Reset Context Window
+        self.context_window.reset()
+
         logger.info("SalesBot reset", conversation_id=self.conversation_id)
 
     @property
@@ -142,7 +152,13 @@ class SalesBot:
         return self._disambiguation_ui
 
     def _get_classification_context(self) -> Dict:
-        """Получить контекст для классификатора."""
+        """
+        Получить контекст для классификатора.
+
+        Включает:
+        - Базовый контекст (state, spin_phase, missing_data)
+        - Расширенный контекст из ContextWindow (история интентов, паттерны)
+        """
         from config import SALES_STATES
 
         state_config = SALES_STATES.get(self.state_machine.state, {})
@@ -152,6 +168,7 @@ class SalesBot:
         missing = [f for f in required if not collected.get(f)]
         spin_phase = state_config.get("spin_phase")
 
+        # Базовый контекст
         context = {
             "state": self.state_machine.state,
             "collected_data": collected.copy(),
@@ -165,6 +182,27 @@ class SalesBot:
         # Добавляем флаг disambiguation если активен
         if self.state_machine.in_disambiguation:
             context["in_disambiguation"] = True
+
+        # =================================================================
+        # РАСШИРЕННЫЙ КОНТЕКСТ из ContextWindow (Уровень 1)
+        # =================================================================
+        # История интентов и actions для детекции паттернов
+        context["intent_history"] = self.context_window.get_intent_history()
+        context["action_history"] = self.context_window.get_action_history()
+
+        # Счётчики для быстрого доступа
+        context["objection_count"] = self.context_window.get_objection_count()
+        context["positive_count"] = self.context_window.get_positive_count()
+        context["question_count"] = self.context_window.get_question_count()
+        context["unclear_count"] = self.context_window.get_unclear_count()
+
+        # Паттерны поведения
+        context["has_oscillation"] = self.context_window.detect_oscillation()
+        context["is_stuck"] = self.context_window.detect_stuck_pattern()
+        context["repeated_question"] = self.context_window.detect_repeated_question()
+
+        # Тренд уверенности
+        context["confidence_trend"] = self.context_window.get_confidence_trend()
 
         return context
 
@@ -283,9 +321,9 @@ class SalesBot:
                 context=context
             )
 
-            # Записываем в метрики
-            if flags.metrics_tracking:
-                self.metrics.record_fallback(intervention)
+            # NOTE: Метрика fallback записывается централизованно в record_turn()
+            # через параметры fallback_used/fallback_tier, поэтому здесь НЕ вызываем
+            # record_fallback() чтобы избежать двойного подсчёта.
 
             logger.info(
                 "Fallback applied",
@@ -650,6 +688,21 @@ class SalesBot:
             "user": user_message,
             "bot": response
         })
+
+        # 4.1 Save to context window (расширенный контекст)
+        self.context_window.add_turn_from_dict(
+            user_message=user_message,
+            bot_response=response,
+            intent=intent,
+            confidence=classification.get("confidence", 0.0),
+            action=action,
+            state=current_state,
+            next_state=next_state,
+            method=classification.get("method", "unknown"),
+            extracted_data=extracted,
+            is_fallback=fallback_used,
+            fallback_tier=fallback_tier,
+        )
 
         # 5. Save context for next turn
         self.last_action = action
