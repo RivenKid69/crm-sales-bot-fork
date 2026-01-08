@@ -23,6 +23,15 @@ from state_machine import (
     OBJECTION_INTENTS,
 )
 from config import SALES_STATES
+from feature_flags import flags
+
+
+@pytest.fixture
+def enable_circular_flow():
+    """Fixture для включения circular_flow feature flag на время теста"""
+    flags.set_override("circular_flow", True)
+    yield
+    flags.clear_override("circular_flow")
 
 
 # =============================================================================
@@ -286,8 +295,8 @@ class TestGoBackFromSoftClose:
         assert "soft_close" in CircularFlowManager.ALLOWED_GOBACKS
         assert CircularFlowManager.ALLOWED_GOBACKS["soft_close"] == "greeting"
 
-    def test_go_back_from_soft_close_processing(self):
-        """go_back из soft_close должен работать."""
+    def test_go_back_from_soft_close_processing(self, enable_circular_flow):
+        """go_back из soft_close должен работать (при включённом флаге)."""
         sm = StateMachine()
         sm.state = "soft_close"
 

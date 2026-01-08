@@ -22,6 +22,14 @@ from cta_generator import CTAGenerator
 from feature_flags import flags
 
 
+@pytest.fixture
+def enable_circular_flow():
+    """Fixture для включения circular_flow feature flag на время теста"""
+    flags.set_override("circular_flow", True)
+    yield
+    flags.clear_override("circular_flow")
+
+
 class TestPhase3ModulesExist:
     """Проверка что все модули Phase 3 существуют и импортируются"""
 
@@ -176,8 +184,8 @@ class TestObjectionHandlerWithCTA:
 class TestCircularFlowWithLeadScoring:
     """Интеграция Circular Flow с Lead Scoring"""
 
-    def test_goback_does_not_affect_scoring(self):
-        """Возврат назад не сбрасывает скоринг"""
+    def test_goback_does_not_affect_scoring(self, enable_circular_flow):
+        """Возврат назад не сбрасывает скоринг (при включённом флаге)"""
         sm = StateMachine()
         scorer = LeadScorer()
 
@@ -193,8 +201,8 @@ class TestCircularFlowWithLeadScoring:
         # Score сохраняется (скорер отдельный от SM)
         assert scorer.current_score == score_before
 
-    def test_hot_lead_can_still_goback(self):
-        """Горячий лид может вернуться назад"""
+    def test_hot_lead_can_still_goback(self, enable_circular_flow):
+        """Горячий лид может вернуться назад (при включённом флаге)"""
         sm = StateMachine()
         scorer = LeadScorer()
 
@@ -280,8 +288,8 @@ class TestFullDialogueScenarios:
         result3 = handler.handle_objection("Не, дорого")
         assert result3.should_soft_close
 
-    def test_correction_flow_with_data(self):
-        """Flow с исправлением данных"""
+    def test_correction_flow_with_data(self, enable_circular_flow):
+        """Flow с исправлением данных (при включённом флаге)"""
         sm = StateMachine()
 
         # Даём неправильные данные
@@ -382,8 +390,8 @@ class TestEdgeCasesIntegration:
         assert handler.get_attempts_count(ObjectionType.PRICE) == 0
         assert cta.turn_count == 0
 
-    def test_max_gobacks_with_objections(self):
-        """Максимум возвратов + возражения"""
+    def test_max_gobacks_with_objections(self, enable_circular_flow):
+        """Максимум возвратов + возражения (при включённом флаге)"""
         sm = StateMachine()
         handler = ObjectionHandler()
 
@@ -439,8 +447,8 @@ class TestComponentInteraction:
         # Score уменьшился
         assert scorer.current_score < high_score
 
-    def test_circular_flow_independent_of_cta(self):
-        """Circular flow независим от CTA"""
+    def test_circular_flow_independent_of_cta(self, enable_circular_flow):
+        """Circular flow независим от CTA (при включённом флаге)"""
         sm = StateMachine()
         cta = CTAGenerator()
 
@@ -511,8 +519,8 @@ class TestRealWorldScenarios:
         # Score низкий
         assert scorer.current_score < 30
 
-    def test_correction_and_continue(self):
-        """Исправление и продолжение"""
+    def test_correction_and_continue(self, enable_circular_flow):
+        """Исправление и продолжение (при включённом флаге)"""
         sm = StateMachine()
 
         # Неправильные данные

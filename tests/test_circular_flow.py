@@ -21,6 +21,15 @@ from state_machine import (
     GO_BACK_INTENTS,
     SPIN_PHASES,
 )
+from feature_flags import flags
+
+
+@pytest.fixture(autouse=False)
+def enable_circular_flow():
+    """Fixture для включения circular_flow feature flag на время теста"""
+    flags.set_override("circular_flow", True)
+    yield
+    flags.clear_override("circular_flow")
 
 
 class TestCircularFlowManagerBasics:
@@ -299,8 +308,8 @@ class TestGoBackIntentHandling:
         """correct_info интент определён"""
         assert "correct_info" in GO_BACK_INTENTS
 
-    def test_go_back_intent_triggers_goback(self):
-        """go_back интент триггерит возврат"""
+    def test_go_back_intent_triggers_goback(self, enable_circular_flow):
+        """go_back интент триггерит возврат (при включённом флаге)"""
         sm = StateMachine()
 
         # Переходим в spin_problem
@@ -312,8 +321,8 @@ class TestGoBackIntentHandling:
         assert result["action"] == "go_back"
         assert result["next_state"] == "spin_situation"
 
-    def test_correct_info_intent_triggers_goback(self):
-        """correct_info интент триггерит возврат"""
+    def test_correct_info_intent_triggers_goback(self, enable_circular_flow):
+        """correct_info интент триггерит возврат (при включённом флаге)"""
         sm = StateMachine()
 
         # Переходим в spin_implication
@@ -325,8 +334,8 @@ class TestGoBackIntentHandling:
         assert result["action"] == "go_back"
         assert result["next_state"] == "spin_problem"
 
-    def test_go_back_blocked_after_limit(self):
-        """go_back блокируется после лимита"""
+    def test_go_back_blocked_after_limit(self, enable_circular_flow):
+        """go_back блокируется после лимита (при включённом флаге)"""
         sm = StateMachine()
 
         # Исчерпываем лимит
@@ -343,14 +352,27 @@ class TestGoBackIntentHandling:
         # Должен продолжить обычную обработку
         assert result["action"] != "go_back"
 
-    def test_go_back_from_greeting_ignored(self):
-        """go_back из greeting игнорируется"""
+    def test_go_back_from_greeting_ignored(self, enable_circular_flow):
+        """go_back из greeting игнорируется (при включённом флаге)"""
         sm = StateMachine()
         sm.state = "greeting"
 
         result = sm.process("go_back")
 
         # go_back не возможен из greeting
+        assert result["action"] != "go_back"
+
+    def test_go_back_disabled_by_default(self):
+        """go_back не работает когда feature flag выключен (по умолчанию)"""
+        # Убеждаемся что флаг выключен
+        flags.clear_override("circular_flow")
+
+        sm = StateMachine()
+        sm.state = "spin_problem"
+
+        result = sm.process("go_back")
+
+        # go_back НЕ должен сработать, так как флаг выключен
         assert result["action"] != "go_back"
 
 
@@ -391,8 +413,8 @@ class TestAllowedGobacks:
 class TestEdgeCases:
     """Тесты граничных случаев"""
 
-    def test_multiple_gobacks_same_state(self):
-        """Несколько возвратов из одного состояния"""
+    def test_multiple_gobacks_same_state(self, enable_circular_flow):
+        """Несколько возвратов из одного состояния (при включённом флаге)"""
         sm = StateMachine()
 
         # Первый возврат
@@ -409,8 +431,8 @@ class TestEdgeCases:
         result = sm.process("go_back")
         assert result["action"] != "go_back"
 
-    def test_go_back_preserves_collected_data(self):
-        """go_back сохраняет собранные данные"""
+    def test_go_back_preserves_collected_data(self, enable_circular_flow):
+        """go_back сохраняет собранные данные (при включённом флаге)"""
         sm = StateMachine()
 
         # Собираем данные
@@ -435,8 +457,8 @@ class TestEdgeCases:
 class TestIntegrationScenarios:
     """Интеграционные сценарии"""
 
-    def test_typical_correction_flow(self):
-        """Типичный flow исправления"""
+    def test_typical_correction_flow(self, enable_circular_flow):
+        """Типичный flow исправления (при включённом флаге)"""
         sm = StateMachine()
 
         # Клиент даёт неправильную информацию
@@ -453,8 +475,8 @@ class TestIntegrationScenarios:
         assert result["next_state"] == "spin_situation"
         assert sm.circular_flow.goback_count == 1
 
-    def test_goback_then_continue_normally(self):
-        """Возврат и продолжение нормально"""
+    def test_goback_then_continue_normally(self, enable_circular_flow):
+        """Возврат и продолжение нормально (при включённом флаге)"""
         sm = StateMachine()
 
         # Переходим в spin_problem
@@ -468,8 +490,8 @@ class TestIntegrationScenarios:
         result = sm.process("situation_provided")
         # Должен продолжить обычную обработку
 
-    def test_full_flow_with_gobacks(self):
-        """Полный flow с возвратами"""
+    def test_full_flow_with_gobacks(self, enable_circular_flow):
+        """Полный flow с возвратами (при включённом флаге)"""
         sm = StateMachine()
 
         # Greeting -> spin_situation

@@ -177,6 +177,61 @@ class TestRecordFallback:
         assert metrics.fallback_by_tier["tier_1"] == 2
         assert metrics.fallback_by_tier["tier_2"] == 1
 
+    def test_no_double_counting_fallback_via_record_turn(self):
+        """
+        Проверка что fallback НЕ считается дважды.
+
+        record_turn с fallback_used=True уже увеличивает счётчик,
+        поэтому НЕ нужно отдельно вызывать record_fallback.
+
+        Этот тест проверяет что record_turn корректно инкрементирует счётчики.
+        """
+        metrics = ConversationMetrics()
+
+        # Записываем ход с fallback
+        metrics.record_turn(
+            state="spin_situation",
+            intent="unclear",
+            fallback_used=True,
+            fallback_tier="tier_1"
+        )
+
+        # Проверяем что счётчик увеличился ровно на 1
+        assert metrics.fallback_count == 1
+        assert metrics.fallback_by_tier["tier_1"] == 1
+
+        # Записываем ещё один ход с fallback другого tier
+        metrics.record_turn(
+            state="spin_problem",
+            intent="unclear",
+            fallback_used=True,
+            fallback_tier="tier_2"
+        )
+
+        # Проверяем что счётчики корректны
+        assert metrics.fallback_count == 2
+        assert metrics.fallback_by_tier["tier_1"] == 1
+        assert metrics.fallback_by_tier["tier_2"] == 1
+
+    def test_fallback_count_consistency(self):
+        """
+        Проверка консистентности fallback_count и fallback_by_tier.
+
+        Сумма fallback_by_tier должна быть <= fallback_count
+        (может быть меньше если были fallback без tier).
+        """
+        metrics = ConversationMetrics()
+
+        # Fallback с tier
+        metrics.record_turn("s1", "i1", fallback_used=True, fallback_tier="tier_1")
+        metrics.record_turn("s2", "i2", fallback_used=True, fallback_tier="tier_1")
+        metrics.record_turn("s3", "i3", fallback_used=True, fallback_tier="tier_2")
+
+        # Сумма по tier должна равняться общему счётчику
+        total_by_tier = sum(metrics.fallback_by_tier.values())
+        assert total_by_tier == metrics.fallback_count
+        assert metrics.fallback_count == 3
+
 
 class TestRecordLeadScore:
     """Тесты для record_lead_score"""

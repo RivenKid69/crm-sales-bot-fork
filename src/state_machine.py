@@ -10,6 +10,7 @@ State Machine — управление состояниями диалога
 
 from typing import Tuple, Dict, Optional, List
 from config import SALES_STATES, QUESTION_INTENTS, DISAMBIGUATION_CONFIG
+from feature_flags import flags
 from logger import logger
 
 
@@ -468,8 +469,9 @@ class StateMachine:
 
         # =====================================================================
         # ПРИОРИТЕТ 1.5: Go Back — возврат назад по фазам
+        # Контролируется feature flag circular_flow (по умолчанию выключен)
         # =====================================================================
-        if intent in GO_BACK_INTENTS:
+        if intent in GO_BACK_INTENTS and flags.circular_flow:
             prev_state = self.circular_flow.go_back(self.state)
             if prev_state:
                 return "go_back", prev_state
