@@ -1150,6 +1150,18 @@ SALES_STATES = {
             "data_complete": "success",
             # Клиент предоставил контакт — успешное завершение
             "contact_provided": "success",
+            # =================================================================
+            # КРИТИЧЕСКИЙ FIX: Клиент согласен в close фазе → успех
+            # =================================================================
+            # Проблема: Клиент говорит "да, хочу демо" или "записывайте",
+            # но intent = agreement, не contact_provided → диалог застревает
+            # Решение: agreement в close = успех (клиент уже согласился!)
+            # =================================================================
+            "agreement": "success",
+            # Демо-запрос в close фазе = подтверждение готовности → успех
+            "demo_request": "success",
+            "callback_request": "success",
+            "consultation_request": "success",
             "rejection": "soft_close",
             # Прощание без контакта — мягко завершаем
             "farewell": "soft_close",
@@ -1160,10 +1172,7 @@ SALES_STATES = {
             "objection_competitor": "handle_objection",
         },
         "rules": {
-            # На демо/колбек запрос — продолжаем собирать контакт
-            "demo_request": "confirm_and_collect_contact",
-            "callback_request": "confirm_and_collect_contact",
-            "consultation_request": "confirm_and_collect_contact",
+            # На вопросы — отвечаем и продолжаем собирать контакт
             "price_question": "answer_with_facts",
             "pricing_details": "answer_with_facts",
             "comparison": "answer_and_continue",
@@ -1172,6 +1181,8 @@ SALES_STATES = {
             "small_talk": "small_talk_and_continue",
             "gratitude": "acknowledge_and_continue",
             "unclear": "clarify_and_continue",
+            # info_provided — клиент дает информацию, продолжаем
+            "info_provided": "continue_current_goal",
         }
     },
 

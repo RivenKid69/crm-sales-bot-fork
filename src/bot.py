@@ -723,13 +723,40 @@ class SalesBot:
                 if value:
                     self.metrics.record_collected_data(key, value)
 
-        # Check if final (is_final уже определён выше, не переопределяем)
-        if is_final:
+        # =================================================================
+        # КРИТИЧЕСКИЙ FIX: Улучшенная логика определения успешного завершения
+        # =================================================================
+        # Проблема: is_final = True только для state с is_final: True (success)
+        # Но диалог может успешно завершиться и в других состояниях:
+        # - close с demo_request/agreement → переход в success
+        # - soft_close с demo_request → переход в close
+        #
+        # Решение: Проверяем не только is_final, но и:
+        # 1. next_state == "success" (явный успех)
+        # 2. Наличие ключевых интентов в истории для определения типа успеха
+        # =================================================================
+
+        # Определяем успешное завершение
+        is_success = is_final or next_state == "success"
+
+        if is_success:
+            # Определяем тип успеха по приоритету
             if intent == "rejection":
                 self._finalize_metrics(ConversationOutcome.REJECTED)
             elif "contact_provided" in self.metrics.intents_sequence:
+                # Контакт предоставлен — полный успех
                 self._finalize_metrics(ConversationOutcome.SUCCESS)
-            elif "demo_request" in self.metrics.intents_sequence:
+            elif intent == "contact_provided":
+                # Текущий интент — контакт
+                self._finalize_metrics(ConversationOutcome.SUCCESS)
+            elif "demo_request" in self.metrics.intents_sequence or intent == "demo_request":
+                # Демо-запрос — успешное назначение демо
+                self._finalize_metrics(ConversationOutcome.DEMO_SCHEDULED)
+            elif intent == "agreement" and sm_result.get("prev_state") == "close":
+                # Согласие в close фазе — считаем успехом
+                self._finalize_metrics(ConversationOutcome.DEMO_SCHEDULED)
+            elif intent in ("callback_request", "consultation_request"):
+                # Запрос колбека/консультации — успех
                 self._finalize_metrics(ConversationOutcome.DEMO_SCHEDULED)
             else:
                 self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
