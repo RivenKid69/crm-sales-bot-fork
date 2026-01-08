@@ -1033,7 +1033,7 @@ class ContextWindow:
     # УРОВЕНЬ 2: Структурированный контекст
     # =========================================================================
 
-    def get_structured_context(self) -> Dict[str, Any]:
+    def get_structured_context(self, use_v2_engagement: bool = False) -> Dict[str, Any]:
         """
         Получить структурированный контекст (Уровень 2).
 
@@ -1044,9 +1044,23 @@ class ContextWindow:
         - Momentum (инерция)
         - Trigger analysis
 
+        Args:
+            use_v2_engagement: Использовать улучшенный расчёт engagement (v2)
+                             без зависимости от word_count
+
         Returns:
             Dict со структурированными метриками
         """
+        # Выбираем версию engagement
+        if use_v2_engagement:
+            engagement_level = self.get_engagement_level_v2().value
+            engagement_score = self.get_engagement_score_v2()
+            engagement_trend = self.get_engagement_trend_v2()
+        else:
+            engagement_level = self.get_engagement_level().value
+            engagement_score = self.get_engagement_score()
+            engagement_trend = self.get_engagement_trend()
+
         return {
             # Типы ходов
             "turn_types": self.get_turn_type_history(),
@@ -1054,9 +1068,9 @@ class ContextWindow:
             "last_turn_type": self.get_last_turn_type(),
 
             # Engagement
-            "engagement_level": self.get_engagement_level().value,
-            "engagement_score": self.get_engagement_score(),
-            "engagement_trend": self.get_engagement_trend(),
+            "engagement_level": engagement_level,
+            "engagement_score": engagement_score,
+            "engagement_trend": engagement_trend,
 
             # Funnel Progress
             "funnel_progress": self.get_funnel_progress(),
@@ -1200,6 +1214,139 @@ class ContextWindow:
         if diff > 0.1:
             return "improving"
         elif diff < -0.1:
+            return "declining"
+        else:
+            return "stable"
+
+    # -------------------------------------------------------------------------
+    # Engagement V2 (улучшенный расчёт без зависимости от word_count)
+    # Phase 3: context_engagement_v2 (PLAN_CONTEXT_POLICY.md)
+    # -------------------------------------------------------------------------
+
+    # Короткие положительные ответы которые НЕ означают disengagement
+    POSITIVE_SHORT_RESPONSES = {
+        "да", "ок", "окей", "хорошо", "понял", "понятно", "ясно",
+        "угу", "ага", "конечно", "верно", "точно", "согласен",
+        "давайте", "можно", "да конечно", "да хорошо",
+    }
+
+    def get_engagement_score_v2(self) -> float:
+        """
+        Улучшенный расчёт engagement без зависимости от word_count.
+
+        Факторы (Phase 3: PLAN_CONTEXT_POLICY.md):
+        - has_data: предоставление данных (+0.25)
+        - turn_type: тип хода (progress +0.2, lateral +0.1, regress -0.15, stuck -0.1)
+        - question_count: вопросы от клиента (+0.1, признак интереса)
+        - repeated_question: повторные вопросы (-0.1, признак непонимания)
+        - objection частота: частые возражения (-0.1)
+        - positive short response: НЕ штрафуем за краткость
+
+        Returns:
+            Score от 0.0 до 1.0
+        """
+        if not self.turns:
+            return 0.5
+
+        scores = []
+        for turn in self.turns:
+            turn_score = 0.5  # Базовый нейтральный
+
+            # 1. Предоставление данных (+0.25)
+            if turn.has_data:
+                turn_score += 0.25
+
+            # 2. Тип хода
+            if turn.turn_type == TurnType.PROGRESS:
+                turn_score += 0.2
+            elif turn.turn_type == TurnType.LATERAL:
+                turn_score += 0.1  # Вопросы — признак интереса
+            elif turn.turn_type == TurnType.REGRESS:
+                turn_score -= 0.15
+            elif turn.turn_type == TurnType.STUCK:
+                turn_score -= 0.1
+
+            # 3. Короткий позитивный ответ — НЕ штрафуем
+            msg_lower = turn.user_message.lower().strip()
+            if msg_lower in self.POSITIVE_SHORT_RESPONSES:
+                # Нейтрализуем возможный негатив от краткости
+                turn_score = max(turn_score, 0.5)
+
+            scores.append(max(0.0, min(1.0, turn_score)))
+
+        base_score = sum(scores) / len(scores)
+
+        # 4. Глобальные модификаторы
+        # Много вопросов = интерес (+0.05)
+        if self.get_question_count() >= 2:
+            base_score = min(1.0, base_score + 0.05)
+
+        # Повторные вопросы = непонимание (-0.05)
+        if self.detect_repeated_question():
+            base_score = max(0.0, base_score - 0.05)
+
+        # Много возражений = сопротивление (-0.05)
+        if self.get_objection_count() >= 3:
+            base_score = max(0.0, base_score - 0.05)
+
+        return base_score
+
+    def get_engagement_level_v2(self) -> EngagementLevel:
+        """
+        Определить уровень вовлечённости (v2).
+
+        Использует улучшенный score без зависимости от word_count.
+        """
+        score = self.get_engagement_score_v2()
+
+        if score >= 0.65:
+            return EngagementLevel.HIGH
+        elif score >= 0.45:
+            return EngagementLevel.MEDIUM
+        elif score >= 0.3:
+            return EngagementLevel.LOW
+        else:
+            return EngagementLevel.DISENGAGED
+
+    def get_engagement_trend_v2(self) -> str:
+        """
+        Определить тренд вовлечённости (v2).
+
+        Использует улучшенный расчёт на основе типов ходов.
+        """
+        if len(self.turns) < 3:
+            return "unknown"
+
+        mid = len(self.turns) // 2
+
+        def calc_half_score(turns_slice):
+            if not turns_slice:
+                return 0.5
+            scores = []
+            for turn in turns_slice:
+                score = 0.5
+                if turn.has_data:
+                    score += 0.25
+                if turn.turn_type == TurnType.PROGRESS:
+                    score += 0.2
+                elif turn.turn_type == TurnType.LATERAL:
+                    score += 0.1
+                elif turn.turn_type == TurnType.REGRESS:
+                    score -= 0.15
+                # Короткие позитивные ответы не штрафуем
+                msg_lower = turn.user_message.lower().strip()
+                if msg_lower in self.POSITIVE_SHORT_RESPONSES:
+                    score = max(score, 0.5)
+                scores.append(max(0.0, min(1.0, score)))
+            return sum(scores) / len(scores)
+
+        first_avg = calc_half_score(self.turns[:mid])
+        second_avg = calc_half_score(self.turns[mid:])
+
+        diff = second_avg - first_avg
+        if diff > 0.08:
+            return "improving"
+        elif diff < -0.08:
             return "declining"
         else:
             return "stable"

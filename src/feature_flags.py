@@ -60,6 +60,21 @@ class FeatureFlags:
 
         # Фаза 5: Dynamic CTA Fallback
         "dynamic_cta_fallback": False,    # Динамические подсказки в fallback tier_2
+
+        # === Context Policy (PLAN_CONTEXT_POLICY.md) ===
+        # Phase 0: Инфраструктура контекста
+        "context_full_envelope": False,   # Полный ContextEnvelope для всех подсистем
+        "context_shadow_mode": False,     # Shadow mode: логируем решения без применения
+
+        # Phase 2: Естественность диалога
+        "context_response_directives": False,  # ResponseDirectives для генератора
+
+        # Phase 3: Policy overlays
+        "context_policy_overlays": False,  # DialoguePolicy action overrides
+        "context_engagement_v2": False,    # Улучшенный расчёт engagement
+
+        # Phase 5: CTA с памятью
+        "context_cta_memory": False,       # CTA с учётом episodic memory
     }
 
     # Группы флагов для удобного управления
@@ -70,6 +85,17 @@ class FeatureFlags:
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
         "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard"],
         "risky": ["circular_flow", "lead_scoring"],
+        # Context Policy groups (PLAN_CONTEXT_POLICY.md)
+        "context_phase_0": ["context_full_envelope", "context_shadow_mode"],
+        "context_phase_2": ["context_response_directives"],
+        "context_phase_3": ["context_policy_overlays", "context_engagement_v2"],
+        "context_phase_5": ["context_cta_memory"],
+        "context_all": [
+            "context_full_envelope", "context_shadow_mode",
+            "context_response_directives", "context_policy_overlays",
+            "context_engagement_v2", "context_cta_memory"
+        ],
+        "context_safe": ["context_full_envelope", "context_response_directives"],
     }
 
     def __init__(self):
@@ -253,6 +279,40 @@ class FeatureFlags:
     def dynamic_cta_fallback(self) -> bool:
         """Включены ли динамические подсказки в fallback tier_2"""
         return self.is_enabled("dynamic_cta_fallback")
+
+    # =========================================================================
+    # Context Policy flags (PLAN_CONTEXT_POLICY.md)
+    # =========================================================================
+
+    @property
+    def context_full_envelope(self) -> bool:
+        """Включён ли полный ContextEnvelope"""
+        return self.is_enabled("context_full_envelope")
+
+    @property
+    def context_shadow_mode(self) -> bool:
+        """Включён ли shadow mode для policy"""
+        return self.is_enabled("context_shadow_mode")
+
+    @property
+    def context_response_directives(self) -> bool:
+        """Включены ли ResponseDirectives"""
+        return self.is_enabled("context_response_directives")
+
+    @property
+    def context_policy_overlays(self) -> bool:
+        """Включены ли policy overlays"""
+        return self.is_enabled("context_policy_overlays")
+
+    @property
+    def context_engagement_v2(self) -> bool:
+        """Включён ли улучшенный расчёт engagement"""
+        return self.is_enabled("context_engagement_v2")
+
+    @property
+    def context_cta_memory(self) -> bool:
+        """Включён ли CTA с учётом episodic memory"""
+        return self.is_enabled("context_cta_memory")
 
 
 # Singleton экземпляр
