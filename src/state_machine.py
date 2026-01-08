@@ -520,7 +520,28 @@ class StateMachine:
         # например deflect_and_continue для вопросов о цене в SPIN-фазах
         # =====================================================================
         if intent in rules:
-            return rules[intent], self.state
+            rule_action = rules[intent]
+
+            # =================================================================
+            # КРИТИЧЕСКИЙ FIX: Price Deflect Loop Bug
+            # =================================================================
+            # Проблема: Когда клиент спрашивает о цене (price_question) в SPIN-фазах,
+            # бот всегда возвращает deflect_and_continue ("Сколько человек?"),
+            # даже если company_size/users_count УЖЕ ИЗВЕСТНЫ.
+            #
+            # Симуляция #10: клиент спросил "почем?" 6 раз, бот каждый раз
+            # deflect'ил, хотя users_count=10 был извлечён на ходе 7.
+            #
+            # Решение: Если price_question И данные для расчёта цены есть —
+            # отвечаем на вопрос (answer_with_facts), а не deflect'им.
+            # =================================================================
+            if intent == "price_question" and rule_action == "deflect_and_continue":
+                has_pricing_data = self.collected_data.get("company_size") or \
+                                  self.collected_data.get("users_count")
+                if has_pricing_data:
+                    return "answer_with_facts", self.state
+
+            return rule_action, self.state
 
         # =====================================================================
         # ПРИОРИТЕТ 3: Общий обработчик вопросов

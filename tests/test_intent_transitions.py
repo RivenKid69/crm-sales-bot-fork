@@ -369,17 +369,26 @@ class TestCloseTransitions:
         result = self.sm.process("objection_think", {})
         assert result["next_state"] == "handle_objection"
 
-    def test_demo_request_stays_with_confirm_and_collect(self):
-        """demo_request в close обрабатывается через rules"""
-        result = self.sm.process("demo_request", {})
-        assert result["next_state"] == "close"
-        assert result["action"] == "confirm_and_collect_contact"
+    def test_demo_request_transitions_to_success(self):
+        """
+        demo_request в close → success.
 
-    def test_callback_request_stays_with_confirm_and_collect(self):
-        """callback_request в close обрабатывается через rules"""
+        ОБНОВЛЕНО: После коммита a5ed763 (fix 0% конверсии).
+        Клиент в close уже согласился — demo_request подтверждает готовность.
+        """
+        result = self.sm.process("demo_request", {})
+        assert result["next_state"] == "success", \
+            f"demo_request в close должен вести к success, получили {result['next_state']}"
+
+    def test_callback_request_transitions_to_success(self):
+        """
+        callback_request в close → success.
+
+        ОБНОВЛЕНО: После коммита a5ed763 (fix 0% конверсии).
+        """
         result = self.sm.process("callback_request", {})
-        assert result["next_state"] == "close"
-        assert result["action"] == "confirm_and_collect_contact"
+        assert result["next_state"] == "success", \
+            f"callback_request в close должен вести к success, получили {result['next_state']}"
 
     def test_contact_provided_completes_to_success(self):
         """contact_provided в close с данными -> success"""

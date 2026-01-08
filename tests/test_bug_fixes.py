@@ -600,21 +600,30 @@ class TestStateMachineRulesPriority:
 
     def test_deflect_and_continue_in_spin_problem(self, state_machine):
         """
-        В spin_problem price_question тоже должен deflect_and_continue.
+        В spin_problem price_question:
+        - БЕЗ company_size → deflect_and_continue (спросить размер)
+        - С company_size → answer_with_facts (дать цену)
+
+        ОБНОВЛЕНО: После фикса Price Deflect Loop Bug поведение изменилось.
+        Теперь если company_size уже известен — бот отвечает на вопрос о цене.
         """
-        # Setup: переходим в spin_problem
+        # Setup: переходим в spin_problem С company_size
         state_machine.process("agreement", {})
         state_machine.process("info_provided", {"company_size": 10})
         assert state_machine.state == "spin_problem"
 
         result = state_machine.process("price_question", {})
 
-        assert result["action"] == "deflect_and_continue"
+        # FIX: С данными должен быть answer_with_facts, не deflect
+        assert result["action"] == "answer_with_facts", \
+            f"С company_size=10 должен быть answer_with_facts, получили {result['action']}"
         assert result["next_state"] == "spin_problem"
 
     def test_deflect_and_continue_in_spin_implication(self, state_machine):
         """
-        В spin_implication price_question тоже должен deflect_and_continue.
+        В spin_implication price_question с company_size → answer_with_facts.
+
+        ОБНОВЛЕНО: После фикса Price Deflect Loop Bug.
         """
         # Setup: переходим в spin_implication
         state_machine.process("agreement", {})
@@ -624,11 +633,15 @@ class TestStateMachineRulesPriority:
 
         result = state_machine.process("price_question", {})
 
-        assert result["action"] == "deflect_and_continue"
+        # FIX: С данными должен быть answer_with_facts
+        assert result["action"] == "answer_with_facts", \
+            f"С company_size=10 должен быть answer_with_facts, получили {result['action']}"
 
     def test_deflect_and_continue_in_spin_need_payoff(self, state_machine):
         """
-        В spin_need_payoff price_question тоже должен deflect_and_continue.
+        В spin_need_payoff price_question с company_size → answer_with_facts.
+
+        ОБНОВЛЕНО: После фикса Price Deflect Loop Bug.
         """
         # Setup: переходим в spin_need_payoff
         state_machine.process("agreement", {})
@@ -639,7 +652,9 @@ class TestStateMachineRulesPriority:
 
         result = state_machine.process("price_question", {})
 
-        assert result["action"] == "deflect_and_continue"
+        # FIX: С данными должен быть answer_with_facts
+        assert result["action"] == "answer_with_facts", \
+            f"С company_size=10 должен быть answer_with_facts, получили {result['action']}"
 
     def test_answer_question_in_presentation(self, state_machine):
         """
