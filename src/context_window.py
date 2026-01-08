@@ -6,6 +6,13 @@ Context Window — расширенный контекст для классиф
 - Предоставляет историю интентов и actions
 - Вычисляет паттерны поведения (повторы, тренды)
 
+Уровень 2: Structured Context
+- Классификация типов ходов (progress, regress, lateral, stuck)
+- Анализ связей между ходами (триггеры возражений/согласий)
+- Engagement Score (вовлечённость клиента)
+- Funnel Progress Analysis (скорость по воронке)
+- Momentum (инерция диалога)
+
 Исследования показали:
 - Окно 3-5 ходов оптимально (arXiv 2024)
 - Полная история создаёт шум и ухудшает классификацию на 20%+
@@ -13,9 +20,54 @@ Context Window — расширенный контекст для классиф
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from collections import Counter
+from enum import Enum
 import time
+
+
+class TurnType(Enum):
+    """Тип хода по влиянию на воронку."""
+    PROGRESS = "progress"      # Движение вперёд по воронке
+    REGRESS = "regress"        # Откат назад (возражение, отказ)
+    LATERAL = "lateral"        # Движение в сторону (вопрос, уточнение)
+    STUCK = "stuck"            # Застревание (unclear, повтор)
+    NEUTRAL = "neutral"        # Нейтральный (приветствие, благодарность)
+
+
+class EngagementLevel(Enum):
+    """Уровень вовлечённости клиента."""
+    HIGH = "high"              # Активно участвует, даёт данные
+    MEDIUM = "medium"          # Отвечает, но кратко
+    LOW = "low"                # Минимальные ответы
+    DISENGAGED = "disengaged"  # Потерял интерес
+
+
+# Порядок SPIN фаз для расчёта прогресса
+SPIN_PHASE_ORDER = {
+    "greeting": 0,
+    "situation": 1,
+    "problem": 2,
+    "implication": 3,
+    "need_payoff": 4,
+    "presentation": 5,
+    "close": 6,
+    "success": 7,
+}
+
+# Порядок состояний для расчёта прогресса
+STATE_ORDER = {
+    "greeting": 0,
+    "spin_situation": 1,
+    "spin_problem": 2,
+    "spin_implication": 3,
+    "spin_need_payoff": 4,
+    "presentation": 5,
+    "handle_objection": 5,  # Параллельно с presentation
+    "close": 6,
+    "success": 7,
+    "soft_close": -1,  # Негативный прогресс
+}
 
 
 @dataclass
@@ -44,6 +96,79 @@ class TurnContext:
     is_disambiguation: bool = False
     is_fallback: bool = False
     fallback_tier: Optional[str] = None
+
+    # =========================================================================
+    # УРОВЕНЬ 2: Структурированные данные хода
+    # =========================================================================
+
+    # Тип хода (вычисляется автоматически)
+    turn_type: Optional[TurnType] = None
+
+    # Прогресс по воронке (разница между state и next_state)
+    funnel_delta: int = 0
+
+    # Метрики сообщения
+    message_length: int = 0  # Длина сообщения клиента
+    word_count: int = 0      # Количество слов
+    has_data: bool = False   # Предоставил ли клиент данные
+
+    def __post_init__(self):
+        """Автоматически вычисляем производные поля."""
+        # Длина и слова
+        self.message_length = len(self.user_message)
+        self.word_count = len(self.user_message.split())
+        self.has_data = bool(self.extracted_data)
+
+        # Прогресс по воронке
+        state_order = STATE_ORDER.get(self.state, 0)
+        next_state_order = STATE_ORDER.get(self.next_state, 0)
+        self.funnel_delta = next_state_order - state_order
+
+        # Тип хода (если не задан явно)
+        if self.turn_type is None:
+            self.turn_type = self._compute_turn_type()
+
+    def _compute_turn_type(self) -> TurnType:
+        """Вычислить тип хода на основе intent и funnel_delta.
+
+        ВАЖНО: Intent-based classification имеет ПРИОРИТЕТ над delta-based,
+        т.к. intent лучше отражает семантику хода (возражение - всегда регресс,
+        даже если state machine перешла в handle_objection).
+        """
+        # 1. РЕГРЕСС (возражения, отказы) - ПРИОРИТЕТ над delta
+        if self.intent in {
+            "objection_price", "objection_competitor", "objection_no_time",
+            "objection_think", "objection_timing", "objection_complexity",
+            "objection_no_need", "objection_trust", "rejection", "farewell"
+        }:
+            return TurnType.REGRESS
+
+        # 2. Lateral (вопросы, уточнения)
+        if self.intent in {
+            "question_features", "question_integrations", "price_question",
+            "pricing_details", "comparison", "consultation_request"
+        }:
+            return TurnType.LATERAL
+
+        # 3. Застревание
+        if self.intent in {"unclear", "needs_clarification"}:
+            return TurnType.STUCK
+
+        # 4. Нейтральный (приветствие, благодарность)
+        if self.intent in {"greeting", "gratitude"}:
+            return TurnType.NEUTRAL
+
+        # 5. Прогресс по delta
+        if self.funnel_delta > 0:
+            return TurnType.PROGRESS
+
+        # 6. По умолчанию смотрим на delta
+        if self.funnel_delta < 0:
+            return TurnType.REGRESS
+        elif self.funnel_delta == 0:
+            return TurnType.NEUTRAL
+
+        return TurnType.PROGRESS
 
 
 class ContextWindow:
@@ -387,7 +512,8 @@ class ContextWindow:
         Returns:
             Dict с историей и агрегированными метриками
         """
-        return {
+        # Уровень 1: Базовый контекст
+        context = {
             # История (основное)
             "intent_history": self.get_intent_history(),
             "action_history": self.get_action_history(),
@@ -416,6 +542,397 @@ class ContextWindow:
             # Мета
             "window_size": len(self.turns),
         }
+
+        # Уровень 2: Структурированный контекст
+        context.update(self.get_structured_context())
+
+        return context
+
+    # =========================================================================
+    # УРОВЕНЬ 2: Структурированный контекст
+    # =========================================================================
+
+    def get_structured_context(self) -> Dict[str, Any]:
+        """
+        Получить структурированный контекст (Уровень 2).
+
+        Включает:
+        - Типы ходов и их распределение
+        - Engagement метрики
+        - Funnel progress
+        - Momentum (инерция)
+        - Trigger analysis
+
+        Returns:
+            Dict со структурированными метриками
+        """
+        return {
+            # Типы ходов
+            "turn_types": self.get_turn_type_history(),
+            "turn_type_counts": self.get_turn_type_counts(),
+            "last_turn_type": self.get_last_turn_type(),
+
+            # Engagement
+            "engagement_level": self.get_engagement_level().value,
+            "engagement_score": self.get_engagement_score(),
+            "engagement_trend": self.get_engagement_trend(),
+
+            # Funnel Progress
+            "funnel_progress": self.get_funnel_progress(),
+            "funnel_velocity": self.get_funnel_velocity(),
+            "is_progressing": self.is_progressing(),
+            "is_regressing": self.is_regressing(),
+
+            # Momentum
+            "momentum": self.get_momentum(),
+            "momentum_direction": self.get_momentum_direction(),
+
+            # Triggers
+            "last_objection_trigger": self.get_last_objection_trigger(),
+            "last_progress_trigger": self.get_last_progress_trigger(),
+            "effective_actions": self.get_effective_actions(),
+
+            # Message metrics
+            "avg_message_length": self.get_avg_message_length(),
+            "data_provided_count": self.get_data_provided_count(),
+        }
+
+    # -------------------------------------------------------------------------
+    # Turn Type Analysis
+    # -------------------------------------------------------------------------
+
+    def get_turn_type_history(self, limit: Optional[int] = None) -> List[str]:
+        """Получить историю типов ходов."""
+        turns = self.turns[-limit:] if limit else self.turns
+        return [t.turn_type.value if t.turn_type else "unknown" for t in turns]
+
+    def get_turn_type_counts(self) -> Dict[str, int]:
+        """Подсчитать количество каждого типа хода."""
+        counts = Counter(t.turn_type for t in self.turns if t.turn_type)
+        return {tt.value: counts.get(tt, 0) for tt in TurnType}
+
+    def get_last_turn_type(self) -> Optional[str]:
+        """Получить тип последнего хода."""
+        if not self.turns:
+            return None
+        return self.turns[-1].turn_type.value if self.turns[-1].turn_type else None
+
+    def count_turn_type(self, turn_type: TurnType, last_n: Optional[int] = None) -> int:
+        """Подсчитать количество ходов определённого типа."""
+        turns = self.turns[-last_n:] if last_n else self.turns
+        return sum(1 for t in turns if t.turn_type == turn_type)
+
+    # -------------------------------------------------------------------------
+    # Engagement Analysis
+    # -------------------------------------------------------------------------
+
+    def get_engagement_score(self) -> float:
+        """
+        Вычислить score вовлечённости (0-1).
+
+        Факторы:
+        - Длина сообщений (больше = лучше)
+        - Предоставление данных (есть = лучше)
+        - Тип ходов (progress > lateral > stuck > regress)
+        """
+        if not self.turns:
+            return 0.5  # Нейтральный начальный score
+
+        scores = []
+        for turn in self.turns:
+            turn_score = 0.5  # Базовый
+
+            # Длина сообщения (нормализуем к 0-0.3)
+            length_score = min(turn.word_count / 10, 1.0) * 0.3
+            turn_score += length_score
+
+            # Предоставление данных (+0.2)
+            if turn.has_data:
+                turn_score += 0.2
+
+            # Тип хода
+            if turn.turn_type == TurnType.PROGRESS:
+                turn_score += 0.2
+            elif turn.turn_type == TurnType.LATERAL:
+                turn_score += 0.1  # Вопросы — признак интереса
+            elif turn.turn_type == TurnType.REGRESS:
+                turn_score -= 0.2
+            elif turn.turn_type == TurnType.STUCK:
+                turn_score -= 0.1
+
+            scores.append(max(0, min(1, turn_score)))
+
+        return sum(scores) / len(scores)
+
+    def get_engagement_level(self) -> EngagementLevel:
+        """Определить уровень вовлечённости."""
+        score = self.get_engagement_score()
+
+        if score >= 0.7:
+            return EngagementLevel.HIGH
+        elif score >= 0.5:
+            return EngagementLevel.MEDIUM
+        elif score >= 0.3:
+            return EngagementLevel.LOW
+        else:
+            return EngagementLevel.DISENGAGED
+
+    def get_engagement_trend(self) -> str:
+        """
+        Определить тренд вовлечённости.
+
+        Returns:
+            "improving", "declining", "stable", или "unknown"
+        """
+        if len(self.turns) < 3:
+            return "unknown"
+
+        # Считаем engagement для первой и второй половины
+        mid = len(self.turns) // 2
+
+        first_half_scores = []
+        for turn in self.turns[:mid]:
+            score = 0.5
+            if turn.has_data:
+                score += 0.3
+            if turn.turn_type == TurnType.PROGRESS:
+                score += 0.2
+            elif turn.turn_type == TurnType.REGRESS:
+                score -= 0.2
+            first_half_scores.append(score)
+
+        second_half_scores = []
+        for turn in self.turns[mid:]:
+            score = 0.5
+            if turn.has_data:
+                score += 0.3
+            if turn.turn_type == TurnType.PROGRESS:
+                score += 0.2
+            elif turn.turn_type == TurnType.REGRESS:
+                score -= 0.2
+            second_half_scores.append(score)
+
+        first_avg = sum(first_half_scores) / len(first_half_scores) if first_half_scores else 0.5
+        second_avg = sum(second_half_scores) / len(second_half_scores) if second_half_scores else 0.5
+
+        diff = second_avg - first_avg
+        if diff > 0.1:
+            return "improving"
+        elif diff < -0.1:
+            return "declining"
+        else:
+            return "stable"
+
+    # -------------------------------------------------------------------------
+    # Funnel Progress Analysis
+    # -------------------------------------------------------------------------
+
+    def get_funnel_progress(self) -> int:
+        """
+        Получить общий прогресс по воронке.
+
+        Returns:
+            Суммарный delta по всем ходам
+        """
+        return sum(t.funnel_delta for t in self.turns)
+
+    def get_funnel_velocity(self) -> float:
+        """
+        Получить скорость движения по воронке (прогресс за ход).
+
+        Returns:
+            Средний delta за ход
+        """
+        if not self.turns:
+            return 0.0
+        return self.get_funnel_progress() / len(self.turns)
+
+    def is_progressing(self) -> bool:
+        """Проверить движется ли клиент вперёд по воронке."""
+        if len(self.turns) < 2:
+            return False
+
+        # Смотрим последние 2 хода
+        recent_delta = sum(t.funnel_delta for t in self.turns[-2:])
+        return recent_delta > 0
+
+    def is_regressing(self) -> bool:
+        """Проверить откатывается ли клиент назад."""
+        if not self.turns:
+            return False
+
+        # Для 1 хода смотрим его delta
+        if len(self.turns) == 1:
+            return self.turns[0].funnel_delta < 0
+
+        # Смотрим последние 2 хода
+        recent_delta = sum(t.funnel_delta for t in self.turns[-2:])
+        return recent_delta < 0
+
+    def get_current_funnel_stage(self) -> Optional[str]:
+        """Получить текущую стадию воронки."""
+        if not self.turns:
+            return None
+        return self.turns[-1].next_state
+
+    # -------------------------------------------------------------------------
+    # Momentum Analysis
+    # -------------------------------------------------------------------------
+
+    def get_momentum(self) -> float:
+        """
+        Получить инерцию диалога (-1 до +1).
+
+        Положительный = движение к закрытию
+        Отрицательный = движение к отказу
+        Ноль = застой
+
+        Returns:
+            Momentum score от -1 до +1
+        """
+        if not self.turns:
+            return 0.0
+
+        # Веса для типов ходов
+        type_weights = {
+            TurnType.PROGRESS: 1.0,
+            TurnType.LATERAL: 0.2,   # Вопросы — слабый позитив
+            TurnType.NEUTRAL: 0.0,
+            TurnType.STUCK: -0.3,
+            TurnType.REGRESS: -1.0,
+        }
+
+        # Weighted average с экспоненциальным затуханием (недавние важнее)
+        total_weight = 0
+        momentum = 0
+
+        for i, turn in enumerate(self.turns):
+            # Экспоненциальный вес: последний ход важнее
+            recency_weight = 2 ** i  # 1, 2, 4, 8, 16...
+            turn_weight = type_weights.get(turn.turn_type, 0)
+
+            momentum += turn_weight * recency_weight
+            total_weight += recency_weight
+
+        if total_weight == 0:
+            return 0.0
+
+        # Нормализуем к -1..+1
+        raw_momentum = momentum / total_weight
+        return max(-1.0, min(1.0, raw_momentum))
+
+    def get_momentum_direction(self) -> str:
+        """
+        Определить направление momentum.
+
+        Returns:
+            "positive", "negative", или "neutral"
+        """
+        momentum = self.get_momentum()
+
+        if momentum > 0.2:
+            return "positive"
+        elif momentum < -0.2:
+            return "negative"
+        else:
+            return "neutral"
+
+    # -------------------------------------------------------------------------
+    # Trigger Analysis
+    # -------------------------------------------------------------------------
+
+    def get_last_objection_trigger(self) -> Optional[Dict[str, str]]:
+        """
+        Найти что триггернуло последнее возражение.
+
+        Returns:
+            {"action": str, "intent_before": str} или None
+        """
+        for i in range(len(self.turns) - 1, 0, -1):
+            if self.turns[i].turn_type == TurnType.REGRESS:
+                prev_turn = self.turns[i - 1]
+                return {
+                    "action": prev_turn.action,
+                    "intent_before": prev_turn.intent,
+                    "objection_type": self.turns[i].intent,
+                }
+        return None
+
+    def get_last_progress_trigger(self) -> Optional[Dict[str, str]]:
+        """
+        Найти что триггернуло последний прогресс.
+
+        Returns:
+            {"action": str, "intent_before": str} или None
+        """
+        for i in range(len(self.turns) - 1, 0, -1):
+            if self.turns[i].turn_type == TurnType.PROGRESS:
+                prev_turn = self.turns[i - 1]
+                return {
+                    "action": prev_turn.action,
+                    "intent_before": prev_turn.intent,
+                    "progress_intent": self.turns[i].intent,
+                }
+        return None
+
+    def get_effective_actions(self) -> List[str]:
+        """
+        Получить список actions которые привели к прогрессу.
+
+        Returns:
+            Список эффективных actions
+        """
+        effective = []
+        for i in range(1, len(self.turns)):
+            if self.turns[i].turn_type == TurnType.PROGRESS:
+                effective.append(self.turns[i - 1].action)
+        return effective
+
+    def get_ineffective_actions(self) -> List[str]:
+        """
+        Получить список actions которые привели к регрессу.
+
+        Returns:
+            Список неэффективных actions
+        """
+        ineffective = []
+        for i in range(1, len(self.turns)):
+            if self.turns[i].turn_type == TurnType.REGRESS:
+                ineffective.append(self.turns[i - 1].action)
+        return ineffective
+
+    # -------------------------------------------------------------------------
+    # Message Metrics
+    # -------------------------------------------------------------------------
+
+    def get_avg_message_length(self) -> float:
+        """Получить среднюю длину сообщений клиента."""
+        if not self.turns:
+            return 0.0
+        return sum(t.message_length for t in self.turns) / len(self.turns)
+
+    def get_avg_word_count(self) -> float:
+        """Получить среднее количество слов в сообщениях."""
+        if not self.turns:
+            return 0.0
+        return sum(t.word_count for t in self.turns) / len(self.turns)
+
+    def get_data_provided_count(self) -> int:
+        """Подсчитать сколько раз клиент предоставил данные."""
+        return sum(1 for t in self.turns if t.has_data)
+
+    # -------------------------------------------------------------------------
+    # Convenience: Уровень 2 only context
+    # -------------------------------------------------------------------------
+
+    def get_level2_context(self) -> Dict[str, Any]:
+        """
+        Получить ТОЛЬКО контекст Уровня 2 (для тестирования).
+
+        Returns:
+            Dict только с метриками Уровня 2
+        """
+        return self.get_structured_context()
 
     def __len__(self) -> int:
         """Количество ходов в окне."""

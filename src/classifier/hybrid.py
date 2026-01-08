@@ -587,4 +587,99 @@ class HybridClassifier:
                     "pattern_type": "repeated_price_after_deflect",
                 }
 
+        # =================================================================
+        # УРОВЕНЬ 2: Паттерны из структурированного контекста
+        # =================================================================
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 6: Негативный momentum + короткое сообщение = отказ
+        # -----------------------------------------------------------------
+        momentum_direction = context.get("momentum_direction")
+        engagement_level = context.get("engagement_level")
+
+        if momentum_direction == "negative" and engagement_level == "disengaged":
+            # Клиент теряет интерес и momentum негативный
+            # Короткие негативные маркеры скорее всего отказ
+            rejection_markers = ["нет", "не", "пока", "потом", "позже"]
+            if any(marker in message for marker in rejection_markers) and len(message) < 20:
+                return {
+                    "intent": "rejection",
+                    "confidence": 0.8,
+                    "pattern_type": "negative_momentum_disengaged",
+                }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 7: Declining engagement + вопрос = последний шанс
+        # -----------------------------------------------------------------
+        engagement_trend = context.get("engagement_trend")
+
+        if engagement_trend == "declining" and engagement_level in ("low", "disengaged"):
+            # Engagement падает, но клиент задаёт вопрос
+            # Это последний шанс — нужно качественно ответить
+            question_markers = ["?", "как", "что", "какой", "почему"]
+            if any(marker in message for marker in question_markers):
+                # Помечаем как high_priority вопрос
+                # Но не меняем intent — пусть определит основной классификатор
+                pass
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 8: После неэффективного action — ожидать возражение
+        # -----------------------------------------------------------------
+        last_objection_trigger = context.get("last_objection_trigger")
+
+        if last_objection_trigger:
+            # Знаем какой action триггернул возражение раньше
+            trigger_action = last_objection_trigger.get("action")
+            last_action = context.get("last_action")
+
+            # Если повторяем тот же action — вероятно снова будет возражение
+            if trigger_action == last_action:
+                # Повышаем чувствительность к возражениям
+                objection_markers = [
+                    "дорого", "нет", "не надо", "подумаю", "потом",
+                    "уже есть", "не интересно", "сложно"
+                ]
+                if any(marker in message for marker in objection_markers):
+                    # Похоже на возражение — определим тип
+                    if "дорого" in message or "бюджет" in message:
+                        return {
+                            "intent": "objection_price",
+                            "confidence": 0.85,
+                            "pattern_type": "repeated_trigger_objection",
+                        }
+                    elif "подумаю" in message or "подумать" in message:
+                        return {
+                            "intent": "objection_think",
+                            "confidence": 0.85,
+                            "pattern_type": "repeated_trigger_objection",
+                        }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 9: Positive momentum + согласие = подтверждение
+        # -----------------------------------------------------------------
+        if momentum_direction == "positive":
+            is_progressing = context.get("is_progressing", False)
+
+            if is_progressing:
+                # Клиент движется вперёд, momentum положительный
+                # Короткие позитивные ответы — это подтверждение
+                agreement_markers = ["да", "ок", "хорошо", "ладно", "давайте", "конечно"]
+                if any(marker in message.lower() for marker in agreement_markers) and len(message) < 30:
+                    return {
+                        "intent": "agreement",
+                        "confidence": 0.9,
+                        "pattern_type": "positive_momentum_agreement",
+                    }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 10: Regressing + длинное сообщение = детальное возражение
+        # -----------------------------------------------------------------
+        is_regressing = context.get("is_regressing", False)
+
+        if is_regressing and len(message) > 50:
+            # Клиент откатывается и пишет много
+            # Это детальное возражение — нужно внимательно прочитать
+            # Пропускаем к основному классификатору для точного определения типа
+            pass
+
         return None
