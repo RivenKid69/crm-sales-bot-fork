@@ -13,10 +13,18 @@ Context Window — расширенный контекст для классиф
 - Funnel Progress Analysis (скорость по воронке)
 - Momentum (инерция диалога)
 
+Уровень 3: Episodic Memory
+- Хранит ключевые эпизоды ВСЕГО диалога (не удаляются при ротации окна)
+- Первое/последнее возражение, переломные моменты
+- Собранный профиль клиента (данные, боли)
+- Успешные и неуспешные actions за весь диалог
+- Темы которые триггерят позитив/негатив
+
 Исследования показали:
 - Окно 3-5 ходов оптимально (arXiv 2024)
 - Полная история создаёт шум и ухудшает классификацию на 20%+
 - Последний ход пользователя — самый важный контекст
+- Но ключевые эпизоды (первое возражение) важны независимо от давности
 """
 
 from dataclasses import dataclass, field
@@ -158,7 +166,15 @@ class TurnContext:
         if self.intent in {"greeting", "gratitude"}:
             return TurnType.NEUTRAL
 
-        # 5. Прогресс по delta
+        # 5. Прогресс по intent (agreement, demo_request и т.д.)
+        if self.intent in {
+            "agreement", "demo_request", "callback_request", "contact_provided",
+            "situation_provided", "problem_revealed", "implication_acknowledged",
+            "need_expressed", "info_provided"
+        }:
+            return TurnType.PROGRESS
+
+        # 6. Прогресс по delta
         if self.funnel_delta > 0:
             return TurnType.PROGRESS
 
@@ -169,6 +185,449 @@ class TurnContext:
             return TurnType.NEUTRAL
 
         return TurnType.PROGRESS
+
+
+# =============================================================================
+# УРОВЕНЬ 3: Episodic Memory
+# =============================================================================
+
+class EpisodeType(Enum):
+    """Тип эпизода для долгосрочной памяти."""
+    FIRST_OBJECTION = "first_objection"       # Первое возражение
+    BREAKTHROUGH = "breakthrough"              # Прорыв (переход от негатива к позитиву)
+    DATA_REVEALED = "data_revealed"           # Клиент раскрыл данные
+    PAIN_POINT = "pain_point"                 # Выявленная боль
+    TURNING_POINT = "turning_point"           # Переломный момент (смена тренда)
+    REPEATED_OBJECTION = "repeated_objection" # Повторное возражение того же типа
+    SUCCESSFUL_CLOSE = "successful_close"     # Успешное согласие на CTA
+
+
+@dataclass
+class Episode:
+    """Один эпизод для долгосрочной памяти."""
+    episode_type: EpisodeType
+    turn_number: int                          # Номер хода (с начала диалога)
+    intent: str                               # Интент в момент эпизода
+    action_before: Optional[str] = None       # Action который привёл к эпизоду
+    data: Dict = field(default_factory=dict)  # Дополнительные данные
+    timestamp: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict:
+        """Сериализация в словарь."""
+        return {
+            "type": self.episode_type.value,
+            "turn": self.turn_number,
+            "intent": self.intent,
+            "action_before": self.action_before,
+            "data": self.data,
+        }
+
+
+@dataclass
+class ClientProfile:
+    """Профиль клиента собранный за диалог."""
+    # Базовые данные
+    company_name: Optional[str] = None
+    company_size: Optional[int] = None
+    industry: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+
+    # Выявленные боли
+    pain_points: List[str] = field(default_factory=list)
+
+    # Интересы
+    interested_features: List[str] = field(default_factory=list)
+
+    # Возражения которые были
+    objection_types: List[str] = field(default_factory=list)
+
+    def update_from_data(self, extracted_data: Dict) -> None:
+        """Обновить профиль из extracted_data."""
+        if not extracted_data:
+            return
+
+        # Базовые данные
+        if "company_name" in extracted_data:
+            self.company_name = extracted_data["company_name"]
+        if "company_size" in extracted_data:
+            self.company_size = extracted_data["company_size"]
+        if "industry" in extracted_data:
+            self.industry = extracted_data["industry"]
+        if "contact_name" in extracted_data:
+            self.contact_name = extracted_data["contact_name"]
+        if "phone" in extracted_data:
+            self.contact_phone = extracted_data["phone"]
+        if "email" in extracted_data:
+            self.contact_email = extracted_data["email"]
+
+        # Боли
+        if "pain_point" in extracted_data:
+            pain = extracted_data["pain_point"]
+            if pain and pain not in self.pain_points:
+                self.pain_points.append(pain)
+
+        # Интересы
+        if "interested_in" in extracted_data:
+            feature = extracted_data["interested_in"]
+            if feature and feature not in self.interested_features:
+                self.interested_features.append(feature)
+
+    def add_objection(self, objection_type: str) -> None:
+        """Добавить тип возражения."""
+        if objection_type not in self.objection_types:
+            self.objection_types.append(objection_type)
+
+    def has_data(self) -> bool:
+        """Проверить есть ли собранные данные."""
+        return bool(
+            self.company_name or self.company_size or
+            self.contact_name or self.contact_phone or
+            self.pain_points
+        )
+
+    def to_dict(self) -> Dict:
+        """Сериализация в словарь."""
+        return {
+            "company_name": self.company_name,
+            "company_size": self.company_size,
+            "industry": self.industry,
+            "contact_name": self.contact_name,
+            "contact_phone": self.contact_phone,
+            "contact_email": self.contact_email,
+            "pain_points": self.pain_points,
+            "interested_features": self.interested_features,
+            "objection_types": self.objection_types,
+        }
+
+
+class EpisodicMemory:
+    """
+    Долгосрочная память ключевых эпизодов диалога.
+
+    В отличие от скользящего окна (Level 1-2), эпизоды НЕ удаляются.
+    Хранит важные моменты всего диалога для контекста.
+    """
+
+    def __init__(self):
+        """Инициализация эпизодической памяти."""
+        self.episodes: List[Episode] = []
+        self.client_profile = ClientProfile()
+        self.total_turns = 0
+
+        # Статистика за весь диалог
+        self.all_objections: Dict[str, int] = {}  # тип -> количество
+        self.all_questions: Dict[str, int] = {}   # тип -> количество
+        self.successful_actions: Dict[str, int] = {}  # action -> сколько раз привёл к progress
+        self.failed_actions: Dict[str, int] = {}     # action -> сколько раз привёл к regress
+
+        # Флаги состояния
+        self._first_objection_recorded = False
+        self._breakthrough_recorded = False
+        self._last_momentum_direction: Optional[str] = None
+
+    def record_turn(self, turn: 'TurnContext', turn_number: int,
+                    prev_turn: Optional['TurnContext'] = None,
+                    momentum_direction: Optional[str] = None) -> List[Episode]:
+        """
+        Записать ход и определить нужно ли создать эпизод.
+
+        Args:
+            turn: Текущий ход
+            turn_number: Номер хода (с начала диалога)
+            prev_turn: Предыдущий ход (для анализа триггеров)
+            momentum_direction: Текущий momentum ("positive", "negative", "neutral")
+
+        Returns:
+            Список созданных эпизодов
+        """
+        self.total_turns = turn_number
+        new_episodes = []
+
+        action_before = prev_turn.action if prev_turn else None
+
+        # -----------------------------------------------------------------
+        # 1. Обновляем профиль клиента
+        # -----------------------------------------------------------------
+        if turn.extracted_data:
+            self.client_profile.update_from_data(turn.extracted_data)
+            # Эпизод: клиент раскрыл данные
+            if turn.has_data:
+                ep = Episode(
+                    episode_type=EpisodeType.DATA_REVEALED,
+                    turn_number=turn_number,
+                    intent=turn.intent,
+                    action_before=action_before,
+                    data=turn.extracted_data.copy(),
+                )
+                new_episodes.append(ep)
+
+        # -----------------------------------------------------------------
+        # 2. Обрабатываем возражения
+        # -----------------------------------------------------------------
+        if turn.turn_type == TurnType.REGRESS:
+            objection_type = turn.intent
+
+            # Первое возражение
+            if not self._first_objection_recorded:
+                ep = Episode(
+                    episode_type=EpisodeType.FIRST_OBJECTION,
+                    turn_number=turn_number,
+                    intent=objection_type,
+                    action_before=action_before,
+                )
+                new_episodes.append(ep)
+                self._first_objection_recorded = True
+
+            # Повторное возражение того же типа
+            elif objection_type in self.all_objections and self.all_objections[objection_type] >= 1:
+                ep = Episode(
+                    episode_type=EpisodeType.REPEATED_OBJECTION,
+                    turn_number=turn_number,
+                    intent=objection_type,
+                    action_before=action_before,
+                    data={"count": self.all_objections[objection_type] + 1},
+                )
+                new_episodes.append(ep)
+
+            # Обновляем статистику возражений
+            self.all_objections[objection_type] = self.all_objections.get(objection_type, 0) + 1
+            self.client_profile.add_objection(objection_type)
+
+            # Неэффективный action
+            if action_before:
+                self.failed_actions[action_before] = self.failed_actions.get(action_before, 0) + 1
+
+        # -----------------------------------------------------------------
+        # 3. Обрабатываем прогресс
+        # -----------------------------------------------------------------
+        if turn.turn_type == TurnType.PROGRESS:
+            # Эффективный action
+            if action_before:
+                self.successful_actions[action_before] = self.successful_actions.get(action_before, 0) + 1
+
+            # Breakthrough: первый прогресс после возражений
+            if not self._breakthrough_recorded and self._first_objection_recorded:
+                ep = Episode(
+                    episode_type=EpisodeType.BREAKTHROUGH,
+                    turn_number=turn_number,
+                    intent=turn.intent,
+                    action_before=action_before,
+                )
+                new_episodes.append(ep)
+                self._breakthrough_recorded = True
+
+        # -----------------------------------------------------------------
+        # 4. Обрабатываем вопросы
+        # -----------------------------------------------------------------
+        if turn.turn_type == TurnType.LATERAL:
+            self.all_questions[turn.intent] = self.all_questions.get(turn.intent, 0) + 1
+
+        # -----------------------------------------------------------------
+        # 5. Обнаружение переломных моментов
+        # -----------------------------------------------------------------
+        if momentum_direction and self._last_momentum_direction:
+            # Смена с негативного на позитивный
+            if self._last_momentum_direction == "negative" and momentum_direction == "positive":
+                ep = Episode(
+                    episode_type=EpisodeType.TURNING_POINT,
+                    turn_number=turn_number,
+                    intent=turn.intent,
+                    action_before=action_before,
+                    data={"from": "negative", "to": "positive"},
+                )
+                new_episodes.append(ep)
+
+            # Смена с позитивного на негативный
+            elif self._last_momentum_direction == "positive" and momentum_direction == "negative":
+                ep = Episode(
+                    episode_type=EpisodeType.TURNING_POINT,
+                    turn_number=turn_number,
+                    intent=turn.intent,
+                    action_before=action_before,
+                    data={"from": "positive", "to": "negative"},
+                )
+                new_episodes.append(ep)
+
+        self._last_momentum_direction = momentum_direction
+
+        # -----------------------------------------------------------------
+        # 6. Сохраняем эпизоды
+        # -----------------------------------------------------------------
+        self.episodes.extend(new_episodes)
+
+        return new_episodes
+
+    def record_successful_close(self, turn: 'TurnContext', turn_number: int,
+                                action_before: Optional[str] = None) -> Episode:
+        """Записать успешное закрытие."""
+        ep = Episode(
+            episode_type=EpisodeType.SUCCESSFUL_CLOSE,
+            turn_number=turn_number,
+            intent=turn.intent,
+            action_before=action_before,
+        )
+        self.episodes.append(ep)
+        return ep
+
+    def reset(self) -> None:
+        """Очистить память для нового диалога."""
+        self.episodes.clear()
+        self.client_profile = ClientProfile()
+        self.total_turns = 0
+        self.all_objections.clear()
+        self.all_questions.clear()
+        self.successful_actions.clear()
+        self.failed_actions.clear()
+        self._first_objection_recorded = False
+        self._breakthrough_recorded = False
+        self._last_momentum_direction = None
+
+    # -------------------------------------------------------------------------
+    # Получение эпизодов
+    # -------------------------------------------------------------------------
+
+    def get_first_objection(self) -> Optional[Episode]:
+        """Получить первое возражение."""
+        for ep in self.episodes:
+            if ep.episode_type == EpisodeType.FIRST_OBJECTION:
+                return ep
+        return None
+
+    def get_breakthrough(self) -> Optional[Episode]:
+        """Получить момент прорыва."""
+        for ep in self.episodes:
+            if ep.episode_type == EpisodeType.BREAKTHROUGH:
+                return ep
+        return None
+
+    def get_turning_points(self) -> List[Episode]:
+        """Получить все переломные моменты."""
+        return [ep for ep in self.episodes if ep.episode_type == EpisodeType.TURNING_POINT]
+
+    def get_repeated_objections(self) -> List[Episode]:
+        """Получить повторные возражения."""
+        return [ep for ep in self.episodes if ep.episode_type == EpisodeType.REPEATED_OBJECTION]
+
+    def get_episodes_by_type(self, episode_type: EpisodeType) -> List[Episode]:
+        """Получить эпизоды определённого типа."""
+        return [ep for ep in self.episodes if ep.episode_type == episode_type]
+
+    # -------------------------------------------------------------------------
+    # Статистика и анализ
+    # -------------------------------------------------------------------------
+
+    def get_most_common_objection(self) -> Optional[Tuple[str, int]]:
+        """Получить самый частый тип возражения."""
+        if not self.all_objections:
+            return None
+        return max(self.all_objections.items(), key=lambda x: x[1])
+
+    def get_most_effective_action(self) -> Optional[Tuple[str, int]]:
+        """Получить самый эффективный action."""
+        if not self.successful_actions:
+            return None
+        return max(self.successful_actions.items(), key=lambda x: x[1])
+
+    def get_least_effective_action(self) -> Optional[Tuple[str, int]]:
+        """Получить наименее эффективный action."""
+        if not self.failed_actions:
+            return None
+        return max(self.failed_actions.items(), key=lambda x: x[1])
+
+    def is_objection_repeated(self, objection_type: str) -> bool:
+        """Проверить было ли такое возражение раньше."""
+        return self.all_objections.get(objection_type, 0) >= 1
+
+    def get_objection_count(self, objection_type: str) -> int:
+        """Получить количество возражений определённого типа."""
+        return self.all_objections.get(objection_type, 0)
+
+    def get_total_objections(self) -> int:
+        """Получить общее количество возражений."""
+        return sum(self.all_objections.values())
+
+    def has_breakthrough(self) -> bool:
+        """Был ли прорыв в диалоге."""
+        return self._breakthrough_recorded
+
+    def get_action_effectiveness(self, action: str) -> float:
+        """
+        Получить эффективность action (0-1).
+
+        Returns:
+            Отношение успехов к общему количеству
+        """
+        successes = self.successful_actions.get(action, 0)
+        failures = self.failed_actions.get(action, 0)
+        total = successes + failures
+        if total == 0:
+            return 0.5  # Нет данных
+        return successes / total
+
+    # -------------------------------------------------------------------------
+    # Контекст для классификатора
+    # -------------------------------------------------------------------------
+
+    def get_episodic_context(self) -> Dict[str, Any]:
+        """
+        Получить контекст из эпизодической памяти.
+
+        Returns:
+            Dict с ключевыми эпизодами и статистикой
+        """
+        first_objection = self.get_first_objection()
+        breakthrough = self.get_breakthrough()
+        most_common_obj = self.get_most_common_objection()
+        most_effective = self.get_most_effective_action()
+        least_effective = self.get_least_effective_action()
+
+        return {
+            # Ключевые эпизоды
+            "first_objection_type": first_objection.intent if first_objection else None,
+            "first_objection_turn": first_objection.turn_number if first_objection else None,
+            "first_objection_trigger": first_objection.action_before if first_objection else None,
+
+            "has_breakthrough": self._breakthrough_recorded,
+            "breakthrough_turn": breakthrough.turn_number if breakthrough else None,
+            "breakthrough_action": breakthrough.action_before if breakthrough else None,
+
+            "turning_points_count": len(self.get_turning_points()),
+
+            # Статистика возражений
+            "total_objections": self.get_total_objections(),
+            "objection_types_seen": list(self.all_objections.keys()),
+            "most_common_objection": most_common_obj[0] if most_common_obj else None,
+            "most_common_objection_count": most_common_obj[1] if most_common_obj else 0,
+            "repeated_objection_types": [
+                ep.intent for ep in self.get_repeated_objections()
+            ],
+
+            # Эффективность actions
+            "most_effective_action": most_effective[0] if most_effective else None,
+            "least_effective_action": least_effective[0] if least_effective else None,
+            "successful_actions": dict(self.successful_actions),
+            "failed_actions": dict(self.failed_actions),
+
+            # Профиль клиента
+            "client_has_data": self.client_profile.has_data(),
+            "client_company_size": self.client_profile.company_size,
+            "client_pain_points": self.client_profile.pain_points,
+            "client_objection_history": self.client_profile.objection_types,
+
+            # Мета
+            "total_turns": self.total_turns,
+            "episodes_count": len(self.episodes),
+        }
+
+    def get_client_profile(self) -> Dict[str, Any]:
+        """Получить профиль клиента."""
+        return self.client_profile.to_dict()
+
+    def __len__(self) -> int:
+        """Количество записанных эпизодов."""
+        return len(self.episodes)
 
 
 class ContextWindow:
@@ -216,18 +675,35 @@ class ContextWindow:
         self.max_size = max_size
         self.turns: List[TurnContext] = []
 
+        # Уровень 3: Episodic Memory (не сбрасывается при ротации окна)
+        self.episodic_memory = EpisodicMemory()
+        self._total_turn_count = 0  # Счётчик всех ходов за диалог
+
     def add_turn(self, turn: TurnContext) -> None:
         """
         Добавить ход в окно.
 
         Если окно переполнено, удаляет самый старый ход.
+        Также записывает в Episodic Memory (Level 3).
 
         Args:
             turn: Контекст хода
         """
+        # Level 1-2: Скользящее окно
+        prev_turn = self.turns[-1] if self.turns else None
         self.turns.append(turn)
         if len(self.turns) > self.max_size:
             self.turns.pop(0)
+
+        # Level 3: Episodic Memory
+        self._total_turn_count += 1
+        momentum_direction = self.get_momentum_direction()
+        self.episodic_memory.record_turn(
+            turn=turn,
+            turn_number=self._total_turn_count,
+            prev_turn=prev_turn,
+            momentum_direction=momentum_direction,
+        )
 
     def add_turn_from_dict(
         self,
@@ -268,6 +744,8 @@ class ContextWindow:
     def reset(self) -> None:
         """Очистить окно для нового диалога."""
         self.turns.clear()
+        self.episodic_memory.reset()
+        self._total_turn_count = 0
 
     # =========================================================================
     # Получение истории
@@ -545,6 +1023,9 @@ class ContextWindow:
 
         # Уровень 2: Структурированный контекст
         context.update(self.get_structured_context())
+
+        # Уровень 3: Episodic Memory
+        context.update(self.get_episodic_context())
 
         return context
 
@@ -933,6 +1414,52 @@ class ContextWindow:
             Dict только с метриками Уровня 2
         """
         return self.get_structured_context()
+
+    # =========================================================================
+    # УРОВЕНЬ 3: Episodic Memory (долгосрочная память)
+    # =========================================================================
+
+    def get_episodic_context(self) -> Dict[str, Any]:
+        """
+        Получить контекст из Episodic Memory (Уровень 3).
+
+        Returns:
+            Dict с ключевыми эпизодами и статистикой за весь диалог
+        """
+        return self.episodic_memory.get_episodic_context()
+
+    def get_level3_context(self) -> Dict[str, Any]:
+        """
+        Получить ТОЛЬКО контекст Уровня 3 (для тестирования).
+
+        Returns:
+            Dict только с метриками Уровня 3
+        """
+        return self.get_episodic_context()
+
+    def get_client_profile(self) -> Dict[str, Any]:
+        """Получить собранный профиль клиента."""
+        return self.episodic_memory.get_client_profile()
+
+    def get_first_objection(self) -> Optional[Episode]:
+        """Получить первое возражение за диалог."""
+        return self.episodic_memory.get_first_objection()
+
+    def has_breakthrough(self) -> bool:
+        """Был ли прорыв в диалоге (прогресс после возражения)."""
+        return self.episodic_memory.has_breakthrough()
+
+    def is_objection_repeated(self, objection_type: str) -> bool:
+        """Проверить было ли такое возражение раньше в диалоге."""
+        return self.episodic_memory.is_objection_repeated(objection_type)
+
+    def get_total_turn_count(self) -> int:
+        """Получить общее количество ходов за диалог (не только в окне)."""
+        return self._total_turn_count
+
+    def get_action_effectiveness(self, action: str) -> float:
+        """Получить эффективность action за весь диалог (0-1)."""
+        return self.episodic_memory.get_action_effectiveness(action)
 
     def __len__(self) -> int:
         """Количество ходов в окне."""

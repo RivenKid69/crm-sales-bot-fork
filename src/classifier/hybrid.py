@@ -489,9 +489,99 @@ class HybridClassifier:
         Returns:
             {"intent": str, "confidence": float, "pattern_type": str} или None
         """
+        # =================================================================
+        # УРОВЕНЬ 3: Паттерны из Episodic Memory (не требуют intent_history)
+        # Проверяем ПЕРВЫМИ, т.к. они основаны на долгосрочной памяти
+        # =================================================================
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 11: Повторное возражение того же типа — высокая уверенность
+        # -----------------------------------------------------------------
+        repeated_objection_types = context.get("repeated_objection_types", [])
+
+        if repeated_objection_types:
+            # Клиент уже возражал по этой теме раньше
+            price_markers = ["дорого", "цена", "стоит", "бюджет", "денег"]
+            time_markers = ["времени", "некогда", "занят", "потом", "позже"]
+            think_markers = ["подумать", "подумаю", "обдумать"]
+
+            if "objection_price" in repeated_objection_types:
+                if any(m in message for m in price_markers):
+                    return {
+                        "intent": "objection_price",
+                        "confidence": 0.95,
+                        "pattern_type": "repeated_objection_episodic",
+                        "is_repeated": True,
+                    }
+
+            if "objection_no_time" in repeated_objection_types:
+                if any(m in message for m in time_markers):
+                    return {
+                        "intent": "objection_no_time",
+                        "confidence": 0.95,
+                        "pattern_type": "repeated_objection_episodic",
+                        "is_repeated": True,
+                    }
+
+            if "objection_think" in repeated_objection_types:
+                if any(m in message for m in think_markers):
+                    return {
+                        "intent": "objection_think",
+                        "confidence": 0.95,
+                        "pattern_type": "repeated_objection_episodic",
+                        "is_repeated": True,
+                    }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 13: После breakthrough — склонность к согласию
+        # -----------------------------------------------------------------
+        has_breakthrough = context.get("has_breakthrough", False)
+
+        if has_breakthrough and len(message) < 20:
+            soft_positive = ["ну", "ладно", "ок", "понял", "хорошо", "да"]
+            if any(m in message.lower() for m in soft_positive):
+                return {
+                    "intent": "agreement",
+                    "confidence": 0.85,
+                    "pattern_type": "post_breakthrough_agreement",
+                }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 14: Много turning points — нестабильный клиент
+        # -----------------------------------------------------------------
+        turning_points_count = context.get("turning_points_count", 0)
+
+        if turning_points_count >= 3 and len(message) < 15:
+            agreement_words = ["да", "ок", "хорошо", "ладно"]
+            if any(w == message.lower().strip().rstrip(".,!") for w in agreement_words):
+                return {
+                    "intent": "agreement",
+                    "confidence": 0.6,
+                    "pattern_type": "unstable_client_agreement",
+                }
+
+        # -----------------------------------------------------------------
+        # ПАТТЕРН 15: Клиент с данными без возражений — лояльный
+        # -----------------------------------------------------------------
+        client_has_data = context.get("client_has_data", False)
+        total_objections = context.get("total_objections", 0)
+
+        if client_has_data and total_objections == 0 and len(message) < 40:
+            interest_markers = ["интересно", "расскажите", "покажите"]
+            if any(m in message.lower() for m in interest_markers):
+                return {
+                    "intent": "agreement",
+                    "confidence": 0.9,
+                    "pattern_type": "engaged_client_interest",
+                }
+
+        # =================================================================
+        # УРОВЕНЬ 1-2: Паттерны из скользящего окна (требуют intent_history)
+        # =================================================================
+
         intent_history = context.get("intent_history", [])
 
-        # Нужна хотя бы минимальная история
+        # Нужна хотя бы минимальная история для Level 1-2 паттернов
         if len(intent_history) < 2:
             return None
 
