@@ -112,87 +112,131 @@ Hardcoded	Каждое условие = новый if в коде
 └─────────────────────────────────────────────────────────────────────────────┘
 
                               config.py
-                    ┌──────────────────────────────────────┐
-                    │  "rules": { ... }                    │
-                    │  "transition_rules": { ... }         │
-                    └──────────────────────────────────────┘
+         ┌────────────────────────────────────────────────────────┐
+         │                                                        │
+         │  INTENT_CATEGORIES = {                                 │
+         │      "objection": [...],                               │
+         │      "positive": [...],                                │
+         │      "go_back": [...]                                  │
+         │  }                                                     │
+         │                                                        │
+         │  SALES_CONFIG = {                                      │
+         │      "global_rules": { ... },     ← fallback actions   │
+         │      "rule_groups": { ... },      ← shared rules       │
+         │      "states": {                                       │
+         │          "spin_situation": {                           │
+         │              "rules": { ... },      ← action           │
+         │              "transitions": { ... } ← state            │
+         │          }                                             │
+         │      }                                                 │
+         │  }                                                     │
+         │                                                        │
+         └────────────────────────────────────────────────────────┘
                                        │
                                        ▼
                               state_machine.py
-                    ┌──────────────────────────────────────┐
-                    │  def apply_rules():                  │
-                    │    action = _resolve_action(...)     │
-                    │    next_state = _resolve_transition(...) │
-                    │    return action, next_state         │
-                    └──────────────────────────────────────┘
+         ┌────────────────────────────────────────────────────────┐
+         │                                                        │
+         │  def apply_rules(intent):                              │
+         │      _apply_hooks(intent)           # 0. Side effects  │
+         │      _check_early_exits(intent)     # 1. Final/reject  │
+         │      action = _resolve_action(...)  # 2. Action        │
+         │      state = _resolve_transition(.) # 3. Transition    │
+         │      return action, state                              │
+         │                                                        │
+         └────────────────────────────────────────────────────────┘
                                        │
                                        ▼
                     ┌──────────────────────────────────────┐
-                    │  _resolve_action(rule)               │
-                    │  _resolve_transition(rule)           │
-                    │    uses condition_evaluator          │
+                    │  condition_evaluator.py              │
+                    │  - evaluate(condition, context)      │
+                    │  - EvaluatorContext dataclass        │
                     └──────────────────────────────────────┘
 2.2 Принципы
 Принцип	Описание
 Декларативность	Вся логика описана в config.py, не в коде
 Единый источник правды	Хочешь узнать поведение — смотри config
-Разделение ответственности	rules отвечают только за action, transition_rules только за переходы
+Разделение ответственности	rules → action, transitions → state (строгое разделение)
 Расширяемость	Новое условие = новый тип в resolver, используй везде
 Обратная совместимость	Старые правила-строки продолжают работать
 Тестируемость	Условия можно тестировать изолированно
 Отказоустойчивость	Жёсткая валидация в CI, мягкий fallback + лог/метрики в runtime
 Часть 3: ДЕТАЛЬНОЕ ОПИСАНИЕ РЕШЕНИЯ
-3.1 Формат rules и transition_rules (Schema)
+3.1 Формат rules и transitions (Schema)
 
-# Простое action-правило (обратная совместимость)
+ПРИНЦИП: Строгое разделение ответственности
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  rules       → определяют ACTION (что делать)                               │
+│  transitions → определяют STATE  (куда переходить)                          │
+│                                                                             │
+│  Оба поддерживают условия. Если нужны оба — условие дублируется явно.       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+RULES — определяют action
+═══════════════════════════════════════════════════════════════════════════════
+
+# Простое правило (обратная совместимость)
 "greeting": "acknowledge_and_continue"
 
-# Условное action-правило
+# Условное правило
 "price_question": {
     "default": "deflect_and_continue",
     "conditions": [
         {
-            "when": { ... },                 # Условие (см. 3.2)
-            "then": "answer_with_facts"      # Только action
+            "when": {"has_any": ["company_size", "users_count"]},
+            "then": "answer_with_facts"      # Только action (строка)
         }
     ]
 }
 
-# Расширенный формат then — action + state вместе
+═══════════════════════════════════════════════════════════════════════════════
+TRANSITIONS — определяют state
+═══════════════════════════════════════════════════════════════════════════════
+
+# Простой переход (обратная совместимость)
+"demo_request": "success"
+
+# Условный переход
 "contact_provided": {
-    "default": "acknowledge_and_continue",
+    "default": null,                         # null → не переходить, fallback на SPIN/data_complete
     "conditions": [
         {
             "when": {"is_spin_state": true},
-            "then": {
-                "action": "acknowledge_contact_early",  # Действие
-                "state": "close"                        # И переход
-            }
+            "then": "close"                  # Только state (строка)
         }
     ]
 }
 
-# Простое transition-правило
-"demo_request": "success"
+═══════════════════════════════════════════════════════════════════════════════
+КОГДА НУЖНЫ ОБА (action + state) — дублируем условие явно
+═══════════════════════════════════════════════════════════════════════════════
 
-# Условное transition-правило
-"demo_request": {
-    "conditions": [
-        {
-            "when": {"state_in": ["close"]},
-            "then": "success"                # Только state
+# Пример: contact_provided в SPIN-фазе → особый action И переход в close
+"spin_situation": {
+    "rules": {
+        "contact_provided": {
+            "default": "acknowledge_and_continue",
+            "conditions": [
+                {"when": {"is_spin_state": true}, "then": "acknowledge_contact_early"}
+            ]
         }
-    ],
-    "default": None  # None → fallback на transitions/SPIN
+    },
+    "transitions": {
+        "contact_provided": {
+            "default": null,
+            "conditions": [
+                {"when": {"is_spin_state": true}, "then": "close"}
+            ]
+        }
+    }
 }
 
-Формат then:
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  "then": "action_name"              — только action (строка)                │
-│  "then": {"action": "..."}          — только action (объект)                │
-│  "then": {"state": "..."}           — только state                          │
-│  "then": {"action": "...", "state": "..."} — action + state вместе          │
-└─────────────────────────────────────────────────────────────────────────────┘
+# Почему дублирование OK:
+# 1. Явно видно что этот интент влияет и на action, и на переход
+# 2. Легко найти все переходы — смотри только transitions
+# 3. Легко найти все actions — смотри только rules
+# 4. Таких случаев мало (2-3 из ~15)
 3.2 Типы условий (Condition Types)
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -331,6 +375,7 @@ class EvaluatorContext:
     """
     Контекст для проверки условий.
     Все поля гарантированно существуют.
+    IntentTracker — единственный источник истории интентов (см. 3.7).
     """
     # Данные клиента
     collected_data: Dict[str, Any]
@@ -340,14 +385,10 @@ class EvaluatorContext:
     spin_phase: Optional[str]
     is_spin_state: bool
 
-    # История интентов
-    last_intent: Optional[str]
-    intent_consecutive: Dict[str, int]   # {"price_question": 3}
-    intent_history: List[str]
-
-    # Возражения
-    objection_consecutive: int
-    objection_total: int
+    # IntentTracker — единый источник истории интентов
+    # Заменяет: last_intent, intent_consecutive, intent_history,
+    #           objection_consecutive, objection_total
+    intent_tracker: IntentTracker
 
     # Метаданные
     turn_number: int
@@ -364,18 +405,14 @@ class EvaluatorContext:
             state=sm.state,
             spin_phase=sm.spin_phase,
             is_spin_state=sm.spin_phase is not None,
-            last_intent=sm.intent_tracker.last_intent,
-            intent_consecutive=sm.intent_tracker.consecutive.copy(),
-            intent_history=sm.intent_tracker.history.copy(),
-            objection_consecutive=sm.objection_flow.objection_count,
-            objection_total=sm.objection_flow.total_objections,
+            intent_tracker=sm.intent_tracker,  # Передаём весь трекер
             turn_number=len(sm.intent_tracker.history),
             missing_required_data=missing,
         )
 
 Mapping условий → поля контекста:
 ┌────────────────────────┬─────────────────────────────────────────────────────┐
-│  Условие               │  Использует                                         │
+│  Условие               │  Использует (через IntentTracker)                    │
 ├────────────────────────┼─────────────────────────────────────────────────────┤
 │  has_any/has_all       │  collected_data                                     │
 │  missing_any/all       │  collected_data                                     │
@@ -383,14 +420,14 @@ Mapping условий → поля контекста:
 │  state_in              │  state                                              │
 │  spin_phase_in         │  spin_phase                                         │
 │  is_spin_state         │  is_spin_state                                      │
-│  intent_repeated       │  intent_consecutive (подряд), intent_history (window)│
-│  objection_count       │  objection_consecutive, objection_total             │
-│  turn_number           │  turn_number                                        │
+│  intent_repeated       │  intent_tracker.consecutive_count() / .in_window()  │
+│  objection_count       │  intent_tracker.objection_consecutive() / .total()  │
+│  turn_number           │  turn_number (= len(intent_tracker.history))        │
 │  data_complete         │  missing_required_data (empty = complete)           │
 └────────────────────────┴─────────────────────────────────────────────────────┘
-3.3 Порядок проверки условий (rules/transition_rules)
+3.3 Порядок проверки условий (для rules и transitions)
 
-              Вход: rule/transition_rule с conditions
+              Вход: rule или transition с conditions
                          │
                          ▼
          ┌───────────────────────────────┐
@@ -559,24 +596,524 @@ def _get_rule_for_intent(self, state: str, intent: str) -> Optional[Union[str, D
 
 3.5 Порядок разрешения action и переходов
 
-Критические ранние выходы (до resolver'ов):
-- final
-- rejection
-- go_back
-- objections
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  НОВАЯ СТРУКТУРА apply_rules()                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  def apply_rules(self, intent: str) -> Tuple[str, str]:                     │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # 0. HOOKS: Side effects (tracking) — читают из INTENT_CATEGORIES      │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      self._apply_hooks(intent)                                              │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # 1. EARLY EXITS: final, rejection, go_back                            │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      early_exit = self._check_early_exits(intent, config)                   │
+│      if early_exit:                                                         │
+│          return early_exit                                                  │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # 2. RESOLVE ACTION: rules → global_rules → default                    │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      action = self._resolve_action(intent, config)                          │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # 3. RESOLVE TRANSITION: transitions → SPIN → data_complete → stay     │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      next_state = self._resolve_transition(intent, config)                  │
+│                                                                             │
+│      return action, next_state                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-Action resolver:
-1) rules[intent] (str или conditional)
-2) QUESTION_INTENTS → answer_question
-3) default → continue_current_goal
+Action resolver (подробно):
+1) state.rules[intent] (str или conditional)
+2) rule_groups (если inherit_rules)
+3) global_rules[intent]
+4) default → continue_current_goal
 
-Transition resolver:
-1) transition_rules[intent] (str или conditional)
-2) SPIN progress / SPIN data_complete
-3) transitions[intent]
-4) non-SPIN data_complete
-5) transitions["any"]
-6) stay in current state
+Transition resolver (подробно):
+1) state.transitions[intent] (str или conditional)
+2) SPIN progress (situation_provided → spin_problem, etc.)
+3) data_complete
+4) transitions["any"]
+5) stay in current state
+
+3.6 Intent Categories и Hooks
+
+ПРОБЛЕМА: В текущем коде категории интентов hardcoded:
+- OBJECTION_INTENTS = ["objection_price", ...]
+- POSITIVE_INTENTS = {"agreement", "demo_request", ...}
+- GO_BACK_INTENTS = ["go_back", "correct_info"]
+- QUESTION_INTENTS = [...]
+
+РЕШЕНИЕ: Вынести категории в config, оставить только hooks в коде.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  INTENT_CATEGORIES — определяют какие hooks вызывать                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  # config.py                                                                │
+│  INTENT_CATEGORIES = {                                                      │
+│      "objection": [                                                         │
+│          "objection_price",                                                 │
+│          "objection_competitor",                                            │
+│          "objection_no_time",                                               │
+│          "objection_think"                                                  │
+│      ],                                                                     │
+│      "positive": [                                                          │
+│          "agreement", "demo_request", "callback_request", "contact_provided",│
+│          "consultation_request",                                            │
+│          "situation_provided", "problem_revealed", "implication_acknowledged",│
+│          "need_expressed", "info_provided",                                 │
+│          "question_features", "question_integrations", "comparison",        │
+│          "greeting", "gratitude"                                            │
+│      ],                                                                     │
+│      "go_back": ["go_back", "correct_info"],                                │
+│      "question": [                                                          │
+│          "question_features", "question_integrations", "question_technical" │
+│      ]                                                                      │
+│  }                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  HOOKS — минимальный код для side effects                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  # state_machine.py                                                         │
+│  def _apply_hooks(self, intent: str) -> None:                               │
+│      """                                                                    │
+│      Side effects based on intent category.                                 │
+│      Читает категории из INTENT_CATEGORIES.                                 │
+│      """                                                                    │
+│      categories = INTENT_CATEGORIES                                         │
+│                                                                             │
+│      # Objection tracking                                                   │
+│      if intent in categories.get("objection", []):                          │
+│          self.objection_flow.record_objection(intent, self.state)           │
+│                                                                             │
+│      # Reset objection count on positive intents                            │
+│      if intent in categories.get("positive", []):                           │
+│          self.objection_flow.reset_consecutive()                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  РЕЗУЛЬТАТЫ — через conditional rules/transitions                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  # Вместо hardcoded: if should_soft_close(): return "...", "soft_close"     │
+│  # Используем условие objection_count в rules/transitions:                  │
+│                                                                             │
+│  # Любое состояние где может быть objection                                 │
+│  "rules": {                                                                 │
+│      "objection_price": {                                                   │
+│          "default": "handle_objection",                                     │
+│          "conditions": [                                                    │
+│              {                                                              │
+│                  "when": {"objection_count": {"scope": "consecutive", "min": 3}},│
+│                  "then": "objection_limit_reached"                          │
+│              }                                                              │
+│          ]                                                                  │
+│      }                                                                      │
+│  },                                                                         │
+│  "transitions": {                                                           │
+│      "objection_price": {                                                   │
+│          "default": "handle_objection",                                     │
+│          "conditions": [                                                    │
+│              {                                                              │
+│                  "when": {"objection_count": {"scope": "consecutive", "min": 3}},│
+│                  "then": "soft_close"                                       │
+│              }                                                              │
+│          ]                                                                  │
+│      }                                                                      │
+│  }                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  GLOBAL_RULES — для QUESTION_INTENTS                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  # Вместо hardcoded: if intent in QUESTION_INTENTS: return "answer_question"│
+│  # Используем global_rules:                                                 │
+│                                                                             │
+│  SALES_CONFIG = {                                                           │
+│      "global_rules": {                                                      │
+│          # Применяются ко ВСЕМ состояниям если нет state-specific rule      │
+│          "question_features": "answer_question",                            │
+│          "question_integrations": "answer_question",                        │
+│          "question_technical": "answer_question",                           │
+│          "greeting": "acknowledge_and_continue",                            │
+│          "gratitude": "acknowledge_and_continue",                           │
+│          "small_talk": "small_talk_and_continue"                            │
+│      },                                                                     │
+│      "states": { ... }                                                      │
+│  }                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Что это даёт:
+┌────────────────────────────────┬────────────────────────────────────────────┐
+│  Было                          │  Стало                                     │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│  OBJECTION_INTENTS hardcoded   │  INTENT_CATEGORIES["objection"] в config   │
+│  POSITIVE_INTENTS hardcoded    │  INTENT_CATEGORIES["positive"] в config    │
+│  QUESTION_INTENTS → answer_q   │  global_rules в config                     │
+│  if should_soft_close(): ...   │  условие objection_count в rules           │
+│  8+ if'ов в apply_rules()      │  3 этапа: hooks → action → transition      │
+└────────────────────────────────┴────────────────────────────────────────────┘
+
+3.7 IntentTracker — единый источник истории интентов
+
+ПРОБЛЕМА: Дублирование tracking'а в 4+ местах
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ТЕКУЩЕЕ СОСТОЯНИЕ — ДУБЛИРОВАНИЕ ВЕЗДЕ                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. StateMachine.last_intent                                                │
+│     self.last_intent = intent  # в process()                                │
+│                                                                             │
+│  2. Bot.last_intent                                                         │
+│     self.last_intent = classified_intent  # в process_message()             │
+│                                                                             │
+│  3. ContextEnvelope.last_intent                                             │
+│     "last_intent": self.state_machine.last_intent  # в envelope             │
+│                                                                             │
+│  4. ObjectionFlowManager.objection_count + objection_history                │
+│     Отдельный класс только для возражений:                                  │
+│     - objection_count: int (consecutive)                                    │
+│     - total_objections: int                                                 │
+│     - objection_history: List[Tuple[str, str]]                              │
+│                                                                             │
+│  5. ContextWindow.get_objection_count()                                     │
+│     Ещё один подсчёт через window                                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Проблемы:
+- Рассинхронизация: Bot.last_intent может отличаться от SM.last_intent
+- ObjectionFlowManager дублирует то, что можно вычислить из истории интентов
+- Нет единого места для запроса "сколько раз price_question подряд"
+- Сложно добавить новые метрики (например, "сколько вопросов в последних 5 ходах")
+
+РЕШЕНИЕ: IntentTracker как единый источник правды
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  IntentTracker — заменяет ВСЁ                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  @dataclass                                                                 │
+│  class IntentRecord:                                                        │
+│      """Запись об одном интенте"""                                          │
+│      intent: str                                                            │
+│      state: str                      # состояние на момент интента          │
+│      timestamp: float                # время для дебага                     │
+│      category: Optional[str] = None  # "objection", "positive", etc.        │
+│                                                                             │
+│                                                                             │
+│  class IntentTracker:                                                       │
+│      """                                                                    │
+│      Единый источник истории интентов.                                      │
+│      Заменяет: last_intent, ObjectionFlowManager, ContextWindow.objections  │
+│      """                                                                    │
+│      MAX_HISTORY = 50                # Достаточно для любых window условий  │
+│                                                                             │
+│      def __init__(self):                                                    │
+│          self.history: List[IntentRecord] = []                              │
+│          self._consecutive_cache: Dict[str, int] = {}                       │
+│          self._last_intent: Optional[str] = None                            │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # ЗАПИСЬ                                                               │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│      def record(self, intent: str, state: str) -> None:                     │
+│          """Записать интент (вызывается в начале SM.process)"""             │
+│          category = self._get_category(intent)                              │
+│          record = IntentRecord(                                             │
+│              intent=intent,                                                 │
+│              state=state,                                                   │
+│              timestamp=time.time(),                                         │
+│              category=category                                              │
+│          )                                                                  │
+│                                                                             │
+│          # Update consecutive cache                                         │
+│          if intent == self._last_intent:                                    │
+│              self._consecutive_cache[intent] = \                            │
+│                  self._consecutive_cache.get(intent, 1) + 1                 │
+│          else:                                                              │
+│              self._consecutive_cache = {intent: 1}                          │
+│                                                                             │
+│          self.history.append(record)                                        │
+│          if len(self.history) > self.MAX_HISTORY:                           │
+│              self.history.pop(0)                                            │
+│                                                                             │
+│          self._last_intent = intent                                         │
+│                                                                             │
+│      def _get_category(self, intent: str) -> Optional[str]:                 │
+│          """Определить категорию интента из INTENT_CATEGORIES"""            │
+│          for category, intents in INTENT_CATEGORIES.items():                │
+│              if intent in intents:                                          │
+│                  return category                                            │
+│          return None                                                        │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # ЧТЕНИЕ — базовые свойства                                            │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│      @property                                                              │
+│      def last_intent(self) -> Optional[str]:                                │
+│          """Последний интент (заменяет SM.last_intent, Bot.last_intent)"""  │
+│          return self._last_intent                                           │
+│                                                                             │
+│      @property                                                              │
+│      def last_record(self) -> Optional[IntentRecord]:                       │
+│          """Полная запись о последнем интенте"""                            │
+│          return self.history[-1] if self.history else None                  │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # ЧТЕНИЕ — для условий intent_repeated                                 │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│      def consecutive_count(self, intent: str) -> int:                       │
+│          """Сколько раз этот интент подряд (для intent_repeated: min: N)""" │
+│          return self._consecutive_cache.get(intent, 0)                      │
+│                                                                             │
+│      def in_window(self, intent: str, window: int = 5) -> int:              │
+│          """Сколько раз интент встречался в последних N ходах"""            │
+│          recent = self.history[-window:] if window else self.history        │
+│          return sum(1 for r in recent if r.intent == intent)                │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # ЧТЕНИЕ — для условий objection_count (заменяет ObjectionFlowManager) │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│      def objection_consecutive(self) -> int:                                │
+│          """Сколько возражений подряд (для objection_count: consecutive)""" │
+│          count = 0                                                          │
+│          for record in reversed(self.history):                              │
+│              if record.category == "objection":                             │
+│                  count += 1                                                 │
+│              else:                                                          │
+│                  break                                                      │
+│          return count                                                       │
+│                                                                             │
+│      def objection_total(self) -> int:                                      │
+│          """Всего возражений за диалог (для objection_count: total)"""      │
+│          return sum(1 for r in self.history if r.category == "objection")   │
+│                                                                             │
+│      def objection_in_window(self, window: int = 5) -> int:                 │
+│          """Возражений в последних N ходах"""                               │
+│          recent = self.history[-window:] if window else self.history        │
+│          return sum(1 for r in recent if r.category == "objection")         │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # ЧТЕНИЕ — для других категорий                                        │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│      def category_consecutive(self, category: str) -> int:                  │
+│          """Сколько интентов данной категории подряд"""                     │
+│          count = 0                                                          │
+│          for record in reversed(self.history):                              │
+│              if record.category == category:                                │
+│                  count += 1                                                 │
+│              else:                                                          │
+│                  break                                                      │
+│          return count                                                       │
+│                                                                             │
+│      def positive_consecutive(self) -> int:                                 │
+│          """Сколько положительных интентов подряд"""                        │
+│          return self.category_consecutive("positive")                       │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # СЕРИАЛИЗАЦИЯ (для ContextEnvelope)                                   │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│      def to_dict(self) -> Dict:                                             │
+│          """Сериализация для передачи в LLM context"""                      │
+│          return {                                                           │
+│              "last_intent": self._last_intent,                              │
+│              "consecutive_count": self._consecutive_cache.copy(),           │
+│              "objection_consecutive": self.objection_consecutive(),         │
+│              "objection_total": self.objection_total(),                     │
+│              "recent_intents": [r.intent for r in self.history[-5:]]        │
+│          }                                                                  │
+│                                                                             │
+│      def reset(self) -> None:                                               │
+│          """Сброс (для начала нового диалога)"""                            │
+│          self.history.clear()                                               │
+│          self._consecutive_cache.clear()                                    │
+│          self._last_intent = None                                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Что удаляется:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  КОМПОНЕНТЫ К УДАЛЕНИЮ                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. StateMachine.last_intent                                                │
+│     - УДАЛИТЬ: self.last_intent = intent                                    │
+│     - ЗАМЕНИТЬ НА: self.intent_tracker.record(intent, self.state)           │
+│                                                                             │
+│  2. Bot.last_intent                                                         │
+│     - УДАЛИТЬ: self.last_intent = classified_intent                         │
+│     - ДОСТУП ЧЕРЕЗ: self.state_machine.intent_tracker.last_intent           │
+│                                                                             │
+│  3. ContextEnvelope → "last_intent"                                         │
+│     - УДАЛИТЬ: "last_intent": self.state_machine.last_intent                │
+│     - ЗАМЕНИТЬ НА: "intent_tracker": self.state_machine.intent_tracker.to_dict()
+│                                                                             │
+│  4. ObjectionFlowManager (ВЕСЬ КЛАСС)                                       │
+│     - УДАЛИТЬ: class ObjectionFlowManager                                   │
+│     - УДАЛИТЬ: self.objection_flow = ObjectionFlowManager()                 │
+│     - ЗАМЕНИТЬ:                                                             │
+│       objection_flow.objection_count → intent_tracker.objection_consecutive()
+│       objection_flow.total_objections → intent_tracker.objection_total()    │
+│       objection_flow.record_objection() → intent_tracker.record() [автоматически]
+│       objection_flow.reset_consecutive() → не нужен (вычисляется динамически)
+│                                                                             │
+│  5. ContextWindow.get_objection_count() (если есть дублирование)            │
+│     - Проверить и удалить, если дублирует IntentTracker                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Интеграция с EvaluatorContext:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ОБНОВЛЁННЫЙ EvaluatorContext                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  @dataclass                                                                 │
+│  class EvaluatorContext:                                                    │
+│      # Данные клиента                                                       │
+│      collected_data: Dict[str, Any]                                         │
+│                                                                             │
+│      # Состояние диалога                                                    │
+│      state: str                                                             │
+│      spin_phase: Optional[str]                                              │
+│      is_spin_state: bool                                                    │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # IntentTracker — ЕДИНСТВЕННЫЙ источник истории интентов               │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      intent_tracker: IntentTracker     # ← NEW: весь трекер                 │
+│                                                                             │
+│      # Метаданные                                                           │
+│      turn_number: int                                                       │
+│      missing_required_data: List[str]                                       │
+│                                                                             │
+│      # Удалено (доступ через intent_tracker):                               │
+│      # - last_intent → intent_tracker.last_intent                           │
+│      # - intent_consecutive → intent_tracker.consecutive_count(intent)      │
+│      # - intent_history → intent_tracker.history                            │
+│      # - objection_consecutive → intent_tracker.objection_consecutive()     │
+│      # - objection_total → intent_tracker.objection_total()                 │
+│                                                                             │
+│      @classmethod                                                           │
+│      def from_state_machine(cls, sm: "StateMachine") -> "EvaluatorContext": │
+│          config = SALES_STATES.get(sm.state, {})                            │
+│          required = config.get("required_data", [])                         │
+│          missing = [f for f in required if not sm.collected_data.get(f)]    │
+│                                                                             │
+│          return cls(                                                        │
+│              collected_data=sm.collected_data.copy(),                       │
+│              state=sm.state,                                                │
+│              spin_phase=sm.spin_phase,                                      │
+│              is_spin_state=sm.spin_phase is not None,                       │
+│              intent_tracker=sm.intent_tracker,  # Передаём весь трекер      │
+│              turn_number=len(sm.intent_tracker.history),                    │
+│              missing_required_data=missing,                                 │
+│          )                                                                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Обновлённый ConditionEvaluator:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  EVALUATOR ИСПОЛЬЗУЕТ IntentTracker                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  class ConditionEvaluator:                                                  │
+│      def evaluate(self, condition: Dict, ctx: EvaluatorContext) -> bool:    │
+│          ...                                                                │
+│                                                                             │
+│      def _eval_intent_repeated(self, params, ctx) -> bool:                  │
+│          """intent_repeated: {min: 3} или {min: 2, scope: "window", window: 5}"""
+│          min_count = params.get("min", 1)                                   │
+│          scope = params.get("scope", "consecutive")                         │
+│          intent = ctx.intent_tracker.last_intent  # Текущий интент          │
+│                                                                             │
+│          if scope == "consecutive":                                         │
+│              actual = ctx.intent_tracker.consecutive_count(intent)          │
+│          elif scope == "window":                                            │
+│              window = params.get("window", 5)                               │
+│              actual = ctx.intent_tracker.in_window(intent, window)          │
+│          else:                                                              │
+│              actual = ctx.intent_tracker.consecutive_count(intent)          │
+│                                                                             │
+│          return actual >= min_count                                         │
+│                                                                             │
+│      def _eval_objection_count(self, params, ctx) -> bool:                  │
+│          """objection_count: {scope: "consecutive", min: 3}"""              │
+│          min_count = params.get("min", 1)                                   │
+│          scope = params.get("scope", "consecutive")                         │
+│                                                                             │
+│          if scope == "consecutive":                                         │
+│              actual = ctx.intent_tracker.objection_consecutive()            │
+│          elif scope == "total":                                             │
+│              actual = ctx.intent_tracker.objection_total()                  │
+│          elif scope == "window":                                            │
+│              window = params.get("window", 5)                               │
+│              actual = ctx.intent_tracker.objection_in_window(window)        │
+│          else:                                                              │
+│              actual = ctx.intent_tracker.objection_consecutive()            │
+│                                                                             │
+│          return actual >= min_count                                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Обновлённые Hooks:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  HOOKS ИСПОЛЬЗУЮТ IntentTracker (проще!)                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  # БЫЛО (с ObjectionFlowManager):                                           │
+│  def _apply_hooks(self, intent: str) -> None:                               │
+│      if intent in INTENT_CATEGORIES.get("objection", []):                   │
+│          self.objection_flow.record_objection(intent, self.state)           │
+│      if intent in INTENT_CATEGORIES.get("positive", []):                    │
+│          self.objection_flow.reset_consecutive()                            │
+│                                                                             │
+│  # СТАЛО (с IntentTracker):                                                 │
+│  def _apply_hooks(self, intent: str) -> None:                               │
+│      # Просто записываем — IntentTracker сам определит категорию            │
+│      self.intent_tracker.record(intent, self.state)                         │
+│      # Всё! Objection tracking теперь автоматический через category         │
+│                                                                             │
+│  # Метод _apply_hooks становится тривиальным и может быть inline в process()│
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Результат:
+
+┌────────────────────────────────┬────────────────────────────────────────────┐
+│  Было                          │  Стало                                     │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│  4+ источника last_intent      │  1 источник: intent_tracker.last_intent    │
+│  ObjectionFlowManager класс    │  УДАЛЁН                                    │
+│  Ручной record_objection()     │  Автоматически через category              │
+│  Ручной reset_consecutive()    │  Не нужен (динамическое вычисление)        │
+│  Синхронизация между Bot и SM  │  Не нужна (единый источник)                │
+│  Сложно добавить новые метрики │  Легко: новый метод в IntentTracker        │
+└────────────────────────────────┴────────────────────────────────────────────┘
+
 Часть 4: ПРИМЕРЫ ПРИМЕНЕНИЯ
 4.1 Price Question (текущий баг)
 До:
@@ -646,7 +1183,7 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
     ]
 }
 Примечание: правила для objection_* размещаются в состоянии handle_objection,
-переход в него управляется transitions/transition_rules.
+переход в него управляется через transitions (могут быть conditional).
 4.4 Технические вопросы с эскалацией
 
 "question_technical": {
@@ -659,21 +1196,30 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
         }
     ]
 }
-4.5 Условный переход (transition_rules)
+4.5 Условный переход (conditional transitions)
 
-"transition_rules": {
-    "demo_request": {
-        "conditions": [
-            {
-                "when": {"state_in": ["close"]},
-                "then": "success"
-            }
-        ],
-        "default": None
+# Пример: demo_request переводит в success только если есть контакт
+"close": {
+    "transitions": {
+        "demo_request": {
+            "default": null,          # null → не переходить, остаться в close
+            "conditions": [
+                {
+                    "when": {"has_any": ["contact_info"]},
+                    "then": "success"
+                }
+            ]
+        },
+        # Простые переходы работают как раньше
+        "contact_provided": "success",
+        "rejection": "soft_close"
     }
 }
-Комментарий: если условия не сработали, переход определяется обычными transitions/SPIN.
-Если transition_rules объявлены внутри конкретного state, state_in можно опустить.
+
+# Комментарий:
+# - transitions внутри state, поэтому state_in не нужен
+# - если условия не сработали → default (null = остаёмся)
+# - если default не указан → fallback на SPIN/data_complete логику
 Часть 5: ПЛАН РЕАЛИЗАЦИИ
 5.1 Структура изменений
 
@@ -682,14 +1228,19 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  src/                                                                       │
-│  ├── state_machine.py          ← _resolve_action + _resolve_transition      │
-│  ├── config.py                 ← rules + transition_rules (conditional)     │
+│  ├── config.py                 ← INTENT_CATEGORIES + SALES_CONFIG           │
+│  │                               (global_rules, rule_groups, states)        │
+│  ├── state_machine.py          ← Рефакторинг apply_rules():                 │
+│  │                               _apply_hooks, _resolve_action,             │
+│  │                               _resolve_transition                        │
 │  ├── condition_evaluator.py    ← НОВЫЙ: логика проверки условий             │
+│  ├── intent_tracker.py         ← НОВЫЙ: отслеживание истории интентов       │
 │  └── rule_validator.py         ← НОВЫЙ: валидация схемы правил              │
 │                                                                             │
 │  tests/                                                                     │
 │  ├── test_condition_evaluator.py  ← НОВЫЙ: unit-тесты условий               │
-│  ├── test_transition_rules.py     ← НОВЫЙ: интеграционные тесты             │
+│  ├── test_intent_tracker.py       ← НОВЫЙ: тесты IntentTracker              │
+│  ├── test_conditional_rules.py    ← НОВЫЙ: интеграционные тесты             │
 │  └── test_state_machine.py        ← Обновить существующие тесты             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -698,38 +1249,63 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ЭТАП 1: Схема config + контракт контекста                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  1. Зафиксировать разделение rules vs transition_rules                      │
-│  2. Определить семантику intent_repeated (consecutive + window)             │
-│  3. Добавить condition state_in                                             │
+│  1. Зафиксировать разделение: rules → action, transitions → state           │
+│  2. Определить INTENT_CATEGORIES (objection, positive, go_back, question)   │
+│  3. Определить структуру SALES_CONFIG (global_rules, rule_groups, states)   │
+│  4. Определить EvaluatorContext dataclass                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 2: Condition Evaluator (изолированный модуль)                         │
+│  ЭТАП 2: IntentTracker + Condition Evaluator                                │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  1. Создать src/condition_evaluator.py                                      │
-│  2. Реализовать все типы условий                                            │
-│  3. Написать unit-тесты для каждого типа                                    │
-│  4. Результат: модуль можно тестировать изолированно                        │
+│  1. Создать src/intent_tracker.py:                                          │
+│     - IntentRecord dataclass (intent, state, timestamp, category)           │
+│     - IntentTracker класс с методами:                                       │
+│       • record(intent, state) — запись интента                              │
+│       • consecutive_count(intent) — подряд для intent_repeated              │
+│       • in_window(intent, window) — в окне для scope: "window"              │
+│       • objection_consecutive() — подряд возражений (заменяет OFM)          │
+│       • objection_total() — всего возражений (заменяет OFM)                 │
+│       • to_dict() — сериализация для ContextEnvelope                        │
+│  2. Создать src/condition_evaluator.py                                      │
+│  3. Реализовать все типы условий (has_any, objection_count, etc.)           │
+│  4. Написать unit-тесты для каждого модуля                                  │
+│  5. Результат: модули можно тестировать изолированно                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 3: Resolvers в State Machine                                          │
+│  ЭТАП 3: Рефакторинг State Machine + Удаление дублирования                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  1. Добавить _resolve_action() и _resolve_transition()                      │
-│  2. Интегрировать condition_evaluator                                       │
-│  3. Обеспечить обратную совместимость (str rules работают)                  │
-│  4. Удалить костыль price_question                                          │
+│  1. Добавить _apply_hooks() — вызывает intent_tracker.record()              │
+│  2. Добавить _resolve_action() — rules → rule_groups → global_rules         │
+│  3. Добавить _resolve_transition() — transitions → SPIN → data_complete     │
+│  4. Упростить apply_rules() до 4 шагов (hooks, early_exit, action, state)   │
+│  5. Удалить hardcoded списки (OBJECTION_INTENTS, POSITIVE_INTENTS, etc.)    │
+│  6. Удалить костыль price_question                                          │
+│  7. УДАЛИТЬ дублирующие компоненты (см. секция 3.7):                        │
+│     - StateMachine.last_intent → intent_tracker.last_intent                 │
+│     - ObjectionFlowManager (весь класс) → intent_tracker.objection_*()      │
+│     - self.objection_flow → удалить                                         │
+│  8. В Bot.py:                                                               │
+│     - УДАЛИТЬ: Bot.last_intent                                              │
+│     - ДОСТУП ЧЕРЕЗ: self.state_machine.intent_tracker.last_intent           │
+│  9. В ContextEnvelope:                                                      │
+│     - ЗАМЕНИТЬ: "last_intent" → "intent_tracker": tracker.to_dict()         │
+│  10. Обеспечить обратную совместимость (str rules работают)                 │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ЭТАП 4: Миграция config.py                                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  1. Конвертировать price_question в conditional format                      │
-│  2. Добавить условия для pricing_details                                    │
-│  3. Добавить transition_rules для условных переходов (demo_request и др.)   │
+│  1. Добавить INTENT_CATEGORIES                                              │
+│  2. Добавить global_rules (greeting, gratitude, question_*)                 │
+│  3. Добавить rule_groups (spin_phases, post_spin)                           │
+│  4. Конвертировать price_question в conditional format                      │
+│  5. Добавить conditional transitions для objection_* (objection_count)      │
+│  6. Мигрировать SPIN-состояния на inherit_rules                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -794,63 +1370,114 @@ def _resolve_transition(self, rule: Union[str, Dict]) -> Optional[str]:
 Часть 6: ОЖИДАЕМЫЕ РЕЗУЛЬТАТЫ
 6.1 До и После
 Аспект	До	После
-Где логика	config.py + state_machine.py	Только config.py (rules + transition_rules)
+Где логика	config.py + state_machine.py	Только config.py (rules + transitions)
 Добавить условие	Писать if в коде	Добавить в config
 Понять поведение	Читать код SM	Читать config
 Тестировать условие	Поднимать весь SM	Unit-тест evaluator
 Количество костылей	Растёт	0
 6.2 Пример: Как будет выглядеть config.py
 
-SALES_STATES = {
-    "spin_situation": {
-        "goal": "Понять ситуацию клиента",
-        "transitions": { ... },
-        "rules": {
-            # Простые правила (обратная совместимость)
-            "greeting": "acknowledge_and_continue",
-            "small_talk": "small_talk_and_continue",
-            
-            # Условные правила (новый формат)
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTENT_CATEGORIES — категории интентов для hooks
+# ═══════════════════════════════════════════════════════════════════════════════
+INTENT_CATEGORIES = {
+    "objection": [
+        "objection_price", "objection_competitor",
+        "objection_no_time", "objection_think"
+    ],
+    "positive": [
+        "agreement", "demo_request", "callback_request", "contact_provided",
+        "situation_provided", "problem_revealed", "implication_acknowledged",
+        "need_expressed", "info_provided", "greeting", "gratitude"
+    ],
+    "go_back": ["go_back", "correct_info"]
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SALES_CONFIG — единый источник правды
+# ═══════════════════════════════════════════════════════════════════════════════
+SALES_CONFIG = {
+    # Глобальные правила — применяются ко всем состояниям
+    "global_rules": {
+        "greeting": "acknowledge_and_continue",
+        "gratitude": "acknowledge_and_continue",
+        "small_talk": "small_talk_and_continue",
+        "question_features": "answer_question",
+        "question_integrations": "answer_question",
+        "question_technical": "answer_question"
+    },
+
+    # Группы правил для наследования
+    "rule_groups": {
+        "spin_phases": {
             "price_question": {
                 "default": "deflect_and_continue",
                 "conditions": [
-                    {
-                        "when": {"has_any": ["company_size", "users_count"]},
-                        "then": "answer_with_facts"
-                    },
-                    {
-                        "when": {"intent_repeated": {"min": 3}},
-                        "then": "answer_with_price_range"
-                    }
+                    {"when": {"has_any": ["company_size", "users_count"]},
+                     "then": "answer_with_facts"},
+                    {"when": {"intent_repeated": {"min": 3}},
+                     "then": "answer_with_price_range"}
                 ]
             },
             "pricing_details": {
                 "default": "deflect_and_continue",
                 "conditions": [
-                    {
-                        "when": {"has_any": ["company_size", "users_count"]},
-                        "then": "answer_with_facts"
-                    }
+                    {"when": {"has_any": ["company_size", "users_count"]},
+                     "then": "answer_with_facts"}
                 ]
             }
         }
     },
-    "close": {
-        "goal": "Взять контакт или назначить демо",
-        "transitions": { ... },
-        "transition_rules": {
-            "demo_request": {
-                "conditions": [
-                    {
-                        "when": {"has_any": ["contact_info"]},
-                        "then": "success"
-                    }
-                ],
-                "default": None
+
+    # Состояния
+    "states": {
+        "spin_situation": {
+            "goal": "Понять ситуацию клиента",
+            "spin_phase": "situation",
+            "inherit_rules": ["spin_phases"],  # Наследуем общие SPIN-правила
+            "rules": {
+                "unclear": "probe_situation"   # Специфичное для этого состояния
+            },
+            "transitions": {
+                "data_complete": "spin_problem",
+                "situation_provided": "spin_problem"
+            }
+        },
+
+        "close": {
+            "goal": "Взять контакт или назначить демо",
+            "rules": {
+                # Objection с условием на лимит
+                "objection_price": {
+                    "default": "handle_objection",
+                    "conditions": [
+                        {"when": {"objection_count": {"scope": "consecutive", "min": 3}},
+                         "then": "objection_limit_reached"}
+                    ]
+                }
+            },
+            "transitions": {
+                "contact_provided": "success",
+                "rejection": "soft_close",
+                # Условный переход
+                "demo_request": {
+                    "default": null,
+                    "conditions": [
+                        {"when": {"has_any": ["contact_info"]}, "then": "success"}
+                    ]
+                },
+                # Переход в soft_close при лимите возражений
+                "objection_price": {
+                    "default": "handle_objection",
+                    "conditions": [
+                        {"when": {"objection_count": {"scope": "consecutive", "min": 3}},
+                         "then": "soft_close"}
+                    ]
+                }
             }
         }
-    },
-    # ... остальные состояния
+        # ... остальные состояния
+    }
 }
 Часть 7: ЛОГГИРОВАНИЕ ДЛЯ СИМУЛЯЦИЙ
 
@@ -958,16 +1585,16 @@ SALES_STATES = {
 │      intent="demo_request",                                                 │
 │      from_state="close",                                                    │
 │      to_state="success",                                                    │
-│      resolution="transition_rule_matched",                                  │
-│      matched_condition_type="state_in"                                      │
+│      resolution="condition_matched",                                        │
+│      matched_condition_type="has_any"                                       │
 │  )                                                                          │
 │                                                                             │
-│  # Fallback на обычные transitions                                          │
+│  # Fallback на SPIN/data_complete                                           │
 │  logger.info("Transition resolved",                                         │
 │      intent="demo_request",                                                 │
 │      from_state="spin_situation",                                           │
 │      to_state="close",                                                      │
-│      resolution="transitions_fallback"  # transition_rules не сработали     │
+│      resolution="spin_fallback"  # условия не сработали → SPIN логика       │
 │  )                                                                          │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -1237,42 +1864,62 @@ class StateMachine:
 
 Часть 8: РЕЗЮМЕ
 
-Что имеем сейчас
-Rules — простые строки
-Условная логика — hardcoded костыли в state_machine.py
-Логика размазана по файлам
-Каждый новый случай = новый if
-Что хотим
-Rules — декларативные объекты с условиями для action
-Transition_rules — декларативные условия для переходов
-Условная логика — в config.py
-Разделение action/transition
-Единый источник правды
-Каждый новый случай = строка в config
-Как достигнем
-Condition Evaluator — изолированный модуль проверки условий
-Action/Transition Resolvers — универсальные интерпретаторы правил в SM
-IntentTracker — отслеживание истории интентов (NEW)
-EvaluatorContext — типизированный контекст для условий (NEW)
-Rule Groups — наследование правил для устранения дублирования (NEW)
-Миграция — постепенная, с обратной совместимостью
-Валидация — жёсткая в CI, мягкий fallback в runtime
+Что имеем сейчас:
+- Rules — простые строки
+- Категории интентов — hardcoded списки в коде (OBJECTION_INTENTS, POSITIVE_INTENTS...)
+- Условная логика — hardcoded костыли в state_machine.py
+- Логика размазана по файлам
+- 8+ if'ов с разными приоритетами в apply_rules()
+- Каждый новый случай = новый if
+- last_intent дублируется в 4+ местах (SM, Bot, ContextEnvelope, ObjectionFlowManager)
+- ObjectionFlowManager — отдельный класс для того, что можно вычислить из истории
+
+Что хотим:
+- Rules — декларативные объекты с условиями для action
+- Transitions — декларативные условия для переходов (строгое разделение)
+- INTENT_CATEGORIES — категории интентов в config
+- Hooks — минимальный код для side effects (tracking через IntentTracker)
+- Global_rules — fallback правила для всех состояний
+- IntentTracker — ЕДИНСТВЕННЫЙ источник истории интентов (заменяет ObjectionFlowManager)
+- Условная логика — в config.py
+- Единый источник правды
+- Каждый новый случай = строка в config
+
+Как достигнем:
+- INTENT_CATEGORIES — категории интентов в config (objection, positive, go_back)
+- IntentTracker — единый источник истории интентов (см. секция 3.7):
+  • Заменяет: SM.last_intent, Bot.last_intent, ObjectionFlowManager
+  • Методы: consecutive_count(), objection_consecutive(), objection_total()
+  • Автоматическая категоризация через INTENT_CATEGORIES
+- Hooks (_apply_hooks) — просто вызывают intent_tracker.record()
+- Condition Evaluator — изолированный модуль проверки условий
+- Action/Transition Resolvers — универсальные интерпретаторы правил в SM
+- EvaluatorContext — типизированный контекст с IntentTracker
+- Global_rules + Rule Groups — наследование правил для устранения дублирования
+- Миграция — постепенная, с обратной совместимостью
+- Валидация — жёсткая в CI, мягкий fallback в runtime
 
 Решённые проблемы:
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  #  │ Проблема                      │ Решение                              │
-├─────┼───────────────────────────────┼──────────────────────────────────────┤
-│  1  │ Scope узкий                   │ Разделение ответственности SM/rules  │
-│  2  │ intent_repeated не существует │ IntentTracker класс                  │
-│  3  │ Нет not условия               │ not, missing_any, missing_all        │
-│  4  │ Условия не влияют на state    │ Расширенный then: {action, state}    │
-│  5  │ Дублирование                  │ global_rules + rule_groups + inherit │
-│  6  │ Контекст не специфицирован    │ EvaluatorContext dataclass           │
-│  7  │ Implicit приоритет            │ Документация + валидатор порядка     │
+│  #  │ Проблема                         │ Решение                           │
+├─────┼──────────────────────────────────┼───────────────────────────────────┤
+│  1  │ Scope узкий (только 1 костыль)   │ Полный рефакторинг apply_rules()  │
+│  2  │ Hardcoded OBJECTION_INTENTS      │ INTENT_CATEGORIES в config        │
+│  3  │ Hardcoded POSITIVE_INTENTS       │ INTENT_CATEGORIES в config        │
+│  4  │ Hardcoded QUESTION_INTENTS       │ global_rules в config             │
+│  5  │ intent_repeated не существует    │ IntentTracker класс               │
+│  6  │ Нет not условия                  │ not, missing_any, missing_all     │
+│  7  │ Дублирование rules в SPIN        │ global_rules + rule_groups        │
+│  8  │ Контекст не специфицирован       │ EvaluatorContext dataclass        │
+│  9  │ 8+ if'ов в apply_rules()         │ 4 этапа: hooks → exit → action → state │
+│ 10  │ if should_soft_close() hardcoded │ условие objection_count в config  │
+│ 11  │ last_intent в 4+ местах          │ IntentTracker.last_intent (единый)│
+│ 12  │ ObjectionFlowManager отдельно    │ IntentTracker.objection_*() методы│
+│ 13  │ Рассинхрон Bot/SM.last_intent    │ Единый IntentTracker в SM         │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Зачем это нужно
-Сейчас: 1 костыль (price_question)
-Через месяц: 5 костылей
-Через полгода: 20 костылей, код нечитаем
-С рефакторингом: 0 костылей навсегда
+Зачем это нужно:
+- Сейчас: 1 явный костыль (price_question) + 5+ неявных (hardcoded списки)
+- Через месяц: 10+ костылей
+- Через полгода: 30+ костылей, код нечитаем
+- С рефакторингом: 0 костылей навсегда, вся логика в config
