@@ -114,19 +114,18 @@ Hardcoded	Каждое условие = новый if в коде
                               config.py
          ┌────────────────────────────────────────────────────────┐
          │                                                        │
-         │  INTENT_CATEGORIES = {                                 │
-         │      "objection": [...],                               │
-         │      "positive": [...],                                │
-         │      "go_back": [...]                                  │
-         │  }                                                     │
+         │  INTENT_CATEGORIES = { ... }                           │
+         │                                                        │
+         │  # Python-level sharing (compile-time)                 │
+         │  SPIN_COMMON_RULES = { ... }                           │
+         │  POST_SPIN_RULES = { ... }                             │
          │                                                        │
          │  SALES_CONFIG = {                                      │
-         │      "global_rules": { ... },     ← fallback actions   │
-         │      "rule_groups": { ... },      ← shared rules       │
+         │      "global_rules": { ... },     ← runtime fallback   │
          │      "states": {                                       │
          │          "spin_situation": {                           │
-         │              "rules": { ... },      ← action           │
-         │              "transitions": { ... } ← state            │
+         │              "rules": {**SPIN_COMMON_RULES, ...}       │
+         │              "transitions": { ... }                    │
          │          }                                             │
          │      }                                                 │
          │  }                                                     │
@@ -464,135 +463,140 @@ Mapping условий → поля контекста:
          
          ВАЖНО: Первое сработавшее условие побеждает!
          Порядок условий имеет значение.
-3.4 Наследование правил (Rule Inheritance)
+3.4 Переиспользование правил (Python-level sharing)
 
 Проблема: В текущей архитектуре одинаковые rules дублируются в spin_situation,
 spin_problem, spin_implication, spin_need_payoff. Это нарушает DRY.
 
-Решение: Трёхуровневая иерархия правил.
+Решение: Python dict unpacking вместо runtime inheritance.
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ИЕРАРХИЯ ПРАВИЛ                                                            │
+│  ПОЧЕМУ НЕ RUNTIME INHERITANCE                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ❌ inherit_rules: ["spin_phases"]  — магия, сложно дебажить                │
+│  ❌ rule_groups в runtime           — "откуда пришло правило?"              │
+│  ❌ 3 уровня приоритетов            — сложно для понимания                  │
+│                                                                             │
+│  ✓ {**SPIN_COMMON_RULES, ...}       — явно, на этапе определения            │
+│  ✓ IDE поддержка (go to definition) — сразу видно источник                  │
+│  ✓ 2 уровня: state.rules → global_rules                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  УПРОЩЁННАЯ ИЕРАРХИЯ (2 уровня)                                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─────────────────┐                                                        │
-│  │  global_rules   │  ← Применяются ко ВСЕМ состояниям                      │
-│  │  (приоритет 3)  │     greeting, gratitude, small_talk                    │
+│  │  global_rules   │  ← Runtime fallback для всех состояний                 │
+│  │  (приоритет 2)  │     greeting, gratitude, small_talk, question_*        │
 │  └────────┬────────┘                                                        │
 │           │                                                                 │
 │           ▼                                                                 │
 │  ┌─────────────────┐                                                        │
-│  │  rule_groups    │  ← Группы правил для наследования                      │
-│  │  (приоритет 2)  │     "spin_phases": price_question, pricing_details...  │
-│  └────────┬────────┘     "post_spin": price_question без deflect            │
-│           │                                                                 │
-│           ▼                                                                 │
-│  ┌─────────────────┐                                                        │
-│  │  state.rules    │  ← Специфичные для состояния (высший приоритет)        │
-│  │  (приоритет 1)  │     unclear → probe_situation (только в spin_situation)│
+│  │  state.rules    │  ← Все правила состояния (включая shared)              │
+│  │  (приоритет 1)  │     {**SPIN_COMMON_RULES, "unclear": "probe_situation"}│
 │  └─────────────────┘                                                        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Формат конфигурации:
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Python-level sharing — обычные dict'ы для переиспользования
+# ═══════════════════════════════════════════════════════════════════════════
+
+SPIN_COMMON_RULES = {
+    "price_question": {
+        "default": "deflect_and_continue",
+        "conditions": [
+            {"when": {"has_any": ["company_size", "users_count"]},
+             "then": "answer_with_facts"},
+            {"when": {"intent_repeated": {"min": 3}},
+             "then": "answer_with_price_range"}
+        ]
+    },
+    "pricing_details": {
+        "default": "deflect_and_continue",
+        "conditions": [
+            {"when": {"has_any": ["company_size", "users_count"]},
+             "then": "answer_with_facts"}
+        ]
+    },
+    "comparison": "answer_and_continue",
+}
+
+POST_SPIN_RULES = {
+    "price_question": "answer_with_facts",   # Без deflect — данные уже есть
+    "pricing_details": "answer_with_facts",
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SALES_CONFIG — только 2 уровня: state.rules → global_rules
+# ═══════════════════════════════════════════════════════════════════════════
+
 SALES_CONFIG = {
-    # Уровень 1: Глобальные правила (для всех состояний)
+    # Runtime fallback — применяются если нет правила в state.rules
     "global_rules": {
         "greeting": "acknowledge_and_continue",
         "gratitude": "acknowledge_and_continue",
         "small_talk": "small_talk_and_continue",
+        "question_features": "answer_question",
+        "question_integrations": "answer_question",
     },
 
-    # Уровень 2: Группы правил (для наследования)
-    "rule_groups": {
-        "spin_phases": {
-            "price_question": {
-                "default": "deflect_and_continue",
-                "conditions": [
-                    {"when": {"has_any": ["company_size", "users_count"]},
-                     "then": "answer_with_facts"},
-                    {"when": {"intent_repeated": {"min": 3}},
-                     "then": "answer_with_price_range"}
-                ]
-            },
-            "pricing_details": {
-                "default": "deflect_and_continue",
-                "conditions": [
-                    {"when": {"has_any": ["company_size", "users_count"]},
-                     "then": "answer_with_facts"}
-                ]
-            },
-            "comparison": "answer_and_continue",
-            "question_features": "answer_and_continue",
-            "question_integrations": "answer_and_continue",
-        },
-        "post_spin": {
-            "price_question": "answer_with_facts",
-            "pricing_details": "answer_with_facts",
-        }
-    },
-
-    # Уровень 3: Состояния с наследованием
     "states": {
+        # SPIN states — Python unpacking, всё явно
         "spin_situation": {
-            "inherit_rules": ["spin_phases"],  # Наследует из группы
-            "rules": {
-                "unclear": "probe_situation",  # Специфичное правило
-            }
+            "rules": {**SPIN_COMMON_RULES, "unclear": "probe_situation"}
         },
         "spin_problem": {
-            "inherit_rules": ["spin_phases"],
-            "rules": {
-                "unclear": "probe_problem",
-            }
+            "rules": {**SPIN_COMMON_RULES, "unclear": "probe_problem"}
         },
         "spin_implication": {
-            "inherit_rules": ["spin_phases"],
-            "rules": {
-                "unclear": "probe_implication",
-            }
+            "rules": {**SPIN_COMMON_RULES, "unclear": "probe_implication"}
         },
         "spin_need_payoff": {
-            "inherit_rules": ["spin_phases"],
-            "rules": {
-                "unclear": "probe_need_payoff",
-            }
+            "rules": {**SPIN_COMMON_RULES, "unclear": "probe_need_payoff"}
         },
+
+        # Post-SPIN states
         "presentation": {
-            "inherit_rules": ["post_spin"],
-            "rules": { ... }
+            "rules": {**POST_SPIN_RULES, "objection_price": "handle_objection"}
         },
         "close": {
-            "inherit_rules": ["post_spin"],
-            "rules": { ... }
-        }
+            "rules": {**POST_SPIN_RULES, "demo_request": "schedule_demo"}
+        },
     }
 }
 
-Алгоритм разрешения правила:
+Алгоритм разрешения правила (упрощённый):
 
 def _get_rule_for_intent(self, state: str, intent: str) -> Optional[Union[str, Dict]]:
-    """Получить правило с учётом наследования"""
+    """Получить правило — только 2 уровня"""
     config = SALES_CONFIG["states"].get(state, {})
 
-    # Приоритет 1: Специфичное правило состояния
+    # Приоритет 1: Правило состояния (уже включает shared через unpacking)
     if intent in config.get("rules", {}):
         return config["rules"][intent]
 
-    # Приоритет 2: Унаследованные группы (в порядке объявления)
-    for group_name in config.get("inherit_rules", []):
-        group = SALES_CONFIG["rule_groups"].get(group_name, {})
-        if intent in group:
-            return group[intent]
-
-    # Приоритет 3: Глобальные правила
+    # Приоритет 2: Глобальные правила (fallback)
     if intent in SALES_CONFIG.get("global_rules", {}):
         return SALES_CONFIG["global_rules"][intent]
 
-    return None  # Правило не найдено → fallback в apply_rules()
+    return None  # Правило не найдено → default в apply_rules()
 
-Результат: Вместо 4x дублирования правил для SPIN-фаз — 1 определение в rule_groups.
+Результат:
+┌────────────────────────────────┬────────────────────────────────────────────┐
+│  Было                          │  Стало                                     │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│  3 уровня runtime inheritance  │  2 уровня: state.rules → global_rules      │
+│  inherit_rules: ["spin_phases"]│  {**SPIN_COMMON_RULES, ...}                │
+│  rule_groups в config          │  Обычные Python dict'ы                     │
+│  Магия в runtime               │  Явно на этапе определения                 │
+│  Сложно дебажить               │  IDE go-to-definition работает             │
+└────────────────────────────────┴────────────────────────────────────────────┘
 
 3.5 Порядок разрешения action и переходов
 
@@ -628,10 +632,9 @@ def _get_rule_for_intent(self, state: str, intent: str) -> Optional[Union[str, D
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Action resolver (подробно):
-1) state.rules[intent] (str или conditional)
-2) rule_groups (если inherit_rules)
-3) global_rules[intent]
-4) default → continue_current_goal
+1) state.rules[intent] (str или conditional) — уже включает shared через **unpacking
+2) global_rules[intent] — runtime fallback
+3) default → continue_current_goal
 
 Transition resolver (подробно):
 1) state.transitions[intent] (str или conditional)
@@ -1228,8 +1231,8 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  src/                                                                       │
-│  ├── config.py                 ← INTENT_CATEGORIES + SALES_CONFIG           │
-│  │                               (global_rules, rule_groups, states)        │
+│  ├── config.py                 ← INTENT_CATEGORIES, SPIN_COMMON_RULES,      │
+│  │                               POST_SPIN_RULES, SALES_CONFIG              │
 │  ├── state_machine.py          ← Рефакторинг apply_rules():                 │
 │  │                               _apply_hooks, _resolve_action,             │
 │  │                               _resolve_transition                        │
@@ -1251,7 +1254,7 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. Зафиксировать разделение: rules → action, transitions → state           │
 │  2. Определить INTENT_CATEGORIES (objection, positive, go_back, question)   │
-│  3. Определить структуру SALES_CONFIG (global_rules, rule_groups, states)   │
+│  3. Определить SPIN_COMMON_RULES, POST_SPIN_RULES, SALES_CONFIG             │
 │  4. Определить EvaluatorContext dataclass                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -1279,7 +1282,7 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │  ЭТАП 3: Рефакторинг State Machine + Удаление дублирования                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. Добавить _apply_hooks() — вызывает intent_tracker.record()              │
-│  2. Добавить _resolve_action() — rules → rule_groups → global_rules         │
+│  2. Добавить _resolve_action() — rules → global_rules (2 уровня)            │
 │  3. Добавить _resolve_transition() — transitions → SPIN → data_complete     │
 │  4. Упростить apply_rules() до 4 шагов (hooks, early_exit, action, state)   │
 │  5. Удалить hardcoded списки (OBJECTION_INTENTS, POSITIVE_INTENTS, etc.)    │
@@ -1302,10 +1305,10 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. Добавить INTENT_CATEGORIES                                              │
 │  2. Добавить global_rules (greeting, gratitude, question_*)                 │
-│  3. Добавить rule_groups (spin_phases, post_spin)                           │
+│  3. Добавить SPIN_COMMON_RULES, POST_SPIN_RULES (Python dict'ы)             │
 │  4. Конвертировать price_question в conditional format                      │
 │  5. Добавить conditional transitions для objection_* (objection_count)      │
-│  6. Мигрировать SPIN-состояния на inherit_rules                             │
+│  6. Мигрировать SPIN-состояния на **unpacking вместо дублирования           │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -1394,10 +1397,38 @@ INTENT_CATEGORIES = {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SALES_CONFIG — единый источник правды
+# Python-level sharing — обычные dict'ы для переиспользования (НЕ runtime)
+# ═══════════════════════════════════════════════════════════════════════════════
+SPIN_COMMON_RULES = {
+    "price_question": {
+        "default": "deflect_and_continue",
+        "conditions": [
+            {"when": {"has_any": ["company_size", "users_count"]},
+             "then": "answer_with_facts"},
+            {"when": {"intent_repeated": {"min": 3}},
+             "then": "answer_with_price_range"}
+        ]
+    },
+    "pricing_details": {
+        "default": "deflect_and_continue",
+        "conditions": [
+            {"when": {"has_any": ["company_size", "users_count"]},
+             "then": "answer_with_facts"}
+        ]
+    },
+    "comparison": "answer_and_continue",
+}
+
+POST_SPIN_RULES = {
+    "price_question": "answer_with_facts",   # Без deflect
+    "pricing_details": "answer_with_facts",
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SALES_CONFIG — только 2 уровня: state.rules → global_rules
 # ═══════════════════════════════════════════════════════════════════════════════
 SALES_CONFIG = {
-    # Глобальные правила — применяются ко всем состояниям
+    # Runtime fallback — применяются если нет правила в state.rules
     "global_rules": {
         "greeting": "acknowledge_and_continue",
         "gratitude": "acknowledge_and_continue",
@@ -1407,35 +1438,13 @@ SALES_CONFIG = {
         "question_technical": "answer_question"
     },
 
-    # Группы правил для наследования
-    "rule_groups": {
-        "spin_phases": {
-            "price_question": {
-                "default": "deflect_and_continue",
-                "conditions": [
-                    {"when": {"has_any": ["company_size", "users_count"]},
-                     "then": "answer_with_facts"},
-                    {"when": {"intent_repeated": {"min": 3}},
-                     "then": "answer_with_price_range"}
-                ]
-            },
-            "pricing_details": {
-                "default": "deflect_and_continue",
-                "conditions": [
-                    {"when": {"has_any": ["company_size", "users_count"]},
-                     "then": "answer_with_facts"}
-                ]
-            }
-        }
-    },
-
-    # Состояния
+    # Состояния — используют Python **unpacking (явно, без магии)
     "states": {
         "spin_situation": {
             "goal": "Понять ситуацию клиента",
             "spin_phase": "situation",
-            "inherit_rules": ["spin_phases"],  # Наследуем общие SPIN-правила
             "rules": {
+                **SPIN_COMMON_RULES,           # Общие SPIN-правила
                 "unclear": "probe_situation"   # Специфичное для этого состояния
             },
             "transitions": {
@@ -1444,9 +1453,22 @@ SALES_CONFIG = {
             }
         },
 
+        "spin_problem": {
+            "goal": "Выявить проблемы клиента",
+            "spin_phase": "problem",
+            "rules": {
+                **SPIN_COMMON_RULES,
+                "unclear": "probe_problem"
+            },
+            "transitions": {
+                "problem_revealed": "spin_implication"
+            }
+        },
+
         "close": {
             "goal": "Взять контакт или назначить демо",
             "rules": {
+                **POST_SPIN_RULES,
                 # Objection с условием на лимит
                 "objection_price": {
                     "default": "handle_objection",
@@ -1461,14 +1483,14 @@ SALES_CONFIG = {
                 "rejection": "soft_close",
                 # Условный переход
                 "demo_request": {
-                    "default": null,
+                    "default": None,
                     "conditions": [
                         {"when": {"has_any": ["contact_info"]}, "then": "success"}
                     ]
                 },
                 # Переход в soft_close при лимите возражений
                 "objection_price": {
-                    "default": "handle_objection",
+                    "default": None,
                     "conditions": [
                         {"when": {"objection_count": {"scope": "consecutive", "min": 3}},
                          "then": "soft_close"}
@@ -1895,7 +1917,7 @@ class StateMachine:
 - Condition Evaluator — изолированный модуль проверки условий
 - Action/Transition Resolvers — универсальные интерпретаторы правил в SM
 - EvaluatorContext — типизированный контекст с IntentTracker
-- Global_rules + Rule Groups — наследование правил для устранения дублирования
+- Python-level sharing (**SPIN_COMMON_RULES) + global_rules — без runtime магии
 - Миграция — постепенная, с обратной совместимостью
 - Валидация — жёсткая в CI, мягкий fallback в runtime
 
@@ -1909,7 +1931,7 @@ class StateMachine:
 │  4  │ Hardcoded QUESTION_INTENTS       │ global_rules в config             │
 │  5  │ intent_repeated не существует    │ IntentTracker класс               │
 │  6  │ Нет not условия                  │ not, missing_any, missing_all     │
-│  7  │ Дублирование rules в SPIN        │ global_rules + rule_groups        │
+│  7  │ Дублирование rules в SPIN        │ **SPIN_COMMON_RULES + global_rules│
 │  8  │ Контекст не специфицирован       │ EvaluatorContext dataclass        │
 │  9  │ 8+ if'ов в apply_rules()         │ 4 этапа: hooks → exit → action → state │
 │ 10  │ if should_soft_close() hardcoded │ условие objection_count в config  │
