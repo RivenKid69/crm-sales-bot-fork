@@ -21,6 +21,91 @@
 - `transitions` выбирают **state** (куда перейти)
 - условия — это **Python‑функции** (типизированные, отлаживаемые), а конфиг лишь **ссылается на них по имени**
 
+### 1.1 Текущее состояние (как работает сейчас)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ТЕКУЩАЯ АРХИТЕКТУРА                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                              config.py
+                    ┌─────────────────────────┐
+                    │  SALES_STATES = {       │
+                    │    "spin_situation": {  │
+                    │      "rules": {         │
+                    │        "price_question":│──────► "deflect_and_continue"
+                    │        "greeting":      │──────► "acknowledge"
+                    │        "rejection":     │──────► "handle_rejection"
+                    │      }                  │            │
+                    │    }                    │            │
+                    │  }                      │            │
+                    └─────────────────────────┘            │
+                                                          │
+                                                          ▼
+                              state_machine.py            │
+                    ┌─────────────────────────┐           │
+                    │  def apply_rules():     │           │
+                    │                         │           │
+                    │    rule = rules[intent] │◄──────────┘
+                    │    return rule, state   │  ← Просто возвращает строку
+                    │                         │    Никакой логики!
+                    └─────────────────────────┘
+```
+
+**Ключевой момент:** исторически `rules` — это просто строки: `intent -> action`.
+
+### 1.2 Почему это ломается (пример: price_question)
+
+**Бизнес‑требование:** “Если спросили цену **и** мы уже знаем размер команды — ответить. Если не знаем — уточнить размер.”
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │  Клиент: "Сколько стоит?"               │
+                    └─────────────────────────────────────────┘
+                                       │
+                                       ▼
+                    ┌─────────────────────────────────────────┐
+                    │  intent = "price_question"              │
+                    │  rule = "deflect_and_continue"          │
+                    └─────────────────────────────────────────┘
+                                       │
+                       ┌───────────────┴───────────────┐
+                       ▼                               ▼
+              Данных НЕТ                        Данные ЕСТЬ
+              collected_data = {}               collected_data = {
+                                                  company_size: 10
+                                                }
+                       │                               │
+                       ▼                               ▼
+              deflect_and_continue              deflect_and_continue
+              "Сколько человек?"                "Сколько человек?"
+                     ✓                                 ✗
+              ПРАВИЛЬНО                         НЕПРАВИЛЬНО!
+                                                Должен ответить на цену
+```
+
+### 1.3 Почему “костыли в коде” — тупиковый путь
+
+| Проблема | Описание |
+|---|---|
+| Hardcoded | Каждое условие = новый `if` в коде |
+| Не масштабируется | 10 условий = 10 `if`’ов |
+| Логика размазана | Часть в `config.py`, часть в `state_machine.py` |
+| Сложно тестировать | Нужно поднимать весь SM, чтобы проверить условие |
+| Сложно понимать | Чтобы узнать поведение, приходится читать код |
+
+### 1.4 Выявленные кейсы, где нужны условия (минимальный список)
+
+| № | Интент | Условие | Результат |
+|---:|---|---|---|
+| 1 | `price_question` | есть `company_size/users_count` | `answer_with_facts` (action) |
+| 2 | `price_question` | повторился 3+ раз | `answer_with_range` (action) |
+| 3 | `pricing_details` | есть `company_size` | `answer_with_facts` (action) |
+| 4 | `comparison` | известен конкурент | `compare_specific` (action) |
+| 5 | `objection_price` | есть `pain_point + company_size` | `handle_with_roi` (action) |
+| 6 | `question_technical` | повторился 2+ раз | `offer_documentation` (action) |
+| 7 | `demo_request` | в фазе `close` | `success` (transition) |
+
 ---
 
 ## 2) Ключевые архитектурные решения (приоритет: Hybrid)
@@ -43,6 +128,18 @@
 
 5) **Обратная совместимость**  
    Старый формат `intent: "action"` остаётся валидным.
+
+### 2.1 Принципы (короткая версия таблицы из Hybrid)
+
+| Принцип | Что это значит на практике |
+|---|---|
+| Условия = Python | логика проверок — в функциях, с типами/дебагом/тестами |
+| Правила = декларативно | `config.py` описывает “когда → что” без `if` в SM |
+| Домены = изоляция | отдельные реестры/контексты для SM/policy/fallback/personalization |
+| rules ≠ transitions | правила выбирают action; переходы выбирают state |
+| Type safety | реестры типизированы: `ConditionRegistry[TContext]` |
+| Open‑Closed | новый домен = новый реестр, без правок старых |
+| Backward compatible | строки‑rules и строки‑transitions продолжают работать |
 
 ---
 
@@ -480,3 +577,242 @@ logging:
 - `$objections: 3` → `objection_limit_reached(ctx)` (через `IntentTracker` + `INTENT_CATEGORIES`)
 
 Если когда‑то понадобится DSL, его можно добавить как отдельный слой поверх реестров, но **не блокировать текущую реализацию**.
+
+Также из `.txt` были предложены отдельные модули под DSL:
+- `src/condition_evaluator.py` → в Hybrid заменён на `src/conditions/*` (Python‑условия + реестры), без общего DSL‑evaluator.
+- `src/rule_validator.py` → в Hybrid заменён на `RuleResolver.validate_config()` + `ConditionRegistries.validate_all()`.
+- `RuleLogger`/`rule_info` → в Hybrid основной механизм — `EvaluationTrace`/`TraceCollector`; при необходимости `rule_info` генерируется из `trace`.
+
+---
+
+## Appendix A) Контракты и интерфейсы (чтобы не потерять детали при реализации)
+
+### A.1 BaseContext (общий контракт)
+
+Минимальный набор полей, доступных во всех доменах условий:
+- `collected_data: Dict[str, Any]`
+- `state: str`
+- `turn_number: int`
+
+### A.2 ConditionRegistry (реестр условий)
+
+**Назначение:** типобезопасная регистрация/валидация/выполнение условий домена.
+
+Обязательные элементы (из `docs/ARCHITECTURE_HYBRID.md`):
+- `ConditionMetadata`: `name`, `description`, `func(ctx)->bool`, `context_type`, `requires_fields`, `category`
+- `ConditionRegistry[TContext]`:
+  - `condition(name, description="", requires_fields=set(), category="general")` — декоратор регистрации
+  - `evaluate(name, ctx, trace=None) -> bool` — выполняет условие и (опционально) пишет в `EvaluationTrace`
+  - `validate_all(ctx_factory) -> {passed, failed, errors}` — рантайм‑валидация условий (полезно для CI)
+  - `list_all()`, `list_by_category()`, `get_categories()`, `get_documentation()`
+- Ошибки:
+  - `ConditionNotFoundError` — неизвестное имя условия
+  - `ConditionEvaluationError` — исключение внутри условия
+
+### A.3 EvaluationTrace / TraceCollector (трассировка)
+
+**Задача:** объяснить “почему выбран action/state” в симуляциях и дебаге, не залезая в код.
+
+Минимальные требования к API:
+- `EvaluationTrace.record(condition_name, result, ctx, relevant_fields=set())`
+- `EvaluationTrace.set_result(final_action, resolution, matched_condition=None)`
+- `EvaluationTrace.to_dict()` (для JSON/хранения)
+- `EvaluationTrace.to_compact_string()` (для отчётов симуляций: блок `[RULE] ...`)
+- `TraceCollector.create_trace(rule_name, intent, state, domain="")`
+- `TraceCollector.get_summary()` (агрегаты по батчу симуляций)
+
+### A.4 IntentTracker (единый источник истории интентов)
+
+**Контракт timing:** `record(intent, state)` вызывается в самом начале `StateMachine.apply_rules()` — до вычисления условий.
+
+Минимальные методы (из Hybrid):
+- `record(intent, state)`
+- `last_intent`, `prev_intent`
+- `streak_count()` / хранение текущего streak
+- `objection_consecutive()` и `objection_total()` (замена ObjectionFlowManager)
+- `to_dict()` (для envelope/логов), `reset()`
+
+### A.5 RuleResolver / RuleResult
+
+**RuleResolver:**
+- `resolve_action(intent, state, ctx, trace=None) -> action`
+  1) `state.rules[intent]`
+  2) `global_rules[intent]`
+  3) fallback: `"continue_current_goal"`
+- `resolve_transition(intent, state, ctx, trace=None) -> Optional[next_state]`
+  - если правило отсутствует → `None` (остаться в текущем состоянии)
+- `validate_config()`:
+  - неизвестные условия
+  - неизвестные target‑состояния в transitions
+
+**RuleResult (возвращаемое значение `StateMachine.apply_rules()`):**
+- поля: `action: str`, `next_state: Optional[str]`, `trace: Optional[EvaluationTrace]`
+- поддержка tuple‑unpacking через `__iter__` (backward compatibility)
+
+### A.6 Доменные контексты (минимальный состав полей)
+
+Нужны, чтобы “не размывать” ответственность и не пытаться сделать один evaluator на всё.
+
+- `EvaluatorContext` (StateMachine):
+  - Base: `collected_data`, `state`, `turn_number`
+  - SM‑specific: `spin_phase`, `is_spin_state`, `current_intent`, `prev_intent`, `intent_tracker`, `missing_required_data`
+- `PolicyContext` (DialoguePolicy):
+  - Base: `collected_data`, `state`, `turn_number`
+  - Policy‑specific: `oscillation_detected`, `confidence_trend`, `momentum_direction`, `turns_in_state`, `breakthrough_detected`, `turns_since_breakthrough`, `total_objections`, `repeated_objection_types`, `current_action`, `frustration_level`
+- `FallbackContext` (FallbackHandler):
+  - Base: `collected_data`, `state`, `turn_number`
+  - Fallback‑specific: `total_fallbacks`, `consecutive_fallbacks`, `current_tier`, `fallbacks_in_state`, `last_successful_intent`
+  - Signals: `frustration_level`, `momentum_direction`, `engagement_level`
+  - Data: `pain_category`, `competitor_mentioned`, `last_intent`
+- `PersonalizationContext` (PersonalizationEngine):
+  - Base: `collected_data`, `state`, `turn_number`
+  - Company: `company_size`, `role`, `industry`
+  - Pain: `pain_category`, `pain_point`, `current_crm`
+  - Signals: `has_breakthrough`, `engagement_level`, `objection_type`
+
+### A.7 Агрегатор реестров (валидация/доки/статистика)
+
+`ConditionRegistries` (из Hybrid) — единая точка для:
+- `validate_all()` (прогнать все условия на тест‑контекстах)
+- `get_stats()` (сколько условий/категорий по доменам)
+- `generate_documentation()` (автоген доки по условиям)
+
+---
+
+## Appendix B) Draft: MongoDB‑style DSL из `Новая архитектура.txt` (не используется в Hybrid)
+
+Этот DSL был описан как альтернатива. В Hybrid он **заменён** на именованные Python‑условия + реестры.
+
+Чтобы не потерять детали (если понадобится как UX‑надстройка в будущем):
+
+### B.1 3‑уровневая модель
+
+- **Level 1: Core operators** (ортогональные примитивы):  
+  `$exists`, `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$and`, `$or`, `$not`, `$ref`
+- **Level 2: Context paths**:  
+  `data.*`, `state`, `spin_phase`, `intent.*`, `counter.*`, … (по `.txt`)
+- **Level 3: Sugar operators**:  
+  `$has_any`, `$has_all`, `$state_in`, `$is_spin`, `$intent_streak`, `$objections`, … (разворачиваются в core)
+
+### B.2 Почему конфликтует с Hybrid
+
+- DSL требует evaluator’а, общего для всех контекстов → риск нарушения SRP.
+- Сложнее типизировать и дебажить (в сравнении с Python‑функциями условий).
+
+### B.3 Как сохранить пользу DSL без конфликта
+
+Если понадобится “читабельный” DSL в config, безопасный путь:
+1) оставить источником истины **реестры Python‑условий**;
+2) добавить отдельный “frontend слой”, который компилирует DSL‑условия в вызовы зарегистрированных условий (или в композиции над ними).
+
+---
+
+## Appendix C) Симуляции и логи: как переносится секция 7 из `Новая архитектура.txt`
+
+### C.1 Уровни (соответствуют текущему `src/logger.py`)
+
+- `DEBUG` — детали вычисления условий
+- `INFO` — финальные решения
+- `WARNING` — default/fallback (условия не сработали или rule отсутствует)
+- `EVENT` — бизнес‑события аналитики
+- `METRIC` — числовые метрики
+
+### C.2 Формат `[RULE] ...` в отчёте (совместимо с Hybrid)
+
+Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляциях достаточно:
+- записывать `trace.to_compact_string()` в `turn_data` (runner)
+- печатать в `_section_full_dialogues()` (report)
+
+### C.3 Что именно переносим из идеи `rule_info` (и как маппится на trace)
+
+В `.txt` предлагалась структура `rule_info` с:
+- `rule_type` / `resolution` / `matched_index`
+- `conditions_evaluated[]` (type/params/result/details)
+
+В Hybrid это выражается через:
+- `trace.resolution` (`simple` / `condition_matched` / `default` / `fallback` / …)
+- `trace.matched_condition`
+- `trace.entries[]` (условие + результат + context snapshot)
+
+Если нужно 1‑в‑1 совместимое поле `rule_info` для отчётов — его можно **производить из trace** без второго источника истины.
+
+### C.4 События и метрики (EVENT/METRIC)
+
+Примерный минимум (из `.txt`, адаптировано под `src/logger.py`):
+- `logger.event("conditional_rule_triggered", intent=..., action=..., matched_condition=...)`
+- `logger.event("conditional_rule_default_used", intent=..., action=..., reason=...)`
+- `logger.metric("condition_evaluation", conditions_checked=..., evaluation_time_ms=..., intent=...)`
+- `logger.metric("conditional_rules_stats", total_evaluations=..., conditions_matched=..., defaults_used=..., batch_id=...)`
+
+### C.5 RuleLogger (идея из .txt) — опционально
+
+В `.txt` предлагалась обёртка `RuleLogger` для удобного логирования conditional rules.
+
+В текущем проекте уже есть `src/logger.py` (структурированный логгер с `event()` и `metric()`), поэтому:
+- либо логируем напрямую через `logger.*`;
+- либо делаем тонкую обёртку `RuleLogger`, но без “второго источника истины”: вся диагностика строится вокруг `EvaluationTrace`.
+
+---
+
+## Appendix D) Решённые проблемы и сравнение подходов (из Hybrid, без потери)
+
+### D.1 Решённые проблемы
+
+| # | Проблема | Решение (Hybrid) |
+|---:|---|---|
+| 1 | JSON DSL без типов | Python‑функции с `@condition` |
+| 2 | Единый evaluator для всех контекстов (SRP) | доменные реестры |
+| 3 | Open‑Closed нарушен | новый домен = новый реестр |
+| 4 | Type safety отсутствует | `Generic[TContext]`, mypy |
+| 5 | Условия смешиваются | изоляция по доменам |
+| 6 | Hardcoded `OBJECTION_INTENTS` | `INTENT_CATEGORIES` |
+| 7 | `last_intent` в 4+ местах | `IntentTracker` |
+| 8 | `ObjectionFlowManager` | `IntentTracker.objection_*()` |
+| 9 | Runtime ошибки | валидация на старте/в CI |
+| 10 | Сложно дебажить | breakpoints + stack traces + `EvaluationTrace` |
+
+### D.2 Сравнение подходов
+
+| Аспект | Один evaluator/DSL | Hybrid: доменные реестры |
+|---|---|---|
+| SRP | нарушен | соблюдён |
+| Type safety | в основном runtime | compile‑time (mypy) + контексты |
+| Open‑Closed | нужно менять evaluator | добавляем новый домен |
+| Изоляция | всё в одном месте | по доменам |
+| IDE support | слабый | полный |
+| Тестирование | сложнее | проще и изолированно |
+
+---
+
+## Appendix E) Проверка покрытия “по очереди” (что куда перенесено)
+
+### E.1 `docs/ARCHITECTURE_HYBRID.md` → `docs/ARCHITECTURE_UNIFIED_PLAN.md`
+
+| Hybrid секция | Где в unified |
+|---|---|
+| Часть 1: текущее состояние | `docs/ARCHITECTURE_UNIFIED_PLAN.md` → раздел 1.1–1.4 |
+| Часть 2: цель/принципы | раздел 1–2 |
+| Часть 3: schema/контракты | раздел 3 + Appendix A |
+| Часть 4: домены | раздел 4–5 + этапы 2/5/6/7 |
+| Часть 5–6: shared + агрегатор | раздел 4.1 + этапы 1/8 + Appendix A |
+| Часть 7: IntentTracker | раздел 4.2 + этап 3 + Appendix A |
+| Часть 8: RuleResolver | раздел 4.3 + этап 3 + Appendix A |
+| Часть 9: StateMachine | раздел 4.4 + этап 4 |
+| Часть 10: конфигурация | раздел 3/5/7 + этап 3 |
+| Часть 11: структура файлов | раздел 4.0 |
+| Часть 12: план реализации | раздел 9 |
+| Часть 13: резюме | Appendix D |
+
+### E.2 `Новая архитектура.txt` → `docs/ARCHITECTURE_UNIFIED_PLAN.md`
+
+| .txt секция | Где в unified |
+|---|---|
+| Часть 1–2 (контекст/цель) | раздел 1–2 |
+| Часть 3.1 (schema) | раздел 3 |
+| Часть 3.2 (MongoDB DSL) | Appendix B (как draft) + раздел 10 (маппинг) |
+| Часть 3.3–3.7 (порядок/шаринг/hooks/tracker) | раздел 4 + Appendix A |
+| Часть 4 (примеры) | раздел 5 |
+| Часть 5 (план) | раздел 9 (PR‑friendly этапы) |
+| Часть 6 (ожидаемые результаты) | раздел 8 |
+| Часть 7 (логирование симуляций) | раздел 6 + Appendix C |
+| Часть 8 (резюме) | раздел 8 + Appendix D |
