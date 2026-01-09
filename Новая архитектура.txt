@@ -2706,6 +2706,619 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │  └─────────────────────────────┴───────────────────────────────────────────┘│
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 9: PersonalizationEngine на условиях (гибкий messaging)                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ЦЕЛЬ: Заменить жёсткую логику size+industry → template на гибкую систему   │
+│        правил для выбора стиля messaging, value proposition, objection      │
+│        counters и demo pitch.                                               │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.1 Проблема текущей реализации                                            │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  СЕЙЧАС:                                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  company_size → SIZE_CATEGORY → BUSINESS_CONTEXTS[category]         │    │
+│  │  business_type → INDUSTRY → INDUSTRY_CONTEXTS[industry]             │    │
+│  │                                                                     │    │
+│  │  Результат: Фиксированный набор полей (size_label, pain_focus, ...) │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ПРОБЛЕМЫ:                                                                  │
+│  1. Один размер = один шаблон (нет учёта role, pain_point, stage)           │
+│  2. Крупная компания без pain_point → тот же enterprise messaging           │
+│  3. Директор маленькой компании → "небольшая команда" (не уважительно)      │
+│  4. Разный контекст разговора → одинаковый value_prop                       │
+│  5. Нельзя A/B тестировать messaging без изменения кода                     │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.2 Концепция: Messaging Styles                                            │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  Вместо фиксированных шаблонов по размеру → выбираем СТИЛЬ messaging:       │
+│                                                                             │
+│  ┌──────────────────┬───────────────────────────────────────────────────┐   │
+│  │  СТИЛЬ           │  КОГДА ИСПОЛЬЗОВАТЬ                               │   │
+│  ├──────────────────┼───────────────────────────────────────────────────┤   │
+│  │  roi_focused     │  Крупная компания + есть pain_point/current_crm   │   │
+│  │  simplicity      │  Маленькая компания ИЛИ роль = owner/director     │   │
+│  │  control         │  Есть pain "нет контроля" или команда 6-20 чел    │   │
+│  │  automation      │  Есть pain "ручная работа" или medium company     │   │
+│  │  enterprise      │  50+ человек + role = it/admin                    │   │
+│  │  quick_win       │  Первые 3 хода + нет данных о компании            │   │
+│  │  relationship    │  Breakthrough detected + high engagement          │   │
+│  └──────────────────┴───────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.3 Новые Context Paths для personalization                                │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌─────────────────────────────┬───────────────────────────────────────────┐│
+│  │  PATH                       │  ИСТОЧНИК                                 ││
+│  ├─────────────────────────────┼───────────────────────────────────────────┤│
+│  │  data.company_size          │  collected_data.company_size (int)        ││
+│  │  data.role                  │  collected_data.role                      ││
+│  │  data.industry              │  detected_industry                        ││
+│  │  data.pain_category         │  collected_data.pain_category             ││
+│  │  data.pain_point            │  collected_data.pain_point (text)         ││
+│  │  data.current_crm           │  collected_data.current_crm               ││
+│  │  data.competitor            │  collected_data.competitor_mentioned      ││
+│  │  data.urgency               │  collected_data.urgency                   ││
+│  │  context.state              │  текущее состояние                        ││
+│  │  context.spin_phase         │  SPIN фаза                                ││
+│  │  context.turn               │  номер хода                               ││
+│  │  context.has_breakthrough   │  envelope.has_breakthrough                ││
+│  │  context.engagement         │  envelope.engagement_level                ││
+│  │  context.objection_type     │  текущий тип возражения (если есть)       ││
+│  └─────────────────────────────┴───────────────────────────────────────────┘│
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.4 Новые Sugar операторы для personalization                              │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌─────────────────────────────────┬───────────────────────────────────────┐│
+│  │  SUGAR                          │  РАЗВОРАЧИВАЕТСЯ В                    ││
+│  ├─────────────────────────────────┼───────────────────────────────────────┤│
+│  │  {"$size_micro": true}          │  {"data.company_size": {"$lte": 5}}   ││
+│  │  {"$size_small": true}          │  {"$and": [{"data.company_size":      ││
+│  │                                 │    {"$gte": 6}}, {...: {"$lte": 15}}]}││
+│  │  {"$size_medium": true}         │  {"$and": [{"data.company_size":      ││
+│  │                                 │    {"$gte": 16}}, {...: {"$lte": 50}}]}│
+│  │  {"$size_large": true}          │  {"data.company_size": {"$gt": 50}}   ││
+│  │  {"$role_decision_maker": true} │  {"data.role": {"$in":                ││
+│  │                                 │    ["owner", "director", "ceo"]}}     ││
+│  │  {"$role_technical": true}      │  {"data.role": {"$in":                ││
+│  │                                 │    ["it", "admin", "developer"]}}     ││
+│  │  {"$has_pain": true}            │  {"data.pain_point": {"$exists": true}}│
+│  │  {"$pain_is": "no_control"}     │  {"data.pain_category": "no_control"} ││
+│  │  {"$has_crm_experience": true}  │  {"data.current_crm": {"$exists": true}}│
+│  │  {"$early_conversation": true}  │  {"context.turn": {"$lte": 3}}        ││
+│  │  {"$high_engagement": true}     │  {"context.engagement": "high"}       ││
+│  └─────────────────────────────────┴───────────────────────────────────────┘│
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.5 MESSAGING_STYLE_RULES — выбор стиля messaging                          │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  # Логика: первое сработавшее правило = этот стиль                          │
+│  # Каждый стиль определяет набор текстовых полей для промптов               │
+│                                                                             │
+│  MESSAGING_STYLE_RULES = [                                                  │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 10: ROI-focused (крупные + есть данные для расчёта)         │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "roi_focused",                                             │
+│          "priority": 10,                                                    │
+│          "when": {"$and": [                                                 │
+│              {"$size_large": true},                                         │
+│              {"$or": [                                                      │
+│                  {"$has_pain": true},                                       │
+│                  {"$has_crm_experience": true}                              │
+│              ]}                                                             │
+│          ]},                                                                │
+│          "style": {                                                         │
+│              "size_label": "крупная компания",                              │
+│              "pain_focus": "ROI и окупаемость",                             │
+│              "value_prop": "посчитаем экономию на конкретных цифрах",       │
+│              "objection_counter": "покажу расчёт окупаемости за 2-3 месяца",│
+│              "demo_pitch": "подготовлю расчёт ROI под ваши цифры",          │
+│              "tone": "business"                                             │
+│          }                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 9: Simplicity (маленькие ИЛИ decision makers)               │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "simplicity",                                              │
+│          "priority": 9,                                                     │
+│          "when": {"$or": [                                                  │
+│              {"$size_micro": true},                                         │
+│              {"$and": [                                                     │
+│                  {"$role_decision_maker": true},                            │
+│                  {"data.company_size": {"$lte": 20}}                        │
+│              ]}                                                             │
+│          ]},                                                                │
+│          "style": {                                                         │
+│              "size_label": "ваш бизнес",                                    │
+│              "pain_focus": "простота и экономия времени",                   │
+│              "value_prop": "всё в одном месте, разберётесь за 15 минут",    │
+│              "objection_counter": "окупается за счёт сэкономленного времени",│
+│              "demo_pitch": "покажу основное — займёт 10 минут",             │
+│              "tone": "friendly"                                             │
+│          }                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 8: Control-focused (pain = no_control или команда 6-20)     │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "control_focused",                                         │
+│          "priority": 8,                                                     │
+│          "when": {"$or": [                                                  │
+│              {"$pain_is": "no_control"},                                    │
+│              {"$and": [                                                     │
+│                  {"data.company_size": {"$gte": 6}},                        │
+│                  {"data.company_size": {"$lte": 20}}                        │
+│              ]}                                                             │
+│          ]},                                                                │
+│          "style": {                                                         │
+│              "size_label": "растущая команда",                              │
+│              "pain_focus": "контроль и прозрачность",                       │
+│              "value_prop": "видите работу каждого, ничего не теряется",     │
+│              "objection_counter": "один потерянный клиент стоит дороже",    │
+│              "demo_pitch": "покажу как выглядит контроль команды",          │
+│              "tone": "professional"                                         │
+│          }                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 8: Automation-focused (pain = manual_work)                  │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "automation_focused",                                      │
+│          "priority": 8,                                                     │
+│          "when": {"$pain_is": "manual_work"},                               │
+│          "style": {                                                         │
+│              "size_label": "ваша компания",                                 │
+│              "pain_focus": "автоматизация рутины",                          │
+│              "value_prop": "автоматические напоминания, отчёты, follow-up", │
+│              "objection_counter": "освобождает 2-3 часа в день на продажи", │
+│              "demo_pitch": "покажу автоматизацию — это впечатляет",         │
+│              "tone": "enthusiastic"                                         │
+│          }                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 7: Enterprise (50+ и техническая роль)                      │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "enterprise",                                              │
+│          "priority": 7,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"$size_large": true},                                         │
+│              {"$role_technical": true}                                      │
+│          ]},                                                                │
+│          "style": {                                                         │
+│              "size_label": "enterprise",                                    │
+│              "pain_focus": "интеграции и безопасность",                     │
+│              "value_prop": "API, SSO, кастомные отчёты, SLA",               │
+│              "objection_counter": "гибкие условия, индивидуальные SLA",     │
+│              "demo_pitch": "обсудим техтребования, подготовлю спецификацию",│
+│              "tone": "technical"                                            │
+│          }                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 6: Quick win (начало разговора, мало данных)                │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "quick_win",                                               │
+│          "priority": 6,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"$early_conversation": true},                                 │
+│              {"$not": {"$has_pain": true}}                                  │
+│          ]},                                                                │
+│          "style": {                                                         │
+│              "size_label": "ваш бизнес",                                    │
+│              "pain_focus": "быстрый результат",                             │
+│              "value_prop": "начните использовать сегодня, результат завтра",│
+│              "objection_counter": "есть бесплатный период — попробуйте",    │
+│              "demo_pitch": "за 5 минут покажу главное",                     │
+│              "tone": "energetic"                                            │
+│          }                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 5: Relationship (breakthrough + engagement)                 │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "relationship",                                            │
+│          "priority": 5,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"context.has_breakthrough": true},                            │
+│              {"$high_engagement": true}                                     │
+│          ]},                                                                │
+│          "style": {                                                         │
+│              "size_label": "вы",                                            │
+│              "pain_focus": "ваши конкретные задачи",                        │
+│              "value_prop": "решим именно то, что обсудили",                 │
+│              "objection_counter": "давайте разберём по пунктам",            │
+│              "demo_pitch": "покажу как решить то, что обсудили",            │
+│              "tone": "warm"                                                 │
+│          }                                                                  │
+│      }                                                                      │
+│  ]                                                                          │
+│                                                                             │
+│  # Default style (если ничего не сработало)                                 │
+│  DEFAULT_MESSAGING_STYLE = {                                                │
+│      "size_label": "ваша компания",                                         │
+│      "pain_focus": "эффективность работы",                                  │
+│      "value_prop": "удобный инструмент для продаж",                         │
+│      "objection_counter": "попробуйте — есть бесплатный период",            │
+│      "demo_pitch": "покажу основные возможности",                           │
+│      "tone": "neutral"                                                      │
+│  }                                                                          │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.6 OBJECTION_COUNTER_RULES — выбор стратегии ответа на возражение         │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  # Разные стратегии для разных комбинаций возражение + контекст             │
+│                                                                             │
+│  OBJECTION_COUNTER_RULES = [                                                │
+│      # Price objection + есть данные для ROI                                │
+│      {                                                                      │
+│          "name": "price_with_roi",                                          │
+│          "priority": 10,                                                    │
+│          "when": {"$and": [                                                 │
+│              {"context.objection_type": "price"},                           │
+│              {"$has_pain": true},                                           │
+│              {"data.company_size": {"$gte": 10}}                            │
+│          ]},                                                                │
+│          "counter": "Давайте посчитаем: если {pain_point} стоит вам X в месяц, система окупится за Y"│
+│      },                                                                     │
+│                                                                             │
+│      # Price objection + маленькая компания                                 │
+│      {                                                                      │
+│          "name": "price_value_time",                                        │
+│          "priority": 9,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"context.objection_type": "price"},                           │
+│              {"$size_micro": true}                                          │
+│          ]},                                                                │
+│          "counter": "Это меньше чем час работы в месяц. А экономит — часы каждый день"│
+│      },                                                                     │
+│                                                                             │
+│      # Competitor objection + знаем конкурента                              │
+│      {                                                                      │
+│          "name": "competitor_specific",                                     │
+│          "priority": 10,                                                    │
+│          "when": {"$and": [                                                 │
+│              {"context.objection_type": "competitor"},                      │
+│              {"data.competitor": {"$exists": true}}                         │
+│          ]},                                                                │
+│          "counter": "У нас есть клиенты, перешедшие с {competitor}. Главное отличие: {key_diff}"│
+│      },                                                                     │
+│                                                                             │
+│      # No time + decision maker                                             │
+│      {                                                                      │
+│          "name": "no_time_decision_maker",                                  │
+│          "priority": 9,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"context.objection_type": "no_time"},                         │
+│              {"$role_decision_maker": true}                                 │
+│          ]},                                                                │
+│          "counter": "Понимаю, время дорого. 15 минут на демо сэкономят часы на анализ"│
+│      },                                                                     │
+│                                                                             │
+│      # Think about it + high engagement (можно мягко подтолкнуть)           │
+│      {                                                                      │
+│          "name": "think_engaged",                                           │
+│          "priority": 8,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"context.objection_type": "think"},                           │
+│              {"$high_engagement": true}                                     │
+│          ]},                                                                 │
+│          "counter": "Конечно. Что поможет принять решение — демо, расчёт, или созвон с клиентом?"│
+│      }                                                                      │
+│  ]                                                                          │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.7 VALUE_PROP_RULES — динамическое ценностное предложение                 │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  # Строит value_prop на лету из нескольких компонентов                      │
+│                                                                             │
+│  VALUE_PROP_COMPONENTS = {                                                  │
+│      # Компонент добавляется если условие true                              │
+│      "time_saving": {                                                       │
+│          "when": {"$or": [                                                  │
+│              {"$pain_is": "manual_work"},                                   │
+│              {"$size_micro": true}                                          │
+│          ]},                                                                │
+│          "text": "экономия 2-3 часов в день"                                │
+│      },                                                                     │
+│      "team_control": {                                                      │
+│          "when": {"$and": [                                                 │
+│              {"data.company_size": {"$gte": 5}},                            │
+│              {"$or": [                                                      │
+│                  {"$pain_is": "no_control"},                                │
+│                  {"$role_decision_maker": true}                             │
+│              ]}                                                             │
+│          ]},                                                                │
+│          "text": "полный контроль над командой"                             │
+│      },                                                                     │
+│      "no_lost_clients": {                                                   │
+│          "when": {"$pain_is": "losing_clients"},                            │
+│          "text": "ни один клиент не потеряется"                             │
+│      },                                                                     │
+│      "integrations": {                                                      │
+│          "when": {"$or": [                                                  │
+│              {"$size_large": true},                                         │
+│              {"$has_crm_experience": true}                                  │
+│          ]},                                                                │
+│          "text": "интеграции с вашими системами"                            │
+│      },                                                                     │
+│      "quick_start": {                                                       │
+│          "when": {"$early_conversation": true},                             │
+│          "text": "запуск за 1 день"                                         │
+│      }                                                                      │
+│  }                                                                          │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.8 PersonalizationContext — контекст для evaluator                        │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  @dataclass                                                                 │
+│  class PersonalizationContext:                                              │
+│      """Контекст для проверки условий personalization."""                   │
+│      # Collected data                                                       │
+│      company_size: Optional[int] = None                                     │
+│      role: Optional[str] = None                                             │
+│      industry: Optional[str] = None                                         │
+│      pain_category: Optional[str] = None                                    │
+│      pain_point: Optional[str] = None                                       │
+│      current_crm: Optional[str] = None                                      │
+│      competitor_mentioned: bool = False                                     │
+│      urgency: Optional[str] = None                                          │
+│                                                                             │
+│      # Context signals                                                      │
+│      state: Optional[str] = None                                            │
+│      spin_phase: Optional[str] = None                                       │
+│      turn: int = 0                                                          │
+│      has_breakthrough: bool = False                                         │
+│      engagement: str = "medium"                                             │
+│      objection_type: Optional[str] = None                                   │
+│                                                                             │
+│      @classmethod                                                           │
+│      def from_collected_data_and_envelope(                                  │
+│          cls,                                                               │
+│          collected_data: Dict,                                              │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> "PersonalizationContext":                                         │
+│          ctx = context or {}                                                │
+│                                                                             │
+│          # Parse company_size                                               │
+│          company_size = collected_data.get("company_size")                  │
+│          if isinstance(company_size, str):                                  │
+│              try:                                                           │
+│                  company_size = int(company_size)                           │
+│              except ValueError:                                             │
+│                  company_size = None                                        │
+│                                                                             │
+│          return cls(                                                        │
+│              company_size=company_size,                                     │
+│              role=collected_data.get("role"),                               │
+│              industry=collected_data.get("industry"),                       │
+│              pain_category=collected_data.get("pain_category"),             │
+│              pain_point=collected_data.get("pain_point"),                   │
+│              current_crm=collected_data.get("current_crm"),                 │
+│              competitor_mentioned=bool(collected_data.get("competitor_mentioned")),│
+│              urgency=collected_data.get("urgency"),                         │
+│              state=ctx.get("state"),                                        │
+│              spin_phase=ctx.get("spin_phase"),                              │
+│              turn=ctx.get("turn", 0),                                       │
+│              has_breakthrough=envelope.has_breakthrough if envelope else False,│
+│              engagement=envelope.engagement_level if envelope else "medium",│
+│              objection_type=ctx.get("objection_type"),                      │
+│          )                                                                  │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.9 Обновлённый PersonalizationEngine                                      │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  class PersonalizationEngine:                                               │
+│      def __init__(                                                          │
+│          self,                                                              │
+│          style_rules: List = None,          # MESSAGING_STYLE_RULES         │
+│          objection_rules: List = None,      # OBJECTION_COUNTER_RULES       │
+│          value_components: Dict = None,     # VALUE_PROP_COMPONENTS         │
+│          evaluator: ConditionEvaluator = None                               │
+│      ):                                                                     │
+│          self.style_rules = style_rules or MESSAGING_STYLE_RULES            │
+│          self.objection_rules = objection_rules or OBJECTION_COUNTER_RULES  │
+│          self.value_components = value_components or VALUE_PROP_COMPONENTS  │
+│          self.evaluator = evaluator or ConditionEvaluator()                 │
+│                                                                             │
+│      def get_messaging_style(                                               │
+│          self,                                                              │
+│          collected_data: Dict,                                              │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> Dict:                                                             │
+│          """Выбрать стиль messaging по правилам."""                         │
+│          ctx = PersonalizationContext.from_collected_data_and_envelope(     │
+│              collected_data, envelope, context                              │
+│          )                                                                  │
+│                                                                             │
+│          # Сортируем по приоритету                                          │
+│          sorted_rules = sorted(                                             │
+│              self.style_rules,                                              │
+│              key=lambda x: x.get("priority", 0),                            │
+│              reverse=True                                                   │
+│          )                                                                  │
+│                                                                             │
+│          for rule in sorted_rules:                                          │
+│              if self.evaluator.evaluate(rule["when"], ctx):                 │
+│                  logger.info(                                               │
+│                      "Messaging style selected",                            │
+│                      style=rule["name"]                                     │
+│                  )                                                          │
+│                  return rule["style"]                                       │
+│                                                                             │
+│          return DEFAULT_MESSAGING_STYLE                                     │
+│                                                                             │
+│      def get_objection_counter(                                             │
+│          self,                                                              │
+│          objection_type: str,                                               │
+│          collected_data: Dict,                                              │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> Optional[str]:                                                    │
+│          """Выбрать контраргумент по правилам."""                           │
+│          ctx = PersonalizationContext.from_collected_data_and_envelope(     │
+│              collected_data, envelope,                                      │
+│              {**(context or {}), "objection_type": objection_type}          │
+│          )                                                                  │
+│                                                                             │
+│          for rule in sorted(self.objection_rules, key=lambda x: -x.get("priority", 0)):│
+│              if self.evaluator.evaluate(rule["when"], ctx):                 │
+│                  logger.info("Objection counter selected", rule=rule["name"])│
+│                  return rule["counter"].format(**collected_data)            │
+│                                                                             │
+│          return None  # Fallback на стиль messaging                         │
+│                                                                             │
+│      def build_dynamic_value_prop(                                          │
+│          self,                                                              │
+│          collected_data: Dict,                                              │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> str:                                                              │
+│          """Собрать value_prop из компонентов."""                           │
+│          ctx = PersonalizationContext.from_collected_data_and_envelope(     │
+│              collected_data, envelope, context                              │
+│          )                                                                  │
+│                                                                             │
+│          parts = []                                                         │
+│          for name, component in self.value_components.items():              │
+│              if self.evaluator.evaluate(component["when"], ctx):            │
+│                  parts.append(component["text"])                            │
+│                                                                             │
+│          return ", ".join(parts[:3]) if parts else "удобный инструмент"     │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.10 Расширение ConditionEvaluator для personalization                     │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  def _expand_sugar(self, condition: Dict) -> Dict:                          │
+│      # ... существующие sugar                                               │
+│                                                                             │
+│      # Personalization sugar                                                │
+│      if key == "$size_micro":                                               │
+│          return {"$and": [                                                  │
+│              {"data.company_size": {"$gte": 1}},                            │
+│              {"data.company_size": {"$lte": 5}}                             │
+│          ]}                                                                 │
+│      if key == "$size_small":                                               │
+│          return {"$and": [                                                  │
+│              {"data.company_size": {"$gte": 6}},                            │
+│              {"data.company_size": {"$lte": 15}}                            │
+│          ]}                                                                 │
+│      if key == "$size_medium":                                              │
+│          return {"$and": [                                                  │
+│              {"data.company_size": {"$gte": 16}},                           │
+│              {"data.company_size": {"$lte": 50}}                            │
+│          ]}                                                                 │
+│      if key == "$size_large":                                               │
+│          return {"data.company_size": {"$gt": 50}}                          │
+│      if key == "$role_decision_maker":                                      │
+│          return {"data.role": {"$in": ["owner", "director", "ceo", "founder"]}}│
+│      if key == "$role_technical":                                           │
+│          return {"data.role": {"$in": ["it", "admin", "developer", "cto"]}} │
+│      if key == "$pain_is":                                                  │
+│          return {"data.pain_category": value}                               │
+│      if key == "$has_crm_experience":                                       │
+│          return {"data.current_crm": {"$exists": True}}                     │
+│      if key == "$early_conversation":                                       │
+│          return {"context.turn": {"$lte": 3}}                               │
+│      if key == "$high_engagement":                                          │
+│          return {"context.engagement": "high"}                              │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.11 План работ                                                            │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  1. Расширить ConditionEvaluator:                                           │
+│     - Добавить personalization sugar ($size_*, $role_*, $pain_is, etc.)     │
+│                                                                             │
+│  2. Создать PersonalizationContext dataclass                                │
+│                                                                             │
+│  3. Добавить в config.py:                                                   │
+│     - MESSAGING_STYLE_RULES                                                 │
+│     - OBJECTION_COUNTER_RULES                                               │
+│     - VALUE_PROP_COMPONENTS                                                 │
+│     - DEFAULT_MESSAGING_STYLE                                               │
+│                                                                             │
+│  4. Рефакторинг PersonalizationEngine:                                      │
+│     - Добавить get_messaging_style() с rules                                │
+│     - Обновить get_objection_counter() с rules                              │
+│     - Добавить build_dynamic_value_prop()                                   │
+│     - Сохранить обратную совместимость (get_context работает)               │
+│                                                                             │
+│  5. Тесты:                                                                  │
+│     - Unit-тесты PersonalizationContext                                     │
+│     - Unit-тесты каждого стиля messaging                                    │
+│     - Unit-тесты objection counters                                         │
+│     - Интеграционные тесты с разными комбинациями данных                    │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.12 Преимущества                                                          │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌──────────────────────────────┬──────────────────────────────────────────┐│
+│  │  Было                        │  Стало                                   ││
+│  ├──────────────────────────────┼──────────────────────────────────────────┤│
+│  │  4 размера → 4 шаблона       │  7+ стилей по комбинации условий         ││
+│  │  Размер — единственный фактор│  Размер + роль + pain + контекст         ││
+│  │  Один objection_counter      │  Разные стратегии по контексту           ││
+│  │  Статичный value_prop        │  Динамический из компонентов             ││
+│  │  A/B тест = изменить код     │  A/B тест = добавить правило с условием  ││
+│  │  Логи: "size=medium"         │  Логи: {"style": "control_focused"}      ││
+│  └──────────────────────────────┴──────────────────────────────────────────┘│
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  9.13 Пример: как работает выбор стиля                                      │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  # Входные данные                                                           │
+│  collected_data = {                                                         │
+│      "company_size": 12,                                                    │
+│      "role": "director",                                                    │
+│      "pain_category": "no_control"                                          │
+│  }                                                                          │
+│                                                                             │
+│  # Проверка правил (по приоритету):                                         │
+│  # 1. roi_focused (priority 10): $size_large=False → SKIP                   │
+│  # 2. simplicity (priority 9): $role_decision_maker=True, size<=20 → MATCH! │
+│                                                                             │
+│  # Результат: style = "simplicity"                                          │
+│  {                                                                          │
+│      "size_label": "ваш бизнес",                                            │
+│      "pain_focus": "простота и экономия времени",                           │
+│      "value_prop": "всё в одном месте, разберётесь за 15 минут",            │
+│      ...                                                                    │
+│  }                                                                          │
+│                                                                             │
+│  # Вместо прежнего "small" → "растущая команда" (менее персонализировано)   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 5.3 Обратная совместимость
 
 def _resolve_action(self, rule: Union[str, Dict]) -> str:
@@ -3317,6 +3930,7 @@ class StateMachine:
 - Валидация — жёсткая в CI, мягкий fallback в runtime
 - DialoguePolicy — POLICY_RULES + PolicyContext + тот же ConditionEvaluator (см. секция 5.2 ЭТАП 7)
 - FallbackHandler — FALLBACK_ESCALATION_RULES + DYNAMIC_CTA_RULES + тот же ConditionEvaluator (см. секция 5.2 ЭТАП 8)
+- PersonalizationEngine — MESSAGING_STYLE_RULES + VALUE_PROP_COMPONENTS + тот же ConditionEvaluator (см. секция 5.2 ЭТАП 9)
 
 Решённые проблемы:
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -3343,6 +3957,8 @@ class StateMachine:
 │ 18  │ DialoguePolicy hardcoded if'ы  │ POLICY_RULES + ConditionEvaluator │
 │ 19  │ FallbackHandler жёсткая       │ FALLBACK_ESCALATION_RULES +       │
 │     │ эскалация Tier 1→2→3→4       │ DYNAMIC_CTA_RULES (адаптивно)     │
+│ 20  │ PersonalizationEngine        │ MESSAGING_STYLE_RULES +           │
+│     │ только size+industry         │ VALUE_PROP_COMPONENTS (гибко)     │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Зачем это нужно:
