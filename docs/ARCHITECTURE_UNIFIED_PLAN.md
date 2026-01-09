@@ -151,17 +151,22 @@
 
 `RuleValue`:
 - `"action"` — простое правило (legacy)
-- `("condition_name", "action")` — одно условие
-- `[("cond1","action1"), ("cond2","action2"), "default_action"]` — цепочка условий, порядок = приоритет, последний `str` = default
+- `{"when": "condition_name", "then": "action"}` — одно условие
+- `[{...}, {...}, "default_action"]` — цепочка условий, порядок = приоритет, последний `str` = default
+
+**Почему dict, а не tuple:**
+- Именованные поля — не надо помнить порядок
+- Легко расширять (добавить `priority`, `description`, `disabled`)
+- Лучше читается в конфиге
 
 Пример (переписано из `Новая архитектура.txt` на hybrid‑формат):
 
 ```python
 SPIN_COMMON_RULES = {
     "price_question": [
-        ("has_pricing_data", "answer_with_facts"),     # если знаем размер/объём
-        ("price_repeated_3x", "answer_with_price_range"),
-        "deflect_and_continue",
+        {"when": "has_pricing_data", "then": "answer_with_facts"},     # если знаем размер/объём
+        {"when": "price_repeated_3x", "then": "answer_with_price_range"},
+        "deflect_and_continue",  # default
     ],
 }
 ```
@@ -170,14 +175,14 @@ SPIN_COMMON_RULES = {
 
 `TransitionValue`:
 - `"next_state"` — простой переход (legacy)
-- `("condition_name", "next_state")` — одно условие
-- `[("cond","next_state"), None]` — если не сработало, остаться в текущем состоянии (`None`)
+- `{"when": "condition_name", "then": "next_state"}` — одно условие
+- `[{...}, None]` — если не сработало, остаться в текущем состоянии (`None`)
 
 Пример:
 
 ```python
 "demo_request": [
-    ("has_contact_info", "success"),
+    {"when": "has_contact_info", "then": "success"},
     None,  # иначе остаёмся в текущем состоянии
 ]
 ```
@@ -276,7 +281,7 @@ src/
 
 ```python
 "price_question": [
-    ("has_pricing_data", "answer_with_facts"),
+    {"when": "has_pricing_data", "then": "answer_with_facts"},
     "deflect_and_continue",
 ]
 ```
@@ -285,8 +290,8 @@ src/
 
 ```python
 "price_question": [
-    ("has_pricing_data", "answer_with_facts"),        # приоритет 1
-    ("price_repeated_3x", "answer_with_price_range"), # приоритет 2
+    {"when": "has_pricing_data", "then": "answer_with_facts"},        # приоритет 1
+    {"when": "price_repeated_3x", "then": "answer_with_price_range"}, # приоритет 2
     "deflect_and_continue",
 ]
 ```
@@ -296,8 +301,8 @@ src/
 Action (в состоянии обработки возражений):
 ```python
 "objection_price": [
-    ("has_pain_and_company_size", "handle_price_with_roi"),
-    ("has_company_size", "handle_price_with_comparison"),
+    {"when": "has_pain_and_company_size", "then": "handle_price_with_roi"},
+    {"when": "has_company_size", "then": "handle_price_with_comparison"},
     "handle_price_objection_generic",
 ]
 ```
@@ -305,7 +310,7 @@ Action (в состоянии обработки возражений):
 Transition (пример лимита возражений):
 ```python
 "objection_price": [
-    ("objection_limit_reached", "soft_close"),
+    {"when": "objection_limit_reached", "then": "soft_close"},
     None,
 ]
 ```
@@ -314,7 +319,7 @@ Transition (пример лимита возражений):
 
 ```python
 "question_technical": [
-    ("technical_question_repeated_2x", "offer_documentation_link"),
+    {"when": "technical_question_repeated_2x", "then": "offer_documentation_link"},
     "answer_technical",
 ]
 ```
@@ -323,7 +328,7 @@ Transition (пример лимита возражений):
 
 ```python
 "demo_request": [
-    ("has_contact_info", "success"),
+    {"when": "has_contact_info", "then": "success"},
     None,
 ]
 ```
@@ -470,7 +475,7 @@ logging:
 
 **Тесты:**
 - unit: `IntentTracker` (streak/objections/reset/serialизация)
-- unit: `RuleResolver._evaluate_rule()` (simple/tuple/list/default/None)
+- unit: `RuleResolver._evaluate_rule()` (simple/dict/list/default/None)
 - unit: `validate_config()` (unknown conditions / unknown targets)
 
 **Готово когда:**
@@ -679,37 +684,9 @@ logging:
 
 ---
 
-## Appendix B) Draft: MongoDB‑style DSL из `Новая архитектура.txt` (не используется в Hybrid)
+## Appendix B) Симуляции и логи: как переносится секция 7 из `Новая архитектура.txt`
 
-Этот DSL был описан как альтернатива. В Hybrid он **заменён** на именованные Python‑условия + реестры.
-
-Чтобы не потерять детали (если понадобится как UX‑надстройка в будущем):
-
-### B.1 3‑уровневая модель
-
-- **Level 1: Core operators** (ортогональные примитивы):  
-  `$exists`, `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$and`, `$or`, `$not`, `$ref`
-- **Level 2: Context paths**:  
-  `data.*`, `state`, `spin_phase`, `intent.*`, `counter.*`, … (по `.txt`)
-- **Level 3: Sugar operators**:  
-  `$has_any`, `$has_all`, `$state_in`, `$is_spin`, `$intent_streak`, `$objections`, … (разворачиваются в core)
-
-### B.2 Почему конфликтует с Hybrid
-
-- DSL требует evaluator’а, общего для всех контекстов → риск нарушения SRP.
-- Сложнее типизировать и дебажить (в сравнении с Python‑функциями условий).
-
-### B.3 Как сохранить пользу DSL без конфликта
-
-Если понадобится “читабельный” DSL в config, безопасный путь:
-1) оставить источником истины **реестры Python‑условий**;
-2) добавить отдельный “frontend слой”, который компилирует DSL‑условия в вызовы зарегистрированных условий (или в композиции над ними).
-
----
-
-## Appendix C) Симуляции и логи: как переносится секция 7 из `Новая архитектура.txt`
-
-### C.1 Уровни (соответствуют текущему `src/logger.py`)
+### B.1 Уровни (соответствуют текущему `src/logger.py`)
 
 - `DEBUG` — детали вычисления условий
 - `INFO` — финальные решения
@@ -717,13 +694,13 @@ logging:
 - `EVENT` — бизнес‑события аналитики
 - `METRIC` — числовые метрики
 
-### C.2 Формат `[RULE] ...` в отчёте (совместимо с Hybrid)
+### B.2 Формат `[RULE] ...` в отчёте (совместимо с Hybrid)
 
 Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляциях достаточно:
 - записывать `trace.to_compact_string()` в `turn_data` (runner)
 - печатать в `_section_full_dialogues()` (report)
 
-### C.3 Что именно переносим из идеи `rule_info` (и как маппится на trace)
+### B.3 Что именно переносим из идеи `rule_info` (и как маппится на trace)
 
 В `.txt` предлагалась структура `rule_info` с:
 - `rule_type` / `resolution` / `matched_index`
@@ -736,7 +713,7 @@ Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляц�
 
 Если нужно 1‑в‑1 совместимое поле `rule_info` для отчётов — его можно **производить из trace** без второго источника истины.
 
-### C.4 События и метрики (EVENT/METRIC)
+### B.4 События и метрики (EVENT/METRIC)
 
 Примерный минимум (из `.txt`, адаптировано под `src/logger.py`):
 - `logger.event("conditional_rule_triggered", intent=..., action=..., matched_condition=...)`
@@ -744,7 +721,7 @@ Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляц�
 - `logger.metric("condition_evaluation", conditions_checked=..., evaluation_time_ms=..., intent=...)`
 - `logger.metric("conditional_rules_stats", total_evaluations=..., conditions_matched=..., defaults_used=..., batch_id=...)`
 
-### C.5 RuleLogger (идея из .txt) — опционально
+### B.5 RuleLogger (идея из .txt) — опционально
 
 В `.txt` предлагалась обёртка `RuleLogger` для удобного логирования conditional rules.
 
@@ -754,9 +731,9 @@ Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляц�
 
 ---
 
-## Appendix D) Решённые проблемы и сравнение подходов (из Hybrid, без потери)
+## Appendix C) Решённые проблемы и сравнение подходов (из Hybrid, без потери)
 
-### D.1 Решённые проблемы
+### C.1 Решённые проблемы
 
 | # | Проблема | Решение (Hybrid) |
 |---:|---|---|
@@ -771,7 +748,7 @@ Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляц�
 | 9 | Runtime ошибки | валидация на старте/в CI |
 | 10 | Сложно дебажить | breakpoints + stack traces + `EvaluationTrace` |
 
-### D.2 Сравнение подходов
+### C.2 Сравнение подходов
 
 | Аспект | Один evaluator/DSL | Hybrid: доменные реестры |
 |---|---|---|
@@ -784,9 +761,9 @@ Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляц�
 
 ---
 
-## Appendix E) Проверка покрытия “по очереди” (что куда перенесено)
+## Appendix D) Проверка покрытия “по очереди” (что куда перенесено)
 
-### E.1 `docs/ARCHITECTURE_HYBRID.md` → `docs/ARCHITECTURE_UNIFIED_PLAN.md`
+### D.1 `docs/ARCHITECTURE_HYBRID.md` → `docs/ARCHITECTURE_UNIFIED_PLAN.md`
 
 | Hybrid секция | Где в unified |
 |---|---|
@@ -801,18 +778,18 @@ Hybrid уже даёт `EvaluationTrace.to_compact_string()`. В симуляц�
 | Часть 10: конфигурация | раздел 3/5/7 + этап 3 |
 | Часть 11: структура файлов | раздел 4.0 |
 | Часть 12: план реализации | раздел 9 |
-| Часть 13: резюме | Appendix D |
+| Часть 13: резюме | Appendix C |
 
-### E.2 `Новая архитектура.txt` → `docs/ARCHITECTURE_UNIFIED_PLAN.md`
+### D.2 `Новая архитектура.txt` → `docs/ARCHITECTURE_UNIFIED_PLAN.md`
 
 | .txt секция | Где в unified |
 |---|---|
 | Часть 1–2 (контекст/цель) | раздел 1–2 |
 | Часть 3.1 (schema) | раздел 3 |
-| Часть 3.2 (MongoDB DSL) | Appendix B (как draft) + раздел 10 (маппинг) |
+| Часть 3.2 (MongoDB DSL) | **Удалён** — заменён на Python‑условия (раздел 10) |
 | Часть 3.3–3.7 (порядок/шаринг/hooks/tracker) | раздел 4 + Appendix A |
 | Часть 4 (примеры) | раздел 5 |
 | Часть 5 (план) | раздел 9 (PR‑friendly этапы) |
 | Часть 6 (ожидаемые результаты) | раздел 8 |
-| Часть 7 (логирование симуляций) | раздел 6 + Appendix C |
-| Часть 8 (резюме) | раздел 8 + Appendix D |
+| Часть 7 (логирование симуляций) | раздел 6 + Appendix B |
+| Часть 8 (резюме) | раздел 8 + Appendix C |
