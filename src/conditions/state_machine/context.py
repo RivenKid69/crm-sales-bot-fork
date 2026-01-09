@@ -10,6 +10,9 @@ Part of Phase 2: StateMachine Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 from typing import Dict, Any, Optional, List, Protocol, runtime_checkable
 from dataclasses import dataclass, field
 
+# Import INTENT_CATEGORIES from the single source of truth
+from src.intent_tracker import INTENT_CATEGORIES
+
 
 # SPIN phases and their order (from state_machine.py)
 SPIN_PHASES = ["situation", "problem", "implication", "need_payoff"]
@@ -24,46 +27,6 @@ SPIN_STATE_TO_PHASE = {
 
 # States that are part of SPIN flow
 SPIN_STATES = set(SPIN_STATE_TO_PHASE.keys())
-
-# Intent categories for tracking
-INTENT_CATEGORIES = {
-    "objection": [
-        "objection_price",
-        "objection_competitor",
-        "objection_no_time",
-        "objection_think",
-    ],
-    "positive": [
-        "agreement",
-        "demo_request",
-        "callback_request",
-        "contact_provided",
-        "consultation_request",
-        "situation_provided",
-        "problem_revealed",
-        "implication_acknowledged",
-        "need_expressed",
-        "info_provided",
-        "question_features",
-        "question_integrations",
-        "comparison",
-        "greeting",
-        "gratitude",
-    ],
-    "question": [
-        "price_question",
-        "question_features",
-        "question_integrations",
-        "question_technical",
-        "comparison",
-    ],
-    "spin_progress": [
-        "situation_provided",
-        "problem_revealed",
-        "implication_acknowledged",
-        "need_expressed",
-    ],
-}
 
 
 @runtime_checkable
