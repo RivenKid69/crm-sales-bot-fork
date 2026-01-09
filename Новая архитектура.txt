@@ -149,20 +149,30 @@ Hardcoded	Каждое условие = новый if в коде
 
 # Условное action-правило
 "price_question": {
-    "default": "deflect_and_continue",      # Действие по умолчанию
-    "conditions": [                          # Список условий (проверяются по порядку)
+    "default": "deflect_and_continue",
+    "conditions": [
         {
-            "when": { ... },                 # Условие (см. типы ниже)
-            "then": "answer_with_facts"      # Действие если условие true
-        },
-        {
-            "when": { ... },
-            "then": "another_action"
+            "when": { ... },                 # Условие (см. 3.2)
+            "then": "answer_with_facts"      # Только action
         }
     ]
 }
 
-# Простое transition-правило (переопределяет transitions)
+# Расширенный формат then — action + state вместе
+"contact_provided": {
+    "default": "acknowledge_and_continue",
+    "conditions": [
+        {
+            "when": {"is_spin_state": true},
+            "then": {
+                "action": "acknowledge_contact_early",  # Действие
+                "state": "close"                        # И переход
+            }
+        }
+    ]
+}
+
+# Простое transition-правило
 "demo_request": "success"
 
 # Условное transition-правило
@@ -170,103 +180,214 @@ Hardcoded	Каждое условие = новый if в коде
     "conditions": [
         {
             "when": {"state_in": ["close"]},
-            "then": "success"
+            "then": "success"                # Только state
         }
     ],
-    "default": None  # None → использовать обычные transitions/SPIN-логику
+    "default": None  # None → fallback на transitions/SPIN
 }
+
+Формат then:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  "then": "action_name"              — только action (строка)                │
+│  "then": {"action": "..."}          — только action (объект)                │
+│  "then": {"state": "..."}           — только state                          │
+│  "then": {"action": "...", "state": "..."} — action + state вместе          │
+└─────────────────────────────────────────────────────────────────────────────┘
 3.2 Типы условий (Condition Types)
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           ТИПЫ УСЛОВИЙ                                      │
+│  ДАННЫЕ (проверка collected_data)                                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  1. has_any                                                         │   │
-│  │     Проверяет: есть ли ЛЮБОЕ из указанных полей в collected_data    │   │
-│  │                                                                     │   │
-│  │     "when": {"has_any": ["company_size", "users_count"]}            │   │
-│  │                                                                     │   │
-│  │     collected_data = {}                    → False                  │   │
-│  │     collected_data = {company_size: 10}    → True                   │   │
-│  │     collected_data = {users_count: 5}      → True                   │   │
-│  │     collected_data = {pain_point: "..."}   → False                  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  1. has_any — есть ЛЮБОЕ из полей                                           │
+│     "when": {"has_any": ["company_size", "users_count"]}                    │
+│     {} → False, {company_size: 10} → True                                   │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  2. has_all                                                         │   │
-│  │     Проверяет: есть ли ВСЕ указанные поля в collected_data          │   │
-│  │                                                                     │   │
-│  │     "when": {"has_all": ["company_size", "pain_point"]}             │   │
-│  │                                                                     │   │
-│  │     collected_data = {company_size: 10}                → False      │   │
-│  │     collected_data = {company_size: 10, pain_point: "x"} → True     │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  2. has_all — есть ВСЕ поля                                                 │
+│     "when": {"has_all": ["company_size", "pain_point"]}                     │
+│     {company_size: 10} → False, {company_size: 10, pain_point: "x"} → True  │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  3. intent_repeated                                                 │   │
-│  │     Проверяет: повторился ли интент N+ раз подряд (по умолчанию)    │   │
-│  │     или в окне последних N (scope="window")                         │   │
-│  │                                                                     │   │
-│  │     "when": {"intent_repeated": {"min": 3}}                         │   │
-│  │     "when": {"intent_repeated": {"min": 2, "scope": "window",        │   │
-│  │                                 "window": 5}}                       │   │
-│  │                                                                     │   │
-│  │     intent_streak["price_question"] = 2    → False                  │   │
-│  │     intent_streak["price_question"] = 3    → True                   │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  3. missing_any — отсутствует ЛЮБОЕ из полей                                │
+│     "when": {"missing_any": ["company_size", "pain_point"]}                 │
+│     {} → True, {company_size: 10} → True (нет pain_point)                   │
+│     {company_size: 10, pain_point: "x"} → False                             │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  4. spin_phase_in                                                   │   │
-│  │     Проверяет: текущая SPIN-фаза в списке                           │   │
-│  │     Для presentation/close используйте state_in                     │   │
-│  │                                                                     │   │
-│  │     "when": {"spin_phase_in": ["implication", "need_payoff"]}        │   │
-│  │                                                                     │   │
-│  │     spin_phase = "situation"    → False                             │   │
-│  │     spin_phase = "need_payoff"  → True                              │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  4. missing_all — отсутствуют ВСЕ поля                                      │
+│     "when": {"missing_all": ["company_size", "users_count"]}                │
+│     {} → True, {company_size: 10} → False (есть хотя бы одно)               │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  5. state_in                                                        │   │
-│  │     Проверяет: текущее состояние в списке                           │   │
-│  │                                                                     │   │
-│  │     "when": {"state_in": ["presentation", "close"]}                 │   │
-│  │                                                                     │   │
-│  │     state = "spin_problem"         → False                          │   │
-│  │     state = "close"                → True                           │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  5. field_equals — поле равно значению                                      │
+│     "when": {"field_equals": {"urgency": "high"}}                           │
+│     {urgency: "low"} → False, {urgency: "high"} → True                      │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  6. field_equals                                                    │   │
-│  │     Проверяет: поле равно конкретному значению                      │   │
-│  │                                                                     │   │
-│  │     "when": {"field_equals": {"urgency": "high"}}                   │   │
-│  │                                                                     │   │
-│  │     collected_data = {urgency: "low"}   → False                     │   │
-│  │     collected_data = {urgency: "high"}  → True                      │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  6. field_compare — числовые сравнения                                      │
+│     "when": {"field_gt": {"company_size": 50}}    # >50                     │
+│     "when": {"field_gte": {"company_size": 10}}   # >=10                    │
+│     "when": {"field_lt": {"company_size": 100}}   # <100                    │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  7. and / or (композиция)                                           │   │
-│  │     Комбинирует несколько условий                                   │   │
-│  │                                                                     │   │
-│  │     "when": {                                                       │   │
-│  │       "and": [                                                      │   │
-│  │         {"has_any": ["company_size"]},                              │   │
-│  │         {"state_in": ["presentation", "close"]}                     │   │
-│  │       ]                                                             │   │
-│  │     }                                                               │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  СОСТОЯНИЕ                                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  7. state_in — текущее состояние в списке                                   │
+│     "when": {"state_in": ["presentation", "close"]}                         │
+│                                                                             │
+│  8. spin_phase_in — текущая SPIN-фаза в списке                              │
+│     "when": {"spin_phase_in": ["implication", "need_payoff"]}               │
+│                                                                             │
+│  9. is_spin_state — находимся в SPIN-фазе (bool)                            │
+│     "when": {"is_spin_state": true}                                         │
+│                                                                             │
+│  10. data_complete — все required_data собраны                              │
+│      "when": {"data_complete": true}                                        │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ИСТОРИЯ ИНТЕНТОВ (требует IntentTracker)                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  11. intent_repeated — интент повторился N+ раз                             │
+│      # Подряд (consecutive) — по умолчанию                                  │
+│      "when": {"intent_repeated": {"min": 3}}                                │
+│                                                                             │
+│      # В окне последних N ходов                                             │
+│      "when": {"intent_repeated": {"min": 2, "scope": "window", "window": 5}}│
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ВОЗРАЖЕНИЯ                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  12. objection_count — счётчик возражений                                   │
+│      "when": {"objection_count": {"scope": "consecutive", "min": 2}}        │
+│      "when": {"objection_count": {"scope": "total", "min": 3}}              │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  МЕТАДАННЫЕ                                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  13. turn_number — номер хода в диалоге                                     │
+│      "when": {"turn_number": {"min": 5}}        # после 5 ходов             │
+│      "when": {"turn_number": {"max": 3}}        # в первые 3 хода           │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ЛОГИЧЕСКИЕ ОПЕРАТОРЫ                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  14. and — все условия истинны                                              │
+│      "when": {"and": [{"has_any": [...]}, {"state_in": [...]}]}             │
+│                                                                             │
+│  15. or — любое условие истинно                                             │
+│      "when": {"or": [{"has_any": [...]}, {"intent_repeated": 3}]}           │
+│                                                                             │
+│  16. not — инверсия условия                                                 │
+│      "when": {"not": {"has_any": ["company_size"]}}                         │
+│      {} → True (not False), {company_size: 10} → False (not True)           │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
-Контекст evaluator (минимальный набор):
-- collected_data
-- state
-- spin_phase
-- intent_history
-- intent_counts / intent_streak
-- last_intent
+
+3.2.1 IntentTracker (реализация для intent_repeated)
+
+class IntentTracker:
+    """
+    Отслеживает историю интентов для conditional rules.
+    Реализует паттерн Sliding Window для эффективного подсчёта.
+    """
+    MAX_HISTORY = 20
+
+    def __init__(self):
+        self.history: List[str] = []           # ["greeting", "price_question", ...]
+        self.consecutive: Dict[str, int] = {}  # {"price_question": 3}
+        self.last_intent: Optional[str] = None
+
+    def record(self, intent: str) -> None:
+        """Записать интент (вызывается в начале process)"""
+        if intent == self.last_intent:
+            self.consecutive[intent] = self.consecutive.get(intent, 1) + 1
+        else:
+            self.consecutive = {intent: 1}
+
+        self.history.append(intent)
+        if len(self.history) > self.MAX_HISTORY:
+            self.history.pop(0)
+
+        self.last_intent = intent
+
+    def get_consecutive(self, intent: str) -> int:
+        return self.consecutive.get(intent, 0)
+
+    def count_in_window(self, intent: str, window: int = 5) -> int:
+        recent = self.history[-window:]
+        return recent.count(intent)
+
+# Интеграция в StateMachine:
+class StateMachine:
+    def __init__(self):
+        ...
+        self.intent_tracker = IntentTracker()
+
+3.2.2 EvaluatorContext (типизированный контракт)
+
+@dataclass
+class EvaluatorContext:
+    """
+    Контекст для проверки условий.
+    Все поля гарантированно существуют.
+    """
+    # Данные клиента
+    collected_data: Dict[str, Any]
+
+    # Состояние диалога
+    state: str
+    spin_phase: Optional[str]
+    is_spin_state: bool
+
+    # История интентов
+    last_intent: Optional[str]
+    intent_consecutive: Dict[str, int]   # {"price_question": 3}
+    intent_history: List[str]
+
+    # Возражения
+    objection_consecutive: int
+    objection_total: int
+
+    # Метаданные
+    turn_number: int
+    missing_required_data: List[str]
+
+    @classmethod
+    def from_state_machine(cls, sm: "StateMachine") -> "EvaluatorContext":
+        config = SALES_STATES.get(sm.state, {})
+        required = config.get("required_data", [])
+        missing = [f for f in required if not sm.collected_data.get(f)]
+
+        return cls(
+            collected_data=sm.collected_data.copy(),
+            state=sm.state,
+            spin_phase=sm.spin_phase,
+            is_spin_state=sm.spin_phase is not None,
+            last_intent=sm.intent_tracker.last_intent,
+            intent_consecutive=sm.intent_tracker.consecutive.copy(),
+            intent_history=sm.intent_tracker.history.copy(),
+            objection_consecutive=sm.objection_flow.objection_count,
+            objection_total=sm.objection_flow.total_objections,
+            turn_number=len(sm.intent_tracker.history),
+            missing_required_data=missing,
+        )
+
+Mapping условий → поля контекста:
+┌────────────────────────┬─────────────────────────────────────────────────────┐
+│  Условие               │  Использует                                         │
+├────────────────────────┼─────────────────────────────────────────────────────┤
+│  has_any/has_all       │  collected_data                                     │
+│  missing_any/all       │  collected_data                                     │
+│  field_equals/compare  │  collected_data                                     │
+│  state_in              │  state                                              │
+│  spin_phase_in         │  spin_phase                                         │
+│  is_spin_state         │  is_spin_state                                      │
+│  intent_repeated       │  intent_consecutive (подряд), intent_history (window)│
+│  objection_count       │  objection_consecutive, objection_total             │
+│  turn_number           │  turn_number                                        │
+│  data_complete         │  missing_required_data (empty = complete)           │
+└────────────────────────┴─────────────────────────────────────────────────────┘
 3.3 Порядок проверки условий (rules/transition_rules)
 
               Вход: rule/transition_rule с conditions
@@ -306,7 +427,137 @@ Hardcoded	Каждое условие = новый if в коде
          
          ВАЖНО: Первое сработавшее условие побеждает!
          Порядок условий имеет значение.
-3.4 Порядок разрешения action и переходов
+3.4 Наследование правил (Rule Inheritance)
+
+Проблема: В текущей архитектуре одинаковые rules дублируются в spin_situation,
+spin_problem, spin_implication, spin_need_payoff. Это нарушает DRY.
+
+Решение: Трёхуровневая иерархия правил.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ИЕРАРХИЯ ПРАВИЛ                                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────┐                                                        │
+│  │  global_rules   │  ← Применяются ко ВСЕМ состояниям                      │
+│  │  (приоритет 3)  │     greeting, gratitude, small_talk                    │
+│  └────────┬────────┘                                                        │
+│           │                                                                 │
+│           ▼                                                                 │
+│  ┌─────────────────┐                                                        │
+│  │  rule_groups    │  ← Группы правил для наследования                      │
+│  │  (приоритет 2)  │     "spin_phases": price_question, pricing_details...  │
+│  └────────┬────────┘     "post_spin": price_question без deflect            │
+│           │                                                                 │
+│           ▼                                                                 │
+│  ┌─────────────────┐                                                        │
+│  │  state.rules    │  ← Специфичные для состояния (высший приоритет)        │
+│  │  (приоритет 1)  │     unclear → probe_situation (только в spin_situation)│
+│  └─────────────────┘                                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Формат конфигурации:
+
+SALES_CONFIG = {
+    # Уровень 1: Глобальные правила (для всех состояний)
+    "global_rules": {
+        "greeting": "acknowledge_and_continue",
+        "gratitude": "acknowledge_and_continue",
+        "small_talk": "small_talk_and_continue",
+    },
+
+    # Уровень 2: Группы правил (для наследования)
+    "rule_groups": {
+        "spin_phases": {
+            "price_question": {
+                "default": "deflect_and_continue",
+                "conditions": [
+                    {"when": {"has_any": ["company_size", "users_count"]},
+                     "then": "answer_with_facts"},
+                    {"when": {"intent_repeated": {"min": 3}},
+                     "then": "answer_with_price_range"}
+                ]
+            },
+            "pricing_details": {
+                "default": "deflect_and_continue",
+                "conditions": [
+                    {"when": {"has_any": ["company_size", "users_count"]},
+                     "then": "answer_with_facts"}
+                ]
+            },
+            "comparison": "answer_and_continue",
+            "question_features": "answer_and_continue",
+            "question_integrations": "answer_and_continue",
+        },
+        "post_spin": {
+            "price_question": "answer_with_facts",
+            "pricing_details": "answer_with_facts",
+        }
+    },
+
+    # Уровень 3: Состояния с наследованием
+    "states": {
+        "spin_situation": {
+            "inherit_rules": ["spin_phases"],  # Наследует из группы
+            "rules": {
+                "unclear": "probe_situation",  # Специфичное правило
+            }
+        },
+        "spin_problem": {
+            "inherit_rules": ["spin_phases"],
+            "rules": {
+                "unclear": "probe_problem",
+            }
+        },
+        "spin_implication": {
+            "inherit_rules": ["spin_phases"],
+            "rules": {
+                "unclear": "probe_implication",
+            }
+        },
+        "spin_need_payoff": {
+            "inherit_rules": ["spin_phases"],
+            "rules": {
+                "unclear": "probe_need_payoff",
+            }
+        },
+        "presentation": {
+            "inherit_rules": ["post_spin"],
+            "rules": { ... }
+        },
+        "close": {
+            "inherit_rules": ["post_spin"],
+            "rules": { ... }
+        }
+    }
+}
+
+Алгоритм разрешения правила:
+
+def _get_rule_for_intent(self, state: str, intent: str) -> Optional[Union[str, Dict]]:
+    """Получить правило с учётом наследования"""
+    config = SALES_CONFIG["states"].get(state, {})
+
+    # Приоритет 1: Специфичное правило состояния
+    if intent in config.get("rules", {}):
+        return config["rules"][intent]
+
+    # Приоритет 2: Унаследованные группы (в порядке объявления)
+    for group_name in config.get("inherit_rules", []):
+        group = SALES_CONFIG["rule_groups"].get(group_name, {})
+        if intent in group:
+            return group[intent]
+
+    # Приоритет 3: Глобальные правила
+    if intent in SALES_CONFIG.get("global_rules", {}):
+        return SALES_CONFIG["global_rules"][intent]
+
+    return None  # Правило не найдено → fallback в apply_rules()
+
+Результат: Вместо 4x дублирования правил для SPIN-фаз — 1 определение в rule_groups.
+
+3.5 Порядок разрешения action и переходов
 
 Критические ранние выходы (до resolver'ов):
 - final
@@ -985,6 +1236,7 @@ class StateMachine:
 [12:34:56] INFO - Rule resolved [intent=price_question, result=answer_with_facts, resolution=condition_matched, matched_condition_index=0, matched_condition_type=has_any, simulation_id=10]
 
 Часть 8: РЕЗЮМЕ
+
 Что имеем сейчас
 Rules — простые строки
 Условная логика — hardcoded костыли в state_machine.py
@@ -1000,8 +1252,25 @@ Transition_rules — декларативные условия для перех
 Как достигнем
 Condition Evaluator — изолированный модуль проверки условий
 Action/Transition Resolvers — универсальные интерпретаторы правил в SM
+IntentTracker — отслеживание истории интентов (NEW)
+EvaluatorContext — типизированный контекст для условий (NEW)
+Rule Groups — наследование правил для устранения дублирования (NEW)
 Миграция — постепенная, с обратной совместимостью
-Валидация — жёстко в CI, мягко в runtime
+Валидация — жёсткая в CI, мягкий fallback в runtime
+
+Решённые проблемы:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  #  │ Проблема                      │ Решение                              │
+├─────┼───────────────────────────────┼──────────────────────────────────────┤
+│  1  │ Scope узкий                   │ Разделение ответственности SM/rules  │
+│  2  │ intent_repeated не существует │ IntentTracker класс                  │
+│  3  │ Нет not условия               │ not, missing_any, missing_all        │
+│  4  │ Условия не влияют на state    │ Расширенный then: {action, state}    │
+│  5  │ Дублирование                  │ global_rules + rule_groups + inherit │
+│  6  │ Контекст не специфицирован    │ EvaluatorContext dataclass           │
+│  7  │ Implicit приоритет            │ Документация + валидатор порядка     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
 Зачем это нужно
 Сейчас: 1 костыль (price_question)
 Через месяц: 5 костылей
