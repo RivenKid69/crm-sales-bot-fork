@@ -1,0 +1,1271 @@
+"""
+Tests for StateMachine Domain Conditions.
+
+This module provides comprehensive tests for:
+- EvaluatorContext (context.py)
+- sm_registry (registry.py)
+- All condition functions (conditions.py)
+
+Part of Phase 2: StateMachine Domain (ARCHITECTURE_UNIFIED_PLAN.md)
+"""
+
+import pytest
+from typing import Dict, Any
+
+from src.conditions.state_machine import (
+    # Context
+    EvaluatorContext,
+    SimpleIntentTracker,
+    IntentTrackerProtocol,
+    create_test_context,
+    SPIN_PHASES,
+    SPIN_STATE_TO_PHASE,
+    SPIN_STATES,
+    INTENT_CATEGORIES,
+    # Registry
+    sm_registry,
+    sm_condition,
+    get_sm_registry,
+    # Data conditions
+    has_pricing_data,
+    has_contact_info,
+    has_company_size,
+    has_pain_point,
+    has_pain_and_company_size,
+    has_competitor_mention,
+    missing_required_data,
+    has_all_required_data,
+    has_high_interest,
+    has_desired_outcome,
+    # Intent conditions
+    price_repeated_3x,
+    price_repeated_2x,
+    technical_question_repeated_2x,
+    objection_limit_reached,
+    objection_consecutive_3x,
+    objection_total_5x,
+    is_current_intent_objection,
+    is_current_intent_positive,
+    is_current_intent_question,
+    is_spin_progress_intent,
+    # State conditions
+    is_spin_state,
+    in_spin_phase,
+    in_situation_phase,
+    in_problem_phase,
+    in_implication_phase,
+    in_need_payoff_phase,
+    is_presentation_state,
+    is_close_state,
+    is_greeting_state,
+    is_handle_objection_state,
+    is_soft_close_state,
+    is_success_state,
+    is_terminal_state,
+    post_spin_phase,
+    # Turn conditions
+    is_first_turn,
+    is_early_conversation,
+    is_late_conversation,
+    is_extended_conversation,
+    # Combined conditions
+    can_answer_price,
+    should_deflect_price,
+    ready_for_presentation,
+    ready_for_close,
+    can_handle_with_roi,
+)
+from src.conditions import ConditionRegistries
+from src.conditions.trace import EvaluationTrace, Resolution
+
+
+# =============================================================================
+# TEST FIXTURES
+# =============================================================================
+
+@pytest.fixture
+def empty_context():
+    """Create an empty context for testing."""
+    return create_test_context()
+
+
+@pytest.fixture
+def pricing_context():
+    """Create a context with pricing data."""
+    return create_test_context(
+        collected_data={"company_size": 10},
+        state="spin_situation"
+    )
+
+
+@pytest.fixture
+def full_context():
+    """Create a context with lots of data."""
+    return create_test_context(
+        collected_data={
+            "company_size": 50,
+            "users_count": 20,
+            "pain_point": "losing customers",
+            "pain_category": "retention",
+            "email": "test@example.com",
+            "phone": "+7900123456",
+            "competitor": "Bitrix",
+            "current_crm": "Excel",
+            "high_interest": True,
+            "desired_outcome": "automate sales",
+        },
+        state="presentation",
+        turn_number=8
+    )
+
+
+@pytest.fixture
+def spin_context():
+    """Create a context in SPIN state."""
+    return create_test_context(
+        state="spin_problem",
+        turn_number=5,
+        current_intent="problem_revealed"
+    )
+
+
+# =============================================================================
+# CONTEXT TESTS
+# =============================================================================
+
+class TestEvaluatorContext:
+    """Tests for EvaluatorContext class."""
+
+    def test_create_empty_context(self):
+        """Test creating empty context."""
+        ctx = EvaluatorContext()
+        assert ctx.collected_data == {}
+        assert ctx.state == ""
+        assert ctx.turn_number == 0
+        assert ctx.spin_phase is None
+        assert ctx.is_spin_state is False
+
+    def test_create_context_with_data(self):
+        """Test creating context with collected data."""
+        ctx = EvaluatorContext(
+            collected_data={"company_size": 10},
+            state="spin_situation",
+            turn_number=3
+        )
+        assert ctx.collected_data["company_size"] == 10
+        assert ctx.state == "spin_situation"
+        assert ctx.turn_number == 3
+        assert ctx.spin_phase == "situation"
+        assert ctx.is_spin_state is True
+
+    def test_negative_turn_number_raises(self):
+        """Test that negative turn number raises ValueError."""
+        with pytest.raises(ValueError, match="turn_number cannot be negative"):
+            EvaluatorContext(turn_number=-1)
+
+    def test_auto_compute_spin_phase(self):
+        """Test automatic computation of spin_phase."""
+        for state, phase in SPIN_STATE_TO_PHASE.items():
+            ctx = EvaluatorContext(state=state)
+            assert ctx.spin_phase == phase
+            assert ctx.is_spin_state is True
+
+    def test_non_spin_state(self):
+        """Test non-SPIN state."""
+        ctx = EvaluatorContext(state="presentation")
+        assert ctx.spin_phase is None
+        assert ctx.is_spin_state is False
+
+    def test_create_test_context(self):
+        """Test create_test_context factory method."""
+        ctx = EvaluatorContext.create_test_context(
+            collected_data={"test": "data"},
+            state="close",
+            turn_number=10
+        )
+        assert ctx.collected_data["test"] == "data"
+        assert ctx.state == "close"
+        assert ctx.turn_number == 10
+        assert ctx.intent_tracker is not None
+
+    def test_from_state_machine(self):
+        """Test creating context from state machine."""
+        class MockStateMachine:
+            state = "spin_problem"
+            collected_data = {"company_size": 15}
+            spin_phase = "problem"
+            turn_number = 7
+            last_intent = "info_provided"
+            intent_tracker = None
+
+        config = {"required_data": ["pain_point"]}
+        ctx = EvaluatorContext.from_state_machine(
+            MockStateMachine(),
+            "problem_revealed",
+            config
+        )
+
+        assert ctx.state == "spin_problem"
+        assert ctx.collected_data["company_size"] == 15
+        assert ctx.spin_phase == "problem"
+        assert ctx.turn_number == 7
+        assert ctx.current_intent == "problem_revealed"
+        assert ctx.prev_intent == "info_provided"
+        assert "pain_point" in ctx.missing_required_data
+
+    def test_has_field(self):
+        """Test has_field method."""
+        ctx = create_test_context(
+            collected_data={"company_size": 10, "empty": None, "zero": 0}
+        )
+        assert ctx.has_field("company_size") is True
+        assert ctx.has_field("empty") is False
+        assert ctx.has_field("zero") is False
+        assert ctx.has_field("nonexistent") is False
+
+    def test_has_any_field(self):
+        """Test has_any_field method."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        assert ctx.has_any_field(["company_size", "users_count"]) is True
+        assert ctx.has_any_field(["users_count", "pain_point"]) is False
+
+    def test_has_all_fields(self):
+        """Test has_all_fields method."""
+        ctx = create_test_context(
+            collected_data={"company_size": 10, "pain_point": "losing"}
+        )
+        assert ctx.has_all_fields(["company_size", "pain_point"]) is True
+        assert ctx.has_all_fields(["company_size", "email"]) is False
+
+    def test_get_field(self):
+        """Test get_field method."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        assert ctx.get_field("company_size") == 10
+        assert ctx.get_field("nonexistent") is None
+        assert ctx.get_field("nonexistent", "default") == "default"
+
+    def test_intent_streak_methods(self):
+        """Test intent tracking methods."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("price_question", 3)
+        tracker.set_intent_total("price_question", 5)
+        tracker.set_category_streak("objection", 2)
+        tracker.set_category_total("objection", 4)
+
+        ctx = create_test_context(intent_tracker=tracker)
+
+        assert ctx.get_intent_streak("price_question") == 3
+        assert ctx.get_intent_total("price_question") == 5
+        assert ctx.get_category_streak("objection") == 2
+        assert ctx.get_category_total("objection") == 4
+
+    def test_intent_streak_without_tracker(self):
+        """Test intent methods when no tracker is set."""
+        ctx = EvaluatorContext()
+        ctx.intent_tracker = None
+
+        assert ctx.get_intent_streak("any") == 0
+        assert ctx.get_intent_total("any") == 0
+        assert ctx.get_category_streak("any") == 0
+        assert ctx.get_category_total("any") == 0
+
+    def test_to_dict(self):
+        """Test to_dict method."""
+        ctx = create_test_context(
+            collected_data={"test": "data"},
+            state="greeting",
+            turn_number=5,
+            current_intent="price_question"
+        )
+        d = ctx.to_dict()
+
+        assert d["collected_data"]["test"] == "data"
+        assert d["state"] == "greeting"
+        assert d["turn_number"] == 5
+        assert d["current_intent"] == "price_question"
+        assert "spin_phase" in d
+        assert "is_spin_state" in d
+
+    def test_repr(self):
+        """Test __repr__ method."""
+        ctx = create_test_context(
+            state="spin_problem",
+            current_intent="price_question",
+            turn_number=3
+        )
+        repr_str = repr(ctx)
+        assert "spin_problem" in repr_str
+        assert "price_question" in repr_str
+        assert "turn=3" in repr_str
+
+
+class TestSimpleIntentTracker:
+    """Tests for SimpleIntentTracker class."""
+
+    def test_initial_state(self):
+        """Test initial tracker state."""
+        tracker = SimpleIntentTracker()
+        assert tracker.last_intent is None
+        assert tracker.prev_intent is None
+        assert tracker.streak_count("any") == 0
+        assert tracker.total_count("any") == 0
+
+    def test_record_intent(self):
+        """Test recording an intent."""
+        tracker = SimpleIntentTracker()
+        tracker.record("price_question")
+
+        assert tracker.last_intent == "price_question"
+        assert tracker.prev_intent is None
+        assert tracker.streak_count("price_question") == 1
+        assert tracker.total_count("price_question") == 1
+
+    def test_record_multiple_same_intent(self):
+        """Test recording same intent multiple times."""
+        tracker = SimpleIntentTracker()
+        tracker.record("price_question")
+        tracker.record("price_question")
+        tracker.record("price_question")
+
+        assert tracker.streak_count("price_question") == 3
+        assert tracker.total_count("price_question") == 3
+        assert tracker.last_intent == "price_question"
+        assert tracker.prev_intent == "price_question"
+
+    def test_streak_reset_on_different_intent(self):
+        """Test that streak resets when different intent."""
+        tracker = SimpleIntentTracker()
+        tracker.record("price_question")
+        tracker.record("price_question")
+        tracker.record("agreement")
+
+        assert tracker.streak_count("price_question") == 0
+        assert tracker.total_count("price_question") == 2
+        assert tracker.streak_count("agreement") == 1
+        assert tracker.last_intent == "agreement"
+        assert tracker.prev_intent == "price_question"
+
+    def test_category_tracking(self):
+        """Test category streak and total tracking."""
+        tracker = SimpleIntentTracker()
+        tracker.record("objection_price")
+        tracker.record("objection_competitor")
+
+        assert tracker.category_total("objection") == 2
+        # Streak should be 2 because both intents are in same category
+        # (category streak continues even with different specific intents)
+        assert tracker.category_streak("objection") == 2
+
+    def test_set_methods(self):
+        """Test manual set methods for testing."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("test", 5)
+        tracker.set_intent_total("test", 10)
+        tracker.set_category_streak("cat", 3)
+        tracker.set_category_total("cat", 7)
+
+        assert tracker.streak_count("test") == 5
+        assert tracker.total_count("test") == 10
+        assert tracker.category_streak("cat") == 3
+        assert tracker.category_total("cat") == 7
+
+
+class TestConstants:
+    """Tests for module constants."""
+
+    def test_spin_phases(self):
+        """Test SPIN_PHASES constant."""
+        assert SPIN_PHASES == ["situation", "problem", "implication", "need_payoff"]
+
+    def test_spin_state_to_phase(self):
+        """Test SPIN_STATE_TO_PHASE mapping."""
+        assert SPIN_STATE_TO_PHASE["spin_situation"] == "situation"
+        assert SPIN_STATE_TO_PHASE["spin_problem"] == "problem"
+        assert SPIN_STATE_TO_PHASE["spin_implication"] == "implication"
+        assert SPIN_STATE_TO_PHASE["spin_need_payoff"] == "need_payoff"
+
+    def test_spin_states_set(self):
+        """Test SPIN_STATES set."""
+        assert "spin_situation" in SPIN_STATES
+        assert "spin_problem" in SPIN_STATES
+        assert "presentation" not in SPIN_STATES
+
+    def test_intent_categories(self):
+        """Test INTENT_CATEGORIES dict."""
+        assert "objection" in INTENT_CATEGORIES
+        assert "positive" in INTENT_CATEGORIES
+        assert "question" in INTENT_CATEGORIES
+        assert "spin_progress" in INTENT_CATEGORIES
+
+        assert "objection_price" in INTENT_CATEGORIES["objection"]
+        assert "agreement" in INTENT_CATEGORIES["positive"]
+        assert "price_question" in INTENT_CATEGORIES["question"]
+
+
+# =============================================================================
+# REGISTRY TESTS
+# =============================================================================
+
+class TestSMRegistry:
+    """Tests for StateMachine registry."""
+
+    def test_registry_exists(self):
+        """Test that sm_registry is properly created."""
+        assert sm_registry is not None
+        assert sm_registry.name == "state_machine"
+        assert len(sm_registry) > 0
+
+    def test_get_sm_registry(self):
+        """Test get_sm_registry function."""
+        reg = get_sm_registry()
+        assert reg is sm_registry
+
+    def test_registry_has_expected_conditions(self):
+        """Test that registry has all expected conditions."""
+        expected = [
+            "has_pricing_data",
+            "has_contact_info",
+            "price_repeated_3x",
+            "is_spin_state",
+            "objection_limit_reached",
+        ]
+        for name in expected:
+            assert sm_registry.has(name), f"Missing condition: {name}"
+
+    def test_registry_categories(self):
+        """Test that registry has expected categories."""
+        categories = sm_registry.get_categories()
+        assert "data" in categories
+        assert "intent" in categories
+        assert "state" in categories
+        assert "turn" in categories
+        assert "combined" in categories
+
+    def test_evaluate_through_registry(self):
+        """Test evaluating conditions through registry."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        assert sm_registry.evaluate("has_pricing_data", ctx) is True
+
+        ctx_empty = create_test_context()
+        assert sm_registry.evaluate("has_pricing_data", ctx_empty) is False
+
+    def test_evaluate_with_trace(self):
+        """Test evaluating with trace."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        trace = EvaluationTrace(rule_name="price_question")
+
+        result = sm_registry.evaluate("has_pricing_data", ctx, trace)
+
+        assert result is True
+        assert len(trace.entries) == 1
+        assert trace.entries[0].condition_name == "has_pricing_data"
+        assert trace.entries[0].result is True
+
+    def test_registry_in_condition_registries(self):
+        """Test that SM registry is in ConditionRegistries."""
+        # SM-specific conditions should be findable
+        assert ConditionRegistries.has_condition("price_repeated_3x")
+        assert ConditionRegistries.find_condition("price_repeated_3x") == "state_machine"
+
+        # SM registry should be registered
+        assert ConditionRegistries.get("state_machine") is sm_registry
+
+    def test_validate_all(self):
+        """Test validate_all method."""
+        result = sm_registry.validate_all(
+            lambda: create_test_context()
+        )
+        assert result.is_valid
+        assert len(result.passed) == len(sm_registry)
+        assert len(result.failed) == 0
+        assert len(result.errors) == 0
+
+
+# =============================================================================
+# DATA CONDITIONS TESTS
+# =============================================================================
+
+class TestDataConditions:
+    """Tests for data-related conditions."""
+
+    def test_has_pricing_data_with_company_size(self):
+        """Test has_pricing_data with company_size."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        assert has_pricing_data(ctx) is True
+
+    def test_has_pricing_data_with_users_count(self):
+        """Test has_pricing_data with users_count."""
+        ctx = create_test_context(collected_data={"users_count": 20})
+        assert has_pricing_data(ctx) is True
+
+    def test_has_pricing_data_with_both(self):
+        """Test has_pricing_data with both fields."""
+        ctx = create_test_context(
+            collected_data={"company_size": 10, "users_count": 20}
+        )
+        assert has_pricing_data(ctx) is True
+
+    def test_has_pricing_data_empty(self):
+        """Test has_pricing_data without data."""
+        ctx = create_test_context()
+        assert has_pricing_data(ctx) is False
+
+    def test_has_contact_info_with_email(self):
+        """Test has_contact_info with email."""
+        ctx = create_test_context(collected_data={"email": "test@example.com"})
+        assert has_contact_info(ctx) is True
+
+    def test_has_contact_info_with_phone(self):
+        """Test has_contact_info with phone."""
+        ctx = create_test_context(collected_data={"phone": "+7900123456"})
+        assert has_contact_info(ctx) is True
+
+    def test_has_contact_info_with_contact(self):
+        """Test has_contact_info with contact field."""
+        ctx = create_test_context(collected_data={"contact": "telegram: @user"})
+        assert has_contact_info(ctx) is True
+
+    def test_has_contact_info_empty(self):
+        """Test has_contact_info without data."""
+        ctx = create_test_context()
+        assert has_contact_info(ctx) is False
+
+    def test_has_company_size(self):
+        """Test has_company_size."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        assert has_company_size(ctx) is True
+
+        ctx_empty = create_test_context()
+        assert has_company_size(ctx_empty) is False
+
+    def test_has_pain_point_with_pain_point(self):
+        """Test has_pain_point with pain_point field."""
+        ctx = create_test_context(collected_data={"pain_point": "losing customers"})
+        assert has_pain_point(ctx) is True
+
+    def test_has_pain_point_with_pain_category(self):
+        """Test has_pain_point with pain_category field."""
+        ctx = create_test_context(collected_data={"pain_category": "retention"})
+        assert has_pain_point(ctx) is True
+
+    def test_has_pain_point_empty(self):
+        """Test has_pain_point without data."""
+        ctx = create_test_context()
+        assert has_pain_point(ctx) is False
+
+    def test_has_pain_and_company_size(self):
+        """Test has_pain_and_company_size."""
+        ctx = create_test_context(
+            collected_data={"pain_point": "losing", "company_size": 10}
+        )
+        assert has_pain_and_company_size(ctx) is True
+
+        ctx_only_pain = create_test_context(collected_data={"pain_point": "losing"})
+        assert has_pain_and_company_size(ctx_only_pain) is False
+
+        ctx_only_size = create_test_context(collected_data={"company_size": 10})
+        assert has_pain_and_company_size(ctx_only_size) is False
+
+    def test_has_competitor_mention_with_competitor(self):
+        """Test has_competitor_mention with competitor."""
+        ctx = create_test_context(collected_data={"competitor": "Bitrix"})
+        assert has_competitor_mention(ctx) is True
+
+    def test_has_competitor_mention_with_current_crm(self):
+        """Test has_competitor_mention with current_crm."""
+        ctx = create_test_context(collected_data={"current_crm": "Excel"})
+        assert has_competitor_mention(ctx) is True
+
+    def test_has_competitor_mention_empty(self):
+        """Test has_competitor_mention without data."""
+        ctx = create_test_context()
+        assert has_competitor_mention(ctx) is False
+
+    def test_missing_required_data(self):
+        """Test missing_required_data."""
+        ctx = create_test_context(missing_required_data=["pain_point", "company_size"])
+        assert missing_required_data(ctx) is True
+
+        ctx_complete = create_test_context(missing_required_data=[])
+        assert missing_required_data(ctx_complete) is False
+
+    def test_has_all_required_data(self):
+        """Test has_all_required_data."""
+        ctx = create_test_context(missing_required_data=[])
+        assert has_all_required_data(ctx) is True
+
+        ctx_missing = create_test_context(missing_required_data=["pain_point"])
+        assert has_all_required_data(ctx_missing) is False
+
+    def test_has_high_interest(self):
+        """Test has_high_interest."""
+        ctx = create_test_context(collected_data={"high_interest": True})
+        assert has_high_interest(ctx) is True
+
+        ctx_false = create_test_context(collected_data={"high_interest": False})
+        assert has_high_interest(ctx_false) is False
+
+        ctx_empty = create_test_context()
+        assert has_high_interest(ctx_empty) is False
+
+    def test_has_desired_outcome(self):
+        """Test has_desired_outcome."""
+        ctx = create_test_context(collected_data={"desired_outcome": "automate"})
+        assert has_desired_outcome(ctx) is True
+
+        ctx_empty = create_test_context()
+        assert has_desired_outcome(ctx_empty) is False
+
+
+# =============================================================================
+# INTENT CONDITIONS TESTS
+# =============================================================================
+
+class TestIntentConditions:
+    """Tests for intent-related conditions."""
+
+    def test_price_repeated_3x(self):
+        """Test price_repeated_3x."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("price_question", 3)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert price_repeated_3x(ctx) is True
+
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_intent_streak("price_question", 2)
+        ctx2 = create_test_context(intent_tracker=tracker2)
+        assert price_repeated_3x(ctx2) is False
+
+    def test_price_repeated_2x(self):
+        """Test price_repeated_2x."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("price_question", 2)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert price_repeated_2x(ctx) is True
+
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_intent_streak("price_question", 1)
+        ctx2 = create_test_context(intent_tracker=tracker2)
+        assert price_repeated_2x(ctx2) is False
+
+    def test_technical_question_repeated_2x(self):
+        """Test technical_question_repeated_2x."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("question_technical", 2)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert technical_question_repeated_2x(ctx) is True
+
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_intent_streak("question_technical", 1)
+        ctx2 = create_test_context(intent_tracker=tracker2)
+        assert technical_question_repeated_2x(ctx2) is False
+
+    def test_objection_limit_reached_consecutive(self):
+        """Test objection_limit_reached with consecutive limit."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 3)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert objection_limit_reached(ctx) is True
+
+    def test_objection_limit_reached_total(self):
+        """Test objection_limit_reached with total limit."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_total("objection", 5)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert objection_limit_reached(ctx) is True
+
+    def test_objection_limit_not_reached(self):
+        """Test objection_limit_reached when not reached."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 2)
+        tracker.set_category_total("objection", 3)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert objection_limit_reached(ctx) is False
+
+    def test_objection_consecutive_3x(self):
+        """Test objection_consecutive_3x."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 3)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert objection_consecutive_3x(ctx) is True
+
+    def test_objection_total_5x(self):
+        """Test objection_total_5x."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_total("objection", 5)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert objection_total_5x(ctx) is True
+
+    def test_is_current_intent_objection(self):
+        """Test is_current_intent_objection."""
+        ctx = create_test_context(current_intent="objection_price")
+        assert is_current_intent_objection(ctx) is True
+
+        ctx2 = create_test_context(current_intent="agreement")
+        assert is_current_intent_objection(ctx2) is False
+
+    def test_is_current_intent_positive(self):
+        """Test is_current_intent_positive."""
+        ctx = create_test_context(current_intent="agreement")
+        assert is_current_intent_positive(ctx) is True
+
+        ctx2 = create_test_context(current_intent="objection_price")
+        assert is_current_intent_positive(ctx2) is False
+
+    def test_is_current_intent_question(self):
+        """Test is_current_intent_question."""
+        ctx = create_test_context(current_intent="price_question")
+        assert is_current_intent_question(ctx) is True
+
+        ctx2 = create_test_context(current_intent="agreement")
+        assert is_current_intent_question(ctx2) is False
+
+    def test_is_spin_progress_intent(self):
+        """Test is_spin_progress_intent."""
+        ctx = create_test_context(current_intent="situation_provided")
+        assert is_spin_progress_intent(ctx) is True
+
+        ctx2 = create_test_context(current_intent="problem_revealed")
+        assert is_spin_progress_intent(ctx2) is True
+
+        ctx3 = create_test_context(current_intent="agreement")
+        assert is_spin_progress_intent(ctx3) is False
+
+
+# =============================================================================
+# STATE CONDITIONS TESTS
+# =============================================================================
+
+class TestStateConditions:
+    """Tests for state-related conditions."""
+
+    def test_is_spin_state(self):
+        """Test is_spin_state."""
+        for state in SPIN_STATES:
+            ctx = create_test_context(state=state)
+            assert is_spin_state(ctx) is True, f"Failed for {state}"
+
+        ctx_non_spin = create_test_context(state="presentation")
+        assert is_spin_state(ctx_non_spin) is False
+
+    def test_in_spin_phase(self):
+        """Test in_spin_phase."""
+        ctx = create_test_context(state="spin_situation")
+        assert in_spin_phase(ctx) is True
+
+        ctx_non = create_test_context(state="presentation")
+        assert in_spin_phase(ctx_non) is False
+
+    def test_in_situation_phase(self):
+        """Test in_situation_phase."""
+        ctx = create_test_context(state="spin_situation")
+        assert in_situation_phase(ctx) is True
+
+        ctx_other = create_test_context(state="spin_problem")
+        assert in_situation_phase(ctx_other) is False
+
+    def test_in_problem_phase(self):
+        """Test in_problem_phase."""
+        ctx = create_test_context(state="spin_problem")
+        assert in_problem_phase(ctx) is True
+
+        ctx_other = create_test_context(state="spin_situation")
+        assert in_problem_phase(ctx_other) is False
+
+    def test_in_implication_phase(self):
+        """Test in_implication_phase."""
+        ctx = create_test_context(state="spin_implication")
+        assert in_implication_phase(ctx) is True
+
+        ctx_other = create_test_context(state="spin_problem")
+        assert in_implication_phase(ctx_other) is False
+
+    def test_in_need_payoff_phase(self):
+        """Test in_need_payoff_phase."""
+        ctx = create_test_context(state="spin_need_payoff")
+        assert in_need_payoff_phase(ctx) is True
+
+        ctx_other = create_test_context(state="spin_implication")
+        assert in_need_payoff_phase(ctx_other) is False
+
+    def test_is_presentation_state(self):
+        """Test is_presentation_state."""
+        ctx = create_test_context(state="presentation")
+        assert is_presentation_state(ctx) is True
+
+        ctx_other = create_test_context(state="close")
+        assert is_presentation_state(ctx_other) is False
+
+    def test_is_close_state(self):
+        """Test is_close_state."""
+        ctx = create_test_context(state="close")
+        assert is_close_state(ctx) is True
+
+        ctx_other = create_test_context(state="presentation")
+        assert is_close_state(ctx_other) is False
+
+    def test_is_greeting_state(self):
+        """Test is_greeting_state."""
+        ctx = create_test_context(state="greeting")
+        assert is_greeting_state(ctx) is True
+
+        ctx_other = create_test_context(state="spin_situation")
+        assert is_greeting_state(ctx_other) is False
+
+    def test_is_handle_objection_state(self):
+        """Test is_handle_objection_state."""
+        ctx = create_test_context(state="handle_objection")
+        assert is_handle_objection_state(ctx) is True
+
+        ctx_other = create_test_context(state="presentation")
+        assert is_handle_objection_state(ctx_other) is False
+
+    def test_is_soft_close_state(self):
+        """Test is_soft_close_state."""
+        ctx = create_test_context(state="soft_close")
+        assert is_soft_close_state(ctx) is True
+
+        ctx_other = create_test_context(state="close")
+        assert is_soft_close_state(ctx_other) is False
+
+    def test_is_success_state(self):
+        """Test is_success_state."""
+        ctx = create_test_context(state="success")
+        assert is_success_state(ctx) is True
+
+        ctx_other = create_test_context(state="close")
+        assert is_success_state(ctx_other) is False
+
+    def test_is_terminal_state(self):
+        """Test is_terminal_state."""
+        for state in ["success", "soft_close", "failed"]:
+            ctx = create_test_context(state=state)
+            assert is_terminal_state(ctx) is True, f"Failed for {state}"
+
+        ctx_non_terminal = create_test_context(state="close")
+        assert is_terminal_state(ctx_non_terminal) is False
+
+    def test_post_spin_phase(self):
+        """Test post_spin_phase."""
+        for state in ["presentation", "close", "handle_objection", "soft_close", "success", "failed"]:
+            ctx = create_test_context(state=state)
+            assert post_spin_phase(ctx) is True, f"Failed for {state}"
+
+        for state in SPIN_STATES:
+            ctx = create_test_context(state=state)
+            assert post_spin_phase(ctx) is False, f"Should be False for {state}"
+
+
+# =============================================================================
+# TURN CONDITIONS TESTS
+# =============================================================================
+
+class TestTurnConditions:
+    """Tests for turn-related conditions."""
+
+    def test_is_first_turn(self):
+        """Test is_first_turn."""
+        ctx = create_test_context(turn_number=0)
+        assert is_first_turn(ctx) is True
+
+        ctx_not_first = create_test_context(turn_number=1)
+        assert is_first_turn(ctx_not_first) is False
+
+    def test_is_early_conversation(self):
+        """Test is_early_conversation."""
+        for turn in [0, 1, 2]:
+            ctx = create_test_context(turn_number=turn)
+            assert is_early_conversation(ctx) is True, f"Failed for turn {turn}"
+
+        ctx_late = create_test_context(turn_number=3)
+        assert is_early_conversation(ctx_late) is False
+
+    def test_is_late_conversation(self):
+        """Test is_late_conversation."""
+        ctx = create_test_context(turn_number=10)
+        assert is_late_conversation(ctx) is True
+
+        ctx_early = create_test_context(turn_number=9)
+        assert is_late_conversation(ctx_early) is False
+
+    def test_is_extended_conversation(self):
+        """Test is_extended_conversation."""
+        ctx = create_test_context(turn_number=20)
+        assert is_extended_conversation(ctx) is True
+
+        ctx_not_extended = create_test_context(turn_number=19)
+        assert is_extended_conversation(ctx_not_extended) is False
+
+
+# =============================================================================
+# COMBINED CONDITIONS TESTS
+# =============================================================================
+
+class TestCombinedConditions:
+    """Tests for combined conditions."""
+
+    def test_can_answer_price_with_data(self):
+        """Test can_answer_price with pricing data."""
+        ctx = create_test_context(collected_data={"company_size": 10})
+        assert can_answer_price(ctx) is True
+
+    def test_can_answer_price_with_repeated(self):
+        """Test can_answer_price with repeated question."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("price_question", 3)
+        ctx = create_test_context(intent_tracker=tracker)
+        assert can_answer_price(ctx) is True
+
+    def test_can_answer_price_no_data_no_repeat(self):
+        """Test can_answer_price without data or repeats."""
+        ctx = create_test_context()
+        assert can_answer_price(ctx) is False
+
+    def test_should_deflect_price_in_spin(self):
+        """Test should_deflect_price in SPIN phase."""
+        ctx = create_test_context(state="spin_situation")
+        assert should_deflect_price(ctx) is True
+
+    def test_should_deflect_price_with_data(self):
+        """Test should_deflect_price with data (should not deflect)."""
+        ctx = create_test_context(
+            collected_data={"company_size": 10},
+            state="spin_situation"
+        )
+        assert should_deflect_price(ctx) is False
+
+    def test_should_deflect_price_after_repeats(self):
+        """Test should_deflect_price after 3 repeats (should not deflect)."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("price_question", 3)
+        ctx = create_test_context(
+            intent_tracker=tracker,
+            state="spin_situation"
+        )
+        assert should_deflect_price(ctx) is False
+
+    def test_should_deflect_price_not_in_spin(self):
+        """Test should_deflect_price not in SPIN (should not deflect)."""
+        ctx = create_test_context(state="presentation")
+        assert should_deflect_price(ctx) is False
+
+    def test_ready_for_presentation(self):
+        """Test ready_for_presentation."""
+        ctx = create_test_context(
+            collected_data={"company_size": 10, "pain_point": "losing"}
+        )
+        assert ready_for_presentation(ctx) is True
+
+        ctx_missing = create_test_context(collected_data={"company_size": 10})
+        assert ready_for_presentation(ctx_missing) is False
+
+    def test_ready_for_close(self):
+        """Test ready_for_close."""
+        ctx = create_test_context(collected_data={"email": "test@example.com"})
+        assert ready_for_close(ctx) is True
+
+        ctx_no_contact = create_test_context()
+        assert ready_for_close(ctx_no_contact) is False
+
+    def test_can_handle_with_roi(self):
+        """Test can_handle_with_roi."""
+        ctx = create_test_context(
+            collected_data={"pain_point": "losing", "company_size": 10}
+        )
+        assert can_handle_with_roi(ctx) is True
+
+        ctx_missing = create_test_context(collected_data={"company_size": 10})
+        assert can_handle_with_roi(ctx_missing) is False
+
+
+# =============================================================================
+# INTEGRATION TESTS
+# =============================================================================
+
+class TestIntegration:
+    """Integration tests for StateMachine conditions."""
+
+    def test_price_question_scenario_without_data(self):
+        """Test price question scenario without pricing data."""
+        ctx = create_test_context(
+            state="spin_situation",
+            current_intent="price_question"
+        )
+
+        # Should deflect
+        assert should_deflect_price(ctx) is True
+        assert can_answer_price(ctx) is False
+        assert has_pricing_data(ctx) is False
+
+    def test_price_question_scenario_with_data(self):
+        """Test price question scenario with pricing data (BUG FIX)."""
+        ctx = create_test_context(
+            collected_data={"company_size": 10},
+            state="spin_situation",
+            current_intent="price_question"
+        )
+
+        # Should answer with facts (not deflect)
+        assert should_deflect_price(ctx) is False
+        assert can_answer_price(ctx) is True
+        assert has_pricing_data(ctx) is True
+
+    def test_price_question_scenario_repeated(self):
+        """Test price question scenario with repeated asks."""
+        tracker = SimpleIntentTracker()
+        tracker.set_intent_streak("price_question", 3)
+
+        ctx = create_test_context(
+            state="spin_problem",
+            current_intent="price_question",
+            intent_tracker=tracker
+        )
+
+        # Should answer with range (not deflect)
+        assert should_deflect_price(ctx) is False
+        assert can_answer_price(ctx) is True
+        assert price_repeated_3x(ctx) is True
+
+    def test_objection_handling_with_roi_data(self):
+        """Test objection handling with ROI data."""
+        ctx = create_test_context(
+            collected_data={
+                "company_size": 10,
+                "pain_point": "losing customers",
+            },
+            state="handle_objection",
+            current_intent="objection_price"
+        )
+
+        assert is_current_intent_objection(ctx) is True
+        assert can_handle_with_roi(ctx) is True
+
+    def test_objection_limit_scenario(self):
+        """Test objection limit reached scenario."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 3)
+
+        ctx = create_test_context(
+            state="presentation",
+            current_intent="objection_no_time",
+            intent_tracker=tracker
+        )
+
+        assert is_current_intent_objection(ctx) is True
+        assert objection_limit_reached(ctx) is True
+        # Should transition to soft_close
+
+    def test_demo_request_with_contact(self):
+        """Test demo request scenario with contact info."""
+        ctx = create_test_context(
+            collected_data={"email": "test@example.com"},
+            state="close",
+            current_intent="demo_request"
+        )
+
+        assert is_close_state(ctx) is True
+        assert has_contact_info(ctx) is True
+        assert ready_for_close(ctx) is True
+        # Should transition to success
+
+    def test_demo_request_without_contact(self):
+        """Test demo request scenario without contact info."""
+        ctx = create_test_context(
+            state="close",
+            current_intent="demo_request"
+        )
+
+        assert is_close_state(ctx) is True
+        assert has_contact_info(ctx) is False
+        assert ready_for_close(ctx) is False
+        # Should stay in current state
+
+    def test_spin_progression(self):
+        """Test SPIN phase progression detection."""
+        # Situation phase
+        ctx_sit = create_test_context(
+            state="spin_situation",
+            current_intent="situation_provided"
+        )
+        assert in_situation_phase(ctx_sit) is True
+        assert is_spin_progress_intent(ctx_sit) is True
+
+        # Problem phase
+        ctx_prob = create_test_context(
+            state="spin_problem",
+            current_intent="problem_revealed"
+        )
+        assert in_problem_phase(ctx_prob) is True
+        assert is_spin_progress_intent(ctx_prob) is True
+
+        # Implication phase
+        ctx_impl = create_test_context(
+            state="spin_implication",
+            current_intent="implication_acknowledged"
+        )
+        assert in_implication_phase(ctx_impl) is True
+        assert is_spin_progress_intent(ctx_impl) is True
+
+        # Need-Payoff phase
+        ctx_need = create_test_context(
+            state="spin_need_payoff",
+            current_intent="need_expressed"
+        )
+        assert in_need_payoff_phase(ctx_need) is True
+        assert is_spin_progress_intent(ctx_need) is True
+
+    def test_conversation_phases(self):
+        """Test conversation phase detection."""
+        # First turn
+        ctx_first = create_test_context(turn_number=0)
+        assert is_first_turn(ctx_first) is True
+        assert is_early_conversation(ctx_first) is True
+        assert is_late_conversation(ctx_first) is False
+        assert is_extended_conversation(ctx_first) is False
+
+        # Early conversation
+        ctx_early = create_test_context(turn_number=2)
+        assert is_first_turn(ctx_early) is False
+        assert is_early_conversation(ctx_early) is True
+        assert is_late_conversation(ctx_early) is False
+
+        # Late conversation
+        ctx_late = create_test_context(turn_number=15)
+        assert is_early_conversation(ctx_late) is False
+        assert is_late_conversation(ctx_late) is True
+        assert is_extended_conversation(ctx_late) is False
+
+        # Extended conversation
+        ctx_extended = create_test_context(turn_number=25)
+        assert is_late_conversation(ctx_extended) is True
+        assert is_extended_conversation(ctx_extended) is True
+
+
+# =============================================================================
+# DOCUMENTATION TESTS
+# =============================================================================
+
+class TestDocumentation:
+    """Tests for documentation generation."""
+
+    def test_registry_documentation(self):
+        """Test that registry can generate documentation."""
+        docs = sm_registry.get_documentation()
+
+        assert "State Machine Conditions" in docs
+        assert "EvaluatorContext" in docs
+        assert "has_pricing_data" in docs
+        assert "data" in docs.lower()
+        assert "intent" in docs.lower()
+        assert "state" in docs.lower()
+
+    def test_registry_stats(self):
+        """Test registry statistics."""
+        stats = sm_registry.get_stats()
+
+        assert stats["name"] == "state_machine"
+        assert stats["total_conditions"] > 0
+        assert stats["total_categories"] >= 5
+        assert "data" in stats["conditions_by_category"]
+        assert "intent" in stats["conditions_by_category"]
+
+
+# =============================================================================
+# EDGE CASES TESTS
+# =============================================================================
+
+class TestEdgeCases:
+    """Tests for edge cases and boundary conditions."""
+
+    def test_empty_collected_data(self):
+        """Test with completely empty collected_data."""
+        ctx = create_test_context(collected_data={})
+
+        assert has_pricing_data(ctx) is False
+        assert has_contact_info(ctx) is False
+        assert has_company_size(ctx) is False
+        assert has_pain_point(ctx) is False
+        assert has_competitor_mention(ctx) is False
+
+    def test_falsy_values_in_collected_data(self):
+        """Test with falsy values in collected_data."""
+        ctx = create_test_context(
+            collected_data={
+                "company_size": 0,
+                "email": "",
+                "pain_point": None,
+            }
+        )
+
+        # All should be False because values are falsy
+        assert has_company_size(ctx) is False
+        assert has_contact_info(ctx) is False
+        assert has_pain_point(ctx) is False
+
+    def test_none_intent_tracker(self):
+        """Test with None intent tracker."""
+        ctx = EvaluatorContext(
+            state="greeting",
+            turn_number=0,
+            intent_tracker=None
+        )
+
+        # Should handle gracefully
+        assert ctx.get_intent_streak("any") == 0
+        assert ctx.get_intent_total("any") == 0
+        assert ctx.get_category_streak("any") == 0
+        assert ctx.get_category_total("any") == 0
+
+    def test_unknown_state(self):
+        """Test with unknown state."""
+        ctx = create_test_context(state="unknown_state")
+
+        assert is_spin_state(ctx) is False
+        assert in_spin_phase(ctx) is False
+        assert is_terminal_state(ctx) is False
+        assert post_spin_phase(ctx) is False
+
+    def test_boundary_turn_numbers(self):
+        """Test boundary turn numbers."""
+        # Exactly at boundaries
+        ctx_3 = create_test_context(turn_number=3)
+        assert is_early_conversation(ctx_3) is False
+
+        ctx_10 = create_test_context(turn_number=10)
+        assert is_late_conversation(ctx_10) is True
+
+        ctx_20 = create_test_context(turn_number=20)
+        assert is_extended_conversation(ctx_20) is True
+
+    def test_boundary_streak_counts(self):
+        """Test boundary streak counts."""
+        tracker = SimpleIntentTracker()
+
+        # Exactly at boundaries
+        tracker.set_intent_streak("price_question", 2)
+        ctx_2 = create_test_context(intent_tracker=tracker)
+        assert price_repeated_2x(ctx_2) is True
+        assert price_repeated_3x(ctx_2) is False
+
+        tracker.set_intent_streak("price_question", 3)
+        ctx_3 = create_test_context(intent_tracker=tracker)
+        assert price_repeated_3x(ctx_3) is True
+
+    def test_context_immutability(self):
+        """Test that collected_data is copied in from_state_machine."""
+        class MockSM:
+            state = "greeting"
+            collected_data = {"key": "value"}
+            spin_phase = None
+            turn_number = 0
+            last_intent = None
+            intent_tracker = None
+
+        sm = MockSM()
+        ctx = EvaluatorContext.from_state_machine(sm, "test", None)
+
+        # Modify original
+        sm.collected_data["key"] = "modified"
+
+        # Context should have original value
+        assert ctx.collected_data["key"] == "value"

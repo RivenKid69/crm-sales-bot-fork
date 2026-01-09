@@ -41,6 +41,9 @@ from src.conditions.trace import (
 )
 from src.conditions.shared import shared_registry
 
+# Import StateMachine domain (Phase 2)
+from src.conditions.state_machine import sm_registry
+
 
 class ConditionRegistries:
     """
@@ -229,6 +232,9 @@ class ConditionRegistries:
 # Register shared registry by default
 ConditionRegistries.register("shared", shared_registry)
 
+# Register StateMachine registry (Phase 2)
+ConditionRegistries.register("state_machine", sm_registry)
+
 
 # Export all public components
 __all__ = [
@@ -256,4 +262,6 @@ __all__ = [
     "ConditionRegistries",
     # Shared
     "shared_registry",
+    # StateMachine (Phase 2)
+    "sm_registry",
 ]
