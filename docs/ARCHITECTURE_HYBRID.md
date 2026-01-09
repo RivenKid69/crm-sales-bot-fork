@@ -129,38 +129,29 @@ def apply_rules(self, intent: str):
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                      ГИБРИДНАЯ АРХИТЕКТУРА                                   │
-│           Python Conditions + Declarative Rules                              │
+│           Python Conditions + Declarative Rules + Domain Registries          │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-   conditions/*.py (Python)              config.py (Declarative)
-   ┌──────────────────────────┐         ┌─────────────────────────────────┐
-   │                          │         │                                 │
-   │  @condition              │         │  "price_question": [            │
-   │  def has_pricing_data    │◄────────│    ("has_pricing_data",         │
-   │      return bool(...)    │   ref   │     "answer_with_facts"),       │
-   │                          │         │    ("price_repeated_3x",        │
-   │  @condition              │◄────────│     "answer_with_range"),       │
-   │  def price_repeated_3x   │         │    "deflect_and_continue"       │
-   │      return streak >= 3  │         │  ]                              │
-   │                          │         │                                 │
-   └──────────────────────────┘         └─────────────────────────────────┘
-            │                                          │
-            │                                          │
-            ▼                                          ▼
-   ┌──────────────────────────┐         ┌─────────────────────────────────┐
-   │   ConditionRegistry      │         │      RuleResolver               │
-   │   - evaluate(name, ctx)  │◄────────│      - resolve_action()         │
-   │   - validate_all()       │         │      - resolve_transition()     │
-   │   - get_documentation()  │         │      - validate_config()        │
-   └──────────────────────────┘         └─────────────────────────────────┘
-            │                                          │
-            └──────────────┬───────────────────────────┘
-                           │
-                           ▼
-                  ┌─────────────────────┐
-                  │   StateMachine      │
-                  │   apply_rules()     │
-                  └─────────────────────┘
+                              ДОМЕНЫ (изолированные)
+   ┌─────────────────────────────────────────────────────────────────────────┐
+   │                                                                         │
+   │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐         │
+   │  │  StateMachine   │  │ DialoguePolicy  │  │ FallbackHandler │   ...   │
+   │  │     Domain      │  │     Domain      │  │     Domain      │         │
+   │  ├─────────────────┤  ├─────────────────┤  ├─────────────────┤         │
+   │  │ EvaluatorContext│  │  PolicyContext  │  │ FallbackContext │         │
+   │  │   sm_registry   │  │ policy_registry │  │fallback_registry│         │
+   │  │  conditions.py  │  │  conditions.py  │  │  conditions.py  │         │
+   │  └─────────────────┘  └─────────────────┘  └─────────────────┘         │
+   │                                                                         │
+   └─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    BaseContext      │
+                         │     (Protocol)      │
+                         │  shared conditions  │
+                         └─────────────────────┘
 ```
 
 ### 2.2 Философия: Разделение ответственности
@@ -168,18 +159,16 @@ def apply_rules(self, intent: str):
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ПРИНЦИП: Условия — это ЛОГИКА, Правила — это МАППИНГ                        │
+│           Домены — это ИЗОЛЯЦИЯ                                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  CONDITIONS (Python-функции)           RULES (Declarative config)           │
-│  ─────────────────────────────         ──────────────────────────────────   │
-│  • Типизация (mypy)                    • Читаемость                         │
-│  • IDE autocomplete                    • Единый источник правды             │
-│  • Breakpoints, debugging              • Легко изменить маппинг             │
-│  • Stack traces при ошибках            • Не требует знания Python           │
-│  • Unit-тесты изолированно             • Валидация на старте                │
-│                                                                             │
-│  ─────────────────────────────         ──────────────────────────────────   │
-│  КАК проверять                         ЧТО делать если условие true         │
+│  CONDITIONS (Python-функции)    RULES (Declarative)    DOMAINS (Isolation)  │
+│  ───────────────────────────    ─────────────────────  ───────────────────  │
+│  • Типизация (mypy)             • Читаемость           • SRP соблюдён       │
+│  • IDE autocomplete             • Единый источник      • Type safety        │
+│  • Breakpoints, debugging       • Легко изменить       • Open-Closed        │
+│  • Stack traces при ошибках     • Валидация            • Изоляция условий   │
+│  • Unit-тесты изолированно                             • Свой контекст      │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -190,12 +179,11 @@ def apply_rules(self, intent: str):
 |---------|----------|
 | **Условия = Python** | Вся логика проверок — типизированные функции |
 | **Правила = Декларативно** | Маппинг условие→действие в config.py |
+| **Домены = Изоляция** | Каждый компонент имеет свой реестр и контекст |
 | **Строгое разделение** | rules → action, transitions → state |
-| **Единый источник правды** | Хочешь узнать поведение — смотри config |
+| **Type Safety** | mypy проверяет совместимость контекстов |
+| **Open-Closed** | Новый домен = новый реестр, без изменения существующих |
 | **Обратная совместимость** | Старые правила-строки продолжают работать |
-| **Тестируемость** | Условия тестируются изолированно (pytest) |
-| **Отказоустойчивость** | Валидация в CI, fallback + метрики в runtime |
-| **IDE Support** | Autocomplete, go-to-definition, типы |
 
 ---
 
@@ -263,92 +251,137 @@ RuleValue = Union[
 ]
 ```
 
-### 3.2 Условия как Python-функции
+### 3.2 Базовый контекст (Protocol)
 
-#### 3.2.1 Декоратор @condition
+```python
+# src/conditions/base.py
+
+from typing import Protocol, Dict, Any, runtime_checkable
+
+
+@runtime_checkable
+class BaseContext(Protocol):
+    """
+    Базовый протокол для всех контекстов.
+
+    Определяет общие поля, доступные во всех доменах.
+    Условия, типизированные под BaseContext, могут использоваться везде.
+    """
+
+    @property
+    def collected_data(self) -> Dict[str, Any]:
+        """Собранные данные о клиенте."""
+        ...
+
+    @property
+    def state(self) -> str:
+        """Текущее состояние диалога."""
+        ...
+
+    @property
+    def turn_number(self) -> int:
+        """Номер хода в диалоге."""
+        ...
+```
+
+### 3.3 Типизированный реестр (Generic)
 
 ```python
 # src/conditions/registry.py
 
-from typing import Callable, Dict, Any, Optional, List, Set
+from typing import (
+    Generic, TypeVar, Callable, Dict, Optional,
+    List, Set, Any, Type
+)
 from dataclasses import dataclass, field
 from functools import wraps
 import inspect
 
+from src.conditions.base import BaseContext
+
+
+TContext = TypeVar("TContext", bound=BaseContext)
+
 
 @dataclass
-class ConditionMetadata:
-    """Метаданные условия для документации и валидации."""
+class ConditionMetadata(Generic[TContext]):
+    """Метаданные условия."""
     name: str
     description: str
-    func: Callable[["EvaluatorContext"], bool]
+    func: Callable[[TContext], bool]
+    context_type: Type[TContext]
     requires_fields: Set[str] = field(default_factory=set)
     category: str = "general"
-    examples: List[str] = field(default_factory=list)
 
 
-class ConditionRegistry:
+class ConditionRegistry(Generic[TContext]):
     """
-    Реестр всех условий.
+    Типизированный реестр условий для конкретного домена.
+
+    Каждый домен (StateMachine, Policy, Fallback, Personalization)
+    имеет свой реестр со своим типом контекста.
 
     Преимущества:
-    - Единая точка регистрации
-    - Валидация на старте приложения
-    - Автодокументация
-    - Интроспекция для тестов
+    - Type safety: mypy проверяет совместимость контекстов
+    - Изоляция: условия одного домена не видны в другом
+    - Open-Closed: новый домен = новый реестр, без изменения существующих
     """
 
-    _instance: Optional["ConditionRegistry"] = None
-
-    def __init__(self):
-        self._conditions: Dict[str, ConditionMetadata] = {}
+    def __init__(self, name: str, context_type: Type[TContext]):
+        self.name = name
+        self.context_type = context_type
+        self._conditions: Dict[str, ConditionMetadata[TContext]] = {}
         self._categories: Dict[str, List[str]] = {}
 
-    @classmethod
-    def get_instance(cls) -> "ConditionRegistry":
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
-
-    def register(
+    def condition(
         self,
         name: str,
         description: str = "",
         requires_fields: Set[str] = None,
-        category: str = "general",
-        examples: List[str] = None
-    ) -> Callable:
+        category: str = "general"
+    ) -> Callable[[Callable[[TContext], bool]], Callable[[TContext], bool]]:
         """
         Декоратор для регистрации условия.
 
-        Использование:
-            @condition("has_pricing_data",
-                      description="Есть данные для расчёта цены",
-                      requires_fields={"company_size", "users_count"},
-                      category="data")
+        Пример:
+            @sm_registry.condition("has_pricing_data", category="data")
             def has_pricing_data(ctx: EvaluatorContext) -> bool:
                 return bool(ctx.collected_data.get("company_size"))
         """
-        def decorator(func: Callable[["EvaluatorContext"], bool]) -> Callable:
+        def decorator(func: Callable[[TContext], bool]) -> Callable[[TContext], bool]:
             # Валидация сигнатуры
             sig = inspect.signature(func)
-            params = list(sig.parameters.keys())
+            params = list(sig.parameters.values())
+
             if len(params) != 1:
                 raise ValueError(
-                    f"Condition '{name}' must accept exactly one parameter (ctx)"
+                    f"Condition '{name}' must accept exactly one parameter"
                 )
+
+            # Проверка аннотации параметра (если указана)
+            param_annotation = params[0].annotation
+            if param_annotation != inspect.Parameter.empty:
+                if not (param_annotation == self.context_type or
+                        param_annotation == BaseContext or
+                        param_annotation.__name__ == self.context_type.__name__):
+                    raise TypeError(
+                        f"Condition '{name}' expects {param_annotation.__name__}, "
+                        f"but registry is for {self.context_type.__name__}"
+                    )
 
             metadata = ConditionMetadata(
                 name=name,
                 description=description or func.__doc__ or "",
                 func=func,
+                context_type=self.context_type,
                 requires_fields=requires_fields or set(),
                 category=category,
-                examples=examples or []
             )
 
             if name in self._conditions:
-                raise ValueError(f"Condition '{name}' already registered")
+                raise ValueError(
+                    f"Condition '{name}' already registered in {self.name}"
+                )
 
             self._conditions[name] = metadata
 
@@ -357,11 +390,11 @@ class ConditionRegistry:
             self._categories[category].append(name)
 
             @wraps(func)
-            def wrapper(ctx: "EvaluatorContext") -> bool:
+            def wrapper(ctx: TContext) -> bool:
                 return func(ctx)
 
             wrapper._condition_name = name
-            wrapper._condition_metadata = metadata
+            wrapper._registry = self.name
             return wrapper
 
         return decorator
@@ -369,13 +402,30 @@ class ConditionRegistry:
     def evaluate(
         self,
         name: str,
-        ctx: "EvaluatorContext",
+        ctx: TContext,
         trace: Optional["EvaluationTrace"] = None
     ) -> bool:
-        """Вычислить условие с опциональной трассировкой."""
+        """
+        Вычислить условие.
+
+        Args:
+            name: Имя условия
+            ctx: Контекст соответствующего типа
+            trace: Опциональная трассировка для дебага
+
+        Returns:
+            Результат вычисления условия
+
+        Raises:
+            ConditionNotFoundError: Условие не найдено
+            TypeError: Неверный тип контекста
+            ConditionEvaluationError: Ошибка при вычислении
+        """
         metadata = self._conditions.get(name)
         if metadata is None:
-            raise ConditionNotFoundError(f"Condition '{name}' not found")
+            raise ConditionNotFoundError(
+                f"Condition '{name}' not found in registry '{self.name}'"
+            )
 
         try:
             result = metadata.func(ctx)
@@ -387,35 +437,39 @@ class ConditionRegistry:
 
         except Exception as e:
             raise ConditionEvaluationError(
-                f"Error evaluating condition '{name}': {e}"
+                f"Error evaluating '{name}' in '{self.name}': {e}"
             ) from e
 
-    def get(self, name: str) -> Optional[ConditionMetadata]:
+    def get(self, name: str) -> Optional[ConditionMetadata[TContext]]:
+        """Получить метаданные условия."""
         return self._conditions.get(name)
 
+    def has(self, name: str) -> bool:
+        """Проверить существование условия."""
+        return name in self._conditions
+
     def list_all(self) -> List[str]:
+        """Список всех условий."""
         return list(self._conditions.keys())
 
     def list_by_category(self, category: str) -> List[str]:
+        """Список условий по категории."""
         return self._categories.get(category, [])
 
-    def get_documentation(self) -> str:
-        """Автогенерация документации из docstrings."""
-        lines = ["# Available Conditions\n"]
+    def get_categories(self) -> List[str]:
+        """Список всех категорий."""
+        return list(self._categories.keys())
 
-        for category in sorted(self._categories.keys()):
-            lines.append(f"\n## {category.title()}\n")
-            for name in sorted(self._categories[category]):
-                meta = self._conditions[name]
-                lines.append(f"### `{name}`")
-                lines.append(f"{meta.description}\n")
-                if meta.requires_fields:
-                    lines.append(f"**Requires:** {', '.join(meta.requires_fields)}\n")
+    def validate_all(self, ctx_factory: Callable[[], TContext]) -> Dict[str, Any]:
+        """
+        Валидация всех условий на тестовом контексте.
 
-        return "\n".join(lines)
+        Args:
+            ctx_factory: Фабрика для создания тестового контекста
 
-    def validate_all(self, ctx_factory: Callable) -> Dict[str, Any]:
-        """Валидация всех условий (для CI)."""
+        Returns:
+            Результаты валидации
+        """
         results = {"passed": [], "failed": [], "errors": []}
         test_ctx = ctx_factory()
 
@@ -434,21 +488,21 @@ class ConditionRegistry:
 
         return results
 
+    def get_documentation(self) -> str:
+        """Генерация документации по условиям реестра."""
+        lines = [f"# {self.name.title()} Conditions\n"]
+        lines.append(f"Context: `{self.context_type.__name__}`\n")
 
-# Глобальный реестр
-registry = ConditionRegistry.get_instance()
+        for category in sorted(self._categories.keys()):
+            lines.append(f"\n## {category.title()}\n")
+            for name in sorted(self._categories[category]):
+                meta = self._conditions[name]
+                lines.append(f"### `{name}`")
+                lines.append(f"{meta.description}\n")
+                if meta.requires_fields:
+                    lines.append(f"**Requires:** {', '.join(meta.requires_fields)}\n")
 
-
-# Удобный алиас
-def condition(
-    name: str,
-    description: str = "",
-    requires_fields: Set[str] = None,
-    category: str = "general",
-    examples: List[str] = None
-) -> Callable:
-    """Декоратор для регистрации условия."""
-    return registry.register(name, description, requires_fields, category, examples)
+        return "\n".join(lines)
 
 
 class ConditionNotFoundError(Exception):
@@ -461,727 +515,7 @@ class ConditionEvaluationError(Exception):
     pass
 ```
 
-#### 3.2.2 EvaluatorContext (типизированный контракт)
-
-```python
-# src/conditions/context.py
-
-from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.intent_tracker import IntentTracker
-
-
-@dataclass
-class EvaluatorContext:
-    """
-    Контекст для проверки условий.
-
-    Все поля гарантированно существуют.
-    IntentTracker — единственный источник истории интентов.
-
-    ВАЖНО: Контракт timing'а
-    ========================
-    record() вызывается В НАЧАЛЕ apply_rules(), ДО создания контекста.
-    streak_count() включает текущий интент.
-    prev_intent берётся из history[-2] (до текущего).
-    """
-    # Данные клиента
-    collected_data: Dict[str, Any]
-
-    # Состояние диалога
-    state: str
-    spin_phase: Optional[str]
-    is_spin_state: bool
-
-    # Интенты — текущий и предыдущий
-    current_intent: str
-    prev_intent: Optional[str]
-
-    # IntentTracker — единый источник истории интентов
-    intent_tracker: "IntentTracker"
-
-    # Метаданные
-    turn_number: int
-    missing_required_data: List[str]
-
-    @classmethod
-    def from_state_machine(cls, sm: "StateMachine", intent: str) -> "EvaluatorContext":
-        """
-        Создать контекст из StateMachine.
-
-        Порядок в apply_rules():
-            1. intent_tracker.record(intent, state)  # записываем текущий
-            2. ctx = EvaluatorContext.from_state_machine(sm, intent)
-            3. # Теперь streak_count(intent) включает текущий
-        """
-        from src.config import SALES_CONFIG
-
-        config = SALES_CONFIG.get("states", {}).get(sm.state, {})
-        required = config.get("required_data", [])
-        missing = [f for f in required if not sm.collected_data.get(f)]
-
-        return cls(
-            collected_data=sm.collected_data.copy(),
-            state=sm.state,
-            spin_phase=config.get("spin_phase"),
-            is_spin_state=config.get("spin_phase") is not None,
-            current_intent=intent,
-            prev_intent=sm.intent_tracker.prev_intent,
-            intent_tracker=sm.intent_tracker,
-            turn_number=len(sm.intent_tracker.history),
-            missing_required_data=missing,
-        )
-
-
-def create_test_context(**overrides) -> EvaluatorContext:
-    """
-    Фабрика для создания тестового контекста.
-
-    Использование в тестах:
-        ctx = create_test_context(
-            collected_data={"company_size": 10},
-            current_intent="price_question"
-        )
-        assert has_pricing_data(ctx) == True
-    """
-    from src.intent_tracker import IntentTracker
-
-    tracker = IntentTracker()
-
-    defaults = {
-        "collected_data": {},
-        "state": "spin_situation",
-        "spin_phase": "situation",
-        "is_spin_state": True,
-        "current_intent": "unclear",
-        "prev_intent": None,
-        "intent_tracker": tracker,
-        "turn_number": 1,
-        "missing_required_data": [],
-    }
-    defaults.update(overrides)
-
-    # Записываем текущий интент в трекер для корректного streak
-    if "current_intent" in overrides:
-        tracker.record(overrides["current_intent"], defaults["state"])
-
-    return EvaluatorContext(**defaults)
-```
-
-#### 3.2.3 Определение условий по категориям
-
-```python
-# src/conditions/data_conditions.py
-"""Условия на основе собранных данных клиента."""
-
-from src.conditions.registry import condition
-from src.conditions.context import EvaluatorContext
-
-
-@condition(
-    name="has_pricing_data",
-    description="Есть данные для расчёта цены (размер компании или количество пользователей)",
-    requires_fields={"company_size", "users_count"},
-    category="data",
-    examples=[
-        "collected_data = {'company_size': 10} → True",
-        "collected_data = {} → False"
-    ]
-)
-def has_pricing_data(ctx: EvaluatorContext) -> bool:
-    return bool(
-        ctx.collected_data.get("company_size") or
-        ctx.collected_data.get("users_count")
-    )
-
-
-@condition(
-    name="has_pain_point",
-    description="Клиент озвучил проблему/боль",
-    requires_fields={"pain_point", "pain_category"},
-    category="data"
-)
-def has_pain_point(ctx: EvaluatorContext) -> bool:
-    return bool(
-        ctx.collected_data.get("pain_point") or
-        ctx.collected_data.get("pain_category")
-    )
-
-
-@condition(
-    name="has_contact",
-    description="Есть контактные данные клиента",
-    requires_fields={"contact_info", "phone", "email"},
-    category="data"
-)
-def has_contact(ctx: EvaluatorContext) -> bool:
-    return bool(
-        ctx.collected_data.get("contact_info") or
-        ctx.collected_data.get("phone") or
-        ctx.collected_data.get("email")
-    )
-
-
-@condition(
-    name="has_competitor_mention",
-    description="Клиент упомянул конкурента",
-    requires_fields={"competitor_mentioned", "current_crm"},
-    category="data"
-)
-def has_competitor_mention(ctx: EvaluatorContext) -> bool:
-    return bool(
-        ctx.collected_data.get("competitor_mentioned") or
-        ctx.collected_data.get("current_crm")
-    )
-
-
-@condition(
-    name="is_large_company",
-    description="Крупная компания (50+ сотрудников)",
-    requires_fields={"company_size"},
-    category="data"
-)
-def is_large_company(ctx: EvaluatorContext) -> bool:
-    size = ctx.collected_data.get("company_size")
-    if size is None:
-        return False
-    try:
-        return int(size) > 50
-    except (ValueError, TypeError):
-        return False
-
-
-@condition(
-    name="is_small_company",
-    description="Небольшая компания (до 10 сотрудников)",
-    requires_fields={"company_size"},
-    category="data"
-)
-def is_small_company(ctx: EvaluatorContext) -> bool:
-    size = ctx.collected_data.get("company_size")
-    if size is None:
-        return False
-    try:
-        return int(size) <= 10
-    except (ValueError, TypeError):
-        return False
-
-
-@condition(
-    name="is_medium_company",
-    description="Средняя компания (11-50 сотрудников)",
-    requires_fields={"company_size"},
-    category="data"
-)
-def is_medium_company(ctx: EvaluatorContext) -> bool:
-    size = ctx.collected_data.get("company_size")
-    if size is None:
-        return False
-    try:
-        s = int(size)
-        return 10 < s <= 50
-    except (ValueError, TypeError):
-        return False
-
-
-@condition(
-    name="ready_for_pricing",
-    description="Готов к обсуждению цены: есть размер компании И боль",
-    requires_fields={"company_size", "pain_point"},
-    category="data"
-)
-def ready_for_pricing(ctx: EvaluatorContext) -> bool:
-    return (
-        bool(ctx.collected_data.get("company_size")) and
-        bool(ctx.collected_data.get("pain_point") or
-             ctx.collected_data.get("pain_category"))
-    )
-
-
-@condition(
-    name="data_complete",
-    description="Все обязательные данные для текущего состояния собраны",
-    requires_fields={"missing_required_data"},
-    category="data"
-)
-def data_complete(ctx: EvaluatorContext) -> bool:
-    return len(ctx.missing_required_data) == 0
-
-
-@condition(
-    name="has_urgency",
-    description="Клиент выразил срочность",
-    requires_fields={"urgency"},
-    category="data"
-)
-def has_urgency(ctx: EvaluatorContext) -> bool:
-    urgency = ctx.collected_data.get("urgency")
-    return urgency in ("high", "urgent", "asap")
-```
-
-```python
-# src/conditions/intent_conditions.py
-"""Условия на основе истории интентов."""
-
-from src.conditions.registry import condition
-from src.conditions.context import EvaluatorContext
-
-
-@condition(
-    name="price_repeated_3x",
-    description="Вопрос о цене задан 3+ раз подряд",
-    requires_fields={"intent_tracker", "current_intent"},
-    category="intent",
-    examples=[
-        "3x price_question подряд → True",
-        "price_question, greeting, price_question → False (не подряд)"
-    ]
-)
-def price_repeated_3x(ctx: EvaluatorContext) -> bool:
-    if ctx.current_intent != "price_question":
-        return False
-    return ctx.intent_tracker.streak_count("price_question") >= 3
-
-
-@condition(
-    name="question_repeated_2x",
-    description="Текущий вопрос задан 2+ раз подряд",
-    requires_fields={"intent_tracker", "current_intent"},
-    category="intent"
-)
-def question_repeated_2x(ctx: EvaluatorContext) -> bool:
-    return ctx.intent_tracker.streak_count(ctx.current_intent) >= 2
-
-
-@condition(
-    name="after_greeting",
-    description="Предыдущий интент был приветствием",
-    requires_fields={"prev_intent"},
-    category="intent"
-)
-def after_greeting(ctx: EvaluatorContext) -> bool:
-    return ctx.prev_intent in ("greeting", "small_talk")
-
-
-@condition(
-    name="after_objection",
-    description="Предыдущий интент был возражением",
-    requires_fields={"prev_intent"},
-    category="intent"
-)
-def after_objection(ctx: EvaluatorContext) -> bool:
-    return ctx.prev_intent is not None and ctx.prev_intent.startswith("objection_")
-
-
-@condition(
-    name="is_technical_question",
-    description="Текущий интент — технический вопрос",
-    requires_fields={"current_intent"},
-    category="intent"
-)
-def is_technical_question(ctx: EvaluatorContext) -> bool:
-    return ctx.current_intent in (
-        "question_technical",
-        "question_integrations",
-        "question_api"
-    )
-
-
-@condition(
-    name="is_price_question",
-    description="Текущий интент — вопрос о цене",
-    requires_fields={"current_intent"},
-    category="intent"
-)
-def is_price_question(ctx: EvaluatorContext) -> bool:
-    return ctx.current_intent in ("price_question", "pricing_details")
-```
-
-```python
-# src/conditions/counter_conditions.py
-"""Условия на основе счётчиков (возражения, ходы)."""
-
-from src.conditions.registry import condition
-from src.conditions.context import EvaluatorContext
-
-
-@condition(
-    name="objection_limit_reached",
-    description="Достигнут лимит возражений подряд (3+)",
-    requires_fields={"intent_tracker"},
-    category="counter"
-)
-def objection_limit_reached(ctx: EvaluatorContext) -> bool:
-    return ctx.intent_tracker.objection_consecutive() >= 3
-
-
-@condition(
-    name="many_objections_total",
-    description="Много возражений за диалог (5+)",
-    requires_fields={"intent_tracker"},
-    category="counter"
-)
-def many_objections_total(ctx: EvaluatorContext) -> bool:
-    return ctx.intent_tracker.objection_total() >= 5
-
-
-@condition(
-    name="early_conversation",
-    description="Начало разговора (первые 3 хода)",
-    requires_fields={"turn_number"},
-    category="counter"
-)
-def early_conversation(ctx: EvaluatorContext) -> bool:
-    return ctx.turn_number <= 3
-
-
-@condition(
-    name="mid_conversation",
-    description="Середина разговора (4-10 ходов)",
-    requires_fields={"turn_number"},
-    category="counter"
-)
-def mid_conversation(ctx: EvaluatorContext) -> bool:
-    return 3 < ctx.turn_number <= 10
-
-
-@condition(
-    name="late_conversation",
-    description="Затянувшийся разговор (10+ ходов)",
-    requires_fields={"turn_number"},
-    category="counter"
-)
-def late_conversation(ctx: EvaluatorContext) -> bool:
-    return ctx.turn_number > 10
-```
-
-```python
-# src/conditions/state_conditions.py
-"""Условия на основе состояния диалога."""
-
-from src.conditions.registry import condition
-from src.conditions.context import EvaluatorContext
-
-
-@condition(
-    name="in_spin_phase",
-    description="Находимся в SPIN-фазе диалога",
-    requires_fields={"is_spin_state"},
-    category="state"
-)
-def in_spin_phase(ctx: EvaluatorContext) -> bool:
-    return ctx.is_spin_state
-
-
-@condition(
-    name="in_closing_phase",
-    description="Находимся в фазе закрытия (close, soft_close)",
-    requires_fields={"state"},
-    category="state"
-)
-def in_closing_phase(ctx: EvaluatorContext) -> bool:
-    return ctx.state in ("close", "soft_close")
-
-
-@condition(
-    name="in_presentation",
-    description="Находимся в фазе презентации",
-    requires_fields={"state"},
-    category="state"
-)
-def in_presentation(ctx: EvaluatorContext) -> bool:
-    return ctx.state == "presentation"
-
-
-@condition(
-    name="past_spin",
-    description="Вышли из SPIN-фазы (presentation, close, etc.)",
-    requires_fields={"state", "is_spin_state"},
-    category="state"
-)
-def past_spin(ctx: EvaluatorContext) -> bool:
-    return not ctx.is_spin_state and ctx.state not in ("greeting", "initial")
-
-
-@condition(
-    name="in_situation_phase",
-    description="В фазе Situation (SPIN)",
-    requires_fields={"spin_phase"},
-    category="state"
-)
-def in_situation_phase(ctx: EvaluatorContext) -> bool:
-    return ctx.spin_phase == "situation"
-
-
-@condition(
-    name="in_problem_phase",
-    description="В фазе Problem (SPIN)",
-    requires_fields={"spin_phase"},
-    category="state"
-)
-def in_problem_phase(ctx: EvaluatorContext) -> bool:
-    return ctx.spin_phase == "problem"
-```
-
-```python
-# src/conditions/composite_conditions.py
-"""Составные условия (комбинации базовых)."""
-
-from src.conditions.registry import condition, registry
-from src.conditions.context import EvaluatorContext
-
-
-@condition(
-    name="should_answer_price",
-    description="Следует ответить на вопрос о цене: есть данные ИЛИ спросили 3+ раз",
-    requires_fields={"collected_data", "intent_tracker"},
-    category="composite"
-)
-def should_answer_price(ctx: EvaluatorContext) -> bool:
-    has_data = registry.evaluate("has_pricing_data", ctx)
-    repeated = registry.evaluate("price_repeated_3x", ctx)
-    return has_data or repeated
-
-
-@condition(
-    name="ready_for_demo_offer",
-    description="Готов к предложению демо: прошли SPIN + есть боль + не было отказа",
-    requires_fields={"state", "collected_data", "prev_intent"},
-    category="composite"
-)
-def ready_for_demo_offer(ctx: EvaluatorContext) -> bool:
-    past_spin = registry.evaluate("past_spin", ctx)
-    has_pain = registry.evaluate("has_pain_point", ctx)
-    recent_rejection = ctx.prev_intent == "rejection"
-    return past_spin and has_pain and not recent_rejection
-
-
-@condition(
-    name="should_escalate_to_human",
-    description="Нужна эскалация на человека: много возражений + поздний этап",
-    requires_fields={"intent_tracker", "turn_number"},
-    category="composite"
-)
-def should_escalate_to_human(ctx: EvaluatorContext) -> bool:
-    objection_limit = registry.evaluate("objection_limit_reached", ctx)
-    late_convo = registry.evaluate("late_conversation", ctx)
-    return objection_limit and late_convo
-
-
-@condition(
-    name="should_offer_soft_close",
-    description="Пора предложить мягкое завершение",
-    requires_fields={"intent_tracker", "state"},
-    category="composite"
-)
-def should_offer_soft_close(ctx: EvaluatorContext) -> bool:
-    objection_limit = registry.evaluate("objection_limit_reached", ctx)
-    in_closing = registry.evaluate("in_closing_phase", ctx)
-    return objection_limit and in_closing
-
-
-@condition(
-    name="can_handle_objection_with_roi",
-    description="Можно обработать возражение о цене через ROI",
-    requires_fields={"collected_data"},
-    category="composite"
-)
-def can_handle_objection_with_roi(ctx: EvaluatorContext) -> bool:
-    has_pricing = registry.evaluate("has_pricing_data", ctx)
-    has_pain = registry.evaluate("has_pain_point", ctx)
-    return has_pricing and has_pain
-```
-
-### 3.3 IntentTracker — единый источник истории интентов
-
-```python
-# src/intent_tracker.py
-
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
-import time
-
-from src.config import INTENT_CATEGORIES
-
-
-@dataclass
-class IntentRecord:
-    """Запись об одном интенте."""
-    intent: str
-    state: str
-    timestamp: float
-    category: Optional[str] = None
-
-
-class IntentTracker:
-    """
-    Единый источник истории интентов.
-
-    Заменяет:
-    - StateMachine.last_intent
-    - Bot.last_intent
-    - ObjectionFlowManager (весь класс)
-    - ContextWindow.get_objection_count()
-
-    ВАЖНО: Контракт timing'а
-    ========================
-    record() вызывается В НАЧАЛЕ apply_rules(), ДО проверки условий.
-    Все методы возвращают значения ВКЛЮЧАЯ текущий записанный интент.
-
-    Пример:
-        Ход 1: price_question → record() → streak=1, >=3 → False
-        Ход 2: price_question → record() → streak=2, >=3 → False
-        Ход 3: price_question → record() → streak=3, >=3 → True ✓
-    """
-
-    MAX_HISTORY = 50
-
-    def __init__(self):
-        self.history: List[IntentRecord] = []
-        self._streak_count: int = 0
-        self._last_intent: Optional[str] = None
-
-    def record(self, intent: str, state: str) -> None:
-        """
-        Записать интент. Вызывать В НАЧАЛЕ apply_rules().
-
-        После вызова streak_count() будет включать этот интент.
-        """
-        category = self._get_category(intent)
-
-        # Update streak
-        if intent == self._last_intent:
-            self._streak_count += 1
-        else:
-            self._streak_count = 1
-
-        record = IntentRecord(
-            intent=intent,
-            state=state,
-            timestamp=time.time(),
-            category=category
-        )
-
-        self.history.append(record)
-        if len(self.history) > self.MAX_HISTORY:
-            self.history.pop(0)
-
-        self._last_intent = intent
-
-    def _get_category(self, intent: str) -> Optional[str]:
-        """Определить категорию интента из INTENT_CATEGORIES."""
-        for category, intents in INTENT_CATEGORIES.items():
-            if intent in intents:
-                return category
-        return None
-
-    # ═══════════════════════════════════════════════════════════════════
-    # ЧТЕНИЕ — базовые свойства
-    # ═══════════════════════════════════════════════════════════════════
-
-    @property
-    def last_intent(self) -> Optional[str]:
-        """Последний интент."""
-        return self._last_intent
-
-    @property
-    def prev_intent(self) -> Optional[str]:
-        """Интент до текущего."""
-        if len(self.history) >= 2:
-            return self.history[-2].intent
-        return None
-
-    @property
-    def last_record(self) -> Optional[IntentRecord]:
-        """Полная запись о последнем интенте."""
-        return self.history[-1] if self.history else None
-
-    # ═══════════════════════════════════════════════════════════════════
-    # ЧТЕНИЕ — для условий streak
-    # ═══════════════════════════════════════════════════════════════════
-
-    def streak_count(self, intent: str) -> int:
-        """
-        Сколько раз этот интент идёт подряд (включая текущий).
-
-        Для условия ">=3" проверяем streak_count(intent) >= 3.
-        """
-        if intent == self._last_intent:
-            return self._streak_count
-        return 0
-
-    def count_in_window(self, intent: str, window: int = 5) -> int:
-        """Сколько раз интент встречался в последних N ходах."""
-        recent = self.history[-window:] if window else self.history
-        return sum(1 for r in recent if r.intent == intent)
-
-    # ═══════════════════════════════════════════════════════════════════
-    # ЧТЕНИЕ — для условий objection (заменяет ObjectionFlowManager)
-    # ═══════════════════════════════════════════════════════════════════
-
-    def objection_consecutive(self) -> int:
-        """Сколько возражений подряд."""
-        count = 0
-        for record in reversed(self.history):
-            if record.category == "objection":
-                count += 1
-            else:
-                break
-        return count
-
-    def objection_total(self) -> int:
-        """Всего возражений за диалог."""
-        return sum(1 for r in self.history if r.category == "objection")
-
-    def objection_in_window(self, window: int = 5) -> int:
-        """Возражений в последних N ходах."""
-        recent = self.history[-window:] if window else self.history
-        return sum(1 for r in recent if r.category == "objection")
-
-    # ═══════════════════════════════════════════════════════════════════
-    # ЧТЕНИЕ — для других категорий
-    # ═══════════════════════════════════════════════════════════════════
-
-    def category_consecutive(self, category: str) -> int:
-        """Сколько интентов данной категории подряд."""
-        count = 0
-        for record in reversed(self.history):
-            if record.category == category:
-                count += 1
-            else:
-                break
-        return count
-
-    def positive_consecutive(self) -> int:
-        """Сколько положительных интентов подряд."""
-        return self.category_consecutive("positive")
-
-    # ═══════════════════════════════════════════════════════════════════
-    # СЕРИАЛИЗАЦИЯ
-    # ═══════════════════════════════════════════════════════════════════
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Сериализация для ContextEnvelope."""
-        return {
-            "last_intent": self._last_intent,
-            "prev_intent": self.prev_intent,
-            "current_streak": self._streak_count,
-            "objection_consecutive": self.objection_consecutive(),
-            "objection_total": self.objection_total(),
-            "turn_number": len(self.history),
-            "recent_intents": [r.intent for r in self.history[-5:]]
-        }
-
-    def reset(self) -> None:
-        """Сброс для нового диалога."""
-        self.history.clear()
-        self._streak_count = 0
-        self._last_intent = None
-```
-
-### 3.4 Трассировка выполнения (для дебага и симуляций)
+### 3.4 Трассировка выполнения
 
 ```python
 # src/conditions/trace.py
@@ -1215,6 +549,7 @@ class EvaluationTrace:
     rule_name: str
     intent: str
     state: str
+    domain: str = ""  # "state_machine", "policy", "fallback", etc.
     entries: List[TraceEntry] = field(default_factory=list)
     final_action: Optional[str] = None
     resolution: str = ""  # "condition_matched", "default", "simple"
@@ -1224,7 +559,7 @@ class EvaluationTrace:
         self,
         condition_name: str,
         result: bool,
-        ctx: "EvaluatorContext",
+        ctx: Any,
         relevant_fields: Set[str] = None
     ):
         """Записать результат проверки условия."""
@@ -1234,13 +569,14 @@ class EvaluationTrace:
             for field_name in relevant_fields:
                 if hasattr(ctx, field_name):
                     context_snapshot[field_name] = getattr(ctx, field_name)
-                elif field_name in ctx.collected_data:
+                elif hasattr(ctx, "collected_data") and field_name in ctx.collected_data:
                     context_snapshot[field_name] = ctx.collected_data[field_name]
         else:
-            context_snapshot = {
-                "state": ctx.state,
-                "current_intent": ctx.current_intent,
-            }
+            # Базовые поля
+            if hasattr(ctx, "state"):
+                context_snapshot["state"] = ctx.state
+            if hasattr(ctx, "turn_number"):
+                context_snapshot["turn_number"] = ctx.turn_number
 
         self.entries.append(TraceEntry(
             condition_name=condition_name,
@@ -1261,6 +597,7 @@ class EvaluationTrace:
             "rule_name": self.rule_name,
             "intent": self.intent,
             "state": self.state,
+            "domain": self.domain,
             "final_action": self.final_action,
             "resolution": self.resolution,
             "matched_condition": self.matched_condition,
@@ -1304,8 +641,20 @@ class TraceCollector:
         self.simulation_id = simulation_id
         self.traces: List[EvaluationTrace] = []
 
-    def create_trace(self, rule_name: str, intent: str, state: str) -> EvaluationTrace:
-        trace = EvaluationTrace(rule_name=rule_name, intent=intent, state=state)
+    def create_trace(
+        self,
+        rule_name: str,
+        intent: str,
+        state: str,
+        domain: str = ""
+    ) -> EvaluationTrace:
+        """Создать новую трассировку."""
+        trace = EvaluationTrace(
+            rule_name=rule_name,
+            intent=intent,
+            state=state,
+            domain=domain
+        )
         self.traces.append(trace)
         return trace
 
@@ -1315,6 +664,17 @@ class TraceCollector:
         matched = sum(1 for t in self.traces if t.resolution == "condition_matched")
         defaults = sum(1 for t in self.traces if t.resolution == "default")
 
+        # По доменам
+        by_domain = {}
+        for trace in self.traces:
+            domain = trace.domain or "unknown"
+            if domain not in by_domain:
+                by_domain[domain] = {"total": 0, "matched": 0}
+            by_domain[domain]["total"] += 1
+            if trace.resolution == "condition_matched":
+                by_domain[domain]["matched"] += 1
+
+        # Статистика по условиям
         condition_hits = {}
         for trace in self.traces:
             for entry in trace.entries:
@@ -1330,11 +690,1617 @@ class TraceCollector:
             "conditions_matched": matched,
             "defaults_used": defaults,
             "match_rate": matched / total if total > 0 else 0,
+            "by_domain": by_domain,
             "condition_stats": condition_hits
         }
 ```
 
-### 3.5 RuleResolver
+---
+
+## Часть 4: ДОМЕННЫЕ РЕЕСТРЫ
+
+### 4.1 StateMachine домен
+
+#### Контекст
+
+```python
+# src/conditions/state_machine/context.py
+
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.intent_tracker import IntentTracker
+
+
+@dataclass
+class EvaluatorContext:
+    """
+    Контекст для условий StateMachine.
+
+    Реализует BaseContext + специфичные поля для SM.
+    """
+    # BaseContext fields
+    collected_data: Dict[str, Any]
+    state: str
+    turn_number: int
+
+    # SM-specific fields
+    spin_phase: Optional[str]
+    is_spin_state: bool
+    current_intent: str
+    prev_intent: Optional[str]
+    intent_tracker: "IntentTracker"
+    missing_required_data: List[str]
+
+    @classmethod
+    def from_state_machine(cls, sm: "StateMachine", intent: str) -> "EvaluatorContext":
+        """
+        Создать контекст из StateMachine.
+
+        ВАЖНО: intent_tracker.record() должен быть вызван ДО этого метода.
+        """
+        from src.config import SALES_CONFIG
+
+        config = SALES_CONFIG.get("states", {}).get(sm.state, {})
+        required = config.get("required_data", [])
+        missing = [f for f in required if not sm.collected_data.get(f)]
+
+        return cls(
+            collected_data=sm.collected_data.copy(),
+            state=sm.state,
+            turn_number=len(sm.intent_tracker.history),
+            spin_phase=config.get("spin_phase"),
+            is_spin_state=config.get("spin_phase") is not None,
+            current_intent=intent,
+            prev_intent=sm.intent_tracker.prev_intent,
+            intent_tracker=sm.intent_tracker,
+            missing_required_data=missing,
+        )
+
+
+def create_sm_test_context(**overrides) -> EvaluatorContext:
+    """Фабрика для тестов."""
+    from src.intent_tracker import IntentTracker
+
+    tracker = overrides.pop("intent_tracker", None) or IntentTracker()
+
+    defaults = {
+        "collected_data": {},
+        "state": "spin_situation",
+        "turn_number": 1,
+        "spin_phase": "situation",
+        "is_spin_state": True,
+        "current_intent": "unclear",
+        "prev_intent": None,
+        "intent_tracker": tracker,
+        "missing_required_data": [],
+    }
+    defaults.update(overrides)
+
+    return EvaluatorContext(**defaults)
+```
+
+#### Реестр и декоратор
+
+```python
+# src/conditions/state_machine/registry.py
+
+from src.conditions.registry import ConditionRegistry
+from src.conditions.state_machine.context import EvaluatorContext
+
+# Реестр для StateMachine
+sm_registry = ConditionRegistry(
+    name="state_machine",
+    context_type=EvaluatorContext
+)
+
+# Алиас для декоратора
+sm_condition = sm_registry.condition
+```
+
+#### Условия
+
+```python
+# src/conditions/state_machine/conditions.py
+"""Условия для StateMachine."""
+
+from src.conditions.state_machine.registry import sm_condition
+from src.conditions.state_machine.context import EvaluatorContext
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DATA CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@sm_condition(
+    name="has_pricing_data",
+    description="Есть данные для расчёта цены (размер компании или количество пользователей)",
+    requires_fields={"company_size", "users_count"},
+    category="data"
+)
+def has_pricing_data(ctx: EvaluatorContext) -> bool:
+    return bool(
+        ctx.collected_data.get("company_size") or
+        ctx.collected_data.get("users_count")
+    )
+
+
+@sm_condition(
+    name="has_pain_point",
+    description="Клиент озвучил проблему/боль",
+    requires_fields={"pain_point", "pain_category"},
+    category="data"
+)
+def has_pain_point(ctx: EvaluatorContext) -> bool:
+    return bool(
+        ctx.collected_data.get("pain_point") or
+        ctx.collected_data.get("pain_category")
+    )
+
+
+@sm_condition(
+    name="has_contact",
+    description="Есть контактные данные клиента",
+    requires_fields={"contact_info", "phone", "email"},
+    category="data"
+)
+def has_contact(ctx: EvaluatorContext) -> bool:
+    return bool(
+        ctx.collected_data.get("contact_info") or
+        ctx.collected_data.get("phone") or
+        ctx.collected_data.get("email")
+    )
+
+
+@sm_condition(
+    name="has_competitor_mention",
+    description="Клиент упомянул конкурента",
+    requires_fields={"competitor_mentioned", "current_crm"},
+    category="data"
+)
+def has_competitor_mention(ctx: EvaluatorContext) -> bool:
+    return bool(
+        ctx.collected_data.get("competitor_mentioned") or
+        ctx.collected_data.get("current_crm")
+    )
+
+
+@sm_condition(
+    name="data_complete",
+    description="Все обязательные данные для текущего состояния собраны",
+    category="data"
+)
+def data_complete(ctx: EvaluatorContext) -> bool:
+    return len(ctx.missing_required_data) == 0
+
+
+@sm_condition(
+    name="ready_for_pricing",
+    description="Готов к обсуждению цены: есть размер компании И боль",
+    requires_fields={"company_size", "pain_point"},
+    category="data"
+)
+def ready_for_pricing(ctx: EvaluatorContext) -> bool:
+    has_size = bool(ctx.collected_data.get("company_size"))
+    has_pain = bool(
+        ctx.collected_data.get("pain_point") or
+        ctx.collected_data.get("pain_category")
+    )
+    return has_size and has_pain
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INTENT CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@sm_condition(
+    name="price_repeated_3x",
+    description="Вопрос о цене задан 3+ раз подряд",
+    requires_fields={"intent_tracker"},
+    category="intent"
+)
+def price_repeated_3x(ctx: EvaluatorContext) -> bool:
+    if ctx.current_intent != "price_question":
+        return False
+    return ctx.intent_tracker.streak_count("price_question") >= 3
+
+
+@sm_condition(
+    name="question_repeated_2x",
+    description="Текущий вопрос задан 2+ раз подряд",
+    requires_fields={"intent_tracker"},
+    category="intent"
+)
+def question_repeated_2x(ctx: EvaluatorContext) -> bool:
+    return ctx.intent_tracker.streak_count(ctx.current_intent) >= 2
+
+
+@sm_condition(
+    name="after_objection",
+    description="Предыдущий интент был возражением",
+    requires_fields={"prev_intent"},
+    category="intent"
+)
+def after_objection(ctx: EvaluatorContext) -> bool:
+    return ctx.prev_intent is not None and ctx.prev_intent.startswith("objection_")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COUNTER CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@sm_condition(
+    name="objection_limit_reached",
+    description="Достигнут лимит возражений подряд (3+)",
+    requires_fields={"intent_tracker"},
+    category="counter"
+)
+def objection_limit_reached(ctx: EvaluatorContext) -> bool:
+    return ctx.intent_tracker.objection_consecutive() >= 3
+
+
+@sm_condition(
+    name="many_objections_total",
+    description="Много возражений за диалог (5+)",
+    requires_fields={"intent_tracker"},
+    category="counter"
+)
+def many_objections_total(ctx: EvaluatorContext) -> bool:
+    return ctx.intent_tracker.objection_total() >= 5
+
+
+@sm_condition(
+    name="early_conversation",
+    description="Начало разговора (первые 3 хода)",
+    category="counter"
+)
+def early_conversation(ctx: EvaluatorContext) -> bool:
+    return ctx.turn_number <= 3
+
+
+@sm_condition(
+    name="late_conversation",
+    description="Затянувшийся разговор (10+ ходов)",
+    category="counter"
+)
+def late_conversation(ctx: EvaluatorContext) -> bool:
+    return ctx.turn_number > 10
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STATE CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@sm_condition(
+    name="in_spin_phase",
+    description="Находимся в SPIN-фазе диалога",
+    category="state"
+)
+def in_spin_phase(ctx: EvaluatorContext) -> bool:
+    return ctx.is_spin_state
+
+
+@sm_condition(
+    name="in_closing_phase",
+    description="Находимся в фазе закрытия (close, soft_close)",
+    category="state"
+)
+def in_closing_phase(ctx: EvaluatorContext) -> bool:
+    return ctx.state in ("close", "soft_close")
+
+
+@sm_condition(
+    name="past_spin",
+    description="Вышли из SPIN-фазы (presentation, close, etc.)",
+    category="state"
+)
+def past_spin(ctx: EvaluatorContext) -> bool:
+    return not ctx.is_spin_state and ctx.state not in ("greeting", "initial")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COMPOSITE CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@sm_condition(
+    name="should_answer_price",
+    description="Следует ответить на вопрос о цене: есть данные ИЛИ спросили 3+ раз",
+    category="composite"
+)
+def should_answer_price(ctx: EvaluatorContext) -> bool:
+    has_data = bool(
+        ctx.collected_data.get("company_size") or
+        ctx.collected_data.get("users_count")
+    )
+    repeated = (
+        ctx.current_intent == "price_question" and
+        ctx.intent_tracker.streak_count("price_question") >= 3
+    )
+    return has_data or repeated
+
+
+@sm_condition(
+    name="can_handle_objection_with_roi",
+    description="Можно обработать возражение о цене через ROI",
+    category="composite"
+)
+def can_handle_objection_with_roi(ctx: EvaluatorContext) -> bool:
+    has_pricing = bool(ctx.collected_data.get("company_size"))
+    has_pain = bool(
+        ctx.collected_data.get("pain_point") or
+        ctx.collected_data.get("pain_category")
+    )
+    return has_pricing and has_pain
+
+
+@sm_condition(
+    name="should_soft_close",
+    description="Пора предложить мягкое завершение",
+    category="composite"
+)
+def should_soft_close(ctx: EvaluatorContext) -> bool:
+    objection_limit = ctx.intent_tracker.objection_consecutive() >= 3
+    in_closing = ctx.state in ("close", "soft_close")
+    return objection_limit and in_closing
+```
+
+### 4.2 DialoguePolicy домен
+
+#### Контекст
+
+```python
+# src/conditions/policy/context.py
+
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional
+
+
+@dataclass
+class PolicyContext:
+    """
+    Контекст для условий DialoguePolicy.
+
+    Содержит сигналы о качестве диалога и необходимости вмешательства.
+    """
+    # BaseContext fields
+    collected_data: Dict[str, Any]
+    state: str
+    turn_number: int
+
+    # Policy-specific fields
+    oscillation_detected: bool           # Осцилляция между состояниями
+    confidence_trend: str                # "rising", "falling", "stable"
+    momentum_direction: str              # "positive", "negative", "neutral"
+    turns_in_state: int                  # Сколько ходов в текущем состоянии
+    breakthrough_detected: bool          # Был ли прорыв в диалоге
+    turns_since_breakthrough: int        # Ходов с момента прорыва
+    total_objections: int                # Всего возражений
+    repeated_objection_types: List[str]  # Повторяющиеся типы возражений
+    current_action: Optional[str]        # Текущее предлагаемое действие
+    frustration_level: float             # 0.0 - 1.0
+
+    @classmethod
+    def from_envelope(
+        cls,
+        envelope: "ContextEnvelope",
+        sm_result: Dict[str, Any]
+    ) -> "PolicyContext":
+        """Создать контекст из ContextEnvelope."""
+        return cls(
+            collected_data=envelope.collected_data,
+            state=sm_result.get("next_state", envelope.state),
+            turn_number=envelope.turn_number,
+            oscillation_detected=envelope.oscillation_detected,
+            confidence_trend=envelope.confidence_trend,
+            momentum_direction=envelope.momentum_direction,
+            turns_in_state=envelope.turns_in_state,
+            breakthrough_detected=envelope.has_breakthrough,
+            turns_since_breakthrough=envelope.turns_since_breakthrough,
+            total_objections=envelope.total_objections,
+            repeated_objection_types=envelope.repeated_objection_types,
+            current_action=sm_result.get("action"),
+            frustration_level=envelope.frustration_level,
+        )
+
+
+def create_policy_test_context(**overrides) -> PolicyContext:
+    """Фабрика для тестов."""
+    defaults = {
+        "collected_data": {},
+        "state": "spin_situation",
+        "turn_number": 1,
+        "oscillation_detected": False,
+        "confidence_trend": "stable",
+        "momentum_direction": "neutral",
+        "turns_in_state": 1,
+        "breakthrough_detected": False,
+        "turns_since_breakthrough": 0,
+        "total_objections": 0,
+        "repeated_objection_types": [],
+        "current_action": None,
+        "frustration_level": 0.0,
+    }
+    defaults.update(overrides)
+    return PolicyContext(**defaults)
+```
+
+#### Реестр и условия
+
+```python
+# src/conditions/policy/registry.py
+
+from src.conditions.registry import ConditionRegistry
+from src.conditions.policy.context import PolicyContext
+
+policy_registry = ConditionRegistry(
+    name="policy",
+    context_type=PolicyContext
+)
+
+policy_condition = policy_registry.condition
+```
+
+```python
+# src/conditions/policy/conditions.py
+"""Условия для DialoguePolicy."""
+
+from src.conditions.policy.registry import policy_condition
+from src.conditions.policy.context import PolicyContext
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPAIR CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@policy_condition(
+    name="is_stuck",
+    description="Диалог застрял: осцилляция + падающая уверенность",
+    category="repair"
+)
+def is_stuck(ctx: PolicyContext) -> bool:
+    return ctx.oscillation_detected and ctx.confidence_trend == "falling"
+
+
+@policy_condition(
+    name="needs_repair",
+    description="Нужен repair: много ходов в одном состоянии без прогресса",
+    category="repair"
+)
+def needs_repair(ctx: PolicyContext) -> bool:
+    return ctx.turns_in_state >= 5 and not ctx.breakthrough_detected
+
+
+@policy_condition(
+    name="clarification_needed",
+    description="Нужно уточнение: много ходов без данных",
+    category="repair"
+)
+def clarification_needed(ctx: PolicyContext) -> bool:
+    no_progress = ctx.turns_in_state >= 3
+    no_data = len(ctx.collected_data) < 2
+    return no_progress and no_data
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MOMENTUM CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@policy_condition(
+    name="has_breakthrough_window",
+    description="Окно после прорыва (1-3 хода) — можно продвигать",
+    category="momentum"
+)
+def has_breakthrough_window(ctx: PolicyContext) -> bool:
+    return (
+        ctx.breakthrough_detected and
+        1 <= ctx.turns_since_breakthrough <= 3
+    )
+
+
+@policy_condition(
+    name="positive_momentum",
+    description="Положительный momentum — диалог идёт хорошо",
+    category="momentum"
+)
+def positive_momentum(ctx: PolicyContext) -> bool:
+    return ctx.momentum_direction == "positive"
+
+
+@policy_condition(
+    name="negative_momentum",
+    description="Отрицательный momentum — диалог ухудшается",
+    category="momentum"
+)
+def negative_momentum(ctx: PolicyContext) -> bool:
+    return ctx.momentum_direction == "negative"
+
+
+@policy_condition(
+    name="confidence_rising",
+    description="Уверенность растёт",
+    category="momentum"
+)
+def confidence_rising(ctx: PolicyContext) -> bool:
+    return ctx.confidence_trend == "rising"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ESCALATION CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@policy_condition(
+    name="high_frustration",
+    description="Высокий уровень фрустрации клиента (>=0.7)",
+    category="escalation"
+)
+def high_frustration(ctx: PolicyContext) -> bool:
+    return ctx.frustration_level >= 0.7
+
+
+@policy_condition(
+    name="medium_frustration",
+    description="Средний уровень фрустрации (0.4-0.7)",
+    category="escalation"
+)
+def medium_frustration(ctx: PolicyContext) -> bool:
+    return 0.4 <= ctx.frustration_level < 0.7
+
+
+@policy_condition(
+    name="should_deescalate",
+    description="Нужна деэскалация: высокая фрустрация + негативный momentum",
+    category="escalation"
+)
+def should_deescalate(ctx: PolicyContext) -> bool:
+    return ctx.frustration_level >= 0.7 and ctx.momentum_direction == "negative"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# OBJECTION CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@policy_condition(
+    name="repeated_objections",
+    description="Есть повторяющиеся возражения",
+    category="objection"
+)
+def repeated_objections(ctx: PolicyContext) -> bool:
+    return len(ctx.repeated_objection_types) > 0
+
+
+@policy_condition(
+    name="objection_fatigue",
+    description="Усталость от возражений: 3+ возражений + негативный momentum",
+    category="objection"
+)
+def objection_fatigue(ctx: PolicyContext) -> bool:
+    return ctx.total_objections >= 3 and ctx.momentum_direction == "negative"
+
+
+@policy_condition(
+    name="same_objection_repeated",
+    description="Одно и то же возражение повторяется",
+    category="objection"
+)
+def same_objection_repeated(ctx: PolicyContext) -> bool:
+    return len(ctx.repeated_objection_types) >= 1
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONSERVATIVE CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@policy_condition(
+    name="should_be_conservative",
+    description="Нужен консервативный подход: негативный momentum в SPIN",
+    category="conservative"
+)
+def should_be_conservative(ctx: PolicyContext) -> bool:
+    is_spin = ctx.state.startswith("spin_")
+    return is_spin and ctx.momentum_direction == "negative"
+```
+
+### 4.3 FallbackHandler домен
+
+#### Контекст
+
+```python
+# src/conditions/fallback/context.py
+
+from dataclasses import dataclass
+from typing import Dict, Any, Optional
+
+
+@dataclass
+class FallbackContext:
+    """
+    Контекст для условий FallbackHandler.
+
+    Содержит информацию о fallback'ах и эскалации.
+    """
+    # BaseContext fields
+    collected_data: Dict[str, Any]
+    state: str
+    turn_number: int
+
+    # Fallback-specific fields
+    total_fallbacks: int             # Всего fallback'ов за диалог
+    consecutive_fallbacks: int       # Fallback'ов подряд
+    current_tier: str                # "tier_1", "tier_2", "tier_3"
+    fallbacks_in_state: int          # Fallback'ов в текущем состоянии
+    last_successful_intent: Optional[str]  # Последний успешный интент
+
+    # Context signals
+    frustration_level: float         # 0.0 - 1.0
+    momentum_direction: str          # "positive", "negative", "neutral"
+    engagement_level: str            # "high", "medium", "low"
+
+    # Data for dynamic CTA
+    pain_category: Optional[str]
+    competitor_mentioned: bool
+    last_intent: Optional[str]
+
+    @classmethod
+    def from_handler(
+        cls,
+        handler: "FallbackHandler",
+        current_tier: str,
+        state: str,
+        envelope: Optional["ContextEnvelope"] = None,
+        context: Optional[Dict] = None
+    ) -> "FallbackContext":
+        """Создать контекст из FallbackHandler."""
+        ctx = context or {}
+        collected = ctx.get("collected_data", {})
+
+        return cls(
+            collected_data=collected,
+            state=state,
+            turn_number=ctx.get("turn_number", 0),
+            total_fallbacks=handler.stats.total_count,
+            consecutive_fallbacks=handler.get_consecutive_count(),
+            current_tier=current_tier,
+            fallbacks_in_state=handler.stats.state_counts.get(state, 0),
+            last_successful_intent=handler.stats.last_successful_intent,
+            frustration_level=envelope.frustration_level if envelope else 0.0,
+            momentum_direction=envelope.momentum_direction if envelope else "neutral",
+            engagement_level=envelope.engagement_level if envelope else "medium",
+            pain_category=collected.get("pain_category"),
+            competitor_mentioned=bool(collected.get("competitor_mentioned")),
+            last_intent=ctx.get("last_intent"),
+        )
+
+
+def create_fallback_test_context(**overrides) -> FallbackContext:
+    """Фабрика для тестов."""
+    defaults = {
+        "collected_data": {},
+        "state": "spin_situation",
+        "turn_number": 1,
+        "total_fallbacks": 0,
+        "consecutive_fallbacks": 0,
+        "current_tier": "tier_1",
+        "fallbacks_in_state": 0,
+        "last_successful_intent": None,
+        "frustration_level": 0.0,
+        "momentum_direction": "neutral",
+        "engagement_level": "medium",
+        "pain_category": None,
+        "competitor_mentioned": False,
+        "last_intent": None,
+    }
+    defaults.update(overrides)
+    return FallbackContext(**defaults)
+```
+
+#### Реестр и условия
+
+```python
+# src/conditions/fallback/registry.py
+
+from src.conditions.registry import ConditionRegistry
+from src.conditions.fallback.context import FallbackContext
+
+fallback_registry = ConditionRegistry(
+    name="fallback",
+    context_type=FallbackContext
+)
+
+fallback_condition = fallback_registry.condition
+```
+
+```python
+# src/conditions/fallback/conditions.py
+"""Условия для FallbackHandler."""
+
+from src.conditions.fallback.registry import fallback_condition
+from src.conditions.fallback.context import FallbackContext
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ESCALATION CONDITIONS — когда пропустить tiers
+# ═══════════════════════════════════════════════════════════════════════════
+
+@fallback_condition(
+    name="frustrated_with_fallbacks",
+    description="Фрустрация + 2+ fallback подряд → сразу на tier 3",
+    category="escalation"
+)
+def frustrated_with_fallbacks(ctx: FallbackContext) -> bool:
+    return ctx.consecutive_fallbacks >= 2 and ctx.frustration_level >= 0.7
+
+
+@fallback_condition(
+    name="stuck_in_state",
+    description="3+ fallback в одном состоянии → пропустить на tier 3",
+    category="escalation"
+)
+def stuck_in_state(ctx: FallbackContext) -> bool:
+    return ctx.fallbacks_in_state >= 3
+
+
+@fallback_condition(
+    name="exhausted_patience",
+    description="4+ fallback + low engagement → soft_close",
+    category="escalation"
+)
+def exhausted_patience(ctx: FallbackContext) -> bool:
+    return ctx.total_fallbacks >= 4 and ctx.engagement_level == "low"
+
+
+@fallback_condition(
+    name="late_stage_fallback",
+    description="Fallback в поздней стадии → пропустить tier 2",
+    category="escalation"
+)
+def late_stage_fallback(ctx: FallbackContext) -> bool:
+    return ctx.state in ("close", "presentation")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STAY CONDITIONS — когда остаться на текущем tier
+# ═══════════════════════════════════════════════════════════════════════════
+
+@fallback_condition(
+    name="positive_momentum_fallback",
+    description="Положительный momentum + мало fallback → дать ещё шанс",
+    category="stay"
+)
+def positive_momentum_fallback(ctx: FallbackContext) -> bool:
+    return ctx.momentum_direction == "positive" and ctx.consecutive_fallbacks <= 1
+
+
+@fallback_condition(
+    name="first_fallback",
+    description="Первый fallback в диалоге",
+    category="stay"
+)
+def first_fallback(ctx: FallbackContext) -> bool:
+    return ctx.total_fallbacks <= 1
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CTA CONDITIONS — для Dynamic CTA выбора
+# ═══════════════════════════════════════════════════════════════════════════
+
+@fallback_condition(
+    name="has_competitor_for_cta",
+    description="Упомянут конкурент → CTA про сравнение",
+    category="cta"
+)
+def has_competitor_for_cta(ctx: FallbackContext) -> bool:
+    return ctx.competitor_mentioned
+
+
+@fallback_condition(
+    name="has_pain_for_cta",
+    description="Есть pain category → CTA про решение проблемы",
+    category="cta"
+)
+def has_pain_for_cta(ctx: FallbackContext) -> bool:
+    return ctx.pain_category is not None
+
+
+@fallback_condition(
+    name="after_price_question_cta",
+    description="После вопроса о цене → CTA про условия оплаты",
+    category="cta"
+)
+def after_price_question_cta(ctx: FallbackContext) -> bool:
+    return ctx.last_intent in ("price_question", "pricing_details", "objection_price")
+
+
+@fallback_condition(
+    name="after_features_question_cta",
+    description="После вопроса о функциях → CTA про демо",
+    category="cta"
+)
+def after_features_question_cta(ctx: FallbackContext) -> bool:
+    return ctx.last_intent in ("question_features", "question_integrations", "question_how")
+
+
+@fallback_condition(
+    name="large_company_cta",
+    description="Крупная компания → CTA про enterprise",
+    category="cta"
+)
+def large_company_cta(ctx: FallbackContext) -> bool:
+    size = ctx.collected_data.get("company_size")
+    if size is None:
+        return False
+    try:
+        return int(size) > 20
+    except (ValueError, TypeError):
+        return False
+```
+
+### 4.4 PersonalizationEngine домен
+
+#### Контекст
+
+```python
+# src/conditions/personalization/context.py
+
+from dataclasses import dataclass
+from typing import Dict, Any, Optional
+
+
+@dataclass
+class PersonalizationContext:
+    """
+    Контекст для условий PersonalizationEngine.
+
+    Содержит информацию для выбора стиля messaging.
+    """
+    # BaseContext fields
+    collected_data: Dict[str, Any]
+    state: str
+    turn_number: int
+
+    # Company data
+    company_size: Optional[int]
+    role: Optional[str]
+    industry: Optional[str]
+
+    # Pain data
+    pain_category: Optional[str]
+    pain_point: Optional[str]
+    current_crm: Optional[str]
+
+    # Context signals
+    has_breakthrough: bool
+    engagement_level: str
+    objection_type: Optional[str]
+
+    @classmethod
+    def from_collected_data(
+        cls,
+        collected_data: Dict[str, Any],
+        envelope: Optional["ContextEnvelope"] = None,
+        context: Optional[Dict] = None
+    ) -> "PersonalizationContext":
+        """Создать контекст из собранных данных."""
+        ctx = context or {}
+
+        # Parse company_size
+        company_size = collected_data.get("company_size")
+        if isinstance(company_size, str):
+            try:
+                company_size = int(company_size)
+            except ValueError:
+                company_size = None
+
+        return cls(
+            collected_data=collected_data,
+            state=ctx.get("state", ""),
+            turn_number=ctx.get("turn_number", 0),
+            company_size=company_size,
+            role=collected_data.get("role"),
+            industry=collected_data.get("industry"),
+            pain_category=collected_data.get("pain_category"),
+            pain_point=collected_data.get("pain_point"),
+            current_crm=collected_data.get("current_crm"),
+            has_breakthrough=envelope.has_breakthrough if envelope else False,
+            engagement_level=envelope.engagement_level if envelope else "medium",
+            objection_type=ctx.get("objection_type"),
+        )
+
+
+def create_personalization_test_context(**overrides) -> PersonalizationContext:
+    """Фабрика для тестов."""
+    defaults = {
+        "collected_data": {},
+        "state": "spin_situation",
+        "turn_number": 1,
+        "company_size": None,
+        "role": None,
+        "industry": None,
+        "pain_category": None,
+        "pain_point": None,
+        "current_crm": None,
+        "has_breakthrough": False,
+        "engagement_level": "medium",
+        "objection_type": None,
+    }
+    defaults.update(overrides)
+    return PersonalizationContext(**defaults)
+```
+
+#### Реестр и условия
+
+```python
+# src/conditions/personalization/registry.py
+
+from src.conditions.registry import ConditionRegistry
+from src.conditions.personalization.context import PersonalizationContext
+
+personalization_registry = ConditionRegistry(
+    name="personalization",
+    context_type=PersonalizationContext
+)
+
+personalization_condition = personalization_registry.condition
+```
+
+```python
+# src/conditions/personalization/conditions.py
+"""Условия для PersonalizationEngine."""
+
+from src.conditions.personalization.registry import personalization_condition
+from src.conditions.personalization.context import PersonalizationContext
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SIZE CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@personalization_condition(
+    name="is_micro_company",
+    description="Микро-компания (1-5 человек)",
+    category="size"
+)
+def is_micro_company(ctx: PersonalizationContext) -> bool:
+    return ctx.company_size is not None and 1 <= ctx.company_size <= 5
+
+
+@personalization_condition(
+    name="is_small_company",
+    description="Небольшая компания (6-15 человек)",
+    category="size"
+)
+def is_small_company(ctx: PersonalizationContext) -> bool:
+    return ctx.company_size is not None and 6 <= ctx.company_size <= 15
+
+
+@personalization_condition(
+    name="is_medium_company",
+    description="Средняя компания (16-50 человек)",
+    category="size"
+)
+def is_medium_company(ctx: PersonalizationContext) -> bool:
+    return ctx.company_size is not None and 16 <= ctx.company_size <= 50
+
+
+@personalization_condition(
+    name="is_large_company",
+    description="Крупная компания (50+ человек)",
+    category="size"
+)
+def is_large_company(ctx: PersonalizationContext) -> bool:
+    return ctx.company_size is not None and ctx.company_size > 50
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ROLE CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@personalization_condition(
+    name="is_decision_maker",
+    description="Роль = ЛПР (owner, director, ceo, founder)",
+    category="role"
+)
+def is_decision_maker(ctx: PersonalizationContext) -> bool:
+    return ctx.role in ("owner", "director", "ceo", "founder")
+
+
+@personalization_condition(
+    name="is_technical_role",
+    description="Техническая роль (it, admin, developer, cto)",
+    category="role"
+)
+def is_technical_role(ctx: PersonalizationContext) -> bool:
+    return ctx.role in ("it", "admin", "developer", "cto")
+
+
+@personalization_condition(
+    name="is_sales_role",
+    description="Роль в продажах (sales, manager, rop)",
+    category="role"
+)
+def is_sales_role(ctx: PersonalizationContext) -> bool:
+    return ctx.role in ("sales", "manager", "rop", "sales_manager")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PAIN CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@personalization_condition(
+    name="pain_is_no_control",
+    description="Боль = нет контроля над командой/процессами",
+    category="pain"
+)
+def pain_is_no_control(ctx: PersonalizationContext) -> bool:
+    return ctx.pain_category == "no_control"
+
+
+@personalization_condition(
+    name="pain_is_manual_work",
+    description="Боль = много ручной работы",
+    category="pain"
+)
+def pain_is_manual_work(ctx: PersonalizationContext) -> bool:
+    return ctx.pain_category == "manual_work"
+
+
+@personalization_condition(
+    name="pain_is_losing_clients",
+    description="Боль = теряют клиентов",
+    category="pain"
+)
+def pain_is_losing_clients(ctx: PersonalizationContext) -> bool:
+    return ctx.pain_category == "losing_clients"
+
+
+@personalization_condition(
+    name="has_any_pain",
+    description="Есть какая-либо боль",
+    category="pain"
+)
+def has_any_pain(ctx: PersonalizationContext) -> bool:
+    return ctx.pain_point is not None or ctx.pain_category is not None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXPERIENCE CONDITIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@personalization_condition(
+    name="has_crm_experience",
+    description="Есть опыт с CRM-системами",
+    category="experience"
+)
+def has_crm_experience(ctx: PersonalizationContext) -> bool:
+    return ctx.current_crm is not None
+
+
+@personalization_condition(
+    name="no_crm_experience",
+    description="Нет опыта с CRM",
+    category="experience"
+)
+def no_crm_experience(ctx: PersonalizationContext) -> bool:
+    return ctx.current_crm is None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MESSAGING STYLE CONDITIONS (composite)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@personalization_condition(
+    name="use_roi_style",
+    description="ROI-стиль: крупная компания + есть данные для расчёта",
+    category="style"
+)
+def use_roi_style(ctx: PersonalizationContext) -> bool:
+    is_large = ctx.company_size is not None and ctx.company_size > 50
+    has_data = ctx.pain_point is not None or ctx.current_crm is not None
+    return is_large and has_data
+
+
+@personalization_condition(
+    name="use_simplicity_style",
+    description="Simplicity-стиль: микро компания или ЛПР маленькой компании",
+    category="style"
+)
+def use_simplicity_style(ctx: PersonalizationContext) -> bool:
+    is_micro = ctx.company_size is not None and ctx.company_size <= 5
+    is_small_dm = (
+        ctx.role in ("owner", "director", "ceo") and
+        ctx.company_size is not None and
+        ctx.company_size <= 20
+    )
+    return is_micro or is_small_dm
+
+
+@personalization_condition(
+    name="use_control_style",
+    description="Control-стиль: боль = нет контроля или растущая команда",
+    category="style"
+)
+def use_control_style(ctx: PersonalizationContext) -> bool:
+    pain_control = ctx.pain_category == "no_control"
+    growing_team = ctx.company_size is not None and 6 <= ctx.company_size <= 20
+    return pain_control or growing_team
+
+
+@personalization_condition(
+    name="use_automation_style",
+    description="Automation-стиль: боль = ручная работа",
+    category="style"
+)
+def use_automation_style(ctx: PersonalizationContext) -> bool:
+    return ctx.pain_category == "manual_work"
+
+
+@personalization_condition(
+    name="use_enterprise_style",
+    description="Enterprise-стиль: крупная компания + техническая роль",
+    category="style"
+)
+def use_enterprise_style(ctx: PersonalizationContext) -> bool:
+    is_large = ctx.company_size is not None and ctx.company_size > 50
+    is_tech = ctx.role in ("it", "admin", "developer", "cto")
+    return is_large and is_tech
+
+
+@personalization_condition(
+    name="use_relationship_style",
+    description="Relationship-стиль: breakthrough + high engagement",
+    category="style"
+)
+def use_relationship_style(ctx: PersonalizationContext) -> bool:
+    return ctx.has_breakthrough and ctx.engagement_level == "high"
+
+
+@personalization_condition(
+    name="use_quick_win_style",
+    description="Quick-win стиль: начало разговора + мало данных",
+    category="style"
+)
+def use_quick_win_style(ctx: PersonalizationContext) -> bool:
+    early = ctx.turn_number <= 3
+    no_pain = ctx.pain_point is None and ctx.pain_category is None
+    return early and no_pain
+```
+
+---
+
+## Часть 5: SHARED CONDITIONS
+
+```python
+# src/conditions/shared/__init__.py
+"""
+Общие условия, работающие с BaseContext.
+Могут использоваться в любом домене через прямой импорт.
+"""
+
+from src.conditions.base import BaseContext
+
+
+def has_company_size(ctx: BaseContext) -> bool:
+    """Известен размер компании."""
+    return bool(ctx.collected_data.get("company_size"))
+
+
+def has_pain_point(ctx: BaseContext) -> bool:
+    """Клиент озвучил проблему."""
+    return bool(
+        ctx.collected_data.get("pain_point") or
+        ctx.collected_data.get("pain_category")
+    )
+
+
+def has_contact_info(ctx: BaseContext) -> bool:
+    """Есть контактные данные."""
+    return bool(
+        ctx.collected_data.get("contact_info") or
+        ctx.collected_data.get("phone") or
+        ctx.collected_data.get("email")
+    )
+
+
+def early_conversation(ctx: BaseContext) -> bool:
+    """Начало разговора (первые 3 хода)."""
+    return ctx.turn_number <= 3
+
+
+def late_conversation(ctx: BaseContext) -> bool:
+    """Затянувшийся разговор (10+ ходов)."""
+    return ctx.turn_number > 10
+
+
+__all__ = [
+    "has_company_size",
+    "has_pain_point",
+    "has_contact_info",
+    "early_conversation",
+    "late_conversation",
+]
+```
+
+---
+
+## Часть 6: АГРЕГАТОР И ЭКСПОРТ
+
+```python
+# src/conditions/__init__.py
+"""
+Условия разделены по доменам:
+- state_machine: условия для StateMachine (rules/transitions)
+- policy: условия для DialoguePolicy
+- fallback: условия для FallbackHandler
+- personalization: условия для PersonalizationEngine
+
+Каждый домен имеет свой реестр и свой тип контекста.
+Это обеспечивает:
+- Type safety (mypy проверяет совместимость)
+- Изоляцию (условия не смешиваются)
+- Open-Closed (новый домен = новый реестр)
+"""
+
+# Base
+from src.conditions.base import BaseContext
+from src.conditions.registry import (
+    ConditionRegistry,
+    ConditionMetadata,
+    ConditionNotFoundError,
+    ConditionEvaluationError,
+)
+from src.conditions.trace import EvaluationTrace, TraceCollector
+
+# StateMachine domain
+from src.conditions.state_machine.registry import sm_registry, sm_condition
+from src.conditions.state_machine.context import EvaluatorContext, create_sm_test_context
+
+# Policy domain
+from src.conditions.policy.registry import policy_registry, policy_condition
+from src.conditions.policy.context import PolicyContext, create_policy_test_context
+
+# Fallback domain
+from src.conditions.fallback.registry import fallback_registry, fallback_condition
+from src.conditions.fallback.context import FallbackContext, create_fallback_test_context
+
+# Personalization domain
+from src.conditions.personalization.registry import (
+    personalization_registry,
+    personalization_condition
+)
+from src.conditions.personalization.context import (
+    PersonalizationContext,
+    create_personalization_test_context
+)
+
+# Shared conditions
+from src.conditions import shared
+
+# Import conditions to register them
+from src.conditions.state_machine import conditions as _sm_conditions
+from src.conditions.policy import conditions as _policy_conditions
+from src.conditions.fallback import conditions as _fallback_conditions
+from src.conditions.personalization import conditions as _personalization_conditions
+
+
+class ConditionRegistries:
+    """
+    Агрегатор всех реестров.
+
+    Используется для:
+    - Валидации всех условий
+    - Генерации документации
+    - Статистики
+    """
+
+    state_machine = sm_registry
+    policy = policy_registry
+    fallback = fallback_registry
+    personalization = personalization_registry
+
+    @classmethod
+    def all_registries(cls):
+        """Список всех реестров."""
+        return [
+            cls.state_machine,
+            cls.policy,
+            cls.fallback,
+            cls.personalization,
+        ]
+
+    @classmethod
+    def get_registry(cls, name: str):
+        """Получить реестр по имени."""
+        mapping = {
+            "state_machine": cls.state_machine,
+            "policy": cls.policy,
+            "fallback": cls.fallback,
+            "personalization": cls.personalization,
+        }
+        return mapping.get(name)
+
+    @classmethod
+    def validate_all(cls) -> dict:
+        """Валидация всех реестров."""
+        from src.conditions.state_machine.context import create_sm_test_context
+        from src.conditions.policy.context import create_policy_test_context
+        from src.conditions.fallback.context import create_fallback_test_context
+        from src.conditions.personalization.context import create_personalization_test_context
+
+        factories = {
+            "state_machine": create_sm_test_context,
+            "policy": create_policy_test_context,
+            "fallback": create_fallback_test_context,
+            "personalization": create_personalization_test_context,
+        }
+
+        results = {}
+        for registry in cls.all_registries():
+            factory = factories.get(registry.name)
+            if factory:
+                results[registry.name] = registry.validate_all(factory)
+            else:
+                results[registry.name] = {"error": "No test context factory"}
+
+        return results
+
+    @classmethod
+    def get_stats(cls) -> dict:
+        """Статистика по всем реестрам."""
+        stats = {}
+        for registry in cls.all_registries():
+            stats[registry.name] = {
+                "total": len(registry.list_all()),
+                "categories": {
+                    cat: len(registry.list_by_category(cat))
+                    for cat in registry.get_categories()
+                }
+            }
+        return stats
+
+    @classmethod
+    def generate_documentation(cls) -> str:
+        """Генерация документации по всем условиям."""
+        lines = ["# All Conditions\n"]
+
+        for registry in cls.all_registries():
+            lines.append(f"\n## {registry.name.replace('_', ' ').title()}\n")
+            lines.append(f"Context: `{registry.context_type.__name__}`\n")
+            lines.append(f"Total conditions: {len(registry.list_all())}\n")
+
+            for category in sorted(registry.get_categories()):
+                lines.append(f"\n### {category.title()}\n")
+                for name in sorted(registry.list_by_category(category)):
+                    meta = registry.get(name)
+                    lines.append(f"- **`{name}`**: {meta.description}")
+
+        return "\n".join(lines)
+
+
+__all__ = [
+    # Base
+    "BaseContext",
+    "ConditionRegistry",
+    "ConditionMetadata",
+    "ConditionNotFoundError",
+    "ConditionEvaluationError",
+    "EvaluationTrace",
+    "TraceCollector",
+
+    # StateMachine
+    "sm_registry",
+    "sm_condition",
+    "EvaluatorContext",
+    "create_sm_test_context",
+
+    # Policy
+    "policy_registry",
+    "policy_condition",
+    "PolicyContext",
+    "create_policy_test_context",
+
+    # Fallback
+    "fallback_registry",
+    "fallback_condition",
+    "FallbackContext",
+    "create_fallback_test_context",
+
+    # Personalization
+    "personalization_registry",
+    "personalization_condition",
+    "PersonalizationContext",
+    "create_personalization_test_context",
+
+    # Shared
+    "shared",
+
+    # Aggregator
+    "ConditionRegistries",
+]
+```
+
+---
+
+## Часть 7: INTENT TRACKER
+
+```python
+# src/intent_tracker.py
+
+from dataclasses import dataclass
+from typing import List, Dict, Optional, Any
+import time
+
+from src.config import INTENT_CATEGORIES
+
+
+@dataclass
+class IntentRecord:
+    """Запись об одном интенте."""
+    intent: str
+    state: str
+    timestamp: float
+    category: Optional[str] = None
+
+
+class IntentTracker:
+    """
+    Единый источник истории интентов.
+
+    Заменяет:
+    - StateMachine.last_intent
+    - Bot.last_intent
+    - ObjectionFlowManager (весь класс)
+
+    ВАЖНО: Контракт timing'а
+    ========================
+    record() вызывается В НАЧАЛЕ apply_rules(), ДО проверки условий.
+    Все методы возвращают значения ВКЛЮЧАЯ текущий записанный интент.
+    """
+
+    MAX_HISTORY = 50
+
+    def __init__(self):
+        self.history: List[IntentRecord] = []
+        self._streak_count: int = 0
+        self._last_intent: Optional[str] = None
+
+    def record(self, intent: str, state: str) -> None:
+        """
+        Записать интент.
+
+        Вызывать В НАЧАЛЕ apply_rules().
+        После вызова streak_count() будет включать этот интент.
+        """
+        category = self._get_category(intent)
+
+        # Update streak
+        if intent == self._last_intent:
+            self._streak_count += 1
+        else:
+            self._streak_count = 1
+
+        record = IntentRecord(
+            intent=intent,
+            state=state,
+            timestamp=time.time(),
+            category=category
+        )
+
+        self.history.append(record)
+        if len(self.history) > self.MAX_HISTORY:
+            self.history.pop(0)
+
+        self._last_intent = intent
+
+    def _get_category(self, intent: str) -> Optional[str]:
+        """Определить категорию интента."""
+        for category, intents in INTENT_CATEGORIES.items():
+            if intent in intents:
+                return category
+        return None
+
+    # ═══════════════════════════════════════════════════════════════════
+    # ЧТЕНИЕ — базовые свойства
+    # ═══════════════════════════════════════════════════════════════════
+
+    @property
+    def last_intent(self) -> Optional[str]:
+        """Последний интент."""
+        return self._last_intent
+
+    @property
+    def prev_intent(self) -> Optional[str]:
+        """Интент до текущего."""
+        if len(self.history) >= 2:
+            return self.history[-2].intent
+        return None
+
+    @property
+    def last_record(self) -> Optional[IntentRecord]:
+        """Полная запись о последнем интенте."""
+        return self.history[-1] if self.history else None
+
+    # ═══════════════════════════════════════════════════════════════════
+    # ЧТЕНИЕ — streak
+    # ═══════════════════════════════════════════════════════════════════
+
+    def streak_count(self, intent: str) -> int:
+        """Сколько раз этот интент идёт подряд (включая текущий)."""
+        if intent == self._last_intent:
+            return self._streak_count
+        return 0
+
+    def count_in_window(self, intent: str, window: int = 5) -> int:
+        """Сколько раз интент встречался в последних N ходах."""
+        recent = self.history[-window:] if window else self.history
+        return sum(1 for r in recent if r.intent == intent)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # ЧТЕНИЕ — objection (заменяет ObjectionFlowManager)
+    # ═══════════════════════════════════════════════════════════════════
+
+    def objection_consecutive(self) -> int:
+        """Сколько возражений подряд."""
+        count = 0
+        for record in reversed(self.history):
+            if record.category == "objection":
+                count += 1
+            else:
+                break
+        return count
+
+    def objection_total(self) -> int:
+        """Всего возражений за диалог."""
+        return sum(1 for r in self.history if r.category == "objection")
+
+    def objection_in_window(self, window: int = 5) -> int:
+        """Возражений в последних N ходах."""
+        recent = self.history[-window:] if window else self.history
+        return sum(1 for r in recent if r.category == "objection")
+
+    # ═══════════════════════════════════════════════════════════════════
+    # ЧТЕНИЕ — категории
+    # ═══════════════════════════════════════════════════════════════════
+
+    def category_consecutive(self, category: str) -> int:
+        """Сколько интентов данной категории подряд."""
+        count = 0
+        for record in reversed(self.history):
+            if record.category == category:
+                count += 1
+            else:
+                break
+        return count
+
+    def positive_consecutive(self) -> int:
+        """Сколько положительных интентов подряд."""
+        return self.category_consecutive("positive")
+
+    # ═══════════════════════════════════════════════════════════════════
+    # СЕРИАЛИЗАЦИЯ
+    # ═══════════════════════════════════════════════════════════════════
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Сериализация."""
+        return {
+            "last_intent": self._last_intent,
+            "prev_intent": self.prev_intent,
+            "current_streak": self._streak_count,
+            "objection_consecutive": self.objection_consecutive(),
+            "objection_total": self.objection_total(),
+            "turn_number": len(self.history),
+            "recent_intents": [r.intent for r in self.history[-5:]]
+        }
+
+    def reset(self) -> None:
+        """Сброс для нового диалога."""
+        self.history.clear()
+        self._streak_count = 0
+        self._last_intent = None
+```
+
+---
+
+## Часть 8: RULE RESOLVER
 
 ```python
 # src/rules/resolver.py
@@ -1342,15 +2308,14 @@ class TraceCollector:
 from typing import Optional, Union, Tuple, List
 from dataclasses import dataclass
 
-from src.conditions import registry, EvaluatorContext
+from src.conditions import sm_registry, EvaluatorContext
 from src.conditions.trace import EvaluationTrace
 
 
-# Тип правила
 RuleValue = Union[
-    str,                                    # Простое: "action"
-    Tuple[str, str],                        # Одно условие: ("condition", "action")
-    List[Union[Tuple[str, str], str, None]] # Список + default
+    str,
+    Tuple[str, str],
+    List[Union[Tuple[str, str], str, None]]
 ]
 
 
@@ -1359,7 +2324,7 @@ class RuleResult:
     """
     Результат разрешения правила.
 
-    Поддерживает tuple unpacking для обратной совместимости:
+    Поддерживает tuple unpacking:
         action, state = resolver.resolve(...)
     """
     action: str
@@ -1367,21 +2332,20 @@ class RuleResult:
     trace: Optional[EvaluationTrace] = None
 
     def __iter__(self):
-        """Для обратной совместимости."""
         return iter((self.action, self.next_state))
 
 
 class RuleResolver:
     """
-    Разрешает правила: условие → действие.
+    Разрешает правила для StateMachine.
 
-    Работает с декларативными правилами из config.py,
-    вычисляя условия через ConditionRegistry.
+    Использует sm_registry для вычисления условий.
     """
 
     def __init__(self, config: dict = None):
         from src.config import SALES_CONFIG
         self.config = config or SALES_CONFIG
+        self.registry = sm_registry
 
     def resolve_action(
         self,
@@ -1396,7 +2360,7 @@ class RuleResolver:
         Порядок:
         1. state.rules[intent]
         2. global_rules[intent]
-        3. "continue_current_goal" (fallback)
+        3. "continue_current_goal"
         """
         state_config = self.config.get("states", {}).get(state, {})
 
@@ -1422,12 +2386,7 @@ class RuleResolver:
         ctx: EvaluatorContext,
         trace: Optional[EvaluationTrace] = None
     ) -> Optional[str]:
-        """
-        Разрешить transition для интента.
-
-        Returns:
-            Новое состояние или None (остаться)
-        """
+        """Разрешить transition для интента."""
         state_config = self.config.get("states", {}).get(state, {})
 
         rule = state_config.get("transitions", {}).get(intent)
@@ -1444,30 +2403,22 @@ class RuleResolver:
         trace: Optional[EvaluationTrace] = None,
         allow_none: bool = False
     ) -> Union[str, None]:
-        """
-        Вычислить правило.
-
-        Форматы:
-            "action"                          → вернуть action
-            ("condition", "action")           → если condition=True
-            [("c1", "a1"), ("c2", "a2"), "d"] → первое сработавшее или default
-        """
-        # Простое правило: строка
+        """Вычислить правило."""
+        # Простое правило
         if isinstance(rule, str):
             if trace:
                 trace.set_result(rule, "simple")
             return rule
 
-        # None (для transitions)
         if rule is None:
             if trace:
                 trace.set_result(None, "explicit_none")
             return None
 
-        # Одно условие: tuple
+        # Одно условие
         if isinstance(rule, tuple) and len(rule) == 2:
             condition_name, action = rule
-            result = registry.evaluate(condition_name, ctx, trace)
+            result = self.registry.evaluate(condition_name, ctx, trace)
 
             if result:
                 if trace:
@@ -1478,16 +2429,13 @@ class RuleResolver:
                     if trace:
                         trace.set_result(None, "condition_not_matched")
                     return None
-                raise ValueError(
-                    f"Single condition '{condition_name}' did not match, no default"
-                )
+                raise ValueError(f"Condition '{condition_name}' not matched, no default")
 
         # Список условий
         if isinstance(rule, list):
             default_action = None
 
             for item in rule:
-                # Default
                 if isinstance(item, str):
                     default_action = item
                     continue
@@ -1495,17 +2443,15 @@ class RuleResolver:
                     default_action = None
                     continue
 
-                # Условие
                 if isinstance(item, tuple) and len(item) == 2:
                     condition_name, action = item
-                    result = registry.evaluate(condition_name, ctx, trace)
+                    result = self.registry.evaluate(condition_name, ctx, trace)
 
                     if result:
                         if trace:
                             trace.set_result(action, "condition_matched", condition_name)
                         return action
 
-            # Default
             if trace:
                 trace.set_result(default_action, "default")
             return default_action
@@ -1517,32 +2463,29 @@ class RuleResolver:
         errors = []
         warnings = []
 
-        all_conditions = set(registry.list_all())
+        all_conditions = set(self.registry.list_all())
         all_states = set(self.config.get("states", {}).keys())
 
         for state_name, state_config in self.config.get("states", {}).items():
-            # Проверка rules
+            # Rules
             for intent, rule in state_config.get("rules", {}).items():
-                conditions = self._extract_conditions(rule)
-                for cond in conditions:
+                for cond in self._extract_conditions(rule):
                     if cond not in all_conditions:
                         errors.append(
                             f"State '{state_name}', rule '{intent}': "
                             f"unknown condition '{cond}'"
                         )
 
-            # Проверка transitions
+            # Transitions
             for intent, rule in state_config.get("transitions", {}).items():
-                conditions = self._extract_conditions(rule)
-                for cond in conditions:
+                for cond in self._extract_conditions(rule):
                     if cond not in all_conditions:
                         errors.append(
                             f"State '{state_name}', transition '{intent}': "
                             f"unknown condition '{cond}'"
                         )
 
-                targets = self._extract_targets(rule)
-                for target in targets:
+                for target in self._extract_targets(rule):
                     if target and target not in all_states:
                         errors.append(
                             f"State '{state_name}', transition '{intent}': "
@@ -1551,8 +2494,7 @@ class RuleResolver:
 
         # Global rules
         for intent, rule in self.config.get("global_rules", {}).items():
-            conditions = self._extract_conditions(rule)
-            for cond in conditions:
+            for cond in self._extract_conditions(rule):
                 if cond not in all_conditions:
                     errors.append(f"Global rule '{intent}': unknown condition '{cond}'")
 
@@ -1587,26 +2529,147 @@ class RuleResolver:
         return []
 ```
 
-### 3.6 Конфигурация (config.py)
+---
+
+## Часть 9: STATE MACHINE
+
+```python
+# src/state_machine.py
+
+from typing import Optional
+
+from src.conditions import sm_registry, EvaluatorContext
+from src.conditions.trace import EvaluationTrace, TraceCollector
+from src.rules.resolver import RuleResolver, RuleResult
+from src.intent_tracker import IntentTracker
+from src.config import SALES_CONFIG
+
+
+class StateMachine:
+    """
+    State Machine с гибридной архитектурой:
+    - Условия: Python-функции в sm_registry
+    - Правила: декларативная конфигурация
+    """
+
+    def __init__(
+        self,
+        config: dict = None,
+        trace_collector: Optional[TraceCollector] = None
+    ):
+        self.config = config or SALES_CONFIG
+        self.state = "spin_situation"
+        self.collected_data = {}
+        self.intent_tracker = IntentTracker()
+        self.rule_resolver = RuleResolver(self.config)
+        self.trace_collector = trace_collector
+
+    @property
+    def spin_phase(self) -> Optional[str]:
+        state_config = self.config.get("states", {}).get(self.state, {})
+        return state_config.get("spin_phase")
+
+    def apply_rules(self, intent: str) -> RuleResult:
+        """
+        Применить правила для интента.
+
+        Returns:
+            RuleResult с action, next_state и трассировкой.
+        """
+        # 1. Record intent
+        self.intent_tracker.record(intent, self.state)
+
+        # 2. Create context
+        ctx = EvaluatorContext.from_state_machine(self, intent)
+
+        # 3. Create trace
+        trace = None
+        if self.trace_collector:
+            trace = self.trace_collector.create_trace(
+                rule_name=f"{self.state}.{intent}",
+                intent=intent,
+                state=self.state,
+                domain="state_machine"
+            )
+
+        # 4. Early exits
+        early_exit = self._check_early_exits(intent)
+        if early_exit:
+            return early_exit
+
+        # 5. Resolve action
+        action = self.rule_resolver.resolve_action(
+            intent=intent,
+            state=self.state,
+            ctx=ctx,
+            trace=trace
+        )
+
+        # 6. Resolve transition
+        next_state = self.rule_resolver.resolve_transition(
+            intent=intent,
+            state=self.state,
+            ctx=ctx,
+            trace=trace
+        )
+
+        # 7. Fallback transitions
+        if next_state is None:
+            next_state = self._fallback_transition(intent, ctx)
+
+        # 8. Apply transition
+        if next_state and next_state != self.state:
+            self.state = next_state
+
+        return RuleResult(
+            action=action,
+            next_state=self.state,
+            trace=trace
+        )
+
+    def _check_early_exits(self, intent: str) -> Optional[RuleResult]:
+        state_config = self.config.get("states", {}).get(self.state, {})
+        if state_config.get("is_final"):
+            return RuleResult(action="stay", next_state=self.state)
+        return None
+
+    def _fallback_transition(self, intent: str, ctx: EvaluatorContext) -> Optional[str]:
+        state_config = self.config.get("states", {}).get(self.state, {})
+        transitions = state_config.get("transitions", {})
+
+        if "data_complete" in transitions:
+            if sm_registry.evaluate("data_complete", ctx):
+                target = transitions["data_complete"]
+                if isinstance(target, str):
+                    return target
+
+        return None
+
+    def update_data(self, data: dict):
+        self.collected_data.update(data)
+
+    def reset(self):
+        self.state = "spin_situation"
+        self.collected_data = {}
+        self.intent_tracker.reset()
+
+    def get_state_info(self) -> dict:
+        state_config = self.config.get("states", {}).get(self.state, {})
+        return {
+            "state": self.state,
+            "goal": state_config.get("goal", ""),
+            "spin_phase": state_config.get("spin_phase"),
+            "is_final": state_config.get("is_final", False),
+            "intent_tracker": self.intent_tracker.to_dict(),
+        }
+```
+
+---
+
+## Часть 10: КОНФИГУРАЦИЯ
 
 ```python
 # src/config.py
-
-"""
-Конфигурация правил.
-
-Условия определены в src/conditions/*.py как Python-функции.
-Здесь только МАППИНГ: какое условие → какое действие.
-
-Формат правила:
-    "intent": "action"                           # Простое
-    "intent": ("condition_name", "action")       # Одно условие
-    "intent": [                                  # Несколько условий
-        ("condition_1", "action_1"),
-        ("condition_2", "action_2"),
-        "default_action"                         # Default
-    ]
-"""
 
 from typing import Dict, List, Tuple, Union
 
@@ -1616,82 +2679,61 @@ RuleValue = Union[
     List[Union[Tuple[str, str], str, None]]
 ]
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# INTENT_CATEGORIES — категории интентов для hooks и tracking
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# INTENT_CATEGORIES
+# ═══════════════════════════════════════════════════════════════════════════
 
 INTENT_CATEGORIES = {
     "objection": [
-        "objection_price",
-        "objection_competitor",
-        "objection_no_time",
-        "objection_think",
-        "objection_not_interested"
+        "objection_price", "objection_competitor",
+        "objection_no_time", "objection_think", "objection_not_interested"
     ],
     "positive": [
         "agreement", "demo_request", "callback_request", "contact_provided",
-        "consultation_request",
-        "situation_provided", "problem_revealed", "implication_acknowledged",
-        "need_expressed", "info_provided",
+        "consultation_request", "situation_provided", "problem_revealed",
+        "implication_acknowledged", "need_expressed", "info_provided",
         "question_features", "question_integrations", "comparison",
         "greeting", "gratitude"
     ],
     "go_back": ["go_back", "correct_info"],
-    "question": [
-        "question_features", "question_integrations", "question_technical"
-    ]
+    "question": ["question_features", "question_integrations", "question_technical"]
 }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SHARED RULES — переиспользуемые правила (Python dict unpacking)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# SHARED RULES
+# ═══════════════════════════════════════════════════════════════════════════
 
 SPIN_COMMON_RULES: Dict[str, RuleValue] = {
-    # Вопрос о цене с условиями
     "price_question": [
         ("has_pricing_data", "answer_with_facts"),
         ("price_repeated_3x", "answer_with_range"),
         "deflect_and_continue"
     ],
-
-    # Детали цены
     "pricing_details": [
         ("has_pricing_data", "answer_with_facts"),
         "deflect_and_continue"
     ],
-
-    # Сравнение
     "comparison": [
         ("has_competitor_mention", "compare_with_known_competitor"),
         "answer_and_continue"
     ],
-
-    # Возражения (базовая обработка в SPIN)
     "objection_price": [
         ("can_handle_objection_with_roi", "handle_objection_with_roi"),
         "handle_objection"
     ],
-
-    # Простые правила
     "question_features": "answer_question",
     "question_integrations": "answer_question",
 }
 
-
 POST_SPIN_RULES: Dict[str, RuleValue] = {
-    # После SPIN — данные уже есть
     "price_question": "answer_with_facts",
     "pricing_details": "answer_with_facts",
-
-    # Возражения с эскалацией
     "objection_price": [
         ("objection_limit_reached", "soft_close_offer"),
         ("can_handle_objection_with_roi", "handle_objection_with_roi"),
         "handle_objection"
     ],
-
     "objection_competitor": [
         ("has_competitor_mention", "compare_with_known_competitor"),
         "handle_objection"
@@ -1699,12 +2741,11 @@ POST_SPIN_RULES: Dict[str, RuleValue] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SALES_CONFIG — основная конфигурация (2 уровня: state → global)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# SALES_CONFIG
+# ═══════════════════════════════════════════════════════════════════════════
 
 SALES_CONFIG = {
-    # Глобальные правила — fallback для всех состояний
     "global_rules": {
         "greeting": "acknowledge_and_continue",
         "gratitude": "acknowledge_and_continue",
@@ -1719,9 +2760,6 @@ SALES_CONFIG = {
     },
 
     "states": {
-        # ─────────────────────────────────────────────────────────────────────
-        # SPIN States
-        # ─────────────────────────────────────────────────────────────────────
         "spin_situation": {
             "goal": "Понять ситуацию клиента",
             "spin_phase": "situation",
@@ -1777,9 +2815,6 @@ SALES_CONFIG = {
             }
         },
 
-        # ─────────────────────────────────────────────────────────────────────
-        # Post-SPIN States
-        # ─────────────────────────────────────────────────────────────────────
         "presentation": {
             "goal": "Презентовать решение",
             "rules": {
@@ -1855,780 +2890,232 @@ SALES_CONFIG = {
 }
 ```
 
-### 3.7 Обновлённый StateMachine
+---
 
-```python
-# src/state_machine.py
+## Часть 11: СТРУКТУРА ФАЙЛОВ
 
-from typing import Optional
-from dataclasses import dataclass
-
-from src.conditions import EvaluatorContext, registry
-from src.conditions.trace import EvaluationTrace, TraceCollector
-from src.rules.resolver import RuleResolver, RuleResult
-from src.intent_tracker import IntentTracker
-from src.config import SALES_CONFIG, INTENT_CATEGORIES
-
-
-class StateMachine:
-    """
-    State Machine с гибридной архитектурой:
-    - Условия: Python-функции (типизация, IDE, дебаг)
-    - Правила: декларативная конфигурация (читаемость)
-    """
-
-    def __init__(
-        self,
-        config: dict = None,
-        trace_collector: Optional[TraceCollector] = None
-    ):
-        self.config = config or SALES_CONFIG
-        self.state = "spin_situation"
-        self.collected_data = {}
-        self.intent_tracker = IntentTracker()
-        self.rule_resolver = RuleResolver(self.config)
-        self.trace_collector = trace_collector
-
-    @property
-    def spin_phase(self) -> Optional[str]:
-        """Текущая SPIN-фаза."""
-        state_config = self.config.get("states", {}).get(self.state, {})
-        return state_config.get("spin_phase")
-
-    def apply_rules(self, intent: str) -> RuleResult:
-        """
-        Применить правила для интента.
-
-        Returns:
-            RuleResult с action, next_state и трассировкой.
-            Поддерживает: action, state = sm.apply_rules(intent)
-        """
-        # ═══════════════════════════════════════════════════════════════════
-        # 0. HOOKS: Записываем интент в tracker
-        # ═══════════════════════════════════════════════════════════════════
-        self.intent_tracker.record(intent, self.state)
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 1. Создаём контекст
-        # ═══════════════════════════════════════════════════════════════════
-        ctx = self._create_context(intent)
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 2. Создаём трассировку (опционально)
-        # ═══════════════════════════════════════════════════════════════════
-        trace = None
-        if self.trace_collector:
-            trace = self.trace_collector.create_trace(
-                rule_name=f"{self.state}.{intent}",
-                intent=intent,
-                state=self.state
-            )
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 3. Early exits (final states)
-        # ═══════════════════════════════════════════════════════════════════
-        early_exit = self._check_early_exits(intent)
-        if early_exit:
-            return early_exit
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 4. Resolve action
-        # ═══════════════════════════════════════════════════════════════════
-        action = self.rule_resolver.resolve_action(
-            intent=intent,
-            state=self.state,
-            ctx=ctx,
-            trace=trace
-        )
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 5. Resolve transition
-        # ═══════════════════════════════════════════════════════════════════
-        next_state = self.rule_resolver.resolve_transition(
-            intent=intent,
-            state=self.state,
-            ctx=ctx,
-            trace=trace
-        )
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 6. Fallback transitions
-        # ═══════════════════════════════════════════════════════════════════
-        if next_state is None:
-            next_state = self._fallback_transition(intent, ctx)
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 7. Apply transition
-        # ═══════════════════════════════════════════════════════════════════
-        if next_state and next_state != self.state:
-            self.state = next_state
-
-        return RuleResult(
-            action=action,
-            next_state=self.state,
-            trace=trace
-        )
-
-    def _create_context(self, intent: str) -> EvaluatorContext:
-        """Создать контекст для вычисления условий."""
-        return EvaluatorContext.from_state_machine(self, intent)
-
-    def _check_early_exits(self, intent: str) -> Optional[RuleResult]:
-        """Проверка на ранние выходы."""
-        state_config = self.config.get("states", {}).get(self.state, {})
-
-        if state_config.get("is_final"):
-            return RuleResult(action="stay", next_state=self.state)
-
-        return None
-
-    def _fallback_transition(
-        self,
-        intent: str,
-        ctx: EvaluatorContext
-    ) -> Optional[str]:
-        """Fallback: SPIN progress, data_complete."""
-        state_config = self.config.get("states", {}).get(self.state, {})
-        transitions = state_config.get("transitions", {})
-
-        # data_complete transition
-        if "data_complete" in transitions:
-            if registry.evaluate("data_complete", ctx):
-                target = transitions["data_complete"]
-                if isinstance(target, str):
-                    return target
-
-        return None
-
-    def update_data(self, data: dict):
-        """Обновить собранные данные."""
-        self.collected_data.update(data)
-
-    def reset(self):
-        """Сбросить состояние."""
-        self.state = "spin_situation"
-        self.collected_data = {}
-        self.intent_tracker.reset()
-
-    def get_state_info(self) -> dict:
-        """Информация о текущем состоянии."""
-        state_config = self.config.get("states", {}).get(self.state, {})
-        return {
-            "state": self.state,
-            "goal": state_config.get("goal", ""),
-            "spin_phase": state_config.get("spin_phase"),
-            "is_final": state_config.get("is_final", False),
-            "required_data": state_config.get("required_data", []),
-            "intent_tracker": self.intent_tracker.to_dict(),
-        }
+```
+src/
+├── conditions/
+│   ├── __init__.py                 # Агрегатор и экспорт
+│   ├── base.py                     # BaseContext Protocol
+│   ├── registry.py                 # Generic ConditionRegistry
+│   ├── trace.py                    # EvaluationTrace, TraceCollector
+│   │
+│   ├── shared/                     # Переиспользуемые условия
+│   │   └── __init__.py
+│   │
+│   ├── state_machine/              # StateMachine домен
+│   │   ├── __init__.py
+│   │   ├── context.py              # EvaluatorContext
+│   │   ├── registry.py             # sm_registry, sm_condition
+│   │   └── conditions.py           # ~20 условий
+│   │
+│   ├── policy/                     # DialoguePolicy домен
+│   │   ├── __init__.py
+│   │   ├── context.py              # PolicyContext
+│   │   ├── registry.py             # policy_registry
+│   │   └── conditions.py           # ~15 условий
+│   │
+│   ├── fallback/                   # FallbackHandler домен
+│   │   ├── __init__.py
+│   │   ├── context.py              # FallbackContext
+│   │   ├── registry.py             # fallback_registry
+│   │   └── conditions.py           # ~12 условий
+│   │
+│   └── personalization/            # PersonalizationEngine домен
+│       ├── __init__.py
+│       ├── context.py              # PersonalizationContext
+│       ├── registry.py             # personalization_registry
+│       └── conditions.py           # ~20 условий
+│
+├── rules/
+│   ├── __init__.py
+│   └── resolver.py                 # RuleResolver, RuleResult
+│
+├── intent_tracker.py               # IntentTracker
+├── state_machine.py                # StateMachine
+└── config.py                       # SALES_CONFIG
 ```
 
 ---
 
-## Часть 4: УДАЛЕНИЕ ДУБЛИРОВАНИЯ
-
-### 4.1 Что удаляется
+## Часть 12: ПЛАН РЕАЛИЗАЦИИ
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  КОМПОНЕНТЫ К УДАЛЕНИЮ                                                       │
+│  ЭТАП 1: Foundation — Base и Registry                                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. StateMachine.last_intent                                                │
-│     - УДАЛИТЬ: self.last_intent = intent                                    │
-│     - ДОСТУП ЧЕРЕЗ: self.intent_tracker.last_intent                         │
+│  1.1 Создать src/conditions/:                                               │
+│      - base.py (BaseContext Protocol)                                       │
+│      - registry.py (Generic ConditionRegistry)                              │
+│      - trace.py (EvaluationTrace, TraceCollector)                           │
 │                                                                             │
-│  2. Bot.last_intent                                                         │
-│     - УДАЛИТЬ: self.last_intent = classified_intent                         │
-│     - ДОСТУП ЧЕРЕЗ: self.state_machine.intent_tracker.last_intent           │
+│  1.2 Написать unit-тесты для ConditionRegistry                              │
 │                                                                             │
-│  3. ObjectionFlowManager (ВЕСЬ КЛАСС)                                       │
-│     - УДАЛИТЬ: class ObjectionFlowManager                                   │
-│     - УДАЛИТЬ: self.objection_flow = ObjectionFlowManager()                 │
-│     - ЗАМЕНА:                                                               │
-│       objection_flow.objection_count → intent_tracker.objection_consecutive()│
-│       objection_flow.total_objections → intent_tracker.objection_total()    │
-│       objection_flow.record_objection() → автоматически через category      │
-│       objection_flow.reset_consecutive() → не нужен                         │
-│                                                                             │
-│  4. ContextEnvelope.last_intent                                             │
-│     - ЗАМЕНИТЬ: "last_intent" → "intent_tracker": tracker.to_dict()         │
-│                                                                             │
-│  5. Hardcoded списки интентов                                               │
-│     - УДАЛИТЬ: OBJECTION_INTENTS = [...]                                    │
-│     - УДАЛИТЬ: POSITIVE_INTENTS = {...}                                     │
-│     - УДАЛИТЬ: QUESTION_INTENTS = [...]                                     │
-│     - ЗАМЕНА: INTENT_CATEGORIES в config.py                                 │
-│                                                                             │
-│  6. Костыли в apply_rules()                                                 │
-│     - УДАЛИТЬ: if intent == "price_question" and ...                        │
-│     - ЗАМЕНА: условие has_pricing_data в config                             │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 4.2 Результат
-
-| Было | Стало |
-|------|-------|
-| 4+ источника last_intent | 1 источник: intent_tracker.last_intent |
-| ObjectionFlowManager класс | УДАЛЁН |
-| Ручной record_objection() | Автоматически через category |
-| Ручной reset_consecutive() | Не нужен (динамическое вычисление) |
-| Hardcoded OBJECTION_INTENTS | INTENT_CATEGORIES["objection"] |
-| Hardcoded POSITIVE_INTENTS | INTENT_CATEGORIES["positive"] |
-| if should_soft_close(): ... | условие objection_limit_reached |
-| 8+ if'ов в apply_rules() | 4 этапа: hooks → exit → action → state |
-
----
-
-## Часть 5: TOOLING И ВАЛИДАЦИЯ
-
-### 5.1 CI Валидация
-
-```python
-# scripts/validate_config.py
-
-#!/usr/bin/env python3
-"""
-Валидация конфигурации правил и условий.
-
-Запуск:
-    python scripts/validate_config.py
-    python scripts/validate_config.py --strict  # Fail on warnings
-"""
-
-import sys
-import argparse
-
-from src.conditions import registry
-from src.conditions.context import create_test_context
-from src.rules.resolver import RuleResolver
-from src.config import SALES_CONFIG
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--strict", action="store_true")
-    args = parser.parse_args()
-
-    print("=" * 60)
-    print("VALIDATING CONDITIONS AND RULES")
-    print("=" * 60)
-
-    errors = []
-    warnings = []
-
-    # 1. Validate conditions
-    print("\n1. Validating conditions...")
-    results = registry.validate_all(create_test_context)
-
-    print(f"   Passed: {len(results['passed'])}")
-    print(f"   Failed: {len(results['failed'])}")
-    print(f"   Errors: {len(results['errors'])}")
-
-    for fail in results["failed"]:
-        errors.append(f"Condition '{fail['name']}': {fail['reason']}")
-    for err in results["errors"]:
-        errors.append(f"Condition '{err['name']}': {err['error']}")
-
-    # 2. Validate config
-    print("\n2. Validating config...")
-    resolver = RuleResolver(SALES_CONFIG)
-    config_results = resolver.validate_config()
-
-    print(f"   Valid: {config_results['valid']}")
-    print(f"   Errors: {len(config_results['errors'])}")
-
-    errors.extend(config_results["errors"])
-    warnings.extend(config_results.get("warnings", []))
-
-    # 3. Summary
-    print("\n3. Registered conditions:")
-    print(f"   Total: {len(registry.list_all())}")
-    for cat in ["data", "intent", "counter", "state", "composite"]:
-        print(f"   {cat}: {len(registry.list_by_category(cat))}")
-
-    # 4. Result
-    print("\n" + "=" * 60)
-
-    if errors:
-        print("ERRORS:")
-        for err in errors:
-            print(f"  ✗ {err}")
-
-    if warnings:
-        print("WARNINGS:")
-        for warn in warnings:
-            print(f"  ⚠ {warn}")
-
-    if errors:
-        print("\n❌ VALIDATION FAILED")
-        sys.exit(1)
-
-    if warnings and args.strict:
-        print("\n❌ VALIDATION FAILED (strict)")
-        sys.exit(1)
-
-    print("\n✅ VALIDATION PASSED")
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### 5.2 Генератор документации
-
-```python
-# scripts/generate_docs.py
-
-#!/usr/bin/env python3
-"""
-Генерация документации по условиям и правилам.
-
-Запуск:
-    python scripts/generate_docs.py > docs/CONDITIONS.md
-"""
-
-from src.conditions import registry
-from src.config import SALES_CONFIG
-
-
-def main():
-    # Conditions
-    print(registry.get_documentation())
-    print("\n---\n")
-
-    # Rules
-    print("# Rules Configuration\n")
-
-    print("## Global Rules\n")
-    for intent, rule in SALES_CONFIG.get("global_rules", {}).items():
-        print(f"- `{intent}`: {_format_rule(rule)}")
-
-    print("\n## States\n")
-    for state_name, config in SALES_CONFIG.get("states", {}).items():
-        print(f"### {state_name}")
-        print(f"**Goal:** {config.get('goal', 'N/A')}\n")
-
-        if config.get("rules"):
-            print("**Rules:**")
-            for intent, rule in config["rules"].items():
-                print(f"- `{intent}`: {_format_rule(rule)}")
-            print()
-
-
-def _format_rule(rule) -> str:
-    if isinstance(rule, str):
-        return f"`{rule}`"
-    if rule is None:
-        return "_stay_"
-    if isinstance(rule, tuple):
-        return f"if `{rule[0]}` → `{rule[1]}`"
-    if isinstance(rule, list):
-        parts = []
-        for item in rule:
-            if isinstance(item, str):
-                parts.append(f"default: `{item}`")
-            elif isinstance(item, tuple):
-                parts.append(f"if `{item[0]}` → `{item[1]}`")
-        return " | ".join(parts)
-    return str(rule)
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### 5.3 Тесты условий
-
-```python
-# tests/test_conditions.py
-
-import pytest
-from src.conditions import registry
-from src.conditions.context import create_test_context
-
-
-class TestDataConditions:
-    """Тесты условий категории 'data'."""
-
-    def test_has_pricing_data_with_company_size(self):
-        ctx = create_test_context(
-            collected_data={"company_size": 10}
-        )
-        assert registry.evaluate("has_pricing_data", ctx) == True
-
-    def test_has_pricing_data_with_users_count(self):
-        ctx = create_test_context(
-            collected_data={"users_count": 5}
-        )
-        assert registry.evaluate("has_pricing_data", ctx) == True
-
-    def test_has_pricing_data_empty(self):
-        ctx = create_test_context(collected_data={})
-        assert registry.evaluate("has_pricing_data", ctx) == False
-
-    def test_is_large_company(self):
-        ctx = create_test_context(collected_data={"company_size": 100})
-        assert registry.evaluate("is_large_company", ctx) == True
-
-        ctx = create_test_context(collected_data={"company_size": 10})
-        assert registry.evaluate("is_large_company", ctx) == False
-
-    def test_data_complete(self):
-        ctx = create_test_context(missing_required_data=[])
-        assert registry.evaluate("data_complete", ctx) == True
-
-        ctx = create_test_context(missing_required_data=["company_size"])
-        assert registry.evaluate("data_complete", ctx) == False
-
-
-class TestIntentConditions:
-    """Тесты условий категории 'intent'."""
-
-    def test_price_repeated_3x(self):
-        from src.intent_tracker import IntentTracker
-
-        tracker = IntentTracker()
-        tracker.record("price_question", "spin_situation")
-        tracker.record("price_question", "spin_situation")
-        tracker.record("price_question", "spin_situation")
-
-        ctx = create_test_context(
-            current_intent="price_question",
-            intent_tracker=tracker
-        )
-
-        assert registry.evaluate("price_repeated_3x", ctx) == True
-
-    def test_price_repeated_not_enough(self):
-        from src.intent_tracker import IntentTracker
-
-        tracker = IntentTracker()
-        tracker.record("price_question", "spin_situation")
-        tracker.record("price_question", "spin_situation")
-
-        ctx = create_test_context(
-            current_intent="price_question",
-            intent_tracker=tracker
-        )
-
-        assert registry.evaluate("price_repeated_3x", ctx) == False
-
-
-class TestCounterConditions:
-    """Тесты условий категории 'counter'."""
-
-    def test_objection_limit_reached(self):
-        from src.intent_tracker import IntentTracker
-
-        tracker = IntentTracker()
-        tracker.record("objection_price", "close")
-        tracker.record("objection_price", "close")
-        tracker.record("objection_price", "close")
-
-        ctx = create_test_context(intent_tracker=tracker)
-
-        assert registry.evaluate("objection_limit_reached", ctx) == True
-
-    def test_early_conversation(self):
-        ctx = create_test_context(turn_number=2)
-        assert registry.evaluate("early_conversation", ctx) == True
-
-        ctx = create_test_context(turn_number=5)
-        assert registry.evaluate("early_conversation", ctx) == False
-
-
-class TestCompositeConditions:
-    """Тесты составных условий."""
-
-    def test_should_answer_price_has_data(self):
-        ctx = create_test_context(
-            collected_data={"company_size": 10},
-            current_intent="price_question"
-        )
-        assert registry.evaluate("should_answer_price", ctx) == True
-
-    def test_can_handle_with_roi(self):
-        ctx = create_test_context(
-            collected_data={
-                "company_size": 10,
-                "pain_point": "теряем клиентов"
-            }
-        )
-        assert registry.evaluate("can_handle_objection_with_roi", ctx) == True
-```
-
----
-
-## Часть 6: ПЛАН РЕАЛИЗАЦИИ
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 1: Foundation — Условия и Реестр                                       │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  1.1 Создать структуру src/conditions/:                                     │
-│      ├── __init__.py                                                        │
-│      ├── registry.py         (ConditionRegistry, @condition)                │
-│      ├── context.py          (EvaluatorContext, create_test_context)        │
-│      ├── trace.py            (EvaluationTrace, TraceCollector)              │
-│      ├── exceptions.py       (ConditionNotFoundError, etc.)                 │
-│      ├── data_conditions.py                                                 │
-│      ├── intent_conditions.py                                               │
-│      ├── counter_conditions.py                                              │
-│      ├── state_conditions.py                                                │
-│      └── composite_conditions.py                                            │
-│                                                                             │
-│  1.2 Определить ~25 базовых условий по категориям                           │
-│                                                                             │
-│  1.3 Написать unit-тесты (tests/test_conditions.py)                         │
-│                                                                             │
-│  Результат: Работающий реестр, 100% покрытие тестами                        │
+│  Результат: Базовая инфраструктура готова                                   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 2: IntentTracker — единый источник                                     │
+│  ЭТАП 2: StateMachine домен                                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  2.1 Создать src/intent_tracker.py:                                         │
-│      - IntentRecord dataclass                                               │
-│      - IntentTracker class                                                  │
-│      - Методы: record(), streak_count(), objection_*(), to_dict()           │
+│  2.1 Создать src/conditions/state_machine/:                                 │
+│      - context.py (EvaluatorContext)                                        │
+│      - registry.py (sm_registry, sm_condition)                              │
+│      - conditions.py (~20 условий)                                          │
 │                                                                             │
-│  2.2 Написать тесты (tests/test_intent_tracker.py)                          │
+│  2.2 Написать тесты для всех условий                                        │
 │                                                                             │
-│  Результат: Готовый IntentTracker для интеграции                            │
+│  Результат: SM условия готовы                                               │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 3: RuleResolver и конфигурация                                         │
+│  ЭТАП 3: IntentTracker и RuleResolver                                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  3.1 Создать src/rules/:                                                    │
-│      ├── __init__.py                                                        │
-│      ├── resolver.py         (RuleResolver, RuleResult)                     │
-│      └── validator.py        (validate_config)                              │
+│  3.1 Создать src/intent_tracker.py                                          │
+│  3.2 Создать src/rules/resolver.py                                          │
+│  3.3 Обновить src/config.py (SALES_CONFIG)                                  │
+│  3.4 Написать тесты                                                         │
 │                                                                             │
-│  3.2 Обновить src/config.py:                                                │
-│      - INTENT_CATEGORIES                                                    │
-│      - SPIN_COMMON_RULES, POST_SPIN_RULES                                   │
-│      - SALES_CONFIG с новым форматом                                        │
-│                                                                             │
-│  3.3 Написать тесты resolver'а                                              │
-│                                                                             │
-│  Результат: RuleResolver работает с Python conditions                       │
+│  Результат: Resolver работает с условиями                                   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 4: Интеграция в StateMachine                                          │
+│  ЭТАП 4: Интеграция StateMachine                                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  4.1 Рефакторинг apply_rules():                                             │
-│      - Использовать RuleResolver                                            │
-│      - Создавать EvaluatorContext                                           │
-│      - Поддержка трассировки                                                │
+│  4.1 Рефакторинг src/state_machine.py                                       │
+│  4.2 Удалить дублирование (last_intent, ObjectionFlowManager)               │
+│  4.3 Обновить Bot.py                                                        │
+│  4.4 Интеграционные тесты                                                   │
 │                                                                             │
-│  4.2 Удалить дублирование:                                                  │
-│      - SM.last_intent → intent_tracker                                      │
-│      - ObjectionFlowManager → удалить                                       │
-│      - Hardcoded списки → INTENT_CATEGORIES                                 │
-│      - Костыль price_question → условие                                     │
-│                                                                             │
-│  4.3 Обновить Bot.py:                                                       │
-│      - Удалить Bot.last_intent                                              │
-│      - Доступ через state_machine.intent_tracker                            │
-│                                                                             │
-│  4.4 Обновить ContextEnvelope                                               │
-│                                                                             │
-│  4.5 Обеспечить обратную совместимость (RuleResult с __iter__)              │
-│                                                                             │
-│  Результат: SM использует новую архитектуру, старый код работает            │
+│  Результат: SM работает на новой архитектуре                                │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 5: Tooling и CI                                                       │
+│  ЭТАП 5: Policy домен                                                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  5.1 Валидация:                                                             │
-│      - scripts/validate_config.py                                           │
-│      - Интеграция в CI pipeline (GitHub Actions / pre-commit)               │
+│  5.1 Создать src/conditions/policy/                                         │
+│  5.2 Рефакторинг DialoguePolicy                                             │
+│  5.3 Тесты                                                                  │
 │                                                                             │
-│  5.2 Документация:                                                          │
-│      - scripts/generate_docs.py                                             │
-│      - Автогенерация docs/CONDITIONS.md                                     │
-│                                                                             │
-│  5.3 IDE Support:                                                           │
-│      - Type hints везде                                                     │
-│      - Примеры использования                                                │
-│                                                                             │
-│  Результат: Полный tooling, ошибки ловятся на CI                            │
+│  Результат: DialoguePolicy на условиях                                      │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 6: Тестирование и миграция                                            │
+│  ЭТАП 6: Fallback домен                                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  6.1 Интеграционные тесты:                                                  │
-│      - tests/test_state_machine_integration.py                              │
-│      - Полные сценарии диалогов                                             │
+│  6.1 Создать src/conditions/fallback/                                       │
+│  6.2 Рефакторинг FallbackHandler                                            │
+│  6.3 Тесты                                                                  │
 │                                                                             │
-│  6.2 Симуляции:                                                             │
-│      - Запуск симуляций с трассировкой                                      │
-│      - Сравнение результатов до/после                                       │
-│      - Анализ трассировок                                                   │
-│                                                                             │
-│  6.3 Миграция существующих правил:                                          │
-│      - Конвертация всех правил в новый формат                               │
-│      - Удаление legacy кода                                                 │
-│                                                                             │
-│  Результат: Система полностью мигрирована, костыли удалены                  │
+│  Результат: FallbackHandler на условиях                                     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ЭТАП 7-9: Расширение (опционально, после стабилизации)                      │
+│  ЭТАП 7: Personalization домен                                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  Решение о необходимости принимается после успешного завершения 1-6.        │
-│  Если текущая архитектура решает проблемы — расширение не требуется.        │
+│  7.1 Создать src/conditions/personalization/                                │
+│  7.2 Рефакторинг PersonalizationEngine                                      │
+│  7.3 Тесты                                                                  │
 │                                                                             │
-│  7. DialoguePolicy:                                                         │
-│     - Добавить policy_conditions.py                                         │
-│     - PolicyContext dataclass                                               │
-│     - POLICY_RULES в config                                                 │
+│  Результат: PersonalizationEngine на условиях                               │
 │                                                                             │
-│  8. FallbackHandler:                                                        │
-│     - Добавить fallback_conditions.py                                       │
-│     - FallbackContext dataclass                                             │
-│     - FALLBACK_ESCALATION_RULES, DYNAMIC_CTA_RULES                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 8: Tooling и CI                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  9. PersonalizationEngine:                                                  │
-│     - Добавить personalization_conditions.py                                │
-│     - PersonalizationContext dataclass                                      │
-│     - MESSAGING_STYLE_RULES, VALUE_PROP_COMPONENTS                          │
+│  8.1 scripts/validate_conditions.py                                         │
+│  8.2 scripts/generate_docs.py                                               │
+│  8.3 CI pipeline                                                            │
+│  8.4 Симуляции с трассировкой                                               │
+│                                                                             │
+│  Результат: Полный tooling                                                  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Часть 7: ЛОГГИРОВАНИЕ ДЛЯ СИМУЛЯЦИЙ
+## Часть 13: РЕЗЮМЕ
 
-### 7.1 Формат вывода
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ФОРМАТ ДИАЛОГА С ТРАССИРОВКОЙ                                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  [Ход 3]                                                                    │
-│  Клиент: А сколько это стоит?                                               │
-│  Бот: Чтобы назвать точную цену, уточните сколько человек в команде?        │
-│    (state=spin_situation, intent=price_question, action=deflect_and_continue)
-│    [RULE] conditional → DEFAULT                                             │
-│           has_pricing_data=FAIL (company_size=None)                         │
-│           price_repeated_3x=FAIL (streak=1)                                 │
-│           → deflect_and_continue                                            │
-│                                                                             │
-│  [Ход 5]                                                                    │
-│  Клиент: Ну так сколько стоит-то?                                           │
-│  Бот: При команде из 10 человек стоимость составит 15000₸ в месяц.          │
-│    (state=spin_situation, intent=price_question, action=answer_with_facts)  │
-│    [RULE] conditional → MATCHED                                             │
-│           has_pricing_data=PASS (company_size=10)                           │
-│           → answer_with_facts                                               │
-│                                                                             │
-│  [Ход 7]                                                                    │
-│  Клиент: Расскажите про интеграции                                          │
-│  Бот: Мы интегрируемся с 1С, Kaspi, WhatsApp...                             │
-│    (state=spin_situation, intent=question_integrations)                     │
-│    [RULE] simple → answer_question                                          │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 7.2 Интеграция с симуляциями
-
-```python
-# В runner.py
-
-def _run_single(self, sim_id: int, persona_name: str) -> SimulationResult:
-    # Создаём коллектор трассировок
-    trace_collector = TraceCollector(simulation_id=sim_id)
-
-    # Передаём в StateMachine
-    sm = StateMachine(trace_collector=trace_collector)
-    bot = SalesBot(self.bot_llm, state_machine=sm)
-
-    # ... диалог ...
-
-    # Получаем статистику
-    trace_summary = trace_collector.get_summary()
-
-    return SimulationResult(
-        ...,
-        trace_summary=trace_summary
-    )
-```
-
----
-
-## Часть 8: РЕЗЮМЕ
-
-### 8.1 Что имеем сейчас
-
-- Rules — простые строки
-- Категории интентов — hardcoded списки в коде
-- Условная логика — костыли в state_machine.py
-- last_intent дублируется в 4+ местах
-- ObjectionFlowManager — отдельный класс
-- Каждый новый случай = новый if
-
-### 8.2 Что получим
-
-- **Условия** — Python-функции с типами, IDE support, дебаг
-- **Правила** — декларативный маппинг в config.py
-- **IntentTracker** — единственный источник истории
-- **Трассировка** — понятно что проверялось и почему
-- **Валидация** — ошибки ловятся на CI, не в runtime
-- **Каждый новый случай** = функция + строка в config
-
-### 8.3 Сравнение подходов
-
-| Аспект | JSON DSL | Python Conditions |
-|--------|----------|-------------------|
-| **Типизация** | Нет | Полная (mypy) |
-| **IDE Support** | Нет | Autocomplete, go-to-def |
-| **Debugging** | Логи | Breakpoints, stack traces |
-| **Runtime errors** | Много | Минимум |
-| **Читаемость условий** | `{"$and": [...]}` | `def has_data(ctx)` |
-| **Документация** | Ручная | Автогенерация |
-| **Тестирование** | Нужен контекст | Обычный pytest |
-
-### 8.4 Решённые проблемы
+### Решённые проблемы
 
 | # | Проблема | Решение |
 |---|----------|---------|
 | 1 | JSON DSL без типов | Python-функции с @condition |
-| 2 | Hardcoded OBJECTION_INTENTS | INTENT_CATEGORIES в config |
-| 3 | Нет отслеживания серий | IntentTracker.streak_count() |
-| 4 | Дублирование rules в SPIN | **SPIN_COMMON_RULES unpacking |
-| 5 | 8+ if'ов в apply_rules() | RuleResolver |
-| 6 | last_intent в 4+ местах | IntentTracker (единый) |
-| 7 | ObjectionFlowManager | IntentTracker.objection_*() |
-| 8 | Runtime ошибки условий | Валидация на старте, CI |
-| 9 | Сложно дебажить | Breakpoints, stack traces |
-| 10 | Нет документации | Автогенерация из docstrings |
+| 2 | Единый evaluator для всех контекстов (SRP) | Доменные реестры |
+| 3 | Open-Closed нарушен | Новый домен = новый реестр |
+| 4 | Type safety отсутствует | Generic[TContext], mypy |
+| 5 | Условия смешиваются | Изоляция по доменам |
+| 6 | Hardcoded OBJECTION_INTENTS | INTENT_CATEGORIES |
+| 7 | last_intent в 4+ местах | IntentTracker |
+| 8 | ObjectionFlowManager | IntentTracker.objection_*() |
+| 9 | Runtime ошибки | Валидация на старте |
+| 10 | Сложно дебажить | Breakpoints, stack traces |
+
+### Сравнение подходов
+
+| Аспект | Один ConditionEvaluator | Доменные реестры |
+|--------|-------------------------|------------------|
+| **SRP** | Нарушен | Соблюдён |
+| **Type Safety** | Runtime ошибки | Compile-time (mypy) |
+| **Open-Closed** | Изменять evaluator | Добавить новый домен |
+| **Изоляция** | Всё смешано | По доменам |
+| **IDE Support** | Слабый | Полный |
+| **Тестирование** | Сложно | Просто |
+
+### Итоговая архитектура
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ИТОГОВАЯ АРХИТЕКТУРА                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐│
+│  │ StateMachine  │  │DialoguePolicy │  │FallbackHandler│  │Personalization││
+│  │    Domain     │  │    Domain     │  │    Domain     │  │    Domain     ││
+│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├───────────────┤│
+│  │EvaluatorCtx   │  │ PolicyCtx     │  │ FallbackCtx   │  │PersonalizCtx  ││
+│  │ sm_registry   │  │policy_registry│  │fallback_reg   │  │personal_reg   ││
+│  │ ~20 conditions│  │~15 conditions │  │~12 conditions │  │~20 conditions ││
+│  └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘│
+│         │                  │                  │                  │         │
+│         └──────────────────┴──────────────────┴──────────────────┘         │
+│                                    │                                        │
+│                                    ▼                                        │
+│                         ┌─────────────────────┐                             │
+│                         │    BaseContext      │                             │
+│                         │     (Protocol)      │                             │
+│                         │  shared conditions  │                             │
+│                         └─────────────────────┘                             │
+│                                    │                                        │
+│                                    ▼                                        │
+│                    ┌───────────────────────────────┐                        │
+│                    │    ConditionRegistry<T>       │                        │
+│                    │    (Generic, Type-safe)       │                        │
+│                    └───────────────────────────────┘                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
