@@ -601,7 +601,390 @@ SALES_STATES = {
     },
     # ... остальные состояния
 }
-Часть 7: РЕЗЮМЕ
+Часть 7: ЛОГГИРОВАНИЕ ДЛЯ СИМУЛЯЦИЙ
+
+7.1 Цель
+При запуске 50 симуляций нужно точно понимать:
+- Почему бот выбрал конкретный action
+- Какие условия проверялись и какой был результат
+- Какой контекст был на момент принятия решения
+- Почему переход пошёл в одно состояние, а не в другое
+
+7.2 Уровни логирования
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           УРОВНИ ЛОГОВ                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  DEBUG   — Детали каждой проверки условия (для отладки конкретной итерации) │
+│  INFO    — Финальные решения: action, transition, matched condition         │
+│  WARNING — Fallback на default (условия не сработали)                       │
+│  EVENT   — Бизнес-события для аналитики (state_transition, rule_matched)    │
+│  METRIC  — Числовые метрики (conditions_checked, evaluation_time_ms)        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+7.3 Что логируем
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. ВХОД В RESOLVER                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  logger.debug("Resolving action",                                           │
+│      intent="price_question",                                               │
+│      state="spin_situation",                                                │
+│      rule_type="conditional",        # "simple" | "conditional"             │
+│      conditions_count=2                                                     │
+│  )                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  2. КОНТЕКСТ ДЛЯ EVALUATOR                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  logger.debug("Evaluation context",                                         │
+│      collected_data={"company_size": 10, "pain_point": "теряем клиентов"},  │
+│      state="spin_situation",                                                │
+│      spin_phase="situation",                                                │
+│      intent_streak={"price_question": 2},                                   │
+│      last_intent="info_provided"                                            │
+│  )                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  3. ПРОВЕРКА КАЖДОГО УСЛОВИЯ                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  logger.debug("Condition evaluated",                                        │
+│      condition_index=0,                                                     │
+│      condition_type="has_any",                                              │
+│      condition_params=["company_size", "users_count"],                      │
+│      result=True,                      # True | False                       │
+│      matched_field="company_size"      # какое поле сработало (для has_any) │
+│  )                                                                          │
+│                                                                             │
+│  logger.debug("Condition evaluated",                                        │
+│      condition_index=1,                                                     │
+│      condition_type="intent_repeated",                                      │
+│      condition_params={"min": 3},                                           │
+│      result=False,                                                          │
+│      actual_streak=2                   # текущее значение streak            │
+│  )                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  4. ФИНАЛЬНОЕ РЕШЕНИЕ                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  # Условие сработало                                                        │
+│  logger.info("Action resolved",                                             │
+│      intent="price_question",                                               │
+│      action="answer_with_facts",                                            │
+│      resolution="condition_matched",   # "condition_matched" | "default"    │
+│      matched_condition_index=0,                                             │
+│      matched_condition_type="has_any"                                       │
+│  )                                                                          │
+│                                                                             │
+│  # Ни одно условие не сработало → default                                   │
+│  logger.warning("Action resolved via default",                              │
+│      intent="price_question",                                               │
+│      action="deflect_and_continue",                                         │
+│      resolution="default",                                                  │
+│      conditions_checked=2,                                                  │
+│      all_conditions_failed=True                                             │
+│  )                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  5. TRANSITION RESOLVER (аналогично)                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  logger.info("Transition resolved",                                         │
+│      intent="demo_request",                                                 │
+│      from_state="close",                                                    │
+│      to_state="success",                                                    │
+│      resolution="transition_rule_matched",                                  │
+│      matched_condition_type="state_in"                                      │
+│  )                                                                          │
+│                                                                             │
+│  # Fallback на обычные transitions                                          │
+│  logger.info("Transition resolved",                                         │
+│      intent="demo_request",                                                 │
+│      from_state="spin_situation",                                           │
+│      to_state="close",                                                      │
+│      resolution="transitions_fallback"  # transition_rules не сработали     │
+│  )                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+7.4 Бизнес-события (EVENT)
+
+# Для аналитики симуляций
+logger.event("conditional_rule_triggered",
+    intent="price_question",
+    condition_type="has_any",
+    action="answer_with_facts",
+    simulation_id=42
+)
+
+logger.event("conditional_rule_default_used",
+    intent="price_question",
+    action="deflect_and_continue",
+    reason="no_pricing_data",
+    simulation_id=42
+)
+
+7.5 Метрики (METRIC)
+
+# Производительность evaluator
+logger.metric("condition_evaluation",
+    conditions_checked=3,
+    evaluation_time_ms=0.5,
+    intent="price_question"
+)
+
+# Статистика по правилам
+logger.metric("conditional_rules_stats",
+    total_evaluations=150,
+    conditions_matched=87,
+    defaults_used=63,
+    simulation_batch_id="batch_001"
+)
+
+7.6 Формат вывода для симуляций
+
+Логи conditional rules встраиваются прямо в секцию диалогов.
+Каждый ход показывает rule resolution для быстрой отладки.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ФОРМАТ ДИАЛОГА С RULE RESOLUTION                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  [Ход 3]                                                                    │
+│  Клиент: А сколько это стоит?                                               │
+│  Бот: Чтобы назвать точную цену, уточните сколько человек в команде?        │
+│    (state=spin_situation, intent=price_question, action=deflect_and_continue)│
+│    [RULE] conditional → DEFAULT                                             │
+│           has_any(company_size,users_count)=FAIL                            │
+│           intent_repeated(3)=FAIL (streak=1)                                │
+│                                                                             │
+│  [Ход 5]                                                                    │
+│  Клиент: Ну так сколько стоит-то?                                           │
+│  Бот: При команде из 10 человек стоимость составит 15000₸ в месяц.          │
+│    (state=spin_situation, intent=price_question, action=answer_with_facts)  │
+│    [RULE] conditional → MATCHED[0]                                          │
+│           has_any(company_size,users_count)=PASS (company_size=10)          │
+│                                                                             │
+│  [Ход 7]                                                                    │
+│  Клиент: Расскажите про интеграции                                          │
+│  Бот: Мы интегрируемся с 1С, Kaspi, WhatsApp...                             │
+│    (state=spin_situation, intent=question_integrations, action=answer_and_continue)
+│    [RULE] simple → answer_and_continue                                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Формат строки [RULE]:
+- "simple → action"           — простое правило (строка)
+- "conditional → MATCHED[N]"  — сработало условие N
+- "conditional → DEFAULT"     — ни одно условие не сработало
+- "none → continue_current_goal" — правило не найдено
+
+Детали условий показываются только для conditional rules.
+Формат: condition_type(params)=PASS/FAIL (details)
+
+7.6.1 Реализация: как rule info попадает в отчёт
+
+1. StateMachine.apply_rules() возвращает расширенный результат:
+
+# Было:
+return action, next_state
+
+# Стало:
+return action, next_state, rule_info
+
+# Где rule_info:
+{
+    "rule_type": "conditional",      # "simple" | "conditional" | "none"
+    "resolution": "condition_matched", # "condition_matched" | "default" | "simple"
+    "matched_index": 0,              # индекс сработавшего условия (или None)
+    "conditions_evaluated": [        # список проверенных условий
+        {
+            "type": "has_any",
+            "params": ["company_size", "users_count"],
+            "result": True,
+            "details": {"matched_field": "company_size", "value": 10}
+        },
+        # ... остальные условия (если первое не сработало)
+    ]
+}
+
+2. Runner записывает rule_info в turn_data:
+
+# В runner.py _run_single()
+turn_data = {
+    "turn": turn + 1,
+    "client": client_message,
+    "bot": bot_result.get("response", ""),
+    "state": bot_result.get("state", ""),
+    "intent": bot_result.get("intent", ""),
+    "action": bot_result.get("action", ""),
+    "rule_info": bot_result.get("rule_info", {}),  # NEW
+}
+
+3. ReportGenerator форматирует rule_info:
+
+# В report.py _section_full_dialogues()
+def _format_rule_info(self, rule_info: Dict) -> List[str]:
+    """Форматирует rule_info для отчёта"""
+    lines = []
+
+    rule_type = rule_info.get("rule_type", "none")
+    resolution = rule_info.get("resolution", "")
+
+    if rule_type == "simple":
+        lines.append(f"    [RULE] simple → {rule_info.get('action', '?')}")
+
+    elif rule_type == "conditional":
+        if resolution == "condition_matched":
+            idx = rule_info.get("matched_index", 0)
+            lines.append(f"    [RULE] conditional → MATCHED[{idx}]")
+        else:
+            lines.append(f"    [RULE] conditional → DEFAULT")
+
+        # Детали условий
+        for cond in rule_info.get("conditions_evaluated", []):
+            result = "PASS" if cond["result"] else "FAIL"
+            params = ",".join(str(p) for p in cond["params"]) if isinstance(cond["params"], list) else str(cond["params"])
+            detail = f" ({cond['details']})" if cond.get("details") else ""
+            lines.append(f"           {cond['type']}({params})={result}{detail}")
+
+    else:
+        lines.append(f"    [RULE] none → continue_current_goal")
+
+    return lines
+
+7.7 Конфигурация уровня логирования
+
+# settings.yaml
+logging:
+  level: INFO                    # Production: INFO, Debug: DEBUG
+  conditional_rules:
+    enabled: true                # Включить детальное логирование rules
+    level: DEBUG                 # Уровень для conditional rules
+    log_context: true            # Логировать полный контекст
+    log_each_condition: true     # Логировать каждое условие
+
+# Или через environment
+CONDITIONAL_RULES_LOG_LEVEL=DEBUG
+
+7.8 Класс RuleLogger (обёртка)
+
+class RuleLogger:
+    """
+    Специализированный логгер для conditional rules.
+    Упрощает логирование и добавляет контекст симуляции.
+    """
+
+    def __init__(self, simulation_id: Optional[int] = None):
+        self.simulation_id = simulation_id
+        self.enabled = settings.get_nested("logging.conditional_rules.enabled", True)
+        self.log_context = settings.get_nested("logging.conditional_rules.log_context", True)
+        self.log_each_condition = settings.get_nested("logging.conditional_rules.log_each_condition", True)
+
+    def log_resolution_start(self, intent: str, rule_type: str, state: str):
+        """Начало разрешения правила"""
+        if not self.enabled:
+            return
+        logger.debug("Resolving rule",
+            intent=intent,
+            rule_type=rule_type,
+            state=state,
+            simulation_id=self.simulation_id
+        )
+
+    def log_context(self, context: Dict):
+        """Логирование контекста evaluator"""
+        if not self.enabled or not self.log_context:
+            return
+        logger.debug("Evaluation context",
+            **context,
+            simulation_id=self.simulation_id
+        )
+
+    def log_condition_result(
+        self,
+        index: int,
+        condition_type: str,
+        params: Any,
+        result: bool,
+        details: Optional[Dict] = None
+    ):
+        """Результат проверки одного условия"""
+        if not self.enabled or not self.log_each_condition:
+            return
+        log_data = {
+            "condition_index": index,
+            "condition_type": condition_type,
+            "params": params,
+            "result": result,
+            "simulation_id": self.simulation_id
+        }
+        if details:
+            log_data.update(details)
+        logger.debug("Condition evaluated", **log_data)
+
+    def log_resolution_result(
+        self,
+        intent: str,
+        result: str,
+        resolution: str,  # "condition_matched" | "default" | "simple_rule"
+        matched_index: Optional[int] = None,
+        matched_type: Optional[str] = None
+    ):
+        """Финальный результат разрешения"""
+        if not self.enabled:
+            return
+
+        log_fn = logger.info if resolution == "condition_matched" else logger.warning
+        log_fn("Rule resolved",
+            intent=intent,
+            result=result,
+            resolution=resolution,
+            matched_condition_index=matched_index,
+            matched_condition_type=matched_type,
+            simulation_id=self.simulation_id
+        )
+
+7.9 Интеграция с SimulationRunner
+
+# В runner.py
+def _run_single(self, sim_id: int, persona_name: str) -> SimulationResult:
+    ...
+    # Создаём логгер для этой симуляции
+    rule_logger = RuleLogger(simulation_id=sim_id)
+
+    # Передаём в бота
+    bot = SalesBot(self.bot_llm, rule_logger=rule_logger)
+    ...
+
+# В state_machine.py
+class StateMachine:
+    def __init__(self, rule_logger: Optional[RuleLogger] = None):
+        ...
+        self.rule_logger = rule_logger or RuleLogger()
+
+7.10 Пример полного лога одного хода
+
+[12:34:56] DEBUG - Resolving rule [intent=price_question, rule_type=conditional, state=spin_situation, simulation_id=10]
+[12:34:56] DEBUG - Evaluation context [collected_data={company_size: 10}, state=spin_situation, spin_phase=situation, intent_streak={price_question: 2}, simulation_id=10]
+[12:34:56] DEBUG - Condition evaluated [condition_index=0, condition_type=has_any, params=['company_size', 'users_count'], result=True, matched_field=company_size, simulation_id=10]
+[12:34:56] INFO - Rule resolved [intent=price_question, result=answer_with_facts, resolution=condition_matched, matched_condition_index=0, matched_condition_type=has_any, simulation_id=10]
+
+Часть 8: РЕЗЮМЕ
 Что имеем сейчас
 Rules — простые строки
 Условная логика — hardcoded костыли в state_machine.py
