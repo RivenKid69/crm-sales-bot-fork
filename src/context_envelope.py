@@ -501,6 +501,19 @@ class ContextEnvelopeBuilder:
         collected = sm.collected_data
         envelope.missing_data = [f for f in required if not collected.get(f)]
 
+        # Phase 4: Fill from IntentTracker if available
+        if hasattr(sm, 'intent_tracker'):
+            tracker = sm.intent_tracker
+            envelope.last_intent = tracker.last_intent
+            envelope.total_turns = tracker.turn_number
+
+            # Get intent history from tracker
+            envelope.intent_history = [r.intent for r in tracker.history[-5:]]
+
+            # Get objection stats from tracker
+            envelope.total_objections = tracker.objection_total()
+            envelope.objection_count = tracker.objection_consecutive()
+
     def _fill_from_context_window(self, envelope: ContextEnvelope) -> None:
         """Заполнить данные из ContextWindow (Level 1-3)."""
         cw = self.context_window

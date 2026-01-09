@@ -6,12 +6,27 @@ State Machine — управление состояниями диалога
 - Обработка возражений: handle_objection
 - Финальные состояния: success, soft_close
 - Circular Flow: возврат назад по фазам (с защитой от злоупотреблений)
+- Conditional Rules: условные правила через RuleResolver (Phase 4)
+
+Phase 4 Integration (ARCHITECTURE_UNIFIED_PLAN.md):
+- IntentTracker: единый источник истории интентов
+- RuleResolver: разрешение conditional rules
+- EvaluatorContext: типизированный контекст для условий
 """
 
-from typing import Tuple, Dict, Optional, List
+from typing import Tuple, Dict, Optional, List, Any, Iterator
+from dataclasses import dataclass, field
+
 from config import SALES_STATES, QUESTION_INTENTS, DISAMBIGUATION_CONFIG
 from feature_flags import flags
 from logger import logger
+
+# Phase 4: Conditional Rules imports
+from src.intent_tracker import IntentTracker, INTENT_CATEGORIES
+from src.conditions.state_machine.context import EvaluatorContext
+from src.conditions.state_machine.registry import sm_registry
+from src.rules.resolver import RuleResolver, RuleResult as ResolverRuleResult
+from src.conditions.trace import EvaluationTrace, TraceCollector, Resolution
 
 
 # SPIN-фазы и их порядок
@@ -36,113 +51,69 @@ SPIN_PROGRESS_INTENTS = {
 # Интенты для возврата назад
 GO_BACK_INTENTS = ["go_back", "correct_info"]
 
-# Интенты возражений
-OBJECTION_INTENTS = [
+# Интенты возражений (для обратной совместимости)
+# Canonical source is now INTENT_CATEGORIES["objection"] from intent_tracker.py
+OBJECTION_INTENTS = INTENT_CATEGORIES.get("objection", [
     "objection_price",
     "objection_competitor",
     "objection_no_time",
     "objection_think",
-]
+])
+
+# Положительные интенты (сбрасывают счётчик возражений)
+# Canonical source is now INTENT_CATEGORIES["positive"]
+POSITIVE_INTENTS = set(INTENT_CATEGORIES.get("positive", [
+    "agreement", "demo_request", "callback_request", "contact_provided",
+    "consultation_request", "situation_provided", "problem_revealed",
+    "implication_acknowledged", "need_expressed", "info_provided",
+    "question_features", "question_integrations", "comparison",
+    "greeting", "gratitude",
+]))
 
 
-class ObjectionFlowManager:
+# =============================================================================
+# Phase 4: RuleResult for StateMachine
+# =============================================================================
+
+@dataclass
+class RuleResult:
     """
-    Управление возражениями с защитой от зацикливания.
+    Result of rule resolution.
 
-    Ограничивает количество последовательных возражений,
-    после которых переходим в soft_close.
+    Supports tuple unpacking for backward compatibility:
+        action, state = sm.apply_rules(intent)
 
     Attributes:
-        objection_count: Количество возражений в текущей серии
-        total_objections: Общее количество возражений за диалог
-        objection_history: История возражений (тип, состояние)
-        MAX_CONSECUTIVE_OBJECTIONS: Максимум последовательных возражений
-        MAX_TOTAL_OBJECTIONS: Максимум возражений за диалог
+        action: The action to take
+        next_state: The next state (or current if None returned)
+        trace: Optional evaluation trace for debugging
     """
+    action: str
+    next_state: str
+    trace: Optional[EvaluationTrace] = None
 
-    MAX_CONSECUTIVE_OBJECTIONS = 3  # Максимум подряд
-    MAX_TOTAL_OBJECTIONS = 5        # Максимум за весь диалог
+    def __iter__(self) -> Iterator[Any]:
+        """Support tuple unpacking: action, state = result"""
+        yield self.action
+        yield self.next_state
 
-    def __init__(self):
-        """Инициализация менеджера"""
-        self.reset()
-
-    def reset(self) -> None:
-        """Сброс для нового разговора"""
-        self.objection_count: int = 0
-        self.total_objections: int = 0
-        self.objection_history: List[tuple] = []
-        self.last_state_before_objection: Optional[str] = None
-
-    def record_objection(self, objection_type: str, state: str) -> None:
-        """
-        Записать возражение.
-
-        Args:
-            objection_type: Тип возражения (objection_price, etc.)
-            state: Состояние в котором было возражение
-        """
-        self.objection_count += 1
-        self.total_objections += 1
-        self.objection_history.append((objection_type, state))
-
-        if self.last_state_before_objection is None:
-            self.last_state_before_objection = state
-
-        logger.info(
-            "Objection recorded",
-            type=objection_type,
-            consecutive=self.objection_count,
-            total=self.total_objections
-        )
-
-    def reset_consecutive(self) -> None:
-        """Сбросить счётчик последовательных возражений (при положительном интенте)"""
-        self.objection_count = 0
-        self.last_state_before_objection = None
-
-    def should_soft_close(self) -> bool:
-        """
-        Проверить нужно ли мягко закрывать диалог.
-
-        Returns:
-            True если превышен лимит возражений
-        """
-        if self.objection_count >= self.MAX_CONSECUTIVE_OBJECTIONS:
-            logger.info(
-                "Consecutive objection limit reached",
-                count=self.objection_count,
-                limit=self.MAX_CONSECUTIVE_OBJECTIONS
-            )
-            return True
-
-        if self.total_objections >= self.MAX_TOTAL_OBJECTIONS:
-            logger.info(
-                "Total objection limit reached",
-                total=self.total_objections,
-                limit=self.MAX_TOTAL_OBJECTIONS
-            )
-            return True
-
-        return False
-
-    def get_return_state(self) -> Optional[str]:
-        """
-        Получить состояние для возврата после успешной отработки возражения.
-
-        Returns:
-            Состояние до начала возражений или None
-        """
-        return self.last_state_before_objection
-
-    def get_stats(self) -> Dict:
-        """Получить статистику для аналитики"""
-        return {
-            "consecutive_objections": self.objection_count,
-            "total_objections": self.total_objections,
-            "history": self.objection_history,
-            "return_state": self.last_state_before_objection,
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        result = {
+            "action": self.action,
+            "next_state": self.next_state,
         }
+        if self.trace:
+            result["trace"] = self.trace.to_dict()
+        return result
+
+
+# =============================================================================
+# Objection limits (constants)
+# =============================================================================
+
+MAX_CONSECUTIVE_OBJECTIONS = 3  # Максимум подряд
+MAX_TOTAL_OBJECTIONS = 5        # Максимум за весь диалог
 
 
 class CircularFlowManager:
@@ -245,12 +216,35 @@ class CircularFlowManager:
 
 
 class StateMachine:
-    def __init__(self):
+    """
+    State Machine for managing dialogue states.
+
+    Phase 4 Integration:
+    - Uses IntentTracker for unified intent history
+    - Supports conditional rules via RuleResolver
+    - Provides EvaluatorContext for condition evaluation
+    """
+
+    def __init__(self, enable_tracing: bool = False):
+        """
+        Initialize StateMachine.
+
+        Args:
+            enable_tracing: If True, collect EvaluationTrace for debugging
+        """
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None  # Текущая SPIN-фаза (если в SPIN flow)
         self.circular_flow = CircularFlowManager()  # Менеджер возвратов
-        self.objection_flow = ObjectionFlowManager()  # Менеджер возражений
+
+        # Phase 4: IntentTracker replaces ObjectionFlowManager
+        self.intent_tracker = IntentTracker()
+
+        # Phase 4: RuleResolver for conditional rules
+        self._resolver = RuleResolver(sm_registry)
+        self._enable_tracing = enable_tracing
+        self._trace_collector = TraceCollector() if enable_tracing else None
+        self._last_trace: Optional[EvaluationTrace] = None
 
         # Disambiguation state
         self.in_disambiguation: bool = False
@@ -258,16 +252,42 @@ class StateMachine:
         self.pre_disambiguation_state: Optional[str] = None
         self.turns_since_last_disambiguation: int = 999  # Большое число = давно не было
 
-        # Для контекстной классификации
+        # Для контекстной классификации (backward compat - also accessible via intent_tracker)
         self.last_action: Optional[str] = None
-        self.last_intent: Optional[str] = None
+
+        # State before objection (for returning after handling)
+        self._state_before_objection: Optional[str] = None
+
+    @property
+    def last_intent(self) -> Optional[str]:
+        """Get last intent from tracker (backward compat property)."""
+        return self.intent_tracker.last_intent
+
+    @last_intent.setter
+    def last_intent(self, value: Optional[str]) -> None:
+        """Setter exists for backward compat but does nothing.
+        Use intent_tracker.record() instead."""
+        pass  # Intent is set via intent_tracker.record()
+
+    @property
+    def turn_number(self) -> int:
+        """Get current turn number from tracker."""
+        return self.intent_tracker.turn_number
 
     def reset(self):
+        """Reset for new conversation."""
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None
         self.circular_flow.reset()
-        self.objection_flow.reset()
+
+        # Phase 4: Reset IntentTracker
+        self.intent_tracker.reset()
+
+        # Reset tracing
+        if self._trace_collector:
+            self._trace_collector.clear()
+        self._last_trace = None
 
         # Reset disambiguation state
         self.in_disambiguation = False
@@ -276,7 +296,64 @@ class StateMachine:
         self.turns_since_last_disambiguation = 999
 
         self.last_action = None
-        self.last_intent = None
+        self._state_before_objection = None
+
+    # =========================================================================
+    # Phase 4: Objection tracking via IntentTracker
+    # =========================================================================
+
+    def _get_objection_stats(self) -> Dict:
+        """
+        Get objection statistics from IntentTracker.
+
+        Replaces ObjectionFlowManager.get_stats().
+        """
+        return {
+            "consecutive_objections": self.intent_tracker.objection_consecutive(),
+            "total_objections": self.intent_tracker.objection_total(),
+            "history": [
+                (r.intent, r.state)
+                for r in self.intent_tracker.get_intents_by_category("objection")
+            ],
+            "return_state": self._state_before_objection,
+        }
+
+    def _check_objection_limit(self) -> bool:
+        """
+        Check if objection limit has been reached.
+
+        Replaces ObjectionFlowManager.should_soft_close().
+        """
+        consecutive = self.intent_tracker.objection_consecutive()
+        total = self.intent_tracker.objection_total()
+
+        if consecutive >= MAX_CONSECUTIVE_OBJECTIONS:
+            logger.info(
+                "Consecutive objection limit reached",
+                count=consecutive,
+                limit=MAX_CONSECUTIVE_OBJECTIONS
+            )
+            return True
+
+        if total >= MAX_TOTAL_OBJECTIONS:
+            logger.info(
+                "Total objection limit reached",
+                total=total,
+                limit=MAX_TOTAL_OBJECTIONS
+            )
+            return True
+
+        return False
+
+    # Backward compatibility property for objection_flow
+    @property
+    def objection_flow(self) -> 'ObjectionFlowAdapter':
+        """
+        Backward compatibility adapter for objection_flow access.
+
+        Returns an adapter that delegates to IntentTracker methods.
+        """
+        return ObjectionFlowAdapter(self)
 
     def update_data(self, data: Dict):
         """Сохраняем извлечённые данные"""
@@ -434,10 +511,18 @@ class StateMachine:
         """
         Определяем действие и следующее состояние.
 
+        Phase 4 Pipeline:
+        1. Record intent in IntentTracker (BEFORE conditions)
+        2. Build EvaluatorContext for condition evaluation
+        3. Apply priority-based rule resolution
+        4. Return (action, next_state) with optional trace
+
         Порядок приоритетов:
         0. Финальное состояние
         1. Rejection — критический интент
-        2. State-specific rules (включая deflect_and_continue для SPIN)
+        1.5. Go Back — возврат назад по фазам
+        1.7. Возражения с защитой от зацикливания (via IntentTracker)
+        2. State-specific rules (с поддержкой conditional rules)
         3. Общий обработчик вопросов (QUESTION_INTENTS)
         4. SPIN-специфичная логика
         5. Переходы по интенту
@@ -448,15 +533,40 @@ class StateMachine:
         Returns:
             Tuple[str, str]: (action, next_state)
         """
+        # =====================================================================
+        # Phase 4 STEP 1: Record intent in IntentTracker FIRST
+        # This must happen BEFORE any condition evaluation
+        # =====================================================================
+        self.intent_tracker.record(intent, self.state)
+
+        # =====================================================================
+        # Phase 4 STEP 2: Build EvaluatorContext for conditions
+        # =====================================================================
         config = SALES_STATES.get(self.state, {})
         transitions = config.get("transitions", {})
         rules = config.get("rules", {})
         spin_phase = self._get_current_spin_phase()
 
+        # Build context for condition evaluation
+        ctx = EvaluatorContext.from_state_machine(self, intent, config)
+
+        # Create trace if tracing is enabled
+        trace = None
+        if self._enable_tracing and self._trace_collector:
+            trace = self._trace_collector.create_trace(
+                rule_name=intent,
+                intent=intent,
+                state=self.state,
+                domain="state_machine"
+            )
+
         # =====================================================================
         # ПРИОРИТЕТ 0: Финальное состояние
         # =====================================================================
         if config.get("is_final"):
+            if trace:
+                trace.set_result("final", Resolution.SIMPLE)
+            self._last_trace = trace
             return "final", self.state
 
         # =====================================================================
@@ -465,6 +575,9 @@ class StateMachine:
         if intent == "rejection":
             if "rejection" in transitions:
                 next_state = transitions["rejection"]
+                if trace:
+                    trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+                self._last_trace = trace
                 return f"transition_to_{next_state}", next_state
 
         # =====================================================================
@@ -474,74 +587,97 @@ class StateMachine:
         if intent in GO_BACK_INTENTS and flags.circular_flow:
             prev_state = self.circular_flow.go_back(self.state)
             if prev_state:
+                if trace:
+                    trace.set_result("go_back", Resolution.SIMPLE)
+                self._last_trace = trace
                 return "go_back", prev_state
             # Если возврат невозможен — продолжаем обычную обработку
 
         # =====================================================================
         # ПРИОРИТЕТ 1.7: Возражения с защитой от зацикливания
+        # Phase 4: Now using IntentTracker methods instead of ObjectionFlowManager
         # =====================================================================
         if intent in OBJECTION_INTENTS:
-            # Записываем возражение
-            self.objection_flow.record_objection(intent, self.state)
+            # Save state before objection for potential return
+            if self._state_before_objection is None:
+                self._state_before_objection = self.state
 
-            # Проверяем лимит возражений
-            if self.objection_flow.should_soft_close():
+            logger.info(
+                "Objection recorded",
+                type=intent,
+                consecutive=self.intent_tracker.objection_consecutive(),
+                total=self.intent_tracker.objection_total()
+            )
+
+            # Проверяем лимит возражений через IntentTracker
+            if self._check_objection_limit():
+                if trace:
+                    trace.set_result("objection_limit_reached", Resolution.CONDITION_MATCHED, "objection_limit_reached")
+                self._last_trace = trace
                 return "objection_limit_reached", "soft_close"
 
             # Иначе обрабатываем через transitions (handle_objection или soft_close)
             if intent in transitions:
                 next_state = transitions[intent]
+                if trace:
+                    trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+                self._last_trace = trace
                 return f"transition_to_{next_state}", next_state
 
-        # Сбрасываем счётчик последовательных возражений при положительных интентах
-        # Полный список включает:
-        # - Явное согласие и запросы: agreement, demo_request, callback_request, contact_provided
-        # - SPIN-прогресс: situation_provided, problem_revealed, implication_acknowledged, need_expressed
-        # - Информационные: info_provided, consultation_request
-        # - Вопросы (показывают интерес): question_features, question_integrations, price_question, comparison
-        POSITIVE_INTENTS = {
-            # Явное согласие и запросы
-            "agreement", "demo_request", "callback_request", "contact_provided",
-            "consultation_request",
-            # SPIN-прогресс (клиент даёт информацию = прогресс)
-            "situation_provided", "problem_revealed", "implication_acknowledged",
-            "need_expressed", "info_provided",
-            # Вопросы показывают интерес (хотя слабее чем agreement)
-            "question_features", "question_integrations", "comparison",
-            # Благодарность и приветствие тоже не должны считаться возражениями
-            "greeting", "gratitude",
-        }
+        # Phase 4: Reset state_before_objection on positive intents
         if intent in POSITIVE_INTENTS:
-            self.objection_flow.reset_consecutive()
+            self._state_before_objection = None
 
         # =====================================================================
-        # ПРИОРИТЕТ 2: State-specific rules
-        # Позволяет состояниям переопределять поведение для конкретных интентов,
-        # например deflect_and_continue для вопросов о цене в SPIN-фазах
+        # ПРИОРИТЕТ 2: State-specific rules (с поддержкой conditional rules)
+        # Phase 4: Now supports conditional rules via RuleResolver
         # =====================================================================
         if intent in rules:
-            rule_action = rules[intent]
+            rule_value = rules[intent]
 
-            # =================================================================
-            # КРИТИЧЕСКИЙ FIX: Price Deflect Loop Bug
-            # =================================================================
-            # Проблема: Когда клиент спрашивает о цене (price_question) в SPIN-фазах,
-            # бот всегда возвращает deflect_and_continue ("Сколько человек?"),
-            # даже если company_size/users_count УЖЕ ИЗВЕСТНЫ.
-            #
-            # Симуляция #10: клиент спросил "почем?" 6 раз, бот каждый раз
-            # deflect'ил, хотя users_count=10 был извлечён на ходе 7.
-            #
-            # Решение: Если price_question И данные для расчёта цены есть —
-            # отвечаем на вопрос (answer_with_facts), а не deflect'им.
-            # =================================================================
-            if intent == "price_question" and rule_action == "deflect_and_continue":
-                has_pricing_data = self.collected_data.get("company_size") or \
-                                  self.collected_data.get("users_count")
-                if has_pricing_data:
-                    return "answer_with_facts", self.state
+            # Check if this is a conditional rule (list or dict) or simple string
+            if isinstance(rule_value, (list, dict)):
+                # Phase 4: Use RuleResolver for conditional rules
+                action = self._resolver.resolve_action(
+                    intent=intent,
+                    state_rules=rules,
+                    global_rules={},
+                    ctx=ctx,
+                    state=self.state,
+                    trace=trace
+                )
+                self._last_trace = trace
+                return action, self.state
+            else:
+                # Simple string rule - apply price_question fix
+                rule_action = rule_value
 
-            return rule_action, self.state
+                # =============================================================
+                # Phase 4: Price question fix via has_pricing_data condition
+                # Now using the registered condition instead of hardcoded check
+                # =============================================================
+                if intent == "price_question" and rule_action == "deflect_and_continue":
+                    # Use the registered condition from sm_registry
+                    try:
+                        has_pricing_data = sm_registry.evaluate("has_pricing_data", ctx, trace)
+                        if has_pricing_data:
+                            if trace:
+                                trace.set_result("answer_with_facts", Resolution.CONDITION_MATCHED, "has_pricing_data")
+                            self._last_trace = trace
+                            return "answer_with_facts", self.state
+                    except Exception as e:
+                        # Fallback to direct check if condition fails
+                        logger.warning("Condition evaluation failed, using fallback", error=str(e))
+                        if self.collected_data.get("company_size") or self.collected_data.get("users_count"):
+                            if trace:
+                                trace.set_result("answer_with_facts", Resolution.CONDITION_MATCHED, "has_pricing_data_fallback")
+                            self._last_trace = trace
+                            return "answer_with_facts", self.state
+
+                if trace:
+                    trace.set_result(rule_action, Resolution.SIMPLE)
+                self._last_trace = trace
+                return rule_action, self.state
 
         # =====================================================================
         # ПРИОРИТЕТ 3: Общий обработчик вопросов
@@ -549,6 +685,9 @@ class StateMachine:
         # =====================================================================
         if intent in QUESTION_INTENTS:
             next_state = transitions.get(intent, self.state)
+            if trace:
+                trace.set_result("answer_question", Resolution.SIMPLE)
+            self._last_trace = trace
             return "answer_question", next_state
 
         # =====================================================================
@@ -560,6 +699,9 @@ class StateMachine:
                 if self._is_spin_phase_progression(intent_phase, spin_phase):
                     if intent in transitions:
                         next_state = transitions[intent]
+                        if trace:
+                            trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+                        self._last_trace = trace
                         return f"transition_to_{next_state}", next_state
 
             # Автопереход по data_complete только если:
@@ -575,6 +717,9 @@ class StateMachine:
                         skip_transitions = next_config.get("transitions", {})
                         if "data_complete" in skip_transitions:
                             next_state = skip_transitions["data_complete"]
+                    if trace:
+                        trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+                    self._last_trace = trace
                     return f"transition_to_{next_state}", next_state
 
         # =====================================================================
@@ -582,6 +727,9 @@ class StateMachine:
         # =====================================================================
         if intent in transitions:
             next_state = transitions[intent]
+            if trace:
+                trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+            self._last_trace = trace
             return f"transition_to_{next_state}", next_state
 
         # =====================================================================
@@ -592,6 +740,9 @@ class StateMachine:
             missing = [f for f in required if not self.collected_data.get(f)]
             if not missing and "data_complete" in transitions:
                 next_state = transitions["data_complete"]
+                if trace:
+                    trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+                self._last_trace = trace
                 return f"transition_to_{next_state}", next_state
 
         # =====================================================================
@@ -599,6 +750,9 @@ class StateMachine:
         # =====================================================================
         if "any" in transitions:
             next_state = transitions["any"]
+            if trace:
+                trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+            self._last_trace = trace
             return f"transition_to_{next_state}", next_state
 
         # =====================================================================
@@ -606,10 +760,27 @@ class StateMachine:
         # =====================================================================
         # Всегда возвращаем валидный action, а не имя состояния
         # generator.py использует spin_phase из контекста для выбора нужного шаблона
+        if trace:
+            trace.set_result("continue_current_goal", Resolution.DEFAULT)
+        self._last_trace = trace
         return "continue_current_goal", self.state
 
+    def get_last_trace(self) -> Optional[EvaluationTrace]:
+        """Get the last evaluation trace (if tracing is enabled)."""
+        return self._last_trace
+
+    def get_trace_summary(self) -> Optional[Dict]:
+        """Get summary of all traces (if tracing is enabled)."""
+        if self._trace_collector:
+            return self._trace_collector.get_summary().to_dict()
+        return None
+
     def process(self, intent: str, extracted_data: Dict = None) -> Dict:
-        """Обработать интент, вернуть результат"""
+        """
+        Обработать интент, вернуть результат.
+
+        Phase 4: Uses IntentTracker for history and stats.
+        """
         prev_state = self.state
 
         if extracted_data:
@@ -617,6 +788,9 @@ class StateMachine:
 
         action, next_state = self.apply_rules(intent)
         self.state = next_state
+
+        # Store last_action for context
+        self.last_action = action
 
         # Обновляем spin_phase
         self.spin_phase = self._get_current_spin_phase()
@@ -641,7 +815,7 @@ class StateMachine:
         optional = config.get("optional_data", [])
         optional_missing = [f for f in optional if not self.collected_data.get(f)]
 
-        return {
+        result = {
             "action": action,
             "prev_state": prev_state,
             "next_state": next_state,
@@ -652,8 +826,117 @@ class StateMachine:
             "is_final": config.get("is_final", False),
             "spin_phase": self.spin_phase,
             "circular_flow": self.circular_flow.get_stats(),
-            "objection_flow": self.objection_flow.get_stats(),
+            # Phase 4: Use IntentTracker-based stats (backward compat)
+            "objection_flow": self._get_objection_stats(),
         }
+
+        # Phase 4: Add trace if enabled
+        if self._enable_tracing and self._last_trace:
+            result["trace"] = self._last_trace.to_dict()
+
+        return result
+
+    # =========================================================================
+    # Phase 4: Context building for external systems
+    # =========================================================================
+
+    def build_evaluator_context(self, intent: str) -> EvaluatorContext:
+        """
+        Build an EvaluatorContext for condition evaluation.
+
+        Useful for external systems that need to evaluate conditions
+        against the current StateMachine state.
+
+        Args:
+            intent: Current intent being processed
+
+        Returns:
+            EvaluatorContext with current state data
+        """
+        config = SALES_STATES.get(self.state, {})
+        return EvaluatorContext.from_state_machine(self, intent, config)
+
+
+# =============================================================================
+# Phase 4: ObjectionFlowAdapter for backward compatibility
+# =============================================================================
+
+class ObjectionFlowAdapter:
+    """
+    Adapter for backward compatibility with ObjectionFlowManager API.
+
+    Delegates all calls to IntentTracker methods.
+    This allows existing code that uses sm.objection_flow to continue working.
+    """
+
+    MAX_CONSECUTIVE_OBJECTIONS = MAX_CONSECUTIVE_OBJECTIONS
+    MAX_TOTAL_OBJECTIONS = MAX_TOTAL_OBJECTIONS
+
+    def __init__(self, state_machine: StateMachine):
+        """Initialize with reference to StateMachine."""
+        self._sm = state_machine
+
+    @property
+    def objection_count(self) -> int:
+        """Consecutive objections count."""
+        return self._sm.intent_tracker.objection_consecutive()
+
+    @property
+    def total_objections(self) -> int:
+        """Total objections in conversation."""
+        return self._sm.intent_tracker.objection_total()
+
+    @property
+    def objection_history(self) -> List[tuple]:
+        """History of objections as (type, state) tuples."""
+        return [
+            (r.intent, r.state)
+            for r in self._sm.intent_tracker.get_intents_by_category("objection")
+        ]
+
+    @property
+    def last_state_before_objection(self) -> Optional[str]:
+        """State before first objection in current series."""
+        return self._sm._state_before_objection
+
+    def reset(self) -> None:
+        """Reset objection tracking (for new conversation)."""
+        self._sm.intent_tracker.reset()
+        self._sm._state_before_objection = None
+
+    def record_objection(self, objection_type: str, state: str) -> None:
+        """
+        Record an objection.
+
+        Note: In Phase 4, recording happens automatically in apply_rules()
+        via intent_tracker.record(). This method exists for backward compat.
+        """
+        # Save state before objection if not already saved
+        if self._sm._state_before_objection is None:
+            self._sm._state_before_objection = state
+        # The actual recording is done in apply_rules via intent_tracker.record()
+
+    def reset_consecutive(self) -> None:
+        """
+        Reset consecutive objections counter.
+
+        Note: In Phase 4, this happens automatically when a positive intent
+        is recorded. This method exists for backward compat.
+        """
+        # Reset the state_before_objection to signal series end
+        self._sm._state_before_objection = None
+
+    def should_soft_close(self) -> bool:
+        """Check if objection limit reached."""
+        return self._sm._check_objection_limit()
+
+    def get_return_state(self) -> Optional[str]:
+        """Get state to return to after handling objection."""
+        return self._sm._state_before_objection
+
+    def get_stats(self) -> Dict:
+        """Get objection statistics."""
+        return self._sm._get_objection_stats()
 
 
 if __name__ == "__main__":

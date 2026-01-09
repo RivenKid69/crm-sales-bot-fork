@@ -2,7 +2,7 @@
 Тесты для завершённой функциональности:
 1. objection_price в SPIN-фазах
 2. Симметричная обработка возражений в greeting
-3. ObjectionFlowManager (защита от зацикливания)
+3. ObjectionFlowAdapter (защита от зацикливания)
 4. Унификация info_provided/situation_provided
 5. go_back из soft_close
 6. question_features/question_integrations в rules SPIN-фаз
@@ -18,9 +18,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import pytest
 from state_machine import (
     StateMachine,
-    ObjectionFlowManager,
+    ObjectionFlowAdapter,  # Phase 4: replaced ObjectionFlowManager
     CircularFlowManager,
     OBJECTION_INTENTS,
+    MAX_CONSECUTIVE_OBJECTIONS,  # Phase 4: now module-level constants
+    MAX_TOTAL_OBJECTIONS,
 )
 from config import SALES_STATES
 from feature_flags import flags
@@ -119,62 +121,76 @@ class TestSymmetricObjectionHandlingInGreeting:
 
 
 # =============================================================================
-# 3. ObjectionFlowManager (защита от зацикливания)
+# 3. ObjectionFlowAdapter (защита от зацикливания)
+# Phase 4: Now using IntentTracker internally via StateMachine
 # =============================================================================
 
-class TestObjectionFlowManager:
-    """Тесты: ObjectionFlowManager защищает от зацикливания возражений."""
+class TestObjectionFlowAdapter:
+    """Тесты: ObjectionFlowAdapter защищает от зацикливания возражений.
+
+    Phase 4: ObjectionFlowAdapter is now a compatibility layer that
+    delegates to IntentTracker methods. Tests now use StateMachine.
+    """
 
     @pytest.fixture
-    def manager(self):
-        return ObjectionFlowManager()
+    def sm(self):
+        """StateMachine fixture - adapter is accessed via sm.objection_flow."""
+        return StateMachine()
 
-    def test_initial_state(self, manager):
+    def test_initial_state(self, sm):
         """Начальное состояние должно быть нулевым."""
-        assert manager.objection_count == 0
-        assert manager.total_objections == 0
-        assert manager.last_state_before_objection is None
+        adapter = sm.objection_flow
+        assert adapter.objection_count == 0
+        assert adapter.total_objections == 0
+        assert adapter.last_state_before_objection is None
 
-    def test_record_objection(self, manager):
-        """Запись возражения увеличивает счётчики."""
-        manager.record_objection("objection_price", "spin_situation")
+    def test_record_objection(self, sm):
+        """Запись возражения увеличивает счётчики (via apply_rules)."""
+        sm.state = "spin_situation"
+        sm.apply_rules("objection_price")  # Records via IntentTracker
 
-        assert manager.objection_count == 1
-        assert manager.total_objections == 1
-        assert manager.last_state_before_objection == "spin_situation"
+        adapter = sm.objection_flow
+        assert adapter.objection_count == 1
+        assert adapter.total_objections == 1
+        assert adapter.last_state_before_objection == "spin_situation"
 
-    def test_consecutive_limit(self, manager):
+    def test_consecutive_limit(self, sm):
         """После MAX_CONSECUTIVE_OBJECTIONS должен вернуть should_soft_close=True."""
-        for _ in range(ObjectionFlowManager.MAX_CONSECUTIVE_OBJECTIONS):
-            manager.record_objection("objection_price", "handle_objection")
+        sm.state = "handle_objection"
+        for i in range(MAX_CONSECUTIVE_OBJECTIONS):
+            sm.apply_rules(OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)])
 
-        assert manager.should_soft_close() is True
+        assert sm.objection_flow.should_soft_close() is True
 
-    def test_total_limit(self, manager):
+    def test_total_limit(self, sm):
         """После MAX_TOTAL_OBJECTIONS должен вернуть should_soft_close=True."""
+        sm.state = "handle_objection"
         # Записываем меньше consecutive, но больше total
-        for i in range(ObjectionFlowManager.MAX_TOTAL_OBJECTIONS):
-            manager.record_objection("objection_price", "handle_objection")
-            if i < ObjectionFlowManager.MAX_TOTAL_OBJECTIONS - 2:
-                manager.reset_consecutive()  # Сбрасываем consecutive
+        for i in range(MAX_TOTAL_OBJECTIONS):
+            sm.apply_rules(OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)])
+            if i < MAX_TOTAL_OBJECTIONS - 2:
+                sm.apply_rules("agreement")  # Сбрасываем consecutive
 
-        assert manager.should_soft_close() is True
+        assert sm.objection_flow.should_soft_close() is True
 
-    def test_reset_consecutive(self, manager):
-        """reset_consecutive сбрасывает только счётчик последовательных."""
-        manager.record_objection("objection_price", "spin_situation")
-        manager.record_objection("objection_price", "handle_objection")
+    def test_reset_consecutive(self, sm):
+        """Положительный интент сбрасывает только счётчик последовательных."""
+        sm.state = "handle_objection"
+        sm.apply_rules("objection_price")
+        sm.apply_rules("objection_price")
 
-        manager.reset_consecutive()
+        sm.apply_rules("agreement")  # Resets consecutive but not total
 
-        assert manager.objection_count == 0
-        assert manager.total_objections == 2  # Total не сбрасывается
+        adapter = sm.objection_flow
+        assert adapter.objection_count == 0
+        assert adapter.total_objections == 2  # Total не сбрасывается
 
-    def test_stats(self, manager):
+    def test_stats(self, sm):
         """get_stats возвращает корректную статистику."""
-        manager.record_objection("objection_price", "spin_situation")
+        sm.state = "spin_situation"
+        sm.apply_rules("objection_price")
 
-        stats = manager.get_stats()
+        stats = sm.objection_flow.get_stats()
 
         assert stats["consecutive_objections"] == 1
         assert stats["total_objections"] == 1
@@ -182,7 +198,7 @@ class TestObjectionFlowManager:
 
 
 class TestObjectionFlowInStateMachine:
-    """Тесты: ObjectionFlowManager интегрирован в StateMachine."""
+    """Тесты: ObjectionFlowAdapter интегрирован в StateMachine."""
 
     @pytest.fixture
     def sm(self):
@@ -191,14 +207,14 @@ class TestObjectionFlowInStateMachine:
     def test_objection_flow_exists(self, sm):
         """StateMachine должен иметь objection_flow."""
         assert hasattr(sm, "objection_flow")
-        assert isinstance(sm.objection_flow, ObjectionFlowManager)
+        assert isinstance(sm.objection_flow, ObjectionFlowAdapter)
 
     def test_objection_limit_triggers_soft_close(self, sm):
         """Превышение лимита возражений должно переводить в soft_close."""
         sm.state = "handle_objection"
 
         # Посылаем MAX_CONSECUTIVE_OBJECTIONS возражений
-        for _ in range(ObjectionFlowManager.MAX_CONSECUTIVE_OBJECTIONS):
+        for _ in range(MAX_CONSECUTIVE_OBJECTIONS):
             result = sm.process("objection_price")
 
         assert result["next_state"] == "soft_close"
@@ -207,7 +223,7 @@ class TestObjectionFlowInStateMachine:
     def test_positive_intent_resets_consecutive(self, sm):
         """Положительный интент сбрасывает consecutive counter."""
         sm.state = "handle_objection"
-        sm.objection_flow.record_objection("objection_price", "handle_objection")
+        sm.apply_rules("objection_price")  # Phase 4: use apply_rules instead
 
         # Клиент согласился
         sm.process("agreement")
