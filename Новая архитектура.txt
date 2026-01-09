@@ -1,0 +1,626 @@
+Conditional Rules: Полное резюме
+Часть 1: ТЕКУЩЕЕ СОСТОЯНИЕ
+1.1 Как работает система сейчас
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ТЕКУЩАЯ АРХИТЕКТУРА                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                              config.py
+                    ┌─────────────────────────┐
+                    │  SALES_STATES = {       │
+                    │    "spin_situation": {  │
+                    │      "rules": {         │
+                    │        "price_question":│──────► "deflect_and_continue"
+                    │        "greeting":      │──────► "acknowledge"
+                    │        "rejection":     │──────► "handle_rejection"
+                    │      }                  │            │
+                    │    }                    │            │
+                    │  }                      │            │
+                    └─────────────────────────┘            │
+                                                          │
+                                                          ▼
+                              state_machine.py            │
+                    ┌─────────────────────────┐           │
+                    │  def apply_rules():     │           │
+                    │                         │           │
+                    │    rule = rules[intent] │◄──────────┘
+                    │    return rule, state   │  ← Просто возвращает строку
+                    │                         │    Никакой логики!
+                    └─────────────────────────┘
+Ключевой момент: Rules — это просто строки. Одна строка = один action. Всегда.
+
+1.2 Проблема: Нужна условная логика
+Бизнес-требование: "Если клиент спросил о цене И мы уже знаем размер команды — ответить на вопрос. Если не знаем — спросить размер."
+
+
+                    ┌─────────────────────────────────────────┐
+                    │  Клиент: "Сколько стоит?"               │
+                    └─────────────────────────────────────────┘
+                                       │
+                                       ▼
+                    ┌─────────────────────────────────────────┐
+                    │  intent = "price_question"              │
+                    │  rule = "deflect_and_continue"          │
+                    └─────────────────────────────────────────┘
+                                       │
+                       ┌───────────────┴───────────────┐
+                       ▼                               ▼
+              Данных НЕТ                        Данные ЕСТЬ
+              collected_data = {}               collected_data = {
+                                                  company_size: 10
+                                                }
+                       │                               │
+                       ▼                               ▼
+              deflect_and_continue              deflect_and_continue
+              "Сколько человек?"                "Сколько человек?"
+                     ✓                                 ✗
+              ПРАВИЛЬНО                         НЕПРАВИЛЬНО!
+                                                Должен ответить на цену
+1.3 Текущее решение: Костыли в коде
+
+# state_machine.py — СЕЙЧАС
+
+def apply_rules(self, intent: str):
+    rules = config.get("rules", {})
+    
+    if intent in rules:
+        rule_action = rules[intent]
+        
+        # ═══════════════════════════════════════════════════════
+        # КОСТЫЛЬ #1: Price Deflect Loop Bug
+        # ═══════════════════════════════════════════════════════
+        if intent == "price_question" and rule_action == "deflect_and_continue":
+            has_pricing_data = self.collected_data.get("company_size") or \
+                              self.collected_data.get("users_count")
+            if has_pricing_data:
+                return "answer_with_facts", self.state
+        
+        # КОСТЫЛЬ #2: (будущий) Эскалация при повторах
+        # if intent == "price_question" and self.price_question_count > 3:
+        #     return "answer_with_range", self.state
+        
+        # КОСТЫЛЬ #3: (будущий) Competitor handling
+        # if intent == "comparison" and self.collected_data.get("competitor"):
+        #     return "compare_with_competitor", self.state
+        
+        return rule_action, self.state
+Проблемы:
+
+Проблема	Описание
+Hardcoded	Каждое условие = новый if в коде
+Не масштабируется	10 условий = 10 if'ов
+Логика размазана	Часть в config.py, часть в state_machine.py
+Сложно тестировать	Нужно поднимать весь SM для теста условия
+Сложно понять	Чтобы узнать поведение, нужно читать код
+1.4 Выявленные случаи где нужны условия
+Из анализа simulation_report.txt и кода:
+
+№	Интент	Условие	Результат
+1	price_question	Есть company_size/users_count	answer_with_facts (action)
+2	price_question	Повторился 3+ раз	answer_with_range (action)
+3	pricing_details	Есть company_size	answer_with_facts (action)
+4	comparison	Известен конкурент	compare_specific (action)
+5	objection_price	Есть pain_point + company_size	handle_with_roi (action)
+6	question_technical	Повторился 2+ раз	offer_documentation (action)
+7	demo_request	В фазе close	success (transition)
+Часть 2: ЦЕЛЬ РЕФАКТОРИНГА
+2.1 Что хотим получить
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ЦЕЛЕВАЯ АРХИТЕКТУРА                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                              config.py
+                    ┌──────────────────────────────────────┐
+                    │  "rules": { ... }                    │
+                    │  "transition_rules": { ... }         │
+                    └──────────────────────────────────────┘
+                                       │
+                                       ▼
+                              state_machine.py
+                    ┌──────────────────────────────────────┐
+                    │  def apply_rules():                  │
+                    │    action = _resolve_action(...)     │
+                    │    next_state = _resolve_transition(...) │
+                    │    return action, next_state         │
+                    └──────────────────────────────────────┘
+                                       │
+                                       ▼
+                    ┌──────────────────────────────────────┐
+                    │  _resolve_action(rule)               │
+                    │  _resolve_transition(rule)           │
+                    │    uses condition_evaluator          │
+                    └──────────────────────────────────────┘
+2.2 Принципы
+Принцип	Описание
+Декларативность	Вся логика описана в config.py, не в коде
+Единый источник правды	Хочешь узнать поведение — смотри config
+Разделение ответственности	rules отвечают только за action, transition_rules только за переходы
+Расширяемость	Новое условие = новый тип в resolver, используй везде
+Обратная совместимость	Старые правила-строки продолжают работать
+Тестируемость	Условия можно тестировать изолированно
+Отказоустойчивость	Жёсткая валидация в CI, мягкий fallback + лог/метрики в runtime
+Часть 3: ДЕТАЛЬНОЕ ОПИСАНИЕ РЕШЕНИЯ
+3.1 Формат rules и transition_rules (Schema)
+
+# Простое action-правило (обратная совместимость)
+"greeting": "acknowledge_and_continue"
+
+# Условное action-правило
+"price_question": {
+    "default": "deflect_and_continue",      # Действие по умолчанию
+    "conditions": [                          # Список условий (проверяются по порядку)
+        {
+            "when": { ... },                 # Условие (см. типы ниже)
+            "then": "answer_with_facts"      # Действие если условие true
+        },
+        {
+            "when": { ... },
+            "then": "another_action"
+        }
+    ]
+}
+
+# Простое transition-правило (переопределяет transitions)
+"demo_request": "success"
+
+# Условное transition-правило
+"demo_request": {
+    "conditions": [
+        {
+            "when": {"state_in": ["close"]},
+            "then": "success"
+        }
+    ],
+    "default": None  # None → использовать обычные transitions/SPIN-логику
+}
+3.2 Типы условий (Condition Types)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ТИПЫ УСЛОВИЙ                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  1. has_any                                                         │   │
+│  │     Проверяет: есть ли ЛЮБОЕ из указанных полей в collected_data    │   │
+│  │                                                                     │   │
+│  │     "when": {"has_any": ["company_size", "users_count"]}            │   │
+│  │                                                                     │   │
+│  │     collected_data = {}                    → False                  │   │
+│  │     collected_data = {company_size: 10}    → True                   │   │
+│  │     collected_data = {users_count: 5}      → True                   │   │
+│  │     collected_data = {pain_point: "..."}   → False                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  2. has_all                                                         │   │
+│  │     Проверяет: есть ли ВСЕ указанные поля в collected_data          │   │
+│  │                                                                     │   │
+│  │     "when": {"has_all": ["company_size", "pain_point"]}             │   │
+│  │                                                                     │   │
+│  │     collected_data = {company_size: 10}                → False      │   │
+│  │     collected_data = {company_size: 10, pain_point: "x"} → True     │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  3. intent_repeated                                                 │   │
+│  │     Проверяет: повторился ли интент N+ раз подряд (по умолчанию)    │   │
+│  │     или в окне последних N (scope="window")                         │   │
+│  │                                                                     │   │
+│  │     "when": {"intent_repeated": {"min": 3}}                         │   │
+│  │     "when": {"intent_repeated": {"min": 2, "scope": "window",        │   │
+│  │                                 "window": 5}}                       │   │
+│  │                                                                     │   │
+│  │     intent_streak["price_question"] = 2    → False                  │   │
+│  │     intent_streak["price_question"] = 3    → True                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  4. spin_phase_in                                                   │   │
+│  │     Проверяет: текущая SPIN-фаза в списке                           │   │
+│  │     Для presentation/close используйте state_in                     │   │
+│  │                                                                     │   │
+│  │     "when": {"spin_phase_in": ["implication", "need_payoff"]}        │   │
+│  │                                                                     │   │
+│  │     spin_phase = "situation"    → False                             │   │
+│  │     spin_phase = "need_payoff"  → True                              │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  5. state_in                                                        │   │
+│  │     Проверяет: текущее состояние в списке                           │   │
+│  │                                                                     │   │
+│  │     "when": {"state_in": ["presentation", "close"]}                 │   │
+│  │                                                                     │   │
+│  │     state = "spin_problem"         → False                          │   │
+│  │     state = "close"                → True                           │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  6. field_equals                                                    │   │
+│  │     Проверяет: поле равно конкретному значению                      │   │
+│  │                                                                     │   │
+│  │     "when": {"field_equals": {"urgency": "high"}}                   │   │
+│  │                                                                     │   │
+│  │     collected_data = {urgency: "low"}   → False                     │   │
+│  │     collected_data = {urgency: "high"}  → True                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  7. and / or (композиция)                                           │   │
+│  │     Комбинирует несколько условий                                   │   │
+│  │                                                                     │   │
+│  │     "when": {                                                       │   │
+│  │       "and": [                                                      │   │
+│  │         {"has_any": ["company_size"]},                              │   │
+│  │         {"state_in": ["presentation", "close"]}                     │   │
+│  │       ]                                                             │   │
+│  │     }                                                               │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+Контекст evaluator (минимальный набор):
+- collected_data
+- state
+- spin_phase
+- intent_history
+- intent_counts / intent_streak
+- last_intent
+3.3 Порядок проверки условий (rules/transition_rules)
+
+              Вход: rule/transition_rule с conditions
+                         │
+                         ▼
+         ┌───────────────────────────────┐
+         │  conditions[0]                │
+         │  when: {has_any: [...]}       │
+         └───────────────────────────────┘
+                         │
+                    True? ──────────────────► return conditions[0]["then"]
+                         │
+                       False
+                         │
+                         ▼
+         ┌───────────────────────────────┐
+         │  conditions[1]                │
+         │  when: {intent_repeated: 3}   │
+         └───────────────────────────────┘
+                         │
+                    True? ──────────────────► return conditions[1]["then"]
+                         │
+                       False
+                         │
+                         ▼
+         ┌───────────────────────────────┐
+         │  conditions[2]                │
+         │  ...                          │
+         └───────────────────────────────┘
+                         │
+                       False
+                         │
+                         ▼
+         ┌───────────────────────────────┐
+         │  return rule["default"]       │
+         └───────────────────────────────┘
+         
+         ВАЖНО: Первое сработавшее условие побеждает!
+         Порядок условий имеет значение.
+3.4 Порядок разрешения action и переходов
+
+Критические ранние выходы (до resolver'ов):
+- final
+- rejection
+- go_back
+- objections
+
+Action resolver:
+1) rules[intent] (str или conditional)
+2) QUESTION_INTENTS → answer_question
+3) default → continue_current_goal
+
+Transition resolver:
+1) transition_rules[intent] (str или conditional)
+2) SPIN progress / SPIN data_complete
+3) transitions[intent]
+4) non-SPIN data_complete
+5) transitions["any"]
+6) stay in current state
+Часть 4: ПРИМЕРЫ ПРИМЕНЕНИЯ
+4.1 Price Question (текущий баг)
+До:
+
+
+# config.py
+"price_question": "deflect_and_continue"
+
+# state_machine.py — КОСТЫЛЬ
+if intent == "price_question" and rule_action == "deflect_and_continue":
+    if self.collected_data.get("company_size"):
+        return "answer_with_facts", self.state
+После:
+
+
+# config.py — ВСЯ ЛОГИКА ЗДЕСЬ
+"price_question": {
+    "default": "deflect_and_continue",
+    "conditions": [
+        {
+            "when": {"has_any": ["company_size", "users_count"]},
+            "then": "answer_with_facts"
+        }
+    ]
+}
+
+# state_machine.py — БЕЗ КОСТЫЛЕЙ
+# Resolvers обрабатывают всё автоматически
+4.2 Эскалация при повторных вопросах о цене
+
+"price_question": {
+    "default": "deflect_and_continue",
+    "conditions": [
+        # Приоритет 1: Если данные есть — ответить
+        {
+            "when": {"has_any": ["company_size", "users_count"]},
+            "then": "answer_with_facts"
+        },
+        # Приоритет 2: Если спросил 3+ раз — дать диапазон
+        {
+            "when": {"intent_repeated": {"min": 3}},  # по умолчанию подряд
+            "then": "answer_with_price_range"
+        }
+    ]
+}
+Сценарий:
+
+
+Ход 1: "Сколько стоит?"     → deflect (данных нет, повторов 1)
+Ход 2: "Ну почем?"          → deflect (данных нет, повторов 2)
+Ход 3: "Цену скажи!"        → answer_with_price_range (повторов 3!)
+4.3 Умная обработка возражения о цене
+
+"objection_price": {
+    "default": "handle_price_objection_generic",
+    "conditions": [
+        # Если знаем боль и размер — показать ROI
+        {
+            "when": {"has_all": ["pain_point", "company_size"]},
+            "then": "handle_price_with_roi"
+        },
+        # Если только размер — сравнить с конкурентами
+        {
+            "when": {"has_any": ["company_size"]},
+            "then": "handle_price_with_comparison"
+        }
+    ]
+}
+Примечание: правила для objection_* размещаются в состоянии handle_objection,
+переход в него управляется transitions/transition_rules.
+4.4 Технические вопросы с эскалацией
+
+"question_technical": {
+    "default": "answer_technical",
+    "conditions": [
+        # Если спрашивает повторно — предложить документацию
+        {
+            "when": {"intent_repeated": {"min": 2}},
+            "then": "offer_documentation_link"
+        }
+    ]
+}
+4.5 Условный переход (transition_rules)
+
+"transition_rules": {
+    "demo_request": {
+        "conditions": [
+            {
+                "when": {"state_in": ["close"]},
+                "then": "success"
+            }
+        ],
+        "default": None
+    }
+}
+Комментарий: если условия не сработали, переход определяется обычными transitions/SPIN.
+Если transition_rules объявлены внутри конкретного state, state_in можно опустить.
+Часть 5: ПЛАН РЕАЛИЗАЦИИ
+5.1 Структура изменений
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ФАЙЛЫ ДЛЯ ИЗМЕНЕНИЯ                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  src/                                                                       │
+│  ├── state_machine.py          ← _resolve_action + _resolve_transition      │
+│  ├── config.py                 ← rules + transition_rules (conditional)     │
+│  ├── condition_evaluator.py    ← НОВЫЙ: логика проверки условий             │
+│  └── rule_validator.py         ← НОВЫЙ: валидация схемы правил              │
+│                                                                             │
+│  tests/                                                                     │
+│  ├── test_condition_evaluator.py  ← НОВЫЙ: unit-тесты условий               │
+│  ├── test_transition_rules.py     ← НОВЫЙ: интеграционные тесты             │
+│  └── test_state_machine.py        ← Обновить существующие тесты             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+5.2 Этапы
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 1: Схема config + контракт контекста                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Зафиксировать разделение rules vs transition_rules                      │
+│  2. Определить семантику intent_repeated (consecutive + window)             │
+│  3. Добавить condition state_in                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 2: Condition Evaluator (изолированный модуль)                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Создать src/condition_evaluator.py                                      │
+│  2. Реализовать все типы условий                                            │
+│  3. Написать unit-тесты для каждого типа                                    │
+│  4. Результат: модуль можно тестировать изолированно                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 3: Resolvers в State Machine                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Добавить _resolve_action() и _resolve_transition()                      │
+│  2. Интегрировать condition_evaluator                                       │
+│  3. Обеспечить обратную совместимость (str rules работают)                  │
+│  4. Удалить костыль price_question                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 4: Миграция config.py                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Конвертировать price_question в conditional format                      │
+│  2. Добавить условия для pricing_details                                    │
+│  3. Добавить transition_rules для условных переходов (demo_request и др.)   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 5: Тестирование                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Unit-тесты evaluator                                                    │
+│  2. Интеграционные тесты приоритетов action/transition                      │
+│  3. Проверка SPIN-прогресса и objections                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 6: Валидация                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Жёсткая схема в CI                                                     │
+│  2. Мягкий fallback + лог/метрики в runtime                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+5.3 Обратная совместимость
+
+def _resolve_action(self, rule: Union[str, Dict]) -> str:
+    """
+    Action resolver с обратной совместимостью.
+    """
+    # Обратная совместимость: строка работает как раньше
+    if isinstance(rule, str):
+        return rule
+
+    # Новый формат: dict с conditions
+    if isinstance(rule, dict):
+        for condition in rule.get("conditions", []):
+            if self.evaluator.evaluate(condition["when"], self._get_context()):
+                return condition["then"]
+        return rule.get("default", "continue_current_goal")
+
+    # Fallback
+    return "continue_current_goal"
+
+def _resolve_transition(self, rule: Union[str, Dict]) -> Optional[str]:
+    """
+    Transition resolver с обратной совместимостью.
+    """
+    # Обратная совместимость: строка = явный next_state
+    if isinstance(rule, str):
+        return rule
+
+    # Новый формат: dict с conditions
+    if isinstance(rule, dict):
+        for condition in rule.get("conditions", []):
+            if self.evaluator.evaluate(condition["when"], self._get_context()):
+                return condition["then"]
+        return rule.get("default")  # None → fallback на transitions/SPIN
+
+    # Fallback
+    return None
+Это значит:
+
+Все существующие "intent": "action" правила продолжают работать
+Все существующие transitions остаются источником переходов по умолчанию
+Можно мигрировать правила по одному
+Нет "big bang" миграции
+Часть 6: ОЖИДАЕМЫЕ РЕЗУЛЬТАТЫ
+6.1 До и После
+Аспект	До	После
+Где логика	config.py + state_machine.py	Только config.py (rules + transition_rules)
+Добавить условие	Писать if в коде	Добавить в config
+Понять поведение	Читать код SM	Читать config
+Тестировать условие	Поднимать весь SM	Unit-тест evaluator
+Количество костылей	Растёт	0
+6.2 Пример: Как будет выглядеть config.py
+
+SALES_STATES = {
+    "spin_situation": {
+        "goal": "Понять ситуацию клиента",
+        "transitions": { ... },
+        "rules": {
+            # Простые правила (обратная совместимость)
+            "greeting": "acknowledge_and_continue",
+            "small_talk": "small_talk_and_continue",
+            
+            # Условные правила (новый формат)
+            "price_question": {
+                "default": "deflect_and_continue",
+                "conditions": [
+                    {
+                        "when": {"has_any": ["company_size", "users_count"]},
+                        "then": "answer_with_facts"
+                    },
+                    {
+                        "when": {"intent_repeated": {"min": 3}},
+                        "then": "answer_with_price_range"
+                    }
+                ]
+            },
+            "pricing_details": {
+                "default": "deflect_and_continue",
+                "conditions": [
+                    {
+                        "when": {"has_any": ["company_size", "users_count"]},
+                        "then": "answer_with_facts"
+                    }
+                ]
+            }
+        }
+    },
+    "close": {
+        "goal": "Взять контакт или назначить демо",
+        "transitions": { ... },
+        "transition_rules": {
+            "demo_request": {
+                "conditions": [
+                    {
+                        "when": {"has_any": ["contact_info"]},
+                        "then": "success"
+                    }
+                ],
+                "default": None
+            }
+        }
+    },
+    # ... остальные состояния
+}
+Часть 7: РЕЗЮМЕ
+Что имеем сейчас
+Rules — простые строки
+Условная логика — hardcoded костыли в state_machine.py
+Логика размазана по файлам
+Каждый новый случай = новый if
+Что хотим
+Rules — декларативные объекты с условиями для action
+Transition_rules — декларативные условия для переходов
+Условная логика — в config.py
+Разделение action/transition
+Единый источник правды
+Каждый новый случай = строка в config
+Как достигнем
+Condition Evaluator — изолированный модуль проверки условий
+Action/Transition Resolvers — универсальные интерпретаторы правил в SM
+Миграция — постепенная, с обратной совместимостью
+Валидация — жёстко в CI, мягко в runtime
+Зачем это нужно
+Сейчас: 1 костыль (price_question)
+Через месяц: 5 костылей
+Через полгода: 20 костылей, код нечитаем
+С рефакторингом: 0 костылей навсегда
