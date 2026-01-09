@@ -303,12 +303,16 @@ TRANSITIONS — определяют state
 │  ИСТОРИЯ ИНТЕНТОВ (требует IntentTracker)                                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  14. intent_repeated — интент повторился N+ раз                             │
-│      # Подряд (consecutive) — по умолчанию                                  │
-│      "when": {"intent_repeated": {"min": 3}}                                │
+│  14. intent_streak — интент идёт подряд N+ раз (включая текущий)            │
+│      # Подряд — по умолчанию                                                │
+│      "when": {"intent_streak": {"min": 3}}   # на 3-м подряд сработает      │
 │                                                                             │
 │      # В окне последних N ходов                                             │
-│      "when": {"intent_repeated": {"min": 2, "scope": "window", "window": 5}}│
+│      "when": {"intent_streak": {"min": 2, "scope": "window", "window": 5}}  │
+│                                                                             │
+│      # ВАЖНО: record() вызывается ДО проверки условий.                      │
+│      # streak_count включает текущий интент.                                │
+│      # min:3 = "этот интент идёт уже 3-й раз подряд"                        │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  ВОЗРАЖЕНИЯ                                                                 │
@@ -334,7 +338,7 @@ TRANSITIONS — определяют state
 │      "when": {"and": [{"has_any": [...]}, {"state_in": [...]}]}             │
 │                                                                             │
 │  18. or — любое условие истинно                                             │
-│      "when": {"or": [{"has_any": [...]}, {"intent_repeated": 3}]}           │
+│      "when": {"or": [{"has_any": [...]}, {"intent_streak": {"min": 3}}]}           │
 │                                                                             │
 │  19. not — инверсия условия                                                 │
 │      "when": {"not": {"has_any": ["company_size"]}}                         │
@@ -342,39 +346,72 @@ TRANSITIONS — определяют state
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-3.2.1 IntentTracker (реализация для intent_repeated)
+3.2.1 IntentTracker (реализация для intent_streak)
 
 class IntentTracker:
     """
     Отслеживает историю интентов для conditional rules.
-    Реализует паттерн Sliding Window для эффективного подсчёта.
+
+    ВАЖНО: Контракт timing'а
+    ========================
+    record() вызывается В НАЧАЛЕ apply_rules(), ДО проверки условий.
+    Все методы возвращают значения ВКЛЮЧАЯ текущий записанный интент.
+
+    Пример:
+        Ход 1: price_question → record() → streak=1, min:3 → False
+        Ход 2: price_question → record() → streak=2, min:3 → False
+        Ход 3: price_question → record() → streak=3, min:3 → True ✓
     """
     MAX_HISTORY = 20
 
     def __init__(self):
         self.history: List[str] = []           # ["greeting", "price_question", ...]
-        self.consecutive: Dict[str, int] = {}  # {"price_question": 3}
-        self.last_intent: Optional[str] = None
+        self._streak_count: int = 0            # Текущая серия одинаковых интентов
+        self._last_intent: Optional[str] = None
 
     def record(self, intent: str) -> None:
-        """Записать интент (вызывается в начале process)"""
-        if intent == self.last_intent:
-            self.consecutive[intent] = self.consecutive.get(intent, 1) + 1
+        """
+        Записать интент. Вызывать В НАЧАЛЕ apply_rules().
+
+        После вызова streak_count() будет включать этот интент.
+        """
+        if intent == self._last_intent:
+            self._streak_count += 1
         else:
-            self.consecutive = {intent: 1}
+            self._streak_count = 1
 
         self.history.append(intent)
         if len(self.history) > self.MAX_HISTORY:
             self.history.pop(0)
 
-        self.last_intent = intent
+        self._last_intent = intent
 
-    def get_consecutive(self, intent: str) -> int:
-        return self.consecutive.get(intent, 0)
+    def streak_count(self, intent: str) -> int:
+        """
+        Сколько раз этот интент идёт подряд (включая текущий).
+
+        Для intent_streak: {min: N} проверяем streak_count(intent) >= N.
+        """
+        if intent == self._last_intent:
+            return self._streak_count
+        return 0
 
     def count_in_window(self, intent: str, window: int = 5) -> int:
+        """Сколько раз интент встречался в последних N ходах."""
         recent = self.history[-window:]
         return recent.count(intent)
+
+    @property
+    def last_intent(self) -> Optional[str]:
+        """Последний записанный интент."""
+        return self._last_intent
+
+    @property
+    def prev_intent(self) -> Optional[str]:
+        """Интент до текущего (для условия prev_intent_in)."""
+        if len(self.history) >= 2:
+            return self.history[-2]
+        return None
 
 # Интеграция в StateMachine:
 class StateMachine:
@@ -415,11 +452,16 @@ class EvaluatorContext:
         """
         Создать контекст для проверки условий.
 
-        ВАЖНО: prev_intent берётся ДО записи текущего интента в tracker.
+        ВАЖНО: Контракт timing'а
+        ========================
+        record() вызывается В НАЧАЛЕ apply_rules(), ДО создания контекста.
+        streak_count() включает текущий интент.
+        prev_intent берётся из history[-2] (до текущего).
+
         Порядок в apply_rules():
-            1. prev_intent = intent_tracker.last_intent  # сохраняем
-            2. intent_tracker.record(intent, state)      # записываем текущий
-            3. ctx = EvaluatorContext.from_state_machine(sm, intent)
+            1. intent_tracker.record(intent, state)      # записываем текущий
+            2. ctx = EvaluatorContext.from_state_machine(sm, intent)
+            3. # Теперь streak_count(intent) включает текущий
         """
         config = SALES_STATES.get(sm.state, {})
         required = config.get("required_data", [])
@@ -456,7 +498,7 @@ Mapping условий → поля контекста:
 │  current_intent_in     │  current_intent                                     │
 │  prev_intent           │  prev_intent                                        │
 │  prev_intent_in        │  prev_intent                                        │
-│  intent_repeated       │  intent_tracker.consecutive_count() / .in_window()  │
+│  intent_streak         │  intent_tracker.streak_count() / .count_in_window() │
 │  objection_count       │  intent_tracker.objection_consecutive() / .total()  │
 │  turn_number           │  turn_number (= len(intent_tracker.history))        │
 │  data_complete         │  missing_required_data (empty = complete)           │
@@ -478,7 +520,7 @@ Mapping условий → поля контекста:
                          ▼
          ┌───────────────────────────────┐
          │  conditions[1]                │
-         │  when: {intent_repeated: 3}   │
+         │  when: {intent_streak: min:3} │
          └───────────────────────────────┘
                          │
                     True? ──────────────────► return conditions[1]["then"]
@@ -550,7 +592,7 @@ SPIN_COMMON_RULES = {
         "conditions": [
             {"when": {"has_any": ["company_size", "users_count"]},
              "then": "answer_with_facts"},
-            {"when": {"intent_repeated": {"min": 3}},
+            {"when": {"intent_streak": {"min": 3}},  # 3-й раз подряд
              "then": "answer_with_price_range"}
         ]
     },
@@ -929,15 +971,20 @@ Transition resolver (подробно):
 │          return self.history[-1] if self.history else None                  │
 │                                                                             │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      # ЧТЕНИЕ — для условий intent_repeated                                 │
+│      # ЧТЕНИЕ — для условий intent_streak                                   │
 │      # ═══════════════════════════════════════════════════════════════════  │
 │                                                                             │
-│      def consecutive_count(self, intent: str) -> int:                       │
-│          """Сколько раз этот интент подряд (для intent_repeated: min: N)""" │
-│          return self._consecutive_cache.get(intent, 0)                      │
+│      def streak_count(self, intent: str) -> int:                            │
+│          """                                                                │
+│          Сколько раз этот интент идёт подряд (включая текущий).             │
+│          Для intent_streak: {min: N} проверяем streak_count(intent) >= N.   │
+│          """                                                                │
+│          if intent == self._last_intent:                                    │
+│              return self._streak_count                                      │
+│          return 0                                                           │
 │                                                                             │
-│      def in_window(self, intent: str, window: int = 5) -> int:              │
-│          """Сколько раз интент встречался в последних N ходах"""            │
+│      def count_in_window(self, intent: str, window: int = 5) -> int:        │
+│          """Сколько раз интент встречался в последних N ходах."""           │
 │          recent = self.history[-window:] if window else self.history        │
 │          return sum(1 for r in recent if r.intent == intent)                │
 │                                                                             │
@@ -990,7 +1037,7 @@ Transition resolver (подробно):
 │          """Сериализация для передачи в LLM context"""                      │
 │          return {                                                           │
 │              "last_intent": self._last_intent,                              │
-│              "consecutive_count": self._consecutive_cache.copy(),           │
+│              "current_streak": self._streak_count,  # Текущая серия         │
 │              "objection_consecutive": self.objection_consecutive(),         │
 │              "objection_total": self.objection_total(),                     │
 │              "recent_intents": [r.intent for r in self.history[-5:]]        │
@@ -999,7 +1046,7 @@ Transition resolver (подробно):
 │      def reset(self) -> None:                                               │
 │          """Сброс (для начала нового диалога)"""                            │
 │          self.history.clear()                                               │
-│          self._consecutive_cache.clear()                                    │
+│          self._streak_count = 0                                             │
 │          self._last_intent = None                                           │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -1063,7 +1110,7 @@ Transition resolver (подробно):
 │                                                                             │
 │      # Удалено (доступ через intent_tracker):                               │
 │      # - last_intent → intent_tracker.last_intent                           │
-│      # - intent_consecutive → intent_tracker.consecutive_count(intent)      │
+│      # - intent_streak → intent_tracker.streak_count(intent)                │
 │      # - intent_history → intent_tracker.history                            │
 │      # - objection_consecutive → intent_tracker.objection_consecutive()     │
 │      # - objection_total → intent_tracker.objection_total()                 │
@@ -1096,19 +1143,25 @@ Transition resolver (подробно):
 │      def evaluate(self, condition: Dict, ctx: EvaluatorContext) -> bool:    │
 │          ...                                                                │
 │                                                                             │
-│      def _eval_intent_repeated(self, params, ctx) -> bool:                  │
-│          """intent_repeated: {min: 3} или {min: 2, scope: "window", window: 5}"""
+│      def _eval_intent_streak(self, params, ctx) -> bool:                    │
+│          """                                                                │
+│          intent_streak: {min: 3} — интент идёт подряд минимум 3 раза.       │
+│          intent_streak: {min: 2, scope: "window", window: 5} — в окне.      │
+│                                                                             │
+│          ВАЖНО: streak_count() включает текущий интент (record() до eval).  │
+│          min:3 = "этот интент идёт уже 3-й раз подряд"                      │
+│          """                                                                │
 │          min_count = params.get("min", 1)                                   │
 │          scope = params.get("scope", "consecutive")                         │
-│          intent = ctx.intent_tracker.last_intent  # Текущий интент          │
+│          intent = ctx.current_intent                                        │
 │                                                                             │
 │          if scope == "consecutive":                                         │
-│              actual = ctx.intent_tracker.consecutive_count(intent)          │
+│              actual = ctx.intent_tracker.streak_count(intent)               │
 │          elif scope == "window":                                            │
 │              window = params.get("window", 5)                               │
-│              actual = ctx.intent_tracker.in_window(intent, window)          │
+│              actual = ctx.intent_tracker.count_in_window(intent, window)    │
 │          else:                                                              │
-│              actual = ctx.intent_tracker.consecutive_count(intent)          │
+│              actual = ctx.intent_tracker.streak_count(intent)               │
 │                                                                             │
 │          return actual >= min_count                                         │
 │                                                                             │
@@ -1205,9 +1258,9 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
             "when": {"has_any": ["company_size", "users_count"]},
             "then": "answer_with_facts"
         },
-        # Приоритет 2: Если спросил 3+ раз — дать диапазон
+        # Приоритет 2: Если спросил 3-й раз подряд — дать диапазон
         {
-            "when": {"intent_repeated": {"min": 3}},  # по умолчанию подряд
+            "when": {"intent_streak": {"min": 3}},
             "then": "answer_with_price_range"
         }
     ]
@@ -1215,9 +1268,9 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 Сценарий:
 
 
-Ход 1: "Сколько стоит?"     → deflect (данных нет, повторов 1)
-Ход 2: "Ну почем?"          → deflect (данных нет, повторов 2)
-Ход 3: "Цену скажи!"        → answer_with_price_range (повторов 3!)
+Ход 1: "Сколько стоит?"     → deflect (данных нет, streak=1, min:3 → False)
+Ход 2: "Ну почем?"          → deflect (данных нет, streak=2, min:3 → False)
+Ход 3: "Цену скажи!"        → answer_with_price_range (streak=3, min:3 → True!)
 4.3 Умная обработка возражения о цене
 
 "objection_price": {
@@ -1242,9 +1295,9 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 "question_technical": {
     "default": "answer_technical",
     "conditions": [
-        # Если спрашивает повторно — предложить документацию
+        # Если спрашивает 2-й раз подряд — предложить документацию
         {
-            "when": {"intent_repeated": {"min": 2}},
+            "when": {"intent_streak": {"min": 2}},
             "then": "offer_documentation_link"
         }
     ]
@@ -1315,9 +1368,9 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │  1. Создать src/intent_tracker.py:                                          │
 │     - IntentRecord dataclass (intent, state, timestamp, category)           │
 │     - IntentTracker класс с методами:                                       │
-│       • record(intent, state) — запись интента                              │
-│       • consecutive_count(intent) — подряд для intent_repeated              │
-│       • in_window(intent, window) — в окне для scope: "window"              │
+│       • record(intent, state) — запись интента (вызывать ДО проверки)       │
+│       • streak_count(intent) — подряд для intent_streak (включая текущий)   │
+│       • count_in_window(intent, window) — в окне для scope: "window"        │
 │       • objection_consecutive() — подряд возражений (заменяет OFM)          │
 │       • objection_total() — всего возражений (заменяет OFM)                 │
 │       • to_dict() — сериализация для ContextEnvelope                        │
@@ -1455,7 +1508,7 @@ SPIN_COMMON_RULES = {
         "conditions": [
             {"when": {"has_any": ["company_size", "users_count"]},
              "then": "answer_with_facts"},
-            {"when": {"intent_repeated": {"min": 3}},
+            {"when": {"intent_streak": {"min": 3}},  # 3-й раз подряд
              "then": "answer_with_price_range"}
         ]
     },
@@ -1617,10 +1670,10 @@ SALES_CONFIG = {
 │                                                                             │
 │  logger.debug("Condition evaluated",                                        │
 │      condition_index=1,                                                     │
-│      condition_type="intent_repeated",                                      │
+│      condition_type="intent_streak",                                        │
 │      condition_params={"min": 3},                                           │
 │      result=False,                                                          │
-│      actual_streak=2                   # текущее значение streak            │
+│      actual_streak=2                   # текущее значение (включая текущий) │
 │  )                                                                          │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -1720,7 +1773,7 @@ logger.metric("conditional_rules_stats",
 │    (state=spin_situation, intent=price_question, action=deflect_and_continue)│
 │    [RULE] conditional → DEFAULT                                             │
 │           has_any(company_size,users_count)=FAIL                            │
-│           intent_repeated(3)=FAIL (streak=1)                                │
+│           intent_streak(min:3)=FAIL (streak=1)                              │
 │                                                                             │
 │  [Ход 5]                                                                    │
 │  Клиент: Ну так сколько стоит-то?                                           │
@@ -1975,7 +2028,7 @@ class StateMachine:
 - INTENT_CATEGORIES — категории интентов в config (objection, positive, go_back)
 - IntentTracker — единый источник истории интентов (см. секция 3.7):
   • Заменяет: SM.last_intent, Bot.last_intent, ObjectionFlowManager
-  • Методы: consecutive_count(), objection_consecutive(), objection_total()
+  • Методы: streak_count(), objection_consecutive(), objection_total()
   • Автоматическая категоризация через INTENT_CATEGORIES
 - Hooks (_apply_hooks) — просто вызывают intent_tracker.record()
 - Condition Evaluator — изолированный модуль проверки условий
@@ -1994,7 +2047,7 @@ class StateMachine:
 │  2  │ Hardcoded OBJECTION_INTENTS      │ INTENT_CATEGORIES в config        │
 │  3  │ Hardcoded POSITIVE_INTENTS       │ INTENT_CATEGORIES в config        │
 │  4  │ Hardcoded QUESTION_INTENTS       │ global_rules в config             │
-│  5  │ intent_repeated не существует    │ IntentTracker класс               │
+│  5  │ Нет отслеживания серий интентов  │ intent_streak + IntentTracker     │
 │  6  │ Нет not условия                  │ not, missing_any, missing_all     │
 │  7  │ Дублирование rules в SPIN        │ **SPIN_COMMON_RULES + global_rules│
 │  8  │ Контекст не специфицирован       │ EvaluatorContext dataclass        │
