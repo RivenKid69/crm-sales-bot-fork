@@ -285,10 +285,25 @@ TRANSITIONS — определяют state
 │      "when": {"data_complete": true}                                        │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
+│  ТЕКУЩИЙ И ПРЕДЫДУЩИЙ ИНТЕНТ                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  11. current_intent_in — текущий интент в списке                            │
+│      "when": {"current_intent_in": ["price_question", "pricing_details"]}   │
+│      # Редко нужно — обычно правила уже по интенту                          │
+│                                                                             │
+│  12. prev_intent — предыдущий интент равен значению                         │
+│      "when": {"prev_intent": "greeting"}                                    │
+│                                                                             │
+│  13. prev_intent_in — предыдущий интент в списке                            │
+│      "when": {"prev_intent_in": ["greeting", "small_talk"]}                 │
+│      # Полезно: после приветствия применить другую логику                   │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
 │  ИСТОРИЯ ИНТЕНТОВ (требует IntentTracker)                                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  11. intent_repeated — интент повторился N+ раз                             │
+│  14. intent_repeated — интент повторился N+ раз                             │
 │      # Подряд (consecutive) — по умолчанию                                  │
 │      "when": {"intent_repeated": {"min": 3}}                                │
 │                                                                             │
@@ -299,7 +314,7 @@ TRANSITIONS — определяют state
 │  ВОЗРАЖЕНИЯ                                                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  12. objection_count — счётчик возражений                                   │
+│  15. objection_count — счётчик возражений                                   │
 │      "when": {"objection_count": {"scope": "consecutive", "min": 2}}        │
 │      "when": {"objection_count": {"scope": "total", "min": 3}}              │
 │                                                                             │
@@ -307,7 +322,7 @@ TRANSITIONS — определяют state
 │  МЕТАДАННЫЕ                                                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  13. turn_number — номер хода в диалоге                                     │
+│  16. turn_number — номер хода в диалоге                                     │
 │      "when": {"turn_number": {"min": 5}}        # после 5 ходов             │
 │      "when": {"turn_number": {"max": 3}}        # в первые 3 хода           │
 │                                                                             │
@@ -315,13 +330,13 @@ TRANSITIONS — определяют state
 │  ЛОГИЧЕСКИЕ ОПЕРАТОРЫ                                                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  14. and — все условия истинны                                              │
+│  17. and — все условия истинны                                              │
 │      "when": {"and": [{"has_any": [...]}, {"state_in": [...]}]}             │
 │                                                                             │
-│  15. or — любое условие истинно                                             │
+│  18. or — любое условие истинно                                             │
 │      "when": {"or": [{"has_any": [...]}, {"intent_repeated": 3}]}           │
 │                                                                             │
-│  16. not — инверсия условия                                                 │
+│  19. not — инверсия условия                                                 │
 │      "when": {"not": {"has_any": ["company_size"]}}                         │
 │      {} → True (not False), {company_size: 10} → False (not True)           │
 │                                                                             │
@@ -384,9 +399,11 @@ class EvaluatorContext:
     spin_phase: Optional[str]
     is_spin_state: bool
 
+    # Интенты — текущий и предыдущий
+    current_intent: str                # Интент который сейчас обрабатываем
+    prev_intent: Optional[str]         # Предыдущий интент (до текущего)
+
     # IntentTracker — единый источник истории интентов
-    # Заменяет: last_intent, intent_consecutive, intent_history,
-    #           objection_consecutive, objection_total
     intent_tracker: IntentTracker
 
     # Метаданные
@@ -394,24 +411,41 @@ class EvaluatorContext:
     missing_required_data: List[str]
 
     @classmethod
-    def from_state_machine(cls, sm: "StateMachine") -> "EvaluatorContext":
+    def from_state_machine(cls, sm: "StateMachine", intent: str) -> "EvaluatorContext":
+        """
+        Создать контекст для проверки условий.
+
+        ВАЖНО: prev_intent берётся ДО записи текущего интента в tracker.
+        Порядок в apply_rules():
+            1. prev_intent = intent_tracker.last_intent  # сохраняем
+            2. intent_tracker.record(intent, state)      # записываем текущий
+            3. ctx = EvaluatorContext.from_state_machine(sm, intent)
+        """
         config = SALES_STATES.get(sm.state, {})
         required = config.get("required_data", [])
         missing = [f for f in required if not sm.collected_data.get(f)]
+
+        # prev_intent — то что было ДО записи текущего
+        # К моменту вызова from_state_machine, intent уже записан,
+        # поэтому prev_intent передаётся явно или берётся из истории
+        history = sm.intent_tracker.history
+        prev = history[-2].intent if len(history) >= 2 else None
 
         return cls(
             collected_data=sm.collected_data.copy(),
             state=sm.state,
             spin_phase=sm.spin_phase,
             is_spin_state=sm.spin_phase is not None,
-            intent_tracker=sm.intent_tracker,  # Передаём весь трекер
-            turn_number=len(sm.intent_tracker.history),
+            current_intent=intent,
+            prev_intent=prev,
+            intent_tracker=sm.intent_tracker,
+            turn_number=len(history),
             missing_required_data=missing,
         )
 
 Mapping условий → поля контекста:
 ┌────────────────────────┬─────────────────────────────────────────────────────┐
-│  Условие               │  Использует (через IntentTracker)                    │
+│  Условие               │  Использует                                         │
 ├────────────────────────┼─────────────────────────────────────────────────────┤
 │  has_any/has_all       │  collected_data                                     │
 │  missing_any/all       │  collected_data                                     │
@@ -419,6 +453,9 @@ Mapping условий → поля контекста:
 │  state_in              │  state                                              │
 │  spin_phase_in         │  spin_phase                                         │
 │  is_spin_state         │  is_spin_state                                      │
+│  current_intent_in     │  current_intent                                     │
+│  prev_intent           │  prev_intent                                        │
+│  prev_intent_in        │  prev_intent                                        │
 │  intent_repeated       │  intent_tracker.consecutive_count() / .in_window()  │
 │  objection_count       │  intent_tracker.objection_consecutive() / .total()  │
 │  turn_number           │  turn_number (= len(intent_tracker.history))        │
@@ -604,30 +641,43 @@ def _get_rule_for_intent(self, state: str, intent: str) -> Optional[Union[str, D
 │  НОВАЯ СТРУКТУРА apply_rules()                                               │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  def apply_rules(self, intent: str) -> Tuple[str, str]:                     │
+│  def apply_rules(self, intent: str) -> RuleResult:                          │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      # 0. HOOKS: Side effects (tracking) — читают из INTENT_CATEGORIES      │
+│      # 0. HOOKS: Записываем интент в tracker                                │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      self._apply_hooks(intent)                                              │
+│      self.intent_tracker.record(intent, self.state)                         │
 │                                                                             │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      # 1. EARLY EXITS: final, rejection, go_back                            │
+│      # 1. Создаём контекст (current_intent + prev_intent уже доступны)      │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      ctx = EvaluatorContext.from_state_machine(self, intent)                │
+│      config = SALES_CONFIG["states"].get(self.state, {})                    │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # 2. EARLY EXITS: final, rejection, go_back                            │
 │      # ═══════════════════════════════════════════════════════════════════  │
 │      early_exit = self._check_early_exits(intent, config)                   │
 │      if early_exit:                                                         │
 │          return early_exit                                                  │
 │                                                                             │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      # 2. RESOLVE ACTION: rules → global_rules → default                    │
+│      # 3. RESOLVE ACTION: rules → global_rules → default                    │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      action = self._resolve_action(intent, config)                          │
+│      action, action_info = self._resolve_action(intent, config, ctx)        │
 │                                                                             │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      # 3. RESOLVE TRANSITION: transitions → SPIN → data_complete → stay     │
+│      # 4. RESOLVE TRANSITION: transitions → SPIN → data_complete → stay     │
 │      # ═══════════════════════════════════════════════════════════════════  │
-│      next_state = self._resolve_transition(intent, config)                  │
+│      next_state, trans_info = self._resolve_transition(intent, config, ctx) │
 │                                                                             │
-│      return action, next_state                                              │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # 5. Возвращаем RuleResult (обратно совместим с tuple unpacking)       │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      return RuleResult(                                                     │
+│          action=action,                                                     │
+│          next_state=next_state,                                             │
+│          rule_info={"action": action_info, "transition": trans_info}        │
+│      )                                                                      │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -1698,15 +1748,29 @@ logger.metric("conditional_rules_stats",
 
 7.6.1 Реализация: как rule info попадает в отчёт
 
-1. StateMachine.apply_rules() возвращает расширенный результат:
+1. RuleResult dataclass с поддержкой обратной совместимости:
 
-# Было:
-return action, next_state
+@dataclass
+class RuleResult:
+    """Результат apply_rules() с опциональной информацией для отладки"""
+    action: str
+    next_state: str
+    rule_info: Optional[Dict] = None
 
-# Стало:
-return action, next_state, rule_info
+    def __iter__(self):
+        """Поддержка tuple unpacking для обратной совместимости"""
+        return iter((self.action, self.next_state))
 
-# Где rule_info:
+# Использование — старый код работает:
+action, state = sm.apply_rules(intent)  # tuple unpacking через __iter__
+
+# Новый код с доступом к rule_info:
+result = sm.apply_rules(intent)
+action = result.action
+state = result.next_state
+info = result.rule_info  # для отчётов симуляций
+
+# Структура rule_info:
 {
     "rule_type": "conditional",      # "simple" | "conditional" | "none"
     "resolution": "condition_matched", # "condition_matched" | "default" | "simple"
@@ -1916,7 +1980,8 @@ class StateMachine:
 - Hooks (_apply_hooks) — просто вызывают intent_tracker.record()
 - Condition Evaluator — изолированный модуль проверки условий
 - Action/Transition Resolvers — универсальные интерпретаторы правил в SM
-- EvaluatorContext — типизированный контекст с IntentTracker
+- EvaluatorContext — типизированный контекст с current_intent, prev_intent, IntentTracker
+- RuleResult — возврат apply_rules() с __iter__ (обратная совместимость)
 - Python-level sharing (**SPIN_COMMON_RULES) + global_rules — без runtime магии
 - Миграция — постепенная, с обратной совместимостью
 - Валидация — жёсткая в CI, мягкий fallback в runtime
@@ -1938,6 +2003,8 @@ class StateMachine:
 │ 11  │ last_intent в 4+ местах          │ IntentTracker.last_intent (единый)│
 │ 12  │ ObjectionFlowManager отдельно    │ IntentTracker.objection_*() методы│
 │ 13  │ Рассинхрон Bot/SM.last_intent    │ Единый IntentTracker в SM         │
+│ 14  │ Breaking change в apply_rules()  │ RuleResult с __iter__ (совместим) │
+│ 15  │ current_intent нет в контексте   │ current_intent + prev_intent      │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Зачем это нужно:
