@@ -168,7 +168,7 @@ Hardcoded	Каждое условие = новый if в коде
 │  rules       → определяют ACTION (что делать)                               │
 │  transitions → определяют STATE  (куда переходить)                          │
 │                                                                             │
-│  Оба поддерживают условия. Если нужны оба — условие дублируется явно.       │
+│  Оба поддерживают условия. Для DRY используем именованные условия ($name).  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -208,34 +208,100 @@ TRANSITIONS — определяют state
 }
 
 ═══════════════════════════════════════════════════════════════════════════════
-КОГДА НУЖНЫ ОБА (action + state) — дублируем условие явно
+ИМЕНОВАННЫЕ УСЛОВИЯ ($name) — DRY для повторяющихся условий
 ═══════════════════════════════════════════════════════════════════════════════
 
-# Пример: contact_provided в SPIN-фазе → особый action И переход в close
+# Проблема: одно условие нужно в rules И в transitions
+# Решение: именованные условия определяются один раз, используются по ссылке
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Определение именованных условий
+# ─────────────────────────────────────────────────────────────────────────────
+
+NAMED_CONDITIONS = {
+    # Данные для расчёта цены
+    "has_pricing_data": {"has_any": ["company_size", "users_count"]},
+
+    # Лимит возражений
+    "objection_limit": {"objection_count": {"scope": "consecutive", "min": 3}},
+
+    # Находимся в SPIN-фазе
+    "in_spin_phase": {"is_spin_state": true},
+
+    # Клиент спрашивает о цене 3+ раз подряд
+    "price_repeated_3x": {"intent_streak": {"min": 3}},
+
+    # Комбинированные условия тоже можно именовать
+    "ready_for_close": {
+        "and": [
+            {"has_all": ["company_size", "pain_point"]},
+            {"state_in": ["presentation", "close"]}
+        ]
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Использование: ссылка через "$name"
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Пример: price_question использует $has_pricing_data в rules и transitions
 "spin_situation": {
     "rules": {
-        "contact_provided": {
-            "default": "acknowledge_and_continue",
+        "price_question": {
+            "default": "deflect_and_continue",
             "conditions": [
-                {"when": {"is_spin_state": true}, "then": "acknowledge_contact_early"}
+                {"when": "$has_pricing_data", "then": "answer_with_facts"},
+                {"when": "$price_repeated_3x", "then": "answer_with_price_range"}
             ]
         }
     },
     "transitions": {
-        "contact_provided": {
+        "price_question": {
             "default": null,
             "conditions": [
-                {"when": {"is_spin_state": true}, "then": "close"}
+                {"when": "$has_pricing_data", "then": "presentation"}
             ]
         }
     }
 }
 
-# Почему дублирование OK:
-# 1. Явно видно что этот интент влияет и на action, и на переход
-# 2. Легко найти все переходы — смотри только transitions
-# 3. Легко найти все actions — смотри только rules
-# 4. Таких случаев мало (2-3 из ~15)
+# Пример: objection с лимитом — одно условие, разные результаты
+"close": {
+    "rules": {
+        "objection_price": {
+            "default": "handle_objection",
+            "conditions": [
+                {"when": "$objection_limit", "then": "objection_limit_reached"}
+            ]
+        }
+    },
+    "transitions": {
+        "objection_price": {
+            "default": null,
+            "conditions": [
+                {"when": "$objection_limit", "then": "soft_close"}
+            ]
+        }
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Комбинирование: $name можно использовать внутри and/or/not
+# ─────────────────────────────────────────────────────────────────────────────
+
+"when": {"and": ["$has_pricing_data", {"turn_number": {"min": 3}}]}
+"when": {"or": ["$objection_limit", "$price_repeated_3x"]}
+"when": {"not": "$in_spin_phase"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Преимущества именованных условий
+# ─────────────────────────────────────────────────────────────────────────────
+
+# 1. DRY — условие определяется один раз
+# 2. Читаемость — "$has_pricing_data" понятнее чем {"has_any": [...]}
+# 3. Сохраняется разделение rules/transitions
+# 4. Изменение условия — в одном месте
+# 5. Легко тестировать — именованные условия можно проверить отдельно
 3.2 Типы условий (Condition Types)
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -343,6 +409,20 @@ TRANSITIONS — определяют state
 │  19. not — инверсия условия                                                 │
 │      "when": {"not": {"has_any": ["company_size"]}}                         │
 │      {} → True (not False), {company_size: 10} → False (not True)           │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ССЫЛКИ НА ИМЕНОВАННЫЕ УСЛОВИЯ                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  20. $name — ссылка на условие из NAMED_CONDITIONS                          │
+│      "when": "$has_pricing_data"                                            │
+│      # Эквивалентно: "when": {"has_any": ["company_size", "users_count"]}   │
+│                                                                             │
+│      # Можно комбинировать с другими условиями:                             │
+│      "when": {"and": ["$has_pricing_data", {"turn_number": {"min": 3}}]}    │
+│      "when": {"not": "$in_spin_phase"}                                      │
+│                                                                             │
+│      # Resolver разворачивает $name перед проверкой                         │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -502,6 +582,7 @@ Mapping условий → поля контекста:
 │  objection_count       │  intent_tracker.objection_consecutive() / .total()  │
 │  turn_number           │  turn_number (= len(intent_tracker.history))        │
 │  data_complete         │  missing_required_data (empty = complete)           │
+│  $name                 │  resolve() → NAMED_CONDITIONS[name] → рекурсивно    │
 └────────────────────────┴─────────────────────────────────────────────────────┘
 3.3 Порядок проверки условий (для rules и transitions)
 
@@ -1182,6 +1263,51 @@ Transition resolver (подробно):
 │                                                                             │
 │          return actual >= min_count                                         │
 │                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  RESOLVER ДЛЯ ИМЕНОВАННЫХ УСЛОВИЙ ($name)                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│      def __init__(self, named_conditions: Dict[str, Any] = None):           │
+│          """                                                                │
+│          named_conditions: NAMED_CONDITIONS из config.py                    │
+│          """                                                                │
+│          self.named_conditions = named_conditions or {}                     │
+│                                                                             │
+│      def resolve(self, condition: Any) -> Any:                              │
+│          """                                                                │
+│          Разворачивает $name ссылки перед проверкой.                        │
+│                                                                             │
+│          "$has_pricing_data" → {"has_any": ["company_size", "users_count"]} │
+│          {"and": ["$x", "$y"]} → {"and": [resolved_x, resolved_y]}          │
+│          """                                                                │
+│          # Строка с $name → разворачиваем                                   │
+│          if isinstance(condition, str) and condition.startswith("$"):       │
+│              name = condition[1:]                                           │
+│              if name not in self.named_conditions:                          │
+│                  raise ValueError(f"Unknown named condition: {condition}")  │
+│              # Рекурсивно разворачиваем (вложенные ссылки)                  │
+│              return self.resolve(self.named_conditions[name])               │
+│                                                                             │
+│          # Dict → разворачиваем вложенные                                   │
+│          if isinstance(condition, dict):                                    │
+│              return {k: self.resolve(v) for k, v in condition.items()}      │
+│                                                                             │
+│          # List → разворачиваем элементы (для and/or)                       │
+│          if isinstance(condition, list):                                    │
+│              return [self.resolve(item) for item in condition]              │
+│                                                                             │
+│          # Остальное (числа, bool) — как есть                               │
+│          return condition                                                   │
+│                                                                             │
+│      def evaluate(self, condition: Any, ctx: EvaluatorContext) -> bool:     │
+│          """Разворачивает и проверяет условие."""                           │
+│          resolved = self.resolve(condition)                                 │
+│          return self._evaluate_resolved(resolved, ctx)                      │
+│                                                                             │
+│      def _evaluate_resolved(self, condition, ctx) -> bool:                  │
+│          """Проверяет уже развёрнутое условие (без $name)."""               │
+│          # ... существующая логика evaluate ...                             │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Обновлённые Hooks:
@@ -1357,8 +1483,9 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. Зафиксировать разделение: rules → action, transitions → state           │
 │  2. Определить INTENT_CATEGORIES (objection, positive, go_back, question)   │
-│  3. Определить SPIN_COMMON_RULES, POST_SPIN_RULES, SALES_CONFIG             │
-│  4. Определить EvaluatorContext dataclass                                   │
+│  3. Определить NAMED_CONDITIONS ($has_pricing_data, $objection_limit, etc.) │
+│  4. Определить SPIN_COMMON_RULES, POST_SPIN_RULES, SALES_CONFIG             │
+│  5. Определить EvaluatorContext dataclass                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -1374,9 +1501,11 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │       • objection_consecutive() — подряд возражений (заменяет OFM)          │
 │       • objection_total() — всего возражений (заменяет OFM)                 │
 │       • to_dict() — сериализация для ContextEnvelope                        │
-│  2. Создать src/condition_evaluator.py                                      │
-│  3. Реализовать все типы условий (has_any, objection_count, etc.)           │
-│  4. Написать unit-тесты для каждого модуля                                  │
+│  2. Создать src/condition_evaluator.py:                                     │
+│     - resolve($name) — разворачивание именованных условий                   │
+│     - evaluate(condition, ctx) — проверка условия                           │
+│  3. Реализовать все типы условий (has_any, objection_count, $name, etc.)    │
+│  4. Написать unit-тесты для каждого модуля (включая $name resolution)       │
 │  5. Результат: модули можно тестировать изолированно                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -2026,12 +2155,13 @@ class StateMachine:
 
 Как достигнем:
 - INTENT_CATEGORIES — категории интентов в config (objection, positive, go_back)
+- NAMED_CONDITIONS — переиспользуемые условия ($has_pricing_data, $objection_limit)
 - IntentTracker — единый источник истории интентов (см. секция 3.7):
   • Заменяет: SM.last_intent, Bot.last_intent, ObjectionFlowManager
   • Методы: streak_count(), objection_consecutive(), objection_total()
   • Автоматическая категоризация через INTENT_CATEGORIES
 - Hooks (_apply_hooks) — просто вызывают intent_tracker.record()
-- Condition Evaluator — изолированный модуль проверки условий
+- Condition Evaluator — изолированный модуль проверки условий + resolve($name)
 - Action/Transition Resolvers — универсальные интерпретаторы правил в SM
 - EvaluatorContext — типизированный контекст с current_intent, prev_intent, IntentTracker
 - RuleResult — возврат apply_rules() с __iter__ (обратная совместимость)
@@ -2058,6 +2188,7 @@ class StateMachine:
 │ 13  │ Рассинхрон Bot/SM.last_intent    │ Единый IntentTracker в SM         │
 │ 14  │ Breaking change в apply_rules()  │ RuleResult с __iter__ (совместим) │
 │ 15  │ current_intent нет в контексте   │ current_intent + prev_intent      │
+│ 16  │ Дублирование условий rules/trans │ NAMED_CONDITIONS + $name ссылки   │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Зачем это нужно:
