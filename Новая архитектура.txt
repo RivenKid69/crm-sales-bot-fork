@@ -2158,6 +2158,554 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │  }                                                                          │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 8: FallbackHandler на условиях (адаптивный выбор tier)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ЦЕЛЬ: Заменить жёсткую последовательность tier 1→2→3→4 на адаптивную       │
+│        логику выбора tier'а и Dynamic CTA на основе контекста.              │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.1 Проблема текущей реализации                                            │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  СЕЙЧАС (escalate_tier):                                                    │
+│  ┌───────────┐    ┌───────────┐    ┌───────────┐    ┌───────────┐           │
+│  │  Tier 1   │ → │  Tier 2   │ → │  Tier 3   │ → │ soft_close│           │
+│  │ rephrase  │    │  options  │    │   skip    │    │   exit    │           │
+│  └───────────┘    └───────────┘    └───────────┘    └───────────┘           │
+│       │                │                │                │                  │
+│       └────────────────┴────────────────┴────────────────┘                  │
+│                    ВСЕГДА линейно, без учёта контекста                      │
+│                                                                             │
+│  ПРОБЛЕМЫ:                                                                  │
+│  1. Пользователь раздражён → всё равно проходит tier 1, 2                   │
+│  2. 2+ fallback подряд → нужно сразу предложить skip                        │
+│  3. Позитивный momentum → можно дать ещё шанс на tier 1                     │
+│  4. Поздняя стадия (close) → tier 2 с кнопками избыточен                    │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.2 Новые Context Paths для fallback                                       │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌─────────────────────────────┬───────────────────────────────────────────┐│
+│  │  PATH                       │  ИСТОЧНИК                                 ││
+│  ├─────────────────────────────┼───────────────────────────────────────────┤│
+│  │  fallback.attempts          │  fallback_stats.total_count               ││
+│  │  fallback.consecutive       │  подряд без успешного ответа              ││
+│  │  fallback.last_tier         │  fallback_stats.last_tier                 ││
+│  │  fallback.current_tier      │  текущий запрошенный tier                 ││
+│  │  fallback.state_attempts    │  fallback в текущем state                 ││
+│  │  context.frustration        │  envelope.frustration_level               ││
+│  │  context.momentum           │  envelope.momentum_direction              ││
+│  │  context.engagement         │  envelope.engagement_level                ││
+│  │  context.state              │  текущее состояние                        ││
+│  │  context.spin_phase         │  SPIN фаза или null                       ││
+│  │  data.pain_category         │  collected_data.pain_category             ││
+│  │  data.company_size          │  collected_data.company_size              ││
+│  │  data.competitor            │  collected_data.competitor_mentioned      ││
+│  │  intent.last                │  last_intent                              ││
+│  └─────────────────────────────┴───────────────────────────────────────────┘│
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.3 Новые Sugar операторы для fallback                                     │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌─────────────────────────────────┬───────────────────────────────────────┐│
+│  │  SUGAR                          │  РАЗВОРАЧИВАЕТСЯ В                    ││
+│  ├─────────────────────────────────┼───────────────────────────────────────┤│
+│  │  {"$fallback_attempts": 2}      │  {"fallback.attempts": {"$gte": 2}}   ││
+│  │  {"$consecutive_fallbacks": 2}  │  {"fallback.consecutive": {"$gte": 2}}││
+│  │  {"$frustration_high": true}    │  {"context.frustration": {"$gte": 0.7}}│
+│  │  {"$frustration_medium": true}  │  {"context.frustration":              ││
+│  │                                 │    {"$gte": 0.4, "$lt": 0.7}}         ││
+│  │  {"$engagement_low": true}      │  {"context.engagement": "low"}        ││
+│  │  {"$late_stage": true}          │  {"context.state":                    ││
+│  │                                 │    {"$in": ["close", "presentation"]}}││
+│  │  {"$in_spin": true}             │  {"context.spin_phase":               ││
+│  │                                 │    {"$exists": true}}                 ││
+│  │  {"$has_pain": true}            │  {"data.pain_category":               ││
+│  │                                 │    {"$exists": true}}                 ││
+│  │  {"$has_competitor": true}      │  {"data.competitor": {"$eq": true}}   ││
+│  │  {"$after_price_question": true}│  {"intent.last":                      ││
+│  │                                 │    {"$in": ["price_question", ...]}}  ││
+│  └─────────────────────────────────┴───────────────────────────────────────┘│
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.4 FALLBACK_ESCALATION_RULES — адаптивный выбор tier'а                    │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  # Логика: проверяем условия, если сработало — возвращаем tier из "then"    │
+│  # Если ничего не сработало — стандартная эскалация (tier+1)                │
+│                                                                             │
+│  FALLBACK_ESCALATION_RULES = {                                              │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Ситуации когда нужно СРАЗУ на tier 3 (skip)                          │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      "skip_to_tier3_frustrated": {                                          │
+│          "priority": 10,                                                    │
+│          "from_tier": ["fallback_tier_1", "fallback_tier_2"],               │
+│          "to_tier": "fallback_tier_3",                                      │
+│          "conditions": [                                                    │
+│              {"when": {"$and": [                                            │
+│                  {"$consecutive_fallbacks": 2},                             │
+│                  {"$frustration_high": true}                                │
+│              ]}}                                                            │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      "skip_to_tier3_stuck": {                                               │
+│          "priority": 11,                                                    │
+│          "from_tier": ["fallback_tier_1", "fallback_tier_2"],               │
+│          "to_tier": "fallback_tier_3",                                      │
+│          "conditions": [                                                    │
+│              {"when": {"fallback.state_attempts": {"$gte": 3}}}             │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Ситуации когда нужно СРАЗУ на soft_close                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      "skip_to_exit_exhausted": {                                            │
+│          "priority": 5,                                                     │
+│          "from_tier": ["fallback_tier_2", "fallback_tier_3"],               │
+│          "to_tier": "soft_close",                                           │
+│          "conditions": [                                                    │
+│              {"when": {"$and": [                                            │
+│                  {"$fallback_attempts": 4},                                 │
+│                  {"$engagement_low": true}                                  │
+│              ]}}                                                            │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Ситуации когда ПРОПУСТИТЬ tier 2 (кнопки не нужны)                   │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      "skip_tier2_late_stage": {                                             │
+│          "priority": 20,                                                    │
+│          "from_tier": ["fallback_tier_1"],                                  │
+│          "to_tier": "fallback_tier_3",                                      │
+│          "conditions": [                                                    │
+│              {"when": {"$late_stage": true}}                                │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Ситуации когда ОСТАТЬСЯ на tier 1 (дать ещё шанс)                    │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      "stay_on_tier1_positive": {                                            │
+│          "priority": 30,                                                    │
+│          "from_tier": ["fallback_tier_1"],                                  │
+│          "to_tier": "fallback_tier_1",  # Остаёмся на том же tier           │
+│          "conditions": [                                                    │
+│              {"when": {"$and": [                                            │
+│                  {"context.momentum": "positive"},                          │
+│                  {"fallback.consecutive": {"$lte": 1}}                      │
+│              ]}}                                                            │
+│          ]                                                                  │
+│      }                                                                      │
+│  }                                                                          │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.5 DYNAMIC_CTA_RULES — выбор контекстных подсказок                        │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  # Заменяет hardcoded _select_dynamic_options()                             │
+│  # Логика: первое сработавшее условие = этот CTA                            │
+│                                                                             │
+│  DYNAMIC_CTA_RULES = [                                                      │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 10: Competitor (самый высокий)                              │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "competitor_mentioned",                                    │
+│          "priority": 10,                                                    │
+│          "when": {"$has_competitor": true},                                 │
+│          "question": "Что важнее всего при выборе системы?",                │
+│          "options": [                                                       │
+│              "Сравнить функции с {competitor}",                             │
+│              "Узнать о переходе с {competitor}",                            │
+│              "Посмотреть демо",                                             │
+│              "Узнать цены"                                                  │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 8: Pain points                                              │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "pain_losing_clients",                                     │
+│          "priority": 8,                                                     │
+│          "when": {"data.pain_category": "losing_clients"},                  │
+│          "question": "Что поможет решить эту проблему?",                    │
+│          "options": [                                                       │
+│              "Автоматические напоминания клиентам",                         │
+│              "Контроль работы менеджеров",                                  │
+│              "Аналитика по клиентам",                                       │
+│              "Посмотреть как это работает"                                  │
+│          ]                                                                  │
+│      },                                                                     │
+│      {                                                                      │
+│          "name": "pain_no_control",                                         │
+│          "priority": 8,                                                     │
+│          "when": {"data.pain_category": "no_control"},                      │
+│          "question": "Какой контроль для вас важнее?",                      │
+│          "options": [                                                       │
+│              "Видеть всех клиентов в одном месте",                          │
+│              "Контроль задач и сроков",                                     │
+│              "Отчёты и аналитика",                                          │
+│              "Посмотреть как это работает"                                  │
+│          ]                                                                  │
+│      },                                                                     │
+│      {                                                                      │
+│          "name": "pain_manual_work",                                        │
+│          "priority": 8,                                                     │
+│          "when": {"data.pain_category": "manual_work"},                     │
+│          "question": "Что хотелось бы автоматизировать?",                   │
+│          "options": [                                                       │
+│              "Напоминания и follow-up",                                     │
+│              "Отчёты и документы",                                          │
+│              "Распределение заявок",                                        │
+│              "Посмотреть возможности"                                       │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 7: Last intent                                              │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "after_price_question",                                    │
+│          "priority": 7,                                                     │
+│          "when": {"intent.last": {"$in": [                                  │
+│              "price_question", "pricing_details", "objection_price"         │
+│          ]}},                                                               │
+│          "question": "Что ещё хотите узнать?",                              │
+│          "options": [                                                       │
+│              "Условия оплаты",                                              │
+│              "Есть ли пробный период",                                      │
+│              "Что входит в тариф",                                          │
+│              "Запланировать демо"                                           │
+│          ]                                                                  │
+│      },                                                                     │
+│      {                                                                      │
+│          "name": "after_features_question",                                 │
+│          "priority": 6,                                                     │
+│          "when": {"intent.last": {"$in": [                                  │
+│              "question_features", "question_integrations", "question_how"   │
+│          ]}},                                                               │
+│          "question": "Какие функции интересуют больше всего?",              │
+│          "options": [                                                       │
+│              "Автоматизация рутины",                                        │
+│              "Аналитика и отчёты",                                          │
+│              "Интеграции",                                                  │
+│              "Показать всё на демо"                                         │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # Priority 5: Company size                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      {                                                                      │
+│          "name": "large_company",                                           │
+│          "priority": 5,                                                     │
+│          "when": {"data.company_size": {"$gt": 20}},                        │
+│          "question": "Что важнее для вашей команды?",                       │
+│          "options": [                                                       │
+│              "Интеграции с другими системами",                              │
+│              "Права доступа и роли",                                        │
+│              "Масштабируемость",                                            │
+│              "Запланировать демо"                                           │
+│          ]                                                                  │
+│      },                                                                     │
+│      {                                                                      │
+│          "name": "small_company",                                           │
+│          "priority": 5,                                                     │
+│          "when": {"$and": [                                                 │
+│              {"data.company_size": {"$gt": 0}},                             │
+│              {"data.company_size": {"$lte": 5}}                             │
+│          ]},                                                                │
+│          "question": "С чего хотите начать?",                               │
+│          "options": [                                                       │
+│              "Узнать базовые функции",                                      │
+│              "Быстрый старт за 15 минут",                                   │
+│              "Узнать стоимость",                                            │
+│              "Попробовать бесплатно"                                        │
+│          ]                                                                  │
+│      }                                                                      │
+│  ]                                                                          │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.6 FallbackContext — контекст для evaluator                               │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  @dataclass                                                                 │
+│  class FallbackContext:                                                     │
+│      """Контекст для проверки условий fallback."""                          │
+│      # Fallback stats                                                       │
+│      attempts: int = 0                                                      │
+│      consecutive: int = 0                                                   │
+│      last_tier: Optional[str] = None                                        │
+│      current_tier: str = "fallback_tier_1"                                  │
+│      state_attempts: int = 0                                                │
+│                                                                             │
+│      # Context signals (from envelope)                                      │
+│      frustration: float = 0.0                                               │
+│      momentum: str = "neutral"                                              │
+│      engagement: str = "medium"                                             │
+│      state: str = ""                                                        │
+│      spin_phase: Optional[str] = None                                       │
+│                                                                             │
+│      # Collected data                                                       │
+│      pain_category: Optional[str] = None                                    │
+│      company_size: Optional[int] = None                                     │
+│      competitor_mentioned: bool = False                                     │
+│      last_intent: Optional[str] = None                                      │
+│                                                                             │
+│      @classmethod                                                           │
+│      def from_handler_and_envelope(                                         │
+│          cls,                                                               │
+│          handler: "FallbackHandler",                                        │
+│          current_tier: str,                                                 │
+│          state: str,                                                        │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> "FallbackContext":                                                │
+│          ctx = context or {}                                                │
+│          collected = ctx.get("collected_data", {})                          │
+│                                                                             │
+│          return cls(                                                        │
+│              # Fallback stats                                               │
+│              attempts=handler.stats.total_count,                            │
+│              consecutive=handler._get_consecutive_count(),                  │
+│              last_tier=handler.stats.last_tier,                             │
+│              current_tier=current_tier,                                     │
+│              state_attempts=handler.stats.state_counts.get(state, 0),       │
+│              # Context signals                                              │
+│              frustration=envelope.frustration_level if envelope else 0.0,   │
+│              momentum=envelope.momentum_direction if envelope else "neutral",│
+│              engagement=envelope.engagement_level if envelope else "medium",│
+│              state=state,                                                   │
+│              spin_phase=envelope.spin_phase if envelope else None,          │
+│              # Collected data                                               │
+│              pain_category=collected.get("pain_category"),                  │
+│              company_size=collected.get("company_size"),                    │
+│              competitor_mentioned=bool(collected.get("competitor_mentioned")),│
+│              last_intent=ctx.get("last_intent"),                            │
+│          )                                                                  │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.7 Обновлённый FallbackHandler                                            │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  class FallbackHandler:                                                     │
+│      def __init__(                                                          │
+│          self,                                                              │
+│          escalation_rules: Dict = None,   # FALLBACK_ESCALATION_RULES       │
+│          cta_rules: List = None,          # DYNAMIC_CTA_RULES               │
+│          evaluator: ConditionEvaluator = None                               │
+│      ):                                                                     │
+│          self.escalation_rules = escalation_rules or FALLBACK_ESCALATION_RULES│
+│          self.cta_rules = cta_rules or DYNAMIC_CTA_RULES                    │
+│          self.evaluator = evaluator or ConditionEvaluator()                 │
+│          self._stats = FallbackStats()                                      │
+│          self._consecutive_count = 0                                        │
+│                                                                             │
+│      def escalate_tier(                                                     │
+│          self,                                                              │
+│          current_tier: str,                                                 │
+│          state: str,                                                        │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> str:                                                              │
+│          """Адаптивная эскалация tier'а."""                                 │
+│          # Создаём контекст для evaluator                                   │
+│          ctx = FallbackContext.from_handler_and_envelope(                   │
+│              self, current_tier, state, envelope, context                   │
+│          )                                                                  │
+│                                                                             │
+│          # Проверяем правила в порядке приоритета                           │
+│          sorted_rules = sorted(                                             │
+│              self.escalation_rules.items(),                                 │
+│              key=lambda x: x[1].get("priority", 100)                        │
+│          )                                                                  │
+│                                                                             │
+│          for rule_name, rule in sorted_rules:                               │
+│              # Проверяем from_tier                                          │
+│              if current_tier not in rule.get("from_tier", []):              │
+│                  continue                                                   │
+│                                                                             │
+│              # Проверяем условия                                            │
+│              for condition in rule.get("conditions", []):                   │
+│                  if self.evaluator.evaluate(condition["when"], ctx):        │
+│                      logger.info(                                           │
+│                          "Fallback escalation rule matched",                │
+│                          rule=rule_name,                                    │
+│                          from_tier=current_tier,                            │
+│                          to_tier=rule["to_tier"]                            │
+│                      )                                                      │
+│                      return rule["to_tier"]                                 │
+│                                                                             │
+│          # Default: стандартная эскалация                                   │
+│          return self._default_escalate(current_tier)                        │
+│                                                                             │
+│      def _select_dynamic_cta(                                               │
+│          self,                                                              │
+│          state: str,                                                        │
+│          envelope: Optional[ContextEnvelope] = None,                        │
+│          context: Optional[Dict] = None                                     │
+│      ) -> Optional[Dict]:                                                   │
+│          """Выбор Dynamic CTA по правилам."""                               │
+│          ctx = FallbackContext.from_handler_and_envelope(                   │
+│              self, "fallback_tier_2", state, envelope, context              │
+│          )                                                                  │
+│                                                                             │
+│          # Сортируем по приоритету                                          │
+│          sorted_rules = sorted(                                             │
+│              self.cta_rules,                                                │
+│              key=lambda x: x.get("priority", 0),                            │
+│              reverse=True                                                   │
+│          )                                                                  │
+│                                                                             │
+│          for rule in sorted_rules:                                          │
+│              if self.evaluator.evaluate(rule["when"], ctx):                 │
+│                  logger.info(                                               │
+│                      "Dynamic CTA rule matched",                            │
+│                      rule=rule["name"]                                      │
+│                  )                                                          │
+│                  return {                                                   │
+│                      "question": rule["question"],                          │
+│                      "options": rule["options"],                            │
+│                      "_type": rule["name"]                                  │
+│                  }                                                          │
+│                                                                             │
+│          return None  # Fallback на статичные options                       │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.8 Расширение ConditionEvaluator для fallback                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  def _resolve_path(self, path: str, ctx) -> Any:                            │
+│      # ... существующие paths                                               │
+│                                                                             │
+│      # Fallback paths                                                       │
+│      if path.startswith("fallback."):                                       │
+│          attr = path[9:]  # "fallback.attempts" → "attempts"                │
+│          return getattr(ctx, attr, None)                                    │
+│                                                                             │
+│      if path.startswith("context."):                                        │
+│          attr = path[8:]  # "context.frustration" → "frustration"           │
+│          return getattr(ctx, attr, None)                                    │
+│                                                                             │
+│      if path.startswith("data."):                                           │
+│          attr = path[5:]  # "data.pain_category" → "pain_category"          │
+│          return getattr(ctx, attr, None)                                    │
+│                                                                             │
+│      if path.startswith("intent."):                                         │
+│          attr = path[7:]  # "intent.last" → "last_intent" (mapped)          │
+│          if attr == "last":                                                 │
+│              return getattr(ctx, "last_intent", None)                       │
+│                                                                             │
+│  def _expand_sugar(self, condition: Dict) -> Dict:                          │
+│      # ... существующие sugar                                               │
+│                                                                             │
+│      # Fallback sugar                                                       │
+│      if key == "$fallback_attempts":                                        │
+│          return {"fallback.attempts": {"$gte": value}}                      │
+│      if key == "$consecutive_fallbacks":                                    │
+│          return {"fallback.consecutive": {"$gte": value}}                   │
+│      if key == "$frustration_high":                                         │
+│          return {"context.frustration": {"$gte": 0.7}}                      │
+│      if key == "$frustration_medium":                                       │
+│          return {"$and": [                                                  │
+│              {"context.frustration": {"$gte": 0.4}},                        │
+│              {"context.frustration": {"$lt": 0.7}}                          │
+│          ]}                                                                 │
+│      if key == "$engagement_low":                                           │
+│          return {"context.engagement": "low"}                               │
+│      if key == "$late_stage":                                               │
+│          return {"context.state": {"$in": ["close", "presentation"]}}       │
+│      if key == "$in_spin":                                                  │
+│          return {"context.spin_phase": {"$exists": True}}                   │
+│      if key == "$has_pain":                                                 │
+│          return {"data.pain_category": {"$exists": True}}                   │
+│      if key == "$has_competitor":                                           │
+│          return {"data.competitor_mentioned": {"$eq": True}}                │
+│      if key == "$after_price_question":                                     │
+│          return {"intent.last": {"$in": [                                   │
+│              "price_question", "pricing_details", "objection_price"         │
+│          ]}}                                                                │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.9 План работ                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  1. Расширить ConditionEvaluator:                                           │
+│     - Добавить fallback.*, context.*, data.*, intent.* paths                │
+│     - Добавить fallback sugar операторы                                     │
+│                                                                             │
+│  2. Создать FallbackContext dataclass                                       │
+│                                                                             │
+│  3. Добавить в config.py:                                                   │
+│     - FALLBACK_ESCALATION_RULES                                             │
+│     - DYNAMIC_CTA_RULES (заменяет DYNAMIC_CTA_OPTIONS dict)                 │
+│                                                                             │
+│  4. Рефакторинг FallbackHandler:                                            │
+│     - Обновить escalate_tier() для использования rules                      │
+│     - Заменить _select_dynamic_options() на _select_dynamic_cta()           │
+│     - Добавить _get_consecutive_count() метод                               │
+│                                                                             │
+│  5. Тесты:                                                                  │
+│     - Unit-тесты FallbackContext                                            │
+│     - Unit-тесты escalation rules                                           │
+│     - Unit-тесты CTA rules                                                  │
+│     - Интеграционные тесты с разными сценариями                             │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.10 Диаграмма: адаптивная эскалация                                       │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                         АДАПТИВНАЯ ЭСКАЛАЦИЯ                          │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│         Tier 1                  Tier 2                 Tier 3               │
+│       (rephrase)               (options)               (skip)               │
+│           │                       │                      │                  │
+│           ▼                       ▼                      ▼                  │
+│    ┌─────────────┐         ┌─────────────┐        ┌─────────────┐           │
+│    │ frustrated  │ ──────► │             │ ─────► │ soft_close  │           │
+│    │ + 2 fails   │  skip   │             │  skip  │             │           │
+│    └─────────────┘         └─────────────┘        └─────────────┘           │
+│           │                       │                      │                  │
+│    ┌─────────────┐         ┌─────────────┐        ┌─────────────┐           │
+│    │  positive   │ ──────► │             │ ─────► │             │           │
+│    │  momentum   │  stay   │             │ normal │             │           │
+│    └─────────────┘         └─────────────┘        └─────────────┘           │
+│           │                       │                      │                  │
+│    ┌─────────────┐         ┌─────────────┐        ┌─────────────┐           │
+│    │ late_stage  │ ──────► │             │ ─────► │             │           │
+│    │  (close)    │  skip   │             │        │             │           │
+│    └─────────────┘         └─────────────┘        └─────────────┘           │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│  8.11 Преимущества                                                          │
+│  ═══════════════════════════════════════════════════════════════════════════│
+│                                                                             │
+│  ┌─────────────────────────────┬───────────────────────────────────────────┐│
+│  │  Было                       │  Стало                                    ││
+│  ├─────────────────────────────┼───────────────────────────────────────────┤│
+│  │  Жёсткая последовательность │  Адаптивный выбор по контексту            ││
+│  │  Tier 1→2→3→4               │  Может пропустить tiers или остаться      ││
+│  │  ~100 строк if/elif в       │  FALLBACK_ESCALATION_RULES в config       ││
+│  │  _select_dynamic_options()  │  DYNAMIC_CTA_RULES в config               ││
+│  │  Добавить сценарий = код    │  Добавить сценарий = правило в config     ││
+│  │  Логи общие                 │  {"rule": "skip_to_tier3_frustrated"}     ││
+│  │  Тестировать сложно         │  Unit-тест каждого правила отдельно       ││
+│  └─────────────────────────────┴───────────────────────────────────────────┘│
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 5.3 Обратная совместимость
 
 def _resolve_action(self, rule: Union[str, Dict]) -> str:
@@ -2768,6 +3316,7 @@ class StateMachine:
 - Миграция — постепенная, с обратной совместимостью
 - Валидация — жёсткая в CI, мягкий fallback в runtime
 - DialoguePolicy — POLICY_RULES + PolicyContext + тот же ConditionEvaluator (см. секция 5.2 ЭТАП 7)
+- FallbackHandler — FALLBACK_ESCALATION_RULES + DYNAMIC_CTA_RULES + тот же ConditionEvaluator (см. секция 5.2 ЭТАП 8)
 
 Решённые проблемы:
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -2792,6 +3341,8 @@ class StateMachine:
 │ 17  │ 19 типов условий — избыточность │ MongoDB-style: 3 уровня (Core +   │
 │     │                                  │ Paths + Sugar)                    │
 │ 18  │ DialoguePolicy hardcoded if'ы  │ POLICY_RULES + ConditionEvaluator │
+│ 19  │ FallbackHandler жёсткая       │ FALLBACK_ESCALATION_RULES +       │
+│     │ эскалация Tier 1→2→3→4       │ DYNAMIC_CTA_RULES (адаптивно)     │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Зачем это нужно:
