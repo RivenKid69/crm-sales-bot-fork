@@ -656,26 +656,60 @@ logging:
 
 ### A.6 Доменные контексты (минимальный состав полей)
 
-Нужны, чтобы “не размывать” ответственность и не пытаться сделать один evaluator на всё.
+Нужны, чтобы "не размывать" ответственность и не пытаться сделать один evaluator на всё.
+
+**Важно:** Поля `frustration_level`, `engagement_level`, `momentum_direction` появляются в нескольких контекстах, но это **не дублирование вычислений** — это копирование из единого источника (см. A.7).
 
 - `EvaluatorContext` (StateMachine):
   - Base: `collected_data`, `state`, `turn_number`
   - SM‑specific: `spin_phase`, `is_spin_state`, `current_intent`, `prev_intent`, `intent_tracker`, `missing_required_data`
 - `PolicyContext` (DialoguePolicy):
   - Base: `collected_data`, `state`, `turn_number`
-  - Policy‑specific: `oscillation_detected`, `confidence_trend`, `momentum_direction`, `turns_in_state`, `breakthrough_detected`, `turns_since_breakthrough`, `total_objections`, `repeated_objection_types`, `current_action`, `frustration_level`
+  - Policy‑specific: `oscillation_detected`, `confidence_trend`, `turns_in_state`, `breakthrough_detected`, `turns_since_breakthrough`, `total_objections`, `repeated_objection_types`, `current_action`
+  - Signals (readonly, из A.7): `frustration_level`, `momentum_direction`
 - `FallbackContext` (FallbackHandler):
   - Base: `collected_data`, `state`, `turn_number`
   - Fallback‑specific: `total_fallbacks`, `consecutive_fallbacks`, `current_tier`, `fallbacks_in_state`, `last_successful_intent`
-  - Signals: `frustration_level`, `momentum_direction`, `engagement_level`
+  - Signals (readonly, из A.7): `frustration_level`, `momentum_direction`, `engagement_level`
   - Data: `pain_category`, `competitor_mentioned`, `last_intent`
 - `PersonalizationContext` (PersonalizationEngine):
   - Base: `collected_data`, `state`, `turn_number`
   - Company: `company_size`, `role`, `industry`
   - Pain: `pain_category`, `pain_point`, `current_crm`
-  - Signals: `has_breakthrough`, `engagement_level`, `objection_type`
+  - Signals (readonly, из A.7): `has_breakthrough`, `engagement_level`, `objection_type`
 
-### A.7 Агрегатор реестров (валидация/доки/статистика)
+### A.7 Source of Truth для общих сигналов
+
+**Проблема:** Поля `frustration_level`, `engagement_level`, `momentum_direction` используются в нескольких доменах. Кто их вычисляет?
+
+**Решение:** Единственные источники (уже реализованы в текущем коде):
+
+| Сигнал | Source of Truth | Файл | Потребители |
+|--------|-----------------|------|-------------|
+| `frustration_level` | `ToneAnalyzer.analyze()` | `src/tone_analyzer.py` | Policy, Fallback, Guard, CTA, Directives |
+| `engagement_level` | `ContextWindow.get_engagement_level()` | `src/context_window.py` | Policy, Fallback, Personalization, Classifier |
+| `momentum_direction` | `ContextWindow.get_momentum_direction()` | `src/context_window.py` | Policy, Fallback, Directives, Classifier |
+
+**Поток данных:**
+
+```
+ToneAnalyzer ──→ frustration_level ──┐
+                                     │
+ContextWindow ──→ engagement_level ──┼──→ ContextEnvelope ──→ Доменные контексты
+              ──→ momentum_direction ┘         (агрегатор)      (readonly копии)
+```
+
+**Правила:**
+
+1. **Вычисление** — только в Source of Truth (ToneAnalyzer, ContextWindow)
+2. **Агрегация** — ContextEnvelope собирает все сигналы в одном месте
+3. **Потребление** — доменные контексты получают readonly-копии через `envelope.frustration_level` и т.д.
+4. **Запрещено** — вычислять эти сигналы заново в доменных контекстах
+
+**Техдолг (известный):**
+- `engagement_level` имеет две версии: v1 и v2 (см. `context_window.py`). V2 — правильная, v1 — deprecated. Нужна консолидация.
+
+### A.8 Агрегатор реестров (валидация/доки/статистика)
 
 `ConditionRegistries` (из Hybrid) — единая точка для:
 - `validate_all()` (прогнать все условия на тест‑контекстах)
