@@ -1812,6 +1812,352 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │  1. Жёсткая схема в CI                                                     │
 │  2. Мягкий fallback + лог/метрики в runtime                                │
 └─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ЭТАП 7: DialoguePolicy на условиях (MongoDB-style)                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ЦЕЛЬ: Перевести hardcoded if'ы в DialoguePolicy на декларативные условия   │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.1 Новые Context Paths для policy (расширение Level 2)                    │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ┌────────────────────────────┬────────────────────────────────────────────┐│
+│  │  PATH                      │  ИСТОЧНИК (ContextEnvelope)                ││
+│  ├────────────────────────────┼────────────────────────────────────────────┤│
+│  │  policy.is_stuck           │  envelope.is_stuck                         ││
+│  │  policy.has_oscillation    │  envelope.has_oscillation                  ││
+│  │  policy.repeated_question  │  envelope.repeated_question                ││
+│  │  policy.confidence_trend   │  envelope.confidence_trend                 ││
+│  │  policy.momentum           │  envelope.momentum_direction               ││
+│  │  policy.total_objections   │  envelope.total_objections                 ││
+│  │  policy.repeated_objections│  envelope.repeated_objection_types         ││
+│  │  policy.has_breakthrough   │  envelope.has_breakthrough                 ││
+│  │  policy.turns_since_break  │  envelope.turns_since_breakthrough         ││
+│  │  policy.guard_intervention │  envelope.guard_intervention               ││
+│  │  policy.current_action     │  sm_result["action"]                       ││
+│  └────────────────────────────┴────────────────────────────────────────────┘│
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.2 Новые Sugar операторы для policy                                       │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ┌────────────────────────────────┬────────────────────────────────────────┐│
+│  │  SUGAR                         │  РАЗВОРАЧИВАЕТСЯ В                     ││
+│  ├────────────────────────────────┼────────────────────────────────────────┤│
+│  │  {"$is_stuck": true}           │  {"policy.is_stuck": {"$eq": true}}    ││
+│  │  {"$has_oscillation": true}    │  {"policy.has_oscillation": true}      ││
+│  │  {"$has_breakthrough": true}   │  {"policy.has_breakthrough": true}     ││
+│  │  {"$momentum": "negative"}     │  {"policy.momentum": "negative"}       ││
+│  │  {"$confidence": "decreasing"} │  {"policy.confidence_trend": "decr.."} ││
+│  │  {"$total_objections": 3}      │  {"policy.total_objections": {"$gte":3}││
+│  │  {"$repeated_objections": true}│  {"policy.repeated_objections":        ││
+│  │                                │   {"$exists": true, "$ne": []}}        ││
+│  │  {"$breakthrough_window": true}│  {"$and": [                            ││
+│  │                                │    {"policy.has_breakthrough": true},  ││
+│  │                                │    {"policy.turns_since_break":        ││
+│  │                                │      {"$gte": 1, "$lte": 3}}           ││
+│  │                                │  ]}                                    ││
+│  │  {"$action_in": ["a", "b"]}    │  {"policy.current_action": {"$in":..}} ││
+│  └────────────────────────────────┴────────────────────────────────────────┘│
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.3 POLICY_RULES — декларативная конфигурация                              │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  POLICY_RULES = {                                                           │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # REPAIR MODE (приоритет 1)                                            │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      "repair_clarify": {                                                    │
+│          "priority": 10,                                                    │
+│          "action": "clarify_one_question",                                  │
+│          "conditions": [                                                    │
+│              {"when": {"$is_stuck": true}}                                  │
+│          ]                                                                  │
+│      },                                                                     │
+│      "repair_summarize": {                                                  │
+│          "priority": 10,                                                    │
+│          "action": "summarize_and_clarify",                                 │
+│          "conditions": [                                                    │
+│              {"when": {"$has_oscillation": true}}                           │
+│          ]                                                                  │
+│      },                                                                     │
+│      "repair_repeated": {                                                   │
+│          "priority": 10,                                                    │
+│          "action": "answer_with_summary",                                   │
+│          "conditions": [                                                    │
+│              {"when": {"policy.repeated_question": {"$exists": true}}}      │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # OBJECTION ESCALATION (приоритет 2)                                   │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      "objection_escalate": {                                                │
+│          "priority": 20,                                                    │
+│          "action": "handle_repeated_objection",                             │
+│          "conditions": [                                                    │
+│              {"when": {"$total_objections": 3}}                             │
+│          ]                                                                  │
+│      },                                                                     │
+│      "objection_reframe": {                                                 │
+│          "priority": 21,                                                    │
+│          "action": "reframe_value",                                         │
+│          "conditions": [                                                    │
+│              {"when": {"$repeated_objections": true}}                       │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # BREAKTHROUGH CTA (приоритет 3)                                       │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      "breakthrough_cta": {                                                  │
+│          "priority": 30,                                                    │
+│          "action": null,  # Не меняем action, только сигнализируем          │
+│          "reason_codes": ["breakthrough.cta", "policy.cta_soft"],           │
+│          "conditions": [                                                    │
+│              {"when": {"$breakthrough_window": true}}                       │
+│          ]                                                                  │
+│      },                                                                     │
+│                                                                             │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      # CONSERVATIVE MODE (приоритет 4)                                      │
+│      # ═══════════════════════════════════════════════════════════════════  │
+│      "conservative": {                                                      │
+│          "priority": 40,                                                    │
+│          "action": "continue_current_goal",                                 │
+│          "conditions": [                                                    │
+│              {                                                              │
+│                  "when": {"$and": [                                         │
+│                      {"$or": [                                              │
+│                          {"$confidence": "decreasing"},                     │
+│                          {"$momentum": "negative"}                          │
+│                      ]},                                                    │
+│                      {"$action_in": [                                       │
+│                          "transition_to_presentation",                      │
+│                          "transition_to_close",                             │
+│                          "ask_for_demo",                                    │
+│                          "ask_for_contact"                                  │
+│                      ]}                                                     │
+│                  ]}                                                         │
+│              }                                                              │
+│          ]                                                                  │
+│      }                                                                      │
+│  }                                                                          │
+│                                                                             │
+│  # States где разрешены оверлеи                                             │
+│  POLICY_ALLOWED_STATES = [                                                  │
+│      "spin_situation", "spin_problem", "spin_implication",                  │
+│      "spin_need_payoff", "presentation", "handle_objection"                 │
+│  ]                                                                          │
+│                                                                             │
+│  # States защищённые от оверлеев                                            │
+│  POLICY_PROTECTED_STATES = ["greeting", "close", "success", "soft_close"]   │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.4 PolicyContext — контекст для evaluator                                 │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  @dataclass                                                                 │
+│  class PolicyContext:                                                       │
+│      """Контекст для проверки условий policy."""                            │
+│      # Из ContextEnvelope                                                   │
+│      is_stuck: bool = False                                                 │
+│      has_oscillation: bool = False                                          │
+│      repeated_question: Optional[str] = None                                │
+│      confidence_trend: str = "unknown"                                      │
+│      momentum_direction: str = "neutral"                                    │
+│      total_objections: int = 0                                              │
+│      repeated_objection_types: List[str] = field(default_factory=list)      │
+│      has_breakthrough: bool = False                                         │
+│      turns_since_breakthrough: Optional[int] = None                         │
+│      guard_intervention: bool = False                                       │
+│                                                                             │
+│      # Из sm_result                                                         │
+│      current_action: Optional[str] = None                                   │
+│      current_state: Optional[str] = None                                    │
+│                                                                             │
+│      @classmethod                                                           │
+│      def from_envelope_and_result(                                          │
+│          cls,                                                               │
+│          envelope: ContextEnvelope,                                         │
+│          sm_result: Dict[str, Any]                                          │
+│      ) -> "PolicyContext":                                                  │
+│          return cls(                                                        │
+│              is_stuck=envelope.is_stuck,                                    │
+│              has_oscillation=envelope.has_oscillation,                      │
+│              repeated_question=envelope.repeated_question,                  │
+│              confidence_trend=envelope.confidence_trend,                    │
+│              momentum_direction=envelope.momentum_direction,                │
+│              total_objections=envelope.total_objections,                    │
+│              repeated_objection_types=envelope.repeated_objection_types,    │
+│              has_breakthrough=envelope.has_breakthrough,                    │
+│              turns_since_breakthrough=envelope.turns_since_breakthrough,    │
+│              guard_intervention=bool(envelope.guard_intervention),          │
+│              current_action=sm_result.get("action"),                        │
+│              current_state=sm_result.get("next_state", envelope.state),     │
+│          )                                                                  │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.5 Обновлённый DialoguePolicy                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  class DialoguePolicy:                                                      │
+│      def __init__(                                                          │
+│          self,                                                              │
+│          rules: Dict = None,                # POLICY_RULES из config        │
+│          evaluator: ConditionEvaluator = None,                              │
+│          shadow_mode: bool = False                                          │
+│      ):                                                                     │
+│          self.rules = rules or POLICY_RULES                                 │
+│          self.evaluator = evaluator or ConditionEvaluator()                 │
+│          self.shadow_mode = shadow_mode                                     │
+│                                                                             │
+│      def maybe_override(                                                    │
+│          self,                                                              │
+│          sm_result: Dict[str, Any],                                         │
+│          envelope: ContextEnvelope                                          │
+│      ) -> Optional[PolicyOverride]:                                         │
+│          # Проверяем feature flag                                           │
+│          if not flags.is_enabled("context_policy_overlays"):                │
+│              return None                                                    │
+│                                                                             │
+│          # Проверяем protected states                                       │
+│          current_state = sm_result.get("next_state", envelope.state)        │
+│          if current_state in POLICY_PROTECTED_STATES:                       │
+│              return None                                                    │
+│          if current_state not in POLICY_ALLOWED_STATES:                     │
+│              return None                                                    │
+│                                                                             │
+│          # Создаём контекст для evaluator                                   │
+│          ctx = PolicyContext.from_envelope_and_result(envelope, sm_result)  │
+│                                                                             │
+│          # Проверяем правила в порядке приоритета                           │
+│          sorted_rules = sorted(                                             │
+│              self.rules.items(),                                            │
+│              key=lambda x: x[1].get("priority", 100)                        │
+│          )                                                                  │
+│                                                                             │
+│          for rule_name, rule in sorted_rules:                               │
+│              for condition in rule.get("conditions", []):                   │
+│                  if self.evaluator.evaluate(condition["when"], ctx):        │
+│                      return PolicyOverride(                                 │
+│                          action=rule.get("action"),                         │
+│                          reason_codes=rule.get("reason_codes", [rule_name]),│
+│                          decision=PolicyDecision[rule_name.upper()],        │
+│                          signals_used={"matched_rule": rule_name},          │
+│                      )                                                      │
+│                                                                             │
+│          return None                                                        │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.6 Расширение ConditionEvaluator для policy                               │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  def _resolve_path(self, path: str, ctx) -> Any:                            │
+│      # ... существующие paths (data.*, state, intent.*, counter.*)          │
+│                                                                             │
+│      # Новые paths для policy (если ctx — PolicyContext)                    │
+│      if path.startswith("policy."):                                         │
+│          attr = path[7:]  # "policy.is_stuck" → "is_stuck"                  │
+│          return getattr(ctx, attr, None)                                    │
+│                                                                             │
+│  def _expand_sugar(self, condition: Dict) -> Dict:                          │
+│      # ... существующие sugar операторы                                     │
+│                                                                             │
+│      # Новые sugar для policy                                               │
+│      if key == "$is_stuck":                                                 │
+│          return {"policy.is_stuck": {"$eq": value}}                         │
+│      if key == "$has_oscillation":                                          │
+│          return {"policy.has_oscillation": {"$eq": value}}                  │
+│      if key == "$has_breakthrough":                                         │
+│          return {"policy.has_breakthrough": {"$eq": value}}                 │
+│      if key == "$momentum":                                                 │
+│          return {"policy.momentum_direction": value}                        │
+│      if key == "$confidence":                                               │
+│          return {"policy.confidence_trend": value}                          │
+│      if key == "$total_objections":                                         │
+│          return {"policy.total_objections": {"$gte": value}}                │
+│      if key == "$repeated_objections":                                      │
+│          return {"$and": [                                                  │
+│              {"policy.repeated_objection_types": {"$exists": True}},        │
+│              {"policy.repeated_objection_types": {"$ne": []}}               │
+│          ]}                                                                 │
+│      if key == "$breakthrough_window":                                      │
+│          return {"$and": [                                                  │
+│              {"policy.has_breakthrough": True},                             │
+│              {"policy.turns_since_breakthrough": {"$gte": 1}},              │
+│              {"policy.turns_since_breakthrough": {"$lte": 3}}               │
+│          ]}                                                                 │
+│      if key == "$action_in":                                                │
+│          return {"policy.current_action": {"$in": value}}                   │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.7 План работ                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  1. Расширить ConditionEvaluator:                                           │
+│     - Добавить policy.* paths в _resolve_path()                             │
+│     - Добавить policy sugar в _expand_sugar()                               │
+│                                                                             │
+│  2. Создать PolicyContext dataclass                                         │
+│                                                                             │
+│  3. Добавить POLICY_RULES в config.py:                                      │
+│     - Перенести OVERLAY_ALLOWED_STATES → POLICY_ALLOWED_STATES              │
+│     - Перенести PROTECTED_STATES → POLICY_PROTECTED_STATES                  │
+│     - Определить все правила декларативно                                   │
+│                                                                             │
+│  4. Рефакторинг DialoguePolicy:                                             │
+│     - Удалить _apply_repair_overlay()                                       │
+│     - Удалить _apply_objection_overlay()                                    │
+│     - Удалить _apply_breakthrough_overlay()                                 │
+│     - Удалить _apply_conservative_overlay()                                 │
+│     - Заменить на один цикл по POLICY_RULES с evaluator                     │
+│                                                                             │
+│  5. Тесты:                                                                  │
+│     - Unit-тесты PolicyContext                                              │
+│     - Unit-тесты policy sugar операторов                                    │
+│     - Интеграционные тесты DialoguePolicy с разными сценариями              │
+│     - Проверить shadow mode                                                 │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.8 Преимущества                                                           │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ┌────────────────────────────┬────────────────────────────────────────────┐│
+│  │  Было                      │  Стало                                     ││
+│  ├────────────────────────────┼────────────────────────────────────────────┤│
+│  │  4 отдельных метода        │  1 универсальный цикл по rules             ││
+│  │  ~200 строк if/elif        │  ~50 строк + config                        ││
+│  │  Приоритеты неявные        │  priority: число в конфиге                 ││
+│  │  Изменить условие = код    │  Изменить условие = конфиг                 ││
+│  │  Добавить правило = метод  │  Добавить правило = строка в конфиг        ││
+│  │  Тестировать сложно        │  Unit-тест каждого условия отдельно        ││
+│  │  Логи неструктурированы    │  {"matched_rule": "repair_clarify", ...}   ││
+│  └────────────────────────────┴────────────────────────────────────────────┘│
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  7.9 Пример добавления нового правила                                       │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  # Было: написать метод _apply_new_overlay() + добавить вызов в maybe_override│
+│                                                                             │
+│  # Стало: добавить в POLICY_RULES                                           │
+│  "frustration_deescalate": {                                                │
+│      "priority": 15,                                                        │
+│      "action": "empathize_and_slow_down",                                   │
+│      "conditions": [                                                        │
+│          {"when": {"$and": [                                                │
+│              {"policy.frustration": {"$gte": 0.7}},                         │
+│              {"policy.momentum": "negative"}                                │
+│          ]}}                                                                │
+│      ]                                                                      │
+│  }                                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 5.3 Обратная совместимость
 
 def _resolve_action(self, rule: Union[str, Dict]) -> str:
@@ -2421,6 +2767,7 @@ class StateMachine:
 - Python-level sharing (**SPIN_COMMON_RULES) + global_rules — без runtime магии
 - Миграция — постепенная, с обратной совместимостью
 - Валидация — жёсткая в CI, мягкий fallback в runtime
+- DialoguePolicy — POLICY_RULES + PolicyContext + тот же ConditionEvaluator (см. секция 5.2 ЭТАП 7)
 
 Решённые проблемы:
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -2444,6 +2791,7 @@ class StateMachine:
 │ 16  │ Дублирование условий rules/trans │ NAMED_CONDITIONS + $ref ссылки    │
 │ 17  │ 19 типов условий — избыточность │ MongoDB-style: 3 уровня (Core +   │
 │     │                                  │ Paths + Sugar)                    │
+│ 18  │ DialoguePolicy hardcoded if'ы  │ POLICY_RULES + ConditionEvaluator │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Зачем это нужно:
