@@ -168,7 +168,7 @@ Hardcoded	Каждое условие = новый if в коде
 │  rules       → определяют ACTION (что делать)                               │
 │  transitions → определяют STATE  (куда переходить)                          │
 │                                                                             │
-│  Оба поддерживают условия. Для DRY используем именованные условия ($name).  │
+│  Оба поддерживают условия. Для DRY используем именованные условия ($ref).   │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -183,7 +183,7 @@ RULES — определяют action
     "default": "deflect_and_continue",
     "conditions": [
         {
-            "when": {"has_any": ["company_size", "users_count"]},
+            "when": {"$has_any": ["company_size", "users_count"]},
             "then": "answer_with_facts"      # Только action (строка)
         }
     ]
@@ -201,57 +201,59 @@ TRANSITIONS — определяют state
     "default": null,                         # null → не переходить, fallback на SPIN/data_complete
     "conditions": [
         {
-            "when": {"is_spin_state": true},
+            "when": {"$is_spin": true},
             "then": "close"                  # Только state (строка)
         }
     ]
 }
 
 ═══════════════════════════════════════════════════════════════════════════════
-ИМЕНОВАННЫЕ УСЛОВИЯ ($name) — DRY для повторяющихся условий
+ИМЕНОВАННЫЕ УСЛОВИЯ ($ref) — DRY для повторяющихся условий
 ═══════════════════════════════════════════════════════════════════════════════
 
 # Проблема: одно условие нужно в rules И в transitions
-# Решение: именованные условия определяются один раз, используются по ссылке
+# Решение: именованные условия определяются один раз, используются через $ref
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Определение именованных условий
+# Определение именованных условий (MongoDB-style)
 # ─────────────────────────────────────────────────────────────────────────────
 
 NAMED_CONDITIONS = {
-    # Данные для расчёта цены
-    "has_pricing_data": {"has_any": ["company_size", "users_count"]},
+    # Данные для расчёта цены (Sugar)
+    "has_pricing_data": {"$has_any": ["company_size", "users_count"]},
 
-    # Лимит возражений
-    "objection_limit": {"objection_count": {"scope": "consecutive", "min": 3}},
+    # Лимит возражений (Sugar)
+    "objection_limit": {"$objections": 3},
 
-    # Находимся в SPIN-фазе
-    "in_spin_phase": {"is_spin_state": true},
+    # Находимся в SPIN-фазе (Sugar)
+    "in_spin_phase": {"$is_spin": true},
 
-    # Клиент спрашивает о цене 3+ раз подряд
-    "price_repeated_3x": {"intent_streak": {"min": 3}},
+    # Клиент спрашивает о цене 3+ раз подряд (Sugar)
+    "price_repeated_3x": {"$intent_streak": 3},
 
-    # Комбинированные условия тоже можно именовать
-    "ready_for_close": {
-        "and": [
-            {"has_all": ["company_size", "pain_point"]},
-            {"state_in": ["presentation", "close"]}
-        ]
-    }
+    # Комбинированные условия (Core + Sugar)
+    "ready_for_close": {"$and": [
+        {"$has_all": ["company_size", "pain_point"]},
+        {"$state_in": ["presentation", "close"]}
+    ]},
+
+    # Можно использовать и Core напрямую
+    "high_urgency": {"data.urgency": "high"},
+    "late_stage": {"counter.turn": {"$gte": 10}}
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Использование: ссылка через "$name"
+# Использование: ссылка через {"$ref": "name"}
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Пример: price_question использует $has_pricing_data в rules и transitions
+# Пример: price_question использует $ref в rules и transitions
 "spin_situation": {
     "rules": {
         "price_question": {
             "default": "deflect_and_continue",
             "conditions": [
-                {"when": "$has_pricing_data", "then": "answer_with_facts"},
-                {"when": "$price_repeated_3x", "then": "answer_with_price_range"}
+                {"when": {"$ref": "has_pricing_data"}, "then": "answer_with_facts"},
+                {"when": {"$ref": "price_repeated_3x"}, "then": "answer_with_price_range"}
             ]
         }
     },
@@ -259,7 +261,7 @@ NAMED_CONDITIONS = {
         "price_question": {
             "default": null,
             "conditions": [
-                {"when": "$has_pricing_data", "then": "presentation"}
+                {"when": {"$ref": "has_pricing_data"}, "then": "presentation"}
             ]
         }
     }
@@ -271,7 +273,7 @@ NAMED_CONDITIONS = {
         "objection_price": {
             "default": "handle_objection",
             "conditions": [
-                {"when": "$objection_limit", "then": "objection_limit_reached"}
+                {"when": {"$ref": "objection_limit"}, "then": "objection_limit_reached"}
             ]
         }
     },
@@ -279,152 +281,288 @@ NAMED_CONDITIONS = {
         "objection_price": {
             "default": null,
             "conditions": [
-                {"when": "$objection_limit", "then": "soft_close"}
+                {"when": {"$ref": "objection_limit"}, "then": "soft_close"}
             ]
         }
     }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Комбинирование: $name можно использовать внутри and/or/not
+# Комбинирование: $ref можно использовать внутри $and/$or/$not
 # ─────────────────────────────────────────────────────────────────────────────
 
-"when": {"and": ["$has_pricing_data", {"turn_number": {"min": 3}}]}
-"when": {"or": ["$objection_limit", "$price_repeated_3x"]}
-"when": {"not": "$in_spin_phase"}
+"when": {"$and": [{"$ref": "has_pricing_data"}, {"counter.turn": {"$gte": 3}}]}
+"when": {"$or": [{"$ref": "objection_limit"}, {"$ref": "price_repeated_3x"}]}
+"when": {"$not": {"$ref": "in_spin_phase"}}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Преимущества именованных условий
+# Преимущества
 # ─────────────────────────────────────────────────────────────────────────────
 
 # 1. DRY — условие определяется один раз
-# 2. Читаемость — "$has_pricing_data" понятнее чем {"has_any": [...]}
+# 2. Читаемость — {"$ref": "has_pricing_data"} самодокументируемо
 # 3. Сохраняется разделение rules/transitions
 # 4. Изменение условия — в одном месте
-# 5. Легко тестировать — именованные условия можно проверить отдельно
-3.2 Типы условий (Condition Types)
+# 5. Композиция — $ref внутри $and/$or/$not
+3.2 Condition Language (MongoDB-inspired)
+
+═══════════════════════════════════════════════════════════════════════════════
+АРХИТЕКТУРА: 3 уровня
+═══════════════════════════════════════════════════════════════════════════════
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ДАННЫЕ (проверка collected_data)                                           │
+│  УРОВЕНЬ 3: Sugar (читаемые сокращения)                                     │
+│  $has_any, $has_all, $state_in, $is_spin... → разворачиваются в L1          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  УРОВЕНЬ 2: Context Paths (пути к данным)                                   │
+│  data.*, state, spin_phase, intent.*, counter.*                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  УРОВЕНЬ 1: Core Operators (базовые операторы)                              │
+│  $exists, $eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $and, $or, $not, $ref  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Принцип: минимум ортогональных примитивов + мощная композиция = любое условие
+
+═══════════════════════════════════════════════════════════════════════════════
+УРОВЕНЬ 1: Core Operators (13 базовых операторов)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  EXISTENCE                                                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. has_any — есть ЛЮБОЕ из полей                                           │
-│     "when": {"has_any": ["company_size", "users_count"]}                    │
-│     {} → False, {company_size: 10} → True                                   │
+│  $exists — проверка существования значения                                  │
 │                                                                             │
-│  2. has_all — есть ВСЕ поля                                                 │
-│     "when": {"has_all": ["company_size", "pain_point"]}                     │
-│     {company_size: 10} → False, {company_size: 10, pain_point: "x"} → True  │
-│                                                                             │
-│  3. missing_any — отсутствует ЛЮБОЕ из полей                                │
-│     "when": {"missing_any": ["company_size", "pain_point"]}                 │
-│     {} → True, {company_size: 10} → True (нет pain_point)                   │
-│     {company_size: 10, pain_point: "x"} → False                             │
-│                                                                             │
-│  4. missing_all — отсутствуют ВСЕ поля                                      │
-│     "when": {"missing_all": ["company_size", "users_count"]}                │
-│     {} → True, {company_size: 10} → False (есть хотя бы одно)               │
-│                                                                             │
-│  5. field_equals — поле равно значению                                      │
-│     "when": {"field_equals": {"urgency": "high"}}                           │
-│     {urgency: "low"} → False, {urgency: "high"} → True                      │
-│                                                                             │
-│  6. field_compare — числовые сравнения                                      │
-│     "when": {"field_gt": {"company_size": 50}}    # >50                     │
-│     "when": {"field_gte": {"company_size": 10}}   # >=10                    │
-│     "when": {"field_lt": {"company_size": 100}}   # <100                    │
+│      {"data.company_size": {"$exists": true}}   # поле существует           │
+│      {"data.company_size": {"$exists": false}}  # поле отсутствует          │
+│      {"spin_phase": {"$exists": true}}          # находимся в SPIN          │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  СОСТОЯНИЕ                                                                  │
+│  COMPARISON                                                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  7. state_in — текущее состояние в списке                                   │
-│     "when": {"state_in": ["presentation", "close"]}                         │
+│  $eq  — равно                                                               │
+│  $ne  — не равно                                                            │
+│  $gt  — больше                                                              │
+│  $gte — больше или равно                                                    │
+│  $lt  — меньше                                                              │
+│  $lte — меньше или равно                                                    │
 │                                                                             │
-│  8. spin_phase_in — текущая SPIN-фаза в списке                              │
-│     "when": {"spin_phase_in": ["implication", "need_payoff"]}               │
-│                                                                             │
-│  9. is_spin_state — находимся в SPIN-фазе (bool)                            │
-│     "when": {"is_spin_state": true}                                         │
-│                                                                             │
-│  10. data_complete — все required_data собраны                              │
-│      "when": {"data_complete": true}                                        │
-│                                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ТЕКУЩИЙ И ПРЕДЫДУЩИЙ ИНТЕНТ                                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  11. current_intent_in — текущий интент в списке                            │
-│      "when": {"current_intent_in": ["price_question", "pricing_details"]}   │
-│      # Редко нужно — обычно правила уже по интенту                          │
-│                                                                             │
-│  12. prev_intent — предыдущий интент равен значению                         │
-│      "when": {"prev_intent": "greeting"}                                    │
-│                                                                             │
-│  13. prev_intent_in — предыдущий интент в списке                            │
-│      "when": {"prev_intent_in": ["greeting", "small_talk"]}                 │
-│      # Полезно: после приветствия применить другую логику                   │
+│      {"data.urgency": {"$eq": "high"}}          # urgency == "high"         │
+│      {"data.urgency": "high"}                   # short form (implicit $eq) │
+│      {"data.team_size": {"$gt": 10}}            # team_size > 10            │
+│      {"counter.turn": {"$lte": 3}}              # turn <= 3                 │
+│      {"intent.streak": {"$gte": 3}}             # streak >= 3               │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  ИСТОРИЯ ИНТЕНТОВ (требует IntentTracker)                                   │
+│  MEMBERSHIP                                                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  14. intent_streak — интент идёт подряд N+ раз (включая текущий)            │
-│      # Подряд — по умолчанию                                                │
-│      "when": {"intent_streak": {"min": 3}}   # на 3-м подряд сработает      │
+│  $in  — значение входит в список                                            │
+│  $nin — значение НЕ входит в список                                         │
 │                                                                             │
-│      # В окне последних N ходов                                             │
-│      "when": {"intent_streak": {"min": 2, "scope": "window", "window": 5}}  │
-│                                                                             │
-│      # ВАЖНО: record() вызывается ДО проверки условий.                      │
-│      # streak_count включает текущий интент.                                │
-│      # min:3 = "этот интент идёт уже 3-й раз подряд"                        │
+│      {"state": {"$in": ["presentation", "close"]}}                          │
+│      {"intent.prev": {"$in": ["greeting", "small_talk"]}}                   │
+│      {"intent.current": {"$nin": ["rejection", "farewell"]}}                │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  ВОЗРАЖЕНИЯ                                                                 │
+│  LOGIC                                                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  15. objection_count — счётчик возражений                                   │
-│      "when": {"objection_count": {"scope": "consecutive", "min": 2}}        │
-│      "when": {"objection_count": {"scope": "total", "min": 3}}              │
+│  $and — все условия истинны                                                 │
+│  $or  — любое условие истинно                                               │
+│  $not — инверсия условия                                                    │
+│                                                                             │
+│      {"$and": [cond1, cond2, cond3]}                                        │
+│      {"$or": [cond1, cond2]}                                                │
+│      {"$not": cond}                                                         │
+│                                                                             │
+│      # Пример: есть данные И находимся в presentation/close                 │
+│      {"$and": [                                                             │
+│          {"data.company_size": {"$exists": true}},                          │
+│          {"state": {"$in": ["presentation", "close"]}}                      │
+│      ]}                                                                     │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  МЕТАДАННЫЕ                                                                 │
+│  REFERENCE                                                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  16. turn_number — номер хода в диалоге                                     │
-│      "when": {"turn_number": {"min": 5}}        # после 5 ходов             │
-│      "when": {"turn_number": {"max": 3}}        # в первые 3 хода           │
+│  $ref — ссылка на именованное условие из NAMED_CONDITIONS                   │
 │                                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ЛОГИЧЕСКИЕ ОПЕРАТОРЫ                                                       │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  17. and — все условия истинны                                              │
-│      "when": {"and": [{"has_any": [...]}, {"state_in": [...]}]}             │
-│                                                                             │
-│  18. or — любое условие истинно                                             │
-│      "when": {"or": [{"has_any": [...]}, {"intent_streak": {"min": 3}}]}           │
-│                                                                             │
-│  19. not — инверсия условия                                                 │
-│      "when": {"not": {"has_any": ["company_size"]}}                         │
-│      {} → True (not False), {company_size: 10} → False (not True)           │
-│                                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ССЫЛКИ НА ИМЕНОВАННЫЕ УСЛОВИЯ                                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  20. $name — ссылка на условие из NAMED_CONDITIONS                          │
-│      "when": "$has_pricing_data"                                            │
-│      # Эквивалентно: "when": {"has_any": ["company_size", "users_count"]}   │
-│                                                                             │
-│      # Можно комбинировать с другими условиями:                             │
-│      "when": {"and": ["$has_pricing_data", {"turn_number": {"min": 3}}]}    │
-│      "when": {"not": "$in_spin_phase"}                                      │
-│                                                                             │
-│      # Resolver разворачивает $name перед проверкой                         │
+│      {"$ref": "has_pricing_data"}                                           │
+│      {"$and": [{"$ref": "has_pricing_data"}, {"counter.turn": {"$gte": 3}}]}│
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+УРОВЕНЬ 2: Context Paths (9 путей к данным)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PATH                    │  ИСТОЧНИК                    │  ПРИМЕР ЗНАЧЕНИЯ  │
+├──────────────────────────┼──────────────────────────────┼───────────────────┤
+│  data.{field}            │  collected_data[field]       │  10, "high", true │
+│  state                   │  текущее состояние SM        │  "spin_situation" │
+│  spin_phase              │  SPIN фаза (или null)        │  "situation"      │
+│  intent.current          │  текущий интент              │  "price_question" │
+│  intent.prev             │  предыдущий интент           │  "greeting"       │
+│  intent.streak           │  серия текущего интента      │  3                │
+│  counter.objections      │  возражения подряд           │  2                │
+│  counter.objections_total│  всего возражений            │  4                │
+│  counter.turn            │  номер хода                  │  7                │
+└──────────────────────────┴──────────────────────────────┴───────────────────┘
+
+Примеры использования путей:
+
+    {"data.company_size": {"$exists": true}}      # collected_data["company_size"]
+    {"data.urgency": "high"}                      # collected_data["urgency"] == "high"
+    {"state": {"$in": ["close", "success"]}}      # state in ["close", "success"]
+    {"spin_phase": {"$exists": true}}             # spin_phase is not None (= is_spin)
+    {"intent.prev": "greeting"}                   # prev_intent == "greeting"
+    {"intent.streak": {"$gte": 3}}                # streak_count >= 3
+    {"counter.objections": {"$gte": 3}}           # objection_consecutive >= 3
+    {"counter.turn": {"$lte": 5}}                 # turn_number <= 5
+
+═══════════════════════════════════════════════════════════════════════════════
+УРОВЕНЬ 3: Sugar (читаемые сокращения для частых случаев)
+═══════════════════════════════════════════════════════════════════════════════
+
+Sugar разворачивается в Core Operators перед выполнением.
+Это ALIAS'ы для удобства — можно использовать и Sugar, и Core напрямую.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  SUGAR                         │  РАЗВОРАЧИВАЕТСЯ В                         │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│                                │                                            │
+│  # Проверка полей данных       │                                            │
+│  ──────────────────────────────┼────────────────────────────────────────────│
+│  {"$has_any": ["a", "b"]}      │  {"$or": [                                 │
+│                                │      {"data.a": {"$exists": true}},        │
+│                                │      {"data.b": {"$exists": true}}         │
+│                                │  ]}                                        │
+│                                │                                            │
+│  {"$has_all": ["a", "b"]}      │  {"$and": [                                │
+│                                │      {"data.a": {"$exists": true}},        │
+│                                │      {"data.b": {"$exists": true}}         │
+│                                │  ]}                                        │
+│                                │                                            │
+│  # Состояние                   │                                            │
+│  ──────────────────────────────┼────────────────────────────────────────────│
+│  {"$state_in": ["a", "b"]}     │  {"state": {"$in": ["a", "b"]}}            │
+│                                │                                            │
+│  {"$is_spin": true}            │  {"spin_phase": {"$exists": true}}         │
+│                                │                                            │
+│  # Интенты                     │                                            │
+│  ──────────────────────────────┼────────────────────────────────────────────│
+│  {"$prev_intent": "greeting"}  │  {"intent.prev": {"$eq": "greeting"}}      │
+│                                │                                            │
+│  {"$prev_intent_in": ["a","b"]}│  {"intent.prev": {"$in": ["a", "b"]}}      │
+│                                │                                            │
+│  {"$intent_streak": 3}         │  {"intent.streak": {"$gte": 3}}            │
+│                                │                                            │
+│  # Счётчики                    │                                            │
+│  ──────────────────────────────┼────────────────────────────────────────────│
+│  {"$objections": 3}            │  {"counter.objections": {"$gte": 3}}       │
+│                                │                                            │
+│  {"$objections_total": 5}      │  {"counter.objections_total": {"$gte": 5}} │
+│                                │                                            │
+│  {"$turn": {"$lte": 3}}        │  {"counter.turn": {"$lte": 3}}             │
+│                                │                                            │
+│  # Специальные                 │                                            │
+│  ──────────────────────────────┼────────────────────────────────────────────│
+│  {"$data_complete": true}      │  (проверка missing_required_data == [])    │
+│                                │                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+ПРИМЕРЫ: от простых к сложным
+═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Простые условия (Sugar)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"when": {"$has_any": ["company_size", "users_count"]}
+"when": {"$has_all": ["company_size", "pain_point"]}
+"when": {"$state_in": ["presentation", "close"]}
+"when": {"$is_spin": true}
+"when": {"$intent_streak": 3}
+"when": {"$objections": 3}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Простые условия (Core)
+# ─────────────────────────────────────────────────────────────────────────────
+
+"when": {"data.company_size": {"$exists": true}}
+"when": {"data.urgency": "high"}
+"when": {"state": {"$in": ["presentation", "close"]}}
+"when": {"intent.streak": {"$gte": 3}}
+"when": {"counter.turn": {"$lte": 5}}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Комбинированные условия
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Есть данные И в нужном состоянии
+"when": {"$and": [
+    {"$has_any": ["company_size", "users_count"]},
+    {"$state_in": ["presentation", "close"]}
+]}
+
+# Или через Core:
+"when": {"$and": [
+    {"data.company_size": {"$exists": true}},
+    {"state": {"$in": ["presentation", "close"]}}
+]}
+
+# Лимит возражений ИЛИ спросил 3+ раза
+"when": {"$or": [
+    {"$objections": 3},
+    {"$intent_streak": 3}
+]}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# С отрицанием
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Не в SPIN фазе
+"when": {"$not": {"$is_spin": true}}
+# Или через Core:
+"when": {"spin_phase": {"$exists": false}}
+
+# missing_all = нет ни одного поля
+"when": {"$not": {"$has_any": ["company_size", "users_count"]}}
+
+# missing_any = нет хотя бы одного
+"when": {"$not": {"$has_all": ["company_size", "pain_point"]}}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Со ссылками на именованные условия
+# ─────────────────────────────────────────────────────────────────────────────
+
+"when": {"$ref": "has_pricing_data"}
+"when": {"$and": [{"$ref": "has_pricing_data"}, {"$intent_streak": 3}]}
+"when": {"$not": {"$ref": "in_spin_phase"}}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Сложные бизнес-условия
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Готов к закрытию: есть все данные + в финальной фазе + прошло 5+ ходов
+"when": {"$and": [
+    {"$has_all": ["company_size", "pain_point", "contact"]},
+    {"$state_in": ["presentation", "close"]},
+    {"counter.turn": {"$gte": 5}}
+]}
+
+# Срочно переходить к soft_close: много возражений ИЛИ (в SPIN и спросил цену 3+ раз)
+"when": {"$or": [
+    {"$objections": 3},
+    {"$and": [
+        {"$is_spin": true},
+        {"$intent_streak": 3}
+    ]}
+]}
 
 3.2.1 IntentTracker (реализация для intent_streak)
 
@@ -565,62 +703,62 @@ class EvaluatorContext:
             missing_required_data=missing,
         )
 
-Mapping условий → поля контекста:
-┌────────────────────────┬─────────────────────────────────────────────────────┐
-│  Условие               │  Использует                                         │
-├────────────────────────┼─────────────────────────────────────────────────────┤
-│  has_any/has_all       │  collected_data                                     │
-│  missing_any/all       │  collected_data                                     │
-│  field_equals/compare  │  collected_data                                     │
-│  state_in              │  state                                              │
-│  spin_phase_in         │  spin_phase                                         │
-│  is_spin_state         │  is_spin_state                                      │
-│  current_intent_in     │  current_intent                                     │
-│  prev_intent           │  prev_intent                                        │
-│  prev_intent_in        │  prev_intent                                        │
-│  intent_streak         │  intent_tracker.streak_count() / .count_in_window() │
-│  objection_count       │  intent_tracker.objection_consecutive() / .total()  │
-│  turn_number           │  turn_number (= len(intent_tracker.history))        │
-│  data_complete         │  missing_required_data (empty = complete)           │
-│  $name                 │  resolve() → NAMED_CONDITIONS[name] → рекурсивно    │
-└────────────────────────┴─────────────────────────────────────────────────────┘
+Mapping Context Paths → EvaluatorContext:
+┌───────────────────────────┬─────────────────────────────────────────────────────┐
+│  Context Path             │  Источник в EvaluatorContext                        │
+├───────────────────────────┼─────────────────────────────────────────────────────┤
+│  data.{field}             │  collected_data[field]                              │
+│  state                    │  state                                              │
+│  spin_phase               │  spin_phase (None если не в SPIN)                   │
+│  intent.current           │  current_intent                                     │
+│  intent.prev              │  prev_intent                                        │
+│  intent.streak            │  intent_tracker.streak_count(current_intent)        │
+│  counter.objections       │  intent_tracker.objection_consecutive()             │
+│  counter.objections_total │  intent_tracker.objection_total()                   │
+│  counter.turn             │  turn_number (= len(intent_tracker.history))        │
+├───────────────────────────┼─────────────────────────────────────────────────────┤
+│  СПЕЦИАЛЬНЫЕ              │                                                     │
+├───────────────────────────┼─────────────────────────────────────────────────────┤
+│  $ref                     │  resolve() → NAMED_CONDITIONS[name] → рекурсивно    │
+│  $data_complete           │  missing_required_data == []                        │
+└───────────────────────────┴─────────────────────────────────────────────────────┘
 3.3 Порядок проверки условий (для rules и transitions)
 
               Вход: rule или transition с conditions
                          │
                          ▼
-         ┌───────────────────────────────┐
-         │  conditions[0]                │
-         │  when: {has_any: [...]}       │
-         └───────────────────────────────┘
+         ┌─────────────────────────────────────┐
+         │  conditions[0]                      │
+         │  when: {"$has_any": ["a", "b"]}     │
+         └─────────────────────────────────────┘
                          │
                     True? ──────────────────► return conditions[0]["then"]
                          │
                        False
                          │
                          ▼
-         ┌───────────────────────────────┐
-         │  conditions[1]                │
-         │  when: {intent_streak: min:3} │
-         └───────────────────────────────┘
+         ┌─────────────────────────────────────┐
+         │  conditions[1]                      │
+         │  when: {"$intent_streak": 3}        │
+         └─────────────────────────────────────┘
                          │
                     True? ──────────────────► return conditions[1]["then"]
                          │
                        False
                          │
                          ▼
-         ┌───────────────────────────────┐
-         │  conditions[2]                │
-         │  ...                          │
-         └───────────────────────────────┘
+         ┌─────────────────────────────────────┐
+         │  conditions[2]                      │
+         │  when: {"$ref": "complex_cond"}     │
+         └─────────────────────────────────────┘
                          │
                        False
                          │
                          ▼
-         ┌───────────────────────────────┐
-         │  return rule["default"]       │
-         └───────────────────────────────┘
-         
+         ┌─────────────────────────────────────┐
+         │  return rule["default"]             │
+         └─────────────────────────────────────┘
+
          ВАЖНО: Первое сработавшее условие побеждает!
          Порядок условий имеет значение.
 3.4 Переиспользование правил (Python-level sharing)
@@ -671,16 +809,18 @@ SPIN_COMMON_RULES = {
     "price_question": {
         "default": "deflect_and_continue",
         "conditions": [
-            {"when": {"has_any": ["company_size", "users_count"]},
+            # Sugar syntax — читаемые сокращения
+            {"when": {"$has_any": ["company_size", "users_count"]},
              "then": "answer_with_facts"},
-            {"when": {"intent_streak": {"min": 3}},  # 3-й раз подряд
+            {"when": {"$intent_streak": 3},  # 3-й раз подряд
              "then": "answer_with_price_range"}
         ]
     },
     "pricing_details": {
         "default": "deflect_and_continue",
         "conditions": [
-            {"when": {"has_any": ["company_size", "users_count"]},
+            # Через $ref — ссылка на именованное условие
+            {"when": {"$ref": "has_pricing_data"},
              "then": "answer_with_facts"}
         ]
     },
@@ -889,7 +1029,7 @@ Transition resolver (подробно):
 │          "default": "handle_objection",                                     │
 │          "conditions": [                                                    │
 │              {                                                              │
-│                  "when": {"objection_count": {"scope": "consecutive", "min": 3}},│
+│                  "when": {"$objections": 3},                                │
 │                  "then": "objection_limit_reached"                          │
 │              }                                                              │
 │          ]                                                                  │
@@ -900,7 +1040,7 @@ Transition resolver (подробно):
 │          "default": "handle_objection",                                     │
 │          "conditions": [                                                    │
 │              {                                                              │
-│                  "when": {"objection_count": {"scope": "consecutive", "min": 3}},│
+│                  "when": {"$objections": 3},                                │
 │                  "then": "soft_close"                                       │
 │              }                                                              │
 │          ]                                                                  │
@@ -1214,99 +1354,210 @@ Transition resolver (подробно):
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Обновлённый ConditionEvaluator:
+Обновлённый ConditionEvaluator (MongoDB-style):
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  EVALUATOR ИСПОЛЬЗУЕТ IntentTracker                                          │
+│  CONDITION EVALUATOR С 3-УРОВНЕВОЙ АРХИТЕКТУРОЙ                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  class ConditionEvaluator:                                                  │
-│      def evaluate(self, condition: Dict, ctx: EvaluatorContext) -> bool:    │
-│          ...                                                                │
+│      """                                                                    │
+│      MongoDB-style evaluator с 3 уровнями:                                  │
+│      1. Core Operators ($exists, $eq, $gt, $in, $and, $or, $not, $ref)      │
+│      2. Context Paths (data.*, state, intent.*, counter.*)                  │
+│      3. Sugar ($has_any, $has_all, $intent_streak, $objections, etc.)       │
 │                                                                             │
-│      def _eval_intent_streak(self, params, ctx) -> bool:                    │
-│          """                                                                │
-│          intent_streak: {min: 3} — интент идёт подряд минимум 3 раза.       │
-│          intent_streak: {min: 2, scope: "window", window: 5} — в окне.      │
-│                                                                             │
-│          ВАЖНО: streak_count() включает текущий интент (record() до eval).  │
-│          min:3 = "этот интент идёт уже 3-й раз подряд"                      │
-│          """                                                                │
-│          min_count = params.get("min", 1)                                   │
-│          scope = params.get("scope", "consecutive")                         │
-│          intent = ctx.current_intent                                        │
-│                                                                             │
-│          if scope == "consecutive":                                         │
-│              actual = ctx.intent_tracker.streak_count(intent)               │
-│          elif scope == "window":                                            │
-│              window = params.get("window", 5)                               │
-│              actual = ctx.intent_tracker.count_in_window(intent, window)    │
-│          else:                                                              │
-│              actual = ctx.intent_tracker.streak_count(intent)               │
-│                                                                             │
-│          return actual >= min_count                                         │
-│                                                                             │
-│      def _eval_objection_count(self, params, ctx) -> bool:                  │
-│          """objection_count: {scope: "consecutive", min: 3}"""              │
-│          min_count = params.get("min", 1)                                   │
-│          scope = params.get("scope", "consecutive")                         │
-│                                                                             │
-│          if scope == "consecutive":                                         │
-│              actual = ctx.intent_tracker.objection_consecutive()            │
-│          elif scope == "total":                                             │
-│              actual = ctx.intent_tracker.objection_total()                  │
-│          elif scope == "window":                                            │
-│              window = params.get("window", 5)                               │
-│              actual = ctx.intent_tracker.objection_in_window(window)        │
-│          else:                                                              │
-│              actual = ctx.intent_tracker.objection_consecutive()            │
-│                                                                             │
-│          return actual >= min_count                                         │
-│                                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  RESOLVER ДЛЯ ИМЕНОВАННЫХ УСЛОВИЙ ($name)                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
+│      Pipeline: Sugar → Core → Resolve Paths → Evaluate                      │
+│      """                                                                    │
 │                                                                             │
 │      def __init__(self, named_conditions: Dict[str, Any] = None):           │
-│          """                                                                │
-│          named_conditions: NAMED_CONDITIONS из config.py                    │
-│          """                                                                │
 │          self.named_conditions = named_conditions or {}                     │
 │                                                                             │
-│      def resolve(self, condition: Any) -> Any:                              │
-│          """                                                                │
-│          Разворачивает $name ссылки перед проверкой.                        │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # EXPAND: Sugar → Core                                                 │
+│      # ─────────────────────────────────────────────────────────────────────│
 │                                                                             │
-│          "$has_pricing_data" → {"has_any": ["company_size", "users_count"]} │
-│          {"and": ["$x", "$y"]} → {"and": [resolved_x, resolved_y]}          │
-│          """                                                                │
-│          # Строка с $name → разворачиваем                                   │
-│          if isinstance(condition, str) and condition.startswith("$"):       │
-│              name = condition[1:]                                           │
-│              if name not in self.named_conditions:                          │
-│                  raise ValueError(f"Unknown named condition: {condition}")  │
-│              # Рекурсивно разворачиваем (вложенные ссылки)                  │
-│              return self.resolve(self.named_conditions[name])               │
+│      def _expand_sugar(self, condition: Dict) -> Dict:                      │
+│          """Разворачивает Sugar в Core operators."""                        │
+│          if not isinstance(condition, dict) or len(condition) != 1:         │
+│              return condition                                               │
 │                                                                             │
-│          # Dict → разворачиваем вложенные                                   │
-│          if isinstance(condition, dict):                                    │
-│              return {k: self.resolve(v) for k, v in condition.items()}      │
+│          key, value = next(iter(condition.items()))                         │
 │                                                                             │
-│          # List → разворачиваем элементы (для and/or)                       │
-│          if isinstance(condition, list):                                    │
-│              return [self.resolve(item) for item in condition]              │
+│          # $has_any: ["a", "b"] → $or: [data.a exists, data.b exists]       │
+│          if key == "$has_any":                                              │
+│              return {"$or": [{"data." + f: {"$exists": True}} for f in value]}│
 │                                                                             │
-│          # Остальное (числа, bool) — как есть                               │
-│          return condition                                                   │
+│          # $has_all: ["a", "b"] → $and: [data.a exists, data.b exists]      │
+│          if key == "$has_all":                                              │
+│              return {"$and": [{"data." + f: {"$exists": True}} for f in value]}│
+│                                                                             │
+│          # $state_in: ["a", "b"] → state: {$in: ["a", "b"]}                 │
+│          if key == "$state_in":                                             │
+│              return {"state": {"$in": value}}                               │
+│                                                                             │
+│          # $is_spin: true → spin_phase: {$exists: true}                     │
+│          if key == "$is_spin":                                              │
+│              return {"spin_phase": {"$exists": value}}                      │
+│                                                                             │
+│          # $prev_intent: "greeting" → intent.prev: {$eq: "greeting"}        │
+│          if key == "$prev_intent":                                          │
+│              return {"intent.prev": {"$eq": value}}                         │
+│                                                                             │
+│          # $prev_intent_in: ["a","b"] → intent.prev: {$in: ["a", "b"]}      │
+│          if key == "$prev_intent_in":                                       │
+│              return {"intent.prev": {"$in": value}}                         │
+│                                                                             │
+│          # $intent_streak: 3 → intent.streak: {$gte: 3}                     │
+│          if key == "$intent_streak":                                        │
+│              return {"intent.streak": {"$gte": value}}                      │
+│                                                                             │
+│          # $objections: 3 → counter.objections: {$gte: 3}                   │
+│          if key == "$objections":                                           │
+│              return {"counter.objections": {"$gte": value}}                 │
+│                                                                             │
+│          # $objections_total: 5 → counter.objections_total: {$gte: 5}       │
+│          if key == "$objections_total":                                     │
+│              return {"counter.objections_total": {"$gte": value}}           │
+│                                                                             │
+│          # $turn: {$lte: 3} → counter.turn: {$lte: 3}                       │
+│          if key == "$turn":                                                 │
+│              return {"counter.turn": value}                                 │
+│                                                                             │
+│          # $data_complete: true → специальная проверка                      │
+│          if key == "$data_complete":                                        │
+│              return {"_special": "data_complete", "_value": value}          │
+│                                                                             │
+│          return condition  # Не Sugar — вернуть как есть                    │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # RESOLVE: Context Paths → Values                                      │
+│      # ─────────────────────────────────────────────────────────────────────│
+│                                                                             │
+│      def _resolve_path(self, path: str, ctx: EvaluatorContext) -> Any:      │
+│          """Получает значение по Context Path."""                           │
+│                                                                             │
+│          # data.{field} → collected_data[field]                             │
+│          if path.startswith("data."):                                       │
+│              field = path[5:]  # "data.company_size" → "company_size"       │
+│              return ctx.collected_data.get(field)                           │
+│                                                                             │
+│          # state → текущее состояние                                        │
+│          if path == "state":                                                │
+│              return ctx.state                                               │
+│                                                                             │
+│          # spin_phase → SPIN фаза или None                                  │
+│          if path == "spin_phase":                                           │
+│              return ctx.spin_phase                                          │
+│                                                                             │
+│          # intent.current → текущий интент                                  │
+│          if path == "intent.current":                                       │
+│              return ctx.current_intent                                      │
+│                                                                             │
+│          # intent.prev → предыдущий интент                                  │
+│          if path == "intent.prev":                                          │
+│              return ctx.prev_intent                                         │
+│                                                                             │
+│          # intent.streak → серия текущего интента                           │
+│          if path == "intent.streak":                                        │
+│              return ctx.intent_tracker.streak_count(ctx.current_intent)     │
+│                                                                             │
+│          # counter.objections → возражения подряд                           │
+│          if path == "counter.objections":                                   │
+│              return ctx.intent_tracker.objection_consecutive()              │
+│                                                                             │
+│          # counter.objections_total → всего возражений                      │
+│          if path == "counter.objections_total":                             │
+│              return ctx.intent_tracker.objection_total()                    │
+│                                                                             │
+│          # counter.turn → номер хода                                        │
+│          if path == "counter.turn":                                         │
+│              return ctx.turn_number                                         │
+│                                                                             │
+│          raise ValueError(f"Unknown path: {path}")                          │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # EVALUATE: Core Operators                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│                                                                             │
+│      def _eval_operator(self, actual: Any, op: str, expected: Any) -> bool: │
+│          """Вычисляет Core operator."""                                     │
+│          if op == "$exists":                                                │
+│              return (actual is not None) == expected                        │
+│          if op == "$eq":                                                    │
+│              return actual == expected                                      │
+│          if op == "$ne":                                                    │
+│              return actual != expected                                      │
+│          if op == "$gt":                                                    │
+│              return actual is not None and actual > expected                │
+│          if op == "$gte":                                                   │
+│              return actual is not None and actual >= expected               │
+│          if op == "$lt":                                                    │
+│              return actual is not None and actual < expected                │
+│          if op == "$lte":                                                   │
+│              return actual is not None and actual <= expected               │
+│          if op == "$in":                                                    │
+│              return actual in expected                                      │
+│          if op == "$nin":                                                   │
+│              return actual not in expected                                  │
+│          raise ValueError(f"Unknown operator: {op}")                        │
+│                                                                             │
+│      # ─────────────────────────────────────────────────────────────────────│
+│      # MAIN: evaluate() — точка входа                                       │
+│      # ─────────────────────────────────────────────────────────────────────│
 │                                                                             │
 │      def evaluate(self, condition: Any, ctx: EvaluatorContext) -> bool:     │
-│          """Разворачивает и проверяет условие."""                           │
-│          resolved = self.resolve(condition)                                 │
-│          return self._evaluate_resolved(resolved, ctx)                      │
+│          """                                                                │
+│          Main entry point. Pipeline:                                        │
+│          1. Resolve $ref (именованные условия)                              │
+│          2. Expand Sugar → Core                                             │
+│          3. Evaluate Core operators                                         │
+│          """                                                                │
+│          # 1. Resolve $ref                                                  │
+│          if isinstance(condition, dict) and "$ref" in condition:            │
+│              name = condition["$ref"]                                       │
+│              if name not in self.named_conditions:                          │
+│                  raise ValueError(f"Unknown named condition: {name}")       │
+│              return self.evaluate(self.named_conditions[name], ctx)         │
 │                                                                             │
-│      def _evaluate_resolved(self, condition, ctx) -> bool:                  │
-│          """Проверяет уже развёрнутое условие (без $name)."""               │
-│          # ... существующая логика evaluate ...                             │
+│          # 2. Expand Sugar → Core                                           │
+│          expanded = self._expand_sugar(condition)                           │
+│                                                                             │
+│          # 3. Evaluate                                                      │
+│          return self._eval(expanded, ctx)                                   │
+│                                                                             │
+│      def _eval(self, condition: Any, ctx: EvaluatorContext) -> bool:        │
+│          """Evaluate Core condition (после expand)."""                      │
+│                                                                             │
+│          # Логические операторы                                             │
+│          if "$and" in condition:                                            │
+│              return all(self.evaluate(c, ctx) for c in condition["$and"])   │
+│          if "$or" in condition:                                             │
+│              return any(self.evaluate(c, ctx) for c in condition["$or"])    │
+│          if "$not" in condition:                                            │
+│              return not self.evaluate(condition["$not"], ctx)               │
+│                                                                             │
+│          # Специальные условия                                              │
+│          if "_special" in condition:                                        │
+│              if condition["_special"] == "data_complete":                   │
+│                  is_complete = len(ctx.missing_required_data) == 0          │
+│                  return is_complete == condition["_value"]                  │
+│                                                                             │
+│          # Path: operator условие — {"data.company_size": {"$exists": true}}│
+│          for path, value in condition.items():                              │
+│              actual = self._resolve_path(path, ctx)                         │
+│                                                                             │
+│              # Implicit $eq: {"data.urgency": "high"}                       │
+│              if not isinstance(value, dict):                                │
+│                  return actual == value                                     │
+│                                                                             │
+│              # Explicit operator: {"data.size": {"$gte": 10}}               │
+│              for op, expected in value.items():                             │
+│                  if not self._eval_operator(actual, op, expected):          │
+│                      return False                                           │
+│              return True                                                    │
+│                                                                             │
+│          return True  # Пустое условие = всегда true                        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -1366,7 +1617,7 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
     "default": "deflect_and_continue",
     "conditions": [
         {
-            "when": {"has_any": ["company_size", "users_count"]},
+            "when": {"$has_any": ["company_size", "users_count"]},
             "then": "answer_with_facts"
         }
     ]
@@ -1381,12 +1632,12 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
     "conditions": [
         # Приоритет 1: Если данные есть — ответить
         {
-            "when": {"has_any": ["company_size", "users_count"]},
+            "when": {"$has_any": ["company_size", "users_count"]},
             "then": "answer_with_facts"
         },
         # Приоритет 2: Если спросил 3-й раз подряд — дать диапазон
         {
-            "when": {"intent_streak": {"min": 3}},
+            "when": {"$intent_streak": 3},
             "then": "answer_with_price_range"
         }
     ]
@@ -1394,9 +1645,9 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 Сценарий:
 
 
-Ход 1: "Сколько стоит?"     → deflect (данных нет, streak=1, min:3 → False)
-Ход 2: "Ну почем?"          → deflect (данных нет, streak=2, min:3 → False)
-Ход 3: "Цену скажи!"        → answer_with_price_range (streak=3, min:3 → True!)
+Ход 1: "Сколько стоит?"     → deflect (данных нет, streak=1, $gte:3 → False)
+Ход 2: "Ну почем?"          → deflect (данных нет, streak=2, $gte:3 → False)
+Ход 3: "Цену скажи!"        → answer_with_price_range (streak=3, $gte:3 → True!)
 4.3 Умная обработка возражения о цене
 
 "objection_price": {
@@ -1404,12 +1655,12 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
     "conditions": [
         # Если знаем боль и размер — показать ROI
         {
-            "when": {"has_all": ["pain_point", "company_size"]},
+            "when": {"$has_all": ["pain_point", "company_size"]},
             "then": "handle_price_with_roi"
         },
         # Если только размер — сравнить с конкурентами
         {
-            "when": {"has_any": ["company_size"]},
+            "when": {"$has_any": ["company_size"]},
             "then": "handle_price_with_comparison"
         }
     ]
@@ -1423,7 +1674,7 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
     "conditions": [
         # Если спрашивает 2-й раз подряд — предложить документацию
         {
-            "when": {"intent_streak": {"min": 2}},
+            "when": {"$intent_streak": 2},
             "then": "offer_documentation_link"
         }
     ]
@@ -1437,7 +1688,7 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
             "default": null,          # null → не переходить, остаться в close
             "conditions": [
                 {
-                    "when": {"has_any": ["contact_info"]},
+                    "when": {"$has_any": ["contact_info"]},
                     "then": "success"
                 }
             ]
@@ -1501,11 +1752,13 @@ if intent == "price_question" and rule_action == "deflect_and_continue":
 │       • objection_consecutive() — подряд возражений (заменяет OFM)          │
 │       • objection_total() — всего возражений (заменяет OFM)                 │
 │       • to_dict() — сериализация для ContextEnvelope                        │
-│  2. Создать src/condition_evaluator.py:                                     │
-│     - resolve($name) — разворачивание именованных условий                   │
-│     - evaluate(condition, ctx) — проверка условия                           │
-│  3. Реализовать все типы условий (has_any, objection_count, $name, etc.)    │
-│  4. Написать unit-тесты для каждого модуля (включая $name resolution)       │
+│  2. Создать src/condition_evaluator.py (MongoDB-style):                     │
+│     - _expand_sugar() — Sugar ($has_any) → Core ($or, $exists)              │
+│     - _resolve_path() — Context Paths (data.*, intent.*, counter.*)         │
+│     - _eval_operator() — Core Operators ($exists, $eq, $gte, $in, etc.)     │
+│     - evaluate() → $ref resolve → expand → eval                             │
+│  3. Реализовать все Sugar операторы ($has_any, $intent_streak, etc.)        │
+│  4. Написать unit-тесты для каждого модуля (включая $ref resolution)        │
 │  5. Результат: модули можно тестировать изолированно                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -1635,16 +1888,16 @@ SPIN_COMMON_RULES = {
     "price_question": {
         "default": "deflect_and_continue",
         "conditions": [
-            {"when": {"has_any": ["company_size", "users_count"]},
+            {"when": {"$has_any": ["company_size", "users_count"]},
              "then": "answer_with_facts"},
-            {"when": {"intent_streak": {"min": 3}},  # 3-й раз подряд
+            {"when": {"$intent_streak": 3},  # 3-й раз подряд
              "then": "answer_with_price_range"}
         ]
     },
     "pricing_details": {
         "default": "deflect_and_continue",
         "conditions": [
-            {"when": {"has_any": ["company_size", "users_count"]},
+            {"when": {"$has_any": ["company_size", "users_count"]},
              "then": "answer_with_facts"}
         ]
     },
@@ -1705,7 +1958,7 @@ SALES_CONFIG = {
                 "objection_price": {
                     "default": "handle_objection",
                     "conditions": [
-                        {"when": {"objection_count": {"scope": "consecutive", "min": 3}},
+                        {"when": {"$objections": 3},
                          "then": "objection_limit_reached"}
                     ]
                 }
@@ -1717,14 +1970,14 @@ SALES_CONFIG = {
                 "demo_request": {
                     "default": None,
                     "conditions": [
-                        {"when": {"has_any": ["contact_info"]}, "then": "success"}
+                        {"when": {"$has_any": ["contact_info"]}, "then": "success"}
                     ]
                 },
                 # Переход в soft_close при лимите возражений
                 "objection_price": {
                     "default": None,
                     "conditions": [
-                        {"when": {"objection_count": {"scope": "consecutive", "min": 3}},
+                        {"when": {"$objections": 3},
                          "then": "soft_close"}
                     ]
                 }
@@ -2126,9 +2379,9 @@ class StateMachine:
 7.10 Пример полного лога одного хода
 
 [12:34:56] DEBUG - Resolving rule [intent=price_question, rule_type=conditional, state=spin_situation, simulation_id=10]
-[12:34:56] DEBUG - Evaluation context [collected_data={company_size: 10}, state=spin_situation, spin_phase=situation, intent_streak={price_question: 2}, simulation_id=10]
-[12:34:56] DEBUG - Condition evaluated [condition_index=0, condition_type=has_any, params=['company_size', 'users_count'], result=True, matched_field=company_size, simulation_id=10]
-[12:34:56] INFO - Rule resolved [intent=price_question, result=answer_with_facts, resolution=condition_matched, matched_condition_index=0, matched_condition_type=has_any, simulation_id=10]
+[12:34:56] DEBUG - Evaluation context [collected_data={company_size: 10}, state=spin_situation, spin_phase=situation, intent.streak=2, simulation_id=10]
+[12:34:56] DEBUG - Condition evaluated [condition_index=0, condition={"$has_any": ["company_size", "users_count"]}, result=True, matched_field=company_size, simulation_id=10]
+[12:34:56] INFO - Rule resolved [intent=price_question, result=answer_with_facts, resolution=condition_matched, matched_condition_index=0, simulation_id=10]
 
 Часть 8: РЕЗЮМЕ
 
@@ -2161,7 +2414,7 @@ class StateMachine:
   • Методы: streak_count(), objection_consecutive(), objection_total()
   • Автоматическая категоризация через INTENT_CATEGORIES
 - Hooks (_apply_hooks) — просто вызывают intent_tracker.record()
-- Condition Evaluator — изолированный модуль проверки условий + resolve($name)
+- Condition Evaluator — MongoDB-style с 3 уровнями (Core + Paths + Sugar) + $ref
 - Action/Transition Resolvers — универсальные интерпретаторы правил в SM
 - EvaluatorContext — типизированный контекст с current_intent, prev_intent, IntentTracker
 - RuleResult — возврат apply_rules() с __iter__ (обратная совместимость)
@@ -2178,7 +2431,7 @@ class StateMachine:
 │  3  │ Hardcoded POSITIVE_INTENTS       │ INTENT_CATEGORIES в config        │
 │  4  │ Hardcoded QUESTION_INTENTS       │ global_rules в config             │
 │  5  │ Нет отслеживания серий интентов  │ intent_streak + IntentTracker     │
-│  6  │ Нет not условия                  │ not, missing_any, missing_all     │
+│  6  │ Нет not условия                  │ $not + $has_any/$has_all (MongoDB)│
 │  7  │ Дублирование rules в SPIN        │ **SPIN_COMMON_RULES + global_rules│
 │  8  │ Контекст не специфицирован       │ EvaluatorContext dataclass        │
 │  9  │ 8+ if'ов в apply_rules()         │ 4 этапа: hooks → exit → action → state │
@@ -2188,7 +2441,9 @@ class StateMachine:
 │ 13  │ Рассинхрон Bot/SM.last_intent    │ Единый IntentTracker в SM         │
 │ 14  │ Breaking change в apply_rules()  │ RuleResult с __iter__ (совместим) │
 │ 15  │ current_intent нет в контексте   │ current_intent + prev_intent      │
-│ 16  │ Дублирование условий rules/trans │ NAMED_CONDITIONS + $name ссылки   │
+│ 16  │ Дублирование условий rules/trans │ NAMED_CONDITIONS + $ref ссылки    │
+│ 17  │ 19 типов условий — избыточность │ MongoDB-style: 3 уровня (Core +   │
+│     │                                  │ Paths + Sugar)                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Зачем это нужно:
