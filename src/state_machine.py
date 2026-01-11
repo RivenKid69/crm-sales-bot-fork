@@ -15,9 +15,9 @@ Phase 4 Integration (ARCHITECTURE_UNIFIED_PLAN.md):
 """
 
 from typing import Tuple, Dict, Optional, List, Any, Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from config import SALES_STATES, QUESTION_INTENTS, DISAMBIGUATION_CONFIG
+from config import SALES_STATES, QUESTION_INTENTS
 from feature_flags import flags
 from logger import logger
 
@@ -25,7 +25,7 @@ from logger import logger
 from src.intent_tracker import IntentTracker, INTENT_CATEGORIES
 from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_registry
-from src.rules.resolver import RuleResolver, RuleResult as ResolverRuleResult
+from src.rules.resolver import RuleResolver
 from src.conditions.trace import EvaluationTrace, TraceCollector, Resolution
 
 

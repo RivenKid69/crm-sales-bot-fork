@@ -38,8 +38,8 @@ class TestExactMatchAdvanced:
         ("алкоголь укм", ["products", "wipon_pro", "pricing"]),
         ("тариф цена", ["pricing"]),
         ("снр", ["tis"]),  # СНР это специальный налоговый режим в рамках ТИС
-        # Фразы из keywords
-        ("онлайн-касса", ["products", "kassa"]),
+        # Фразы из keywords - NOTE: "онлайн-касса" moved to lemma test
+        # because hyphenated words are tokenized into separate lemmas
         ("укм марка", ["products", "wipon_pro", "pricing"]),  # УКМ - учётно-контрольные марки
         ("режим налогообложения", ["tis", "support"]),  # Может быть в support или tis
     ])
@@ -136,6 +136,21 @@ class TestLemmaMatchAdvanced:
                 assert base_lemma == inflection_lemma or \
                        any(base_lemma in str(r.matched_lemmas) for r in inflection_results if inflection_results), \
                        f"'{base_word}' -> '{base_lemma}', '{inflection}' -> '{inflection_lemma}'"
+
+    def test_hyphenated_words_tokenized_to_lemmas(self, retriever):
+        """Слова с дефисом разбиваются на отдельные леммы."""
+        # "онлайн-касса" tokenizes into {"онлайн", "касса"} and matches via lemma
+        results = retriever.search("онлайн-касса")
+        assert len(results) > 0, "Should find results for 'онлайн-касса'"
+        # Should match via LEMMA since hyphen causes tokenization
+        assert results[0].stage == MatchStage.LEMMA, \
+            f"Expected LEMMA stage for hyphenated word, got {results[0].stage}"
+        assert "касса" in results[0].matched_lemmas, \
+            f"Expected 'касса' in matched_lemmas, got {results[0].matched_lemmas}"
+        # Result should be in pricing/kassa category
+        assert "pricing" in results[0].section.category.lower() or \
+               "kassa" in results[0].section.topic.lower(), \
+            f"Expected pricing/kassa category, got {results[0].section.category}/{results[0].section.topic}"
 
     def test_lemma_search_with_stop_words(self, retriever):
         """Стоп-слова фильтруются при лемматизации."""

@@ -7,7 +7,7 @@
 """
 
 from typing import Dict, List, Optional
-from config import SYSTEM_PROMPT, SYSTEM_PROMPT_BASE, PROMPT_TEMPLATES, KNOWLEDGE
+from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from knowledge.retriever import get_retriever
 from settings import settings
 from logger import logger
@@ -571,7 +571,7 @@ if __name__ == "__main__":
     
     # Тест 1: Приветствие
     ctx1 = {"user_message": "Привет"}
-    print(f"Клиент: Привет")
+    print("Клиент: Привет")
     print(f"Бот: {gen.generate('greeting', ctx1)}\n")
     
     # Тест 2: Deflect price
@@ -581,5 +581,5 @@ if __name__ == "__main__":
         "goal": "Узнать размер и боль",
         "missing_data": ["company_size", "pain_point"]
     }
-    print(f"Клиент: Сколько стоит?")
+    print("Клиент: Сколько стоит?")
     print(f"Бот: {gen.generate('deflect_and_continue', ctx2)}\n")

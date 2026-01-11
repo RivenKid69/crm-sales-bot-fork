@@ -37,9 +37,6 @@ from feature_flags import flags
 from src.conditions.policy import (
     PolicyContext,
     policy_registry,
-    OVERLAY_ALLOWED_STATES,
-    PROTECTED_STATES,
-    AGGRESSIVE_ACTIONS,
 )
 from src.conditions.trace import EvaluationTrace, Resolution
 

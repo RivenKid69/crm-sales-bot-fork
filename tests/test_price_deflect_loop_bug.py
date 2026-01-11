@@ -214,28 +214,50 @@ class TestPriceDeflectLoopFix:
 
 class TestConfigRulesAnalysis:
     """
-    Анализ конфигурации — правила в config.py не изменились.
+    Анализ конфигурации — проверяем условные правила (Phase 8 Conditional Rules).
+
+    В SPIN-фазах price_question имеет условную логику:
+    [{"when": "can_answer_price", "then": "answer_with_facts"}, "deflect_and_continue"]
+
+    В presentation/close — простое answer_with_facts.
     """
 
-    def test_spin_situation_rules_has_deflect(self):
-        """Config: spin_situation.rules имеет price_question: deflect"""
+    def test_spin_situation_rules_has_conditional_price_question(self):
+        """Config: spin_situation.rules имеет условный price_question"""
         rules = SALES_STATES["spin_situation"]["rules"]
-        assert rules.get("price_question") == "deflect_and_continue"
+        price_rule = rules.get("price_question")
+        # Должен быть список с условием и fallback
+        assert isinstance(price_rule, list), \
+            f"price_question в spin_situation должен быть списком (conditional rule). Получили: {type(price_rule)}"
+        assert len(price_rule) == 2, \
+            f"Conditional rule должен иметь 2 элемента: условие и fallback. Получили: {price_rule}"
+        assert price_rule[0].get("when") == "can_answer_price", \
+            f"Первый элемент должен иметь when='can_answer_price'. Получили: {price_rule[0]}"
+        assert price_rule[0].get("then") == "answer_with_facts", \
+            f"Первый элемент должен иметь then='answer_with_facts'. Получили: {price_rule[0]}"
+        assert price_rule[1] == "deflect_and_continue", \
+            f"Fallback должен быть 'deflect_and_continue'. Получили: {price_rule[1]}"
 
-    def test_spin_problem_rules_has_deflect(self):
-        """Config: spin_problem.rules имеет price_question: deflect"""
+    def test_spin_problem_rules_has_conditional_price_question(self):
+        """Config: spin_problem.rules имеет условный price_question"""
         rules = SALES_STATES["spin_problem"]["rules"]
-        assert rules.get("price_question") == "deflect_and_continue"
+        price_rule = rules.get("price_question")
+        assert isinstance(price_rule, list)
+        assert price_rule[1] == "deflect_and_continue"
 
-    def test_spin_implication_rules_has_deflect(self):
-        """Config: spin_implication.rules имеет price_question: deflect"""
+    def test_spin_implication_rules_has_conditional_price_question(self):
+        """Config: spin_implication.rules имеет условный price_question"""
         rules = SALES_STATES["spin_implication"]["rules"]
-        assert rules.get("price_question") == "deflect_and_continue"
+        price_rule = rules.get("price_question")
+        assert isinstance(price_rule, list)
+        assert price_rule[1] == "deflect_and_continue"
 
-    def test_spin_need_payoff_rules_has_deflect(self):
-        """Config: spin_need_payoff.rules имеет price_question: deflect"""
+    def test_spin_need_payoff_rules_has_conditional_price_question(self):
+        """Config: spin_need_payoff.rules имеет условный price_question"""
         rules = SALES_STATES["spin_need_payoff"]["rules"]
-        assert rules.get("price_question") == "deflect_and_continue"
+        price_rule = rules.get("price_question")
+        assert isinstance(price_rule, list)
+        assert price_rule[1] == "deflect_and_continue"
 
     def test_presentation_rules_has_answer(self):
         """Config: presentation.rules имеет price_question: answer_with_facts"""

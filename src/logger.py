@@ -301,7 +301,6 @@ def create_test_logger(name: str = "test") -> StructuredLogger:
 # =============================================================================
 
 if __name__ == "__main__":
-    import sys
 
     print("=" * 60)
     print("ДЕМО STRUCTURED LOGGER")

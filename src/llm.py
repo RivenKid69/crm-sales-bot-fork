@@ -19,7 +19,7 @@ Resilient LLM Client для CRM Sales Bot.
 """
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import requests

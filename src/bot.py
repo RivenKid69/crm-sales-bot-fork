@@ -32,7 +32,7 @@ from conversation_guard import ConversationGuard
 from fallback_handler import FallbackHandler
 
 # Phase 2: Natural Dialogue
-from tone_analyzer import ToneAnalyzer, Tone
+from tone_analyzer import ToneAnalyzer
 
 # Phase 3: SPIN Flow Optimization
 from lead_scoring import LeadScorer, get_signal_from_intent

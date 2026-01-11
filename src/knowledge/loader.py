@@ -8,7 +8,7 @@
 
 import yaml
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from .base import KnowledgeBase, KnowledgeSection
 
 # Путь к директории с YAML файлами

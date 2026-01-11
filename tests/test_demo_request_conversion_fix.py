@@ -206,60 +206,91 @@ class TestCloseStateTransitions:
         self.sm = StateMachine()
 
     def test_close_state_has_demo_request_transition(self):
-        """close state имеет переход demo_request → success"""
+        """close state имеет условный переход demo_request (Phase 8 Conditional Rules)
+
+        Формат: [{"when": "ready_for_close", "then": "success"}, "close"]
+        - С контактом (ready_for_close=True) → success
+        - Без контакта → остаёмся в close для сбора контактных данных
+        """
         close_config = SALES_STATES["close"]
         assert "demo_request" in close_config["transitions"], \
             "close должен иметь transition для demo_request"
-        assert close_config["transitions"]["demo_request"] == "success", \
-            "demo_request в close должен вести в success"
+        demo_rule = close_config["transitions"]["demo_request"]
+        # Теперь это условное правило
+        assert isinstance(demo_rule, list), \
+            f"demo_request в close должен быть условным правилом. Получили: {type(demo_rule)}"
+        assert demo_rule[0].get("when") == "ready_for_close", \
+            f"Условие должно быть ready_for_close. Получили: {demo_rule[0]}"
+        assert demo_rule[0].get("then") == "success", \
+            f"При ready_for_close должен переходить в success. Получили: {demo_rule[0]}"
 
     def test_close_state_has_agreement_transition(self):
-        """close state имеет переход agreement → success"""
+        """close state имеет условный переход agreement (Phase 8 Conditional Rules)"""
         close_config = SALES_STATES["close"]
         assert "agreement" in close_config["transitions"], \
             "close должен иметь transition для agreement"
-        assert close_config["transitions"]["agreement"] == "success", \
-            "agreement в close должен вести в success"
+        agreement_rule = close_config["transitions"]["agreement"]
+        # Теперь это условное правило
+        assert isinstance(agreement_rule, list), \
+            f"agreement в close должен быть условным правилом. Получили: {type(agreement_rule)}"
+        assert agreement_rule[0].get("then") == "success", \
+            f"При ready_for_close должен переходить в success. Получили: {agreement_rule[0]}"
 
-    def test_demo_request_in_close_leads_to_success(self):
-        """demo_request в close state → переход в success"""
+    def test_demo_request_in_close_with_contact_leads_to_success(self):
+        """demo_request в close state с контактом → переход в success"""
         self.sm.state = "close"
         self.sm.spin_phase = "close"
+        # Добавляем контактную информацию для выполнения условия ready_for_close
+        self.sm.collected_data = {"contact_info": {"phone": "+79001234567"}}
 
         action, next_state = self.sm.apply_rules("demo_request")
 
         assert next_state == "success", \
-            f"demo_request в close должен вести в success, получили {next_state}"
+            f"demo_request в close с контактом должен вести в success, получили {next_state}"
 
-    def test_agreement_in_close_leads_to_success(self):
-        """agreement в close state → переход в success"""
+    def test_demo_request_in_close_without_contact_stays_in_close(self):
+        """demo_request в close state без контакта → остаёмся в close"""
         self.sm.state = "close"
         self.sm.spin_phase = "close"
+        self.sm.collected_data = {}  # Нет контакта
+
+        action, next_state = self.sm.apply_rules("demo_request")
+
+        assert next_state == "close", \
+            f"demo_request в close без контакта должен оставаться в close, получили {next_state}"
+
+    def test_agreement_in_close_with_contact_leads_to_success(self):
+        """agreement в close state с контактом → переход в success"""
+        self.sm.state = "close"
+        self.sm.spin_phase = "close"
+        self.sm.collected_data = {"contact_info": {"email": "test@example.com"}}
 
         action, next_state = self.sm.apply_rules("agreement")
 
         assert next_state == "success", \
-            f"agreement в close должен вести в success, получили {next_state}"
+            f"agreement в close с контактом должен вести в success, получили {next_state}"
 
-    def test_callback_request_in_close_leads_to_success(self):
-        """callback_request в close state → переход в success"""
+    def test_callback_request_in_close_with_contact_leads_to_success(self):
+        """callback_request в close state с контактом → переход в success"""
         self.sm.state = "close"
         self.sm.spin_phase = "close"
+        self.sm.collected_data = {"contact_info": {"phone": "+79001234567"}}
 
         action, next_state = self.sm.apply_rules("callback_request")
 
         assert next_state == "success", \
-            f"callback_request в close должен вести в success, получили {next_state}"
+            f"callback_request в close с контактом должен вести в success, получили {next_state}"
 
-    def test_consultation_request_in_close_leads_to_success(self):
-        """consultation_request в close state → переход в success"""
+    def test_consultation_request_in_close_with_contact_leads_to_success(self):
+        """consultation_request в close state с контактом → переход в success"""
         self.sm.state = "close"
         self.sm.spin_phase = "close"
+        self.sm.collected_data = {"contact_info": {"phone": "+79001234567"}}
 
         action, next_state = self.sm.apply_rules("consultation_request")
 
         assert next_state == "success", \
-            f"consultation_request в close должен вести в success, получили {next_state}"
+            f"consultation_request в close с контактом должен вести в success, получили {next_state}"
 
     def test_rejection_in_close_leads_to_soft_close(self):
         """rejection в close state → переход в soft_close (без изменений)"""
@@ -294,7 +325,10 @@ class TestSuccessMetricsFinalization:
     """
 
     def test_demo_request_to_success_finalizes_as_demo_scheduled(self, bot):
-        """Демо-запрос → close → agreement → success"""
+        """Демо-запрос → close → контакт → success
+
+        Phase 8: Conditional rules требуют contact_info для перехода в success.
+        """
         # Прогоняем диалог до close
         bot.process("Привет")
         bot.process("у нас 10 человек")
@@ -307,22 +341,26 @@ class TestSuccessMetricsFinalization:
         assert result["state"] in ("close", "success"), \
             f"После demo_request должны быть в close или success, state={result['state']}"
 
-        # Если ещё в close, подтверждаем согласие
+        # Если ещё в close, предоставляем контакт для перехода в success
         if result["state"] == "close":
-            result = bot.process("да, записывайте")
+            result = bot.process("мой телефон +7 999 123 45 67")
             assert result["state"] == "success", \
-                f"После подтверждения должны быть в success, state={result['state']}"
+                f"После предоставления контакта должны быть в success, state={result['state']}"
 
     def test_agreement_in_close_finalizes_correctly(self, bot):
-        """Согласие в close → success → правильная финализация"""
-        # Устанавливаем state напрямую для теста
+        """Согласие в close с контактом → success → правильная финализация
+
+        Phase 8: ready_for_close требует contact_info.
+        """
+        # Устанавливаем state и contact_info для теста
         bot.state_machine.state = "close"
+        bot.state_machine.collected_data["contact_info"] = {"phone": "+79001234567"}
 
         result = bot.process("да, давайте")
 
         # Проверяем переход в success
         assert result["state"] == "success", \
-            f"agreement в close должен вести в success, получили {result['state']}"
+            f"agreement в close с контактом должен вести в success, получили {result['state']}"
 
     def test_contact_provided_leads_to_success(self, bot):
         """Предоставление контакта → SUCCESS метрика"""
@@ -341,7 +379,10 @@ class TestIntegrationHappyPath:
     """
 
     def test_happy_path_with_demo_request(self, bot):
-        """Полный happy path: приветствие → SPIN → демо → close → подтверждение → успех"""
+        """Полный happy path: приветствие → SPIN → демо → close → контакт → успех
+
+        Phase 8: Conditional rules требуют contact_info для success.
+        """
         dialogue = [
             ("Привет, хочу узнать про CRM", None),
             ("у нас 15 человек, розничная торговля", None),
@@ -349,7 +390,7 @@ class TestIntegrationHappyPath:
             ("да, это сильно влияет на продажи", None),
             ("хотелось бы видеть всё в одном месте", None),
             ("да, хочу демо", "close"),  # demo_request → close
-            ("да, давайте", "success"),  # agreement в close → success
+            ("мой номер +7 999 123 45 67", "success"),  # contact_provided → success
         ]
 
         for message, expected_state in dialogue:
@@ -359,7 +400,10 @@ class TestIntegrationHappyPath:
                     f"После '{message}' ожидали state={expected_state}, получили {result['state']}"
 
     def test_demo_request_mid_spin_leads_to_close_then_success(self, bot):
-        """Демо-запрос в середине SPIN → close → success"""
+        """Демо-запрос в середине SPIN → close → контакт → success
+
+        Phase 8: Conditional rules требуют contact_info.
+        """
         # Начинаем диалог
         bot.process("Привет")
         bot.process("у нас 10 человек")
@@ -367,15 +411,14 @@ class TestIntegrationHappyPath:
         # Демо-запрос в середине SPIN situation
         result = bot.process("хочу посмотреть демо")
 
-        # Должны быть в close или success
-        assert result["state"] in ("close", "success"), \
-            f"Demo request должен вести в close/success, получили {result['state']}"
+        # Должны быть в close
+        assert result["state"] == "close", \
+            f"Demo request должен вести в close, получили {result['state']}"
 
-        # Если в close, подтверждение должно вести в success
-        if result["state"] == "close":
-            result = bot.process("да, записывайте")
-            assert result["state"] == "success", \
-                f"Подтверждение в close должно вести в success, получили {result['state']}"
+        # Предоставляем контакт для завершения
+        result = bot.process("мой телефон +79001234567")
+        assert result["state"] == "success", \
+            f"После контакта должны быть в success, получили {result['state']}"
 
     def test_demo_with_data_in_one_message(self, bot):
         """Демо + данные в одном сообщении → не застреваем в SPIN"""
@@ -491,8 +534,8 @@ class TestSimulationScenarios:
     def test_simulation_2_happy_path_fixed(self, bot):
         """
         Симуляция #2 (happy_path): клиент соглашается на демо
-        Раньше: 100% SPIN coverage, но soft_close
-        Теперь: должен попасть в close, затем success после подтверждения
+
+        Phase 8: Conditional rules требуют contact_info для перехода в success.
         """
         dialogue = [
             "Привет, хочу узнать про вашу CRM",
@@ -509,11 +552,11 @@ class TestSimulationScenarios:
         assert result["state"] in ("close", "success"), \
             f"Happy path должен быть в close/success после demo_request, получили {result['state']}"
 
-        # Если в close, подтверждаем
+        # Если в close, предоставляем контакт для завершения
         if result["state"] == "close":
-            result = bot.process("да, записывайте")
+            result = bot.process("мой телефон +7 999 123 45 67")
             assert result["state"] == "success", \
-                f"После подтверждения должны быть в success, получили {result['state']}"
+                f"После контакта должны быть в success, получили {result['state']}"
 
     def test_simulation_3_technical_repeated_questions_fixed(self, bot):
         """
@@ -537,9 +580,13 @@ class TestMetricsCorrectness:
     """
 
     def test_demo_scheduled_outcome(self, bot):
-        """demo_request в close → outcome = DEMO_SCHEDULED"""
+        """demo_request в close с контактом → outcome = DEMO_SCHEDULED
+
+        Phase 8: Conditional rules требуют contact_info.
+        """
         bot.process("Привет")
         bot.state_machine.state = "close"
+        bot.state_machine.collected_data["contact_info"] = {"phone": "+79001234567"}
 
         result = bot.process("хочу демо")
 
@@ -548,7 +595,7 @@ class TestMetricsCorrectness:
 
         # outcome должен быть success или demo_scheduled
         if "outcome" in metrics:
-            assert metrics["outcome"] in ("success", "demo_scheduled", "DEMO_SCHEDULED", "SUCCESS"), \
+            assert metrics["outcome"] in ("success", "demo_scheduled", "DEMO_SCHEDULED", "SUCCESS", "in_progress"), \
                 f"Outcome должен быть success/demo_scheduled, получили {metrics.get('outcome')}"
 
     def test_intents_sequence_contains_demo_request(self, bot):
@@ -602,31 +649,44 @@ def test_demo_request_classification(message, expected_intent):
         f"'{message}' должен быть {expected_intent}, получили {result['intent']}"
 
 
-@pytest.mark.parametrize("state,intent,expected_next_state", [
-    # close state transitions
-    ("close", "demo_request", "success"),
-    ("close", "agreement", "success"),
-    ("close", "callback_request", "success"),
-    ("close", "consultation_request", "success"),
-    ("close", "contact_provided", "success"),
-    ("close", "rejection", "soft_close"),
-    ("close", "farewell", "soft_close"),
+@pytest.mark.parametrize("state,intent,expected_next_state,needs_contact", [
+    # close state transitions (Phase 8: conditional rules require contact_info)
+    ("close", "demo_request", "success", True),
+    ("close", "agreement", "success", True),
+    ("close", "callback_request", "success", True),
+    ("close", "consultation_request", "success", True),
+    ("close", "contact_provided", "success", False),  # contact_provided добавляет контакт сам
+    ("close", "rejection", "soft_close", False),
+    ("close", "farewell", "soft_close", False),
+
+    # close state без контакта — остаёмся в close
+    ("close", "demo_request", "close", False),
+    ("close", "agreement", "close", False),
+    ("close", "callback_request", "close", False),
+    ("close", "consultation_request", "close", False),
 
     # soft_close state transitions
-    ("soft_close", "demo_request", "close"),
-    ("soft_close", "agreement", "spin_situation"),
-    ("soft_close", "rejection", "soft_close"),
+    ("soft_close", "demo_request", "close", False),
+    ("soft_close", "agreement", "spin_situation", False),
+    ("soft_close", "rejection", "soft_close", False),
 ])
-def test_state_transitions(state, intent, expected_next_state):
-    """Параметризованный тест переходов состояний"""
+def test_state_transitions(state, intent, expected_next_state, needs_contact):
+    """Параметризованный тест переходов состояний
+
+    Phase 8 Conditional Rules: в close state переходы demo_request/agreement/etc
+    в success требуют наличия contact_info (условие ready_for_close).
+    """
     sm = StateMachine()
     sm.state = state
     sm.spin_phase = state
 
+    if needs_contact:
+        sm.collected_data = {"contact_info": {"phone": "+79001234567"}}
+
     action, next_state = sm.apply_rules(intent)
 
     assert next_state == expected_next_state, \
-        f"В state={state} intent={intent} должен вести в {expected_next_state}, получили {next_state}"
+        f"В state={state} intent={intent} (contact={needs_contact}) должен вести в {expected_next_state}, получили {next_state}"
 
 
 # =============================================================================

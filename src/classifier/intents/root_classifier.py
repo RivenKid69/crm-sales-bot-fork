@@ -5,7 +5,6 @@
 определения интента по наличию ключевых корней в тексте.
 """
 
-import re
 from typing import Dict, Tuple
 
 from config import INTENT_ROOTS, CLASSIFIER_CONFIG

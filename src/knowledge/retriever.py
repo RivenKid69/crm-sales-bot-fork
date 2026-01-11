@@ -23,7 +23,7 @@ from logger import logger
 
 from .base import KnowledgeSection, KnowledgeBase
 from .loader import load_knowledge_base
-from .lemmatizer import get_lemmatizer, Lemmatizer
+from .lemmatizer import get_lemmatizer
 from .reranker import get_reranker
 
 

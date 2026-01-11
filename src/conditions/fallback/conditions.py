@@ -14,11 +14,7 @@ Part of Phase 6: Fallback Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 
 from src.conditions.fallback.context import (
     FallbackContext,
-    FALLBACK_TIERS,
     DYNAMIC_CTA_STATES,
-    PAIN_CATEGORIES,
-    SMALL_COMPANY_THRESHOLD,
-    LARGE_COMPANY_THRESHOLD,
 )
 from src.conditions.fallback.registry import fallback_condition
 

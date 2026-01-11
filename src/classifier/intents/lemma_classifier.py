@@ -80,7 +80,7 @@ class LemmaClassifier:
                     continue
 
                 # Частичное совпадение (все леммы фразы есть в сообщении)
-                matching_lemmas = sum(1 for l in phrase_lemmas if l in message_lemmas)
+                matching_lemmas = sum(1 for lemma in phrase_lemmas if lemma in message_lemmas)
                 if matching_lemmas == len(phrase_lemmas):
                     match_score = matching_lemmas * self.config["lemma_match_weight"] * 0.8
                     best_match_score = max(best_match_score, match_score)

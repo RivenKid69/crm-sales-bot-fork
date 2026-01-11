@@ -16,16 +16,7 @@ Part of Phase 7: Personalization Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 
 from src.conditions.personalization.context import (
     PersonalizationContext,
-    CTA_ELIGIBLE_STATES,
-    SOFT_CTA_STATES,
-    DIRECT_CTA_STATES,
-    PAIN_CATEGORIES,
-    SMALL_COMPANY_THRESHOLD,
-    MEDIUM_COMPANY_THRESHOLD,
-    LARGE_COMPANY_THRESHOLD,
     SOFT_CTA_FRUSTRATION_THRESHOLD,
-    NO_CTA_FRUSTRATION_THRESHOLD,
-    MIN_TURNS_FOR_CTA,
 )
 from src.conditions.personalization.registry import personalization_condition
 
@@ -750,7 +741,7 @@ def ready_for_strong_cta(ctx: PersonalizationContext) -> bool:
         return False
     if ctx.frustration_level >= 3:
         return False
-    if not ctx.state in ("presentation", "close"):
+    if ctx.state not in ("presentation", "close"):
         return False
     return True
 

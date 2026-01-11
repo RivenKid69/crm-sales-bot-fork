@@ -369,26 +369,40 @@ class TestCloseTransitions:
         result = self.sm.process("objection_think", {})
         assert result["next_state"] == "handle_objection"
 
-    def test_demo_request_transitions_to_success(self):
+    def test_demo_request_with_contact_transitions_to_success(self):
         """
-        demo_request в close → success.
+        demo_request в close с контактом → success.
 
-        ОБНОВЛЕНО: После коммита a5ed763 (fix 0% конверсии).
-        Клиент в close уже согласился — demo_request подтверждает готовность.
+        ОБНОВЛЕНО Phase 8: Conditional Rules.
+        Теперь требуется контакт (ready_for_close условие).
         """
+        # Добавляем контактную информацию
+        self.sm.collected_data = {"contact_info": {"phone": "+79001234567"}}
         result = self.sm.process("demo_request", {})
         assert result["next_state"] == "success", \
-            f"demo_request в close должен вести к success, получили {result['next_state']}"
+            f"demo_request в close с контактом должен вести к success, получили {result['next_state']}"
 
-    def test_callback_request_transitions_to_success(self):
+    def test_demo_request_without_contact_stays_in_close(self):
         """
-        callback_request в close → success.
+        demo_request в close без контакта → остаёмся в close.
 
-        ОБНОВЛЕНО: После коммита a5ed763 (fix 0% конверсии).
+        Phase 8: Conditional Rules — без контакта продолжаем сбор данных.
         """
+        self.sm.collected_data = {}  # Нет контакта
+        result = self.sm.process("demo_request", {})
+        assert result["next_state"] == "close", \
+            f"demo_request в close без контакта должен оставаться в close, получили {result['next_state']}"
+
+    def test_callback_request_with_contact_transitions_to_success(self):
+        """
+        callback_request в close с контактом → success.
+
+        ОБНОВЛЕНО Phase 8: Conditional Rules.
+        """
+        self.sm.collected_data = {"contact_info": {"phone": "+79001234567"}}
         result = self.sm.process("callback_request", {})
         assert result["next_state"] == "success", \
-            f"callback_request в close должен вести к success, получили {result['next_state']}"
+            f"callback_request в close с контактом должен вести к success, получили {result['next_state']}"
 
     def test_contact_provided_completes_to_success(self):
         """contact_provided в close с данными -> success"""

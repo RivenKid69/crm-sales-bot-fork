@@ -7,7 +7,7 @@ conditions in the FallbackHandler.
 Part of Phase 6: Fallback Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from dataclasses import dataclass, field
 
 

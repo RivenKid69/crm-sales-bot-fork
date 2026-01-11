@@ -59,7 +59,7 @@ class Reranker:
             print(f"[Reranker] Loading model: {self.model_name}")
             self.model = CrossEncoder(self.model_name)
             self._initialized = True
-            print(f"[Reranker] Model loaded successfully")
+            print("[Reranker] Model loaded successfully")
         except ImportError:
             print("[Reranker] sentence-transformers not installed")
             self._initialized = True  # Не пытаемся снова

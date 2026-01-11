@@ -16,7 +16,7 @@ Feature Flags для CRM Sales Bot.
         pass
 """
 
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 from settings import settings
 
 

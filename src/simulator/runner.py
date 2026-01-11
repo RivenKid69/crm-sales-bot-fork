@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Добавляем путь к src
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from .personas import Persona, PERSONAS, get_all_persona_names
+from .personas import PERSONAS, get_all_persona_names
 from .client_agent import ClientAgent
 from .metrics import (
     determine_outcome,
@@ -257,7 +257,7 @@ class SimulationRunner:
                 try:
                     lead_info = bot.get_lead_score()
                     lead_score = lead_info.get("score", 0.0) if isinstance(lead_info, dict) else 0.0
-                except:
+                except Exception:
                     pass
 
             # Получаем информацию о возражениях из клиента

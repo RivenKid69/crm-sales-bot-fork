@@ -12,7 +12,6 @@ from typing import Dict, List, Any, Optional, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-import time
 
 
 class Resolution(str, Enum):

@@ -13,7 +13,6 @@ Part of Phase 2: StateMachine Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 from src.conditions.state_machine.context import (
     EvaluatorContext,
     SPIN_PHASES,
-    SPIN_STATES,
 )
 from src.conditions.state_machine.registry import sm_condition
 
@@ -44,7 +43,7 @@ def has_pricing_data(ctx: EvaluatorContext) -> bool:
 @sm_condition(
     "has_contact_info",
     description="Check if contact information has been collected",
-    requires_fields={"email", "phone", "contact"},
+    requires_fields={"email", "phone", "contact", "contact_info"},
     category="data"
 )
 def has_contact_info(ctx: EvaluatorContext) -> bool:
@@ -52,12 +51,18 @@ def has_contact_info(ctx: EvaluatorContext) -> bool:
     Returns True if email, phone, or contact is available.
 
     Used for demo_request transition to success state.
+    Checks both top-level fields and nested contact_info dict.
     """
-    return bool(
-        ctx.collected_data.get("email") or
-        ctx.collected_data.get("phone") or
-        ctx.collected_data.get("contact")
-    )
+    # Check top-level fields
+    if ctx.collected_data.get("email") or ctx.collected_data.get("phone") or ctx.collected_data.get("contact"):
+        return True
+
+    # Check nested contact_info dict
+    contact_info = ctx.collected_data.get("contact_info")
+    if isinstance(contact_info, dict):
+        return bool(contact_info.get("email") or contact_info.get("phone") or contact_info.get("name"))
+
+    return False
 
 
 @sm_condition(

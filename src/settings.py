@@ -141,7 +141,7 @@ def load_settings(filepath: Path = None) -> DotDict:
         config = _deep_merge(config, yaml_config)
     else:
         print(f"[settings] Файл настроек не найден: {filepath}")
-        print(f"[settings] Используются значения по умолчанию")
+        print("[settings] Используются значения по умолчанию")
 
     return DotDict(config)
 

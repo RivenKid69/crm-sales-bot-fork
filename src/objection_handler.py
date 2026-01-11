@@ -21,7 +21,7 @@ Objection Handler для CRM Sales Bot.
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Pattern
+from typing import Dict, List, Optional, Pattern
 from enum import Enum
 
 from logger import logger

@@ -25,7 +25,7 @@ ContextEnvelope — это единая точка сбора всего кон�
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any
 from enum import Enum
 import re
 
@@ -517,6 +517,15 @@ class ContextEnvelopeBuilder:
     def _fill_from_context_window(self, envelope: ContextEnvelope) -> None:
         """Заполнить данные из ContextWindow (Level 1-3)."""
         cw = self.context_window
+
+        # If state_machine not provided, get state from last turn
+        if not self.state_machine:
+            last_turn = cw.get_last_turn()
+            if last_turn:
+                # Use next_state as current state (after the turn was processed)
+                envelope.state = last_turn.next_state or last_turn.state
+                envelope.last_action = last_turn.action
+                envelope.last_intent = last_turn.intent
 
         # === Level 1: Sliding Window ===
         envelope.intent_history = cw.get_intent_history()

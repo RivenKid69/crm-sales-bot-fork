@@ -8,9 +8,8 @@
 - Полными диалогами
 """
 
-from typing import List, Dict, Any
+from typing import List
 from datetime import datetime
-from collections import Counter
 
 from .runner import SimulationResult
 from .metrics import MetricsCollector, AggregatedMetrics
