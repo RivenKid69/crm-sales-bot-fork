@@ -52,13 +52,19 @@ class SalesBot:
     Все ошибки обрабатываются gracefully без падения бота.
     """
 
-    def __init__(self, llm, conversation_id: Optional[str] = None):
+    def __init__(
+        self,
+        llm,
+        conversation_id: Optional[str] = None,
+        enable_tracing: bool = False
+    ):
         """
         Инициализация бота со всеми компонентами.
 
         Args:
             llm: LLM клиент (OllamaLLM или другой)
             conversation_id: Уникальный ID диалога (генерируется если не указан)
+            enable_tracing: Включить трассировку условных правил (для симуляций)
         """
         # Генерируем ID диалога для трейсинга
         self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
@@ -66,7 +72,7 @@ class SalesBot:
 
         # Core components (always active)
         self.classifier = HybridClassifier()
-        self.state_machine = StateMachine()
+        self.state_machine = StateMachine(enable_tracing=enable_tracing)
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
 

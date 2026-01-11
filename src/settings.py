@@ -60,6 +60,14 @@ DEFAULTS = {
         "log_llm_requests": False,
         "log_retriever_results": False,
     },
+    "conditional_rules": {
+        "enable_tracing": True,
+        "log_level": "INFO",
+        "log_context": False,
+        "log_each_condition": False,
+        "validate_on_startup": True,
+        "coverage_threshold": 0.8,
+    },
     "development": {
         "debug": False,
         "skip_embeddings": False,
