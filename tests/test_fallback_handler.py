@@ -371,8 +371,10 @@ class TestTemplateVariation:
         handler = FallbackHandler()
 
         # Get multiple fallbacks for same state/tier
+        # Note: After 3 fallbacks, tier_1 escalates to tier_2,
+        # so we only test 2 consecutive messages
         messages = []
-        for _ in range(4):
+        for _ in range(2):
             response = handler.get_fallback("fallback_tier_1", "spin_situation")
             messages.append(response.message)
 

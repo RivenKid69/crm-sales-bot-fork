@@ -47,6 +47,9 @@ from src.conditions.state_machine import sm_registry
 # Import Policy domain (Phase 5)
 from src.conditions.policy import policy_registry
 
+# Import Fallback domain (Phase 6)
+from src.conditions.fallback import fallback_registry
+
 
 class ConditionRegistries:
     """
@@ -241,6 +244,9 @@ ConditionRegistries.register("state_machine", sm_registry)
 # Register Policy registry (Phase 5)
 ConditionRegistries.register("policy", policy_registry)
 
+# Register Fallback registry (Phase 6)
+ConditionRegistries.register("fallback", fallback_registry)
+
 
 # Export all public components
 __all__ = [
@@ -272,4 +278,6 @@ __all__ = [
     "sm_registry",
     # Policy (Phase 5)
     "policy_registry",
+    # Fallback (Phase 6)
+    "fallback_registry",
 ]

@@ -16,13 +16,25 @@ Multi-Tier Fallback Handler для CRM Sales Bot.
 
     handler = FallbackHandler()
     response = handler.get_fallback("fallback_tier_1", "spin_situation", context)
+
+Part of Phase 6: Fallback Domain (ARCHITECTURE_UNIFIED_PLAN.md)
+- Integrated with conditions system for declarative decision making
+- Added tracing support for observability
+- Enhanced logging with events and metrics
 """
 
 from dataclasses import dataclass, field
 from random import choice
 from typing import Any, Dict, List, Optional
+import time
 
 from logger import logger
+from src.conditions.fallback import (
+    FallbackContext,
+    fallback_registry,
+    FALLBACK_TIERS,
+)
+from src.conditions.trace import EvaluationTrace, Resolution
 
 
 @dataclass
@@ -32,6 +44,7 @@ class FallbackResponse:
     options: Optional[List[str]] = None  # Для tier_2
     action: str = "continue"             # continue, skip, close
     next_state: Optional[str] = None     # Куда перейти при skip
+    trace: Optional[EvaluationTrace] = None  # Трассировка для отладки
 
 
 @dataclass
@@ -248,9 +261,16 @@ class FallbackHandler:
         "options": ["Подробнее о системе", "Цены", "Демо", "Связаться позже"]
     }
 
-    def __init__(self):
+    def __init__(self, enable_tracing: bool = True):
+        """
+        Initialize FallbackHandler.
+
+        Args:
+            enable_tracing: Whether to enable condition evaluation tracing
+        """
         self._stats = FallbackStats()
         self._used_templates: Dict[str, List[str]] = {}  # Для избежания повторов
+        self._enable_tracing = enable_tracing
 
     def reset(self) -> None:
         """Сбросить состояние для нового диалога"""
@@ -261,6 +281,42 @@ class FallbackHandler:
     def stats(self) -> FallbackStats:
         """Статистика использования"""
         return self._stats
+
+    def _create_fallback_context(
+        self,
+        tier: str,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> FallbackContext:
+        """
+        Create FallbackContext for condition evaluation.
+
+        Args:
+            tier: Current fallback tier
+            state: Current dialogue state
+            context: Additional context data
+
+        Returns:
+            Initialized FallbackContext
+        """
+        context = context or {}
+        return FallbackContext.from_handler_stats(
+            stats=self.get_stats_dict(),
+            state=state,
+            context=context,
+            current_tier=tier
+        )
+
+    def _create_trace(self, tier: str, state: str) -> Optional[EvaluationTrace]:
+        """Create evaluation trace if tracing is enabled."""
+        if not self._enable_tracing:
+            return None
+        return EvaluationTrace(
+            rule_name=f"fallback_{tier}",
+            intent="fallback",
+            state=state,
+            domain="fallback"
+        )
 
     def get_fallback(
         self,
@@ -279,7 +335,13 @@ class FallbackHandler:
         Returns:
             FallbackResponse с сообщением и возможными опциями
         """
+        start_time = time.perf_counter()
         context = context or {}
+
+        # Normalize tier for backward compatibility
+        # "fallback_tier_4" was renamed to "soft_close"
+        if tier == "fallback_tier_4":
+            tier = "soft_close"
 
         # Обновляем статистику
         self._stats.total_count += 1
@@ -288,37 +350,120 @@ class FallbackHandler:
         self._stats.last_tier = tier
         self._stats.last_state = state
 
-        logger.info(
-            "Fallback triggered",
+        # Create context and trace for condition evaluation
+        fb_context = self._create_fallback_context(tier, state, context)
+        trace = self._create_trace(tier, state)
+
+        # Log event
+        logger.event(
+            "fallback_triggered",
             tier=tier,
             state=state,
+            total_fallbacks=self._stats.total_count,
+            frustration_level=fb_context.frustration_level,
+            engagement_level=fb_context.engagement_level
+        )
+
+        # Check for immediate escalation using conditions
+        if self._should_immediate_escalate(fb_context, trace):
+            response = self._tier_4_exit(context, trace)
+            self._log_metrics(start_time, tier, "immediate_escalation", trace)
+            return response
+
+        # Process based on tier
+        if tier == "fallback_tier_1":
+            response = self._tier_1_rephrase(state, context, fb_context, trace)
+        elif tier == "fallback_tier_2":
+            response = self._tier_2_options(state, context, fb_context, trace)
+        elif tier == "fallback_tier_3":
+            response = self._tier_3_skip(state, context, fb_context, trace)
+        else:  # tier_4 or soft_close
+            response = self._tier_4_exit(context, trace)
+
+        self._log_metrics(start_time, tier, "normal", trace)
+        return response
+
+    def _should_immediate_escalate(
+        self,
+        ctx: FallbackContext,
+        trace: Optional[EvaluationTrace]
+    ) -> bool:
+        """Check if immediate escalation to soft_close is needed."""
+        result = fallback_registry.evaluate("needs_immediate_escalation", ctx, trace)
+        if result:
+            logger.event(
+                "fallback_immediate_escalation",
+                tier=ctx.current_tier,
+                state=ctx.state,
+                frustration_level=ctx.frustration_level,
+                total_fallbacks=ctx.total_fallbacks
+            )
+        return result
+
+    def _log_metrics(
+        self,
+        start_time: float,
+        tier: str,
+        resolution: str,
+        trace: Optional[EvaluationTrace]
+    ) -> None:
+        """Log metrics for fallback processing."""
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        conditions_checked = trace.conditions_checked if trace else 0
+
+        logger.metric(
+            "fallback_processing_time",
+            round(elapsed_ms, 3),
+            tier=tier,
+            resolution=resolution,
+            conditions_checked=conditions_checked,
             total_fallbacks=self._stats.total_count
         )
 
-        if tier == "fallback_tier_1":
-            return self._tier_1_rephrase(state, context)
-        elif tier == "fallback_tier_2":
-            return self._tier_2_options(state, context)
-        elif tier == "fallback_tier_3":
-            return self._tier_3_skip(state, context)
-        else:  # tier_4 or soft_close
-            return self._tier_4_exit(context)
-
-    def _tier_1_rephrase(self, state: str, context: Dict) -> FallbackResponse:
+    def _tier_1_rephrase(
+        self,
+        state: str,
+        context: Dict,
+        fb_context: Optional[FallbackContext] = None,
+        trace: Optional[EvaluationTrace] = None
+    ) -> FallbackResponse:
         """Tier 1: Переформулировать вопрос"""
         templates = self.REPHRASE_TEMPLATES.get(state, [self.DEFAULT_REPHRASE])
 
+        # Evaluate if rephrase is appropriate using conditions
+        if fb_context and trace:
+            can_rephrase = fallback_registry.evaluate("can_try_rephrase", fb_context, trace)
+            if not can_rephrase:
+                # Escalate to tier 2 if rephrase not appropriate
+                logger.event(
+                    "fallback_tier_escalated",
+                    from_tier="fallback_tier_1",
+                    to_tier="fallback_tier_2",
+                    reason="rephrase_not_appropriate"
+                )
+                return self._tier_2_options(state, context, fb_context, trace)
+
         # Выбираем не использованный недавно шаблон
         message = self._get_unused_template(f"rephrase_{state}", templates)
+
+        if trace:
+            trace.set_result("rephrase", Resolution.SIMPLE, None)
 
         return FallbackResponse(
             message=message,
             options=None,
             action="continue",
-            next_state=None
+            next_state=None,
+            trace=trace
         )
 
-    def _tier_2_options(self, state: str, context: Dict) -> FallbackResponse:
+    def _tier_2_options(
+        self,
+        state: str,
+        context: Dict,
+        fb_context: Optional[FallbackContext] = None,
+        trace: Optional[EvaluationTrace] = None
+    ) -> FallbackResponse:
         """
         Tier 2: Предложить варианты (текстовые подсказки).
 
@@ -332,19 +477,36 @@ class FallbackHandler:
         from feature_flags import flags
 
         if not flags.is_enabled("dynamic_cta_fallback"):
-            return self._get_static_tier_2_options(state, context)
+            return self._get_static_tier_2_options(state, context, trace)
+
+        # Use conditions to check if dynamic CTA is appropriate
+        if fb_context:
+            should_use_dynamic = fallback_registry.evaluate(
+                "should_use_dynamic_cta", fb_context, trace
+            )
+            if not should_use_dynamic:
+                return self._get_static_tier_2_options(state, context, trace)
 
         collected = context.get("collected_data", {})
         last_intent = context.get("last_intent")
 
-        best = self._select_dynamic_options(collected, last_intent, state)
+        # Use conditions to select best dynamic options
+        best = self._select_dynamic_options_with_conditions(
+            collected, last_intent, state, fb_context, trace
+        )
 
         if best:
             option_type = best.get("_type", "unknown")
             self._stats.dynamic_cta_counts[option_type] = \
                 self._stats.dynamic_cta_counts.get(option_type, 0) + 1
 
-            logger.info("Dynamic CTA selected", option_type=option_type, state=state)
+            logger.event(
+                "fallback_dynamic_cta_selected",
+                option_type=option_type,
+                state=state,
+                has_competitor=fb_context.competitor_mentioned if fb_context else False,
+                pain_category=fb_context.pain_category if fb_context else None
+            )
 
             # Форматируем сообщение с нумерованными вариантами
             message = self._format_options_message(
@@ -353,16 +515,29 @@ class FallbackHandler:
                 collected_data=collected
             )
 
+            if trace:
+                trace.set_result(
+                    f"dynamic_cta_{option_type}",
+                    Resolution.CONDITION_MATCHED,
+                    option_type
+                )
+
             return FallbackResponse(
                 message=message,
                 options=best["options"][:4],  # Сохраняем для аналитики
                 action="continue",
-                next_state=None
+                next_state=None,
+                trace=trace
             )
 
-        return self._get_static_tier_2_options(state, context)
+        return self._get_static_tier_2_options(state, context, trace)
 
-    def _get_static_tier_2_options(self, state: str, context: Dict) -> FallbackResponse:
+    def _get_static_tier_2_options(
+        self,
+        state: str,
+        context: Dict,
+        trace: Optional[EvaluationTrace] = None
+    ) -> FallbackResponse:
         """Статичные варианты (оригинальное поведение)."""
         template = self.OPTIONS_TEMPLATES.get(state)
 
@@ -373,14 +548,86 @@ class FallbackHandler:
                 options=template["options"],
                 collected_data=collected
             )
+
+            if trace:
+                trace.set_result("static_options", Resolution.DEFAULT, None)
+
             return FallbackResponse(
                 message=message,
                 options=template["options"].copy(),
                 action="continue",
-                next_state=None
+                next_state=None,
+                trace=trace
             )
 
         return self._tier_1_rephrase(state, context)
+
+    def _select_dynamic_options_with_conditions(
+        self,
+        collected: Dict,
+        last_intent: Optional[str],
+        state: str,
+        fb_context: Optional[FallbackContext],
+        trace: Optional[EvaluationTrace]
+    ) -> Optional[Dict]:
+        """
+        Select best dynamic options using conditions.
+
+        Uses condition registry to evaluate which dynamic CTA is most appropriate.
+        Returns the best option based on priority.
+        """
+        if not fb_context:
+            # Fallback to old method if no context
+            return self._select_dynamic_options(collected, last_intent, state)
+
+        candidates = []
+
+        # Priority 10: Competitor - use condition
+        if fallback_registry.evaluate("has_competitor_context", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("competitor_mentioned")
+            if opt:
+                candidates.append({**opt, "_type": "competitor_mentioned"})
+
+        # Priority 8: Pain point - use conditions
+        if fallback_registry.evaluate("has_pain_losing_clients", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("pain_losing_clients")
+            if opt:
+                candidates.append({**opt, "_type": "pain_losing_clients"})
+        elif fallback_registry.evaluate("has_pain_no_control", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("pain_no_control")
+            if opt:
+                candidates.append({**opt, "_type": "pain_no_control"})
+        elif fallback_registry.evaluate("has_pain_manual_work", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("pain_manual_work")
+            if opt:
+                candidates.append({**opt, "_type": "pain_manual_work"})
+
+        # Priority 7: Last intent - use conditions
+        if fallback_registry.evaluate("last_intent_price_related", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("after_price_question")
+            if opt:
+                candidates.append({**opt, "_type": "after_price_question"})
+        elif fallback_registry.evaluate("last_intent_feature_related", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("after_features_question")
+            if opt:
+                candidates.append({**opt, "_type": "after_features_question"})
+
+        # Priority 5: Company size - use conditions
+        if fallback_registry.evaluate("is_large_company", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("large_company")
+            if opt:
+                candidates.append({**opt, "_type": "large_company"})
+        elif fallback_registry.evaluate("is_small_company", fb_context, trace):
+            opt = self.DYNAMIC_CTA_OPTIONS.get("small_company")
+            if opt:
+                candidates.append({**opt, "_type": "small_company"})
+
+        # Sort by priority and return best
+        if candidates:
+            candidates.sort(key=lambda x: x.get("priority", 0), reverse=True)
+            return candidates[0]
+
+        return None
 
     def _format_options_message(
         self,
@@ -479,27 +726,69 @@ class FallbackHandler:
 
         return None
 
-    def _tier_3_skip(self, state: str, context: Dict) -> FallbackResponse:
+    def _tier_3_skip(
+        self,
+        state: str,
+        context: Dict,
+        fb_context: Optional[FallbackContext] = None,
+        trace: Optional[EvaluationTrace] = None
+    ) -> FallbackResponse:
         """Tier 3: Предложить skip"""
+        # Check using conditions if skip is appropriate
+        if fb_context and trace:
+            should_skip = fallback_registry.evaluate("should_skip_to_next_state", fb_context, trace)
+            if not should_skip:
+                # Still offer skip but log that conditions weren't optimal
+                logger.event(
+                    "fallback_skip_suboptimal",
+                    state=state,
+                    fallbacks_in_state=fb_context.fallbacks_in_state,
+                    frustration_level=fb_context.frustration_level
+                )
+
         next_state = self.SKIP_MAP.get(state, "presentation")
         message = self._get_unused_template("skip", self.SKIP_TEMPLATES)
+
+        if trace:
+            trace.set_result(f"skip_to_{next_state}", Resolution.SIMPLE, None)
+
+        logger.event(
+            "fallback_skip_offered",
+            from_state=state,
+            to_state=next_state
+        )
 
         return FallbackResponse(
             message=message,
             options=None,
             action="skip",
-            next_state=next_state
+            next_state=next_state,
+            trace=trace
         )
 
-    def _tier_4_exit(self, context: Dict) -> FallbackResponse:
+    def _tier_4_exit(
+        self,
+        context: Dict,
+        trace: Optional[EvaluationTrace] = None
+    ) -> FallbackResponse:
         """Tier 4: Graceful exit"""
         message = self._get_unused_template("exit", self.EXIT_TEMPLATES)
+
+        if trace:
+            trace.set_result("graceful_exit", Resolution.FALLBACK, None)
+
+        logger.event(
+            "fallback_graceful_exit",
+            total_fallbacks=self._stats.total_count,
+            last_state=self._stats.last_state
+        )
 
         return FallbackResponse(
             message=message,
             options=None,
             action="close",
-            next_state="soft_close"
+            next_state="soft_close",
+            trace=trace
         )
 
     def _get_unused_template(self, key: str, templates: List[str]) -> str:
@@ -552,19 +841,110 @@ class FallbackHandler:
         Returns:
             Следующий уровень или soft_close
         """
-        tier_order = [
-            "fallback_tier_1",
-            "fallback_tier_2",
-            "fallback_tier_3",
-            "soft_close"
-        ]
-
         try:
-            current_index = tier_order.index(current_tier)
-            next_index = min(current_index + 1, len(tier_order) - 1)
-            return tier_order[next_index]
+            current_index = FALLBACK_TIERS.index(current_tier)
+            next_index = min(current_index + 1, len(FALLBACK_TIERS) - 1)
+            next_tier = FALLBACK_TIERS[next_index]
+
+            logger.event(
+                "fallback_tier_escalated",
+                from_tier=current_tier,
+                to_tier=next_tier
+            )
+
+            return next_tier
         except ValueError:
             return "soft_close"
+
+    def smart_escalate(
+        self,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> str:
+        """
+        Smart tier escalation using conditions.
+
+        Determines whether to escalate based on context signals
+        like frustration, fallback count, and engagement.
+
+        Args:
+            state: Current dialogue state
+            context: Conversation context
+
+        Returns:
+            Appropriate tier for the situation
+        """
+        current_tier = self._stats.last_tier or "fallback_tier_1"
+        fb_context = self._create_fallback_context(current_tier, state, context)
+        trace = self._create_trace(current_tier, state)
+
+        # Check if immediate escalation needed
+        if fallback_registry.evaluate("needs_immediate_escalation", fb_context, trace):
+            logger.event(
+                "fallback_smart_escalation",
+                reason="immediate_escalation",
+                to_tier="soft_close"
+            )
+            return "soft_close"
+
+        # Check if should escalate
+        if fallback_registry.evaluate("should_escalate_tier", fb_context, trace):
+            next_tier = self.escalate_tier(current_tier)
+            logger.event(
+                "fallback_smart_escalation",
+                reason="condition_triggered",
+                from_tier=current_tier,
+                to_tier=next_tier
+            )
+            return next_tier
+
+        # Check if can recover
+        if not fallback_registry.evaluate("can_recover", fb_context, trace):
+            logger.event(
+                "fallback_smart_escalation",
+                reason="cannot_recover",
+                to_tier="soft_close"
+            )
+            return "soft_close"
+
+        # Stay at current tier
+        return current_tier
+
+    def get_recommended_tier(
+        self,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> str:
+        """
+        Get recommended tier based on current context.
+
+        This is useful for starting a fallback sequence
+        at an appropriate level.
+
+        Args:
+            state: Current dialogue state
+            context: Conversation context
+
+        Returns:
+            Recommended starting tier
+        """
+        context = context or {}
+        # Create a temporary context for the first tier
+        fb_context = self._create_fallback_context("fallback_tier_1", state, context)
+
+        # If frustration is high, start at tier 2
+        if fb_context.frustration_level >= 2:
+            return "fallback_tier_2"
+
+        # If many total fallbacks, start at tier 2
+        if fb_context.total_fallbacks >= 3:
+            return "fallback_tier_2"
+
+        # If critical, go straight to exit
+        if fb_context.frustration_level >= 4:
+            return "soft_close"
+
+        return "fallback_tier_1"
 
 
 # =============================================================================
