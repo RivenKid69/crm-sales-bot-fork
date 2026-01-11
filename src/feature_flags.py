@@ -81,6 +81,11 @@ class FeatureFlags:
 
         # Phase 5: CTA с памятью
         "context_cta_memory": False,       # CTA с учётом episodic memory
+
+        # === Cascade Tone Analyzer (Phase 5) ===
+        "cascade_tone_analyzer": True,     # Master switch для каскадного анализатора
+        "tone_semantic_tier2": True,       # RoSBERTa semantic (Tier 2)
+        "tone_llm_tier3": True,            # LLM fallback (Tier 3)
     }
 
     # Группы флагов для удобного управления
@@ -103,6 +108,10 @@ class FeatureFlags:
             "context_engagement_v2", "context_cta_memory"
         ],
         "context_safe": ["context_full_envelope", "context_response_directives"],
+        # Cascade Tone Analyzer groups
+        "phase_5_tone": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
+        "tone_safe": ["cascade_tone_analyzer"],  # Только улучшенный Tier 1
+        "tone_full": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
     }
 
     def __init__(self):
@@ -330,6 +339,25 @@ class FeatureFlags:
     def context_cta_memory(self) -> bool:
         """Включён ли CTA с учётом episodic memory"""
         return self.is_enabled("context_cta_memory")
+
+    # =========================================================================
+    # Cascade Tone Analyzer flags
+    # =========================================================================
+
+    @property
+    def cascade_tone_analyzer(self) -> bool:
+        """Включён ли каскадный анализатор тона"""
+        return self.is_enabled("cascade_tone_analyzer")
+
+    @property
+    def tone_semantic_tier2(self) -> bool:
+        """Включён ли Tier 2 (RoSBERTa semantic) для анализа тона"""
+        return self.is_enabled("tone_semantic_tier2")
+
+    @property
+    def tone_llm_tier3(self) -> bool:
+        """Включён ли Tier 3 (LLM) для анализа тона"""
+        return self.is_enabled("tone_llm_tier3")
 
 
 # Singleton экземпляр
