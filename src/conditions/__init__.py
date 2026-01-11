@@ -50,6 +50,9 @@ from src.conditions.policy import policy_registry
 # Import Fallback domain (Phase 6)
 from src.conditions.fallback import fallback_registry
 
+# Import Personalization domain (Phase 7)
+from src.conditions.personalization import personalization_registry
+
 
 class ConditionRegistries:
     """
@@ -247,6 +250,9 @@ ConditionRegistries.register("policy", policy_registry)
 # Register Fallback registry (Phase 6)
 ConditionRegistries.register("fallback", fallback_registry)
 
+# Register Personalization registry (Phase 7)
+ConditionRegistries.register("personalization", personalization_registry)
+
 
 # Export all public components
 __all__ = [
@@ -280,4 +286,6 @@ __all__ = [
     "policy_registry",
     # Fallback (Phase 6)
     "fallback_registry",
+    # Personalization (Phase 7)
+    "personalization_registry",
 ]

@@ -14,11 +14,18 @@ CTA Generator для CRM Sales Bot.
     final_response = generator.append_cta(response, "presentation", context)
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from random import choice
 from dataclasses import dataclass
 
-from logger import logger
+try:
+    from logger import logger
+except ImportError:
+    from src.logger import logger
+from src.conditions.personalization import (
+    PersonalizationContext,
+    personalization_registry,
+)
 
 
 @dataclass
@@ -357,6 +364,268 @@ class CTAGenerator:
             },
             "total_ctas_used": sum(len(ctas) for ctas in self.used_ctas.values())
         }
+
+    # =========================================================================
+    # CONDITION-BASED CTA METHODS (Phase 7 Integration)
+    # =========================================================================
+
+    def _get_cta_stats(self) -> Dict[str, Any]:
+        """Get CTA statistics for PersonalizationContext."""
+        last_cta_turn = None
+        cta_count = sum(len(ctas) for ctas in self.used_ctas.values())
+
+        # Find last CTA turn (approximate based on history)
+        if cta_count > 0:
+            last_cta_turn = max(0, self.turn_count - 1)
+
+        return {
+            "last_cta_turn": last_cta_turn,
+            "cta_count": cta_count,
+        }
+
+    def create_personalization_context(
+        self,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> PersonalizationContext:
+        """
+        Create a PersonalizationContext from state and context.
+
+        Args:
+            state: Current dialogue state
+            context: Context dictionary
+
+        Returns:
+            PersonalizationContext for condition evaluation
+        """
+        context = context or {}
+        cta_stats = self._get_cta_stats()
+
+        # Build collected_data from context if not already there
+        collected_data = context.get("collected_data", {})
+
+        return PersonalizationContext.from_context_dict(
+            context={
+                "collected_data": collected_data,
+                "turn_number": self.turn_count,
+                "has_breakthrough": context.get("has_breakthrough", False),
+                "engagement_level": context.get("engagement_level", "medium"),
+                "momentum_direction": context.get("momentum_direction", "neutral"),
+                "frustration_level": context.get("frustration_level", 0),
+                "objection_type": context.get("objection_type"),
+                "total_objections": context.get("total_objections", 0),
+                "repeated_objection_types": context.get("repeated_objection_types", []),
+                "last_action": context.get("last_action"),
+            },
+            state=state,
+            cta_stats=cta_stats
+        )
+
+    def should_add_cta_with_conditions(
+        self,
+        state: str,
+        response: str,
+        context: Optional[Dict] = None
+    ) -> tuple:
+        """
+        Check if CTA should be added using condition-based evaluation.
+
+        Uses PersonalizationContext and registered conditions for
+        more intelligent CTA decision making.
+
+        Args:
+            state: Current dialogue state
+            response: Current response text
+            context: Context dictionary
+
+        Returns:
+            Tuple[bool, Optional[str]]: (should add CTA, skip reason)
+        """
+        # First check response-based rules (these don't need conditions)
+        if response.rstrip().endswith("?"):
+            return False, "response_ends_with_question"
+
+        # Create personalization context
+        ctx = self.create_personalization_context(state, context)
+
+        # Evaluate conditions
+        try:
+            should_add = personalization_registry.evaluate("should_add_cta", ctx)
+
+            if not should_add:
+                # Determine the specific reason
+                if not personalization_registry.evaluate("cta_eligible_state", ctx):
+                    return False, "no_cta_for_state"
+                if not personalization_registry.evaluate("enough_turns_for_cta", ctx):
+                    return False, f"too_early_turn_{ctx.turn_number}"
+                if personalization_registry.evaluate("should_skip_cta", ctx):
+                    return False, f"high_frustration_{ctx.frustration_level}"
+                return False, "condition_not_met"
+
+            return True, None
+
+        except Exception as e:
+            logger.warning(f"Error evaluating CTA conditions: {e}")
+            # Fall back to legacy method
+            return self.should_add_cta(state, response, context)
+
+    def get_optimal_cta_type(
+        self,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> Optional[str]:
+        """
+        Determine the optimal CTA type using conditions.
+
+        Uses PersonalizationContext and registered conditions to
+        select the most appropriate CTA type.
+
+        Args:
+            state: Current dialogue state
+            context: Context dictionary
+
+        Returns:
+            CTA type (demo, contact, trial, info) or None for default
+        """
+        ctx = self.create_personalization_context(state, context)
+
+        try:
+            # Check CTA type conditions in order of priority
+            if personalization_registry.evaluate("contact_cta_appropriate", ctx):
+                return "contact"
+
+            if personalization_registry.evaluate("demo_cta_appropriate", ctx):
+                return "demo"
+
+            if personalization_registry.evaluate("trial_cta_appropriate", ctx):
+                return "trial"
+
+            if personalization_registry.evaluate("info_cta_appropriate", ctx):
+                return "info"
+
+            # No specific type recommended
+            return None
+
+        except Exception as e:
+            logger.warning(f"Error determining CTA type: {e}")
+            return None
+
+    def append_cta_with_conditions(
+        self,
+        response: str,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> str:
+        """
+        Add CTA to response using condition-based evaluation.
+
+        Enhanced version of append_cta that uses PersonalizationContext
+        and registered conditions for smarter CTA selection.
+
+        Args:
+            response: Current response text
+            state: Current dialogue state
+            context: Context dictionary
+
+        Returns:
+            Response with CTA or original response
+        """
+        should_add, skip_reason = self.should_add_cta_with_conditions(
+            state, response, context
+        )
+
+        if not should_add:
+            logger.debug(
+                "CTA skipped (conditions)",
+                state=state,
+                reason=skip_reason
+            )
+            return response
+
+        # Determine CTA type using conditions
+        ctx = self.create_personalization_context(state, context)
+        cta_type = self.get_optimal_cta_type(state, context)
+
+        # Check if soft CTA is needed
+        try:
+            soft = personalization_registry.evaluate("should_use_soft_cta", ctx)
+        except Exception:
+            soft = context.get("frustration_level", 0) >= 3 if context else False
+
+        cta = self.get_cta(state, cta_type=cta_type, soft=soft)
+        if not cta:
+            return response
+
+        logger.info(
+            "CTA added (conditions)",
+            state=state,
+            cta_type=cta_type or "default",
+            soft=soft,
+            cta=cta[:30]
+        )
+
+        return f"{response.rstrip()} {cta}"
+
+    def generate_cta_result_with_conditions(
+        self,
+        response: str,
+        state: str,
+        context: Optional[Dict] = None
+    ) -> CTAResult:
+        """
+        Generate CTA result using condition-based evaluation.
+
+        Enhanced version of generate_cta_result that uses
+        PersonalizationContext and registered conditions.
+
+        Args:
+            response: Current response text
+            state: Current dialogue state
+            context: Context dictionary
+
+        Returns:
+            CTAResult with full information
+        """
+        should_add, skip_reason = self.should_add_cta_with_conditions(
+            state, response, context
+        )
+
+        if not should_add:
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason=skip_reason
+            )
+
+        # Get optimal CTA
+        ctx = self.create_personalization_context(state, context)
+        cta_type = self.get_optimal_cta_type(state, context)
+
+        try:
+            soft = personalization_registry.evaluate("should_use_soft_cta", ctx)
+        except Exception:
+            soft = context.get("frustration_level", 0) >= 3 if context else False
+
+        cta = self.get_cta(state, cta_type=cta_type, soft=soft)
+        if not cta:
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="no_cta_available"
+            )
+
+        final_response = f"{response.rstrip()} {cta}"
+
+        return CTAResult(
+            original_response=response,
+            cta=cta,
+            final_response=final_response,
+            cta_added=True
+        )
 
 
 # =============================================================================
