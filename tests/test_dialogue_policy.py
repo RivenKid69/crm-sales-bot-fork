@@ -297,6 +297,7 @@ class TestDialoguePolicy:
         envelope2 = ContextEnvelope(
             state="presentation",
             has_breakthrough=True,
+            turns_since_breakthrough=2,  # Must be in window [1,3]
             reason_codes=[ReasonCode.BREAKTHROUGH_CTA.value],
         )
         sm_result2 = {"next_state": "presentation", "action": "present"}
@@ -345,6 +346,7 @@ class TestDialoguePolicy:
         envelope2 = ContextEnvelope(
             state="presentation",
             has_breakthrough=True,
+            turns_since_breakthrough=2,  # Must be in window [1,3]
             reason_codes=[ReasonCode.BREAKTHROUGH_CTA.value],
         )
         sm_result2 = {"next_state": "presentation", "action": "present"}

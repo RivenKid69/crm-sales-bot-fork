@@ -2,6 +2,7 @@
 Dialogue Policy — контекстные оверлеи для выбора action.
 
 Phase 3: Оптимизация SPIN Flow (docs/PLAN_CONTEXT_POLICY.md)
+Phase 5: Declarative conditions (ARCHITECTURE_UNIFIED_PLAN.md)
 
 DialoguePolicy добавляет гибкость в поведение бота БЕЗ нарушения
 инвариантов state machine. Оверлеи применяются только на
@@ -28,11 +29,19 @@ DialoguePolicy добавляет гибкость в поведение бот�
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from enum import Enum
 
 from context_envelope import ContextEnvelope, ReasonCode
 from feature_flags import flags
+from src.conditions.policy import (
+    PolicyContext,
+    policy_registry,
+    OVERLAY_ALLOWED_STATES,
+    PROTECTED_STATES,
+    AGGRESSIVE_ACTIONS,
+)
+from src.conditions.trace import EvaluationTrace, Resolution
 
 
 class PolicyDecision(Enum):
@@ -59,6 +68,7 @@ class PolicyOverride:
         decision: Тип решения
         signals_used: Сигналы на которых основано решение
         expected_effect: Ожидаемый эффект
+        trace: Evaluation trace for debugging
     """
     action: Optional[str] = None
     next_state: Optional[str] = None
@@ -66,6 +76,7 @@ class PolicyOverride:
     decision: PolicyDecision = PolicyDecision.NO_OVERRIDE
     signals_used: Dict[str, Any] = field(default_factory=dict)
     expected_effect: str = ""
+    trace: Optional[EvaluationTrace] = None
 
     @property
     def has_override(self) -> bool:
@@ -74,7 +85,7 @@ class PolicyOverride:
 
     def to_dict(self) -> Dict[str, Any]:
         """Сериализовать в словарь."""
-        return {
+        result = {
             "action": self.action,
             "next_state": self.next_state,
             "reason_codes": self.reason_codes,
@@ -82,6 +93,9 @@ class PolicyOverride:
             "signals_used": self.signals_used,
             "expected_effect": self.expected_effect,
         }
+        if self.trace:
+            result["trace"] = self.trace.to_dict()
+        return result
 
 
 class DialoguePolicy:
@@ -119,30 +133,14 @@ class DialoguePolicy:
         "empathize": "empathize_and_redirect",
     }
 
-    # States в которых разрешены оверлеи
-    OVERLAY_ALLOWED_STATES = {
-        "spin_situation",
-        "spin_problem",
-        "spin_implication",
-        "spin_need_payoff",
-        "presentation",
-        "handle_objection",
-    }
-
-    # States которые нельзя менять через policy
-    PROTECTED_STATES = {
-        "greeting",
-        "close",
-        "success",
-        "soft_close",
-    }
-
-    def __init__(self, shadow_mode: bool = False):
+    def __init__(self, shadow_mode: bool = False, trace_enabled: bool = False):
         """
         Args:
             shadow_mode: Если True, только логируем решения без применения
+            trace_enabled: Если True, включить трассировку условий
         """
         self.shadow_mode = shadow_mode
+        self.trace_enabled = trace_enabled
         self._decision_history: List[PolicyOverride] = []
 
     def maybe_override(
@@ -164,42 +162,54 @@ class DialoguePolicy:
         if not flags.is_enabled("context_policy_overlays"):
             return None
 
+        # Создаём PolicyContext из envelope
+        current_action = sm_result.get("action", "")
+        ctx = PolicyContext.from_envelope(envelope, current_action=current_action)
+
+        # Создаём trace если включено
+        trace = None
+        if self.trace_enabled:
+            trace = EvaluationTrace(
+                rule_name="policy_override",
+                intent=envelope.last_intent or "",
+                state=envelope.state,
+                domain="policy"
+            )
+
         # Проверяем разрешён ли оверлей для текущего состояния
-        current_state = sm_result.get("next_state", envelope.state)
-        if current_state in self.PROTECTED_STATES:
+        if policy_registry.evaluate("is_protected_state", ctx, trace):
             return None
 
-        if current_state not in self.OVERLAY_ALLOWED_STATES:
+        if not policy_registry.evaluate("is_overlay_allowed", ctx, trace):
             return None
-
-        # Получаем контекст для policy
-        policy_context = envelope.for_policy()
 
         # Проверяем оверлеи в порядке приоритета
         override = None
 
         # 1. Guard intervention имеет высший приоритет
-        if envelope.guard_intervention:
-            override = self._handle_guard_intervention(envelope, sm_result)
+        if policy_registry.evaluate("has_guard_intervention", ctx, trace):
+            override = self._handle_guard_intervention(ctx, sm_result, trace)
 
         # 2. Repair mode (stuck, oscillation, repeated question)
-        if not override and envelope.has_reason(ReasonCode.POLICY_REPAIR_MODE):
-            override = self._apply_repair_overlay(envelope, sm_result)
+        if not override and policy_registry.evaluate("needs_repair", ctx, trace):
+            override = self._apply_repair_overlay(ctx, sm_result, trace)
 
         # 3. Repeated objection escalation
-        if not override and envelope.repeated_objection_types:
-            override = self._apply_objection_overlay(envelope, sm_result)
+        if not override and policy_registry.evaluate("has_repeated_objections", ctx, trace):
+            override = self._apply_objection_overlay(ctx, sm_result, trace)
 
         # 4. Breakthrough window CTA
-        if not override and envelope.has_reason(ReasonCode.BREAKTHROUGH_CTA):
-            override = self._apply_breakthrough_overlay(envelope, sm_result)
+        if not override and policy_registry.evaluate("in_breakthrough_window", ctx, trace):
+            override = self._apply_breakthrough_overlay(ctx, sm_result, trace)
 
-        # 5. Conservative mode (низкая confidence)
-        if not override and envelope.has_reason(ReasonCode.POLICY_CONSERVATIVE):
-            override = self._apply_conservative_overlay(envelope, sm_result)
+        # 5. Conservative mode (низкая confidence + aggressive action)
+        if not override and policy_registry.evaluate("should_apply_conservative_overlay", ctx, trace):
+            override = self._apply_conservative_overlay(ctx, sm_result, trace)
 
         # Записываем в историю
         if override:
+            if trace:
+                override.trace = trace
             self._decision_history.append(override)
 
             # Shadow mode: возвращаем None но логируем
@@ -217,31 +227,36 @@ class DialoguePolicy:
 
     def _handle_guard_intervention(
         self,
-        envelope: ContextEnvelope,
-        sm_result: Dict[str, Any]
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None
     ) -> Optional[PolicyOverride]:
         """Обработать интервенцию guard."""
         # Guard уже обрабатывается в bot.py, здесь только логируем
+        if trace:
+            trace.set_result("guard_handled", Resolution.NO_MATCH)
+
         return PolicyOverride(
             action=None,  # Не меняем action, guard сам обработает
             reason_codes=[ReasonCode.GUARD_INTERVENTION.value],
             decision=PolicyDecision.NO_OVERRIDE,
-            signals_used={"guard_intervention": envelope.guard_intervention},
+            signals_used={"guard_intervention": ctx.guard_intervention},
             expected_effect="Guard handles intervention",
         )
 
     def _apply_repair_overlay(
         self,
-        envelope: ContextEnvelope,
-        sm_result: Dict[str, Any]
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None
     ) -> Optional[PolicyOverride]:
         """
         Применить оверлей для repair mode.
 
-        Триггеры:
+        Триггеры (проверяем через registry):
         - is_stuck: клиент застрял
         - has_oscillation: клиент колеблется
-        - repeated_question: повторный вопрос
+        - has_repeated_question: повторный вопрос
 
         Actions:
         - clarify_one_question: один конкретный вопрос
@@ -252,23 +267,26 @@ class DialoguePolicy:
         action = None
         decision = PolicyDecision.NO_OVERRIDE
 
-        if envelope.is_stuck:
+        if policy_registry.evaluate("is_stuck", ctx, trace):
             signals["is_stuck"] = True
-            signals["unclear_count"] = envelope.unclear_count
+            signals["unclear_count"] = ctx.unclear_count
             action = self.REPAIR_ACTIONS["stuck"]
             decision = PolicyDecision.REPAIR_CLARIFY
 
-        elif envelope.has_oscillation:
+        elif policy_registry.evaluate("has_oscillation", ctx, trace):
             signals["has_oscillation"] = True
             action = self.REPAIR_ACTIONS["oscillation"]
             decision = PolicyDecision.REPAIR_SUMMARIZE
 
-        elif envelope.repeated_question:
-            signals["repeated_question"] = envelope.repeated_question
+        elif policy_registry.evaluate("has_repeated_question", ctx, trace):
+            signals["repeated_question"] = ctx.repeated_question
             action = self.REPAIR_ACTIONS["repeated_question"]
             decision = PolicyDecision.REPAIR_CLARIFY
 
         if action:
+            if trace:
+                trace.set_result(action, Resolution.CONDITION_MATCHED, matched_condition="repair")
+
             return PolicyOverride(
                 action=action,
                 next_state=None,  # Сохраняем текущий state
@@ -282,27 +300,35 @@ class DialoguePolicy:
 
     def _apply_objection_overlay(
         self,
-        envelope: ContextEnvelope,
-        sm_result: Dict[str, Any]
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None
     ) -> Optional[PolicyOverride]:
         """
         Применить оверлей для повторных возражений.
 
-        Триггеры:
-        - repeated_objection_types: типы повторных возражений
-        - total_objections >= 3: много возражений
+        Триггеры (проверяем через registry):
+        - has_repeated_objections: типы повторных возражений
+        - total_objections_3_plus: много возражений
 
         Actions:
         - reframe_value: переформулировать ценность
         - handle_repeated_objection: эскалация тактики
         """
         signals = {
-            "repeated_objection_types": envelope.repeated_objection_types,
-            "total_objections": envelope.total_objections,
+            "repeated_objection_types": ctx.repeated_objection_types,
+            "total_objections": ctx.total_objections,
         }
 
         # Эскалация при >= 3 возражениях
-        if envelope.total_objections >= 3:
+        if policy_registry.evaluate("total_objections_3_plus", ctx, trace):
+            if trace:
+                trace.set_result(
+                    self.OBJECTION_ACTIONS["escalate"],
+                    Resolution.CONDITION_MATCHED,
+                    matched_condition="total_objections_3_plus"
+                )
+
             return PolicyOverride(
                 action=self.OBJECTION_ACTIONS["escalate"],
                 next_state=None,
@@ -316,9 +342,16 @@ class DialoguePolicy:
             )
 
         # Reframe при повторных возражениях
-        if envelope.repeated_objection_types:
+        if policy_registry.evaluate("has_repeated_objections", ctx, trace):
             # Проверяем least_effective_action чтобы не повторять
-            signals["least_effective_action"] = envelope.least_effective_action
+            signals["least_effective_action"] = ctx.least_effective_action
+
+            if trace:
+                trace.set_result(
+                    self.OBJECTION_ACTIONS["reframe"],
+                    Resolution.CONDITION_MATCHED,
+                    matched_condition="has_repeated_objections"
+                )
 
             return PolicyOverride(
                 action=self.OBJECTION_ACTIONS["reframe"],
@@ -333,24 +366,27 @@ class DialoguePolicy:
 
     def _apply_breakthrough_overlay(
         self,
-        envelope: ContextEnvelope,
-        sm_result: Dict[str, Any]
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None
     ) -> Optional[PolicyOverride]:
         """
         Применить оверлей для breakthrough window.
 
-        Триггеры:
-        - has_breakthrough: был прорыв
-        - turns_since_breakthrough in [1, 3]: окно для CTA
+        Триггеры (проверяем через registry):
+        - in_breakthrough_window: в окне после прорыва
 
         Actions:
         - добавить soft CTA (не меняем action, добавляем directive)
         """
         signals = {
             "has_breakthrough": True,
-            "turns_since_breakthrough": envelope.turns_since_breakthrough,
-            "breakthrough_action": envelope.breakthrough_action,
+            "turns_since_breakthrough": ctx.turns_since_breakthrough,
+            "breakthrough_action": ctx.most_effective_action,
         }
+
+        if trace:
+            trace.set_result(None, Resolution.CONDITION_MATCHED, matched_condition="in_breakthrough_window")
 
         # Не меняем action, но сигнализируем о CTA
         # Реальное добавление CTA происходит через ResponseDirectives
@@ -368,46 +404,40 @@ class DialoguePolicy:
 
     def _apply_conservative_overlay(
         self,
-        envelope: ContextEnvelope,
-        sm_result: Dict[str, Any]
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None
     ) -> Optional[PolicyOverride]:
         """
         Применить консервативный оверлей.
 
-        Триггеры:
-        - confidence_trend == "decreasing"
-        - momentum_direction == "negative"
+        Триггеры (проверяем через registry):
+        - should_apply_conservative_overlay: combined condition
 
         Actions:
         - Более осторожные действия (уточнение вместо прогресса)
         """
         signals = {
-            "confidence_trend": envelope.confidence_trend,
-            "momentum_direction": envelope.momentum_direction,
+            "confidence_trend": ctx.confidence_trend,
+            "momentum_direction": ctx.momentum_direction,
+            "current_action": ctx.current_action,
         }
 
-        # Только если уже есть action который можно заменить на более консервативный
-        current_action = sm_result.get("action", "")
-
-        # Список actions которые можно сделать консервативнее
-        aggressive_actions = {
-            "transition_to_presentation",
-            "transition_to_close",
-            "ask_for_demo",
-            "ask_for_contact",
-        }
-
-        if current_action in aggressive_actions:
-            return PolicyOverride(
-                action="continue_current_goal",  # Остаёмся на текущем этапе
-                next_state=None,
-                reason_codes=[ReasonCode.POLICY_CONSERVATIVE.value],
-                decision=PolicyDecision.CONSERVATIVE,
-                signals_used=signals,
-                expected_effect="Stay in current phase, avoid premature advancement",
+        if trace:
+            trace.set_result(
+                "continue_current_goal",
+                Resolution.CONDITION_MATCHED,
+                matched_condition="should_apply_conservative_overlay"
             )
 
-        return None
+        return PolicyOverride(
+            action="continue_current_goal",  # Остаёмся на текущем этапе
+            next_state=None,
+            reason_codes=[ReasonCode.POLICY_CONSERVATIVE.value],
+            decision=PolicyDecision.CONSERVATIVE,
+            signals_used=signals,
+            expected_effect="Stay in current phase, avoid premature advancement",
+        )
 
     def get_decision_history(self) -> List[Dict[str, Any]]:
         """Получить историю решений."""
