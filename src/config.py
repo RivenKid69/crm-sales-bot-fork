@@ -947,8 +947,15 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            "price_question": "deflect_and_continue",
-            "pricing_details": "deflect_and_continue",
+            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            "price_question": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
+            "pricing_details": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
             "question_features": "answer_and_continue",
@@ -988,8 +995,15 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            "price_question": "deflect_and_continue",
-            "pricing_details": "deflect_and_continue",
+            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            "price_question": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
+            "pricing_details": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
             "question_features": "answer_and_continue",
@@ -1029,8 +1043,15 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            "price_question": "deflect_and_continue",
-            "pricing_details": "deflect_and_continue",
+            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            "price_question": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
+            "pricing_details": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
             "question_features": "answer_and_continue",
@@ -1069,8 +1090,15 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            "price_question": "deflect_and_continue",
-            "pricing_details": "deflect_and_continue",
+            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            "price_question": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
+            "pricing_details": [
+                {"when": "can_answer_price", "then": "answer_with_facts"},
+                "deflect_and_continue"
+            ],
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
             "question_features": "answer_and_continue",
@@ -1124,15 +1152,34 @@ SALES_STATES = {
             "callback_request": "close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
-            # Другие возражения — остаёмся в handle_objection
-            "objection_price": "handle_objection",
-            "objection_no_time": "handle_objection",
-            "objection_think": "handle_objection",
-            "objection_competitor": "handle_objection",
+            # Conditional: при достижении лимита возражений → soft_close
+            "objection_price": [
+                {"when": "objection_limit_reached", "then": "soft_close"},
+                "handle_objection"
+            ],
+            "objection_no_time": [
+                {"when": "objection_limit_reached", "then": "soft_close"},
+                "handle_objection"
+            ],
+            "objection_think": [
+                {"when": "objection_limit_reached", "then": "soft_close"},
+                "handle_objection"
+            ],
+            "objection_competitor": [
+                {"when": "objection_limit_reached", "then": "soft_close"},
+                "handle_objection"
+            ],
         },
         "rules": {
-            "price_question": "answer_with_facts",
-            "pricing_details": "answer_with_facts",
+            # Conditional: если есть данные для ROI — отвечаем с расчётом
+            "price_question": [
+                {"when": "can_handle_with_roi", "then": "answer_with_roi"},
+                "answer_with_facts"
+            ],
+            "pricing_details": [
+                {"when": "can_handle_with_roi", "then": "answer_with_roi"},
+                "answer_with_facts"
+            ],
             "comparison": "answer_and_continue",
             "consultation_request": "acknowledge_and_continue",
             "question_features": "answer_and_continue",
@@ -1150,18 +1197,24 @@ SALES_STATES = {
             "data_complete": "success",
             # Клиент предоставил контакт — успешное завершение
             "contact_provided": "success",
-            # =================================================================
-            # КРИТИЧЕСКИЙ FIX: Клиент согласен в close фазе → успех
-            # =================================================================
-            # Проблема: Клиент говорит "да, хочу демо" или "записывайте",
-            # но intent = agreement, не contact_provided → диалог застревает
-            # Решение: agreement в close = успех (клиент уже согласился!)
-            # =================================================================
-            "agreement": "success",
-            # Демо-запрос в close фазе = подтверждение готовности → успех
-            "demo_request": "success",
-            "callback_request": "success",
-            "consultation_request": "success",
+            # Conditional: если контакт уже есть — сразу success, иначе продолжаем
+            "agreement": [
+                {"when": "ready_for_close", "then": "success"},
+                "close"
+            ],
+            # Демо-запрос: если контакт есть — успех, иначе продолжаем собирать
+            "demo_request": [
+                {"when": "ready_for_close", "then": "success"},
+                "close"
+            ],
+            "callback_request": [
+                {"when": "ready_for_close", "then": "success"},
+                "close"
+            ],
+            "consultation_request": [
+                {"when": "ready_for_close", "then": "success"},
+                "close"
+            ],
             "rejection": "soft_close",
             # Прощание без контакта — мягко завершаем
             "farewell": "soft_close",

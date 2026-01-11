@@ -507,6 +507,46 @@ class StateMachine:
 
         return intent_idx >= current_idx
 
+    def _resolve_transition(
+        self,
+        intent_or_key: str,
+        transitions: Dict,
+        ctx: Any,
+        trace: Optional['EvaluationTrace'] = None
+    ) -> Optional[str]:
+        """
+        Resolve a transition, handling both simple strings and conditional rules.
+
+        Args:
+            intent_or_key: The intent or key to look up in transitions (e.g., "rejection", "data_complete")
+            transitions: Transition dictionary from state config
+            ctx: EvaluatorContext for condition evaluation
+            trace: Optional trace for debugging
+
+        Returns:
+            Next state name, or None if intent not in transitions
+        """
+        if intent_or_key not in transitions:
+            return None
+
+        value = transitions[intent_or_key]
+
+        # Simple string - return directly
+        if isinstance(value, str):
+            return value
+
+        # Conditional rule - use resolver
+        if isinstance(value, (list, dict)):
+            return self._resolver.resolve_transition(
+                intent=intent_or_key,
+                transitions=transitions,
+                ctx=ctx,
+                state=self.state,
+                trace=trace
+            )
+
+        return None
+
     def apply_rules(self, intent: str) -> Tuple[str, str]:
         """
         Определяем действие и следующее состояние.
@@ -573,9 +613,9 @@ class StateMachine:
         # ПРИОРИТЕТ 1: Rejection — всегда обрабатываем немедленно
         # =====================================================================
         if intent == "rejection":
-            if "rejection" in transitions:
-                next_state = transitions["rejection"]
-                if trace:
+            next_state = self._resolve_transition("rejection", transitions, ctx, trace)
+            if next_state:
+                if trace and not trace.final_action:
                     trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
                 self._last_trace = trace
                 return f"transition_to_{next_state}", next_state
@@ -617,9 +657,9 @@ class StateMachine:
                 return "objection_limit_reached", "soft_close"
 
             # Иначе обрабатываем через transitions (handle_objection или soft_close)
-            if intent in transitions:
-                next_state = transitions[intent]
-                if trace:
+            next_state = self._resolve_transition(intent, transitions, ctx, trace)
+            if next_state:
+                if trace and not trace.final_action:
                     trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
                 self._last_trace = trace
                 return f"transition_to_{next_state}", next_state
@@ -684,8 +724,8 @@ class StateMachine:
         # Если клиент задаёт вопрос — сначала отвечаем, потом продолжаем
         # =====================================================================
         if intent in QUESTION_INTENTS:
-            next_state = transitions.get(intent, self.state)
-            if trace:
+            next_state = self._resolve_transition(intent, transitions, ctx, trace) or self.state
+            if trace and not trace.final_action:
                 trace.set_result("answer_question", Resolution.SIMPLE)
             self._last_trace = trace
             return "answer_question", next_state
@@ -697,9 +737,9 @@ class StateMachine:
             if intent in SPIN_PROGRESS_INTENTS:
                 intent_phase = SPIN_PROGRESS_INTENTS[intent]
                 if self._is_spin_phase_progression(intent_phase, spin_phase):
-                    if intent in transitions:
-                        next_state = transitions[intent]
-                        if trace:
+                    next_state = self._resolve_transition(intent, transitions, ctx, trace)
+                    if next_state:
+                        if trace and not trace.final_action:
                             trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
                         self._last_trace = trace
                         return f"transition_to_{next_state}", next_state
@@ -709,15 +749,16 @@ class StateMachine:
             # 2. Интент НЕ определён явно в transitions (no_need, no_problem и т.д.)
             # Это позволяет явным интентам иметь приоритет над автопереходом
             if intent not in transitions and self._check_spin_data_complete(config):
-                if "data_complete" in transitions:
-                    next_state = transitions["data_complete"]
+                next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
+                if next_state:
                     next_config = SALES_STATES.get(next_state, {})
                     next_phase = next_config.get("spin_phase")
                     if next_phase and self._should_skip_spin_phase(next_phase):
                         skip_transitions = next_config.get("transitions", {})
-                        if "data_complete" in skip_transitions:
-                            next_state = skip_transitions["data_complete"]
-                    if trace:
+                        skip_next = self._resolve_transition("data_complete", skip_transitions, ctx, trace)
+                        if skip_next:
+                            next_state = skip_next
+                    if trace and not trace.final_action:
                         trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
                     self._last_trace = trace
                     return f"transition_to_{next_state}", next_state
@@ -725,9 +766,9 @@ class StateMachine:
         # =====================================================================
         # ПРИОРИТЕТ 5: Переходы по интенту
         # =====================================================================
-        if intent in transitions:
-            next_state = transitions[intent]
-            if trace:
+        next_state = self._resolve_transition(intent, transitions, ctx, trace)
+        if next_state:
+            if trace and not trace.final_action:
                 trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
             self._last_trace = trace
             return f"transition_to_{next_state}", next_state
@@ -738,19 +779,20 @@ class StateMachine:
         required = config.get("required_data", [])
         if required:
             missing = [f for f in required if not self.collected_data.get(f)]
-            if not missing and "data_complete" in transitions:
-                next_state = transitions["data_complete"]
-                if trace:
-                    trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-                self._last_trace = trace
-                return f"transition_to_{next_state}", next_state
+            if not missing:
+                next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
+                if next_state:
+                    if trace and not trace.final_action:
+                        trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
+                    self._last_trace = trace
+                    return f"transition_to_{next_state}", next_state
 
         # =====================================================================
         # ПРИОРИТЕТ 7: Автопереход (для greeting)
         # =====================================================================
-        if "any" in transitions:
-            next_state = transitions["any"]
-            if trace:
+        next_state = self._resolve_transition("any", transitions, ctx, trace)
+        if next_state:
+            if trace and not trace.final_action:
                 trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
             self._last_trace = trace
             return f"transition_to_{next_state}", next_state
