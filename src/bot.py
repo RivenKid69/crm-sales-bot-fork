@@ -644,14 +644,16 @@ class SalesBot:
         # =================================================================
         # Phase 5: Build ContextEnvelope for context-aware decisions
         # =================================================================
-        context_envelope = build_context_envelope(
-            state_machine=self.state_machine,
-            context_window=self.context_window,
-            tone_info=tone_info,
-            guard_info={"intervention": intervention} if intervention else None,
-            last_action=self.last_action,
-            last_intent=self.last_intent,
-        )
+        context_envelope = None
+        if flags.context_full_envelope or flags.context_policy_overlays:
+            context_envelope = build_context_envelope(
+                state_machine=self.state_machine,
+                context_window=self.context_window,
+                tone_info=tone_info,
+                guard_info={"intervention": intervention} if intervention else None,
+                last_action=self.last_action,
+                last_intent=self.last_intent,
+            )
 
         # 2. Run state machine with context envelope
         sm_result = self.state_machine.process(
@@ -661,7 +663,9 @@ class SalesBot:
         # =================================================================
         # Phase 5: Apply DialoguePolicy overlay if enabled
         # =================================================================
-        policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
+        policy_override = None
+        if flags.context_policy_overlays:
+            policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
         if policy_override and policy_override.has_override:
             logger.info(
                 "DialoguePolicy override applied",
