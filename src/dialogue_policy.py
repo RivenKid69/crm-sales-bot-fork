@@ -231,7 +231,7 @@ class DialoguePolicy:
         """Обработать интервенцию guard."""
         # Guard уже обрабатывается в bot.py, здесь только логируем
         if trace:
-            trace.set_result("guard_handled", Resolution.NO_MATCH)
+            trace.set_result("guard_handled", Resolution.NONE)
 
         return PolicyOverride(
             action=None,  # Не меняем action, guard сам обработает

@@ -508,7 +508,7 @@ class ContextEnvelopeBuilder:
             envelope.total_turns = tracker.turn_number
 
             # Get intent history from tracker
-            envelope.intent_history = [r.intent for r in tracker.history[-5:]]
+            envelope.intent_history = tracker.get_recent_intents(5)
 
             # Get objection stats from tracker
             envelope.total_objections = tracker.objection_total()
