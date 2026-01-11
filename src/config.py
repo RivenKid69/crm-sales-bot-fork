@@ -947,13 +947,16 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            # Conditional: если есть данные для цены, клиент раздражён или повторный запрос — отвечаем
+            # Phase 5: Добавлены context-aware условия (should_answer_directly, client_stuck)
             "price_question": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "pricing_details": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "comparison": "answer_and_continue",
@@ -961,7 +964,11 @@ SALES_STATES = {
             "question_features": "answer_and_continue",
             "question_integrations": "answer_and_continue",
             # При неясных ответах — переспрашиваем о ситуации
-            "unclear": "probe_situation",
+            # Phase 5: если застряли — переключаемся на clarify
+            "unclear": [
+                {"when": "client_stuck", "then": "clarify_one_question"},
+                "probe_situation"
+            ],
             "small_talk": "small_talk_and_continue",
             "gratitude": "acknowledge_and_continue",
         }
@@ -995,13 +1002,16 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            # Conditional: если есть данные для цены, клиент раздражён или повторный запрос — отвечаем
+            # Phase 5: Добавлены context-aware условия
             "price_question": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "pricing_details": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "comparison": "answer_and_continue",
@@ -1009,7 +1019,12 @@ SALES_STATES = {
             "question_features": "answer_and_continue",
             "question_integrations": "answer_and_continue",
             # Если клиент неясно ответил — переспрашиваем о проблемах
-            "unclear": "probe_problem",
+            # Phase 5: если застряли — переключаемся на clarify
+            "unclear": [
+                {"when": "client_stuck", "then": "clarify_one_question"},
+                {"when": "client_oscillating", "then": "summarize_and_clarify"},
+                "probe_problem"
+            ],
             "small_talk": "small_talk_and_continue",
             "gratitude": "acknowledge_and_continue",
         }
@@ -1043,13 +1058,16 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            # Conditional: если есть данные для цены, клиент раздражён или повторный запрос — отвечаем
+            # Phase 5: Добавлены context-aware условия
             "price_question": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "pricing_details": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "comparison": "answer_and_continue",
@@ -1057,7 +1075,12 @@ SALES_STATES = {
             "question_features": "answer_and_continue",
             "question_integrations": "answer_and_continue",
             # При неясных ответах — переспрашиваем о последствиях
-            "unclear": "probe_implication",
+            # Phase 5: если застряли — переключаемся на clarify
+            "unclear": [
+                {"when": "client_stuck", "then": "clarify_one_question"},
+                {"when": "client_oscillating", "then": "summarize_and_clarify"},
+                "probe_implication"
+            ],
             "small_talk": "small_talk_and_continue",
             "gratitude": "acknowledge_and_continue",
         }
@@ -1090,13 +1113,16 @@ SALES_STATES = {
             "objection_think": "soft_close",
         },
         "rules": {
-            # Conditional: если есть данные для цены или повторный запрос — отвечаем
+            # Conditional: если есть данные для цены, клиент раздражён или повторный запрос — отвечаем
+            # Phase 5: Добавлены context-aware условия
             "price_question": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "pricing_details": [
                 {"when": "can_answer_price", "then": "answer_with_facts"},
+                {"when": "should_answer_directly", "then": "answer_with_facts"},
                 "deflect_and_continue"
             ],
             "comparison": "answer_and_continue",
@@ -1104,7 +1130,12 @@ SALES_STATES = {
             "question_features": "answer_and_continue",
             "question_integrations": "answer_and_continue",
             # При неясных ответах — переспрашиваем о ценности
-            "unclear": "probe_need_payoff",
+            # Phase 5: если застряли — переключаемся на clarify
+            "unclear": [
+                {"when": "client_stuck", "then": "clarify_one_question"},
+                {"when": "client_oscillating", "then": "summarize_and_clarify"},
+                "probe_need_payoff"
+            ],
             "small_talk": "small_talk_and_continue",
             "gratitude": "acknowledge_and_continue",
         }

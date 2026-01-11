@@ -158,6 +158,20 @@ class EvaluatorContext:
         intent_tracker: IntentTracker for counting/streaks
         missing_required_data: List of required fields not yet collected
         config: Optional state configuration from SALES_STATES
+
+        # === Context-aware fields (from ContextEnvelope) ===
+        frustration_level: Client frustration level (0-5)
+        is_stuck: Whether dialogue is stuck
+        has_oscillation: Whether dialogue is oscillating
+        momentum_direction: Momentum direction (positive/negative/neutral)
+        momentum: Momentum score (-1 to +1)
+        engagement_level: Engagement level (high/medium/low)
+        repeated_question: Repeated question intent (or None)
+        confidence_trend: Confidence trend (increasing/stable/decreasing)
+        total_objections: Total objections in conversation
+        has_breakthrough: Whether breakthrough was detected
+        turns_since_breakthrough: Turns since breakthrough
+        guard_intervention: Guard intervention type (or None)
     """
     # Base context fields (from BaseContext protocol)
     collected_data: Dict[str, Any] = field(default_factory=dict)
@@ -172,6 +186,20 @@ class EvaluatorContext:
     intent_tracker: Optional[IntentTrackerProtocol] = None
     missing_required_data: List[str] = field(default_factory=list)
     config: Optional[Dict[str, Any]] = None
+
+    # === Context-aware fields (from ContextEnvelope) ===
+    frustration_level: int = 0
+    is_stuck: bool = False
+    has_oscillation: bool = False
+    momentum_direction: str = "neutral"
+    momentum: float = 0.0
+    engagement_level: str = "medium"
+    repeated_question: Optional[str] = None
+    confidence_trend: str = "stable"
+    total_objections: int = 0
+    has_breakthrough: bool = False
+    turns_since_breakthrough: Optional[int] = None
+    guard_intervention: Optional[str] = None
 
     def __post_init__(self):
         """Validate and compute derived fields."""
@@ -191,7 +219,8 @@ class EvaluatorContext:
         cls,
         state_machine: Any,
         current_intent: str,
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
+        context_envelope: Any = None
     ) -> "EvaluatorContext":
         """
         Create context from StateMachine instance.
@@ -203,6 +232,7 @@ class EvaluatorContext:
             state_machine: StateMachine instance
             current_intent: Intent being processed
             config: Optional state configuration (from SALES_STATES)
+            context_envelope: Optional ContextEnvelope with rich context
 
         Returns:
             Initialized EvaluatorContext
@@ -221,6 +251,34 @@ class EvaluatorContext:
         intent_tracker = getattr(state_machine, 'intent_tracker', None)
         prev_intent = getattr(state_machine, 'last_intent', None)
 
+        # Extract context-aware fields from envelope if provided
+        frustration_level = 0
+        is_stuck = False
+        has_oscillation = False
+        momentum_direction = "neutral"
+        momentum = 0.0
+        engagement_level = "medium"
+        repeated_question = None
+        confidence_trend = "stable"
+        total_objections = 0
+        has_breakthrough = False
+        turns_since_breakthrough = None
+        guard_intervention = None
+
+        if context_envelope is not None:
+            frustration_level = getattr(context_envelope, 'frustration_level', 0)
+            is_stuck = getattr(context_envelope, 'is_stuck', False)
+            has_oscillation = getattr(context_envelope, 'has_oscillation', False)
+            momentum_direction = getattr(context_envelope, 'momentum_direction', "neutral")
+            momentum = getattr(context_envelope, 'momentum', 0.0)
+            engagement_level = getattr(context_envelope, 'engagement_level', "medium")
+            repeated_question = getattr(context_envelope, 'repeated_question', None)
+            confidence_trend = getattr(context_envelope, 'confidence_trend', "stable")
+            total_objections = getattr(context_envelope, 'total_objections', 0)
+            has_breakthrough = getattr(context_envelope, 'has_breakthrough', False)
+            turns_since_breakthrough = getattr(context_envelope, 'turns_since_breakthrough', None)
+            guard_intervention = getattr(context_envelope, 'guard_intervention', None)
+
         return cls(
             collected_data=collected_data.copy() if collected_data else {},
             state=state,
@@ -231,7 +289,20 @@ class EvaluatorContext:
             prev_intent=prev_intent,
             intent_tracker=intent_tracker,
             missing_required_data=missing,
-            config=config
+            config=config,
+            # Context-aware fields
+            frustration_level=frustration_level,
+            is_stuck=is_stuck,
+            has_oscillation=has_oscillation,
+            momentum_direction=momentum_direction,
+            momentum=momentum,
+            engagement_level=engagement_level,
+            repeated_question=repeated_question,
+            confidence_trend=confidence_trend,
+            total_objections=total_objections,
+            has_breakthrough=has_breakthrough,
+            turns_since_breakthrough=turns_since_breakthrough,
+            guard_intervention=guard_intervention,
         )
 
     @classmethod
@@ -243,7 +314,20 @@ class EvaluatorContext:
         current_intent: str = "",
         intent_tracker: Optional[IntentTrackerProtocol] = None,
         missing_required_data: List[str] = None,
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
+        # Context-aware fields for testing
+        frustration_level: int = 0,
+        is_stuck: bool = False,
+        has_oscillation: bool = False,
+        momentum_direction: str = "neutral",
+        momentum: float = 0.0,
+        engagement_level: str = "medium",
+        repeated_question: Optional[str] = None,
+        confidence_trend: str = "stable",
+        total_objections: int = 0,
+        has_breakthrough: bool = False,
+        turns_since_breakthrough: Optional[int] = None,
+        guard_intervention: Optional[str] = None,
     ) -> "EvaluatorContext":
         """
         Factory method to create a test context with defaults.
@@ -259,6 +343,18 @@ class EvaluatorContext:
             intent_tracker: Optional tracker for intents
             missing_required_data: Optional list of missing fields
             config: Optional state configuration
+            frustration_level: Client frustration (0-5)
+            is_stuck: Whether dialogue is stuck
+            has_oscillation: Whether dialogue is oscillating
+            momentum_direction: Momentum direction
+            momentum: Momentum score
+            engagement_level: Engagement level
+            repeated_question: Repeated question intent
+            confidence_trend: Confidence trend
+            total_objections: Total objections count
+            has_breakthrough: Breakthrough detected
+            turns_since_breakthrough: Turns since breakthrough
+            guard_intervention: Guard intervention type
 
         Returns:
             A new EvaluatorContext instance
@@ -274,7 +370,19 @@ class EvaluatorContext:
             current_intent=current_intent,
             intent_tracker=intent_tracker,
             missing_required_data=missing_required_data or [],
-            config=config
+            config=config,
+            frustration_level=frustration_level,
+            is_stuck=is_stuck,
+            has_oscillation=has_oscillation,
+            momentum_direction=momentum_direction,
+            momentum=momentum,
+            engagement_level=engagement_level,
+            repeated_question=repeated_question,
+            confidence_trend=confidence_trend,
+            total_objections=total_objections,
+            has_breakthrough=has_breakthrough,
+            turns_since_breakthrough=turns_since_breakthrough,
+            guard_intervention=guard_intervention,
         )
 
     def has_field(self, field_name: str) -> bool:
@@ -328,6 +436,19 @@ class EvaluatorContext:
             "current_intent": self.current_intent,
             "prev_intent": self.prev_intent,
             "missing_required_data": self.missing_required_data,
+            # Context-aware fields
+            "frustration_level": self.frustration_level,
+            "is_stuck": self.is_stuck,
+            "has_oscillation": self.has_oscillation,
+            "momentum_direction": self.momentum_direction,
+            "momentum": self.momentum,
+            "engagement_level": self.engagement_level,
+            "repeated_question": self.repeated_question,
+            "confidence_trend": self.confidence_trend,
+            "total_objections": self.total_objections,
+            "has_breakthrough": self.has_breakthrough,
+            "turns_since_breakthrough": self.turns_since_breakthrough,
+            "guard_intervention": self.guard_intervention,
         }
 
     def __repr__(self) -> str:

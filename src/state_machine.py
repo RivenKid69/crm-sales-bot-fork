@@ -547,7 +547,7 @@ class StateMachine:
 
         return None
 
-    def apply_rules(self, intent: str) -> Tuple[str, str]:
+    def apply_rules(self, intent: str, context_envelope: Any = None) -> Tuple[str, str]:
         """
         Определяем действие и следующее состояние.
 
@@ -556,6 +556,8 @@ class StateMachine:
         2. Build EvaluatorContext for condition evaluation
         3. Apply priority-based rule resolution
         4. Return (action, next_state) with optional trace
+
+        Phase 5: Context-aware conditions via context_envelope.
 
         Порядок приоритетов:
         0. Финальное состояние
@@ -570,6 +572,10 @@ class StateMachine:
         7. Автопереход по "any"
         8. Default — оставаться в текущем состоянии
 
+        Args:
+            intent: The intent to process
+            context_envelope: Optional ContextEnvelope with rich context signals
+
         Returns:
             Tuple[str, str]: (action, next_state)
         """
@@ -581,14 +587,17 @@ class StateMachine:
 
         # =====================================================================
         # Phase 4 STEP 2: Build EvaluatorContext for conditions
+        # Phase 5: Include context_envelope for context-aware conditions
         # =====================================================================
         config = SALES_STATES.get(self.state, {})
         transitions = config.get("transitions", {})
         rules = config.get("rules", {})
         spin_phase = self._get_current_spin_phase()
 
-        # Build context for condition evaluation
-        ctx = EvaluatorContext.from_state_machine(self, intent, config)
+        # Build context for condition evaluation (with envelope if provided)
+        ctx = EvaluatorContext.from_state_machine(
+            self, intent, config, context_envelope=context_envelope
+        )
 
         # Create trace if tracing is enabled
         trace = None
@@ -817,18 +826,29 @@ class StateMachine:
             return self._trace_collector.get_summary().to_dict()
         return None
 
-    def process(self, intent: str, extracted_data: Dict = None) -> Dict:
+    def process(
+        self,
+        intent: str,
+        extracted_data: Dict = None,
+        context_envelope: Any = None
+    ) -> Dict:
         """
         Обработать интент, вернуть результат.
 
         Phase 4: Uses IntentTracker for history and stats.
+        Phase 5: Uses context_envelope for context-aware conditions.
+
+        Args:
+            intent: The intent to process
+            extracted_data: Optional extracted data to update
+            context_envelope: Optional ContextEnvelope with rich context signals
         """
         prev_state = self.state
 
         if extracted_data:
             self.update_data(extracted_data)
 
-        action, next_state = self.apply_rules(intent)
+        action, next_state = self.apply_rules(intent, context_envelope=context_envelope)
         self.state = next_state
 
         # Store last_action for context

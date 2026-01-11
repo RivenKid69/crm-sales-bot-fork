@@ -572,6 +572,274 @@ def can_handle_with_roi(ctx: EvaluatorContext) -> bool:
     return has_pain_and_company_size(ctx)
 
 
+# =============================================================================
+# CONTEXT-AWARE CONDITIONS - Based on ContextEnvelope signals
+# =============================================================================
+
+@sm_condition(
+    "client_frustrated",
+    description="Check if client frustration level is high (>= 3)",
+    category="context"
+)
+def client_frustrated(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if client frustration level is 3 or higher.
+
+    When frustrated, avoid deflecting and be more direct.
+    """
+    return ctx.frustration_level >= 3
+
+
+@sm_condition(
+    "client_very_frustrated",
+    description="Check if client frustration level is very high (>= 4)",
+    category="context"
+)
+def client_very_frustrated(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if client frustration level is 4 or higher.
+
+    Consider offering exit or immediate help.
+    """
+    return ctx.frustration_level >= 4
+
+
+@sm_condition(
+    "client_stuck",
+    description="Check if dialogue is stuck (repeated unclear/same responses)",
+    category="context"
+)
+def client_stuck(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if dialogue is stuck.
+
+    Triggers clarification or change of approach.
+    """
+    return ctx.is_stuck
+
+
+@sm_condition(
+    "client_oscillating",
+    description="Check if dialogue is oscillating (back-and-forth pattern)",
+    category="context"
+)
+def client_oscillating(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if dialogue is oscillating.
+
+    Triggers summarization and reset.
+    """
+    return ctx.has_oscillation
+
+
+@sm_condition(
+    "momentum_positive",
+    description="Check if conversation momentum is positive",
+    category="context"
+)
+def momentum_positive(ctx: EvaluatorContext) -> bool:
+    """Returns True if momentum direction is positive."""
+    return ctx.momentum_direction == "positive"
+
+
+@sm_condition(
+    "momentum_negative",
+    description="Check if conversation momentum is negative",
+    category="context"
+)
+def momentum_negative(ctx: EvaluatorContext) -> bool:
+    """Returns True if momentum direction is negative."""
+    return ctx.momentum_direction == "negative"
+
+
+@sm_condition(
+    "momentum_strong_positive",
+    description="Check if momentum score is strongly positive (> 0.5)",
+    category="context"
+)
+def momentum_strong_positive(ctx: EvaluatorContext) -> bool:
+    """Returns True if momentum score > 0.5."""
+    return ctx.momentum > 0.5
+
+
+@sm_condition(
+    "momentum_strong_negative",
+    description="Check if momentum score is strongly negative (< -0.5)",
+    category="context"
+)
+def momentum_strong_negative(ctx: EvaluatorContext) -> bool:
+    """Returns True if momentum score < -0.5."""
+    return ctx.momentum < -0.5
+
+
+@sm_condition(
+    "engagement_high",
+    description="Check if client engagement level is high",
+    category="context"
+)
+def engagement_high(ctx: EvaluatorContext) -> bool:
+    """Returns True if engagement level is high."""
+    return ctx.engagement_level == "high"
+
+
+@sm_condition(
+    "engagement_low",
+    description="Check if client engagement level is low",
+    category="context"
+)
+def engagement_low(ctx: EvaluatorContext) -> bool:
+    """Returns True if engagement level is low or disengaged."""
+    return ctx.engagement_level in ("low", "disengaged")
+
+
+@sm_condition(
+    "has_repeated_question",
+    description="Check if there is a repeated question",
+    category="context"
+)
+def has_repeated_question(ctx: EvaluatorContext) -> bool:
+    """Returns True if a repeated question was detected."""
+    return ctx.repeated_question is not None
+
+
+@sm_condition(
+    "repeated_price_question",
+    description="Check if price question is being repeated",
+    category="context"
+)
+def repeated_price_question(ctx: EvaluatorContext) -> bool:
+    """Returns True if repeated question is about price."""
+    if ctx.repeated_question is None:
+        return False
+    q = ctx.repeated_question.lower()
+    return "price" in q or "pricing" in q
+
+
+@sm_condition(
+    "confidence_declining",
+    description="Check if classification confidence is declining",
+    category="context"
+)
+def confidence_declining(ctx: EvaluatorContext) -> bool:
+    """Returns True if confidence trend is decreasing."""
+    return ctx.confidence_trend == "decreasing"
+
+
+@sm_condition(
+    "many_objections",
+    description="Check if there are many objections (3+) in conversation",
+    category="context"
+)
+def many_objections(ctx: EvaluatorContext) -> bool:
+    """Returns True if total objections >= 3."""
+    return ctx.total_objections >= 3
+
+
+@sm_condition(
+    "breakthrough_detected",
+    description="Check if a breakthrough was detected in conversation",
+    category="context"
+)
+def breakthrough_detected(ctx: EvaluatorContext) -> bool:
+    """Returns True if breakthrough was detected."""
+    return ctx.has_breakthrough
+
+
+@sm_condition(
+    "in_breakthrough_window",
+    description="Check if we're in the breakthrough window (1-3 turns after)",
+    category="context"
+)
+def in_breakthrough_window(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if in breakthrough window.
+
+    This is the optimal time for soft CTA.
+    """
+    if not ctx.has_breakthrough:
+        return False
+    if ctx.turns_since_breakthrough is None:
+        return False
+    return 1 <= ctx.turns_since_breakthrough <= 3
+
+
+@sm_condition(
+    "guard_intervened",
+    description="Check if conversation guard has intervened",
+    category="context"
+)
+def guard_intervened(ctx: EvaluatorContext) -> bool:
+    """Returns True if guard intervention is active."""
+    return ctx.guard_intervention is not None
+
+
+@sm_condition(
+    "needs_repair",
+    description="Check if dialogue needs repair (stuck, oscillating, or repeated question)",
+    category="context"
+)
+def needs_repair(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if dialogue needs repair.
+
+    Combined check for stuck, oscillation, or repeated question.
+    """
+    return ctx.is_stuck or ctx.has_oscillation or ctx.repeated_question is not None
+
+
+@sm_condition(
+    "should_be_careful",
+    description="Check if we should be careful (frustrated or negative momentum)",
+    category="context"
+)
+def should_be_careful(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if we should be more careful with responses.
+
+    Triggers when client is frustrated or momentum is negative.
+    """
+    return ctx.frustration_level >= 2 or ctx.momentum_direction == "negative"
+
+
+@sm_condition(
+    "can_accelerate",
+    description="Check if we can accelerate the flow (positive signals)",
+    category="context"
+)
+def can_accelerate(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if we can accelerate the sales flow.
+
+    Requires positive momentum, high engagement, and no frustration.
+    """
+    return (
+        ctx.momentum_direction == "positive" and
+        ctx.engagement_level == "high" and
+        ctx.frustration_level == 0
+    )
+
+
+@sm_condition(
+    "should_answer_directly",
+    description="Check if we should answer question directly (frustrated or repeated)",
+    category="context"
+)
+def should_answer_directly(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if we should answer directly instead of deflecting.
+
+    Triggers when:
+    - Client is frustrated (level >= 2)
+    - Question is repeated
+    - Confidence is declining
+    """
+    return (
+        ctx.frustration_level >= 2 or
+        ctx.repeated_question is not None or
+        ctx.confidence_trend == "decreasing"
+    )
+
+
 # Export all condition functions for testing
 __all__ = [
     # Data conditions
@@ -622,4 +890,26 @@ __all__ = [
     "ready_for_presentation",
     "ready_for_close",
     "can_handle_with_roi",
+    # Context-aware conditions
+    "client_frustrated",
+    "client_very_frustrated",
+    "client_stuck",
+    "client_oscillating",
+    "momentum_positive",
+    "momentum_negative",
+    "momentum_strong_positive",
+    "momentum_strong_negative",
+    "engagement_high",
+    "engagement_low",
+    "has_repeated_question",
+    "repeated_price_question",
+    "confidence_declining",
+    "many_objections",
+    "breakthrough_detected",
+    "in_breakthrough_window",
+    "guard_intervened",
+    "needs_repair",
+    "should_be_careful",
+    "can_accelerate",
+    "should_answer_directly",
 ]

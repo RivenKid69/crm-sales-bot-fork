@@ -1269,3 +1269,356 @@ class TestEdgeCases:
 
         # Context should have original value
         assert ctx.collected_data["key"] == "value"
+
+
+# =============================================================================
+# CONTEXT-AWARE CONDITIONS TESTS (Phase 5)
+# =============================================================================
+
+# Import new conditions
+from src.conditions.state_machine import (
+    client_frustrated,
+    client_very_frustrated,
+    client_stuck,
+    client_oscillating,
+    momentum_positive,
+    momentum_negative,
+    momentum_strong_positive,
+    momentum_strong_negative,
+    engagement_high,
+    engagement_low,
+    has_repeated_question,
+    repeated_price_question,
+    confidence_declining,
+    many_objections,
+    breakthrough_detected,
+    in_breakthrough_window,
+    guard_intervened,
+    needs_repair,
+    should_be_careful,
+    can_accelerate,
+    should_answer_directly,
+)
+
+
+class TestContextAwareConditions:
+    """Tests for context-aware conditions based on ContextEnvelope signals."""
+
+    # =========================================================================
+    # Frustration conditions
+    # =========================================================================
+
+    def test_client_frustrated_true(self):
+        """Test client_frustrated returns True for frustration >= 3."""
+        ctx = create_test_context(frustration_level=3)
+        assert client_frustrated(ctx) is True
+
+        ctx_high = create_test_context(frustration_level=5)
+        assert client_frustrated(ctx_high) is True
+
+    def test_client_frustrated_false(self):
+        """Test client_frustrated returns False for frustration < 3."""
+        ctx = create_test_context(frustration_level=0)
+        assert client_frustrated(ctx) is False
+
+        ctx_low = create_test_context(frustration_level=2)
+        assert client_frustrated(ctx_low) is False
+
+    def test_client_very_frustrated(self):
+        """Test client_very_frustrated for frustration >= 4."""
+        ctx_3 = create_test_context(frustration_level=3)
+        assert client_very_frustrated(ctx_3) is False
+
+        ctx_4 = create_test_context(frustration_level=4)
+        assert client_very_frustrated(ctx_4) is True
+
+        ctx_5 = create_test_context(frustration_level=5)
+        assert client_very_frustrated(ctx_5) is True
+
+    # =========================================================================
+    # Stuck and oscillation conditions
+    # =========================================================================
+
+    def test_client_stuck(self):
+        """Test client_stuck condition."""
+        ctx_stuck = create_test_context(is_stuck=True)
+        assert client_stuck(ctx_stuck) is True
+
+        ctx_not_stuck = create_test_context(is_stuck=False)
+        assert client_stuck(ctx_not_stuck) is False
+
+    def test_client_oscillating(self):
+        """Test client_oscillating condition."""
+        ctx_osc = create_test_context(has_oscillation=True)
+        assert client_oscillating(ctx_osc) is True
+
+        ctx_no_osc = create_test_context(has_oscillation=False)
+        assert client_oscillating(ctx_no_osc) is False
+
+    # =========================================================================
+    # Momentum conditions
+    # =========================================================================
+
+    def test_momentum_positive(self):
+        """Test momentum_positive condition."""
+        ctx_pos = create_test_context(momentum_direction="positive")
+        assert momentum_positive(ctx_pos) is True
+
+        ctx_neg = create_test_context(momentum_direction="negative")
+        assert momentum_positive(ctx_neg) is False
+
+        ctx_neutral = create_test_context(momentum_direction="neutral")
+        assert momentum_positive(ctx_neutral) is False
+
+    def test_momentum_negative(self):
+        """Test momentum_negative condition."""
+        ctx_neg = create_test_context(momentum_direction="negative")
+        assert momentum_negative(ctx_neg) is True
+
+        ctx_pos = create_test_context(momentum_direction="positive")
+        assert momentum_negative(ctx_pos) is False
+
+    def test_momentum_strong_positive(self):
+        """Test momentum_strong_positive for score > 0.5."""
+        ctx_strong = create_test_context(momentum=0.7)
+        assert momentum_strong_positive(ctx_strong) is True
+
+        ctx_weak = create_test_context(momentum=0.3)
+        assert momentum_strong_positive(ctx_weak) is False
+
+        ctx_boundary = create_test_context(momentum=0.5)
+        assert momentum_strong_positive(ctx_boundary) is False
+
+    def test_momentum_strong_negative(self):
+        """Test momentum_strong_negative for score < -0.5."""
+        ctx_strong = create_test_context(momentum=-0.7)
+        assert momentum_strong_negative(ctx_strong) is True
+
+        ctx_weak = create_test_context(momentum=-0.3)
+        assert momentum_strong_negative(ctx_weak) is False
+
+    # =========================================================================
+    # Engagement conditions
+    # =========================================================================
+
+    def test_engagement_high(self):
+        """Test engagement_high condition."""
+        ctx_high = create_test_context(engagement_level="high")
+        assert engagement_high(ctx_high) is True
+
+        ctx_medium = create_test_context(engagement_level="medium")
+        assert engagement_high(ctx_medium) is False
+
+    def test_engagement_low(self):
+        """Test engagement_low condition."""
+        ctx_low = create_test_context(engagement_level="low")
+        assert engagement_low(ctx_low) is True
+
+        ctx_disengaged = create_test_context(engagement_level="disengaged")
+        assert engagement_low(ctx_disengaged) is True
+
+        ctx_medium = create_test_context(engagement_level="medium")
+        assert engagement_low(ctx_medium) is False
+
+    # =========================================================================
+    # Repeated question conditions
+    # =========================================================================
+
+    def test_has_repeated_question(self):
+        """Test has_repeated_question condition."""
+        ctx_repeated = create_test_context(repeated_question="price_question")
+        assert has_repeated_question(ctx_repeated) is True
+
+        ctx_no_repeat = create_test_context(repeated_question=None)
+        assert has_repeated_question(ctx_no_repeat) is False
+
+    def test_repeated_price_question(self):
+        """Test repeated_price_question condition."""
+        ctx_price = create_test_context(repeated_question="price_question")
+        assert repeated_price_question(ctx_price) is True
+
+        ctx_pricing = create_test_context(repeated_question="pricing_details")
+        assert repeated_price_question(ctx_pricing) is True
+
+        ctx_other = create_test_context(repeated_question="question_features")
+        assert repeated_price_question(ctx_other) is False
+
+        ctx_none = create_test_context(repeated_question=None)
+        assert repeated_price_question(ctx_none) is False
+
+    # =========================================================================
+    # Confidence conditions
+    # =========================================================================
+
+    def test_confidence_declining(self):
+        """Test confidence_declining condition."""
+        ctx_declining = create_test_context(confidence_trend="decreasing")
+        assert confidence_declining(ctx_declining) is True
+
+        ctx_stable = create_test_context(confidence_trend="stable")
+        assert confidence_declining(ctx_stable) is False
+
+        ctx_increasing = create_test_context(confidence_trend="increasing")
+        assert confidence_declining(ctx_increasing) is False
+
+    # =========================================================================
+    # Objection conditions
+    # =========================================================================
+
+    def test_many_objections(self):
+        """Test many_objections for total >= 3."""
+        ctx_many = create_test_context(total_objections=3)
+        assert many_objections(ctx_many) is True
+
+        ctx_more = create_test_context(total_objections=5)
+        assert many_objections(ctx_more) is True
+
+        ctx_few = create_test_context(total_objections=2)
+        assert many_objections(ctx_few) is False
+
+    # =========================================================================
+    # Breakthrough conditions
+    # =========================================================================
+
+    def test_breakthrough_detected(self):
+        """Test breakthrough_detected condition."""
+        ctx_bt = create_test_context(has_breakthrough=True)
+        assert breakthrough_detected(ctx_bt) is True
+
+        ctx_no_bt = create_test_context(has_breakthrough=False)
+        assert breakthrough_detected(ctx_no_bt) is False
+
+    def test_in_breakthrough_window(self):
+        """Test in_breakthrough_window for 1-3 turns after breakthrough."""
+        # In window (1-3 turns)
+        ctx_1 = create_test_context(has_breakthrough=True, turns_since_breakthrough=1)
+        assert in_breakthrough_window(ctx_1) is True
+
+        ctx_2 = create_test_context(has_breakthrough=True, turns_since_breakthrough=2)
+        assert in_breakthrough_window(ctx_2) is True
+
+        ctx_3 = create_test_context(has_breakthrough=True, turns_since_breakthrough=3)
+        assert in_breakthrough_window(ctx_3) is True
+
+        # Outside window
+        ctx_0 = create_test_context(has_breakthrough=True, turns_since_breakthrough=0)
+        assert in_breakthrough_window(ctx_0) is False
+
+        ctx_4 = create_test_context(has_breakthrough=True, turns_since_breakthrough=4)
+        assert in_breakthrough_window(ctx_4) is False
+
+        # No breakthrough
+        ctx_no_bt = create_test_context(has_breakthrough=False, turns_since_breakthrough=2)
+        assert in_breakthrough_window(ctx_no_bt) is False
+
+        # None turns_since
+        ctx_none = create_test_context(has_breakthrough=True, turns_since_breakthrough=None)
+        assert in_breakthrough_window(ctx_none) is False
+
+    # =========================================================================
+    # Guard conditions
+    # =========================================================================
+
+    def test_guard_intervened(self):
+        """Test guard_intervened condition."""
+        ctx_guard = create_test_context(guard_intervention="empathize")
+        assert guard_intervened(ctx_guard) is True
+
+        ctx_no_guard = create_test_context(guard_intervention=None)
+        assert guard_intervened(ctx_no_guard) is False
+
+    # =========================================================================
+    # Combined conditions
+    # =========================================================================
+
+    def test_needs_repair(self):
+        """Test needs_repair combined condition."""
+        # Stuck
+        ctx_stuck = create_test_context(is_stuck=True)
+        assert needs_repair(ctx_stuck) is True
+
+        # Oscillating
+        ctx_osc = create_test_context(has_oscillation=True)
+        assert needs_repair(ctx_osc) is True
+
+        # Repeated question
+        ctx_repeat = create_test_context(repeated_question="price_question")
+        assert needs_repair(ctx_repeat) is True
+
+        # None of the above
+        ctx_ok = create_test_context(
+            is_stuck=False, has_oscillation=False, repeated_question=None
+        )
+        assert needs_repair(ctx_ok) is False
+
+    def test_should_be_careful(self):
+        """Test should_be_careful combined condition."""
+        # Frustrated (level >= 2)
+        ctx_frust = create_test_context(frustration_level=2)
+        assert should_be_careful(ctx_frust) is True
+
+        # Negative momentum
+        ctx_neg = create_test_context(momentum_direction="negative")
+        assert should_be_careful(ctx_neg) is True
+
+        # Both ok
+        ctx_ok = create_test_context(
+            frustration_level=1, momentum_direction="neutral"
+        )
+        assert should_be_careful(ctx_ok) is False
+
+    def test_can_accelerate(self):
+        """Test can_accelerate combined condition."""
+        # All conditions met
+        ctx_ok = create_test_context(
+            momentum_direction="positive",
+            engagement_level="high",
+            frustration_level=0
+        )
+        assert can_accelerate(ctx_ok) is True
+
+        # Missing positive momentum
+        ctx_no_mom = create_test_context(
+            momentum_direction="neutral",
+            engagement_level="high",
+            frustration_level=0
+        )
+        assert can_accelerate(ctx_no_mom) is False
+
+        # Missing high engagement
+        ctx_no_eng = create_test_context(
+            momentum_direction="positive",
+            engagement_level="medium",
+            frustration_level=0
+        )
+        assert can_accelerate(ctx_no_eng) is False
+
+        # Has frustration
+        ctx_frust = create_test_context(
+            momentum_direction="positive",
+            engagement_level="high",
+            frustration_level=1
+        )
+        assert can_accelerate(ctx_frust) is False
+
+    def test_should_answer_directly(self):
+        """Test should_answer_directly combined condition."""
+        # Frustrated
+        ctx_frust = create_test_context(frustration_level=2)
+        assert should_answer_directly(ctx_frust) is True
+
+        # Repeated question
+        ctx_repeat = create_test_context(repeated_question="price_question")
+        assert should_answer_directly(ctx_repeat) is True
+
+        # Declining confidence
+        ctx_conf = create_test_context(confidence_trend="decreasing")
+        assert should_answer_directly(ctx_conf) is True
+
+        # None of the above
+        ctx_ok = create_test_context(
+            frustration_level=0,
+            repeated_question=None,
+            confidence_trend="stable"
+        )
+        assert should_answer_directly(ctx_ok) is False

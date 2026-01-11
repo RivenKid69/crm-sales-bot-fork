@@ -43,6 +43,10 @@ from response_variations import variations
 # Context Window for enhanced classification
 from context_window import ContextWindow
 
+# Phase 5: Context-aware policy overlays
+from dialogue_policy import DialoguePolicy
+from context_envelope import build_context_envelope
+
 
 class SalesBot:
     """
@@ -99,6 +103,12 @@ class SalesBot:
         self._disambiguation_ui = None
         self.disambiguation_metrics = DisambiguationMetrics()
 
+        # Phase 5: Context-aware policy overlays (controlled by feature flag)
+        self.dialogue_policy = DialoguePolicy(
+            shadow_mode=False,  # Применять решения (не только логировать)
+            trace_enabled=enable_tracing
+        )
+
         # Context Window: расширенный контекст для классификатора
         # Хранит последние 5 ходов с полной информацией (intent, action, confidence)
         self.context_window = ContextWindow(max_size=5)
@@ -143,6 +153,9 @@ class SalesBot:
 
         # Reset Phase 4
         self.disambiguation_metrics = DisambiguationMetrics()
+
+        # Reset Phase 5
+        self.dialogue_policy.reset()
 
         # Reset Context Window
         self.context_window.reset()
@@ -628,8 +641,41 @@ class SalesBot:
         # Phase 3: Update lead score
         self._update_lead_score(intent)
 
-        # 2. Run state machine
-        sm_result = self.state_machine.process(intent, extracted)
+        # =================================================================
+        # Phase 5: Build ContextEnvelope for context-aware decisions
+        # =================================================================
+        context_envelope = build_context_envelope(
+            state_machine=self.state_machine,
+            context_window=self.context_window,
+            tone_info=tone_info,
+            guard_info={"intervention": intervention} if intervention else None,
+            last_action=self.last_action,
+            last_intent=self.last_intent,
+        )
+
+        # 2. Run state machine with context envelope
+        sm_result = self.state_machine.process(
+            intent, extracted, context_envelope=context_envelope
+        )
+
+        # =================================================================
+        # Phase 5: Apply DialoguePolicy overlay if enabled
+        # =================================================================
+        policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
+        if policy_override and policy_override.has_override:
+            logger.info(
+                "DialoguePolicy override applied",
+                original_action=sm_result["action"],
+                override_action=policy_override.action,
+                reason_codes=policy_override.reason_codes,
+                decision=policy_override.decision.value,
+            )
+            # Apply the override
+            if policy_override.action:
+                sm_result["action"] = policy_override.action
+            if policy_override.next_state:
+                sm_result["next_state"] = policy_override.next_state
+                self.state_machine.state = policy_override.next_state
 
         # Build context for response generation
         context = {
@@ -651,6 +697,8 @@ class SalesBot:
             "objection_info": objection_info,
             # For CTA
             "last_action": self.last_action,
+            # Phase 5: Policy reason codes for generator
+            "policy_reason_codes": policy_override.reason_codes if policy_override else [],
         }
 
         # Determine action
