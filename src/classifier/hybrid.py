@@ -5,8 +5,15 @@
 - TextNormalizer: нормализация текста
 - RootClassifier: быстрая классификация по корням
 - LemmaClassifier: fallback через pymorphy
+- SemanticClassifier: семантический fallback через эмбеддинги (cascade)
 - DataExtractor: извлечение структурированных данных
 - DisambiguationAnalyzer: уточнение намерения при близких scores
+
+Cascade Pipeline (когда flags.cascade_classifier включён):
+1. Priority Patterns → высокая уверенность
+2. Root Classifier → быстрая классификация
+3. Lemma Classifier → морфологический анализ
+4. Semantic Classifier → эмбеддинги (fallback)
 """
 
 import re
@@ -16,6 +23,7 @@ from config import CLASSIFIER_CONFIG
 from feature_flags import flags
 from .normalizer import TextNormalizer
 from .intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
+from .intents.semantic import get_semantic_classifier, SemanticClassifier
 from .extractors import DataExtractor
 
 
@@ -23,12 +31,20 @@ class HybridClassifier:
     """
     Гибридный классификатор: быстрый + точный
 
+    Cascade Pipeline:
     1. Нормализация текста (TextNormalizer)
-    2. Пробуем быструю классификацию по корням
-    3. Если confidence >= threshold → возвращаем
-    4. Иначе → fallback на pymorphy2
-    5. Выбираем лучший результат
+    2. Контекстная классификация коротких ответов
+    3. Priority Patterns (regex)
+    4. Быстрая классификация по корням (RootClassifier)
+    5. Fallback на pymorphy2 (LemmaClassifier)
+    6. Semantic fallback через эмбеддинги (SemanticClassifier)
+    7. Выбираем лучший результат
     """
+
+    # Порог для семантического fallback
+    SEMANTIC_THRESHOLD = 0.55
+    # Минимальный порог keyword классификаторов для пропуска semantic
+    KEYWORD_THRESHOLD_SKIP_SEMANTIC = 0.65
 
     def __init__(self):
         self.normalizer = TextNormalizer()
@@ -37,6 +53,18 @@ class HybridClassifier:
         self.data_extractor = DataExtractor()
         self.config = CLASSIFIER_CONFIG
         self._disambiguation_analyzer = None
+        self._semantic_classifier: Optional[SemanticClassifier] = None
+
+    @property
+    def semantic_classifier(self) -> Optional[SemanticClassifier]:
+        """Lazy initialization семантического классификатора."""
+        if not flags.cascade_classifier:
+            return None
+
+        if self._semantic_classifier is None:
+            self._semantic_classifier = get_semantic_classifier()
+
+        return self._semantic_classifier
 
     @property
     def disambiguation_analyzer(self):
@@ -248,32 +276,60 @@ class HybridClassifier:
                         ),
                     }
 
-        # 4. Выбираем лучший результат
+        # 4. Выбираем лучший результат между root и lemma
         if lemma_conf > root_conf:
+            best_keyword_intent = lemma_intent
+            best_keyword_conf = lemma_conf
+            best_keyword_method = "lemma"
+            best_keyword_scores = lemma_scores
+        else:
+            best_keyword_intent = root_intent
+            best_keyword_conf = root_conf
+            best_keyword_method = "root"
+            best_keyword_scores = root_scores
+
+        # =================================================================
+        # ПРИОРИТЕТ 9: SEMANTIC FALLBACK (Cascade Stage 4)
+        # =================================================================
+        # Если keyword классификаторы дали низкую уверенность,
+        # пробуем семантический fallback через эмбеддинги
+        if flags.cascade_classifier and best_keyword_conf < self.KEYWORD_THRESHOLD_SKIP_SEMANTIC:
+            semantic_result = self._semantic_fallback(message, best_keyword_intent, best_keyword_conf)
+            if semantic_result:
+                return {
+                    "intent": semantic_result["intent"],
+                    "confidence": semantic_result["confidence"],
+                    "extracted_data": extracted,
+                    "method": "semantic",
+                    "debug_scores": {
+                        "semantic": semantic_result["scores"],
+                        "keyword_fallback": {
+                            "intent": best_keyword_intent,
+                            "confidence": best_keyword_conf,
+                        }
+                    }
+                }
+
+        # 5. Возвращаем лучший keyword результат
+        if best_keyword_conf >= self.config["min_confidence"]:
             return {
-                "intent": lemma_intent,
-                "confidence": lemma_conf,
+                "intent": best_keyword_intent,
+                "confidence": best_keyword_conf,
                 "extracted_data": extracted,
-                "method": "lemma",
-                "debug_scores": lemma_scores
+                "method": best_keyword_method,
+                "debug_scores": best_keyword_scores
             }
 
-        # Если оба метода дали низкую уверенность
-        if root_conf < self.config["min_confidence"]:
-            return {
-                "intent": "unclear",
-                "confidence": root_conf,
-                "extracted_data": extracted,
-                "method": "root",
-                "debug_scores": root_scores
-            }
-
+        # Если все методы дали низкую уверенность
         return {
-            "intent": root_intent,
-            "confidence": root_conf,
+            "intent": "unclear",
+            "confidence": best_keyword_conf,
             "extracted_data": extracted,
-            "method": "root",
-            "debug_scores": root_scores
+            "method": "fallback",
+            "debug_scores": {
+                "root": root_scores,
+                "lemma": lemma_scores,
+            }
         }
 
     def _classify_short_answer(self, message: str, context: Dict) -> Optional[Dict]:
@@ -888,3 +944,50 @@ class HybridClassifier:
             }
 
         return None
+
+    def _semantic_fallback(
+        self,
+        message: str,
+        keyword_intent: str,
+        keyword_conf: float
+    ) -> Optional[Dict]:
+        """
+        Семантический fallback через эмбеддинги.
+
+        Используется когда keyword классификаторы (root/lemma) дали
+        низкую уверенность. Вычисляет cosine similarity между сообщением
+        и примерами интентов.
+
+        Args:
+            message: Текст сообщения
+            keyword_intent: Лучший интент от keyword классификаторов
+            keyword_conf: Уверенность keyword классификаторов
+
+        Returns:
+            {"intent": str, "confidence": float, "scores": dict} или None
+        """
+        if not self.semantic_classifier:
+            return None
+
+        if not self.semantic_classifier.is_available:
+            return None
+
+        try:
+            semantic_intent, semantic_conf, semantic_scores = \
+                self.semantic_classifier.classify(message)
+
+            # Если семантика дала результат выше порога
+            if semantic_conf >= self.SEMANTIC_THRESHOLD:
+                # И если семантика лучше keyword или keyword слишком низкий
+                if semantic_conf > keyword_conf or keyword_conf < self.config["min_confidence"]:
+                    return {
+                        "intent": semantic_intent,
+                        "confidence": semantic_conf,
+                        "scores": semantic_scores,
+                    }
+
+            return None
+
+        except Exception:
+            # При ошибке просто пропускаем semantic stage
+            return None

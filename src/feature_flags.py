@@ -58,19 +58,22 @@ class FeatureFlags:
         # Фаза 4: Intent Disambiguation
         "intent_disambiguation": False,   # Уточнение намерения при близких scores
 
+        # Фаза 4.5: Cascade Classifier (семантический fallback)
+        "cascade_classifier": True,       # Каскадный классификатор с эмбеддингами
+
         # Фаза 5: Dynamic CTA Fallback
         "dynamic_cta_fallback": False,    # Динамические подсказки в fallback tier_2
 
         # === Context Policy (PLAN_CONTEXT_POLICY.md) ===
         # Phase 0: Инфраструктура контекста
-        "context_full_envelope": False,   # Полный ContextEnvelope для всех подсистем
+        "context_full_envelope": True,    # Полный ContextEnvelope для всех подсистем
         "context_shadow_mode": False,     # Shadow mode: логируем решения без применения
 
         # Phase 2: Естественность диалога
         "context_response_directives": False,  # ResponseDirectives для генератора
 
         # Phase 3: Policy overlays
-        "context_policy_overlays": False,  # DialoguePolicy action overrides
+        "context_policy_overlays": True,   # DialoguePolicy action overrides
         "context_engagement_v2": False,    # Улучшенный расчёт engagement
 
         # Phase 5: CTA с памятью
@@ -83,7 +86,8 @@ class FeatureFlags:
         "phase_1": ["multi_tier_fallback", "conversation_guard"],
         "phase_2": ["tone_analysis", "response_variations", "personalization"],
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
-        "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard"],
+        "phase_4": ["intent_disambiguation", "cascade_classifier"],
+        "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier"],
         "risky": ["circular_flow", "lead_scoring"],
         # Context Policy groups (PLAN_CONTEXT_POLICY.md)
         "context_phase_0": ["context_full_envelope", "context_shadow_mode"],
@@ -279,6 +283,11 @@ class FeatureFlags:
     def dynamic_cta_fallback(self) -> bool:
         """Включены ли динамические подсказки в fallback tier_2"""
         return self.is_enabled("dynamic_cta_fallback")
+
+    @property
+    def cascade_classifier(self) -> bool:
+        """Включён ли каскадный классификатор с семантическим fallback"""
+        return self.is_enabled("cascade_classifier")
 
     # =========================================================================
     # Context Policy flags (PLAN_CONTEXT_POLICY.md)
