@@ -61,6 +61,9 @@ class FeatureFlags:
         # Фаза 4.5: Cascade Classifier (семантический fallback)
         "cascade_classifier": True,       # Каскадный классификатор с эмбеддингами
 
+        # Фаза 4.6: Semantic Objection Detection
+        "semantic_objection_detection": True,  # Semantic fallback для возражений
+
         # Фаза 5: Dynamic CTA Fallback
         "dynamic_cta_fallback": False,    # Динамические подсказки в fallback tier_2
 
@@ -86,8 +89,8 @@ class FeatureFlags:
         "phase_1": ["multi_tier_fallback", "conversation_guard"],
         "phase_2": ["tone_analysis", "response_variations", "personalization"],
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
-        "phase_4": ["intent_disambiguation", "cascade_classifier"],
-        "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier"],
+        "phase_4": ["intent_disambiguation", "cascade_classifier", "semantic_objection_detection"],
+        "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
         "risky": ["circular_flow", "lead_scoring"],
         # Context Policy groups (PLAN_CONTEXT_POLICY.md)
         "context_phase_0": ["context_full_envelope", "context_shadow_mode"],
@@ -288,6 +291,11 @@ class FeatureFlags:
     def cascade_classifier(self) -> bool:
         """Включён ли каскадный классификатор с семантическим fallback"""
         return self.is_enabled("cascade_classifier")
+
+    @property
+    def semantic_objection_detection(self) -> bool:
+        """Включён ли семантический fallback для детекции возражений"""
+        return self.is_enabled("semantic_objection_detection")
 
     # =========================================================================
     # Context Policy flags (PLAN_CONTEXT_POLICY.md)
