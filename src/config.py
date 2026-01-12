@@ -1387,6 +1387,8 @@ SALES_STATES = {
             # Клиент хочет демо или звонок — переходим в close
             "demo_request": "close",
             "callback_request": "close",
+            # FIX: consultation_request = сильный сигнал интереса → close
+            "consultation_request": "close",
             # Прощание — мягко завершаем
             "farewell": "soft_close",
             # Возражения по времени и "надо подумать" — обрабатываем
@@ -1436,6 +1438,14 @@ SALES_STATES = {
                 {"when": "objection_limit_reached", "then": "soft_close"},
                 "handle_objection"
             ],
+            # FIX: Вопросы = сигнал интереса, клиент пересматривает решение
+            # Выходим из handle_objection обратно в presentation/close
+            "question_features": "presentation",
+            "question_integrations": "presentation",
+            "comparison": "presentation",
+            "consultation_request": "close",  # Сильный сигнал интереса!
+            # info_provided = клиент даёт контекст, возвращаем в квалификацию
+            "info_provided": "spin_situation",
         },
         "rules": {
             # Conditional: если есть данные для ROI — отвечаем с расчётом
@@ -1528,8 +1538,11 @@ SALES_STATES = {
             # FIX: Вопросы = проявление интереса → возвращаем в диалог
             # Если клиент задаёт вопросы в soft_close, он ещё не ушёл
             "price_question": "presentation",
+            "pricing_details": "presentation",  # Детали по ценам = интерес
             "question_features": "spin_situation",
             "question_integrations": "spin_situation",
+            "comparison": "presentation",  # Сравнение = выбирает между вариантами
+            "consultation_request": "close",  # Хочет консультацию = сильный интерес!
             # info_provided = клиент отвечает на вопросы → продолжаем диалог
             "info_provided": "spin_situation",
             "situation_provided": "spin_situation",
@@ -1537,8 +1550,10 @@ SALES_STATES = {
         "rules": {
             # На вопросы — отвечаем (transitions выше обеспечат переход)
             "price_question": "answer_with_facts",
+            "pricing_details": "answer_with_facts",
             "question_features": "answer_and_continue",
             "question_integrations": "answer_and_continue",
+            "comparison": "answer_and_continue",
             "gratitude": "acknowledge_farewell",
             "small_talk": "polite_farewell",
         }
