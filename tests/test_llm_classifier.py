@@ -178,5 +178,127 @@ class TestSchemas:
         assert PainCategory is not None
 
 
+class TestPrompts:
+    """Тесты промптов."""
+
+    def test_system_prompt_has_no_think(self):
+        """Проверка /no_think в начале."""
+        from classifier.llm.prompts import SYSTEM_PROMPT
+        assert SYSTEM_PROMPT.startswith("/no_think")
+
+    def test_system_prompt_has_all_intents(self):
+        """Проверка что все интенты описаны."""
+        from classifier.llm.prompts import SYSTEM_PROMPT
+        from classifier.llm.schemas import IntentType
+        import typing
+
+        # Получаем все интенты из Literal
+        intents = typing.get_args(IntentType)
+
+        for intent in intents:
+            assert intent in SYSTEM_PROMPT, f"Intent {intent} not in SYSTEM_PROMPT"
+
+    def test_build_classification_prompt(self):
+        """Проверка построения промпта."""
+        from classifier.llm.prompts import build_classification_prompt
+
+        prompt = build_classification_prompt(
+            message="Привет",
+            context={"state": "greeting", "spin_phase": "situation"}
+        )
+
+        assert "Привет" in prompt
+        assert "greeting" in prompt
+        assert "situation" in prompt
+        assert "/no_think" in prompt
+
+    def test_build_classification_prompt_no_context(self):
+        """Проверка промпта без контекста."""
+        from classifier.llm.prompts import build_classification_prompt
+
+        prompt = build_classification_prompt(message="Тест")
+
+        assert "Тест" in prompt
+        assert "Нет контекста" in prompt
+
+    def test_build_classification_prompt_all_context_fields(self):
+        """Проверка всех полей контекста."""
+        from classifier.llm.prompts import build_classification_prompt
+
+        prompt = build_classification_prompt(
+            message="Сообщение",
+            context={
+                "state": "spin_situation",
+                "spin_phase": "problem",
+                "last_action": "задал вопрос",
+                "last_intent": "greeting"
+            }
+        )
+
+        assert "spin_situation" in prompt
+        assert "problem" in prompt
+        assert "задал вопрос" in prompt
+        assert "greeting" in prompt
+
+
+class TestFewShot:
+    """Тесты few-shot примеров."""
+
+    def test_few_shot_examples_valid(self):
+        """Проверка валидности few-shot примеров."""
+        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+        from classifier.llm.schemas import IntentType
+        import typing
+
+        valid_intents = set(typing.get_args(IntentType))
+
+        for ex in FEW_SHOT_EXAMPLES:
+            assert "message" in ex
+            assert "result" in ex
+            assert ex["result"]["intent"] in valid_intents, f"Invalid intent: {ex['result']['intent']}"
+            assert 0 <= ex["result"]["confidence"] <= 1
+
+    def test_few_shot_examples_count(self):
+        """Проверка количества примеров."""
+        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+
+        assert len(FEW_SHOT_EXAMPLES) >= 10
+
+    def test_get_few_shot_prompt(self):
+        """Проверка генерации few-shot промпта."""
+        from classifier.llm.few_shot import get_few_shot_prompt
+
+        prompt = get_few_shot_prompt(n_examples=3)
+
+        assert "Пример 1" in prompt
+        assert "Пример 2" in prompt
+        assert "Пример 3" in prompt
+        assert "Сообщение:" in prompt
+
+    def test_get_few_shot_prompt_limit(self):
+        """Проверка лимита примеров."""
+        from classifier.llm.few_shot import get_few_shot_prompt
+
+        prompt = get_few_shot_prompt(n_examples=2)
+
+        assert "Пример 1" in prompt
+        assert "Пример 2" in prompt
+        assert "Пример 3" not in prompt
+
+    def test_few_shot_covers_main_categories(self):
+        """Проверка покрытия основных категорий."""
+        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+
+        intents = {ex["result"]["intent"] for ex in FEW_SHOT_EXAMPLES}
+
+        # Проверяем что есть примеры для основных категорий
+        assert "greeting" in intents
+        assert "price_question" in intents
+        assert "objection_price" in intents
+        assert "situation_provided" in intents
+        assert "problem_revealed" in intents
+        assert "contact_provided" in intents
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
