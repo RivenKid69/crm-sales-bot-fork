@@ -86,6 +86,9 @@ class FeatureFlags:
         "cascade_tone_analyzer": True,     # Master switch для каскадного анализатора
         "tone_semantic_tier2": True,       # RoSBERTa semantic (Tier 2)
         "tone_llm_tier3": True,            # LLM fallback (Tier 3)
+
+        # === LLM Classifier (Phase LLM) ===
+        "llm_classifier": True,            # Использовать LLM классификатор вместо Hybrid
     }
 
     # Группы флагов для удобного управления
@@ -358,6 +361,15 @@ class FeatureFlags:
     def tone_llm_tier3(self) -> bool:
         """Включён ли Tier 3 (LLM) для анализа тона"""
         return self.is_enabled("tone_llm_tier3")
+
+    # =========================================================================
+    # LLM Classifier flags
+    # =========================================================================
+
+    @property
+    def llm_classifier(self) -> bool:
+        """Включён ли LLM классификатор вместо Hybrid"""
+        return self.is_enabled("llm_classifier")
 
 
 # Singleton экземпляр

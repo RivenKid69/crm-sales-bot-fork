@@ -500,5 +500,131 @@ class TestLLMClassifier:
         assert LLMClassifier is not None
 
 
+class TestUnifiedClassifier:
+    """Тесты UnifiedClassifier."""
+
+    def test_uses_llm_when_flag_true(self):
+        """Использует LLM когда флаг включен."""
+        from classifier.unified import UnifiedClassifier
+        from unittest.mock import patch, Mock
+
+        with patch('classifier.unified.flags') as mock_flags:
+            mock_flags.llm_classifier = True
+
+            classifier = UnifiedClassifier()
+
+            # Mock LLM classifier
+            mock_llm = Mock()
+            mock_llm.classify.return_value = {"intent": "greeting", "method": "llm"}
+            classifier._llm = mock_llm
+
+            result = classifier.classify("привет")
+
+            assert result["method"] == "llm"
+            mock_llm.classify.assert_called_once()
+
+    def test_uses_hybrid_when_flag_false(self):
+        """Использует Hybrid когда флаг выключен."""
+        from classifier.unified import UnifiedClassifier
+        from unittest.mock import patch, Mock
+
+        with patch('classifier.unified.flags') as mock_flags:
+            mock_flags.llm_classifier = False
+
+            classifier = UnifiedClassifier()
+
+            # Mock Hybrid classifier
+            mock_hybrid = Mock()
+            mock_hybrid.classify.return_value = {"intent": "greeting", "method": "root"}
+            classifier._hybrid = mock_hybrid
+
+            result = classifier.classify("привет")
+
+            mock_hybrid.classify.assert_called_once()
+
+    def test_lazy_loading_hybrid(self):
+        """Проверка lazy loading HybridClassifier."""
+        from classifier.unified import UnifiedClassifier
+        from unittest.mock import patch
+
+        with patch('classifier.unified.flags') as mock_flags:
+            mock_flags.llm_classifier = False
+
+            classifier = UnifiedClassifier()
+
+            # До первого вызова _hybrid должен быть None
+            assert classifier._hybrid is None
+
+            # После обращения к property создаётся
+            with patch('classifier.hybrid.HybridClassifier') as MockHybrid:
+                MockHybrid.return_value.classify.return_value = {"intent": "greeting"}
+                _ = classifier.hybrid
+                # Теперь _hybrid должен быть установлен
+                assert classifier._hybrid is not None
+
+    def test_lazy_loading_llm(self):
+        """Проверка lazy loading LLMClassifier."""
+        from classifier.unified import UnifiedClassifier
+        from unittest.mock import patch, Mock
+
+        with patch('classifier.unified.flags') as mock_flags:
+            mock_flags.llm_classifier = True
+
+            classifier = UnifiedClassifier()
+
+            # До первого вызова _llm должен быть None
+            assert classifier._llm is None
+
+            # Mock hybrid чтобы избежать реальной инициализации
+            classifier._hybrid = Mock()
+
+            with patch('classifier.llm.LLMClassifier') as MockLLM:
+                MockLLM.return_value.classify.return_value = {"intent": "greeting"}
+                _ = classifier.llm
+                assert classifier._llm is not None
+
+    def test_get_stats(self):
+        """Проверка получения статистики."""
+        from classifier.unified import UnifiedClassifier
+        from unittest.mock import patch, Mock
+
+        with patch('classifier.unified.flags') as mock_flags:
+            mock_flags.llm_classifier = True
+
+            classifier = UnifiedClassifier()
+
+            # Без инициализации LLM
+            stats = classifier.get_stats()
+            assert stats["active_classifier"] == "llm"
+            assert "llm_stats" not in stats
+
+            # С инициализированным LLM
+            mock_llm = Mock()
+            mock_llm.get_stats.return_value = {"llm_calls": 5}
+            classifier._llm = mock_llm
+
+            stats = classifier.get_stats()
+            assert stats["llm_stats"]["llm_calls"] == 5
+
+    def test_get_stats_hybrid_mode(self):
+        """Проверка статистики в режиме Hybrid."""
+        from classifier.unified import UnifiedClassifier
+        from unittest.mock import patch
+
+        with patch('classifier.unified.flags') as mock_flags:
+            mock_flags.llm_classifier = False
+
+            classifier = UnifiedClassifier()
+            stats = classifier.get_stats()
+
+            assert stats["active_classifier"] == "hybrid"
+
+    def test_module_exports_unified(self):
+        """Проверка экспорта UnifiedClassifier из модуля."""
+        from classifier import UnifiedClassifier
+
+        assert UnifiedClassifier is not None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
