@@ -4,24 +4,38 @@ LLM-based Category Router для базы знаний.
 
 Использует LLM для классификации запроса по категориям,
 что позволяет CascadeRetriever искать только в релевантных файлах.
+
+Поддерживает:
+- Structured Output (vLLM + Outlines) — 100% валидный JSON
+- Legacy режим (generate + parsing) — обратная совместимость
 """
 
 import json
 import re
 import time
-from typing import List, Optional, Protocol
+from typing import List, Optional, Protocol, Type, TypeVar
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from pydantic import BaseModel
 from logger import logger
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class LLMProtocol(Protocol):
     """Протокол для LLM клиента."""
     def generate(self, prompt: str) -> str:
         """Генерация ответа."""
+        ...
+
+
+class StructuredLLMProtocol(LLMProtocol, Protocol):
+    """Протокол для LLM с поддержкой structured output."""
+    def generate_structured(self, prompt: str, schema: Type[T]) -> Optional[T]:
+        """Генерация структурированного ответа."""
         ...
 
 
@@ -88,6 +102,10 @@ class CategoryRouter:
         """
         Определить топ-N категорий для запроса.
 
+        Автоматически выбирает метод:
+        - generate_structured (vLLM) если доступен
+        - generate + parsing (legacy) иначе
+
         Args:
             query: Сообщение клиента
 
@@ -101,15 +119,13 @@ class CategoryRouter:
         start_time = time.perf_counter()
 
         try:
-            from config import CATEGORY_ROUTER_PROMPT
-
-            prompt = CATEGORY_ROUTER_PROMPT.format(
-                query=query,
-                top_k=self.top_k
-            )
-
-            response = self.llm.generate(prompt)
-            categories = self._parse_response(response)
+            # Проверяем поддержку structured output
+            if hasattr(self.llm, 'generate_structured'):
+                categories = self._route_structured(query)
+                method = "structured"
+            else:
+                categories = self._route_legacy(query)
+                method = "legacy"
 
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
@@ -117,6 +133,7 @@ class CategoryRouter:
                 "CategoryRouter result",
                 query=query[:50],
                 categories=categories,
+                method=method,
                 latency_ms=round(elapsed_ms, 2)
             )
 
@@ -131,6 +148,45 @@ class CategoryRouter:
                 latency_ms=round(elapsed_ms, 2)
             )
             return self.fallback_categories[:self.top_k]
+
+    def _route_structured(self, query: str) -> List[str]:
+        """
+        Роутинг через structured output (vLLM + Outlines).
+
+        Гарантирует 100% валидный JSON через Pydantic схему.
+        """
+        from config import CATEGORY_ROUTER_PROMPT_STRUCTURED
+        from classifier.llm import CategoryResult
+
+        prompt = CATEGORY_ROUTER_PROMPT_STRUCTURED.format(
+            query=query,
+            top_k=self.top_k
+        )
+
+        result = self.llm.generate_structured(prompt, CategoryResult)
+
+        if result is None:
+            logger.warning("CategoryRouter: structured output returned None")
+            return []
+
+        # CategoryResult.categories уже валидировано Pydantic
+        return list(result.categories[:self.top_k])
+
+    def _route_legacy(self, query: str) -> List[str]:
+        """
+        Legacy роутинг через generate + parsing.
+
+        Обратная совместимость для LLM без structured output.
+        """
+        from config import CATEGORY_ROUTER_PROMPT
+
+        prompt = CATEGORY_ROUTER_PROMPT.format(
+            query=query,
+            top_k=self.top_k
+        )
+
+        response = self.llm.generate(prompt)
+        return self._parse_response(response)
 
     def _parse_response(self, response: str) -> List[str]:
         """

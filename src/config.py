@@ -1865,6 +1865,24 @@ faq (4 секции) — общие частые вопросы
 Выбери {top_k} наиболее подходящих категорий для поиска ответа.
 Ответь ТОЛЬКО JSON массивом без пояснений: ["category1", "category2"]"""
 
+
+# Structured Output версия для vLLM + Outlines
+CATEGORY_ROUTER_PROMPT_STRUCTURED = """/no_think
+Определи категории для поиска в базе знаний Wipon.
+
+КАТЕГОРИИ: analytics, competitors, employees, equipment, faq, features, fiscal, integrations, inventory, mobile, pricing, products, promotions, regions, stability, support, tis
+
+ПРИМЕРЫ:
+"Что посоветуете для маленького магазина?" → products, equipment, pricing
+"какой сканер лучше?" → equipment, support, products
+"работаете в караганде?" → regions, support, equipment
+"wipon vs iiko" → competitors, products, pricing
+
+Запрос: {query}
+
+Выбери {top_k} подходящих категорий."""
+
+
 # =============================================================================
 # ШАБЛОНЫ ПРОМПТОВ
 # =============================================================================

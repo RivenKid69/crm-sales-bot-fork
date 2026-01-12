@@ -356,5 +356,116 @@ class TestRealScenarios:
         assert "features" in result
 
 
+# =============================================================================
+# Тесты Structured Output (vLLM)
+# =============================================================================
+
+class MockStructuredLLM:
+    """Mock LLM с поддержкой structured output."""
+
+    def __init__(self, categories=None, return_none=False):
+        from classifier.llm import CategoryResult
+        self.categories = categories or ["pricing", "products"]
+        self.return_none = return_none
+        self.last_prompt = None
+        self.last_schema = None
+        self.call_count = 0
+
+    def generate(self, prompt: str) -> str:
+        """Legacy метод (не должен вызываться при наличии generate_structured)."""
+        self.last_prompt = prompt
+        self.call_count += 1
+        cats = ', '.join(f'"{c}"' for c in self.categories)
+        return f'[{cats}]'
+
+    def generate_structured(self, prompt: str, schema):
+        """Structured output метод."""
+        from classifier.llm import CategoryResult
+        self.last_prompt = prompt
+        self.last_schema = schema
+        self.call_count += 1
+
+        if self.return_none:
+            return None
+
+        return CategoryResult(categories=self.categories)
+
+
+class TestStructuredOutput:
+    """Тесты для structured output (vLLM + Outlines)."""
+
+    def test_uses_structured_when_available(self):
+        """Используется generate_structured если доступен."""
+        llm = MockStructuredLLM(categories=["pricing", "support"])
+        router = CategoryRouter(llm, top_k=3)
+        result = router.route("Сколько стоит?")
+
+        assert result == ["pricing", "support"]
+        assert llm.call_count == 1
+        # Проверяем что вызван structured метод
+        from classifier.llm import CategoryResult
+        assert llm.last_schema == CategoryResult
+
+    def test_structured_respects_top_k(self):
+        """Top_k применяется к structured output."""
+        llm = MockStructuredLLM(categories=["pricing", "products", "features", "support"])
+        router = CategoryRouter(llm, top_k=2)
+        result = router.route("Тест")
+
+        assert len(result) == 2
+        assert result == ["pricing", "products"]
+
+    def test_structured_none_returns_fallback(self):
+        """При None от structured output возвращается fallback."""
+        llm = MockStructuredLLM(return_none=True)
+        router = CategoryRouter(llm, top_k=2, fallback_categories=["faq", "features"])
+        result = router.route("Тест")
+
+        assert result == ["faq", "features"]
+
+    def test_legacy_used_without_structured(self):
+        """Legacy метод используется если нет generate_structured."""
+        llm = MockLLM('["integrations", "fiscal"]')
+        router = CategoryRouter(llm, top_k=3)
+        result = router.route("Интеграции?")
+
+        assert result == ["integrations", "fiscal"]
+        assert llm.call_count == 1
+
+    def test_structured_prompt_different_from_legacy(self):
+        """Structured prompt использует CATEGORY_ROUTER_PROMPT_STRUCTURED."""
+        llm = MockStructuredLLM(categories=["pricing"])
+        router = CategoryRouter(llm, top_k=2)
+        router.route("Цена?")
+
+        # Structured prompt короче и содержит /no_think
+        assert "/no_think" in llm.last_prompt
+        assert "КАТЕГОРИИ:" in llm.last_prompt
+
+    def test_category_result_schema_valid(self):
+        """CategoryResult schema валидирует категории."""
+        from classifier.llm import CategoryResult
+
+        # Валидные категории
+        result = CategoryResult(categories=["pricing", "support"])
+        assert result.categories == ["pricing", "support"]
+
+        # Невалидная категория
+        with pytest.raises(Exception):
+            CategoryResult(categories=["invalid_category"])
+
+    def test_category_result_min_max_length(self):
+        """CategoryResult требует 1-5 категорий."""
+        from classifier.llm import CategoryResult
+
+        # Пустой список - ошибка
+        with pytest.raises(Exception):
+            CategoryResult(categories=[])
+
+        # 5 категорий - OK
+        result = CategoryResult(categories=["pricing", "support", "faq", "products", "features"])
+        assert len(result.categories) == 5
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -1,6 +1,6 @@
 """Pydantic schemas для LLM классификатора."""
-from typing import Optional, Literal
-from pydantic import BaseModel, Field
+from typing import Optional, Literal, List
+from pydantic import BaseModel, Field, field_validator
 
 # 33 интента из текущего INTENT_ROOTS
 IntentType = Literal[
@@ -46,3 +46,39 @@ class ClassificationResult(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0, description="Уверенность 0-1")
     reasoning: str = Field(..., description="Объяснение выбора интента")
     extracted_data: ExtractedData = Field(default_factory=ExtractedData)
+
+
+# =============================================================================
+# CategoryRouter schema
+# =============================================================================
+
+# 17 категорий базы знаний
+CategoryType = Literal[
+    "analytics",     # Аналитика и отчёты
+    "competitors",   # Сравнение с конкурентами
+    "employees",     # Сотрудники и кадры
+    "equipment",     # Оборудование и периферия
+    "faq",           # Общие частые вопросы
+    "features",      # Функции системы
+    "fiscal",        # Фискализация
+    "integrations",  # Интеграции
+    "inventory",     # Товары и склад
+    "mobile",        # Мобильное приложение
+    "pricing",       # Цены и тарифы
+    "products",      # Продукты Wipon
+    "promotions",    # Акции и скидки
+    "regions",       # Регионы и доставка
+    "stability",     # Надёжность и стабильность
+    "support",       # Техподдержка и обучение
+    "tis",           # Трёхкомпонентная система для ИП
+]
+
+
+class CategoryResult(BaseModel):
+    """Результат роутинга по категориям."""
+    categories: List[CategoryType] = Field(
+        ...,
+        min_length=1,
+        max_length=5,
+        description="Список категорий для поиска (1-5)"
+    )

@@ -1,5 +1,12 @@
 """LLM-based classifier module."""
-from .schemas import IntentType, ExtractedData, ClassificationResult, PainCategory
+from .schemas import (
+    IntentType,
+    ExtractedData,
+    ClassificationResult,
+    PainCategory,
+    CategoryType,
+    CategoryResult,
+)
 from .classifier import LLMClassifier
 
 __all__ = [
@@ -7,5 +14,7 @@ __all__ = [
     "ExtractedData",
     "ClassificationResult",
     "PainCategory",
+    "CategoryType",
+    "CategoryResult",
     "LLMClassifier",
 ]
