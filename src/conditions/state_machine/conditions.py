@@ -57,8 +57,14 @@ def has_contact_info(ctx: EvaluatorContext) -> bool:
     if ctx.collected_data.get("email") or ctx.collected_data.get("phone") or ctx.collected_data.get("contact"):
         return True
 
-    # Check nested contact_info dict
+    # Check contact_info field
     contact_info = ctx.collected_data.get("contact_info")
+
+    # FIX: contact_info can be a string (direct phone/email from DataExtractor)
+    if isinstance(contact_info, str) and contact_info:
+        return True
+
+    # Or a dict with nested fields
     if isinstance(contact_info, dict):
         return bool(contact_info.get("email") or contact_info.get("phone") or contact_info.get("name"))
 

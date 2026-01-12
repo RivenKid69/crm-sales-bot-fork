@@ -70,16 +70,24 @@ def has_pricing_data(ctx: BaseContext) -> bool:
 @shared_registry.condition(
     "has_contact_info",
     description="Check if contact information has been collected",
-    requires_fields={"email", "phone", "contact"},
+    requires_fields={"email", "phone", "contact", "contact_info"},
     category="data"
 )
 def has_contact_info(ctx: BaseContext) -> bool:
     """Returns True if email, phone, or contact is available."""
-    return bool(
-        ctx.collected_data.get("email") or
-        ctx.collected_data.get("phone") or
-        ctx.collected_data.get("contact")
-    )
+    # Check top-level fields
+    if ctx.collected_data.get("email") or ctx.collected_data.get("phone") or ctx.collected_data.get("contact"):
+        return True
+
+    # FIX: Check contact_info (can be string from DataExtractor)
+    contact_info = ctx.collected_data.get("contact_info")
+    if contact_info:
+        if isinstance(contact_info, str):
+            return True
+        if isinstance(contact_info, dict):
+            return bool(contact_info.get("email") or contact_info.get("phone"))
+
+    return False
 
 
 @shared_registry.condition(
