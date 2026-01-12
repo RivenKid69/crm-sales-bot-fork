@@ -5,14 +5,14 @@
 # После изменения перезапустите бота.
 
 # -----------------------------------------------------------------------------
-# LLM (Language Model)
+# LLM (Language Model) - vLLM Server
 # -----------------------------------------------------------------------------
 llm:
-  # Модель Ollama
-  model: "qwen3:8b-fast"
+  # Модель vLLM (Qwen3-8B с AWQ квантизацией)
+  model: "Qwen/Qwen3-8B-AWQ"
 
-  # URL сервера Ollama
-  base_url: "http://localhost:11434"
+  # URL vLLM сервера (OpenAI-compatible API)
+  base_url: "http://localhost:8000/v1"
 
   # Таймаут запроса в секундах
   timeout: 60
