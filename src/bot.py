@@ -606,6 +606,20 @@ class SalesBot:
                         "options": fb_result.get("options"),
                     }
 
+                # FIX: Handle "skip" action - apply state transition to break loops
+                elif fb_result.get("action") == "skip" and fb_result.get("next_state"):
+                    skip_next_state = fb_result["next_state"]
+                    self.state_machine.state = skip_next_state
+                    logger.info(
+                        "Fallback skip applied",
+                        from_state=current_state,
+                        to_state=skip_next_state
+                    )
+                    # Update current_state for rest of processing
+                    current_state = skip_next_state
+                    # Continue processing with new state - don't return early
+                    # This allows the normal flow to generate a response
+
         # 1. Classify intent
         classification = self.classifier.classify(user_message, current_context)
         intent = classification["intent"]

@@ -827,7 +827,7 @@ def can_accelerate(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "should_answer_directly",
-    description="Check if we should answer question directly (frustrated or repeated)",
+    description="Check if we should answer question directly (frustrated, rushed, or repeated)",
     category="context"
 )
 def should_answer_directly(ctx: EvaluatorContext) -> bool:
@@ -838,11 +838,17 @@ def should_answer_directly(ctx: EvaluatorContext) -> bool:
     - Client is frustrated (level >= 2)
     - Question is repeated
     - Confidence is declining
+    - FIX: Client tone is RUSHED (busy/aggressive personas want immediate answers)
     """
+    # FIX: RUSHED tone = client wants direct answer NOW, don't deflect
+    # This fixes busy/aggressive personas not being served with price/time
+    is_rushed = ctx.tone and ctx.tone.lower() == "rushed"
+
     return (
         ctx.frustration_level >= 2 or
         ctx.repeated_question is not None or
-        ctx.confidence_trend == "decreasing"
+        ctx.confidence_trend == "decreasing" or
+        is_rushed
     )
 
 

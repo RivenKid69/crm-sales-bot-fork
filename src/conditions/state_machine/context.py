@@ -200,6 +200,8 @@ class EvaluatorContext:
     has_breakthrough: bool = False
     turns_since_breakthrough: Optional[int] = None
     guard_intervention: Optional[str] = None
+    # FIX: Add tone field for busy/aggressive persona handling
+    tone: Optional[str] = None
 
     def __post_init__(self):
         """Validate and compute derived fields."""
@@ -264,6 +266,7 @@ class EvaluatorContext:
         has_breakthrough = False
         turns_since_breakthrough = None
         guard_intervention = None
+        tone = None
 
         if context_envelope is not None:
             frustration_level = getattr(context_envelope, 'frustration_level', 0)
@@ -278,6 +281,8 @@ class EvaluatorContext:
             has_breakthrough = getattr(context_envelope, 'has_breakthrough', False)
             turns_since_breakthrough = getattr(context_envelope, 'turns_since_breakthrough', None)
             guard_intervention = getattr(context_envelope, 'guard_intervention', None)
+            # FIX: Extract tone for busy/aggressive persona handling
+            tone = getattr(context_envelope, 'tone', None)
 
         return cls(
             collected_data=collected_data.copy() if collected_data else {},
@@ -303,6 +308,7 @@ class EvaluatorContext:
             has_breakthrough=has_breakthrough,
             turns_since_breakthrough=turns_since_breakthrough,
             guard_intervention=guard_intervention,
+            tone=tone,
         )
 
     @classmethod
@@ -328,6 +334,7 @@ class EvaluatorContext:
         has_breakthrough: bool = False,
         turns_since_breakthrough: Optional[int] = None,
         guard_intervention: Optional[str] = None,
+        tone: Optional[str] = None,
     ) -> "EvaluatorContext":
         """
         Factory method to create a test context with defaults.
@@ -383,6 +390,7 @@ class EvaluatorContext:
             has_breakthrough=has_breakthrough,
             turns_since_breakthrough=turns_since_breakthrough,
             guard_intervention=guard_intervention,
+            tone=tone,
         )
 
     def has_field(self, field_name: str) -> bool:

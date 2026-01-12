@@ -1525,12 +1525,20 @@ SALES_STATES = {
             # Если твёрдо отказывается — остаёмся (но не бесконечно)
             "rejection": "soft_close",
             "farewell": "soft_close",
+            # FIX: Вопросы = проявление интереса → возвращаем в диалог
+            # Если клиент задаёт вопросы в soft_close, он ещё не ушёл
+            "price_question": "presentation",
+            "question_features": "spin_situation",
+            "question_integrations": "spin_situation",
+            # info_provided = клиент отвечает на вопросы → продолжаем диалог
+            "info_provided": "spin_situation",
+            "situation_provided": "spin_situation",
         },
         "rules": {
-            # На вопросы — отвечаем и предлагаем продолжить
-            "price_question": "answer_and_offer_continue",
-            "question_features": "answer_and_offer_continue",
-            "question_integrations": "answer_and_offer_continue",
+            # На вопросы — отвечаем (transitions выше обеспечат переход)
+            "price_question": "answer_with_facts",
+            "question_features": "answer_and_continue",
+            "question_integrations": "answer_and_continue",
             "gratitude": "acknowledge_farewell",
             "small_talk": "polite_farewell",
         }
