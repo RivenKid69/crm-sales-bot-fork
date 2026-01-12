@@ -300,5 +300,205 @@ class TestFewShot:
         assert "contact_provided" in intents
 
 
+class TestLLMClassifier:
+    """Тесты LLMClassifier."""
+
+    def test_classify_success(self):
+        """Успешная классификация через LLM."""
+        from unittest.mock import Mock, MagicMock
+        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+
+        # Мок VLLMClient
+        mock_vllm = Mock()
+        mock_result = ClassificationResult(
+            intent="greeting",
+            confidence=0.95,
+            reasoning="Приветствие",
+            extracted_data=ExtractedData()
+        )
+        mock_vllm.generate_structured.return_value = mock_result
+
+        classifier = LLMClassifier(vllm_client=mock_vllm)
+        result = classifier.classify("Привет!")
+
+        assert result["intent"] == "greeting"
+        assert result["confidence"] == 0.95
+        assert result["method"] == "llm"
+        assert result["reasoning"] == "Приветствие"
+        mock_vllm.generate_structured.assert_called_once()
+
+    def test_classify_fallback_on_none(self):
+        """Fallback когда LLM возвращает None."""
+        from unittest.mock import Mock
+        from classifier.llm import LLMClassifier
+
+        # Мок VLLMClient возвращает None
+        mock_vllm = Mock()
+        mock_vllm.generate_structured.return_value = None
+
+        # Мок fallback классификатора
+        mock_fallback = Mock()
+        mock_fallback.classify.return_value = {
+            "intent": "greeting",
+            "confidence": 0.8,
+            "extracted_data": {}
+        }
+
+        classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=mock_fallback)
+        result = classifier.classify("Привет!")
+
+        assert result["method"] == "llm_fallback"
+        mock_fallback.classify.assert_called_once()
+
+    def test_classify_fallback_on_exception(self):
+        """Fallback при исключении LLM."""
+        from unittest.mock import Mock
+        from classifier.llm import LLMClassifier
+
+        # Мок VLLMClient выбрасывает исключение
+        mock_vllm = Mock()
+        mock_vllm.generate_structured.side_effect = Exception("LLM Error")
+
+        # Мок fallback классификатора
+        mock_fallback = Mock()
+        mock_fallback.classify.return_value = {
+            "intent": "unclear",
+            "confidence": 0.5,
+            "extracted_data": {}
+        }
+
+        classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=mock_fallback)
+        result = classifier.classify("Test message")
+
+        assert result["method"] == "llm_fallback"
+        mock_fallback.classify.assert_called_once()
+
+    def test_classify_no_fallback(self):
+        """Без fallback возвращает unclear."""
+        from unittest.mock import Mock
+        from classifier.llm import LLMClassifier
+
+        # Мок VLLMClient возвращает None
+        mock_vllm = Mock()
+        mock_vllm.generate_structured.return_value = None
+
+        classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=None)
+        result = classifier.classify("Test")
+
+        assert result["intent"] == "unclear"
+        assert result["confidence"] == 0.5
+        assert result["method"] == "llm_fallback"
+
+    def test_classify_fallback_also_fails(self):
+        """Когда и LLM и fallback падают."""
+        from unittest.mock import Mock
+        from classifier.llm import LLMClassifier
+
+        # Мок VLLMClient возвращает None
+        mock_vllm = Mock()
+        mock_vllm.generate_structured.return_value = None
+
+        # Мок fallback тоже падает
+        mock_fallback = Mock()
+        mock_fallback.classify.side_effect = Exception("Fallback Error")
+
+        classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=mock_fallback)
+        result = classifier.classify("Test")
+
+        assert result["intent"] == "unclear"
+        assert result["confidence"] == 0.3
+        assert result["method"] == "llm_fallback"
+
+    def test_stats(self):
+        """Проверка статистики."""
+        from unittest.mock import Mock
+        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+
+        mock_vllm = Mock()
+        mock_vllm.get_stats_dict.return_value = {"total_requests": 5}
+
+        # Первый вызов - успех
+        mock_result = ClassificationResult(
+            intent="greeting",
+            confidence=0.95,
+            reasoning="test",
+            extracted_data=ExtractedData()
+        )
+        mock_vllm.generate_structured.return_value = mock_result
+
+        classifier = LLMClassifier(vllm_client=mock_vllm)
+        classifier.classify("Test 1")
+
+        # Второй вызов - None → fallback
+        mock_vllm.generate_structured.return_value = None
+        classifier.classify("Test 2")
+
+        stats = classifier.get_stats()
+
+        assert stats["llm_calls"] == 2
+        assert stats["llm_successes"] == 1
+        assert stats["fallback_calls"] == 1
+        assert stats["llm_success_rate"] == 50.0
+        assert stats["vllm_stats"]["total_requests"] == 5
+
+    def test_classify_with_context(self):
+        """Классификация с контекстом."""
+        from unittest.mock import Mock, call
+        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+
+        mock_vllm = Mock()
+        mock_result = ClassificationResult(
+            intent="agreement",
+            confidence=0.9,
+            reasoning="Согласие после предложения демо",
+            extracted_data=ExtractedData()
+        )
+        mock_vllm.generate_structured.return_value = mock_result
+
+        classifier = LLMClassifier(vllm_client=mock_vllm)
+        result = classifier.classify(
+            "Да",
+            context={"state": "demo_offer", "last_action": "предложил демо"}
+        )
+
+        assert result["intent"] == "agreement"
+        # Проверяем что контекст был передан в промпт
+        call_args = mock_vllm.generate_structured.call_args
+        prompt = call_args[0][0]
+        assert "demo_offer" in prompt
+        assert "предложил демо" in prompt
+
+    def test_extracted_data_serialization(self):
+        """Проверка сериализации extracted_data."""
+        from unittest.mock import Mock
+        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+
+        mock_vllm = Mock()
+        mock_result = ClassificationResult(
+            intent="situation_provided",
+            confidence=0.92,
+            reasoning="Клиент описал ситуацию",
+            extracted_data=ExtractedData(
+                company_size=25,
+                business_type="ресторан",
+                pain_point=None  # None должен быть исключён
+            )
+        )
+        mock_vllm.generate_structured.return_value = mock_result
+
+        classifier = LLMClassifier(vllm_client=mock_vllm)
+        result = classifier.classify("У нас 25 человек, мы ресторан")
+
+        assert result["extracted_data"]["company_size"] == 25
+        assert result["extracted_data"]["business_type"] == "ресторан"
+        assert "pain_point" not in result["extracted_data"]  # None исключён
+
+    def test_module_exports_classifier(self):
+        """Проверка экспорта LLMClassifier из модуля."""
+        from classifier.llm import LLMClassifier
+
+        assert LLMClassifier is not None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
