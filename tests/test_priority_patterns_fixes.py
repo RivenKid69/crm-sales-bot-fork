@@ -54,13 +54,14 @@ class TestRejectionWordBoundaries:
         # слитное написание
         ("неинтересно", "rejection"),
 
-        # "не нужно" - отказ
-        ("не нужно", "rejection"),
-        ("мне не нужно", "rejection"),
-        ("нам не нужно", "rejection"),
-        ("это не нужно", "rejection"),
+        # "не нужно" - теперь классифицируется как no_need (SPIN)
+        # Это изменение в Phase 4 - более тонкая классификация для SPIN-сценариев
+        ("не нужно", "no_need"),
+        ("мне не нужно", "no_need"),
+        ("нам не нужно", "no_need"),
+        ("это не нужно", "no_need"),
         # слитное написание
-        ("ненужно", "rejection"),
+        ("ненужно", "no_need"),
 
         # "не хочу/хотим" - отказ
         ("не хочу", "rejection"),
@@ -394,11 +395,18 @@ class TestPatternCompilation:
     def test_all_patterns_have_valid_intents(self):
         """Проверяет что все паттерны имеют валидные интенты."""
         valid_intents = {
+            # Основные интенты
             "rejection", "agreement", "greeting", "farewell", "gratitude",
             "question_features", "question_integrations", "price_question",
             "pricing_details", "comparison", "objection_price", "objection_no_time",
             "objection_competitor", "objection_think", "demo_request",
-            "callback_request", "consultation_request", "small_talk", "unclear"
+            "callback_request", "consultation_request", "small_talk", "unclear",
+            # Дополнительные интенты (Phase 4)
+            "contact_provided", "correct_info", "go_back",
+            "situation_provided", "problem_revealed", "implication_acknowledged",
+            "need_expressed", "no_problem", "no_need", "info_provided",
+            "objection_complexity", "objection_no_need", "objection_timing",
+            "objection_trust"
         }
         for pattern_str, intent, confidence in PRIORITY_PATTERNS:
             assert intent in valid_intents, \
