@@ -596,5 +596,179 @@ class TestEdgeCases:
         assert "\n" in response
 
 
+class TestGenerateStructured:
+    """Тесты метода generate_structured()."""
+
+    from pydantic import BaseModel
+
+    class SampleSchema(BaseModel):
+        """Тестовая схема."""
+        intent: str
+        confidence: float
+
+    def test_generate_structured_success(self):
+        """Успешная генерация structured output."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=False)
+
+        # Mock HTTP response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"text": '{"intent": "greeting", "confidence": 0.95}'}]
+        }
+
+        with patch('requests.post', return_value=mock_response):
+            result = client.generate_structured("test prompt", self.SampleSchema)
+
+        assert result is not None
+        assert result.intent == "greeting"
+        assert result.confidence == 0.95
+        assert client.stats.successful_requests == 1
+
+    def test_generate_structured_circuit_breaker_open(self):
+        """Circuit breaker блокирует запрос."""
+        from llm import VLLMClient
+
+        client = VLLMClient()
+        # Имитируем открытый circuit breaker
+        client._circuit_breaker.is_open = True
+        client._circuit_breaker.open_until = float('inf')
+
+        result = client.generate_structured("test", self.SampleSchema)
+
+        assert result is None
+        assert client.stats.fallback_used == 1
+
+    def test_generate_structured_retry_on_timeout(self):
+        """Retry при timeout."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=True)
+        client.MAX_RETRIES = 2
+        client.INITIAL_DELAY = 0.01  # Ускоряем тест
+
+        call_count = 0
+        def mock_post(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 2:
+                raise requests.exceptions.Timeout("timeout")
+            mock_resp = MagicMock()
+            mock_resp.json.return_value = {
+                "choices": [{"text": '{"intent": "test", "confidence": 0.9}'}]
+            }
+            return mock_resp
+
+        with patch('requests.post', side_effect=mock_post):
+            result = client.generate_structured("test", self.SampleSchema)
+
+        assert result is not None
+        assert call_count == 2
+        assert client.stats.total_retries == 1
+
+    def test_generate_structured_all_retries_failed(self):
+        """Все retry провалились — возвращает None."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=True, enable_circuit_breaker=True)
+        client.MAX_RETRIES = 2
+        client.INITIAL_DELAY = 0.01
+
+        with patch('requests.post', side_effect=requests.exceptions.Timeout("timeout")):
+            result = client.generate_structured("test", self.SampleSchema)
+
+        assert result is None
+        assert client.stats.failed_requests == 1
+        assert client._circuit_breaker.failures == 1
+
+    def test_generate_structured_circuit_breaker_trips(self):
+        """Circuit breaker открывается после threshold ошибок."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=False)
+        client.CIRCUIT_BREAKER_THRESHOLD = 2
+
+        with patch('requests.post', side_effect=requests.exceptions.ConnectionError()):
+            client.generate_structured("test1", self.SampleSchema)
+            client.generate_structured("test2", self.SampleSchema)
+
+        assert client._circuit_breaker.is_open is True
+        assert client.stats.circuit_breaker_trips == 1
+
+    def test_generate_structured_stats_tracking(self):
+        """Проверка корректного трекинга статистики."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=False)
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "choices": [{"text": '{"intent": "test", "confidence": 0.8}'}]
+        }
+
+        with patch('requests.post', return_value=mock_response):
+            client.generate_structured("test", self.SampleSchema)
+            client.generate_structured("test", self.SampleSchema)
+
+        assert client.stats.total_requests == 2
+        assert client.stats.successful_requests == 2
+        assert client.stats.success_rate == 100.0
+        assert client.stats.average_response_time_ms > 0
+
+    def test_generate_structured_pydantic_validation_error(self):
+        """Ошибка валидации Pydantic."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=False, enable_circuit_breaker=False)
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "choices": [{"text": '{"invalid": "json"}'}]  # Не соответствует схеме
+        }
+
+        with patch('requests.post', return_value=mock_response):
+            result = client.generate_structured("test", self.SampleSchema)
+
+        # Pydantic validation error → возвращает None
+        assert result is None
+
+    def test_generate_structured_empty_choices(self):
+        """Обработка пустого массива choices."""
+        from llm import VLLMClient
+
+        client = VLLMClient(enable_retry=False, enable_circuit_breaker=False)
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"choices": []}
+
+        with patch('requests.post', return_value=mock_response):
+            result = client.generate_structured("test", self.SampleSchema)
+
+        assert result is None
+
+
+class TestVLLMClientAlias:
+    """Тесты алиаса OllamaLLM = VLLMClient."""
+
+    def test_ollama_llm_is_vllm_client(self):
+        """OllamaLLM является алиасом VLLMClient."""
+        from llm import OllamaLLM, VLLMClient
+
+        assert OllamaLLM is VLLMClient
+
+    def test_backwards_compatibility(self):
+        """Старый код с OllamaLLM продолжает работать."""
+        from llm import OllamaLLM
+
+        llm = OllamaLLM()
+        assert hasattr(llm, 'generate')
+        assert hasattr(llm, 'generate_structured')
+        assert hasattr(llm, '_call_llm')
+        assert hasattr(llm, 'health_check')
+        assert hasattr(llm, 'get_stats_dict')
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

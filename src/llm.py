@@ -1,31 +1,27 @@
 """
-Resilient LLM Client для CRM Sales Bot.
+vLLM Client для CRM Sales Bot.
 
-Устойчивый LLM клиент с:
-- Exponential backoff retry
-- Circuit breaker
+Полная замена OllamaLLM с сохранением всего интерфейса:
+- Circuit Breaker (open/closed/half-open)
+- LLMStats (success_rate, avg_response_time)
+- Retry с exponential backoff
 - Fallback responses
-- Request timeout handling
-- Structured logging
 
-Использование:
-    from llm import OllamaLLM
-
-    llm = OllamaLLM()
-    response = llm.generate(prompt, state="spin_situation")
-
-    # С circuit breaker
-    llm.reset_circuit_breaker()
+Добавляет:
+- Structured output через Outlines (generate_structured)
 """
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type, TypeVar
 
 import requests
+from pydantic import BaseModel
 
 from logger import logger
 from settings import settings
+
+T = TypeVar('T', bound=BaseModel)
 
 
 @dataclass
@@ -63,12 +59,12 @@ class LLMStats:
         return self.total_response_time_ms / self.successful_requests
 
 
-class OllamaLLM:
+class VLLMClient:
     """
-    Resilient LLM client с:
-    - Exponential backoff retry
-    - Circuit breaker
-    - Fallback responses
+    vLLM клиент с полной совместимостью с OllamaLLM.
+
+    Использует vLLM OpenAI-compatible API.
+    Для structured output использует guided_json (Outlines backend).
     """
 
     # Настройки retry
@@ -78,10 +74,10 @@ class OllamaLLM:
     BACKOFF_MULTIPLIER: float = 2.0
 
     # Настройки circuit breaker
-    CIRCUIT_BREAKER_THRESHOLD: int = 5  # Сколько ошибок до открытия
-    CIRCUIT_BREAKER_TIMEOUT: int = 60   # Секунд до попытки восстановления
+    CIRCUIT_BREAKER_THRESHOLD: int = 5
+    CIRCUIT_BREAKER_TIMEOUT: int = 60
 
-    # Fallback responses по состояниям (если LLM недоступен)
+    # Fallback responses по состояниям
     FALLBACK_RESPONSES: Dict[str, str] = {
         "greeting": "Здравствуйте! Чем могу помочь?",
         "spin_situation": "Расскажите, сколько человек работает в вашей команде?",
@@ -105,20 +101,18 @@ class OllamaLLM:
         enable_retry: bool = True
     ):
         """
-        Инициализация LLM клиента.
+        Инициализация vLLM клиента.
 
         Args:
             model: Название модели (из settings если не указано)
-            base_url: URL Ollama API (из settings если не указано)
-            timeout: Таймаут запроса в секундах (из settings если не указано)
+            base_url: URL vLLM API (из settings если не указано)
+            timeout: Таймаут запроса в секундах
             enable_circuit_breaker: Включить circuit breaker
             enable_retry: Включить retry с exponential backoff
         """
         self.model = model or settings.llm.model
         self.base_url = base_url or settings.llm.base_url
         self.timeout = timeout or settings.llm.timeout
-        self.stream = settings.llm.stream
-        self.think = settings.llm.think
 
         self._enable_circuit_breaker = enable_circuit_breaker
         self._enable_retry = enable_retry
@@ -145,6 +139,97 @@ class OllamaLLM:
         """Проверка открыт ли circuit breaker"""
         return self._is_circuit_open()
 
+    # =========================================================================
+    # STRUCTURED OUTPUT (НОВОЕ)
+    # =========================================================================
+
+    def generate_structured(
+        self,
+        prompt: str,
+        schema: Type[T],
+        allow_fallback: bool = True
+    ) -> Optional[T]:
+        """
+        Генерация с гарантированным JSON через Outlines.
+
+        Args:
+            prompt: Промпт для LLM
+            schema: Pydantic модель для валидации
+            allow_fallback: Игнорируется (для совместимости)
+
+        Returns:
+            Экземпляр schema или None при ошибке
+        """
+        self._stats.total_requests += 1
+        start_time = time.time()
+
+        # Circuit breaker check
+        if self._enable_circuit_breaker and self._is_circuit_open():
+            logger.warning("Circuit breaker open for structured generation")
+            self._stats.fallback_used += 1
+            return None
+
+        last_error: Optional[Exception] = None
+        delay = self.INITIAL_DELAY
+        max_attempts = self.MAX_RETRIES if self._enable_retry else 1
+
+        for attempt in range(max_attempts):
+            try:
+                response = requests.post(
+                    f"{self.base_url}/completions",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "temperature": 0.1,
+                        "max_tokens": 512,
+                        "guided_json": schema.model_json_schema(),
+                    },
+                    timeout=self.timeout
+                )
+                response.raise_for_status()
+
+                # Успех
+                elapsed_ms = (time.time() - start_time) * 1000
+                self._stats.successful_requests += 1
+                self._stats.total_response_time_ms += elapsed_ms
+                self._reset_failures()
+
+                data = response.json()
+                choices = data.get("choices", [])
+                if not choices or "text" not in choices[0]:
+                    raise ValueError("Empty or invalid response from vLLM")
+
+                text = choices[0]["text"]
+                return schema.model_validate_json(text)
+
+            except requests.exceptions.Timeout as e:
+                last_error = e
+                logger.warning(f"vLLM structured timeout (attempt {attempt + 1}/{max_attempts})")
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                logger.warning(f"vLLM structured error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
+            except Exception as e:
+                last_error = e
+                logger.error(f"vLLM structured unexpected error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
+
+            # Retry с backoff
+            if attempt < max_attempts - 1:
+                self._stats.total_retries += 1
+                time.sleep(delay)
+                delay = min(delay * self.BACKOFF_MULTIPLIER, self.MAX_DELAY)
+
+        # Все попытки провалились
+        self._stats.failed_requests += 1
+        if self._enable_circuit_breaker:
+            self._record_failure()
+
+        logger.error(f"vLLM structured all retries failed: {str(last_error)[:100] if last_error else 'unknown'}")
+        return None
+
+    # =========================================================================
+    # FREE-FORM GENERATION (как в OllamaLLM)
+    # =========================================================================
+
     def generate(
         self,
         prompt: str,
@@ -167,22 +252,18 @@ class OllamaLLM:
 
         # Circuit breaker check
         if self._enable_circuit_breaker and self._is_circuit_open():
-            logger.warning(
-                "Circuit breaker open, using fallback",
-                state=state
-            )
+            logger.warning("Circuit breaker open, using fallback", state=state)
             self._stats.fallback_used += 1
             return self._get_fallback(state) if allow_fallback else ""
 
-        # Попытка с retry
         last_error: Optional[Exception] = None
         delay = self.INITIAL_DELAY
-
         max_attempts = self.MAX_RETRIES if self._enable_retry else 1
 
         for attempt in range(max_attempts):
             try:
-                response = self._call_llm(prompt)
+                # Используем _call_llm для совместимости с тестами
+                response_text = self._call_llm(prompt)
 
                 # Успех
                 elapsed_ms = (time.time() - start_time) * 1000
@@ -191,39 +272,27 @@ class OllamaLLM:
                 self._reset_failures()
 
                 logger.debug(
-                    "LLM request successful",
+                    "vLLM request successful",
                     attempt=attempt + 1,
                     elapsed_ms=round(elapsed_ms, 1)
                 )
 
-                return response
+                return response_text
 
             except requests.exceptions.Timeout as e:
                 last_error = e
-                logger.warning(
-                    f"LLM timeout (attempt {attempt + 1}/{max_attempts})",
-                    timeout=self.timeout
-                )
+                logger.warning(f"vLLM timeout (attempt {attempt + 1}/{max_attempts})")
             except requests.exceptions.ConnectionError as e:
                 last_error = e
-                logger.warning(
-                    f"LLM connection error (attempt {attempt + 1}/{max_attempts})",
-                    error=str(e)[:100]
-                )
+                logger.warning(f"vLLM connection error (attempt {attempt + 1}/{max_attempts})")
             except requests.exceptions.RequestException as e:
                 last_error = e
-                logger.warning(
-                    f"LLM request failed (attempt {attempt + 1}/{max_attempts})",
-                    error=str(e)[:100]
-                )
+                logger.warning(f"vLLM request failed (attempt {attempt + 1}/{max_attempts})")
             except Exception as e:
                 last_error = e
-                logger.error(
-                    f"LLM unexpected error (attempt {attempt + 1}/{max_attempts})",
-                    error=str(e)[:100]
-                )
+                logger.error(f"vLLM unexpected error (attempt {attempt + 1}/{max_attempts})")
 
-            # Retry с exponential backoff (кроме последней попытки)
+            # Retry с backoff
             if attempt < max_attempts - 1:
                 self._stats.total_retries += 1
                 logger.debug(f"Retrying in {delay:.1f}s...")
@@ -236,7 +305,7 @@ class OllamaLLM:
             self._record_failure()
 
         logger.error(
-            "LLM all retries failed",
+            "vLLM all retries failed",
             error=str(last_error)[:100] if last_error else "unknown",
             state=state
         )
@@ -247,20 +316,39 @@ class OllamaLLM:
 
         return ""
 
+    # =========================================================================
+    # LEGACY METHOD FOR TEST COMPATIBILITY
+    # =========================================================================
+
     def _call_llm(self, prompt: str) -> str:
-        """Вызов LLM API"""
+        """
+        Вызов LLM API (для совместимости с тестами).
+
+        Внутренний метод без retry/circuit breaker.
+        Тесты могут мокать этот метод.
+        """
         response = requests.post(
-            f"{self.base_url}/api/generate",
+            f"{self.base_url}/completions",
             json={
                 "model": self.model,
                 "prompt": prompt,
-                "stream": self.stream,
-                "think": self.think,
+                "temperature": 0.7,
+                "max_tokens": 256,
             },
             timeout=self.timeout
         )
         response.raise_for_status()
-        return response.json()["response"]
+
+        data = response.json()
+        choices = data.get("choices", [])
+        if not choices or "text" not in choices[0]:
+            raise ValueError("Empty or invalid response from vLLM")
+
+        return choices[0]["text"]
+
+    # =========================================================================
+    # CIRCUIT BREAKER
+    # =========================================================================
 
     def _is_circuit_open(self) -> bool:
         """Проверка открыт ли circuit breaker"""
@@ -304,6 +392,10 @@ class OllamaLLM:
             return self.FALLBACK_RESPONSES[state]
         return self.DEFAULT_FALLBACK
 
+    # =========================================================================
+    # STATS & HEALTH
+    # =========================================================================
+
     def get_stats_dict(self) -> Dict[str, Any]:
         """Получить статистику в виде словаря"""
         return {
@@ -320,19 +412,24 @@ class OllamaLLM:
 
     def health_check(self) -> bool:
         """
-        Проверка доступности LLM.
+        Проверка доступности vLLM.
 
         Returns:
-            True если LLM доступен
+            True если vLLM доступен
         """
         try:
-            response = requests.get(
-                f"{self.base_url}/api/tags",
-                timeout=5
-            )
+            # vLLM health endpoint
+            health_url = self.base_url.rstrip("/v1").rstrip("/") + "/health"
+            response = requests.get(health_url, timeout=5)
             return response.status_code == 200
         except Exception:
             return False
+
+
+# =============================================================================
+# АЛИАС ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ
+# =============================================================================
+OllamaLLM = VLLMClient
 
 
 # =============================================================================
@@ -343,10 +440,10 @@ if __name__ == "__main__":
     import json
 
     print("=" * 60)
-    print("RESILIENT LLM CLIENT DEMO")
+    print("vLLM CLIENT DEMO")
     print("=" * 60)
 
-    llm = OllamaLLM()
+    llm = VLLMClient()
 
     print(f"\nModel: {llm.model}")
     print(f"URL: {llm.base_url}")
@@ -355,7 +452,7 @@ if __name__ == "__main__":
     # Health check
     print("\n--- Health Check ---")
     is_healthy = llm.health_check()
-    print(f"LLM available: {is_healthy}")
+    print(f"vLLM available: {is_healthy}")
 
     if is_healthy:
         print("\n--- Test Generation ---")
@@ -376,7 +473,7 @@ if __name__ == "__main__":
     # Circuit breaker demo
     print("\n--- Circuit Breaker Demo ---")
     # Создаём клиент с несуществующим URL
-    bad_llm = OllamaLLM(base_url="http://localhost:99999", timeout=1)
+    bad_llm = VLLMClient(base_url="http://localhost:99999/v1", timeout=1)
     bad_llm.CIRCUIT_BREAKER_THRESHOLD = 2  # Быстрее для демо
 
     for i in range(3):
