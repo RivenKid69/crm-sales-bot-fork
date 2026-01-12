@@ -18,7 +18,7 @@
 import uuid
 from typing import Dict, List, Optional
 
-from classifier import HybridClassifier
+from classifier import UnifiedClassifier
 from state_machine import StateMachine
 from generator import ResponseGenerator
 
@@ -75,7 +75,7 @@ class SalesBot:
         logger.set_conversation(self.conversation_id)
 
         # Core components (always active)
-        self.classifier = HybridClassifier()
+        self.classifier = UnifiedClassifier()
         self.state_machine = StateMachine(enable_tracing=enable_tracing)
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
