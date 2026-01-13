@@ -1007,41 +1007,63 @@ class SalesBot:
             options=options
         )
 
-        if resolved_intent:
-            # Успешно распознали ответ
-            current_state, intent = self.state_machine.resolve_disambiguation(resolved_intent)
+        # Проверяем, выбрал ли пользователь "свой вариант" или написал что-то нераспознанное
+        from disambiguation_ui import DisambiguationUI
+        is_custom_input = (
+            resolved_intent == DisambiguationUI.CUSTOM_INPUT_MARKER
+            or resolved_intent is None
+        )
+
+        if is_custom_input:
+            # Пользователь ввёл свой вариант - классифицируем его сообщение напрямую
+            self.state_machine.exit_disambiguation()
 
             self.disambiguation_metrics.record_resolution(
-                resolved_intent=resolved_intent,
+                resolved_intent="custom_input",
                 attempt=attempt,
                 success=True
             )
 
             logger.info(
-                "Disambiguation resolved",
-                resolved_intent=resolved_intent,
-                attempt=attempt
-            )
-
-            return self._continue_with_classification(
-                classification={
-                    "intent": resolved_intent,
-                    "confidence": 0.9,
-                    "extracted_data": extracted_data,
-                    "method": "disambiguation_resolved"
-                },
+                "Disambiguation: user provided custom input, classifying",
+                attempt=attempt,
                 user_message=user_message
             )
-        else:
-            # Не удалось распознать ответ
-            context["attempt"] = attempt + 1
 
-            if context["attempt"] > 2:
-                # Превышен лимит попыток - выходим
-                return self._fallback_from_disambiguation(user_message=user_message)
-            else:
-                # Повторяем вопрос
-                return self._repeat_disambiguation_question(context)
+            # Классифицируем сообщение пользователя напрямую
+            new_classification = self.classifier.classify(user_message, current_context)
+            merged_extracted = {**extracted_data, **new_classification.get("extracted_data", {})}
+            new_classification["extracted_data"] = merged_extracted
+
+            return self._continue_with_classification(
+                classification=new_classification,
+                user_message=user_message
+            )
+
+        # Успешно распознали ответ как одну из опций
+        current_state, intent = self.state_machine.resolve_disambiguation(resolved_intent)
+
+        self.disambiguation_metrics.record_resolution(
+            resolved_intent=resolved_intent,
+            attempt=attempt,
+            success=True
+        )
+
+        logger.info(
+            "Disambiguation resolved",
+            resolved_intent=resolved_intent,
+            attempt=attempt
+        )
+
+        return self._continue_with_classification(
+            classification={
+                "intent": resolved_intent,
+                "confidence": 0.9,
+                "extracted_data": extracted_data,
+                "method": "disambiguation_resolved"
+            },
+            user_message=user_message
+        )
 
     def _continue_with_classification(
         self,

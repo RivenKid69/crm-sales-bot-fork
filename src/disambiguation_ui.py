@@ -17,10 +17,14 @@ class DisambiguationUI:
     Форматирование вопросов и парсинг ответов disambiguation.
 
     Поддерживает:
-    - Числовые ответы: "1", "2", "3"
-    - Словесные номера: "первый", "второй", "третий"
+    - Числовые ответы: "1", "2", "3", "4"
+    - Словесные номера: "первый", "второй", "третий", "четвёртый"
     - Ключевые слова: "цена", "функции", "интеграции"
+    - Свой вариант: пользователь может выбрать 4-й вариант для ввода своего ответа
     """
+
+    # Специальный маркер для "свой вариант"
+    CUSTOM_INPUT_MARKER = "_custom_input"
 
     # Паттерны для распознавания ответов
     ANSWER_PATTERNS: Dict[str, List[Tuple[str, int]]] = {
@@ -28,6 +32,7 @@ class DisambiguationUI:
             (r"^1$|^перв|^один$", 0),
             (r"^2$|^втор|^два$", 1),
             (r"^3$|^трет|^три$", 2),
+            (r"^4$|^четв|^четыре$", 3),  # 4-й вариант - "свой вариант"
         ],
     }
 
@@ -87,11 +92,9 @@ class DisambiguationUI:
         Returns:
             Форматированный вопрос
         """
-        options_text = "\n".join(
-            f"{i+1}. {self._get_option_label(o)}"
-            for i, o in enumerate(options)
-        )
-        return f"Не совсем понял. Уточните:\n{options_text}"
+        lines = [f"{i+1}. {self._get_option_label(o)}" for i, o in enumerate(options)]
+        options_text = "\n".join(lines)
+        return f"Не совсем понял. Уточните:\n{options_text}\nИли напишите ваш вопрос своими словами."
 
     def parse_answer(
         self,
@@ -106,19 +109,32 @@ class DisambiguationUI:
             options: Доступные опции
 
         Returns:
-            Intent выбранной опции или None если не удалось распознать
+            Intent выбранной опции, CUSTOM_INPUT_MARKER для своего варианта,
+            или None если не удалось распознать
         """
         if not answer or not answer.strip():
             return None
 
+        if not options:
+            return None
+
         answer_lower = answer.lower().strip()
         option_intents = [o["intent"] for o in options]
+        custom_input_index = len(option_intents)  # "Свой вариант" всегда следующий после опций
 
         # Проверяем числовые ответы
         for pattern, index in self.ANSWER_PATTERNS["numeric"]:
             if re.match(pattern, answer_lower):
+                # Проверяем, это "свой вариант"?
+                if index == custom_input_index:
+                    return self.CUSTOM_INPUT_MARKER
+                # Проверяем, это одна из опций?
                 if index < len(option_intents):
                     return option_intents[index]
+
+        # Проверяем ключевые слова для "свой вариант"
+        if re.match(r"^сво[йяеёи]", answer_lower) or "другое" in answer_lower:
+            return self.CUSTOM_INPUT_MARKER
 
         # Проверяем ключевые слова
         for intent, keywords in self.INTENT_KEYWORDS.items():
@@ -154,7 +170,7 @@ class DisambiguationUI:
         for i, opt in enumerate(options, 1):
             label = self._get_option_label(opt)
             lines.append(f"{i}. {label}")
-        lines.append("Выберите номер или опишите подробнее.")
+        lines.append("Или напишите ваш вопрос своими словами.")
         return "\n".join(lines)
 
     def _format_inline(self, options: List[Dict]) -> str:

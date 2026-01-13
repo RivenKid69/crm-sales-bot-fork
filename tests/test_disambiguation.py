@@ -506,6 +506,229 @@ class TestDisambiguationUIRepeatQuestion:
         assert isinstance(result, str)
         assert "Не совсем понял" in result
 
+    def test_format_repeat_question_includes_custom_hint(self, ui):
+        """format_repeat_question включает подсказку о своём варианте"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        result = ui.format_repeat_question(options)
+        assert "своими словами" in result.lower()
+
+
+# =============================================================================
+# DisambiguationUI Custom Input Tests (4-й вариант)
+# =============================================================================
+
+class TestDisambiguationUICustomInput:
+    """Тесты для 4-го варианта 'Свой вариант'"""
+
+    @pytest.fixture
+    def ui(self):
+        return DisambiguationUI()
+
+    def test_custom_input_marker_exists(self, ui):
+        """CUSTOM_INPUT_MARKER существует"""
+        assert hasattr(DisambiguationUI, "CUSTOM_INPUT_MARKER")
+        assert DisambiguationUI.CUSTOM_INPUT_MARKER == "_custom_input"
+
+    def test_parse_number_4_with_three_options(self, ui):
+        """Парсинг числа 4 при 3 опциях возвращает custom_input"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"},
+            {"intent": "agreement", "label": "Продолжить"}
+        ]
+        result = ui.parse_answer("4", options)
+        assert result == DisambiguationUI.CUSTOM_INPUT_MARKER
+
+    def test_parse_number_3_with_two_options(self, ui):
+        """Парсинг числа 3 при 2 опциях возвращает custom_input"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        result = ui.parse_answer("3", options)
+        assert result == DisambiguationUI.CUSTOM_INPUT_MARKER
+
+    def test_parse_fourth_word_with_three_options(self, ui):
+        """Парсинг 'четвёртый' при 3 опциях возвращает custom_input"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"},
+            {"intent": "agreement", "label": "Продолжить"}
+        ]
+        assert ui.parse_answer("четвёртый", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+        assert ui.parse_answer("четвертый", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+        assert ui.parse_answer("четыре", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+
+    def test_parse_third_word_with_two_options(self, ui):
+        """Парсинг 'третий' при 2 опциях возвращает custom_input"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("третий", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+        assert ui.parse_answer("три", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+
+    def test_parse_custom_keywords(self, ui):
+        """Парсинг ключевых слов 'свой', 'другое'"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        assert ui.parse_answer("свой вариант", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+        assert ui.parse_answer("своё", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+        assert ui.parse_answer("другое", options) == DisambiguationUI.CUSTOM_INPUT_MARKER
+
+    def test_format_numbered_includes_custom_hint(self, ui):
+        """_format_numbered включает подсказку о своём варианте"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"},
+            {"intent": "agreement", "label": "Продолжить"}
+        ]
+        result = ui._format_numbered(options)
+        assert "своими словами" in result.lower()
+
+    def test_format_numbered_two_options_includes_custom_hint(self, ui):
+        """_format_numbered с 2 опциями включает подсказку"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"}
+        ]
+        result = ui._format_numbered(options)
+        assert "своими словами" in result.lower()
+
+    def test_number_4_does_not_match_when_only_one_option(self, ui):
+        """Число 4 не срабатывает когда только 1 опция (custom = 2)"""
+        options = [{"intent": "price_question", "label": "Цена"}]
+        # "4" не должно совпадать, т.к. custom_input_index = 1 (2-й вариант)
+        result = ui.parse_answer("4", options)
+        assert result is None
+
+    def test_number_2_is_custom_when_one_option(self, ui):
+        """Число 2 = custom_input когда только 1 опция"""
+        options = [{"intent": "price_question", "label": "Цена"}]
+        result = ui.parse_answer("2", options)
+        assert result == DisambiguationUI.CUSTOM_INPUT_MARKER
+
+    def test_regular_options_still_work(self, ui):
+        """Обычные опции по-прежнему работают"""
+        options = [
+            {"intent": "price_question", "label": "Цена"},
+            {"intent": "question_features", "label": "Функции"},
+            {"intent": "agreement", "label": "Продолжить"}
+        ]
+        assert ui.parse_answer("1", options) == "price_question"
+        assert ui.parse_answer("2", options) == "question_features"
+        assert ui.parse_answer("3", options) == "agreement"
+        assert ui.parse_answer("первый", options) == "price_question"
+        assert ui.parse_answer("второй", options) == "question_features"
+
+
+class TestDisambiguationUICustomInputIntegration:
+    """Интеграционные тесты для 'Свой вариант'"""
+
+    @pytest.fixture
+    def mock_llm(self):
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.generate.return_value = "Тестовый ответ"
+        return llm
+
+    @pytest.fixture
+    def bot(self, mock_llm):
+        from bot import SalesBot
+        from feature_flags import flags
+
+        flags.set_override("intent_disambiguation", True)
+        flags.set_override("metrics_tracking", True)
+
+        bot = SalesBot(mock_llm)
+        bot.generator.generate = lambda action, ctx: "Тестовый ответ от генератора"
+        yield bot
+
+        flags.clear_override("intent_disambiguation")
+        flags.clear_override("metrics_tracking")
+
+    def test_custom_input_direct_classification(self, bot):
+        """Свободный текст классифицируется напрямую"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Пользователь пишет свой вопрос напрямую
+        result = bot.process("Меня интересует интеграция с 1С")
+
+        # Должен выйти из disambiguation и классифицировать
+        assert not bot.state_machine.in_disambiguation
+        assert "response" in result
+
+    def test_custom_input_with_keyword_classifies(self, bot):
+        """Ключевое слово 'свой' тоже классифицирует сообщение"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Даже "свой вариант" классифицируется (хотя результат будет unclear)
+        result = bot.process("свой вариант")
+
+        assert not bot.state_machine.in_disambiguation
+        assert "response" in result
+
+    def test_next_message_after_custom_input_is_classified(self, bot):
+        """Следующее сообщение после custom_input классифицируется обычно"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+        bot.state_machine.enter_disambiguation(options, {})
+
+        # Выбираем свой вариант
+        bot.process("3")
+
+        # Следующее сообщение должно быть классифицировано обычным образом
+        assert not bot.state_machine.in_disambiguation
+        result = bot.process("Меня интересует интеграция с 1С")
+
+        # Сообщение обработано обычным классификатором
+        assert "response" in result
+
+    def test_custom_input_metrics_recorded(self, bot):
+        """Метрики записываются при выборе custom_input"""
+        options = [
+            {"intent": "price_question", "label": "Узнать стоимость"},
+            {"intent": "question_features", "label": "Узнать о функциях"}
+        ]
+
+        # Сначала инициируем disambiguation
+        classification = {
+            "intent": "disambiguation_needed",
+            "disambiguation_options": options,
+            "disambiguation_question": "Уточните:",
+            "extracted_data": {},
+            "original_scores": {"price_question": 0.5, "question_features": 0.48},
+            "confidence": 0.5,
+            "original_intent": "price_question"
+        }
+        bot._initiate_disambiguation(
+            classification=classification,
+            user_message="тест",
+            context={},
+            tone_info={"frustration_level": 0}
+        )
+
+        # Выбираем свой вариант
+        bot.process("свой")
+
+        # Метрики должны быть записаны
+        assert bot.disambiguation_metrics.total_disambiguations == 1
+
 
 # =============================================================================
 # DisambiguationMetrics Tests
@@ -1007,38 +1230,20 @@ class TestDisambiguationIntegrationFlow:
         # Должен вернуть ответ
         assert "response" in result
 
-    def test_disambiguation_repeat_on_unknown_answer(self, bot):
-        """Непонятный ответ вызывает повтор вопроса"""
+    def test_disambiguation_unknown_answer_classifies_directly(self, bot):
+        """Непонятный ответ классифицируется напрямую (как свой вариант)"""
         options = [
             {"intent": "price_question", "label": "Узнать стоимость"},
             {"intent": "question_features", "label": "Узнать о функциях"}
         ]
         bot.state_machine.enter_disambiguation(options, {})
 
-        # Отвечаем непонятно
+        # Отвечаем чем-то непонятным - это теперь "свой вариант"
         result = bot.process("абракадабра")
 
-        # Должен остаться в disambiguation
-        assert bot.state_machine.in_disambiguation
-        # Попытка увеличивается
-        assert bot.state_machine.disambiguation_context["attempt"] == 2
-
-    def test_disambiguation_fallback_after_max_attempts(self, bot):
-        """После max попыток выходим с fallback"""
-        options = [
-            {"intent": "price_question", "label": "Узнать стоимость"},
-            {"intent": "question_features", "label": "Узнать о функциях"}
-        ]
-        bot.state_machine.enter_disambiguation(options, {})
-
-        # Первый непонятный ответ
-        bot.process("непонятно")
-
-        # Второй непонятный ответ - должен выйти
-        result = bot.process("всё ещё непонятно")
-
-        # Должен выйти из disambiguation
+        # Должен выйти из disambiguation и классифицировать ответ
         assert not bot.state_machine.in_disambiguation
+        assert "response" in result
 
     def test_disambiguation_critical_intent_exits(self, bot):
         """Критический интент выходит из disambiguation"""
