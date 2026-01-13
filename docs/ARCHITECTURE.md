@@ -187,10 +187,11 @@ classifier/llm/
 ```
 classifier/
 ├── hybrid.py           # HybridClassifier (оркестратор)
-├── normalizer.py       # TextNormalizer (692 исправления опечаток)
+├── normalizer.py       # TextNormalizer (663 исправления опечаток)
+├── cascade.py          # CascadeClassifier (semantic fallback)
 ├── disambiguation.py   # IntentDisambiguator
 ├── intents/
-│   ├── patterns.py     # PRIORITY_PATTERNS (212 паттернов)
+│   ├── patterns.py     # PRIORITY_PATTERNS (426 паттернов)
 │   ├── root_classifier.py   # Классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy
 └── extractors/
@@ -458,6 +459,9 @@ FALLBACK_RESPONSES = {
 | `context_window.py` | Расширенный контекст диалога |
 | `dialogue_policy.py` | Context-aware policy overlays |
 | `context_envelope.py` | Построение контекста для подсистем |
+| `intent_tracker.py` | Трекинг интентов и паттернов |
+| `response_directives.py` | Директивы для генератора |
+| `tone_analyzer/` | Каскадный анализатор тона (3 уровня) |
 
 ## Тестирование
 

@@ -170,11 +170,24 @@ guard.record_progress()
 
 | Модуль | Флаг | Описание |
 |--------|------|----------|
-| `tone_analyzer.py` | `tone_analysis` | Анализ тона клиента |
+| `tone_analyzer/` | `cascade_tone_analyzer` | Каскадный анализатор тона (3 уровня) |
 | `response_variations.py` | `response_variations` | Вариативность ответов |
-| `cascade_tone_analyzer.py` | `cascade_tone_analyzer` | Каскадный анализатор тона |
 
-### tone_analyzer.py — Анализ тона
+### tone_analyzer/ — Каскадный анализатор тона
+
+```
+tone_analyzer/
+├── cascade_analyzer.py     # Основной 3-уровневый каскад
+├── regex_analyzer.py       # Tier 1: Regex паттерны (быстро)
+├── semantic_analyzer.py    # Tier 2: RoSBERTa semantic (точно)
+├── llm_analyzer.py         # Tier 3: LLM fallback (надёжно)
+├── frustration_tracker.py  # Трекинг уровня фрустрации
+├── markers.py              # Маркеры для анализа
+├── models.py               # Модели данных
+└── examples.py             # Примеры и паттерны
+```
+
+### Использование анализатора тона
 
 ```python
 from tone_analyzer import ToneAnalyzer

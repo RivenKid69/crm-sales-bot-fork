@@ -18,6 +18,7 @@ classifier/
 ├── unified.py               # UnifiedClassifier — адаптер для переключения
 ├── normalizer.py            # TextNormalizer, TYPO_FIXES, SPLIT_PATTERNS
 ├── hybrid.py                # HybridClassifier — regex-based fallback
+├── cascade.py               # CascadeClassifier — semantic fallback
 ├── disambiguation.py        # IntentDisambiguator
 ├── llm/                     # LLM классификатор (основной)
 │   ├── __init__.py          # Экспорт LLMClassifier, schemas
@@ -26,7 +27,7 @@ classifier/
 │   └── schemas.py           # Pydantic схемы для structured output
 ├── intents/                 # Regex-based классификация (для fallback)
 │   ├── __init__.py
-│   ├── patterns.py          # PRIORITY_PATTERNS (212 паттернов)
+│   ├── patterns.py          # PRIORITY_PATTERNS (426 паттернов)
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy
 └── extractors/              # Извлечение данных
@@ -238,11 +239,11 @@ result = classifier.classify(
 ```python
 normalizer = TextNormalizer()
 
-# Исправление опечаток (692 записи)
+# Исправление опечаток (663 записи)
 text = normalizer.normalize("скок стоит прайс?")
 # → "сколько стоит цена?"
 
-# Разбиение слитного текста (176 паттернов)
+# Разбиение слитного текста (170 паттернов)
 text = normalizer.normalize("сколькостоит")
 # → "сколько стоит"
 ```
@@ -265,7 +266,7 @@ INTENT_ROOTS = {
 
 Fallback через pymorphy для сложных форм слов.
 
-#### 4. PRIORITY_PATTERNS (212 паттернов)
+#### 4. PRIORITY_PATTERNS (426 паттернов)
 
 Regex-паттерны для приоритетных интентов:
 
@@ -277,7 +278,7 @@ PRIORITY_PATTERNS = [
 
     # Price questions
     (r"скольк\w*\s*стоит", "price_question", 0.95),
-    # ... 208+ паттернов
+    # ... 420+ паттернов
 ]
 ```
 

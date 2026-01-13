@@ -262,8 +262,13 @@ Feature flags позволяют постепенно включать новы�
 | `cascade_classifier` | `true` | Каскадный классификатор |
 | `semantic_objection_detection` | `true` | Семантическая детекция возражений |
 | `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
+| `tone_semantic_tier2` | `true` | Tier 2: RoSBERTa semantic |
+| `tone_llm_tier3` | `true` | Tier 3: LLM fallback |
 | `context_full_envelope` | `true` | Полный ContextEnvelope |
 | `context_policy_overlays` | `true` | DialoguePolicy overrides |
+| `context_shadow_mode` | `false` | Shadow mode для policy |
+| `context_response_directives` | `false` | ResponseDirectives для генератора |
+| `dynamic_cta_fallback` | `false` | Динамические CTA в fallback |
 
 **Переопределение через env:**
 ```bash

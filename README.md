@@ -20,7 +20,7 @@ cd src && python bot.py
 ## Возможности
 
 - **SPIN Selling** — структурированный подход к продажам (Situation → Problem → Implication → Need-Payoff)
-- **Гибридная классификация** — 212 приоритетных паттернов + поиск по корням + лемматизация
+- **Гибридная классификация** — 426 приоритетных паттернов + поиск по корням + лемматизация
 - **Каскадный поиск** — 3-этапный retriever (exact → lemma → semantic)
 - **LLM-маршрутизация** — CategoryRouter для интеллектуальной классификации категорий
 - **Голосовой интерфейс** — Voice Bot с STT (Whisper) и TTS (F5-TTS)
@@ -82,25 +82,43 @@ src/
 ├── conversation_guard.py   # Защита от зацикливания
 │
 ├── # Фаза 2: Естественность диалога
-├── tone_analyzer.py        # Анализ тона клиента
+├── tone_analyzer/          # Каскадный анализатор тона
+│   ├── cascade_analyzer.py # 3-уровневый каскад (regex → semantic → LLM)
+│   ├── regex_analyzer.py   # Tier 1: Regex паттерны
+│   ├── semantic_analyzer.py # Tier 2: RoSBERTa semantic
+│   ├── llm_analyzer.py     # Tier 3: LLM fallback
+│   └── frustration_tracker.py # Трекинг фрустрации
 ├── response_variations.py  # Вариативность ответов
 │
 ├── # Фаза 3: Оптимизация SPIN Flow
 ├── lead_scoring.py         # Скоринг лидов
 ├── objection_handler.py    # Продвинутая обработка возражений
 ├── cta_generator.py        # Генерация Call-to-Action
+├── objection/              # Продвинутая обработка возражений
+│
+├── # Фаза 5: Context Policy
+├── context_envelope.py     # Построение единого контекста для подсистем
+├── context_window.py       # Расширенный контекст диалога (история)
+├── dialogue_policy.py      # Context-aware policy overlays
+├── intent_tracker.py       # Трекинг интентов и паттернов
+├── response_directives.py  # Директивы для генератора
+│
+├── # Условные правила
+├── conditions/             # Пакет условных правил
 │
 ├── classifier/             # Пакет классификации интентов
 │   ├── __init__.py         # Публичный API пакета
 │   ├── unified.py          # UnifiedClassifier — адаптер LLM/Hybrid
 │   ├── normalizer.py       # Нормализация текста (опечатки, сленг)
 │   ├── hybrid.py           # HybridClassifier — regex fallback
+│   ├── cascade.py          # CascadeClassifier — semantic fallback
+│   ├── disambiguation.py   # IntentDisambiguator
 │   ├── llm/                # LLM классификатор (основной)
 │   │   ├── classifier.py   # LLMClassifier (vLLM + Outlines)
 │   │   ├── prompts.py      # System prompt + few-shot
 │   │   └── schemas.py      # Pydantic схемы для structured output
 │   ├── intents/            # Подпакет классификации интентов (для fallback)
-│   │   ├── patterns.py     # Приоритетные паттерны (212 шт)
+│   │   ├── patterns.py     # Приоритетные паттерны (426 шт)
 │   │   ├── root_classifier.py   # Быстрая классификация по корням
 │   │   └── lemma_classifier.py  # Fallback через pymorphy
 │   └── extractors/         # Подпакет извлечения данных
@@ -142,7 +160,7 @@ voice_bot/                  # Голосовой интерфейс
 ├── models/                 # XTTS-RU-IPA модели
 └── test_*.py               # Тесты компонентов (STT, TTS, LLM)
 
-tests/                      # 1379+ тестов в 39 файлах
+tests/                      # 2900+ тестов в 71 файле
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
@@ -358,14 +376,16 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 classifier/
 ├── __init__.py          # API: UnifiedClassifier, HybridClassifier, TextNormalizer
 ├── unified.py           # UnifiedClassifier — адаптер LLM/Hybrid
-├── normalizer.py        # TYPO_FIXES (692 шт), SPLIT_PATTERNS (176 шт)
+├── normalizer.py        # TYPO_FIXES (663 шт), SPLIT_PATTERNS (170 шт)
 ├── hybrid.py            # HybridClassifier — regex fallback
+├── cascade.py           # CascadeClassifier — semantic fallback
+├── disambiguation.py    # IntentDisambiguator
 ├── llm/                 # LLM классификатор (основной)
 │   ├── classifier.py    # LLMClassifier (vLLM + Outlines)
 │   ├── prompts.py       # System prompt + few-shot примеры
 │   └── schemas.py       # Pydantic схемы (ClassificationResult, ExtractedData)
 ├── intents/
-│   ├── patterns.py      # PRIORITY_PATTERNS (212 шт) для fallback
+│   ├── patterns.py      # PRIORITY_PATTERNS (426 шт) для fallback
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy2/3
 └── extractors/
@@ -453,7 +473,7 @@ from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 ## Тестирование
 
 ```bash
-# Все тесты (1379+ тестов)
+# Все тесты (2900+ тестов)
 pytest tests/ -v
 
 # Только тесты классификатора
@@ -534,16 +554,16 @@ pip install -r requirements.txt
 ## Метрики проекта
 
 ```
-Модулей Python:           40+ в src/
-Тестов:                   1500+ в 50+ файлах
+Модулей Python:           50+ в src/
+Тестов:                   2900+ в 71 файле
 Секций в базе знаний:     1969 в 18 YAML файлах
 Интентов LLM:             33 в classifier/llm/
 Интентов Hybrid:          58 в INTENT_ROOTS
-Паттернов опечаток:       692 в TYPO_FIXES
-Паттернов разделения:     176 в SPLIT_PATTERNS
-Приоритетных паттернов:   212 в PRIORITY_PATTERNS
+Паттернов опечаток:       663 в TYPO_FIXES
+Паттернов разделения:     170 в SPLIT_PATTERNS
+Приоритетных паттернов:   426 в PRIORITY_PATTERNS
 Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17
-Feature Flags:            25+ флагов
+Feature Flags:            30+ флагов
 ```
