@@ -64,7 +64,7 @@ class VLLMClient:
     vLLM клиент с полной совместимостью с OllamaLLM.
 
     Использует vLLM OpenAI-compatible API.
-    Для structured output использует guided_json (Outlines backend).
+    Для structured output использует response_format с json_schema (vLLM 0.12+).
     """
 
     # Настройки retry
@@ -150,7 +150,7 @@ class VLLMClient:
         allow_fallback: bool = True
     ) -> Optional[T]:
         """
-        Генерация с гарантированным JSON через Outlines.
+        Генерация с гарантированным JSON через vLLM structured outputs.
 
         Args:
             prompt: Промпт для LLM
@@ -175,14 +175,21 @@ class VLLMClient:
 
         for attempt in range(max_attempts):
             try:
+                # vLLM 0.12+ использует /chat/completions с response_format
                 response = requests.post(
-                    f"{self.base_url}/completions",
+                    f"{self.base_url}/chat/completions",
                     json={
                         "model": self.model,
-                        "prompt": prompt,
+                        "messages": [{"role": "user", "content": prompt}],
                         "temperature": 0.1,
                         "max_tokens": 512,
-                        "guided_json": schema.model_json_schema(),
+                        "response_format": {
+                            "type": "json_schema",
+                            "json_schema": {
+                                "name": schema.__name__,
+                                "schema": schema.model_json_schema(),
+                            },
+                        },
                     },
                     timeout=self.timeout
                 )
@@ -196,11 +203,16 @@ class VLLMClient:
 
                 data = response.json()
                 choices = data.get("choices", [])
-                if not choices or "text" not in choices[0]:
-                    raise ValueError("Empty or invalid response from vLLM")
+                if not choices:
+                    raise ValueError("Empty response from vLLM")
 
-                text = choices[0]["text"]
-                return schema.model_validate_json(text)
+                # Chat completions возвращает message.content вместо text
+                message = choices[0].get("message", {})
+                content = message.get("content", "")
+                if not content:
+                    raise ValueError("Empty content in response from vLLM")
+
+                return schema.model_validate_json(content)
 
             except requests.exceptions.Timeout as e:
                 last_error = e

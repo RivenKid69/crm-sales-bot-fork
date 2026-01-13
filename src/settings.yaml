@@ -8,8 +8,8 @@
 # LLM (Language Model) - vLLM Server
 # -----------------------------------------------------------------------------
 llm:
-  # Модель vLLM (Qwen3-8B с AWQ квантизацией)
-  model: "Qwen/Qwen3-8B-AWQ"
+  # Модель vLLM (Qwen3-4B с AWQ квантизацией)
+  model: "Qwen/Qwen3-4B-AWQ"
 
   # URL vLLM сервера (OpenAI-compatible API)
   base_url: "http://localhost:8000/v1"
