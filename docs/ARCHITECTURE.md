@@ -24,7 +24,7 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 │                              SalesBot                                        │
 │                             (bot.py)                                         │
 │      Оркестрация: classifier → state_machine → generator                     │
-│      + Feature Flags + Metrics + Logger                                      │
+│      + Feature Flags + Metrics + Logger + DialoguePolicy                     │
 └─────────────────┬───────────────────────────────┬───────────────────────────┘
                   │                               │
     ┌─────────────▼─────────────┐   ┌─────────────▼─────────────┐
@@ -382,6 +382,10 @@ if flags.llm_classifier:
 | `conversation_guard` | `True` | Защита от зацикливания |
 | `response_variations` | `True` | Вариативность ответов |
 | `cascade_tone_analyzer` | `True` | Каскадный анализатор тона |
+| `context_full_envelope` | `True` | Полный ContextEnvelope |
+| `context_policy_overlays` | `True` | DialoguePolicy overrides |
+| `cascade_classifier` | `True` | Каскадный классификатор |
+| `semantic_objection_detection` | `True` | Семантическая детекция возражений |
 | `tone_analysis` | `False` | Анализ тона клиента |
 | `lead_scoring` | `False` | Скоринг лидов |
 
@@ -451,6 +455,9 @@ FALLBACK_RESPONSES = {
 | `feature_flags.py` | Управление фичами |
 | `settings.py` | Конфигурация из YAML |
 | `config.py` | Интенты, состояния, промпты |
+| `context_window.py` | Расширенный контекст диалога |
+| `dialogue_policy.py` | Context-aware policy overlays |
+| `context_envelope.py` | Построение контекста для подсистем |
 
 ## Тестирование
 

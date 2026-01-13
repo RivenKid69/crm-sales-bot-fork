@@ -8,8 +8,17 @@
 
 ```python
 from bot import SalesBot
+from llm import VLLMClient
 
-bot = SalesBot()
+llm = VLLMClient()
+bot = SalesBot(llm)
+
+# Или с параметрами
+bot = SalesBot(
+    llm=llm,
+    conversation_id="abc123",    # Опционально: ID диалога
+    enable_tracing=True          # Опционально: трассировка правил
+)
 ```
 
 #### Методы
@@ -23,12 +32,19 @@ result = bot.process("Привет, сколько стоит ваша CRM?")
 
 # Возвращает:
 {
-    "response": "Здравствуйте! Тарифы начинаются от 990 ₽/мес...",
+    "response": "Здравствуйте! Тарифы начинаются от 990 тг/мес...",
     "intent": "price_question",
     "action": "answer_question",
     "state": "greeting",
     "is_final": False,
-    "spin_phase": None
+    "spin_phase": None,
+    "fallback_used": False,
+    "fallback_tier": None,
+    "tone": "neutral",
+    "frustration_level": 0,
+    "lead_score": 50,
+    "objection_detected": False,
+    "options": None
 }
 ```
 
@@ -40,6 +56,61 @@ result = bot.process("Привет, сколько стоит ваша CRM?")
 bot.reset()
 ```
 
+##### `get_metrics_summary() -> Dict`
+
+Получить сводку метрик текущего диалога.
+
+```python
+summary = bot.get_metrics_summary()
+# {
+#     "conversation_id": "abc123",
+#     "turns": 5,
+#     "duration_sec": 120,
+#     "states_visited": ["greeting", "spin_situation", "spin_problem"],
+#     "fallbacks_used": 0,
+#     "objections_count": 1
+# }
+```
+
+##### `get_lead_score() -> Dict`
+
+Получить текущий lead score.
+
+```python
+score = bot.get_lead_score()
+# {
+#     "score": 65,
+#     "temperature": "warm",
+#     "signals": ["company_size_provided", "problem_revealed"]
+# }
+```
+
+##### `get_guard_stats() -> Dict`
+
+Получить статистику ConversationGuard.
+
+```python
+stats = bot.get_guard_stats()
+# {
+#     "same_state_count": 2,
+#     "frustration_level": 1,
+#     "interventions": []
+# }
+```
+
+##### `get_disambiguation_metrics() -> Dict`
+
+Получить метрики disambiguation.
+
+```python
+metrics = bot.get_disambiguation_metrics()
+# {
+#     "total_disambiguations": 3,
+#     "successful_resolutions": 2,
+#     "average_attempts": 1.5
+# }
+```
+
 #### Атрибуты
 
 | Атрибут | Тип | Описание |
@@ -48,8 +119,14 @@ bot.reset()
 | `state_machine` | `StateMachine` | Управление состояниями |
 | `generator` | `ResponseGenerator` | Генерация ответов |
 | `history` | `List[Dict]` | История диалога |
-| `last_action` | `str` | Последнее действие (для контекста) |
-| `last_intent` | `str` | Последний интент пользователя |
+| `last_action` | `str` | Последнее действие |
+| `last_intent` | `str` | Последний интент |
+| `conversation_id` | `str` | ID диалога |
+| `metrics` | `ConversationMetrics` | Метрики диалога |
+| `guard` | `ConversationGuard` | Защита от зацикливания |
+| `lead_scorer` | `LeadScorer` | Скоринг лидов |
+| `context_window` | `ContextWindow` | Расширенный контекст |
+| `dialogue_policy` | `DialoguePolicy` | Policy overlays |
 
 ---
 
@@ -152,6 +229,8 @@ result = classifier.classify(
 | `spin_phase` | `str` | SPIN-фаза: `situation`, `problem`, `implication`, `need_payoff` |
 | `last_action` | `str` | Последнее действие бота |
 | `last_intent` | `str` | Предыдущий интент пользователя |
+| `intent_history` | `List[str]` | История интентов |
+| `action_history` | `List[str]` | История действий |
 
 ---
 
@@ -213,10 +292,10 @@ normalizer = TextNormalizer()
 
 ```python
 text = normalizer.normalize("скок стоит прайс?")
-# → "сколько стоит цена?"
+# -> "сколько стоит цена?"
 
 text = normalizer.normalize("сколькостоит")
-# → "сколько стоит"
+# -> "сколько стоит"
 ```
 
 ---
@@ -279,8 +358,15 @@ llm = VLLMClient()
 llm = VLLMClient(
     model="Qwen/Qwen3-8B-AWQ",
     base_url="http://localhost:8000/v1",
-    timeout=60
+    timeout=60,
+    enable_circuit_breaker=True,
+    enable_retry=True
 )
+```
+
+**Алиас для обратной совместимости:**
+```python
+from llm import OllamaLLM  # = VLLMClient
 ```
 
 #### Методы
@@ -308,7 +394,7 @@ class Result(BaseModel):
     confidence: float
 
 result = llm.generate_structured(prompt, Result)
-# → Result(intent="price_question", confidence=0.95)
+# -> Result(intent="price_question", confidence=0.95)
 ```
 
 ##### `health_check() -> bool`
@@ -342,17 +428,9 @@ stats = llm.get_stats_dict()
 
 Сбросить статистику для нового диалога.
 
-```python
-llm.reset()
-```
-
 ##### `reset_circuit_breaker()`
 
 Сбросить circuit breaker.
-
-```python
-llm.reset_circuit_breaker()
-```
 
 #### Атрибуты
 
@@ -365,8 +443,8 @@ llm.reset_circuit_breaker()
 | `is_circuit_open` | `bool` | Открыт ли circuit breaker |
 
 **Resilience Features:**
-- **Circuit Breaker**: 5 ошибок → 60 сек cooldown
-- **Retry**: exponential backoff (1s → 2s → 4s)
+- **Circuit Breaker**: 5 ошибок -> 60 сек cooldown
+- **Retry**: exponential backoff (1s -> 2s -> 4s)
 - **Fallback**: предопределённые ответы по состояниям
 
 ---
@@ -379,11 +457,13 @@ llm.reset_circuit_breaker()
 from state_machine import StateMachine
 
 sm = StateMachine()
+# или с трассировкой:
+sm = StateMachine(enable_tracing=True)
 ```
 
 #### Методы
 
-##### `process(intent: str, extracted_data: Dict) -> Dict`
+##### `process(intent: str, extracted_data: Dict, context_envelope: ContextEnvelope = None) -> Dict`
 
 Обрабатывает интент и определяет следующее действие.
 
@@ -415,6 +495,18 @@ result = sm.process(
 
 Обновляет собранные данные.
 
+##### `enter_disambiguation(options: List[Dict], extracted_data: Dict)`
+
+Войти в режим disambiguation.
+
+##### `exit_disambiguation()`
+
+Выйти из режима disambiguation.
+
+##### `resolve_disambiguation(resolved_intent: str) -> Tuple[str, str]`
+
+Разрешить disambiguation и вернуть (state, intent).
+
 #### Атрибуты
 
 | Атрибут | Тип | Описание |
@@ -422,6 +514,8 @@ result = sm.process(
 | `state` | `str` | Текущее состояние |
 | `collected_data` | `Dict` | Собранные данные |
 | `spin_phase` | `str` | Текущая SPIN-фаза |
+| `in_disambiguation` | `bool` | В режиме disambiguation |
+| `disambiguation_context` | `Dict` | Контекст disambiguation |
 
 ---
 
@@ -431,8 +525,10 @@ result = sm.process(
 
 ```python
 from generator import ResponseGenerator
+from llm import VLLMClient
 
-generator = ResponseGenerator()
+llm = VLLMClient()
+generator = ResponseGenerator(llm)
 ```
 
 #### Методы
@@ -450,7 +546,7 @@ response = generator.generate(
         "spin_phase": "problem"
     }
 )
-# → "Понял, команда из 10 человек. Какая главная сложность с учётом сейчас?"
+# -> "Понял, команда из 10 человек. Какая главная сложность с учётом сейчас?"
 ```
 
 **Поддерживаемые actions:**
@@ -463,7 +559,7 @@ response = generator.generate(
 | `spin_problem` | Вопрос о проблемах |
 | `spin_implication` | Вопрос о последствиях |
 | `spin_need_payoff` | Вопрос о ценности |
-| `transition_to_spin_problem` | Переход S→P |
+| `transition_to_spin_problem` | Переход S->P |
 | `presentation` | Презентация решения |
 | `handle_objection` | Работа с возражением |
 | `close` | Запрос контакта |
@@ -497,7 +593,7 @@ facts = retriever.retrieve(
     intent="price_question",
     top_k=2
 )
-# → "Тарифы Wipon:\n| Тариф | Торговых точек |..."
+# -> "Тарифы Wipon:\n| Тариф | Торговых точек |..."
 ```
 
 ##### `search(query: str, category: str = None, top_k: int = 3) -> List[SearchResult]`
@@ -549,7 +645,7 @@ router = CategoryRouter(VLLMClient(), top_k=3)
 
 ```python
 categories = router.route("как подключить 1С?")
-# → ["integrations", "features", "support"]
+# -> ["integrations", "features", "support"]
 ```
 
 Поддерживает:
@@ -578,6 +674,14 @@ all_flags = flags.get_all_flags()
 
 # Включённые флаги
 enabled = flags.get_enabled_flags()
+
+# Override флага в runtime
+flags.set_override("tone_analysis", True)
+flags.clear_override("tone_analysis")
+
+# Управление группами
+flags.enable_group("phase_3")
+flags.disable_group("risky")
 ```
 
 ---
@@ -660,8 +764,10 @@ class CategoryResult(BaseModel):
 
 ```python
 from bot import SalesBot
+from llm import VLLMClient
 
-bot = SalesBot()
+llm = VLLMClient()
+bot = SalesBot(llm)
 
 # Приветствие
 result = bot.process("Привет!")
@@ -688,15 +794,15 @@ classifier = UnifiedClassifier()
 
 # Классификация с LLM
 result = classifier.classify("не интересно")
-print(f"Intent: {result['intent']}")  # → rejection
-print(f"Method: {result['method']}")  # → llm
+print(f"Intent: {result['intent']}")  # -> rejection
+print(f"Method: {result['method']}")  # -> llm
 
 # С контекстом
 result = classifier.classify(
     "10 человек",
     context={"spin_phase": "situation"}
 )
-print(f"Data: {result['extracted_data']}")  # → {"company_size": 10}
+print(f"Data: {result['extracted_data']}")  # -> {"company_size": 10}
 ```
 
 ### Поиск по базе знаний
@@ -761,4 +867,29 @@ if flags.is_enabled("tone_analysis"):
     from tone_analyzer import ToneAnalyzer
     analyzer = ToneAnalyzer()
     tone = analyzer.analyze(message)
+```
+
+### Интерактивный режим
+
+```python
+from bot import SalesBot, run_interactive
+from llm import VLLMClient
+from feature_flags import flags
+
+# Включить нужные фичи
+flags.enable_group("phase_3")
+
+llm = VLLMClient()
+bot = SalesBot(llm)
+
+# Запуск интерактивного режима
+run_interactive(bot)
+
+# Команды в интерактивном режиме:
+# /reset - сбросить диалог
+# /status - показать состояние
+# /metrics - показать метрики
+# /lead - показать lead score
+# /flags - показать включённые флаги
+# /quit - выйти
 ```

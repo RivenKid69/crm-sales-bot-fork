@@ -63,8 +63,10 @@ text = "".join([segment.text for segment in segments])
 
 ```python
 from bot import SalesBot
+from llm import VLLMClient
 
-bot = SalesBot()
+llm = VLLMClient()
+bot = SalesBot(llm)
 
 # Обработка текста
 result = bot.process(recognized_text)
@@ -110,7 +112,8 @@ class VoicePipeline:
         self.whisper = WhisperModel("large-v3", device="cuda")
 
         # LLM (vLLM + Qwen3-8B-AWQ)
-        self.bot = SalesBot()
+        self.llm = VLLMClient()
+        self.bot = SalesBot(self.llm)
 
         # TTS
         self.tts = F5TTS()
@@ -345,8 +348,8 @@ python seed_search.py --corpus ruslan_corpus --output checkpoints/custom
 
 ```python
 class VoiceSalesBot(SalesBot):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, llm):
+        super().__init__(llm)
         self.pipeline = VoicePipeline()
 
     def process_voice(self, audio_path: str) -> str:

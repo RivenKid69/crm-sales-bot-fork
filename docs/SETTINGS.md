@@ -84,6 +84,9 @@ classifier:
     root_match: 1.0
     phrase_match: 2.0
     lemma_match: 1.5
+  merge_weights:
+    root_classifier: 0.6
+    lemma_classifier: 0.4
   thresholds:
     high_confidence: 0.7
     min_confidence: 0.3
@@ -97,11 +100,22 @@ logging:
   log_retriever_results: false
 
 # -----------------------------------------------------------------------------
+# CONDITIONAL RULES (Phase 8: Условные правила)
+# -----------------------------------------------------------------------------
+conditional_rules:
+  enable_tracing: true
+  log_level: "INFO"
+  log_context: false
+  log_each_condition: false
+  validate_on_startup: true
+  coverage_threshold: 0.8
+
+# -----------------------------------------------------------------------------
 # FEATURE FLAGS (Управление фичами)
 # -----------------------------------------------------------------------------
 feature_flags:
   # LLM классификатор
-  llm_classifier: true          # LLM вместо Hybrid классификатора
+  llm_classifier: true
 
   # Фаза 0: Инфраструктура
   structured_logging: true
@@ -203,6 +217,8 @@ vllm serve Qwen/Qwen3-8B-AWQ \
 | `weights.root_match` | float | `1.0` | Вес совпадения по корню (для HybridClassifier) |
 | `weights.phrase_match` | float | `2.0` | Вес точного совпадения фразы |
 | `weights.lemma_match` | float | `1.5` | Вес совпадения по лемме |
+| `merge_weights.root_classifier` | float | `0.6` | Вес RootClassifier при слиянии |
+| `merge_weights.lemma_classifier` | float | `0.4` | Вес LemmaClassifier при слиянии |
 | `thresholds.high_confidence` | float | `0.7` | Порог высокой уверенности |
 | `thresholds.min_confidence` | float | `0.3` | Минимальная уверенность |
 
@@ -213,6 +229,17 @@ vllm serve Qwen/Qwen3-8B-AWQ \
 | `level` | string | `"INFO"` | Уровень логирования |
 | `log_llm_requests` | bool | `false` | Логировать запросы к LLM |
 | `log_retriever_results` | bool | `false` | Логировать результаты retriever |
+
+### CONDITIONAL RULES (Условные правила)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `enable_tracing` | bool | `true` | Включить трассировку правил |
+| `log_level` | string | `"INFO"` | Уровень логирования правил |
+| `log_context` | bool | `false` | Логировать контекст при проверке |
+| `log_each_condition` | bool | `false` | Логировать каждую проверку |
+| `validate_on_startup` | bool | `true` | Валидация при старте |
+| `coverage_threshold` | float | `0.8` | Минимальное покрытие условий в тестах |
 
 ### FEATURE FLAGS (Управление фичами)
 
@@ -232,7 +259,11 @@ Feature flags позволяют постепенно включать новы�
 | `circular_flow` | `false` | Возврат назад по фазам |
 | `objection_handler` | `false` | Обработка возражений |
 | `cta_generator` | `false` | Call-to-Action |
+| `cascade_classifier` | `true` | Каскадный классификатор |
+| `semantic_objection_detection` | `true` | Семантическая детекция возражений |
 | `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
+| `context_full_envelope` | `true` | Полный ContextEnvelope |
+| `context_policy_overlays` | `true` | DialoguePolicy overrides |
 
 **Переопределение через env:**
 ```bash
@@ -269,10 +300,10 @@ allowed = settings.generator.allowed_english_words
 from settings import settings
 
 value = settings.get_nested("retriever.thresholds.semantic")
-# → 0.5
+# -> 0.5
 
 value = settings.get_nested("nonexistent.path", default="fallback")
-# → "fallback"
+# -> "fallback"
 ```
 
 ### Перезагрузка настроек
@@ -299,6 +330,17 @@ if flags.is_enabled("tone_analysis"):
 
 # Получить все флаги
 all_flags = flags.get_all_flags()
+
+# Получить включённые флаги
+enabled = flags.get_enabled_flags()
+
+# Override в runtime
+flags.set_override("tone_analysis", True)
+flags.clear_override("tone_analysis")
+
+# Группы
+flags.enable_group("phase_3")
+flags.disable_group("risky")
 ```
 
 ## Профили настроек
@@ -359,6 +401,9 @@ feature_flags:
   multi_tier_fallback: true
   conversation_guard: true
   response_variations: true
+  cascade_classifier: true
+  context_full_envelope: true
+  context_policy_overlays: true
 
 development:
   debug: false
@@ -371,6 +416,11 @@ logging:
   level: "DEBUG"
   log_llm_requests: true
   log_retriever_results: true
+
+conditional_rules:
+  enable_tracing: true
+  log_context: true
+  log_each_condition: true
 
 development:
   debug: true

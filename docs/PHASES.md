@@ -25,16 +25,12 @@
 ### logger.py — Структурированное логирование
 
 ```python
-from logger import get_logger, LogContext
+from logger import logger
 
-logger = get_logger(__name__)
-
-# Обычное логирование
+# Логирование с контекстом
 logger.info("Обработка сообщения", user_id="123", message="привет")
-
-# Контекстное логирование
-with LogContext(conversation_id="conv_123", spin_phase="situation"):
-    logger.info("Переход в фазу problem")
+logger.set_conversation("conv_123")
+logger.info("Переход в фазу problem")
 ```
 
 **Режимы:**
@@ -44,48 +40,51 @@ with LogContext(conversation_id="conv_123", spin_phase="situation"):
 ### metrics.py — Трекинг метрик
 
 ```python
-from metrics import MetricsTracker
+from metrics import ConversationMetrics, ConversationOutcome
 
-tracker = MetricsTracker()
+metrics = ConversationMetrics("conv_123")
 
-# Начало диалога
-tracker.start_conversation("conv_123")
+# Начало хода
+metrics.start_turn_timer()
 
 # Трекинг событий
-tracker.track_intent("price_question")
-tracker.track_state_transition("greeting", "spin_situation")
-tracker.track_response_time(1.5)
+metrics.record_turn(
+    state="spin_situation",
+    intent="situation_provided",
+    tone="neutral",
+    fallback_used=False,
+    fallback_tier=None
+)
+
+# Запись возражений
+metrics.record_objection("price", resolved=True)
 
 # Завершение
-tracker.end_conversation("conv_123", outcome="success")
+metrics.set_outcome(ConversationOutcome.SUCCESS)
 
 # Получение статистики
-stats = tracker.get_stats()
-# {
-#     "total_conversations": 100,
-#     "success_rate": 0.65,
-#     "avg_turns": 8.5,
-#     "avg_response_time": 1.2
-# }
+summary = metrics.get_summary()
 ```
 
 ### feature_flags.py — Управление фичами
 
 ```python
-from feature_flags import is_enabled, get_all_flags, FeatureFlags
+from feature_flags import flags
 
-# Проверка флага
-if is_enabled("tone_analysis"):
+# Проверка флага (property)
+if flags.llm_classifier:
+    # использовать LLM классификатор
+
+# Проверка флага (метод)
+if flags.is_enabled("tone_analysis"):
     # использовать ToneAnalyzer
 
 # Все флаги
-flags = get_all_flags()
+all_flags = flags.get_all_flags()
 
-# Декоратор
-@FeatureFlags.require("lead_scoring")
-def calculate_score(data):
-    # выполнится только если lead_scoring включён
-    pass
+# Группы флагов
+flags.enable_group("phase_3")
+flags.disable_group("risky")
 ```
 
 **Переопределение через env:**
@@ -114,8 +113,8 @@ FF_TONE_ANALYSIS=true python bot.py
 Уровень 1: Knowledge Base
     │       Попытка найти ответ в базе знаний
     ▼
-Уровень 2: Company Facts
-    │       Общие факты о компании
+Уровень 2: Company Facts + Dynamic CTA
+    │       Общие факты о компании + контекстные подсказки
     ▼
 Уровень 3: Generic Response
     │       Шаблонный ответ по действию
@@ -128,15 +127,14 @@ FF_TONE_ANALYSIS=true python bot.py
 from fallback_handler import FallbackHandler
 
 handler = FallbackHandler()
-
-try:
-    response = llm.generate(prompt)
-except Exception as e:
-    response = handler.get_fallback(
-        action="answer_question",
-        context={"user_message": "сколько стоит?"},
-        error=e
-    )
+response = handler.get_fallback(
+    tier="tier_2",
+    state="spin_problem",
+    context={
+        "collected_data": {"pain_category": "losing_clients"},
+        "last_intent": "price_question"
+    }
+)
 ```
 
 ### conversation_guard.py — Защита от зацикливания
@@ -144,26 +142,22 @@ except Exception as e:
 ```python
 from conversation_guard import ConversationGuard
 
-guard = ConversationGuard(
-    max_turns=50,
-    max_same_state=5,
-    loop_detection_window=10
-)
+guard = ConversationGuard()
 
 # Проверка перед обработкой
-if guard.should_stop(conversation_history):
-    return "Извините, давайте начнём сначала."
-
-# Обновление после хода
-guard.update(
+can_continue, intervention = guard.check(
     state="spin_situation",
-    intent="situation_provided",
-    response="Понял, 10 человек."
+    message="10 человек",
+    collected_data={"company_size": 10},
+    frustration_level=0
 )
 
-# Детекция зацикливания
-if guard.detect_loop():
-    guard.break_loop()  # Форсированный переход
+if not can_continue:
+    # Применить intervention (soft_close, skip, etc.)
+    pass
+
+# Запись прогресса
+guard.record_progress()
 ```
 
 ---
@@ -178,6 +172,7 @@ if guard.detect_loop():
 |--------|------|----------|
 | `tone_analyzer.py` | `tone_analysis` | Анализ тона клиента |
 | `response_variations.py` | `response_variations` | Вариативность ответов |
+| `cascade_tone_analyzer.py` | `cascade_tone_analyzer` | Каскадный анализатор тона |
 
 ### tone_analyzer.py — Анализ тона
 
@@ -187,46 +182,49 @@ from tone_analyzer import ToneAnalyzer
 analyzer = ToneAnalyzer()
 
 result = analyzer.analyze("Это слишком дорого, не интересует")
-# {
-#     "sentiment": "negative",
-#     "frustration": 0.7,
-#     "urgency": 0.3,
-#     "interest": 0.2,
-#     "recommended_tone": "empathetic"
-# }
+# ToneAnalysis(
+#     tone=Tone.NEGATIVE,
+#     frustration_level=3,
+#     style=Style.CONCISE
+# )
 
-# Адаптация ответа под тон
-if result["frustration"] > 0.5:
-    prompt += "\n\nКлиент раздражён. Будь особенно вежлив и лаконичен."
+guidance = analyzer.get_response_guidance(result)
+# {
+#     "tone_instruction": "Будь эмпатичным, не дави",
+#     "should_apologize": False,
+#     "should_offer_exit": True,
+#     "max_words": 30
+# }
 ```
 
-**Анализируемые параметры:**
-- `sentiment` — позитивный/негативный/нейтральный
-- `frustration` — уровень раздражения (0-1)
-- `urgency` — срочность (0-1)
-- `interest` — заинтересованность (0-1)
+### Cascade Tone Analyzer — 3-уровневый каскад
+
+```
+Tier 1: Regex patterns (быстро)
+    │
+    ▼  низкая уверенность
+Tier 2: RoSBERTa semantic (точно)
+    │
+    ▼  всё ещё не уверен
+Tier 3: LLM fallback (медленно, но надёжно)
+```
+
+**Флаги:**
+- `cascade_tone_analyzer` — master switch
+- `tone_semantic_tier2` — RoSBERTa (Tier 2)
+- `tone_llm_tier3` — LLM fallback (Tier 3)
 
 ### response_variations.py — Вариативность ответов
 
 ```python
-from response_variations import ResponseVariations
-
-variations = ResponseVariations()
+from response_variations import variations
 
 # Получить вариацию приветствия
 greeting = variations.get("greeting")
 # "Здравствуйте!" / "Добрый день!" / "Привет!"
 
 # С учётом истории (не повторяться)
-greeting = variations.get("greeting", history=["Здравствуйте!"])
-# Вернёт другой вариант
-
-# Кастомные вариации
-variations.add("spin_situation", [
-    "Расскажите о вашей компании",
-    "Сколько человек работает?",
-    "Чем занимается ваш бизнес?"
-])
+greeting = variations.get_variant("greeting", used=["Здравствуйте!"])
 ```
 
 ---
@@ -239,110 +237,31 @@ variations.add("spin_situation", [
 
 | Модуль | Флаг | Описание |
 |--------|------|----------|
-| `state_machine.py` | — | CircularFlowManager + ObjectionFlowManager |
 | `lead_scoring.py` | `lead_scoring` | Скоринг лидов |
 | `objection_handler.py` | `objection_handler` | Обработка возражений |
 | `cta_generator.py` | `cta_generator` | Call-to-Action |
 
-### CircularFlowManager — Возврат назад по фазам
-
-Позволяет клиенту вернуться к предыдущей SPIN-фазе с защитой от зацикливания:
-
-```python
-from state_machine import CircularFlowManager
-
-flow = CircularFlowManager()
-
-# Проверка возможности возврата
-if flow.can_go_back("spin_problem"):
-    prev_state = flow.go_back("spin_problem")  # → "spin_situation"
-
-# Лимиты
-flow.MAX_GOBACKS = 2  # Максимум 2 возврата за диалог
-
-# Разрешённые переходы
-ALLOWED_GOBACKS = {
-    "spin_problem": "spin_situation",
-    "spin_implication": "spin_problem",
-    "spin_need_payoff": "spin_implication",
-    "presentation": "spin_need_payoff",
-    "close": "presentation",
-}
-```
-
-### ObjectionFlowManager — Обработка возражений
-
-Управление последовательными возражениями с защитой от зацикливания:
-
-```python
-from state_machine import ObjectionFlowManager
-
-manager = ObjectionFlowManager()
-
-# Запись возражения
-manager.record_objection("objection_price", "presentation")
-
-# Проверка лимитов
-if manager.should_soft_close():
-    # Переход в soft_close
-    pass
-
-# Лимиты
-manager.MAX_CONSECUTIVE_OBJECTIONS = 3  # Максимум 3 подряд
-manager.MAX_TOTAL_OBJECTIONS = 5        # Максимум 5 за диалог
-
-# Сброс при положительном интенте
-manager.reset_consecutive()
-
-# Статистика
-stats = manager.get_stats()
-# {"consecutive_objections": 2, "total_objections": 3, "history": [...]}
-```
-
 ### lead_scoring.py — Скоринг лидов
 
 ```python
-from lead_scoring import LeadScorer, LeadCategory
+from lead_scoring import LeadScorer, get_signal_from_intent
 
 scorer = LeadScorer()
 
-# Расчёт скора
-score = scorer.calculate(
-    collected_data={
-        "company_size": 10,
-        "pain_point": "теряем клиентов",
-        "current_tools": "Excel"
-    },
-    conversation_history=history,
-    intents=["situation_provided", "problem_revealed"]
-)
-# {
-#     "score": 75,
-#     "category": LeadCategory.WARM,
-#     "factors": {
-#         "company_size": +10,
-#         "pain_expressed": +20,
-#         "current_tools_weak": +15,
-#         "engagement": +30
-#     },
-#     "recommendation": "Переходить к презентации"
-# }
+# Добавление сигналов
+signal = get_signal_from_intent("situation_provided")
+result = scorer.add_signal(signal)
 
-# Категории
-if score["category"] == LeadCategory.HOT:
-    # Агрессивный close
-elif score["category"] == LeadCategory.WARM:
-    # Стандартный flow
-else:
-    # Nurturing
+# Результат
+# LeadScore(
+#     score=65,
+#     temperature=Temperature.WARM,
+#     signals=["company_size", "pain_revealed"]
+# )
+
+# Сводка
+summary = scorer.get_summary()
 ```
-
-**Факторы скоринга:**
-- Размер компании (+5..+20)
-- Выраженность боли (+10..+30)
-- Слабость текущих инструментов (+10..+20)
-- Вовлечённость в диалог (+5..+30)
-- Интент high_interest (+25)
 
 ### objection_handler.py — Обработка возражений
 
@@ -351,37 +270,27 @@ from objection_handler import ObjectionHandler
 
 handler = ObjectionHandler()
 
-# Классификация возражения
-objection = handler.classify("Это слишком дорого для нас")
-# {
-#     "type": "price",
-#     "intensity": 0.8,
-#     "subtype": "budget_constraint"
-# }
-
-# Получение стратегии
-strategy = handler.get_strategy(objection, context)
-# {
-#     "approach": "value_reframe",
-#     "points": [
-#         "Подсчитайте потери от текущих проблем",
-#         "Wipon окупается за 2-3 месяца",
-#         "Есть рассрочка до 12 месяцев"
-#     ],
-#     "prompt_modifier": "Фокус на ROI и рассрочку"
-# }
-
-# Генерация ответа
-response = handler.generate_response(objection, strategy, llm)
+result = handler.handle_objection(
+    message="Это слишком дорого для нас",
+    collected_data={"company_size": 10}
+)
+# ObjectionResult(
+#     objection_type=ObjectionType.PRICE,
+#     strategy="value_reframe",
+#     should_soft_close=False,
+#     attempt_number=1,
+#     response_parts={"message": "...", "points": [...]}
+# )
 ```
 
 **Типы возражений:**
 - `price` — дорого
-- `time` — нет времени
+- `no_time` — нет времени
+- `think` — подумаю
 - `competitor` — уже есть решение
-- `authority` — не принимаю решения
-- `need` — не нужно
+- `complexity` — сложно
 - `trust` — не доверяю
+- `no_need` — не нужно
 
 ### cta_generator.py — Call-to-Action
 
@@ -390,29 +299,20 @@ from cta_generator import CTAGenerator
 
 generator = CTAGenerator()
 
-# Генерация CTA
-cta = generator.generate(
-    state="presentation",
-    collected_data=data,
-    lead_score=75
-)
-# {
-#     "primary": "Давайте запишу вас на демо?",
-#     "secondary": "Или могу отправить презентацию на почту",
-#     "urgency": "Сейчас действует скидка 20%"
-# }
+# Инкремент хода
+generator.increment_turn()
 
-# Адаптивный CTA
-cta = generator.adaptive(
-    previous_ctas=["демо", "презентация"],
-    response_to_previous="нет"
+# Добавление CTA к ответу
+response = generator.append_cta(
+    response="Wipon поможет решить эту проблему.",
+    state="presentation",
+    context={"frustration_level": 0}
 )
-# Предложит что-то другое
 ```
 
 ---
 
-## Фаза 4: Intent Disambiguation
+## Фаза 4: Intent Disambiguation & Cascade Classifier
 
 **Цель:** Уточнять намерение пользователя при неоднозначных ответах.
 
@@ -420,106 +320,203 @@ cta = generator.adaptive(
 
 | Модуль | Флаг | Описание |
 |--------|------|----------|
-| `classifier/` | `intent_disambiguation` | Уточнение при близких scores |
+| `disambiguation_ui.py` | `intent_disambiguation` | UI для уточнения интента |
+| `classifier/cascade/` | `cascade_classifier` | Каскадный классификатор |
+| `classifier/cascade/` | `semantic_objection_detection` | Семантическая детекция возражений |
 
-### Функциональность
+### Disambiguation Flow
 
-При нескольких интентах с близкими scores система может:
-1. Запросить уточнение у пользователя
-2. Использовать контекст для disambiguition
-3. Применить более сложную классификацию
+```
+Классификация → несколько интентов с близкими scores
+    │
+    ▼
+Формирование вопроса с вариантами
+    │
+    ▼
+Пользователь выбирает (цифра/текст)
+    │
+    ▼
+Продолжение с выбранным интентом
+```
+
+```python
+# В bot.py автоматически
+if intent == "disambiguation_needed":
+    # Бот задаёт уточняющий вопрос
+    # "Уточните, пожалуйста:
+    #  1. Хотите узнать цену?
+    #  2. Интересует демо?"
+```
+
+### Cascade Classifier — 3-уровневый
+
+```
+Tier 1: Regex patterns (быстро, ~100 интентов)
+    │
+    ▼  низкая уверенность
+Tier 2: Lemma matching (точнее)
+    │
+    ▼  всё ещё не уверен
+Tier 3: Semantic similarity (RoSBERTa)
+```
+
+**Флаги:**
+- `cascade_classifier` — master switch для каскада
+- `semantic_objection_detection` — semantic fallback для возражений
 
 ---
 
-## Фаза 5: Dynamic CTA Fallback
+## Фаза 5: Context Policy & Dynamic CTA
 
-**Цель:** Контекстно-зависимые подсказки в fallback_tier_2 на основе собранных данных.
+**Цель:** Context-aware решения и динамические подсказки.
 
 ### Компоненты
 
 | Модуль | Флаг | Описание |
 |--------|------|----------|
+| `context_envelope.py` | `context_full_envelope` | Полный ContextEnvelope |
+| `dialogue_policy.py` | `context_policy_overlays` | DialoguePolicy overrides |
+| `context_window.py` | — | Расширенный контекст диалога |
 | `fallback_handler.py` | `dynamic_cta_fallback` | Динамические подсказки |
-| `data_extractor.py` | — | Категоризация боли (pain_category) |
 
-### DYNAMIC_CTA_OPTIONS
+### ContextEnvelope — Единый контекст
 
-8 типов контекстных подсказок с приоритетами:
+```python
+from context_envelope import build_context_envelope
+
+envelope = build_context_envelope(
+    state_machine=sm,
+    context_window=ctx_window,
+    tone_info=tone_info,
+    guard_info={"intervention": None},
+    last_action="spin_situation",
+    last_intent="situation_provided"
+)
+
+# envelope содержит:
+# - state, spin_phase, collected_data, missing_data
+# - intent_history, action_history
+# - objection_count, positive_count
+# - has_oscillation, is_stuck
+# - confidence_trend
+# - tone, frustration_level
+```
+
+### DialoguePolicy — Action Overrides
+
+```python
+from dialogue_policy import DialoguePolicy
+
+policy = DialoguePolicy(shadow_mode=False, trace_enabled=True)
+
+# Проверка и возможный override
+override = policy.maybe_override(sm_result, context_envelope)
+
+if override and override.has_override:
+    # Применить override
+    sm_result["action"] = override.action
+    sm_result["next_state"] = override.next_state
+```
+
+**Примеры policy rules:**
+- При 3+ unclear подряд → предложить конкретные варианты
+- При oscillation (интерес ↔ возражение) → мягко уточнить
+- При высоком frustration → предложить выход
+
+### Dynamic CTA Fallback
 
 ```python
 DYNAMIC_CTA_OPTIONS = {
-    "competitor_mentioned": {      # Приоритет 10
-        "options": ["Сравнить с {competitor}", "Узнать отличия", ...],
+    "competitor_mentioned": {
+        "options": ["Сравнить с {competitor}", "Узнать отличия"],
         "priority": 10
     },
-    "pain_losing_clients": {       # Приоритет 8
-        "options": ["Как Wipon помогает удерживать клиентов", ...],
+    "pain_losing_clients": {
+        "options": ["Как Wipon помогает удерживать клиентов"],
         "priority": 8
     },
-    "pain_no_control": {           # Приоритет 8
-        "options": ["Какие отчёты есть в Wipon", ...],
+    "pain_no_control": {
+        "options": ["Какие отчёты есть в Wipon"],
         "priority": 8
     },
-    "pain_manual_work": {          # Приоритет 8
-        "options": ["Что можно автоматизировать", ...],
+    "pain_manual_work": {
+        "options": ["Что можно автоматизировать"],
         "priority": 8
-    },
-    "after_price_question": {      # Приоритет 7
-        "options": ["Узнать про рассрочку", "Что входит в тариф", ...],
-        "priority": 7
-    },
-    "after_features_question": {   # Приоритет 7
-        "options": ["Записаться на демо", "Какие интеграции есть", ...],
-        "priority": 7
-    },
-    "large_company": {             # Приоритет 5 (>20 сотрудников)
-        "options": ["Enterprise возможности", "Мультифилиальность", ...],
-        "priority": 5
-    },
-    "small_company": {             # Приоритет 5 (≤5 сотрудников)
-        "options": ["Базовый тариф", "Быстрый старт", ...],
-        "priority": 5
     }
 }
 ```
 
-### Категоризация боли (pain_category)
-
-DataExtractor автоматически определяет категорию боли по ключевым словам:
+### Context Window — История диалога
 
 ```python
-PAIN_CATEGORY_KEYWORDS = {
-    "losing_clients": ["теря", "клиент", "отток", "упуска", "продаж", ...],
-    "no_control": ["контрол", "вид", "прозрачн", "хаос", "статистик", ...],
-    "manual_work": ["excel", "рутин", "вручную", "времен", "дубл", ...]
-}
+from context_window import ContextWindow
+
+window = ContextWindow(max_size=5)
+
+# Добавить ход
+window.add_turn_from_dict(
+    user_message="нас 10 человек",
+    bot_response="Понял, команда из 10 человек.",
+    intent="situation_provided",
+    confidence=0.95,
+    action="spin_situation",
+    state="greeting",
+    next_state="spin_situation"
+)
+
+# Получить историю
+intent_history = window.get_intent_history()  # ["situation_provided"]
+action_history = window.get_action_history()  # ["spin_situation"]
+
+# Детекция паттернов
+has_oscillation = window.detect_oscillation()  # True/False
+is_stuck = window.detect_stuck_pattern()       # True/False
+confidence_trend = window.get_confidence_trend()  # "rising"/"falling"/"stable"
 ```
 
-Пример:
+---
+
+## Phase LLM: LLM Classifier
+
+**Цель:** Использовать LLM для классификации интентов вместо regex.
+
+### Компоненты
+
+| Модуль | Флаг | Описание |
+|--------|------|----------|
+| `classifier/unified.py` | `llm_classifier` | Переключатель LLM/Hybrid |
+| `classifier/llm/` | — | LLM классификатор |
+
+### UnifiedClassifier — Адаптер
+
 ```python
-extractor = DataExtractor()
-result = extractor.extract("Мы теряем клиентов")
-# result: {"pain_point": "потеря клиентов", "pain_category": "losing_clients"}
+from classifier import UnifiedClassifier
+
+classifier = UnifiedClassifier()
+
+# Автоматически использует LLM или Hybrid
+# в зависимости от flags.llm_classifier
+result = classifier.classify(message, context)
 ```
 
-### Использование
+### LLMClassifier — vLLM + Outlines
 
 ```python
-from fallback_handler import FallbackHandler
+from classifier.llm import LLMClassifier
 
-handler = FallbackHandler()
-context = {
-    "collected_data": {
-        "competitor_mentioned": True,
-        "competitor_name": "Битрикс",
-        "pain_category": "losing_clients"
-    },
-    "last_intent": "price_question"
-}
+classifier = LLMClassifier()
 
-response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
-# Вернёт подсказки про сравнение с Битрикс (приоритет 10)
+result = classifier.classify("нас 10 человек")
+# {
+#     "intent": "situation_provided",
+#     "confidence": 0.95,
+#     "extracted_data": {"company_size": 10},
+#     "method": "llm",
+#     "reasoning": "Клиент указал размер команды"
+# }
 ```
+
+**При ошибке LLM → fallback на HybridClassifier**
 
 ---
 
@@ -527,21 +524,25 @@ response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
 
 | Фаза | Компонент | Флаг | Статус |
 |------|-----------|------|--------|
-| — | LLM Classifier | `llm_classifier` | ✅ Production |
+| LLM | LLM Classifier | `llm_classifier` | ✅ Production |
 | 0 | Логирование | `structured_logging` | ✅ Production |
 | 0 | Метрики | `metrics_tracking` | ✅ Production |
 | 1 | Fallback | `multi_tier_fallback` | ✅ Production |
 | 1 | Guard | `conversation_guard` | ✅ Production |
-| 2 | Тон | `tone_analysis` | ⏸️ Testing |
 | 2 | Вариации | `response_variations` | ✅ Production |
-| 2 | Персонализация | `personalization` | ⏸️ Development |
-| 3 | CircularFlowManager | — | ✅ Production |
-| 3 | ObjectionFlowManager | — | ✅ Production |
+| 2 | Тон | `tone_analysis` | ⏸️ Testing |
+| 2 | Cascade Tone | `cascade_tone_analyzer` | ✅ Production |
+| 2 | Tone Tier 2 | `tone_semantic_tier2` | ✅ Production |
+| 2 | Tone Tier 3 | `tone_llm_tier3` | ✅ Production |
 | 3 | Скоринг | `lead_scoring` | ⏸️ Calibration |
-| 3 | Circular flow (flag) | `circular_flow` | ⏸️ Risky |
 | 3 | Возражения | `objection_handler` | ⏸️ Testing |
 | 3 | CTA | `cta_generator` | ⏸️ Development |
+| 3 | Circular flow | `circular_flow` | ⏸️ Risky |
 | 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
+| 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
+| 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
+| 5 | Context Envelope | `context_full_envelope` | ✅ Production |
+| 5 | Policy Overlays | `context_policy_overlays` | ✅ Production |
 | 5 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Testing |
 
 **Легенда:**
@@ -551,63 +552,86 @@ response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
 - ⏸️ Calibration — требует калибровки
 - ⏸️ Risky — потенциально опасно
 
+## Группы флагов
+
+```python
+GROUPS = {
+    "phase_0": ["structured_logging", "metrics_tracking"],
+    "phase_1": ["multi_tier_fallback", "conversation_guard"],
+    "phase_2": ["tone_analysis", "response_variations", "personalization"],
+    "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
+    "phase_4": ["intent_disambiguation", "cascade_classifier", "semantic_objection_detection"],
+    "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
+    "risky": ["circular_flow", "lead_scoring"],
+    "context_phase_0": ["context_full_envelope", "context_shadow_mode"],
+    "context_phase_3": ["context_policy_overlays", "context_engagement_v2"],
+    "phase_5_tone": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
+    "tone_full": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
+}
+```
+
 ## Включение фаз
 
 ### Через settings.yaml
 
 ```yaml
 feature_flags:
-  # Включить фазу 2 полностью
+  # Фаза 2
   tone_analysis: true
   response_variations: true
-  personalization: true
 
-  # Включить фазу 3 полностью
+  # Фаза 3
   lead_scoring: true
   objection_handler: true
   cta_generator: true
+
+  # Фаза 5
+  context_full_envelope: true
+  context_policy_overlays: true
 ```
 
 ### Через переменные окружения
 
 ```bash
-# Включить отдельные фичи
 FF_TONE_ANALYSIS=true \
 FF_LEAD_SCORING=true \
 python bot.py
 ```
 
-### В коде
+### В коде (runtime)
 
 ```python
-from feature_flags import is_enabled
+from feature_flags import flags
 
-# Условное использование
-if is_enabled("tone_analysis"):
-    from tone_analyzer import ToneAnalyzer
-    analyzer = ToneAnalyzer()
-    tone = analyzer.analyze(message)
+# Включить группу
+flags.enable_group("phase_3")
+
+# Включить отдельный флаг
+flags.set_override("tone_analysis", True)
+
+# Выключить флаг
+flags.set_override("circular_flow", False)
+
+# Очистить overrides
+flags.clear_all_overrides()
 ```
 
 ## Тестирование фаз
 
 ```bash
-# Тесты фазы 0
-pytest tests/test_logger.py tests/test_metrics.py tests/test_feature_flags.py -v
+# Все тесты
+pytest tests/ -v
 
-# Тесты фазы 1
-pytest tests/test_fallback_handler.py tests/test_conversation_guard.py -v
+# Тесты по фазам
+pytest tests/test_logger.py tests/test_metrics.py tests/test_feature_flags.py -v  # Phase 0
+pytest tests/test_fallback_handler.py tests/test_conversation_guard.py -v         # Phase 1
+pytest tests/test_tone_analyzer.py tests/test_response_variations.py -v           # Phase 2
+pytest tests/test_lead_scoring.py tests/test_objection_handler.py -v              # Phase 3
+pytest tests/test_phase4_integration.py -v                                         # Phase 4
 
-# Тесты фазы 2
-pytest tests/test_tone_analyzer.py tests/test_response_variations.py -v
-pytest tests/test_phase2_integration.py -v
-
-# Тесты фазы 3
-pytest tests/test_lead_scoring.py tests/test_objection_handler.py tests/test_cta_generator.py -v
-pytest tests/test_phase3_integration.py -v
-
-# Интеграционные тесты всех фаз
-pytest tests/test_phase4_integration.py -v
+# Интеграционные тесты
+pytest tests/test_spin.py -v
+pytest tests/test_simulator_integration.py -v
 ```
 
 ## Рекомендации по внедрению
@@ -616,19 +640,10 @@ pytest tests/test_phase4_integration.py -v
 
 1. **Фаза 0** — включить сразу (безопасно)
 2. **Фаза 1** — включить сразу (критично для надёжности)
-3. **Фаза 2** — включить `response_variations`, затем `tone_analysis`
-4. **Фаза 3** — включать по одной фиче после калибровки
-
-### Мониторинг при включении
-
-При включении новой фичи отслеживайте:
-
-```python
-# Метрики для мониторинга
-metrics.track("feature_enabled", feature="tone_analysis")
-metrics.track("feature_error_rate", feature="tone_analysis", rate=0.01)
-metrics.track("feature_latency", feature="tone_analysis", ms=50)
-```
+3. **Фаза 2** — включить `response_variations`, затем `cascade_tone_analyzer`
+4. **Фаза 4** — включить `cascade_classifier` (улучшает классификацию)
+5. **Фаза 5** — включить `context_full_envelope` и `context_policy_overlays`
+6. **Фаза 3** — включать по одной фиче после калибровки
 
 ### Откат
 
@@ -643,4 +658,9 @@ feature_flags:
 Или через env:
 ```bash
 FF_PROBLEMATIC_FEATURE=false python bot.py
+```
+
+Или в runtime:
+```python
+flags.set_override("problematic_feature", False)
 ```

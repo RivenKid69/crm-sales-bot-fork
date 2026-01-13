@@ -361,16 +361,21 @@ stats = classifier.get_stats()
 
 ## Конфигурация
 
-### Feature Flag
+### Feature Flags
 
 ```python
 # feature_flags.py
-"llm_classifier": True  # Использовать LLM классификатор
+"llm_classifier": True               # Использовать LLM классификатор
+"cascade_classifier": True           # Каскадный классификатор для HybridClassifier
+"semantic_objection_detection": True # Семантическая детекция возражений
 ```
 
 ```bash
 # Переключиться на HybridClassifier
 export FF_LLM_CLASSIFIER=false
+
+# Включить семантическую детекцию возражений
+export FF_SEMANTIC_OBJECTION_DETECTION=true
 ```
 
 ### Настройки (settings.yaml)
