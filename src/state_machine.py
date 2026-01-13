@@ -963,6 +963,20 @@ class StateMachine:
             self.collected_data["need_payoff_probed"] = True  # = need_payoff_phase_entered
 
         config = self.states_config.get(self.state, {})
+
+        # =====================================================================
+        # ON_ENTER: Execute action when entering a new state
+        # =====================================================================
+        # If state changed AND new state has on_enter config, use on_enter action.
+        # This allows states to show prompts/options immediately upon entry,
+        # regardless of what intent triggered the transition.
+        state_changed = prev_state != next_state
+        on_enter = config.get("on_enter")
+        if state_changed and on_enter:
+            on_enter_action = on_enter.get("action") if isinstance(on_enter, dict) else on_enter
+            if on_enter_action:
+                action = on_enter_action
+
         required = config.get("required_data", [])
         missing = [f for f in required if not self.collected_data.get(f)]
 

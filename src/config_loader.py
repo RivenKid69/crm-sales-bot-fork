@@ -143,6 +143,30 @@ class LoadedConfig:
         state = self.states.get(state_name, {})
         return state.get("is_final", False)
 
+    def get_state_on_enter(self, state_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get on_enter configuration for a state.
+
+        on_enter defines an action to execute when entering the state,
+        regardless of which intent triggered the transition.
+
+        Example YAML:
+            ask_activity:
+              on_enter:
+                action: show_activity_options
+
+        Returns:
+            Dict with 'action' key, or None if not defined
+        """
+        state = self.states.get(state_name, {})
+        on_enter = state.get("on_enter")
+        if on_enter is None:
+            return None
+        # Support both dict format and shorthand string format
+        if isinstance(on_enter, str):
+            return {"action": on_enter}
+        return on_enter
+
 
 class ConfigLoader:
     """

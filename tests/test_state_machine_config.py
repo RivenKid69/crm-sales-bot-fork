@@ -789,3 +789,306 @@ class TestAlteredSpinFlow:
         # Backward = not progression
         assert sm._is_spin_phase_progression("explore", "understand") is False
         assert sm._is_spin_phase_progression("explore", "propose") is False
+
+
+class TestOnEnterActions:
+    """
+    Tests for on_enter action mechanism.
+
+    on_enter allows states to define an action that executes when
+    entering the state, regardless of what intent triggered the transition.
+    """
+
+    @pytest.fixture
+    def on_enter_config_dir(self, tmp_path):
+        """Create config with states that have on_enter defined."""
+        (tmp_path / "states").mkdir()
+        (tmp_path / "spin").mkdir()
+        (tmp_path / "conditions").mkdir()
+
+        constants = {
+            "spin": {"phases": [], "states": {}, "progress_intents": {}},
+            "limits": {"max_consecutive_objections": 3, "max_total_objections": 5, "max_gobacks": 2},
+            "intents": {"go_back": ["go_back"], "categories": {"objection": [], "positive": ["agreement"]}},
+            "policy": {},
+            "lead_scoring": {"skip_phases": {}},
+            "guard": {"high_frustration_threshold": 7},
+            "frustration": {"thresholds": {"high": 7}},
+            "circular_flow": {"allowed_gobacks": {}},
+        }
+        with open(tmp_path / "constants.yaml", 'w') as f:
+            yaml.dump(constants, f)
+
+        # States with on_enter actions
+        states = {
+            "states": {
+                "greeting": {
+                    "goal": "Greet",
+                    "transitions": {
+                        "agreement": "ask_activity",
+                        "question_features": "ask_activity",
+                    },
+                },
+                "ask_activity": {
+                    "goal": "Узнать род деятельности",
+                    # Dict format for on_enter
+                    "on_enter": {
+                        "action": "show_activity_options"
+                    },
+                    "transitions": {
+                        "info_provided": "ask_size",
+                    },
+                },
+                "ask_size": {
+                    "goal": "Узнать размер компании",
+                    # Shorthand string format for on_enter
+                    "on_enter": "show_size_options",
+                    "transitions": {
+                        "info_provided": "done",
+                    },
+                },
+                "done": {
+                    "goal": "Завершить",
+                    "is_final": True,
+                },
+                # State without on_enter (for comparison)
+                "no_on_enter_state": {
+                    "goal": "Обычное состояние",
+                    "transitions": {},
+                },
+            }
+        }
+        with open(tmp_path / "states" / "sales_flow.yaml", 'w') as f:
+            yaml.dump(states, f)
+
+        spin = {"phase_order": [], "phases": {}}
+        with open(tmp_path / "spin" / "phases.yaml", 'w') as f:
+            yaml.dump(spin, f)
+
+        with open(tmp_path / "conditions" / "custom.yaml", 'w') as f:
+            yaml.dump({}, f)
+
+        return tmp_path
+
+    def test_on_enter_executes_on_state_transition(self, on_enter_config_dir):
+        """Test on_enter action is used when entering a new state."""
+        from src.state_machine import StateMachine
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        sm = StateMachine(config=config)
+        assert sm.state == "greeting"
+
+        # Transition to ask_activity - should use on_enter action
+        result = sm.process("agreement")
+
+        assert result["prev_state"] == "greeting"
+        assert result["next_state"] == "ask_activity"
+        # Action should be from on_enter, not from the intent
+        assert result["action"] == "show_activity_options"
+
+    def test_on_enter_shorthand_string_format(self, on_enter_config_dir):
+        """Test on_enter works with shorthand string format."""
+        from src.state_machine import StateMachine
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        sm = StateMachine(config=config)
+        sm.state = "ask_activity"
+
+        # Transition to ask_size - should use shorthand on_enter
+        result = sm.process("info_provided")
+
+        assert result["next_state"] == "ask_size"
+        assert result["action"] == "show_size_options"
+
+    def test_on_enter_not_executed_when_staying_in_same_state(self, on_enter_config_dir):
+        """Test on_enter is NOT executed when state doesn't change."""
+        from src.state_machine import StateMachine
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        sm = StateMachine(config=config)
+        sm.state = "ask_activity"
+
+        # Intent that doesn't cause transition (unclear defaults to continue_current_goal)
+        result = sm.process("unclear")
+
+        assert result["prev_state"] == "ask_activity"
+        assert result["next_state"] == "ask_activity"  # Same state
+        # Action should NOT be from on_enter since we didn't "enter" the state
+        assert result["action"] != "show_activity_options"
+
+    def test_state_without_on_enter_uses_regular_action(self, on_enter_config_dir):
+        """Test states without on_enter use regular action resolution."""
+        from src.state_machine import StateMachine
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        sm = StateMachine(config=config)
+        assert sm.state == "greeting"
+
+        # greeting has no on_enter, so should use regular rules
+        result = sm.process("greeting")
+
+        # Should use rule-based action, not on_enter
+        assert result["next_state"] == "greeting"  # No transition defined for greeting intent
+        assert result["action"] != "show_activity_options"
+
+    def test_on_enter_with_different_triggering_intents(self, on_enter_config_dir):
+        """Test on_enter action is same regardless of which intent triggered transition."""
+        from src.state_machine import StateMachine
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        # Test with first intent
+        sm1 = StateMachine(config=config)
+        result1 = sm1.process("agreement")
+        assert result1["next_state"] == "ask_activity"
+        assert result1["action"] == "show_activity_options"
+
+        # Test with different intent that also leads to ask_activity
+        sm2 = StateMachine(config=config)
+        result2 = sm2.process("question_features")
+        assert result2["next_state"] == "ask_activity"
+        # Same on_enter action regardless of triggering intent
+        assert result2["action"] == "show_activity_options"
+
+    def test_loaded_config_get_state_on_enter_dict_format(self, on_enter_config_dir):
+        """Test LoadedConfig.get_state_on_enter with dict format."""
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        on_enter = config.get_state_on_enter("ask_activity")
+
+        assert on_enter is not None
+        assert on_enter["action"] == "show_activity_options"
+
+    def test_loaded_config_get_state_on_enter_string_format(self, on_enter_config_dir):
+        """Test LoadedConfig.get_state_on_enter with string shorthand."""
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        on_enter = config.get_state_on_enter("ask_size")
+
+        assert on_enter is not None
+        # Should be converted to dict format
+        assert on_enter["action"] == "show_size_options"
+
+    def test_loaded_config_get_state_on_enter_returns_none(self, on_enter_config_dir):
+        """Test LoadedConfig.get_state_on_enter returns None when not defined."""
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(on_enter_config_dir)
+        config = loader.load()
+
+        on_enter = config.get_state_on_enter("greeting")
+        assert on_enter is None
+
+        on_enter = config.get_state_on_enter("no_on_enter_state")
+        assert on_enter is None
+
+        on_enter = config.get_state_on_enter("nonexistent_state")
+        assert on_enter is None
+
+    def test_on_enter_with_production_like_flow(self, tmp_path):
+        """Test on_enter in a realistic multi-step flow."""
+        # Create a realistic config simulating activity selection
+        (tmp_path / "states").mkdir()
+        (tmp_path / "spin").mkdir()
+        (tmp_path / "conditions").mkdir()
+
+        constants = {
+            "spin": {"phases": [], "states": {}, "progress_intents": {}},
+            "limits": {"max_consecutive_objections": 3, "max_total_objections": 5, "max_gobacks": 2},
+            "intents": {"go_back": ["go_back"], "categories": {"objection": [], "positive": ["agreement"]}},
+            "policy": {},
+            "lead_scoring": {"skip_phases": {}},
+            "guard": {"high_frustration_threshold": 7},
+            "frustration": {"thresholds": {"high": 7}},
+            "circular_flow": {"allowed_gobacks": {}},
+        }
+        with open(tmp_path / "constants.yaml", 'w') as f:
+            yaml.dump(constants, f)
+
+        states = {
+            "states": {
+                "greeting": {
+                    "goal": "Поздороваться",
+                    # Use 'any' for auto-transition or a specific intent
+                    "transitions": {"agreement": "qualification_start"},
+                },
+                "qualification_start": {
+                    "goal": "Начать квалификацию",
+                    "on_enter": {"action": "ask_business_type"},
+                    "transitions": {"info_provided": "qualification_size"},
+                    "rules": {"unclear": "repeat_question"},
+                },
+                "qualification_size": {
+                    "goal": "Узнать размер",
+                    "on_enter": "ask_company_size",
+                    "transitions": {"info_provided": "presentation"},
+                },
+                "presentation": {
+                    "goal": "Презентация",
+                    # No on_enter - will use default action
+                    "transitions": {"agreement": "success"},
+                },
+                "success": {
+                    "goal": "Успех",
+                    "is_final": True,
+                },
+            }
+        }
+        with open(tmp_path / "states" / "sales_flow.yaml", 'w') as f:
+            yaml.dump(states, f)
+
+        spin = {"phase_order": [], "phases": {}}
+        with open(tmp_path / "spin" / "phases.yaml", 'w') as f:
+            yaml.dump(spin, f)
+
+        with open(tmp_path / "conditions" / "custom.yaml", 'w') as f:
+            yaml.dump({}, f)
+
+        from src.state_machine import StateMachine
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader(tmp_path)
+        config = loader.load()
+
+        sm = StateMachine(config=config)
+
+        # Step 1: Agreement triggers transition to qualification_start
+        result = sm.process("agreement")
+        assert result["next_state"] == "qualification_start"
+        assert result["action"] == "ask_business_type"  # on_enter action
+
+        # Step 2: User provides unclear answer - should NOT trigger on_enter again
+        result = sm.process("unclear")
+        assert result["next_state"] == "qualification_start"  # Stays in same state
+        assert result["action"] == "repeat_question"  # Uses rules, not on_enter
+
+        # Step 3: User provides info - transition to next state
+        result = sm.process("info_provided")
+        assert result["next_state"] == "qualification_size"
+        assert result["action"] == "ask_company_size"  # on_enter (shorthand)
+
+        # Step 4: User provides size - transition to presentation (no on_enter)
+        result = sm.process("info_provided")
+        assert result["next_state"] == "presentation"
+        # No on_enter, so uses whatever action apply_rules determined
+        assert result["action"] != "ask_company_size"
