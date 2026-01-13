@@ -108,7 +108,7 @@ conditions:
     description: "Возражение требует эскалации"
     expression:
       and:
-        - repeated_same_objection
+        - "custom:repeated_same_objection"
         - not: objection_limit_reached
 
   # =================================================================

@@ -852,6 +852,169 @@ def should_answer_directly(ctx: EvaluatorContext) -> bool:
     )
 
 
+# =============================================================================
+# ADDITIONAL CONDITIONS FOR YAML CUSTOM EXPRESSIONS
+# =============================================================================
+
+@sm_condition(
+    "has_oscillation",
+    description="Alias for client_oscillating - dialogue is oscillating",
+    category="context"
+)
+def has_oscillation(ctx: EvaluatorContext) -> bool:
+    """Returns True if dialogue is oscillating (back-and-forth pattern)."""
+    return ctx.has_oscillation
+
+
+@sm_condition(
+    "has_breakthrough",
+    description="Alias for breakthrough_detected - breakthrough was detected",
+    category="context"
+)
+def has_breakthrough(ctx: EvaluatorContext) -> bool:
+    """Returns True if breakthrough was detected."""
+    return ctx.has_breakthrough
+
+
+@sm_condition(
+    "turns_since_breakthrough_ok",
+    description="Check if we're in optimal window after breakthrough (1-3 turns)",
+    category="context"
+)
+def turns_since_breakthrough_ok(ctx: EvaluatorContext) -> bool:
+    """Returns True if in breakthrough window (1-3 turns after)."""
+    if not ctx.has_breakthrough:
+        return False
+    if ctx.turns_since_breakthrough is None:
+        return False
+    return 1 <= ctx.turns_since_breakthrough <= 3
+
+
+@sm_condition(
+    "in_protected_state",
+    description="Check if in a protected state (greeting, success)",
+    category="state"
+)
+def in_protected_state(ctx: EvaluatorContext) -> bool:
+    """Returns True if in a protected state where aggressive tactics are not allowed."""
+    protected_states = {"greeting", "success", "soft_close", "failed"}
+    return ctx.state in protected_states
+
+
+@sm_condition(
+    "has_financial_impact",
+    description="Check if financial impact data is available",
+    requires_fields={"financial_impact", "revenue", "savings"},
+    category="data"
+)
+def has_financial_impact(ctx: EvaluatorContext) -> bool:
+    """Returns True if financial impact data is available for ROI calculation."""
+    return bool(
+        ctx.collected_data.get("financial_impact") or
+        ctx.collected_data.get("revenue") or
+        ctx.collected_data.get("savings") or
+        ctx.collected_data.get("budget")
+    )
+
+
+@sm_condition(
+    "unclear_count_high",
+    description="Check if there have been many unclear responses (3+)",
+    category="context"
+)
+def unclear_count_high(ctx: EvaluatorContext) -> bool:
+    """Returns True if unclear intent count is 3 or higher."""
+    return ctx.unclear_count >= 3
+
+
+@sm_condition(
+    "frustration_warning",
+    description="Check if frustration is at warning level (>= 2)",
+    category="context"
+)
+def frustration_warning(ctx: EvaluatorContext) -> bool:
+    """Returns True if frustration level is at warning threshold (2+)."""
+    return ctx.frustration_level >= 2
+
+
+@sm_condition(
+    "has_objection",
+    description="Check if current intent is an objection type",
+    category="intent"
+)
+def has_objection(ctx: EvaluatorContext) -> bool:
+    """Returns True if current intent is an objection."""
+    from src.conditions.state_machine.context import INTENT_CATEGORIES
+    return ctx.current_intent in INTENT_CATEGORIES.get("objection", [])
+
+
+@sm_condition(
+    "objection_repeated",
+    description="Check if same objection type is repeated (2+ times)",
+    category="intent"
+)
+def objection_repeated(ctx: EvaluatorContext) -> bool:
+    """Returns True if same objection has been repeated 2+ times."""
+    if not ctx.current_intent:
+        return False
+    # Check if current objection intent has a streak of 2+
+    return ctx.get_intent_streak(ctx.current_intent) >= 2
+
+
+@sm_condition(
+    "has_multiple_questions",
+    description="Check if client has asked multiple questions (3+ in conversation)",
+    category="intent"
+)
+def has_multiple_questions(ctx: EvaluatorContext) -> bool:
+    """Returns True if 3+ question intents in conversation."""
+    return ctx.get_category_total("question") >= 3
+
+
+@sm_condition(
+    "engagement_declining",
+    description="Check if engagement is declining over time",
+    category="context"
+)
+def engagement_declining(ctx: EvaluatorContext) -> bool:
+    """Returns True if engagement trend is declining."""
+    # Check momentum as proxy for engagement trend
+    return ctx.momentum_direction == "negative" or ctx.momentum < -0.2
+
+
+@sm_condition(
+    "lead_temperature_hot",
+    description="Check if lead temperature is HOT",
+    category="lead"
+)
+def lead_temperature_hot(ctx: EvaluatorContext) -> bool:
+    """Returns True if lead_temperature is 'hot' or 'HOT'."""
+    temp = ctx.collected_data.get("lead_temperature", "").lower()
+    return temp == "hot"
+
+
+@sm_condition(
+    "lead_temperature_very_hot",
+    description="Check if lead temperature is VERY_HOT",
+    category="lead"
+)
+def lead_temperature_very_hot(ctx: EvaluatorContext) -> bool:
+    """Returns True if lead_temperature is 'very_hot' or 'VERY_HOT'."""
+    temp = ctx.collected_data.get("lead_temperature", "").lower()
+    return temp in ("very_hot", "very hot")
+
+
+@sm_condition(
+    "lead_temperature_cold",
+    description="Check if lead temperature is COLD",
+    category="lead"
+)
+def lead_temperature_cold(ctx: EvaluatorContext) -> bool:
+    """Returns True if lead_temperature is 'cold' or 'COLD'."""
+    temp = ctx.collected_data.get("lead_temperature", "").lower()
+    return temp == "cold"
+
+
 # Export all condition functions for testing
 __all__ = [
     # Data conditions
@@ -924,4 +1087,19 @@ __all__ = [
     "should_be_careful",
     "can_accelerate",
     "should_answer_directly",
+    # Additional conditions for YAML custom expressions
+    "has_oscillation",
+    "has_breakthrough",
+    "turns_since_breakthrough_ok",
+    "in_protected_state",
+    "has_financial_impact",
+    "unclear_count_high",
+    "frustration_warning",
+    "has_objection",
+    "objection_repeated",
+    "has_multiple_questions",
+    "engagement_declining",
+    "lead_temperature_hot",
+    "lead_temperature_very_hot",
+    "lead_temperature_cold",
 ]
