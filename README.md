@@ -14,8 +14,8 @@ cd src && python bot.py
 
 **Требования:**
 - Python 3.11+
-- Ollama с моделью `qwen3:8b-fast`
-- (опционально) sentence-transformers для семантического поиска
+- vLLM сервер с моделью Qwen/Qwen3-8B-AWQ (~5-6 GB VRAM)
+- sentence-transformers для семантического поиска
 
 ## Возможности
 
@@ -53,7 +53,7 @@ cd src && python bot.py
          │
          ▼
 ┌─────────────────┐
-│   LLM (Ollama)  │  ← Qwen3:8b-fast генерирует финальный ответ
+│   LLM (vLLM)    │  ← Qwen3-8B-AWQ генерирует финальный ответ
 └────────┬────────┘
          │
          ▼
@@ -68,7 +68,7 @@ src/
 ├── settings.yaml           # Конфигурация (LLM, retriever, classifier, feature_flags)
 ├── settings.py             # Загрузчик настроек с DotDict
 ├── config.py               # Интенты, состояния, SPIN-промпты
-├── llm.py                  # Интеграция с Ollama
+├── llm.py                  # VLLMClient — интеграция с vLLM
 ├── state_machine.py        # Управление состояниями диалога (SPIN flow)
 ├── generator.py            # Генерация ответов через LLM
 │
@@ -92,9 +92,14 @@ src/
 │
 ├── classifier/             # Пакет классификации интентов
 │   ├── __init__.py         # Публичный API пакета
+│   ├── unified.py          # UnifiedClassifier — адаптер LLM/Hybrid
 │   ├── normalizer.py       # Нормализация текста (опечатки, сленг)
-│   ├── hybrid.py           # HybridClassifier — главный класс
-│   ├── intents/            # Подпакет классификации интентов
+│   ├── hybrid.py           # HybridClassifier — regex fallback
+│   ├── llm/                # LLM классификатор (основной)
+│   │   ├── classifier.py   # LLMClassifier (vLLM + Outlines)
+│   │   ├── prompts.py      # System prompt + few-shot
+│   │   └── schemas.py      # Pydantic схемы для structured output
+│   ├── intents/            # Подпакет классификации интентов (для fallback)
 │   │   ├── patterns.py     # Приоритетные паттерны (212 шт)
 │   │   ├── root_classifier.py   # Быстрая классификация по корням
 │   │   └── lemma_classifier.py  # Fallback через pymorphy
@@ -162,10 +167,10 @@ scripts/                    # Вспомогательные скрипты
 Все параметры вынесены в `src/settings.yaml`:
 
 ```yaml
-# LLM (Language Model)
+# LLM (Language Model) - vLLM Server
 llm:
-  model: "qwen3:8b-fast"
-  base_url: "http://localhost:11434"
+  model: "Qwen/Qwen3-8B-AWQ"
+  base_url: "http://localhost:8000/v1"
   timeout: 60
 
 # Retriever (Поиск по базе знаний)
@@ -190,14 +195,15 @@ category_router:
 
 # Feature Flags (Управление фичами)
 feature_flags:
+  llm_classifier: true        # LLM классификатор (основной)
   structured_logging: true    # JSON логи
   metrics_tracking: true      # Трекинг метрик
   multi_tier_fallback: true   # 4-уровневый fallback
   conversation_guard: true    # Защита от зацикливания
-  tone_analysis: false        # Анализ тона (выключен)
+  cascade_tone_analyzer: true # Каскадный анализатор тона
   response_variations: true   # Вариативность ответов
-  lead_scoring: false         # Скоринг лидов (выключен)
-  objection_handler: false    # Обработка возражений (выключен)
+  context_full_envelope: true # Полный ContextEnvelope
+  context_policy_overlays: true # DialoguePolicy overrides
 ```
 
 Подробнее: [docs/SETTINGS.md](docs/SETTINGS.md)
@@ -346,15 +352,20 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 
 ## Classifier (classifier/)
 
-Пакет классификации разбит на модули для удобства поддержки:
+Пакет классификации с LLM-классификатором и regex fallback:
 
 ```
 classifier/
-├── __init__.py          # API: HybridClassifier, TextNormalizer, DataExtractor
+├── __init__.py          # API: UnifiedClassifier, HybridClassifier, TextNormalizer
+├── unified.py           # UnifiedClassifier — адаптер LLM/Hybrid
 ├── normalizer.py        # TYPO_FIXES (692 шт), SPLIT_PATTERNS (176 шт)
-├── hybrid.py            # HybridClassifier — оркестратор
+├── hybrid.py            # HybridClassifier — regex fallback
+├── llm/                 # LLM классификатор (основной)
+│   ├── classifier.py    # LLMClassifier (vLLM + Outlines)
+│   ├── prompts.py       # System prompt + few-shot примеры
+│   └── schemas.py       # Pydantic схемы (ClassificationResult, ExtractedData)
 ├── intents/
-│   ├── patterns.py      # PRIORITY_PATTERNS (212 шт) для "не интересно" и т.д.
+│   ├── patterns.py      # PRIORITY_PATTERNS (212 шт) для fallback
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy2/3
 └── extractors/
@@ -363,14 +374,13 @@ classifier/
 
 ### Публичный API:
 ```python
-from classifier import HybridClassifier, TextNormalizer, DataExtractor
-from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
+from classifier import UnifiedClassifier, HybridClassifier, TextNormalizer, DataExtractor
+from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 ```
 
-### Гибридная классификация:
-1. **Приоритетные паттерны** — "не интересно" → rejection (не agreement)
-2. **Быстрый поиск по корням слов** — основной метод
-3. **Fallback на pymorphy3** (или pymorphy2) — если корни не сработали
+### Dual-mode классификация:
+- **LLM режим** (по умолчанию) — 33 интента через vLLM + Outlines, structured output
+- **Hybrid режим** (fallback) — regex + pymorphy при ошибке LLM или `llm_classifier=false`
 
 ### Контекстная классификация:
 Классификатор учитывает текущую SPIN-фазу:
@@ -409,17 +419,20 @@ from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
 
 | Фаза | Компонент | Флаг | Статус |
 |------|-----------|------|--------|
-| 0 | Логирование | `structured_logging` | ✅ Включено |
-| 0 | Метрики | `metrics_tracking` | ✅ Включено |
-| 1 | Fallback | `multi_tier_fallback` | ✅ Включено |
-| 1 | Guard | `conversation_guard` | ✅ Включено |
-| 2 | Тон | `tone_analysis` | ⏸️ Выключено |
-| 2 | Вариации | `response_variations` | ✅ Включено |
-| 3 | Скоринг | `lead_scoring` | ⏸️ Выключено |
-| 3 | Возражения | `objection_handler` | ⏸️ Выключено |
-| 3 | CTA | `cta_generator` | ⏸️ Выключено |
-| 4 | Disambig | `intent_disambiguation` | ⏸️ Выключено |
-| 5 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Выключено |
+| LLM | LLM Classifier | `llm_classifier` | ✅ Production |
+| 0 | Логирование | `structured_logging` | ✅ Production |
+| 0 | Метрики | `metrics_tracking` | ✅ Production |
+| 1 | Fallback | `multi_tier_fallback` | ✅ Production |
+| 1 | Guard | `conversation_guard` | ✅ Production |
+| 2 | Cascade Tone | `cascade_tone_analyzer` | ✅ Production |
+| 2 | Вариации | `response_variations` | ✅ Production |
+| 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
+| 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
+| 5 | Context Envelope | `context_full_envelope` | ✅ Production |
+| 5 | Policy Overlays | `context_policy_overlays` | ✅ Production |
+| 3 | Скоринг | `lead_scoring` | ⏸️ Testing |
+| 3 | Возражения | `objection_handler` | ⏸️ Testing |
+| 3 | CTA | `cta_generator` | ⏸️ Development |
 
 Подробнее: [docs/PHASES.md](docs/PHASES.md)
 
@@ -429,8 +442,8 @@ from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
 
 ```
 ┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐
-│   faster-whisper  │ ──► │   LLM (Ollama)    │ ──► │   F5-TTS Russian  │
-│   (STT)           │     │   Qwen3:8b-fast   │     │   + RUAccent      │
+│   faster-whisper  │ ──► │   LLM (vLLM)      │ ──► │   F5-TTS Russian  │
+│   (STT)           │     │   Qwen3-8B-AWQ    │     │   + RUAccent      │
 └───────────────────┘     └───────────────────┘     └───────────────────┘
       Голос клиента              Текст                   Голос бота
 ```
@@ -485,10 +498,12 @@ python scripts/stress_test_knowledge.py
 
 | Пакет | Назначение |
 |-------|------------|
-| `ollama` + `qwen3:8b-fast` | Локальная LLM |
+| `vllm` | vLLM сервер для LLM (Qwen3-8B-AWQ) |
+| `outlines` | Structured output (guided decoding) |
+| `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка (fallback на pymorphy2) |
 | `sentence-transformers` | Эмбеддинги (ai-forever/ru-en-RoSBERTa) |
-| `requests` | HTTP-клиент для Ollama API |
+| `openai` | HTTP-клиент для vLLM API (OpenAI-compatible) |
 | `pyyaml` | Парсинг YAML конфигурации и базы знаний |
 | `pytest` | Тестирование |
 
@@ -519,15 +534,16 @@ pip install -r requirements.txt
 ## Метрики проекта
 
 ```
-Модулей Python:           20+ в src/
-Тестов:                   1379 в 39 файлах
-Секций в базе знаний:     1969 в 17 YAML файлах
-Интентов:                 58 в INTENT_ROOTS
+Модулей Python:           40+ в src/
+Тестов:                   1500+ в 50+ файлах
+Секций в базе знаний:     1969 в 18 YAML файлах
+Интентов LLM:             33 в classifier/llm/
+Интентов Hybrid:          58 в INTENT_ROOTS
 Паттернов опечаток:       692 в TYPO_FIXES
 Паттернов разделения:     176 в SPLIT_PATTERNS
 Приоритетных паттернов:   212 в PRIORITY_PATTERNS
 Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17
-Feature Flags:            12 флагов
+Feature Flags:            25+ флагов
 ```
