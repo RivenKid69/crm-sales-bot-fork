@@ -1,0 +1,168 @@
+# =============================================================================
+# CUSTOM CONDITIONS CONFIGURATION
+# =============================================================================
+# Версия: 1.0
+# Кастомные комбинированные условия (AND/OR/NOT)
+#
+# Формат:
+# - Простое условие: "condition_name"
+# - AND: {"and": [...]}
+# - OR: {"or": [...]}
+# - NOT: {"not": "condition_name"}
+# - Ссылка на кастомное: "custom:name"
+# =============================================================================
+
+conditions:
+  # =================================================================
+  # ПРИМЕРЫ ГОТОВЫХ КОМБИНАЦИЙ
+  # =================================================================
+
+  # Клиент готов к демо
+  ready_for_demo:
+    description: "Клиент готов к демо"
+    expression:
+      and:
+        - has_contact_info
+        - or:
+            - has_pain_point
+            - has_high_interest
+        - not: client_frustrated
+
+  # Можно ускорить flow
+  can_accelerate_flow:
+    description: "Можно ускорить прохождение SPIN"
+    expression:
+      and:
+        - momentum_positive
+        - engagement_high
+        - not: many_objections
+
+  # Клиент застрял и раздражён
+  stuck_and_frustrated:
+    description: "Клиент застрял и проявляет раздражение"
+    expression:
+      and:
+        - client_stuck
+        - or:
+            - client_frustrated
+            - has_oscillation
+
+  # Нужен мягкий CTA
+  soft_cta_appropriate:
+    description: "Подходящий момент для мягкого CTA"
+    expression:
+      and:
+        - has_breakthrough
+        - turns_since_breakthrough_ok
+        - not: client_frustrated
+        - not: in_protected_state
+
+  # Можно предложить ROI расчёт
+  roi_opportunity:
+    description: "Есть данные для ROI расчёта"
+    expression:
+      and:
+        - has_pain_point
+        - or:
+            - has_company_size
+            - has_financial_impact
+        - not: client_frustrated
+
+  # =================================================================
+  # REPAIR CONDITIONS
+  # =================================================================
+
+  # Нужен repair mode
+  needs_repair:
+    description: "Диалог требует repair (уточнения)"
+    expression:
+      or:
+        - client_stuck
+        - has_oscillation
+        - has_repeated_question
+
+  # Severe repair (критическое состояние)
+  needs_severe_repair:
+    description: "Диалог требует серьёзного вмешательства"
+    expression:
+      and:
+        - needs_repair
+        - or:
+            - unclear_count_high
+            - frustration_warning
+
+  # =================================================================
+  # OBJECTION CONDITIONS
+  # =================================================================
+
+  # Повторное возражение того же типа
+  repeated_same_objection:
+    description: "Клиент повторяет то же возражение"
+    expression:
+      and:
+        - has_objection
+        - objection_repeated
+
+  # Нужна эскалация возражения
+  objection_needs_escalation:
+    description: "Возражение требует эскалации"
+    expression:
+      and:
+        - repeated_same_objection
+        - not: objection_limit_reached
+
+  # =================================================================
+  # ENGAGEMENT CONDITIONS
+  # =================================================================
+
+  # Высокий engagement
+  high_engagement:
+    description: "Клиент проявляет высокий интерес"
+    expression:
+      and:
+        - engagement_high
+        - not: client_frustrated
+        - or:
+            - momentum_positive
+            - has_multiple_questions
+
+  # Низкий engagement
+  low_engagement:
+    description: "Клиент теряет интерес"
+    expression:
+      or:
+        - engagement_low
+        - and:
+            - engagement_declining
+            - momentum_negative
+
+  # =================================================================
+  # LEAD TEMPERATURE CONDITIONS
+  # =================================================================
+
+  # Горячий лид
+  lead_is_hot:
+    description: "Лид горячий (HOT или VERY_HOT)"
+    expression:
+      or:
+        - lead_temperature_hot
+        - lead_temperature_very_hot
+
+  # Холодный лид
+  lead_is_cold:
+    description: "Лид холодный"
+    expression:
+      and:
+        - lead_temperature_cold
+        - not: has_high_interest
+
+# =================================================================
+# CONDITION ALIASES
+# =================================================================
+# Удобные алиасы для часто используемых условий
+aliases:
+  frustrated: client_frustrated
+  stuck: client_stuck
+  hot_lead: "custom:lead_is_hot"
+  cold_lead: "custom:lead_is_cold"
+  ready: "custom:ready_for_demo"

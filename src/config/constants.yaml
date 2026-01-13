@@ -1,0 +1,282 @@
+# =============================================================================
+# ЕДИНАЯ ТОЧКА ИСТИНЫ ДЛЯ ВСЕХ КОНСТАНТ STATE MACHINE
+# =============================================================================
+# Версия: 1.0
+# Этот файл является источником истины для всех констант,
+# связанных с state machine и диалоговой логикой.
+# =============================================================================
+
+# =============================================================================
+# SPIN SELLING CONFIGURATION
+# =============================================================================
+spin:
+  # Порядок SPIN фаз (можно изменить!)
+  phases:
+    - situation
+    - problem
+    - implication
+    - need_payoff
+
+  # Маппинг фаза -> состояние
+  states:
+    situation: spin_situation
+    problem: spin_problem
+    implication: spin_implication
+    need_payoff: spin_need_payoff
+
+  # Интенты которые указывают на прогресс в соответствующей фазе
+  progress_intents:
+    situation_provided: situation
+    problem_revealed: problem
+    implication_acknowledged: implication
+    need_expressed: need_payoff
+
+# =============================================================================
+# LIMITS
+# =============================================================================
+limits:
+  # Максимум возражений подряд до soft_close
+  max_consecutive_objections: 3
+  # Максимум возражений за весь диалог
+  max_total_objections: 5
+  # Максимум возвратов назад по SPIN
+  max_gobacks: 2
+
+# =============================================================================
+# INTENT CATEGORIES
+# =============================================================================
+intents:
+  # Интенты для возврата назад по flow
+  go_back:
+    - go_back
+    - correct_info
+
+  # Категории интентов (source of truth)
+  categories:
+    objection:
+      - objection_price
+      - objection_competitor
+      - objection_no_time
+      - objection_think
+
+    positive:
+      - agreement
+      - demo_request
+      - callback_request
+      - contact_provided
+      - consultation_request
+      - situation_provided
+      - problem_revealed
+      - implication_acknowledged
+      - need_expressed
+      - info_provided
+      - question_features
+      - question_integrations
+      - comparison
+      - greeting
+      - gratitude
+
+    question:
+      - price_question
+      - pricing_details
+      - question_features
+      - question_integrations
+      - question_technical
+      - comparison
+
+    spin_progress:
+      - situation_provided
+      - problem_revealed
+      - implication_acknowledged
+      - need_expressed
+
+    negative:
+      - rejection
+      - farewell
+      - objection_price
+      - objection_competitor
+      - objection_no_time
+      - objection_think
+
+# =============================================================================
+# DIALOGUE POLICY SETTINGS
+# =============================================================================
+policy:
+  # Состояния где разрешены оверлеи DialoguePolicy
+  overlay_allowed_states:
+    - spin_situation
+    - spin_problem
+    - spin_implication
+    - spin_need_payoff
+    - presentation
+    - handle_objection
+
+  # Защищённые состояния (без оверлеев)
+  protected_states:
+    - greeting
+    - close
+    - success
+    - soft_close
+
+  # Агрессивные действия (требуют осторожности)
+  aggressive_actions:
+    - transition_to_presentation
+    - transition_to_close
+    - ask_for_demo
+    - ask_for_contact
+
+  # Mapping для repair mode
+  repair_actions:
+    stuck: clarify_one_question
+    oscillation: summarize_and_clarify
+    repeated_question: answer_with_summary
+
+  # Mapping для возражений
+  objection_actions:
+    reframe: reframe_value
+    escalate: handle_repeated_objection
+    empathize: empathize_and_redirect
+
+# =============================================================================
+# LEAD SCORER SETTINGS
+# =============================================================================
+lead_scoring:
+  # Веса положительных сигналов
+  positive_weights:
+    demo_request: 30
+    price_with_size: 25
+    callback_request: 25
+    consultation_request: 20
+    contact_provided: 35
+    explicit_problem: 15
+    competitor_comparison: 12
+    budget_mentioned: 10
+    timeline_mentioned: 10
+    multiple_questions: 8
+    features_question: 5
+    integrations_question: 5
+    general_interest: 3
+    price_question: 5
+
+  # Веса негативных сигналов
+  negative_weights:
+    objection_price: -15
+    objection_competitor: -10
+    objection_no_time: -20
+    objection_think: -10
+    objection_no_need: -25
+    unclear_repeated: -5
+    rejection_soft: -25
+    frustration: -15
+
+  # Пороги температуры [min, max]
+  thresholds:
+    cold: [0, 29]
+    warm: [30, 49]
+    hot: [50, 69]
+    very_hot: [70, 100]
+
+  # ⚠️ КРИТИЧНО: Какие SPIN фазы пропускать по температуре
+  # Это напрямую влияет на flow диалога!
+  skip_phases:
+    cold: []  # Полный SPIN
+    warm:     # Пропустить I, N
+      - spin_implication
+      - spin_need_payoff
+    hot:      # Только S
+      - spin_problem
+      - spin_implication
+      - spin_need_payoff
+    very_hot: # Сразу close
+      - spin_situation
+      - spin_problem
+      - spin_implication
+      - spin_need_payoff
+
+  # Рекомендуемые пути по температуре
+  paths:
+    cold: full_spin           # S → P → I → N → presentation
+    warm: short_spin          # S → P → presentation (skip I, N)
+    hot: direct_present       # S → presentation
+    very_hot: direct_close    # presentation → close
+
+# =============================================================================
+# CONVERSATION GUARD SETTINGS
+# =============================================================================
+guard:
+  # Основные лимиты
+  max_turns: 25                         # Средний sales диалог: 8-15 turns
+  max_phase_attempts: 3                 # LivePerson recommendation
+  max_same_state: 4                     # Loop detection
+  max_same_message: 2                   # Exact repeat detection
+  timeout_seconds: 1800                 # 30 минут
+
+  # Пороги прогресса
+  progress_check_interval: 5            # Каждые 5 turns проверяем прогресс
+  min_unique_states_for_progress: 2     # Минимум уникальных состояний за интервал
+
+  # ⚠️ КРИТИЧНО: Должен быть равен frustration.thresholds.high
+  high_frustration_threshold: 7
+
+  # Предустановленные профили
+  profiles:
+    strict:
+      max_turns: 15
+      max_phase_attempts: 2
+      max_same_state: 3
+      timeout_seconds: 900              # 15 минут
+    relaxed:
+      max_turns: 40
+      max_phase_attempts: 5
+      max_same_state: 6
+      timeout_seconds: 3600             # 1 час
+
+# =============================================================================
+# FRUSTRATION TRACKER SETTINGS
+# =============================================================================
+frustration:
+  # Максимальный уровень frustration (0-10 шкала)
+  max_level: 10
+
+  # Веса для накопления frustration (по тону сообщения)
+  weights:
+    frustrated: 3      # Сильно увеличивает
+    skeptical: 1       # Немного увеличивает
+    rushed: 1          # Немного увеличивает
+    confused: 1        # Долгое непонимание = frustration
+
+  # Веса для снижения frustration (decay)
+  decay:
+    neutral: 1         # Немного снижает
+    positive: 2        # Хорошо снижает
+    interested: 2      # Хорошо снижает
+
+  # ⚠️ Пороги frustration
+  # ВАЖНО: thresholds.high ДОЛЖЕН быть равен guard.high_frustration_threshold!
+  thresholds:
+    warning: 4         # Начать сокращать ответы
+    high: 7            # Предложить помощь/выход (= guard.high_frustration_threshold)
+    critical: 9        # Мягкое завершение
+
+# =============================================================================
+# CIRCULAR FLOW (Go Back) SETTINGS
+# =============================================================================
+circular_flow:
+  # Разрешённые переходы назад
+  allowed_gobacks:
+    spin_problem: spin_situation
+    spin_implication: spin_problem
+    spin_need_payoff: spin_implication
+    presentation: spin_need_payoff
+    close: presentation
+    handle_objection: presentation
+    soft_close: greeting  # Новая попытка
+
+# =============================================================================
+# СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
+# =============================================================================
+# guard.high_frustration_threshold ДОЛЖЕН быть равен frustration.thresholds.high
+# Это обеспечивает единообразное поведение:
+# - FrustrationTracker определяет уровень
+# - ConversationGuard реагирует на тот же порог
+# - DialoguePolicy использует те же пороги в условиях

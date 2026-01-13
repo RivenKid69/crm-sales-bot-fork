@@ -7,14 +7,19 @@ State Machine — управление состояниями диалога
 - Финальные состояния: success, soft_close
 - Circular Flow: возврат назад по фазам (с защитой от злоупотреблений)
 - Conditional Rules: условные правила через RuleResolver (Phase 4)
+- YAML Configuration: параметризация через ConfigLoader (Phase 1 Parameterization)
 
 Phase 4 Integration (ARCHITECTURE_UNIFIED_PLAN.md):
 - IntentTracker: единый источник истории интентов
 - RuleResolver: разрешение conditional rules
 - EvaluatorContext: типизированный контекст для условий
+
+Phase 1 Parameterization:
+- ConfigLoader: загрузка конфигурации из YAML
+- AND/OR/NOT условия в rules через ConditionExpressionParser
 """
 
-from typing import Tuple, Dict, Optional, List, Any, Iterator
+from typing import Tuple, Dict, Optional, List, Any, Iterator, TYPE_CHECKING
 from dataclasses import dataclass
 
 from config import SALES_STATES, QUESTION_INTENTS
@@ -27,6 +32,9 @@ from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_registry
 from src.rules.resolver import RuleResolver
 from src.conditions.trace import EvaluationTrace, TraceCollector, Resolution
+
+if TYPE_CHECKING:
+    from src.config_loader import LoadedConfig
 
 
 # SPIN-фазы и их порядок
@@ -126,13 +134,15 @@ class CircularFlowManager:
     Attributes:
         goback_count: Количество совершённых возвратов
         goback_history: История возвратов (from_state, to_state)
-        MAX_GOBACKS: Максимально допустимое количество возвратов
+        max_gobacks: Максимально допустимое количество возвратов
+        allowed_gobacks: Разрешённые переходы назад
     """
 
+    # Default values (used when no config provided)
     MAX_GOBACKS = 2  # Максимум возвратов за диалог
 
-    # Разрешённые переходы назад
-    ALLOWED_GOBACKS: Dict[str, str] = {
+    # Default разрешённые переходы назад
+    DEFAULT_ALLOWED_GOBACKS: Dict[str, str] = {
         "spin_problem": "spin_situation",
         "spin_implication": "spin_problem",
         "spin_need_payoff": "spin_implication",
@@ -143,8 +153,23 @@ class CircularFlowManager:
         "soft_close": "greeting",
     }
 
-    def __init__(self):
-        """Инициализация менеджера"""
+    # Backward compatibility alias
+    ALLOWED_GOBACKS = DEFAULT_ALLOWED_GOBACKS
+
+    def __init__(
+        self,
+        allowed_gobacks: Dict[str, str] = None,
+        max_gobacks: int = None
+    ):
+        """
+        Инициализация менеджера.
+
+        Args:
+            allowed_gobacks: Разрешённые переходы (из YAML конфига)
+            max_gobacks: Максимум возвратов (из YAML конфига)
+        """
+        self.allowed_gobacks = allowed_gobacks or self.DEFAULT_ALLOWED_GOBACKS
+        self.max_gobacks = max_gobacks if max_gobacks is not None else self.MAX_GOBACKS
         self.reset()
 
     def reset(self) -> None:
@@ -162,7 +187,7 @@ class CircularFlowManager:
         Returns:
             True если возврат возможен
         """
-        if self.goback_count >= self.MAX_GOBACKS:
+        if self.goback_count >= self.max_gobacks:
             logger.info(
                 "Go back limit reached",
                 current=current_state,
@@ -170,7 +195,7 @@ class CircularFlowManager:
             )
             return False
 
-        return current_state in self.ALLOWED_GOBACKS
+        return current_state in self.allowed_gobacks
 
     def go_back(self, current_state: str) -> Optional[str]:
         """
@@ -185,7 +210,7 @@ class CircularFlowManager:
         if not self.can_go_back(current_state):
             return None
 
-        prev_state = self.ALLOWED_GOBACKS.get(current_state)
+        prev_state = self.allowed_gobacks.get(current_state)
         if prev_state:
             self.goback_count += 1
             self.goback_history.append((current_state, prev_state))
@@ -193,14 +218,14 @@ class CircularFlowManager:
                 "Go back executed",
                 from_state=current_state,
                 to_state=prev_state,
-                remaining=self.MAX_GOBACKS - self.goback_count
+                remaining=self.max_gobacks - self.goback_count
             )
 
         return prev_state
 
     def get_remaining_gobacks(self) -> int:
         """Получить оставшееся количество возвратов"""
-        return max(0, self.MAX_GOBACKS - self.goback_count)
+        return max(0, self.max_gobacks - self.goback_count)
 
     def get_history(self) -> List[tuple]:
         """Получить историю возвратов"""
@@ -223,25 +248,61 @@ class StateMachine:
     - Uses IntentTracker for unified intent history
     - Supports conditional rules via RuleResolver
     - Provides EvaluatorContext for condition evaluation
+
+    Phase 1 Parameterization:
+    - Optionally accepts LoadedConfig from ConfigLoader
+    - Uses YAML configuration for states, limits, etc.
+    - Falls back to Python constants for backward compatibility
     """
 
-    def __init__(self, enable_tracing: bool = False):
+    def __init__(
+        self,
+        enable_tracing: bool = False,
+        config: "LoadedConfig" = None
+    ):
         """
         Initialize StateMachine.
 
         Args:
             enable_tracing: If True, collect EvaluationTrace for debugging
+            config: Optional LoadedConfig from ConfigLoader for YAML configuration
         """
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None  # Текущая SPIN-фаза (если в SPIN flow)
-        self.circular_flow = CircularFlowManager()  # Менеджер возвратов
+
+        # Store config for parameterization
+        self._config = config
+
+        # Initialize circular flow with config if available
+        if config:
+            allowed_gobacks = config.circular_flow.get("allowed_gobacks", {})
+            max_gobacks = config.limits.get("max_gobacks", CircularFlowManager.MAX_GOBACKS)
+            self.circular_flow = CircularFlowManager(
+                allowed_gobacks=allowed_gobacks,
+                max_gobacks=max_gobacks
+            )
+        else:
+            self.circular_flow = CircularFlowManager()
 
         # Phase 4: IntentTracker replaces ObjectionFlowManager
         self.intent_tracker = IntentTracker()
 
-        # Phase 4: RuleResolver for conditional rules
-        self._resolver = RuleResolver(sm_registry)
+        # Phase 4/Phase 1: RuleResolver with optional expression parser
+        if config and config.custom_conditions:
+            from src.conditions.expression_parser import ConditionExpressionParser
+            expression_parser = ConditionExpressionParser(
+                sm_registry,
+                config.custom_conditions
+            )
+            self._resolver = RuleResolver(
+                sm_registry,
+                default_action=config.default_action,
+                expression_parser=expression_parser
+            )
+        else:
+            self._resolver = RuleResolver(sm_registry)
+
         self._enable_tracing = enable_tracing
         self._trace_collector = TraceCollector() if enable_tracing else None
         self._last_trace: Optional[EvaluationTrace] = None
@@ -257,6 +318,51 @@ class StateMachine:
 
         # State before objection (for returning after handling)
         self._state_before_objection: Optional[str] = None
+
+    # =========================================================================
+    # Configuration Properties (with fallback to Python constants)
+    # =========================================================================
+
+    @property
+    def max_consecutive_objections(self) -> int:
+        """Get max consecutive objections limit."""
+        if self._config:
+            return self._config.limits.get(
+                "max_consecutive_objections",
+                MAX_CONSECUTIVE_OBJECTIONS
+            )
+        return MAX_CONSECUTIVE_OBJECTIONS
+
+    @property
+    def max_total_objections(self) -> int:
+        """Get max total objections limit."""
+        if self._config:
+            return self._config.limits.get(
+                "max_total_objections",
+                MAX_TOTAL_OBJECTIONS
+            )
+        return MAX_TOTAL_OBJECTIONS
+
+    @property
+    def spin_phases(self) -> List[str]:
+        """Get SPIN phases order."""
+        if self._config:
+            return self._config.spin_phases or SPIN_PHASES
+        return SPIN_PHASES
+
+    @property
+    def spin_states(self) -> Dict[str, str]:
+        """Get SPIN phase to state mapping."""
+        if self._config:
+            return self._config.constants.get("spin", {}).get("states", SPIN_STATES)
+        return SPIN_STATES
+
+    @property
+    def states_config(self) -> Dict[str, Any]:
+        """Get states configuration."""
+        if self._config:
+            return self._config.states
+        return SALES_STATES
 
     @property
     def last_intent(self) -> Optional[str]:
@@ -323,23 +429,24 @@ class StateMachine:
         Check if objection limit has been reached.
 
         Replaces ObjectionFlowManager.should_soft_close().
+        Uses configurable limits from YAML or falls back to constants.
         """
         consecutive = self.intent_tracker.objection_consecutive()
         total = self.intent_tracker.objection_total()
 
-        if consecutive >= MAX_CONSECUTIVE_OBJECTIONS:
+        if consecutive >= self.max_consecutive_objections:
             logger.info(
                 "Consecutive objection limit reached",
                 count=consecutive,
-                limit=MAX_CONSECUTIVE_OBJECTIONS
+                limit=self.max_consecutive_objections
             )
             return True
 
-        if total >= MAX_TOTAL_OBJECTIONS:
+        if total >= self.max_total_objections:
             logger.info(
                 "Total objection limit reached",
                 total=total,
-                limit=MAX_TOTAL_OBJECTIONS
+                limit=self.max_total_objections
             )
             return True
 

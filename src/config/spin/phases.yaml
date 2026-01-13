@@ -1,0 +1,61 @@
+# =============================================================================
+# SPIN PHASES CONFIGURATION
+# =============================================================================
+# Версия: 1.0
+# Конфигурация порядка и условий пропуска SPIN фаз
+# =============================================================================
+
+# Порядок фаз (можно изменить!)
+# Изменение этого списка изменит последовательность квалификации
+phase_order:
+  - situation
+  - problem
+  - implication
+  - need_payoff
+
+# Настройки каждой фазы
+phases:
+  situation:
+    state: spin_situation
+    description: "Понять текущую ситуацию клиента"
+    skippable: false
+    # Situation нельзя пропустить — всегда нужно понять контекст
+    skip_conditions: []
+
+  problem:
+    state: spin_problem
+    description: "Выявить проблемы и боли"
+    skippable: false
+    # Problem можно пропустить только для VERY_HOT лидов (через lead_scoring.skip_phases)
+    skip_conditions: []
+
+  implication:
+    state: spin_implication
+    description: "Показать последствия проблем"
+    skippable: true
+    # Implication можно пропустить если клиент уже проявил высокий интерес
+    skip_conditions:
+      - has_high_interest
+      - lead_is_hot
+
+  need_payoff:
+    state: spin_need_payoff
+    description: "Помочь клиенту сформулировать ценность"
+    skippable: true
+    # Need-Payoff можно пропустить если клиент уже сформулировал желаемый результат
+    skip_conditions:
+      - has_desired_outcome
+      - lead_is_hot
+
+# Маппинг фаза -> действие для probing
+probe_actions:
+  situation: probe_situation
+  problem: probe_problem
+  implication: probe_implication
+  need_payoff: probe_need_payoff
+
+# Автоматически устанавливаемые флаги при входе в фазу
+# Это предотвращает пропуск фазы при первом неясном ответе
+entry_flags:
+  implication: implication_probed
+  need_payoff: need_payoff_probed

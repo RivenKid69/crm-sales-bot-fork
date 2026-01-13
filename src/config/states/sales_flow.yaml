@@ -1,0 +1,392 @@
+# =============================================================================
+# SALES FLOW STATE MACHINE CONFIGURATION
+# =============================================================================
+# Версия: 1.0
+# Конфигурация состояний для SPIN Selling flow
+# =============================================================================
+
+meta:
+  version: "1.0"
+  description: "SPIN Selling state machine для CRM Sales Bot"
+
+defaults:
+  default_action: continue_current_goal
+
+states:
+  # =================================================================
+  # GREETING: Точка входа
+  # =================================================================
+  greeting:
+    goal: "Поздороваться и узнать чем помочь"
+    required_data: []
+    transitions:
+      # Переход в SPIN: начинаем с Situation
+      price_question: spin_situation
+      question_features: spin_situation
+      question_integrations: spin_situation
+      agreement: spin_situation
+      info_provided: spin_situation
+      comparison: spin_situation
+      pricing_details: spin_situation
+      consultation_request: spin_situation
+      # Клиент сразу хочет демо или звонок — переходим в close
+      demo_request: close
+      callback_request: close
+      # На rejection сразу мягко закрываем
+      rejection: soft_close
+      farewell: soft_close
+      # Возражения
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+    rules:
+      greeting: greet_back
+      unclear: ask_how_to_help
+      gratitude: acknowledge_and_continue
+      small_talk: small_talk_and_continue
+
+  # =================================================================
+  # SPIN SELLING: 4 фазы квалификации
+  # =================================================================
+
+  # S - Situation: понять текущую ситуацию клиента
+  spin_situation:
+    goal: "Понять текущую ситуацию клиента (размер, инструменты, процессы)"
+    spin_phase: situation
+    required_data:
+      - company_size
+    optional_data:
+      - current_tools
+      - business_type
+    transitions:
+      data_complete: spin_problem
+      situation_provided: spin_problem
+      info_provided: spin_problem
+      rejection: soft_close
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+    rules:
+      price_question:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      pricing_details:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - probe_situation
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+
+  # P - Problem: выявить проблемы и боли
+  spin_problem:
+    goal: "Выявить проблемы и боли клиента"
+    spin_phase: problem
+    required_data:
+      - pain_point
+    transitions:
+      data_complete: spin_implication
+      problem_revealed: spin_implication
+      info_provided: spin_implication
+      rejection: soft_close
+      agreement: presentation
+      no_problem: spin_implication
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+    rules:
+      price_question:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      pricing_details:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - probe_problem
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+
+  # I - Implication: показать последствия проблем
+  spin_implication:
+    goal: "Помочь осознать последствия и масштаб проблемы"
+    spin_phase: implication
+    required_data:
+      - implication_probed
+    optional_data:
+      - pain_impact
+      - financial_impact
+    transitions:
+      data_complete: spin_need_payoff
+      rejection: soft_close
+      agreement: spin_need_payoff
+      implication_acknowledged: spin_need_payoff
+      no_problem: spin_need_payoff
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+    rules:
+      price_question:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      pricing_details:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - probe_implication
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+
+  # N - Need-Payoff: клиент сам формулирует ценность
+  spin_need_payoff:
+    goal: "Помочь клиенту сформулировать ценность решения"
+    spin_phase: need_payoff
+    required_data:
+      - need_payoff_probed
+    optional_data:
+      - desired_outcome
+      - value_acknowledged
+    transitions:
+      data_complete: presentation
+      agreement: presentation
+      need_expressed: presentation
+      rejection: soft_close
+      no_need: soft_close
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+    rules:
+      price_question:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      pricing_details:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - deflect_and_continue
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - probe_need_payoff
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+
+  # =================================================================
+  # POST-SPIN STATES
+  # =================================================================
+
+  presentation:
+    goal: "Показать ценность продукта"
+    required_data: []
+    transitions:
+      agreement: close
+      objection_price: handle_objection
+      rejection: soft_close
+      demo_request: close
+      callback_request: close
+      consultation_request: close
+      farewell: soft_close
+      objection_no_time: handle_objection
+      objection_think: handle_objection
+      objection_competitor: handle_objection
+    rules:
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+      unclear: clarify_and_continue
+
+  handle_objection:
+    goal: "Отработать возражение"
+    required_data: []
+    transitions:
+      agreement: close
+      rejection: soft_close
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      question_features: presentation
+      question_integrations: presentation
+      comparison: presentation
+      consultation_request: close
+      info_provided: spin_situation
+    rules:
+      price_question:
+        - when: can_handle_with_roi
+          then: answer_with_roi
+        - answer_with_facts
+      pricing_details:
+        - when: can_handle_with_roi
+          then: answer_with_roi
+        - answer_with_facts
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+      unclear: clarify_and_continue
+
+  close:
+    goal: "Взять контакт или назначить демо"
+    required_data:
+      - contact_info
+    transitions:
+      data_complete: success
+      contact_provided: success
+      agreement:
+        - when: ready_for_close
+          then: success
+        - close
+      demo_request:
+        - when: ready_for_close
+          then: success
+        - close
+      callback_request:
+        - when: ready_for_close
+          then: success
+        - close
+      consultation_request:
+        - when: ready_for_close
+          then: success
+        - close
+      rejection: soft_close
+      farewell: soft_close
+      objection_price: handle_objection
+      objection_no_time: handle_objection
+      objection_think: handle_objection
+      objection_competitor: handle_objection
+    rules:
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
+      comparison: answer_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+      unclear: clarify_and_continue
+      info_provided: continue_current_goal
+
+  # =================================================================
+  # FINAL STATES
+  # =================================================================
+
+  success:
+    goal: "Завершить успешно"
+    is_final: true
+
+  soft_close:
+    goal: "Вежливо завершить, но дать возможность вернуться"
+    is_final: false
+    transitions:
+      # Клиент передумал
+      agreement: spin_situation
+      demo_request: close
+      callback_request: close
+      go_back: greeting
+      correct_info: greeting
+      rejection: soft_close
+      farewell: soft_close
+      # Вопросы = проявление интереса
+      price_question: presentation
+      pricing_details: presentation
+      question_features: spin_situation
+      question_integrations: spin_situation
+      comparison: presentation
+      consultation_request: close
+      info_provided: spin_situation
+      situation_provided: spin_situation
+    rules:
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      comparison: answer_and_continue
+      gratitude: acknowledge_farewell
+      small_talk: polite_farewell

@@ -5,15 +5,20 @@ RuleResolver - разрешение rules и transitions через услови
 - Simple: "action" (строка)
 - Conditional dict: {"when": "condition_name", "then": "action"}
 - Conditional list: [{...}, {...}, "default"] - цепочка условий
+- Composite conditions: {"when": {"and": [...]}, "then": "action"}
 
 Part of Phase 3: IntentTracker + RuleResolver (ARCHITECTURE_UNIFIED_PLAN.md)
+Extended in Phase 1 (State Machine Parameterization) for AND/OR/NOT support.
 """
 
-from typing import Dict, List, Optional, Any, Union, Set, Iterator
+from typing import Dict, List, Optional, Any, Union, Set, Iterator, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from src.conditions.registry import ConditionRegistry, ConditionNotFoundError
 from src.conditions.trace import EvaluationTrace, Resolution
+
+if TYPE_CHECKING:
+    from src.conditions.expression_parser import ConditionExpressionParser
 
 
 # Type aliases for rule formats
@@ -229,7 +234,8 @@ class RuleResolver:
     def __init__(
         self,
         registry: ConditionRegistry,
-        default_action: str = None
+        default_action: str = None,
+        expression_parser: "ConditionExpressionParser" = None
     ):
         """
         Initialize resolver.
@@ -237,9 +243,11 @@ class RuleResolver:
         Args:
             registry: Condition registry to use for evaluation
             default_action: Default action when no rule matches
+            expression_parser: Optional parser for composite conditions (AND/OR/NOT)
         """
         self.registry = registry
         self.default_action = default_action or self.DEFAULT_ACTION
+        self.expression_parser = expression_parser
 
     def resolve_action(
         self,
@@ -392,7 +400,11 @@ class RuleResolver:
         """
         Evaluate a conditional rule dict.
 
-        Format: {"when": "condition_name", "then": "action"}
+        Formats:
+        - Simple: {"when": "condition_name", "then": "action"}
+        - Composite: {"when": {"and": [...]}, "then": "action"}
+        - Composite: {"when": {"or": [...]}, "then": "action"}
+        - Composite: {"when": {"not": "condition"}, "then": "action"}
 
         Args:
             rule: The conditional rule dict
@@ -409,18 +421,42 @@ class RuleResolver:
                 "conditional rule must have 'when' and 'then' keys"
             )
 
-        condition_name = rule["when"]
+        condition = rule["when"]
         action = rule["then"]
 
-        # Evaluate condition
-        try:
-            result = self.registry.evaluate(condition_name, ctx, trace)
-        except ConditionNotFoundError:
-            raise UnknownConditionError(condition_name, rule_name)
+        # Evaluate condition based on type
+        if isinstance(condition, str):
+            # Simple condition: use registry directly
+            try:
+                result = self.registry.evaluate(condition, ctx, trace)
+            except ConditionNotFoundError:
+                raise UnknownConditionError(condition, rule_name)
+            condition_desc = condition
+        elif isinstance(condition, dict):
+            # Composite condition (AND/OR/NOT): use expression parser
+            if self.expression_parser is None:
+                raise InvalidRuleFormatError(
+                    rule_name,
+                    "composite conditions require expression_parser"
+                )
+            try:
+                parsed = self.expression_parser.parse(condition, rule_name)
+                result = parsed.evaluate(ctx, trace)
+                condition_desc = str(condition)
+            except Exception as e:
+                raise InvalidRuleFormatError(
+                    rule_name,
+                    f"failed to evaluate composite condition: {e}"
+                )
+        else:
+            raise InvalidRuleFormatError(
+                rule_name,
+                f"'when' must be string or dict, got {type(condition).__name__}"
+            )
 
         if result:
             if trace:
-                trace.set_result(action, Resolution.CONDITION_MATCHED, condition_name)
+                trace.set_result(action, Resolution.CONDITION_MATCHED, condition_desc)
             return action
 
         return None
@@ -667,15 +703,30 @@ class RuleResolver:
             )
             return
 
-        # Check condition exists
-        condition_name = rule["when"]
-        if condition_name not in registered_conditions:
+        # Check condition(s) exist
+        condition = rule["when"]
+        if isinstance(condition, str):
+            # Simple condition
+            if condition not in registered_conditions:
+                result.add_error(
+                    "unknown_condition",
+                    f"Unknown condition '{condition}'",
+                    state=state,
+                    rule_name=rule_name,
+                    condition_name=condition
+                )
+        elif isinstance(condition, dict):
+            # Composite condition (AND/OR/NOT)
+            self._validate_composite_condition(
+                condition, rule_name, state,
+                registered_conditions, result
+            )
+        else:
             result.add_error(
-                "unknown_condition",
-                f"Unknown condition '{condition_name}'",
+                "invalid_condition_type",
+                f"Condition must be string or dict, got {type(condition).__name__}",
                 state=state,
-                rule_name=rule_name,
-                condition_name=condition_name
+                rule_name=rule_name
             )
 
         # Check target state for transitions
@@ -689,6 +740,100 @@ class RuleResolver:
                     rule_name=rule_name,
                     target_state=target
                 )
+
+    def _validate_composite_condition(
+        self,
+        condition: Dict[str, Any],
+        rule_name: str,
+        state: str,
+        registered_conditions: Set[str],
+        result: ValidationResult
+    ) -> None:
+        """
+        Validate a composite condition (AND/OR/NOT).
+
+        Recursively validates nested conditions.
+        """
+        if "and" in condition:
+            operands = condition["and"]
+            if not isinstance(operands, list):
+                result.add_error(
+                    "invalid_composite",
+                    "'and' operands must be a list",
+                    state=state,
+                    rule_name=rule_name
+                )
+                return
+            for operand in operands:
+                self._validate_condition_operand(
+                    operand, rule_name, state,
+                    registered_conditions, result
+                )
+        elif "or" in condition:
+            operands = condition["or"]
+            if not isinstance(operands, list):
+                result.add_error(
+                    "invalid_composite",
+                    "'or' operands must be a list",
+                    state=state,
+                    rule_name=rule_name
+                )
+                return
+            for operand in operands:
+                self._validate_condition_operand(
+                    operand, rule_name, state,
+                    registered_conditions, result
+                )
+        elif "not" in condition:
+            operand = condition["not"]
+            self._validate_condition_operand(
+                operand, rule_name, state,
+                registered_conditions, result
+            )
+        else:
+            result.add_error(
+                "invalid_composite",
+                "Composite condition must have 'and', 'or', or 'not' key",
+                state=state,
+                rule_name=rule_name
+            )
+
+    def _validate_condition_operand(
+        self,
+        operand: Any,
+        rule_name: str,
+        state: str,
+        registered_conditions: Set[str],
+        result: ValidationResult
+    ) -> None:
+        """Validate a single operand in a composite condition."""
+        if isinstance(operand, str):
+            # Simple condition reference
+            # Allow "custom:" prefix for custom conditions
+            if operand.startswith("custom:"):
+                # Custom conditions are validated separately by ConfigLoader
+                pass
+            elif operand not in registered_conditions:
+                result.add_error(
+                    "unknown_condition",
+                    f"Unknown condition '{operand}'",
+                    state=state,
+                    rule_name=rule_name,
+                    condition_name=operand
+                )
+        elif isinstance(operand, dict):
+            # Nested composite condition
+            self._validate_composite_condition(
+                operand, rule_name, state,
+                registered_conditions, result
+            )
+        else:
+            result.add_error(
+                "invalid_operand",
+                f"Condition operand must be string or dict, got {type(operand).__name__}",
+                state=state,
+                rule_name=rule_name
+            )
 
     def _validate_rule_chain(
         self,
