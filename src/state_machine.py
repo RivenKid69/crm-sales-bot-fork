@@ -289,12 +289,14 @@ class StateMachine:
         self.intent_tracker = IntentTracker()
 
         # Phase 4/Phase 1: RuleResolver with optional expression parser
-        if config and config.custom_conditions:
-            from src.conditions.expression_parser import ConditionExpressionParser
-            expression_parser = ConditionExpressionParser(
-                sm_registry,
-                config.custom_conditions
-            )
+        if config:
+            expression_parser = None
+            if config.custom_conditions:
+                from src.conditions.expression_parser import ConditionExpressionParser
+                expression_parser = ConditionExpressionParser(
+                    sm_registry,
+                    config.custom_conditions
+                )
             self._resolver = RuleResolver(
                 sm_registry,
                 default_action=config.default_action,

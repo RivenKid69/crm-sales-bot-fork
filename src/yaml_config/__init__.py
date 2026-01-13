@@ -13,7 +13,7 @@ Usage:
 """
 
 # Re-export constants for easy access
-from src.config.constants import (
+from src.yaml_config.constants import (
     # SPIN
     SPIN_PHASES,
     SPIN_STATES,

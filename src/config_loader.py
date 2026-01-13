@@ -160,8 +160,8 @@ class ConfigLoader:
             config_dir: Path to config directory (defaults to src/config/)
         """
         if config_dir is None:
-            # Default to src/config/ relative to this file
-            config_dir = Path(__file__).parent / "config"
+            # Default to src/yaml_config/ relative to this file
+            config_dir = Path(__file__).parent / "yaml_config"
         self.config_dir = Path(config_dir)
 
     def load(self, validate: bool = True) -> LoadedConfig:
