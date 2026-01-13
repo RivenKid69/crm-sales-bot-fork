@@ -527,6 +527,7 @@ response = handler.get_fallback("fallback_tier_2", "spin_problem", context)
 
 | Фаза | Компонент | Флаг | Статус |
 |------|-----------|------|--------|
+| — | LLM Classifier | `llm_classifier` | ✅ Production |
 | 0 | Логирование | `structured_logging` | ✅ Production |
 | 0 | Метрики | `metrics_tracking` | ✅ Production |
 | 1 | Fallback | `multi_tier_fallback` | ✅ Production |

@@ -14,11 +14,11 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# LLM (Language Model)
+# LLM (Language Model) - vLLM Server
 # -----------------------------------------------------------------------------
 llm:
-  model: "qwen3:8b-fast"
-  base_url: "http://localhost:11434"
+  model: "Qwen/Qwen3-8B-AWQ"
+  base_url: "http://localhost:8000/v1"
   timeout: 60
   stream: false
   think: false
@@ -100,6 +100,9 @@ logging:
 # FEATURE FLAGS (Управление фичами)
 # -----------------------------------------------------------------------------
 feature_flags:
+  # LLM классификатор
+  llm_classifier: true          # LLM вместо Hybrid классификатора
+
   # Фаза 0: Инфраструктура
   structured_logging: true
   metrics_tracking: true
@@ -129,20 +132,27 @@ development:
 
 ## Параметры
 
-### LLM (Language Model)
+### LLM (vLLM Server)
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
-| `model` | string | `"qwen3:8b-fast"` | Название модели Ollama |
-| `base_url` | string | `"http://localhost:11434"` | URL сервера Ollama |
+| `model` | string | `"Qwen/Qwen3-8B-AWQ"` | Модель vLLM (с AWQ квантизацией) |
+| `base_url` | string | `"http://localhost:8000/v1"` | URL vLLM сервера (OpenAI-compatible) |
 | `timeout` | int | `60` | Таймаут запроса в секундах |
 | `stream` | bool | `false` | Режим стриминга |
-| `think` | bool | `false` | Thinking mode (для скорости выключен) |
+| `think` | bool | `false` | Thinking mode (/no_think для скорости) |
 
-**Примеры моделей:**
-- `qwen3:8b-fast` — быстрая версия Qwen3 8B (рекомендуется)
-- `qwen3:8b` — стандартная версия
-- `llama3.1:8b` — альтернатива
+**Запуск vLLM сервера:**
+```bash
+vllm serve Qwen/Qwen3-8B-AWQ \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --guided-decoding-backend outlines \
+    --max-model-len 4096 \
+    --gpu-memory-utilization 0.9
+```
+
+**Требования:** ~5-6 GB VRAM, CUDA GPU
 
 ### RETRIEVER (Поиск по базе знаний)
 
@@ -160,10 +170,6 @@ development:
 - `lemma: 0.15` — низкий порог для широкого охвата
 - `semantic: 0.5` — средний порог для баланса точности/охвата
 
-**Модели эмбеддингов:**
-- `ai-forever/ru-en-RoSBERTa` — русско-английская модель (рекомендуется)
-- `cointegrated/rubert-tiny2` — компактная русская модель (быстрее)
-
 ### RERANKER (Переоценка результатов)
 
 | Параметр | Тип | По умолчанию | Описание |
@@ -172,10 +178,6 @@ development:
 | `model` | string | `"BAAI/bge-reranker-v2-m3"` | Модель cross-encoder |
 | `threshold` | float | `0.5` | Порог score ниже которого включается |
 | `candidates_count` | int | `10` | Сколько кандидатов переоценивать |
-
-**Модели reranker:**
-- `BAAI/bge-reranker-v2-m3` — мультиязычный, высокое качество (рекомендуется)
-- `cross-encoder/ms-marco-MiniLM-L-6-v2` — быстрый, английский
 
 ### CATEGORY ROUTER (LLM-классификация)
 
@@ -194,23 +196,15 @@ development:
 | `retriever_top_k` | int | `2` | Количество фактов из базы знаний |
 | `allowed_english_words` | list | см. выше | Разрешённые английские слова |
 
-**allowed_english_words:**
-
-Список английских слов, которые НЕ считаются "иностранным текстом" и не вызывают retry. Добавьте сюда технические термины, используемые в вашем продукте.
-
 ### CLASSIFIER (Классификация интентов)
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
-| `weights.root_match` | float | `1.0` | Вес совпадения по корню |
+| `weights.root_match` | float | `1.0` | Вес совпадения по корню (для HybridClassifier) |
 | `weights.phrase_match` | float | `2.0` | Вес точного совпадения фразы |
 | `weights.lemma_match` | float | `1.5` | Вес совпадения по лемме |
 | `thresholds.high_confidence` | float | `0.7` | Порог высокой уверенности |
 | `thresholds.min_confidence` | float | `0.3` | Минимальная уверенность |
-
-**Влияние порогов:**
-- `high_confidence: 0.7` — при этом score возврат без fallback на pymorphy
-- `min_confidence: 0.3` — ниже этого возвращается `unclear`
 
 ### LOGGING (Логирование)
 
@@ -220,36 +214,34 @@ development:
 | `log_llm_requests` | bool | `false` | Логировать запросы к LLM |
 | `log_retriever_results` | bool | `false` | Логировать результаты retriever |
 
-**Уровни:** `DEBUG`, `INFO`, `WARNING`, `ERROR`
-
 ### FEATURE FLAGS (Управление фичами)
 
 Feature flags позволяют постепенно включать новые возможности без изменения кода.
 
-| Флаг | Фаза | По умолчанию | Описание |
-|------|------|--------------|----------|
-| `structured_logging` | 0 | `true` | JSON логи для production |
-| `metrics_tracking` | 0 | `true` | Трекинг метрик диалогов |
-| `multi_tier_fallback` | 1 | `true` | 4-уровневый fallback |
-| `conversation_guard` | 1 | `true` | Защита от зацикливания |
-| `tone_analysis` | 2 | `false` | Анализ тона клиента |
-| `response_variations` | 2 | `true` | Вариативность ответов |
-| `personalization` | 2 | `false` | Персонализация |
-| `lead_scoring` | 3 | `false` | Скоринг лидов |
-| `circular_flow` | 3 | `false` | Возврат назад по фазам |
-| `objection_handler` | 3 | `false` | Обработка возражений |
-| `cta_generator` | 3 | `false` | Call-to-Action |
+| Флаг | По умолчанию | Описание |
+|------|--------------|----------|
+| `llm_classifier` | `true` | **LLM классификатор вместо Hybrid** |
+| `structured_logging` | `true` | JSON логи для production |
+| `metrics_tracking` | `true` | Трекинг метрик диалогов |
+| `multi_tier_fallback` | `true` | 4-уровневый fallback |
+| `conversation_guard` | `true` | Защита от зацикливания |
+| `tone_analysis` | `false` | Анализ тона клиента |
+| `response_variations` | `true` | Вариативность ответов |
+| `personalization` | `false` | Персонализация |
+| `lead_scoring` | `false` | Скоринг лидов |
+| `circular_flow` | `false` | Возврат назад по фазам |
+| `objection_handler` | `false` | Обработка возражений |
+| `cta_generator` | `false` | Call-to-Action |
+| `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
 
 **Переопределение через env:**
 ```bash
+# Переключиться на HybridClassifier
+FF_LLM_CLASSIFIER=false python bot.py
+
 # Включить tone_analysis
 FF_TONE_ANALYSIS=true python bot.py
-
-# Выключить metrics_tracking
-FF_METRICS_TRACKING=false python bot.py
 ```
-
-Подробнее: [PHASES.md](./PHASES.md)
 
 ### DEVELOPMENT (Режим разработки)
 
@@ -292,68 +284,21 @@ from settings import reload_settings
 reload_settings()
 ```
 
-### Валидация настроек
-
-```python
-from settings import validate_settings, get_settings
-
-errors = validate_settings(get_settings())
-if errors:
-    for err in errors:
-        print(f"Ошибка: {err}")
-```
-
 ### Использование Feature Flags
 
 ```python
-from feature_flags import is_enabled, get_all_flags
+from feature_flags import flags
 
-# Проверка флага
-if is_enabled("tone_analysis"):
+# Проверка флага (property)
+if flags.llm_classifier:
+    # использовать LLM классификатор
+
+# Проверка флага (метод)
+if flags.is_enabled("tone_analysis"):
     analyzer = ToneAnalyzer()
-    tone = analyzer.analyze(message)
 
 # Получить все флаги
-flags = get_all_flags()
-print(flags)  # {"structured_logging": True, "tone_analysis": False, ...}
-```
-
-## Значения по умолчанию
-
-Если параметр не указан в `settings.yaml`, используются значения по умолчанию из `settings.py`:
-
-```python
-DEFAULTS = {
-    "llm": {
-        "model": "qwen3:8b-fast",
-        "base_url": "http://localhost:11434",
-        "timeout": 60,
-        "stream": False,
-        "think": False,
-    },
-    "retriever": {
-        "use_embeddings": True,
-        "embedder_model": "ai-forever/ru-en-RoSBERTa",
-        "thresholds": {
-            "exact": 1.0,
-            "lemma": 0.15,
-            "semantic": 0.5,
-        },
-        "default_top_k": 2,
-    },
-    "reranker": {
-        "enabled": True,
-        "model": "BAAI/bge-reranker-v2-m3",
-        "threshold": 0.5,
-        "candidates_count": 10,
-    },
-    "category_router": {
-        "enabled": True,
-        "top_k": 3,
-        "fallback_categories": ["faq", "features"],
-    },
-    # ...
-}
+all_flags = flags.get_all_flags()
 ```
 
 ## Профили настроек
@@ -383,10 +328,9 @@ development:
 retriever:
   use_embeddings: true
   thresholds:
-    exact: 1.0
-    lemma: 0.10      # Понизить порог
-    semantic: 0.4    # Понизить порог
-  default_top_k: 3   # Больше результатов
+    lemma: 0.10
+    semantic: 0.4
+  default_top_k: 3
 
 reranker:
   enabled: true
@@ -409,12 +353,12 @@ logging:
   log_retriever_results: false
 
 feature_flags:
+  llm_classifier: true
   structured_logging: true
   metrics_tracking: true
   multi_tier_fallback: true
   conversation_guard: true
   response_variations: true
-  # Остальные выключены
 
 development:
   debug: false
@@ -438,21 +382,8 @@ development:
 # Вывести текущие настройки
 cd src && python settings.py
 
-# Вывод:
-# ============================================================
-# ТЕКУЩИЕ НАСТРОЙКИ
-# ============================================================
-#
-# [+] Все настройки валидны
-#
-# ------------------------------------------------------------
-# {
-#   "llm": {
-#     "model": "qwen3:8b-fast",
-#     ...
-#   },
-#   ...
-# }
+# Вывести feature flags
+cd src && python feature_flags.py
 ```
 
 ## Тестирование
@@ -463,20 +394,4 @@ pytest tests/test_settings.py -v
 
 # Тесты feature flags
 pytest tests/test_feature_flags.py -v
-```
-
-## Миграция настроек
-
-При обновлении версии бота новые параметры автоматически получают значения по умолчанию. Существующие настройки сохраняются.
-
-**Пример:** добавлен новый параметр `retriever.cache_ttl`
-
-1. Обновите код
-2. Старый `settings.yaml` продолжит работать
-3. Новый параметр будет использовать default
-
-Для явного указания:
-```yaml
-retriever:
-  cache_ttl: 3600  # новый параметр
 ```

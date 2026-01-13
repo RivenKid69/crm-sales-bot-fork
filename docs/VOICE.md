@@ -57,16 +57,14 @@ text = "".join([segment.text for segment in segments])
 
 ### LLM (Language Model)
 
-**Модель:** Ollama + Qwen3:8b-fast
+**Модель:** vLLM + Qwen3-8B-AWQ
 
 Используется тот же SalesBot что и в текстовом режиме:
 
 ```python
 from bot import SalesBot
-from llm import OllamaLLM
 
-llm = OllamaLLM()
-bot = SalesBot(llm)
+bot = SalesBot()
 
 # Обработка текста
 result = bot.process(recognized_text)
@@ -111,9 +109,8 @@ class VoicePipeline:
         # STT
         self.whisper = WhisperModel("large-v3", device="cuda")
 
-        # LLM
-        self.llm = OllamaLLM()
-        self.bot = SalesBot(self.llm)
+        # LLM (vLLM + Qwen3-8B-AWQ)
+        self.bot = SalesBot()
 
         # TTS
         self.tts = F5TTS()
@@ -300,9 +297,9 @@ python voice_pipeline.py --test
 | Компонент | Время | GPU |
 |-----------|-------|-----|
 | STT (10s audio) | ~1s | RTX 3080 |
-| LLM (response) | ~2s | Ollama |
+| LLM (response) | ~0.1-0.2s | vLLM |
 | TTS (100 chars) | ~0.5s | RTX 3080 |
-| **Итого** | **~3.5s** | |
+| **Итого** | **~1.5-2s** | |
 
 ### Оптимизация
 
@@ -348,8 +345,8 @@ python seed_search.py --corpus ruslan_corpus --output checkpoints/custom
 
 ```python
 class VoiceSalesBot(SalesBot):
-    def __init__(self, llm):
-        super().__init__(llm)
+    def __init__(self):
+        super().__init__()
         self.pipeline = VoicePipeline()
 
     def process_voice(self, audio_path: str) -> str:
@@ -367,7 +364,7 @@ class VoiceSalesBot(SalesBot):
 import websockets
 
 async def voice_handler(websocket):
-    bot = VoiceSalesBot(llm)
+    bot = VoiceSalesBot()
 
     async for audio_chunk in websocket:
         # Получение аудио

@@ -139,7 +139,7 @@ sections:
          ▼
 ┌────────────────────┐
 │  4. CategoryRouter │  LLM-классификация категорий (опционально)
-│  (fallback)        │  Qwen3:8b-fast определяет релевантные категории
+│  (fallback)        │  vLLM + Outlines определяет релевантные категории
 └────────┬───────────┘
          │ при необходимости
          ▼
@@ -200,9 +200,9 @@ sections:
 
 ```python
 # Запрос: "как подключить 1С к Wipon?"
-# CategoryRouter (Qwen3:8b-fast) определяет: ["integrations", "features"]
+# CategoryRouter (vLLM + Outlines) определяет: ["integrations", "features"]
+# Structured output гарантирует валидный JSON с категориями
 # Поиск сужается до релевантных категорий
-# Результаты переоцениваются в контексте определённых категорий
 
 # Настройки (settings.yaml):
 category_router:
@@ -279,18 +279,13 @@ print(f"Время: {stats['total_time_ms']:.2f}ms")
 
 ```python
 from knowledge.category_router import CategoryRouter
+from llm import VLLMClient
 
-router = CategoryRouter()
+router = CategoryRouter(VLLMClient(), top_k=3)
 
-# Классификация запроса
-categories = router.classify("как подключить 1С?")
+# Классификация запроса (structured output через Outlines)
+categories = router.route("как подключить 1С?")
 print(categories)  # ['integrations', 'features', 'support']
-
-# С учётом контекста
-categories = router.classify(
-    "сколько стоит?",
-    context={"spin_phase": "situation"}
-)
 ```
 
 ### Использование Reranker

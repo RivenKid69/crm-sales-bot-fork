@@ -3,19 +3,28 @@
 ## Обзор
 
 Пакет `classifier/` отвечает за:
-1. **Нормализацию текста** — исправление опечаток, сленга, слитного текста
-2. **Классификацию интентов** — определение намерения пользователя
-3. **Извлечение данных** — структурированные данные из сообщения
-4. **Контекстную классификацию** — учёт SPIN-фазы и истории диалога
+1. **Классификацию интентов** — определение намерения пользователя
+2. **Извлечение данных** — структурированные данные из сообщения
+3. **Контекстную классификацию** — учёт SPIN-фазы и истории диалога
+
+**Основной классификатор**: LLMClassifier (Qwen3-8B через vLLM)
+**Fallback**: HybridClassifier (regex + pymorphy)
 
 ## Структура пакета
 
 ```
 classifier/
 ├── __init__.py              # Публичный API
+├── unified.py               # UnifiedClassifier — адаптер для переключения
 ├── normalizer.py            # TextNormalizer, TYPO_FIXES, SPLIT_PATTERNS
-├── hybrid.py                # HybridClassifier — главный оркестратор
-├── intents/                 # Классификация интентов
+├── hybrid.py                # HybridClassifier — regex-based fallback
+├── disambiguation.py        # IntentDisambiguator
+├── llm/                     # LLM классификатор (основной)
+│   ├── __init__.py          # Экспорт LLMClassifier, schemas
+│   ├── classifier.py        # LLMClassifier
+│   ├── prompts.py           # System prompt + few-shot примеры
+│   └── schemas.py           # Pydantic схемы для structured output
+├── intents/                 # Regex-based классификация (для fallback)
 │   ├── __init__.py
 │   ├── patterns.py          # PRIORITY_PATTERNS (212 паттернов)
 │   ├── root_classifier.py   # Быстрая классификация по корням
@@ -28,15 +37,175 @@ classifier/
 ## Публичный API
 
 ```python
-from classifier import HybridClassifier, TextNormalizer, DataExtractor
+from classifier import UnifiedClassifier, HybridClassifier, TextNormalizer, DataExtractor
 from classifier import TYPO_FIXES, SPLIT_PATTERNS, PRIORITY_PATTERNS
+from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 ```
 
-### HybridClassifier
+## UnifiedClassifier (рекомендуется)
 
-Главный класс для классификации сообщений.
+Адаптер для переключения между LLM и Hybrid классификаторами:
 
 ```python
+from classifier import UnifiedClassifier
+
+classifier = UnifiedClassifier()
+
+result = classifier.classify(
+    message="нас 10 человек, теряем клиентов",
+    context={"spin_phase": "situation"}
+)
+```
+
+**Логика переключения:**
+- `flags.llm_classifier == True` → LLMClassifier (по умолчанию)
+- `flags.llm_classifier == False` → HybridClassifier
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                   UnifiedClassifier                       │
+│                                                          │
+│   flags.llm_classifier == True     False                 │
+│           │                          │                   │
+│           ▼                          ▼                   │
+│   ┌───────────────┐         ┌────────────────┐          │
+│   │ LLMClassifier │         │ HybridClassifier│          │
+│   │ (vLLM+Outlines)│        │ (regex+lemma)   │          │
+│   └───────┬───────┘         └────────────────┘          │
+│           │                                              │
+│           │ fallback при ошибке vLLM                     │
+│           ▼                                              │
+│   ┌────────────────┐                                     │
+│   │ HybridClassifier│                                    │
+│   └────────────────┘                                     │
+└──────────────────────────────────────────────────────────┘
+```
+
+## LLMClassifier (основной)
+
+Классификатор на базе LLM с structured output через vLLM + Outlines.
+
+```python
+from classifier.llm import LLMClassifier
+
+classifier = LLMClassifier()
+
+result = classifier.classify(
+    message="нас 10 человек, теряем клиентов",
+    context={"spin_phase": "situation"}
+)
+
+# result:
+{
+    "intent": "situation_provided",
+    "confidence": 0.95,
+    "extracted_data": {
+        "company_size": 10,
+        "pain_point": "теряем клиентов",
+        "pain_category": "losing_clients"
+    },
+    "method": "llm",
+    "reasoning": "Клиент указал размер команды и проблему с клиентами"
+}
+```
+
+### Возможности
+
+- **33 интента** с описаниями и примерами
+- **Structured output** — 100% валидный JSON через Pydantic
+- **Извлечение данных** — company_size, pain_point, contact_info и др.
+- **Контекстная классификация** — учёт SPIN фазы и last_action
+- **Fallback** на HybridClassifier при ошибке vLLM
+
+### 33 интента
+
+**Приветствия и общение:**
+- `greeting` — приветствие
+- `agreement` — согласие
+- `gratitude` — благодарность
+- `farewell` — прощание
+- `small_talk` — разговор не по теме
+
+**Ценовые вопросы:**
+- `price_question` — вопрос о цене
+- `pricing_details` — детали тарифов
+- `objection_price` — возражение по цене
+
+**Вопросы о продукте:**
+- `question_features` — вопрос о функциях
+- `question_integrations` — вопрос об интеграциях
+- `comparison` — сравнение с конкурентами
+
+**Запросы на контакт:**
+- `callback_request` — запрос перезвона
+- `contact_provided` — предоставление контакта
+- `demo_request` — запрос демо
+- `consultation_request` — запрос консультации
+
+**SPIN данные:**
+- `situation_provided` — информация о ситуации
+- `problem_revealed` — описание проблемы
+- `implication_acknowledged` — осознание последствий
+- `need_expressed` — выражение потребности
+- `no_problem` — отрицание проблемы
+- `no_need` — отрицание потребности
+- `info_provided` — предоставление информации
+
+**Возражения:**
+- `objection_no_time` — нет времени
+- `objection_timing` — неподходящее время
+- `objection_think` — нужно подумать
+- `objection_complexity` — сложность
+- `objection_competitor` — есть конкурент
+- `objection_trust` — недоверие
+- `objection_no_need` — не нужно
+- `rejection` — жёсткий отказ
+
+**Управление диалогом:**
+- `unclear` — непонятное сообщение
+- `go_back` — вернуться назад
+- `correct_info` — исправление информации
+
+### Pydantic схемы (schemas.py)
+
+```python
+class ExtractedData(BaseModel):
+    """Извлечённые данные из сообщения."""
+    company_size: Optional[int]
+    business_type: Optional[str]
+    current_tools: Optional[str]
+    pain_point: Optional[str]
+    pain_category: Optional[Literal["losing_clients", "no_control", "manual_work"]]
+    pain_impact: Optional[str]
+    financial_impact: Optional[str]
+    contact_info: Optional[str]
+    desired_outcome: Optional[str]
+    value_acknowledged: Optional[bool]
+
+
+class ClassificationResult(BaseModel):
+    """Результат классификации интента."""
+    intent: IntentType  # Literal из 33 интентов
+    confidence: float  # 0.0 - 1.0
+    reasoning: str  # Объяснение выбора
+    extracted_data: ExtractedData
+```
+
+### System Prompt (prompts.py)
+
+LLMClassifier использует детальный system prompt с:
+- Описанием всех 33 интентов
+- Критическими правилами (price_question vs objection_price)
+- Примерами неоднозначных случаев
+- Инструкциями по использованию контекста
+
+## HybridClassifier (fallback)
+
+Быстрый regex-based классификатор для fallback.
+
+```python
+from classifier import HybridClassifier
+
 classifier = HybridClassifier()
 
 result = classifier.classify(
@@ -60,109 +229,27 @@ result = classifier.classify(
 }
 ```
 
-### TextNormalizer
+### Компоненты HybridClassifier
 
-Нормализация текста перед классификацией.
+#### 1. TextNormalizer
+
+Нормализация текста перед классификацией:
 
 ```python
 normalizer = TextNormalizer()
 
-# Исправление опечаток
+# Исправление опечаток (692 записи)
 text = normalizer.normalize("скок стоит прайс?")
 # → "сколько стоит цена?"
 
-# Разбиение слитного текста
+# Разбиение слитного текста (176 паттернов)
 text = normalizer.normalize("сколькостоит")
 # → "сколько стоит"
 ```
 
-### DataExtractor
+#### 2. RootClassifier
 
-Извлечение структурированных данных.
-
-```python
-extractor = DataExtractor()
-
-data = extractor.extract("у нас 10 человек, работаем в розничной торговле")
-# → {"company_size": 10, "business_type": "розничная торговля"}
-
-data = extractor.extract("теряем примерно 10 клиентов в месяц")
-# → {"pain_point": "теряем клиентов", "pain_impact": "10 клиентов в месяц"}
-```
-
-## Компоненты
-
-### 1. Нормализация (normalizer.py)
-
-#### TYPO_FIXES (692 записи)
-
-Словарь автозамен для исправления опечаток и сленга:
-
-```python
-TYPO_FIXES = {
-    # Ценовые синонимы
-    "прайс": "цена",
-    "прайсы": "цены",
-    "ценник": "цена",
-
-    # Сокращения
-    "скок": "сколько",
-    "чё": "что",
-    "норм": "нормально",
-
-    # Опечатки
-    "систеа": "система",
-    "функционла": "функционал",
-    # ... 690+ записей
-}
-```
-
-#### SPLIT_PATTERNS (176 паттернов)
-
-Паттерны для разбиения слитного текста:
-
-```python
-SPLIT_PATTERNS = [
-    ("сколькостоит", "сколько стоит"),
-    ("естьинтеграция", "есть интеграция"),
-    ("какаяцена", "какая цена"),
-    # ... 173+ паттернов
-]
-```
-
-### 2. Классификация интентов (intents/)
-
-#### Приоритетные паттерны (patterns.py)
-
-212 regex-паттернов для приоритетных интентов:
-
-```python
-PRIORITY_PATTERNS = [
-    # Rejection (приоритет над agreement)
-    (r"не\s*интересно", "rejection", 0.95),
-    (r"не\s*надо", "rejection", 0.95),
-    (r"отказываюсь", "rejection", 0.95),
-
-    # Price questions
-    (r"скольк\w*\s*стоит", "price_question", 0.95),
-    (r"цен\w+\s*(на|за)?", "price_question", 0.90),
-
-    # High interest signals
-    (r"очень\s+интересн", "high_interest", 0.90),
-    (r"хотим\s+попробовать", "high_interest", 0.85),
-    # ... 206+ паттернов
-]
-```
-
-**Зачем нужны приоритетные паттерны?**
-
-Решают проблему неоднозначности. Например:
-- "не интересно" содержит корень "интерес" → без паттерна определится как `agreement`
-- С паттерном `r"не\s*интересно"` → корректно определяется как `rejection`
-
-#### RootClassifier (root_classifier.py)
-
-Быстрая классификация по корням слов из `config.INTENT_ROOTS`:
+Быстрая классификация по корням слов:
 
 ```python
 # config.py
@@ -174,241 +261,177 @@ INTENT_ROOTS = {
 }
 ```
 
-Алгоритм:
-1. Проверяем приоритетные паттерны
-2. Ищем корни в тексте
-3. Считаем score для каждого интента
-4. Возвращаем интент с максимальным score
+#### 3. LemmaClassifier
 
-#### LemmaClassifier (lemma_classifier.py)
+Fallback через pymorphy для сложных форм слов.
 
-Fallback через pymorphy2/3:
+#### 4. PRIORITY_PATTERNS (212 паттернов)
+
+Regex-паттерны для приоритетных интентов:
 
 ```python
-# Когда используется:
-# - RootClassifier дал низкую уверенность (< threshold)
-# - Слова в необычных формах
+PRIORITY_PATTERNS = [
+    # Rejection (приоритет над agreement)
+    (r"не\s*интересно", "rejection", 0.95),
+    (r"не\s*надо", "rejection", 0.95),
 
-# Пример:
-# "мне интересно" → лемма "интересный" → agreement
-# "заинтересовались" → лемма "заинтересоваться" → agreement
+    # Price questions
+    (r"скольк\w*\s*стоит", "price_question", 0.95),
+    # ... 208+ паттернов
+]
 ```
 
-### 3. Извлечение данных (extractors/)
+## DataExtractor
 
-#### DataExtractor (data_extractor.py)
+Извлечение структурированных данных:
 
-Извлекает структурированные данные из сообщений.
+```python
+from classifier import DataExtractor
+
+extractor = DataExtractor()
+
+data = extractor.extract("у нас 10 человек, работаем в розничной торговле")
+# → {"company_size": 10, "business_type": "розничная торговля"}
+```
 
 **Поддерживаемые поля:**
 
-| Поле | Описание | Примеры паттернов |
-|------|----------|-------------------|
-| `company_size` | Размер команды | "нас 10", "команда из 5", "8 официантов" |
-| `current_tools` | Текущие инструменты | "Excel", "1С", "вручную", "блокнот" |
-| `business_type` | Тип бизнеса | "розница", "общепит", "опт", "услуги" |
-| `pain_point` | Боль клиента | "теряем клиентов", "низкие продажи" |
-| `pain_impact` | Количественные потери | "10 клиентов", "3 часа в день" |
-| `financial_impact` | Финансовые потери | "~50 000 в месяц" |
-| `desired_outcome` | Желаемый результат | "автоматизировать", "упростить" |
-| `value_acknowledged` | Признание ценности | true/false |
-| `contact_info` | Контакт клиента | телефон, email |
-| `high_interest` | Высокий интерес | true/false |
+| Поле | Описание | Примеры |
+|------|----------|---------|
+| `company_size` | Размер команды | "нас 10", "команда из 5" |
+| `current_tools` | Текущие инструменты | "Excel", "1С", "вручную" |
+| `business_type` | Тип бизнеса | "розница", "общепит" |
+| `pain_point` | Боль клиента | "теряем клиентов" |
 | `pain_category` | Категория боли | `losing_clients`, `no_control`, `manual_work` |
-| `option_index` | Индекс выбранного варианта | 0-3 (для numbered responses) |
+| `pain_impact` | Количественные потери | "10 клиентов в месяц" |
+| `financial_impact` | Финансовые потери | "~50 000 в месяц" |
+| `desired_outcome` | Желаемый результат | "автоматизировать" |
+| `contact_info` | Контакт клиента | телефон, email |
 
-### pain_category — Категоризация боли
+### pain_category
 
-DataExtractor автоматически определяет категорию боли на основе ключевых слов:
+Автоматическая категоризация боли:
 
 ```python
 PAIN_CATEGORY_KEYWORDS = {
-    "losing_clients": [  # Потеря клиентов, продаж
-        "теря", "клиент", "отток", "упуска", "сделк", "продаж",
-        "выручк", "конверси", "воронк", "недовольн"
-    ],
-    "no_control": [      # Отсутствие контроля
-        "контрол", "вид", "прозрачн", "хаос", "статистик",
-        "аналитик", "отчёт", "kpi", "руковод"
-    ],
-    "manual_work": [     # Ручная работа
-        "excel", "эксел", "рутин", "вручную", "времен",
-        "долго", "дубл", "ошиб", "путаниц"
-    ]
+    "losing_clients": ["теря", "клиент", "отток", "сделк", "продаж"],
+    "no_control": ["контрол", "прозрачн", "хаос", "аналитик"],
+    "manual_work": ["excel", "рутин", "вручную", "долго"]
 }
-```
-
-Пример:
-```python
-extractor = DataExtractor()
-result = extractor.extract("Мы теряем клиентов")
-# → {"pain_point": "потеря клиентов", "pain_category": "losing_clients"}
-
-result = extractor.extract("Нет контроля над менеджерами")
-# → {"pain_point": "нет контроля", "pain_category": "no_control"}
-
-result = extractor.extract("Всё ведём в Excel")
-# → {"pain_point": "работа в Excel", "pain_category": "manual_work"}
-```
-
-**Примеры извлечения:**
-
-```python
-# company_size
-"нас 10 человек" → {"company_size": 10}
-"команда из 5 продавцов" → {"company_size": 5}
-"8 официантов работает" → {"company_size": 8}
-
-# current_tools
-"пользуемся Excel" → {"current_tools": "Excel"}
-"ведём учёт вручную" → {"current_tools": "вручную"}
-"есть 1С" → {"current_tools": "1С"}
-
-# pain_point (50+ паттернов)
-"теряем клиентов" → {"pain_point": "потеря клиентов"}
-"низкие продажи" → {"pain_point": "низкие продажи"}
-"путаемся в заказах" → {"pain_point": "путаница в заказах"}
-
-# contact_info
-"+7 999 123-45-67" → {"contact_info": {"phone": "+79991234567"}}
-"email@example.com" → {"contact_info": {"email": "email@example.com"}}
 ```
 
 ## Контекстная классификация
 
-Классификатор учитывает текущую SPIN-фазу и историю диалога:
+Классификатор учитывает контекст диалога:
 
 ```python
-# Без контекста
-classifier.classify("10 человек")
-# → intent: "info_provided"
-
-# С контекстом фазы Situation
+# С контекстом SPIN фазы
 classifier.classify("10 человек", context={"spin_phase": "situation"})
 # → intent: "situation_provided"
 
-# С контекстом фазы Problem
-classifier.classify("теряем клиентов", context={"spin_phase": "problem"})
-# → intent: "problem_revealed"
+# С контекстом предыдущего действия
+classifier.classify("да", context={"last_action": "ask_for_demo"})
+# → intent: "demo_request"
 ```
 
-**Маппинг фаз:**
-
-| SPIN-фаза | Базовый интент | Контекстный интент |
-|-----------|----------------|-------------------|
-| `situation` | `info_provided` | `situation_provided` |
-| `problem` | `info_provided` + pain | `problem_revealed` |
-| `implication` | `info_provided` + impact | `implication_acknowledged` |
-| `need_payoff` | `info_provided` + desire | `need_expressed` |
-
-**Контекст предыдущего хода:**
-
-Для интерпретации коротких ответов используется:
+**Контекст для LLMClassifier:**
+- `state` — текущее состояние FSM
+- `spin_phase` — SPIN фаза (situation/problem/implication/need_payoff)
 - `last_action` — последнее действие бота
-- `last_intent` — последний интент пользователя
+- `last_intent` — предыдущий интент пользователя
+
+## Статистика
 
 ```python
-# Бот спросил "Сколько человек в команде?"
-# Пользователь ответил "10"
-context = {
-    "spin_phase": "situation",
-    "last_action": "spin_situation"
-}
-classifier.classify("10", context)
-# → intent: "situation_provided", extracted_data: {"company_size": 10}
+classifier = UnifiedClassifier()
+
+# Получить статистику
+stats = classifier.get_stats()
+# {
+#     "active_classifier": "llm",
+#     "llm_stats": {
+#         "llm_calls": 100,
+#         "llm_successes": 98,
+#         "fallback_calls": 2,
+#         "llm_success_rate": 98.0,
+#         "vllm_stats": {...}
+#     }
+# }
 ```
 
-## Веса и пороги (из settings.yaml)
+## Конфигурация
+
+### Feature Flag
+
+```python
+# feature_flags.py
+"llm_classifier": True  # Использовать LLM классификатор
+```
+
+```bash
+# Переключиться на HybridClassifier
+export FF_LLM_CLASSIFIER=false
+```
+
+### Настройки (settings.yaml)
 
 ```yaml
 classifier:
   weights:
-    root_match: 1.0       # Совпадение по корню слова
-    phrase_match: 2.0     # Точное совпадение фразы
-    lemma_match: 1.5      # Совпадение по лемме
+    root_match: 1.0       # Для HybridClassifier
+    phrase_match: 2.0
+    lemma_match: 1.5
 
   thresholds:
-    high_confidence: 0.7  # Порог для быстрого возврата
-    min_confidence: 0.3   # Минимальная уверенность (ниже = unclear)
+    high_confidence: 0.7  # Порог быстрого возврата
+    min_confidence: 0.3   # Минимальная уверенность
 ```
 
 ## Расширение
 
 ### Добавление нового интента
 
-1. **Добавить корни** в `config.INTENT_ROOTS`:
-```python
-INTENT_ROOTS = {
-    # ...
-    "new_intent": ["корень1", "корень2"],
-}
-```
+**Для LLMClassifier:**
 
-2. **Добавить фразы** в `config.INTENT_PHRASES`:
+1. Добавить в `classifier/llm/schemas.py`:
 ```python
-INTENT_PHRASES = {
+IntentType = Literal[
     # ...
-    "new_intent": ["фраза один", "фраза два"],
-}
-```
-
-3. **(Опционально) Добавить приоритетный паттерн** в `intents/patterns.py`:
-```python
-PRIORITY_PATTERNS = [
-    # ...
-    (r"regex_pattern", "new_intent", 0.95),
+    "new_intent",
 ]
+```
+
+2. Добавить в `classifier/llm/prompts.py`:
+```python
+SYSTEM_PROMPT = """
+...
+- new_intent: описание ("пример 1", "пример 2")
+...
+"""
+```
+
+**Для HybridClassifier (опционально):**
+
+3. Добавить в `config.INTENT_ROOTS`:
+```python
+"new_intent": ["корень1", "корень2"],
+```
+
+4. Добавить паттерн в `classifier/intents/patterns.py`:
+```python
+(r"regex_pattern", "new_intent", 0.95),
 ```
 
 ### Добавление нового экстрактора
 
-В `extractors/data_extractor.py`:
-
+В `classifier/llm/schemas.py`:
 ```python
-def _extract_new_field(self, text: str) -> Optional[str]:
-    """Извлечение нового поля"""
-    patterns = [
-        r"паттерн\s+(\w+)",
-        r"другой\s+паттерн",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1)
-    return None
-
-def extract(self, text: str) -> Dict[str, Any]:
-    data = {}
-    # ... существующие экстракторы
-
-    new_field = self._extract_new_field(text)
-    if new_field:
-        data["new_field"] = new_field
-
-    return data
-```
-
-### Добавление новой опечатки
-
-В `normalizer.py` в словарь `TYPO_FIXES`:
-
-```python
-TYPO_FIXES = {
+class ExtractedData(BaseModel):
     # ...
-    "опечтка": "опечатка",
-}
+    new_field: Optional[str] = Field(None, description="Описание")
 ```
 
-### Добавление слитного паттерна
-
-В `normalizer.py` в список `SPLIT_PATTERNS`:
-
-```python
-SPLIT_PATTERNS = [
-    # ...
-    ("новыйслитныйтекст", "новый слитный текст"),
-]
-```
+В system prompt добавить инструкции по извлечению.
 
 ## Тестирование
 
@@ -416,36 +439,20 @@ SPLIT_PATTERNS = [
 # Все тесты классификатора
 pytest tests/test_classifier.py -v
 
-# Конкретный тест
-pytest tests/test_classifier.py::test_rejection_priority -v
+# Тесты LLM классификатора (требует vLLM)
+pytest tests/test_llm_classifier.py -v
 
-# Тесты с покрытием
+# С покрытием
 pytest tests/test_classifier.py --cov=classifier --cov-report=html
 ```
 
 ## Производительность
 
-| Компонент | Время на 1000 сообщений |
-|-----------|-------------------------|
-| TextNormalizer | ~50ms |
-| RootClassifier | ~30ms |
-| LemmaClassifier | ~500ms (с pymorphy) |
-| DataExtractor | ~100ms |
-| **HybridClassifier (итого)** | **~200ms** (без fallback) |
+| Классификатор | Латентность | Точность |
+|--------------|-------------|----------|
+| LLMClassifier | ~100-200ms | ~95%+ |
+| HybridClassifier | ~5-50ms | ~85% |
 
-Рекомендации:
-- RootClassifier покрывает 90%+ случаев
-- LemmaClassifier используется только при низкой уверенности
-- Для максимальной скорости можно увеличить `high_confidence` порог в settings
-
-## Статистика
-
-| Компонент | Количество |
-|-----------|------------|
-| TYPO_FIXES | 692 записей |
-| SPLIT_PATTERNS | 176 паттернов |
-| PRIORITY_PATTERNS | 212 паттернов |
-| pain_patterns | 240+ паттернов |
-| PAIN_CATEGORY_KEYWORDS | 3 категории, 30+ ключевых слов |
-| Интенты в INTENT_ROOTS | 58 интентов |
-| Экстракторы в DataExtractor | 12+ полей |
+**Рекомендации:**
+- LLMClassifier по умолчанию для максимальной точности
+- HybridClassifier для высоконагруженных сценариев или при недоступности vLLM

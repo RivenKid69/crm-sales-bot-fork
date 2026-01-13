@@ -4,6 +4,12 @@
 
 CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. Использует методологию SPIN Selling для квалификации клиентов и ведёт диалог от приветствия до закрытия сделки.
 
+**Технологический стек:**
+- **LLM**: Qwen3-8B-AWQ через vLLM (OpenAI-compatible API)
+- **Structured Output**: Outlines (guided decoding) для гарантированного JSON
+- **Эмбеддинги**: ai-forever/ru-en-RoSBERTa
+- **Reranker**: BAAI/bge-reranker-v2-m3
+
 **Архитектурные принципы:**
 1. **FAIL-SAFE** — любой сбой → graceful degradation, не crash
 2. **PROGRESSIVE** — feature flags для постепенного включения фич
@@ -22,20 +28,20 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 └─────────────────┬───────────────────────────────┬───────────────────────────┘
                   │                               │
     ┌─────────────▼─────────────┐   ┌─────────────▼─────────────┐
-    │    HybridClassifier       │   │     StateMachine          │
+    │    UnifiedClassifier      │   │     StateMachine          │
     │    (classifier/)          │   │   (state_machine.py)      │
     │                           │   │                           │
-    │ • Определение интента     │   │ • SPIN flow логика        │
-    │ • Извлечение данных       │   │ • Приоритеты обработки    │
-    │ • Нормализация текста     │   │ • Умное пропускание фаз   │
-    │ • Контекстная классификация│  │ • 10 состояний            │
+    │ • LLMClassifier (vLLM)    │   │ • SPIN flow логика        │
+    │ • Structured output       │   │ • Приоритеты обработки    │
+    │ • HybridClassifier fallback│  │ • Умное пропускание фаз   │
+    │ • 33 интента              │   │ • 10 состояний            │
     └───────────────────────────┘   └─────────────┬─────────────┘
                                                   │
                   ┌───────────────────────────────▼───────────────┐
                   │           ResponseGenerator                   │
                   │            (generator.py)                     │
                   │                                               │
-                  │ • Генерация ответов через LLM                 │
+                  │ • Генерация ответов через vLLM                │
                   │ • Промпт-инжиниринг по action                 │
                   │ • Интеграция с базой знаний                   │
                   │ • Retry при иностранном тексте                │
@@ -45,12 +51,12 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
           ┌────────────────────────┼────────────────────────┐
           │                        │                        │
 ┌─────────▼─────────┐   ┌──────────▼──────────┐   ┌─────────▼─────────┐
-│    OllamaLLM      │   │  CascadeRetriever   │   │      config       │
+│    VLLMClient     │   │  CascadeRetriever   │   │      config       │
 │    (llm.py)       │   │   (knowledge/)      │   │    (config.py)    │
 │                   │   │                     │   │                   │
-│ • qwen3:8b-fast   │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
-│ • /no_think mode  │   │ • 1969 YAML секций  │   │ • SALES_STATES    │
-│ • Streaming       │   │ • ru-en-RoSBERTa    │   │ • Промпт-шаблоны  │
+│ • Qwen3-8B-AWQ    │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
+│ • Structured JSON │   │ • 1969 YAML секций  │   │ • SALES_STATES    │
+│ • Outlines backend│   │ • ru-en-RoSBERTa    │   │ • Промпт-шаблоны  │
 │ • Retry + Circuit │   │ • CategoryRouter    │   │                   │
 │   Breaker         │   │ • Reranker          │   │                   │
 └───────────────────┘   └─────────────────────┘   └───────────────────┘
@@ -65,91 +71,130 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
           └──────────────┴───────────────────┘
 ```
 
-## Фазы разработки (Phase 0-3)
+## LLM Архитектура
 
-### Фаза 0: Инфраструктура
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Phase 0                                  │
-├──────────────────┬──────────────────┬──────────────────────────┤
-│   logger.py      │   metrics.py     │   feature_flags.py       │
-│                  │                  │                          │
-│ • JSON логи      │ • Метрики        │ • Управление фичами      │
-│ • Readable логи  │   диалогов       │ • Env override           │
-│ • Context        │ • Conversion     │ • Hot reload             │
-│   tracking       │   tracking       │                          │
-└──────────────────┴──────────────────┴──────────────────────────┘
+### vLLM Server
+
+```bash
+# Запуск vLLM
+vllm serve Qwen/Qwen3-8B-AWQ \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --guided-decoding-backend outlines \
+    --max-model-len 4096 \
+    --gpu-memory-utilization 0.9
 ```
 
-### Фаза 1: Защита и надёжность
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Phase 1                                  │
-├─────────────────────────────────┬───────────────────────────────┤
-│   fallback_handler.py           │   conversation_guard.py       │
-│                                 │                               │
-│ • 4-уровневый fallback          │ • Защита от зацикливания      │
-│   1. Knowledge base             │ • Loop detection              │
-│   2. Company facts              │ • Max turns limit             │
-│   3. Generic response           │ • State repetition check      │
-│   4. Apology                    │                               │
-└─────────────────────────────────┴───────────────────────────────┘
+**Требования:**
+- ~5-6 GB VRAM
+- CUDA совместимая GPU
+- Python 3.10+
+
+### VLLMClient (llm.py)
+
+Единый клиент для всех LLM операций:
+
+```python
+from llm import VLLMClient
+
+llm = VLLMClient()
+
+# Free-form генерация
+response = llm.generate(prompt, state="greeting")
+
+# Structured output (Outlines)
+result = llm.generate_structured(prompt, PydanticSchema)
 ```
 
-### Фаза 2: Естественность диалога
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Phase 2                                  │
-├─────────────────────────────────┬───────────────────────────────┤
-│   tone_analyzer.py              │   response_variations.py      │
-│                                 │                               │
-│ • Анализ тона клиента           │ • Вариативность ответов       │
-│ • Sentiment detection           │ • Template variations         │
-│ • Urgency level                 │ • Anti-repetition             │
-│ • Frustration detection         │                               │
-└─────────────────────────────────┴───────────────────────────────┘
+**Возможности:**
+- **Structured Output** — 100% валидный JSON через Pydantic схемы
+- **Circuit Breaker** — 5 ошибок → 60 сек cooldown
+- **Retry** — exponential backoff (1s → 2s → 4s)
+- **Fallback responses** — по состояниям FSM
+- **Health check** — проверка доступности vLLM
+
+**Конфигурация** (settings.yaml):
+```yaml
+llm:
+  model: "Qwen/Qwen3-8B-AWQ"
+  base_url: "http://localhost:8000/v1"
+  timeout: 60
 ```
 
-### Фаза 3: Оптимизация SPIN Flow
+## Классификация интентов
+
+### UnifiedClassifier
+
+Адаптер для переключения между классификаторами:
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Phase 3                                  │
-├───────────────────┬───────────────────┬─────────────────────────┤
-│  lead_scoring.py  │ objection_handler │  cta_generator.py       │
-│                   │       .py         │                         │
-│ • Скоринг лидов   │ • Обработка       │ • Call-to-Action        │
-│ • Hot/Warm/Cold   │   возражений      │ • Персонализация        │
-│ • Priority calc   │ • Price objection │ • Timing optimization   │
-│                   │ • Time objection  │                         │
-└───────────────────┴───────────────────┴─────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                   UnifiedClassifier                       │
+│                                                          │
+│   flags.llm_classifier == True     False                 │
+│           │                          │                   │
+│           ▼                          ▼                   │
+│   ┌───────────────┐         ┌────────────────┐          │
+│   │ LLMClassifier │         │ HybridClassifier│          │
+│   │ (vLLM+Outlines)│        │ (regex+lemma)   │          │
+│   └───────┬───────┘         └────────────────┘          │
+│           │                                              │
+│           │ fallback при ошибке                          │
+│           ▼                                              │
+│   ┌────────────────┐                                     │
+│   │ HybridClassifier│                                    │
+│   └────────────────┘                                     │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### Фаза 4: Intent Disambiguation
+### LLMClassifier (classifier/llm/)
+
+Основной классификатор на базе LLM:
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Phase 4                                  │
-├─────────────────────────────────────────────────────────────────┤
-│   classifier/ (intent_disambiguation)                           │
-│                                                                 │
-│ • Уточнение при близких scores                                  │
-│ • Контекстная disambiguition                                    │
-│ • Запрос уточнения у пользователя                               │
-└─────────────────────────────────────────────────────────────────┘
+classifier/llm/
+├── __init__.py         # Публичный API
+├── classifier.py       # LLMClassifier
+├── prompts.py          # System prompt + few-shot примеры
+└── schemas.py          # Pydantic схемы (ClassificationResult, ExtractedData)
 ```
 
-### Фаза 5: Dynamic CTA Fallback
+**Возможности:**
+- 33 интента с описаниями и примерами
+- Structured output через Outlines
+- Извлечение данных (company_size, pain_point, etc.)
+- Контекстная классификация (учёт SPIN фазы)
+- Fallback на HybridClassifier при ошибке
+
+**Пример результата:**
+```json
+{
+    "intent": "situation_provided",
+    "confidence": 0.95,
+    "extracted_data": {
+        "company_size": 10,
+        "pain_point": "теряем клиентов"
+    },
+    "method": "llm",
+    "reasoning": "Клиент указал размер команды и проблему"
+}
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Phase 5                                  │
-├─────────────────────────────┬───────────────────────────────────┤
-│   fallback_handler.py       │   data_extractor.py               │
-│                             │                                   │
-│ • DYNAMIC_CTA_OPTIONS       │ • PAIN_CATEGORY_KEYWORDS          │
-│ • Контекстные подсказки     │ • pain_category extraction        │
-│ • Приоритеты: competitor(10)│ • losing_clients                  │
-│   pain(8), intent(7)        │ • no_control                      │
-│   company_size(5)           │ • manual_work                     │
-└─────────────────────────────┴───────────────────────────────────┘
+
+### HybridClassifier (fallback)
+
+Быстрый regex-based классификатор:
+
+```
+classifier/
+├── hybrid.py           # HybridClassifier (оркестратор)
+├── normalizer.py       # TextNormalizer (692 исправления опечаток)
+├── disambiguation.py   # IntentDisambiguator
+├── intents/
+│   ├── patterns.py     # PRIORITY_PATTERNS (212 паттернов)
+│   ├── root_classifier.py   # Классификация по корням
+│   └── lemma_classifier.py  # Fallback через pymorphy
+└── extractors/
+    └── data_extractor.py    # Извлечение данных + pain_category
 ```
 
 ## Поток данных
@@ -160,17 +205,16 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 # bot.py:process()
 user_message = "нас 10 человек, теряем клиентов"
 
-# Нормализация (опечатки, сленг, слитный текст)
-normalized = "нас 10 человек теряем клиентов"
-
-# Классификация интента с контекстом SPIN-фазы
+# UnifiedClassifier (LLM mode)
 {
     "intent": "situation_provided",
-    "confidence": 0.85,
+    "confidence": 0.95,
     "extracted_data": {
         "company_size": 10,
         "pain_point": "теряем клиентов"
-    }
+    },
+    "method": "llm",
+    "reasoning": "..."
 }
 ```
 
@@ -210,11 +254,8 @@ retrieved_facts = retriever.retrieve(message, intent, state)
 # 2. Выбор промпт-шаблона по action
 template = PROMPT_TEMPLATES["spin_problem"]
 
-# 3. Подстановка контекста + LLM генерация
+# 3. Генерация через vLLM
 response = "Понял, команда из 10 человек. Расскажите подробнее — как именно теряете клиентов?"
-
-# 4. ResponseVariations (если включено)
-response = variations.apply(response, action)
 ```
 
 ## SPIN Selling Flow
@@ -246,90 +287,7 @@ close ────────────────── Запрос кон
     └──► soft_close (отказ)
 ```
 
-## Приоритеты обработки интентов
-
-State Machine обрабатывает интенты в порядке приоритета:
-
-| Приоритет | Интенты | Действие |
-|-----------|---------|----------|
-| 0 | Финальное состояние | Остаться в состоянии |
-| 1 | `rejection` | Немедленный переход в `soft_close` |
-| 2 | State-specific rules | `deflect_and_continue` для SPIN |
-| 3 | `price_question`, `question_features`, `question_integrations` | Ответить на вопрос |
-| 4 | SPIN-интенты | Проверка прогресса, переход по фазам |
-| 5 | Переходы по интенту | Стандартные переходы |
-| 6 | `data_complete` | Автопереход при сборе данных |
-| 7 | `any` | Автопереход (для greeting) |
-| 8 | Default | Остаться в текущем состоянии |
-
-## Модули
-
-### classifier/ — Классификация интентов
-
-```
-classifier/
-├── __init__.py          # Публичный API
-├── normalizer.py        # TextNormalizer, TYPO_FIXES (692), SPLIT_PATTERNS (176)
-├── disambiguation.py    # IntentDisambiguator для уточнения интентов
-├── hybrid.py            # HybridClassifier (оркестратор)
-├── intents/
-│   ├── patterns.py      # PRIORITY_PATTERNS (212 паттернов)
-│   ├── root_classifier.py   # Быстрая классификация по корням
-│   └── lemma_classifier.py  # Fallback через pymorphy
-└── extractors/
-    └── data_extractor.py    # Извлечение данных + pain_category
-```
-
-Подробнее: [CLASSIFIER.md](./CLASSIFIER.md)
-
-### knowledge/ — База знаний
-
-```
-knowledge/
-├── __init__.py         # Публичный API (WIPON_KNOWLEDGE, get_retriever)
-├── base.py             # KnowledgeSection, KnowledgeBase
-├── loader.py           # Загрузчик YAML файлов
-├── lemmatizer.py       # Лемматизация для поиска
-├── retriever.py        # CascadeRetriever (3-этапный поиск)
-├── category_router.py  # LLM-классификация категорий
-├── reranker.py         # Cross-encoder переоценка
-└── data/               # 17 YAML файлов (1969 секций)
-    ├── _meta.yaml      # Метаданные
-    ├── equipment.yaml  # Оборудование (316)
-    ├── pricing.yaml    # Тарифы (286)
-    ├── products.yaml   # Продукты (273)
-    ├── support.yaml    # Техподдержка (201)
-    ├── tis.yaml        # Товарно-информационная система (191)
-    ├── regions.yaml    # Регионы (130)
-    ├── inventory.yaml  # Складской учёт (93)
-    ├── features.yaml   # Функции (90)
-    ├── integrations.yaml   # Интеграции (86)
-    ├── fiscal.yaml     # Фискализация (68)
-    ├── analytics.yaml  # Аналитика (63)
-    ├── employees.yaml  # Управление персоналом (55)
-    ├── stability.yaml  # Стабильность (45)
-    ├── mobile.yaml     # Мобильное приложение (35)
-    ├── promotions.yaml # Акции и скидки (26)
-    ├── competitors.yaml # Конкуренты (7)
-    └── faq.yaml        # FAQ (4)
-```
-
-**Категории знаний (по размеру):**
-- `equipment` — Оборудование (316 секций)
-- `pricing` — Тарифы (286 секций)
-- `products` — Продукты (273 секции)
-- `support` — Техподдержка (201 секция)
-- `tis` — Товарно-информационная система (191 секция)
-- `regions` — Регионы (130 секций)
-- `inventory` — Складской учёт (93 секции)
-- `features` — Функции (90 секций)
-- `integrations` — Интеграции (86 секций)
-- `fiscal` — Фискализация (68 секций)
-- `analytics` — Аналитика (63 секции)
-- `employees` — Управление персоналом (55 секций)
-- `stability` — Стабильность (45 секций)
-
-Подробнее: [KNOWLEDGE.md](./KNOWLEDGE.md)
+## База знаний
 
 ### CascadeRetriever — 3-этапный поиск
 
@@ -357,7 +315,7 @@ knowledge/
          ▼
 ┌────────────────────┐
 │  4. CategoryRouter │  LLM-классификация категорий
-│  (fallback)        │  Qwen3:8b-fast определяет категории
+│  (fallback)        │  vLLM определяет релевантные категории
 └────────┬───────────┘
          │ при необходимости
          ▼
@@ -367,208 +325,137 @@ knowledge/
 └────────────────────┘
 ```
 
-### state_machine.py — Управление состояниями
+### CategoryRouter
 
-Конечный автомат с SPIN-логикой:
-- 10 состояний (greeting → success/soft_close)
-- Проверка `required_data` и `optional_data` для каждого состояния
-- Умное пропускание фаз I/N при `high_interest`
-- Контекст для классификатора (`last_action`, `last_intent`)
+LLM-классификация запросов по 17 категориям:
 
-### generator.py — Генерация ответов
-
-- Выбор промпт-шаблона по action
-- Подстановка контекста (collected_data, history)
-- Интеграция с CascadeRetriever для вопросов о продукте
-- Вызов LLM (Ollama/Qwen3:8b-fast)
-- Retry при китайских символах или английском тексте (max 3 попытки)
-- Фильтрация нерусского текста из ответа
-- ResponseVariations для вариативности (если включено)
-
-### Модули Phase 0-5
-
-| Модуль | Фаза | Назначение | Флаг |
-|--------|------|------------|------|
-| logger.py | 0 | Структурированное логирование | `structured_logging` |
-| metrics.py | 0 | Трекинг метрик диалогов | `metrics_tracking` |
-| feature_flags.py | 0 | Управление фичами | всегда включен |
-| fallback_handler.py | 1 | 4-уровневый fallback | `multi_tier_fallback` |
-| conversation_guard.py | 1 | Защита от зацикливания | `conversation_guard` |
-| tone_analyzer.py | 2 | Анализ тона клиента | `tone_analysis` |
-| response_variations.py | 2 | Вариативность ответов | `response_variations` |
-| lead_scoring.py | 3 | Скоринг лидов | `lead_scoring` |
-| objection_handler.py | 3 | Обработка возражений | `objection_handler` |
-| cta_generator.py | 3 | Call-to-Action | `cta_generator` |
-| classifier/ | 4 | Intent Disambiguation | `intent_disambiguation` |
-| fallback_handler.py | 5 | Dynamic CTA Fallback | `dynamic_cta_fallback` |
-| data_extractor.py | 5 | Pain category extraction | — (всегда включено) |
-
-### settings.py + settings.yaml — Конфигурация
-
-Централизованное хранилище параметров:
-
-```yaml
-llm:
-  model: "qwen3:8b-fast"
-  base_url: "http://localhost:11434"
-  timeout: 60
-
-retriever:
-  use_embeddings: true
-  embedder_model: "ai-forever/ru-en-RoSBERTa"
-  thresholds:
-    exact: 1.0
-    lemma: 0.15
-    semantic: 0.5
-
-reranker:
-  enabled: true
-  model: "BAAI/bge-reranker-v2-m3"
-  threshold: 0.5
-
-category_router:
-  enabled: true
-  top_k: 3
-
-generator:
-  max_retries: 3
-  history_length: 4
-  retriever_top_k: 2
-
-classifier:
-  weights:
-    root_match: 1.0
-    phrase_match: 2.0
-    lemma_match: 1.5
-  thresholds:
-    high_confidence: 0.7
-    min_confidence: 0.3
-
-feature_flags:
-  structured_logging: true
-  metrics_tracking: true
-  multi_tier_fallback: true
-  conversation_guard: true
-  tone_analysis: false
-  response_variations: true
-  lead_scoring: false
-  objection_handler: false
-  cta_generator: false
-```
-
-Подробнее: [SETTINGS.md](./SETTINGS.md)
-
-### config.py — Конфигурация интентов и промптов
-
-Центральное хранилище:
-- `INTENT_ROOTS` — корни слов для быстрой классификации
-- `INTENT_PHRASES` — фразы для лемматизации
-- `SALES_STATES` — конфигурация состояний SPIN
-- `PROMPT_TEMPLATES` — шаблоны промптов для LLM
-- `SYSTEM_PROMPT` — системный промпт
-- `KNOWLEDGE` — встроенные факты о тарифах
-- `QUESTION_INTENTS` — интенты-вопросы
-
-## Voice Bot (voice_bot/)
-
-Голосовой интерфейс для разговорного взаимодействия:
-
-```
-┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐
-│   faster-whisper  │ ──► │    SalesBot       │ ──► │   F5-TTS Russian  │
-│   (STT)           │     │   (text mode)     │     │   + RUAccent      │
-└───────────────────┘     └───────────────────┘     └───────────────────┘
-      Голос клиента              Обработка               Голос бота
-```
-
-Компоненты:
-- **STT** (Speech-to-Text): faster-whisper с GPU поддержкой
-- **LLM**: Ollama (Qwen3:8b-fast)
-- **TTS** (Text-to-Speech): F5-TTS Russian + RUAccent для ударений
-- Обработка audio: sounddevice, soundfile, numpy
-
-Подробнее: [VOICE.md](./VOICE.md)
-
-## Расширение системы
-
-### Добавление нового интента
-
-1. Добавить корни в `config.INTENT_ROOTS`
-2. Добавить фразы в `config.INTENT_PHRASES`
-3. (опционально) Добавить паттерн в `classifier/intents/patterns.py`
-4. Добавить правила обработки в `state_machine.py` (transitions/rules)
-5. Добавить промпт-шаблон в `config.PROMPT_TEMPLATES`
-
-### Добавление новой SPIN-фазы
-
-1. Создать состояние в `config.SALES_STATES`:
 ```python
-"spin_new_phase": {
-    "goal": "Цель фазы",
-    "spin_phase": "new_phase",
-    "required_data": ["field1"],
-    "optional_data": ["field2"],
-    "transitions": {
-        "relevant_intent": "next_state",
-        "data_complete": "next_state",
-        "rejection": "soft_close"
-    },
-    "rules": {
-        "price_question": "deflect_and_continue"
-    }
+router = CategoryRouter(llm, top_k=3)
+categories = router.route("Сколько стоит Wipon Desktop?")
+# ["pricing", "products"]
+```
+
+**Поддерживает:**
+- Structured Output (vLLM + Outlines) — 100% валидный JSON
+- Legacy режим (generate + parsing) — обратная совместимость
+
+### Категории знаний
+
+| Категория | Секций | Описание |
+|-----------|--------|----------|
+| equipment | 316 | Оборудование и периферия |
+| pricing | 286 | Тарифы и цены |
+| products | 273 | Продукты Wipon |
+| support | 201 | Техподдержка |
+| tis | 191 | Товарно-информационная система |
+| regions | 130 | Регионы и доставка |
+| inventory | 93 | Складской учёт |
+| features | 90 | Функции системы |
+| integrations | 86 | Интеграции |
+| fiscal | 68 | Фискализация |
+| analytics | 63 | Аналитика |
+| employees | 55 | Управление персоналом |
+| stability | 45 | Стабильность |
+| mobile | 35 | Мобильное приложение |
+| promotions | 26 | Акции и скидки |
+| competitors | 7 | Сравнение с конкурентами |
+| faq | 4 | Общие вопросы |
+
+## Feature Flags
+
+Система управления фичами для постепенного включения:
+
+```python
+from feature_flags import flags
+
+if flags.llm_classifier:
+    # Использовать LLM классификатор
+    pass
+```
+
+**Ключевые флаги:**
+
+| Флаг | Default | Описание |
+|------|---------|----------|
+| `llm_classifier` | `True` | LLM классификатор вместо Hybrid |
+| `multi_tier_fallback` | `True` | 4-уровневый fallback |
+| `conversation_guard` | `True` | Защита от зацикливания |
+| `response_variations` | `True` | Вариативность ответов |
+| `cascade_tone_analyzer` | `True` | Каскадный анализатор тона |
+| `tone_analysis` | `False` | Анализ тона клиента |
+| `lead_scoring` | `False` | Скоринг лидов |
+
+**Override через env:**
+```bash
+export FF_LLM_CLASSIFIER=false  # Переключиться на HybridClassifier
+```
+
+## Resilience Patterns
+
+### Circuit Breaker
+
+```
+                    ┌───────────┐
+              ┌────►│  CLOSED   │◄────┐
+              │     └─────┬─────┘     │
+              │           │           │
+         success    5 failures    success
+              │           │           │
+              │     ┌─────▼─────┐     │
+              │     │   OPEN    │     │
+              │     └─────┬─────┘     │
+              │           │           │
+              │      60 sec           │
+              │           │           │
+              │     ┌─────▼─────┐     │
+              └─────│ HALF-OPEN │─────┘
+                    └───────────┘
+```
+
+### Retry с Exponential Backoff
+
+```
+Attempt 1 → fail → wait 1s
+Attempt 2 → fail → wait 2s
+Attempt 3 → fail → wait 4s
+All failed → use fallback
+```
+
+### Fallback Responses
+
+При полном отказе LLM — предопределённые ответы по состояниям:
+
+```python
+FALLBACK_RESPONSES = {
+    "greeting": "Здравствуйте! Чем могу помочь?",
+    "spin_situation": "Расскажите, сколько человек работает в вашей команде?",
+    "spin_problem": "С какими сложностями сталкиваетесь сейчас?",
+    # ...
 }
 ```
-2. Добавить в `SPIN_PHASES` и `SPIN_STATES` в `state_machine.py`
-3. Создать промпт-шаблоны в `config.PROMPT_TEMPLATES`
 
-### Расширение базы знаний
+## Модули системы
 
-1. Создать/редактировать YAML файл в `knowledge/data/`:
-```yaml
-sections:
-- topic: unique_topic_id
-  priority: 5
-  keywords:
-  - ключевое слово 1
-  - ключевое слово 2
-  facts: |
-    Факты о теме.
-    Многострочный текст.
-```
-2. Обновить `_meta.yaml` — увеличить `total_sections`
-3. Запустить валидацию: `python scripts/validate_knowledge_yaml.py`
-
-### Добавление нового Feature Flag
-
-1. Добавить флаг в `settings.yaml`:
-```yaml
-feature_flags:
-  new_feature: false
-```
-
-2. Использовать в коде:
-```python
-from feature_flags import is_enabled
-
-if is_enabled("new_feature"):
-    # новая функциональность
-```
-
-3. Переопределить через env: `FF_NEW_FEATURE=true`
-
-### Изменение параметров
-
-Все параметры вынесены в `settings.yaml`:
-- LLM модель и таймауты
-- Пороги retriever'а
-- Веса классификатора
-- Длина истории и количество retry
-- Feature flags
+| Модуль | Назначение |
+|--------|------------|
+| `bot.py` | Оркестрация: classifier → state_machine → generator |
+| `llm.py` | VLLMClient с circuit breaker и retry |
+| `state_machine.py` | FSM с 10 состояниями и SPIN-логикой |
+| `generator.py` | Генерация ответов через vLLM |
+| `classifier/unified.py` | Адаптер для переключения классификаторов |
+| `classifier/llm/` | LLM классификатор (33 интента) |
+| `classifier/hybrid.py` | Regex-based классификатор (fallback) |
+| `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
+| `knowledge/category_router.py` | LLM-классификация категорий |
+| `knowledge/reranker.py` | Cross-encoder переоценка |
+| `feature_flags.py` | Управление фичами |
+| `settings.py` | Конфигурация из YAML |
+| `config.py` | Интенты, состояния, промпты |
 
 ## Тестирование
 
 ```bash
-# Все тесты (1379)
+# Все тесты
 pytest tests/ -v
 
 # Тесты классификатора
@@ -578,37 +465,61 @@ pytest tests/test_classifier.py -v
 pytest tests/test_spin.py -v
 
 # Тесты базы знаний
-pytest tests/test_knowledge.py -v
-
-# Тесты каскадного retriever
-pytest tests/test_cascade_retriever.py tests/test_cascade_advanced.py -v
+pytest tests/test_knowledge.py tests/test_cascade*.py -v
 
 # Тесты CategoryRouter
 pytest tests/test_category_router*.py -v
-
-# Тесты настроек
-pytest tests/test_settings.py -v
-
-# Тесты фаз 0-4
-pytest tests/test_phase*_integration.py -v
 ```
 
 ## Зависимости
 
 | Пакет | Назначение |
 |-------|------------|
-| `ollama` | Локальная LLM (qwen3:8b-fast) |
+| `vllm` | vLLM сервер для LLM |
+| `outlines` | Structured output (guided decoding) |
+| `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка |
-| `sentence-transformers` | Эмбеддинги (ai-forever/ru-en-RoSBERTa) |
+| `sentence-transformers` | Эмбеддинги (RoSBERTa) |
 | `requests` | HTTP-клиент |
 | `pyyaml` | Парсинг YAML |
 | `pytest` | Тестирование |
 
-Voice Bot:
-| Пакет | Назначение |
-|-------|------------|
-| `faster-whisper` | Speech-to-Text |
-| `f5-tts` | Text-to-Speech |
-| `RUAccent` | Расстановка ударений |
-| `sounddevice` | Работа с аудио |
-| `torch` | GPU поддержка |
+## Расширение системы
+
+### Добавление нового интента
+
+1. Добавить в `classifier/llm/prompts.py`:
+   - Описание интента
+   - Few-shot примеры
+2. (опционально) Добавить в `config.INTENT_ROOTS` и `config.INTENT_PHRASES`
+3. Добавить правила в `state_machine.py`
+4. Добавить промпт-шаблон в `config.PROMPT_TEMPLATES`
+
+### Расширение базы знаний
+
+1. Создать/редактировать YAML в `knowledge/data/`:
+```yaml
+sections:
+- topic: unique_topic_id
+  priority: 5
+  keywords:
+  - ключевое слово
+  facts: |
+    Факты о теме.
+```
+2. Запустить валидацию: `python scripts/validate_knowledge_yaml.py`
+
+### Добавление нового Feature Flag
+
+1. Добавить в `feature_flags.py:DEFAULTS`:
+```python
+"new_feature": False,
+```
+2. Добавить property (опционально):
+```python
+@property
+def new_feature(self) -> bool:
+    return self.is_enabled("new_feature")
+```
+3. Использовать: `if flags.new_feature: ...`
+4. Override через env: `FF_NEW_FEATURE=true`
