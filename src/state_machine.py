@@ -27,56 +27,25 @@ from feature_flags import flags
 from logger import logger
 
 # Phase 4: Conditional Rules imports
-from src.intent_tracker import IntentTracker, INTENT_CATEGORIES
+from src.intent_tracker import IntentTracker
 from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_registry
 from src.rules.resolver import RuleResolver
 from src.conditions.trace import EvaluationTrace, TraceCollector, Resolution
 
+# Phase 1 Parameterization: Import constants from YAML config (single source of truth)
+from src.yaml_config.constants import (
+    SPIN_PHASES,
+    SPIN_STATES,
+    SPIN_PROGRESS_INTENTS,
+    GO_BACK_INTENTS,
+    OBJECTION_INTENTS,
+    POSITIVE_INTENTS,
+    INTENT_CATEGORIES,
+)
+
 if TYPE_CHECKING:
     from src.config_loader import LoadedConfig
-
-
-# SPIN-фазы и их порядок
-SPIN_PHASES = ["situation", "problem", "implication", "need_payoff"]
-
-# Состояния SPIN
-SPIN_STATES = {
-    "situation": "spin_situation",
-    "problem": "spin_problem",
-    "implication": "spin_implication",
-    "need_payoff": "spin_need_payoff",
-}
-
-# SPIN-интенты которые указывают на прогресс в соответствующей фазе
-SPIN_PROGRESS_INTENTS = {
-    "situation_provided": "situation",
-    "problem_revealed": "problem",
-    "implication_acknowledged": "implication",
-    "need_expressed": "need_payoff",
-}
-
-# Интенты для возврата назад
-GO_BACK_INTENTS = ["go_back", "correct_info"]
-
-# Интенты возражений (для обратной совместимости)
-# Canonical source is now INTENT_CATEGORIES["objection"] from intent_tracker.py
-OBJECTION_INTENTS = INTENT_CATEGORIES.get("objection", [
-    "objection_price",
-    "objection_competitor",
-    "objection_no_time",
-    "objection_think",
-])
-
-# Положительные интенты (сбрасывают счётчик возражений)
-# Canonical source is now INTENT_CATEGORIES["positive"]
-POSITIVE_INTENTS = set(INTENT_CATEGORIES.get("positive", [
-    "agreement", "demo_request", "callback_request", "contact_provided",
-    "consultation_request", "situation_provided", "problem_revealed",
-    "implication_acknowledged", "need_expressed", "info_provided",
-    "question_features", "question_integrations", "comparison",
-    "greeting", "gratitude",
-]))
 
 
 # =============================================================================
@@ -360,6 +329,15 @@ class StateMachine:
         return SPIN_STATES
 
     @property
+    def spin_progress_intents(self) -> Dict[str, str]:
+        """Get SPIN progress intents mapping (intent -> phase)."""
+        if self._config:
+            return self._config.constants.get("spin", {}).get(
+                "progress_intents", SPIN_PROGRESS_INTENTS
+            )
+        return SPIN_PROGRESS_INTENTS
+
+    @property
     def states_config(self) -> Dict[str, Any]:
         """Get states configuration."""
         if self._config:
@@ -550,7 +528,7 @@ class StateMachine:
 
     def _get_missing_data(self) -> List[str]:
         """Получить список недостающих обязательных данных."""
-        config = SALES_STATES.get(self.state, {})
+        config = self.states_config.get(self.state, {})
         required = config.get("required_data", [])
         return [f for f in required if not self.collected_data.get(f)]
 
@@ -560,19 +538,22 @@ class StateMachine:
 
     def _get_current_spin_phase(self) -> Optional[str]:
         """Определяем текущую SPIN-фазу по состоянию"""
-        config = SALES_STATES.get(self.state, {})
+        config = self.states_config.get(self.state, {})
         return config.get("spin_phase")
 
     def _get_next_spin_state(self, current_phase: str) -> Optional[str]:
-        """Определяем следующее SPIN-состояние"""
-        if current_phase not in SPIN_PHASES:
+        """Определяем следующее SPIN-состояние (читает из конфига)."""
+        phases = self.spin_phases
+        states = self.spin_states
+
+        if current_phase not in phases:
             return None
 
-        current_idx = SPIN_PHASES.index(current_phase)
-        if current_idx < len(SPIN_PHASES) - 1:
-            next_phase = SPIN_PHASES[current_idx + 1]
-            return SPIN_STATES.get(next_phase)
-        return "presentation"  # После need_payoff идёт presentation
+        current_idx = phases.index(current_phase)
+        if current_idx < len(phases) - 1:
+            next_phase = phases[current_idx + 1]
+            return states.get(next_phase)
+        return "presentation"  # После последней фазы идёт presentation
 
     def _check_spin_data_complete(self, config: Dict) -> bool:
         """Проверяем собраны ли данные для текущей SPIN-фазы"""
@@ -608,11 +589,13 @@ class StateMachine:
         Returns:
             True если intent_phase соответствует текущей или следующей фазе
         """
-        if intent_phase not in SPIN_PHASES or current_phase not in SPIN_PHASES:
+        phases = self.spin_phases
+
+        if intent_phase not in phases or current_phase not in phases:
             return False
 
-        intent_idx = SPIN_PHASES.index(intent_phase)
-        current_idx = SPIN_PHASES.index(current_phase)
+        intent_idx = phases.index(intent_phase)
+        current_idx = phases.index(current_phase)
 
         return intent_idx >= current_idx
 
@@ -698,7 +681,7 @@ class StateMachine:
         # Phase 4 STEP 2: Build EvaluatorContext for conditions
         # Phase 5: Include context_envelope for context-aware conditions
         # =====================================================================
-        config = SALES_STATES.get(self.state, {})
+        config = self.states_config.get(self.state, {})
         transitions = config.get("transitions", {})
         rules = config.get("rules", {})
         spin_phase = self._get_current_spin_phase()
@@ -852,8 +835,9 @@ class StateMachine:
         # ПРИОРИТЕТ 4: SPIN-специфичная логика
         # =====================================================================
         if spin_phase:
-            if intent in SPIN_PROGRESS_INTENTS:
-                intent_phase = SPIN_PROGRESS_INTENTS[intent]
+            progress_intents = self.spin_progress_intents
+            if intent in progress_intents:
+                intent_phase = progress_intents[intent]
                 if self._is_spin_phase_progression(intent_phase, spin_phase):
                     next_state = self._resolve_transition(intent, transitions, ctx, trace)
                     if next_state:
@@ -869,7 +853,7 @@ class StateMachine:
             if intent not in transitions and self._check_spin_data_complete(config):
                 next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
                 if next_state:
-                    next_config = SALES_STATES.get(next_state, {})
+                    next_config = self.states_config.get(next_state, {})
                     next_phase = next_config.get("spin_phase")
                     if next_phase and self._should_skip_spin_phase(next_phase):
                         skip_transitions = next_config.get("transitions", {})
@@ -978,7 +962,7 @@ class StateMachine:
         if next_state == "spin_need_payoff" and prev_state != "spin_need_payoff":
             self.collected_data["need_payoff_probed"] = True  # = need_payoff_phase_entered
 
-        config = SALES_STATES.get(self.state, {})
+        config = self.states_config.get(self.state, {})
         required = config.get("required_data", [])
         missing = [f for f in required if not self.collected_data.get(f)]
 
@@ -1024,7 +1008,7 @@ class StateMachine:
         Returns:
             EvaluatorContext with current state data
         """
-        config = SALES_STATES.get(self.state, {})
+        config = self.states_config.get(self.state, {})
         return EvaluatorContext.from_state_machine(self, intent, config)
 
 
