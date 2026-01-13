@@ -60,7 +60,9 @@ from src.config_loader import (
     ConfigLoadError,
     ConfigValidationError,
     get_config,
+    get_config_validated,
     init_config,
+    validate_config_conditions,
 )
 
 
@@ -101,5 +103,7 @@ __all__ = [
     "ConfigLoadError",
     "ConfigValidationError",
     "get_config",
+    "get_config_validated",
     "init_config",
+    "validate_config_conditions",
 ]

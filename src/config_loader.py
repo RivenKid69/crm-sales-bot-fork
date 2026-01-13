@@ -8,10 +8,13 @@ Part of Phase 1: State Machine Parameterization
 """
 
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Set, Union
+from typing import Dict, Any, Optional, List, Set, Union, TYPE_CHECKING
 from dataclasses import dataclass, field
 import yaml
 import logging
+
+if TYPE_CHECKING:
+    from src.conditions.registry import ConditionRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -485,6 +488,144 @@ def init_config(config_dir: Optional[Path] = None) -> LoadedConfig:
     return _config_instance
 
 
+def validate_config_conditions(
+    config: LoadedConfig,
+    registry: "ConditionRegistry",
+    raise_on_error: bool = True
+) -> Dict[str, Any]:
+    """
+    Validate that all 'when:' conditions in config reference existing conditions.
+
+    This function validates:
+    - Conditions in state rules (rules.intent.when)
+    - Conditions in transitions (transitions.intent.when)
+    - Custom conditions expressions
+
+    Args:
+        config: LoadedConfig instance to validate
+        registry: ConditionRegistry with registered conditions
+        raise_on_error: If True, raise ConfigValidationError on errors
+
+    Returns:
+        Dict with validation results:
+        {
+            "is_valid": bool,
+            "errors": [...],
+            "warnings": [...],
+            "checked_rules": int,
+            "checked_transitions": int
+        }
+
+    Raises:
+        ConfigValidationError: If raise_on_error=True and validation fails
+
+    Example:
+        from src.config_loader import get_config, validate_config_conditions
+        from src.conditions.state_machine.registry import sm_registry
+
+        config = get_config()
+        result = validate_config_conditions(config, sm_registry)
+        if not result["is_valid"]:
+            print("Validation errors:", result["errors"])
+    """
+    from src.rules.resolver import RuleResolver
+    from src.conditions.expression_parser import ConditionExpressionParser
+
+    # Create expression parser for composite conditions
+    expression_parser = ConditionExpressionParser(
+        registry=registry,
+        custom_conditions=config.custom_conditions
+    )
+
+    # Create resolver with expression parser
+    resolver = RuleResolver(
+        registry=registry,
+        default_action=config.default_action,
+        expression_parser=expression_parser
+    )
+
+    # Get known states
+    known_states = set(config.states.keys())
+
+    # Validate config
+    validation_result = resolver.validate_config(
+        states_config=config.states,
+        global_rules={},
+        known_states=known_states
+    )
+
+    # Also validate custom conditions
+    custom_errors = expression_parser.validate_custom_conditions()
+    for name, errors in custom_errors.items():
+        for error in errors:
+            validation_result.add_error(
+                error_type="custom_condition_error",
+                message=f"Custom condition '{name}': {error}",
+                condition_name=name
+            )
+
+    # Convert to dict
+    result = validation_result.to_dict()
+
+    # Log results
+    if validation_result.is_valid:
+        logger.info(
+            f"Config validation passed: "
+            f"{validation_result.checked_rules} rules, "
+            f"{validation_result.checked_transitions} transitions"
+        )
+    else:
+        logger.warning(
+            f"Config validation found {len(validation_result.errors)} error(s)"
+        )
+        for err in validation_result.errors:
+            logger.warning(f"  - {err.message}")
+
+    # Raise if requested
+    if raise_on_error and not validation_result.is_valid:
+        error_messages = [e.message for e in validation_result.errors]
+        raise ConfigValidationError(error_messages)
+
+    return result
+
+
+def get_config_validated(
+    registry: "ConditionRegistry" = None,
+    reload: bool = False
+) -> LoadedConfig:
+    """
+    Get configuration with condition validation.
+
+    This is a convenience function that loads config and validates
+    all condition references against the registry.
+
+    Args:
+        registry: ConditionRegistry to validate against (defaults to sm_registry)
+        reload: Force reload from files
+
+    Returns:
+        LoadedConfig instance (validated)
+
+    Raises:
+        ConfigValidationError: If condition validation fails
+
+    Example:
+        from src.config_loader import get_config_validated
+        config = get_config_validated()  # Uses sm_registry by default
+    """
+    config = get_config(reload=reload)
+
+    # Get registry if not provided
+    if registry is None:
+        from src.conditions.state_machine.registry import sm_registry
+        registry = sm_registry
+
+    # Validate conditions
+    validate_config_conditions(config, registry, raise_on_error=True)
+
+    return config
+
+
 # Export all public components
 __all__ = [
     "ConfigLoader",
@@ -492,5 +633,7 @@ __all__ = [
     "ConfigLoadError",
     "ConfigValidationError",
     "get_config",
+    "get_config_validated",
     "init_config",
+    "validate_config_conditions",
 ]
