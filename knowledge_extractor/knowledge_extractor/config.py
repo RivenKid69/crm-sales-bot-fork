@@ -13,7 +13,7 @@ class LLMConfig:
     timeout: int = 120
     max_retries: int = 3
     temperature: float = 0.3
-    max_tokens: int = 4096
+    max_tokens: int = 1024  # Conservative default for small models
 
 
 @dataclass

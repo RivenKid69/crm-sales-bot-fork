@@ -38,6 +38,7 @@ class SemanticDeduplicator:
         similarity_threshold: float = 0.85,
         embedder_model: str = "ai-forever/ru-en-RoSBERTa",
         merge_strategy: str = "longest",
+        device: str = "auto",
     ):
         """
         Initialize deduplicator.
@@ -46,24 +47,42 @@ class SemanticDeduplicator:
             similarity_threshold: Cosine similarity threshold for considering duplicates
             embedder_model: Sentence-transformers model for embeddings
             merge_strategy: "longest" (keep longest facts) or "highest_priority"
+            device: Device for embeddings ("auto", "cpu", "cuda"). Auto will try CUDA, fallback to CPU.
         """
         self.similarity_threshold = similarity_threshold
         self.embedder_model = embedder_model
         self.merge_strategy = merge_strategy
+        self.device = device
         self._embedder = None
 
     def _get_embedder(self):
-        """Lazy load embedder."""
+        """Lazy load embedder with CPU fallback."""
         if self._embedder is None:
             try:
                 from sentence_transformers import SentenceTransformer
 
                 logger.info(f"Loading embedder: {self.embedder_model}")
-                self._embedder = SentenceTransformer(self.embedder_model)
+
+                # Determine device
+                device = self.device
+                if device == "auto":
+                    # Try CPU first to avoid conflicts with vLLM
+                    device = "cpu"
+                    logger.info("Using CPU for embeddings (auto mode)")
+
+                self._embedder = SentenceTransformer(self.embedder_model, device=device)
+
             except ImportError:
                 raise ImportError(
                     "sentence-transformers not installed. Run: pip install sentence-transformers"
                 )
+            except RuntimeError as e:
+                if "CUDA" in str(e) or "out of memory" in str(e):
+                    logger.warning(f"CUDA error, falling back to CPU: {e}")
+                    from sentence_transformers import SentenceTransformer
+                    self._embedder = SentenceTransformer(self.embedder_model, device="cpu")
+                else:
+                    raise
         return self._embedder
 
     def deduplicate(self, sections: List[ExtractedSection]) -> DeduplicationResult:

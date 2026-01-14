@@ -83,6 +83,12 @@ Supported formats:
         default="Qwen/Qwen3-14B",
         help="LLM model name (default: Qwen/Qwen3-14B)",
     )
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=1024,
+        help="Max tokens for LLM response (default: 1024)",
+    )
 
     # Output options
     parser.add_argument(
@@ -145,6 +151,7 @@ Supported formats:
         llm=LLMConfig(
             base_url=args.llm_url,
             model=args.llm_model,
+            max_tokens=args.max_tokens,
         ),
         chunking=ChunkingConfig(),
         extraction=ExtractionConfig(
