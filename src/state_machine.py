@@ -743,6 +743,309 @@ class StateMachine:
 
         return None
 
+    # =========================================================================
+    # Priority-Driven Rule Application (Этап 4)
+    # =========================================================================
+
+    def _apply_priority(
+        self,
+        priority: Dict[str, Any],
+        intent: str,
+        config: Dict,
+        transitions: Dict,
+        rules: Dict,
+        ctx: Any,
+        trace: Optional['EvaluationTrace'] = None
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Apply a single priority and return result if matched.
+
+        Args:
+            priority: Priority configuration from YAML
+            intent: Current intent
+            config: Current state configuration
+            transitions: State transitions
+            rules: State rules
+            ctx: EvaluatorContext for condition evaluation
+            trace: Optional trace for debugging
+
+        Returns:
+            Tuple[action, next_state] if priority matched, None otherwise
+        """
+        priority_name = priority.get("name", "unknown")
+
+        # Check if priority applies to this intent
+        if not self._priority_matches_intent(priority, intent, config):
+            return None
+
+        # Check condition if specified
+        condition = priority.get("condition")
+        if condition and not self._evaluate_priority_condition(condition, ctx, config):
+            # Check 'else' clause
+            else_action = priority.get("else")
+            if else_action == "use_transitions":
+                next_state = self._resolve_transition(intent, transitions, ctx, trace)
+                if next_state:
+                    return f"transition_to_{next_state}", next_state
+            return None
+
+        # Check feature flag if specified
+        feature_flag = priority.get("feature_flag")
+        if feature_flag and not getattr(flags, feature_flag, False):
+            return None
+
+        # Handle the priority
+        handler = priority.get("handler")
+        if handler:
+            return self._call_priority_handler(handler, intent, config, transitions, ctx, trace)
+
+        # Direct action
+        action = priority.get("action")
+        if action:
+            if action == "final":
+                return "final", self.state
+            elif action.startswith("transition_to_"):
+                next_state = action.replace("transition_to_", "")
+                return action, next_state
+            return action, self.state
+
+        # Use transitions
+        if priority.get("use_transitions"):
+            trigger = priority.get("trigger")
+            if trigger:
+                # Use trigger as key (e.g., "data_complete", "any")
+                next_state = self._resolve_transition(trigger, transitions, ctx, trace)
+            else:
+                next_state = self._resolve_transition(intent, transitions, ctx, trace)
+            if next_state:
+                return f"transition_to_{next_state}", next_state
+
+        # Use resolver for rules
+        if priority.get("use_resolver") and priority.get("source") == "rules":
+            if intent in rules:
+                rule_value = rules[intent]
+                if isinstance(rule_value, (list, dict)):
+                    action = self._resolver.resolve_action(
+                        intent=intent,
+                        state_rules=rules,
+                        global_rules={},
+                        ctx=ctx,
+                        state=self.state,
+                        trace=trace
+                    )
+                    return action, self.state
+                else:
+                    return rule_value, self.state
+
+        # Default action from priority
+        default_action = priority.get("default_action")
+        if default_action:
+            next_state = self._resolve_transition(intent, transitions, ctx, trace) or self.state
+            return default_action, next_state
+
+        return None
+
+    def _priority_matches_intent(
+        self,
+        priority: Dict[str, Any],
+        intent: str,
+        config: Dict
+    ) -> bool:
+        """
+        Check if a priority matches the current intent.
+
+        Args:
+            priority: Priority configuration
+            intent: Current intent
+            config: State configuration
+
+        Returns:
+            True if priority applies to this intent
+        """
+        # Check specific intents list
+        intents = priority.get("intents", [])
+        if intents and intent in intents:
+            return True
+
+        # Check intent category
+        intent_category = priority.get("intent_category")
+        if intent_category:
+            category_intents = INTENT_CATEGORIES.get(intent_category, [])
+            if intent in category_intents:
+                return True
+
+        # Check trigger (special keys like "data_complete", "any")
+        trigger = priority.get("trigger")
+        if trigger:
+            return True  # Triggers always apply, actual logic is in handler
+
+        # Check source (e.g., "rules" - applies if intent is in state rules)
+        source = priority.get("source")
+        if source == "rules":
+            return intent in config.get("rules", {})
+
+        # Check condition-only priorities (like final_state)
+        if priority.get("condition") and not intents and not intent_category:
+            return True
+
+        # Check handler (like phase_progress_handler)
+        if priority.get("handler"):
+            return True
+
+        # Check use_transitions without specific intents
+        if priority.get("use_transitions") and not intents and not intent_category and not trigger:
+            return True
+
+        return False
+
+    def _evaluate_priority_condition(
+        self,
+        condition: str,
+        ctx: Any,
+        config: Dict
+    ) -> bool:
+        """
+        Evaluate a priority condition.
+
+        Args:
+            condition: Condition name
+            ctx: EvaluatorContext
+            config: State configuration
+
+        Returns:
+            True if condition is met
+        """
+        if condition == "is_final":
+            return config.get("is_final", False)
+        elif condition == "objection_limit_reached":
+            return self._check_objection_limit()
+        elif condition == "has_all_required_data":
+            return self._check_phase_data_complete(config)
+        else:
+            # Try to evaluate via condition registry
+            try:
+                return sm_registry.evaluate(condition, ctx)
+            except Exception:
+                return False
+
+    def _call_priority_handler(
+        self,
+        handler: str,
+        intent: str,
+        config: Dict,
+        transitions: Dict,
+        ctx: Any,
+        trace: Optional['EvaluationTrace'] = None
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Call a priority handler method.
+
+        Args:
+            handler: Handler name
+            intent: Current intent
+            config: State configuration
+            transitions: State transitions
+            ctx: EvaluatorContext
+            trace: Optional trace
+
+        Returns:
+            Tuple[action, next_state] or None
+        """
+        if handler == "circular_flow_handler":
+            prev_state = self.circular_flow.go_back(self.state)
+            if prev_state:
+                return "go_back", prev_state
+            return None
+
+        elif handler == "phase_progress_handler":
+            spin_phase = self._get_current_phase()
+            if not spin_phase:
+                return None
+
+            progress_intents = self.progress_intents
+            if intent in progress_intents:
+                intent_phase = progress_intents[intent]
+                if self._is_phase_progression(intent_phase, spin_phase):
+                    next_state = self._resolve_transition(intent, transitions, ctx, trace)
+                    if next_state:
+                        return f"transition_to_{next_state}", next_state
+
+            # Auto-transition by data_complete within phase
+            if intent not in transitions and self._check_phase_data_complete(config):
+                next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
+                if next_state:
+                    # Check if next phase should be skipped
+                    next_config = self.states_config.get(next_state, {})
+                    next_phase = next_config.get("phase") or next_config.get("spin_phase")
+                    if next_phase and self._should_skip_phase(next_phase):
+                        skip_transitions = next_config.get("transitions", {})
+                        skip_next = self._resolve_transition("data_complete", skip_transitions, ctx, trace)
+                        if skip_next:
+                            next_state = skip_next
+                    return f"transition_to_{next_state}", next_state
+
+            return None
+
+        return None
+
+    def _apply_rules_priority_driven(
+        self,
+        intent: str,
+        config: Dict,
+        transitions: Dict,
+        rules: Dict,
+        ctx: Any,
+        trace: Optional['EvaluationTrace'] = None
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Apply rules using priority-driven approach from FlowConfig.
+
+        Iterates through priorities sorted by priority number and applies
+        each one until a result is found.
+
+        Args:
+            intent: Current intent
+            config: State configuration
+            transitions: State transitions
+            rules: State rules
+            ctx: EvaluatorContext
+            trace: Optional trace for debugging
+
+        Returns:
+            Tuple[action, next_state] if any priority matched, None otherwise
+        """
+        # Sort priorities by priority number (lower = higher priority)
+        sorted_priorities = sorted(
+            self.priorities,
+            key=lambda p: p.get("priority", 999)
+        )
+
+        # Special handling for objection intents - save state before objection
+        if intent in OBJECTION_INTENTS:
+            if self._state_before_objection is None:
+                self._state_before_objection = self.state
+            logger.info(
+                "Objection recorded",
+                type=intent,
+                consecutive=self.intent_tracker.objection_consecutive(),
+                total=self.intent_tracker.objection_total()
+            )
+
+        # Reset state_before_objection on positive intents
+        if intent in POSITIVE_INTENTS:
+            self._state_before_objection = None
+
+        # Iterate through priorities
+        for priority in sorted_priorities:
+            result = self._apply_priority(
+                priority, intent, config, transitions, rules, ctx, trace
+            )
+            if result:
+                return result
+
+        # No priority matched - return default
+        return "continue_current_goal", self.state
+
     def apply_rules(self, intent: str, context_envelope: Any = None) -> Tuple[str, str]:
         """
         Определяем действие и следующее состояние.
@@ -804,6 +1107,26 @@ class StateMachine:
                 state=self.state,
                 domain="state_machine"
             )
+
+        # =====================================================================
+        # PRIORITY-DRIVEN APPROACH (Этап 4)
+        # When FlowConfig is available with priorities, use configurable logic
+        # =====================================================================
+        if self._flow and self.priorities:
+            result = self._apply_rules_priority_driven(
+                intent, config, transitions, rules, ctx, trace
+            )
+            if result:
+                action, next_state = result
+                if trace and not trace.final_action:
+                    trace.set_result(action, Resolution.SIMPLE)
+                self._last_trace = trace
+                return action, next_state
+
+        # =====================================================================
+        # LEGACY APPROACH: Hardcoded priorities (backward compatibility)
+        # Used when no FlowConfig or no priorities defined
+        # =====================================================================
 
         # =====================================================================
         # ПРИОРИТЕТ 0: Финальное состояние

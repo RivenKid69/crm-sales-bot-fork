@@ -6,11 +6,14 @@
 - PersonalizationEngine: персонализация на основе собранных данных
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from knowledge.retriever import get_retriever
 from settings import settings
 from logger import logger
+
+if TYPE_CHECKING:
+    from src.config_loader import FlowConfig
 
 
 # =============================================================================
@@ -310,8 +313,17 @@ class PersonalizationEngine:
 
 
 class ResponseGenerator:
-    def __init__(self, llm):
+    def __init__(self, llm, flow: "FlowConfig" = None):
+        """
+        Initialize ResponseGenerator.
+
+        Args:
+            llm: LLM instance for generation
+            flow: Optional FlowConfig for YAML-based templates
+        """
         self.llm = llm
+        self._flow = flow
+
         # Параметры из settings
         self.max_retries = settings.generator.max_retries
         self.history_length = settings.generator.history_length
@@ -394,6 +406,25 @@ class ResponseGenerator:
         """Проверяем есть ли иностранный текст (китайский или английский)"""
         return self._has_chinese(text) or self._has_english(text)
 
+    def _get_template(self, template_key: str) -> str:
+        """
+        Get template by key, with FlowConfig fallback to PROMPT_TEMPLATES.
+
+        Args:
+            template_key: Template name (e.g., 'spin_situation', 'deflect_and_continue')
+
+        Returns:
+            Template string
+        """
+        # Try FlowConfig templates first
+        if self._flow:
+            template = self._flow.get_template(template_key)
+            if template:
+                return template
+
+        # Fallback to Python PROMPT_TEMPLATES
+        return PROMPT_TEMPLATES.get(template_key, PROMPT_TEMPLATES.get("continue_current_goal", ""))
+
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""
 
@@ -437,10 +468,14 @@ class ResponseGenerator:
         spin_phase = context.get("spin_phase", "")
         if template_key == "continue_current_goal" and spin_phase:
             spin_template_key = f"spin_{spin_phase}"
-            if spin_template_key in PROMPT_TEMPLATES:
+            # Check if template exists (either in FlowConfig or PROMPT_TEMPLATES)
+            if self._flow and self._flow.get_template(spin_template_key):
+                template_key = spin_template_key
+            elif spin_template_key in PROMPT_TEMPLATES:
                 template_key = spin_template_key
 
-        template = PROMPT_TEMPLATES.get(template_key, PROMPT_TEMPLATES["continue_current_goal"])
+        # Get template using the new method with FlowConfig fallback
+        template = self._get_template(template_key)
 
         # Собираем переменные
         collected = context.get("collected_data", {})

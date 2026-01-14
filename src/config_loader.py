@@ -246,6 +246,33 @@ class FlowConfig:
         """Get a flow variable."""
         return self.variables.get(name, default)
 
+    def get_template(self, action: str) -> Optional[str]:
+        """
+        Get prompt template string for an action.
+
+        Args:
+            action: Action name (e.g., 'spin_situation', 'deflect_and_continue')
+
+        Returns:
+            Template string or None if not found
+        """
+        template_config = self.templates.get(action)
+        if template_config:
+            return template_config.get("template")
+        return None
+
+    def get_template_config(self, action: str) -> Optional[Dict[str, Any]]:
+        """
+        Get full template configuration for an action.
+
+        Args:
+            action: Action name
+
+        Returns:
+            Dict with template, description, parameters, etc.
+        """
+        return self.templates.get(action)
+
 
 class ConfigLoader:
     """
@@ -648,7 +675,7 @@ class ConfigLoader:
             priorities=priorities,
             variables=variables,
             entry_points=flow_config.get("entry_points", {"default": "greeting"}),
-            templates={}  # TODO: Load templates in Этап 5
+            templates=self._load_flow_templates(flow_name)
         )
 
         if validate:
@@ -834,6 +861,35 @@ class ConfigLoader:
                 result[idx] = self._deep_merge(result[idx], override)
 
         return result
+
+    def _load_flow_templates(self, flow_name: str) -> Dict[str, Dict[str, Any]]:
+        """
+        Load prompt templates for a flow.
+
+        Loads base templates from templates/_base/ and merges with
+        flow-specific templates from templates/{flow_name}/.
+
+        Args:
+            flow_name: Name of the flow
+
+        Returns:
+            Dict of template_name -> template_config
+        """
+        templates = {}
+
+        # Load base templates
+        base_templates_file = self.config_dir / "templates" / "_base" / "prompts.yaml"
+        if base_templates_file.exists():
+            base_data = self._load_yaml("templates/_base/prompts.yaml", required=False)
+            templates.update(base_data.get("templates", {}))
+
+        # Load flow-specific templates (override base)
+        flow_templates_file = self.config_dir / "templates" / flow_name / "prompts.yaml"
+        if flow_templates_file.exists():
+            flow_data = self._load_yaml(f"templates/{flow_name}/prompts.yaml", required=False)
+            templates.update(flow_data.get("templates", {}))
+
+        return templates
 
     def _validate_flow(self, flow: FlowConfig) -> None:
         """Validate a loaded flow configuration."""
