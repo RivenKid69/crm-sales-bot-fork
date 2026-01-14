@@ -168,12 +168,92 @@ class LoadedConfig:
         return on_enter
 
 
+@dataclass
+class FlowConfig:
+    """
+    Configuration for a modular flow (SPIN, BANT, Support, etc.).
+
+    FlowConfig represents a complete flow definition loaded from
+    flows/{flow_name}/ directory, with all inheritance resolved.
+    """
+    name: str
+    version: str = "1.0"
+    description: str = ""
+
+    # Resolved states (after extends/mixins)
+    states: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
+    # Phase configuration (optional - some flows don't have phases)
+    phases: Optional[Dict[str, Any]] = None
+
+    # Processing priorities
+    priorities: List[Dict[str, Any]] = field(default_factory=list)
+
+    # Flow variables (substituted in templates)
+    variables: Dict[str, Any] = field(default_factory=dict)
+
+    # Entry points for different scenarios
+    entry_points: Dict[str, str] = field(default_factory=dict)
+
+    # Prompt templates
+    templates: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
+    # Computed properties
+    @property
+    def post_phases_state(self) -> Optional[str]:
+        """State to transition to after all phases complete."""
+        if self.phases:
+            return self.phases.get("post_phases_state", "presentation")
+        return None
+
+    @property
+    def phase_order(self) -> List[str]:
+        """Ordered list of phase names."""
+        if self.phases:
+            return self.phases.get("order", [])
+        return []
+
+    @property
+    def phase_mapping(self) -> Dict[str, str]:
+        """Mapping from phase name to state name."""
+        if self.phases:
+            return self.phases.get("mapping", {})
+        return {}
+
+    @property
+    def progress_intents(self) -> Dict[str, str]:
+        """Intents that indicate progress through phases."""
+        if self.phases:
+            return self.phases.get("progress_intents", {})
+        return {}
+
+    @property
+    def skip_conditions(self) -> Dict[str, List[str]]:
+        """Conditions for skipping phases."""
+        if self.phases:
+            return self.phases.get("skip_conditions", {})
+        return {}
+
+    def get_state_for_phase(self, phase: str) -> Optional[str]:
+        """Get state name for a phase."""
+        return self.phase_mapping.get(phase)
+
+    def get_entry_point(self, scenario: str = "default") -> str:
+        """Get entry state for a scenario."""
+        return self.entry_points.get(scenario, self.entry_points.get("default", "greeting"))
+
+    def get_variable(self, name: str, default: Any = None) -> Any:
+        """Get a flow variable."""
+        return self.variables.get(name, default)
+
+
 class ConfigLoader:
     """
     Loads and validates YAML configuration files.
 
     Provides:
     - Loading of all config files from src/config/
+    - Loading of modular flows from flows/{flow_name}/
     - Validation of references between files
     - Threshold synchronization checks
     - Fallback to default values
@@ -464,6 +544,341 @@ class ConfigLoader:
         """Reload configuration from files."""
         return self.load(validate=True)
 
+    # =========================================================================
+    # FLOW LOADING (Modular flows with extends/mixins)
+    # =========================================================================
+
+    def load_flow(self, flow_name: str, validate: bool = True) -> FlowConfig:
+        """
+        Load a modular flow by name.
+
+        Loads flow configuration from flows/{flow_name}/ directory,
+        resolving all extends, mixins, and parameter substitutions.
+
+        Args:
+            flow_name: Name of the flow (e.g., "spin_selling", "bant")
+            validate: Whether to validate the flow configuration
+
+        Returns:
+            FlowConfig with all inheritance resolved
+
+        Raises:
+            ConfigLoadError: If flow files cannot be loaded
+            ConfigValidationError: If validation fails
+
+        Example:
+            loader = ConfigLoader()
+            flow = loader.load_flow("spin_selling")
+            print(flow.phase_order)  # ['situation', 'problem', ...]
+        """
+        flow_dir = self.config_dir / "flows" / flow_name
+        flow_file = flow_dir / "flow.yaml"
+
+        if not flow_file.exists():
+            raise ConfigLoadError(
+                str(flow_file),
+                f"Flow '{flow_name}' not found"
+            )
+
+        # Load flow.yaml
+        flow_data = self._load_yaml(f"flows/{flow_name}/flow.yaml", required=True)
+        flow_config = flow_data.get("flow", {})
+
+        # Load base components
+        base_states = self._load_yaml("flows/_base/states.yaml", required=False)
+        base_mixins = self._load_yaml("flows/_base/mixins.yaml", required=False)
+        base_priorities = self._load_yaml("flows/_base/priorities.yaml", required=False)
+
+        # Load flow-specific states if exists
+        flow_states_file = f"flows/{flow_name}/states.yaml"
+        flow_states = self._load_yaml(flow_states_file, required=False)
+
+        # Build mixins registry
+        mixins_registry = base_mixins.get("mixins", {})
+
+        # Build states with inheritance
+        all_states = {}
+
+        # First, add base states (non-abstract)
+        for name, state_config in base_states.get("states", {}).items():
+            if not state_config.get("abstract", False):
+                all_states[name] = state_config.copy()
+
+        # Then, process flow-specific states
+        for name, state_config in flow_states.get("states", {}).items():
+            if state_config.get("abstract", False):
+                continue  # Skip abstract states
+            resolved = self._resolve_state(
+                state_name=name,
+                state_config=state_config,
+                all_states={**base_states.get("states", {}), **flow_states.get("states", {})},
+                mixins_registry=mixins_registry,
+                variables=flow_config.get("variables", {})
+            )
+            all_states[name] = resolved
+
+        # Resolve variables in all states
+        # Merge flow variables with state-level parameters
+        variables = flow_config.get("variables", {})
+        for name, state_config in all_states.items():
+            # State parameters override flow variables
+            state_params = state_config.pop("parameters", {})
+            merged_params = {**variables, **state_params}
+            all_states[name] = self._resolve_parameters(state_config, merged_params)
+
+        # Build priorities
+        priorities = base_priorities.get("default_priorities", [])
+        if "priorities" in flow_config:
+            flow_priorities = flow_config["priorities"]
+            if isinstance(flow_priorities, dict) and "overrides" in flow_priorities:
+                priorities = self._apply_priority_overrides(
+                    priorities,
+                    flow_priorities["overrides"]
+                )
+            elif isinstance(flow_priorities, list):
+                priorities = flow_priorities
+
+        # Build FlowConfig
+        result = FlowConfig(
+            name=flow_config.get("name", flow_name),
+            version=flow_config.get("version", "1.0"),
+            description=flow_config.get("description", ""),
+            states=all_states,
+            phases=flow_config.get("phases"),
+            priorities=priorities,
+            variables=variables,
+            entry_points=flow_config.get("entry_points", {"default": "greeting"}),
+            templates={}  # TODO: Load templates in Этап 5
+        )
+
+        if validate:
+            self._validate_flow(result)
+
+        return result
+
+    def _resolve_state(
+        self,
+        state_name: str,
+        state_config: Dict[str, Any],
+        all_states: Dict[str, Dict[str, Any]],
+        mixins_registry: Dict[str, Dict[str, Any]],
+        variables: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Resolve a state configuration with extends and mixins.
+
+        Args:
+            state_name: Name of the state being resolved
+            state_config: Raw state configuration
+            all_states: All available states (for extends lookup)
+            mixins_registry: Available mixins
+            variables: Flow variables for parameter substitution
+
+        Returns:
+            Resolved state configuration
+        """
+        result = {}
+
+        # 1. Apply extends (inheritance)
+        if "extends" in state_config:
+            base_name = state_config["extends"]
+            if base_name in all_states:
+                base_config = all_states[base_name]
+                # Recursively resolve base
+                if "extends" in base_config or "mixins" in base_config:
+                    base_config = self._resolve_state(
+                        base_name, base_config, all_states, mixins_registry, variables
+                    )
+                result = self._deep_merge({}, base_config)
+            else:
+                logger.warning(
+                    f"State '{state_name}' extends unknown state '{base_name}'"
+                )
+
+        # 2. Apply mixins
+        if "mixins" in state_config:
+            for mixin_name in state_config["mixins"]:
+                if mixin_name in mixins_registry:
+                    mixin = mixins_registry[mixin_name]
+
+                    # Handle nested includes
+                    if "includes" in mixin:
+                        for included_name in mixin["includes"]:
+                            if included_name in mixins_registry:
+                                included_mixin = mixins_registry[included_name]
+                                result = self._apply_mixin(result, included_mixin)
+
+                    result = self._apply_mixin(result, mixin)
+                else:
+                    logger.warning(
+                        f"State '{state_name}' uses unknown mixin '{mixin_name}'"
+                    )
+
+        # 3. Apply state's own configuration (overrides base/mixins)
+        for key, value in state_config.items():
+            if key in ("extends", "mixins", "abstract"):
+                continue  # Skip meta keys
+            if key in ("rules", "transitions"):
+                # Deep merge rules/transitions
+                if key not in result:
+                    result[key] = {}
+                result[key] = self._deep_merge(result[key], value)
+            else:
+                result[key] = value
+
+        return result
+
+    def _apply_mixin(
+        self,
+        state_config: Dict[str, Any],
+        mixin: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Apply a mixin to a state configuration."""
+        result = state_config.copy()
+
+        # Apply rules from mixin
+        if "rules" in mixin:
+            if "rules" not in result:
+                result["rules"] = {}
+            for intent, action in mixin["rules"].items():
+                if intent not in result["rules"]:
+                    result["rules"][intent] = action
+
+        # Apply transitions from mixin
+        if "transitions" in mixin:
+            if "transitions" not in result:
+                result["transitions"] = {}
+            for intent, target in mixin["transitions"].items():
+                if intent not in result["transitions"]:
+                    result["transitions"][intent] = target
+
+        return result
+
+    def _resolve_parameters(
+        self,
+        config: Any,
+        params: Dict[str, Any]
+    ) -> Any:
+        """
+        Substitute {{param}} placeholders in configuration.
+
+        Args:
+            config: Configuration dict/list/str to process
+            params: Parameters to substitute
+
+        Returns:
+            Configuration with parameters substituted
+        """
+        if isinstance(config, dict):
+            return {
+                key: self._resolve_parameters(value, params)
+                for key, value in config.items()
+            }
+        elif isinstance(config, list):
+            return [self._resolve_parameters(item, params) for item in config]
+        elif isinstance(config, str):
+            # Simple template substitution
+            result = config
+            for key, value in params.items():
+                placeholder = "{{" + key + "}}"
+                if placeholder in result:
+                    if result == placeholder:
+                        # If entire string is placeholder, return value directly
+                        return value
+                    result = result.replace(placeholder, str(value))
+            return result
+        return config
+
+    def _deep_merge(
+        self,
+        base: Dict[str, Any],
+        override: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Deep merge two dictionaries.
+
+        Override values take precedence. Lists are replaced, not merged.
+
+        Args:
+            base: Base dictionary
+            override: Dictionary with overriding values
+
+        Returns:
+            Merged dictionary
+        """
+        result = base.copy()
+
+        for key, value in override.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._deep_merge(result[key], value)
+            else:
+                result[key] = value
+
+        return result
+
+    def _apply_priority_overrides(
+        self,
+        priorities: List[Dict[str, Any]],
+        overrides: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Apply priority overrides from flow config."""
+        result = [p.copy() for p in priorities]
+
+        # Build index by name
+        index = {p["name"]: i for i, p in enumerate(result)}
+
+        for override in overrides:
+            name = override.get("name")
+            if name and name in index:
+                idx = index[name]
+                result[idx] = self._deep_merge(result[idx], override)
+
+        return result
+
+    def _validate_flow(self, flow: FlowConfig) -> None:
+        """Validate a loaded flow configuration."""
+        errors = []
+        known_states = set(flow.states.keys())
+
+        # Validate phase mapping
+        for phase, state in flow.phase_mapping.items():
+            if state not in known_states:
+                errors.append(
+                    f"Phase '{phase}' maps to unknown state '{state}'"
+                )
+
+        # Validate entry points
+        for scenario, state in flow.entry_points.items():
+            if state not in known_states:
+                errors.append(
+                    f"Entry point '{scenario}' references unknown state '{state}'"
+                )
+
+        # Validate transitions
+        for state_name, state_config in flow.states.items():
+            transitions = state_config.get("transitions", {})
+            for intent, target in transitions.items():
+                if isinstance(target, str):
+                    if target not in known_states and not target.startswith("{{"):
+                        errors.append(
+                            f"State '{state_name}' transition to unknown state '{target}'"
+                        )
+                elif isinstance(target, list):
+                    for rule in target:
+                        if isinstance(rule, dict):
+                            then_target = rule.get("then")
+                            if then_target and then_target not in known_states:
+                                errors.append(
+                                    f"State '{state_name}' rule transition to unknown state '{then_target}'"
+                                )
+                        elif isinstance(rule, str) and rule not in known_states:
+                            errors.append(
+                                f"State '{state_name}' fallback to unknown state '{rule}'"
+                            )
+
+        if errors:
+            raise ConfigValidationError(errors)
+
     def __repr__(self) -> str:
         return f"ConfigLoader(config_dir={self.config_dir})"
 
@@ -654,6 +1069,7 @@ def get_config_validated(
 __all__ = [
     "ConfigLoader",
     "LoadedConfig",
+    "FlowConfig",
     "ConfigLoadError",
     "ConfigValidationError",
     "get_config",

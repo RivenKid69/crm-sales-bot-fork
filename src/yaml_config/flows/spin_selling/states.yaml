@@ -1,0 +1,145 @@
+# =============================================================================
+# SPIN SELLING STATES
+# =============================================================================
+# Версия: 2.0
+# Состояния специфичные для SPIN Selling flow.
+# Используют extends и mixins для минимизации дублирования.
+#
+# Сравнение с оригиналом:
+# - Оригинал: ~50 строк на каждое SPIN состояние (rules + transitions)
+# - С mixins: ~15 строк на состояние (только уникальное)
+# =============================================================================
+
+states:
+  # =================================================================
+  # АБСТРАКТНЫЙ БАЗОВЫЙ SPIN STATE
+  # =================================================================
+  # Все общие правила и переходы для SPIN фаз
+  _spin_base:
+    abstract: true
+    extends: _base_phase
+    parameters:
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
+    transitions:
+      # Общие переходы для всех SPIN фаз
+      rejection: soft_close
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      # Возражения → обработка или soft_close
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+
+  # =================================================================
+  # S - SITUATION: Понять текущую ситуацию клиента
+  # =================================================================
+  spin_situation:
+    extends: _spin_base
+    goal: "Понять текущую ситуацию клиента (размер, инструменты, процессы)"
+    phase: situation
+    spin_phase: situation  # Для обратной совместимости
+    required_data:
+      - company_size
+    optional_data:
+      - current_tools
+      - business_type
+    transitions:
+      # Прогресс по фазе
+      data_complete: spin_problem
+      situation_provided: spin_problem
+      info_provided: spin_problem
+    rules:
+      # Специфичный unclear для situation
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - probe_situation
+
+  # =================================================================
+  # P - PROBLEM: Выявить проблемы и боли
+  # =================================================================
+  spin_problem:
+    extends: _spin_base
+    goal: "Выявить проблемы и боли клиента"
+    phase: problem
+    spin_phase: problem
+    required_data:
+      - pain_point
+    transitions:
+      # Прогресс по фазе
+      data_complete: spin_implication
+      problem_revealed: spin_implication
+      info_provided: spin_implication
+      # Если клиент говорит "нет проблем" — всё равно переходим
+      no_problem: spin_implication
+      # Если клиент сразу согласен — в презентацию
+      agreement: presentation
+    rules:
+      # Специфичный unclear для problem
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - probe_problem
+
+  # =================================================================
+  # I - IMPLICATION: Показать последствия проблем
+  # =================================================================
+  spin_implication:
+    extends: _spin_base
+    goal: "Помочь осознать последствия и масштаб проблемы"
+    phase: implication
+    spin_phase: implication
+    required_data:
+      - implication_probed
+    optional_data:
+      - pain_impact
+      - financial_impact
+    transitions:
+      # Прогресс по фазе
+      data_complete: spin_need_payoff
+      implication_acknowledged: spin_need_payoff
+      # Согласие или "нет проблем" → следующая фаза
+      agreement: spin_need_payoff
+      no_problem: spin_need_payoff
+    rules:
+      # Специфичный unclear для implication
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - probe_implication
+
+  # =================================================================
+  # N - NEED PAYOFF: Клиент формулирует ценность
+  # =================================================================
+  spin_need_payoff:
+    extends: _spin_base
+    goal: "Помочь клиенту сформулировать ценность решения"
+    phase: need_payoff
+    spin_phase: need_payoff
+    required_data:
+      - need_payoff_probed
+    optional_data:
+      - desired_outcome
+      - value_acknowledged
+    transitions:
+      # Прогресс → презентация
+      data_complete: presentation
+      agreement: presentation
+      need_expressed: presentation
+      # Нет потребности — soft close
+      no_need: soft_close
+    rules:
+      # Специфичный unclear для need_payoff
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - probe_need_payoff

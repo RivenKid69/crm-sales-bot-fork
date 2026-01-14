@@ -1,0 +1,169 @@
+# =============================================================================
+# PRIORITIES: Конфигурируемые приоритеты обработки интентов
+# =============================================================================
+# Версия: 1.0
+# Определяет порядок обработки интентов в apply_rules().
+# Чем меньше priority, тем раньше обрабатывается.
+#
+# Поля приоритета:
+#   name: str              - Уникальное имя
+#   priority: int          - Числовой приоритет (меньше = раньше)
+#   description: str       - Описание для документации
+#
+# Условия активации (опционально):
+#   intents: [str]         - Список конкретных интентов
+#   intent_category: str   - Категория интентов (objection, question, etc.)
+#   condition: str         - Имя условия из registry
+#   feature_flag: str      - Feature flag который должен быть включён
+#   trigger: str           - Специальный триггер (data_complete, any)
+#
+# Действия:
+#   action: str            - Действие при срабатывании
+#   handler: str           - Имя handler метода в StateMachine
+#   use_transitions: bool  - Использовать transitions из состояния
+#   use_resolver: bool     - Использовать RuleResolver
+#   source: str            - Источник правил (rules, transitions)
+#   else: str              - Действие если условие не выполнено
+# =============================================================================
+
+default_priorities:
+  # =================================================================
+  # КРИТИЧЕСКИЕ (0-99): Немедленная обработка
+  # =================================================================
+
+  - name: final_state
+    priority: 0
+    description: "Проверка финального состояния"
+    condition: is_final
+    action: final
+
+  # =================================================================
+  # ВЫСОКИЕ (100-199): Критические интенты
+  # =================================================================
+
+  - name: rejection
+    priority: 100
+    description: "Немедленная обработка rejection"
+    intents:
+      - rejection
+    use_transitions: true
+
+  - name: go_back
+    priority: 150
+    description: "Возврат назад по фазам"
+    intents:
+      - go_back
+      - correct_info
+    feature_flag: circular_flow
+    handler: circular_flow_handler
+
+  - name: objection_limit
+    priority: 170
+    description: "Проверка лимита возражений"
+    intent_category: objection
+    condition: objection_limit_reached
+    action: transition_to_soft_close
+    else: use_transitions
+
+  # =================================================================
+  # СРЕДНИЕ (200-399): Правила и вопросы
+  # =================================================================
+
+  - name: state_rules
+    priority: 200
+    description: "State-specific rules"
+    source: rules
+    use_resolver: true
+
+  - name: question_handling
+    priority: 300
+    description: "Общий обработчик вопросов"
+    intent_category: question
+    default_action: answer_question
+    use_transitions: true
+
+  # =================================================================
+  # ФАЗОВЫЕ (400-499): Прогресс по фазам
+  # =================================================================
+
+  - name: phase_progress
+    priority: 400
+    description: "Прогресс по фазам (SPIN, BANT, etc.)"
+    handler: phase_progress_handler
+    # Читает progress_intents из flow.phases
+    # Если intent в progress_intents И фаза корректная → переход
+
+  # =================================================================
+  # ПЕРЕХОДЫ (500-699): Стандартные переходы
+  # =================================================================
+
+  - name: transitions
+    priority: 500
+    description: "Прямые переходы по интенту"
+    use_transitions: true
+
+  - name: data_complete
+    priority: 600
+    description: "Автопереход по data_complete"
+    trigger: data_complete
+    condition: has_all_required_data
+    use_transitions: true
+
+  # =================================================================
+  # FALLBACK (700-999): Запасные варианты
+  # =================================================================
+
+  - name: any_transition
+    priority: 700
+    description: "Автопереход (для greeting)"
+    trigger: any
+    use_transitions: true
+
+  - name: default
+    priority: 999
+    description: "Default - оставаться в текущем состоянии"
+    action: continue_current_goal
+
+# =================================================================
+# АЛЬТЕРНАТИВНЫЕ ПРОФИЛИ ПРИОРИТЕТОВ
+# =================================================================
+# Можно использовать для разных flows
+
+# Агрессивный профиль (для hot leads)
+aggressive_priorities:
+  extends: default_priorities
+  overrides:
+    - name: phase_progress
+      priority: 250  # Выше чем state_rules
+    - name: question_handling
+      priority: 350  # Ниже чем phase_progress
+
+# Поддержка (без фаз)
+support_priorities:
+  - name: urgent_escalation
+    priority: 50
+    description: "Эскалация срочных запросов"
+    condition: is_urgent
+    action: escalate_to_human
+
+  - name: answer_question
+    priority: 100
+    description: "Ответить на вопрос"
+    intent_category: question
+    action: answer_with_knowledge
+
+  - name: collect_info
+    priority: 200
+    description: "Собрать недостающую информацию"
+    condition: missing_required_data
+    action: ask_for_info
+
+  - name: resolve
+    priority: 300
+    description: "Предоставить решение"
+    condition: can_resolve
+    action: provide_solution
+
+  - name: default
+    priority: 999
+    action: ask_clarification

@@ -1,0 +1,67 @@
+# =============================================================================
+# SPIN SELLING FLOW CONFIGURATION
+# =============================================================================
+# Версия: 2.0
+# Модульная конфигурация SPIN Selling flow
+#
+# SPIN (Situation, Problem, Implication, Need-Payoff) — методология продаж,
+# основанная на выявлении потребностей через серию вопросов.
+# =============================================================================
+
+flow:
+  name: spin_selling
+  version: "2.0"
+  description: "SPIN Selling methodology flow"
+
+  # Переменные для подстановки в шаблоны
+  variables:
+    entry_state: spin_situation
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  # Конфигурация фаз SPIN
+  phases:
+    order:
+      - situation
+      - problem
+      - implication
+      - need_payoff
+
+    # После последней фазы переходим в presentation
+    post_phases_state: presentation
+
+    # Маппинг фаза → состояние
+    mapping:
+      situation: spin_situation
+      problem: spin_problem
+      implication: spin_implication
+      need_payoff: spin_need_payoff
+
+    # Интенты, означающие прогресс по фазам
+    progress_intents:
+      situation_provided: situation
+      problem_revealed: problem
+      implication_acknowledged: implication
+      need_expressed: need_payoff
+
+    # Условия для пропуска фаз (hot leads)
+    skip_conditions:
+      implication:
+        - has_high_interest
+        - lead_is_hot
+      need_payoff:
+        - has_desired_outcome
+        - lead_is_hot
+
+  # Точки входа для разных сценариев
+  entry_points:
+    default: greeting
+    hot_lead: presentation
+    returning_customer: spin_situation
+
+  # Переопределение приоритетов (опционально)
+  # priorities:
+  #   extends: default_priorities
+  #   overrides:
+  #     - name: phase_progress
+  #       priority: 350  # Выше чем state_rules

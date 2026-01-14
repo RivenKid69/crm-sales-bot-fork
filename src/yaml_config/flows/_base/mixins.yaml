@@ -1,0 +1,122 @@
+# =============================================================================
+# MIXINS: Переиспользуемые блоки правил и переходов
+# =============================================================================
+# Версия: 1.0
+# Mixins позволяют избежать дублирования правил между состояниями.
+# Использование: добавьте список mixins в состояние.
+#
+# Пример:
+#   states:
+#     my_state:
+#       mixins:
+#         - price_handling
+#         - exit_intents
+#       parameters:
+#         default_price_action: deflect_and_continue
+# =============================================================================
+
+mixins:
+  # =================================================================
+  # PRICE HANDLING: Обработка ценовых вопросов
+  # =================================================================
+  price_handling:
+    description: "Правила для обработки вопросов о цене"
+    rules:
+      price_question:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+      pricing_details:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+
+  # =================================================================
+  # PRODUCT QUESTIONS: Вопросы о продукте
+  # =================================================================
+  product_questions:
+    description: "Правила для вопросов о функциях и интеграциях"
+    rules:
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+
+  # =================================================================
+  # OBJECTION HANDLING: Обработка возражений
+  # =================================================================
+  objection_handling:
+    description: "Переходы для обработки возражений"
+    transitions:
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+
+  # =================================================================
+  # DIALOGUE REPAIR: Восстановление диалога
+  # =================================================================
+  dialogue_repair:
+    description: "Правила для застрявшего диалога"
+    rules:
+      unclear:
+        - when: client_stuck
+          then: clarify_one_question
+        - when: client_oscillating
+          then: summarize_and_clarify
+        - "{{default_unclear_action}}"
+
+  # =================================================================
+  # EXIT INTENTS: Завершающие интенты
+  # =================================================================
+  exit_intents:
+    description: "Обработка завершающих интентов"
+    transitions:
+      rejection: soft_close
+      farewell: soft_close
+
+  # =================================================================
+  # DEMO/CALLBACK SHORTCUTS: Быстрый переход к закрытию
+  # =================================================================
+  close_shortcuts:
+    description: "Быстрые переходы к закрытию при запросе демо/звонка"
+    transitions:
+      demo_request: close
+      callback_request: close
+
+  # =================================================================
+  # SOCIAL INTENTS: Социальные интенты
+  # =================================================================
+  social_intents:
+    description: "Обработка социальных интентов (благодарность, small talk)"
+    rules:
+      gratitude: acknowledge_and_continue
+      small_talk: small_talk_and_continue
+
+  # =================================================================
+  # SPIN COMMON: Общие правила для всех SPIN фаз
+  # =================================================================
+  # Комбинация нескольких mixins для удобства
+  spin_common:
+    description: "Стандартный набор правил для SPIN состояний"
+    # Этот mixin объединяет несколько других
+    includes:
+      - price_handling
+      - product_questions
+      - objection_handling
+      - dialogue_repair
+      - exit_intents
+      - close_shortcuts
+      - social_intents
+
+# =================================================================
+# ПАРАМЕТРЫ ПО УМОЛЧАНИЮ
+# =================================================================
+# Эти значения используются если параметр не указан в состоянии
+defaults:
+  default_price_action: deflect_and_continue
+  default_unclear_action: continue_current_goal

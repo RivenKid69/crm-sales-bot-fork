@@ -45,7 +45,7 @@ from src.yaml_config.constants import (
 )
 
 if TYPE_CHECKING:
-    from src.config_loader import LoadedConfig
+    from src.config_loader import LoadedConfig, FlowConfig
 
 
 # =============================================================================
@@ -227,7 +227,8 @@ class StateMachine:
     def __init__(
         self,
         enable_tracing: bool = False,
-        config: "LoadedConfig" = None
+        config: "LoadedConfig" = None,
+        flow: "FlowConfig" = None
     ):
         """
         Initialize StateMachine.
@@ -235,13 +236,15 @@ class StateMachine:
         Args:
             enable_tracing: If True, collect EvaluationTrace for debugging
             config: Optional LoadedConfig from ConfigLoader for YAML configuration
+            flow: Optional FlowConfig for modular flow configuration
         """
         self.state = "greeting"
         self.collected_data = {}
-        self.spin_phase = None  # Текущая SPIN-фаза (если в SPIN flow)
+        self.spin_phase = None  # Current phase (legacy name for compatibility)
 
         # Store config for parameterization
         self._config = config
+        self._flow = flow  # Optional FlowConfig for modular flows
 
         # Initialize circular flow with config if available
         if config:
@@ -315,31 +318,57 @@ class StateMachine:
         return MAX_TOTAL_OBJECTIONS
 
     @property
-    def spin_phases(self) -> List[str]:
-        """Get SPIN phases order."""
+    def phase_order(self) -> List[str]:
+        """Get phase order (abstracted from SPIN)."""
+        if self._flow:
+            return self._flow.phase_order
         if self._config:
             return self._config.spin_phases or SPIN_PHASES
         return SPIN_PHASES
 
+    # Alias for backward compatibility
     @property
-    def spin_states(self) -> Dict[str, str]:
-        """Get SPIN phase to state mapping."""
+    def spin_phases(self) -> List[str]:
+        """Get SPIN phases order (legacy, use phase_order)."""
+        return self.phase_order
+
+    @property
+    def phase_states(self) -> Dict[str, str]:
+        """Get phase to state mapping (abstracted from SPIN)."""
+        if self._flow:
+            return self._flow.phase_mapping
         if self._config:
             return self._config.constants.get("spin", {}).get("states", SPIN_STATES)
         return SPIN_STATES
 
+    # Alias for backward compatibility
     @property
-    def spin_progress_intents(self) -> Dict[str, str]:
-        """Get SPIN progress intents mapping (intent -> phase)."""
+    def spin_states(self) -> Dict[str, str]:
+        """Get SPIN phase to state mapping (legacy, use phase_states)."""
+        return self.phase_states
+
+    @property
+    def progress_intents(self) -> Dict[str, str]:
+        """Get progress intents mapping (intent -> phase)."""
+        if self._flow:
+            return self._flow.progress_intents
         if self._config:
             return self._config.constants.get("spin", {}).get(
                 "progress_intents", SPIN_PROGRESS_INTENTS
             )
         return SPIN_PROGRESS_INTENTS
 
+    # Alias for backward compatibility
+    @property
+    def spin_progress_intents(self) -> Dict[str, str]:
+        """Get SPIN progress intents mapping (legacy, use progress_intents)."""
+        return self.progress_intents
+
     @property
     def states_config(self) -> Dict[str, Any]:
         """Get states configuration."""
+        if self._flow:
+            return self._flow.states
         if self._config:
             return self._config.states
         return SALES_STATES
@@ -533,18 +562,31 @@ class StateMachine:
         return [f for f in required if not self.collected_data.get(f)]
 
     # =========================================================================
-    # SPIN Methods
+    # Phase Methods (abstracted from SPIN)
     # =========================================================================
 
-    def _get_current_spin_phase(self) -> Optional[str]:
-        """Определяем текущую SPIN-фазу по состоянию"""
-        config = self.states_config.get(self.state, {})
-        return config.get("spin_phase")
+    def _get_current_phase(self) -> Optional[str]:
+        """
+        Get current phase from state configuration.
 
-    def _get_next_spin_state(self, current_phase: str) -> Optional[str]:
-        """Определяем следующее SPIN-состояние (читает из конфига)."""
-        phases = self.spin_phases
-        states = self.spin_states
+        Supports both 'phase' (new) and 'spin_phase' (legacy) field names.
+        """
+        config = self.states_config.get(self.state, {})
+        # Try 'phase' first, then fall back to 'spin_phase' for backward compatibility
+        return config.get("phase") or config.get("spin_phase")
+
+    # Alias for backward compatibility
+    _get_current_spin_phase = _get_current_phase
+
+    def _get_next_phase_state(self, current_phase: str) -> Optional[str]:
+        """
+        Get next state in the phase progression.
+
+        Uses FlowConfig.post_phases_state if available, otherwise falls back
+        to "presentation" for backward compatibility with SPIN flow.
+        """
+        phases = self.phase_order
+        states = self.phase_states
 
         if current_phase not in phases:
             return None
@@ -553,43 +595,87 @@ class StateMachine:
         if current_idx < len(phases) - 1:
             next_phase = phases[current_idx + 1]
             return states.get(next_phase)
-        return "presentation"  # После последней фазы идёт presentation
 
-    def _check_spin_data_complete(self, config: Dict) -> bool:
-        """Проверяем собраны ли данные для текущей SPIN-фазы"""
+        # After last phase - use configured post_phases_state or default
+        return self._post_phases_state
+
+    # Alias for backward compatibility
+    _get_next_spin_state = _get_next_phase_state
+
+    @property
+    def _post_phases_state(self) -> str:
+        """State to transition to after all phases complete."""
+        if self._flow and self._flow.post_phases_state:
+            return self._flow.post_phases_state
+        # Fallback for backward compatibility
+        return "presentation"
+
+    def _check_phase_data_complete(self, config: Dict) -> bool:
+        """Check if required data for current phase is collected."""
         required = config.get("required_data", [])
         if not required:
-            return True  # Если нет обязательных данных — считаем завершённой
+            return True  # No required data = complete
 
         for field in required:
             if not self.collected_data.get(field):
                 return False
         return True
 
-    def _should_skip_spin_phase(self, phase: str) -> bool:
-        """Определяем можно ли пропустить SPIN-фазу (для ускорения)"""
-        # Implication и Need-Payoff можно пропустить если клиент уже готов
+    # Alias for backward compatibility
+    _check_spin_data_complete = _check_phase_data_complete
+
+    def _should_skip_phase(self, phase: str) -> bool:
+        """
+        Determine if a phase can be skipped.
+
+        Checks skip_conditions from FlowConfig if available,
+        otherwise falls back to legacy SPIN logic.
+        """
+        # Try to get skip conditions from FlowConfig
+        if self._flow and self._flow.skip_conditions:
+            skip_conditions = self._flow.skip_conditions.get(phase, [])
+            for condition in skip_conditions:
+                if self._evaluate_skip_condition(condition):
+                    return True
+            return False
+
+        # Legacy SPIN logic for backward compatibility
         if phase in ["implication", "need_payoff"]:
-            # Если клиент уже выразил сильный интерес
+            # If client already expressed high interest
             if self.collected_data.get("high_interest"):
                 return True
-            # Если уже есть желаемый результат
+            # If desired outcome already known
             if phase == "need_payoff" and self.collected_data.get("desired_outcome"):
                 return True
         return False
 
-    def _is_spin_phase_progression(self, intent_phase: str, current_phase: str) -> bool:
+    # Alias for backward compatibility
+    _should_skip_spin_phase = _should_skip_phase
+
+    def _evaluate_skip_condition(self, condition: str) -> bool:
+        """Evaluate a skip condition by name."""
+        # Check collected_data for the condition
+        if condition == "has_high_interest":
+            return bool(self.collected_data.get("high_interest"))
+        elif condition == "has_desired_outcome":
+            return bool(self.collected_data.get("desired_outcome"))
+        elif condition == "lead_is_hot":
+            return self.collected_data.get("lead_temperature") in ["hot", "very_hot"]
+        # Default: try to evaluate via condition registry
+        return False
+
+    def _is_phase_progression(self, intent_phase: str, current_phase: str) -> bool:
         """
-        Проверяет, является ли intent_phase прогрессом относительно current_phase.
+        Check if intent_phase represents progress from current_phase.
 
         Args:
-            intent_phase: Фаза из интента (situation, problem, etc.)
-            current_phase: Текущая SPIN-фаза
+            intent_phase: Phase indicated by the intent
+            current_phase: Current phase
 
         Returns:
-            True если intent_phase соответствует текущей или следующей фазе
+            True if intent_phase is at or after current_phase
         """
-        phases = self.spin_phases
+        phases = self.phase_order
 
         if intent_phase not in phases or current_phase not in phases:
             return False
@@ -598,6 +684,9 @@ class StateMachine:
         current_idx = phases.index(current_phase)
 
         return intent_idx >= current_idx
+
+    # Alias for backward compatibility
+    _is_spin_phase_progression = _is_phase_progression
 
     def _resolve_transition(
         self,

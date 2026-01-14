@@ -1,0 +1,254 @@
+# =============================================================================
+# BASE STATES: Базовые состояния для всех flows
+# =============================================================================
+# Версия: 1.0
+# Эти состояния можно использовать напрямую или наследовать через extends.
+#
+# Абстрактные состояния (abstract: true) нельзя использовать напрямую,
+# они служат только для наследования.
+#
+# Пример наследования:
+#   my_state:
+#     extends: _base_greeting
+#     goal: "Мой кастомный goal"
+#     transitions:
+#       custom_intent: custom_state
+# =============================================================================
+
+states:
+  # =================================================================
+  # АБСТРАКТНЫЕ БАЗОВЫЕ СОСТОЯНИЯ
+  # =================================================================
+
+  # Базовое приветственное состояние
+  _base_greeting:
+    abstract: true
+    goal: "Поздороваться и узнать чем помочь"
+    required_data: []
+    rules:
+      greeting: greet_back
+      unclear: ask_how_to_help
+      gratitude: acknowledge_and_continue
+      small_talk: small_talk_and_continue
+
+  # Базовое терминальное состояние
+  _base_terminal:
+    abstract: true
+    rules:
+      farewell: polite_farewell
+      gratitude: acknowledge_farewell
+
+  # Базовое состояние для фаз (SPIN, BANT, etc.)
+  _base_phase:
+    abstract: true
+    mixins:
+      - price_handling
+      - product_questions
+      - objection_handling
+      - dialogue_repair
+      - exit_intents
+      - close_shortcuts
+      - social_intents
+    parameters:
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
+
+  # =================================================================
+  # КОНКРЕТНЫЕ СОСТОЯНИЯ
+  # =================================================================
+
+  # Приветствие
+  greeting:
+    extends: _base_greeting
+    transitions:
+      # Вопросы и интерес → переход в основной flow
+      price_question: "{{entry_state}}"
+      question_features: "{{entry_state}}"
+      question_integrations: "{{entry_state}}"
+      agreement: "{{entry_state}}"
+      info_provided: "{{entry_state}}"
+      comparison: "{{entry_state}}"
+      pricing_details: "{{entry_state}}"
+      consultation_request: "{{entry_state}}"
+      # Клиент сразу хочет демо/звонок → close
+      demo_request: close
+      callback_request: close
+      # Отказ → soft_close
+      rejection: soft_close
+      farewell: soft_close
+      # Возражения
+      objection_price: handle_objection
+      objection_competitor: handle_objection
+      objection_no_time: soft_close
+      objection_think: soft_close
+
+  # Успешное завершение
+  success:
+    extends: _base_terminal
+    is_final: true
+    goal: "Завершить успешно"
+
+  # Мягкое завершение (дверь открыта)
+  soft_close:
+    extends: _base_terminal
+    is_final: false
+    goal: "Вежливо завершить, оставить возможность вернуться"
+    transitions:
+      # Клиент передумал
+      agreement: "{{entry_state}}"
+      demo_request: close
+      callback_request: close
+      go_back: greeting
+      correct_info: greeting
+      rejection: soft_close
+      farewell: soft_close
+      # Вопросы = проявление интереса
+      price_question: presentation
+      pricing_details: presentation
+      question_features: "{{entry_state}}"
+      question_integrations: "{{entry_state}}"
+      comparison: presentation
+      consultation_request: close
+      info_provided: "{{entry_state}}"
+      situation_provided: "{{entry_state}}"
+    rules:
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      comparison: answer_and_continue
+      gratitude: acknowledge_farewell
+      small_talk: polite_farewell
+
+  # Презентация
+  presentation:
+    extends: _base_phase
+    goal: "Показать ценность продукта"
+    required_data: []
+    parameters:
+      default_price_action: answer_with_facts
+      default_unclear_action: clarify_and_continue
+    transitions:
+      agreement: close
+      objection_price: handle_objection
+      rejection: soft_close
+      demo_request: close
+      callback_request: close
+      consultation_request: close
+      farewell: soft_close
+      objection_no_time: handle_objection
+      objection_think: handle_objection
+      objection_competitor: handle_objection
+    rules:
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+      unclear: clarify_and_continue
+
+  # Обработка возражений
+  handle_objection:
+    extends: _base_phase
+    goal: "Отработать возражение"
+    required_data: []
+    parameters:
+      default_price_action: answer_with_facts
+      default_unclear_action: clarify_and_continue
+    transitions:
+      agreement: close
+      rejection: soft_close
+      demo_request: close
+      callback_request: close
+      farewell: soft_close
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      question_features: presentation
+      question_integrations: presentation
+      comparison: presentation
+      consultation_request: close
+      info_provided: "{{entry_state}}"
+    rules:
+      price_question:
+        - when: can_handle_with_roi
+          then: answer_with_roi
+        - answer_with_facts
+      pricing_details:
+        - when: can_handle_with_roi
+          then: answer_with_roi
+        - answer_with_facts
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+      unclear: clarify_and_continue
+
+  # Закрытие (взять контакт)
+  close:
+    extends: _base_phase
+    goal: "Взять контакт или назначить демо"
+    required_data:
+      - contact_info
+    parameters:
+      default_price_action: answer_with_facts
+      default_unclear_action: clarify_and_continue
+    transitions:
+      data_complete: success
+      contact_provided: success
+      agreement:
+        - when: ready_for_close
+          then: success
+        - close
+      demo_request:
+        - when: ready_for_close
+          then: success
+        - close
+      callback_request:
+        - when: ready_for_close
+          then: success
+        - close
+      consultation_request:
+        - when: ready_for_close
+          then: success
+        - close
+      rejection: soft_close
+      farewell: soft_close
+      objection_price: handle_objection
+      objection_no_time: handle_objection
+      objection_think: handle_objection
+      objection_competitor: handle_objection
+    rules:
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
+      comparison: answer_and_continue
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      small_talk: small_talk_and_continue
+      gratitude: acknowledge_and_continue
+      unclear: clarify_and_continue
+      info_provided: continue_current_goal
+
+# =================================================================
+# ПАРАМЕТРЫ ПО УМОЛЧАНИЮ
+# =================================================================
+defaults:
+  entry_state: greeting  # Может быть переопределено в flow.yaml
