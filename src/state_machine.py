@@ -374,6 +374,21 @@ class StateMachine:
         return SALES_STATES
 
     @property
+    def priorities(self) -> List[Dict[str, Any]]:
+        """
+        Get processing priorities configuration.
+
+        Returns list of priority definitions from FlowConfig.
+        These define the order of processing in apply_rules().
+
+        Note: Currently used for introspection. Full priority-driven
+        apply_rules() is planned for future enhancement.
+        """
+        if self._flow:
+            return self._flow.priorities
+        return []
+
+    @property
     def last_intent(self) -> Optional[str]:
         """Get last intent from tracker (backward compat property)."""
         return self.intent_tracker.last_intent
