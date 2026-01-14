@@ -32,9 +32,9 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
     │    (classifier/)          │   │   (state_machine.py)      │
     │                           │   │                           │
     │ • LLMClassifier (vLLM)    │   │ • SPIN flow логика        │
-    │ • Structured output       │   │ • Приоритеты обработки    │
-    │ • HybridClassifier fallback│  │ • Умное пропускание фаз   │
-    │ • 33 интента              │   │ • 10 состояний            │
+    │ • Structured output       │   │ • Priority-driven rules   │
+    │ • HybridClassifier fallback│  │ • FlowConfig (YAML)       │
+    │ • 33 интента              │   │ • on_enter actions        │
     └───────────────────────────┘   └─────────────┬─────────────┘
                                                   │
                   ┌───────────────────────────────▼───────────────┐
@@ -288,6 +288,119 @@ close ────────────────── Запрос кон
     └──► soft_close (отказ)
 ```
 
+## Modular Flow System
+
+Система модульных flow позволяет создавать кастомные диалоговые сценарии через YAML-конфигурацию.
+
+### Архитектура Flow
+
+```
+yaml_config/
+├── flows/                      # Модульные flow
+│   ├── _base/                  # Базовые компоненты
+│   │   ├── states.yaml         # Общие состояния (greeting, success, etc.)
+│   │   ├── mixins.yaml         # Переиспользуемые блоки правил
+│   │   └── priorities.yaml     # Приоритеты обработки
+│   │
+│   └── spin_selling/           # SPIN Selling flow
+│       ├── flow.yaml           # Конфигурация (phases, entry_points)
+│       └── states.yaml         # SPIN-состояния
+│
+└── templates/                  # Шаблоны промптов
+    ├── _base/prompts.yaml      # Базовые шаблоны
+    └── spin_selling/prompts.yaml # SPIN шаблоны
+```
+
+### ConfigLoader и FlowConfig
+
+```python
+from src.config_loader import ConfigLoader
+from src.state_machine import StateMachine
+
+loader = ConfigLoader()
+flow = loader.load_flow("spin_selling")
+
+# FlowConfig содержит:
+# - states: Dict[str, Dict] — resolved состояния
+# - phases: Dict — фазы и их конфигурация
+# - priorities: List[Dict] — приоритеты обработки
+# - templates: Dict — шаблоны промптов
+# - entry_points: Dict — точки входа
+
+sm = StateMachine(flow=flow)
+```
+
+### Extends и Mixins
+
+```yaml
+# Наследование от базового состояния
+states:
+  spin_situation:
+    extends: _base_phase      # Наследует rules, transitions
+    mixins:
+      - price_handling        # Добавляет правила для цен
+      - exit_intents          # Добавляет обработку отказов
+    goal: "Понять ситуацию"   # Переопределяет goal
+```
+
+### Priority-driven apply_rules()
+
+StateMachine поддерживает приоритизацию через YAML:
+
+```yaml
+# priorities.yaml
+default_priorities:
+  - name: final_state
+    priority: 0
+    condition: is_final
+    action: final
+
+  - name: rejection
+    priority: 1
+    intents: [rejection]
+    use_transitions: true
+
+  - name: questions
+    priority: 2
+    intent_category: question
+    default_action: answer_question
+```
+
+При наличии FlowConfig, `apply_rules()` итерирует по приоритетам вместо hardcoded логики.
+
+### on_enter Actions
+
+Состояния могут определять action при входе:
+
+```yaml
+states:
+  ask_activity:
+    on_enter:
+      action: show_activity_options
+    transitions:
+      activity_selected: next_state
+```
+
+При переходе в это состояние, action автоматически устанавливается в `show_activity_options`.
+
+### Параметризация
+
+Flow variables подставляются в конфигурацию:
+
+```yaml
+# flow.yaml
+flow:
+  variables:
+    entry_state: spin_situation
+    default_action: deflect_and_continue
+
+# states.yaml — используем {{param}}
+transitions:
+  agreement: "{{entry_state}}"    # → spin_situation
+rules:
+  price_question: "{{default_action}}"  # → deflect_and_continue
+```
+
 ## База знаний
 
 ### CascadeRetriever — 3-этапный поиск
@@ -456,6 +569,8 @@ FALLBACK_RESPONSES = {
 | `feature_flags.py` | Управление фичами |
 | `settings.py` | Конфигурация из YAML |
 | `config.py` | Интенты, состояния, промпты |
+| `config_loader.py` | ConfigLoader, FlowConfig для YAML flow |
+| `yaml_config/` | YAML конфигурация (states, flows, templates) |
 | `context_window.py` | Расширенный контекст диалога |
 | `dialogue_policy.py` | Context-aware policy overlays |
 | `context_envelope.py` | Построение контекста для подсистем |
@@ -534,3 +649,38 @@ def new_feature(self) -> bool:
 ```
 3. Использовать: `if flags.new_feature: ...`
 4. Override через env: `FF_NEW_FEATURE=true`
+
+### Создание нового Flow (без кода)
+
+1. Создать директорию `yaml_config/flows/my_flow/`
+2. Создать `flow.yaml`:
+```yaml
+flow:
+  name: my_flow
+  version: "1.0"
+  phases:
+    order: [phase1, phase2]
+    mapping:
+      phase1: state_phase1
+      phase2: state_phase2
+    post_phases_state: closing
+  entry_points:
+    default: greeting
+```
+3. Создать `states.yaml`:
+```yaml
+states:
+  state_phase1:
+    extends: _base_phase
+    mixins: [price_handling]
+    goal: "Phase 1 goal"
+    phase: phase1
+```
+4. Загрузить flow:
+```python
+loader = ConfigLoader()
+flow = loader.load_flow("my_flow")
+sm = StateMachine(flow=flow)
+```
+
+Подробнее: [src/yaml_config/flows/README.md](../src/yaml_config/flows/README.md)

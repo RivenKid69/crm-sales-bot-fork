@@ -25,6 +25,8 @@ cd src && python bot.py
 - **LLM-маршрутизация** — CategoryRouter для интеллектуальной классификации категорий
 - **Голосовой интерфейс** — Voice Bot с STT (Whisper) и TTS (F5-TTS)
 - **Модульные фазы** — постепенное включение новых возможностей через feature flags
+- **Modular Flow System** — YAML-конфигурация диалоговых flow с extends/mixins
+- **Priority-driven Rules** — приоритизация обработки правил через YAML
 - **Dynamic CTA** — контекстно-зависимые подсказки при fallback на основе собранных данных
 - **Категоризация болей** — автоматическое определение типа боли (losing_clients, no_control, manual_work)
 
@@ -105,6 +107,25 @@ src/
 │
 ├── # Условные правила
 ├── conditions/             # Пакет условных правил
+│
+├── # YAML Configuration (Phase 1 Parameterization)
+├── config_loader.py        # Загрузчик YAML конфигурации
+├── yaml_config/            # YAML конфигурация
+│   ├── constants.yaml      # Константы (limits, intents, policy)
+│   ├── spin/phases.yaml    # SPIN фазы
+│   ├── states/sales_flow.yaml  # Состояния диалога
+│   ├── conditions/custom.yaml  # Кастомные условия
+│   ├── flows/              # Модульные flow (extends/mixins)
+│   │   ├── _base/          # Базовые компоненты
+│   │   │   ├── states.yaml     # Общие состояния
+│   │   │   ├── mixins.yaml     # Переиспользуемые блоки правил
+│   │   │   └── priorities.yaml # Приоритеты обработки
+│   │   └── spin_selling/   # SPIN Selling flow
+│   │       ├── flow.yaml       # Конфигурация flow
+│   │       └── states.yaml     # SPIN-состояния
+│   └── templates/          # Шаблоны промптов
+│       ├── _base/prompts.yaml  # Базовые шаблоны
+│       └── spin_selling/prompts.yaml  # SPIN шаблоны
 │
 ├── classifier/             # Пакет классификации интентов
 │   ├── __init__.py         # Публичный API пакета
@@ -433,6 +454,64 @@ from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 - Управление последовательными возражениями
 - Максимум 3 подряд / 5 за диалог → soft_close
 
+## Modular Flow System (yaml_config/flows/)
+
+Система модульных flow для создания кастомизированных диалогов без изменения кода.
+
+### Ключевые возможности:
+
+- **Extends** — наследование от базовых состояний
+- **Mixins** — переиспользуемые блоки правил
+- **Parameters** — подстановка `{{param}}` в конфигурации
+- **Priority-driven Rules** — приоритизация через YAML
+
+### Пример создания custom flow:
+
+```yaml
+# flows/my_flow/flow.yaml
+flow:
+  name: my_flow
+  version: "1.0"
+
+  phases:
+    order: [discovery, qualification, proposal]
+    mapping:
+      discovery: state_discovery
+      qualification: state_qualification
+      proposal: state_proposal
+    post_phases_state: closing
+
+  entry_points:
+    default: greeting
+    hot_lead: state_qualification
+```
+
+```yaml
+# flows/my_flow/states.yaml
+states:
+  state_discovery:
+    extends: _base_phase
+    mixins:
+      - price_handling
+      - exit_intents
+    goal: "Understand customer situation"
+    phase: discovery
+    required_data: [company_size]
+```
+
+### Загрузка flow:
+
+```python
+from src.config_loader import ConfigLoader
+from src.state_machine import StateMachine
+
+loader = ConfigLoader()
+flow = loader.load_flow("my_flow")
+sm = StateMachine(flow=flow)
+```
+
+Подробнее: [src/yaml_config/flows/README.md](src/yaml_config/flows/README.md)
+
 ## Feature Flags (Фазы разработки)
 
 Система использует feature flags для постепенного включения функциональности:
@@ -566,4 +645,6 @@ pip install -r requirements.txt
 Состояний диалога:        10 основных
 Категорий знаний:         17
 Feature Flags:            30+ флагов
+YAML Config Files:        11 в yaml_config/
+Modular Flows:            1 (spin_selling) + _base
 ```

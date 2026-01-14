@@ -2,7 +2,12 @@
 
 ## Обзор
 
-Все настраиваемые параметры бота вынесены в файл `src/settings.yaml`. Это позволяет изменять поведение системы без правки кода.
+Все настраиваемые параметры бота вынесены в файлы конфигурации:
+
+- **`src/settings.yaml`** — основные настройки (LLM, retriever, feature flags)
+- **`src/yaml_config/`** — структурированная конфигурация (states, flows, constants)
+
+Это позволяет изменять поведение системы без правки кода.
 
 ## Файл настроек
 
@@ -450,3 +455,175 @@ pytest tests/test_settings.py -v
 # Тесты feature flags
 pytest tests/test_feature_flags.py -v
 ```
+
+## YAML Configuration (yaml_config/)
+
+Помимо `settings.yaml`, система использует структурированную YAML конфигурацию.
+
+### Структура yaml_config/
+
+```
+src/yaml_config/
+├── constants.yaml          # Константы (limits, intents, policy)
+├── spin/phases.yaml        # Конфигурация SPIN фаз
+├── states/sales_flow.yaml  # Состояния диалога
+├── conditions/custom.yaml  # Кастомные условия для rules
+│
+├── flows/                  # Модульные flow
+│   ├── _base/              # Базовые компоненты
+│   │   ├── states.yaml     # Общие состояния
+│   │   ├── mixins.yaml     # Переиспользуемые блоки
+│   │   └── priorities.yaml # Приоритеты обработки
+│   └── spin_selling/       # SPIN Selling flow
+│       ├── flow.yaml       # Конфигурация flow
+│       └── states.yaml     # SPIN-состояния
+│
+└── templates/              # Шаблоны промптов
+    ├── _base/prompts.yaml
+    └── spin_selling/prompts.yaml
+```
+
+### constants.yaml — Константы
+
+```yaml
+# Лимиты
+limits:
+  max_consecutive_objections: 3
+  max_total_objections: 5
+  max_gobacks: 2
+
+# Категории интентов
+intents:
+  question: [price_question, question_features, question_integrations]
+  objection: [objection_price, objection_time, objection_competitor]
+  positive: [agreement, interest, demo_request]
+
+# SPIN конфигурация
+spin:
+  phases: [situation, problem, implication, need_payoff]
+  states:
+    situation: spin_situation
+    problem: spin_problem
+```
+
+### flows/ — Модульные flow
+
+Позволяют создавать кастомные диалоги без кода:
+
+```yaml
+# flows/my_flow/flow.yaml
+flow:
+  name: my_flow
+  phases:
+    order: [phase1, phase2]
+    mapping:
+      phase1: state_phase1
+      phase2: state_phase2
+  entry_points:
+    default: greeting
+```
+
+```yaml
+# flows/my_flow/states.yaml
+states:
+  state_phase1:
+    extends: _base_phase
+    mixins: [price_handling]
+    goal: "Phase 1 goal"
+```
+
+### templates/ — Шаблоны промптов
+
+```yaml
+# templates/spin_selling/prompts.yaml
+templates:
+  spin_situation:
+    template: |
+      Ты — консультант Wipon.
+      Цель: узнать ситуацию клиента.
+      {{context}}
+    variables:
+      - context
+```
+
+```python
+# Использование
+flow = loader.load_flow("spin_selling")
+template = flow.get_template("spin_situation")
+prompt = template.format(context="...")
+```
+
+### priorities.yaml — Приоритеты обработки
+
+```yaml
+# _base/priorities.yaml
+default_priorities:
+  - name: final_state
+    priority: 0
+    condition: is_final
+    action: final
+
+  - name: rejection
+    priority: 1
+    intents: [rejection]
+    use_transitions: true
+
+  - name: questions
+    priority: 2
+    intent_category: question
+    default_action: answer_question
+
+  - name: phase_progress
+    priority: 4
+    handler: phase_progress_handler
+```
+
+При наличии FlowConfig, StateMachine использует эти приоритеты вместо hardcoded логики.
+
+### on_enter Actions
+
+```yaml
+# Состояние с действием при входе
+states:
+  ask_activity:
+    on_enter:
+      action: show_activity_options
+    transitions:
+      activity_selected: next_state
+```
+
+При переходе в состояние, action автоматически становится `show_activity_options`.
+
+### Загрузка конфигурации
+
+```python
+from src.config_loader import ConfigLoader, get_config
+
+# Глобальный конфиг
+config = get_config()
+
+# Или с перезагрузкой
+config = get_config(reload=True)
+
+# Загрузка flow
+loader = ConfigLoader()
+flow = loader.load_flow("spin_selling")
+
+# FlowConfig содержит:
+# - states: Dict — resolved состояния
+# - priorities: List — приоритеты обработки
+# - templates: Dict — шаблоны промптов
+# - phase_order: List — порядок фаз
+# - entry_points: Dict — точки входа
+```
+
+### Валидация конфигурации
+
+```python
+from src.config_loader import get_config_validated
+
+# Загрузка с валидацией условий
+config = get_config_validated()
+```
+
+Подробнее: [src/yaml_config/flows/README.md](../src/yaml_config/flows/README.md)

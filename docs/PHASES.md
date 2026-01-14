@@ -346,7 +346,7 @@ response = generator.append_cta(
 Формирование вопроса с вариантами
     │
     ▼
-Пользователь выбирает (цифра/текст)
+Пользователь выбирает (цифра/текст/свой вариант)
     │
     ▼
 Продолжение с выбранным интентом
@@ -355,11 +355,31 @@ response = generator.append_cta(
 ```python
 # В bot.py автоматически
 if intent == "disambiguation_needed":
-    # Бот задаёт уточняющий вопрос
+    # Бот задаёт уточняющий вопрос:
     # "Уточните, пожалуйста:
     #  1. Хотите узнать цену?
-    #  2. Интересует демо?"
+    #  2. Интересует демо?
+    #  3. Другое (напишите свой вопрос)"
 ```
+
+### Custom Input Option
+
+Пользователь может выбрать "свой вариант" вместо предложенных:
+
+```python
+class DisambiguationUI:
+    CUSTOM_INPUT_MARKER = "_custom_input"
+
+    # Пользователь вводит "4" или "другое"
+    # → Бот просит ввести вопрос своими словами
+    # → Ответ классифицируется заново
+```
+
+**Поддерживаемые форматы ответа:**
+- Числа: `1`, `2`, `3`, `4`
+- Слова: `первый`, `второй`, `третий`, `четвёртый`
+- Ключевые слова: `цена`, `функции`, `интеграции`
+- Свой вариант: `другое`, `4` → переход к вводу своего вопроса
 
 ### Cascade Classifier — 3-уровневый
 
@@ -489,6 +509,130 @@ confidence_trend = window.get_confidence_trend()  # "rising"/"falling"/"stable"
 
 ---
 
+## Phase Parameterization: YAML Configuration
+
+**Цель:** Вынести конфигурацию в YAML для изменений без кода.
+
+### Компоненты
+
+| Модуль | Описание |
+|--------|----------|
+| `config_loader.py` | ConfigLoader, FlowConfig, LoadedConfig |
+| `yaml_config/constants.yaml` | Константы (limits, intents, policy) |
+| `yaml_config/states/` | Состояния диалога |
+| `yaml_config/flows/` | Модульные flow с extends/mixins |
+| `yaml_config/templates/` | Шаблоны промптов |
+
+### ConfigLoader — Загрузка конфигурации
+
+```python
+from src.config_loader import ConfigLoader, get_config
+
+# Глобальный конфиг
+config = get_config()
+
+# Или создать loader
+loader = ConfigLoader()
+config = loader.load()
+
+# Доступ к настройкам
+max_objections = config.limits.get("max_total_objections", 5)
+spin_phases = config.spin_phases
+```
+
+### FlowConfig — Модульные flow
+
+```python
+from src.config_loader import ConfigLoader
+from src.state_machine import StateMachine
+
+loader = ConfigLoader()
+flow = loader.load_flow("spin_selling")
+
+# FlowConfig содержит resolved данные
+print(flow.phase_order)       # ['situation', 'problem', ...]
+print(flow.priorities)        # [{name, priority, ...}, ...]
+print(flow.states)            # Resolved состояния
+
+sm = StateMachine(flow=flow)
+```
+
+### Priority-driven apply_rules
+
+При наличии FlowConfig, StateMachine использует YAML-приоритеты:
+
+```yaml
+# priorities.yaml
+default_priorities:
+  - name: final_state
+    priority: 0
+    condition: is_final
+    action: final
+
+  - name: rejection
+    priority: 1
+    intents: [rejection]
+    use_transitions: true
+
+  - name: phase_progress
+    priority: 4
+    handler: phase_progress_handler
+```
+
+### on_enter Actions
+
+Состояния могут определять action при входе:
+
+```yaml
+states:
+  ask_activity:
+    on_enter:
+      action: show_activity_options
+```
+
+При переходе в `ask_activity`, action автоматически становится `show_activity_options`.
+
+### Extends и Mixins
+
+```yaml
+# Наследование
+states:
+  spin_situation:
+    extends: _base_phase
+    mixins:
+      - price_handling
+      - exit_intents
+    goal: "Понять ситуацию"
+```
+
+### Templates — Шаблоны промптов
+
+```yaml
+# templates/spin_selling/prompts.yaml
+templates:
+  spin_situation:
+    template: |
+      Ты — консультант Wipon.
+      Цель: узнать ситуацию клиента.
+      ...
+```
+
+```python
+flow = loader.load_flow("spin_selling")
+template = flow.get_template("spin_situation")
+```
+
+### Создание нового Flow
+
+1. Создать `yaml_config/flows/my_flow/flow.yaml`
+2. Создать `yaml_config/flows/my_flow/states.yaml`
+3. (Опционально) `yaml_config/templates/my_flow/prompts.yaml`
+4. Загрузить: `loader.load_flow("my_flow")`
+
+Подробнее: [src/yaml_config/flows/README.md](../src/yaml_config/flows/README.md)
+
+---
+
 ## Phase LLM: LLM Classifier
 
 **Цель:** Использовать LLM для классификации интентов вместо regex.
@@ -537,6 +681,10 @@ result = classifier.classify("нас 10 человек")
 
 | Фаза | Компонент | Флаг | Статус |
 |------|-----------|------|--------|
+| Param | ConfigLoader | — | ✅ Production |
+| Param | FlowConfig | — | ✅ Production |
+| Param | Priority-driven Rules | — | ✅ Production |
+| Param | on_enter Actions | — | ✅ Production |
 | LLM | LLM Classifier | `llm_classifier` | ✅ Production |
 | 0 | Логирование | `structured_logging` | ✅ Production |
 | 0 | Метрики | `metrics_tracking` | ✅ Production |
