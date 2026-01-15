@@ -211,9 +211,9 @@ class KeywordGenerator:
         return typos[:2]
 
     def _transliterate(self, keywords: List[str]) -> List[str]:
-        """Add transliterations (EN↔RU)."""
+        """Convert English terms to Russian transliteration (EN -> RU only)."""
+        # Only EN -> RU mapping (all output in Russian!)
         translit_map = {
-            # EN -> RU
             "price": "прайс",
             "free": "фри",
             "demo": "демо",
@@ -228,11 +228,13 @@ class KeywordGenerator:
             "support": "саппорт",
             "online": "онлайн",
             "offline": "офлайн",
-            # RU -> EN
-            "прайс": "price",
-            "фри": "free",
-            "демо": "demo",
-            "апи": "api",
+            "whatsapp": "вотсап",
+            "telegram": "телеграм",
+            "business": "бизнес",
+            "enterprise": "энтерпрайз",
+            "startup": "стартап",
+            "tariff": "тариф",
+            "integration": "интеграция",
         }
 
         result = []
