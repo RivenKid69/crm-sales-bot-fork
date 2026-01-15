@@ -1,0 +1,399 @@
+# =============================================================================
+# BANT Qualification Flow - Example DAG Flow
+# =============================================================================
+#
+# Демонстрирует использование DAG для B2B квалификации по методологии BANT:
+# - Budget (Бюджет)
+# - Authority (Полномочия ЛПР)
+# - Need (Потребность)
+# - Timeline (Сроки)
+#
+# Использует:
+# - CHOICE для маршрутизации по типу лида
+# - FORK для параллельного сбора BANT данных
+# - JOIN для агрегации результатов
+#
+# =============================================================================
+
+flow:
+  name: bant_qualification
+  version: "1.0"
+  description: "BANT квалификация для B2B продаж с поддержкой DAG"
+
+# =============================================================================
+# Phases (optional, для совместимости с phase-based flows)
+# =============================================================================
+phases:
+  order:
+    - qualification
+    - presentation
+    - closing
+  mapping:
+    qualification: lead_router
+    presentation: presentation
+    closing: closing
+  post_phases_state: success
+
+# =============================================================================
+# Entry Points
+# =============================================================================
+entry_points:
+  default: greeting
+  inbound_hot: fast_track_demo
+  referral: referral_flow
+
+# =============================================================================
+# States
+# =============================================================================
+states:
+  # ---------------------------------------------------------------------------
+  # Greeting (SIMPLE)
+  # ---------------------------------------------------------------------------
+  greeting:
+    type: simple
+    goal: "Приветствие и первичный контакт"
+    transitions:
+      greeting_complete: lead_router
+      positive_response: lead_router
+    rules:
+      greeting:
+        - greet_and_qualify
+
+  # ---------------------------------------------------------------------------
+  # Lead Router (CHOICE - XOR branching)
+  # ---------------------------------------------------------------------------
+  lead_router:
+    type: choice
+    goal: "Маршрутизация по типу лида"
+    choices:
+      # Hot inbound leads -> fast track
+      - condition: is_inbound_hot_lead
+        next: fast_track_demo
+
+      # Enterprise leads -> extended qualification
+      - condition: is_enterprise_lead
+        next: enterprise_qualification
+
+      # Referral leads -> special handling
+      - condition: is_referral
+        next: referral_flow
+
+      # SMB leads -> standard BANT
+      - condition: is_smb_lead
+        next: standard_bant
+
+    # Default path for unqualified leads
+    default: standard_bant
+
+  # ---------------------------------------------------------------------------
+  # Standard BANT (FORK - parallel qualification)
+  # ---------------------------------------------------------------------------
+  standard_bant:
+    type: fork
+    goal: "Параллельный сбор Budget, Authority, Need, Timeline"
+    branches:
+      - id: budget_qualification
+        start_at: collect_budget
+
+      - id: authority_check
+        start_at: identify_decision_maker
+
+      - id: need_discovery
+        start_at: discover_pain_points
+
+      - id: timeline_assessment
+        start_at: assess_urgency
+
+    join_at: bant_aggregation
+    join_condition: all_complete
+
+  # ---------------------------------------------------------------------------
+  # Budget Branch States
+  # ---------------------------------------------------------------------------
+  collect_budget:
+    type: simple
+    branch: budget_qualification
+    goal: "Определить бюджет клиента"
+    required_data:
+      - budget_range
+    optional_data:
+      - budget_source
+      - fiscal_year
+    transitions:
+      budget_confirmed: _branch_complete
+      no_budget: budget_objection_handler
+      data_complete: _branch_complete
+    rules:
+      unclear:
+        - when: budget_range_given
+          then: confirm_budget_range
+        - probe_budget_indirectly
+      price_question:
+        - when: has_budget_data
+          then: answer_with_range
+        - deflect_to_value
+
+  budget_objection_handler:
+    type: simple
+    branch: budget_qualification
+    goal: "Обработка возражения об отсутствии бюджета"
+    transitions:
+      budget_found: collect_budget
+      truly_no_budget: _branch_complete
+    rules:
+      objection:
+        - when: budget_objection_count_lt_2
+          then: explore_budget_alternatives
+        - accept_no_budget
+
+  # ---------------------------------------------------------------------------
+  # Authority Branch States
+  # ---------------------------------------------------------------------------
+  identify_decision_maker:
+    type: simple
+    branch: authority_check
+    goal: "Выявить лицо, принимающее решение"
+    required_data:
+      - is_decision_maker
+    optional_data:
+      - decision_process
+      - stakeholders
+    transitions:
+      is_decision_maker: _branch_complete
+      not_decision_maker: get_dm_contact
+      data_complete: _branch_complete
+    rules:
+      unclear:
+        - when: mentions_boss
+          then: ask_about_approval_process
+        - when: mentions_committee
+          then: map_stakeholders
+        - probe_decision_authority
+
+  get_dm_contact:
+    type: simple
+    branch: authority_check
+    goal: "Получить контакт ЛПР"
+    transitions:
+      dm_contact_received: _branch_complete
+      cannot_provide: _branch_complete
+    rules:
+      unclear:
+        - request_introduction
+
+  # ---------------------------------------------------------------------------
+  # Need Discovery Branch States
+  # ---------------------------------------------------------------------------
+  discover_pain_points:
+    type: simple
+    branch: need_discovery
+    goal: "Выявить боли и потребности"
+    required_data:
+      - main_pain_point
+    optional_data:
+      - secondary_pains
+      - current_solution
+      - impact_of_problem
+    transitions:
+      pain_identified: quantify_impact
+      no_pain: create_urgency
+      data_complete: _branch_complete
+    rules:
+      unclear:
+        - when: vague_answer
+          then: probe_deeper
+        - when: mentions_challenge
+          then: explore_challenge
+        - situation_question
+
+  quantify_impact:
+    type: simple
+    branch: need_discovery
+    goal: "Количественно оценить влияние проблемы"
+    transitions:
+      impact_quantified: _branch_complete
+      cannot_quantify: _branch_complete
+    rules:
+      unclear:
+        - help_calculate_impact
+
+  create_urgency:
+    type: simple
+    branch: need_discovery
+    goal: "Создать осознание потребности"
+    transitions:
+      urgency_created: _branch_complete
+      still_no_need: _branch_complete
+    rules:
+      unclear:
+        - implication_question
+
+  # ---------------------------------------------------------------------------
+  # Timeline Branch States
+  # ---------------------------------------------------------------------------
+  assess_urgency:
+    type: simple
+    branch: timeline_assessment
+    goal: "Оценить срочность и сроки"
+    required_data:
+      - timeline
+    optional_data:
+      - deadline_driver
+      - competing_priorities
+    transitions:
+      urgent: _branch_complete
+      not_urgent: explore_timeline_drivers
+      data_complete: _branch_complete
+    rules:
+      unclear:
+        - when: mentions_deadline
+          then: confirm_deadline
+        - when: says_no_rush
+          then: explore_consequences_of_delay
+        - probe_timeline
+
+  explore_timeline_drivers:
+    type: simple
+    branch: timeline_assessment
+    goal: "Исследовать факторы, влияющие на сроки"
+    transitions:
+      driver_found: _branch_complete
+      no_driver: _branch_complete
+    rules:
+      unclear:
+        - ask_about_upcoming_events
+
+  # ---------------------------------------------------------------------------
+  # BANT Aggregation (JOIN)
+  # ---------------------------------------------------------------------------
+  bant_aggregation:
+    type: join
+    goal: "Агрегация результатов BANT квалификации"
+    expects_branches:
+      - budget_qualification
+      - authority_check
+      - need_discovery
+      - timeline_assessment
+    join_condition: all_complete
+    on_join:
+      action: calculate_lead_score
+    transitions:
+      qualified: presentation
+      partially_qualified: nurturing_track
+      not_qualified: polite_exit
+
+  # ---------------------------------------------------------------------------
+  # Alternative Paths
+  # ---------------------------------------------------------------------------
+  fast_track_demo:
+    type: simple
+    goal: "Быстрый путь для горячих лидов"
+    transitions:
+      demo_scheduled: success
+      needs_qualification: standard_bant
+    rules:
+      objection:
+        - handle_demo_objection
+
+  enterprise_qualification:
+    type: simple
+    goal: "Расширенная квалификация Enterprise"
+    transitions:
+      qualified: presentation
+      needs_more_info: standard_bant
+    rules:
+      question:
+        - answer_enterprise_question
+
+  referral_flow:
+    type: simple
+    goal: "Обработка реферальных лидов"
+    transitions:
+      qualified: presentation
+      needs_qualification: standard_bant
+
+  nurturing_track:
+    type: simple
+    goal: "Nurturing для частично квалифицированных"
+    transitions:
+      ready_to_buy: presentation
+      still_nurturing: nurturing_track
+    is_final: false
+
+  # ---------------------------------------------------------------------------
+  # Presentation and Closing
+  # ---------------------------------------------------------------------------
+  presentation:
+    type: simple
+    goal: "Презентация решения"
+    transitions:
+      interested: closing
+      objection: handle_objection
+      question: answer_question
+    rules:
+      positive_response:
+        - proceed_to_close
+      objection:
+        - handle_and_continue
+
+  handle_objection:
+    type: simple
+    goal: "Обработка возражений"
+    transitions:
+      objection_handled: presentation
+      rejection: polite_exit
+
+  closing:
+    type: simple
+    goal: "Закрытие сделки"
+    transitions:
+      agreement: success
+      need_time: follow_up
+      rejection: polite_exit
+
+  # ---------------------------------------------------------------------------
+  # Final States
+  # ---------------------------------------------------------------------------
+  success:
+    type: simple
+    goal: "Успешное завершение"
+    is_final: true
+
+  polite_exit:
+    type: simple
+    goal: "Вежливое завершение"
+    is_final: true
+
+  follow_up:
+    type: simple
+    goal: "Планирование follow-up"
+    transitions:
+      scheduled: success
+    is_final: false
+
+# =============================================================================
+# Variables
+# =============================================================================
+variables:
+  max_qualification_turns: 15
+  min_bant_score_for_qualified: 3
+  enterprise_threshold: 100
+  smb_threshold: 20
+
+# =============================================================================
+# Templates (optional)
+# =============================================================================
+templates:
+  probe_budget_indirectly:
+    template: |
+      Чтобы предложить оптимальное решение, помогите мне понять масштаб.
+      Какой примерный бюджет вы закладываете на подобные проекты?
+
+  calculate_lead_score:
+    template: |
+      На основе собранной информации:
+      - Бюджет: {{ budget_score }}/25
+      - ЛПР: {{ authority_score }}/25
+      - Потребность: {{ need_score }}/25
+      - Сроки: {{ timeline_score }}/25
+      Общий BANT Score: {{ total_score }}/100

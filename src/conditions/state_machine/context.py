@@ -203,6 +203,14 @@ class EvaluatorContext:
     # FIX: Add tone field for busy/aggressive persona handling
     tone: Optional[str] = None
 
+    # === DAG-specific fields ===
+    is_dag_mode: bool = False
+    active_branches: List[str] = field(default_factory=list)
+    current_branch: Optional[str] = None
+    dag_depth: int = 0  # Depth of fork nesting
+    in_fork: bool = False
+    fork_id: Optional[str] = None
+
     def __post_init__(self):
         """Validate and compute derived fields."""
         if self.turn_number < 0:
@@ -284,6 +292,22 @@ class EvaluatorContext:
             # FIX: Extract tone for busy/aggressive persona handling
             tone = getattr(context_envelope, 'tone', None)
 
+        # Extract DAG context if available
+        is_dag_mode = False
+        active_branches = []
+        current_branch = None
+        dag_depth = 0
+        in_fork = False
+        fork_id = None
+
+        dag_ctx = getattr(state_machine, '_dag_context', None)
+        if dag_ctx is not None:
+            is_dag_mode = dag_ctx.is_dag_mode
+            active_branches = dag_ctx.active_branch_ids
+            dag_depth = len(dag_ctx.fork_stack)
+            in_fork = dag_depth > 0
+            fork_id = dag_ctx.current_fork
+
         return cls(
             collected_data=collected_data.copy() if collected_data else {},
             state=state,
@@ -309,6 +333,13 @@ class EvaluatorContext:
             turns_since_breakthrough=turns_since_breakthrough,
             guard_intervention=guard_intervention,
             tone=tone,
+            # DAG fields
+            is_dag_mode=is_dag_mode,
+            active_branches=active_branches,
+            current_branch=current_branch,
+            dag_depth=dag_depth,
+            in_fork=in_fork,
+            fork_id=fork_id,
         )
 
     @classmethod
@@ -335,6 +366,13 @@ class EvaluatorContext:
         turns_since_breakthrough: Optional[int] = None,
         guard_intervention: Optional[str] = None,
         tone: Optional[str] = None,
+        # DAG fields for testing
+        is_dag_mode: bool = False,
+        active_branches: List[str] = None,
+        current_branch: Optional[str] = None,
+        dag_depth: int = 0,
+        in_fork: bool = False,
+        fork_id: Optional[str] = None,
     ) -> "EvaluatorContext":
         """
         Factory method to create a test context with defaults.
@@ -362,6 +400,12 @@ class EvaluatorContext:
             has_breakthrough: Breakthrough detected
             turns_since_breakthrough: Turns since breakthrough
             guard_intervention: Guard intervention type
+            is_dag_mode: Whether in DAG execution mode
+            active_branches: List of active branch IDs
+            current_branch: Current branch being processed
+            dag_depth: Depth of fork nesting
+            in_fork: Whether inside a fork
+            fork_id: Current fork ID
 
         Returns:
             A new EvaluatorContext instance
@@ -391,6 +435,13 @@ class EvaluatorContext:
             turns_since_breakthrough=turns_since_breakthrough,
             guard_intervention=guard_intervention,
             tone=tone,
+            # DAG fields
+            is_dag_mode=is_dag_mode,
+            active_branches=active_branches or [],
+            current_branch=current_branch,
+            dag_depth=dag_depth,
+            in_fork=in_fork,
+            fork_id=fork_id,
         )
 
     def has_field(self, field_name: str) -> bool:

@@ -1,0 +1,475 @@
+# =============================================================================
+# Customer Support Flow - Example DAG Flow
+# =============================================================================
+#
+# Демонстрирует использование DAG для службы поддержки:
+# - CHOICE для маршрутизации по типу проблемы
+# - FORK для параллельной диагностики
+# - History states для прерванных диалогов
+#
+# Типы поддерживаемых обращений:
+# - Технические проблемы
+# - Billing/платежи
+# - Вопросы по аккаунту
+# - Запросы на функционал
+#
+# =============================================================================
+
+flow:
+  name: customer_support
+  version: "1.0"
+  description: "Поддержка клиентов с DAG маршрутизацией"
+
+# =============================================================================
+# Entry Points
+# =============================================================================
+entry_points:
+  default: greeting
+  returning_customer: quick_identify
+  escalation: human_handoff
+
+# =============================================================================
+# States
+# =============================================================================
+states:
+  # ---------------------------------------------------------------------------
+  # Greeting and Identification
+  # ---------------------------------------------------------------------------
+  greeting:
+    type: simple
+    goal: "Приветствие и идентификация клиента"
+    transitions:
+      greeting_complete: issue_classifier
+      returning_customer: quick_identify
+    rules:
+      greeting:
+        - welcome_to_support
+
+  quick_identify:
+    type: simple
+    goal: "Быстрая идентификация возвращающегося клиента"
+    transitions:
+      identified: issue_classifier
+      not_identified: greeting
+
+  # ---------------------------------------------------------------------------
+  # Issue Classifier (CHOICE)
+  # ---------------------------------------------------------------------------
+  issue_classifier:
+    type: choice
+    goal: "Классификация типа обращения"
+    choices:
+      # Technical issues -> technical flow with parallel diagnostics
+      - condition: is_technical_issue
+        next: technical_flow
+
+      # Billing issues -> billing flow with history support
+      - condition: is_billing_issue
+        next: billing_flow
+
+      # Account issues
+      - condition: is_account_issue
+        next: account_flow
+
+      # Feature requests
+      - condition: is_feature_request
+        next: feature_request_handler
+
+      # Urgent/critical issues -> escalate immediately
+      - condition: is_urgent_issue
+        next: human_handoff
+
+    default: general_inquiry
+
+  # ---------------------------------------------------------------------------
+  # Technical Flow (FORK - parallel diagnostics)
+  # ---------------------------------------------------------------------------
+  technical_flow:
+    type: fork
+    goal: "Параллельная диагностика технической проблемы"
+    branches:
+      - id: system_check
+        start_at: check_system_status
+
+      - id: user_diagnostics
+        start_at: collect_error_details
+
+      - id: known_issues
+        start_at: check_known_issues
+        condition: has_error_code  # Only if user provided error code
+
+    join_at: technical_resolution
+    join_condition: all_complete
+
+  # System Check Branch
+  check_system_status:
+    type: simple
+    branch: system_check
+    goal: "Проверить статус системы"
+    transitions:
+      system_ok: _branch_complete
+      system_issue: report_system_issue
+    rules:
+      unclear:
+        - check_status_api
+
+  report_system_issue:
+    type: simple
+    branch: system_check
+    goal: "Сообщить о проблеме на стороне системы"
+    transitions:
+      reported: _branch_complete
+
+  # User Diagnostics Branch
+  collect_error_details:
+    type: simple
+    branch: user_diagnostics
+    goal: "Собрать детали ошибки от пользователя"
+    required_data:
+      - error_description
+    optional_data:
+      - error_code
+      - steps_to_reproduce
+      - browser_version
+      - os_version
+    transitions:
+      details_collected: _branch_complete
+      data_complete: _branch_complete
+    rules:
+      unclear:
+        - when: vague_error
+          then: ask_specific_questions
+        - request_screenshot
+
+  # Known Issues Branch
+  check_known_issues:
+    type: simple
+    branch: known_issues
+    goal: "Проверить известные проблемы"
+    transitions:
+      known_issue_found: provide_known_solution
+      no_known_issue: _branch_complete
+
+  provide_known_solution:
+    type: simple
+    branch: known_issues
+    goal: "Предоставить решение известной проблемы"
+    transitions:
+      solution_helped: _branch_complete
+      solution_not_helped: _branch_complete
+
+  # Technical Resolution (JOIN)
+  technical_resolution:
+    type: join
+    goal: "Решение технической проблемы"
+    expects_branches:
+      - system_check
+      - user_diagnostics
+      - known_issues
+    join_condition: all_complete
+    on_join:
+      action: analyze_diagnostics
+    transitions:
+      resolved: satisfaction_check
+      needs_escalation: escalate_technical
+      workaround_available: provide_workaround
+
+  escalate_technical:
+    type: simple
+    goal: "Эскалация технической проблемы"
+    transitions:
+      ticket_created: follow_up_scheduled
+      immediate_help: human_handoff
+
+  provide_workaround:
+    type: simple
+    goal: "Предложить временное решение"
+    transitions:
+      workaround_accepted: satisfaction_check
+      workaround_rejected: escalate_technical
+
+  # ---------------------------------------------------------------------------
+  # Billing Flow (with history for interruptions)
+  # ---------------------------------------------------------------------------
+  billing_flow:
+    type: simple
+    goal: "Обработка billing вопросов"
+    history: shallow  # Remember state for interruptions
+    transitions:
+      refund_request: process_refund
+      payment_failed: troubleshoot_payment
+      invoice_question: explain_invoice
+      subscription_change: handle_subscription
+
+  process_refund:
+    type: simple
+    goal: "Обработка запроса на возврат"
+    required_data:
+      - order_id
+      - refund_reason
+    transitions:
+      refund_approved: satisfaction_check
+      refund_denied: explain_denial
+      needs_review: escalate_billing
+    rules:
+      unclear:
+        - when: missing_order_id
+          then: request_order_details
+
+  explain_denial:
+    type: simple
+    goal: "Объяснить причину отказа в возврате"
+    transitions:
+      understood: satisfaction_check
+      escalate: escalate_billing
+
+  troubleshoot_payment:
+    type: simple
+    goal: "Решение проблем с платежом"
+    transitions:
+      payment_fixed: satisfaction_check
+      needs_bank: refer_to_bank
+      needs_manual: escalate_billing
+
+  refer_to_bank:
+    type: simple
+    goal: "Направить к банку"
+    transitions:
+      understood: satisfaction_check
+
+  explain_invoice:
+    type: simple
+    goal: "Объяснить содержимое счета"
+    transitions:
+      understood: satisfaction_check
+      dispute: process_dispute
+
+  process_dispute:
+    type: simple
+    goal: "Обработка оспаривания счета"
+    transitions:
+      resolved: satisfaction_check
+      needs_review: escalate_billing
+
+  handle_subscription:
+    type: simple
+    goal: "Изменение подписки"
+    transitions:
+      changed: satisfaction_check
+      cannot_change: explain_subscription_rules
+
+  explain_subscription_rules:
+    type: simple
+    goal: "Объяснить правила подписки"
+    transitions:
+      understood: satisfaction_check
+      escalate: escalate_billing
+
+  escalate_billing:
+    type: simple
+    goal: "Эскалация billing вопроса"
+    transitions:
+      escalated: follow_up_scheduled
+
+  # ---------------------------------------------------------------------------
+  # Account Flow
+  # ---------------------------------------------------------------------------
+  account_flow:
+    type: simple
+    goal: "Вопросы по аккаунту"
+    transitions:
+      password_reset: help_password_reset
+      account_locked: unlock_account
+      profile_update: help_profile_update
+      delete_account: process_deletion_request
+
+  help_password_reset:
+    type: simple
+    goal: "Помощь со сбросом пароля"
+    transitions:
+      reset_sent: satisfaction_check
+      cannot_reset: verify_identity
+
+  verify_identity:
+    type: simple
+    goal: "Верификация личности"
+    transitions:
+      verified: help_password_reset
+      not_verified: escalate_security
+
+  escalate_security:
+    type: simple
+    goal: "Эскалация вопроса безопасности"
+    transitions:
+      escalated: human_handoff
+
+  unlock_account:
+    type: simple
+    goal: "Разблокировка аккаунта"
+    transitions:
+      unlocked: satisfaction_check
+      needs_verification: verify_identity
+
+  help_profile_update:
+    type: simple
+    goal: "Помощь с обновлением профиля"
+    transitions:
+      updated: satisfaction_check
+      cannot_update: explain_limitation
+
+  explain_limitation:
+    type: simple
+    goal: "Объяснить ограничения"
+    transitions:
+      understood: satisfaction_check
+
+  process_deletion_request:
+    type: simple
+    goal: "Обработка запроса на удаление аккаунта"
+    transitions:
+      confirmed: schedule_deletion
+      cancelled: satisfaction_check
+
+  schedule_deletion:
+    type: simple
+    goal: "Планирование удаления аккаунта"
+    transitions:
+      scheduled: final_goodbye
+
+  final_goodbye:
+    type: simple
+    goal: "Прощание с уходящим клиентом"
+    is_final: true
+
+  # ---------------------------------------------------------------------------
+  # Feature Request Handler
+  # ---------------------------------------------------------------------------
+  feature_request_handler:
+    type: simple
+    goal: "Обработка запроса на функционал"
+    transitions:
+      logged: thank_for_feedback
+      existing_feature: explain_existing_feature
+      on_roadmap: share_roadmap
+
+  thank_for_feedback:
+    type: simple
+    goal: "Поблагодарить за обратную связь"
+    transitions:
+      done: satisfaction_check
+
+  explain_existing_feature:
+    type: simple
+    goal: "Объяснить существующий функционал"
+    transitions:
+      understood: satisfaction_check
+      still_missing: feature_request_handler
+
+  share_roadmap:
+    type: simple
+    goal: "Поделиться планами развития"
+    transitions:
+      satisfied: satisfaction_check
+      not_satisfied: log_priority_request
+
+  log_priority_request:
+    type: simple
+    goal: "Записать приоритетный запрос"
+    transitions:
+      logged: satisfaction_check
+
+  # ---------------------------------------------------------------------------
+  # General Inquiry
+  # ---------------------------------------------------------------------------
+  general_inquiry:
+    type: simple
+    goal: "Обработка общих вопросов"
+    transitions:
+      answered: satisfaction_check
+      needs_clarification: clarify_question
+      redirect: issue_classifier
+
+  clarify_question:
+    type: simple
+    goal: "Уточнить вопрос"
+    transitions:
+      clarified: general_inquiry
+      still_unclear: human_handoff
+
+  # ---------------------------------------------------------------------------
+  # Satisfaction and Closure
+  # ---------------------------------------------------------------------------
+  satisfaction_check:
+    type: simple
+    goal: "Проверка удовлетворённости"
+    transitions:
+      satisfied: success
+      not_satisfied: address_dissatisfaction
+      new_question: issue_classifier
+
+  address_dissatisfaction:
+    type: simple
+    goal: "Работа с неудовлетворённостью"
+    transitions:
+      resolved: success
+      needs_escalation: human_handoff
+      accepted: success
+
+  # ---------------------------------------------------------------------------
+  # Escalation and Follow-up
+  # ---------------------------------------------------------------------------
+  human_handoff:
+    type: simple
+    goal: "Передача живому оператору"
+    is_final: true
+    on_enter:
+      action: notify_human_agent
+
+  follow_up_scheduled:
+    type: simple
+    goal: "Запланирован follow-up"
+    transitions:
+      confirmed: success
+    rules:
+      unclear:
+        - confirm_follow_up_time
+
+  # ---------------------------------------------------------------------------
+  # Final States
+  # ---------------------------------------------------------------------------
+  success:
+    type: simple
+    goal: "Успешное завершение обращения"
+    is_final: true
+    on_enter:
+      action: send_satisfaction_survey
+
+# =============================================================================
+# Variables
+# =============================================================================
+variables:
+  max_self_service_attempts: 3
+  auto_escalate_after_turns: 10
+  satisfaction_survey_enabled: true
+
+# =============================================================================
+# Templates
+# =============================================================================
+templates:
+  welcome_to_support:
+    template: |
+      Здравствуйте! Я виртуальный помощник службы поддержки.
+      Чем могу помочь сегодня?
+
+  analyze_diagnostics:
+    template: |
+      На основе диагностики:
+      - Статус системы: {{ system_status }}
+      - Детали ошибки: {{ error_details }}
+      - Известные проблемы: {{ known_issues_check }}
+
+  notify_human_agent:
+    template: |
+      Передаю вас специалисту поддержки.
+      Время ожидания: примерно {{ wait_time }} минут.
+      Номер обращения: {{ ticket_id }}

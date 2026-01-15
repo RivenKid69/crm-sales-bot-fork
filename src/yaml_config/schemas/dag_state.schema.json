@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dag_state.schema.json",
+  "title": "DAG State Schema",
+  "description": "Schema for DAG state machine nodes (choice, fork, join, parallel)",
+  "type": "object",
+
+  "properties": {
+    "type": {
+      "description": "Type of state node",
+      "type": "string",
+      "enum": ["simple", "choice", "fork", "join", "parallel"],
+      "default": "simple"
+    },
+
+    "goal": {
+      "description": "Human-readable goal/purpose of this state",
+      "type": "string"
+    },
+
+    "phase": {
+      "description": "Phase this state belongs to (for phase-based flows)",
+      "type": "string"
+    },
+
+    "transitions": {
+      "description": "Intent-to-state transitions (for simple states or after DAG processing)",
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "$ref": "#/$defs/conditionalTransition" }
+        ]
+      }
+    },
+
+    "rules": {
+      "description": "Intent-to-action rules",
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array" },
+          { "type": "object" }
+        ]
+      }
+    },
+
+    "required_data": {
+      "description": "List of required data fields for this state",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "optional_data": {
+      "description": "List of optional data fields",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "is_final": {
+      "description": "Whether this is a final/terminal state",
+      "type": "boolean",
+      "default": false
+    },
+
+    "on_enter": {
+      "description": "Action to execute when entering this state",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "action": { "type": "string" }
+          },
+          "required": ["action"]
+        }
+      ]
+    },
+
+    "choices": {
+      "description": "Choice options for CHOICE nodes (XOR branching)",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "description": "Condition to evaluate",
+            "type": "string"
+          },
+          "next": {
+            "description": "Next state if condition is true",
+            "type": "string"
+          }
+        },
+        "required": ["condition", "next"]
+      }
+    },
+
+    "default": {
+      "description": "Default state for CHOICE nodes when no condition matches",
+      "type": "string"
+    },
+
+    "branches": {
+      "description": "Parallel branches for FORK nodes",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique branch identifier",
+            "type": "string"
+          },
+          "start_at": {
+            "description": "Initial state for this branch",
+            "type": "string"
+          },
+          "condition": {
+            "description": "Optional condition for activating this branch",
+            "type": "string"
+          }
+        },
+        "required": ["id", "start_at"]
+      }
+    },
+
+    "join_at": {
+      "description": "State to transition to after all branches complete (for FORK)",
+      "type": "string"
+    },
+
+    "join_condition": {
+      "description": "Condition for JOIN completion",
+      "type": "string",
+      "enum": ["all_complete", "any_complete", "majority", "n_of_m"],
+      "default": "all_complete"
+    },
+
+    "expects_branches": {
+      "description": "Branch IDs expected to complete (for JOIN nodes)",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "on_join": {
+      "description": "Action to execute when JOIN completes",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" }
+      }
+    },
+
+    "regions": {
+      "description": "Parallel regions for PARALLEL (compound) states",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "initial": {
+            "description": "Initial state for this region",
+            "type": "string"
+          },
+          "states": {
+            "description": "States within this region",
+            "type": "object"
+          }
+        },
+        "required": ["initial", "states"]
+      }
+    },
+
+    "exit_when": {
+      "description": "Condition for exiting PARALLEL state",
+      "type": "object",
+      "properties": {
+        "region": {
+          "description": "Which region to monitor",
+          "type": "string"
+        },
+        "reaches": {
+          "description": "State that triggers exit",
+          "type": "string"
+        }
+      }
+    },
+
+    "history": {
+      "description": "History type for compound states (for interrupted dialogs)",
+      "type": "string",
+      "enum": ["none", "shallow", "deep"],
+      "default": "none"
+    },
+
+    "branch": {
+      "description": "Branch ID this state belongs to (for states within a fork)",
+      "type": "string"
+    }
+  },
+
+  "$defs": {
+    "conditionalTransition": {
+      "description": "Conditional transition with when/then clauses",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "when": { "type": "string" },
+            "then": { "type": "string" }
+          },
+          "required": ["when", "then"]
+        },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "properties": {
+                  "when": { "type": "string" },
+                  "then": { "type": "string" }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "const": "choice" } }
+      },
+      "then": {
+        "required": ["choices"],
+        "properties": {
+          "default": {
+            "description": "Required: default state when no choice matches"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "fork" } }
+      },
+      "then": {
+        "required": ["branches", "join_at"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "join" } }
+      },
+      "then": {
+        "required": ["expects_branches"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "parallel" } }
+      },
+      "then": {
+        "required": ["regions"]
+      }
+    }
+  ]
+}

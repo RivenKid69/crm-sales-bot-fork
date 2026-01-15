@@ -46,6 +46,7 @@ from src.yaml_config.constants import (
 
 if TYPE_CHECKING:
     from src.config_loader import LoadedConfig, FlowConfig
+    from src.dag.models import DAGExecutionContext
 
 
 # =============================================================================
@@ -293,6 +294,11 @@ class StateMachine:
         # State before objection (for returning after handling)
         self._state_before_objection: Optional[str] = None
 
+        # DAG Support (Phase DAG)
+        self._dag_enabled = True  # DAG mode enabled by default (backward compat)
+        self._dag_context: Optional["DAGExecutionContext"] = None
+        self._dag_executor = None  # Lazy initialized
+
     # =========================================================================
     # Configuration Properties (with fallback to Python constants)
     # =========================================================================
@@ -404,6 +410,141 @@ class StateMachine:
         """Get current turn number from tracker."""
         return self.intent_tracker.turn_number
 
+    # =========================================================================
+    # DAG Properties and Methods
+    # =========================================================================
+
+    @property
+    def dag_context(self) -> Optional["DAGExecutionContext"]:
+        """
+        Get DAG execution context.
+
+        Returns None if DAG mode is not active.
+        Context is lazily initialized when first DAG node is encountered.
+        """
+        return self._dag_context
+
+    @property
+    def is_dag_mode(self) -> bool:
+        """
+        Check if currently in DAG mode.
+
+        DAG mode is active when:
+        - There are active parallel branches
+        - We are inside a fork
+        """
+        return (
+            self._dag_context is not None and
+            self._dag_context.is_dag_mode
+        )
+
+    @property
+    def active_branches(self) -> List[str]:
+        """Get list of active branch IDs (empty if not in DAG mode)."""
+        if self._dag_context:
+            return self._dag_context.active_branch_ids
+        return []
+
+    @property
+    def dag_events(self) -> List[Dict]:
+        """Get DAG events log for debugging/analytics."""
+        if self._dag_context:
+            return [e.to_dict() for e in self._dag_context.events]
+        return []
+
+    def _init_dag_context(self) -> "DAGExecutionContext":
+        """Initialize DAG context lazily."""
+        if self._dag_context is None:
+            from src.dag.models import DAGExecutionContext
+            self._dag_context = DAGExecutionContext(primary_state=self.state)
+        return self._dag_context
+
+    def _get_dag_executor(self):
+        """Get or create DAG executor lazily."""
+        if self._dag_executor is None and self._flow:
+            from src.dag.executor import DAGExecutor
+            self._dag_executor = DAGExecutor(
+                flow_config=self._flow,
+                condition_registry=sm_registry,
+            )
+        return self._dag_executor
+
+    def is_dag_state(self, state_id: str) -> bool:
+        """Check if a state is a DAG node (choice, fork, join, parallel)."""
+        if self._flow:
+            return self._flow.is_dag_state(state_id)
+        return False
+
+    def _apply_dag_rules(
+        self,
+        intent: str,
+        context_envelope: Any = None,
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Apply DAG rules for current state.
+
+        Called when current state is a DAG node (choice, fork, join, parallel).
+
+        Args:
+            intent: Current intent
+            context_envelope: Optional context envelope
+
+        Returns:
+            Tuple[action, next_state] or None if DAG processing failed
+        """
+        # Initialize DAG context if needed
+        dag_ctx = self._init_dag_context()
+
+        # Get or create executor
+        executor = self._get_dag_executor()
+        if not executor:
+            logger.warning("DAG executor not available")
+            return None
+
+        # Build evaluator context
+        config = self.states_config.get(self.state, {})
+        ctx = EvaluatorContext.from_state_machine(
+            self, intent, config, context_envelope=context_envelope
+        )
+
+        # Execute DAG node
+        result = executor.execute_node(
+            node_id=self.state,
+            intent=intent,
+            ctx=ctx,
+            dag_ctx=dag_ctx,
+        )
+
+        if not result.is_dag:
+            # Not a DAG node, let normal processing handle it
+            return None
+
+        # Handle DAG result
+        logger.debug(
+            f"DAG result for state '{self.state}': "
+            f"action='{result.action}', primary_state='{result.primary_state}'"
+        )
+
+        # Update state if changed
+        if result.primary_state and result.primary_state != self.state:
+            old_state = self.state
+            self.state = result.primary_state
+            logger.debug(f"DAG transition: {old_state} -> {self.state}")
+
+        # Merge aggregated data from completed branches
+        if result.aggregated_data:
+            self.collected_data["_dag_results"] = result.aggregated_data
+            # Also merge individual branch data into collected_data
+            for branch_id, branch_data in result.aggregated_data.items():
+                for key, value in branch_data.items():
+                    if key not in self.collected_data:
+                        self.collected_data[key] = value
+
+        # Update DAG context primary state
+        dag_ctx.primary_state = self.state
+
+        return result.action, result.primary_state
+
     def reset(self):
         """Reset for new conversation."""
         self.state = "greeting"
@@ -418,6 +559,10 @@ class StateMachine:
         if self._trace_collector:
             self._trace_collector.clear()
         self._last_trace = None
+
+        # Reset DAG context
+        if self._dag_context:
+            self._dag_context.reset()
 
         # Reset disambiguation state
         self.in_disambiguation = False
@@ -1083,6 +1228,15 @@ class StateMachine:
         # This must happen BEFORE any condition evaluation
         # =====================================================================
         self.intent_tracker.record(intent, self.state)
+
+        # =====================================================================
+        # DAG STEP: Check if current state is a DAG node
+        # If so, process via DAG executor and return early
+        # =====================================================================
+        if self._dag_enabled and self._flow and self._flow.is_dag_state(self.state):
+            dag_result = self._apply_dag_rules(intent, context_envelope)
+            if dag_result is not None:
+                return dag_result
 
         # =====================================================================
         # Phase 4 STEP 2: Build EvaluatorContext for conditions

@@ -15,6 +15,7 @@ import logging
 
 if TYPE_CHECKING:
     from src.conditions.registry import ConditionRegistry
+    from src.dag.models import DAGNodeConfig
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +199,28 @@ class FlowConfig:
     # Prompt templates
     templates: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
+    # DAG nodes (parsed from states with type != simple)
+    _dag_nodes: Dict[str, "DAGNodeConfig"] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """Parse DAG nodes from states after initialization."""
+        self._parse_dag_nodes()
+
+    def _parse_dag_nodes(self):
+        """Extract DAG nodes from states configuration."""
+        from src.dag.models import DAGNodeConfig, NodeType
+
+        for state_id, state_config in self.states.items():
+            type_str = state_config.get("type", "simple")
+            if type_str != "simple":
+                try:
+                    self._dag_nodes[state_id] = DAGNodeConfig.from_state_config(
+                        state_id, state_config
+                    )
+                except Exception:
+                    # If parsing fails, skip this node
+                    pass
+
     # Computed properties
     @property
     def post_phases_state(self) -> Optional[str]:
@@ -272,6 +295,103 @@ class FlowConfig:
             Dict with template, description, parameters, etc.
         """
         return self.templates.get(action)
+
+    # =========================================================================
+    # DAG Support Methods
+    # =========================================================================
+
+    @property
+    def dag_nodes(self) -> Dict[str, "DAGNodeConfig"]:
+        """Get all DAG nodes in this flow."""
+        return self._dag_nodes
+
+    def is_dag_state(self, state_id: str) -> bool:
+        """
+        Check if a state is a DAG node (choice, fork, join, parallel).
+
+        Args:
+            state_id: State identifier
+
+        Returns:
+            True if state is a DAG node, False otherwise
+        """
+        return state_id in self._dag_nodes
+
+    def get_dag_node(self, state_id: str) -> Optional["DAGNodeConfig"]:
+        """
+        Get DAG node configuration for a state.
+
+        Args:
+            state_id: State identifier
+
+        Returns:
+            DAGNodeConfig or None if not a DAG node
+        """
+        return self._dag_nodes.get(state_id)
+
+    def get_dag_node_type(self, state_id: str) -> Optional[str]:
+        """
+        Get the type of DAG node (choice, fork, join, parallel).
+
+        Args:
+            state_id: State identifier
+
+        Returns:
+            Node type string or None if not a DAG node
+        """
+        node = self._dag_nodes.get(state_id)
+        if node:
+            return node.node_type.value
+        return None
+
+    def get_fork_branches(self, state_id: str) -> List[Dict[str, Any]]:
+        """
+        Get branches for a FORK node.
+
+        Args:
+            state_id: FORK state identifier
+
+        Returns:
+            List of branch configurations
+        """
+        node = self._dag_nodes.get(state_id)
+        if node:
+            return node.branches
+        return []
+
+    def get_choice_options(self, state_id: str) -> List[Dict[str, Any]]:
+        """
+        Get choices for a CHOICE node.
+
+        Args:
+            state_id: CHOICE state identifier
+
+        Returns:
+            List of choice configurations
+        """
+        node = self._dag_nodes.get(state_id)
+        if node:
+            return node.choices
+        return []
+
+    def get_join_config(self, state_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get JOIN node configuration.
+
+        Args:
+            state_id: JOIN state identifier
+
+        Returns:
+            Dict with expects_branches, join_condition, on_join
+        """
+        node = self._dag_nodes.get(state_id)
+        if node:
+            return {
+                "expects_branches": node.expects_branches,
+                "join_condition": node.join_condition.value,
+                "on_join_action": node.on_join_action,
+            }
+        return None
 
 
 class ConfigLoader:
