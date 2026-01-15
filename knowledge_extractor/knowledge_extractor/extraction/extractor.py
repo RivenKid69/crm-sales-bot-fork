@@ -188,23 +188,50 @@ class KnowledgeExtractor:
             category=result.category,
         )
 
-        # Expand keywords
+        # Expand keywords with new phrase-based structure
+        # key_phrases (75%) + single_keywords (25%) + question_phrases
         keyword_set = self.keyword_gen.generate(
-            primary_keywords=result.primary_keywords,
-            synonyms=result.synonyms,
+            primary_keywords=result.single_keywords,  # Single words for morphology
+            synonyms=[],  # No separate synonyms anymore
             question_phrases=result.question_phrases,
             text_context=chunk.text[:500],
         )
 
-        # Build final section
-        keywords = keyword_set.to_flat_list(max_count=self.config.extraction.max_keywords)
+        # Build final keywords list: phrases first (75%), then single words (25%)
+        keywords = []
+        seen = set()
+
+        # 1. Add key_phrases first (multi-word phrases - 75%)
+        for phrase in result.key_phrases:
+            phrase_clean = phrase.strip().lower()
+            if phrase_clean and phrase_clean not in seen:
+                keywords.append(phrase_clean)
+                seen.add(phrase_clean)
+
+        # 2. Add question_phrases
+        for phrase in result.question_phrases:
+            phrase_clean = phrase.strip().lower()
+            if phrase_clean and phrase_clean not in seen:
+                keywords.append(phrase_clean)
+                seen.add(phrase_clean)
+
+        # 3. Add single keywords with their morphological forms
+        single_kws = keyword_set.to_flat_list(max_count=self.config.extraction.max_keywords)
+        for kw in single_kws:
+            if kw not in seen:
+                keywords.append(kw)
+                seen.add(kw)
+
+        # Limit to max_keywords
+        keywords = keywords[:self.config.extraction.max_keywords]
 
         # Ensure minimum keywords
         if len(keywords) < self.config.extraction.min_keywords:
-            # Add more from primary if available
-            for kw in result.primary_keywords:
-                if kw.lower() not in keywords:
+            # Add more from key_phrases if available
+            for kw in result.key_phrases:
+                if kw.lower() not in seen:
                     keywords.append(kw.lower())
+                    seen.add(kw.lower())
                 if len(keywords) >= self.config.extraction.min_keywords:
                     break
 

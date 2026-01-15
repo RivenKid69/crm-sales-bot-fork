@@ -28,21 +28,21 @@ CategoryType = Literal[
 class ExtractedKeywordsRaw(BaseModel):
     """Raw keywords extracted from text (first LLM pass)."""
 
-    primary_keywords: List[str] = Field(
+    key_phrases: List[str] = Field(
         ...,
-        min_length=3,
-        max_length=15,
-        description="Основные ключевые слова из текста (существительные, глаголы, термины)",
+        min_length=10,
+        max_length=35,
+        description="ФРАЗЫ из 2-5 слов - 75% от общего числа (интеграция с 1С, тариф бизнес 29900)",
     )
-    synonyms: List[str] = Field(
+    single_keywords: List[str] = Field(
         default_factory=list,
         max_length=10,
-        description="Синонимы основных слов (цена → стоимость, прайс)",
+        description="Одиночные слова - 25% от общего числа (api, crm, тариф)",
     )
     question_phrases: List[str] = Field(
         default_factory=list,
-        max_length=10,
-        description="Вопросительные фразы (сколько стоит, как работает, можно ли)",
+        max_length=20,
+        description="Полные вопросы-фразы (сколько стоит тариф бизнес, как подключить WhatsApp)",
     )
 
 
@@ -237,19 +237,21 @@ class FullExtractionResult(BaseModel):
         ...,
         description="Категория",
     )
-    primary_keywords: List[str] = Field(
+    key_phrases: List[str] = Field(
         ...,
-        min_length=5,
-        max_length=15,
-        description="Основные ключевые слова",
+        min_length=10,
+        max_length=35,
+        description="ФРАЗЫ из 2-5 слов - 75% keywords (интеграция с 1С, тариф бизнес)",
     )
-    synonyms: List[str] = Field(
+    single_keywords: List[str] = Field(
         default_factory=list,
-        description="Синонимы",
+        max_length=10,
+        description="Одиночные слова - 25% keywords (api, crm)",
     )
     question_phrases: List[str] = Field(
         default_factory=list,
-        description="Вопросительные фразы",
+        max_length=20,
+        description="Полные вопросы-фразы",
     )
     facts: str = Field(
         ...,
