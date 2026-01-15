@@ -3,7 +3,7 @@
 
 Оркестрирует 3-уровневый каскад:
 1. Tier 1: Regex (быстрый, явные сигналы)
-2. Tier 2: Semantic (RoSBERTa, неявные сигналы)
+2. Tier 2: Semantic (FRIDA, неявные сигналы)
 3. Tier 3: LLM (сарказм, ирония)
 """
 
@@ -28,7 +28,7 @@ class CascadeToneConfig:
     TIER1_HIGH_CONFIDENCE = 0.85      # Early return threshold
     TIER1_MIN_SIGNALS = 1             # Минимум сигналов для high confidence
 
-    # Tier 2: Semantic (RoSBERTa)
+    # Tier 2: Semantic (FRIDA)
     TIER2_THRESHOLD = 0.70            # Min confidence для return
 
     # Tier 3: LLM
@@ -44,7 +44,7 @@ class CascadeToneAnalyzer:
 
     Архитектура:
         Tier 1: Regex (быстрый) → если confidence >= 0.85 и есть сигналы → return
-        Tier 2: Semantic (RoSBERTa) → если confidence >= 0.70 → return
+        Tier 2: Semantic (FRIDA) → если confidence >= 0.70 → return
         Tier 3: LLM → если confidence >= 0.65 → return
         Fallback: NEUTRAL
 

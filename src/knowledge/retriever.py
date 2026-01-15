@@ -168,6 +168,7 @@ class CascadeRetriever:
         # Эмбеддинги (инициализируются лениво)
         self.embedder = None
         self.np = None
+        self._use_prefixes = False  # Для FRIDA модели
 
         # Reranker параметры из settings
         self.reranker_enabled = getattr(
@@ -208,20 +209,29 @@ class CascadeRetriever:
             from sentence_transformers import SentenceTransformer
             import numpy as np
             self.np = np
-            # Модель из settings (по умолчанию: ai-forever/ru-en-RoSBERTa)
+            # Модель из settings (по умолчанию: ai-forever/FRIDA)
             embedder_model = settings.retriever.embedder_model
             self.embedder = SentenceTransformer(embedder_model)
 
+            # Проверяем нужны ли префиксы (FRIDA использует префиксы для лучшего качества)
+            self._use_prefixes = "FRIDA" in embedder_model.upper()
+
             # Индексируем все секции
-            texts = [s.facts for s in self.kb.sections]
+            # Для FRIDA добавляем префикс search_document:
+            if self._use_prefixes:
+                texts = [f"search_document: {s.facts}" for s in self.kb.sections]
+            else:
+                texts = [s.facts for s in self.kb.sections]
+
             embeddings = self.embedder.encode(texts)
             for i, section in enumerate(self.kb.sections):
                 section.embedding = embeddings[i].tolist()
 
-            print(f"[CascadeRetriever] Indexed {len(texts)} sections with embeddings")
+            print(f"[CascadeRetriever] Indexed {len(texts)} sections with embeddings (prefixes={self._use_prefixes})")
         except ImportError:
             print("[CascadeRetriever] sentence-transformers not installed, using keywords only")
             self.use_embeddings = False
+            self._use_prefixes = False
 
     def retrieve(
         self,
@@ -547,7 +557,9 @@ class CascadeRetriever:
         if not self.embedder or not self.np:
             return []
 
-        query_emb = self.embedder.encode(query)
+        # Для FRIDA добавляем префикс search_query:
+        query_text = f"search_query: {query}" if getattr(self, '_use_prefixes', False) else query
+        query_emb = self.embedder.encode(query_text)
         results = []
 
         for section in sections:

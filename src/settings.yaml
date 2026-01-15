@@ -30,8 +30,8 @@ retriever:
   # Использовать семантический поиск (требует sentence-transformers)
   use_embeddings: true
 
-  # Модель для эмбеддингов
-  embedder_model: "ai-forever/ru-en-RoSBERTa"
+  # Модель для эмбеддингов (FRIDA - лучшая модель для русского языка, ruMTEB avg ~71)
+  embedder_model: "ai-forever/FRIDA"
 
   # Пороги для каждого этапа каскада
   thresholds:

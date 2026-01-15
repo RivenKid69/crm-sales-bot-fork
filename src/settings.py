@@ -27,7 +27,7 @@ DEFAULTS = {
     },
     "retriever": {
         "use_embeddings": True,
-        "embedder_model": "ai-forever/ru-en-RoSBERTa",
+        "embedder_model": "ai-forever/FRIDA",
         "thresholds": {
             "exact": 1.0,
             "lemma": 0.15,

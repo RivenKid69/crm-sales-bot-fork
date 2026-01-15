@@ -96,10 +96,10 @@ class SemanticClassifier:
             return getattr(
                 getattr(settings, 'retriever', None),
                 'embedder_model',
-                'ai-forever/ru-en-RoSBERTa'
+                'ai-forever/FRIDA'
             )
         except ImportError:
-            return 'ai-forever/ru-en-RoSBERTa'
+            return 'ai-forever/FRIDA'
 
     def _init_embeddings(self) -> bool:
         """

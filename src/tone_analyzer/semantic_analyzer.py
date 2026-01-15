@@ -1,7 +1,7 @@
 """
 Semantic анализатор тона (Tier 2).
 
-Использует RoSBERTa embeddings для вычисления similarity
+Использует FRIDA embeddings для вычисления similarity
 между сообщением и примерами каждого типа тона.
 """
 
@@ -19,7 +19,7 @@ class SemanticToneAnalyzer:
     """
     Tier 2: Semantic анализатор тона на основе embeddings.
 
-    Использует существующий RoSBERTa из classifier/intents/semantic.py
+    Использует существующий FRIDA embedder из classifier/intents/semantic.py
     для вычисления similarity к примерам тона.
 
     Особенности:
@@ -79,10 +79,10 @@ class SemanticToneAnalyzer:
                     model_name = getattr(
                         getattr(settings, 'retriever', None),
                         'embedder_model',
-                        'ai-forever/ru-en-RoSBERTa'
+                        'ai-forever/FRIDA'
                     )
                 except ImportError:
-                    model_name = 'ai-forever/ru-en-RoSBERTa'
+                    model_name = 'ai-forever/FRIDA'
 
                 logger.info(f"Loading semantic tone model: {model_name}")
                 self._embedder = SentenceTransformer(model_name)

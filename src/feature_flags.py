@@ -84,7 +84,7 @@ class FeatureFlags:
 
         # === Cascade Tone Analyzer (Phase 5) ===
         "cascade_tone_analyzer": True,     # Master switch для каскадного анализатора
-        "tone_semantic_tier2": True,       # RoSBERTa semantic (Tier 2)
+        "tone_semantic_tier2": True,       # FRIDA semantic (Tier 2)
         "tone_llm_tier3": True,            # LLM fallback (Tier 3)
 
         # === LLM Classifier (Phase LLM) ===
@@ -354,7 +354,7 @@ class FeatureFlags:
 
     @property
     def tone_semantic_tier2(self) -> bool:
-        """Включён ли Tier 2 (RoSBERTa semantic) для анализа тона"""
+        """Включён ли Tier 2 (FRIDA semantic) для анализа тона"""
         return self.is_enabled("tone_semantic_tier2")
 
     @property

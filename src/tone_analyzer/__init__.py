@@ -3,7 +3,7 @@ Tone Analyzer Module.
 
 Каскадный анализатор тона с 3-уровневой архитектурой:
 - Tier 1: Regex (быстрый, явные сигналы)
-- Tier 2: Semantic (RoSBERTa, неявные сигналы)
+- Tier 2: Semantic (FRIDA, неявные сигналы)
 - Tier 3: LLM (сарказм, ирония)
 
 Использование:
