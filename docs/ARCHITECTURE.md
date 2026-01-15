@@ -288,6 +288,91 @@ close ────────────────── Запрос кон
     └──► soft_close (отказ)
 ```
 
+## DAG State Machine ⭐ NEW
+
+Расширение линейной state machine для поддержки параллельных потоков и условных ветвлений.
+
+### Архитектура DAG
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              StateMachine                                    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │                        DAG Components                                    ││
+│  │                                                                          ││
+│  │  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐       ││
+│  │  │ DAGExecution    │   │   DAGExecutor   │   │  BranchRouter   │       ││
+│  │  │    Context      │   │                 │   │                 │       ││
+│  │  │ • branches      │   │ • execute_choice│   │ • round_robin   │       ││
+│  │  │ • history       │   │ • execute_fork  │   │ • priority      │       ││
+│  │  │ • events        │   │ • execute_join  │   │ • first_match   │       ││
+│  │  └────────┬────────┘   └────────┬────────┘   └────────┬────────┘       ││
+│  │           │                     │                     │                 ││
+│  │           └─────────────────────┼─────────────────────┘                 ││
+│  │                                 │                                        ││
+│  │  ┌─────────────────┐   ┌───────▼─────────┐   ┌─────────────────┐       ││
+│  │  │ SyncPointManager│   │   apply_rules() │   │  HistoryManager │       ││
+│  │  │                 │   │                 │   │                 │       ││
+│  │  │ • ALL_COMPLETE  │   │ • check DAG node│   │ • shallow       │       ││
+│  │  │ • ANY_COMPLETE  │   │ • execute DAG   │   │ • deep          │       ││
+│  │  │ • MAJORITY      │   │ • event sourcing│   │ • interruptions │       ││
+│  │  └─────────────────┘   └─────────────────┘   └─────────────────┘       ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Типы DAG узлов
+
+| Тип | Описание | Use Case |
+|-----|----------|----------|
+| `CHOICE` | Условное ветвление (XOR) | Маршрутизация по типу запроса |
+| `FORK` | Запуск параллельных веток | BANT квалификация |
+| `JOIN` | Синхронизация веток | Объединение результатов |
+| `PARALLEL` | Compound state | Вложенные регионы |
+
+### Пример DAG Flow
+
+```yaml
+states:
+  # Условное ветвление
+  issue_classifier:
+    type: choice
+    choices:
+      - condition: is_technical_issue
+        next: technical_flow
+      - condition: is_billing_issue
+        next: billing_flow
+    default: general_inquiry
+
+  # Параллельные ветки
+  qualification_fork:
+    type: fork
+    branches:
+      - id: budget_branch
+        start_at: collect_budget
+      - id: need_branch
+        start_at: assess_needs
+    join_at: qualification_complete
+    join_condition: all_complete
+```
+
+### Файлы DAG модуля
+
+```
+src/dag/
+├── __init__.py           # Публичный API
+├── models.py             # DAGBranch, DAGExecutionContext, NodeType
+├── executor.py           # DAGExecutor (CHOICE, FORK, JOIN, PARALLEL)
+├── branch_router.py      # BranchRouter, IntentBranchMapping
+├── sync_points.py        # SyncPointManager, SyncStrategy
+└── history.py            # HistoryManager, ConversationFlowTracker
+```
+
+Подробнее: [docs/DAG.md](DAG.md), [docs/state_machine.md#13-dag-state-machine](state_machine.md#13-dag-state-machine)
+
+---
+
 ## Modular Flow System
 
 Система модульных flow позволяет создавать кастомные диалоговые сценарии через YAML-конфигурацию.
@@ -571,6 +656,7 @@ FALLBACK_RESPONSES = {
 | `config.py` | Интенты, состояния, промпты |
 | `config_loader.py` | ConfigLoader, FlowConfig для YAML flow |
 | `yaml_config/` | YAML конфигурация (states, flows, templates) |
+| `dag/` | **DAG State Machine** (CHOICE, FORK/JOIN, History) ⭐ |
 | `context_window.py` | Расширенный контекст диалога |
 | `dialogue_policy.py` | Context-aware policy overlays |
 | `context_envelope.py` | Построение контекста для подсистем |

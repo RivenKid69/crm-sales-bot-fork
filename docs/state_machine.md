@@ -1,6 +1,6 @@
 # State Machine - Полная Документация
 
-> **Версия документации:** 2.0
+> **Версия документации:** 3.0
 > **Последнее обновление:** Январь 2026
 > **Основной файл:** `src/state_machine.py`
 
@@ -18,6 +18,7 @@
 10. [Диаграммы и Схемы](#10-диаграммы-и-схемы)
 11. [Тестирование](#11-тестирование)
 12. [FAQ и Troubleshooting](#12-faq-и-troubleshooting)
+13. [DAG State Machine](#13-dag-state-machine) ⭐ NEW
 
 ---
 
@@ -1609,6 +1610,330 @@ flags.circular_flow = True
 - `go_back` — вернуться назад
 - `correct_info` — исправить информацию
 - `unclear` — неясно
+
+---
+
+## 13. DAG State Machine
+
+### 13.1 Что такое DAG State Machine?
+
+DAG (Directed Acyclic Graph) — расширение линейной state machine, позволяющее создавать:
+
+- **Условные ветвления (CHOICE)** — XOR выбор между путями
+- **Параллельные потоки (FORK/JOIN)** — одновременное выполнение веток
+- **Compound states (PARALLEL)** — вложенные параллельные регионы
+- **History states** — сохранение состояния при прерываниях
+
+```
+                    ┌─────────────────────────────────────────────┐
+                    │           DAG State Machine                  │
+                    │                                              │
+     LINEAR:        │    A ───► B ───► C ───► D                   │
+                    │                                              │
+     CHOICE (XOR):  │              ┌──► B ──┐                     │
+                    │    A ────────┤        ├────► D              │
+                    │              └──► C ──┘                     │
+                    │                                              │
+     FORK/JOIN:     │              ┌──► B ──┐                     │
+                    │    A ────────┤        ├────► E              │
+                    │      (fork)  └──► C ──┘  (join)             │
+                    │              └──► D ──┘                     │
+                    └─────────────────────────────────────────────┘
+```
+
+### 13.2 Компоненты DAG
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `DAGExecutionContext` | `src/dag/models.py` | Контекст выполнения DAG (ветки, история) |
+| `DAGExecutor` | `src/dag/executor.py` | Выполнение CHOICE, FORK, JOIN, PARALLEL |
+| `BranchRouter` | `src/dag/branch_router.py` | Маршрутизация интентов между ветками |
+| `SyncPointManager` | `src/dag/sync_points.py` | Синхронизация параллельных веток |
+| `HistoryManager` | `src/dag/history.py` | История для прерванных диалогов |
+
+### 13.3 Типы DAG узлов
+
+```python
+from src.dag import NodeType
+
+class NodeType(Enum):
+    SIMPLE = "simple"      # Обычное состояние
+    CHOICE = "choice"      # Условное ветвление (XOR)
+    FORK = "fork"          # Начало параллельного выполнения
+    JOIN = "join"          # Синхронизация веток
+    PARALLEL = "parallel"  # Compound state с регионами
+```
+
+### 13.4 YAML конфигурация DAG
+
+#### CHOICE (условное ветвление)
+
+```yaml
+states:
+  issue_classifier:
+    type: choice
+    goal: "Классификация типа обращения"
+    choices:
+      - condition: is_technical_issue
+        next: technical_flow
+      - condition: is_billing_issue
+        next: billing_flow
+      - condition: is_account_issue
+        next: account_flow
+    default: general_inquiry
+```
+
+#### FORK/JOIN (параллельные потоки)
+
+```yaml
+states:
+  # FORK — запуск параллельных веток
+  qualification_fork:
+    type: fork
+    goal: "Параллельная квалификация"
+    branches:
+      - id: budget_branch
+        start_at: collect_budget
+      - id: authority_branch
+        start_at: identify_decision_maker
+      - id: need_branch
+        start_at: assess_needs
+        condition: has_initial_interest  # Опциональная ветка
+    join_at: qualification_complete
+    join_condition: all_complete  # или any_complete, majority
+
+  # JOIN — синхронизация веток
+  qualification_complete:
+    type: join
+    goal: "Объединение результатов"
+    expects_branches:
+      - budget_branch
+      - authority_branch
+      - need_branch
+    join_condition: all_complete
+    on_join:
+      action: analyze_qualification
+    transitions:
+      qualified: presentation
+      not_qualified: nurture_flow
+```
+
+#### History States
+
+```yaml
+states:
+  billing_flow:
+    type: simple
+    goal: "Обработка billing вопросов"
+    history: shallow  # или deep
+    transitions:
+      refund_request: process_refund
+      payment_failed: troubleshoot_payment
+```
+
+### 13.5 Использование DAG в коде
+
+#### Инициализация DAG контекста
+
+```python
+from src.dag import DAGExecutionContext, DAGBranch, NodeType
+
+# DAG контекст создаётся автоматически в StateMachine
+sm = StateMachine()
+
+# Проверка режима DAG
+if sm.is_dag_mode:
+    print(f"Active branches: {sm.active_branches}")
+    print(f"DAG events: {len(sm.dag_events)}")
+```
+
+#### Работа с параллельными ветками
+
+```python
+from src.dag import BranchRouter
+
+# Маршрутизация интентов
+router = BranchRouter(sm.dag_context, strategy="round_robin")
+result = router.route_intent("price_question")
+
+if result.branch_id:
+    print(f"Route to branch: {result.branch_id}")
+    print(f"Current state: {result.state}")
+```
+
+#### Синхронизация веток
+
+```python
+from src.dag import SyncPointManager, SyncStrategy
+
+sync_manager = SyncPointManager()
+
+# Регистрация точки синхронизации
+sync_manager.register_sync_point(
+    "qualification_complete",
+    required_branches=["budget", "authority", "need"],
+    strategy=SyncStrategy.ALL_COMPLETE
+)
+
+# Проверка готовности
+result = sync_manager.arrive("qualification_complete", "budget")
+if result.is_complete:
+    print("All branches complete!")
+```
+
+#### History States для прерываний
+
+```python
+from src.dag import HistoryManager, HistoryType
+
+history = HistoryManager()
+
+# Сохранить состояние при прерывании
+history.save("booking_flow", "collect_date", data={"step": 1})
+
+# ... пользователь спрашивает о ценах ...
+
+# Восстановить состояние
+state, data = history.restore_with_data("booking_flow")
+# state = "collect_date", data = {"step": 1}
+```
+
+### 13.6 Стратегии синхронизации
+
+| Стратегия | Описание |
+|-----------|----------|
+| `ALL_COMPLETE` | Ждать завершения всех веток |
+| `ANY_COMPLETE` | Продолжить при завершении любой ветки |
+| `MAJORITY` | Продолжить при завершении >50% веток |
+| `N_OF_M` | Продолжить при завершении N из M веток |
+| `TIMEOUT` | Продолжить по таймауту |
+
+```yaml
+# Пример с MAJORITY
+states:
+  parallel_diagnostics:
+    type: join
+    join_condition: majority
+    expects_branches:
+      - system_check
+      - user_diagnostics
+      - known_issues
+```
+
+### 13.7 Event Sourcing
+
+DAG поддерживает event sourcing для отладки и replay:
+
+```python
+from src.dag import DAGEvent
+
+# События записываются автоматически
+for event in sm.dag_events:
+    print(f"{event.timestamp}: {event.event_type}")
+    print(f"  Branch: {event.branch_id}")
+    print(f"  State: {event.from_state} → {event.to_state}")
+    print(f"  Data: {event.data}")
+
+# Сериализация для персистенции
+events_json = [e.to_dict() for e in sm.dag_events]
+```
+
+### 13.8 Примеры Flow
+
+#### BANT Qualification Flow
+
+```yaml
+# src/yaml_config/flows/examples/bant_flow.yaml
+flow:
+  name: bant_qualification
+  description: "BANT квалификация с параллельным сбором данных"
+
+states:
+  bant_fork:
+    type: fork
+    branches:
+      - id: budget
+        start_at: collect_budget
+      - id: authority
+        start_at: identify_dm
+      - id: need
+        start_at: assess_need
+      - id: timeline
+        start_at: determine_timeline
+    join_at: bant_complete
+
+  bant_complete:
+    type: join
+    expects_branches: [budget, authority, need, timeline]
+    join_condition: all_complete
+    transitions:
+      all_positive: presentation
+      mixed: nurture
+      all_negative: disqualify
+```
+
+#### Customer Support Flow
+
+```yaml
+# src/yaml_config/flows/examples/support_flow.yaml
+flow:
+  name: customer_support
+  description: "Поддержка с DAG маршрутизацией"
+
+states:
+  issue_classifier:
+    type: choice
+    choices:
+      - condition: is_technical_issue
+        next: technical_flow
+      - condition: is_billing_issue
+        next: billing_flow
+    default: general_inquiry
+
+  technical_flow:
+    type: fork
+    branches:
+      - id: system_check
+        start_at: check_system_status
+      - id: user_diagnostics
+        start_at: collect_error_details
+    join_at: technical_resolution
+```
+
+### 13.9 Тестирование DAG
+
+```bash
+# Запуск DAG тестов
+pytest tests/test_dag.py -v
+
+# Все 37 тестов
+pytest tests/test_dag.py::TestDAGBranch -v
+pytest tests/test_dag.py::TestDAGExecutionContext -v
+pytest tests/test_dag.py::TestDAGExecutor -v
+pytest tests/test_dag.py::TestBranchRouter -v
+pytest tests/test_dag.py::TestSyncPointManager -v
+pytest tests/test_dag.py::TestHistoryManager -v
+pytest tests/test_dag.py::TestDAGIntegration -v
+```
+
+### 13.10 Обратная совместимость
+
+DAG реализован с полной обратной совместимостью:
+
+- Существующие SPIN flows работают без изменений
+- DAG активируется только при наличии DAG-узлов в конфигурации
+- Линейные переходы остаются основным режимом
+- Все существующие тесты проходят
+
+```python
+# Обычный режим (без DAG)
+sm = StateMachine()
+assert not sm.is_dag_mode
+
+# DAG режим (при наличии fork/choice в flow)
+sm = StateMachine(flow=dag_flow)
+assert sm.is_dag_mode
+```
 
 ---
 
