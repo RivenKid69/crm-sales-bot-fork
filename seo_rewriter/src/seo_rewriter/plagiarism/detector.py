@@ -46,13 +46,13 @@ class PlagiarismDetector:
         self.shingle_size = shingle_size or settings.shingle_size
         self.uniqueness_threshold = uniqueness_threshold or settings.min_uniqueness_threshold
 
-        # Default weights based on empirical effectiveness
-        # Higher weight = more influence on final score
+        # Weights calibrated to match text.ru / Advego / ETXT behavior
+        # These services focus on phrase matching, not semantic similarity
         self.weights = weights or {
-            "ngram": 0.35,  # Most reliable for phrase detection
-            "jaccard": 0.15,  # Basic vocabulary comparison
-            "simhash": 0.25,  # Good for overall structure
-            "winnowing": 0.25,  # Guaranteed detection of long matches
+            "ngram": 0.55,      # Primary: phrase-level plagiarism
+            "jaccard": 0.15,    # Secondary: vocabulary overlap
+            "simhash": 0.00,    # Disabled: semantic similarity not used by real services
+            "winnowing": 0.30,  # Shingle-based fingerprinting
         }
 
     def analyze(self, original: str, rewritten: str) -> PlagiarismReport:
