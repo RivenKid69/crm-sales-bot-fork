@@ -15,12 +15,8 @@ from pathlib import Path
 # Добавляем src в PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from state_machine import (
-    StateMachine,
-    CircularFlowManager,
-    GO_BACK_INTENTS,
-    SPIN_PHASES,
-)
+from state_machine import StateMachine, CircularFlowManager
+from src.yaml_config.constants import GO_BACK_INTENTS, SPIN_PHASES
 from feature_flags import flags
 
 

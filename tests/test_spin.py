@@ -7,7 +7,8 @@ import sys
 sys.path.insert(0, 'src')
 
 from classifier import HybridClassifier, DataExtractor
-from state_machine import StateMachine, SPIN_PHASES, SPIN_STATES
+from state_machine import StateMachine
+from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
 
 
 class TestSPINStateMachine:

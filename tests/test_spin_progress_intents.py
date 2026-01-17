@@ -13,7 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from state_machine import StateMachine, SPIN_PROGRESS_INTENTS
+from state_machine import StateMachine
+from src.yaml_config.constants import SPIN_PROGRESS_INTENTS
 from config import SALES_STATES
 from knowledge.retriever import INTENT_TO_CATEGORY
 

@@ -7,8 +7,71 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 **Технологический стек:**
 - **LLM**: Qwen3-8B-AWQ через vLLM (OpenAI-compatible API)
 - **Structured Output**: Outlines (guided decoding) для гарантированного JSON
-- **Эмбеддинги**: ai-forever/ru-en-RoSBERTa
+- **Эмбеддинги**: ai-forever/FRIDA (ранее ru-en-RoSBERTa)
 - **Reranker**: BAAI/bge-reranker-v2-m3
+
+---
+
+## 📦 Версия 2.0: Модульная YAML конфигурация
+
+**Дата миграции**: Январь 2026
+
+### Что изменилось
+
+| Компонент | v1.x (Legacy) | v2.0 (Current) |
+|-----------|---------------|----------------|
+| **StateMachine config** | Python constants (`config.py`) | YAML (`src/yaml_config/`) |
+| **Flow definition** | Hardcoded в `state_machine.py` | `FlowConfig` из `flows/spin_selling/` |
+| **States** | `SALES_STATES` dict | `states.yaml` с extends/mixins |
+| **Constants** | Разбросаны по файлам | `constants.yaml` (single source of truth) |
+| **Fallback** | Python → YAML | YAML only (no fallback) |
+| **Эмбеддинги** | ru-en-RoSBERTa | ai-forever/FRIDA |
+
+### Ключевые файлы v2.0
+
+```
+src/
+├── config_loader.py          # ConfigLoader, FlowConfig, LoadedConfig
+├── yaml_config/
+│   ├── constants.yaml        # Единый источник констант
+│   ├── states/
+│   │   └── sales_flow.yaml   # Определение состояний
+│   ├── flows/
+│   │   ├── _base/            # Базовые состояния и mixins
+│   │   │   ├── states.yaml
+│   │   │   ├── mixins.yaml
+│   │   │   └── priorities.yaml
+│   │   └── spin_selling/     # SPIN Selling flow
+│   │       ├── flow.yaml     # Главная конфигурация
+│   │       └── states.yaml   # SPIN-специфичные состояния
+│   └── conditions/
+│       └── custom.yaml       # Кастомные условия
+└── dag/                      # DAG State Machine (параллельные потоки)
+```
+
+### Миграция импортов
+
+```python
+# ❌ v1.x (deprecated)
+from state_machine import SPIN_PHASES, SPIN_STATES, SPIN_PROGRESS_INTENTS
+
+# ✅ v2.0
+from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES, SPIN_PROGRESS_INTENTS
+
+# StateMachine теперь автоматически загружает config и flow
+sm = StateMachine()  # Auto-loads from YAML
+```
+
+### DAG State Machine
+
+v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
+- **CHOICE nodes** — условные ветвления
+- **FORK/JOIN nodes** — параллельные потоки
+- **History states** — восстановление после прерываний
+
+Подробнее: [docs/DAG.md](DAG.md)
+
+---
 
 **Архитектурные принципы:**
 1. **FAIL-SAFE** — любой сбой → graceful degradation, не crash

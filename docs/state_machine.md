@@ -1,8 +1,40 @@
 # State Machine - Полная Документация
 
-> **Версия документации:** 3.0
+> **Версия документации:** 3.1 (v2.0 Modular YAML)
 > **Последнее обновление:** Январь 2026
 > **Основной файл:** `src/state_machine.py`
+
+---
+
+## ⚠️ ВАЖНО: Миграция на v2.0
+
+**С января 2026** StateMachine использует исключительно YAML-конфигурацию.
+Legacy Python constants (`SPIN_PHASES`, `SPIN_STATES`, `SALES_STATES`) **deprecated**.
+
+### Быстрый старт v2.0
+
+```python
+from state_machine import StateMachine
+
+# v2.0: Автоматически загружает config и flow из YAML
+sm = StateMachine()
+
+# Конфигурация доступна через свойства
+print(sm.phase_order)      # ['situation', 'problem', 'implication', 'need_payoff']
+print(sm.states_config)    # Dict из flows/spin_selling/states.yaml
+```
+
+### Миграция импортов
+
+```python
+# ❌ Старый способ (не работает в v2.0)
+from state_machine import SPIN_PHASES, SPIN_STATES
+
+# ✅ Новый способ
+from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
+```
+
+---
 
 ## Содержание
 

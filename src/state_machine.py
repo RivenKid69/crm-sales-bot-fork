@@ -1,28 +1,29 @@
 """
 State Machine — управление состояниями диалога
 
+v2.0: Modular YAML Configuration (legacy Python constants deprecated)
+
 Поддерживает:
-- SPIN Selling flow: greeting → spin_situation → spin_problem → spin_implication → spin_need_payoff → presentation → close
+- Modular Flow System: FlowConfig с extends/mixins
+- DAG State Machine: параллельные потоки и условные ветвления
+- SPIN Selling flow: greeting → spin_situation → spin_problem →
+  spin_implication → spin_need_payoff → presentation → close
 - Обработка возражений: handle_objection
 - Финальные состояния: success, soft_close
 - Circular Flow: возврат назад по фазам (с защитой от злоупотреблений)
-- Conditional Rules: условные правила через RuleResolver (Phase 4)
-- YAML Configuration: параметризация через ConfigLoader (Phase 1 Parameterization)
+- Conditional Rules: условные правила через RuleResolver
 
-Phase 4 Integration (ARCHITECTURE_UNIFIED_PLAN.md):
-- IntentTracker: единый источник истории интентов
-- RuleResolver: разрешение conditional rules
-- EvaluatorContext: типизированный контекст для условий
-
-Phase 1 Parameterization:
-- ConfigLoader: загрузка конфигурации из YAML
-- AND/OR/NOT условия в rules через ConditionExpressionParser
+Configuration:
+- ConfigLoader: загрузка из YAML (src/yaml_config/)
+- FlowConfig: модульные flows с наследованием (flows/spin_selling/)
+- DAGNodeConfig: поддержка CHOICE/FORK/JOIN/PARALLEL нод
+- ConditionExpressionParser: AND/OR/NOT условия в rules
 """
 
 from typing import Tuple, Dict, Optional, List, Any, Iterator, TYPE_CHECKING
 from dataclasses import dataclass
 
-from config import SALES_STATES, QUESTION_INTENTS
+from config import QUESTION_INTENTS
 from feature_flags import flags
 from logger import logger
 
@@ -33,11 +34,8 @@ from src.conditions.state_machine.registry import sm_registry
 from src.rules.resolver import RuleResolver
 from src.conditions.trace import EvaluationTrace, TraceCollector, Resolution
 
-# Phase 1 Parameterization: Import constants from YAML config (single source of truth)
+# YAML config constants (for backward compatibility with other modules)
 from src.yaml_config.constants import (
-    SPIN_PHASES,
-    SPIN_STATES,
-    SPIN_PROGRESS_INTENTS,
     GO_BACK_INTENTS,
     OBJECTION_INTENTS,
     POSITIVE_INTENTS,
@@ -87,11 +85,12 @@ class RuleResult:
 
 
 # =============================================================================
-# Objection limits (constants)
+# Objection limits (DEPRECATED - use YAML config instead)
+# Kept for backward compatibility with external code that imports these
 # =============================================================================
 
-MAX_CONSECUTIVE_OBJECTIONS = 3  # Максимум подряд
-MAX_TOTAL_OBJECTIONS = 5        # Максимум за весь диалог
+MAX_CONSECUTIVE_OBJECTIONS = 3  # DEPRECATED: use config.limits.max_consecutive_objections
+MAX_TOTAL_OBJECTIONS = 5        # DEPRECATED: use config.limits.max_total_objections
 
 
 class CircularFlowManager:
@@ -214,15 +213,17 @@ class StateMachine:
     """
     State Machine for managing dialogue states.
 
-    Phase 4 Integration:
-    - Uses IntentTracker for unified intent history
-    - Supports conditional rules via RuleResolver
-    - Provides EvaluatorContext for condition evaluation
+    v2.0: Modular YAML Configuration (legacy Python constants deprecated)
 
-    Phase 1 Parameterization:
-    - Optionally accepts LoadedConfig from ConfigLoader
-    - Uses YAML configuration for states, limits, etc.
-    - Falls back to Python constants for backward compatibility
+    Configuration (auto-loaded if not provided):
+    - LoadedConfig: YAML constants and states from ConfigLoader
+    - FlowConfig: Modular flow with extends/mixins from flows/spin_selling/
+
+    Features:
+    - IntentTracker: unified intent history
+    - RuleResolver: conditional rules with AND/OR/NOT expressions
+    - EvaluatorContext: typed context for condition evaluation
+    - DAGExecutor: parallel branches and conditional routing (when DAG nodes defined)
     """
 
     def __init__(
@@ -236,16 +237,28 @@ class StateMachine:
 
         Args:
             enable_tracing: If True, collect EvaluationTrace for debugging
-            config: Optional LoadedConfig from ConfigLoader for YAML configuration
-            flow: Optional FlowConfig for modular flow configuration
+            config: LoadedConfig from ConfigLoader (auto-loaded if not provided)
+            flow: FlowConfig for modular flow (auto-loaded if not provided)
+
+        Since v2.0: config and flow are always loaded from YAML.
+        Legacy Python constants are deprecated.
         """
         self.state = "greeting"
         self.collected_data = {}
         self.spin_phase = None  # Current phase (legacy name for compatibility)
 
-        # Store config for parameterization
+        # Auto-load config and flow if not provided (v2.0: YAML is the source of truth)
+        if config is None or flow is None:
+            from src.config_loader import ConfigLoader
+            loader = ConfigLoader()
+            if config is None:
+                config = loader.load()
+            if flow is None:
+                flow = loader.load_flow("spin_selling")
+
+        # Store config for parameterization (always set since v2.0)
         self._config = config
-        self._flow = flow  # Optional FlowConfig for modular flows
+        self._flow = flow
 
         # Initialize circular flow with config if available
         if config:
@@ -300,84 +313,56 @@ class StateMachine:
         self._dag_executor = None  # Lazy initialized
 
     # =========================================================================
-    # Configuration Properties (with fallback to Python constants)
+    # Configuration Properties (from YAML - legacy Python constants deprecated)
     # =========================================================================
 
     @property
     def max_consecutive_objections(self) -> int:
-        """Get max consecutive objections limit."""
-        if self._config:
-            return self._config.limits.get(
-                "max_consecutive_objections",
-                MAX_CONSECUTIVE_OBJECTIONS
-            )
-        return MAX_CONSECUTIVE_OBJECTIONS
+        """Get max consecutive objections limit from YAML config."""
+        return self._config.limits.get("max_consecutive_objections", 3)
 
     @property
     def max_total_objections(self) -> int:
-        """Get max total objections limit."""
-        if self._config:
-            return self._config.limits.get(
-                "max_total_objections",
-                MAX_TOTAL_OBJECTIONS
-            )
-        return MAX_TOTAL_OBJECTIONS
+        """Get max total objections limit from YAML config."""
+        return self._config.limits.get("max_total_objections", 5)
 
     @property
     def phase_order(self) -> List[str]:
-        """Get phase order (abstracted from SPIN)."""
-        if self._flow:
-            return self._flow.phase_order
-        if self._config:
-            return self._config.spin_phases or SPIN_PHASES
-        return SPIN_PHASES
+        """Get phase order from FlowConfig."""
+        return self._flow.phase_order
 
     # Alias for backward compatibility
     @property
     def spin_phases(self) -> List[str]:
-        """Get SPIN phases order (legacy, use phase_order)."""
+        """Get SPIN phases order (legacy alias for phase_order)."""
         return self.phase_order
 
     @property
     def phase_states(self) -> Dict[str, str]:
-        """Get phase to state mapping (abstracted from SPIN)."""
-        if self._flow:
-            return self._flow.phase_mapping
-        if self._config:
-            return self._config.constants.get("spin", {}).get("states", SPIN_STATES)
-        return SPIN_STATES
+        """Get phase to state mapping from FlowConfig."""
+        return self._flow.phase_mapping
 
     # Alias for backward compatibility
     @property
     def spin_states(self) -> Dict[str, str]:
-        """Get SPIN phase to state mapping (legacy, use phase_states)."""
+        """Get SPIN phase to state mapping (legacy alias for phase_states)."""
         return self.phase_states
 
     @property
     def progress_intents(self) -> Dict[str, str]:
-        """Get progress intents mapping (intent -> phase)."""
-        if self._flow:
-            return self._flow.progress_intents
-        if self._config:
-            return self._config.constants.get("spin", {}).get(
-                "progress_intents", SPIN_PROGRESS_INTENTS
-            )
-        return SPIN_PROGRESS_INTENTS
+        """Get progress intents mapping from FlowConfig."""
+        return self._flow.progress_intents
 
     # Alias for backward compatibility
     @property
     def spin_progress_intents(self) -> Dict[str, str]:
-        """Get SPIN progress intents mapping (legacy, use progress_intents)."""
+        """Get SPIN progress intents mapping (legacy alias for progress_intents)."""
         return self.progress_intents
 
     @property
     def states_config(self) -> Dict[str, Any]:
-        """Get states configuration."""
-        if self._flow:
-            return self._flow.states
-        if self._config:
-            return self._config.states
-        return SALES_STATES
+        """Get states configuration from FlowConfig."""
+        return self._flow.states
 
     @property
     def priorities(self) -> List[Dict[str, Any]]:

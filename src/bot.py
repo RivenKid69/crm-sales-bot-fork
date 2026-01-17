@@ -47,6 +47,9 @@ from context_window import ContextWindow
 from dialogue_policy import DialoguePolicy
 from context_envelope import build_context_envelope
 
+# Phase DAG: Modular Flow System & YAML Parameterization
+from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
+
 
 class SalesBot:
     """
@@ -74,9 +77,27 @@ class SalesBot:
         self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
         logger.set_conversation(self.conversation_id)
 
+        # Phase DAG: Load modular flow configuration (REQUIRED since v2.0)
+        # Legacy Python-based config is deprecated and no longer used
+        self._config_loader = ConfigLoader()
+        self._config: LoadedConfig = self._config_loader.load()
+        self._flow: FlowConfig = self._config_loader.load_flow("spin_selling")
+
+        logger.debug(
+            "Loaded modular flow configuration",
+            flow_name=self._flow.name,
+            flow_version=self._flow.version,
+            states_count=len(self._flow.states),
+            phases=self._flow.phase_order,
+        )
+
         # Core components (always active)
         self.classifier = UnifiedClassifier()
-        self.state_machine = StateMachine(enable_tracing=enable_tracing)
+        self.state_machine = StateMachine(
+            enable_tracing=enable_tracing,
+            config=self._config,
+            flow=self._flow,
+        )
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
 
@@ -116,7 +137,10 @@ class SalesBot:
         logger.info(
             "SalesBot initialized",
             conversation_id=self.conversation_id,
-            enabled_flags=list(flags.get_enabled_flags())
+            enabled_flags=list(flags.get_enabled_flags()),
+            flow_name=self._flow.name,
+            flow_version=self._flow.version,
+            config_system="modular_yaml",
         )
 
     def reset(self):

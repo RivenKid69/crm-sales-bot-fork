@@ -140,8 +140,9 @@ class TestObjectionTrackingViaIntentTracker:
         for i in range(MAX_CONSECUTIVE_OBJECTIONS):
             action, next_state = sm.apply_rules(OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)])
 
-        # The last one should trigger objection_limit_reached
-        assert action == "objection_limit_reached"
+        # The last one should trigger transition to soft_close
+        # (action name changed from objection_limit_reached to transition_to_soft_close in YAML)
+        assert action == "transition_to_soft_close"
         assert next_state == "soft_close"
 
     def test_total_objections_limit(self, sm):
