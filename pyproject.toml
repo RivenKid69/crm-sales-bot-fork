@@ -1,0 +1,84 @@
+[project]
+name = "crm-sales-bot"
+version = "1.0.0"
+description = "CRM Sales Bot with SPIN methodology - intelligent B2B sales assistant"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    # Core
+    "requests>=2.28.0",
+    "pyyaml>=6.0",
+
+    # NLP
+    "pymorphy3>=2.0.0",
+
+    # Embeddings & ML
+    "sentence-transformers>=2.2.0",
+    "numpy>=1.24.0",
+
+    # Async
+    "aiohttp>=3.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+llm = [
+    # For running local LLM inference
+    "vllm>=0.4.0",
+    "transformers>=4.35.0",
+    "torch>=2.0.0",
+]
+
+[project.scripts]
+crm-bot = "src.bot:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # function calls in argument defaults
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

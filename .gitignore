@@ -12,22 +12,64 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+.eggs/
 
 # Environment variables
 .env
 .env.local
+.env.*
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*.sublime-*
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Voice bot
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+# Linting & Formatting
+.ruff_cache/
+.mypy_cache/
+
+# Logs
+logs/
+*.log
+
+# Reports & Generated files
+reports/
+*.html
+
+# Voice bot (large files)
 voice_bot/models/
 voice_bot/audio/
 voice_bot/venv/
+voice_bot/checkpoints/
+voice_bot/CosyVoice/
+voice_bot/fish-speech/
+
+# Prototype directories
+prototype_retriever/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+
+# Test baselines (generated)
+tests_baseline.txt

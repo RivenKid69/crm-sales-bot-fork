@@ -1,0 +1,4 @@
+# Ignore all report files
+*
+# Except this .gitignore
+!.gitignore
