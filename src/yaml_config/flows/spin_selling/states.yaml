@@ -40,7 +40,6 @@ states:
     extends: _spin_base
     goal: "Понять текущую ситуацию клиента (размер, инструменты, процессы)"
     phase: situation
-    spin_phase: situation  # Для обратной совместимости
     required_data:
       - company_size
     optional_data:
@@ -65,7 +64,6 @@ states:
     extends: _spin_base
     goal: "Выявить проблемы и боли клиента"
     phase: problem
-    spin_phase: problem
     required_data:
       - pain_point
     transitions:
@@ -93,7 +91,6 @@ states:
     extends: _spin_base
     goal: "Помочь осознать последствия и масштаб проблемы"
     phase: implication
-    spin_phase: implication
     # Set flag when entering this state (replaces hardcoded logic in state_machine.py)
     on_enter:
       set_flags:
@@ -126,7 +123,6 @@ states:
     extends: _spin_base
     goal: "Помочь клиенту сформулировать ценность решения"
     phase: need_payoff
-    spin_phase: need_payoff
     # Set flag when entering this state (replaces hardcoded logic in state_machine.py)
     on_enter:
       set_flags:

@@ -22,7 +22,6 @@ Configuration:
 from typing import Tuple, Dict, Optional, List, Any, Iterator, TYPE_CHECKING
 from dataclasses import dataclass
 
-from config import QUESTION_INTENTS
 from feature_flags import flags
 from logger import logger
 from settings import settings
@@ -34,11 +33,12 @@ from src.conditions.state_machine.registry import sm_registry
 from src.rules.resolver import RuleResolver
 from src.conditions.trace import EvaluationTrace, TraceCollector, Resolution
 
-# YAML config constants (for backward compatibility with other modules)
+# YAML config constants (single source of truth)
 from src.yaml_config.constants import (
     GO_BACK_INTENTS,
     OBJECTION_INTENTS,
     POSITIVE_INTENTS,
+    QUESTION_INTENTS,
     INTENT_CATEGORIES,
     ALLOWED_GOBACKS,
 )
@@ -83,15 +83,6 @@ class RuleResult:
         if self.trace:
             result["trace"] = self.trace.to_dict()
         return result
-
-
-# =============================================================================
-# Objection limits (DEPRECATED - use YAML config instead)
-# Kept for backward compatibility with external code that imports these
-# =============================================================================
-
-MAX_CONSECUTIVE_OBJECTIONS = 3  # DEPRECATED: use config.limits.max_consecutive_objections
-MAX_TOTAL_OBJECTIONS = 5        # DEPRECATED: use config.limits.max_total_objections
 
 
 class CircularFlowManager:
@@ -1601,12 +1592,19 @@ class ObjectionFlowAdapter:
     This allows existing code that uses sm.objection_flow to continue working.
     """
 
-    MAX_CONSECUTIVE_OBJECTIONS = MAX_CONSECUTIVE_OBJECTIONS
-    MAX_TOTAL_OBJECTIONS = MAX_TOTAL_OBJECTIONS
-
     def __init__(self, state_machine: StateMachine):
         """Initialize with reference to StateMachine."""
         self._sm = state_machine
+
+    @property
+    def MAX_CONSECUTIVE_OBJECTIONS(self) -> int:
+        """Get from YAML config via StateMachine."""
+        return self._sm.max_consecutive_objections
+
+    @property
+    def MAX_TOTAL_OBJECTIONS(self) -> int:
+        """Get from YAML config via StateMachine."""
+        return self._sm.max_total_objections
 
     @property
     def objection_count(self) -> int:
