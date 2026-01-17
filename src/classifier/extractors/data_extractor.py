@@ -7,9 +7,10 @@
 """
 
 import re
-from typing import Dict, Set
+from typing import Dict, Set, List
 
 from src.knowledge.lemmatizer import get_lemmatizer, Lemmatizer
+from src.yaml_config.constants import SPIN_PHASE_CLASSIFICATION
 
 
 class DataExtractor:
@@ -99,6 +100,39 @@ class DataExtractor:
             for kw in keywords:
                 lemmas.update(self._lemmatizer.lemmatize_to_set(kw, remove_stop_words=False))
             self._role_lemmas[category] = lemmas
+
+        # Построим обратный индекс: data_field -> phase для быстрого lookup
+        self._field_to_phase: Dict[str, str] = {}
+        for phase, config in SPIN_PHASE_CLASSIFICATION.items():
+            for field in config.get("data_fields", []):
+                self._field_to_phase[field] = phase
+
+    def _should_extract_for_phase(
+        self, target_phase: str, current_phase: str | None, missing_data: List[str]
+    ) -> bool:
+        """
+        Проверяет нужно ли извлекать данные для указанной фазы.
+
+        Извлекаем если:
+        1. Текущая фаза == целевая фаза
+        2. ИЛИ какое-то из полей этой фазы есть в missing_data
+
+        Args:
+            target_phase: Фаза для которой проверяем (e.g., "implication")
+            current_phase: Текущая фаза диалога
+            missing_data: Список недостающих данных
+
+        Returns:
+            True если нужно извлекать данные для этой фазы
+        """
+        # Прямое совпадение фазы
+        if current_phase == target_phase:
+            return True
+
+        # Проверяем есть ли поля этой фазы в missing_data
+        phase_config = SPIN_PHASE_CLASSIFICATION.get(target_phase, {})
+        phase_fields = phase_config.get("data_fields", [])
+        return any(field in missing_data for field in phase_fields)
 
     def _categorize_pain_point(self, pain_text: str) -> str | None:
         """
@@ -1661,8 +1695,8 @@ class DataExtractor:
                 extracted["business_type"] = btype
                 break
 
-        # === Последствия проблемы (для Implication) ===
-        if spin_phase == "implication" or "pain_impact" in missing_data:
+        # === Последствия проблемы (для Implication) — config-driven ===
+        if self._should_extract_for_phase("implication", spin_phase, missing_data):
             impact_patterns = [
                 # Количество потерянных клиентов
                 (r'(\d+)\s*(?:клиент|покупател|заказ)\w*\s*(?:теря|упуска|уход)', 'clients_lost'),
@@ -1711,8 +1745,8 @@ class DataExtractor:
                         extracted["pain_impact"] = "осознаёт последствия"
                     break
 
-        # === Желаемый результат (для Need-Payoff) ===
-        if spin_phase == "need_payoff" or "desired_outcome" in missing_data:
+        # === Желаемый результат (для Need-Payoff) — config-driven ===
+        if self._should_extract_for_phase("need_payoff", spin_phase, missing_data):
             need_patterns = {
                 r'(?:хотел|хочу|хотим|хочется)\s*(?:бы\s*)?(?:видеть|знать|понима)': "прозрачность и контроль",
                 r'(?:хотел|хочу|хотим)\s*(?:бы\s*)?автоматиз': "автоматизация процессов",

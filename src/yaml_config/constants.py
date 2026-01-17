@@ -55,6 +55,10 @@ _spin_config = _constants.get("spin", {})
 SPIN_PHASES: List[str] = _spin_config.get("phases", [])
 SPIN_STATES: Dict[str, str] = _spin_config.get("states", {})
 SPIN_PROGRESS_INTENTS: Dict[str, str] = _spin_config.get("progress_intents", {})
+# Phase classification config: maps phase -> {data_fields, intent, confidence}
+SPIN_PHASE_CLASSIFICATION: Dict[str, Dict[str, Any]] = _spin_config.get("phase_classification", {})
+# Short answer classification: maps phase -> {positive_intent, negative_intent, ...}
+SPIN_SHORT_ANSWER_CLASSIFICATION: Dict[str, Dict[str, Any]] = _spin_config.get("short_answer_classification", {})
 
 
 # =============================================================================
@@ -167,6 +171,38 @@ ALLOWED_GOBACKS: Dict[str, str] = _circular_flow.get("allowed_gobacks", {})
 
 
 # =============================================================================
+# CONTEXT WINDOW SETTINGS
+# =============================================================================
+
+_context = _constants.get("context", {})
+
+STATE_ORDER: Dict[str, int] = _context.get("state_order", {})
+PHASE_ORDER: Dict[str, int] = _context.get("phase_order", {})
+
+
+# =============================================================================
+# FALLBACK SETTINGS
+# =============================================================================
+
+_fallback = _constants.get("fallback", {})
+
+FALLBACK_REPHRASE_TEMPLATES: Dict[str, List[str]] = _fallback.get("rephrase_templates", {})
+FALLBACK_OPTIONS_TEMPLATES: Dict[str, Dict[str, Any]] = _fallback.get("options_templates", {})
+FALLBACK_DEFAULT_REPHRASE: str = _fallback.get("default_rephrase", "Давайте попробую спросить иначе...")
+FALLBACK_DEFAULT_OPTIONS: Dict[str, Any] = _fallback.get("default_options", {})
+
+
+# =============================================================================
+# LLM SETTINGS
+# =============================================================================
+
+_llm = _constants.get("llm", {})
+
+LLM_FALLBACK_RESPONSES: Dict[str, str] = _llm.get("fallback_responses", {})
+LLM_DEFAULT_FALLBACK: str = _llm.get("default_fallback", "Произошла техническая ошибка.")
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
@@ -175,6 +211,8 @@ __all__ = [
     "SPIN_PHASES",
     "SPIN_STATES",
     "SPIN_PROGRESS_INTENTS",
+    "SPIN_PHASE_CLASSIFICATION",
+    "SPIN_SHORT_ANSWER_CLASSIFICATION",
     # Limits
     "MAX_CONSECUTIVE_OBJECTIONS",
     "MAX_TOTAL_OBJECTIONS",
@@ -208,4 +246,15 @@ __all__ = [
     "FRUSTRATION_THRESHOLDS",
     # Circular flow
     "ALLOWED_GOBACKS",
+    # Context window
+    "STATE_ORDER",
+    "PHASE_ORDER",
+    # Fallback
+    "FALLBACK_REPHRASE_TEMPLATES",
+    "FALLBACK_OPTIONS_TEMPLATES",
+    "FALLBACK_DEFAULT_REPHRASE",
+    "FALLBACK_DEFAULT_OPTIONS",
+    # LLM
+    "LLM_FALLBACK_RESPONSES",
+    "LLM_DEFAULT_FALLBACK",
 ]

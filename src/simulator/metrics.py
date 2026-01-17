@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, TYPE_CHECKING
 from collections import Counter
 
+from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
+
 if TYPE_CHECKING:
     from .runner import SimulationResult
 
@@ -89,7 +91,8 @@ class AggregatedMetrics:
 class MetricsCollector:
     """Сборщик и агрегатор метрик"""
 
-    SPIN_PHASES = ["situation", "problem", "implication", "need_payoff", "presentation"]
+    # Фазы загружаются из конфига + presentation для полного покрытия
+    METRICS_PHASES = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
 
     def collect_from_result(self, result: 'SimulationResult') -> SimulationMetrics:
         """
@@ -275,7 +278,8 @@ def calculate_spin_coverage(phases_reached: List[str]) -> float:
     Returns:
         Покрытие от 0.0 до 1.0
     """
-    all_phases = ["situation", "problem", "implication", "need_payoff", "presentation"]
+    # Используем фазы из конфига + presentation
+    all_phases = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
 
     if not phases_reached:
         return 0.0
@@ -298,14 +302,13 @@ def extract_phases_from_dialogue(dialogue: List[Dict]) -> List[str]:
     """
     phases = set()
 
-    phase_mapping = {
-        "spin_situation": "situation",
-        "spin_problem": "problem",
-        "spin_implication": "implication",
-        "spin_need_payoff": "need_payoff",
-        "presentation": "presentation",
-        "close": "presentation",
-    }
+    # Строим маппинг из конфига: state -> phase
+    # SPIN_STATES: {"situation": "spin_situation", ...}
+    # Нам нужен обратный: {"spin_situation": "situation", ...}
+    phase_mapping = {state: phase for phase, state in SPIN_STATES.items()}
+    # Добавляем стандартные маппинги
+    phase_mapping["presentation"] = "presentation"
+    phase_mapping["close"] = "presentation"
 
     for turn in dialogue:
         state = turn.get("state", "")

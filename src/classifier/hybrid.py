@@ -17,10 +17,15 @@ Cascade Pipeline (когда flags.cascade_classifier включён):
 """
 
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from config import CLASSIFIER_CONFIG
 from feature_flags import flags
+from src.yaml_config.constants import (
+    SPIN_PHASE_CLASSIFICATION,
+    SPIN_PROGRESS_INTENTS,
+    SPIN_SHORT_ANSWER_CLASSIFICATION,
+)
 from .normalizer import TextNormalizer
 from .intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
 from .intents.semantic import get_semantic_classifier, SemanticClassifier
@@ -167,49 +172,13 @@ class HybridClassifier:
         spin_phase = context.get("spin_phase") if context else None
 
         # =================================================================
-        # SPIN-специфичная классификация на основе извлечённых данных
+        # PHASE-специфичная классификация на основе извлечённых данных
         # (extracted уже получен выше в ПРИОРИТЕТ 0)
+        # Конфигурация загружается из YAML, без хардкода названий фаз
         # =================================================================
-
-        # Если в фазе situation и получили данные о ситуации
-        if spin_phase == "situation":
-            if extracted.get("company_size") or extracted.get("current_tools") or extracted.get("business_type"):
-                return {
-                    "intent": "situation_provided",
-                    "confidence": 0.9,
-                    "extracted_data": extracted,
-                    "method": "spin"
-                }
-
-        # Если в фазе problem и получили информацию о боли
-        if spin_phase == "problem":
-            if extracted.get("pain_point"):
-                return {
-                    "intent": "problem_revealed",
-                    "confidence": 0.9,
-                    "extracted_data": extracted,
-                    "method": "spin"
-                }
-
-        # Если в фазе implication и клиент осознаёт последствия
-        if spin_phase == "implication":
-            if extracted.get("pain_impact") or extracted.get("financial_impact"):
-                return {
-                    "intent": "implication_acknowledged",
-                    "confidence": 0.9,
-                    "extracted_data": extracted,
-                    "method": "spin"
-                }
-
-        # Если в фазе need_payoff и клиент выразил желаемый результат
-        if spin_phase == "need_payoff":
-            if extracted.get("desired_outcome") or extracted.get("value_acknowledged"):
-                return {
-                    "intent": "need_expressed",
-                    "confidence": 0.9,
-                    "extracted_data": extracted,
-                    "method": "spin"
-                }
+        phase_result = self._classify_by_phase(spin_phase, extracted)
+        if phase_result:
+            return phase_result
 
         # =================================================================
         # Стандартная классификация (если не SPIN-специфичная)
@@ -331,6 +300,40 @@ class HybridClassifier:
                 "lemma": lemma_scores,
             }
         }
+
+    def _classify_by_phase(self, phase: Optional[str], extracted: Dict[str, Any]) -> Optional[Dict]:
+        """
+        Классификация по текущей фазе и извлечённым данным.
+
+        Использует конфигурацию из YAML (SPIN_PHASE_CLASSIFICATION) для определения
+        какие данные означают прогресс в каждой фазе.
+
+        Args:
+            phase: Текущая фаза диалога (situation, problem, etc.)
+            extracted: Извлечённые данные из сообщения
+
+        Returns:
+            {"intent": str, "confidence": float, ...} или None если не определено
+        """
+        if not phase or not extracted:
+            return None
+
+        # Ищем конфигурацию для текущей фазы
+        phase_config = SPIN_PHASE_CLASSIFICATION.get(phase)
+        if not phase_config:
+            return None
+
+        # Проверяем наличие требуемых данных
+        data_fields = phase_config.get("data_fields", [])
+        if any(extracted.get(field) for field in data_fields):
+            return {
+                "intent": phase_config.get("intent", "info_provided"),
+                "confidence": phase_config.get("confidence", 0.9),
+                "extracted_data": extracted,
+                "method": "phase_classification"
+            }
+
+        return None
 
     def _classify_short_answer(self, message: str, context: Dict) -> Optional[Dict]:
         """
@@ -472,52 +475,39 @@ class HybridClassifier:
                 return {"intent": "agreement", "confidence": 0.8}
 
         # -----------------------------------------------------------------
-        # ПРИОРИТЕТ 3: По spin_phase (SPIN-фаза диалога)
+        # ПРИОРИТЕТ 3: По spin_phase (фаза диалога) — config-driven
         # -----------------------------------------------------------------
-
-        if spin_phase == "situation":
-            if is_positive:
-                return {"intent": "situation_provided", "confidence": 0.7}
-
-        if spin_phase == "problem":
-            if is_positive:
-                return {"intent": "problem_revealed", "confidence": 0.75}
-            if is_negative:
-                # Клиент отрицает наличие проблемы — это тоже информация
-                return {"intent": "no_problem", "confidence": 0.7}
-
-        if spin_phase == "implication":
-            if is_positive:
-                return {"intent": "implication_acknowledged", "confidence": 0.8}
-
-        if spin_phase == "need_payoff":
-            if is_positive:
-                return {"intent": "need_expressed", "confidence": 0.85}
-            if is_negative:
-                return {"intent": "no_need", "confidence": 0.7}
+        if spin_phase:
+            phase_config = SPIN_SHORT_ANSWER_CLASSIFICATION.get(spin_phase)
+            if phase_config:
+                if is_positive and "positive_intent" in phase_config:
+                    return {
+                        "intent": phase_config["positive_intent"],
+                        "confidence": phase_config.get("positive_confidence", 0.7)
+                    }
+                if is_negative and "negative_intent" in phase_config:
+                    return {
+                        "intent": phase_config["negative_intent"],
+                        "confidence": phase_config.get("negative_confidence", 0.7)
+                    }
 
         # -----------------------------------------------------------------
-        # ПРИОРИТЕТ 4: По last_action для фаз (config-driven)
+        # ПРИОРИТЕТ 4: По last_action для фаз — config-driven
         # -----------------------------------------------------------------
-
-        # Бот спрашивал о проблемах (probe_problem или любое действие с "problem")
-        if last_action and ("problem" in last_action or last_action == "probe_problem"):
-            if is_positive:
-                return {"intent": "problem_revealed", "confidence": 0.75}
-            if is_negative:
-                return {"intent": "no_problem", "confidence": 0.7}
-
-        # Бот спрашивал о последствиях (probe_implication или любое действие с "implication")
-        if last_action and ("implication" in last_action or last_action == "probe_implication"):
-            if is_positive:
-                return {"intent": "implication_acknowledged", "confidence": 0.8}
-
-        # Бот спрашивал о ценности/потребности (probe_need_payoff или любое действие с "need")
-        if last_action and ("need_payoff" in last_action or last_action == "probe_need_payoff"):
-            if is_positive:
-                return {"intent": "need_expressed", "confidence": 0.85}
-            if is_negative:
-                return {"intent": "no_need", "confidence": 0.7}
+        # Ищем совпадение фазы в названии last_action
+        if last_action:
+            for phase, phase_config in SPIN_SHORT_ANSWER_CLASSIFICATION.items():
+                if phase in last_action or last_action == f"probe_{phase}":
+                    if is_positive and "positive_intent" in phase_config:
+                        return {
+                            "intent": phase_config["positive_intent"],
+                            "confidence": phase_config.get("positive_confidence", 0.75)
+                        }
+                    if is_negative and "negative_intent" in phase_config:
+                        return {
+                            "intent": phase_config["negative_intent"],
+                            "confidence": phase_config.get("negative_confidence", 0.7)
+                        }
 
         # -----------------------------------------------------------------
         # ПРИОРИТЕТ 5: Общие случаи

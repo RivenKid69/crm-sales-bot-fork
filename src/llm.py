@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from logger import logger
 from settings import settings
+from src.yaml_config.constants import LLM_FALLBACK_RESPONSES, LLM_DEFAULT_FALLBACK
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -77,20 +78,10 @@ class VLLMClient:
     CIRCUIT_BREAKER_THRESHOLD: int = 5
     CIRCUIT_BREAKER_TIMEOUT: int = 60
 
-    # Fallback responses по состояниям
-    FALLBACK_RESPONSES: Dict[str, str] = {
-        "greeting": "Здравствуйте! Чем могу помочь?",
-        "spin_situation": "Расскажите, сколько человек работает в вашей команде?",
-        "spin_problem": "С какими сложностями сталкиваетесь сейчас?",
-        "spin_implication": "Как это влияет на бизнес?",
-        "spin_need_payoff": "Что было бы идеальным решением?",
-        "presentation": "Wipon помогает автоматизировать работу с клиентами. Хотите узнать подробнее?",
-        "close": "Оставьте контакт — свяжусь с деталями.",
-        "soft_close": "Спасибо за разговор! Если вопросы появятся — пишите.",
-        "handle_objection": "Понимаю ваши сомнения. Давайте разберём подробнее?",
-    }
+    # Fallback responses по состояниям (загружаются из YAML конфига)
+    FALLBACK_RESPONSES: Dict[str, str] = LLM_FALLBACK_RESPONSES or {}
 
-    DEFAULT_FALLBACK: str = "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт."
+    DEFAULT_FALLBACK: str = LLM_DEFAULT_FALLBACK or "Произошла техническая ошибка."
 
     def __init__(
         self,

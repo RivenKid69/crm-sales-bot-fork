@@ -31,6 +31,54 @@ spin:
     implication_acknowledged: implication
     need_expressed: need_payoff
 
+  # Конфигурация классификации по фазам
+  # Определяет какие extracted данные означают прогресс в каждой фазе
+  phase_classification:
+    situation:
+      data_fields:
+        - company_size
+        - current_tools
+        - business_type
+      intent: situation_provided
+      confidence: 0.9
+    problem:
+      data_fields:
+        - pain_point
+      intent: problem_revealed
+      confidence: 0.9
+    implication:
+      data_fields:
+        - pain_impact
+        - financial_impact
+      intent: implication_acknowledged
+      confidence: 0.9
+    need_payoff:
+      data_fields:
+        - desired_outcome
+        - value_acknowledged
+      intent: need_expressed
+      confidence: 0.9
+
+  # Конфигурация классификации коротких ответов по фазам
+  # Определяет какой интент возвращать при положительном/негативном ответе
+  short_answer_classification:
+    situation:
+      positive_intent: situation_provided
+      positive_confidence: 0.7
+    problem:
+      positive_intent: problem_revealed
+      positive_confidence: 0.75
+      negative_intent: no_problem
+      negative_confidence: 0.7
+    implication:
+      positive_intent: implication_acknowledged
+      positive_confidence: 0.8
+    need_payoff:
+      positive_intent: need_expressed
+      positive_confidence: 0.85
+      negative_intent: no_need
+      negative_confidence: 0.7
+
 # =============================================================================
 # LIMITS
 # =============================================================================
@@ -389,6 +437,23 @@ fallback:
       - "Цены"
       - "Демо"
       - "Связаться позже"
+
+# =============================================================================
+# LLM FALLBACK SETTINGS
+# =============================================================================
+# Ответы при технической ошибке LLM (circuit breaker, timeout, etc.)
+llm:
+  fallback_responses:
+    greeting: "Здравствуйте! Чем могу помочь?"
+    spin_situation: "Расскажите, сколько человек работает в вашей команде?"
+    spin_problem: "С какими сложностями сталкиваетесь сейчас?"
+    spin_implication: "Как это влияет на бизнес?"
+    spin_need_payoff: "Что было бы идеальным решением?"
+    presentation: "Наша CRM помогает автоматизировать работу с клиентами. Хотите узнать подробнее?"
+    close: "Оставьте контакт — свяжусь с деталями."
+    soft_close: "Спасибо за разговор! Если вопросы появятся — пишите."
+    handle_objection: "Понимаю ваши сомнения. Давайте разберём подробнее?"
+  default_fallback: "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт."
 
 # =============================================================================
 # CTA (Call-to-Action) SETTINGS
