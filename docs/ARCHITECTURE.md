@@ -802,16 +802,32 @@ pytest tests/test_knowledge.py tests/test_cascade*.py -v
 # Тесты CategoryRouter
 pytest tests/test_category_router*.py -v
 
-# Тесты конфигурации (1500+ тестов)
+# Тесты конфигурации (1780+ тестов)
 pytest tests/test_config_*.py -v
 ```
 
-**Покрытие тестами конфигурации:**
-- `test_config_constants_yaml.py` — валидация constants.yaml
-- `test_config_settings_yaml.py` — валидация settings.yaml
-- `test_config_flow_yaml.py` — валидация flow конфигураций
-- `test_config_behavior_*.py` — поведенческие тесты конфигурации
-- `test_config_coverage_*.py` — 100% покрытие всех параметров конфигурации
+**Покрытие тестами конфигурации (1780+ тестов):**
+
+| Категория | Файл | Описание |
+|-----------|------|----------|
+| **Базовые тесты** | | |
+| Constants YAML | `test_config_constants_yaml.py` | Валидация constants.yaml |
+| Settings YAML | `test_config_settings_yaml.py` | Валидация settings.yaml |
+| Flow YAML | `test_config_flow_yaml.py` | Валидация flow конфигураций |
+| Behavior | `test_config_behavior_*.py` | Поведенческие тесты |
+| Coverage | `test_config_coverage_*.py` | 100% покрытие параметров |
+| **Edge Case тесты** | | |
+| Edge Cases | `test_config_edge_cases.py` | Граничные значения, unicode, concurrent |
+| Property-based | `test_config_property_based.py` | Hypothesis автогенерация |
+| **Расширенные тесты (190 тестов)** | | |
+| Dynamic Changes | `test_config_dynamic_changes.py` | Runtime-изменение конфигурации |
+| Conflicts | `test_config_conflicts.py` | Конфликты между параметрами |
+| Complex Conditions | `test_config_complex_conditions.py` | Вложенные AND/OR/NOT условия |
+| Unreachable States | `test_config_unreachable_states.py` | Недостижимые состояния (BFS/DFS) |
+| Template Interpolation | `test_config_template_interpolation.py` | {{variable}} и circular refs |
+| Multi-tenant | `test_config_multi_tenant.py` | Изоляция конфигов между tenant |
+| Stress/Performance | `test_config_stress_performance.py` | Нагрузочные тесты |
+| Migration | `test_config_migration.py` | Миграция между версиями конфига |
 
 ## Зависимости
 

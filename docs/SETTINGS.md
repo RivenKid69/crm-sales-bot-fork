@@ -478,7 +478,7 @@ cd src && python feature_flags.py
 ### Запуск тестов
 
 ```bash
-# Все тесты конфигурации (1590 тестов)
+# Все тесты конфигурации (1780+ тестов)
 pytest tests/test_config*.py -v
 
 # Тесты настроек
@@ -492,14 +492,21 @@ pytest tests/test_config_edge_cases.py -v
 
 # Property-based тесты (Hypothesis)
 pytest tests/test_config_property_based.py -v
+
+# Расширенные тесты (190 тестов)
+pytest tests/test_config_dynamic_changes.py tests/test_config_conflicts.py \
+       tests/test_config_complex_conditions.py tests/test_config_unreachable_states.py \
+       tests/test_config_template_interpolation.py tests/test_config_multi_tenant.py \
+       tests/test_config_stress_performance.py tests/test_config_migration.py -v
 ```
 
 ### Покрытие тестами
 
-Система конфигурации покрыта **1590 тестами**:
+Система конфигурации покрыта **1780+ тестами**:
 
 | Категория | Файл | Тестов | Описание |
 |-----------|------|--------|----------|
+| **Базовые тесты** | | | |
 | Settings YAML | `test_config_settings_yaml.py` | 89 | Параметры settings.yaml |
 | Constants YAML | `test_config_constants_yaml.py` | 133 | Параметры constants.yaml |
 | Flow YAML | `test_config_flow_yaml.py` | 137 | Структура flow.yaml |
@@ -508,8 +515,61 @@ pytest tests/test_config_property_based.py -v
 | Behavior (constants) | `test_config_behavior_constants.py` | 112 | Поведение с constants |
 | Behavior (flags) | `test_config_behavior_feature_flags.py` | 38 | Влияние feature flags |
 | E2E сценарии | `test_config_e2e_scenarios.py` | 26 | Полные диалоговые сценарии |
-| **Edge cases** | `test_config_edge_cases.py` | **72** | Граничные значения |
-| **Property-based** | `test_config_property_based.py` | **38** | Автогенерация Hypothesis |
+| Edge cases | `test_config_edge_cases.py` | 72 | Граничные значения |
+| Property-based | `test_config_property_based.py` | 38 | Автогенерация Hypothesis |
+| **Расширенные тесты (190)** | | | |
+| Dynamic Changes | `test_config_dynamic_changes.py` | 22 | Runtime-изменение конфигурации |
+| Conflicts | `test_config_conflicts.py` | 22 | Конфликты между параметрами |
+| Complex Conditions | `test_config_complex_conditions.py` | 25 | Вложенные AND/OR/NOT |
+| Unreachable States | `test_config_unreachable_states.py` | 24 | BFS/DFS анализ графа |
+| Template Interpolation | `test_config_template_interpolation.py` | 25 | {{variable}}, circular refs |
+| Multi-tenant | `test_config_multi_tenant.py` | 24 | Изоляция конфигов |
+| Stress/Performance | `test_config_stress_performance.py` | 24 | Нагрузочные тесты |
+| Migration | `test_config_migration.py` | 24 | Миграция версий |
+
+### Расширенные тесты конфигурации
+
+Расширенные тесты покрывают критичные сценарии:
+
+**Dynamic Changes** — изменение параметров в runtime:
+- Hot reload конфигурации
+- Thread-safe обновления
+- Синхронизация компонентов
+
+**Conflicts** — обнаружение конфликтов:
+- Несовместимые threshold значения
+- Недействительные ссылки на состояния
+- Циклические зависимости
+
+**Complex Conditions** — вложенные условия:
+- Глубокая вложенность AND/OR/NOT
+- Short-circuit evaluation
+- Законы Де Моргана
+
+**Unreachable States** — анализ графа:
+- BFS/DFS обход состояний
+- Обнаружение orphan состояний
+- Dead-end детекция
+
+**Template Interpolation** — переменные в шаблонах:
+- Вложенная интерполяция {{a.{{b}}}}
+- Circular reference детекция
+- Сохранение типов (int, bool, list)
+
+**Multi-tenant** — изоляция tenant:
+- Независимые конфигурации
+- Deep copy изоляция
+- Config inheritance
+
+**Stress/Performance** — нагрузка:
+- Большие конфиги (1000+ states)
+- Concurrent доступ
+- Memory leak детекция
+
+**Migration** — миграция версий:
+- Version detection
+- Migration path
+- Backwards compatibility
 
 ### Edge Case тесты
 
