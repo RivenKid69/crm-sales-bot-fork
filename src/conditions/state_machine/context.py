@@ -7,26 +7,20 @@ conditions in the StateMachine (rules/transitions).
 Part of Phase 2: StateMachine Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 """
 
-from typing import Dict, Any, Optional, List, Protocol, runtime_checkable
+from typing import Dict, Any, Optional, List, Protocol, runtime_checkable, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 # Import INTENT_CATEGORIES from the single source of truth
 from src.intent_tracker import INTENT_CATEGORIES
 
+# Import SPIN constants for auto-computing phase from state
+from src.yaml_config.constants import SPIN_STATES
 
-# SPIN phases and their order (from state_machine.py)
-SPIN_PHASES = ["situation", "problem", "implication", "need_payoff"]
+if TYPE_CHECKING:
+    from src.config_loader import FlowConfig
 
-# Mapping of state names to SPIN phases
-SPIN_STATE_TO_PHASE = {
-    "spin_situation": "situation",
-    "spin_problem": "problem",
-    "spin_implication": "implication",
-    "spin_need_payoff": "need_payoff",
-}
-
-# States that are part of SPIN flow
-SPIN_STATES = set(SPIN_STATE_TO_PHASE.keys())
+# Create reverse mapping: state -> phase
+_STATE_TO_PHASE = {v: k for k, v in SPIN_STATES.items()}
 
 
 @runtime_checkable
@@ -151,13 +145,14 @@ class EvaluatorContext:
         collected_data: Data collected about the client during conversation
         state: Current dialogue state name
         turn_number: Current turn number in the dialogue (0-indexed)
-        spin_phase: Current SPIN phase if in SPIN flow (situation, problem, etc.)
-        is_spin_state: Whether current state is part of SPIN flow
+        current_phase: Current phase name (from FlowConfig)
+        is_phase_state: Whether current state is a phase state
         current_intent: The intent being processed
         prev_intent: Previous intent
         intent_tracker: IntentTracker for counting/streaks
         missing_required_data: List of required fields not yet collected
-        config: Optional state configuration from SALES_STATES
+        config: Optional state configuration
+        flow_config: Optional FlowConfig for phase info
 
         # === Context-aware fields (from ContextEnvelope) ===
         frustration_level: Client frustration level (0-5)
@@ -179,13 +174,14 @@ class EvaluatorContext:
     turn_number: int = 0
 
     # StateMachine-specific fields
-    spin_phase: Optional[str] = None
-    is_spin_state: bool = False
+    current_phase: Optional[str] = None
+    is_phase_state: bool = False
     current_intent: str = ""
     prev_intent: Optional[str] = None
     intent_tracker: Optional[IntentTrackerProtocol] = None
     missing_required_data: List[str] = field(default_factory=list)
     config: Optional[Dict[str, Any]] = None
+    flow_config: Optional["FlowConfig"] = None
 
     # === Context-aware fields (from ContextEnvelope) ===
     frustration_level: int = 0
@@ -202,6 +198,8 @@ class EvaluatorContext:
     guard_intervention: Optional[str] = None
     # FIX: Add tone field for busy/aggressive persona handling
     tone: Optional[str] = None
+    # Count of unclear intents
+    unclear_count: int = 0
 
     # === DAG-specific fields ===
     is_dag_mode: bool = False
@@ -216,13 +214,24 @@ class EvaluatorContext:
         if self.turn_number < 0:
             raise ValueError("turn_number cannot be negative")
 
-        # Compute is_spin_state if not set
-        if not self.is_spin_state and self.state in SPIN_STATES:
-            self.is_spin_state = True
+        # Auto-compute current_phase from state if not provided
+        if self.current_phase is None and self.state in _STATE_TO_PHASE:
+            self.current_phase = _STATE_TO_PHASE[self.state]
 
-        # Compute spin_phase if not set and in SPIN state
-        if not self.spin_phase and self.state in SPIN_STATE_TO_PHASE:
-            self.spin_phase = SPIN_STATE_TO_PHASE[self.state]
+        # Compute is_phase_state from current_phase
+        if not self.is_phase_state and self.current_phase is not None:
+            self.is_phase_state = True
+
+    # Legacy aliases for backward compatibility
+    @property
+    def spin_phase(self) -> Optional[str]:
+        """Legacy alias for current_phase."""
+        return self.current_phase
+
+    @property
+    def is_spin_state(self) -> bool:
+        """Legacy alias for is_phase_state."""
+        return self.is_phase_state
 
     @classmethod
     def from_state_machine(
@@ -249,7 +258,11 @@ class EvaluatorContext:
         """
         state = state_machine.state
         collected_data = getattr(state_machine, 'collected_data', {})
-        spin_phase = getattr(state_machine, 'spin_phase', None)
+        # Use current_phase (or spin_phase for backward compat)
+        current_phase = getattr(state_machine, 'current_phase', None)
+        if current_phase is None:
+            current_phase = getattr(state_machine, 'spin_phase', None)
+        flow_config = getattr(state_machine, '_flow', None)
 
         # Compute missing required data
         missing = []
@@ -312,13 +325,14 @@ class EvaluatorContext:
             collected_data=collected_data.copy() if collected_data else {},
             state=state,
             turn_number=getattr(state_machine, 'turn_number', 0),
-            spin_phase=spin_phase,
-            is_spin_state=state in SPIN_STATES,
+            current_phase=current_phase,
+            is_phase_state=current_phase is not None,
             current_intent=current_intent,
             prev_intent=prev_intent,
             intent_tracker=intent_tracker,
             missing_required_data=missing,
             config=config,
+            flow_config=flow_config,
             # Context-aware fields
             frustration_level=frustration_level,
             is_stuck=is_stuck,

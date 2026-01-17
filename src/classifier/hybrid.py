@@ -497,23 +497,23 @@ class HybridClassifier:
                 return {"intent": "no_need", "confidence": 0.7}
 
         # -----------------------------------------------------------------
-        # ПРИОРИТЕТ 4: По last_action для SPIN-фаз
+        # ПРИОРИТЕТ 4: По last_action для фаз (config-driven)
         # -----------------------------------------------------------------
 
-        # Бот спрашивал о проблемах
-        if last_action in ["spin_problem", "transition_to_spin_problem"]:
+        # Бот спрашивал о проблемах (probe_problem или любое действие с "problem")
+        if last_action and ("problem" in last_action or last_action == "probe_problem"):
             if is_positive:
                 return {"intent": "problem_revealed", "confidence": 0.75}
             if is_negative:
                 return {"intent": "no_problem", "confidence": 0.7}
 
-        # Бот спрашивал о последствиях
-        if last_action in ["spin_implication", "transition_to_spin_implication"]:
+        # Бот спрашивал о последствиях (probe_implication или любое действие с "implication")
+        if last_action and ("implication" in last_action or last_action == "probe_implication"):
             if is_positive:
                 return {"intent": "implication_acknowledged", "confidence": 0.8}
 
-        # Бот спрашивал о ценности
-        if last_action in ["spin_need_payoff", "transition_to_spin_need_payoff"]:
+        # Бот спрашивал о ценности/потребности (probe_need_payoff или любое действие с "need")
+        if last_action and ("need_payoff" in last_action or last_action == "probe_need_payoff"):
             if is_positive:
                 return {"intent": "need_expressed", "confidence": 0.85}
             if is_negative:

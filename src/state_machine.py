@@ -1,13 +1,12 @@
 """
 State Machine — управление состояниями диалога
 
-v2.0: Modular YAML Configuration (legacy Python constants deprecated)
+v2.0: Modular YAML Configuration (domain-independent)
 
 Поддерживает:
 - Modular Flow System: FlowConfig с extends/mixins
 - DAG State Machine: параллельные потоки и условные ветвления
-- SPIN Selling flow: greeting → spin_situation → spin_problem →
-  spin_implication → spin_need_payoff → presentation → close
+- Configurable phases: порядок фаз определяется в flow.yaml
 - Обработка возражений: handle_objection
 - Финальные состояния: success, soft_close
 - Circular Flow: возврат назад по фазам (с защитой от злоупотреблений)
@@ -15,7 +14,7 @@ v2.0: Modular YAML Configuration (legacy Python constants deprecated)
 
 Configuration:
 - ConfigLoader: загрузка из YAML (src/yaml_config/)
-- FlowConfig: модульные flows с наследованием (flows/spin_selling/)
+- FlowConfig: модульные flows с наследованием (flows/{flow_name}/)
 - DAGNodeConfig: поддержка CHOICE/FORK/JOIN/PARALLEL нод
 - ConditionExpressionParser: AND/OR/NOT условия в rules
 """
@@ -40,6 +39,7 @@ from src.yaml_config.constants import (
     OBJECTION_INTENTS,
     POSITIVE_INTENTS,
     INTENT_CATEGORIES,
+    ALLOWED_GOBACKS,
 )
 
 if TYPE_CHECKING:
@@ -97,33 +97,18 @@ class CircularFlowManager:
     """
     Управление возвратами назад с защитой от злоупотреблений.
 
-    Позволяет клиенту вернуться к предыдущей фазе SPIN,
+    Позволяет клиенту вернуться к предыдущей фазе,
     но ограничивает количество возвратов для предотвращения зацикливания.
 
     Attributes:
         goback_count: Количество совершённых возвратов
         goback_history: История возвратов (from_state, to_state)
         max_gobacks: Максимально допустимое количество возвратов
-        allowed_gobacks: Разрешённые переходы назад
+        allowed_gobacks: Разрешённые переходы назад (из YAML конфига)
     """
 
     # Default values (used when no config provided)
     MAX_GOBACKS = 2  # Максимум возвратов за диалог
-
-    # Default разрешённые переходы назад
-    DEFAULT_ALLOWED_GOBACKS: Dict[str, str] = {
-        "spin_problem": "spin_situation",
-        "spin_implication": "spin_problem",
-        "spin_need_payoff": "spin_implication",
-        "presentation": "spin_need_payoff",
-        "close": "presentation",
-        "handle_objection": "presentation",
-        # Из soft_close можно вернуться в greeting для новой попытки
-        "soft_close": "greeting",
-    }
-
-    # Backward compatibility alias
-    ALLOWED_GOBACKS = DEFAULT_ALLOWED_GOBACKS
 
     def __init__(
         self,
@@ -134,10 +119,15 @@ class CircularFlowManager:
         Инициализация менеджера.
 
         Args:
-            allowed_gobacks: Разрешённые переходы (из YAML конфига)
+            allowed_gobacks: Разрешённые переходы (из YAML конфига).
+                             Если не передан, берётся из constants.yaml.
             max_gobacks: Максимум возвратов (из YAML конфига)
         """
-        self.allowed_gobacks = allowed_gobacks or self.DEFAULT_ALLOWED_GOBACKS
+        # Use ALLOWED_GOBACKS from constants.yaml if not provided
+        if allowed_gobacks is None:
+            self.allowed_gobacks = ALLOWED_GOBACKS.copy() if ALLOWED_GOBACKS else {}
+        else:
+            self.allowed_gobacks = allowed_gobacks
         self.max_gobacks = max_gobacks if max_gobacks is not None else self.MAX_GOBACKS
         self.reset()
 
@@ -245,7 +235,7 @@ class StateMachine:
         """
         self.state = "greeting"
         self.collected_data = {}
-        self.spin_phase = None  # Current phase (legacy name for compatibility)
+        self.current_phase = None  # Current phase name from flow
 
         # Auto-load config and flow if not provided (v2.0: YAML is the source of truth)
         if config is None or flow is None:
@@ -358,6 +348,16 @@ class StateMachine:
     def spin_progress_intents(self) -> Dict[str, str]:
         """Get SPIN progress intents mapping (legacy alias for progress_intents)."""
         return self.progress_intents
+
+    @property
+    def spin_phase(self) -> Optional[str]:
+        """Legacy alias for current_phase."""
+        return self.current_phase
+
+    @spin_phase.setter
+    def spin_phase(self, value: Optional[str]) -> None:
+        """Legacy setter for current_phase."""
+        self.current_phase = value
 
     @property
     def states_config(self) -> Dict[str, Any]:
@@ -534,7 +534,7 @@ class StateMachine:
         """Reset for new conversation."""
         self.state = "greeting"
         self.collected_data = {}
-        self.spin_phase = None
+        self.current_phase = None
         self.circular_flow.reset()
 
         # Phase 4: Reset IntentTracker
@@ -773,24 +773,14 @@ class StateMachine:
         """
         Determine if a phase can be skipped.
 
-        Checks skip_conditions from FlowConfig if available,
-        otherwise falls back to legacy SPIN logic.
+        Checks skip_conditions from FlowConfig.
         """
-        # Try to get skip conditions from FlowConfig
-        if self._flow and self._flow.skip_conditions:
-            skip_conditions = self._flow.skip_conditions.get(phase, [])
-            for condition in skip_conditions:
-                if self._evaluate_skip_condition(condition):
-                    return True
+        if not self._flow or not self._flow.skip_conditions:
             return False
 
-        # Legacy SPIN logic for backward compatibility
-        if phase in ["implication", "need_payoff"]:
-            # If client already expressed high interest
-            if self.collected_data.get("high_interest"):
-                return True
-            # If desired outcome already known
-            if phase == "need_payoff" and self.collected_data.get("desired_outcome"):
+        skip_conditions = self._flow.skip_conditions.get(phase, [])
+        for condition in skip_conditions:
+            if self._evaluate_skip_condition(condition):
                 return True
         return False
 
@@ -1513,8 +1503,8 @@ class StateMachine:
         # Store last_action for context
         self.last_action = action
 
-        # Обновляем spin_phase
-        self.spin_phase = self._get_current_spin_phase()
+        # Update current phase from state config
+        self.current_phase = self._get_current_phase()
 
         # Check if state changed
         state_changed = prev_state != next_state

@@ -139,7 +139,9 @@ def demo_cta_appropriate(ctx: PersonalizationContext) -> bool:
     Demo CTA works best in presentation state with engaged client.
     Hesitant clients (with objections) should get trial CTA instead.
     """
-    if ctx.state not in ("presentation", "spin_need_payoff"):
+    # Check if in late phase or presentation
+    late_states = ctx.config.get("late_phase_states", ["presentation"])
+    if ctx.state not in late_states and ctx.state != "presentation":
         return False
     if ctx.engagement_level in ("low", "disengaged"):
         return False
@@ -198,9 +200,10 @@ def info_cta_appropriate(ctx: PersonalizationContext) -> bool:
     """
     Returns True if info CTA is appropriate.
 
-    Info CTA for earlier stages or lower engagement.
+    Info CTA for mid phases or lower engagement.
     """
-    if ctx.state in ("spin_implication", "spin_need_payoff"):
+    mid_states = ctx.config.get("mid_phase_states", [])
+    if ctx.state in mid_states:
         return True
     if ctx.engagement_level in ("low", "disengaged"):
         return True
@@ -651,33 +654,46 @@ def objection_is_time(ctx: PersonalizationContext) -> bool:
 # =============================================================================
 
 @personalization_condition(
+    "is_phase_state",
+    description="Check if in a phase state",
+    category="state"
+)
+def is_phase_state(ctx: PersonalizationContext) -> bool:
+    """Returns True if in a phase state (has current_phase set)."""
+    return ctx.current_phase is not None
+
+
+# Legacy alias
+@personalization_condition(
     "is_spin_state",
-    description="Check if in a SPIN state",
+    description="Legacy alias for is_phase_state",
     category="state"
 )
 def is_spin_state(ctx: PersonalizationContext) -> bool:
-    """Returns True if in a SPIN state."""
-    return ctx.state.startswith("spin_")
+    """Legacy alias - returns True if in a phase state."""
+    return is_phase_state(ctx)
 
 
 @personalization_condition(
     "is_early_state",
-    description="Check if in early state (greeting/spin_situation)",
+    description="Check if in early state (from config)",
     category="state"
 )
 def is_early_state(ctx: PersonalizationContext) -> bool:
-    """Returns True if in early state."""
-    return ctx.state in ("greeting", "spin_situation", "spin_problem")
+    """Returns True if in early state (from config or default)."""
+    early_states = ctx.config.get("early_phase_states", ["greeting"])
+    return ctx.state in early_states
 
 
 @personalization_condition(
     "is_mid_state",
-    description="Check if in mid state (spin_implication/need_payoff)",
+    description="Check if in mid state (from config)",
     category="state"
 )
 def is_mid_state(ctx: PersonalizationContext) -> bool:
-    """Returns True if in mid state."""
-    return ctx.state in ("spin_implication", "spin_need_payoff")
+    """Returns True if in mid state (from config or default)."""
+    mid_states = ctx.config.get("mid_phase_states", [])
+    return ctx.state in mid_states
 
 
 @personalization_condition(
@@ -687,7 +703,8 @@ def is_mid_state(ctx: PersonalizationContext) -> bool:
 )
 def is_late_state(ctx: PersonalizationContext) -> bool:
     """Returns True if in late state."""
-    return ctx.state in ("presentation", "close", "handle_objection")
+    late_states = ctx.config.get("late_phase_states", ["presentation", "close", "handle_objection"])
+    return ctx.state in late_states
 
 
 @personalization_condition(

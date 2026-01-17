@@ -64,25 +64,12 @@ class CTAGenerator:
         used_ctas: История использованных CTA для избежания повторов
     """
 
-    # CTA по состояниям
+    # CTA по состояниям (defaults, loaded from config via _load_ctas)
     CTAS: Dict[str, List[str]] = {
         # В ранних состояниях CTA не добавляем
         "greeting": [],
-        "spin_situation": [],
-        "spin_problem": [],
 
-        # В средних состояниях — мягкие CTA
-        "spin_implication": [
-            "Хотите посмотреть как это можно решить?",
-            "Интересно увидеть решение?",
-        ],
-        "spin_need_payoff": [
-            "Хотите покажу как это работает?",
-            "Интересно увидеть систему в действии?",
-            "Показать на демо?",
-        ],
-
-        # В поздних состояниях — прямые CTA
+        # В поздних состояниях — прямые CTA (defaults)
         "presentation": [
             "Готовы попробовать?",
             "Запланируем демо?",
@@ -135,8 +122,8 @@ class CTAGenerator:
     FRUSTRATION_THRESHOLD = 5    # Не добавлять при высоком frustration
     MIN_TURNS_FOR_CTA = 3        # Минимум ходов до добавления CTA
 
-    # Early states where CTA should not be added (DEFAULT)
-    DEFAULT_EARLY_STATES = {"greeting", "spin_situation", "spin_problem"}
+    # Early states where CTA should not be added (loaded from config)
+    DEFAULT_EARLY_STATES = {"greeting"}
 
     def __init__(self, config: Optional["LoadedConfig"] = None):
         """
@@ -681,11 +668,10 @@ if __name__ == "__main__":
     # Симуляция диалога
     test_cases = [
         ("greeting", "Здравствуйте! Чем могу помочь?", {}),
-        ("spin_situation", "Понял, у вас 15 человек в команде.", {}),
-        ("spin_problem", "Да, это частая проблема с учётом.", {}),
-        ("spin_implication", "Это может стоить вам 200 тысяч в месяц.", {"frustration_level": 2}),
         ("presentation", "Wipon решает эту проблему автоматически.", {"frustration_level": 1}),
         ("presentation", "У нас есть интеграция с 1С.", {"frustration_level": 6}),
+        ("handle_objection", "Понимаю ваши сомнения.", {"frustration_level": 2}),
+        ("close", "Отлично! Давайте обменяемся контактами.", {}),
     ]
 
     for state, response, context in test_cases:

@@ -19,22 +19,17 @@ CTA_TYPES = {
     "info": "Information request CTA",
 }
 
-# States where CTA is appropriate
+# States where CTA is appropriate (defaults, can be overridden by config)
 CTA_ELIGIBLE_STATES = {
-    "spin_implication",
-    "spin_need_payoff",
     "presentation",
     "handle_objection",
     "close",
 }
 
-# States where soft CTA is preferred
-SOFT_CTA_STATES = {
-    "spin_implication",
-    "spin_need_payoff",
-}
+# States where soft CTA is preferred (defaults, can be overridden by config)
+SOFT_CTA_STATES: set = set()
 
-# States where direct CTA is preferred
+# States where direct CTA is preferred (defaults)
 DIRECT_CTA_STATES = {
     "presentation",
     "close",
@@ -131,6 +126,8 @@ class PersonalizationContext:
     collected_data: Dict[str, Any] = field(default_factory=dict)
     state: str = ""
     turn_number: int = 0
+    current_phase: Optional[str] = None
+    config: Dict[str, Any] = field(default_factory=dict)
 
     # Company information
     company_size: Optional[int] = None
@@ -412,15 +409,18 @@ class PersonalizationContext:
 
     def is_cta_eligible_state(self) -> bool:
         """Check if current state is eligible for CTA."""
-        return self.state in CTA_ELIGIBLE_STATES
+        eligible_states = self.config.get("cta_eligible_states", CTA_ELIGIBLE_STATES)
+        return self.state in eligible_states
 
     def is_soft_cta_state(self) -> bool:
         """Check if current state prefers soft CTA."""
-        return self.state in SOFT_CTA_STATES
+        soft_states = self.config.get("soft_cta_states", SOFT_CTA_STATES)
+        return self.state in soft_states
 
     def is_direct_cta_state(self) -> bool:
         """Check if current state prefers direct CTA."""
-        return self.state in DIRECT_CTA_STATES
+        direct_states = self.config.get("direct_cta_states", DIRECT_CTA_STATES)
+        return self.state in direct_states
 
     def should_use_soft_cta(self) -> bool:
         """Check if soft CTA should be used based on frustration."""

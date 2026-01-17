@@ -11,12 +11,8 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 
 
-# States where overlays are allowed
+# States where overlays are allowed (defaults, loaded from config)
 OVERLAY_ALLOWED_STATES = {
-    "spin_situation",
-    "spin_problem",
-    "spin_implication",
-    "spin_need_payoff",
     "presentation",
     "handle_objection",
 }
@@ -54,7 +50,7 @@ class PolicyContext:
         turn_number: Current turn number in the dialogue (0-indexed)
 
         # Basic context
-        spin_phase: Current SPIN phase if in SPIN flow
+        current_phase: Current phase (from FlowConfig)
         last_action: Last action taken by the bot
         last_intent: Last intent from the client
         current_action: Current action being evaluated for override
@@ -93,10 +89,12 @@ class PolicyContext:
     turn_number: int = 0
 
     # Basic context
-    spin_phase: Optional[str] = None
+    current_phase: Optional[str] = None
     last_action: Optional[str] = None
     last_intent: Optional[str] = None
     current_action: Optional[str] = None
+
+    # Legacy alias for spin_phase is added via property after dataclass fields
 
     # Level 1 signals (Repair)
     is_stuck: bool = False
@@ -133,6 +131,11 @@ class PolicyContext:
         if self.frustration_level < 0:
             raise ValueError("frustration_level cannot be negative")
 
+    @property
+    def spin_phase(self) -> Optional[str]:
+        """Legacy alias for current_phase."""
+        return self.current_phase
+
     @classmethod
     def from_envelope(
         cls,
@@ -159,7 +162,7 @@ class PolicyContext:
             turn_number=envelope.total_turns,
 
             # Basic context
-            spin_phase=envelope.spin_phase,
+            current_phase=getattr(envelope, 'current_phase', None) or getattr(envelope, 'spin_phase', None),
             last_action=envelope.last_action,
             last_intent=envelope.last_intent,
             current_action=current_action,
@@ -197,9 +200,9 @@ class PolicyContext:
     def create_test_context(
         cls,
         collected_data: Dict[str, Any] = None,
-        state: str = "spin_situation",
+        state: str = "greeting",
         turn_number: int = 0,
-        spin_phase: Optional[str] = "situation",
+        current_phase: Optional[str] = None,
         last_action: Optional[str] = None,
         last_intent: Optional[str] = None,
         current_action: Optional[str] = None,
@@ -234,7 +237,7 @@ class PolicyContext:
             collected_data=collected_data or {},
             state=state,
             turn_number=turn_number,
-            spin_phase=spin_phase,
+            current_phase=current_phase,
             last_action=last_action,
             last_intent=last_intent,
             current_action=current_action,

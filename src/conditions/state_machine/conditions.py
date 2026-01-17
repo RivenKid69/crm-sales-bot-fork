@@ -10,10 +10,7 @@ Conditions are organized by category:
 Part of Phase 2: StateMachine Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 """
 
-from src.conditions.state_machine.context import (
-    EvaluatorContext,
-    SPIN_PHASES,
-)
+from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_condition
 
 
@@ -308,63 +305,92 @@ def is_spin_progress_intent(ctx: EvaluatorContext) -> bool:
 # =============================================================================
 
 @sm_condition(
+    "is_phase_state",
+    description="Check if current state is a phase state (any flow)",
+    category="state"
+)
+def is_phase_state(ctx: EvaluatorContext) -> bool:
+    """Returns True if currently in a phase state."""
+    return ctx.is_phase_state
+
+
+# Legacy alias for backward compatibility
+@sm_condition(
     "is_spin_state",
-    description="Check if current state is part of SPIN flow",
+    description="Legacy alias for is_phase_state",
     category="state"
 )
 def is_spin_state(ctx: EvaluatorContext) -> bool:
-    """Returns True if currently in a SPIN state."""
-    return ctx.is_spin_state
+    """Legacy alias - returns True if currently in a phase state."""
+    return ctx.is_phase_state
 
 
 @sm_condition(
+    "in_phase",
+    description="Check if currently in any phase",
+    category="state"
+)
+def in_phase(ctx: EvaluatorContext) -> bool:
+    """Returns True if currently in any phase."""
+    return ctx.current_phase is not None
+
+
+# Legacy alias for backward compatibility
+@sm_condition(
     "in_spin_phase",
-    description="Check if currently in any SPIN phase",
+    description="Legacy alias for in_phase",
     category="state"
 )
 def in_spin_phase(ctx: EvaluatorContext) -> bool:
-    """Returns True if currently in any SPIN phase."""
-    return ctx.spin_phase is not None and ctx.spin_phase in SPIN_PHASES
+    """Legacy alias - returns True if currently in any phase."""
+    return ctx.current_phase is not None
 
 
+# Generic phase checker - use with phase name from config
+def _in_specific_phase(ctx: EvaluatorContext, phase_name: str) -> bool:
+    """Check if in a specific phase by name."""
+    return ctx.current_phase == phase_name
+
+
+# Legacy SPIN phase conditions for backward compatibility
 @sm_condition(
     "in_situation_phase",
-    description="Check if in SPIN Situation phase",
+    description="Check if in situation phase",
     category="state"
 )
 def in_situation_phase(ctx: EvaluatorContext) -> bool:
-    """Returns True if in Situation phase."""
-    return ctx.spin_phase == "situation"
+    """Returns True if in situation phase."""
+    return ctx.current_phase == "situation"
 
 
 @sm_condition(
     "in_problem_phase",
-    description="Check if in SPIN Problem phase",
+    description="Check if in problem phase",
     category="state"
 )
 def in_problem_phase(ctx: EvaluatorContext) -> bool:
-    """Returns True if in Problem phase."""
-    return ctx.spin_phase == "problem"
+    """Returns True if in problem phase."""
+    return ctx.current_phase == "problem"
 
 
 @sm_condition(
     "in_implication_phase",
-    description="Check if in SPIN Implication phase",
+    description="Check if in implication phase",
     category="state"
 )
 def in_implication_phase(ctx: EvaluatorContext) -> bool:
-    """Returns True if in Implication phase."""
-    return ctx.spin_phase == "implication"
+    """Returns True if in implication phase."""
+    return ctx.current_phase == "implication"
 
 
 @sm_condition(
     "in_need_payoff_phase",
-    description="Check if in SPIN Need-Payoff phase",
+    description="Check if in need_payoff phase",
     category="state"
 )
 def in_need_payoff_phase(ctx: EvaluatorContext) -> bool:
-    """Returns True if in Need-Payoff phase."""
-    return ctx.spin_phase == "need_payoff"
+    """Returns True if in need_payoff phase."""
+    return ctx.current_phase == "need_payoff"
 
 
 @sm_condition(
@@ -438,14 +464,30 @@ def is_terminal_state(ctx: EvaluatorContext) -> bool:
 
 
 @sm_condition(
+    "post_phase",
+    description="Check if past all phases (in final states)",
+    category="state"
+)
+def post_phase(ctx: EvaluatorContext) -> bool:
+    """Returns True if past all phases (in a known post-phase state)."""
+    # Known post-phase states (after all phases are complete)
+    POST_PHASE_STATES = {
+        "presentation", "close", "handle_objection",
+        "soft_close", "success", "failed"
+    }
+    # Only return True for known post-phase states
+    return ctx.state in POST_PHASE_STATES and not ctx.is_phase_state
+
+
+# Legacy alias
+@sm_condition(
     "post_spin_phase",
-    description="Check if past all SPIN phases (presentation or later)",
+    description="Legacy alias for post_phase",
     category="state"
 )
 def post_spin_phase(ctx: EvaluatorContext) -> bool:
-    """Returns True if past SPIN phases (in presentation, close, etc.)."""
-    non_spin_states = {"presentation", "close", "handle_objection", "soft_close", "success", "failed"}
-    return ctx.state in non_spin_states
+    """Legacy alias - returns True if past phases."""
+    return post_phase(ctx)
 
 
 # =============================================================================
@@ -842,7 +884,7 @@ def should_answer_directly(ctx: EvaluatorContext) -> bool:
     """
     # FIX: RUSHED tone = client wants direct answer NOW, don't deflect
     # This fixes busy/aggressive personas not being served with price/time
-    is_rushed = ctx.tone and ctx.tone.lower() == "rushed"
+    is_rushed = bool(ctx.tone and ctx.tone.lower() == "rushed")
 
     return (
         ctx.frustration_level >= 2 or
@@ -1039,13 +1081,20 @@ __all__ = [
     "is_current_intent_positive",
     "is_current_intent_question",
     "is_spin_progress_intent",
-    # State conditions
+    # State conditions (generic)
+    "is_phase_state",
+    "in_phase",
+    "post_phase",
+    # State conditions (legacy aliases)
     "is_spin_state",
     "in_spin_phase",
+    "post_spin_phase",
+    # Phase-specific conditions
     "in_situation_phase",
     "in_problem_phase",
     "in_implication_phase",
     "in_need_payoff_phase",
+    # State-specific conditions
     "is_presentation_state",
     "is_close_state",
     "is_greeting_state",
@@ -1053,7 +1102,6 @@ __all__ = [
     "is_soft_close_state",
     "is_success_state",
     "is_terminal_state",
-    "post_spin_phase",
     # Turn conditions
     "is_first_turn",
     "is_early_conversation",

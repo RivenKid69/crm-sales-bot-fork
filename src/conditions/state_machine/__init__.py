@@ -35,11 +35,18 @@ from src.conditions.state_machine.context import (
     EvaluatorContext,
     SimpleIntentTracker,
     IntentTrackerProtocol,
-    SPIN_PHASES,
-    SPIN_STATE_TO_PHASE,
-    SPIN_STATES,
     INTENT_CATEGORIES,
 )
+
+# Re-export SPIN constants from yaml_config for backward compatibility
+from src.yaml_config.constants import (
+    SPIN_PHASES,
+    SPIN_STATES,
+    SPIN_PROGRESS_INTENTS,
+)
+
+# Create SPIN_STATE_TO_PHASE mapping from SPIN_STATES (reverse mapping)
+SPIN_STATE_TO_PHASE = {v: k for k, v in SPIN_STATES.items()}
 
 from src.conditions.state_machine.registry import (
     sm_registry,
@@ -71,13 +78,20 @@ from src.conditions.state_machine.conditions import (
     is_current_intent_positive,
     is_current_intent_question,
     is_spin_progress_intent,
-    # State conditions
+    # State conditions (generic)
+    is_phase_state,
+    in_phase,
+    post_phase,
+    # State conditions (legacy aliases)
     is_spin_state,
     in_spin_phase,
+    post_spin_phase,
+    # Phase-specific conditions
     in_situation_phase,
     in_problem_phase,
     in_implication_phase,
     in_need_payoff_phase,
+    # State-specific conditions
     is_presentation_state,
     is_close_state,
     is_greeting_state,
@@ -85,7 +99,6 @@ from src.conditions.state_machine.conditions import (
     is_soft_close_state,
     is_success_state,
     is_terminal_state,
-    post_spin_phase,
     # Turn conditions
     is_first_turn,
     is_early_conversation,
@@ -146,10 +159,12 @@ __all__ = [
     "IntentTrackerProtocol",
     "create_test_context",
     # Constants
-    "SPIN_PHASES",
-    "SPIN_STATE_TO_PHASE",
-    "SPIN_STATES",
     "INTENT_CATEGORIES",
+    # SPIN constants (from yaml_config, re-exported for backward compatibility)
+    "SPIN_PHASES",
+    "SPIN_STATES",
+    "SPIN_STATE_TO_PHASE",
+    "SPIN_PROGRESS_INTENTS",
     # Registry
     "sm_registry",
     "sm_condition",
@@ -176,13 +191,20 @@ __all__ = [
     "is_current_intent_positive",
     "is_current_intent_question",
     "is_spin_progress_intent",
-    # State conditions
+    # State conditions (generic)
+    "is_phase_state",
+    "in_phase",
+    "post_phase",
+    # State conditions (legacy)
     "is_spin_state",
     "in_spin_phase",
+    "post_spin_phase",
+    # Phase-specific conditions
     "in_situation_phase",
     "in_problem_phase",
     "in_implication_phase",
     "in_need_payoff_phase",
+    # State-specific conditions
     "is_presentation_state",
     "is_close_state",
     "is_greeting_state",
@@ -190,7 +212,6 @@ __all__ = [
     "is_soft_close_state",
     "is_success_state",
     "is_terminal_state",
-    "post_spin_phase",
     # Turn conditions
     "is_first_turn",
     "is_early_conversation",

@@ -21,6 +21,7 @@ class TestStateMachineWithConfig:
         (tmp_path / "states").mkdir()
         (tmp_path / "spin").mkdir()
         (tmp_path / "conditions").mkdir()
+        (tmp_path / "flows" / "spin_selling").mkdir(parents=True)
 
         # Create constants.yaml
         constants = {
@@ -71,7 +72,7 @@ class TestStateMachineWithConfig:
         with open(tmp_path / "constants.yaml", 'w') as f:
             yaml.dump(constants, f)
 
-        # Create states/sales_flow.yaml
+        # Create states/sales_flow.yaml (legacy format)
         states = {
             "meta": {"version": "1.0"},
             "defaults": {"default_action": "custom_default_action"},
@@ -95,7 +96,54 @@ class TestStateMachineWithConfig:
         with open(tmp_path / "states" / "sales_flow.yaml", 'w') as f:
             yaml.dump(states, f)
 
-        # Create spin/phases.yaml
+        # Create flows/spin_selling/flow.yaml (v2.0 FlowConfig format)
+        # NOTE: ConfigLoader expects 'flow' key in flow.yaml
+        flow_data = {
+            "flow": {
+                "name": "spin_selling",
+                "entry_points": {
+                    "default": "greeting"
+                },
+                "phases": {
+                    "order": ["situation", "problem"],
+                    "mapping": {
+                        "situation": "spin_situation",
+                        "problem": "spin_problem",
+                    },
+                    "progress_intents": {
+                        "situation_provided": "situation",
+                        "problem_revealed": "problem",
+                    }
+                },
+            }
+        }
+        with open(tmp_path / "flows" / "spin_selling" / "flow.yaml", 'w') as f:
+            yaml.dump(flow_data, f)
+
+        # Create flows/spin_selling/states.yaml (states are loaded from separate file)
+        flow_states = {
+            "states": {
+                "greeting": {
+                    "goal": "Greet",
+                    "transitions": {"price_question": "spin_situation"},
+                    "rules": {"greeting": "greet_back"}
+                },
+                "spin_situation": {
+                    "goal": "Understand",
+                    "spin_phase": "situation",
+                    "transitions": {"data_complete": "spin_problem"}
+                },
+                "spin_problem": {
+                    "goal": "Find problems",
+                    "spin_phase": "problem",
+                }
+            },
+            "defaults": {"default_action": "custom_default_action"}
+        }
+        with open(tmp_path / "flows" / "spin_selling" / "states.yaml", 'w') as f:
+            yaml.dump(flow_states, f)
+
+        # Create spin/phases.yaml (legacy format)
         spin = {
             "phase_order": ["situation", "problem"],
             "phases": {
@@ -114,14 +162,15 @@ class TestStateMachineWithConfig:
         return tmp_path
 
     def test_state_machine_without_config(self):
-        """Test StateMachine works without config (backward compatibility)."""
+        """Test StateMachine works without explicit config (uses auto-loaded config)."""
         from src.state_machine import StateMachine
 
         sm = StateMachine()
 
         assert sm.state == "greeting"
-        assert sm._config is None
-        # Should use Python constants
+        # v2.0: Config is always loaded from YAML
+        assert sm._config is not None
+        # Should use values from constants.yaml
         assert sm.max_consecutive_objections == 3
         assert sm.max_total_objections == 5
 
@@ -141,39 +190,42 @@ class TestStateMachineWithConfig:
         assert sm.max_total_objections == 4
 
     def test_spin_phases_from_config(self, config_dir):
-        """Test SPIN phases are loaded from config."""
+        """Test SPIN phases are loaded from flow config."""
         from src.state_machine import StateMachine
         from src.config_loader import ConfigLoader
 
         loader = ConfigLoader(config_dir)
         config = loader.load()
+        flow = loader.load_flow("spin_selling")
 
-        sm = StateMachine(config=config)
+        sm = StateMachine(config=config, flow=flow)
 
         assert sm.spin_phases == ["situation", "problem"]
 
     def test_spin_states_from_config(self, config_dir):
-        """Test SPIN states mapping from config."""
+        """Test SPIN states mapping from flow config."""
         from src.state_machine import StateMachine
         from src.config_loader import ConfigLoader
 
         loader = ConfigLoader(config_dir)
         config = loader.load()
+        flow = loader.load_flow("spin_selling")
 
-        sm = StateMachine(config=config)
+        sm = StateMachine(config=config, flow=flow)
 
         assert sm.spin_states["situation"] == "spin_situation"
         assert sm.spin_states["problem"] == "spin_problem"
 
     def test_states_config_from_yaml(self, config_dir):
-        """Test states configuration is loaded from YAML."""
+        """Test states configuration is loaded from flow YAML."""
         from src.state_machine import StateMachine
         from src.config_loader import ConfigLoader
 
         loader = ConfigLoader(config_dir)
         config = loader.load()
+        flow = loader.load_flow("spin_selling")
 
-        sm = StateMachine(config=config)
+        sm = StateMachine(config=config, flow=flow)
 
         assert "greeting" in sm.states_config
         assert "spin_situation" in sm.states_config

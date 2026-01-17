@@ -53,7 +53,7 @@ class SimpleContext:
     Example:
         ctx = SimpleContext(
             collected_data={"company_size": 10},
-            state="spin_situation",
+            state="greeting",
             turn_number=5
         )
         result = some_condition(ctx)

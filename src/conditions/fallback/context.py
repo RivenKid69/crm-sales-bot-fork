@@ -19,12 +19,8 @@ FALLBACK_TIERS = [
     "soft_close",       # Graceful exit
 ]
 
-# States where dynamic CTA is especially useful
+# States where dynamic CTA is especially useful (loaded from config, these are defaults)
 DYNAMIC_CTA_STATES = {
-    "spin_situation",
-    "spin_problem",
-    "spin_implication",
-    "spin_need_payoff",
     "presentation",
 }
 
@@ -229,7 +225,7 @@ class FallbackContext:
     def create_test_context(
         cls,
         collected_data: Dict[str, Any] = None,
-        state: str = "spin_situation",
+        state: str = "greeting",
         turn_number: int = 0,
         total_fallbacks: int = 0,
         consecutive_fallbacks: int = 0,

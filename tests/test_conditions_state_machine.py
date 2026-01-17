@@ -385,9 +385,13 @@ class TestConstants:
         assert SPIN_STATE_TO_PHASE["spin_need_payoff"] == "need_payoff"
 
     def test_spin_states_set(self):
-        """Test SPIN_STATES set."""
-        assert "spin_situation" in SPIN_STATES
-        assert "spin_problem" in SPIN_STATES
+        """Test SPIN_STATES dict (phase -> state mapping)."""
+        # SPIN_STATES is a dict: phase_name -> state_name
+        assert "situation" in SPIN_STATES
+        assert "problem" in SPIN_STATES
+        assert SPIN_STATES["situation"] == "spin_situation"
+        assert SPIN_STATES["problem"] == "spin_problem"
+        # presentation is not a phase
         assert "presentation" not in SPIN_STATES
 
     def test_intent_categories(self):
@@ -741,9 +745,11 @@ class TestStateConditions:
 
     def test_is_spin_state(self):
         """Test is_spin_state."""
-        for state in SPIN_STATES:
-            ctx = create_test_context(state=state)
-            assert is_spin_state(ctx) is True, f"Failed for {state}"
+        # SPIN_STATES is a dict: phase -> state_name
+        # Use values (state names) for testing
+        for state_name in SPIN_STATES.values():
+            ctx = create_test_context(state=state_name)
+            assert is_spin_state(ctx) is True, f"Failed for {state_name}"
 
         ctx_non_spin = create_test_context(state="presentation")
         assert is_spin_state(ctx_non_spin) is False
@@ -851,9 +857,11 @@ class TestStateConditions:
             ctx = create_test_context(state=state)
             assert post_spin_phase(ctx) is True, f"Failed for {state}"
 
-        for state in SPIN_STATES:
-            ctx = create_test_context(state=state)
-            assert post_spin_phase(ctx) is False, f"Should be False for {state}"
+        # SPIN_STATES is a dict: phase -> state_name
+        # Use values (state names) for testing
+        for state_name in SPIN_STATES.values():
+            ctx = create_test_context(state=state_name)
+            assert post_spin_phase(ctx) is False, f"Should be False for {state_name}"
 
 
 # =============================================================================

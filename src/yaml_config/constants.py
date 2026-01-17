@@ -46,26 +46,15 @@ _constants = _load_yaml(_config_dir / "constants.yaml")
 
 
 # =============================================================================
-# SPIN CONFIGURATION
+# PHASE CONFIGURATION (loaded from YAML, no hardcoded fallback)
 # =============================================================================
 
-SPIN_PHASES: List[str] = _constants.get("spin", {}).get("phases", [
-    "situation", "problem", "implication", "need_payoff"
-])
+_spin_config = _constants.get("spin", {})
 
-SPIN_STATES: Dict[str, str] = _constants.get("spin", {}).get("states", {
-    "situation": "spin_situation",
-    "problem": "spin_problem",
-    "implication": "spin_implication",
-    "need_payoff": "spin_need_payoff",
-})
-
-SPIN_PROGRESS_INTENTS: Dict[str, str] = _constants.get("spin", {}).get("progress_intents", {
-    "situation_provided": "situation",
-    "problem_revealed": "problem",
-    "implication_acknowledged": "implication",
-    "need_expressed": "need_payoff",
-})
+# Phase order and mappings from YAML config
+SPIN_PHASES: List[str] = _spin_config.get("phases", [])
+SPIN_STATES: Dict[str, str] = _spin_config.get("states", {})
+SPIN_PROGRESS_INTENTS: Dict[str, str] = _spin_config.get("progress_intents", {})
 
 
 # =============================================================================
@@ -86,38 +75,13 @@ MAX_GOBACKS: int = _limits.get("max_gobacks", 2)
 _intents = _constants.get("intents", {})
 _categories = _intents.get("categories", {})
 
-GO_BACK_INTENTS: List[str] = _intents.get("go_back", ["go_back", "correct_info"])
+GO_BACK_INTENTS: List[str] = _intents.get("go_back", [])
 
-OBJECTION_INTENTS: List[str] = _categories.get("objection", [
-    "objection_price",
-    "objection_competitor",
-    "objection_no_time",
-    "objection_think",
-])
-
-POSITIVE_INTENTS: Set[str] = set(_categories.get("positive", [
-    "agreement", "demo_request", "callback_request", "contact_provided",
-    "consultation_request", "situation_provided", "problem_revealed",
-    "implication_acknowledged", "need_expressed", "info_provided",
-    "question_features", "question_integrations", "comparison",
-    "greeting", "gratitude",
-]))
-
-QUESTION_INTENTS: List[str] = _categories.get("question", [
-    "price_question", "pricing_details", "question_features",
-    "question_integrations", "question_technical", "comparison",
-])
-
-SPIN_PROGRESS_INTENT_LIST: List[str] = _categories.get("spin_progress", [
-    "situation_provided", "problem_revealed",
-    "implication_acknowledged", "need_expressed",
-])
-
-NEGATIVE_INTENTS: List[str] = _categories.get("negative", [
-    "rejection", "farewell",
-    "objection_price", "objection_competitor",
-    "objection_no_time", "objection_think",
-])
+OBJECTION_INTENTS: List[str] = _categories.get("objection", [])
+POSITIVE_INTENTS: Set[str] = set(_categories.get("positive", []))
+QUESTION_INTENTS: List[str] = _categories.get("question", [])
+SPIN_PROGRESS_INTENT_LIST: List[str] = _categories.get("spin_progress", [])
+NEGATIVE_INTENTS: List[str] = _categories.get("negative", [])
 
 # Full intent categories dict (for IntentTracker compatibility)
 INTENT_CATEGORIES: Dict[str, List[str]] = {
@@ -135,31 +99,11 @@ INTENT_CATEGORIES: Dict[str, List[str]] = {
 
 _policy = _constants.get("policy", {})
 
-OVERLAY_ALLOWED_STATES: Set[str] = set(_policy.get("overlay_allowed_states", [
-    "spin_situation", "spin_problem", "spin_implication",
-    "spin_need_payoff", "presentation", "handle_objection",
-]))
-
-PROTECTED_STATES: Set[str] = set(_policy.get("protected_states", [
-    "greeting", "close", "success", "soft_close",
-]))
-
-AGGRESSIVE_ACTIONS: Set[str] = set(_policy.get("aggressive_actions", [
-    "transition_to_presentation", "transition_to_close",
-    "ask_for_demo", "ask_for_contact",
-]))
-
-REPAIR_ACTIONS: Dict[str, str] = _policy.get("repair_actions", {
-    "stuck": "clarify_one_question",
-    "oscillation": "summarize_and_clarify",
-    "repeated_question": "answer_with_summary",
-})
-
-OBJECTION_ESCALATION_ACTIONS: Dict[str, str] = _policy.get("objection_actions", {
-    "reframe": "reframe_value",
-    "escalate": "handle_repeated_objection",
-    "empathize": "empathize_and_redirect",
-})
+OVERLAY_ALLOWED_STATES: Set[str] = set(_policy.get("overlay_allowed_states", []))
+PROTECTED_STATES: Set[str] = set(_policy.get("protected_states", []))
+AGGRESSIVE_ACTIONS: Set[str] = set(_policy.get("aggressive_actions", []))
+REPAIR_ACTIONS: Dict[str, str] = _policy.get("repair_actions", {})
+OBJECTION_ESCALATION_ACTIONS: Dict[str, str] = _policy.get("objection_actions", {})
 
 
 # =============================================================================
@@ -168,28 +112,17 @@ OBJECTION_ESCALATION_ACTIONS: Dict[str, str] = _policy.get("objection_actions", 
 
 _lead_scoring = _constants.get("lead_scoring", {})
 
-LEAD_SCORING_POSITIVE_WEIGHTS: Dict[str, int] = _lead_scoring.get("positive_weights", {
-    "demo_request": 30, "contact_provided": 35, "callback_request": 25,
-})
-
-LEAD_SCORING_NEGATIVE_WEIGHTS: Dict[str, int] = _lead_scoring.get("negative_weights", {
-    "objection_price": -15, "objection_no_time": -20, "rejection_soft": -25,
-})
+LEAD_SCORING_POSITIVE_WEIGHTS: Dict[str, int] = _lead_scoring.get("positive_weights", {})
+LEAD_SCORING_NEGATIVE_WEIGHTS: Dict[str, int] = _lead_scoring.get("negative_weights", {})
 
 _thresholds = _lead_scoring.get("thresholds", {})
 LEAD_TEMPERATURE_THRESHOLDS: Dict[str, Tuple[int, int]] = {
-    "cold": tuple(_thresholds.get("cold", [0, 29])),
-    "warm": tuple(_thresholds.get("warm", [30, 49])),
-    "hot": tuple(_thresholds.get("hot", [50, 69])),
-    "very_hot": tuple(_thresholds.get("very_hot", [70, 100])),
-}
+    temp: tuple(_thresholds.get(temp, [0, 100]))
+    for temp in ["cold", "warm", "hot", "very_hot"]
+    if temp in _thresholds
+} or {}
 
-SKIP_PHASES_BY_TEMPERATURE: Dict[str, List[str]] = _lead_scoring.get("skip_phases", {
-    "cold": [],
-    "warm": ["spin_implication", "spin_need_payoff"],
-    "hot": ["spin_problem", "spin_implication", "spin_need_payoff"],
-    "very_hot": ["spin_situation", "spin_problem", "spin_implication", "spin_need_payoff"],
-})
+SKIP_PHASES_BY_TEMPERATURE: Dict[str, List[str]] = _lead_scoring.get("skip_phases", {})
 
 
 # =============================================================================
@@ -219,18 +152,9 @@ GUARD_PROFILES: Dict[str, Dict[str, Any]] = _guard.get("profiles", {})
 _frustration = _constants.get("frustration", {})
 
 MAX_FRUSTRATION: int = _frustration.get("max_level", 10)
-
-FRUSTRATION_WEIGHTS: Dict[str, int] = _frustration.get("weights", {
-    "frustrated": 3, "skeptical": 1, "rushed": 1, "confused": 1,
-})
-
-FRUSTRATION_DECAY: Dict[str, int] = _frustration.get("decay", {
-    "neutral": 1, "positive": 2, "interested": 2,
-})
-
-FRUSTRATION_THRESHOLDS: Dict[str, int] = _frustration.get("thresholds", {
-    "warning": 4, "high": 7, "critical": 9,
-})
+FRUSTRATION_WEIGHTS: Dict[str, int] = _frustration.get("weights", {})
+FRUSTRATION_DECAY: Dict[str, int] = _frustration.get("decay", {})
+FRUSTRATION_THRESHOLDS: Dict[str, int] = _frustration.get("thresholds", {})
 
 
 # =============================================================================
@@ -239,15 +163,7 @@ FRUSTRATION_THRESHOLDS: Dict[str, int] = _frustration.get("thresholds", {
 
 _circular_flow = _constants.get("circular_flow", {})
 
-ALLOWED_GOBACKS: Dict[str, str] = _circular_flow.get("allowed_gobacks", {
-    "spin_problem": "spin_situation",
-    "spin_implication": "spin_problem",
-    "spin_need_payoff": "spin_implication",
-    "presentation": "spin_need_payoff",
-    "close": "presentation",
-    "handle_objection": "presentation",
-    "soft_close": "greeting",
-})
+ALLOWED_GOBACKS: Dict[str, str] = _circular_flow.get("allowed_gobacks", {})
 
 
 # =============================================================================
