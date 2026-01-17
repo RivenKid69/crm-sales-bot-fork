@@ -20,8 +20,11 @@ Lead Scoring для CRM Sales Bot.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, TYPE_CHECKING
 from enum import Enum
+
+if TYPE_CHECKING:
+    from src.config_loader import LoadedConfig
 
 from logger import logger
 
@@ -164,27 +167,77 @@ class LeadScorer:
         LeadTemperature.VERY_HOT: "direct_close",    # presentation → close
     }
 
-    # Фазы для пропуска по температуре
-    SKIP_PHASES: Dict[LeadTemperature, Set[str]] = {
+    # Фазы для пропуска по температуре (DEPRECATED: use config parameter)
+    # Kept as fallback for backward compatibility
+    DEFAULT_SKIP_PHASES: Dict[LeadTemperature, Set[str]] = {
         LeadTemperature.COLD: set(),
         LeadTemperature.WARM: {"spin_implication", "spin_need_payoff"},
         LeadTemperature.HOT: {"spin_problem", "spin_implication", "spin_need_payoff"},
         LeadTemperature.VERY_HOT: {"spin_situation", "spin_problem", "spin_implication", "spin_need_payoff"},
     }
+    # Backward compatibility alias
+    SKIP_PHASES = DEFAULT_SKIP_PHASES
 
     # Максимальная длина истории сигналов
     MAX_HISTORY_LENGTH = 20
 
-    def __init__(self, decay_factor: float = 0.95):
+    def __init__(
+        self,
+        decay_factor: float = 0.95,
+        config: Optional["LoadedConfig"] = None
+    ):
         """
         Инициализация скорера.
 
         Args:
             decay_factor: Коэффициент затухания (0.0-1.0).
                           Чем ближе к 1, тем дольше "помнятся" старые сигналы.
+            config: LoadedConfig for skip_phases. If provided, reads from
+                    config.lead_scoring["skip_phases"]. Otherwise uses DEFAULT_SKIP_PHASES.
         """
         self.decay_factor = decay_factor
+        self._skip_phases = self._load_skip_phases(config)
         self.reset()
+
+    def _load_skip_phases(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[LeadTemperature, Set[str]]:
+        """
+        Load skip_phases from config or use defaults.
+
+        Args:
+            config: LoadedConfig with lead_scoring.skip_phases
+
+        Returns:
+            Dict mapping temperature -> set of phases to skip
+        """
+        if config is None:
+            return self.DEFAULT_SKIP_PHASES
+
+        # Try to get from config.lead_scoring.skip_phases
+        skip_phases_config = config.lead_scoring.get("skip_phases", {})
+        if not skip_phases_config:
+            return self.DEFAULT_SKIP_PHASES
+
+        # Convert config format (str keys) to LeadTemperature keys
+        result: Dict[LeadTemperature, Set[str]] = {}
+        temp_map = {
+            "cold": LeadTemperature.COLD,
+            "warm": LeadTemperature.WARM,
+            "hot": LeadTemperature.HOT,
+            "very_hot": LeadTemperature.VERY_HOT,
+        }
+        for temp_str, phases in skip_phases_config.items():
+            temp_key = temp_map.get(temp_str.lower())
+            if temp_key:
+                result[temp_key] = set(phases) if phases else set()
+
+        # Fill in any missing temperatures with defaults
+        for temp in LeadTemperature:
+            if temp not in result:
+                result[temp] = self.DEFAULT_SKIP_PHASES.get(temp, set())
+
+        return result
 
     def reset(self) -> None:
         """Сброс скорера для нового разговора"""
@@ -262,7 +315,7 @@ class LeadScorer:
             temperature=temperature,
             signals=self.signals_history[-5:],  # Последние 5 сигналов
             recommended_path=self.PATHS[temperature],
-            skip_phases=self.SKIP_PHASES[temperature].copy()
+            skip_phases=self._skip_phases[temperature].copy()
         )
 
     def _get_temperature(self) -> LeadTemperature:

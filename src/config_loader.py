@@ -168,6 +168,27 @@ class LoadedConfig:
             return {"action": on_enter}
         return on_enter
 
+    def get_state_on_enter_flags(self, state_name: str) -> Dict[str, Any]:
+        """
+        Get flags to set when entering a state.
+
+        Allows generic flag setting without hardcoding state names.
+
+        Example YAML:
+            spin_implication:
+              on_enter:
+                action: probe_implication
+                set_flags:
+                  implication_probed: true
+
+        Returns:
+            Dict of flag_name -> value to set in collected_data
+        """
+        on_enter = self.get_state_on_enter(state_name)
+        if on_enter and isinstance(on_enter, dict):
+            return on_enter.get("set_flags", {})
+        return {}
+
 
 @dataclass
 class FlowConfig:
@@ -295,6 +316,92 @@ class FlowConfig:
             Dict with template, description, parameters, etc.
         """
         return self.templates.get(action)
+
+    # =========================================================================
+    # State Configuration Methods
+    # =========================================================================
+
+    def get_state_on_enter(self, state_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get on_enter configuration for a state.
+
+        Returns:
+            Dict with 'action', 'set_flags', etc. or None
+        """
+        state = self.states.get(state_name, {})
+        on_enter = state.get("on_enter")
+        if on_enter is None:
+            return None
+        if isinstance(on_enter, str):
+            return {"action": on_enter}
+        return on_enter
+
+    def get_state_on_enter_flags(self, state_name: str) -> Dict[str, Any]:
+        """
+        Get flags to set when entering a state.
+
+        Allows generic flag setting without hardcoding state names.
+
+        Example YAML:
+            spin_implication:
+              on_enter:
+                set_flags:
+                  implication_probed: true
+
+        Returns:
+            Dict of flag_name -> value to set in collected_data
+        """
+        on_enter = self.get_state_on_enter(state_name)
+        if on_enter and isinstance(on_enter, dict):
+            return on_enter.get("set_flags", {})
+        return {}
+
+    @property
+    def skip_map(self) -> Dict[str, str]:
+        """
+        Build skip map from state transitions.
+
+        Returns a mapping of state -> next_state for fallback skip logic.
+        Built automatically from 'data_complete' transitions in states.
+
+        Returns:
+            Dict mapping state_name -> skip_target_state
+        """
+        result = {}
+        for state_name, state_config in self.states.items():
+            if state_name.startswith("_"):  # Skip abstract states
+                continue
+            transitions = state_config.get("transitions", {})
+            # Use 'data_complete' transition as skip target
+            if "data_complete" in transitions:
+                result[state_name] = transitions["data_complete"]
+        return result
+
+    @property
+    def goback_map(self) -> Dict[str, str]:
+        """
+        Build goback map from state transitions.
+
+        Returns a mapping of state -> previous_state for go_back logic.
+        Built automatically from 'go_back' transitions or inverse of skip_map.
+
+        Returns:
+            Dict mapping state_name -> goback_target_state
+        """
+        result = {}
+        for state_name, state_config in self.states.items():
+            if state_name.startswith("_"):
+                continue
+            transitions = state_config.get("transitions", {})
+            # Explicit go_back transition takes priority
+            if "go_back" in transitions:
+                result[state_name] = transitions["go_back"]
+        # If no explicit go_back, build from skip_map inverse
+        if not result:
+            skip = self.skip_map
+            for from_state, to_state in skip.items():
+                result[to_state] = from_state
+        return result
 
     # =========================================================================
     # DAG Support Methods

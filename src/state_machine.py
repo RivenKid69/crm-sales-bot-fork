@@ -1516,17 +1516,23 @@ class StateMachine:
         # Обновляем spin_phase
         self.spin_phase = self._get_current_spin_phase()
 
-        # Устанавливаем phase-флаги при ВХОДЕ в соответствующие SPIN-фазы
-        # Эти флаги означают: "мы вошли в эту фазу и бот задаст вопрос"
-        # Используются для:
-        # 1. Предотвращения пропуска фазы при первом неясном ответе
-        # 2. Определения data_complete (required_data в config.py)
-        # 3. Отслеживания прогресса через SPIN для аналитики
-        # NOTE: Название "_probed" историческое, семантически означает "phase_entered"
-        if next_state == "spin_implication" and prev_state != "spin_implication":
-            self.collected_data["implication_probed"] = True  # = implication_phase_entered
-        if next_state == "spin_need_payoff" and prev_state != "spin_need_payoff":
-            self.collected_data["need_payoff_probed"] = True  # = need_payoff_phase_entered
+        # Check if state changed
+        state_changed = prev_state != next_state
+
+        # =====================================================================
+        # ON_ENTER: Set flags when entering a new state (generic mechanism)
+        # =====================================================================
+        # Replaces hardcoded checks like:
+        #   if next_state == "spin_implication": self.collected_data["implication_probed"] = True
+        # Now configured via YAML:
+        #   spin_implication:
+        #     on_enter:
+        #       set_flags:
+        #         implication_probed: true
+        if state_changed and self._flow:
+            on_enter_flags = self._flow.get_state_on_enter_flags(next_state)
+            for flag_name, flag_value in on_enter_flags.items():
+                self.collected_data[flag_name] = flag_value
 
         config = self.states_config.get(self.state, {})
 
@@ -1536,7 +1542,6 @@ class StateMachine:
         # If state changed AND new state has on_enter config, use on_enter action.
         # This allows states to show prompts/options immediately upon entry,
         # regardless of what intent triggered the transition.
-        state_changed = prev_state != next_state
         on_enter = config.get("on_enter")
         if state_changed and on_enter:
             on_enter_action = on_enter.get("action") if isinstance(on_enter, dict) else on_enter

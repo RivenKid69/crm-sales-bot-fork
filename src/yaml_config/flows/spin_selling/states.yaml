@@ -94,6 +94,10 @@ states:
     goal: "Помочь осознать последствия и масштаб проблемы"
     phase: implication
     spin_phase: implication
+    # Set flag when entering this state (replaces hardcoded logic in state_machine.py)
+    on_enter:
+      set_flags:
+        implication_probed: true
     required_data:
       - implication_probed
     optional_data:
@@ -123,6 +127,10 @@ states:
     goal: "Помочь клиенту сформулировать ценность решения"
     phase: need_payoff
     spin_phase: need_payoff
+    # Set flag when entering this state (replaces hardcoded logic in state_machine.py)
+    on_enter:
+      set_flags:
+        need_payoff_probed: true
     required_data:
       - need_payoff_probed
     optional_data:

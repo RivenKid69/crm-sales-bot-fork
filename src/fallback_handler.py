@@ -25,8 +25,11 @@ Part of Phase 6: Fallback Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 
 from dataclasses import dataclass, field
 from random import choice
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import time
+
+if TYPE_CHECKING:
+    from src.config_loader import FlowConfig
 
 from logger import logger
 from src.conditions.fallback import (
@@ -235,8 +238,9 @@ class FallbackHandler:
         "Давайте пропустим и перейдём к следующему шагу.",
     ]
 
-    # Карта переходов при skip
-    SKIP_MAP: Dict[str, str] = {
+    # Карта переходов при skip (DEPRECATED: use skip_map parameter or FlowConfig)
+    # Kept as fallback for backward compatibility
+    DEFAULT_SKIP_MAP: Dict[str, str] = {
         "greeting": "spin_situation",
         "spin_situation": "spin_problem",
         "spin_problem": "spin_implication",
@@ -245,6 +249,8 @@ class FallbackHandler:
         "presentation": "close",
         "handle_objection": "soft_close",
     }
+    # Backward compatibility alias
+    SKIP_MAP = DEFAULT_SKIP_MAP
 
     # Tier 4: Graceful exit
     EXIT_TEMPLATES: List[str] = [
@@ -261,16 +267,32 @@ class FallbackHandler:
         "options": ["Подробнее о системе", "Цены", "Демо", "Связаться позже"]
     }
 
-    def __init__(self, enable_tracing: bool = True):
+    def __init__(
+        self,
+        enable_tracing: bool = True,
+        skip_map: Optional[Dict[str, str]] = None,
+        flow: Optional["FlowConfig"] = None
+    ):
         """
         Initialize FallbackHandler.
 
         Args:
             enable_tracing: Whether to enable condition evaluation tracing
+            skip_map: Custom skip map (state -> next_state). If not provided,
+                      will try to get from flow.skip_map, or use DEFAULT_SKIP_MAP.
+            flow: FlowConfig to get skip_map from (auto-builds from transitions)
         """
         self._stats = FallbackStats()
         self._used_templates: Dict[str, List[str]] = {}  # Для избежания повторов
         self._enable_tracing = enable_tracing
+
+        # Determine skip_map priority: explicit > flow > default
+        if skip_map is not None:
+            self._skip_map = skip_map
+        elif flow is not None:
+            self._skip_map = flow.skip_map
+        else:
+            self._skip_map = self.DEFAULT_SKIP_MAP
 
     def reset(self) -> None:
         """Сбросить состояние для нового диалога"""
@@ -746,7 +768,7 @@ class FallbackHandler:
                     frustration_level=fb_context.frustration_level
                 )
 
-        next_state = self.SKIP_MAP.get(state, "presentation")
+        next_state = self._skip_map.get(state, "presentation")
         message = self._get_unused_template("skip", self.SKIP_TEMPLATES)
 
         if trace:
