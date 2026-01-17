@@ -13,7 +13,7 @@ cd src && python bot.py
 ```
 
 **Требования:**
-- Python 3.11+
+- Python 3.10+
 - vLLM сервер с моделью Qwen/Qwen3-4B-AWQ (~3-4 GB VRAM)
 - sentence-transformers для семантического поиска (ai-forever/FRIDA)
 
@@ -145,6 +145,15 @@ src/
 │   └── extractors/         # Подпакет извлечения данных
 │       └── data_extractor.py    # Извлечение структурированных данных
 │
+├── simulator/              # Симулятор диалогов для тестирования
+│   ├── __init__.py         # Публичный API
+│   ├── runner.py           # SimulationRunner — оркестратор симуляций
+│   ├── client_agent.py     # ClientAgent — эмуляция клиента через LLM
+│   ├── personas.py         # Персоны клиентов (happy_path, objector, etc.)
+│   ├── noise.py            # Добавление шума в сообщения
+│   ├── metrics.py          # Сбор метрик симуляций
+│   └── report.py           # Генерация отчётов
+│
 └── knowledge/              # База знаний о продуктах Wipon
     ├── __init__.py         # Публичный API (WIPON_KNOWLEDGE, get_retriever)
     ├── base.py             # Структуры данных (KnowledgeSection, KnowledgeBase)
@@ -181,7 +190,7 @@ voice_bot/                  # Голосовой интерфейс
 ├── models/                 # XTTS-RU-IPA модели
 └── test_*.py               # Тесты компонентов (STT, TTS, LLM)
 
-tests/                      # Тесты в 104 файлах
+tests/                      # Тесты в 102 файлах
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
@@ -553,6 +562,39 @@ sm = StateMachine(flow=flow)
 
 Подробнее: [docs/VOICE.md](docs/VOICE.md)
 
+## Симулятор диалогов (simulator/)
+
+Модуль для массового тестирования бота с эмуляцией различных типов клиентов:
+
+```bash
+# Запуск 50 симуляций
+python -m src.simulator -n 50 -o report.txt
+
+# Запуск с конкретной персоной
+python -m src.simulator -n 10 --persona happy_path
+
+# Параллельный запуск
+python -m src.simulator -n 100 --parallel 4
+```
+
+### Компоненты симулятора
+
+| Компонент | Описание |
+|-----------|----------|
+| `SimulationRunner` | Оркестратор batch-симуляций |
+| `ClientAgent` | LLM-агент, эмулирующий клиента |
+| `Persona` | Профили поведения (happy_path, objector, price_focused) |
+| `MetricsCollector` | Сбор метрик (SPIN coverage, outcome, duration) |
+| `ReportGenerator` | Генерация отчётов в текстовом формате |
+
+### Персоны клиентов
+
+- **happy_path** — идеальный клиент, следует SPIN flow
+- **objector** — часто возражает (цена, конкуренты)
+- **price_focused** — фокусируется на стоимости
+- **quick_decision** — быстро принимает решение
+- **skeptic** — скептически настроен
+
 ## Тестирование
 
 ```bash
@@ -632,13 +674,15 @@ pip install -r requirements.txt
 - [KNOWLEDGE.md](docs/KNOWLEDGE.md) — документация базы знаний
 - [SETTINGS.md](docs/SETTINGS.md) — описание настроек
 - [PHASES.md](docs/PHASES.md) — фазы разработки (0-5)
+- [state_machine.md](docs/state_machine.md) — State Machine v2.0
+- [DAG.md](docs/DAG.md) — DAG State Machine (параллельные потоки)
 - [VOICE.md](docs/VOICE.md) — голосовой интерфейс
 
 ## Метрики проекта
 
 ```
 Модулей Python:           102 в src/
-Тестовых файлов:          104 в tests/
+Тестовых файлов:          102 в tests/
 Секций в базе знаний:     1969 в 17 YAML файлах
 Интентов LLM:             33 в classifier/llm/
 Интентов Hybrid:          58 в INTENT_ROOTS
@@ -648,7 +692,7 @@ pip install -r requirements.txt
 Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17
-Feature Flags:            30+ флагов
+Feature Flags:            28 флагов
 YAML Config Files:        11 в yaml_config/
 Modular Flows:            1 (spin_selling) + _base
 ```

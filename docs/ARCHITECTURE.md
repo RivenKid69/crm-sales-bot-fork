@@ -730,6 +730,59 @@ FALLBACK_RESPONSES = {
 | `intent_tracker.py` | Трекинг интентов и паттернов |
 | `response_directives.py` | Директивы для генератора |
 | `tone_analyzer/` | Каскадный анализатор тона (3 уровня) |
+| `simulator/` | Симулятор диалогов (batch-тестирование с LLM-клиентом) |
+
+## Симулятор диалогов
+
+Модуль `simulator/` обеспечивает массовое тестирование бота с эмуляцией различных типов клиентов:
+
+```bash
+# Запуск 50 симуляций
+python -m src.simulator -n 50 -o report.txt
+
+# С конкретной персоной
+python -m src.simulator -n 10 --persona happy_path
+
+# Параллельный запуск
+python -m src.simulator -n 100 --parallel 4
+```
+
+### Компоненты
+
+| Модуль | Описание |
+|--------|----------|
+| `runner.py` | `SimulationRunner` — оркестратор batch-симуляций |
+| `client_agent.py` | `ClientAgent` — LLM-агент, эмулирующий клиента |
+| `personas.py` | Профили поведения (happy_path, objector, price_focused) |
+| `noise.py` | Добавление реалистичного шума в сообщения |
+| `metrics.py` | Сбор метрик (SPIN coverage, outcome, duration) |
+| `report.py` | Генерация отчётов в текстовом формате |
+
+### Персоны
+
+- **happy_path** — идеальный клиент, следует SPIN flow
+- **objector** — часто возражает (цена, конкуренты)
+- **price_focused** — фокусируется на стоимости
+- **quick_decision** — быстро принимает решение
+- **skeptic** — скептически настроен
+
+### Метрики симуляции
+
+```python
+@dataclass
+class SimulationResult:
+    simulation_id: int
+    persona: str
+    outcome: str           # success, rejection, soft_close, error
+    turns: int
+    duration_seconds: float
+    phases_reached: List[str]
+    spin_coverage: float   # 0.0 - 1.0
+    objections_count: int
+    fallback_count: int
+    collected_data: Dict
+    rule_traces: List[Dict]  # Трассировка условных правил
+```
 
 ## Тестирование
 
