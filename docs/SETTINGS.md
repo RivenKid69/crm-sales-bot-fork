@@ -475,13 +475,75 @@ cd src && python feature_flags.py
 
 ## Тестирование
 
+### Запуск тестов
+
 ```bash
+# Все тесты конфигурации (1590 тестов)
+pytest tests/test_config*.py -v
+
 # Тесты настроек
 pytest tests/test_settings.py -v
 
 # Тесты feature flags
 pytest tests/test_feature_flags.py -v
+
+# Edge cases (граничные значения, unicode, конкурентность)
+pytest tests/test_config_edge_cases.py -v
+
+# Property-based тесты (Hypothesis)
+pytest tests/test_config_property_based.py -v
 ```
+
+### Покрытие тестами
+
+Система конфигурации покрыта **1590 тестами**:
+
+| Категория | Файл | Тестов | Описание |
+|-----------|------|--------|----------|
+| Settings YAML | `test_config_settings_yaml.py` | 89 | Параметры settings.yaml |
+| Constants YAML | `test_config_constants_yaml.py` | 133 | Параметры constants.yaml |
+| Flow YAML | `test_config_flow_yaml.py` | 137 | Структура flow.yaml |
+| Integration | `test_config_integration.py` | 16 | ConfigLoader + Parser + Resolver |
+| Behavior (settings) | `test_config_behavior_settings.py` | 78 | Поведение компонентов |
+| Behavior (constants) | `test_config_behavior_constants.py` | 112 | Поведение с constants |
+| Behavior (flags) | `test_config_behavior_feature_flags.py` | 38 | Влияние feature flags |
+| E2E сценарии | `test_config_e2e_scenarios.py` | 26 | Полные диалоговые сценарии |
+| **Edge cases** | `test_config_edge_cases.py` | **72** | Граничные значения |
+| **Property-based** | `test_config_property_based.py` | **38** | Автогенерация Hypothesis |
+
+### Edge Case тесты
+
+`test_config_edge_cases.py` покрывает:
+
+- **Граничные значения** — `max_turns=0/1/999999/-1`, `timeout=0/86400`
+- **Пустые значения** — пустые templates, categories, phases
+- **Типы данных** — string "25", float 25.7, "true" vs true
+- **Unicode/кодировки** — русский текст, emoji, BOM
+- **Файловые ошибки** — not found, invalid YAML, read-only, empty
+- **Конкурентность** — многопоточное чтение конфигов
+- **Сложные условия** — глубокая вложенность and/or/not
+- **Консистентность** — guard.threshold == frustration.threshold
+
+### Property-based тесты
+
+`test_config_property_based.py` использует [Hypothesis](https://hypothesis.readthedocs.io/) для автоматической генерации тестовых данных:
+
+```python
+@given(
+    max_turns=st.integers(min_value=1, max_value=1000),
+    timeout=st.integers(min_value=1, max_value=86400)
+)
+def test_guard_config_with_positive_values(max_turns, timeout):
+    """Любые положительные значения должны загружаться."""
+    config = {"guard": {"max_turns": max_turns, "timeout_seconds": timeout}}
+    loaded = yaml.safe_load(yaml.dump(config))
+    assert loaded['guard']['max_turns'] == max_turns
+```
+
+Преимущества:
+- Автоматическое обнаружение edge cases
+- Тысячи комбинаций параметров за секунды
+- Воспроизводимость через seed
 
 ## YAML Configuration (yaml_config/)
 

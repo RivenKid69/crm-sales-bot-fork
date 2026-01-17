@@ -598,7 +598,7 @@ python -m src.simulator -n 100 --parallel 4
 ## Тестирование
 
 ```bash
-# Все тесты (2900+ тестов)
+# Все тесты (3000+ тестов)
 pytest tests/ -v
 
 # Только тесты классификатора
@@ -619,11 +619,35 @@ pytest tests/test_category_router*.py -v
 # Тесты фаз 0-4
 pytest tests/test_phase*_integration.py -v
 
+# Тесты конфигурации (1590 тестов)
+pytest tests/test_config*.py -v
+
 # Стресс-тест бота
 python scripts/full_bot_stress_test.py
 
 # Тест базы знаний
 python scripts/stress_test_knowledge.py
+```
+
+### Тесты конфигурации
+
+Система конфигурации покрыта **1590 тестами**:
+
+| Категория | Файлы | Тестов |
+|-----------|-------|--------|
+| Unit тесты | `test_config_*_yaml.py` | ~450 |
+| Integration | `test_config_integration.py` | ~100 |
+| Behavior | `test_config_behavior_*.py` | ~280 |
+| E2E сценарии | `test_config_e2e_scenarios.py` | ~70 |
+| Edge cases | `test_config_edge_cases.py` | 72 |
+| Property-based | `test_config_property_based.py` | 38 |
+
+```bash
+# Edge cases (граничные значения, unicode, конкурентность)
+pytest tests/test_config_edge_cases.py -v
+
+# Property-based (Hypothesis - автоматическая генерация тестов)
+pytest tests/test_config_property_based.py -v
 ```
 
 ## Отладка
