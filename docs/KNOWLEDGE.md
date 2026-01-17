@@ -333,11 +333,11 @@ for r in reranked[:3]:
 
 ```yaml
 stats:
-  total_sections: 1240  # было 1239
-  last_updated: '2026-01-06'
+  total_sections: 1970  # было 1969
+  last_updated: '2026-01-17'
   categories:
   - name: support
-    count: 157  # было 156
+    count: 202  # было 201
 ```
 
 ### 4. Проверить валидность
@@ -482,11 +482,13 @@ python scripts/stress_test_knowledge.py
 python scripts/validate_knowledge_yaml.py
 
 # Вывод:
-# [OK] equipment.yaml: 183 секции
-# [OK] tis.yaml: 166 секций
-# [OK] support.yaml: 156 секций
+# [OK] equipment.yaml: 316 секций
+# [OK] pricing.yaml: 286 секций
+# [OK] products.yaml: 273 секции
+# [OK] support.yaml: 201 секция
+# [OK] tis.yaml: 191 секция
 # ...
-# [OK] Всего: 1239 секций (ожидалось: 1239)
+# [OK] Всего: 1969 секций (ожидалось: 1969)
 ```
 
 ## Производительность

@@ -14,8 +14,8 @@ cd src && python bot.py
 
 **Требования:**
 - Python 3.11+
-- vLLM сервер с моделью Qwen/Qwen3-8B-AWQ (~5-6 GB VRAM)
-- sentence-transformers для семантического поиска
+- vLLM сервер с моделью Qwen/Qwen3-4B-AWQ (~3-4 GB VRAM)
+- sentence-transformers для семантического поиска (ai-forever/FRIDA)
 
 ## Возможности
 
@@ -55,7 +55,7 @@ cd src && python bot.py
          │
          ▼
 ┌─────────────────┐
-│   LLM (vLLM)    │  ← Qwen3-8B-AWQ генерирует финальный ответ
+│   LLM (vLLM)    │  ← Qwen3-4B-AWQ генерирует финальный ответ
 └────────┬────────┘
          │
          ▼
@@ -181,7 +181,7 @@ voice_bot/                  # Голосовой интерфейс
 ├── models/                 # XTTS-RU-IPA модели
 └── test_*.py               # Тесты компонентов (STT, TTS, LLM)
 
-tests/                      # 2900+ тестов в 71 файле
+tests/                      # Тесты в 104 файлах
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
@@ -208,14 +208,14 @@ scripts/                    # Вспомогательные скрипты
 ```yaml
 # LLM (Language Model) - vLLM Server
 llm:
-  model: "Qwen/Qwen3-8B-AWQ"
+  model: "Qwen/Qwen3-4B-AWQ"
   base_url: "http://localhost:8000/v1"
   timeout: 60
 
 # Retriever (Поиск по базе знаний)
 retriever:
   use_embeddings: true
-  embedder_model: "ai-forever/ru-en-RoSBERTa"
+  embedder_model: "ai-forever/FRIDA"
   thresholds:
     exact: 1.0      # Точное совпадение keyword
     lemma: 0.15     # Совпадение по леммам
@@ -374,7 +374,7 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 2. Lemma Match    ─── сравнение лемматизированных множеств
        │
        ▼ (если не найдено)
-3. Semantic Match ─── cosine similarity эмбеддингов (ai-forever/ru-en-RoSBERTa)
+3. Semantic Match ─── cosine similarity эмбеддингов (ai-forever/FRIDA)
 ```
 
 ### CategoryRouter — LLM-маршрутизация
@@ -524,6 +524,8 @@ sm = StateMachine(flow=flow)
 | 1 | Fallback | `multi_tier_fallback` | ✅ Production |
 | 1 | Guard | `conversation_guard` | ✅ Production |
 | 2 | Cascade Tone | `cascade_tone_analyzer` | ✅ Production |
+| 2 | Tone Tier 2 | `tone_semantic_tier2` | ✅ Production |
+| 2 | Tone Tier 3 | `tone_llm_tier3` | ✅ Production |
 | 2 | Вариации | `response_variations` | ✅ Production |
 | 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
 | 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
@@ -532,6 +534,8 @@ sm = StateMachine(flow=flow)
 | 3 | Скоринг | `lead_scoring` | ⏸️ Testing |
 | 3 | Возражения | `objection_handler` | ⏸️ Testing |
 | 3 | CTA | `cta_generator` | ⏸️ Development |
+| 3 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Testing |
+| 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
 
 Подробнее: [docs/PHASES.md](docs/PHASES.md)
 
@@ -542,7 +546,7 @@ sm = StateMachine(flow=flow)
 ```
 ┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐
 │   faster-whisper  │ ──► │   LLM (vLLM)      │ ──► │   F5-TTS Russian  │
-│   (STT)           │     │   Qwen3-8B-AWQ    │     │   + RUAccent      │
+│   (STT)           │     │   Qwen3-4B-AWQ    │     │   + RUAccent      │
 └───────────────────┘     └───────────────────┘     └───────────────────┘
       Голос клиента              Текст                   Голос бота
 ```
@@ -601,7 +605,7 @@ python scripts/stress_test_knowledge.py
 | `outlines` | Structured output (guided decoding) |
 | `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка (fallback на pymorphy2) |
-| `sentence-transformers` | Эмбеддинги (ai-forever/ru-en-RoSBERTa) |
+| `sentence-transformers` | Эмбеддинги (ai-forever/FRIDA) |
 | `openai` | HTTP-клиент для vLLM API (OpenAI-compatible) |
 | `pyyaml` | Парсинг YAML конфигурации и базы знаний |
 | `pytest` | Тестирование |
@@ -627,15 +631,15 @@ pip install -r requirements.txt
 - [CLASSIFIER.md](docs/CLASSIFIER.md) — документация классификатора
 - [KNOWLEDGE.md](docs/KNOWLEDGE.md) — документация базы знаний
 - [SETTINGS.md](docs/SETTINGS.md) — описание настроек
-- [PHASES.md](docs/PHASES.md) — фазы разработки (0-3)
+- [PHASES.md](docs/PHASES.md) — фазы разработки (0-5)
 - [VOICE.md](docs/VOICE.md) — голосовой интерфейс
 
 ## Метрики проекта
 
 ```
-Модулей Python:           50+ в src/
-Тестов:                   2900+ в 71 файле
-Секций в базе знаний:     1969 в 18 YAML файлах
+Модулей Python:           102 в src/
+Тестовых файлов:          104 в tests/
+Секций в базе знаний:     1969 в 17 YAML файлах
 Интентов LLM:             33 в classifier/llm/
 Интентов Hybrid:          58 в INTENT_ROOTS
 Паттернов опечаток:       663 в TYPO_FIXES

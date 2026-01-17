@@ -273,6 +273,7 @@ Feature flags позволяют постепенно включать новы�
 | `cta_generator` | `false` | Call-to-Action |
 | `cascade_classifier` | `true` | Каскадный классификатор |
 | `semantic_objection_detection` | `true` | Семантическая детекция возражений |
+| `intent_disambiguation` | `false` | Уточнение намерения при близких scores |
 | `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
 | `tone_semantic_tier2` | `true` | Tier 2: FRIDA semantic |
 | `tone_llm_tier3` | `true` | Tier 3: LLM fallback |
@@ -280,6 +281,8 @@ Feature flags позволяют постепенно включать новы�
 | `context_policy_overlays` | `true` | DialoguePolicy overrides |
 | `context_shadow_mode` | `false` | Shadow mode для policy |
 | `context_response_directives` | `false` | ResponseDirectives для генератора |
+| `context_engagement_v2` | `false` | Улучшенный расчёт engagement |
+| `context_cta_memory` | `false` | CTA с учётом episodic memory |
 | `dynamic_cta_fallback` | `false` | Динамические CTA в fallback |
 
 **Переопределение через env:**
