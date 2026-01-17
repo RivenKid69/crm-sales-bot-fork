@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from config import QUESTION_INTENTS
 from feature_flags import flags
 from logger import logger
+from settings import settings
 
 # Phase 4: Conditional Rules imports
 from src.intent_tracker import IntentTracker
@@ -244,7 +245,8 @@ class StateMachine:
             if config is None:
                 config = loader.load()
             if flow is None:
-                flow = loader.load_flow("spin_selling")
+                # Load flow from settings (configurable, not hardcoded)
+                flow = loader.load_flow(settings.flow.active)
 
         # Store config for parameterization (always set since v2.0)
         self._config = config

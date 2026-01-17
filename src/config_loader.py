@@ -836,9 +836,12 @@ class ConfigLoader:
             ConfigValidationError: If validation fails
 
         Example:
+            from settings import settings
+
             loader = ConfigLoader()
-            flow = loader.load_flow("spin_selling")
-            print(flow.phase_order)  # ['situation', 'problem', ...]
+            # Load flow from settings (configurable in settings.yaml)
+            flow = loader.load_flow(settings.flow.active)
+            print(flow.phase_order)  # e.g., ['situation', 'problem', ...]
         """
         flow_dir = self.config_dir / "flows" / flow_name
         flow_file = flow_dir / "flow.yaml"

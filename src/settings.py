@@ -68,6 +68,9 @@ DEFAULTS = {
         "validate_on_startup": True,
         "coverage_threshold": 0.8,
     },
+    "flow": {
+        "active": "spin_selling",  # Default flow (can be overridden in settings.yaml)
+    },
     "development": {
         "debug": False,
         "skip_embeddings": False,

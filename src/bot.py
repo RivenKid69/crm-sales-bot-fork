@@ -49,6 +49,7 @@ from context_envelope import build_context_envelope
 
 # Phase DAG: Modular Flow System & YAML Parameterization
 from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
+from settings import settings
 
 
 class SalesBot:
@@ -63,7 +64,8 @@ class SalesBot:
         self,
         llm,
         conversation_id: Optional[str] = None,
-        enable_tracing: bool = False
+        enable_tracing: bool = False,
+        flow_name: Optional[str] = None
     ):
         """
         Инициализация бота со всеми компонентами.
@@ -72,6 +74,7 @@ class SalesBot:
             llm: LLM клиент (OllamaLLM или другой)
             conversation_id: Уникальный ID диалога (генерируется если не указан)
             enable_tracing: Включить трассировку условных правил (для симуляций)
+            flow_name: Имя flow для загрузки (по умолчанию из settings.flow.active)
         """
         # Генерируем ID диалога для трейсинга
         self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
@@ -81,7 +84,10 @@ class SalesBot:
         # Legacy Python-based config is deprecated and no longer used
         self._config_loader = ConfigLoader()
         self._config: LoadedConfig = self._config_loader.load()
-        self._flow: FlowConfig = self._config_loader.load_flow("spin_selling")
+
+        # Load flow from parameter, settings, or default
+        active_flow = flow_name or settings.flow.active
+        self._flow: FlowConfig = self._config_loader.load_flow(active_flow)
 
         logger.debug(
             "Loaded modular flow configuration",

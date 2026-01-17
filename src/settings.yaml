@@ -177,6 +177,19 @@ conditional_rules:
   coverage_threshold: 0.8
 
 # -----------------------------------------------------------------------------
+# FLOW (Конфигурация диалогового flow)
+# -----------------------------------------------------------------------------
+# Выбор активного flow для state machine.
+# Доступные flows находятся в src/yaml_config/flows/
+# Примеры: spin_selling, bant (см. flows/examples/)
+
+flow:
+  # Активный flow (имя директории в yaml_config/flows/)
+  # spin_selling - SPIN Selling methodology (Situation, Problem, Implication, Need-Payoff)
+  # Для других методологий создайте flow в yaml_config/flows/<name>/
+  active: "spin_selling"
+
+# -----------------------------------------------------------------------------
 # FEATURE FLAGS (Управление фичами)
 # -----------------------------------------------------------------------------
 # Позволяет постепенно включать новые возможности.
