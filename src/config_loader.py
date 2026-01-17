@@ -99,6 +99,21 @@ class LoadedConfig:
         """Get circular flow (go back) configuration."""
         return self.constants.get("circular_flow", {})
 
+    @property
+    def context(self) -> Dict[str, Any]:
+        """Get context window configuration (state_order, phase_order)."""
+        return self.constants.get("context", {})
+
+    @property
+    def fallback(self) -> Dict[str, Any]:
+        """Get fallback templates configuration."""
+        return self.constants.get("fallback", {})
+
+    @property
+    def cta(self) -> Dict[str, Any]:
+        """Get CTA (call-to-action) configuration."""
+        return self.constants.get("cta", {})
+
     # SPIN convenience methods
     def get_spin_state(self, phase: str) -> Optional[str]:
         """Get state name for a SPIN phase."""

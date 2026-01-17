@@ -14,9 +14,12 @@ CTA Generator для CRM Sales Bot.
     final_response = generator.append_cta(response, "presentation", context)
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from random import choice
 from dataclasses import dataclass
+
+if TYPE_CHECKING:
+    from src.config_loader import LoadedConfig
 
 try:
     from logger import logger
@@ -132,10 +135,46 @@ class CTAGenerator:
     FRUSTRATION_THRESHOLD = 5    # Не добавлять при высоком frustration
     MIN_TURNS_FOR_CTA = 3        # Минимум ходов до добавления CTA
 
-    def __init__(self):
-        """Инициализация генератора"""
+    # Early states where CTA should not be added (DEFAULT)
+    DEFAULT_EARLY_STATES = {"greeting", "spin_situation", "spin_problem"}
+
+    def __init__(self, config: Optional["LoadedConfig"] = None):
+        """
+        Инициализация генератора.
+
+        Args:
+            config: LoadedConfig for CTA templates and early_states
+        """
         self.used_ctas: Dict[str, List[str]] = {}
         self.turn_count = 0
+
+        # Load config-driven templates (fallback to class constants)
+        self._ctas = self._load_ctas(config)
+        self._cta_by_action = self._load_cta_by_action(config)
+        self._early_states = self._load_early_states(config)
+
+    def _load_ctas(self, config: Optional["LoadedConfig"]) -> Dict[str, List[str]]:
+        """Load state-specific CTAs from config or use default."""
+        if config is None:
+            return self.CTAS
+        templates = config.cta.get("templates", {})
+        return templates if templates else self.CTAS
+
+    def _load_cta_by_action(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[str, List[str]]:
+        """Load action-specific CTAs from config or use default."""
+        if config is None:
+            return self.CTA_BY_ACTION
+        by_action = config.cta.get("by_action", {})
+        return by_action if by_action else self.CTA_BY_ACTION
+
+    def _load_early_states(self, config: Optional["LoadedConfig"]) -> set:
+        """Load early states from config or use default."""
+        if config is None:
+            return self.DEFAULT_EARLY_STATES
+        early = config.cta.get("early_states", [])
+        return set(early) if early else self.DEFAULT_EARLY_STATES
 
     def reset(self) -> None:
         """Сброс для нового разговора"""
@@ -166,7 +205,7 @@ class CTAGenerator:
         context = context or {}
 
         # 1. Проверяем есть ли CTA для этого состояния
-        if state not in self.CTAS or not self.CTAS[state]:
+        if state not in self._ctas or not self._ctas[state]:
             return False, "no_cta_for_state"
 
         # 2. Проверяем не заканчивается ли ответ вопросом
@@ -188,7 +227,7 @@ class CTAGenerator:
             return False, "just_answered_question"
 
         # 6. Проверяем состояния где CTA не уместен
-        if state in ["greeting", "spin_situation", "spin_problem"]:
+        if state in self._early_states:
             return False, "early_state"
 
         return True, None
@@ -213,10 +252,10 @@ class CTAGenerator:
         # Выбираем источник CTA
         if soft:
             ctas = self.SOFT_CTAS
-        elif cta_type and cta_type in self.CTA_BY_ACTION:
-            ctas = self.CTA_BY_ACTION[cta_type]
+        elif cta_type and cta_type in self._cta_by_action:
+            ctas = self._cta_by_action[cta_type]
         else:
-            ctas = self.CTAS.get(state, [])
+            ctas = self._ctas.get(state, [])
 
         if not ctas:
             return None

@@ -28,10 +28,13 @@ Context Window — расширенный контекст для классиф
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Tuple
+from typing import List, Dict, Optional, Any, Tuple, TYPE_CHECKING
 from collections import Counter
 from enum import Enum
 import time
+
+if TYPE_CHECKING:
+    from src.config_loader import LoadedConfig
 
 
 class TurnType(Enum):
@@ -51,8 +54,8 @@ class EngagementLevel(Enum):
     DISENGAGED = "disengaged"  # Потерял интерес
 
 
-# Порядок SPIN фаз для расчёта прогресса
-SPIN_PHASE_ORDER = {
+# Порядок SPIN фаз для расчёта прогресса (DEFAULT - используется как fallback)
+DEFAULT_PHASE_ORDER = {
     "greeting": 0,
     "situation": 1,
     "problem": 2,
@@ -62,9 +65,11 @@ SPIN_PHASE_ORDER = {
     "close": 6,
     "success": 7,
 }
+# Backward compatibility alias
+SPIN_PHASE_ORDER = DEFAULT_PHASE_ORDER
 
-# Порядок состояний для расчёта прогресса
-STATE_ORDER = {
+# Порядок состояний для расчёта прогресса (DEFAULT - используется как fallback)
+DEFAULT_STATE_ORDER = {
     "greeting": 0,
     "spin_situation": 1,
     "spin_problem": 2,
@@ -75,6 +80,15 @@ STATE_ORDER = {
     "close": 6,
     "success": 7,
     "soft_close": -1,  # Негативный прогресс
+}
+# Backward compatibility alias
+STATE_ORDER = DEFAULT_STATE_ORDER
+
+# Progress intents that indicate forward movement (DEFAULT - используется как fallback)
+DEFAULT_PROGRESS_INTENTS = {
+    "agreement", "demo_request", "callback_request", "contact_provided",
+    "situation_provided", "problem_revealed", "implication_acknowledged",
+    "need_expressed", "info_provided"
 }
 
 
@@ -120,6 +134,10 @@ class TurnContext:
     word_count: int = 0      # Количество слов
     has_data: bool = False   # Предоставил ли клиент данные
 
+    # Config-driven mappings (use DEFAULT_* if None)
+    state_order: Optional[Dict[str, int]] = field(default=None, repr=False)
+    progress_intents: Optional[set] = field(default=None, repr=False)
+
     def __post_init__(self):
         """Автоматически вычисляем производные поля."""
         # Длина и слова
@@ -127,10 +145,11 @@ class TurnContext:
         self.word_count = len(self.user_message.split())
         self.has_data = bool(self.extracted_data)
 
-        # Прогресс по воронке
-        state_order = STATE_ORDER.get(self.state, 0)
-        next_state_order = STATE_ORDER.get(self.next_state, 0)
-        self.funnel_delta = next_state_order - state_order
+        # Прогресс по воронке (use config or default)
+        order = self.state_order if self.state_order is not None else DEFAULT_STATE_ORDER
+        state_pos = order.get(self.state, 0)
+        next_state_pos = order.get(self.next_state, 0)
+        self.funnel_delta = next_state_pos - state_pos
 
         # Тип хода (если не задан явно)
         if self.turn_type is None:
@@ -167,11 +186,12 @@ class TurnContext:
             return TurnType.NEUTRAL
 
         # 5. Прогресс по intent (agreement, demo_request и т.д.)
-        if self.intent in {
-            "agreement", "demo_request", "callback_request", "contact_provided",
-            "situation_provided", "problem_revealed", "implication_acknowledged",
-            "need_expressed", "info_provided"
-        }:
+        progress = (
+            self.progress_intents
+            if self.progress_intents is not None
+            else DEFAULT_PROGRESS_INTENTS
+        )
+        if self.intent in progress:
             return TurnType.PROGRESS
 
         # 6. Прогресс по delta
@@ -665,12 +685,17 @@ class ContextWindow:
         "pricing_details", "comparison", "consultation_request"
     }
 
-    def __init__(self, max_size: int = 5):
+    def __init__(
+        self,
+        max_size: int = 5,
+        config: Optional["LoadedConfig"] = None
+    ):
         """
         Инициализация окна контекста.
 
         Args:
             max_size: Максимальное количество ходов в окне (3-10 оптимально)
+            config: LoadedConfig for state_order, phase_order, progress_intents
         """
         self.max_size = max_size
         self.turns: List[TurnContext] = []
@@ -678,6 +703,44 @@ class ContextWindow:
         # Уровень 3: Episodic Memory (не сбрасывается при ротации окна)
         self.episodic_memory = EpisodicMemory()
         self._total_turn_count = 0  # Счётчик всех ходов за диалог
+
+        # Config-driven order mappings (fallback to defaults)
+        self._state_order = self._load_state_order(config)
+        self._phase_order = self._load_phase_order(config)
+        self._progress_intents = self._load_progress_intents(config)
+
+    def _load_state_order(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[str, int]:
+        """Load state order from config or use default."""
+        if config is None:
+            return DEFAULT_STATE_ORDER
+        order = config.context.get("state_order", {})
+        return order if order else DEFAULT_STATE_ORDER
+
+    def _load_phase_order(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[str, int]:
+        """Load phase order from config or use default."""
+        if config is None:
+            return DEFAULT_PHASE_ORDER
+        order = config.context.get("phase_order", {})
+        return order if order else DEFAULT_PHASE_ORDER
+
+    def _load_progress_intents(self, config: Optional["LoadedConfig"]) -> set:
+        """Load progress intents from config or use default."""
+        if config is None:
+            return DEFAULT_PROGRESS_INTENTS
+        # Try spin.progress_intents first (keys are intents)
+        spin_config = config.constants.get("spin", {})
+        progress_intents = spin_config.get("progress_intents", {})
+        if progress_intents:
+            return set(progress_intents.keys())
+        # Fallback: try intents.categories.positive
+        intents_config = config.constants.get("intents", {})
+        categories = intents_config.get("categories", {})
+        positive = categories.get("positive", [])
+        return set(positive) if positive else DEFAULT_PROGRESS_INTENTS
 
     def add_turn(self, turn: TurnContext) -> None:
         """
@@ -738,6 +801,8 @@ class ContextWindow:
             is_fallback=is_fallback,
             fallback_tier=fallback_tier,
             is_disambiguation=is_disambiguation,
+            state_order=self._state_order,
+            progress_intents=self._progress_intents,
         )
         self.add_turn(turn)
 

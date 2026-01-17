@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import time
 
 if TYPE_CHECKING:
-    from src.config_loader import FlowConfig
+    from src.config_loader import FlowConfig, LoadedConfig
 
 from logger import logger
 from src.conditions.fallback import (
@@ -271,7 +271,8 @@ class FallbackHandler:
         self,
         enable_tracing: bool = True,
         skip_map: Optional[Dict[str, str]] = None,
-        flow: Optional["FlowConfig"] = None
+        flow: Optional["FlowConfig"] = None,
+        config: Optional["LoadedConfig"] = None
     ):
         """
         Initialize FallbackHandler.
@@ -281,6 +282,7 @@ class FallbackHandler:
             skip_map: Custom skip map (state -> next_state). If not provided,
                       will try to get from flow.skip_map, or use DEFAULT_SKIP_MAP.
             flow: FlowConfig to get skip_map from (auto-builds from transitions)
+            config: LoadedConfig for templates (rephrase, options, defaults)
         """
         self._stats = FallbackStats()
         self._used_templates: Dict[str, List[str]] = {}  # Для избежания повторов
@@ -293,6 +295,44 @@ class FallbackHandler:
             self._skip_map = flow.skip_map
         else:
             self._skip_map = self.DEFAULT_SKIP_MAP
+
+        # Load templates from config (fallback to class constants)
+        self._rephrase_templates = self._load_rephrase_templates(config)
+        self._options_templates = self._load_options_templates(config)
+        self._default_rephrase = self._load_default_rephrase(config)
+        self._default_options = self._load_default_options(config)
+
+    def _load_rephrase_templates(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[str, List[str]]:
+        """Load rephrase templates from config or use class default."""
+        if config is None:
+            return self.REPHRASE_TEMPLATES
+        templates = config.fallback.get("rephrase_templates", {})
+        return templates if templates else self.REPHRASE_TEMPLATES
+
+    def _load_options_templates(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[str, Dict[str, Any]]:
+        """Load options templates from config or use class default."""
+        if config is None:
+            return self.OPTIONS_TEMPLATES
+        templates = config.fallback.get("options_templates", {})
+        return templates if templates else self.OPTIONS_TEMPLATES
+
+    def _load_default_rephrase(self, config: Optional["LoadedConfig"]) -> str:
+        """Load default rephrase from config or use class default."""
+        if config is None:
+            return self.DEFAULT_REPHRASE
+        return config.fallback.get("default_rephrase", self.DEFAULT_REPHRASE)
+
+    def _load_default_options(
+        self, config: Optional["LoadedConfig"]
+    ) -> Dict[str, Any]:
+        """Load default options from config or use class default."""
+        if config is None:
+            return self.DEFAULT_OPTIONS
+        return config.fallback.get("default_options", self.DEFAULT_OPTIONS)
 
     def reset(self) -> None:
         """Сбросить состояние для нового диалога"""
@@ -450,7 +490,7 @@ class FallbackHandler:
         trace: Optional[EvaluationTrace] = None
     ) -> FallbackResponse:
         """Tier 1: Переформулировать вопрос"""
-        templates = self.REPHRASE_TEMPLATES.get(state, [self.DEFAULT_REPHRASE])
+        templates = self._rephrase_templates.get(state, [self._default_rephrase])
 
         # Evaluate if rephrase is appropriate using conditions
         if fb_context and trace:
@@ -561,7 +601,7 @@ class FallbackHandler:
         trace: Optional[EvaluationTrace] = None
     ) -> FallbackResponse:
         """Статичные варианты (оригинальное поведение)."""
-        template = self.OPTIONS_TEMPLATES.get(state)
+        template = self._options_templates.get(state)
 
         if template:
             collected = context.get("collected_data", {})

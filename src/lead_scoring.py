@@ -181,6 +181,17 @@ class LeadScorer:
     # Максимальная длина истории сигналов
     MAX_HISTORY_LENGTH = 20
 
+    # Default phase order for get_next_phase (DEPRECATED: use config parameter)
+    # Kept as fallback for backward compatibility
+    DEFAULT_PHASE_ORDER: List[str] = [
+        "spin_situation",
+        "spin_problem",
+        "spin_implication",
+        "spin_need_payoff",
+        "presentation",
+        "close"
+    ]
+
     def __init__(
         self,
         decay_factor: float = 0.95,
@@ -192,11 +203,12 @@ class LeadScorer:
         Args:
             decay_factor: Коэффициент затухания (0.0-1.0).
                           Чем ближе к 1, тем дольше "помнятся" старые сигналы.
-            config: LoadedConfig for skip_phases. If provided, reads from
-                    config.lead_scoring["skip_phases"]. Otherwise uses DEFAULT_SKIP_PHASES.
+            config: LoadedConfig for skip_phases and phase_order. If provided,
+                    reads from config.lead_scoring. Otherwise uses DEFAULT_*.
         """
         self.decay_factor = decay_factor
         self._skip_phases = self._load_skip_phases(config)
+        self._phase_order = self._load_phase_order(config)
         self.reset()
 
     def _load_skip_phases(
@@ -238,6 +250,37 @@ class LeadScorer:
                 result[temp] = self.DEFAULT_SKIP_PHASES.get(temp, set())
 
         return result
+
+    def _load_phase_order(self, config: Optional["LoadedConfig"]) -> List[str]:
+        """
+        Load phase order from config or use defaults.
+
+        Args:
+            config: LoadedConfig with context.state_order or lead_scoring.phase_order
+
+        Returns:
+            List of phase names in order
+        """
+        if config is None:
+            return self.DEFAULT_PHASE_ORDER
+
+        # Try context.state_order first (extract ordered keys)
+        state_order = config.context.get("state_order", {})
+        if state_order:
+            # Filter to only include valid phases and sort by order
+            valid_phases = {
+                "spin_situation", "spin_problem", "spin_implication",
+                "spin_need_payoff", "presentation", "close"
+            }
+            ordered = [
+                (phase, order) for phase, order in state_order.items()
+                if phase in valid_phases
+            ]
+            ordered.sort(key=lambda x: x[1])
+            if ordered:
+                return [phase for phase, _ in ordered]
+
+        return self.DEFAULT_PHASE_ORDER
 
     def reset(self) -> None:
         """Сброс скорера для нового разговора"""
@@ -348,24 +391,15 @@ class LeadScorer:
         Returns:
             Следующая фаза или None
         """
-        phase_order = [
-            "spin_situation",
-            "spin_problem",
-            "spin_implication",
-            "spin_need_payoff",
-            "presentation",
-            "close"
-        ]
-
         try:
-            current_idx = phase_order.index(current_phase)
+            current_idx = self._phase_order.index(current_phase)
         except ValueError:
             return None
 
         score = self.get_score()
 
         # Ищем следующую фазу, которую не нужно пропускать
-        for next_phase in phase_order[current_idx + 1:]:
+        for next_phase in self._phase_order[current_idx + 1:]:
             if next_phase not in score.skip_phases:
                 return next_phase
 
