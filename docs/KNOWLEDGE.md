@@ -133,7 +133,7 @@ sections:
          ▼
 ┌────────────────────┐
 │  3. Semantic Match │  cosine similarity эмбеддингов
-│  (score >= 0.5)    │  Модель: ai-forever/ru-en-RoSBERTa
+│  (score >= 0.5)    │  Модель: ai-forever/FRIDA
 └────────┬───────────┘
          │ низкий score
          ▼
@@ -186,7 +186,7 @@ sections:
 Косинусное сходство эмбеддингов:
 
 ```python
-# Модель: ai-forever/ru-en-RoSBERTa
+# Модель: ai-forever/FRIDA
 # query_embedding = model.encode("как автоматизировать склад?")
 # section_embedding = section.embedding
 
@@ -388,7 +388,7 @@ retriever:
   use_embeddings: true
 
   # Модель для эмбеддингов
-  embedder_model: "ai-forever/ru-en-RoSBERTa"
+  embedder_model: "ai-forever/FRIDA"
 
   # Пороги для каждого этапа
   thresholds:

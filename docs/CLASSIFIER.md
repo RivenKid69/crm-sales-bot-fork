@@ -7,8 +7,15 @@
 2. **Извлечение данных** — структурированные данные из сообщения
 3. **Контекстную классификацию** — учёт SPIN-фазы и истории диалога
 
-**Основной классификатор**: LLMClassifier (Qwen3-8B через vLLM)
+**Основной классификатор**: LLMClassifier (Qwen3-4B через vLLM)
 **Fallback**: HybridClassifier (regex + pymorphy)
+
+## Config-Driven Architecture
+
+Классификатор использует конфигурацию из `constants.yaml`:
+- Категории интентов (`intents.categories`)
+- Конфигурация SPIN фаз (`spin.phase_classification`)
+- Классификация коротких ответов (`spin.short_answer_classification`)
 
 ## Структура пакета
 
@@ -85,6 +92,13 @@ result = classifier.classify(
 ## LLMClassifier (основной)
 
 Классификатор на базе LLM с structured output через vLLM + Outlines.
+
+**Модель:** `Qwen/Qwen3-4B-AWQ` (настраивается в `settings.yaml`)
+
+**Конфигурация из YAML:**
+- Категории интентов берутся из `constants.yaml` → `intents.categories`
+- Конфигурация классификации по SPIN фазам из `constants.yaml` → `spin.phase_classification`
+- Классификация коротких ответов из `constants.yaml` → `spin.short_answer_classification`
 
 ```python
 from classifier.llm import LLMClassifier

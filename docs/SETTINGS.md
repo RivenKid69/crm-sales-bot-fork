@@ -22,7 +22,7 @@
 # LLM (Language Model) - vLLM Server
 # -----------------------------------------------------------------------------
 llm:
-  model: "Qwen/Qwen3-8B-AWQ"
+  model: "Qwen/Qwen3-4B-AWQ"
   base_url: "http://localhost:8000/v1"
   timeout: 60
   stream: false
@@ -33,7 +33,7 @@ llm:
 # -----------------------------------------------------------------------------
 retriever:
   use_embeddings: true
-  embedder_model: "ai-forever/ru-en-RoSBERTa"
+  embedder_model: "ai-forever/FRIDA"
   thresholds:
     exact: 1.0
     lemma: 0.15
@@ -142,6 +142,13 @@ feature_flags:
   cta_generator: false
 
 # -----------------------------------------------------------------------------
+# FLOW (Конфигурация диалогового flow)
+# -----------------------------------------------------------------------------
+flow:
+  # Активный flow (имя директории в yaml_config/flows/)
+  active: "spin_selling"
+
+# -----------------------------------------------------------------------------
 # DEVELOPMENT (Режим разработки)
 # -----------------------------------------------------------------------------
 development:
@@ -155,7 +162,7 @@ development:
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
-| `model` | string | `"Qwen/Qwen3-8B-AWQ"` | Модель vLLM (с AWQ квантизацией) |
+| `model` | string | `"Qwen/Qwen3-4B-AWQ"` | Модель vLLM (с AWQ квантизацией) |
 | `base_url` | string | `"http://localhost:8000/v1"` | URL vLLM сервера (OpenAI-compatible) |
 | `timeout` | int | `60` | Таймаут запроса в секундах |
 | `stream` | bool | `false` | Режим стриминга |
@@ -163,7 +170,7 @@ development:
 
 **Запуск vLLM сервера:**
 ```bash
-vllm serve Qwen/Qwen3-8B-AWQ \
+vllm serve Qwen/Qwen3-4B-AWQ \
     --host 0.0.0.0 \
     --port 8000 \
     --guided-decoding-backend outlines \
@@ -171,14 +178,14 @@ vllm serve Qwen/Qwen3-8B-AWQ \
     --gpu-memory-utilization 0.9
 ```
 
-**Требования:** ~5-6 GB VRAM, CUDA GPU
+**Требования:** ~3-4 GB VRAM, CUDA GPU
 
 ### RETRIEVER (Поиск по базе знаний)
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
 | `use_embeddings` | bool | `true` | Использовать семантический поиск |
-| `embedder_model` | string | `"ai-forever/ru-en-RoSBERTa"` | Модель для эмбеддингов |
+| `embedder_model` | string | `"ai-forever/FRIDA"` | Модель для эмбеддингов (ruMTEB avg ~71) |
 | `thresholds.exact` | float | `1.0` | Порог для exact match |
 | `thresholds.lemma` | float | `0.15` | Порог для lemma match |
 | `thresholds.semantic` | float | `0.5` | Порог для semantic match |
@@ -267,7 +274,7 @@ Feature flags позволяют постепенно включать новы�
 | `cascade_classifier` | `true` | Каскадный классификатор |
 | `semantic_objection_detection` | `true` | Семантическая детекция возражений |
 | `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
-| `tone_semantic_tier2` | `true` | Tier 2: RoSBERTa semantic |
+| `tone_semantic_tier2` | `true` | Tier 2: FRIDA semantic |
 | `tone_llm_tier3` | `true` | Tier 3: LLM fallback |
 | `context_full_envelope` | `true` | Полный ContextEnvelope |
 | `context_policy_overlays` | `true` | DialoguePolicy overrides |
@@ -282,6 +289,23 @@ FF_LLM_CLASSIFIER=false python bot.py
 
 # Включить tone_analysis
 FF_TONE_ANALYSIS=true python bot.py
+```
+
+### FLOW (Конфигурация диалогового flow)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `active` | string | `"spin_selling"` | Активный flow из `yaml_config/flows/` |
+
+**Доступные flows:**
+- `spin_selling` — SPIN Selling methodology (Situation, Problem, Implication, Need-Payoff)
+- Создайте собственный flow в `yaml_config/flows/<name>/`
+
+**Структура flow:**
+```
+yaml_config/flows/<name>/
+├── flow.yaml       # Конфигурация flow (phases, skip_conditions)
+└── states.yaml     # Специфичные состояния для этого flow
 ```
 
 ### DEVELOPMENT (Режим разработки)

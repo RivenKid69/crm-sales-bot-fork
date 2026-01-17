@@ -5,9 +5,9 @@
 CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. Использует методологию SPIN Selling для квалификации клиентов и ведёт диалог от приветствия до закрытия сделки.
 
 **Технологический стек:**
-- **LLM**: Qwen3-8B-AWQ через vLLM (OpenAI-compatible API)
+- **LLM**: Qwen3-4B-AWQ через vLLM (OpenAI-compatible API)
 - **Structured Output**: Outlines (guided decoding) для гарантированного JSON
-- **Эмбеддинги**: ai-forever/FRIDA (ранее ru-en-RoSBERTa)
+- **Эмбеддинги**: ai-forever/FRIDA (ruMTEB avg ~71, лучшая модель для русского)
 - **Reranker**: BAAI/bge-reranker-v2-m3
 
 ---
@@ -26,14 +26,18 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 | **Constants** | Разбросаны по файлам | `constants.yaml` (single source of truth) |
 | **Fallback** | Python → YAML | YAML only (no fallback) |
 | **Эмбеддинги** | ru-en-RoSBERTa | ai-forever/FRIDA |
+| **Flow selection** | Hardcoded SPIN | Configurable via `settings.yaml` |
+| **Domain** | SPIN-specific hardcodes | Domain-independent, config-driven |
 
 ### Ключевые файлы v2.0
 
 ```
 src/
+├── settings.yaml             # Настройки бота (LLM, retriever, flow.active)
 ├── config_loader.py          # ConfigLoader, FlowConfig, LoadedConfig
 ├── yaml_config/
-│   ├── constants.yaml        # Единый источник констант
+│   ├── constants.yaml        # Единый источник констант (SPIN, limits, intents)
+│   ├── constants.py          # Python-обёртка для constants.yaml
 │   ├── states/
 │   │   └── sales_flow.yaml   # Определение состояний
 │   ├── flows/
@@ -117,9 +121,9 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
 │    VLLMClient     │   │  CascadeRetriever   │   │      config       │
 │    (llm.py)       │   │   (knowledge/)      │   │    (config.py)    │
 │                   │   │                     │   │                   │
-│ • Qwen3-8B-AWQ    │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
+│ • Qwen3-4B-AWQ    │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
 │ • Structured JSON │   │ • 1969 YAML секций  │   │ • SALES_STATES    │
-│ • Outlines backend│   │ • ru-en-RoSBERTa    │   │ • Промпт-шаблоны  │
+│ • Outlines backend│   │ • ai-forever/FRIDA  │   │ • Промпт-шаблоны  │
 │ • Retry + Circuit │   │ • CategoryRouter    │   │                   │
 │   Breaker         │   │ • Reranker          │   │                   │
 └───────────────────┘   └─────────────────────┘   └───────────────────┘
@@ -140,7 +144,7 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
 
 ```bash
 # Запуск vLLM
-vllm serve Qwen/Qwen3-8B-AWQ \
+vllm serve Qwen/Qwen3-4B-AWQ \
     --host 0.0.0.0 \
     --port 8000 \
     --guided-decoding-backend outlines \
@@ -149,7 +153,7 @@ vllm serve Qwen/Qwen3-8B-AWQ \
 ```
 
 **Требования:**
-- ~5-6 GB VRAM
+- ~3-4 GB VRAM (для 4B модели)
 - CUDA совместимая GPU
 - Python 3.10+
 
@@ -179,7 +183,7 @@ result = llm.generate_structured(prompt, PydanticSchema)
 **Конфигурация** (settings.yaml):
 ```yaml
 llm:
-  model: "Qwen/Qwen3-8B-AWQ"
+  model: "Qwen/Qwen3-4B-AWQ"
   base_url: "http://localhost:8000/v1"
   timeout: 60
 ```
@@ -571,7 +575,7 @@ rules:
          ▼
 ┌────────────────────┐
 │  3. Semantic Match │  cosine similarity эмбеддингов
-│  (score >= 0.5)    │  ai-forever/ru-en-RoSBERTa
+│  (score >= 0.5)    │  ai-forever/FRIDA
 └────────┬───────────┘
          │ низкий score
          ▼
@@ -744,7 +748,17 @@ pytest tests/test_knowledge.py tests/test_cascade*.py -v
 
 # Тесты CategoryRouter
 pytest tests/test_category_router*.py -v
+
+# Тесты конфигурации (1500+ тестов)
+pytest tests/test_config_*.py -v
 ```
+
+**Покрытие тестами конфигурации:**
+- `test_config_constants_yaml.py` — валидация constants.yaml
+- `test_config_settings_yaml.py` — валидация settings.yaml
+- `test_config_flow_yaml.py` — валидация flow конфигураций
+- `test_config_behavior_*.py` — поведенческие тесты конфигурации
+- `test_config_coverage_*.py` — 100% покрытие всех параметров конфигурации
 
 ## Зависимости
 
@@ -754,7 +768,7 @@ pytest tests/test_category_router*.py -v
 | `outlines` | Structured output (guided decoding) |
 | `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка |
-| `sentence-transformers` | Эмбеддинги (RoSBERTa) |
+| `sentence-transformers` | Эмбеддинги (FRIDA) |
 | `requests` | HTTP-клиент |
 | `pyyaml` | Парсинг YAML |
 | `pytest` | Тестирование |

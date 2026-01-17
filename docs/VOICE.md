@@ -57,7 +57,7 @@ text = "".join([segment.text for segment in segments])
 
 ### LLM (Language Model)
 
-**Модель:** vLLM + Qwen3-8B-AWQ
+**Модель:** vLLM + Qwen3-4B-AWQ
 
 Используется тот же SalesBot что и в текстовом режиме:
 
@@ -111,7 +111,7 @@ class VoicePipeline:
         # STT
         self.whisper = WhisperModel("large-v3", device="cuda")
 
-        # LLM (vLLM + Qwen3-8B-AWQ)
+        # LLM (vLLM + Qwen3-4B-AWQ)
         self.llm = VLLMClient()
         self.bot = SalesBot(self.llm)
 

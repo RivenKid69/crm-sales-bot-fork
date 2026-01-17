@@ -356,7 +356,7 @@ from llm import VLLMClient
 llm = VLLMClient()
 # или с параметрами:
 llm = VLLMClient(
-    model="Qwen/Qwen3-8B-AWQ",
+    model="Qwen/Qwen3-4B-AWQ",
     base_url="http://localhost:8000/v1",
     timeout=60,
     enable_circuit_breaker=True,

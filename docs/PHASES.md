@@ -179,7 +179,7 @@ guard.record_progress()
 tone_analyzer/
 ├── cascade_analyzer.py     # Основной 3-уровневый каскад
 ├── regex_analyzer.py       # Tier 1: Regex паттерны (быстро)
-├── semantic_analyzer.py    # Tier 2: RoSBERTa semantic (точно)
+├── semantic_analyzer.py    # Tier 2: FRIDA semantic (точно)
 ├── llm_analyzer.py         # Tier 3: LLM fallback (надёжно)
 ├── frustration_tracker.py  # Трекинг уровня фрустрации
 ├── markers.py              # Маркеры для анализа
@@ -216,7 +216,7 @@ guidance = analyzer.get_response_guidance(result)
 Tier 1: Regex patterns (быстро)
     │
     ▼  низкая уверенность
-Tier 2: RoSBERTa semantic (точно)
+Tier 2: FRIDA semantic (точно)
     │
     ▼  всё ещё не уверен
 Tier 3: LLM fallback (медленно, но надёжно)
@@ -224,7 +224,7 @@ Tier 3: LLM fallback (медленно, но надёжно)
 
 **Флаги:**
 - `cascade_tone_analyzer` — master switch
-- `tone_semantic_tier2` — RoSBERTa (Tier 2)
+- `tone_semantic_tier2` — FRIDA (Tier 2)
 - `tone_llm_tier3` — LLM fallback (Tier 3)
 
 ### response_variations.py — Вариативность ответов
@@ -390,7 +390,7 @@ Tier 1: Regex patterns (быстро, ~100 интентов)
 Tier 2: Lemma matching (точнее)
     │
     ▼  всё ещё не уверен
-Tier 3: Semantic similarity (RoSBERTa)
+Tier 3: Semantic similarity (FRIDA)
 ```
 
 **Флаги:**

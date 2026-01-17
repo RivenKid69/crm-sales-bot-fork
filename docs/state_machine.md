@@ -1,15 +1,18 @@
 # State Machine - Полная Документация
 
-> **Версия документации:** 3.1 (v2.0 Modular YAML)
+> **Версия документации:** 3.2 (v2.0 Domain-Independent)
 > **Последнее обновление:** Январь 2026
 > **Основной файл:** `src/state_machine.py`
 
 ---
 
-## ⚠️ ВАЖНО: Миграция на v2.0
+## ⚠️ ВАЖНО: Архитектура v2.0
 
-**С января 2026** StateMachine использует исключительно YAML-конфигурацию.
-Legacy Python constants (`SPIN_PHASES`, `SPIN_STATES`, `SALES_STATES`) **deprecated**.
+**С января 2026** StateMachine использует исключительно YAML-конфигурацию и стал **domain-independent**.
+- Все константы в `constants.yaml` (single source of truth)
+- Выбор flow через `settings.yaml` (`flow.active`)
+- Нет hardcoded SPIN логики — платформа универсальная
+- Legacy Python constants (`SPIN_PHASES`, `SPIN_STATES`, `SALES_STATES`) **deprecated**.
 
 ### Быстрый старт v2.0
 
@@ -17,12 +20,23 @@ Legacy Python constants (`SPIN_PHASES`, `SPIN_STATES`, `SALES_STATES`) **depreca
 from state_machine import StateMachine
 
 # v2.0: Автоматически загружает config и flow из YAML
+# Flow определяется в settings.yaml: flow.active = "spin_selling"
 sm = StateMachine()
 
 # Конфигурация доступна через свойства
 print(sm.phase_order)      # ['situation', 'problem', 'implication', 'need_payoff']
 print(sm.states_config)    # Dict из flows/spin_selling/states.yaml
 ```
+
+### Выбор flow
+
+```yaml
+# settings.yaml
+flow:
+  active: "spin_selling"  # Можно заменить на другой flow
+```
+
+Доступные flows находятся в `src/yaml_config/flows/`.
 
 ### Миграция импортов
 
@@ -738,18 +752,27 @@ tracker.is_question("price_question")     # True
 ### 7.1 Структура директории
 
 ```
-src/yaml_config/
-├── constants.yaml          # Единая точка истины для констант
-├── states/
-│   └── sales_flow.yaml     # Конфигурация состояний
-└── flows/
-    ├── _base/
-    │   ├── states.yaml     # Базовые состояния
-    │   ├── priorities.yaml # Приоритеты обработки
-    │   └── mixins.yaml     # Переиспользуемые блоки
-    └── spin_selling/
-        ├── flow.yaml       # Конфигурация flow
-        └── states.yaml     # Состояния для SPIN
+src/
+├── settings.yaml               # Настройки (flow.active выбирает flow)
+└── yaml_config/
+    ├── constants.yaml          # Единая точка истины для констант
+    ├── constants.py            # Python-обёртка для constants.yaml
+    ├── states/
+    │   └── sales_flow.yaml     # Конфигурация состояний
+    └── flows/
+        ├── _base/
+        │   ├── states.yaml     # Базовые состояния
+        │   ├── priorities.yaml # Приоритеты обработки
+        │   └── mixins.yaml     # Переиспользуемые блоки
+        └── spin_selling/
+            ├── flow.yaml       # Конфигурация flow
+            └── states.yaml     # Состояния для SPIN
+```
+
+**Выбор flow в settings.yaml:**
+```yaml
+flow:
+  active: "spin_selling"
 ```
 
 ### 7.2 constants.yaml
