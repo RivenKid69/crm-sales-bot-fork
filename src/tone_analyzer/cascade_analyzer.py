@@ -72,8 +72,12 @@ class CascadeToneAnalyzer:
         Args:
             llm: Экземпляр OllamaLLM для Tier 3 (опционально)
         """
-        # Tier 1: Regex (всегда доступен)
-        self._regex = RegexToneAnalyzer()
+        # Общий frustration tracker (создаём СНАЧАЛА)
+        self._frustration = FrustrationTracker()
+
+        # Tier 1: Regex (передаём общий frustration tracker)
+        # Это устраняет дублирование трекеров
+        self._regex = RegexToneAnalyzer(frustration_tracker=self._frustration)
 
         # Tier 2: Semantic (lazy)
         self._semantic: Optional[SemanticToneAnalyzer] = None
@@ -81,9 +85,6 @@ class CascadeToneAnalyzer:
         # Tier 3: LLM (lazy)
         self._llm_analyzer: Optional[LLMToneAnalyzer] = None
         self._external_llm = llm
-
-        # Общий frustration tracker
-        self._frustration = FrustrationTracker()
 
         # Конфигурация
         self.config = CascadeToneConfig()
@@ -138,10 +139,8 @@ class CascadeToneAnalyzer:
         if (tier1_result.signals
             and tier1_result.confidence >= self.config.TIER1_HIGH_CONFIDENCE):
 
-            # Обновляем общий frustration tracker с записью в историю
-            self._frustration.update(tier1_result.tone)
-            tier1_result.frustration_level = self._frustration.level
-
+            # NOTE: frustration tracker уже обновлён в RegexToneAnalyzer.analyze()
+            # так как используется общий трекер (передан в конструктор)
             tier1_result.latency_ms = (time.perf_counter() - start_time) * 1000
 
             logger.debug(
@@ -245,8 +244,10 @@ class CascadeToneAnalyzer:
             best_tone = Tone.NEUTRAL
             best_tier = "fallback"
 
-        # Обновляем frustration с лучшим тоном
-        self._frustration.update(best_tone)
+        # Обновляем frustration ТОЛЬКО если выбрали другой тон
+        # (RegexToneAnalyzer уже обновил frustration с tier1_result.tone)
+        if best_tone != tier1_result.tone:
+            self._frustration.update(best_tone)
 
         result = ToneAnalysis(
             tone=best_tone,

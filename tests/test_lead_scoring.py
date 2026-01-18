@@ -187,11 +187,13 @@ class TestDecayMechanism:
     def test_decay_reduces_score(self):
         """Decay должен уменьшать влияние старых сигналов"""
         scorer = LeadScorer(decay_factor=0.5)
-        scorer.add_signal("demo_request")  # +30
-        first_score = scorer.current_score
+        scorer.add_signal("demo_request")  # Ход 1: +30
 
-        # Добавляем ещё один сигнал — decay применяется
-        scorer.add_signal("features_question")  # +5 after decay
+        # Переходим к следующему ходу
+        scorer.end_turn()
+
+        # Добавляем ещё один сигнал в НОВОМ ходу — decay применяется
+        scorer.add_signal("features_question")  # Ход 2: decay + 5
 
         # Score должен быть: 30 * 0.5 + 5 = 20
         assert scorer.current_score == 20
@@ -200,19 +202,33 @@ class TestDecayMechanism:
         """Decay factor = 1.0 не уменьшает score"""
         scorer = LeadScorer(decay_factor=1.0)
         scorer.add_signal("demo_request")  # +30
+        scorer.end_turn()
         scorer.add_signal("features_question")  # +5
 
         assert scorer.current_score == 35  # Без decay
 
     def test_decay_accumulates(self):
-        """Decay накапливается с каждым сигналом"""
+        """Decay накапливается с каждым ходом"""
         scorer = LeadScorer(decay_factor=0.9)
 
-        scorer.add_signal("demo_request")  # +30
-        scorer.add_signal("features_question")  # 30*0.9 + 5 = 32
-        scorer.add_signal("integrations_question")  # 32*0.9 + 5 = 33.8
+        scorer.add_signal("demo_request")  # Ход 1: +30
+        scorer.end_turn()
+        scorer.add_signal("features_question")  # Ход 2: 30*0.9 + 5 = 32
+        scorer.end_turn()
+        scorer.add_signal("integrations_question")  # Ход 3: 32*0.9 + 5 = 33.8
 
         assert 30 < scorer.current_score < 35
+
+    def test_multiple_signals_same_turn_no_extra_decay(self):
+        """Несколько сигналов в одном ходе не применяют decay дважды"""
+        scorer = LeadScorer(decay_factor=0.9)
+
+        # Все сигналы в одном ходу
+        scorer.add_signal("demo_request")  # +30
+        scorer.add_signal("features_question")  # +5 (без дополнительного decay)
+
+        # Score = 30 + 5 = 35 (decay применился только один раз в начале)
+        assert scorer.current_score == 35
 
 
 class TestSignalsHistory:

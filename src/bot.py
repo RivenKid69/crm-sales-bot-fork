@@ -558,6 +558,12 @@ class SalesBot:
         # Phase 4: Increment turn counter for disambiguation cooldown
         self.state_machine.increment_turn()
 
+        # Phase 3: Reset turn decay flag and apply turn-based decay to lead score
+        # Это обеспечивает "затухание" старых сигналов даже без новых сигналов
+        if flags.lead_scoring:
+            self.lead_scorer.end_turn()  # Сброс флага от предыдущего хода
+            self.lead_scorer.apply_turn_decay()
+
         # Start metrics timer
         if flags.metrics_tracking:
             self.metrics.start_turn_timer()
@@ -1103,6 +1109,12 @@ class SalesBot:
         """
         Продолжить обработку с заданной классификацией.
 
+        Включает все фазы защиты:
+        - Phase 1: Guard check
+        - Phase 2: Tone analysis
+        - Phase 3: Objection handling
+        - Phase 5: Policy overlay
+
         Args:
             classification: Результат классификации
             user_message: Сообщение пользователя (для истории)
@@ -1114,6 +1126,79 @@ class SalesBot:
         extracted = classification.get("extracted_data", {})
         confidence = classification.get("confidence", 0.5)
 
+        current_state = self.state_machine.state
+        collected_data = self.state_machine.collected_data
+
+        # =================================================================
+        # Phase 2: Analyze tone (важно для frustration и guidance)
+        # =================================================================
+        tone_info = self._analyze_tone(user_message) if user_message else {
+            "tone_instruction": "",
+            "frustration_level": 0,
+            "should_apologize": False,
+            "should_offer_exit": False,
+        }
+        frustration_level = tone_info.get("frustration_level", 0)
+
+        # =================================================================
+        # Phase 1: Check guard for intervention
+        # =================================================================
+        intervention = self._check_guard(
+            state=current_state,
+            message=user_message,
+            collected_data=collected_data,
+            frustration_level=frustration_level
+        ) if user_message else None
+
+        fallback_used = False
+        fallback_tier = None
+
+        if intervention:
+            fallback_used = True
+            fallback_tier = intervention
+
+            fb_result = self._apply_fallback(
+                intervention=intervention,
+                state=current_state,
+                context={
+                    "collected_data": collected_data,
+                    "last_intent": self.last_intent,
+                    "last_action": self.last_action,
+                    "frustration_level": frustration_level,
+                }
+            )
+
+            if fb_result.get("response") and fb_result.get("action") == "close":
+                self._record_turn_metrics(
+                    state=current_state,
+                    intent="fallback_close",
+                    tone=tone_info.get("tone"),
+                    fallback_used=True,
+                    fallback_tier=intervention
+                )
+
+                self.history.append({
+                    "user": user_message,
+                    "bot": fb_result["response"]
+                })
+
+                self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
+
+                return {
+                    "response": fb_result["response"],
+                    "intent": "fallback_close",
+                    "action": "soft_close",
+                    "state": "soft_close",
+                    "is_final": True,
+                    "fallback_used": True,
+                    "fallback_tier": intervention,
+                }
+
+        # =================================================================
+        # Phase 3: Check for objection
+        # =================================================================
+        objection_info = self._check_objection(user_message, collected_data) if user_message else None
+
         # Обновляем собранные данные
         if extracted:
             self.state_machine.update_data(extracted)
@@ -1121,9 +1206,37 @@ class SalesBot:
         # Обрабатываем через state machine
         sm_result = self.state_machine.process(intent, extracted)
 
+        # =================================================================
+        # Phase 5: Build ContextEnvelope for policy overlay
+        # =================================================================
+        context_envelope = None
+        if flags.context_full_envelope or flags.context_policy_overlays:
+            context_envelope = build_context_envelope(
+                state_machine=self.state_machine,
+                context_window=self.context_window,
+                tone_info=tone_info,
+                guard_info={"intervention": intervention} if intervention else None,
+                last_action=self.last_action,
+                last_intent=self.last_intent,
+            )
+
+        # Phase 5: Apply dialogue policy overlays
+        if flags.context_policy_overlays and context_envelope:
+            override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
+            if override and override.has_override:
+                logger.info(
+                    "Policy override applied (disambiguation path)",
+                    original_action=sm_result["action"],
+                    override_action=override.action,
+                    reason=override.reason
+                )
+                sm_result["action"] = override.action
+                if override.next_state:
+                    sm_result["next_state"] = override.next_state
+
         # Контекст для генерации ответа
         context = {
-            "user_message": user_message,  # Передаём сообщение для контекста
+            "user_message": user_message,
             "intent": intent,
             "state": sm_result["next_state"],
             "history": self.history,
@@ -1132,6 +1245,13 @@ class SalesBot:
             "missing_data": sm_result["missing_data"],
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
+            # Phase 2: Tone guidance
+            "tone_instruction": tone_info.get("tone_instruction", ""),
+            "should_apologize": tone_info.get("should_apologize", False),
+            "should_offer_exit": tone_info.get("should_offer_exit", False),
+            "max_words": tone_info.get("max_words", 50),
+            # Phase 3: Objection info
+            "objection_info": objection_info,
         }
 
         action = sm_result["action"]
@@ -1149,13 +1269,13 @@ class SalesBot:
         self.last_action = action
         self.last_intent = intent
 
-        # Записываем метрики
+        # Записываем метрики (с информацией о тоне и fallback)
         self._record_turn_metrics(
             state=sm_result["next_state"],
             intent=intent,
-            tone=None,
-            fallback_used=False,
-            fallback_tier=None
+            tone=tone_info.get("tone"),
+            fallback_used=fallback_used,
+            fallback_tier=fallback_tier
         )
 
         # Проверяем финальное состояние

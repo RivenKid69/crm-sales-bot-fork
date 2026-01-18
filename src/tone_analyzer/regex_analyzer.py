@@ -47,10 +47,18 @@ class RegexToneAnalyzer:
     MAX_CONFIDENCE = 0.95
     NO_SIGNAL_CONFIDENCE = 0.30
 
-    def __init__(self):
+    def __init__(self, frustration_tracker: Optional[FrustrationTracker] = None):
+        """
+        Инициализация анализатора.
+
+        Args:
+            frustration_tracker: Внешний FrustrationTracker для использования.
+                                 Если None, создаётся собственный.
+        """
         self._compiled_patterns: Dict[Tone, List[re.Pattern]] = {}
         self._compiled_informal: List[re.Pattern] = []
-        self._frustration_tracker = FrustrationTracker()
+        self._owns_frustration_tracker = frustration_tracker is None
+        self._frustration_tracker = frustration_tracker or FrustrationTracker()
         self._compile_patterns()
 
     def _compile_patterns(self) -> None:
@@ -263,7 +271,9 @@ class RegexToneAnalyzer:
 
     def reset(self) -> None:
         """Сброс состояния для нового диалога."""
-        self._frustration_tracker.reset()
+        # Сбрасываем frustration tracker только если владеем им
+        if self._owns_frustration_tracker:
+            self._frustration_tracker.reset()
 
     def get_frustration_level(self) -> int:
         """Получить текущий уровень frustration."""

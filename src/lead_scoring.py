@@ -287,10 +287,52 @@ class LeadScorer:
         self.current_score: int = 0
         self.signals_history: List[str] = []
         self._raw_score: float = 0.0  # Для точных расчётов с decay
+        self._turn_count: int = 0  # Счётчик ходов для turn-based decay
+        self._decay_applied_this_turn: bool = False  # Флаг для предотвращения двойного decay
+
+    def apply_turn_decay(self) -> None:
+        """
+        Применить decay к score на основе хода.
+
+        Вызывается при каждом ходе диалога, независимо от наличия сигналов.
+        Это обеспечивает "затухание" старых сигналов со временем.
+        """
+        if self._decay_applied_this_turn:
+            return  # Уже применили decay в этом ходу
+
+        self._turn_count += 1
+        old_score = self._raw_score
+
+        # Применяем decay
+        self._raw_score *= self.decay_factor
+        self._raw_score = max(0.0, min(100.0, self._raw_score))
+        self.current_score = int(self._raw_score)
+
+        self._decay_applied_this_turn = True
+
+        if old_score != self._raw_score:
+            logger.debug(
+                "Lead score decay applied",
+                turn=self._turn_count,
+                old_score=round(old_score, 2),
+                new_score=self.current_score
+            )
+
+    def end_turn(self) -> None:
+        """
+        Завершить ход и сбросить флаг decay.
+
+        Вызывается в конце обработки каждого хода.
+        """
+        self._decay_applied_this_turn = False
 
     def add_signal(self, signal: str) -> LeadScore:
         """
         Добавить сигнал и пересчитать score.
+
+        NOTE: Decay теперь применяется через apply_turn_decay() в начале хода,
+        а не при добавлении сигнала. Это обеспечивает корректный decay
+        даже когда нет новых сигналов.
 
         Args:
             signal: Имя сигнала (из LeadSignal или строка)
@@ -298,8 +340,9 @@ class LeadScorer:
         Returns:
             LeadScore: Обновлённый результат скоринга
         """
-        # Применяем decay к старому score
-        self._raw_score *= self.decay_factor
+        # Убеждаемся что decay применён в этом ходу
+        if not self._decay_applied_this_turn:
+            self.apply_turn_decay()
 
         # Получаем вес сигнала
         weight = self.POSITIVE_WEIGHTS.get(signal, 0)

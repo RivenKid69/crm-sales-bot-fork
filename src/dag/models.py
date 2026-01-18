@@ -289,11 +289,23 @@ class DAGExecutionContext:
         """
         Завершить fork и вернуть завершённые ветки.
 
+        Использует LIFO порядок: удаляет последнее вхождение fork_id.
+        Если fork_id не является текущим активным (последним), логирует предупреждение.
+
         Returns:
             Dict с завершёнными ветками
         """
         if fork_id in self.fork_stack:
-            self.fork_stack.remove(fork_id)
+            # LIFO: проверяем что fork_id — последний в стеке
+            if self.fork_stack and self.fork_stack[-1] == fork_id:
+                self.fork_stack.pop()  # Корректный LIFO pop
+            else:
+                # Fork не на вершине стека — удаляем последнее вхождение
+                # (поддержка вложенных форков с одинаковым ID)
+                for i in range(len(self.fork_stack) - 1, -1, -1):
+                    if self.fork_stack[i] == fork_id:
+                        self.fork_stack.pop(i)
+                        break
 
         # Переместить ветки в completed
         completed = {}

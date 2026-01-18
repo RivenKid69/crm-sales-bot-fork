@@ -21,7 +21,7 @@ import requests
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from llm import OllamaLLM, CircuitBreakerState, LLMStats
+from llm import OllamaLLM, CircuitBreakerState, CircuitBreakerStatus, LLMStats
 
 
 class TestLLMStats:
@@ -297,7 +297,7 @@ class TestCircuitBreaker:
         llm = OllamaLLM(enable_retry=False)
 
         # Manually open circuit
-        llm._circuit_breaker.is_open = True
+        llm._circuit_breaker.status = CircuitBreakerStatus.OPEN
         llm._circuit_breaker.failures = 5
         llm._circuit_breaker.open_until = time.time() - 1  # Already expired
 
@@ -314,7 +314,7 @@ class TestCircuitBreaker:
         llm = OllamaLLM()
 
         # Manually open circuit
-        llm._circuit_breaker.is_open = True
+        llm._circuit_breaker.status = CircuitBreakerStatus.OPEN
         llm._circuit_breaker.failures = 10
 
         llm.reset_circuit_breaker()
@@ -547,7 +547,7 @@ class TestMultipleInstances:
         llm1 = OllamaLLM()
         llm2 = OllamaLLM()
 
-        llm1._circuit_breaker.is_open = True
+        llm1._circuit_breaker.status = CircuitBreakerStatus.OPEN
         llm1._circuit_breaker.failures = 10
 
         assert llm2._circuit_breaker.is_open is False
@@ -629,11 +629,11 @@ class TestGenerateStructured:
 
     def test_generate_structured_circuit_breaker_open(self):
         """Circuit breaker блокирует запрос."""
-        from llm import VLLMClient
+        from llm import VLLMClient, CircuitBreakerStatus
 
         client = VLLMClient()
         # Имитируем открытый circuit breaker
-        client._circuit_breaker.is_open = True
+        client._circuit_breaker.status = CircuitBreakerStatus.OPEN
         client._circuit_breaker.open_until = float('inf')
 
         result = client.generate_structured("test", self.SampleSchema)

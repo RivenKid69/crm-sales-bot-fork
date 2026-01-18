@@ -31,13 +31,26 @@ from src.yaml_config.constants import LLM_FALLBACK_RESPONSES, LLM_DEFAULT_FALLBA
 T = TypeVar('T', bound=BaseModel)
 
 
+class CircuitBreakerStatus:
+    """Статусы circuit breaker"""
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+
 @dataclass
 class CircuitBreakerState:
     """Состояние circuit breaker"""
     failures: int = 0
     last_failure_time: float = 0.0
-    is_open: bool = False
+    status: str = CircuitBreakerStatus.CLOSED
     open_until: float = 0.0
+    half_open_request_in_flight: bool = False
+
+    @property
+    def is_open(self) -> bool:
+        """Совместимость со старым API"""
+        return self.status == CircuitBreakerStatus.OPEN
 
 
 @dataclass
@@ -388,40 +401,97 @@ class VLLMClient:
     # =========================================================================
 
     def _is_circuit_open(self) -> bool:
-        """Проверка открыт ли circuit breaker"""
-        if not self._circuit_breaker.is_open:
+        """
+        Проверка состояния circuit breaker.
+
+        Реализует паттерн half-open для безопасного восстановления:
+        - CLOSED: Все запросы проходят
+        - OPEN: Все запросы блокируются до истечения timeout
+        - HALF_OPEN: Пропускается только 1 запрос для проверки
+
+        Returns:
+            True если запрос должен быть заблокирован
+        """
+        cb = self._circuit_breaker
+
+        if cb.status == CircuitBreakerStatus.CLOSED:
             return False
 
-        # Проверяем не пора ли попробовать восстановиться
-        if time.time() >= self._circuit_breaker.open_until:
-            logger.info("Circuit breaker attempting recovery (half-open state)")
-            self._circuit_breaker.is_open = False
-            return False
+        if cb.status == CircuitBreakerStatus.OPEN:
+            # Проверяем не пора ли перейти в half-open
+            if time.time() >= cb.open_until:
+                cb.status = CircuitBreakerStatus.HALF_OPEN
+                cb.half_open_request_in_flight = False
+                logger.info("Circuit breaker transitioning to half-open state")
+                # Fall through to half-open check
+            else:
+                return True  # Блокируем
 
-        return True
+        if cb.status == CircuitBreakerStatus.HALF_OPEN:
+            # В half-open пропускаем только 1 запрос
+            if cb.half_open_request_in_flight:
+                # Уже есть запрос в полёте - блокируем остальные
+                return True
+            else:
+                # Помечаем что запрос в полёте
+                cb.half_open_request_in_flight = True
+                logger.info("Circuit breaker half-open: allowing probe request")
+                return False
+
+        return False
 
     def _record_failure(self) -> None:
-        """Записать ошибку для circuit breaker"""
-        self._circuit_breaker.failures += 1
-        self._circuit_breaker.last_failure_time = time.time()
+        """
+        Записать ошибку для circuit breaker.
 
-        if self._circuit_breaker.failures >= self.CIRCUIT_BREAKER_THRESHOLD:
-            self._circuit_breaker.is_open = True
-            self._circuit_breaker.open_until = time.time() + self.CIRCUIT_BREAKER_TIMEOUT
+        В half-open состоянии - сразу возвращаемся в OPEN.
+        """
+        cb = self._circuit_breaker
+        cb.failures += 1
+        cb.last_failure_time = time.time()
+
+        if cb.status == CircuitBreakerStatus.HALF_OPEN:
+            # Probe request failed - возвращаемся в OPEN
+            cb.status = CircuitBreakerStatus.OPEN
+            cb.open_until = time.time() + self.CIRCUIT_BREAKER_TIMEOUT
+            cb.half_open_request_in_flight = False
+            logger.warning(
+                "Circuit breaker half-open probe failed, returning to OPEN",
+                timeout=self.CIRCUIT_BREAKER_TIMEOUT
+            )
+        elif cb.failures >= self.CIRCUIT_BREAKER_THRESHOLD:
+            cb.status = CircuitBreakerStatus.OPEN
+            cb.open_until = time.time() + self.CIRCUIT_BREAKER_TIMEOUT
             self._stats.circuit_breaker_trips += 1
 
             logger.error(
                 "Circuit breaker opened",
-                failures=self._circuit_breaker.failures,
+                failures=cb.failures,
                 timeout=self.CIRCUIT_BREAKER_TIMEOUT
             )
 
     def _reset_failures(self) -> None:
-        """Сбросить счётчик ошибок после успеха"""
-        self._circuit_breaker.failures = 0
-        if self._circuit_breaker.is_open:
+        """
+        Сбросить счётчик ошибок после успеха.
+
+        В half-open состоянии - закрываем circuit breaker.
+        """
+        cb = self._circuit_breaker
+
+        if cb.status == CircuitBreakerStatus.HALF_OPEN:
+            # Probe request succeeded - закрываем circuit
+            cb.status = CircuitBreakerStatus.CLOSED
+            cb.failures = 0
+            cb.half_open_request_in_flight = False
+            logger.info("Circuit breaker closed after successful probe request")
+        elif cb.status == CircuitBreakerStatus.OPEN:
+            # Не должно происходить, но на всякий случай
+            cb.status = CircuitBreakerStatus.CLOSED
+            cb.failures = 0
             logger.info("Circuit breaker closed after successful request")
-            self._circuit_breaker.is_open = False
+        else:
+            # CLOSED state - просто сбрасываем failures
+            cb.failures = 0
 
     def _get_fallback(self, state: Optional[str]) -> str:
         """Получить fallback ответ для состояния"""
@@ -444,7 +514,8 @@ class VLLMClient:
             "circuit_breaker_trips": self._stats.circuit_breaker_trips,
             "success_rate": round(self._stats.success_rate, 1),
             "average_response_time_ms": round(self._stats.average_response_time_ms, 1),
-            "circuit_breaker_open": self._circuit_breaker.is_open,
+            "circuit_breaker_status": self._circuit_breaker.status,
+            "circuit_breaker_open": self._circuit_breaker.is_open,  # backward compatibility
         }
 
     def health_check(self) -> bool:
