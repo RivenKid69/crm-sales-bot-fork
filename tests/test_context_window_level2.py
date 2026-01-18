@@ -406,6 +406,77 @@ class TestFunnelProgress:
         stage = cw.get_current_funnel_stage()
         assert stage == "spin_problem"
 
+    def test_is_progressing_single_turn_positive_delta(self):
+        """is_progressing возвращает True для 1 хода с положительным delta."""
+        cw = ContextWindow(max_size=5)
+
+        # 1 ход с положительным delta: greeting -> spin_situation
+        cw.add_turn_from_dict(
+            user_message="расскажите о себе",
+            bot_response="...",
+            intent="info_provided",
+            confidence=0.9,
+            action="spin_situation",
+            state="greeting",
+            next_state="spin_situation",
+        )
+
+        # До исправления is_progressing возвращал False для 1 хода
+        # После исправления должен возвращать True (симметрично с is_regressing)
+        assert len(cw.turns) == 1
+        assert cw.turns[0].funnel_delta > 0
+        assert cw.is_progressing() is True
+        assert cw.is_regressing() is False
+
+    def test_is_regressing_single_turn_negative_delta(self):
+        """is_regressing возвращает True для 1 хода с отрицательным delta."""
+        cw = ContextWindow(max_size=5)
+
+        # 1 ход с отрицательным delta: presentation -> soft_close
+        cw.add_turn_from_dict(
+            user_message="не интересно",
+            bot_response="...",
+            intent="rejection",
+            confidence=0.9,
+            action="soft_close",
+            state="presentation",
+            next_state="soft_close",
+        )
+
+        assert len(cw.turns) == 1
+        assert cw.turns[0].funnel_delta < 0
+        assert cw.is_regressing() is True
+        assert cw.is_progressing() is False
+
+    def test_is_progressing_is_regressing_symmetry_single_turn(self):
+        """Симметрия: для 1 хода с нулевым delta оба метода возвращают False."""
+        cw = ContextWindow(max_size=5)
+
+        # 1 ход с нулевым delta: spin_situation -> spin_situation (нет перехода)
+        cw.add_turn_from_dict(
+            user_message="расскажите подробнее",
+            bot_response="...",
+            intent="question_functionality",
+            confidence=0.9,
+            action="clarify",
+            state="spin_situation",
+            next_state="spin_situation",
+        )
+
+        assert len(cw.turns) == 1
+        assert cw.turns[0].funnel_delta == 0
+        # Симметрия: оба False для нулевого delta
+        assert cw.is_progressing() is False
+        assert cw.is_regressing() is False
+
+    def test_is_progressing_is_regressing_empty_window(self):
+        """Пустое окно: оба метода возвращают False."""
+        cw = ContextWindow(max_size=5)
+
+        assert len(cw.turns) == 0
+        assert cw.is_progressing() is False
+        assert cw.is_regressing() is False
+
 
 # =============================================================================
 # ТЕСТЫ Momentum (Инерция)

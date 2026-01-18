@@ -1442,8 +1442,12 @@ class ContextWindow:
 
     def is_progressing(self) -> bool:
         """Проверить движется ли клиент вперёд по воронке."""
-        if len(self.turns) < 2:
+        if not self.turns:
             return False
+
+        # Для 1 хода смотрим его delta (симметрично с is_regressing)
+        if len(self.turns) == 1:
+            return self.turns[0].funnel_delta > 0
 
         # Смотрим последние 2 хода
         recent_delta = sum(t.funnel_delta for t in self.turns[-2:])

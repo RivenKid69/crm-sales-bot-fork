@@ -260,6 +260,11 @@ class LeadScorer:
 
         Returns:
             List of phase names in order
+
+        Priority:
+            1. context.state_order (dict with numeric ordering)
+            2. lead_scoring.phase_order (explicit list)
+            3. DEFAULT_PHASE_ORDER (fallback)
         """
         if config is None:
             return self.DEFAULT_PHASE_ORDER
@@ -279,6 +284,11 @@ class LeadScorer:
             ordered.sort(key=lambda x: x[1])
             if ordered:
                 return [phase for phase, _ in ordered]
+
+        # Try lead_scoring.phase_order as alternative (explicit list)
+        phase_order = config.lead_scoring.get("phase_order")
+        if phase_order and isinstance(phase_order, list):
+            return phase_order
 
         return self.DEFAULT_PHASE_ORDER
 

@@ -534,5 +534,157 @@ class TestIntegrationScenarios:
         assert scorer.is_ready_for_close()
 
 
+class TestPhaseOrderLoading:
+    """Тесты загрузки phase_order из конфигурации."""
+
+    def test_load_phase_order_from_context_state_order(self):
+        """Загрузка phase_order из context.state_order (приоритет 1)."""
+        from unittest.mock import Mock
+
+        # Создаём mock конфига с context.state_order
+        mock_config = Mock()
+        mock_config.context = {
+            "state_order": {
+                "spin_situation": 1,
+                "spin_problem": 2,
+                "spin_implication": 3,
+                "spin_need_payoff": 4,
+                "presentation": 5,
+                "close": 6,
+            }
+        }
+        mock_config.lead_scoring = {}  # Пустой lead_scoring
+
+        scorer = LeadScorer(config=mock_config)
+
+        # Должен загрузить из context.state_order
+        expected_order = [
+            "spin_situation", "spin_problem", "spin_implication",
+            "spin_need_payoff", "presentation", "close"
+        ]
+        assert scorer._phase_order == expected_order
+
+    def test_load_phase_order_from_lead_scoring_phase_order(self):
+        """Загрузка phase_order из lead_scoring.phase_order (приоритет 2)."""
+        from unittest.mock import Mock
+
+        # Создаём mock конфига БЕЗ context.state_order, но С lead_scoring.phase_order
+        mock_config = Mock()
+        mock_config.context = {}  # Пустой context
+        mock_config.lead_scoring = {
+            "phase_order": [
+                "spin_situation", "presentation", "close"  # Сокращённый порядок
+            ]
+        }
+
+        scorer = LeadScorer(config=mock_config)
+
+        # Должен загрузить из lead_scoring.phase_order
+        expected_order = ["spin_situation", "presentation", "close"]
+        assert scorer._phase_order == expected_order
+
+    def test_load_phase_order_context_priority_over_lead_scoring(self):
+        """context.state_order имеет приоритет над lead_scoring.phase_order."""
+        from unittest.mock import Mock
+
+        mock_config = Mock()
+        # Оба источника заполнены
+        mock_config.context = {
+            "state_order": {
+                "spin_situation": 1,
+                "spin_problem": 2,
+                "presentation": 3,
+                "close": 4,
+            }
+        }
+        mock_config.lead_scoring = {
+            "phase_order": ["close", "presentation"]  # Другой порядок
+        }
+
+        scorer = LeadScorer(config=mock_config)
+
+        # Должен использовать context.state_order (приоритет 1)
+        expected_order = ["spin_situation", "spin_problem", "presentation", "close"]
+        assert scorer._phase_order == expected_order
+
+    def test_load_phase_order_defaults_when_no_config(self):
+        """Использование DEFAULT_PHASE_ORDER при отсутствии конфигурации."""
+        scorer = LeadScorer(config=None)
+
+        # Должен использовать дефолтный порядок
+        assert scorer._phase_order == scorer.DEFAULT_PHASE_ORDER
+
+    def test_load_phase_order_defaults_when_empty_config(self):
+        """Использование DEFAULT_PHASE_ORDER при пустой конфигурации."""
+        from unittest.mock import Mock
+
+        mock_config = Mock()
+        mock_config.context = {}
+        mock_config.lead_scoring = {}
+
+        scorer = LeadScorer(config=mock_config)
+
+        # Должен использовать дефолтный порядок
+        assert scorer._phase_order == scorer.DEFAULT_PHASE_ORDER
+
+    def test_load_phase_order_filters_invalid_phases(self):
+        """Фильтрация невалидных фаз из context.state_order."""
+        from unittest.mock import Mock
+
+        mock_config = Mock()
+        mock_config.context = {
+            "state_order": {
+                "spin_situation": 1,
+                "invalid_phase": 2,  # Невалидная фаза
+                "spin_problem": 3,
+                "greeting": 4,  # Невалидная фаза (не в valid_phases)
+                "presentation": 5,
+            }
+        }
+        mock_config.lead_scoring = {}
+
+        scorer = LeadScorer(config=mock_config)
+
+        # Должен фильтровать только валидные фазы
+        expected_order = ["spin_situation", "spin_problem", "presentation"]
+        assert scorer._phase_order == expected_order
+
+    def test_load_phase_order_respects_numeric_ordering(self):
+        """Порядок из state_order сортируется по числовым значениям."""
+        from unittest.mock import Mock
+
+        mock_config = Mock()
+        mock_config.context = {
+            "state_order": {
+                "close": 100,  # Намеренно не в алфавитном порядке
+                "spin_situation": 10,
+                "presentation": 50,
+            }
+        }
+        mock_config.lead_scoring = {}
+
+        scorer = LeadScorer(config=mock_config)
+
+        # Должен отсортировать по числовым значениям
+        expected_order = ["spin_situation", "presentation", "close"]
+        assert scorer._phase_order == expected_order
+
+    def test_lead_scoring_phase_order_accepts_any_list(self):
+        """lead_scoring.phase_order принимает любой список без фильтрации."""
+        from unittest.mock import Mock
+
+        mock_config = Mock()
+        mock_config.context = {}
+        mock_config.lead_scoring = {
+            "phase_order": ["custom_phase1", "custom_phase2", "close"]
+        }
+
+        scorer = LeadScorer(config=mock_config)
+
+        # lead_scoring.phase_order используется as-is (без фильтрации)
+        expected_order = ["custom_phase1", "custom_phase2", "close"]
+        assert scorer._phase_order == expected_order
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
