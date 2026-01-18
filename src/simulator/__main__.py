@@ -18,7 +18,7 @@ import sys
 import os
 from datetime import datetime
 
-# Принудительно используем CPU для sentence-transformers чтобы освободить VRAM для Ollama
+# Принудительно используем CPU для sentence-transformers чтобы освободить VRAM для vLLM
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 # Также устанавливаем device через torch
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = os.path.expanduser("~/.cache/sentence_transformers")
@@ -146,25 +146,26 @@ def run_e2e_mode(args):
     print()
 
     try:
-        # Инициализация LLM
-        print("Инициализация LLM...")
-        from llm import OllamaLLM
-        llm = OllamaLLM()
+        # Инициализация vLLM
+        print("Инициализация vLLM...")
+        from llm import VLLMClient
+        llm = VLLMClient()
 
-        # Прогрев LLM
-        print("Прогрев LLM (загрузка модели в VRAM)...")
+        # Прогрев vLLM
+        print("Прогрев vLLM (загрузка модели в VRAM)...")
         import requests
         from settings import settings
 
         warmup_success = False
+        warmup_url = f"{settings.llm.base_url}/chat/completions"
         for attempt in range(5):
             try:
                 response = requests.post(
-                    f"{settings.llm.base_url}/api/generate",
+                    warmup_url,
                     json={
                         "model": settings.llm.model,
-                        "prompt": "привет",
-                        "stream": False
+                        "messages": [{"role": "user", "content": "привет"}],
+                        "max_tokens": 10
                     },
                     timeout=120
                 )
@@ -182,18 +183,19 @@ def run_e2e_mode(args):
                 time.sleep(3)
 
         if not warmup_success:
-            print("ОШИБКА: Не удалось загрузить модель. Убедитесь что Ollama запущен.")
+            print("ОШИБКА: Не удалось подключиться к vLLM.")
+            print("Запустите: vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq")
             sys.exit(1)
 
         if hasattr(llm, 'reset_circuit_breaker'):
             llm.reset_circuit_breaker()
 
-        print("LLM готов")
+        print("vLLM готов")
         print()
 
     except Exception as e:
-        print(f"ОШИБКА при инициализации LLM: {e}")
-        print("Убедитесь что Ollama запущен: ollama serve")
+        print(f"ОШИБКА при инициализации vLLM: {e}")
+        print("Запустите: vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq")
         sys.exit(1)
 
     # Создаём runner
@@ -294,25 +296,26 @@ def main():
     print()
 
     try:
-        # Импортируем LLM
-        print("Инициализация LLM...")
-        from llm import OllamaLLM
-        llm = OllamaLLM()
+        # Импортируем vLLM
+        print("Инициализация vLLM...")
+        from llm import VLLMClient
+        llm = VLLMClient()
 
-        # Прогрев LLM - делаем тестовый запрос чтобы модель загрузилась
-        print("Прогрев LLM (загрузка модели в VRAM)...")
+        # Прогрев vLLM - делаем тестовый запрос чтобы модель загрузилась
+        print("Прогрев vLLM (загрузка модели в VRAM)...")
         import requests
         from settings import settings
 
         warmup_success = False
+        warmup_url = f"{settings.llm.base_url}/chat/completions"
         for attempt in range(5):
             try:
                 response = requests.post(
-                    f"{settings.llm.base_url}/api/generate",
+                    warmup_url,
                     json={
                         "model": settings.llm.model,
-                        "prompt": "привет",
-                        "stream": False
+                        "messages": [{"role": "user", "content": "привет"}],
+                        "max_tokens": 10
                     },
                     timeout=120
                 )
@@ -330,19 +333,20 @@ def main():
                 time.sleep(3)
 
         if not warmup_success:
-            print("ОШИБКА: Не удалось загрузить модель. Убедитесь что Ollama запущен.")
+            print("ОШИБКА: Не удалось подключиться к vLLM.")
+            print("Запустите: vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq")
             sys.exit(1)
 
         # Сбрасываем circuit breaker если он есть
         if hasattr(llm, 'reset_circuit_breaker'):
             llm.reset_circuit_breaker()
 
-        print("LLM готов")
+        print("vLLM готов")
         print()
 
     except Exception as e:
-        print(f"ОШИБКА при инициализации LLM: {e}")
-        print("Убедитесь что Ollama запущен: ollama serve")
+        print(f"ОШИБКА при инициализации vLLM: {e}")
+        print("Запустите: vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq")
         sys.exit(1)
 
     # Создаём runner

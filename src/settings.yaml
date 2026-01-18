@@ -7,8 +7,14 @@
 # -----------------------------------------------------------------------------
 # LLM (Language Model) - vLLM Server
 # -----------------------------------------------------------------------------
+# Запуск vLLM сервера:
+#   vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+#
+# Или без квантизации (требует больше VRAM):
+#   vllm serve Qwen/Qwen3-4B --port 8000
+#
 llm:
-  # Модель vLLM (Qwen3-4B с AWQ квантизацией)
+  # Модель vLLM (Qwen3-4B-AWQ - оптимальный баланс качества и скорости)
   model: "Qwen/Qwen3-4B-AWQ"
 
   # URL vLLM сервера (OpenAI-compatible API)
@@ -17,11 +23,8 @@ llm:
   # Таймаут запроса в секундах
   timeout: 60
 
-  # Режим стриминга (false для простоты)
+  # Режим стриминга (false для structured output)
   stream: false
-
-  # Thinking mode (false для скорости)
-  think: false
 
 # -----------------------------------------------------------------------------
 # RETRIEVER (Поиск по базе знаний)

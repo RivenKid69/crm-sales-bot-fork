@@ -1,14 +1,20 @@
 """
 vLLM Client для CRM Sales Bot.
 
-Полная замена OllamaLLM с сохранением всего интерфейса:
-- Circuit Breaker (open/closed/half-open)
-- LLMStats (success_rate, avg_response_time)
-- Retry с exponential backoff
-- Fallback responses
+Использует vLLM OpenAI-compatible API с native structured output.
 
-Добавляет:
-- Structured output через Outlines (generate_structured)
+Возможности:
+- Native Structured Output: response_format с json_schema (vLLM 0.6+)
+- Circuit Breaker: open/closed/half-open состояния
+- LLMStats: success_rate, avg_response_time
+- Retry: exponential backoff при ошибках
+- Fallback: graceful degradation при сбоях
+
+Запуск vLLM сервера:
+    vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+
+Примечание:
+    Этот проект использует ТОЛЬКО vLLM. Ollama не поддерживается.
 """
 
 import time
@@ -62,10 +68,17 @@ class LLMStats:
 
 class VLLMClient:
     """
-    vLLM клиент с полной совместимостью с OllamaLLM.
+    vLLM клиент для CRM Sales Bot.
 
-    Использует vLLM OpenAI-compatible API.
-    Для structured output использует response_format с json_schema (vLLM 0.12+).
+    Использует vLLM OpenAI-compatible API с native structured output.
+    Structured output гарантирует 100% валидный JSON через json_schema.
+
+    Требования:
+        - vLLM сервер запущен на указанном URL
+        - Модель поддерживает structured output (Qwen, Llama, etc.)
+
+    Пример запуска vLLM:
+        vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
     """
 
     # Настройки retry
@@ -141,7 +154,10 @@ class VLLMClient:
         allow_fallback: bool = True
     ) -> Optional[T]:
         """
-        Генерация с гарантированным JSON через vLLM structured outputs.
+        Генерация с гарантированным JSON через vLLM native structured output.
+
+        Использует response_format с json_schema для 100% валидного JSON.
+        vLLM гарантирует что ответ соответствует схеме.
 
         Args:
             prompt: Промпт для LLM
@@ -151,6 +167,8 @@ class VLLMClient:
         Returns:
             Экземпляр schema или None при ошибке
         """
+        import json
+
         self._stats.total_requests += 1
         start_time = time.time()
 
@@ -164,11 +182,17 @@ class VLLMClient:
         delay = self.INITIAL_DELAY
         max_attempts = self.MAX_RETRIES if self._enable_retry else 1
 
+        # Получаем JSON schema из Pydantic модели
+        json_schema = schema.model_json_schema()
+        schema_name = schema.__name__
+
         for attempt in range(max_attempts):
             try:
-                # vLLM 0.12+ использует /chat/completions с response_format
+                base_url_normalized = self.base_url.rstrip("/")
+
+                # vLLM native structured output через response_format
                 response = requests.post(
-                    f"{self.base_url}/chat/completions",
+                    f"{base_url_normalized}/chat/completions",
                     json={
                         "model": self.model,
                         "messages": [{"role": "user", "content": prompt}],
@@ -177,31 +201,32 @@ class VLLMClient:
                         "response_format": {
                             "type": "json_schema",
                             "json_schema": {
-                                "name": schema.__name__,
-                                "schema": schema.model_json_schema(),
-                            },
-                        },
+                                "name": schema_name,
+                                "schema": json_schema,
+                                "strict": True
+                            }
+                        }
                     },
                     timeout=self.timeout
                 )
                 response.raise_for_status()
-
-                # Успех
-                elapsed_ms = (time.time() - start_time) * 1000
-                self._stats.successful_requests += 1
-                self._stats.total_response_time_ms += elapsed_ms
-                self._reset_failures()
 
                 data = response.json()
                 choices = data.get("choices", [])
                 if not choices:
                     raise ValueError("Empty response from vLLM")
 
-                # Chat completions возвращает message.content вместо text
                 message = choices[0].get("message", {})
                 content = message.get("content", "")
+
                 if not content:
                     raise ValueError("Empty content in response from vLLM")
+
+                # vLLM гарантирует валидный JSON, но проверяем на всякий случай
+                elapsed_ms = (time.time() - start_time) * 1000
+                self._stats.successful_requests += 1
+                self._stats.total_response_time_ms += elapsed_ms
+                self._reset_failures()
 
                 return schema.model_validate_json(content)
 
@@ -325,16 +350,19 @@ class VLLMClient:
 
     def _call_llm(self, prompt: str) -> str:
         """
-        Вызов LLM API (для совместимости с тестами).
+        Вызов vLLM API (для совместимости с тестами).
 
         Внутренний метод без retry/circuit breaker.
         Тесты могут мокать этот метод.
         """
+        base_url_normalized = self.base_url.rstrip("/")
+
+        # vLLM OpenAI-compatible API
         response = requests.post(
-            f"{self.base_url}/completions",
+            f"{base_url_normalized}/chat/completions",
             json={
                 "model": self.model,
-                "prompt": prompt,
+                "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.7,
                 "max_tokens": 256,
             },
@@ -344,10 +372,16 @@ class VLLMClient:
 
         data = response.json()
         choices = data.get("choices", [])
-        if not choices or "text" not in choices[0]:
-            raise ValueError("Empty or invalid response from vLLM")
+        if not choices:
+            raise ValueError("Empty response from vLLM")
 
-        return choices[0]["text"]
+        message = choices[0].get("message", {})
+        content = message.get("content", "")
+
+        if not content:
+            raise ValueError("Empty content in response from vLLM")
+
+        return content
 
     # =========================================================================
     # CIRCUIT BREAKER
@@ -432,6 +466,7 @@ class VLLMClient:
 # =============================================================================
 # АЛИАС ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ
 # =============================================================================
+# OllamaLLM - устаревший алиас, используйте VLLMClient напрямую
 OllamaLLM = VLLMClient
 
 
@@ -445,6 +480,8 @@ if __name__ == "__main__":
     print("=" * 60)
     print("vLLM CLIENT DEMO")
     print("=" * 60)
+    print("\nЭтот проект использует ТОЛЬКО vLLM.")
+    print("Запуск vLLM: vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq")
 
     llm = VLLMClient()
 
@@ -465,6 +502,19 @@ if __name__ == "__main__":
         )
         print(f"Response: {response[:100]}...")
 
+        # Structured output demo
+        print("\n--- Structured Output Demo ---")
+        from classifier.llm.schemas import ClassificationResult
+        result = llm.generate_structured(
+            "Классифицируй сообщение: 'Сколько стоит ваша система?'",
+            ClassificationResult
+        )
+        if result:
+            print(f"Intent: {result.intent}")
+            print(f"Confidence: {result.confidence}")
+        else:
+            print("Structured output failed (vLLM not running?)")
+
     print("\n--- Fallback Demo ---")
     for state in ["greeting", "spin_situation", "spin_problem", "unknown"]:
         fallback = llm._get_fallback(state)
@@ -472,17 +522,5 @@ if __name__ == "__main__":
 
     print("\n--- Stats ---")
     print(json.dumps(llm.get_stats_dict(), indent=2, ensure_ascii=False))
-
-    # Circuit breaker demo
-    print("\n--- Circuit Breaker Demo ---")
-    # Создаём клиент с несуществующим URL
-    bad_llm = VLLMClient(base_url="http://localhost:99999/v1", timeout=1)
-    bad_llm.CIRCUIT_BREAKER_THRESHOLD = 2  # Быстрее для демо
-
-    for i in range(3):
-        print(f"\nAttempt {i + 1}:")
-        response = bad_llm.generate("test", state="greeting")
-        print(f"  Response: {response[:40]}...")
-        print(f"  Circuit open: {bad_llm.is_circuit_open}")
 
     print("\n" + "=" * 60)

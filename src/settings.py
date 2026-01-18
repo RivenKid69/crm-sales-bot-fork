@@ -19,11 +19,10 @@ SETTINGS_FILE = Path(__file__).parent / "settings.yaml"
 # Значения по умолчанию (используются если параметр не указан в YAML)
 DEFAULTS = {
     "llm": {
-        "model": "qwen3:8b-fast",
-        "base_url": "http://localhost:11434",
+        "model": "Qwen/Qwen3-4B-AWQ",
+        "base_url": "http://localhost:8000/v1",
         "timeout": 60,
         "stream": False,
-        "think": False,
     },
     "retriever": {
         "use_embeddings": True,

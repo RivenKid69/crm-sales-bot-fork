@@ -603,7 +603,7 @@ _retriever_config: Optional[dict] = None
 _retriever_lock = threading.Lock()
 
 
-def get_retriever(use_embeddings: bool = True) -> CascadeRetriever:
+def get_retriever(use_embeddings: bool = None) -> CascadeRetriever:
     """
     Получить инстанс retriever'а (thread-safe).
 
@@ -616,11 +616,16 @@ def get_retriever(use_embeddings: bool = True) -> CascadeRetriever:
 
     Args:
         use_embeddings: Использовать ли семантический поиск с эмбеддингами.
+                       По умолчанию берётся из settings.retriever.use_embeddings
 
     Returns:
         CascadeRetriever: Singleton-экземпляр retriever'а.
     """
     global _retriever, _retriever_config
+
+    # Читаем из settings если не указано явно
+    if use_embeddings is None:
+        use_embeddings = settings.retriever.use_embeddings
 
     current_config = {"use_embeddings": use_embeddings}
 

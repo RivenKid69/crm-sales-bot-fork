@@ -5,10 +5,13 @@
 ## Быстрый старт
 
 ```bash
-# Активация виртуального окружения
+# 1. Запустить vLLM сервер (в отдельном терминале)
+vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+
+# 2. Активация виртуального окружения
 source venv/bin/activate
 
-# Запуск бота
+# 3. Запуск бота
 cd src && python bot.py
 ```
 
@@ -16,6 +19,53 @@ cd src && python bot.py
 - Python 3.10+
 - vLLM сервер с моделью Qwen/Qwen3-4B-AWQ (~3-4 GB VRAM)
 - sentence-transformers для семантического поиска (ai-forever/FRIDA)
+
+## vLLM Setup
+
+> **Важно:** Этот проект использует **только vLLM**. Ollama не поддерживается.
+
+### Установка vLLM
+
+```bash
+pip install vllm
+```
+
+### Запуск vLLM сервера
+
+```bash
+# С AWQ квантизацией (рекомендуется, ~4GB VRAM)
+vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+
+# Без квантизации (требует ~8GB VRAM)
+vllm serve Qwen/Qwen3-4B --port 8000
+
+# С 8B моделью (лучшее качество, ~6GB VRAM с AWQ)
+vllm serve Qwen/Qwen3-8B-AWQ --port 8000 --quantization awq
+```
+
+### Проверка работы
+
+```bash
+curl http://localhost:8000/v1/models
+```
+
+### Настройка модели
+
+В `src/settings.yaml`:
+
+```yaml
+llm:
+  model: "Qwen/Qwen3-4B-AWQ"
+  base_url: "http://localhost:8000/v1"
+  timeout: 60
+```
+
+### Преимущества vLLM
+
+- **Native Structured Output** — гарантированный JSON через `response_format`
+- **Высокая скорость** — PagedAttention и continuous batching
+- **Эффективное использование VRAM** — оптимизированное выделение памяти
+- **AWQ квантизация** — 4-bit квантизация без потери качества
 
 ## Возможности
 
