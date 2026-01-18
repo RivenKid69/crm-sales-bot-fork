@@ -19,13 +19,18 @@ from datetime import datetime
 
 
 # Intent categories for tracking
-# This is the source of truth - shared with state_machine/context.py
+# This is the source of truth - shared with context_window.py (must stay in sync!)
 INTENT_CATEGORIES: Dict[str, List[str]] = {
     "objection": [
         "objection_price",
         "objection_competitor",
         "objection_no_time",
         "objection_think",
+        # Additional objections (sync with context_window.OBJECTION_INTENTS)
+        "objection_timing",
+        "objection_complexity",
+        "objection_no_need",
+        "objection_trust",
     ],
     "positive": [
         "agreement",
@@ -64,6 +69,11 @@ INTENT_CATEGORIES: Dict[str, List[str]] = {
         "objection_competitor",
         "objection_no_time",
         "objection_think",
+        # Additional objections (sync with "objection" category)
+        "objection_timing",
+        "objection_complexity",
+        "objection_no_need",
+        "objection_trust",
     ],
 }
 

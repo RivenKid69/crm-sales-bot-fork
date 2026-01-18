@@ -483,8 +483,6 @@ class ContextEnvelopeBuilder:
 
     def _fill_from_state_machine(self, envelope: ContextEnvelope) -> None:
         """Заполнить данные из StateMachine."""
-        from config import SALES_STATES
-
         sm = self.state_machine
         envelope.state = sm.state
         envelope.collected_data = sm.collected_data.copy()
@@ -493,9 +491,9 @@ class ContextEnvelopeBuilder:
             sm, 'turns_since_last_disambiguation', 0
         )
 
-        # SPIN phase и missing data
-        state_config = SALES_STATES.get(sm.state, {})
-        envelope.spin_phase = state_config.get("spin_phase")
+        # SPIN phase и missing data - use StateMachine's states_config property (YAML source of truth)
+        state_config = sm.states_config.get(sm.state, {})
+        envelope.spin_phase = state_config.get("phase")
 
         required = state_config.get("required_data", [])
         collected = sm.collected_data

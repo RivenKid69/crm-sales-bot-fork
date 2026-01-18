@@ -138,7 +138,8 @@ class SalesBot:
 
         # Context Window: расширенный контекст для классификатора
         # Хранит последние 5 ходов с полной информацией (intent, action, confidence)
-        self.context_window = ContextWindow(max_size=5)
+        # Pass config for state_order, phase_order from YAML (v2.0)
+        self.context_window = ContextWindow(max_size=5, config=self._config)
 
         logger.info(
             "SalesBot initialized",
@@ -208,14 +209,13 @@ class SalesBot:
         - Базовый контекст (state, spin_phase, missing_data)
         - Расширенный контекст из ContextWindow (история интентов, паттерны)
         """
-        from config import SALES_STATES
-
-        state_config = SALES_STATES.get(self.state_machine.state, {})
+        # Use YAML flow config as source of truth (v2.0)
+        state_config = self._flow.states.get(self.state_machine.state, {})
         required = state_config.get("required_data", [])
         collected = self.state_machine.collected_data
 
         missing = [f for f in required if not collected.get(f)]
-        spin_phase = state_config.get("spin_phase")
+        spin_phase = state_config.get("phase")
 
         # Базовый контекст
         context = {
@@ -728,8 +728,16 @@ class SalesBot:
             if policy_override.action:
                 sm_result["action"] = policy_override.action
             if policy_override.next_state:
-                sm_result["next_state"] = policy_override.next_state
-                self.state_machine.state = policy_override.next_state
+                # Validate: next_state without action is inconsistent
+                if not policy_override.action:
+                    logger.warning(
+                        "PolicyOverride has next_state without action - skipping next_state",
+                        next_state=policy_override.next_state,
+                        decision=policy_override.decision.value,
+                    )
+                else:
+                    sm_result["next_state"] = policy_override.next_state
+                    self.state_machine.state = policy_override.next_state
 
         # Build context for response generation
         context = {

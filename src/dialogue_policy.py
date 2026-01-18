@@ -203,8 +203,8 @@ class DialoguePolicy:
         if not override and policy_registry.evaluate("should_apply_conservative_overlay", ctx, trace):
             override = self._apply_conservative_overlay(ctx, sm_result, trace)
 
-        # Записываем в историю
-        if override:
+        # Записываем в историю only for actual overrides (NO_OVERRIDE pollutes stats)
+        if override and override.has_override:
             if trace:
                 override.trace = trace
             self._decision_history.append(override)

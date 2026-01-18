@@ -146,10 +146,16 @@ class TurnContext:
         self.has_data = bool(self.extracted_data)
 
         # Прогресс по воронке (use config or default)
+        # IMPORTANT: Use None for unknown states to avoid false delta calculations
         order = self.state_order if self.state_order is not None else DEFAULT_STATE_ORDER
-        state_pos = order.get(self.state, 0)
-        next_state_pos = order.get(self.next_state, 0)
-        self.funnel_delta = next_state_pos - state_pos
+        state_pos = order.get(self.state)  # None if unknown
+        next_state_pos = order.get(self.next_state)  # None if unknown
+
+        # If either state is unknown, funnel_delta = 0 (neutral/unknown transition)
+        if state_pos is None or next_state_pos is None:
+            self.funnel_delta = 0
+        else:
+            self.funnel_delta = next_state_pos - state_pos
 
         # Тип хода (если не задан явно)
         if self.turn_type is None:
