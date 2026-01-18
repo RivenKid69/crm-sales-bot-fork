@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Any
 
+from logger import logger
+
 from .intents import (
     COMPILED_PRIORITY_PATTERNS,
     RootClassifier,
@@ -379,6 +381,7 @@ class CascadeIntentClassifier:
 # =============================================================================
 
 _cascade_classifier: Optional[CascadeIntentClassifier] = None
+_cascade_classifier_config: Optional[Dict[str, Any]] = None
 
 
 def get_cascade_classifier(
@@ -394,19 +397,38 @@ def get_cascade_classifier(
 
     Returns:
         CascadeIntentClassifier
+
+    Warning:
+        Parameters are only used on first invocation. Subsequent calls with
+        different parameters will log a warning but return the existing instance.
+        Use reset_cascade_classifier() to create a new instance with different params.
     """
-    global _cascade_classifier
+    global _cascade_classifier, _cascade_classifier_config
+
+    requested_config = {"enable_semantic": enable_semantic, **kwargs}
 
     if _cascade_classifier is None:
         _cascade_classifier = CascadeIntentClassifier(
             enable_semantic=enable_semantic,
             **kwargs
         )
+        _cascade_classifier_config = requested_config
+    else:
+        # Check if parameters differ from the existing instance
+        if _cascade_classifier_config != requested_config:
+            logger.warning(
+                "get_cascade_classifier called with different parameters than "
+                "existing singleton instance. Parameters ignored.",
+                existing_config=_cascade_classifier_config,
+                requested_config=requested_config,
+                hint="Use reset_cascade_classifier() first to apply new parameters"
+            )
 
     return _cascade_classifier
 
 
 def reset_cascade_classifier() -> None:
-    """Сбросить singleton (для тестирования)."""
-    global _cascade_classifier
+    """Сбросить singleton (для тестирования или переконфигурирования)."""
+    global _cascade_classifier, _cascade_classifier_config
     _cascade_classifier = None
+    _cascade_classifier_config = None

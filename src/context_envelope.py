@@ -528,9 +528,14 @@ class ContextEnvelopeBuilder:
                 envelope.last_intent = last_turn.intent
 
         # === Level 1: Sliding Window ===
-        envelope.intent_history = cw.get_intent_history()
+        # NOTE: intent_history, objection_count, total_objections may already be set
+        # from IntentTracker (state_machine). IntentTracker is the authoritative source
+        # when available, so we only fill from context_window if not already set.
+        if not envelope.intent_history:
+            envelope.intent_history = cw.get_intent_history()
         envelope.action_history = cw.get_action_history()
-        envelope.objection_count = cw.get_objection_count()
+        if envelope.objection_count == 0:
+            envelope.objection_count = cw.get_objection_count()
         envelope.positive_count = cw.get_positive_count()
         envelope.question_count = cw.get_question_count()
         envelope.unclear_count = cw.get_unclear_count()
@@ -564,7 +569,9 @@ class ContextEnvelopeBuilder:
         level3 = cw.get_episodic_context()
         envelope.first_objection_type = level3.get("first_objection_type")
         envelope.first_objection_turn = level3.get("first_objection_turn")
-        envelope.total_objections = level3.get("total_objections", 0)
+        # total_objections: prefer IntentTracker value if already set
+        if envelope.total_objections == 0:
+            envelope.total_objections = level3.get("total_objections", 0)
         envelope.repeated_objection_types = level3.get("repeated_objection_types", [])
         envelope.objection_types_seen = level3.get("objection_types_seen", [])
         envelope.has_breakthrough = level3.get("has_breakthrough", False)

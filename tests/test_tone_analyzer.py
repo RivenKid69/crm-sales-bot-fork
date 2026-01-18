@@ -253,16 +253,16 @@ class TestFrustrationTracking:
         assert self.analyzer.get_frustration_level() >= ToneAnalyzer.FRUSTRATION_THRESHOLDS["warning"]
 
     def test_frustration_history(self):
-        """Проверка истории frustration"""
-        self.analyzer.analyze("Привет")
-        self.analyzer.analyze("Достали!")
-        self.analyzer.analyze("Отлично!")
+        """Проверка истории frustration (только записи с delta != 0)"""
+        self.analyzer.analyze("Привет")      # NEUTRAL at level 0 → delta=0 → no entry
+        self.analyzer.analyze("Достали!")    # FRUSTRATED → delta > 0 → entry
+        self.analyzer.analyze("Отлично!")    # POSITIVE → delta < 0 → entry
 
         history = self.analyzer.get_frustration_history()
-        assert len(history) == 3
-        assert history[0]["tone"] == "neutral"
-        assert history[1]["tone"] == "frustrated"
-        assert history[2]["tone"] == "positive"
+        # Only meaningful changes (delta != 0) are recorded
+        assert len(history) == 2
+        assert history[0]["tone"] == "frustrated"
+        assert history[1]["tone"] == "positive"
 
 
 class TestResponseGuidance:
@@ -353,9 +353,10 @@ class TestReset:
 
     def test_reset_clears_history(self):
         """Reset очищает историю"""
-        self.analyzer.analyze("Привет")
-        self.analyzer.analyze("Достали!")
-        assert len(self.analyzer.get_frustration_history()) == 2
+        self.analyzer.analyze("Привет")      # NEUTRAL at level 0 → delta=0 → no entry
+        self.analyzer.analyze("Достали!")    # FRUSTRATED → delta > 0 → entry
+        # Only 1 entry (FRUSTRATED) because NEUTRAL at level 0 has delta=0
+        assert len(self.analyzer.get_frustration_history()) == 1
 
         self.analyzer.reset()
         assert len(self.analyzer.get_frustration_history()) == 0

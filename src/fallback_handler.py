@@ -564,7 +564,7 @@ class FallbackHandler:
                 trace=trace
             )
 
-        return self._tier_1_rephrase(state, context)
+        return self._tier_1_rephrase(state, context, trace=trace)
 
     def _select_dynamic_options_with_conditions(
         self,

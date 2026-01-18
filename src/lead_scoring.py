@@ -299,6 +299,7 @@ class LeadScorer:
         self._raw_score: float = 0.0  # Для точных расчётов с decay
         self._turn_count: int = 0  # Счётчик ходов для turn-based decay
         self._decay_applied_this_turn: bool = False  # Флаг для предотвращения двойного decay
+        self._turns_without_end_turn: int = 0  # Счётчик пропущенных end_turn() для диагностики
 
     def apply_turn_decay(self) -> None:
         """
@@ -306,8 +307,20 @@ class LeadScorer:
 
         Вызывается при каждом ходе диалога, независимо от наличия сигналов.
         Это обеспечивает "затухание" старых сигналов со временем.
+
+        IMPORTANT: Caller MUST call end_turn() after processing each turn,
+        otherwise decay will only be applied once. This is enforced via warning logs.
         """
         if self._decay_applied_this_turn:
+            # Track consecutive turns without end_turn() being called
+            self._turns_without_end_turn += 1
+            if self._turns_without_end_turn >= 2:
+                logger.warning(
+                    "LeadScorer.apply_turn_decay() called multiple times without end_turn(). "
+                    "Decay will NOT be applied. Call end_turn() after each turn.",
+                    turns_without_end_turn=self._turns_without_end_turn,
+                    current_score=self.current_score
+                )
             return  # Уже применили decay в этом ходу
 
         self._turn_count += 1
@@ -332,9 +345,11 @@ class LeadScorer:
         """
         Завершить ход и сбросить флаг decay.
 
-        Вызывается в конце обработки каждого хода.
+        MUST be called at the end of each turn to enable decay for the next turn.
+        Failure to call this will prevent decay from being applied and trigger warnings.
         """
         self._decay_applied_this_turn = False
+        self._turns_without_end_turn = 0  # Reset the warning counter
 
     def add_signal(self, signal: str) -> LeadScore:
         """

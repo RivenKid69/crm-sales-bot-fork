@@ -64,13 +64,16 @@ class FrustrationTracker:
             decay = FRUSTRATION_DECAY[tone]
             self._level = max(0, self._level - decay)
 
-        # Сохраняем историю
-        self._history.append({
-            "tone": tone.value,
-            "old_level": old_level,
-            "new_level": self._level,
-            "delta": self._level - old_level,
-        })
+        # Сохраняем историю только если уровень изменился
+        # (избегаем засорения нулевыми записями для нейтральных тонов)
+        delta = self._level - old_level
+        if delta != 0:
+            self._history.append({
+                "tone": tone.value,
+                "old_level": old_level,
+                "new_level": self._level,
+                "delta": delta,
+            })
 
         return self._level
 

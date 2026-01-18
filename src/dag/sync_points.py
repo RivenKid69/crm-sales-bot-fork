@@ -135,6 +135,14 @@ class SyncPointManager:
         self.arrived[sync_id] = set()
         self.branch_data[sync_id] = {}
 
+        # Warn about MAJORITY with 2 branches (equivalent to ALL_COMPLETE)
+        if strategy == SyncStrategy.MAJORITY and len(expected_branches) == 2:
+            logger.warning(
+                f"Sync point '{sync_id}' uses MAJORITY strategy with 2 branches. "
+                f"This is equivalent to ALL_COMPLETE (requires both branches). "
+                f"Consider using ALL_COMPLETE explicitly or adding more branches."
+            )
+
         logger.debug(
             f"Registered sync point '{sync_id}' with strategy {strategy.value}, "
             f"expecting {len(expected_branches)} branches"
@@ -240,7 +248,16 @@ class SyncPointManager:
         expected: Set[str],
         n_required: int,
     ) -> bool:
-        """Evaluate sync strategy."""
+        """
+        Evaluate sync strategy.
+
+        Note on MAJORITY strategy:
+            Uses strict > (greater than) len/2, meaning:
+            - 2 branches: requires 2 (>1) - equivalent to ALL_COMPLETE
+            - 3 branches: requires 2 (>1.5)
+            - 4 branches: requires 3 (>2)
+            This ensures a true majority (more than half, not just half).
+        """
         intersection = arrived & expected
 
         if strategy == SyncStrategy.ALL_COMPLETE:
@@ -250,6 +267,7 @@ class SyncPointManager:
             return len(intersection) > 0
 
         elif strategy == SyncStrategy.MAJORITY:
+            # Strict majority: more than half must complete
             return len(intersection) > len(expected) / 2
 
         elif strategy == SyncStrategy.N_OF_M:
