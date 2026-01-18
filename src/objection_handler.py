@@ -74,13 +74,13 @@ class ObjectionResult:
     Результат обработки возражения.
 
     Attributes:
-        objection_type: Тип возражения
+        objection_type: Тип возражения (None если не возражение)
         strategy: Стратегия обработки (если есть)
         attempt_number: Номер попытки
         should_soft_close: Нужно ли мягко закрыть
         response_parts: Части ответа (template, follow_up)
     """
-    objection_type: ObjectionType
+    objection_type: Optional[ObjectionType]
     strategy: Optional[ObjectionStrategy]
     attempt_number: int
     should_soft_close: bool

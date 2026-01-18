@@ -198,13 +198,12 @@ class TurnContext:
         if self.funnel_delta > 0:
             return TurnType.PROGRESS
 
-        # 6. По умолчанию смотрим на delta
+        # 7. Регресс или нейтральный по delta
         if self.funnel_delta < 0:
             return TurnType.REGRESS
-        elif self.funnel_delta == 0:
-            return TurnType.NEUTRAL
 
-        return TurnType.PROGRESS
+        # 8. По умолчанию — нейтральный (funnel_delta == 0)
+        return TurnType.NEUTRAL
 
 
 # =============================================================================

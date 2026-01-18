@@ -510,11 +510,14 @@ class DAGExecutor:
             return len(completed & expected) > 0
 
         elif condition == JoinCondition.MAJORITY:
-            return len(completed & expected) > len(expected) / 2
+            # Use >= for "simple majority" (50%+), more intuitive for even branch counts
+            # For 2 branches: 1 is majority (50%)
+            # For 4 branches: 2 is majority (50%)
+            return len(completed & expected) >= len(expected) / 2
 
         elif condition == JoinCondition.N_OF_M:
             # N_OF_M requires additional config, default to majority
-            return len(completed & expected) > len(expected) / 2
+            return len(completed & expected) >= len(expected) / 2
 
         return False
 

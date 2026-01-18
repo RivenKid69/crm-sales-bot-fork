@@ -1265,6 +1265,21 @@ class SalesBot:
             "action": action,
         })
 
+        # Сохраняем в context_window (для синхронизации с history)
+        self.context_window.add_turn_from_dict(
+            user_message=user_message,
+            bot_response=response,
+            intent=intent,
+            confidence=confidence,
+            action=action,
+            state=current_state,
+            next_state=sm_result["next_state"],
+            method=classification.get("method", "disambiguation_resolved"),
+            extracted_data=extracted,
+            is_fallback=fallback_used,
+            fallback_tier=fallback_tier,
+        )
+
         # Обновляем контекст
         self.last_action = action
         self.last_intent = intent
