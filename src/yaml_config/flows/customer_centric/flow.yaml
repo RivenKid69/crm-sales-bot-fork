@@ -1,0 +1,42 @@
+# =============================================================================
+# CUSTOMER CENTRIC SELLING FLOW
+# =============================================================================
+# Listen -> Understand -> Empower -> Support
+# =============================================================================
+
+flow:
+  name: customer_centric
+  version: "1.0"
+  description: "Customer Centric - customer at center, we help decide"
+
+  variables:
+    entry_state: cc_listen
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - listen
+      - understand
+      - empower
+      - support
+
+    post_phases_state: presentation
+
+    mapping:
+      listen: cc_listen
+      understand: cc_understand
+      empower: cc_empower
+      support: cc_support
+
+    progress_intents:
+      listened: listen
+      understood: understand
+      empowered: empower
+      supported: support
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: cc_empower

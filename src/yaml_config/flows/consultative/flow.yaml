@@ -1,0 +1,39 @@
+# =============================================================================
+# CONSULTATIVE SELLING FLOW
+# =============================================================================
+# Understand -> Advise -> Recommend
+# =============================================================================
+
+flow:
+  name: consultative
+  version: "1.0"
+  description: "Consultative Selling - act as consultant, not salesperson"
+
+  variables:
+    entry_state: consult_understand
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - understand
+      - advise
+      - recommend
+
+    post_phases_state: presentation
+
+    mapping:
+      understand: consult_understand
+      advise: consult_advise
+      recommend: consult_recommend
+
+    progress_intents:
+      situation_understood: understand
+      advice_accepted: advise
+      recommendation_accepted: recommend
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: consult_advise

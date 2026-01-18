@@ -1,0 +1,41 @@
+# =============================================================================
+# TRANSACTIONAL SELLING FLOW
+# =============================================================================
+# Quick Qualification -> Direct Offer -> Fast Close
+# =============================================================================
+
+flow:
+  name: transactional
+  version: "1.0"
+  description: "Transactional Selling - fast, to the point, no fluff"
+
+  variables:
+    entry_state: trans_qualify
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - quick_qualification
+      - direct_offer
+      - fast_close
+
+    post_phases_state: presentation
+
+    mapping:
+      quick_qualification: trans_qualify
+      direct_offer: trans_offer
+      fast_close: trans_close
+
+    progress_intents:
+      qualified: quick_qualification
+      offer_received: direct_offer
+      closed: fast_close
+
+    skip_conditions:
+      direct_offer:
+        - lead_is_hot
+
+  entry_points:
+    default: greeting
+    hot_lead: trans_close

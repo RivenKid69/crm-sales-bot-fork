@@ -1,0 +1,42 @@
+# =============================================================================
+# RELATIONSHIP SELLING FLOW
+# =============================================================================
+# Connect -> Build Rapport -> Nurture -> Long-term Partnership
+# =============================================================================
+
+flow:
+  name: relationship
+  version: "1.0"
+  description: "Relationship Selling - build long-term relationships"
+
+  variables:
+    entry_state: rel_connect
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - connect
+      - build_rapport
+      - nurture
+      - partnership
+
+    post_phases_state: presentation
+
+    mapping:
+      connect: rel_connect
+      build_rapport: rel_rapport
+      nurture: rel_nurture
+      partnership: rel_partnership
+
+    progress_intents:
+      connected: connect
+      rapport_built: build_rapport
+      nurtured: nurture
+      partnership_formed: partnership
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: rel_partnership

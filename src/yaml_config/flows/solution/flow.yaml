@@ -1,0 +1,41 @@
+# =============================================================================
+# SOLUTION SELLING FLOW
+# =============================================================================
+# Pain Discovery -> Solution Mapping -> Value Proof
+# =============================================================================
+
+flow:
+  name: solution
+  version: "1.0"
+  description: "Solution Selling - deep pain exploration, show solution"
+
+  variables:
+    entry_state: solution_pain
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - pain_discovery
+      - solution_mapping
+      - value_proof
+
+    post_phases_state: presentation
+
+    mapping:
+      pain_discovery: solution_pain
+      solution_mapping: solution_map
+      value_proof: solution_value
+
+    progress_intents:
+      pain_revealed: pain_discovery
+      solution_understood: solution_mapping
+      value_confirmed: value_proof
+
+    skip_conditions:
+      value_proof:
+        - has_high_interest
+
+  entry_points:
+    default: greeting
+    hot_lead: solution_map

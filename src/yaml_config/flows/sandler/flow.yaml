@@ -1,0 +1,45 @@
+# =============================================================================
+# SANDLER METHOD FLOW
+# =============================================================================
+# Bonding -> Upfront Contract -> Pain Funnel -> Budget -> Decision
+# =============================================================================
+
+flow:
+  name: sandler
+  version: "1.0"
+  description: "Sandler Method - pain funnel methodology"
+
+  variables:
+    entry_state: sandler_bonding
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - bonding
+      - upfront_contract
+      - pain_funnel
+      - budget
+      - decision
+
+    post_phases_state: presentation
+
+    mapping:
+      bonding: sandler_bonding
+      upfront_contract: sandler_contract
+      pain_funnel: sandler_pain
+      budget: sandler_budget
+      decision: sandler_decision
+
+    progress_intents:
+      rapport_built: bonding
+      contract_agreed: upfront_contract
+      pain_revealed: pain_funnel
+      budget_confirmed: budget
+      decision_process_clear: decision
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    warm_lead: sandler_pain

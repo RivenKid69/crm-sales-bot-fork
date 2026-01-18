@@ -1,0 +1,42 @@
+# =============================================================================
+# GAP SELLING FLOW
+# =============================================================================
+# Current State -> Future State -> Gap Analysis -> Solution Fit
+# =============================================================================
+
+flow:
+  name: gap
+  version: "1.0"
+  description: "Gap Selling - show gap between now and future"
+
+  variables:
+    entry_state: gap_current
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - current_state
+      - future_state
+      - gap_analysis
+      - solution_fit
+
+    post_phases_state: presentation
+
+    mapping:
+      current_state: gap_current
+      future_state: gap_future
+      gap_analysis: gap_analysis
+      solution_fit: gap_solution
+
+    progress_intents:
+      current_understood: current_state
+      future_visualized: future_state
+      gap_identified: gap_analysis
+      solution_accepted: solution_fit
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: gap_solution

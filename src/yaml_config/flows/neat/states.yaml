@@ -1,0 +1,51 @@
+# =============================================================================
+# NEAT SELLING STATES
+# =============================================================================
+
+states:
+  neat_needs:
+    extends: _base_phase
+    goal: "Выявить потребности"
+    rules:
+      needs_identified: acknowledge_and_continue
+      problem_revealed: explore_needs
+      unclear: clarify_needs
+    transitions:
+      needs_identified: neat_economic
+      agreement: neat_economic
+
+  neat_economic:
+    extends: _base_phase
+    mixins:
+      - value_rules
+    goal: "Понять экономическое влияние"
+    rules:
+      economic_impact_understood: acknowledge_and_continue
+      roi_inquiry: present_business_case
+      unclear: quantify_impact
+    transitions:
+      economic_impact_understood: neat_authority
+      agreement: neat_authority
+
+  neat_authority:
+    extends: _base_phase
+    goal: "Получить доступ к ЛПР"
+    rules:
+      authority_accessed: acknowledge_and_continue
+      decision_maker: acknowledge_and_continue
+      unclear: identify_authority
+    transitions:
+      authority_accessed: neat_timeline
+      agreement: neat_timeline
+
+  neat_timeline:
+    extends: _base_phase
+    goal: "Установить временные рамки"
+    rules:
+      timeline_set: acknowledge_and_continue
+      urgent_need: fast_track_close
+      unclear: clarify_timeline
+    transitions:
+      timeline_set: presentation
+      agreement: presentation
+      commitment: close

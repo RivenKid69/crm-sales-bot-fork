@@ -1,0 +1,57 @@
+# =============================================================================
+# INBOUND SALES STATES
+# =============================================================================
+
+states:
+  inbound_identify:
+    extends: _base_phase
+    mixins:
+      - inbound_rules
+    goal: "Идентифицировать кто к нам пришёл"
+    rules:
+      identified: acknowledge_and_continue
+      help_request: provide_helpful_answer
+      unclear: gentle_inquiry
+    transitions:
+      identified: inbound_connect
+      agreement: inbound_connect
+
+  inbound_connect:
+    extends: _base_phase
+    mixins:
+      - inbound_rules
+    goal: "Установить связь"
+    rules:
+      connected: acknowledge_and_continue
+      information_request: share_value
+      unclear: build_connection
+    transitions:
+      connected: inbound_explore
+      agreement: inbound_explore
+
+  inbound_explore:
+    extends: _base_phase
+    mixins:
+      - inbound_rules
+    goal: "Исследовать потребности"
+    rules:
+      explored: acknowledge_and_continue
+      resource_request: offer_resource
+      unclear: explore_needs
+    transitions:
+      explored: inbound_advise
+      agreement: inbound_advise
+
+  inbound_advise:
+    extends: _base_phase
+    mixins:
+      - inbound_rules
+    goal: "Дать полезный совет"
+    rules:
+      advised: acknowledge_and_continue
+      help_request: provide_helpful_answer
+      unclear: offer_guidance
+    transitions:
+      advised: presentation
+      agreement: presentation
+      commitment: close

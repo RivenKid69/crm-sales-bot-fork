@@ -1,0 +1,46 @@
+# =============================================================================
+# CHALLENGER STATES
+# =============================================================================
+
+states:
+  challenger_teach:
+    extends: _base_phase
+    mixins:
+      - challenger_rules
+    goal: "Поделиться инсайтом, вызвать переосмысление"
+    rules:
+      insight_accepted: deepen_insight
+      client_resistant: reframe_perspective
+      status_quo_defended: challenge_assumption
+      unclear: clarify_insight
+    transitions:
+      insight_accepted: challenger_tailor
+      reframe_accepted: challenger_tailor
+      agreement: challenger_tailor
+
+  challenger_tailor:
+    extends: _base_phase
+    mixins:
+      - challenger_rules
+    goal: "Кастомизировать решение под клиента"
+    rules:
+      solution_interest: tailor_message
+      specific_question: customize_response
+      unclear: clarify_needs
+    transitions:
+      solution_fit: challenger_close
+      agreement: challenger_close
+      commitment: challenger_close
+
+  challenger_close:
+    extends: _base_phase
+    mixins:
+      - challenger_rules
+    goal: "Взять контроль и закрыть сделку"
+    rules:
+      commitment: fast_close
+      hesitation: assert_leadership
+      unclear: direct_to_action
+    transitions:
+      commitment: close
+      agreement: close

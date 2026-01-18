@@ -1,0 +1,68 @@
+# =============================================================================
+# SANDLER METHOD STATES
+# =============================================================================
+
+states:
+  sandler_bonding:
+    extends: _base_phase
+    mixins:
+      - sandler_rules
+    goal: "Установить доверительный контакт"
+    rules:
+      rapport_built: acknowledge_and_continue
+      small_talk: build_rapport
+      unclear: gentle_exploration
+    transitions:
+      rapport_built: sandler_contract
+      agreement: sandler_contract
+
+  sandler_contract:
+    extends: _base_phase
+    mixins:
+      - sandler_rules
+    goal: "Установить правила разговора"
+    rules:
+      contract_agreed: acknowledge_and_continue
+      unclear: explain_process
+    transitions:
+      contract_agreed: sandler_pain
+      agreement: sandler_pain
+
+  sandler_pain:
+    extends: _base_phase
+    mixins:
+      - sandler_rules
+    goal: "Глубоко исследовать боль"
+    rules:
+      pain_revealed: explore_pain_deeper
+      pain_confirmed: quantify_pain
+      surface_pain: dig_deeper
+      unclear: probe_pain
+    transitions:
+      pain_critical: sandler_budget
+      pain_confirmed: sandler_budget
+
+  sandler_budget:
+    extends: _base_phase
+    mixins:
+      - sandler_rules
+    goal: "Обсудить бюджет"
+    rules:
+      budget_confirmed: acknowledge_and_continue
+      no_budget: explore_investment
+      unclear: clarify_budget
+    transitions:
+      budget_confirmed: sandler_decision
+      agreement: sandler_decision
+
+  sandler_decision:
+    extends: _base_phase
+    mixins:
+      - sandler_rules
+    goal: "Понять процесс принятия решения"
+    rules:
+      decision_process_clear: acknowledge_and_continue
+      unclear: explore_decision_process
+    transitions:
+      decision_process_clear: presentation
+      agreement: presentation

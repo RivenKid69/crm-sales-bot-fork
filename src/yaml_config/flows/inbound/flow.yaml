@@ -1,0 +1,42 @@
+# =============================================================================
+# INBOUND SALES FLOW
+# =============================================================================
+# Identify -> Connect -> Explore -> Advise
+# =============================================================================
+
+flow:
+  name: inbound
+  version: "1.0"
+  description: "Inbound Sales - help, don't sell aggressively"
+
+  variables:
+    entry_state: inbound_identify
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - identify
+      - connect
+      - explore
+      - advise
+
+    post_phases_state: presentation
+
+    mapping:
+      identify: inbound_identify
+      connect: inbound_connect
+      explore: inbound_explore
+      advise: inbound_advise
+
+    progress_intents:
+      identified: identify
+      connected: connect
+      explored: explore
+      advised: advise
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: inbound_advise

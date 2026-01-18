@@ -1,0 +1,49 @@
+# =============================================================================
+# RELATIONSHIP SELLING STATES
+# =============================================================================
+
+states:
+  rel_connect:
+    extends: _base_phase
+    goal: "Установить первый контакт"
+    rules:
+      connected: acknowledge_and_continue
+      greeting: warm_welcome
+      unclear: initiate_connection
+    transitions:
+      connected: rel_rapport
+      agreement: rel_rapport
+
+  rel_rapport:
+    extends: _base_phase
+    goal: "Построить взаимопонимание"
+    rules:
+      rapport_built: acknowledge_and_continue
+      small_talk: build_rapport
+      unclear: find_common_ground
+    transitions:
+      rapport_built: rel_nurture
+      agreement: rel_nurture
+
+  rel_nurture:
+    extends: _base_phase
+    goal: "Развивать отношения"
+    rules:
+      nurtured: acknowledge_and_continue
+      interest_shown: deepen_relationship
+      unclear: provide_value
+    transitions:
+      nurtured: rel_partnership
+      agreement: rel_partnership
+
+  rel_partnership:
+    extends: _base_phase
+    goal: "Сформировать партнёрство"
+    rules:
+      partnership_formed: acknowledge_and_continue
+      commitment: formalize_partnership
+      unclear: propose_partnership
+    transitions:
+      partnership_formed: presentation
+      agreement: presentation
+      commitment: close

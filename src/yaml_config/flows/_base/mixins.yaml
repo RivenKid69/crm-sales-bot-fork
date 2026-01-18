@@ -114,6 +114,104 @@ mixins:
       - social_intents
 
 # =================================================================
+# CHALLENGER SALE: Провокационный подход
+# =================================================================
+  challenger_rules:
+    description: "Правила для Challenger Sale - провокация, вызов статус-кво"
+    rules:
+      insight_shared: deepen_insight
+      client_resistant: reframe_perspective
+      reframe_accepted: acknowledge_and_continue
+      status_quo_challenged: continue_current_goal
+    transitions:
+      commitment: close
+
+# =================================================================
+# VALUE BASED: ROI и цифры
+# =================================================================
+  value_rules:
+    description: "Правила для Value-Based Selling - фокус на ROI"
+    rules:
+      value_question: calculate_roi_response
+      roi_inquiry: present_business_case
+      savings_question: answer_with_facts
+      cost_concern: answer_with_roi
+
+# =================================================================
+# CONSULTATIVE: Эксперт-консультант
+# =================================================================
+  consultative_rules:
+    description: "Экспертный консультативный подход"
+    rules:
+      technical_question: answer_as_consultant
+      advice_request: provide_expert_advice
+      recommendation_request: recommend_solution
+
+# =================================================================
+# TRANSACTIONAL: Быстро и по делу
+# =================================================================
+  transactional_rules:
+    description: "Минимум разговоров, быстрое закрытие"
+    rules:
+      any_response: keep_it_short
+      buying_signal: fast_close
+    transitions:
+      buying_signal: close
+      ready_to_buy: close
+
+# =================================================================
+# SANDLER: Pain Funnel
+# =================================================================
+  sandler_rules:
+    description: "Sandler Method - глубокое исследование боли"
+    rules:
+      pain_revealed: explore_pain_deeper
+      pain_confirmed: quantify_pain
+      budget_discussed: confirm_budget
+    transitions:
+      pain_critical: close
+
+# =================================================================
+# SOLUTION: Решение проблем
+# =================================================================
+  solution_rules:
+    description: "Solution Selling - глубокое понимание проблемы"
+    rules:
+      problem_described: map_to_solution
+      solution_fit: prove_value
+      value_confirmed: acknowledge_and_continue
+
+# =================================================================
+# INBOUND: Помощь, не продажа
+# =================================================================
+  inbound_rules:
+    description: "Inbound - помогаем, не продаём агрессивно"
+    rules:
+      help_request: provide_helpful_answer
+      information_request: share_value
+      resource_request: offer_resource
+
+# =================================================================
+# AIDA: Внимание-Интерес-Желание-Действие
+# =================================================================
+  aida_rules:
+    description: "AIDA marketing flow"
+    rules:
+      attention_captured: build_interest
+      interest_shown: create_desire
+      desire_expressed: call_to_action
+
+# =================================================================
+# GAP SELLING: Разрыв текущее vs желаемое
+# =================================================================
+  gap_rules:
+    description: "Gap Selling - показать разрыв"
+    rules:
+      current_state_described: explore_future_state
+      gap_identified: present_solution
+      solution_accepted: acknowledge_and_continue
+
+# =================================================================
 # ПАРАМЕТРЫ ПО УМОЛЧАНИЮ
 # =================================================================
 # Эти значения используются если параметр не указан в состоянии

@@ -1,0 +1,49 @@
+# =============================================================================
+# SOLUTION SELLING STATES
+# =============================================================================
+
+states:
+  solution_pain:
+    extends: _base_phase
+    mixins:
+      - solution_rules
+    goal: "Глубоко понять боль клиента"
+    rules:
+      pain_revealed: explore_pain_deeper
+      problem_described: map_to_solution
+      no_pain: create_pain_awareness
+      unclear: clarify_pain
+    transitions:
+      pain_confirmed: solution_map
+      problem_revealed: solution_map
+      agreement: solution_map
+
+  solution_map:
+    extends: _base_phase
+    mixins:
+      - solution_rules
+    goal: "Связать боль с нашим решением"
+    rules:
+      solution_understood: prove_value
+      feature_question: explain_solution_fit
+      comparison: differentiate_solution
+      unclear: clarify_solution
+    transitions:
+      solution_fit: solution_value
+      agreement: solution_value
+      value_question: solution_value
+
+  solution_value:
+    extends: _base_phase
+    mixins:
+      - solution_rules
+    goal: "Доказать ценность решения"
+    rules:
+      value_confirmed: acknowledge_and_continue
+      roi_question: present_business_case
+      skepticism: provide_proof
+      unclear: clarify_value
+    transitions:
+      value_confirmed: presentation
+      agreement: presentation
+      commitment: close

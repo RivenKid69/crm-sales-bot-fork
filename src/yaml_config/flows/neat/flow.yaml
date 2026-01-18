@@ -1,0 +1,44 @@
+# =============================================================================
+# NEAT SELLING FLOW
+# =============================================================================
+# Needs -> Economic Impact -> Access to Authority -> Timeline
+# =============================================================================
+
+flow:
+  name: neat
+  version: "1.0"
+  description: "NEAT Selling - modernized BANT with economic focus"
+
+  variables:
+    entry_state: neat_needs
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - needs
+      - economic_impact
+      - access_authority
+      - timeline
+
+    post_phases_state: presentation
+
+    mapping:
+      needs: neat_needs
+      economic_impact: neat_economic
+      access_authority: neat_authority
+      timeline: neat_timeline
+
+    progress_intents:
+      needs_identified: needs
+      economic_impact_understood: economic_impact
+      authority_accessed: access_authority
+      timeline_set: timeline
+
+    skip_conditions:
+      timeline:
+        - has_high_interest
+
+  entry_points:
+    default: greeting
+    hot_lead: neat_economic

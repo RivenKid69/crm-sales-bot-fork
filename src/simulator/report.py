@@ -407,3 +407,145 @@ class ReportGenerator:
 
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(report)
+
+
+def generate_e2e_report(results: List, output_path: str = None) -> dict:
+    """
+    Generate E2E test report.
+
+    Args:
+        results: List of E2EResult objects
+        output_path: Optional path to save JSON report
+
+    Returns:
+        Report data as dict
+    """
+    import json
+    from datetime import datetime
+
+    # Calculate summary stats
+    total = len(results)
+    passed = sum(1 for r in results if r.passed)
+    failed = total - passed
+    avg_score = sum(r.score for r in results) / total if total > 0 else 0.0
+    pass_rate = (passed / total * 100) if total > 0 else 0.0
+
+    # Build report structure
+    report_data = {
+        "run_id": f"e2e_{datetime.now().strftime('%Y-%m-%d_%H%M%S')}",
+        "timestamp": datetime.now().isoformat(),
+        "config": {
+            "total_flows": total,
+        },
+        "summary": {
+            "passed": passed,
+            "failed": failed,
+            "pass_rate": round(pass_rate, 2),
+            "avg_score": round(avg_score, 4),
+        },
+        "flows": []
+    }
+
+    # Add individual flow results
+    for r in results:
+        flow_data = {
+            "id": r.scenario_id,
+            "name": r.scenario_name,
+            "flow": r.flow_name,
+            "passed": r.passed,
+            "score": round(r.score, 4),
+            "outcome": r.outcome,
+            "expected_outcome": r.expected_outcome,
+            "phases_reached": r.phases_reached,
+            "expected_phases": r.expected_phases,
+            "turns": r.turns,
+            "duration_seconds": round(r.duration_seconds, 2),
+            "errors": r.errors,
+            "details": r.details
+        }
+        report_data["flows"].append(flow_data)
+
+    # Save to file if path provided
+    if output_path:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(report_data, f, ensure_ascii=False, indent=2)
+
+    return report_data
+
+
+def generate_e2e_text_report(results: List, output_path: str = None) -> str:
+    """
+    Generate human-readable E2E test report.
+
+    Args:
+        results: List of E2EResult objects
+        output_path: Optional path to save text report
+
+    Returns:
+        Report text
+    """
+    from datetime import datetime
+
+    lines = []
+
+    # Header
+    lines.append("=" * 80)
+    lines.append("E2E TEST REPORT - SALES TECHNIQUES")
+    lines.append("=" * 80)
+    lines.append(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append("")
+
+    # Summary
+    total = len(results)
+    passed = sum(1 for r in results if r.passed)
+    failed = total - passed
+    avg_score = sum(r.score for r in results) / total if total > 0 else 0.0
+    pass_rate = (passed / total * 100) if total > 0 else 0.0
+
+    lines.append("SUMMARY")
+    lines.append("-" * 80)
+    lines.append(f"Passed: {passed}/{total} ({pass_rate:.1f}%)")
+    lines.append(f"Average Score: {avg_score:.2f}")
+    lines.append("")
+
+    # Results by technique
+    lines.append("RESULTS BY TECHNIQUE")
+    lines.append("-" * 80)
+
+    for r in results:
+        status = "PASS" if r.passed else "FAIL"
+        expected_note = f" (expected: {r.expected_outcome})" if r.outcome != r.expected_outcome else ""
+        lines.append(
+            f"{status} {r.scenario_id:>2}. {r.scenario_name:<25} "
+            f"-> {r.outcome:<12} score={r.score:.2f}{expected_note}"
+        )
+
+    lines.append("")
+
+    # Failed tests details
+    failed_results = [r for r in results if not r.passed]
+    if failed_results:
+        lines.append("FAILED TESTS DETAILS")
+        lines.append("-" * 80)
+        for r in failed_results:
+            lines.append(f"\n{r.scenario_id}. {r.scenario_name}:")
+            lines.append(f"  Flow: {r.flow_name}")
+            lines.append(f"  Expected: {r.expected_outcome}, Got: {r.outcome}")
+            lines.append(f"  Phases reached: {r.phases_reached}")
+            lines.append(f"  Expected phases: {r.expected_phases}")
+            if r.errors:
+                lines.append(f"  Errors: {r.errors[:3]}")
+        lines.append("")
+
+    lines.append("=" * 80)
+    lines.append("END OF REPORT")
+    lines.append("=" * 80)
+
+    report_text = "\n".join(lines)
+
+    # Save to file if path provided
+    if output_path:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(report_text)
+
+    return report_text

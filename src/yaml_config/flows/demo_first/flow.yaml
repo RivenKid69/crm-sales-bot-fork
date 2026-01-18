@@ -1,0 +1,44 @@
+# =============================================================================
+# DEMO FIRST SELLING FLOW
+# =============================================================================
+# Hook -> Demo -> Q&A -> Close
+# =============================================================================
+
+flow:
+  name: demo_first
+  version: "1.0"
+  description: "Demo First - show product first, talk later"
+
+  variables:
+    entry_state: demo_hook
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - hook
+      - demo
+      - qa
+      - close
+
+    post_phases_state: presentation
+
+    mapping:
+      hook: demo_hook
+      demo: demo_show
+      qa: demo_qa
+      close: demo_close
+
+    progress_intents:
+      hooked: hook
+      demo_completed: demo
+      questions_answered: qa
+      closed: close
+
+    skip_conditions:
+      hook:
+        - lead_is_hot
+
+  entry_points:
+    default: greeting
+    hot_lead: demo_show

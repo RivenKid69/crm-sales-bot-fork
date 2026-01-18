@@ -1,0 +1,41 @@
+# =============================================================================
+# CHALLENGER SALE FLOW
+# =============================================================================
+# Teach -> Tailor -> Take Control
+# Провокационный подход: вызов статус-кво, переосмысление
+# =============================================================================
+
+flow:
+  name: challenger
+  version: "1.0"
+  description: "Challenger Sale - teach, tailor, take control"
+
+  variables:
+    entry_state: challenger_teach
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - teach
+      - tailor
+      - take_control
+
+    post_phases_state: presentation
+
+    mapping:
+      teach: challenger_teach
+      tailor: challenger_tailor
+      take_control: challenger_close
+
+    progress_intents:
+      insight_accepted: teach
+      reframe_accepted: tailor
+      commitment: take_control
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    warm_lead: challenger_teach
+    hot_lead: challenger_tailor

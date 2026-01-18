@@ -1,0 +1,39 @@
+# =============================================================================
+# VALUE-BASED SELLING FLOW
+# =============================================================================
+# Discover Value Drivers -> Quantify Impact -> Present ROI
+# =============================================================================
+
+flow:
+  name: value
+  version: "1.0"
+  description: "Value-Based Selling - focus on ROI and numbers"
+
+  variables:
+    entry_state: value_discover
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - discover_value
+      - quantify_impact
+      - present_roi
+
+    post_phases_state: presentation
+
+    mapping:
+      discover_value: value_discover
+      quantify_impact: value_quantify
+      present_roi: value_roi
+
+    progress_intents:
+      value_drivers_found: discover_value
+      impact_quantified: quantify_impact
+      roi_accepted: present_roi
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: value_roi

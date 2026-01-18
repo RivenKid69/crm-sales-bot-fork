@@ -1,0 +1,49 @@
+# =============================================================================
+# SOCIAL SELLING STATES
+# =============================================================================
+
+states:
+  social_trust:
+    extends: _base_phase
+    goal: "Построить доверие"
+    rules:
+      trust_built: share_value
+      social_proof_request: provide_testimonials
+      unclear: build_credibility
+    transitions:
+      trust_built: social_value
+      agreement: social_value
+
+  social_value:
+    extends: _base_phase
+    goal: "Поделиться ценностью"
+    rules:
+      value_shared: engage_deeper
+      content_interest: share_insights
+      unclear: provide_value
+    transitions:
+      value_shared: social_engage
+      agreement: social_engage
+
+  social_engage:
+    extends: _base_phase
+    goal: "Вовлечь в диалог"
+    rules:
+      engaged: move_to_conversion
+      interaction: deepen_engagement
+      unclear: encourage_engagement
+    transitions:
+      engaged: social_convert
+      agreement: social_convert
+
+  social_convert:
+    extends: _base_phase
+    goal: "Конвертировать в клиента"
+    rules:
+      converted: acknowledge_and_continue
+      ready_to_proceed: fast_close
+      unclear: guide_to_conversion
+    transitions:
+      converted: presentation
+      agreement: presentation
+      commitment: close

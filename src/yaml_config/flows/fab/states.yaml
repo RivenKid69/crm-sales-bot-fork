@@ -1,0 +1,38 @@
+# =============================================================================
+# FAB STATES
+# =============================================================================
+
+states:
+  fab_features:
+    extends: _base_phase
+    goal: "Представить ключевые функции"
+    rules:
+      feature_understood: show_advantage
+      question_features: explain_feature
+      unclear: clarify_feature
+    transitions:
+      feature_understood: fab_advantages
+      agreement: fab_advantages
+
+  fab_advantages:
+    extends: _base_phase
+    goal: "Показать преимущества"
+    rules:
+      advantage_seen: translate_to_benefit
+      comparison: highlight_advantage
+      unclear: clarify_advantage
+    transitions:
+      advantage_seen: fab_benefits
+      agreement: fab_benefits
+
+  fab_benefits:
+    extends: _base_phase
+    goal: "Перевести в выгоды для клиента"
+    rules:
+      benefit_realized: acknowledge_and_continue
+      value_question: emphasize_benefit
+      unclear: clarify_benefit
+    transitions:
+      benefit_realized: presentation
+      agreement: presentation
+      commitment: close

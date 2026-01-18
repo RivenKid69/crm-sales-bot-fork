@@ -1,0 +1,44 @@
+# =============================================================================
+# AIDA FLOW
+# =============================================================================
+# Attention -> Interest -> Desire -> Action
+# =============================================================================
+
+flow:
+  name: aida
+  version: "1.0"
+  description: "AIDA - classic marketing funnel"
+
+  variables:
+    entry_state: aida_attention
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - attention
+      - interest
+      - desire
+      - action
+
+    post_phases_state: presentation
+
+    mapping:
+      attention: aida_attention
+      interest: aida_interest
+      desire: aida_desire
+      action: aida_action
+
+    progress_intents:
+      attention_captured: attention
+      interest_shown: interest
+      desire_expressed: desire
+      action_taken: action
+
+    skip_conditions:
+      desire:
+        - has_high_interest
+
+  entry_points:
+    default: greeting
+    hot_lead: aida_desire

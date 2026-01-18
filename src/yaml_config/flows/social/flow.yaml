@@ -1,0 +1,44 @@
+# =============================================================================
+# SOCIAL SELLING FLOW
+# =============================================================================
+# Build Trust -> Share Value -> Engage -> Convert
+# =============================================================================
+
+flow:
+  name: social
+  version: "1.0"
+  description: "Social Selling - build trust through social proof"
+
+  variables:
+    entry_state: social_trust
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - build_trust
+      - share_value
+      - engage
+      - convert
+
+    post_phases_state: presentation
+
+    mapping:
+      build_trust: social_trust
+      share_value: social_value
+      engage: social_engage
+      convert: social_convert
+
+    progress_intents:
+      trust_built: build_trust
+      value_shared: share_value
+      engaged: engage
+      converted: convert
+
+    skip_conditions:
+      engage:
+        - has_high_interest
+
+  entry_points:
+    default: greeting
+    hot_lead: social_convert

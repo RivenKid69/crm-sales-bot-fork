@@ -1,0 +1,49 @@
+# =============================================================================
+# CUSTOMER CENTRIC STATES
+# =============================================================================
+
+states:
+  cc_listen:
+    extends: _base_phase
+    goal: "Внимательно слушать клиента"
+    rules:
+      listened: acknowledge_and_continue
+      info_provided: active_listening
+      unclear: encourage_sharing
+    transitions:
+      listened: cc_understand
+      agreement: cc_understand
+
+  cc_understand:
+    extends: _base_phase
+    goal: "Глубоко понять ситуацию"
+    rules:
+      understood: acknowledge_and_continue
+      clarification_needed: ask_clarifying_questions
+      unclear: explore_deeper
+    transitions:
+      understood: cc_empower
+      agreement: cc_empower
+
+  cc_empower:
+    extends: _base_phase
+    goal: "Дать клиенту возможность принять решение"
+    rules:
+      empowered: provide_options
+      decision_support: offer_guidance
+      unclear: present_choices
+    transitions:
+      empowered: cc_support
+      agreement: cc_support
+
+  cc_support:
+    extends: _base_phase
+    goal: "Поддержать в принятии решения"
+    rules:
+      supported: acknowledge_and_continue
+      help_request: provide_support
+      unclear: offer_assistance
+    transitions:
+      supported: presentation
+      agreement: presentation
+      commitment: close

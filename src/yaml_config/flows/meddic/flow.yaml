@@ -1,0 +1,50 @@
+# =============================================================================
+# MEDDIC FLOW
+# =============================================================================
+# Metrics -> Economic Buyer -> Decision Criteria -> Decision Process -> Identify Pain -> Champion
+# =============================================================================
+
+flow:
+  name: meddic
+  version: "1.0"
+  description: "MEDDIC - B2B deal qualification methodology"
+
+  variables:
+    entry_state: meddic_metrics
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - metrics
+      - economic_buyer
+      - decision_criteria
+      - decision_process
+      - identify_pain
+      - champion
+
+    post_phases_state: presentation
+
+    mapping:
+      metrics: meddic_metrics
+      economic_buyer: meddic_buyer
+      decision_criteria: meddic_criteria
+      decision_process: meddic_process
+      identify_pain: meddic_pain
+      champion: meddic_champion
+
+    progress_intents:
+      metrics_defined: metrics
+      buyer_identified: economic_buyer
+      criteria_understood: decision_criteria
+      process_mapped: decision_process
+      pain_identified: identify_pain
+      champion_found: champion
+
+    skip_conditions:
+      champion:
+        - has_high_interest
+
+  entry_points:
+    default: greeting
+    hot_lead: meddic_pain

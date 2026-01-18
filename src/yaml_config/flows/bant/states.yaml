@@ -1,0 +1,62 @@
+# =============================================================================
+# BANT STATES
+# =============================================================================
+# Состояния для BANT flow
+# =============================================================================
+
+states:
+  # Budget phase
+  bant_budget:
+    extends: _base_phase
+    goal: "Выяснить бюджет клиента"
+    rules:
+      budget_confirmed: acknowledge_and_continue
+      no_budget: explore_budget_options
+      price_question: answer_with_facts
+      unclear: clarify_budget_question
+    transitions:
+      budget_confirmed: bant_authority
+      agreement: bant_authority
+      info_provided: bant_authority
+
+  # Authority phase
+  bant_authority:
+    extends: _base_phase
+    goal: "Определить лицо принимающее решение"
+    rules:
+      authority_confirmed: acknowledge_and_continue
+      decision_maker: acknowledge_and_continue
+      not_decision_maker: identify_decision_maker
+      unclear: clarify_authority_question
+    transitions:
+      authority_confirmed: bant_need
+      agreement: bant_need
+      info_provided: bant_need
+
+  # Need phase
+  bant_need:
+    extends: _base_phase
+    goal: "Выявить потребность"
+    rules:
+      need_confirmed: acknowledge_and_continue
+      problem_revealed: explore_need_deeper
+      no_need: create_need_awareness
+      unclear: clarify_need_question
+    transitions:
+      need_confirmed: bant_timeline
+      agreement: bant_timeline
+      info_provided: bant_timeline
+
+  # Timeline phase
+  bant_timeline:
+    extends: _base_phase
+    goal: "Определить сроки принятия решения"
+    rules:
+      timeline_confirmed: acknowledge_and_continue
+      urgent_need: fast_track_close
+      no_rush: build_urgency
+      unclear: clarify_timeline_question
+    transitions:
+      timeline_confirmed: presentation
+      agreement: presentation
+      info_provided: presentation

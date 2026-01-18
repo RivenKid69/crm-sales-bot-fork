@@ -1,0 +1,48 @@
+# =============================================================================
+# BANT SALES FLOW
+# =============================================================================
+# Budget -> Authority -> Need -> Timeline
+# Классическая квалификация лида по 4 критериям
+# =============================================================================
+
+flow:
+  name: bant
+  version: "1.0"
+  description: "BANT - Budget, Authority, Need, Timeline qualification"
+
+  variables:
+    entry_state: bant_budget
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - budget
+      - authority
+      - need
+      - timeline
+
+    post_phases_state: presentation
+
+    mapping:
+      budget: bant_budget
+      authority: bant_authority
+      need: bant_need
+      timeline: bant_timeline
+
+    progress_intents:
+      budget_confirmed: budget
+      authority_confirmed: authority
+      need_confirmed: need
+      timeline_confirmed: timeline
+
+    skip_conditions:
+      need:
+        - has_high_interest
+      timeline:
+        - has_desired_outcome
+
+  entry_points:
+    default: greeting
+    hot_lead: bant_need
+    returning_customer: bant_budget

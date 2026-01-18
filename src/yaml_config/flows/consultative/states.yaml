@@ -1,0 +1,47 @@
+# =============================================================================
+# CONSULTATIVE SELLING STATES
+# =============================================================================
+
+states:
+  consult_understand:
+    extends: _base_phase
+    mixins:
+      - consultative_rules
+    goal: "Глубоко понять ситуацию клиента"
+    rules:
+      situation_described: ask_clarifying_questions
+      technical_question: answer_as_consultant
+      unclear: explore_situation
+    transitions:
+      situation_understood: consult_advise
+      agreement: consult_advise
+      info_provided: consult_advise
+
+  consult_advise:
+    extends: _base_phase
+    mixins:
+      - consultative_rules
+    goal: "Дать экспертный совет"
+    rules:
+      advice_request: provide_expert_advice
+      question_features: explain_as_expert
+      comparison: objective_comparison
+      unclear: clarify_advice
+    transitions:
+      advice_accepted: consult_recommend
+      agreement: consult_recommend
+      recommendation_request: consult_recommend
+
+  consult_recommend:
+    extends: _base_phase
+    mixins:
+      - consultative_rules
+    goal: "Рекомендовать оптимальное решение"
+    rules:
+      recommendation_accepted: acknowledge_and_continue
+      objection: address_concern_objectively
+      unclear: clarify_recommendation
+    transitions:
+      recommendation_accepted: presentation
+      agreement: presentation
+      commitment: close

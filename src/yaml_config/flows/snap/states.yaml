@@ -1,0 +1,49 @@
+# =============================================================================
+# SNAP SELLING STATES
+# =============================================================================
+
+states:
+  snap_simple:
+    extends: _base_phase
+    goal: "Сделать всё максимально просто"
+    rules:
+      simplicity_appreciated: acknowledge_and_continue
+      complex_question: simplify_answer
+      unclear: keep_it_simple
+    transitions:
+      simplicity_appreciated: snap_value
+      agreement: snap_value
+
+  snap_value:
+    extends: _base_phase
+    goal: "Показать незаменимую ценность"
+    rules:
+      value_understood: acknowledge_and_continue
+      value_question: demonstrate_value
+      unclear: clarify_value
+    transitions:
+      value_understood: snap_align
+      agreement: snap_align
+
+  snap_align:
+    extends: _base_phase
+    goal: "Выровняться с приоритетами клиента"
+    rules:
+      aligned: acknowledge_and_continue
+      priority_mismatch: realign_priorities
+      unclear: explore_priorities
+    transitions:
+      aligned: snap_priority
+      agreement: snap_priority
+
+  snap_priority:
+    extends: _base_phase
+    goal: "Поднять приоритет нашего решения"
+    rules:
+      priority_raised: acknowledge_and_continue
+      urgency_created: fast_track_close
+      unclear: create_urgency
+    transitions:
+      priority_raised: presentation
+      agreement: presentation
+      commitment: close

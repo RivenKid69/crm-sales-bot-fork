@@ -1,0 +1,46 @@
+# =============================================================================
+# SNAP SELLING FLOW
+# =============================================================================
+# Keep it Simple -> Be iNvaluable -> Always Align -> Raise Priorities
+# =============================================================================
+
+flow:
+  name: snap
+  version: "1.0"
+  description: "SNAP Selling - for busy clients"
+
+  variables:
+    entry_state: snap_simple
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - simple
+      - invaluable
+      - align
+      - priority
+
+    post_phases_state: presentation
+
+    mapping:
+      simple: snap_simple
+      invaluable: snap_value
+      align: snap_align
+      priority: snap_priority
+
+    progress_intents:
+      simplicity_appreciated: simple
+      value_understood: invaluable
+      aligned: align
+      priority_raised: priority
+
+    skip_conditions:
+      align:
+        - has_high_interest
+      priority:
+        - lead_is_hot
+
+  entry_points:
+    default: greeting
+    hot_lead: snap_priority

@@ -35,7 +35,10 @@ class SimulationResult:
     duration_seconds: float
     dialogue: List[Dict[str, Any]]
 
-    # SPIN прогресс
+    # Flow info (for e2e testing)
+    flow_name: str = ""
+
+    # SPIN прогресс (works for any phase-based flow)
     phases_reached: List[str] = field(default_factory=list)
     spin_coverage: float = 0.0
 
@@ -58,7 +61,13 @@ class SimulationResult:
 class SimulationRunner:
     """Оркестратор массовых симуляций"""
 
-    def __init__(self, bot_llm, client_llm=None, verbose: bool = False):
+    def __init__(
+        self,
+        bot_llm,
+        client_llm=None,
+        verbose: bool = False,
+        flow_name: Optional[str] = None
+    ):
         """
         Инициализация runner'а.
 
@@ -66,10 +75,12 @@ class SimulationRunner:
             bot_llm: LLM для бота
             client_llm: LLM для клиента (если None, используется bot_llm)
             verbose: Выводить подробную информацию
+            flow_name: Имя flow для использования (None = default из settings)
         """
         self.bot_llm = bot_llm
         self.client_llm = client_llm or bot_llm
         self.verbose = verbose
+        self.flow_name = flow_name
 
     def run_batch(
         self,
@@ -152,13 +163,19 @@ class SimulationRunner:
         """
         return self._run_single(0, persona_name)
 
-    def _run_single(self, sim_id: int, persona_name: str) -> SimulationResult:
+    def _run_single(
+        self,
+        sim_id: int,
+        persona_name: str,
+        flow_name: Optional[str] = None
+    ) -> SimulationResult:
         """
         Внутренняя реализация одной симуляции.
 
         Args:
             sim_id: ID симуляции
             persona_name: Имя персоны
+            flow_name: Имя flow (если None, используется self.flow_name)
 
         Returns:
             Результат симуляции
@@ -166,6 +183,7 @@ class SimulationRunner:
         start_time = time.time()
         errors = []
         dialogue = []
+        active_flow = flow_name or self.flow_name
 
         rule_traces = []  # Phase 8: Collect rule traces
 
@@ -177,7 +195,8 @@ class SimulationRunner:
             persona = PERSONAS[persona_name]
             client = ClientAgent(self.client_llm, persona)
             # Phase 8: Enable tracing for conditional rules debugging
-            bot = SalesBot(self.bot_llm, enable_tracing=True)
+            # Pass flow_name to SalesBot (SalesBot already supports this!)
+            bot = SalesBot(self.bot_llm, enable_tracing=True, flow_name=active_flow)
 
             # Первое сообщение клиента
             client_message = client.start_conversation()
@@ -270,6 +289,7 @@ class SimulationRunner:
                 turns=len(dialogue),
                 duration_seconds=duration,
                 dialogue=dialogue,
+                flow_name=active_flow or "",
                 phases_reached=phases,
                 spin_coverage=spin_coverage,
                 objections_count=client_summary.get("objections", 0),
@@ -294,8 +314,55 @@ class SimulationRunner:
                 turns=len(dialogue),
                 duration_seconds=duration,
                 dialogue=dialogue,
+                flow_name=active_flow or "",
                 errors=errors
             )
+
+    def run_e2e_batch(
+        self,
+        scenarios: List[Any],
+        progress_callback: Optional[callable] = None
+    ) -> List[Any]:
+        """
+        Запуск batch e2e сценариев с разными flows.
+
+        Args:
+            scenarios: Список E2EScenario
+            progress_callback: Callback для отображения прогресса
+
+        Returns:
+            Список E2EResult
+        """
+        from .e2e_scenarios import E2EScenario
+        from .e2e_evaluator import E2EEvaluator, E2EResult
+
+        # Сбрасываем circuit breaker перед началом batch
+        if hasattr(self.bot_llm, 'reset_circuit_breaker'):
+            self.bot_llm.reset_circuit_breaker()
+
+        evaluator = E2EEvaluator()
+        results: List[E2EResult] = []
+
+        for idx, scenario in enumerate(scenarios):
+            # Запускаем симуляцию с конкретным flow
+            sim_result = self._run_single(
+                sim_id=int(scenario.id) if scenario.id.isdigit() else idx,
+                persona_name=scenario.persona,
+                flow_name=scenario.flow
+            )
+
+            # Оцениваем результат
+            evaluation = evaluator.evaluate(sim_result, scenario)
+            results.append(evaluation)
+
+            if progress_callback:
+                progress_callback(evaluation)
+            elif self.verbose:
+                status = "PASS" if evaluation.passed else "FAIL"
+                print(f"  [{idx+1}/{len(scenarios)}] {status} {scenario.name}: "
+                      f"{evaluation.outcome} (score: {evaluation.score:.2f})")
+
+        return results
 
 
 def create_runner(verbose: bool = False) -> SimulationRunner:

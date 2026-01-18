@@ -1,0 +1,46 @@
+# =============================================================================
+# TRANSACTIONAL SELLING STATES
+# =============================================================================
+
+states:
+  trans_qualify:
+    extends: _base_phase
+    mixins:
+      - transactional_rules
+    goal: "Быстро квалифицировать"
+    rules:
+      qualified: make_offer
+      any_response: keep_it_short
+      unclear: quick_question
+    transitions:
+      qualified: trans_offer
+      agreement: trans_offer
+      buying_signal: trans_close
+
+  trans_offer:
+    extends: _base_phase
+    mixins:
+      - transactional_rules
+    goal: "Сделать прямое предложение"
+    rules:
+      offer_received: move_to_close
+      buying_signal: fast_close
+      unclear: direct_offer
+    transitions:
+      offer_received: trans_close
+      agreement: trans_close
+      ready_to_buy: close
+
+  trans_close:
+    extends: _base_phase
+    mixins:
+      - transactional_rules
+    goal: "Быстро закрыть"
+    rules:
+      closed: acknowledge_and_continue
+      commitment: fast_close
+      unclear: direct_to_action
+    transitions:
+      closed: presentation
+      agreement: presentation
+      commitment: close

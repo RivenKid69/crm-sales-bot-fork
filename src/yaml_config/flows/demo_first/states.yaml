@@ -1,0 +1,54 @@
+# =============================================================================
+# DEMO FIRST SELLING STATES
+# =============================================================================
+
+states:
+  demo_hook:
+    extends: _base_phase
+    goal: "Зацепить интерес к демо"
+    rules:
+      hooked: offer_demo
+      demo_request: start_demo
+      unclear: create_curiosity
+    transitions:
+      hooked: demo_show
+      agreement: demo_show
+      demo_request: demo_show
+
+  demo_show:
+    extends: _base_phase
+    goal: "Показать продукт"
+    rules:
+      demo_completed: answer_questions
+      question_features: demonstrate_feature
+      unclear: continue_demo
+    transitions:
+      demo_completed: demo_qa
+      agreement: demo_qa
+      questions_answered: demo_qa
+
+  demo_qa:
+    extends: _base_phase
+    goal: "Ответить на вопросы"
+    rules:
+      questions_answered: move_to_close
+      question_features: answer_and_continue
+      comparison: address_comparison
+      unclear: invite_questions
+    transitions:
+      questions_answered: demo_close
+      agreement: demo_close
+      commitment: close
+
+  demo_close:
+    extends: _base_phase
+    goal: "Закрыть после демо"
+    rules:
+      closed: acknowledge_and_continue
+      commitment: fast_close
+      objection: address_concern
+      unclear: propose_next_steps
+    transitions:
+      closed: presentation
+      agreement: presentation
+      commitment: close

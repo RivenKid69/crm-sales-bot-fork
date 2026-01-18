@@ -1,0 +1,39 @@
+# =============================================================================
+# COMMAND OF THE SALE FLOW
+# =============================================================================
+# Establish Authority -> Control Conversation -> Guide to Close
+# =============================================================================
+
+flow:
+  name: command
+  version: "1.0"
+  description: "Command of Sale - seller leads and controls"
+
+  variables:
+    entry_state: command_authority
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - establish_authority
+      - control_conversation
+      - guide_to_close
+
+    post_phases_state: presentation
+
+    mapping:
+      establish_authority: command_authority
+      control_conversation: command_control
+      guide_to_close: command_close
+
+    progress_intents:
+      authority_established: establish_authority
+      control_gained: control_conversation
+      guided_to_close: guide_to_close
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: command_close

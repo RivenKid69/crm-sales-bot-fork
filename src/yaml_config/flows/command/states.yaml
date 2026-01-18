@@ -1,0 +1,38 @@
+# =============================================================================
+# COMMAND OF SALE STATES
+# =============================================================================
+
+states:
+  command_authority:
+    extends: _base_phase
+    goal: "Установить авторитет"
+    rules:
+      authority_established: take_control
+      expertise_recognized: acknowledge_and_continue
+      unclear: demonstrate_expertise
+    transitions:
+      authority_established: command_control
+      agreement: command_control
+
+  command_control:
+    extends: _base_phase
+    goal: "Взять контроль над разговором"
+    rules:
+      control_gained: guide_conversation
+      resistance: assert_leadership
+      unclear: redirect_conversation
+    transitions:
+      control_gained: command_close
+      agreement: command_close
+
+  command_close:
+    extends: _base_phase
+    goal: "Направить к закрытию"
+    rules:
+      guided_to_close: direct_close
+      commitment: fast_close
+      unclear: guide_to_decision
+    transitions:
+      guided_to_close: presentation
+      agreement: presentation
+      commitment: close

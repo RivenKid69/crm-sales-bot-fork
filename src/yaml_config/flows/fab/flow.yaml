@@ -1,0 +1,37 @@
+# =============================================================================
+# FAB (Features-Advantages-Benefits) FLOW
+# =============================================================================
+
+flow:
+  name: fab
+  version: "1.0"
+  description: "FAB - Features, Advantages, Benefits"
+
+  variables:
+    entry_state: fab_features
+    company_name: "Poster"
+    product_name: "CRM-система"
+
+  phases:
+    order:
+      - feature
+      - advantage
+      - benefit
+
+    post_phases_state: presentation
+
+    mapping:
+      feature: fab_features
+      advantage: fab_advantages
+      benefit: fab_benefits
+
+    progress_intents:
+      feature_understood: feature
+      advantage_seen: advantage
+      benefit_realized: benefit
+
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    hot_lead: fab_benefits

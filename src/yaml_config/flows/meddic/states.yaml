@@ -1,0 +1,64 @@
+# =============================================================================
+# MEDDIC STATES
+# =============================================================================
+
+states:
+  meddic_metrics:
+    extends: _base_phase
+    goal: "Определить метрики успеха"
+    rules:
+      metrics_defined: acknowledge_and_continue
+      unclear: explore_success_metrics
+    transitions:
+      metrics_defined: meddic_buyer
+      agreement: meddic_buyer
+
+  meddic_buyer:
+    extends: _base_phase
+    goal: "Идентифицировать экономического покупателя"
+    rules:
+      buyer_identified: acknowledge_and_continue
+      unclear: identify_decision_maker
+    transitions:
+      buyer_identified: meddic_criteria
+      agreement: meddic_criteria
+
+  meddic_criteria:
+    extends: _base_phase
+    goal: "Понять критерии принятия решения"
+    rules:
+      criteria_understood: acknowledge_and_continue
+      unclear: explore_criteria
+    transitions:
+      criteria_understood: meddic_process
+      agreement: meddic_process
+
+  meddic_process:
+    extends: _base_phase
+    goal: "Понять процесс принятия решения"
+    rules:
+      process_mapped: acknowledge_and_continue
+      unclear: map_decision_process
+    transitions:
+      process_mapped: meddic_pain
+      agreement: meddic_pain
+
+  meddic_pain:
+    extends: _base_phase
+    goal: "Идентифицировать боль"
+    rules:
+      pain_identified: acknowledge_and_continue
+      unclear: explore_pain
+    transitions:
+      pain_identified: meddic_champion
+      agreement: meddic_champion
+
+  meddic_champion:
+    extends: _base_phase
+    goal: "Найти внутреннего чемпиона"
+    rules:
+      champion_found: acknowledge_and_continue
+      unclear: identify_champion
+    transitions:
+      champion_found: presentation
+      agreement: presentation
