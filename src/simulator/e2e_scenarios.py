@@ -3,10 +3,15 @@ E2E Scenarios for Sales Technique Testing.
 
 Defines 20 unique sales techniques as test scenarios for the e2e testing framework.
 Each scenario specifies the flow to use, expected phases, and success criteria.
+
+Supports testing each technique with multiple random personas (default: 5 per technique).
 """
 
+import random
 from dataclasses import dataclass, field
 from typing import List, Optional
+
+from .personas import get_all_persona_names
 
 
 @dataclass
@@ -15,7 +20,7 @@ class E2EScenario:
     E2E test scenario configuration.
 
     Attributes:
-        id: Unique scenario identifier (01-20)
+        id: Unique scenario identifier (e.g., "01", "01_skeptic")
         name: Human-readable name of the technique
         flow: Flow name to load (e.g., "spin_selling", "challenger")
         technique: Short description of the technique
@@ -307,6 +312,87 @@ def get_scenarios_by_outcome(expected_outcome: str) -> List[E2EScenario]:
     return [s for s in ALL_SCENARIOS if s.expected_outcome == expected_outcome]
 
 
+def expand_scenarios_with_personas(
+    scenarios: Optional[List[E2EScenario]] = None,
+    personas_per_scenario: int = 5,
+    seed: Optional[int] = None
+) -> List[E2EScenario]:
+    """
+    Expand scenarios by assigning random personas to each.
+
+    Each technique will be tested with `personas_per_scenario` different
+    randomly selected client personas.
+
+    Args:
+        scenarios: List of base scenarios (default: ALL_SCENARIOS)
+        personas_per_scenario: Number of personas per technique (default: 5)
+        seed: Random seed for reproducibility (default: None)
+
+    Returns:
+        Expanded list of scenarios (20 techniques × 5 personas = 100 scenarios)
+
+    Example:
+        >>> expanded = expand_scenarios_with_personas(personas_per_scenario=5)
+        >>> len(expanded)
+        100
+        >>> # Each technique now has 5 variants with different personas
+    """
+    if scenarios is None:
+        scenarios = ALL_SCENARIOS
+
+    if seed is not None:
+        random.seed(seed)
+
+    all_personas = get_all_persona_names()
+    expanded: List[E2EScenario] = []
+
+    for scenario in scenarios:
+        # Select random personas for this technique
+        selected_personas = random.sample(
+            all_personas,
+            min(personas_per_scenario, len(all_personas))
+        )
+
+        for idx, persona in enumerate(selected_personas):
+            # Create new scenario with this persona
+            expanded_id = f"{scenario.id}_{persona}"
+            expanded_name = f"{scenario.name} ({persona})"
+
+            new_scenario = E2EScenario(
+                id=expanded_id,
+                name=expanded_name,
+                flow=scenario.flow,
+                technique=scenario.technique,
+                phases=scenario.phases.copy(),
+                expected_outcome=scenario.expected_outcome,
+                persona=persona,
+                description=scenario.description
+            )
+            expanded.append(new_scenario)
+
+    return expanded
+
+
+def get_all_scenarios_expanded(personas_per_scenario: int = 5, seed: Optional[int] = None) -> List[E2EScenario]:
+    """
+    Get all scenarios expanded with random personas.
+
+    Convenience function for getting 20 techniques × N personas.
+
+    Args:
+        personas_per_scenario: Number of personas per technique (default: 5)
+        seed: Random seed for reproducibility
+
+    Returns:
+        List of expanded scenarios
+    """
+    return expand_scenarios_with_personas(
+        scenarios=ALL_SCENARIOS,
+        personas_per_scenario=personas_per_scenario,
+        seed=seed
+    )
+
+
 # Export
 __all__ = [
     "E2EScenario",
@@ -315,4 +401,6 @@ __all__ = [
     "get_scenario_by_flow",
     "get_scenarios_by_persona",
     "get_scenarios_by_outcome",
+    "expand_scenarios_with_personas",
+    "get_all_scenarios_expanded",
 ]

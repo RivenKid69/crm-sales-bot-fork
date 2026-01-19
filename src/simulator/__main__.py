@@ -8,8 +8,9 @@ CLI для запуска симуляций диалогов.
     python -m src.simulator -n 100 --parallel 4
 
 E2E тестирование 20 техник продаж:
-    python -m src.simulator --e2e                    # Все 20 техник
-    python -m src.simulator --e2e-flow challenger    # Только Challenger
+    python -m src.simulator --e2e                    # 20 техник × 5 персон = 100 тестов
+    python -m src.simulator --e2e --personas 3       # 20 техник × 3 персоны = 60 тестов
+    python -m src.simulator --e2e-flow challenger    # 1 техника × 5 персон = 5 тестов
     python -m src.simulator --e2e -o e2e_report.json # С сохранением отчёта
 """
 
@@ -42,8 +43,10 @@ def create_parser():
   python -m src.simulator -n 50 -o report.txt      # С сохранением в файл
   python -m src.simulator -n 20 --persona skeptic  # Только скептики
   python -m src.simulator -n 100 -p 4              # 4 параллельных потока
-  python -m src.simulator --e2e                    # Все 20 техник продаж
-  python -m src.simulator --e2e-flow challenger    # Конкретная техника
+  python -m src.simulator --e2e                    # 20 техник × 5 персон = 100 тестов
+  python -m src.simulator --e2e --personas 3       # 20 техник × 3 персоны = 60 тестов
+  python -m src.simulator --e2e-flow challenger    # 1 техника × 5 персон = 5 тестов
+  python -m src.simulator --e2e --seed 42          # Воспроизводимый выбор персон
         """
     )
 
@@ -106,6 +109,22 @@ def create_parser():
         help="Использовать конкретный flow для обычных симуляций"
     )
 
+    parser.add_argument(
+        "--personas",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Количество рандомных персон на каждую технику в e2e режиме (по умолчанию: 5)"
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        metavar="SEED",
+        help="Random seed для воспроизводимости выбора персон"
+    )
+
     return parser
 
 
@@ -114,8 +133,13 @@ def run_e2e_mode(args):
     Run E2E testing mode for sales techniques.
 
     Tests all 20 (or a specific) sales technique flows.
+    Each technique is tested with N random personas (default: 5).
     """
-    from simulator.e2e_scenarios import ALL_SCENARIOS, get_scenario_by_flow
+    from simulator.e2e_scenarios import (
+        ALL_SCENARIOS,
+        get_scenario_by_flow,
+        expand_scenarios_with_personas
+    )
     from simulator.report import generate_e2e_report
 
     # Заголовок
@@ -127,18 +151,31 @@ def run_e2e_mode(args):
 
     # Determine which scenarios to run
     if args.e2e_flow:
-        scenario = get_scenario_by_flow(args.e2e_flow)
-        if not scenario:
+        base_scenario = get_scenario_by_flow(args.e2e_flow)
+        if not base_scenario:
             print(f"ОШИБКА: Flow '{args.e2e_flow}' не найден")
             print("Доступные flows:")
             for s in ALL_SCENARIOS:
                 print(f"  - {s.flow}")
             sys.exit(1)
-        scenarios = [scenario]
+        # Expand single flow with random personas
+        scenarios = expand_scenarios_with_personas(
+            scenarios=[base_scenario],
+            personas_per_scenario=args.personas,
+            seed=args.seed
+        )
         print(f"Flow: {args.e2e_flow}")
+        print(f"Персон на технику: {args.personas}")
     else:
-        scenarios = ALL_SCENARIOS
-        print(f"Тестов: {len(scenarios)} техник продаж")
+        # Expand all scenarios with random personas
+        scenarios = expand_scenarios_with_personas(
+            scenarios=ALL_SCENARIOS,
+            personas_per_scenario=args.personas,
+            seed=args.seed
+        )
+        print(f"Техник: {len(ALL_SCENARIOS)}")
+        print(f"Персон на технику: {args.personas}")
+        print(f"Всего тестов: {len(scenarios)}")
 
     if args.output:
         print(f"Вывод в: {args.output}")
@@ -238,14 +275,33 @@ def run_e2e_mode(args):
     print(f"Avg Score: {avg_score:.2f}")
     print()
 
-    # Детали по каждому тесту
+    # Детали по каждому тесту - группируем по техникам
     print("RESULTS BY TECHNIQUE")
     print("-" * 60)
+
+    # Группируем результаты по flow
+    from collections import defaultdict
+    results_by_flow = defaultdict(list)
     for r in results:
-        status = "PASS" if r.passed else "FAIL"
-        expected = f"(expected: {r.expected_outcome})" if r.outcome != r.expected_outcome else ""
-        print(f"  {status} {r.scenario_id}. {r.scenario_name:25s} "
-              f"→ {r.outcome:12s} {expected}")
+        results_by_flow[r.flow_name].append(r)
+
+    for flow_name in sorted(results_by_flow.keys()):
+        flow_results = results_by_flow[flow_name]
+        flow_passed = sum(1 for r in flow_results if r.passed)
+        flow_total = len(flow_results)
+        flow_avg_score = sum(r.score for r in flow_results) / flow_total
+
+        # Заголовок техники
+        flow_status = "✓" if flow_passed == flow_total else "○" if flow_passed > 0 else "✗"
+        print(f"\n  {flow_status} {flow_name.upper()} ({flow_passed}/{flow_total}, avg: {flow_avg_score:.2f})")
+
+        # Детали по каждой персоне
+        for r in flow_results:
+            status = "PASS" if r.passed else "FAIL"
+            # Извлекаем персону из scenario_id (формат: "01_skeptic")
+            persona = r.scenario_id.split("_", 1)[1] if "_" in r.scenario_id else "unknown"
+            print(f"      {status} {persona:18s} → {r.outcome:12s} (score: {r.score:.2f})")
+
     print()
 
     # Сохранение отчёта

@@ -411,7 +411,7 @@ class ReportGenerator:
 
 def generate_e2e_report(results: List, output_path: str = None) -> dict:
     """
-    Generate E2E test report.
+    Generate E2E test report with grouping by technique.
 
     Args:
         results: List of E2EResult objects
@@ -422,6 +422,7 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
     """
     import json
     from datetime import datetime
+    from collections import defaultdict
 
     # Calculate summary stats
     total = len(results)
@@ -430,12 +431,41 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
     avg_score = sum(r.score for r in results) / total if total > 0 else 0.0
     pass_rate = (passed / total * 100) if total > 0 else 0.0
 
+    # Group results by flow (technique)
+    results_by_flow = defaultdict(list)
+    for r in results:
+        results_by_flow[r.flow_name].append(r)
+
+    # Calculate per-technique stats
+    techniques_summary = []
+    for flow_name, flow_results in sorted(results_by_flow.items()):
+        tech_total = len(flow_results)
+        tech_passed = sum(1 for r in flow_results if r.passed)
+        tech_avg_score = sum(r.score for r in flow_results) / tech_total
+        tech_pass_rate = (tech_passed / tech_total * 100) if tech_total > 0 else 0.0
+
+        techniques_summary.append({
+            "flow": flow_name,
+            "total": tech_total,
+            "passed": tech_passed,
+            "pass_rate": round(tech_pass_rate, 2),
+            "avg_score": round(tech_avg_score, 4),
+            "personas": [r.scenario_id.split("_", 1)[1] if "_" in r.scenario_id else "unknown"
+                        for r in flow_results]
+        })
+
+    # Count unique techniques and personas
+    unique_techniques = len(results_by_flow)
+    personas_per_technique = len(next(iter(results_by_flow.values()))) if results_by_flow else 0
+
     # Build report structure
     report_data = {
         "run_id": f"e2e_{datetime.now().strftime('%Y-%m-%d_%H%M%S')}",
         "timestamp": datetime.now().isoformat(),
         "config": {
-            "total_flows": total,
+            "total_tests": total,
+            "techniques": unique_techniques,
+            "personas_per_technique": personas_per_technique,
         },
         "summary": {
             "passed": passed,
@@ -443,15 +473,20 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
             "pass_rate": round(pass_rate, 2),
             "avg_score": round(avg_score, 4),
         },
-        "flows": []
+        "by_technique": techniques_summary,
+        "all_results": []
     }
 
-    # Add individual flow results
+    # Add individual test results
     for r in results:
-        flow_data = {
+        # Extract persona from scenario_id
+        persona = r.scenario_id.split("_", 1)[1] if "_" in r.scenario_id else "unknown"
+
+        result_data = {
             "id": r.scenario_id,
             "name": r.scenario_name,
             "flow": r.flow_name,
+            "persona": persona,
             "passed": r.passed,
             "score": round(r.score, 4),
             "outcome": r.outcome,
@@ -463,7 +498,7 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
             "errors": r.errors,
             "details": r.details
         }
-        report_data["flows"].append(flow_data)
+        report_data["all_results"].append(result_data)
 
     # Save to file if path provided
     if output_path:
@@ -475,7 +510,7 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
 
 def generate_e2e_text_report(results: List, output_path: str = None) -> str:
     """
-    Generate human-readable E2E test report.
+    Generate human-readable E2E test report with grouping by technique.
 
     Args:
         results: List of E2EResult objects
@@ -485,6 +520,7 @@ def generate_e2e_text_report(results: List, output_path: str = None) -> str:
         Report text
     """
     from datetime import datetime
+    from collections import defaultdict
 
     lines = []
 
@@ -495,6 +531,14 @@ def generate_e2e_text_report(results: List, output_path: str = None) -> str:
     lines.append(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append("")
 
+    # Group by flow
+    results_by_flow = defaultdict(list)
+    for r in results:
+        results_by_flow[r.flow_name].append(r)
+
+    unique_techniques = len(results_by_flow)
+    personas_per_technique = len(next(iter(results_by_flow.values()))) if results_by_flow else 0
+
     # Summary
     total = len(results)
     passed = sum(1 for r in results if r.passed)
@@ -504,21 +548,33 @@ def generate_e2e_text_report(results: List, output_path: str = None) -> str:
 
     lines.append("SUMMARY")
     lines.append("-" * 80)
+    lines.append(f"Techniques: {unique_techniques}")
+    lines.append(f"Personas per technique: {personas_per_technique}")
+    lines.append(f"Total tests: {total}")
     lines.append(f"Passed: {passed}/{total} ({pass_rate:.1f}%)")
     lines.append(f"Average Score: {avg_score:.2f}")
     lines.append("")
 
-    # Results by technique
+    # Results grouped by technique
     lines.append("RESULTS BY TECHNIQUE")
     lines.append("-" * 80)
 
-    for r in results:
-        status = "PASS" if r.passed else "FAIL"
-        expected_note = f" (expected: {r.expected_outcome})" if r.outcome != r.expected_outcome else ""
-        lines.append(
-            f"{status} {r.scenario_id:>2}. {r.scenario_name:<25} "
-            f"-> {r.outcome:<12} score={r.score:.2f}{expected_note}"
-        )
+    for flow_name in sorted(results_by_flow.keys()):
+        flow_results = results_by_flow[flow_name]
+        flow_passed = sum(1 for r in flow_results if r.passed)
+        flow_total = len(flow_results)
+        flow_avg_score = sum(r.score for r in flow_results) / flow_total
+
+        # Technique header
+        flow_status = "✓" if flow_passed == flow_total else "○" if flow_passed > 0 else "✗"
+        lines.append(f"\n{flow_status} {flow_name.upper()} ({flow_passed}/{flow_total}, avg: {flow_avg_score:.2f})")
+
+        # Details per persona
+        for r in flow_results:
+            status = "PASS" if r.passed else "FAIL"
+            persona = r.scenario_id.split("_", 1)[1] if "_" in r.scenario_id else "unknown"
+            expected_note = f" (exp: {r.expected_outcome})" if r.outcome != r.expected_outcome else ""
+            lines.append(f"    {status} {persona:18s} → {r.outcome:12s} score={r.score:.2f}{expected_note}")
 
     lines.append("")
 
@@ -528,8 +584,8 @@ def generate_e2e_text_report(results: List, output_path: str = None) -> str:
         lines.append("FAILED TESTS DETAILS")
         lines.append("-" * 80)
         for r in failed_results:
-            lines.append(f"\n{r.scenario_id}. {r.scenario_name}:")
-            lines.append(f"  Flow: {r.flow_name}")
+            persona = r.scenario_id.split("_", 1)[1] if "_" in r.scenario_id else "unknown"
+            lines.append(f"\n{r.flow_name} + {persona}:")
             lines.append(f"  Expected: {r.expected_outcome}, Got: {r.outcome}")
             lines.append(f"  Phases reached: {r.phases_reached}")
             lines.append(f"  Expected phases: {r.expected_phases}")
