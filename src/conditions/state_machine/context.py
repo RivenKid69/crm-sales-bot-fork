@@ -14,13 +14,16 @@ from dataclasses import dataclass, field
 from src.intent_tracker import INTENT_CATEGORIES
 
 # Import SPIN constants for auto-computing phase from state
-from src.yaml_config.constants import SPIN_STATES
+from src.yaml_config.constants import SPIN_STATES, SPIN_PHASES
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
 
 # Create reverse mapping: state -> phase
 _STATE_TO_PHASE = {v: k for k, v in SPIN_STATES.items()}
+
+# Alias for backward compatibility (tests may use SPIN_STATE_TO_PHASE)
+SPIN_STATE_TO_PHASE = _STATE_TO_PHASE
 
 
 @runtime_checkable

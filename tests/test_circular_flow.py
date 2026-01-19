@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from state_machine import StateMachine, CircularFlowManager
-from src.yaml_config.constants import GO_BACK_INTENTS, SPIN_PHASES
+from src.yaml_config.constants import GO_BACK_INTENTS, SPIN_PHASES, ALLOWED_GOBACKS
 from feature_flags import flags
 
 
@@ -377,21 +377,19 @@ class TestAllowedGobacks:
 
     def test_all_spin_phases_have_goback(self):
         """Все SPIN-фазы (кроме situation) имеют возврат"""
-        manager = CircularFlowManager()
-
-        assert "spin_problem" in manager.ALLOWED_GOBACKS
-        assert "spin_implication" in manager.ALLOWED_GOBACKS
-        assert "spin_need_payoff" in manager.ALLOWED_GOBACKS
+        # ALLOWED_GOBACKS is now loaded from yaml_config/constants.yaml
+        assert "spin_problem" in ALLOWED_GOBACKS
+        assert "spin_implication" in ALLOWED_GOBACKS
+        assert "spin_need_payoff" in ALLOWED_GOBACKS
 
     def test_goback_chain(self):
         """Цепочка возвратов правильная"""
-        manager = CircularFlowManager()
-
+        # ALLOWED_GOBACKS is now loaded from yaml_config/constants.yaml
         chain = []
         state = "presentation"
 
-        while state in manager.ALLOWED_GOBACKS:
-            next_state = manager.ALLOWED_GOBACKS[state]
+        while state in ALLOWED_GOBACKS:
+            next_state = ALLOWED_GOBACKS[state]
             chain.append((state, next_state))
             state = next_state
 

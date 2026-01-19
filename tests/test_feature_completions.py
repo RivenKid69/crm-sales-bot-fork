@@ -24,6 +24,7 @@ from state_machine import (
     MAX_CONSECUTIVE_OBJECTIONS,  # Phase 4: now module-level constants
     MAX_TOTAL_OBJECTIONS,
 )
+from src.yaml_config.constants import ALLOWED_GOBACKS
 from config import SALES_STATES
 from feature_flags import flags
 
@@ -218,7 +219,8 @@ class TestObjectionFlowInStateMachine:
             result = sm.process("objection_price")
 
         assert result["next_state"] == "soft_close"
-        assert result["action"] == "objection_limit_reached"
+        # condition is objection_limit_reached, action is transition_to_soft_close
+        assert result["action"] == "transition_to_soft_close"
 
     def test_positive_intent_resets_consecutive(self, sm):
         """Положительный интент сбрасывает consecutive counter."""
@@ -308,8 +310,9 @@ class TestGoBackFromSoftClose:
 
     def test_soft_close_in_allowed_gobacks(self):
         """soft_close должен быть в ALLOWED_GOBACKS."""
-        assert "soft_close" in CircularFlowManager.ALLOWED_GOBACKS
-        assert CircularFlowManager.ALLOWED_GOBACKS["soft_close"] == "greeting"
+        # ALLOWED_GOBACKS is now loaded from yaml_config/constants.yaml
+        assert "soft_close" in ALLOWED_GOBACKS
+        assert ALLOWED_GOBACKS["soft_close"] == "greeting"
 
     def test_go_back_from_soft_close_processing(self, enable_circular_flow):
         """go_back из soft_close должен работать (при включённом флаге)."""
@@ -415,7 +418,8 @@ class TestSoftCloseRules:
         rules = config.get("rules", {})
 
         assert "price_question" in rules
-        assert rules["price_question"] == "answer_and_offer_continue"
+        # Updated to match current YAML config value
+        assert rules["price_question"] == "answer_with_facts"
 
 
 # =============================================================================

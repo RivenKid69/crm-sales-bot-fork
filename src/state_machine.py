@@ -41,6 +41,8 @@ from src.yaml_config.constants import (
     QUESTION_INTENTS,
     INTENT_CATEGORIES,
     ALLOWED_GOBACKS,
+    MAX_CONSECUTIVE_OBJECTIONS,
+    MAX_TOTAL_OBJECTIONS,
 )
 
 if TYPE_CHECKING:

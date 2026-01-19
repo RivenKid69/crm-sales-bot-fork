@@ -10,28 +10,12 @@ Part of Phase 5: DialoguePolicy Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 
-
-# States where overlays are allowed (defaults, loaded from config)
-OVERLAY_ALLOWED_STATES = {
-    "presentation",
-    "handle_objection",
-}
-
-# States that are protected from policy overlays
-PROTECTED_STATES = {
-    "greeting",
-    "close",
-    "success",
-    "soft_close",
-}
-
-# Actions that are considered aggressive
-AGGRESSIVE_ACTIONS = {
-    "transition_to_presentation",
-    "transition_to_close",
-    "ask_for_demo",
-    "ask_for_contact",
-}
+# Import from single source of truth (yaml_config/constants.py)
+from src.yaml_config.constants import (
+    OVERLAY_ALLOWED_STATES,
+    PROTECTED_STATES,
+    AGGRESSIVE_ACTIONS,
+)
 
 
 @dataclass

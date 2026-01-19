@@ -3,15 +3,25 @@ Property-based tests for config using Hypothesis.
 
 These tests automatically generate random valid and invalid configurations
 to discover edge cases that might be missed by traditional unit tests.
+
+Requires: pip install hypothesis
 """
 
 import pytest
-from hypothesis import given, strategies as st, settings, assume, example, HealthCheck
-from hypothesis.stateful import RuleBasedStateMachine, rule, initialize, invariant
 from pathlib import Path
 import yaml
 import sys
 import tempfile
+
+# Skip entire module if hypothesis is not installed
+# This uses pytest's importorskip which properly handles collection
+hypothesis = pytest.importorskip(
+    "hypothesis",
+    reason="hypothesis not installed - run 'pip install hypothesis' to enable property-based tests"
+)
+
+from hypothesis import given, strategies as st, settings, assume, example, HealthCheck
+from hypothesis.stateful import RuleBasedStateMachine, rule, initialize, invariant
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 

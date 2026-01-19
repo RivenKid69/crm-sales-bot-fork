@@ -548,6 +548,10 @@ class TestDynamicSpinConfiguration:
             "phases": {
                 "discovery": {"state": "spin_discovery", "skippable": False},
                 "solution": {"state": "spin_solution", "skippable": False}
+            },
+            "progress_intents": {
+                "discovery_complete": "discovery",
+                "solution_accepted": "solution",
             }
         }
         with open(tmp_path / "spin" / "phases.yaml", 'w') as f:

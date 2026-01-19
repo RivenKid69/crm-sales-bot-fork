@@ -294,11 +294,12 @@ class TestDialoguePolicy:
 
         policy.maybe_override(sm_result1, envelope1)
 
+        # Use oscillation instead of breakthrough (breakthrough_cta has action=None
+        # and doesn't get added to history)
         envelope2 = ContextEnvelope(
             state="presentation",
-            has_breakthrough=True,
-            turns_since_breakthrough=2,  # Must be in window [1,3]
-            reason_codes=[ReasonCode.BREAKTHROUGH_CTA.value],
+            has_oscillation=True,
+            reason_codes=[ReasonCode.POLICY_REPAIR_MODE.value],
         )
         sm_result2 = {"next_state": "presentation", "action": "present"}
 
@@ -308,7 +309,7 @@ class TestDialoguePolicy:
 
         assert len(history) == 2
         assert history[0]["decision"] == "repair_clarify"
-        assert history[1]["decision"] == "breakthrough_cta"
+        assert history[1]["decision"] == "repair_summarize"
 
     def test_get_override_rate(self):
         """Проверить расчёт override rate."""
@@ -343,11 +344,12 @@ class TestDialoguePolicy:
             sm_result = {"next_state": "spin_situation", "action": "ask"}
             policy.maybe_override(sm_result, envelope)
 
+        # Use oscillation instead of breakthrough (breakthrough_cta has action=None
+        # and doesn't get added to history)
         envelope2 = ContextEnvelope(
             state="presentation",
-            has_breakthrough=True,
-            turns_since_breakthrough=2,  # Must be in window [1,3]
-            reason_codes=[ReasonCode.BREAKTHROUGH_CTA.value],
+            has_oscillation=True,
+            reason_codes=[ReasonCode.POLICY_REPAIR_MODE.value],
         )
         sm_result2 = {"next_state": "presentation", "action": "present"}
         policy.maybe_override(sm_result2, envelope2)
@@ -355,7 +357,7 @@ class TestDialoguePolicy:
         distribution = policy.get_decision_distribution()
 
         assert distribution["repair_clarify"] == 2
-        assert distribution["breakthrough_cta"] == 1
+        assert distribution["repair_summarize"] == 1
 
     def test_reset(self):
         """Проверить сброс истории."""

@@ -383,8 +383,10 @@ class TestPolicyRegistry:
     def test_registry_in_condition_registries(self):
         """Test that Policy registry is in ConditionRegistries."""
         # Policy-specific conditions should be findable
-        assert ConditionRegistries.has_condition("in_breakthrough_window")
-        assert ConditionRegistries.find_condition("in_breakthrough_window") == "policy"
+        # Note: in_breakthrough_window is in both state_machine and policy,
+        # so we use has_guard_intervention which is unique to policy
+        assert ConditionRegistries.has_condition("has_guard_intervention")
+        assert ConditionRegistries.find_condition("has_guard_intervention") == "policy"
 
         # Policy registry should be registered
         assert ConditionRegistries.get("policy") is policy_registry
