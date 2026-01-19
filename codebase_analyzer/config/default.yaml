@@ -1,0 +1,88 @@
+# Codebase Analyzer Configuration
+# ================================
+
+# LLM Configuration
+llm:
+  model_name: "Qwen/Qwen3-30B-A3B-GPTQ-Int4"
+  quantization: "gptq"
+  max_model_len: 65536
+  gpu_memory_utilization: 0.92
+  max_num_batched_tokens: 8192
+  enable_chunked_prefill: true
+  enable_prefix_caching: true
+  temperature: 0.1
+  top_p: 0.9
+  max_tokens: 4096
+  api_base: "http://localhost:8000/v1"
+  api_key: "EMPTY"
+
+# Embedding Configuration
+embedding:
+  model_name: "Qodo/Qodo-Embed-1-1.5B"
+  device: "auto"
+  batch_size: 32
+  normalize: true
+
+# RAG Configuration
+rag:
+  vector_db: "qdrant"
+  qdrant_host: "localhost"
+  qdrant_port: 6333
+  collection_name: "codebase_chunks"
+  top_k_initial: 50
+  top_k_final: 10
+  rrf_k: 60
+  bm25_weight: 0.3
+  dense_weight: 0.5
+  graph_weight: 0.2
+  enable_reranking: true
+  reranker_model: "colbert"
+
+# Chunking Configuration
+chunking:
+  strategy: "ast"
+  chunk_size_tokens: 1500
+  chunk_overlap_percent: 0.1
+  min_chunk_size: 100
+
+# Indexer Configuration
+indexer:
+  languages:
+    - php
+    - go
+    - typescript
+    - javascript
+  include_patterns:
+    - "**/*.php"
+    - "**/*.go"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.js"
+    - "**/*.jsx"
+  exclude_patterns:
+    - "**/node_modules/**"
+    - "**/vendor/**"
+    - "**/.git/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/__pycache__/**"
+    - "**/test/**"
+    - "**/tests/**"
+    - "**/*.test.*"
+    - "**/*.spec.*"
+  max_file_size_mb: 5.0
+  parallel_workers: 8
+
+# Generator Configuration
+generator:
+  output_format: "markdown"
+  detail_level: "modular"
+  include_code_snippets: true
+  include_diagrams: false
+  language: "ru"
+
+# General Settings
+log_level: "INFO"
+batch_size: 10
+max_retries: 3
+retry_delay: 1.0
