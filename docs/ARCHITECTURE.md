@@ -5,8 +5,8 @@
 CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. Использует методологию SPIN Selling для квалификации клиентов и ведёт диалог от приветствия до закрытия сделки.
 
 **Технологический стек:**
-- **LLM**: Qwen3-4B-AWQ через vLLM (OpenAI-compatible API)
-- **Structured Output**: Outlines (guided decoding) для гарантированного JSON
+- **LLM**: Qwen3 14B через Ollama (native API)
+- **Structured Output**: Ollama native structured output (format parameter)
 - **Эмбеддинги**: ai-forever/FRIDA (ruMTEB avg ~71, лучшая модель для русского)
 - **Reranker**: BAAI/bge-reranker-v2-m3
 
@@ -98,7 +98,7 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
     │    UnifiedClassifier      │   │     StateMachine          │
     │    (classifier/)          │   │   (state_machine.py)      │
     │                           │   │                           │
-    │ • LLMClassifier (vLLM)    │   │ • SPIN flow логика        │
+    │ • LLMClassifier (Ollama)  │   │ • SPIN flow логика        │
     │ • Structured output       │   │ • Priority-driven rules   │
     │ • HybridClassifier fallback│  │ • FlowConfig (YAML)       │
     │ • 33 интента              │   │ • on_enter actions        │
@@ -108,7 +108,7 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
                   │           ResponseGenerator                   │
                   │            (generator.py)                     │
                   │                                               │
-                  │ • Генерация ответов через vLLM                │
+                  │ • Генерация ответов через Ollama              │
                   │ • Промпт-инжиниринг по action                 │
                   │ • Интеграция с базой знаний                   │
                   │ • Retry при иностранном тексте                │
@@ -118,12 +118,12 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
           ┌────────────────────────┼────────────────────────┐
           │                        │                        │
 ┌─────────▼─────────┐   ┌──────────▼──────────┐   ┌─────────▼─────────┐
-│    VLLMClient     │   │  CascadeRetriever   │   │      config       │
+│   OllamaClient    │   │  CascadeRetriever   │   │      config       │
 │    (llm.py)       │   │   (knowledge/)      │   │    (config.py)    │
 │                   │   │                     │   │                   │
-│ • Qwen3-4B-AWQ    │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
+│ • Qwen3 14B       │   │ • 3-этапный поиск   │   │ • INTENT_ROOTS    │
 │ • Structured JSON │   │ • 1969 YAML секций  │   │ • SALES_STATES    │
-│ • Outlines backend│   │ • ai-forever/FRIDA  │   │ • Промпт-шаблоны  │
+│ • Native format   │   │ • ai-forever/FRIDA  │   │ • Промпт-шаблоны  │
 │ • Retry + Circuit │   │ • CategoryRouter    │   │                   │
 │   Breaker         │   │ • Reranker          │   │                   │
 └───────────────────┘   └─────────────────────┘   └───────────────────┘
@@ -140,52 +140,53 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
 
 ## LLM Архитектура
 
-### vLLM Server
+### Ollama Server
 
 ```bash
-# Запуск vLLM
-vllm serve Qwen/Qwen3-4B-AWQ \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --guided-decoding-backend outlines \
-    --max-model-len 4096 \
-    --gpu-memory-utilization 0.9
+# Установка Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Скачать модель
+ollama pull qwen3:14b
+
+# Запуск сервера
+ollama serve
 ```
 
 **Требования:**
-- ~3-4 GB VRAM (для 4B модели)
+- ~12-16 GB VRAM (для 14B модели)
 - CUDA совместимая GPU
 - Python 3.10+
 
-### VLLMClient (llm.py)
+### OllamaClient (llm.py)
 
 Единый клиент для всех LLM операций:
 
 ```python
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 
 # Free-form генерация
 response = llm.generate(prompt, state="greeting")
 
-# Structured output (Outlines)
+# Structured output (Ollama native)
 result = llm.generate_structured(prompt, PydanticSchema)
 ```
 
 **Возможности:**
-- **Structured Output** — 100% валидный JSON через Pydantic схемы
+- **Structured Output** — 100% валидный JSON через Pydantic схемы (native format parameter)
 - **Circuit Breaker** — 5 ошибок → 60 сек cooldown
 - **Retry** — exponential backoff (1s → 2s → 4s)
 - **Fallback responses** — по состояниям FSM
-- **Health check** — проверка доступности vLLM
+- **Health check** — проверка доступности Ollama
 
 **Конфигурация** (settings.yaml):
 ```yaml
 llm:
-  model: "Qwen/Qwen3-4B-AWQ"
-  base_url: "http://localhost:8000/v1"
-  timeout: 60
+  model: "qwen3:14b"
+  base_url: "http://localhost:11434"
+  timeout: 120
 ```
 
 ## Классификация интентов
@@ -203,7 +204,7 @@ llm:
 │           ▼                          ▼                   │
 │   ┌───────────────┐         ┌────────────────┐          │
 │   │ LLMClassifier │         │ HybridClassifier│          │
-│   │ (vLLM+Outlines)│        │ (regex+lemma)   │          │
+│   │ (Ollama)      │         │ (regex+lemma)   │          │
 │   └───────┬───────┘         └────────────────┘          │
 │           │                                              │
 │           │ fallback при ошибке                          │
@@ -228,7 +229,7 @@ classifier/llm/
 
 **Возможности:**
 - 33 интента с описаниями и примерами
-- Structured output через Outlines
+- Structured output через Ollama native format
 - Извлечение данных (company_size, pain_point, etc.)
 - Контекстная классификация (учёт SPIN фазы)
 - Fallback на HybridClassifier при ошибке
@@ -322,7 +323,7 @@ retrieved_facts = retriever.retrieve(message, intent, state)
 # 2. Выбор промпт-шаблона по action
 template = PROMPT_TEMPLATES["spin_problem"]
 
-# 3. Генерация через vLLM
+# 3. Генерация через Ollama
 response = "Понял, команда из 10 человек. Расскажите подробнее — как именно теряете клиентов?"
 ```
 
@@ -581,7 +582,7 @@ rules:
          ▼
 ┌────────────────────┐
 │  4. CategoryRouter │  LLM-классификация категорий
-│  (fallback)        │  vLLM определяет релевантные категории
+│  (fallback)        │  Ollama определяет релевантные категории
 └────────┬───────────┘
          │ при необходимости
          ▼
@@ -602,7 +603,7 @@ categories = router.route("Сколько стоит Wipon Desktop?")
 ```
 
 **Поддерживает:**
-- Structured Output (vLLM + Outlines) — 100% валидный JSON
+- Structured Output (Ollama native format) — 100% валидный JSON
 - Legacy режим (generate + parsing) — обратная совместимость
 
 ### Категории знаний
@@ -709,9 +710,9 @@ FALLBACK_RESPONSES = {
 | Модуль | Назначение |
 |--------|------------|
 | `bot.py` | Оркестрация: classifier → state_machine → generator |
-| `llm.py` | VLLMClient с circuit breaker и retry |
+| `llm.py` | OllamaClient с circuit breaker и retry |
 | `state_machine.py` | FSM с 10 состояниями и SPIN-логикой |
-| `generator.py` | Генерация ответов через vLLM |
+| `generator.py` | Генерация ответов через Ollama |
 | `classifier/unified.py` | Адаптер для переключения классификаторов |
 | `classifier/llm/` | LLM классификатор (33 интента) |
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
@@ -833,12 +834,11 @@ pytest tests/test_config_*.py -v
 
 | Пакет | Назначение |
 |-------|------------|
-| `vllm` | vLLM сервер для LLM |
-| `outlines` | Structured output (guided decoding) |
+| `ollama` | Ollama сервер для LLM (устанавливается системно) |
+| `requests` | HTTP-клиент для Ollama API |
 | `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка |
 | `sentence-transformers` | Эмбеддинги (FRIDA) |
-| `requests` | HTTP-клиент |
 | `pyyaml` | Парсинг YAML |
 | `pytest` | Тестирование |
 

@@ -8,9 +8,9 @@
 
 ```python
 from bot import SalesBot
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 bot = SalesBot(llm)
 
 # Или с параметрами
@@ -178,7 +178,7 @@ stats = classifier.get_stats()
 #         "llm_successes": 98,
 #         "fallback_calls": 2,
 #         "llm_success_rate": 98.0,
-#         "vllm_stats": {...}
+#         "ollama_stats": {...}
 #     }
 # }
 ```
@@ -187,7 +187,7 @@ stats = classifier.get_stats()
 
 ### LLMClassifier
 
-Классификатор на базе LLM с structured output через vLLM + Outlines.
+Классификатор на базе LLM с structured output через Ollama native format.
 
 ```python
 from classifier.llm import LLMClassifier
@@ -346,27 +346,22 @@ data = extractor.extract("нас 10 человек, теряем примерн�
 
 ---
 
-### VLLMClient
+### OllamaClient
 
-Клиент для vLLM с circuit breaker, retry и structured output.
+Клиент для Ollama с circuit breaker, retry и structured output.
 
 ```python
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 # или с параметрами:
-llm = VLLMClient(
-    model="Qwen/Qwen3-4B-AWQ",
-    base_url="http://localhost:8000/v1",
-    timeout=60,
+llm = OllamaClient(
+    model="qwen3:14b",
+    base_url="http://localhost:11434",
+    timeout=120,
     enable_circuit_breaker=True,
     enable_retry=True
 )
-```
-
-**Алиас для обратной совместимости:**
-```python
-from llm import OllamaLLM  # = VLLMClient
 ```
 
 #### Методы
@@ -384,7 +379,7 @@ response = llm.generate(
 
 ##### `generate_structured(prompt: str, schema: Type[BaseModel], allow_fallback: bool = True) -> Optional[T]`
 
-Генерация с гарантированным JSON через Outlines.
+Генерация с гарантированным JSON через Ollama native format parameter.
 
 ```python
 from pydantic import BaseModel
@@ -399,7 +394,7 @@ result = llm.generate_structured(prompt, Result)
 
 ##### `health_check() -> bool`
 
-Проверка доступности vLLM.
+Проверка доступности Ollama.
 
 ```python
 is_healthy = llm.health_check()
@@ -437,7 +432,7 @@ stats = llm.get_stats_dict()
 | Атрибут | Тип | Описание |
 |---------|-----|----------|
 | `model` | `str` | Название модели |
-| `base_url` | `str` | URL vLLM API |
+| `base_url` | `str` | URL Ollama API |
 | `timeout` | `int` | Таймаут запроса |
 | `stats` | `LLMStats` | Статистика запросов |
 | `is_circuit_open` | `bool` | Открыт ли circuit breaker |
@@ -521,13 +516,13 @@ result = sm.process(
 
 ### ResponseGenerator
 
-Генерация ответов через vLLM.
+Генерация ответов через Ollama.
 
 ```python
 from generator import ResponseGenerator
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 generator = ResponseGenerator(llm)
 ```
 
@@ -632,9 +627,9 @@ LLM-классификация категорий для улучшения по
 
 ```python
 from knowledge.category_router import CategoryRouter
-from llm import VLLMClient
+from llm import OllamaClient
 
-router = CategoryRouter(VLLMClient(), top_k=3)
+router = CategoryRouter(OllamaClient(), top_k=3)
 ```
 
 #### Методы
@@ -649,7 +644,7 @@ categories = router.route("как подключить 1С?")
 ```
 
 Поддерживает:
-- Structured Output (vLLM + Outlines) — 100% валидный JSON
+- Structured Output (Ollama native format) — 100% валидный JSON
 - Legacy режим (generate + parsing) — обратная совместимость
 
 ---
@@ -764,9 +759,9 @@ class CategoryResult(BaseModel):
 
 ```python
 from bot import SalesBot
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 bot = SalesBot(llm)
 
 # Приветствие
@@ -823,16 +818,16 @@ results, stats = retriever.search_with_stats("цены на Wipon")
 print(f"Использован этап: {stats['stage_used']}")
 ```
 
-### Работа с vLLM
+### Работа с Ollama
 
 ```python
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 
 # Health check
 if llm.health_check():
-    print("vLLM доступен")
+    print("Ollama доступен")
 
 # Free-form генерация
 response = llm.generate("Привет!", state="greeting")
@@ -873,13 +868,13 @@ if flags.is_enabled("tone_analysis"):
 
 ```python
 from bot import SalesBot, run_interactive
-from llm import VLLMClient
+from llm import OllamaClient
 from feature_flags import flags
 
 # Включить нужные фичи
 flags.enable_group("phase_3")
 
-llm = VLLMClient()
+llm = OllamaClient()
 bot = SalesBot(llm)
 
 # Запуск интерактивного режима

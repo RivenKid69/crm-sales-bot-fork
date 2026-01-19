@@ -29,7 +29,7 @@ pip install -e .
 
 Install and run Ollama with Qwen3:
 ```bash
-ollama pull qwen3:8b
+ollama pull qwen3:14b
 ollama serve
 ```
 
@@ -81,6 +81,6 @@ Environment variables (prefix `SEO_`):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | SEO_OLLAMA_BASE_URL | http://localhost:11434 | Ollama API URL |
-| SEO_OLLAMA_MODEL | qwen3:8b | Model name |
+| SEO_OLLAMA_MODEL | qwen3:14b | Model name |
 | SEO_TARGET_UNIQUENESS | 95.0 | Target uniqueness % |
 | SEO_MAX_REWRITE_ATTEMPTS | 3 | Max retry attempts |

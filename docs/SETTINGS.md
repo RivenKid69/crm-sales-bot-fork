@@ -19,14 +19,13 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# LLM (Language Model) - vLLM Server
+# LLM (Language Model) - Ollama Server
 # -----------------------------------------------------------------------------
 llm:
-  model: "Qwen/Qwen3-4B-AWQ"
-  base_url: "http://localhost:8000/v1"
-  timeout: 60
+  model: "qwen3:14b"
+  base_url: "http://localhost:11434"
+  timeout: 120
   stream: false
-  think: false
 
 # -----------------------------------------------------------------------------
 # RETRIEVER (Поиск по базе знаний)
@@ -158,27 +157,28 @@ development:
 
 ## Параметры
 
-### LLM (vLLM Server)
+### LLM (Ollama Server)
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
-| `model` | string | `"Qwen/Qwen3-4B-AWQ"` | Модель vLLM (с AWQ квантизацией) |
-| `base_url` | string | `"http://localhost:8000/v1"` | URL vLLM сервера (OpenAI-compatible) |
-| `timeout` | int | `60` | Таймаут запроса в секундах |
+| `model` | string | `"qwen3:14b"` | Модель Ollama (qwen3:14b - стандарт проекта) |
+| `base_url` | string | `"http://localhost:11434"` | URL Ollama сервера (native API) |
+| `timeout` | int | `120` | Таймаут запроса в секундах |
 | `stream` | bool | `false` | Режим стриминга |
-| `think` | bool | `false` | Thinking mode (/no_think для скорости) |
 
-**Запуск vLLM сервера:**
+**Запуск Ollama сервера:**
 ```bash
-vllm serve Qwen/Qwen3-4B-AWQ \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --guided-decoding-backend outlines \
-    --max-model-len 4096 \
-    --gpu-memory-utilization 0.9
+# Установка
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Скачать модель
+ollama pull qwen3:14b
+
+# Запуск
+ollama serve
 ```
 
-**Требования:** ~3-4 GB VRAM, CUDA GPU
+**Требования:** ~12-16 GB VRAM, CUDA GPU
 
 ### RETRIEVER (Поиск по базе знаний)
 

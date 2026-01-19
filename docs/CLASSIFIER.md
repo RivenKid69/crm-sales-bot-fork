@@ -7,7 +7,7 @@
 2. **Извлечение данных** — структурированные данные из сообщения
 3. **Контекстную классификацию** — учёт SPIN-фазы и истории диалога
 
-**Основной классификатор**: LLMClassifier (Qwen3-4B через vLLM)
+**Основной классификатор**: LLMClassifier (Qwen3 14B через Ollama)
 **Fallback**: HybridClassifier (regex + pymorphy)
 
 ## Config-Driven Architecture
@@ -78,10 +78,10 @@ result = classifier.classify(
 │           ▼                          ▼                   │
 │   ┌───────────────┐         ┌────────────────┐          │
 │   │ LLMClassifier │         │ HybridClassifier│          │
-│   │ (vLLM+Outlines)│        │ (regex+lemma)   │          │
+│   │ (Ollama)      │         │ (regex+lemma)   │          │
 │   └───────┬───────┘         └────────────────┘          │
 │           │                                              │
-│           │ fallback при ошибке vLLM                     │
+│           │ fallback при ошибке Ollama                   │
 │           ▼                                              │
 │   ┌────────────────┐                                     │
 │   │ HybridClassifier│                                    │
@@ -91,9 +91,9 @@ result = classifier.classify(
 
 ## LLMClassifier (основной)
 
-Классификатор на базе LLM с structured output через vLLM + Outlines.
+Классификатор на базе LLM с structured output через Ollama native format.
 
-**Модель:** `Qwen/Qwen3-4B-AWQ` (настраивается в `settings.yaml`)
+**Модель:** `qwen3:14b` (настраивается в `settings.yaml`)
 
 **Конфигурация из YAML:**
 - Категории интентов берутся из `constants.yaml` → `intents.categories`
@@ -127,10 +127,10 @@ result = classifier.classify(
 ### Возможности
 
 - **33 интента** с описаниями и примерами
-- **Structured output** — 100% валидный JSON через Pydantic
+- **Structured output** — 100% валидный JSON через Ollama native format
 - **Извлечение данных** — company_size, pain_point, contact_info и др.
 - **Контекстная классификация** — учёт SPIN фазы и last_action
-- **Fallback** на HybridClassifier при ошибке vLLM
+- **Fallback** на HybridClassifier при ошибке Ollama
 
 ### 33 интента
 
@@ -369,7 +369,7 @@ stats = classifier.get_stats()
 #         "llm_successes": 98,
 #         "fallback_calls": 2,
 #         "llm_success_rate": 98.0,
-#         "vllm_stats": {...}
+#         "ollama_stats": {...}
 #     }
 # }
 ```
@@ -459,7 +459,7 @@ class ExtractedData(BaseModel):
 # Все тесты классификатора
 pytest tests/test_classifier.py -v
 
-# Тесты LLM классификатора (требует vLLM)
+# Тесты LLM классификатора (требует Ollama)
 pytest tests/test_llm_classifier.py -v
 
 # С покрытием
@@ -475,4 +475,4 @@ pytest tests/test_classifier.py --cov=classifier --cov-report=html
 
 **Рекомендации:**
 - LLMClassifier по умолчанию для максимальной точности
-- HybridClassifier для высоконагруженных сценариев или при недоступности vLLM
+- HybridClassifier для высоконагруженных сценариев или при недоступности Ollama

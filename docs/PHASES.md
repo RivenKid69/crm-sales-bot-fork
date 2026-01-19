@@ -656,7 +656,7 @@ classifier = UnifiedClassifier()
 result = classifier.classify(message, context)
 ```
 
-### LLMClassifier — vLLM + Outlines
+### LLMClassifier — Ollama + Structured Output
 
 ```python
 from classifier.llm import LLMClassifier

@@ -18,8 +18,8 @@ python -m knowledge_extractor --input docs/ --output kb/
 # Обработать один PDF файл
 python -m knowledge_extractor -i manual.pdf -o knowledge/
 
-# Использовать кастомный vLLM endpoint
-python -m knowledge_extractor -i docs/ -o kb/ --llm-url http://localhost:8000/v1
+# Использовать кастомный Ollama endpoint
+python -m knowledge_extractor -i docs/ -o kb/ --llm-url http://localhost:11434
 
 # Dry run (без LLM, только парсинг и chunking)
 python -m knowledge_extractor -i docs/ -o kb/ --dry-run
@@ -68,7 +68,7 @@ INPUT (PDF/DOCX/TXT/Excel/Chat)
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  3. EXTRACTION  │  → ExtractedSection (via Qwen3 14B + Outlines)
+│  3. EXTRACTION  │  → ExtractedSection (via Ollama + Qwen3 14B)
 └────────┬────────┘
          ▼
 ┌─────────────────┐
@@ -94,8 +94,8 @@ INPUT (PDF/DOCX/TXT/Excel/Chat)
 |----------|--------------|----------|
 | `--input, -i` | обязателен | Входной файл или директория |
 | `--output, -o` | обязателен | Директория для YAML файлов |
-| `--llm-url` | http://localhost:8000/v1 | vLLM API endpoint |
-| `--llm-model` | Qwen/Qwen3-14B | Модель LLM |
+| `--llm-url` | http://localhost:11434 | Ollama API endpoint |
+| `--llm-model` | qwen3:14b | Модель Ollama |
 | `--company-name` | - | Название компании для _meta.yaml |
 | `--min-keywords` | 20 | Минимум keywords на секцию |
 | `--max-keywords` | 50 | Максимум keywords на секцию |
@@ -106,21 +106,24 @@ INPUT (PDF/DOCX/TXT/Excel/Chat)
 ## Зависимости
 
 - Python 3.10+
-- vLLM сервер с Qwen3 14B
+- Ollama с моделью qwen3:14b
 - PyMuPDF, python-docx, pandas
 - pymorphy3, sentence-transformers
 - rich, pyyaml
 
-## Требования к vLLM
+## Требования к Ollama
 
-Запустите vLLM перед использованием:
-
-```bash
-vllm serve Qwen/Qwen3-14B --port 8000
-```
-
-Или используйте AWQ квантизацию для экономии памяти:
+Установите и запустите Ollama перед использованием:
 
 ```bash
-vllm serve Qwen/Qwen3-14B-AWQ --port 8000 --quantization awq
+# Установка
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Скачать модель
+ollama pull qwen3:14b
+
+# Запуск
+ollama serve
 ```
+
+**Требования:** ~12-16 GB VRAM для Qwen3 14B
