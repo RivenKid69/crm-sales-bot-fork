@@ -10,6 +10,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 from logger import logger
+from settings import settings
 
 from .models import Tone, Style, ToneAnalysis
 from .markers import (
@@ -197,9 +198,17 @@ class RegexToneAnalyzer:
         Returns:
             Словарь с рекомендациями
         """
+        # Получаем style_instruction из конфига
+        style_key = "informal" if analysis.style == Style.INFORMAL else "formal"
+        style_instruction = settings.get_nested(
+            f"tone_analyzer.style_instructions.{style_key}",
+            default=""
+        )
+
         guidance = {
             "max_words": 50,
             "tone_instruction": "",
+            "style_instruction": style_instruction,
             "should_apologize": False,
             "should_offer_exit": False,
             "formality": "formal" if analysis.style == Style.FORMAL else "casual"

@@ -265,6 +265,7 @@ class SalesBot:
         if not flags.tone_analysis:
             return {
                 "tone_instruction": "",
+                "style_instruction": "",
                 "frustration_level": 0,
                 "should_apologize": False,
                 "should_offer_exit": False,
@@ -287,6 +288,7 @@ class SalesBot:
 
             return {
                 "tone_instruction": guidance.get("tone_instruction", ""),
+                "style_instruction": guidance.get("style_instruction", ""),
                 "frustration_level": analysis.frustration_level,
                 "should_apologize": guidance.get("should_apologize", False),
                 "should_offer_exit": guidance.get("should_offer_exit", False),
@@ -298,6 +300,7 @@ class SalesBot:
             logger.error("Tone analysis failed", error=str(e))
             return {
                 "tone_instruction": "",
+                "style_instruction": "",
                 "frustration_level": 0,
                 "should_apologize": False,
                 "should_offer_exit": False,
@@ -750,8 +753,9 @@ class SalesBot:
             "missing_data": sm_result["missing_data"],
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
-            # Phase 2: Tone instruction
+            # Phase 2: Tone and style instructions
             "tone_instruction": tone_info.get("tone_instruction", ""),
+            "style_instruction": tone_info.get("style_instruction", ""),
             "frustration_level": frustration_level,
             "should_apologize": tone_info.get("should_apologize", False),
             "should_offer_exit": tone_info.get("should_offer_exit", False),
@@ -1142,6 +1146,7 @@ class SalesBot:
         # =================================================================
         tone_info = self._analyze_tone(user_message) if user_message else {
             "tone_instruction": "",
+            "style_instruction": "",
             "frustration_level": 0,
             "should_apologize": False,
             "should_offer_exit": False,
@@ -1253,8 +1258,9 @@ class SalesBot:
             "missing_data": sm_result["missing_data"],
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
-            # Phase 2: Tone guidance
+            # Phase 2: Tone and style guidance
             "tone_instruction": tone_info.get("tone_instruction", ""),
+            "style_instruction": tone_info.get("style_instruction", ""),
             "should_apologize": tone_info.get("should_apologize", False),
             "should_offer_exit": tone_info.get("should_offer_exit", False),
             "max_words": tone_info.get("max_words", 50),

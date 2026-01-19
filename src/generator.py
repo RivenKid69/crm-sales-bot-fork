@@ -489,12 +489,20 @@ class ResponseGenerator:
         desired_outcome = collected.get("desired_outcome", "не сформулирован")
         spin_phase = context.get("spin_phase", "")
 
-        # Tone instruction из контекста (Phase 2: Естественность диалога)
+        # Tone and style instructions из контекста (Phase 2: Естественность диалога)
         tone_instruction = context.get("tone_instruction", "")
+        style_instruction = context.get("style_instruction", "")
 
-        # Формируем SYSTEM_PROMPT с tone_instruction
-        # Если tone_instruction пустой - используем пустую строку
-        system_prompt = SYSTEM_PROMPT.format(tone_instruction=tone_instruction)
+        # Формируем SYSTEM_PROMPT с tone_instruction и style_instruction
+        system_prompt = SYSTEM_PROMPT.format(
+            tone_instruction=tone_instruction,
+            style_instruction=style_instruction
+        )
+
+        # Phase 3: Objection context
+        objection_info = context.get("objection_info") or {}
+        objection_type = objection_info.get("objection_type", "")
+        objection_counter = self._get_objection_counter(objection_type, collected)
 
         variables = {
             "system": system_prompt,
@@ -516,8 +524,12 @@ class ResponseGenerator:
             "financial_impact": financial_impact,
             "desired_outcome": desired_outcome,
             "spin_phase": spin_phase,
-            # Phase 2: Tone instruction (для обратной совместимости в шаблонах)
+            # Phase 2: Tone and style instructions
             "tone_instruction": tone_instruction,
+            "style_instruction": style_instruction,
+            # Phase 3: Objection handling
+            "objection_type": objection_type,
+            "objection_counter": objection_counter,
         }
 
         # Подставляем в шаблон
@@ -550,7 +562,36 @@ class ResponseGenerator:
 
         # Возвращаем лучший результат из попыток
         return best_response if best_response else "Чем могу помочь?"
-    
+
+    def _get_objection_counter(self, objection_type: str, collected_data: Dict) -> str:
+        """
+        Получить контраргумент для возражения.
+
+        Сначала пытается получить из settings.yaml (objection.counters),
+        затем использует PersonalizationEngine для персонализации.
+
+        Args:
+            objection_type: Тип возражения (price, competitor, no_time, etc.)
+            collected_data: Собранные данные о клиенте
+
+        Returns:
+            Контраргумент для использования в промпте
+        """
+        if not objection_type:
+            return ""
+
+        # Пытаемся получить из конфига
+        counter = settings.get_nested(
+            f"objection.counters.{objection_type}",
+            default=""
+        )
+
+        if counter:
+            return counter
+
+        # Fallback на PersonalizationEngine для персонализированного контраргумента
+        return PersonalizationEngine.get_objection_counter(collected_data, objection_type)
+
     def _clean(self, text: str) -> str:
         """Убираем лишнее и фильтруем нерусский текст"""
         import re
