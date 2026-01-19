@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # Ollama settings
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:1.7b"  # Default Qwen3 model
+    ollama_model: str = "qwen3:14b"  # Default Qwen3 14B model
     ollama_timeout: int = 120  # seconds
 
     # Rewriter settings
