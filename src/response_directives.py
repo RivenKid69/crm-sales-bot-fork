@@ -209,15 +209,89 @@ class ResponseDirectivesBuilder:
         summary = builder.build_context_summary()
     """
 
-    # Максимальная длина context_summary (строк)
-    MAX_SUMMARY_LINES = 6
+    # Defaults (используются если конфиг недоступен)
+    _DEFAULT_MAX_SUMMARY_LINES = 6
+    _DEFAULT_TONE_THRESHOLDS = {
+        "empathetic_frustration": 3,
+        "validate_frustration": 2,
+    }
+    _DEFAULT_MAX_WORDS = {
+        "high_frustration": 40,
+        "low_engagement": 50,
+        "repair_mode": 50,
+        "default": 60,
+        "instruction_threshold": 50,
+    }
+    _DEFAULT_OBJECTION_TRANSLATIONS = {
+        "objection_price": "цена",
+        "objection_competitor": "конкурент",
+        "objection_no_time": "нет времени",
+        "objection_think": "подумать",
+        "objection_timing": "не сейчас",
+        "objection_complexity": "сложно",
+        "objection_no_need": "не нужно",
+        "objection_trust": "доверие",
+    }
+    _DEFAULT_COLLECTED_FIELD_NAMES = {
+        "company_size": "размер компании",
+        "company_name": "название компании",
+        "business_type": "тип бизнеса",
+        "pain_point": "проблема",
+        "current_tools": "текущие инструменты",
+    }
+    _DEFAULT_TONE_INSTRUCTIONS = {
+        "empathetic": "Используй эмпатичный тон, признай ситуацию клиента.",
+        "confident": "Используй уверенный тон, подчеркни преимущества.",
+        "supportive": "Используй поддерживающий тон, помоги разобраться.",
+        "neutral": "",
+    }
 
-    def __init__(self, envelope: ContextEnvelope):
+    def __init__(self, envelope: ContextEnvelope, config: Dict[str, Any] = None):
         """
         Args:
             envelope: ContextEnvelope с полным контекстом
+            config: Опциональный конфиг (по умолчанию из get_config())
         """
         self.envelope = envelope
+
+        # Загружаем конфиг response_directives
+        if config is None:
+            try:
+                from src.config_loader import get_config
+                config = get_config().response_directives
+            except Exception:
+                config = {}
+        self._config = config
+
+    @property
+    def max_summary_lines(self) -> int:
+        """Максимум строк в context_summary."""
+        return self._config.get("max_summary_lines", self._DEFAULT_MAX_SUMMARY_LINES)
+
+    @property
+    def tone_thresholds(self) -> Dict[str, int]:
+        """Пороги для определения тона."""
+        return self._config.get("tone_thresholds", self._DEFAULT_TONE_THRESHOLDS)
+
+    @property
+    def max_words_config(self) -> Dict[str, int]:
+        """Лимиты длины ответа."""
+        return self._config.get("max_words", self._DEFAULT_MAX_WORDS)
+
+    @property
+    def objection_translations(self) -> Dict[str, str]:
+        """Переводы типов возражений."""
+        return self._config.get("objection_translations", self._DEFAULT_OBJECTION_TRANSLATIONS)
+
+    @property
+    def collected_field_names(self) -> Dict[str, str]:
+        """Названия полей для do_not_repeat."""
+        return self._config.get("collected_field_names", self._DEFAULT_COLLECTED_FIELD_NAMES)
+
+    @property
+    def tone_instructions(self) -> Dict[str, str]:
+        """Тексты инструкций по тонам."""
+        return self._config.get("tone_instructions", self._DEFAULT_TONE_INSTRUCTIONS)
 
     def build(self) -> ResponseDirectives:
         """
@@ -251,9 +325,10 @@ class ResponseDirectivesBuilder:
     def _determine_tone(self) -> ResponseTone:
         """Определить тон ответа."""
         envelope = self.envelope
+        empathetic_threshold = self.tone_thresholds.get("empathetic_frustration", 3)
 
         # Высокая фрустрация → эмпатичный
-        if envelope.frustration_level >= 3:
+        if envelope.frustration_level >= empathetic_threshold:
             return ResponseTone.EMPATHETIC
 
         # Прогресс и breakthrough → уверенный (важнее чем возражения, т.к. клиент их преодолел)
@@ -281,16 +356,20 @@ class ResponseDirectivesBuilder:
     def _apply_style(self, directives: ResponseDirectives) -> None:
         """Применить стилистические директивы."""
         envelope = self.envelope
+        empathetic_threshold = self.tone_thresholds.get("empathetic_frustration", 3)
+        max_words = self.max_words_config
 
         # Ограничение длины
-        if envelope.frustration_level >= 3:
-            directives.max_words = 40  # Короче при фрустрации
+        if envelope.frustration_level >= empathetic_threshold:
+            directives.max_words = max_words.get("high_frustration", 40)
             directives.be_brief = True
         elif envelope.engagement_level in ("low", "disengaged"):
-            directives.max_words = 50
+            directives.max_words = max_words.get("low_engagement", 50)
             directives.be_brief = True
         elif envelope.has_reason(ReasonCode.POLICY_REPAIR_MODE):
-            directives.max_words = 50  # Короче при repair
+            directives.max_words = max_words.get("repair_mode", 50)
+        else:
+            directives.max_words = max_words.get("default", 60)
 
         # One question rule (почти всегда)
         directives.one_question = True
@@ -302,9 +381,10 @@ class ResponseDirectivesBuilder:
     def _apply_dialogue_moves(self, directives: ResponseDirectives) -> None:
         """Применить диалоговые действия."""
         envelope = self.envelope
+        validate_threshold = self.tone_thresholds.get("validate_frustration", 2)
 
         # Validate: при фрустрации или возражениях
-        if envelope.frustration_level >= 2:
+        if envelope.frustration_level >= validate_threshold:
             directives.validate = True
 
         if envelope.first_objection_type:
@@ -386,15 +466,7 @@ class ResponseDirectivesBuilder:
         collected = self.envelope.collected_data
         fields = []
 
-        field_names = {
-            "company_size": "размер компании",
-            "company_name": "название компании",
-            "business_type": "тип бизнеса",
-            "pain_point": "проблема",
-            "current_tools": "текущие инструменты",
-        }
-
-        for key, name in field_names.items():
+        for key, name in self.collected_field_names.items():
             if collected.get(key):
                 fields.append(name)
 
@@ -402,24 +474,14 @@ class ResponseDirectivesBuilder:
 
     def _translate_objections(self, objection_types: List[str]) -> List[str]:
         """Перевести типы возражений в читаемый вид."""
-        translations = {
-            "objection_price": "цена",
-            "objection_competitor": "конкурент",
-            "objection_no_time": "нет времени",
-            "objection_think": "подумать",
-            "objection_timing": "не сейчас",
-            "objection_complexity": "сложно",
-            "objection_no_need": "не нужно",
-            "objection_trust": "доверие",
-        }
-        return [translations.get(o, o) for o in objection_types]
+        return [self.objection_translations.get(o, o) for o in objection_types]
 
     def build_context_summary(self) -> str:
         """
         Построить краткий текстовый summary контекста.
 
         Используется для передачи в промпт генератора.
-        Ограничен MAX_SUMMARY_LINES строками.
+        Ограничен max_summary_lines строками.
 
         Returns:
             Текстовый summary (без PII)
@@ -461,8 +523,8 @@ class ResponseDirectivesBuilder:
             lines.append("Был прорыв: клиент показал интерес")
 
         # Ограничиваем количество строк
-        if len(lines) > self.MAX_SUMMARY_LINES:
-            lines = lines[:self.MAX_SUMMARY_LINES]
+        if len(lines) > self.max_summary_lines:
+            lines = lines[:self.max_summary_lines]
 
         return "\n".join(lines) if lines else ""
 

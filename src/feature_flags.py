@@ -73,7 +73,7 @@ class FeatureFlags:
         "context_shadow_mode": False,     # Shadow mode: логируем решения без применения
 
         # Phase 2: Естественность диалога
-        "context_response_directives": False,  # ResponseDirectives для генератора
+        "context_response_directives": True,  # ResponseDirectives для генератора
 
         # Phase 3: Policy overlays
         "context_policy_overlays": True,   # DialoguePolicy action overrides

@@ -46,6 +46,7 @@ from context_window import ContextWindow
 # Phase 5: Context-aware policy overlays
 from dialogue_policy import DialoguePolicy
 from context_envelope import build_context_envelope
+from response_directives import build_response_directives
 
 # Phase DAG: Modular Flow System & YAML Parameterization
 from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
@@ -720,6 +721,11 @@ class SalesBot:
                 last_intent=self.last_intent,
             )
 
+        # Build ResponseDirectives if flag enabled
+        response_directives = None
+        if flags.context_response_directives and context_envelope:
+            response_directives = build_response_directives(context_envelope)
+
         # 2. Run state machine with context envelope
         sm_result = self.state_machine.process(
             intent, extracted, context_envelope=context_envelope
@@ -755,6 +761,11 @@ class SalesBot:
                     self.state_machine.state = policy_override.next_state
 
         # Build context for response generation
+        # При наличии ResponseDirectives используем их instruction
+        directive_instruction = ""
+        if response_directives:
+            directive_instruction = response_directives.get_instruction()
+
         context = {
             "user_message": user_message,
             "intent": intent,
@@ -766,7 +777,8 @@ class SalesBot:
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
             # Phase 2: Tone and style instructions
-            "tone_instruction": tone_info.get("tone_instruction", ""),
+            # ResponseDirectives instruction имеет приоритет если доступен
+            "tone_instruction": directive_instruction or tone_info.get("tone_instruction", ""),
             "style_instruction": tone_info.get("style_instruction", ""),
             "frustration_level": frustration_level,
             "should_apologize": tone_info.get("should_apologize", False),
@@ -781,6 +793,8 @@ class SalesBot:
             "context_envelope": context_envelope,
             "action_tracker": self.action_tracker,
             "user_messages": [turn.get("user", "") for turn in self.history[-5:]] + [user_message],
+            # Phase 2: ResponseDirectives для generator
+            "response_directives": response_directives,
         }
 
         # Determine action
@@ -1261,6 +1275,11 @@ class SalesBot:
                 last_intent=self.last_intent,
             )
 
+        # Build ResponseDirectives if flag enabled
+        response_directives = None
+        if flags.context_response_directives and context_envelope:
+            response_directives = build_response_directives(context_envelope)
+
         # Phase 5: Apply dialogue policy overlays
         if flags.context_policy_overlays and context_envelope:
             override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
@@ -1276,6 +1295,11 @@ class SalesBot:
                     sm_result["next_state"] = override.next_state
 
         # Контекст для генерации ответа
+        # При наличии ResponseDirectives используем их instruction
+        directive_instruction = ""
+        if response_directives:
+            directive_instruction = response_directives.get_instruction()
+
         context = {
             "user_message": user_message,
             "intent": intent,
@@ -1287,13 +1311,16 @@ class SalesBot:
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
             # Phase 2: Tone and style guidance
-            "tone_instruction": tone_info.get("tone_instruction", ""),
+            # ResponseDirectives instruction имеет приоритет если доступен
+            "tone_instruction": directive_instruction or tone_info.get("tone_instruction", ""),
             "style_instruction": tone_info.get("style_instruction", ""),
             "should_apologize": tone_info.get("should_apologize", False),
             "should_offer_exit": tone_info.get("should_offer_exit", False),
             "max_words": tone_info.get("max_words", 50),
             # Phase 3: Objection info
             "objection_info": objection_info,
+            # Phase 2: ResponseDirectives для generator
+            "response_directives": response_directives,
         }
 
         action = sm_result["action"]

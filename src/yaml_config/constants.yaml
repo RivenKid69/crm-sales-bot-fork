@@ -505,6 +505,67 @@ cta:
       - "Попробовать бесплатно?"
 
 # =============================================================================
+# RESPONSE DIRECTIVES SETTINGS
+# =============================================================================
+# Настройки для ResponseDirectives (Phase 2: Естественность диалога)
+# ResponseDirectives управляют стилем ответа, не меняя логику state machine.
+
+response_directives:
+  # === Пороги для определения тона ===
+  tone_thresholds:
+    # Порог frustration для EMPATHETIC тона (>= threshold)
+    empathetic_frustration: 3
+
+    # Порог frustration для VALIDATE (>= threshold)
+    validate_frustration: 2
+
+  # === Лимиты длины ответа (max_words) ===
+  max_words:
+    # При высокой фрустрации
+    high_frustration: 40
+
+    # При низком engagement
+    low_engagement: 50
+
+    # При repair mode
+    repair_mode: 50
+
+    # Стандартный лимит
+    default: 60
+
+    # Порог для добавления инструкции "не более N слов"
+    instruction_threshold: 50
+
+  # === Лимит строк в context summary ===
+  max_summary_lines: 6
+
+  # === Перевод типов возражений для display ===
+  objection_translations:
+    objection_price: "цена"
+    objection_competitor: "конкурент"
+    objection_no_time: "нет времени"
+    objection_think: "подумать"
+    objection_timing: "не сейчас"
+    objection_complexity: "сложно"
+    objection_no_need: "не нужно"
+    objection_trust: "доверие"
+
+  # === Поля для do_not_repeat (collected_data -> readable name) ===
+  collected_field_names:
+    company_size: "размер компании"
+    company_name: "название компании"
+    business_type: "тип бизнеса"
+    pain_point: "проблема"
+    current_tools: "текущие инструменты"
+
+  # === Tone instructions (русские тексты) ===
+  tone_instructions:
+    empathetic: "Используй эмпатичный тон, признай ситуацию клиента."
+    confident: "Используй уверенный тон, подчеркни преимущества."
+    supportive: "Используй поддерживающий тон, помоги разобраться."
+    neutral: ""
+
+# =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
 # =============================================================================
 # guard.high_frustration_threshold ДОЛЖЕН быть равен frustration.thresholds.high

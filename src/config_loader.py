@@ -114,6 +114,11 @@ class LoadedConfig:
         """Get CTA (call-to-action) configuration."""
         return self.constants.get("cta", {})
 
+    @property
+    def response_directives(self) -> Dict[str, Any]:
+        """Get response directives configuration."""
+        return self.constants.get("response_directives", {})
+
     # SPIN convenience methods
     def get_spin_state(self, phase: str) -> Optional[str]:
         """Get state name for a SPIN phase."""

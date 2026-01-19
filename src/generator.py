@@ -564,6 +564,36 @@ class ResponseGenerator:
             except Exception as e:
                 logger.warning(f"Personalization v2 failed: {e}")
 
+        # === ResponseDirectives integration ===
+        response_directives = context.get("response_directives")
+        if response_directives and flags.context_response_directives:
+            try:
+                directives_dict = response_directives.to_dict()
+                memory = directives_dict.get("memory", {})
+
+                # Memory fields для персонализации
+                if memory.get("client_card"):
+                    variables["client_card"] = memory["client_card"]
+                if memory.get("do_not_repeat"):
+                    variables["do_not_repeat"] = ", ".join(memory["do_not_repeat"])
+                if memory.get("reference_pain"):
+                    variables["reference_pain"] = memory["reference_pain"]
+                if memory.get("objection_summary"):
+                    variables["objection_summary"] = memory["objection_summary"]
+
+                # Structured данные для templates
+                variables["directives_style"] = directives_dict.get("style", {})
+                variables["directives_moves"] = directives_dict.get("dialogue_moves", {})
+
+                logger.debug(
+                    "ResponseDirectives applied",
+                    tone=directives_dict.get("style", {}).get("tone"),
+                    max_words=directives_dict.get("style", {}).get("max_words"),
+                    repair_mode=directives_dict.get("dialogue_moves", {}).get("repair_mode"),
+                )
+            except Exception as e:
+                logger.warning(f"ResponseDirectives integration failed: {e}")
+
         # Подставляем в шаблон
         try:
             prompt = template.format(**variables)

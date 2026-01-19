@@ -430,7 +430,7 @@ class TestBuildContextSummary:
         summary = builder.build_context_summary()
 
         lines = summary.strip().split("\n")
-        assert len(lines) <= builder.MAX_SUMMARY_LINES
+        assert len(lines) <= builder.max_summary_lines
 
 
 class TestBuildFunctions:
