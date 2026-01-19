@@ -5,23 +5,24 @@
 # После изменения перезапустите бота.
 
 # -----------------------------------------------------------------------------
-# LLM (Language Model) - vLLM Server
+# LLM (Language Model) - Ollama Server
 # -----------------------------------------------------------------------------
-# Запуск vLLM сервера:
-#   vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+# Запуск Ollama сервера:
+#   ollama serve
+#   ollama pull qwen3:14b
 #
-# Или без квантизации (требует больше VRAM):
-#   vllm serve Qwen/Qwen3-4B --port 8000
+# Или через скрипт:
+#   ./scripts/start_ollama.sh
 #
 llm:
-  # Модель vLLM (Qwen3-4B-AWQ - оптимальный баланс качества и скорости)
-  model: "Qwen/Qwen3-4B-AWQ"
+  # Модель Ollama (qwen3:14b - лучшее качество, поддержка русского)
+  model: "qwen3:14b"
 
-  # URL vLLM сервера (OpenAI-compatible API)
-  base_url: "http://localhost:8000/v1"
+  # URL Ollama сервера (native API)
+  base_url: "http://localhost:11434"
 
-  # Таймаут запроса в секундах
-  timeout: 60
+  # Таймаут запроса в секундах (увеличен для Ollama)
+  timeout: 120
 
   # Режим стриминга (false для structured output)
   stream: false

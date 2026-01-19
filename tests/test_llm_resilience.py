@@ -448,11 +448,30 @@ class TestHealthCheck:
 
     @patch('requests.get')
     def test_health_check_success(self, mock_get):
-        """Health check returns True when LLM is available"""
-        mock_get.return_value.status_code = 200
-        llm = OllamaLLM()
+        """Health check returns True when Ollama is available and model loaded"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        # Ollama /api/tags response format
+        mock_response.json.return_value = {
+            "models": [{"name": "qwen3:14b"}]
+        }
+        mock_get.return_value = mock_response
+        llm = OllamaLLM(model="qwen3:14b")
 
         assert llm.health_check() is True
+
+    @patch('requests.get')
+    def test_health_check_model_not_found(self, mock_get):
+        """Health check returns False when model not loaded"""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "models": [{"name": "llama3:8b"}]  # Different model
+        }
+        mock_get.return_value = mock_response
+        llm = OllamaLLM(model="qwen3:14b")
+
+        assert llm.health_check() is False
 
     @patch('requests.get')
     def test_health_check_failure_status(self, mock_get):
@@ -608,15 +627,15 @@ class TestGenerateStructured:
 
     def test_generate_structured_success(self):
         """Успешная генерация structured output."""
-        from llm import VLLMClient
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=False)
+        client = OllamaClient(enable_retry=False)
 
-        # Mock HTTP response
+        # Mock HTTP response (Ollama format)
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "choices": [{"text": '{"intent": "greeting", "confidence": 0.95}'}]
+            "message": {"content": '{"intent": "greeting", "confidence": 0.95}'}
         }
 
         with patch('requests.post', return_value=mock_response):
@@ -629,9 +648,9 @@ class TestGenerateStructured:
 
     def test_generate_structured_circuit_breaker_open(self):
         """Circuit breaker блокирует запрос."""
-        from llm import VLLMClient, CircuitBreakerStatus
+        from llm import OllamaClient, CircuitBreakerStatus
 
-        client = VLLMClient()
+        client = OllamaClient()
         # Имитируем открытый circuit breaker
         client._circuit_breaker.status = CircuitBreakerStatus.OPEN
         client._circuit_breaker.open_until = float('inf')
@@ -643,9 +662,9 @@ class TestGenerateStructured:
 
     def test_generate_structured_retry_on_timeout(self):
         """Retry при timeout."""
-        from llm import VLLMClient
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=True)
+        client = OllamaClient(enable_retry=True)
         client.MAX_RETRIES = 2
         client.INITIAL_DELAY = 0.01  # Ускоряем тест
 
@@ -656,8 +675,9 @@ class TestGenerateStructured:
             if call_count < 2:
                 raise requests.exceptions.Timeout("timeout")
             mock_resp = MagicMock()
+            # Ollama response format
             mock_resp.json.return_value = {
-                "choices": [{"text": '{"intent": "test", "confidence": 0.9}'}]
+                "message": {"content": '{"intent": "test", "confidence": 0.9}'}
             }
             return mock_resp
 
@@ -670,9 +690,9 @@ class TestGenerateStructured:
 
     def test_generate_structured_all_retries_failed(self):
         """Все retry провалились — возвращает None."""
-        from llm import VLLMClient
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=True, enable_circuit_breaker=True)
+        client = OllamaClient(enable_retry=True, enable_circuit_breaker=True)
         client.MAX_RETRIES = 2
         client.INITIAL_DELAY = 0.01
 
@@ -685,9 +705,9 @@ class TestGenerateStructured:
 
     def test_generate_structured_circuit_breaker_trips(self):
         """Circuit breaker открывается после threshold ошибок."""
-        from llm import VLLMClient
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=False)
+        client = OllamaClient(enable_retry=False)
         client.CIRCUIT_BREAKER_THRESHOLD = 2
 
         with patch('requests.post', side_effect=requests.exceptions.ConnectionError()):
@@ -699,13 +719,14 @@ class TestGenerateStructured:
 
     def test_generate_structured_stats_tracking(self):
         """Проверка корректного трекинга статистики."""
-        from llm import VLLMClient
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=False)
+        client = OllamaClient(enable_retry=False)
 
         mock_response = MagicMock()
+        # Ollama response format
         mock_response.json.return_value = {
-            "choices": [{"text": '{"intent": "test", "confidence": 0.8}'}]
+            "message": {"content": '{"intent": "test", "confidence": 0.8}'}
         }
 
         with patch('requests.post', return_value=mock_response):
@@ -719,13 +740,14 @@ class TestGenerateStructured:
 
     def test_generate_structured_pydantic_validation_error(self):
         """Ошибка валидации Pydantic."""
-        from llm import VLLMClient
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=False, enable_circuit_breaker=False)
+        client = OllamaClient(enable_retry=False, enable_circuit_breaker=False)
 
         mock_response = MagicMock()
+        # Ollama response format
         mock_response.json.return_value = {
-            "choices": [{"text": '{"invalid": "json"}'}]  # Не соответствует схеме
+            "message": {"content": '{"invalid": "json"}'}  # Не соответствует схеме
         }
 
         with patch('requests.post', return_value=mock_response):
@@ -734,14 +756,15 @@ class TestGenerateStructured:
         # Pydantic validation error → возвращает None
         assert result is None
 
-    def test_generate_structured_empty_choices(self):
-        """Обработка пустого массива choices."""
-        from llm import VLLMClient
+    def test_generate_structured_empty_message(self):
+        """Обработка пустого message."""
+        from llm import OllamaClient
 
-        client = VLLMClient(enable_retry=False, enable_circuit_breaker=False)
+        client = OllamaClient(enable_retry=False, enable_circuit_breaker=False)
 
         mock_response = MagicMock()
-        mock_response.json.return_value = {"choices": []}
+        # Ollama response format with empty content
+        mock_response.json.return_value = {"message": {"content": ""}}
 
         with patch('requests.post', return_value=mock_response):
             result = client.generate_structured("test", self.SampleSchema)
@@ -749,16 +772,33 @@ class TestGenerateStructured:
         assert result is None
 
 
-class TestVLLMClientAlias:
-    """Тесты алиаса OllamaLLM = VLLMClient."""
+class TestOllamaClientAliases:
+    """Тесты алиасов для обратной совместимости."""
 
-    def test_ollama_llm_is_vllm_client(self):
-        """OllamaLLM является алиасом VLLMClient."""
-        from llm import OllamaLLM, VLLMClient
+    def test_vllm_client_is_ollama_client(self):
+        """VLLMClient является алиасом OllamaClient."""
+        from llm import OllamaClient, VLLMClient
 
-        assert OllamaLLM is VLLMClient
+        assert VLLMClient is OllamaClient
 
-    def test_backwards_compatibility(self):
+    def test_ollama_llm_is_ollama_client(self):
+        """OllamaLLM является алиасом OllamaClient."""
+        from llm import OllamaClient, OllamaLLM
+
+        assert OllamaLLM is OllamaClient
+
+    def test_backwards_compatibility_vllm(self):
+        """Старый код с VLLMClient продолжает работать."""
+        from llm import VLLMClient
+
+        llm = VLLMClient()
+        assert hasattr(llm, 'generate')
+        assert hasattr(llm, 'generate_structured')
+        assert hasattr(llm, '_call_llm')
+        assert hasattr(llm, 'health_check')
+        assert hasattr(llm, 'get_stats_dict')
+
+    def test_backwards_compatibility_ollama_llm(self):
         """Старый код с OllamaLLM продолжает работать."""
         from llm import OllamaLLM
 

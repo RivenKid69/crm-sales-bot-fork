@@ -7,9 +7,9 @@ from typing import List, Optional
 
 @dataclass
 class LLMConfig:
-    """LLM configuration."""
-    base_url: str = "http://localhost:8000/v1"
-    model: str = "Qwen/Qwen3-14B"
+    """LLM configuration for Ollama."""
+    base_url: str = "http://localhost:11434"  # Ollama default port
+    model: str = "qwen3:14b"  # Ollama model name
     timeout: int = 120
     max_retries: int = 3
     temperature: float = 0.3

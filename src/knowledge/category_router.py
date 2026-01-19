@@ -6,7 +6,7 @@ LLM-based Category Router для базы знаний.
 что позволяет CascadeRetriever искать только в релевантных файлах.
 
 Поддерживает:
-- Structured Output (vLLM + Outlines) — 100% валидный JSON
+- Structured Output (Ollama) — валидный JSON через format parameter
 - Legacy режим (generate + parsing) — обратная совместимость
 """
 
@@ -103,7 +103,7 @@ class CategoryRouter:
         Определить топ-N категорий для запроса.
 
         Автоматически выбирает метод:
-        - generate_structured (vLLM) если доступен
+        - generate_structured (Ollama) если доступен
         - generate + parsing (legacy) иначе
 
         Args:
@@ -151,9 +151,9 @@ class CategoryRouter:
 
     def _route_structured(self, query: str) -> List[str]:
         """
-        Роутинг через structured output (vLLM + Outlines).
+        Роутинг через structured output (Ollama).
 
-        Гарантирует 100% валидный JSON через Pydantic схему.
+        Гарантирует валидный JSON через Pydantic схему.
         """
         from config import CATEGORY_ROUTER_PROMPT_STRUCTURED
         from classifier.llm import CategoryResult

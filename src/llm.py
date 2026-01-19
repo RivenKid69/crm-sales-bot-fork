@@ -1,20 +1,21 @@
 """
-vLLM Client для CRM Sales Bot.
+Ollama Client для CRM Sales Bot.
 
-Использует vLLM OpenAI-compatible API с native structured output.
+Использует Ollama native API с structured output.
 
 Возможности:
-- Native Structured Output: response_format с json_schema (vLLM 0.6+)
+- Native Structured Output: format с JSON schema (Ollama 0.5+)
 - Circuit Breaker: open/closed/half-open состояния
 - LLMStats: success_rate, avg_response_time
 - Retry: exponential backoff при ошибках
 - Fallback: graceful degradation при сбоях
 
-Запуск vLLM сервера:
-    vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+Запуск Ollama сервера:
+    ollama serve
+    ollama pull qwen3:14b
 
 Примечание:
-    Этот проект использует ТОЛЬКО vLLM. Ollama не поддерживается.
+    Этот проект использует Ollama для inference.
 """
 
 import time
@@ -79,19 +80,20 @@ class LLMStats:
         return self.total_response_time_ms / self.successful_requests
 
 
-class VLLMClient:
+class OllamaClient:
     """
-    vLLM клиент для CRM Sales Bot.
+    Ollama клиент для CRM Sales Bot.
 
-    Использует vLLM OpenAI-compatible API с native structured output.
-    Structured output гарантирует 100% валидный JSON через json_schema.
+    Использует Ollama native API с structured output.
+    Structured output гарантирует валидный JSON через format параметр.
 
     Требования:
-        - vLLM сервер запущен на указанном URL
-        - Модель поддерживает structured output (Qwen, Llama, etc.)
+        - Ollama сервер запущен (ollama serve)
+        - Модель скачана (ollama pull qwen3:14b)
 
-    Пример запуска vLLM:
-        vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+    Пример запуска Ollama:
+        ollama serve
+        ollama pull qwen3:14b
     """
 
     # Настройки retry
@@ -118,11 +120,11 @@ class VLLMClient:
         enable_retry: bool = True
     ):
         """
-        Инициализация vLLM клиента.
+        Инициализация Ollama клиента.
 
         Args:
             model: Название модели (из settings если не указано)
-            base_url: URL vLLM API (из settings если не указано)
+            base_url: URL Ollama API (из settings если не указано)
             timeout: Таймаут запроса в секундах
             enable_circuit_breaker: Включить circuit breaker
             enable_retry: Включить retry с exponential backoff
@@ -167,10 +169,10 @@ class VLLMClient:
         allow_fallback: bool = True
     ) -> Optional[T]:
         """
-        Генерация с гарантированным JSON через vLLM native structured output.
+        Генерация с гарантированным JSON через Ollama structured output.
 
-        Использует response_format с json_schema для 100% валидного JSON.
-        vLLM гарантирует что ответ соответствует схеме.
+        Использует format параметр с JSON schema для валидного JSON.
+        Ollama гарантирует что ответ соответствует схеме.
 
         Args:
             prompt: Промпт для LLM
@@ -180,8 +182,6 @@ class VLLMClient:
         Returns:
             Экземпляр schema или None при ошибке
         """
-        import json
-
         self._stats.total_requests += 1
         start_time = time.time()
 
@@ -197,27 +197,22 @@ class VLLMClient:
 
         # Получаем JSON schema из Pydantic модели
         json_schema = schema.model_json_schema()
-        schema_name = schema.__name__
 
         for attempt in range(max_attempts):
             try:
                 base_url_normalized = self.base_url.rstrip("/")
 
-                # vLLM native structured output через response_format
+                # Ollama native structured output через format
                 response = requests.post(
-                    f"{base_url_normalized}/chat/completions",
+                    f"{base_url_normalized}/api/chat",
                     json={
                         "model": self.model,
                         "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.1,
-                        "max_tokens": 512,
-                        "response_format": {
-                            "type": "json_schema",
-                            "json_schema": {
-                                "name": schema_name,
-                                "schema": json_schema,
-                                "strict": True
-                            }
+                        "stream": False,
+                        "format": json_schema,  # Ollama: schema напрямую в format
+                        "options": {
+                            "temperature": 0.1,
+                            "num_predict": 512,
                         }
                     },
                     timeout=self.timeout
@@ -225,17 +220,13 @@ class VLLMClient:
                 response.raise_for_status()
 
                 data = response.json()
-                choices = data.get("choices", [])
-                if not choices:
-                    raise ValueError("Empty response from vLLM")
-
-                message = choices[0].get("message", {})
+                message = data.get("message", {})
                 content = message.get("content", "")
 
                 if not content:
-                    raise ValueError("Empty content in response from vLLM")
+                    raise ValueError("Empty content in response from Ollama")
 
-                # vLLM гарантирует валидный JSON, но проверяем на всякий случай
+                # Ollama гарантирует валидный JSON, валидируем через Pydantic
                 elapsed_ms = (time.time() - start_time) * 1000
                 self._stats.successful_requests += 1
                 self._stats.total_response_time_ms += elapsed_ms
@@ -245,13 +236,13 @@ class VLLMClient:
 
             except requests.exceptions.Timeout as e:
                 last_error = e
-                logger.warning(f"vLLM structured timeout (attempt {attempt + 1}/{max_attempts})")
+                logger.warning(f"Ollama structured timeout (attempt {attempt + 1}/{max_attempts})")
             except requests.exceptions.RequestException as e:
                 last_error = e
-                logger.warning(f"vLLM structured error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
+                logger.warning(f"Ollama structured error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
             except Exception as e:
                 last_error = e
-                logger.error(f"vLLM structured unexpected error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
+                logger.error(f"Ollama structured unexpected error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
 
             # Retry с backoff
             if attempt < max_attempts - 1:
@@ -264,7 +255,7 @@ class VLLMClient:
         if self._enable_circuit_breaker:
             self._record_failure()
 
-        logger.error(f"vLLM structured all retries failed: {str(last_error)[:100] if last_error else 'unknown'}")
+        logger.error(f"Ollama structured all retries failed: {str(last_error)[:100] if last_error else 'unknown'}")
         return None
 
     # =========================================================================
@@ -313,7 +304,7 @@ class VLLMClient:
                 self._reset_failures()
 
                 logger.debug(
-                    "vLLM request successful",
+                    "Ollama request successful",
                     attempt=attempt + 1,
                     elapsed_ms=round(elapsed_ms, 1)
                 )
@@ -322,16 +313,16 @@ class VLLMClient:
 
             except requests.exceptions.Timeout as e:
                 last_error = e
-                logger.warning(f"vLLM timeout (attempt {attempt + 1}/{max_attempts})")
+                logger.warning(f"Ollama timeout (attempt {attempt + 1}/{max_attempts})")
             except requests.exceptions.ConnectionError as e:
                 last_error = e
-                logger.warning(f"vLLM connection error (attempt {attempt + 1}/{max_attempts})")
+                logger.warning(f"Ollama connection error (attempt {attempt + 1}/{max_attempts})")
             except requests.exceptions.RequestException as e:
                 last_error = e
-                logger.warning(f"vLLM request failed (attempt {attempt + 1}/{max_attempts})")
+                logger.warning(f"Ollama request failed (attempt {attempt + 1}/{max_attempts})")
             except Exception as e:
                 last_error = e
-                logger.error(f"vLLM unexpected error (attempt {attempt + 1}/{max_attempts})")
+                logger.error(f"Ollama unexpected error (attempt {attempt + 1}/{max_attempts})")
 
             # Retry с backoff
             if attempt < max_attempts - 1:
@@ -346,7 +337,7 @@ class VLLMClient:
             self._record_failure()
 
         logger.error(
-            "vLLM all retries failed",
+            "Ollama all retries failed",
             error=str(last_error)[:100] if last_error else "unknown",
             state=state
         )
@@ -358,41 +349,40 @@ class VLLMClient:
         return ""
 
     # =========================================================================
-    # LEGACY METHOD FOR TEST COMPATIBILITY
+    # INTERNAL LLM CALL METHOD
     # =========================================================================
 
     def _call_llm(self, prompt: str) -> str:
         """
-        Вызов vLLM API (для совместимости с тестами).
+        Вызов Ollama API (для совместимости с тестами).
 
         Внутренний метод без retry/circuit breaker.
         Тесты могут мокать этот метод.
         """
         base_url_normalized = self.base_url.rstrip("/")
 
-        # vLLM OpenAI-compatible API
+        # Ollama native API
         response = requests.post(
-            f"{base_url_normalized}/chat/completions",
+            f"{base_url_normalized}/api/chat",
             json={
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7,
-                "max_tokens": 256,
+                "stream": False,
+                "options": {
+                    "temperature": 0.7,
+                    "num_predict": 256,
+                }
             },
             timeout=self.timeout
         )
         response.raise_for_status()
 
         data = response.json()
-        choices = data.get("choices", [])
-        if not choices:
-            raise ValueError("Empty response from vLLM")
-
-        message = choices[0].get("message", {})
+        message = data.get("message", {})
         content = message.get("content", "")
 
         if not content:
-            raise ValueError("Empty content in response from vLLM")
+            raise ValueError("Empty content in response from Ollama")
 
         return content
 
@@ -520,25 +510,33 @@ class VLLMClient:
 
     def health_check(self) -> bool:
         """
-        Проверка доступности vLLM.
+        Проверка доступности Ollama.
 
         Returns:
-            True если vLLM доступен
+            True если Ollama доступен и модель загружена
         """
         try:
-            # vLLM health endpoint
-            health_url = self.base_url.rstrip("/v1").rstrip("/") + "/health"
-            response = requests.get(health_url, timeout=5)
-            return response.status_code == 200
+            # Ollama tags endpoint для проверки доступности
+            base_url_normalized = self.base_url.rstrip("/")
+            response = requests.get(f"{base_url_normalized}/api/tags", timeout=5)
+            if response.status_code != 200:
+                return False
+
+            # Проверяем что модель доступна
+            data = response.json()
+            models = [m.get("name", "") for m in data.get("models", [])]
+            model_base = self.model.split(":")[0]
+            return any(model_base in m for m in models)
         except Exception:
             return False
 
 
 # =============================================================================
-# АЛИАС ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ
+# АЛИАСЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ
 # =============================================================================
-# OllamaLLM - устаревший алиас, используйте VLLMClient напрямую
-OllamaLLM = VLLMClient
+# VLLMClient - устаревший алиас, используйте OllamaClient напрямую
+VLLMClient = OllamaClient
+OllamaLLM = OllamaClient
 
 
 # =============================================================================
@@ -549,12 +547,12 @@ if __name__ == "__main__":
     import json
 
     print("=" * 60)
-    print("vLLM CLIENT DEMO")
+    print("OLLAMA CLIENT DEMO")
     print("=" * 60)
-    print("\nЭтот проект использует ТОЛЬКО vLLM.")
-    print("Запуск vLLM: vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq")
+    print("\nЭтот проект использует Ollama.")
+    print("Запуск Ollama: ollama serve && ollama pull qwen3:14b")
 
-    llm = VLLMClient()
+    llm = OllamaClient()
 
     print(f"\nModel: {llm.model}")
     print(f"URL: {llm.base_url}")
@@ -563,7 +561,7 @@ if __name__ == "__main__":
     # Health check
     print("\n--- Health Check ---")
     is_healthy = llm.health_check()
-    print(f"vLLM available: {is_healthy}")
+    print(f"Ollama available: {is_healthy}")
 
     if is_healthy:
         print("\n--- Test Generation ---")
@@ -584,7 +582,7 @@ if __name__ == "__main__":
             print(f"Intent: {result.intent}")
             print(f"Confidence: {result.confidence}")
         else:
-            print("Structured output failed (vLLM not running?)")
+            print("Structured output failed (Ollama not running?)")
 
     print("\n--- Fallback Demo ---")
     for state in ["greeting", "spin_situation", "spin_problem", "unknown"]:

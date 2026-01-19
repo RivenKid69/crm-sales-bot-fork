@@ -1866,7 +1866,7 @@ faq (4 секции) — общие частые вопросы
 Ответь ТОЛЬКО JSON массивом без пояснений: ["category1", "category2"]"""
 
 
-# Structured Output версия для vLLM + Outlines
+# Structured Output версия для Ollama
 CATEGORY_ROUTER_PROMPT_STRUCTURED = """/no_think
 Определи категории для поиска в базе знаний Wipon.
 

@@ -55,11 +55,18 @@ def mock_llm_with_responses():
 
 
 @pytest.fixture
-def mock_vllm_client():
-    """Mock vLLM client for classifier tests."""
+def mock_ollama_client():
+    """Mock Ollama client for classifier tests."""
     client = Mock()
     client.health_check.return_value = True
     return client
+
+
+# Alias for backward compatibility
+@pytest.fixture
+def mock_vllm_client(mock_ollama_client):
+    """Alias for mock_ollama_client (backward compatibility)."""
+    return mock_ollama_client
 
 
 # =============================================================================

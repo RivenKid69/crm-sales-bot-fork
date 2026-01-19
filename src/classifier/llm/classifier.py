@@ -2,7 +2,7 @@
 from typing import Dict, Optional, Any
 
 from logger import logger
-from llm import VLLMClient
+from llm import OllamaClient
 from .schemas import ClassificationResult
 from .prompts import build_classification_prompt
 
@@ -11,23 +11,24 @@ class LLMClassifier:
     """
     Классификатор на базе LLM с fallback на HybridClassifier.
 
-    Использует vLLM + Outlines для 100% гарантии валидного JSON.
+    Использует Ollama для structured output с гарантией валидного JSON.
     При ошибке LLM падает на старый regex классификатор.
     """
 
     def __init__(
         self,
-        vllm_client: Optional[VLLMClient] = None,
+        vllm_client: Optional[OllamaClient] = None,
         fallback_classifier: Optional[Any] = None
     ):
         """
         Инициализация.
 
         Args:
-            vllm_client: vLLM клиент (создаётся если не передан)
+            vllm_client: Ollama клиент (создаётся если не передан).
+                         Параметр называется vllm_client для обратной совместимости.
             fallback_classifier: Fallback классификатор (HybridClassifier)
         """
-        self.vllm = vllm_client or VLLMClient()
+        self.vllm = vllm_client or OllamaClient()
         self.fallback = fallback_classifier
 
         # Статистика

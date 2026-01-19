@@ -1,11 +1,11 @@
-"""vLLM client with structured output support via Outlines."""
+"""Ollama client with structured output support."""
 
 import json
 import logging
 import time
 from typing import Any, Dict, Optional, Type, TypeVar
 
-from openai import OpenAI
+import requests
 from pydantic import BaseModel
 
 from ..config import LLMConfig
@@ -36,15 +36,10 @@ class LLMValidationError(LLMError):
 
 
 class LLMClient:
-    """vLLM client with structured output support."""
+    """Ollama client with structured output support."""
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        self.client = OpenAI(
-            base_url=config.base_url,
-            api_key="not-needed",  # vLLM doesn't require API key
-            timeout=config.timeout,
-        )
         self._request_count = 0
         self._total_tokens = 0
 
@@ -88,14 +83,7 @@ class LLMClient:
             messages=messages,
             temperature=temperature or self.config.temperature,
             max_tokens=max_tokens or self.config.max_tokens,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": schema.__name__,
-                    "schema": json_schema,
-                    "strict": True,
-                },
-            },
+            format_schema=json_schema,  # Ollama native format
         )
 
         # Parse and validate response
@@ -112,44 +100,66 @@ class LLMClient:
         messages: list,
         temperature: float,
         max_tokens: int,
-        response_format: Optional[Dict[str, Any]] = None,
+        format_schema: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Call LLM API with retry logic."""
+        """Call Ollama API with retry logic."""
         last_error = None
+        base_url = self.config.base_url.rstrip("/")
 
         for attempt in range(self.config.max_retries):
             try:
-                kwargs = {
+                payload = {
                     "model": self.config.model,
                     "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
+                    "stream": False,
+                    "options": {
+                        "temperature": temperature,
+                        "num_predict": max_tokens,
+                    }
                 }
-                if response_format:
-                    kwargs["response_format"] = response_format
+
+                # Ollama native structured output via format parameter
+                if format_schema:
+                    payload["format"] = format_schema
 
                 start_time = time.time()
-                response = self.client.chat.completions.create(**kwargs)
+                response = requests.post(
+                    f"{base_url}/api/chat",
+                    json=payload,
+                    timeout=self.config.timeout,
+                )
+                response.raise_for_status()
                 elapsed = time.time() - start_time
 
+                data = response.json()
                 self._request_count += 1
-                if response.usage:
-                    self._total_tokens += response.usage.total_tokens
+
+                # Ollama returns token counts in eval_count and prompt_eval_count
+                eval_count = data.get("eval_count", 0)
+                prompt_eval_count = data.get("prompt_eval_count", 0)
+                total_tokens = eval_count + prompt_eval_count
+                self._total_tokens += total_tokens
 
                 logger.debug(
                     f"LLM request #{self._request_count}: {elapsed:.2f}s, "
-                    f"tokens: {response.usage.total_tokens if response.usage else 'N/A'}"
+                    f"tokens: {total_tokens}"
                 )
 
-                return response.choices[0].message.content
+                message = data.get("message", {})
+                content = message.get("content", "")
 
-            except TimeoutError as e:
+                if not content:
+                    raise LLMError("Empty content in response from Ollama")
+
+                return content
+
+            except requests.exceptions.Timeout as e:
                 last_error = LLMTimeoutError(f"Request timed out: {e}")
                 logger.warning(f"Timeout on attempt {attempt + 1}/{self.config.max_retries}")
                 if attempt < self.config.max_retries - 1:
                     time.sleep(2 ** attempt)  # Exponential backoff
 
-            except ConnectionError as e:
+            except requests.exceptions.ConnectionError as e:
                 last_error = LLMConnectionError(f"Connection error: {e}")
                 logger.warning(f"Connection error on attempt {attempt + 1}/{self.config.max_retries}")
                 if attempt < self.config.max_retries - 1:
