@@ -37,19 +37,18 @@ class OllamaClient:
         Returns:
             Generated text
         """
-        # Qwen3 requires /no_think to disable thinking mode
-        # Combine system prompt with user prompt in a single message
-        full_prompt = f"/no_think\n{system}\n\n{prompt}" if system else f"/no_think\n{prompt}"
-
         payload = {
             "model": self.model,
-            "prompt": full_prompt,
+            "prompt": prompt,
             "stream": False,
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
             },
         }
+
+        if system:
+            payload["system"] = system
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(
@@ -82,18 +81,18 @@ class OllamaClient:
         Yields:
             Text chunks as they are generated
         """
-        # Qwen3 requires /no_think to disable thinking mode
-        full_prompt = f"/no_think\n{system}\n\n{prompt}" if system else f"/no_think\n{prompt}"
-
         payload = {
             "model": self.model,
-            "prompt": full_prompt,
+            "prompt": prompt,
             "stream": True,
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
             },
         }
+
+        if system:
+            payload["system"] = system
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream(
