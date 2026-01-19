@@ -19,9 +19,9 @@ SETTINGS_FILE = Path(__file__).parent / "settings.yaml"
 # Значения по умолчанию (используются если параметр не указан в YAML)
 DEFAULTS = {
     "llm": {
-        "model": "Qwen/Qwen3-4B-AWQ",
-        "base_url": "http://localhost:8000/v1",
-        "timeout": 60,
+        "model": "qwen3:14b",  # Ollama model (Qwen3 14B - best quality)
+        "base_url": "http://localhost:11434",  # Ollama native API
+        "timeout": 120,  # Increased for larger model
         "stream": False,
     },
     "retriever": {

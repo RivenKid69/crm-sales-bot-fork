@@ -48,8 +48,8 @@ Examples:
   # Process single PDF file
   python -m knowledge_extractor -i manual.pdf -o knowledge/
 
-  # Use custom vLLM endpoint
-  python -m knowledge_extractor -i docs/ -o kb/ --llm-url http://localhost:8000/v1
+  # Use custom Ollama endpoint
+  python -m knowledge_extractor -i docs/ -o kb/ --llm-url http://localhost:11434
 
 Supported formats:
   - PDF (.pdf)
@@ -75,13 +75,13 @@ Supported formats:
     # LLM options
     parser.add_argument(
         "--llm-url",
-        default="http://localhost:8000/v1",
-        help="vLLM API endpoint (default: http://localhost:8000/v1)",
+        default="http://localhost:11434",
+        help="Ollama API endpoint (default: http://localhost:11434)",
     )
     parser.add_argument(
         "--llm-model",
-        default="Qwen/Qwen3-14B",
-        help="LLM model name (default: Qwen/Qwen3-14B)",
+        default="qwen3:14b",
+        help="Ollama model name (default: qwen3:14b)",
     )
     parser.add_argument(
         "--max-tokens",

@@ -5,11 +5,12 @@
 ## Быстрый старт
 
 ```bash
-# 1. Запустить vLLM сервер (в отдельном терминале)
-vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+# 1. Запустить Ollama и скачать модель
+ollama serve
+ollama pull qwen3:14b
 
 # 2. Активация виртуального окружения
-source venv/bin/activate
+source .venv/bin/activate
 
 # 3. Запуск бота
 cd src && python bot.py
@@ -17,36 +18,40 @@ cd src && python bot.py
 
 **Требования:**
 - Python 3.10+
-- vLLM сервер с моделью Qwen/Qwen3-4B-AWQ (~3-4 GB VRAM)
+- Ollama с моделью qwen3:14b (~9 GB VRAM)
 - sentence-transformers для семантического поиска (ai-forever/FRIDA)
 
-## vLLM Setup
+## Ollama Setup
 
-> **Важно:** Этот проект использует **только vLLM**. Ollama не поддерживается.
+> **Стандарт проекта:** Ollama + Qwen3 14B с native structured output.
 
-### Установка vLLM
+### Установка Ollama
 
 ```bash
-pip install vllm
+curl -fsSL https://ollama.ai/install.sh | sh
 ```
 
-### Запуск vLLM сервера
+### Запуск Ollama сервера
 
 ```bash
-# С AWQ квантизацией (рекомендуется, ~4GB VRAM)
-vllm serve Qwen/Qwen3-4B-AWQ --port 8000 --quantization awq
+# Через системный сервис (автозапуск)
+sudo systemctl start ollama
 
-# Без квантизации (требует ~8GB VRAM)
-vllm serve Qwen/Qwen3-4B --port 8000
+# Или вручную
+ollama serve
+```
 
-# С 8B моделью (лучшее качество, ~6GB VRAM с AWQ)
-vllm serve Qwen/Qwen3-8B-AWQ --port 8000 --quantization awq
+### Скачать модель
+
+```bash
+# Qwen3 14B - стандарт проекта (9.3 GB, ~12-16 GB VRAM)
+ollama pull qwen3:14b
 ```
 
 ### Проверка работы
 
 ```bash
-curl http://localhost:8000/v1/models
+curl http://localhost:11434/api/tags
 ```
 
 ### Настройка модели
@@ -55,17 +60,17 @@ curl http://localhost:8000/v1/models
 
 ```yaml
 llm:
-  model: "Qwen/Qwen3-4B-AWQ"
-  base_url: "http://localhost:8000/v1"
-  timeout: 60
+  model: "qwen3:14b"
+  base_url: "http://localhost:11434"
+  timeout: 120
 ```
 
-### Преимущества vLLM
+### Преимущества Ollama + Qwen3 14B
 
-- **Native Structured Output** — гарантированный JSON через `response_format`
-- **Высокая скорость** — PagedAttention и continuous batching
-- **Эффективное использование VRAM** — оптимизированное выделение памяти
-- **AWQ квантизация** — 4-bit квантизация без потери качества
+- **Native Structured Output** — гарантированный JSON через `format` параметр (Ollama 0.5+)
+- **Высокое качество** — Qwen3 14B значительно лучше 4B/8B моделей
+- **Простая установка** — одна команда для установки и запуска
+- **Поддержка русского** — Qwen3 отлично работает с русским языком
 
 ## Возможности
 
@@ -105,7 +110,7 @@ llm:
          │
          ▼
 ┌─────────────────┐
-│   LLM (vLLM)    │  ← Qwen3-4B-AWQ генерирует финальный ответ
+│   LLM (Ollama)  │  ← Qwen3 14B генерирует финальный ответ
 └────────┬────────┘
          │
          ▼
@@ -120,7 +125,7 @@ src/
 ├── settings.yaml           # Конфигурация (LLM, retriever, classifier, feature_flags)
 ├── settings.py             # Загрузчик настроек с DotDict
 ├── config.py               # Интенты, состояния, SPIN-промпты
-├── llm.py                  # VLLMClient — интеграция с vLLM
+├── llm.py                  # OllamaClient — интеграция с Ollama
 ├── state_machine.py        # Управление состояниями диалога (SPIN flow)
 ├── generator.py            # Генерация ответов через LLM
 │
@@ -185,7 +190,7 @@ src/
 │   ├── cascade.py          # CascadeClassifier — semantic fallback
 │   ├── disambiguation.py   # IntentDisambiguator
 │   ├── llm/                # LLM классификатор (основной)
-│   │   ├── classifier.py   # LLMClassifier (vLLM + Outlines)
+│   │   ├── classifier.py   # LLMClassifier (Ollama + Structured Output)
 │   │   ├── prompts.py      # System prompt + few-shot
 │   │   └── schemas.py      # Pydantic схемы для structured output
 │   ├── intents/            # Подпакет классификации интентов (для fallback)
@@ -265,11 +270,11 @@ scripts/                    # Вспомогательные скрипты
 Все параметры вынесены в `src/settings.yaml`:
 
 ```yaml
-# LLM (Language Model) - vLLM Server
+# LLM (Language Model) - Ollama Server
 llm:
-  model: "Qwen/Qwen3-4B-AWQ"
-  base_url: "http://localhost:8000/v1"
-  timeout: 60
+  model: "qwen3:14b"
+  base_url: "http://localhost:11434"
+  timeout: 120
 
 # Retriever (Поиск по базе знаний)
 retriever:
@@ -479,7 +484,7 @@ from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 ```
 
 ### Dual-mode классификация:
-- **LLM режим** (по умолчанию) — 33 интента через vLLM + Outlines, structured output
+- **LLM режим** (по умолчанию) — 33 интента через Ollama, structured output
 - **Hybrid режим** (fallback) — regex + pymorphy при ошибке LLM или `llm_classifier=false`
 
 ### Контекстная классификация:
@@ -604,8 +609,8 @@ sm = StateMachine(flow=flow)
 
 ```
 ┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐
-│   faster-whisper  │ ──► │   LLM (vLLM)      │ ──► │   F5-TTS Russian  │
-│   (STT)           │     │   Qwen3-4B-AWQ    │     │   + RUAccent      │
+│   faster-whisper  │ ──► │   LLM (Ollama)    │ ──► │   F5-TTS Russian  │
+│   (STT)           │     │   Qwen3 14B       │     │   + RUAccent      │
 └───────────────────┘     └───────────────────┘     └───────────────────┘
       Голос клиента              Текст                   Голос бота
 ```
@@ -717,12 +722,11 @@ pytest tests/test_config_property_based.py -v
 
 | Пакет | Назначение |
 |-------|------------|
-| `vllm` | vLLM сервер для LLM (Qwen3-8B-AWQ) |
-| `outlines` | Structured output (guided decoding) |
+| `ollama` | Ollama для LLM (qwen3:14b) — устанавливается системно |
+| `requests` | HTTP-клиент для Ollama API |
 | `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка (fallback на pymorphy2) |
 | `sentence-transformers` | Эмбеддинги (ai-forever/FRIDA) |
-| `openai` | HTTP-клиент для vLLM API (OpenAI-compatible) |
 | `pyyaml` | Парсинг YAML конфигурации и базы знаний |
 | `pytest` | Тестирование |
 
