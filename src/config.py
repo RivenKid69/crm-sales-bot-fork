@@ -1994,19 +1994,23 @@ PROMPT_TEMPLATES = {
 
     "presentation": """{system}
 
-{adaptive_style_instruction}
-{adaptive_tactical_instruction}
+{style_full_instruction}
 
 Информация о клиенте:
 - Размер команды: {bc_size_label} ({company_size} человек)
+- Категория: {size_category}
 - Проблема: {pain_point}
-- Отрасль: {industry}
+- Отрасль: {industry} (уверенность: {industry_confidence}%)
 - Типичные боли отрасли: {ic_pain_examples}
+- Примеры для отрасли: {ic_examples}
+{pain_reference}
 
 {effective_actions_hint}
 
 Наш продукт: {facts}
+Фокус боли для этого размера: {bc_pain_focus}
 Ценностное предложение: {bc_value_prop}
+Питч демо: {bc_demo_pitch}
 
 Диалог:
 {history}
@@ -2025,12 +2029,19 @@ PROMPT_TEMPLATES = {
 
     "handle_objection": """{system}
 
+{style_full_instruction}
+
 Тип возражения: {objection_type}
 Информация о клиенте:
+- Размер: {bc_size_label} ({company_size} человек)
+- Отрасль: {industry}
 - Проблема: {pain_point}
-- Размер: {company_size} человек
+{pain_reference}
 
 Контраргумент: {objection_counter}
+Контраргумент для размера: {bc_objection_counter}
+
+{effective_actions_hint}
 
 Наш продукт: {facts}
 
@@ -2048,15 +2059,18 @@ PROMPT_TEMPLATES = {
 
     "handle_objection_price": """{system}
 
-{adaptive_style_instruction}
+{style_full_instruction}
 
 Ситуация: Клиент говорит что дорого.
 Информация о клиенте:
+- Размер: {bc_size_label} ({company_size} человек), категория: {size_category}
+- Отрасль: {industry} (уверенность: {industry_confidence}%)
 - Проблема: {pain_point}
-- Размер: {bc_size_label} ({company_size} человек)
-- Отрасль: {industry}
+- Фокус боли: {bc_pain_focus}
+{pain_reference}
 
 Контраргумент для этого размера бизнеса: {bc_objection_counter}
+Ценностное предложение: {bc_value_prop}
 Общий контраргумент: {objection_counter}
 
 {effective_actions_hint}
@@ -2108,6 +2122,8 @@ PROMPT_TEMPLATES = {
 
     "answer_with_knowledge": """{system}
 
+{style_full_instruction}
+
 ВАЖНО: Отвечай СТРОГО на основе фактов ниже.
 Если информации нет в фактах — скажи "Уточню у коллег и сразу вернусь с ответом".
 НЕ ПРИДУМЫВАЙ информацию, которой нет.
@@ -2117,8 +2133,12 @@ PROMPT_TEMPLATES = {
 ========================
 
 Информация о клиенте:
-- Размер: {company_size}
+- Отрасль: {industry}
+- Размер: {bc_size_label} ({company_size} человек)
 - Потребность: {pain_point}
+{pain_reference}
+
+{effective_actions_hint}
 
 Диалог:
 {history}
@@ -2130,12 +2150,21 @@ PROMPT_TEMPLATES = {
 
     "answer_question": """{system}
 
+{style_full_instruction}
+
 ВАЖНО: Клиент задал вопрос — ты ОБЯЗАН на него ответить!
 Используй ТОЛЬКО факты ниже. Если информации нет — честно скажи что уточнишь.
 
 === ФАКТЫ О ПРОДУКТЕ ===
 {retrieved_facts}
 ========================
+
+Информация о клиенте:
+- Отрасль: {industry}
+- Размер: {bc_size_label} ({company_size} человек)
+{pain_reference}
+
+{effective_actions_hint}
 
 Диалог:
 {history}
@@ -2152,7 +2181,14 @@ PROMPT_TEMPLATES = {
 
     "soft_close": """{system}
 
+{style_full_instruction}
+
 Ситуация: Клиент не заинтересован или отказывается.
+
+Информация о клиенте:
+- Отрасль: {industry}
+- Размер: {bc_size_label}
+{pain_reference}
 
 Диалог:
 {history}
@@ -2170,7 +2206,20 @@ PROMPT_TEMPLATES = {
 
     "close": """{system}
 
+{style_full_instruction}
+
 Ситуация: Клиент заинтересован и готов к следующему шагу.
+
+Информация о клиенте:
+- Отрасль: {industry}
+- Размер: {bc_size_label} ({company_size} человек)
+- Проблема: {pain_point}
+{pain_reference}
+
+Питч для демо: {bc_demo_pitch}
+Ценностное предложение: {bc_value_prop}
+
+{effective_actions_hint}
 
 Диалог:
 {history}
@@ -2220,14 +2269,18 @@ PROMPT_TEMPLATES = {
     # P - Problem: выявить проблемы
     "spin_problem": """{system}
 
-{adaptive_style_instruction}
+{style_full_instruction}
 
 ЭТАП: Problem (выявить боли и проблемы)
 
 Информация о клиенте:
-- Отрасль: {industry}
-- Размер: {bc_size_label}
+- Отрасль: {industry} (уверенность: {industry_confidence}%)
+- Размер: {bc_size_label} ({company_size} человек)
+- Категория: {size_category}
+- Фокус боли для размера: {bc_pain_focus}
 - Типичные боли в этой отрасли: {ic_pain_examples}
+- Примеры отрасли: {ic_examples}
+- Ключевые слова: {ic_keywords}
 
 Диалог:
 {history}
@@ -2255,13 +2308,22 @@ PROMPT_TEMPLATES = {
     # I - Implication: показать последствия
     "spin_implication": """{system}
 
+{style_full_instruction}
+
 ЭТАП: Implication (помочь осознать последствия проблемы)
+
+Информация о клиенте:
+- Отрасль: {industry}
+- Размер: {bc_size_label} ({company_size} человек)
+- Выявленная проблема: {pain_point}
+{pain_reference}
+
+{effective_actions_hint}
 
 Диалог:
 {history}
 
 Клиент: "{user_message}"
-Выявленная проблема: {pain_point}
 
 Твоя задача:
 1. СНАЧАЛА признай проблему клиента (покажи эмпатию и понимание)
@@ -2286,14 +2348,24 @@ PROMPT_TEMPLATES = {
     # N - Need-Payoff: создать ценность решения
     "spin_need_payoff": """{system}
 
+{style_full_instruction}
+
 ЭТАП: Need-Payoff (клиент сам формулирует ценность решения)
+
+Информация о клиенте:
+- Отрасль: {industry}
+- Размер: {bc_size_label} ({company_size} человек)
+- Проблема: {pain_point}
+- Последствия: {pain_impact}
+- Ценностное предложение: {bc_value_prop}
+{pain_reference}
+
+{effective_actions_hint}
 
 Диалог:
 {history}
 
 Клиент: "{user_message}"
-Проблема: {pain_point}
-Последствия: {pain_impact}
 
 Твоя задача:
 1. СНАЧАЛА подтверди понимание ситуации (кратко)
