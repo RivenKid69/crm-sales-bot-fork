@@ -51,10 +51,9 @@ class LLMClient:
         max_tokens: Optional[int] = None,
     ) -> str:
         """Generate text completion."""
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+        # Qwen3 requires /no_think in user message to disable thinking mode
+        user_content = f"/no_think\n{system_prompt}\n\n{prompt}" if system_prompt else f"/no_think\n{prompt}"
+        messages = [{"role": "user", "content": user_content}]
 
         return self._call_api(
             messages=messages,
@@ -71,10 +70,9 @@ class LLMClient:
         max_tokens: Optional[int] = None,
     ) -> T:
         """Generate structured output using JSON schema."""
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+        # Qwen3 requires /no_think in user message to disable thinking mode
+        user_content = f"/no_think\n{system_prompt}\n\n{prompt}" if system_prompt else f"/no_think\n{prompt}"
+        messages = [{"role": "user", "content": user_content}]
 
         # Get JSON schema from Pydantic model
         json_schema = schema.model_json_schema()
@@ -147,6 +145,10 @@ class LLMClient:
 
                 message = data.get("message", {})
                 content = message.get("content", "")
+
+                # Qwen3 may return response in "thinking" field when in thinking mode
+                if not content:
+                    content = message.get("thinking", "")
 
                 if not content:
                     raise LLMError("Empty content in response from Ollama")
