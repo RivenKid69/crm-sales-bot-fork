@@ -89,6 +89,12 @@ class FeatureFlags:
 
         # === LLM Classifier (Phase LLM) ===
         "llm_classifier": True,            # Использовать LLM классификатор вместо Hybrid
+
+        # === Personalization v2 (Adaptive Personalization) ===
+        "personalization_v2": False,              # V2 engine с behavioral adaptation
+        "personalization_adaptive_style": False,  # AdaptiveStyleSelector
+        "personalization_semantic_industry": False,  # IndustryDetectorV2 semantic matching
+        "personalization_session_memory": False,  # EffectiveActionTracker
     }
 
     # Группы флагов для удобного управления
@@ -115,6 +121,14 @@ class FeatureFlags:
         "phase_5_tone": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
         "tone_safe": ["cascade_tone_analyzer"],  # Только улучшенный Tier 1
         "tone_full": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
+        # Personalization v2 groups
+        "personalization_v2_safe": [
+            "personalization", "personalization_v2", "personalization_adaptive_style"
+        ],
+        "personalization_v2_full": [
+            "personalization", "personalization_v2", "personalization_adaptive_style",
+            "personalization_semantic_industry", "personalization_session_memory"
+        ],
     }
 
     def __init__(self):
@@ -370,6 +384,30 @@ class FeatureFlags:
     def llm_classifier(self) -> bool:
         """Включён ли LLM классификатор вместо Hybrid"""
         return self.is_enabled("llm_classifier")
+
+    # =========================================================================
+    # Personalization v2 flags
+    # =========================================================================
+
+    @property
+    def personalization_v2(self) -> bool:
+        """Включён ли PersonalizationEngine v2 с behavioral adaptation"""
+        return self.is_enabled("personalization_v2")
+
+    @property
+    def personalization_adaptive_style(self) -> bool:
+        """Включён ли AdaptiveStyleSelector"""
+        return self.is_enabled("personalization_adaptive_style")
+
+    @property
+    def personalization_semantic_industry(self) -> bool:
+        """Включён ли semantic matching для определения отрасли"""
+        return self.is_enabled("personalization_semantic_industry")
+
+    @property
+    def personalization_session_memory(self) -> bool:
+        """Включён ли EffectiveActionTracker для session memory"""
+        return self.is_enabled("personalization_session_memory")
 
 
 # Singleton экземпляр

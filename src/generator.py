@@ -11,9 +11,11 @@ from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from knowledge.retriever import get_retriever
 from settings import settings
 from logger import logger
+from feature_flags import flags
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
+    from src.personalization import PersonalizationEngineV2
 
 
 # =============================================================================
@@ -343,7 +345,15 @@ class ResponseGenerator:
                 )
             )
             logger.info("CategoryRouter initialized", top_k=self.category_router.top_k)
-    
+
+        # PersonalizationEngineV2: адаптивная персонализация на основе поведения
+        self.personalization_engine: Optional["PersonalizationEngineV2"] = None
+        if flags.personalization_v2:
+            from src.personalization import PersonalizationEngineV2
+            retriever = get_retriever()
+            self.personalization_engine = PersonalizationEngineV2(retriever)
+            logger.info("PersonalizationEngineV2 initialized")
+
     def get_facts(self, company_size: int = None) -> str:
         """Получить факты о продукте"""
         # Явная проверка на None, чтобы 0 не считался False
@@ -531,6 +541,28 @@ class ResponseGenerator:
             "objection_type": objection_type,
             "objection_counter": objection_counter,
         }
+
+        # === Personalization v2: Adaptive personalization ===
+        if self.personalization_engine and flags.personalization_v2:
+            try:
+                from src.personalization import PersonalizationResult
+                p_result = self.personalization_engine.personalize(
+                    envelope=context.get("context_envelope"),
+                    collected_data=collected,
+                    action_tracker=context.get("action_tracker"),
+                    messages=context.get("user_messages", []),
+                )
+                # Добавляем переменные персонализации
+                personalization_vars = p_result.to_prompt_variables()
+                variables.update(personalization_vars)
+                logger.debug(
+                    "Personalization v2 applied",
+                    style_verbosity=p_result.style.verbosity,
+                    industry=p_result.industry_context.industry,
+                    size_category=p_result.business_context.size_category,
+                )
+            except Exception as e:
+                logger.warning(f"Personalization v2 failed: {e}")
 
         # Подставляем в шаблон
         try:

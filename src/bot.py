@@ -51,6 +51,9 @@ from context_envelope import build_context_envelope
 from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
 from settings import settings
 
+# Personalization v2: Adaptive personalization
+from src.personalization import EffectiveActionTracker
+
 
 class SalesBot:
     """
@@ -141,6 +144,11 @@ class SalesBot:
         # Pass config for state_order, phase_order from YAML (v2.0)
         self.context_window = ContextWindow(max_size=5, config=self._config)
 
+        # Personalization v2: Session memory for effective actions
+        self.action_tracker: Optional[EffectiveActionTracker] = None
+        if flags.personalization_session_memory:
+            self.action_tracker = EffectiveActionTracker()
+
         logger.info(
             "SalesBot initialized",
             conversation_id=self.conversation_id,
@@ -190,6 +198,10 @@ class SalesBot:
 
         # Reset Context Window
         self.context_window.reset()
+
+        # Reset Personalization v2
+        if self.action_tracker:
+            self.action_tracker.reset()
 
         logger.info("SalesBot reset", conversation_id=self.conversation_id)
 
@@ -765,6 +777,10 @@ class SalesBot:
             "last_action": self.last_action,
             # Phase 5: Policy reason codes for generator
             "policy_reason_codes": policy_override.reason_codes if policy_override else [],
+            # Personalization v2: Context envelope and action tracker
+            "context_envelope": context_envelope,
+            "action_tracker": self.action_tracker,
+            "user_messages": [turn.get("user", "") for turn in self.history[-5:]] + [user_message],
         }
 
         # Determine action
@@ -823,6 +839,18 @@ class SalesBot:
             is_fallback=fallback_used,
             fallback_tier=fallback_tier,
         )
+
+        # 4.2 Record action outcome for personalization v2
+        if self.action_tracker and self.last_action:
+            # Получаем turn_type из context_window
+            turn_type = "NEUTRAL"
+            if hasattr(self.context_window, 'get_last_turn_type'):
+                turn_type = self.context_window.get_last_turn_type() or "NEUTRAL"
+            self.action_tracker.record_outcome(
+                action=self.last_action,
+                turn_type=turn_type,
+                intent=intent,
+            )
 
         # 5. Save context for next turn
         self.last_action = action
