@@ -364,7 +364,8 @@ class SalesBot:
         state: str,
         message: str,
         collected_data: Dict,
-        frustration_level: int
+        frustration_level: int,
+        last_intent: str = ""  # BUG-001 FIX: Pass intent for informative check
     ) -> Optional[str]:
         """
         Проверить ConversationGuard (Phase 1).
@@ -380,7 +381,8 @@ class SalesBot:
                 state=state,
                 message=message,
                 collected_data=collected_data,
-                frustration_level=frustration_level
+                frustration_level=frustration_level,
+                last_intent=last_intent  # BUG-001 FIX: Pass intent for informative check
             )
 
             if not can_continue:
@@ -656,7 +658,8 @@ class SalesBot:
             state=current_state,
             message=user_message,
             collected_data=collected_data,
-            frustration_level=frustration_level
+            frustration_level=frustration_level,
+            last_intent=self.last_intent  # BUG-001 FIX: Pass intent for informative check
         )
         guard_elapsed = (time.time() - guard_start) * 1000
 
@@ -724,14 +727,16 @@ class SalesBot:
                     skip_next_state = fb_result["next_state"]
                     self.state_machine.state = skip_next_state
                     logger.info(
-                        "Fallback skip applied",
+                        "Fallback skip applied - resetting fallback for normal generation",
                         from_state=current_state,
-                        to_state=skip_next_state
+                        to_state=skip_next_state,
+                        original_tier=intervention
                     )
                     # Update current_state for rest of processing
                     current_state = skip_next_state
-                    # Continue processing with new state - don't return early
-                    # This allows the normal flow to generate a response
+                    # ✅ FIX BUG-001: Сбрасываем fallback_response чтобы сгенерировать
+                    # нормальный ответ вместо tier_3 шаблона
+                    fallback_response = None
 
         # 1. Classify intent
         classification_start = time.time()
@@ -1343,7 +1348,8 @@ class SalesBot:
             state=current_state,
             message=user_message,
             collected_data=collected_data,
-            frustration_level=frustration_level
+            frustration_level=frustration_level,
+            last_intent=self.last_intent  # BUG-001 FIX: Pass intent for informative check
         ) if user_message else None
 
         fallback_used = False

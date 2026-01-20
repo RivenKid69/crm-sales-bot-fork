@@ -150,6 +150,32 @@ intents:
       - implication_acknowledged
       - need_expressed
 
+    # BUG-001 FIX: Информативные интенты (клиент предоставляет данные, не застрял)
+    # Используется ConversationGuard для проверки перед срабатыванием TIER_3
+    informative:
+      # SPIN situation
+      - situation_provided
+      - info_provided
+      # SPIN problem
+      - problem_revealed
+      - problem_mentioned
+      - pain_mentioned
+      # SPIN implication
+      - implication_acknowledged
+      - consequence_mentioned
+      # SPIN need-payoff
+      - need_expressed
+      - benefit_acknowledged
+      # General informative
+      - question_answered
+      - data_provided
+      - clarification_provided
+      - details_shared
+      # Budget/timeline related
+      - budget_mentioned
+      - timeline_mentioned
+      - decision_process_shared
+
     negative:
       - rejection
       - farewell

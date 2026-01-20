@@ -85,6 +85,9 @@ class GuardState:
     last_progress_turn: int = 0
     collected_data_count: int = 0
     frustration_level: int = 0
+    # BUG-001 FIX: Track intents to detect informative responses
+    intent_history: List[str] = field(default_factory=list)
+    last_intent: str = ""
 
 
 class ConversationGuard:
@@ -146,7 +149,8 @@ class ConversationGuard:
         state: str,
         message: str,
         collected_data: Dict,
-        frustration_level: Optional[int] = None
+        frustration_level: Optional[int] = None,
+        last_intent: str = ""  # BUG-001 FIX: Accept intent for informative check
     ) -> Tuple[bool, Optional[str]]:
         """
         Проверить состояние диалога и определить нужна ли интервенция.
@@ -156,6 +160,7 @@ class ConversationGuard:
             message: Сообщение клиента
             collected_data: Собранные данные о клиенте
             frustration_level: Уровень раздражения (0-10), если None - используется внутренний
+            last_intent: Предыдущий intent клиента (для проверки информативности)
 
         Returns:
             Tuple[can_continue, intervention_action]
@@ -175,6 +180,11 @@ class ConversationGuard:
         # Обновляем frustration если передан
         if frustration_level is not None:
             self._state.frustration_level = frustration_level
+
+        # BUG-001 FIX: Record intent history for informative response detection
+        if last_intent:
+            self._state.intent_history.append(last_intent)
+            self._state.last_intent = last_intent
 
         # Проверки в порядке критичности
 
@@ -216,15 +226,25 @@ class ConversationGuard:
             )
             return True, self.TIER_2  # Предложить варианты
 
-        # 5. Проверка застревания в состоянии
+        # 5. Проверка застревания в состоянии (с учётом информативности)
         same_state_count = self._count_recent_same_state(state)
         if same_state_count >= self.config.max_same_state:
-            logger.warning(
-                "State loop detected",
-                state=state,
-                count=same_state_count
-            )
-            return True, self.TIER_3  # Предложить skip
+            # BUG-001 FIX: Проверяем был ли последний intent информативным
+            if self._has_recent_informative_intent():
+                logger.debug(
+                    "State loop threshold reached but client is providing info - not triggering",
+                    state=state,
+                    count=same_state_count,
+                    last_intent=self._state.last_intent
+                )
+                # Не возвращаем TIER_3, даём диалогу продолжиться
+            else:
+                logger.warning(
+                    "State loop detected",
+                    state=state,
+                    count=same_state_count
+                )
+                return True, self.TIER_3  # Предложить skip
 
         # 6. Проверка попыток в фазе (но только если нет прогресса в данных)
         # NOTE: Используем > (не >=) для консистентности с max_turns:
@@ -302,6 +322,49 @@ class ConversationGuard:
         unique_recent = len(set(recent_states))
 
         return unique_recent >= self.config.min_unique_states_for_progress
+
+    def _get_informative_intents(self) -> set:
+        """
+        BUG-001 FIX: Возвращает набор интентов, указывающих на информативные ответы.
+
+        Эти интенты означают что клиент предоставляет данные, а не застрял.
+        """
+        return {
+            # SPIN situation
+            "situation_provided",
+            "info_provided",
+            # SPIN problem
+            "problem_mentioned",
+            "pain_mentioned",
+            # SPIN implication
+            "implication_acknowledged",
+            "consequence_mentioned",
+            # SPIN need-payoff
+            "need_expressed",
+            "benefit_acknowledged",
+            # General informative
+            "question_answered",
+            "data_provided",
+            "clarification_provided",
+            "details_shared",
+            # Budget/timeline related
+            "budget_mentioned",
+            "timeline_mentioned",
+            "decision_process_shared",
+        }
+
+    def _has_recent_informative_intent(self) -> bool:
+        """
+        BUG-001 FIX: Проверяет был ли последний intent информативным.
+
+        Returns:
+            True если последний intent указывает что клиент предоставляет данные
+        """
+        if not self._state.last_intent:
+            return False
+
+        informative_intents = self._get_informative_intents()
+        return self._state.last_intent in informative_intents
 
     def get_stats(self) -> Dict:
         """Получить статистику диалога"""

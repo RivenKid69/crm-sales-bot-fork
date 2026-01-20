@@ -99,6 +99,10 @@ class FeatureFlags:
         # === НОВОЕ: Response Quality (Bag Fixes) ===
         "response_deduplication": True,           # Проверка на дублирующиеся ответы
         "price_question_override": True,          # Intent-aware override для вопросов о цене
+
+        # === BUG-001 FIX: Guard/Fallback Intervention Fixes ===
+        "guard_informative_intent_check": True,   # Проверка информативных интентов перед TIER_3
+        "guard_skip_resets_fallback": True,       # Сброс fallback_response после skip action
     }
 
     # Группы флагов для удобного управления
@@ -132,6 +136,10 @@ class FeatureFlags:
         "personalization_v2_full": [
             "personalization", "personalization_v2", "personalization_adaptive_style",
             "personalization_semantic_industry", "personalization_session_memory"
+        ],
+        # BUG-001 FIX: Guard/Fallback groups
+        "guard_fixes": [
+            "guard_informative_intent_check", "guard_skip_resets_fallback"
         ],
     }
 
@@ -412,6 +420,20 @@ class FeatureFlags:
     def personalization_session_memory(self) -> bool:
         """Включён ли EffectiveActionTracker для session memory"""
         return self.is_enabled("personalization_session_memory")
+
+    # =========================================================================
+    # BUG-001 FIX: Guard/Fallback flags
+    # =========================================================================
+
+    @property
+    def guard_informative_intent_check(self) -> bool:
+        """Включена ли проверка информативных интентов перед TIER_3"""
+        return self.is_enabled("guard_informative_intent_check")
+
+    @property
+    def guard_skip_resets_fallback(self) -> bool:
+        """Включён ли сброс fallback_response после skip action"""
+        return self.is_enabled("guard_skip_resets_fallback")
 
 
 # Singleton экземпляр
