@@ -51,6 +51,7 @@ class PolicyDecision(Enum):
     OBJECTION_ESCALATE = "objection_escalate"  # Эскалация возражения
     BREAKTHROUGH_CTA = "breakthrough_cta"    # Мягкий CTA после прорыва
     CONSERVATIVE = "conservative"             # Консервативный режим
+    PRICE_QUESTION = "price_question"        # НОВОЕ: Override для вопроса о цене
 
 
 @dataclass
@@ -186,6 +187,10 @@ class DialoguePolicy:
         # 1. Guard intervention имеет высший приоритет
         if policy_registry.evaluate("has_guard_intervention", ctx, trace):
             override = self._handle_guard_intervention(ctx, sm_result, trace)
+
+        # 1.5 НОВОЕ: Price question override (гарантирует ответ о цене)
+        if not override and policy_registry.evaluate("is_price_question", ctx, trace):
+            override = self._apply_price_question_overlay(ctx, sm_result, trace)
 
         # 2. Repair mode (stuck, oscillation, repeated question)
         if not override and policy_registry.evaluate("needs_repair", ctx, trace):
@@ -360,6 +365,61 @@ class DialoguePolicy:
             )
 
         return None
+
+    def _apply_price_question_overlay(
+        self,
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None
+    ) -> Optional[PolicyOverride]:
+        """
+        НОВОЕ: Применить оверлей для вопросов о цене.
+
+        Триггеры (проверяем через registry):
+        - is_price_question: intent = price_question | pricing_details
+
+        Actions:
+        - answer_with_pricing: гарантирует ответ о цене
+
+        Этот оверлей гарантирует что вопрос о цене НИКОГДА не игнорируется,
+        даже если state machine вернул другой action.
+        """
+        current_action = ctx.current_action
+
+        # Если action уже правильный — не меняем
+        if current_action in ("answer_with_pricing", "answer_with_facts", "answer_pricing_details"):
+            if trace:
+                trace.set_result(None, Resolution.NONE, matched_condition="price_action_already_correct")
+            return None
+
+        signals = {
+            "intent": ctx.last_intent,
+            "original_action": current_action,
+        }
+
+        if trace:
+            trace.set_result(
+                "answer_with_pricing",
+                Resolution.CONDITION_MATCHED,
+                matched_condition="is_price_question"
+            )
+
+        from logger import logger
+        logger.info(
+            "Policy: Price question override applied",
+            original_action=current_action,
+            new_action="answer_with_pricing",
+            intent=ctx.last_intent
+        )
+
+        return PolicyOverride(
+            action="answer_with_pricing",
+            next_state=None,  # Сохраняем текущий state
+            reason_codes=[ReasonCode.POLICY_PRICE_OVERRIDE.value],
+            decision=PolicyDecision.PRICE_QUESTION,
+            signals_used=signals,
+            expected_effect="Answer price question directly instead of deflecting",
+        )
 
     def _apply_breakthrough_overlay(
         self,

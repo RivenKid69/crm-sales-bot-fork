@@ -132,6 +132,18 @@ intents:
       - question_technical
       - comparison
 
+    # НОВОЕ: Вопросы о цене (требуют ответа с ценой)
+    price_related:
+      - price_question
+      - pricing_details
+
+    # НОВОЕ: Вопросы требующие ответа фактами (не deflect)
+    question_requires_facts:
+      - price_question
+      - pricing_details
+      - question_features
+      - question_integrations
+
     spin_progress:
       - situation_provided
       - problem_revealed
@@ -145,6 +157,13 @@ intents:
       - objection_competitor
       - objection_no_time
       - objection_think
+
+  # НОВОЕ: Маппинг intent → preferred action (override default behavior)
+  intent_action_overrides:
+    price_question: answer_with_pricing
+    pricing_details: answer_with_pricing
+    question_features: answer_with_facts
+    question_integrations: answer_with_facts
 
 # =============================================================================
 # DIALOGUE POLICY SETTINGS

@@ -15,7 +15,7 @@
 #   ./scripts/start_ollama.sh
 #
 llm:
-  # Модель Ollama (qwen3:14b - лучшее качество, поддержка русского)
+  # Модель Ollama (qwen3:14b - с thinking mode отключённым через API)
   model: "qwen3:14b"
 
   # URL Ollama сервера (native API)

@@ -101,6 +101,7 @@ class ResponseDirectives:
     client_card: str = ""
     objection_summary: str = ""
     do_not_repeat: List[str] = field(default_factory=list)
+    do_not_repeat_responses: List[str] = field(default_factory=list)  # НОВОЕ: предыдущие ответы бота
     reference_pain: str = ""
 
     # === Meta ===
@@ -129,6 +130,7 @@ class ResponseDirectives:
                 "client_card": self.client_card,
                 "objection_summary": self.objection_summary,
                 "do_not_repeat": self.do_not_repeat,
+                "do_not_repeat_responses": self.do_not_repeat_responses,  # НОВОЕ
                 "reference_pain": self.reference_pain,
             },
             "reason_codes": self.reason_codes,
@@ -189,6 +191,12 @@ class ResponseDirectives:
         # Что не повторять
         if self.do_not_repeat:
             parts.append(f"Не спрашивай повторно: {', '.join(self.do_not_repeat)}")
+
+        # НОВОЕ: Не повторять предыдущие ответы
+        if self.do_not_repeat_responses:
+            # Берём первые 80 символов каждого ответа для краткости
+            recent = [r[:80] + "..." if len(r) > 80 else r for r in self.do_not_repeat_responses[-3:]]
+            parts.append(f"НЕ ПОВТОРЯЙ дословно эти фразы: {recent}")
 
         # Возражения
         if self.objection_summary:
@@ -426,6 +434,9 @@ class ResponseDirectivesBuilder:
         # Do not repeat (уже собранные данные)
         directives.do_not_repeat = self._get_collected_fields()
 
+        # НОВОЕ: Do not repeat responses (предыдущие ответы бота)
+        directives.do_not_repeat_responses = self._get_recent_bot_responses()
+
         # Reference pain
         if envelope.client_pain_points:
             # Берём первую боль (без PII)
@@ -471,6 +482,30 @@ class ResponseDirectivesBuilder:
                 fields.append(name)
 
         return fields
+
+    def _get_recent_bot_responses(self, n: int = 3) -> List[str]:
+        """
+        НОВОЕ: Получить последние N ответов бота для предотвращения повторов.
+
+        Args:
+            n: Количество ответов для возврата
+
+        Returns:
+            Список последних ответов бота (первые 100 символов каждого)
+        """
+        responses = []
+
+        # Пытаемся получить из envelope.bot_responses (если есть)
+        if hasattr(self.envelope, 'bot_responses') and self.envelope.bot_responses:
+            responses = self.envelope.bot_responses[-n:]
+        # Fallback: пытаемся получить из history
+        elif hasattr(self.envelope, 'history') and self.envelope.history:
+            for turn in self.envelope.history[-n:]:
+                if isinstance(turn, dict) and turn.get("bot"):
+                    responses.append(turn["bot"])
+
+        # Ограничиваем длину каждого ответа для краткости
+        return [r[:100] for r in responses if r]
 
     def _translate_objections(self, objection_types: List[str]) -> List[str]:
         """Перевести типы возражений в читаемый вид."""

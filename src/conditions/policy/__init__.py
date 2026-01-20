@@ -90,6 +90,8 @@ from src.conditions.policy.conditions import (
     should_apply_conservative_overlay,
     has_effective_action_history,
     should_avoid_least_effective,
+    # Price question condition (НОВОЕ)
+    is_price_question,
 )
 
 
@@ -154,4 +156,6 @@ __all__ = [
     "should_apply_conservative_overlay",
     "has_effective_action_history",
     "should_avoid_least_effective",
+    # Price question condition (НОВОЕ)
+    "is_price_question",
 ]

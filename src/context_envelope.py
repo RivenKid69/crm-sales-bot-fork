@@ -69,6 +69,7 @@ class ReasonCode(Enum):
     POLICY_CONSERVATIVE = "policy.conservative"
     POLICY_ACCELERATE = "policy.accelerate"
     POLICY_CTA_SOFT = "policy.cta_soft"
+    POLICY_PRICE_OVERRIDE = "policy.price_override"  # НОВОЕ: override для вопросов о цене
 
     # Guard/Fallback
     GUARD_INTERVENTION = "guard.intervention"

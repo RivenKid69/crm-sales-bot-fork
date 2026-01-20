@@ -95,6 +95,10 @@ class FeatureFlags:
         "personalization_adaptive_style": False,  # AdaptiveStyleSelector
         "personalization_semantic_industry": False,  # IndustryDetectorV2 semantic matching
         "personalization_session_memory": False,  # EffectiveActionTracker
+
+        # === НОВОЕ: Response Quality (Bag Fixes) ===
+        "response_deduplication": True,           # Проверка на дублирующиеся ответы
+        "price_question_override": True,          # Intent-aware override для вопросов о цене
     }
 
     # Группы флагов для удобного управления

@@ -581,6 +581,28 @@ def should_avoid_least_effective(ctx: PolicyContext) -> bool:
     return ctx.current_action == ctx.least_effective_action
 
 
+# =============================================================================
+# PRICE QUESTION CONDITION (НОВОЕ) - Вопросы о цене
+# =============================================================================
+
+@policy_condition(
+    "is_price_question",
+    description="Check if client is asking about price",
+    category="price"
+)
+def is_price_question(ctx: PolicyContext) -> bool:
+    """
+    Returns True if client is asking about price.
+
+    Price-related intents: price_question, pricing_details
+
+    Этот condition гарантирует что вопрос о цене получит
+    правильный action (answer_with_pricing) независимо от state machine.
+    """
+    price_related_intents = {"price_question", "pricing_details"}
+    return ctx.last_intent in price_related_intents
+
+
 # Export all condition functions for testing
 __all__ = [
     # Repair conditions
@@ -633,4 +655,6 @@ __all__ = [
     "should_apply_conservative_overlay",
     "has_effective_action_history",
     "should_avoid_least_effective",
+    # Price question condition (НОВОЕ)
+    "is_price_question",
 ]

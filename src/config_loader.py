@@ -520,6 +520,56 @@ class FlowConfig:
             }
         return None
 
+    # =========================================================================
+    # Intent Category Support (for price questions, etc.)
+    # =========================================================================
+
+    def get_intent_category(self, category_name: str) -> Optional[List[str]]:
+        """
+        Get intent category from global constants.
+
+        Reads from constants.yaml: intents.{category_name}
+
+        Args:
+            category_name: Name of the intent category (e.g., 'price_related')
+
+        Returns:
+            List of intent names in the category, or None if not found
+
+        Example:
+            price_intents = flow.get_intent_category("price_related")
+            # Returns: ["price_question", "pricing_details"]
+        """
+        try:
+            config = get_config()
+            return config.intents.get(category_name)
+        except Exception:
+            # If config not available, return None
+            return None
+
+    def get_intent_action_override(self, intent: str) -> Optional[str]:
+        """
+        Get action override for a specific intent.
+
+        Reads from constants.yaml: intents.intent_action_overrides.{intent}
+
+        Args:
+            intent: Intent name to look up
+
+        Returns:
+            Action name to use for this intent, or None if no override
+
+        Example:
+            action = flow.get_intent_action_override("price_question")
+            # Returns: "answer_with_pricing"
+        """
+        try:
+            config = get_config()
+            overrides = config.intents.get("intent_action_overrides", {})
+            return overrides.get(intent)
+        except Exception:
+            return None
+
 
 class ConfigLoader:
     """

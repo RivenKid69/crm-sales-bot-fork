@@ -315,6 +315,12 @@ class PersonalizationEngine:
 
 
 class ResponseGenerator:
+    # Интенты связанные с ценой - требуют специального шаблона
+    PRICE_RELATED_INTENTS = {"price_question", "pricing_details"}
+
+    # Порог схожести для детекции дубликатов
+    SIMILARITY_THRESHOLD = 0.80
+
     def __init__(self, llm, flow: "FlowConfig" = None):
         """
         Initialize ResponseGenerator.
@@ -331,6 +337,10 @@ class ResponseGenerator:
         self.history_length = settings.generator.history_length
         self.retriever_top_k = settings.generator.retriever_top_k
         self.allowed_english = set(settings.generator.allowed_english_words)
+
+        # === НОВОЕ: Deduplication ===
+        self._response_history: List[str] = []
+        self._max_response_history = 5
 
         # CategoryRouter: LLM-классификация категорий перед поиском
         self.category_router = None
@@ -468,15 +478,26 @@ class ResponseGenerator:
         )
 
         # Выбираем шаблон
-        if action.startswith("transition_to_"):
+        # === НОВОЕ: Intent-aware выбор шаблона для price-related вопросов ===
+        # Price-related интенты ВСЕГДА получают pricing шаблон, независимо от action
+        if intent in self.PRICE_RELATED_INTENTS:
+            template_key = self._get_price_template_key(intent, action)
+            logger.debug(
+                "Price-related intent detected, using pricing template",
+                intent=intent,
+                original_action=action,
+                template_key=template_key
+            )
+        elif action.startswith("transition_to_"):
             template_key = action.replace("transition_to_", "")
         else:
             template_key = action
 
         # Для SPIN-фаз: если action == "continue_current_goal" и есть spin_phase,
         # используем специфический SPIN-шаблон вместо generic continue_current_goal
+        # НО только если это не price-related интент (price имеет приоритет)
         spin_phase = context.get("spin_phase", "")
-        if template_key == "continue_current_goal" and spin_phase:
+        if template_key == "continue_current_goal" and spin_phase and intent not in self.PRICE_RELATED_INTENTS:
             spin_template_key = f"spin_{spin_phase}"
             # Check if template exists (either in FlowConfig or PROMPT_TEMPLATES)
             if self._flow and self._flow.get_template(spin_template_key):
@@ -603,12 +624,26 @@ class ResponseGenerator:
 
         # Генерируем с retry при китайских символах
         best_response = ""
+        history = context.get("history", [])
+
         for attempt in range(max_retries):
             response = self.llm.generate(prompt)
 
-            # Если нет иностранного текста — сразу возвращаем
+            # Если нет иностранного текста — проверяем на дубликаты
             if not self._has_foreign_language(response):
-                return self._clean(response)
+                cleaned = self._clean(response)
+
+                # === НОВОЕ: Проверка на дубликаты ===
+                if flags.is_enabled("response_deduplication") and self._is_duplicate(cleaned, history):
+                    logger.info(
+                        "Duplicate response detected, regenerating",
+                        response_preview=cleaned[:50]
+                    )
+                    cleaned = self._regenerate_with_diversity(prompt, context, cleaned)
+
+                # Сохраняем в историю для отслеживания
+                self._add_to_response_history(cleaned)
+                return cleaned
 
             # Иначе чистим и сохраняем лучший результат
             cleaned = self._clean(response)
@@ -623,7 +658,14 @@ class ResponseGenerator:
                 )
 
         # Возвращаем лучший результат из попыток
-        return best_response if best_response else "Чем могу помочь?"
+        final_response = best_response if best_response else "Чем могу помочь?"
+
+        # === НОВОЕ: Проверка на дубликаты для fallback случая ===
+        if flags.is_enabled("response_deduplication") and self._is_duplicate(final_response, history):
+            final_response = self._regenerate_with_diversity(prompt, context, final_response)
+
+        self._add_to_response_history(final_response)
+        return final_response
 
     def _get_objection_counter(self, objection_type: str, collected_data: Dict) -> str:
         """
@@ -697,6 +739,188 @@ class ResponseGenerator:
         text = re.sub(r'\s+', ' ', text).strip()
 
         return text
+
+    # =========================================================================
+    # НОВОЕ: Deduplication методы
+    # =========================================================================
+
+    def _compute_similarity(self, text_a: str, text_b: str) -> float:
+        """
+        Вычислить схожесть двух текстов (Jaccard similarity по словам).
+
+        Args:
+            text_a: Первый текст
+            text_b: Второй текст
+
+        Returns:
+            Схожесть от 0.0 до 1.0
+        """
+        # Нормализация
+        a_norm = text_a.lower().strip()
+        b_norm = text_b.lower().strip()
+
+        # Точное совпадение
+        if a_norm == b_norm:
+            return 1.0
+
+        # Jaccard similarity по словам
+        words_a = set(a_norm.split())
+        words_b = set(b_norm.split())
+
+        if not words_a or not words_b:
+            return 0.0
+
+        intersection = len(words_a & words_b)
+        union = len(words_a | words_b)
+
+        return intersection / union if union > 0 else 0.0
+
+    def _is_duplicate(self, response: str, history: List[Dict]) -> bool:
+        """
+        Проверить является ли ответ дубликатом предыдущих.
+
+        Args:
+            response: Новый ответ для проверки
+            history: История диалога (список словарей с ключами 'user', 'bot')
+
+        Returns:
+            True если ответ слишком похож на предыдущие
+        """
+        if not response:
+            return False
+
+        # 1. Проверяем внутренний кэш ответов
+        for prev in self._response_history[-3:]:
+            similarity = self._compute_similarity(response, prev)
+            if similarity > self.SIMILARITY_THRESHOLD:
+                logger.debug(
+                    "Duplicate detected in response history",
+                    similarity=f"{similarity:.2f}",
+                    threshold=self.SIMILARITY_THRESHOLD
+                )
+                return True
+
+        # 2. Проверяем историю диалога
+        for turn in history[-3:]:
+            bot_response = turn.get("bot", "")
+            if bot_response:
+                similarity = self._compute_similarity(response, bot_response)
+                if similarity > self.SIMILARITY_THRESHOLD:
+                    logger.debug(
+                        "Duplicate detected in dialogue history",
+                        similarity=f"{similarity:.2f}",
+                        threshold=self.SIMILARITY_THRESHOLD
+                    )
+                    return True
+
+        return False
+
+    def _regenerate_with_diversity(
+        self,
+        prompt: str,
+        context: Dict,
+        original_response: str,
+        max_attempts: int = 2
+    ) -> str:
+        """
+        Перегенерировать ответ с инструкцией о разнообразии.
+
+        Args:
+            prompt: Исходный промпт
+            context: Контекст генерации
+            original_response: Оригинальный ответ (дубликат)
+            max_attempts: Максимум попыток регенерации
+
+        Returns:
+            Новый уникальный ответ или лучший из попыток
+        """
+        history = context.get("history", [])
+
+        # Собираем предыдущие ответы для инструкции
+        recent_responses = []
+        for turn in history[-3:]:
+            if turn.get("bot"):
+                recent_responses.append(turn["bot"][:80])
+
+        diversity_instruction = f"""
+⚠️ ВАЖНО: Твой предыдущий ответ слишком похож на уже данные.
+НЕ ПОВТОРЯЙ эти ответы: {recent_responses}
+
+Сформулируй ответ ИНАЧЕ:
+- Используй ДРУГИЕ слова и фразы
+- Измени структуру предложения
+- Если задаёшь вопрос — задай его по-другому
+
+"""
+        modified_prompt = diversity_instruction + prompt
+
+        best_response = original_response
+        best_similarity = 1.0
+
+        for attempt in range(max_attempts):
+            try:
+                response = self.llm.generate(modified_prompt)
+                cleaned = self._clean(response)
+
+                if not cleaned:
+                    continue
+
+                # Проверяем уникальность
+                if not self._is_duplicate(cleaned, history):
+                    logger.info(
+                        "Regeneration successful",
+                        attempt=attempt + 1
+                    )
+                    return cleaned
+
+                # Сохраняем лучший результат (наименее похожий)
+                max_sim = 0.0
+                for turn in history[-3:]:
+                    if turn.get("bot"):
+                        sim = self._compute_similarity(cleaned, turn["bot"])
+                        max_sim = max(max_sim, sim)
+
+                if max_sim < best_similarity:
+                    best_similarity = max_sim
+                    best_response = cleaned
+
+            except Exception as e:
+                logger.warning(f"Regeneration attempt {attempt + 1} failed: {e}")
+
+        logger.warning(
+            "Regeneration exhausted, using best attempt",
+            best_similarity=f"{best_similarity:.2f}"
+        )
+        return best_response
+
+    def _add_to_response_history(self, response: str) -> None:
+        """Добавить ответ в историю для отслеживания дубликатов."""
+        if response:
+            self._response_history.append(response)
+            if len(self._response_history) > self._max_response_history:
+                self._response_history.pop(0)
+
+    def reset(self) -> None:
+        """Сбросить историю ответов для нового диалога."""
+        self._response_history.clear()
+
+    def _get_price_template_key(self, intent: str, action: str) -> str:
+        """
+        Выбрать шаблон для price-related вопросов.
+
+        Args:
+            intent: Интент клиента
+            action: Action от state machine
+
+        Returns:
+            Ключ шаблона
+        """
+        if intent == "price_question":
+            return "answer_with_pricing"
+        elif intent == "pricing_details":
+            return "answer_pricing_details"
+        # Fallback
+        return "answer_with_facts"
 
 
 if __name__ == "__main__":

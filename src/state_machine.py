@@ -718,6 +718,47 @@ class StateMachine:
     # Alias for backward compatibility
     _get_current_spin_phase = _get_current_phase
 
+    def _get_intent_category(self, category_name: str) -> Optional[set]:
+        """
+        Get intent category from YAML config (constants.yaml).
+
+        Args:
+            category_name: Name of the category (e.g., "price_related", "question_requires_facts")
+
+        Returns:
+            Set of intents in the category, or None if not found
+        """
+        # Try FlowConfig first (Phase 4)
+        if self._flow:
+            category = self._flow.get_intent_category(category_name)
+            if category:
+                return set(category)
+
+        # Fallback 1: Try self._constants.intents.{category_name}
+        if hasattr(self, '_constants') and self._constants:
+            intents_config = self._constants.get("intents", {})
+            # Check directly under intents (e.g., intents.price_related)
+            if category_name in intents_config:
+                category = intents_config[category_name]
+                if isinstance(category, list):
+                    return set(category)
+            # Legacy path: intents.categories.{category_name}
+            categories = intents_config.get("categories", {})
+            if category_name in categories:
+                return set(categories[category_name])
+
+        # Fallback 2: Try global config
+        try:
+            from src.config_loader import get_config
+            config = get_config()
+            category = config.intents.get(category_name)
+            if category:
+                return set(category)
+        except Exception:
+            pass
+
+        return None
+
     def _get_next_phase_state(self, current_phase: str) -> Optional[str]:
         """
         Get next state in the phase progression.
@@ -1150,6 +1191,23 @@ class StateMachine:
         if intent in POSITIVE_INTENTS:
             self._state_before_objection = None
 
+        # =====================================================================
+        # PRIORITY OVERRIDE: Price-related questions
+        # Price questions have highest priority - ALWAYS return answer_with_pricing
+        # This ensures price questions are not deflected regardless of state rules
+        # =====================================================================
+        if flags.is_enabled("price_question_override"):
+            price_related_intents = self._get_intent_category("price_related") or {"price_question", "pricing_details"}
+            if intent in price_related_intents:
+                logger.debug(
+                    "Price-related intent detected (priority-driven), using pricing action",
+                    intent=intent,
+                    state=self.state
+                )
+                if trace:
+                    trace.set_result("answer_with_pricing", Resolution.CONDITION_MATCHED, "price_related_priority")
+                return "answer_with_pricing", self.state
+
         # Iterate through priorities
         for priority in sorted_priorities:
             result = self._apply_priority(
@@ -1319,6 +1377,27 @@ class StateMachine:
         # Phase 4: Reset state_before_objection on positive intents
         if intent in POSITIVE_INTENTS:
             self._state_before_objection = None
+
+        # =====================================================================
+        # ПРИОРИТЕТ 1.9: Price-related questions (НОВОЕ)
+        # Вопросы о цене имеют ВЫСШИЙ ПРИОРИТЕТ над state rules
+        # ВСЕГДА возвращаем answer_with_pricing, независимо от того что
+        # написано в rules для этого intent
+        # =====================================================================
+        if flags.is_enabled("price_question_override"):
+            # Получаем категорию price_related из конфига
+            price_related_intents = self._get_intent_category("price_related") or {"price_question", "pricing_details"}
+
+            if intent in price_related_intents:
+                logger.debug(
+                    "Price-related intent detected, using pricing action (priority 1.9)",
+                    intent=intent,
+                    state=self.state
+                )
+                if trace:
+                    trace.set_result("answer_with_pricing", Resolution.CONDITION_MATCHED, "price_related_priority")
+                self._last_trace = trace
+                return "answer_with_pricing", self.state
 
         # =====================================================================
         # ПРИОРИТЕТ 2: State-specific rules (с поддержкой conditional rules)
