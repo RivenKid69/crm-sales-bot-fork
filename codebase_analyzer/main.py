@@ -1,14 +1,20 @@
 """CLI entry point for Codebase Analyzer."""
 
+import asyncio
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from .analyzer.cache import AnalysisCache
+from .analyzer.models import AnalysisResult
+from .analyzer.pipeline import AnalysisPipeline
 from .config import AppConfig, load_config
+from .generator import GeneratorConfig, MarkdownGenerator
 from .indexer.indexer import create_indexer
 from .utils.logging import setup_logging
 from .utils.progress import get_metrics
@@ -90,13 +96,13 @@ def index(
 
     # Run indexer
     indexer = create_indexer(config)
-    graph, stats = indexer.index(path)
+    result = indexer.index(path)
 
     # Save index
-    index_path = indexer.save_index()
+    index_path = indexer.save_index(index_result=result)
 
     # Print summary
-    _print_index_summary(stats, index_path)
+    _print_index_summary(result.stats, index_path)
 
 
 @app.command()
@@ -113,12 +119,28 @@ def analyze(
     ],
     output: Annotated[
         Optional[Path],
-        typer.Option("--output", "-o", help="Output directory for documentation"),
+        typer.Option("--output", "-o", help="Output path for analysis results"),
     ] = None,
-    doc_type: Annotated[
+    incremental: Annotated[
+        bool,
+        typer.Option("--incremental", "-i", help="Use incremental analysis with caching"),
+    ] = True,
+    model: Annotated[
         str,
-        typer.Option("--type", "-t", help="Documentation type: technical, business, or both"),
-    ] = "both",
+        typer.Option("--model", "-m", help="LLM model name"),
+    ] = "qwen3:14b",
+    api_base: Annotated[
+        str,
+        typer.Option("--api-base", help="LLM API base URL"),
+    ] = "http://localhost:11434/v1",
+    max_concurrent: Annotated[
+        int,
+        typer.Option("--concurrent", help="Maximum concurrent LLM requests"),
+    ] = 5,
+    skip_architecture: Annotated[
+        bool,
+        typer.Option("--skip-architecture", help="Skip architecture synthesis"),
+    ] = False,
     config_file: Annotated[
         Optional[Path],
         typer.Option("--config", "-c", help="Configuration file path"),
@@ -128,10 +150,10 @@ def analyze(
         typer.Option("--verbose", "-V", help="Enable verbose logging"),
     ] = False,
 ) -> None:
-    """Analyze indexed codebase and generate documentation.
+    """Analyze indexed codebase using LLM.
 
     This command uses the LLM to analyze the indexed code and generate
-    comprehensive documentation.
+    entity summaries, module summaries, and architecture overview.
     """
     # Setup logging
     log_level = "DEBUG" if verbose else "INFO"
@@ -141,14 +163,16 @@ def analyze(
     config = load_config(config_file)
     config.index_dir = index_path
 
-    if output:
-        config.output_dir = output
+    # Determine output path
+    output_path = output or (index_path / "analysis.json")
 
     console.print(
         Panel(
             f"[bold blue]Analyzing codebase from index:[/bold blue] {index_path}\n"
-            f"[dim]Documentation type:[/dim] {doc_type}\n"
-            f"[dim]Output:[/dim] {config.output_dir}",
+            f"[dim]Model:[/dim] {model}\n"
+            f"[dim]API Base:[/dim] {api_base}\n"
+            f"[dim]Incremental:[/dim] {incremental}\n"
+            f"[dim]Output:[/dim] {output_path}",
             title="Codebase Analyzer",
         )
     )
@@ -159,24 +183,73 @@ def analyze(
         console.print("[red]Failed to load index[/red]")
         raise typer.Exit(1)
 
-    # TODO: Implement analysis pipeline
-    console.print("[yellow]Analysis pipeline not yet implemented[/yellow]")
-    console.print("Next steps:")
-    console.print("1. Load embedding model (Qodo-Embed-1-1.5B)")
-    console.print("2. Build RAG index")
-    console.print("3. Analyze code with LLM")
-    console.print("4. Generate documentation")
+    # Check if we have a graph
+    if indexer.dependency_graph is None:
+        console.print("[red]No dependency graph found in index[/red]")
+        raise typer.Exit(1)
+
+    # Setup cache for incremental analysis
+    cache = None
+    if incremental:
+        cache_dir = index_path / "cache"
+        cache = AnalysisCache(cache_dir=cache_dir, model=model)
+        console.print(f"[dim]Using cache at:[/dim] {cache_dir}")
+
+    # Create pipeline
+    pipeline = AnalysisPipeline(
+        graph=indexer.dependency_graph,
+        api_base=api_base,
+        model=model,
+        config=config,
+        cache=cache,
+    )
+
+    # Run analysis
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Analyzing codebase...", total=None)
+
+            if incremental and cache:
+                result = asyncio.run(
+                    pipeline.analyze_incremental(
+                        max_concurrent=max_concurrent,
+                        skip_architecture=skip_architecture,
+                    )
+                )
+            else:
+                result = asyncio.run(
+                    pipeline.analyze(
+                        max_concurrent=max_concurrent,
+                        skip_architecture=skip_architecture,
+                    )
+                )
+
+            progress.update(task, completed=True, description="Analysis complete")
+
+        # Save results
+        result.save(output_path)
+
+        # Print summary
+        _print_analysis_summary(result, output_path)
+
+    except Exception as e:
+        console.print(f"[red]Analysis failed: {e}[/red]")
+        raise typer.Exit(1)
+    finally:
+        asyncio.run(pipeline.close())
 
 
 @app.command()
 def generate(
-    index_path: Annotated[
+    analysis_path: Annotated[
         Path,
         typer.Argument(
-            help="Path to the code index",
+            help="Path to the analysis results (JSON file or directory containing analysis.json)",
             exists=True,
-            file_okay=False,
-            dir_okay=True,
             resolve_path=True,
         ),
     ],
@@ -184,24 +257,28 @@ def generate(
         Optional[Path],
         typer.Option("--output", "-o", help="Output directory for documentation"),
     ] = None,
-    doc_type: Annotated[
+    title: Annotated[
         str,
-        typer.Option(
-            "--type",
-            "-t",
-            help="Documentation type: technical, business",
-        ),
-    ] = "technical",
-    format: Annotated[
-        str,
-        typer.Option("--format", "-f", help="Output format: markdown, html, both"),
-    ] = "markdown",
+        typer.Option("--title", "-t", help="Documentation title"),
+    ] = "Project Documentation",
+    no_modules: Annotated[
+        bool,
+        typer.Option("--no-modules", help="Skip module documentation"),
+    ] = False,
+    no_api: Annotated[
+        bool,
+        typer.Option("--no-api", help="Skip API documentation"),
+    ] = False,
+    no_structure: Annotated[
+        bool,
+        typer.Option("--no-structure", help="Skip structure documentation"),
+    ] = False,
     verbose: Annotated[
         bool,
         typer.Option("--verbose", "-V", help="Enable verbose logging"),
     ] = False,
 ) -> None:
-    """Generate documentation from analyzed codebase.
+    """Generate Markdown documentation from analysis results.
 
     This command generates documentation files from the analysis results.
     """
@@ -209,18 +286,60 @@ def generate(
     log_level = "DEBUG" if verbose else "INFO"
     setup_logging(log_level)
 
+    # Determine the analysis file path
+    if analysis_path.is_dir():
+        analysis_file = analysis_path / "analysis.json"
+    else:
+        analysis_file = analysis_path
+
+    if not analysis_file.exists():
+        console.print(f"[red]Analysis file not found: {analysis_file}[/red]")
+        raise typer.Exit(1)
+
+    # Determine output directory
+    output_dir = output or Path("./docs")
+
     console.print(
         Panel(
             f"[bold blue]Generating documentation:[/bold blue]\n"
-            f"[dim]Index:[/dim] {index_path}\n"
-            f"[dim]Type:[/dim] {doc_type}\n"
-            f"[dim]Format:[/dim] {format}",
+            f"[dim]Analysis:[/dim] {analysis_file}\n"
+            f"[dim]Title:[/dim] {title}\n"
+            f"[dim]Output:[/dim] {output_dir}",
             title="Codebase Analyzer",
         )
     )
 
-    # TODO: Implement documentation generation
-    console.print("[yellow]Documentation generation not yet implemented[/yellow]")
+    # Load analysis results
+    try:
+        result = AnalysisResult.load(analysis_file)
+        console.print(f"[dim]Loaded analysis with {result.total_entities} entities[/dim]")
+    except Exception as e:
+        console.print(f"[red]Failed to load analysis: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Create generator config
+    gen_config = GeneratorConfig(
+        title=title,
+        create_module_docs=not no_modules,
+        create_api_docs=not no_api,
+        create_structure=not no_structure,
+    )
+
+    # Generate documentation
+    try:
+        generator = MarkdownGenerator(config=gen_config)
+        files = generator.generate(result, output_dir)
+
+        # Print summary
+        console.print(f"\n[green]Generated {len(files)} documentation files:[/green]")
+        for file_path in files:
+            console.print(f"  - {file_path.relative_to(output_dir.parent)}")
+
+        console.print(f"\n[bold green]Documentation generated at: {output_dir}[/bold green]")
+
+    except Exception as e:
+        console.print(f"[red]Documentation generation failed: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -273,6 +392,33 @@ def config(
         console.print(f"[green]Configuration saved to {output}[/green]")
     else:
         console.print("Use --show to display config or --output to save default config")
+
+
+def _print_analysis_summary(result: AnalysisResult, output_path: Path) -> None:
+    """Print a summary of the analysis results."""
+    table = Table(title="Analysis Summary")
+
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", justify="right")
+
+    table.add_row("Total Entities", f"{result.total_entities:,}")
+    table.add_row("Total Modules", f"{result.total_modules:,}")
+    table.add_row("Processing Levels", f"{len(result.processing_levels):,}")
+    table.add_row("Input Tokens", f"{result.total_tokens_in:,}")
+    table.add_row("Output Tokens", f"{result.total_tokens_out:,}")
+    table.add_row("Processing Time", f"{result.processing_time_seconds:.1f}s")
+    table.add_row("Model", result.model_used)
+
+    console.print(table)
+
+    # Show architecture overview if available
+    if result.architecture and result.architecture.overview:
+        console.print("\n[bold]Architecture Overview:[/bold]")
+        console.print(result.architecture.overview[:500])
+        if len(result.architecture.overview) > 500:
+            console.print("...")
+
+    console.print(f"\n[green]Analysis saved to: {output_path}[/green]")
 
 
 def _print_index_summary(stats, index_path: Path) -> None:

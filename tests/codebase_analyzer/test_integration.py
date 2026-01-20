@@ -640,7 +640,8 @@ class TestEndToEndPHPIndexing:
         indexer = CodebaseIndexer(config)
 
         # Run full indexing
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Verify stats
         assert stats.total_files == 6
@@ -656,7 +657,8 @@ class TestEndToEndPHPIndexing:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Find User class
         classes = graph.get_entities_by_type(EntityType.CLASS)
@@ -710,7 +712,8 @@ class TestEndToEndGoIndexing:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Verify stats
         assert stats.total_files >= 5
@@ -725,7 +728,8 @@ class TestEndToEndGoIndexing:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Find interfaces
         interfaces = graph.get_entities_by_type(EntityType.INTERFACE)
@@ -747,7 +751,8 @@ class TestEndToEndGoIndexing:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Find a function with calls
         functions = graph.get_entities_by_type(EntityType.FUNCTION)
@@ -771,7 +776,8 @@ class TestEndToEndTypeScriptIndexing:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Verify stats
         assert stats.total_files >= 4
@@ -786,7 +792,8 @@ class TestEndToEndTypeScriptIndexing:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Find interfaces
         interfaces = graph.get_entities_by_type(EntityType.INTERFACE)
@@ -858,7 +865,8 @@ class TestCrossLanguageIntegration:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Should have files from all languages
         assert "php" in stats.files_by_language or stats.total_files > 0
@@ -887,7 +895,8 @@ class TestCrossLanguageIntegration:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Should have language breakdown
         assert len(stats.files_by_language) >= 1
@@ -909,7 +918,8 @@ class TestDependencyGraphQuality:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, _ = indexer.index()
+        result = indexer.index()
+        graph = result.graph
 
         # Find User class
         classes = graph.get_entities_by_type(EntityType.CLASS)
@@ -931,7 +941,8 @@ class TestDependencyGraphQuality:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, _ = indexer.index()
+        result = indexer.index()
+        graph = result.graph
 
         clusters = graph.detect_module_clusters(min_cluster_size=2)
 
@@ -946,7 +957,8 @@ class TestDependencyGraphQuality:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, _ = indexer.index()
+        result = indexer.index()
+        graph = result.graph
 
         # Get dependencies for service file
         service_files = [
@@ -989,7 +1001,8 @@ class TestPerformance:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Should complete and find all methods
         assert stats.total_methods >= 100
@@ -1011,7 +1024,8 @@ func Function{i}() int {{
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Should index all files
         assert stats.total_files == 50
@@ -1053,7 +1067,8 @@ func AlsoValid() {}
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
 
         # Should have indexed valid files
         assert stats.total_files >= 1  # At least valid files
@@ -1070,5 +1085,6 @@ func AlsoValid() {}
         indexer = CodebaseIndexer(config)
 
         # Should complete without crashing
-        graph, stats = indexer.index()
+        result = indexer.index()
+        graph, stats = result.graph, result.stats
         assert stats is not None

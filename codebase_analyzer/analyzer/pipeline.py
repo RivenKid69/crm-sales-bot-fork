@@ -11,6 +11,7 @@ from ..config import AppConfig, get_config
 from ..indexer.graph.dependency_graph import DependencyGraph
 from ..indexer.models.entities import CodeEntity, EntityType
 from ..utils.logging import get_logger
+from .cache import AnalysisCache
 from .models import (
     AnalysisResult,
     ArchitectureSummary,
@@ -64,6 +65,7 @@ class AnalysisPipeline:
         api_base: str = "http://localhost:11434/v1",
         model: str = "qwen3:14b",
         config: AppConfig | None = None,
+        cache: AnalysisCache | None = None,
     ):
         """Initialize pipeline.
 
@@ -72,11 +74,13 @@ class AnalysisPipeline:
             api_base: LLM API base URL
             model: Model name to use
             config: Optional app configuration
+            cache: Optional analysis cache for incremental analysis
         """
         self.graph = graph
         self.api_base = api_base
         self.model = model
         self.config = config or get_config()
+        self.cache = cache
 
         self.summarizer = EntitySummarizer(
             api_base=api_base,
@@ -166,6 +170,198 @@ class AnalysisPipeline:
         )
 
         return result
+
+    async def analyze_incremental(
+        self,
+        max_concurrent: int = 5,
+        skip_architecture: bool = False,
+    ) -> AnalysisResult:
+        """Run incremental analysis using cache.
+
+        Only analyzes entities that have changed since the last run.
+        Unchanged entities are loaded from cache.
+
+        Args:
+            max_concurrent: Maximum concurrent LLM calls
+            skip_architecture: Skip architecture synthesis (faster)
+
+        Returns:
+            Complete analysis result (mix of cached and fresh)
+        """
+        if not self.cache:
+            logger.warning("No cache configured, falling back to full analysis")
+            return await self.analyze(max_concurrent, skip_architecture)
+
+        start_time = time.time()
+        logger.info("Starting incremental analysis pipeline")
+
+        # Phase 1: Determine what changed
+        changed_entity_ids: list[str] = []
+        cached_summaries: dict[str, EntitySummary] = {}
+
+        all_entity_ids = self.graph.get_all_entity_ids()
+        logger.info(f"Checking {len(all_entity_ids)} entities for changes")
+
+        for entity_id in all_entity_ids:
+            entity = self.graph.get_entity(entity_id)
+            if not entity:
+                continue
+
+            code_hash = self.cache.get_code_hash(entity)
+
+            # Try to get from cache
+            cached = self.cache.get_cached_summary(entity_id, code_hash)
+            if cached:
+                cached_summaries[entity_id] = cached
+            else:
+                changed_entity_ids.append(entity_id)
+                # Invalidate dependents (entities that depend on this one)
+                self.cache.invalidate_dependents(
+                    entity_id,
+                    lambda eid: self.graph.get_dependent_ids(eid),
+                )
+
+        logger.info(
+            f"Incremental status: {len(changed_entity_ids)} changed, "
+            f"{len(cached_summaries)} cached"
+        )
+
+        # Phase 2: Analyze changed entities (respecting topological order)
+        if changed_entity_ids:
+            fresh_summaries = await self._analyze_entities_incremental(
+                changed_entity_ids,
+                cached_summaries,
+                max_concurrent,
+            )
+            # Merge fresh summaries
+            all_summaries = {**cached_summaries, **fresh_summaries}
+        else:
+            logger.info("No changes detected, using fully cached results")
+            all_summaries = cached_summaries
+
+        # Phase 3: Module aggregation
+        logger.info("Stage 2: Module aggregation")
+        module_summaries = await self._aggregate_modules(all_summaries)
+
+        # Phase 4: Architecture synthesis
+        architecture = None
+        if not skip_architecture and module_summaries:
+            logger.info("Stage 3: Architecture synthesis")
+            architecture = await self._synthesize_architecture(module_summaries)
+
+        # Build result
+        levels = self.graph.get_processing_levels()
+        total_in = sum(s.input_tokens for s in all_summaries.values())
+        total_out = sum(s.output_tokens for s in all_summaries.values())
+
+        result = AnalysisResult(
+            entity_summaries=all_summaries,
+            module_summaries=module_summaries,
+            architecture=architecture,
+            total_entities=len(all_summaries),
+            total_modules=len(module_summaries),
+            total_tokens_in=total_in,
+            total_tokens_out=total_out,
+            processing_time_seconds=time.time() - start_time,
+            model_used=self.model,
+            analysis_timestamp=datetime.now().isoformat(),
+            processing_levels=[list(level) for level in levels],
+        )
+
+        logger.info(
+            f"Incremental analysis complete: {result.total_entities} entities "
+            f"({len(changed_entity_ids)} analyzed, {len(cached_summaries)} cached), "
+            f"{result.processing_time_seconds:.1f}s"
+        )
+
+        return result
+
+    async def _analyze_entities_incremental(
+        self,
+        entity_ids: list[str],
+        cached_summaries: dict[str, EntitySummary],
+        max_concurrent: int,
+    ) -> dict[str, EntitySummary]:
+        """Analyze a subset of entities, using cached summaries as context.
+
+        Processes entities in topological order to ensure dependencies
+        (whether cached or fresh) are available as context.
+        """
+        # Get topological order to process dependencies first
+        topo_order = self.graph.get_topological_order(break_cycles_if_needed=False)
+
+        # Filter to only entities we need to analyze, but maintain order
+        ordered_ids = [eid for eid in topo_order if eid in entity_ids]
+
+        # If some IDs aren't in topo order, add them at the end
+        remaining = set(entity_ids) - set(ordered_ids)
+        ordered_ids.extend(remaining)
+
+        logger.info(f"Analyzing {len(ordered_ids)} changed entities")
+
+        fresh_summaries: dict[str, EntitySummary] = {}
+
+        # Process in batches respecting dependencies
+        # For simplicity, we process one at a time ensuring dependencies are ready
+        # A more sophisticated approach would group by processing level
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def process_entity(entity_id: str) -> tuple[str, EntitySummary | None]:
+            async with semaphore:
+                entity = self.graph.get_entity(entity_id)
+                if not entity:
+                    return entity_id, None
+
+                # Build context from dependencies (cached + fresh)
+                all_available = {**cached_summaries, **fresh_summaries}
+                dep_ids = self.graph.get_dependency_ids(entity_id)
+                dep_summaries = [
+                    all_available[did]
+                    for did in dep_ids
+                    if did in all_available
+                ]
+
+                # Create context string
+                context = ""
+                if dep_summaries:
+                    context_lines = ["Dependencies:"]
+                    for ds in dep_summaries[:10]:  # Limit context size
+                        context_lines.append(f"- {ds.to_context_string()}")
+                    context = "\n".join(context_lines)
+
+                # Summarize the entity
+                summary = await self.summarizer.summarize_entity(entity, context)
+
+                # Cache the new summary
+                if summary and self.cache:
+                    code_hash = self.cache.get_code_hash(entity)
+                    self.cache.cache_summary(summary, code_hash)
+
+                return entity_id, summary
+
+        # Process entities
+        # For proper dependency ordering, process level by level
+        processing_levels = self.graph.get_processing_levels(break_cycles_if_needed=False)
+
+        for level_idx, level in enumerate(processing_levels):
+            level_entities = [eid for eid in level if eid in entity_ids]
+            if not level_entities:
+                continue
+
+            logger.debug(f"Processing level {level_idx}: {len(level_entities)} entities")
+
+            tasks = [process_entity(eid) for eid in level_entities]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.error(f"Entity processing failed: {result}")
+                    continue
+                entity_id, summary = result
+                if summary:
+                    fresh_summaries[entity_id] = summary
+
+        return fresh_summaries
 
     async def _aggregate_modules(
         self,
@@ -364,8 +560,10 @@ async def analyze_codebase(
     model: str = "qwen3:14b",
     output_path: Path | None = None,
     max_concurrent: int = 5,
+    cache_dir: Path | None = None,
+    incremental: bool = False,
 ) -> AnalysisResult:
-    """Convenience function for running full analysis.
+    """Convenience function for running full or incremental analysis.
 
     Args:
         graph: Populated dependency graph
@@ -373,18 +571,30 @@ async def analyze_codebase(
         model: Model name
         output_path: Optional path to save results
         max_concurrent: Maximum concurrent LLM calls
+        cache_dir: Optional directory for analysis cache
+        incremental: Whether to use incremental analysis
 
     Returns:
         Analysis result
     """
+    # Setup cache if incremental mode is enabled
+    cache = None
+    if incremental and cache_dir:
+        cache = AnalysisCache(cache_dir=cache_dir, model=model)
+        logger.info(f"Using incremental analysis with cache at {cache_dir}")
+
     pipeline = AnalysisPipeline(
         graph=graph,
         api_base=api_base,
         model=model,
+        cache=cache,
     )
 
     try:
-        result = await pipeline.analyze(max_concurrent=max_concurrent)
+        if incremental and cache:
+            result = await pipeline.analyze_incremental(max_concurrent=max_concurrent)
+        else:
+            result = await pipeline.analyze(max_concurrent=max_concurrent)
 
         if output_path:
             result.save(output_path)
