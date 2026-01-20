@@ -110,16 +110,29 @@ class SalesBot:
         self._config: LoadedConfig = self._config_loader.load()
 
         # Load flow from parameter, settings, or default
-        active_flow = flow_name or settings.flow.active
+        # IMPORTANT: flow_name must be non-empty string to override settings
+        active_flow = flow_name if flow_name else settings.flow.active
         self._flow: FlowConfig = self._config_loader.load_flow(active_flow)
 
-        logger.debug(
-            "Loaded modular flow configuration",
+        # Log flow resolution for debugging multi-flow scenarios
+        logger.info(
+            "SalesBot flow resolved",
+            requested_flow=flow_name,
+            resolved_flow=active_flow,
             flow_name=self._flow.name,
             flow_version=self._flow.version,
             states_count=len(self._flow.states),
-            phases=self._flow.phase_order,
+            phase_order=self._flow.phase_order,
+            entry_state=self._flow.get_entry_point("default"),
         )
+
+        # Validate flow was loaded correctly
+        if self._flow.name != active_flow:
+            logger.warning(
+                "Flow name mismatch",
+                requested=active_flow,
+                loaded=self._flow.name,
+            )
 
         # Core components (always active)
         self.classifier = UnifiedClassifier()

@@ -272,9 +272,13 @@ class SimulationRunner:
             # Собираем результат
             duration = time.time() - start_time
 
-            # Извлекаем фазы и рассчитываем coverage
-            phases = extract_phases_from_dialogue(dialogue)
-            spin_coverage = calculate_spin_coverage(phases)
+            # Get flow_config from bot for dynamic phase extraction
+            flow_config = getattr(bot, '_flow', None)
+            expected_phases = flow_config.phase_order if flow_config else None
+
+            # Извлекаем фазы и рассчитываем coverage с учётом flow
+            phases = extract_phases_from_dialogue(dialogue, flow_config=flow_config)
+            spin_coverage = calculate_spin_coverage(phases, expected_phases=expected_phases)
 
             # Определяем исход
             final_state = dialogue[-1]["state"] if dialogue else ""

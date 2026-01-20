@@ -1,15 +1,22 @@
 """
 Сбор и агрегация метрик симуляций.
+
+Supports dynamic flow configurations - not just SPIN.
+Phase extraction and coverage calculation now work with any sales technique.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from collections import Counter
+import logging
 
 from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
 
 if TYPE_CHECKING:
     from .runner import SimulationResult
+    from src.config_loader import FlowConfig
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -89,10 +96,18 @@ class AggregatedMetrics:
 
 
 class MetricsCollector:
-    """Сборщик и агрегатор метрик"""
+    """Сборщик и агрегатор метрик.
+
+    Note: This class uses SPIN_PHASES as default for backward compatibility.
+    For multi-flow support, consider passing expected_phases to individual results.
+    """
 
     # Фазы загружаются из конфига + presentation для полного покрытия
+    # This is a default; actual phases should come from flow_config
     METRICS_PHASES = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
+
+    # Alias for backward compatibility
+    SPIN_PHASES = METRICS_PHASES
 
     def collect_from_result(self, result: 'SimulationResult') -> SimulationMetrics:
         """
@@ -268,20 +283,33 @@ def determine_outcome(state: str, is_final: bool, collected_data: Dict) -> str:
     return "abandoned"
 
 
-def calculate_spin_coverage(phases_reached: List[str]) -> float:
+def calculate_spin_coverage(
+    phases_reached: List[str],
+    expected_phases: Optional[List[str]] = None
+) -> float:
     """
-    Рассчитывает покрытие SPIN фаз.
+    Рассчитывает покрытие фаз продаж.
+
+    Supports any sales technique, not just SPIN.
 
     Args:
         phases_reached: Список достигнутых фаз
+        expected_phases: Ожидаемые фазы для данной техники.
+                        If None, falls back to legacy SPIN phases.
 
     Returns:
         Покрытие от 0.0 до 1.0
     """
-    # Используем фазы из конфига + presentation
-    all_phases = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
+    # Use provided expected_phases or fall back to SPIN for legacy compatibility
+    if expected_phases is None:
+        all_phases = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
+    else:
+        # Add presentation to expected phases if not already there
+        all_phases = list(expected_phases)
+        if "presentation" not in all_phases:
+            all_phases = all_phases + ["presentation"]
 
-    if not phases_reached:
+    if not phases_reached or not all_phases:
         return 0.0
 
     reached_set = set(phases_reached)
@@ -290,29 +318,75 @@ def calculate_spin_coverage(phases_reached: List[str]) -> float:
     return covered / len(all_phases)
 
 
-def extract_phases_from_dialogue(dialogue: List[Dict]) -> List[str]:
+def build_phase_mapping_from_flow(flow_config: 'FlowConfig') -> Dict[str, str]:
+    """
+    Build state->phase mapping from FlowConfig.
+
+    Args:
+        flow_config: The FlowConfig object containing phase_mapping
+
+    Returns:
+        Dict mapping state names to phase names.
+        Example: {"bant_budget": "budget", "bant_authority": "authority", ...}
+    """
+    # FlowConfig.phase_mapping is {phase: state}, we need {state: phase}
+    phase_mapping = {state: phase for phase, state in flow_config.phase_mapping.items()}
+
+    # Add common states that map to presentation phase
+    phase_mapping["presentation"] = "presentation"
+    phase_mapping["close"] = "presentation"
+
+    return phase_mapping
+
+
+def extract_phases_from_dialogue(
+    dialogue: List[Dict],
+    flow_config: Optional['FlowConfig'] = None,
+    phase_mapping: Optional[Dict[str, str]] = None
+) -> List[str]:
     """
     Извлекает достигнутые фазы из диалога.
 
+    Supports dynamic flow configurations - not just SPIN.
+
     Args:
         dialogue: История диалога
+        flow_config: FlowConfig object for dynamic phase mapping.
+                    Takes precedence over phase_mapping if provided.
+        phase_mapping: Direct state->phase mapping dict.
+                      Used if flow_config is not provided.
+                      Falls back to legacy SPIN mapping if neither provided.
 
     Returns:
         Список достигнутых фаз
     """
     phases = set()
 
-    # Строим маппинг из конфига: state -> phase
-    # SPIN_STATES: {"situation": "spin_situation", ...}
-    # Нам нужен обратный: {"spin_situation": "situation", ...}
-    phase_mapping = {state: phase for phase, state in SPIN_STATES.items()}
-    # Добавляем стандартные маппинги
-    phase_mapping["presentation"] = "presentation"
-    phase_mapping["close"] = "presentation"
+    # Build phase mapping from flow_config, direct mapping, or legacy SPIN
+    if flow_config is not None:
+        mapping = build_phase_mapping_from_flow(flow_config)
+        logger.debug(
+            "Using flow_config for phase extraction",
+            flow_name=flow_config.name,
+            phase_mapping=mapping
+        )
+    elif phase_mapping is not None:
+        mapping = phase_mapping.copy()
+        # Ensure presentation mappings exist
+        mapping.setdefault("presentation", "presentation")
+        mapping.setdefault("close", "presentation")
+    else:
+        # Legacy fallback: SPIN phases only
+        # SPIN_STATES: {"situation": "spin_situation", ...}
+        # Инвертируем: {"spin_situation": "situation", ...}
+        mapping = {state: phase for phase, state in SPIN_STATES.items()}
+        mapping["presentation"] = "presentation"
+        mapping["close"] = "presentation"
+        logger.debug("Using legacy SPIN phase mapping (no flow_config provided)")
 
     for turn in dialogue:
         state = turn.get("state", "")
-        if state in phase_mapping:
-            phases.add(phase_mapping[state])
+        if state in mapping:
+            phases.add(mapping[state])
 
     return list(phases)

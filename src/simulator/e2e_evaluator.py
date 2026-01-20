@@ -31,6 +31,10 @@ class E2EResult:
         duration_seconds: Time taken for simulation
         errors: Any errors encountered
         details: Detailed breakdown of scoring
+        dialogue: Full dialogue history
+        decision_traces: Decision traces from bot
+        client_traces: Client agent traces
+        rule_traces: Conditional rule traces
     """
     scenario_id: str
     scenario_name: str
@@ -45,6 +49,10 @@ class E2EResult:
     duration_seconds: float = 0.0
     errors: List[str] = field(default_factory=list)
     details: Dict[str, Any] = field(default_factory=dict)
+    dialogue: List[Dict[str, Any]] = field(default_factory=list)
+    decision_traces: List[Dict[str, Any]] = field(default_factory=list)
+    client_traces: List[Dict[str, Any]] = field(default_factory=list)
+    rule_traces: List[Dict[str, Any]] = field(default_factory=list)
 
 
 class E2EEvaluator:
@@ -158,7 +166,11 @@ class E2EEvaluator:
                 'scores': scores,
                 'weights': self.WEIGHTS,
                 **details
-            }
+            },
+            dialogue=result.dialogue,
+            decision_traces=result.decision_traces,
+            client_traces=result.client_traces,
+            rule_traces=result.rule_traces,
         )
 
     def _evaluate_outcome(

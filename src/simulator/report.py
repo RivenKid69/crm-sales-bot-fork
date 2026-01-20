@@ -635,9 +635,12 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
             "duration_seconds": round(r.duration_seconds, 2),
             "errors": r.errors,
             "details": r.details,
+            # Full dialogue history
+            "dialogue": getattr(r, 'dialogue', []) if hasattr(r, 'dialogue') else [],
             # Decision Tracing: Include full traces
             "decision_traces": getattr(r, 'decision_traces', []) if hasattr(r, 'decision_traces') else [],
             "client_traces": getattr(r, 'client_traces', []) if hasattr(r, 'client_traces') else [],
+            "rule_traces": getattr(r, 'rule_traces', []) if hasattr(r, 'rule_traces') else [],
         }
         report_data["all_results"].append(result_data)
 
