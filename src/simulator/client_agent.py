@@ -6,10 +6,12 @@ LLM-агент для имитации клиента.
 """
 
 import random
-from typing import List, Dict, Any
+import time
+from typing import List, Dict, Any, Optional, Tuple
 
 from .personas import Persona
 from .noise import add_noise, add_heavy_noise, add_light_noise
+from src.decision_trace import ClientAgentTrace
 
 
 class ClientAgent:
@@ -61,6 +63,8 @@ class ClientAgent:
         self._objection_count = 0
         self._last_response = ""
         self._repeat_count = 0
+        self._last_trace: Optional[ClientAgentTrace] = None
+        self._enable_tracing = True
 
     def start_conversation(self) -> str:
         """
@@ -84,9 +88,23 @@ class ClientAgent:
         Returns:
             Ответ клиента
         """
+        # Initialize trace for this turn
+        trace = ClientAgentTrace(
+            persona_name=self.persona.name,
+            persona_description=self.persona.description[:200] if self.persona.description else "",
+        ) if self._enable_tracing else None
+
+        start_time = time.time()
+
         # Проверяем, решил ли клиент уйти
         if self._should_leave_now():
-            return self._generate_leave_message()
+            response = self._generate_leave_message()
+            if trace:
+                trace.leave_decision = {"should_leave": True, "reason": "persona_behavior"}
+                trace.cleaned_response = response
+                trace.llm_latency_ms = 0
+                self._last_trace = trace
+            return response
 
         # Строим промпт
         prompt = self.SYSTEM_PROMPT.format(
@@ -96,23 +114,67 @@ class ClientAgent:
             bot_message=bot_message
         )
 
+        if trace:
+            trace.prompt_sent_to_llm = prompt
+
         # Генерируем ответ через LLM
+        raw_response = ""
         try:
-            response = self.llm.generate(prompt)
-            response = self._clean_response(response)
+            raw_response = self.llm.generate(prompt)
+            response = self._clean_response(raw_response)
+            if trace:
+                trace.raw_llm_response = raw_response
         except Exception:
             # Fallback если LLM не работает
             response = self._generate_fallback_response()
+            if trace:
+                trace.raw_llm_response = f"ERROR: fallback used"
+
+        # Track LLM latency
+        llm_elapsed = (time.time() - start_time) * 1000
+        if trace:
+            trace.llm_latency_ms = llm_elapsed
 
         # Проверяем на повтор и форсируем разнообразие
+        original_response = response
         response = self._ensure_variety(response)
+        if trace and response != original_response:
+            trace.variety_check = {"similar_to_last": True, "forced_alternative": True}
+        else:
+            if trace:
+                trace.variety_check = {"similar_to_last": False, "forced_alternative": False}
 
         # Применяем шум согласно персоне
+        before_noise = response
         response = self._apply_persona_noise(response)
+        if trace and response != before_noise:
+            # Track what noise was applied
+            trace.noise_applied = {"modified": True}
 
         # Проверяем, нужно ли добавить возражение
-        if self._should_add_objection():
+        objection_roll = random.random()
+        objection_threshold = self.persona.objection_probability * 0.3
+        should_add_objection = self._objection_count < 3 and objection_roll < objection_threshold
+
+        if trace:
+            trace.objection_decision = {
+                "roll": round(objection_roll, 3),
+                "threshold": round(objection_threshold, 3),
+                "injected": should_add_objection,
+            }
+
+        if should_add_objection:
+            before_objection = response
             response = self._inject_objection(response)
+            if trace and response != before_objection:
+                # Extract the injected objection
+                injected_part = response.replace(before_objection, "").strip()
+                trace.objection_injected = injected_part
+
+        if trace:
+            trace.cleaned_response = response
+            trace.leave_decision = {"should_leave": False, "reason": None}
+            self._last_trace = trace
 
         # Сохраняем в историю
         self.history.append({
@@ -314,3 +376,7 @@ class ClientAgent:
             "objections": self._objection_count,
             "left_early": self._decided_to_leave,
         }
+
+    def get_last_trace(self) -> Optional[ClientAgentTrace]:
+        """Возвращает последний трейс клиентского агента."""
+        return self._last_trace

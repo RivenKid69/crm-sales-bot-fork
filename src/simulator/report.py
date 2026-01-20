@@ -78,6 +78,9 @@ class ReportGenerator:
         # Phase 8: Статистика условных правил
         report.append(self._section_rule_traces(results))
 
+        # Decision Analysis: Full decision traces
+        report.append(self._section_decision_analysis(results))
+
         # Полные диалоги (если включено)
         if include_dialogues:
             report.append(self._section_full_dialogues(results))
@@ -333,6 +336,141 @@ class ReportGenerator:
 
         return "\n".join(lines)
 
+    def _section_decision_analysis(self, results: List[SimulationResult]) -> str:
+        """
+        Секция анализа решений (Decision Tracing).
+
+        Показывает:
+        - Общую статистику по классификации
+        - Статистику по state machine transitions
+        - Информацию о policy overrides
+        - Тайминги
+        """
+        lines = []
+        lines.append("## DECISION ANALYSIS")
+        lines.append("-" * 50)
+
+        # Collect all decision traces
+        all_traces = []
+        for r in results:
+            all_traces.extend(r.decision_traces)
+
+        if not all_traces:
+            lines.append("Decision traces не собраны")
+            lines.append("(enable_tracing=True для сбора)")
+            lines.append("")
+            return "\n".join(lines)
+
+        lines.append(f"Всего traces: {len(all_traces)}")
+        lines.append("")
+
+        # Classification stats
+        confidences = []
+        methods = {}
+        intents = {}
+
+        for trace in all_traces:
+            classification = trace.get("classification", {})
+            if classification:
+                conf = classification.get("confidence", 0)
+                if conf:
+                    confidences.append(conf)
+                method = classification.get("method_used", "unknown")
+                methods[method] = methods.get(method, 0) + 1
+                intent = classification.get("top_intent", "unknown")
+                intents[intent] = intents.get(intent, 0) + 1
+
+        if confidences:
+            avg_conf = sum(confidences) / len(confidences)
+            high_conf = len([c for c in confidences if c > 0.8])
+            lines.append("Classification:")
+            lines.append(f"  Avg confidence: {avg_conf:.2f}")
+            lines.append(f"  High confidence (>0.8): {high_conf}/{len(confidences)} ({high_conf/len(confidences)*100:.0f}%)")
+            lines.append(f"  Methods: {methods}")
+            lines.append(f"  Top intents: {dict(sorted(intents.items(), key=lambda x: -x[1])[:5])}")
+            lines.append("")
+
+        # State machine stats
+        transitions = {}
+        states_visited = {}
+
+        for trace in all_traces:
+            sm = trace.get("state_machine", {})
+            if sm:
+                prev_state = sm.get("prev_state", "?")
+                next_state = sm.get("next_state", "?")
+                trans_key = f"{prev_state}->{next_state}"
+                transitions[trans_key] = transitions.get(trans_key, 0) + 1
+                states_visited[next_state] = states_visited.get(next_state, 0) + 1
+
+        if transitions:
+            lines.append("State Machine:")
+            lines.append(f"  Top transitions: {dict(sorted(transitions.items(), key=lambda x: -x[1])[:5])}")
+            lines.append(f"  States visited: {dict(sorted(states_visited.items(), key=lambda x: -x[1])[:5])}")
+            lines.append("")
+
+        # Policy override stats
+        override_count = 0
+        override_decisions = {}
+
+        for trace in all_traces:
+            policy = trace.get("policy_override", {})
+            if policy and policy.get("was_overridden"):
+                override_count += 1
+                decision = policy.get("decision", "unknown")
+                override_decisions[decision] = override_decisions.get(decision, 0) + 1
+
+        if override_count > 0:
+            lines.append("Policy Overrides:")
+            lines.append(f"  Total: {override_count} ({override_count/len(all_traces)*100:.1f}%)")
+            lines.append(f"  Decisions: {override_decisions}")
+            lines.append("")
+
+        # Timing stats
+        turn_times = []
+        bottlenecks = {}
+
+        for trace in all_traces:
+            timing = trace.get("timing", {})
+            if timing:
+                total_ms = timing.get("total_turn_ms", 0)
+                if total_ms:
+                    turn_times.append(total_ms)
+                bottleneck = timing.get("bottleneck", "unknown")
+                bottlenecks[bottleneck] = bottlenecks.get(bottleneck, 0) + 1
+
+        if turn_times:
+            avg_time = sum(turn_times) / len(turn_times)
+            lines.append("Timing:")
+            lines.append(f"  Avg turn time: {avg_time:.0f}ms")
+            lines.append(f"  Max turn time: {max(turn_times):.0f}ms")
+            lines.append(f"  Bottlenecks: {bottlenecks}")
+            lines.append("")
+
+        # Per-simulation breakdown (first 3 simulations)
+        lines.append("Per-Simulation Breakdown (first 3):")
+        for r in results[:3]:
+            if not r.decision_traces:
+                continue
+            lines.append(f"\n  Simulation #{r.simulation_id} ({r.persona}, {r.outcome}):")
+            for i, trace in enumerate(r.decision_traces[:5], 1):
+                meta = trace.get("metadata", {})
+                turn = meta.get("turn_number", i)
+                classification = trace.get("classification", {})
+                intent = classification.get("top_intent", "?")
+                conf = classification.get("confidence", 0)
+                sm = trace.get("state_machine", {})
+                prev_state = sm.get("prev_state", "?")
+                next_state = sm.get("next_state", "?")
+                action = sm.get("action", "?")
+                timing = trace.get("timing", {})
+                ms = timing.get("total_turn_ms", 0)
+
+                lines.append(f"    Turn {turn}: {intent}({conf:.2f}) | {prev_state}->{next_state} | {action} | {ms:.0f}ms")
+
+        lines.append("")
+        return "\n".join(lines)
+
     def _section_full_dialogues(self, results: List[SimulationResult]) -> str:
         """Секция с полными диалогами"""
         lines = []
@@ -496,7 +634,10 @@ def generate_e2e_report(results: List, output_path: str = None) -> dict:
             "turns": r.turns,
             "duration_seconds": round(r.duration_seconds, 2),
             "errors": r.errors,
-            "details": r.details
+            "details": r.details,
+            # Decision Tracing: Include full traces
+            "decision_traces": getattr(r, 'decision_traces', []) if hasattr(r, 'decision_traces') else [],
+            "client_traces": getattr(r, 'client_traces', []) if hasattr(r, 'client_traces') else [],
         }
         report_data["all_results"].append(result_data)
 

@@ -15,8 +15,9 @@
 5. REVERSIBLE: Возможность отката любого изменения
 """
 
+import time
 import uuid
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 from classifier import UnifiedClassifier
 from state_machine import StateMachine
@@ -54,6 +55,25 @@ from settings import settings
 
 # Personalization v2: Adaptive personalization
 from src.personalization import EffectiveActionTracker
+
+# Decision Tracing: Full logging of all decision stages
+from src.decision_trace import (
+    DecisionTrace,
+    DecisionTraceBuilder,
+    ClassificationTrace,
+    ToneAnalysisTrace,
+    GuardCheckTrace,
+    FallbackTrace,
+    LeadScoreTrace,
+    ObjectionTrace,
+    StateMachineTrace,
+    PolicyOverrideTrace,
+    ResponseTrace,
+    LLMTrace,
+    TimingTrace,
+    ContextWindowTrace,
+    TurnSummary,
+)
 
 
 class SalesBot:
@@ -150,6 +170,10 @@ class SalesBot:
         if flags.personalization_session_memory:
             self.action_tracker = EffectiveActionTracker()
 
+        # Decision Tracing: Store traces for each turn
+        self._decision_traces: List[DecisionTrace] = []
+        self._enable_decision_tracing = enable_tracing
+
         logger.info(
             "SalesBot initialized",
             conversation_id=self.conversation_id,
@@ -203,6 +227,9 @@ class SalesBot:
         # Reset Personalization v2
         if self.action_tracker:
             self.action_tracker.reset()
+
+        # Reset Decision Traces
+        self._decision_traces = []
 
         logger.info("SalesBot reset", conversation_id=self.conversation_id)
 
@@ -571,6 +598,11 @@ class SalesBot:
         Returns:
             Dict с response, intent, action, state, is_final и др.
         """
+        # Decision Tracing: Create trace builder for this turn
+        trace_builder: Optional[DecisionTraceBuilder] = None
+        if self._enable_decision_tracing:
+            trace_builder = DecisionTraceBuilder(turn=self.turn + 1, message=user_message)
+
         # Phase 4: Increment turn counter for disambiguation cooldown
         self.state_machine.increment_turn()
 
@@ -596,16 +628,32 @@ class SalesBot:
         collected_data = self.state_machine.collected_data
 
         # Phase 2: Analyze tone
+        tone_start = time.time()
         tone_info = self._analyze_tone(user_message)
         frustration_level = tone_info.get("frustration_level", 0)
+        tone_elapsed = (time.time() - tone_start) * 1000
+
+        # Decision Tracing: Record tone analysis
+        if trace_builder:
+            trace_builder.record_tone(tone_info, elapsed_ms=tone_elapsed)
 
         # Phase 1: Check guard for intervention
+        guard_start = time.time()
         intervention = self._check_guard(
             state=current_state,
             message=user_message,
             collected_data=collected_data,
             frustration_level=frustration_level
         )
+        guard_elapsed = (time.time() - guard_start) * 1000
+
+        # Decision Tracing: Record guard check
+        if trace_builder:
+            trace_builder.record_guard(
+                intervention=intervention,
+                frustration=frustration_level,
+                elapsed_ms=guard_elapsed
+            )
 
         fallback_used = False
         fallback_tier = None
@@ -673,9 +721,19 @@ class SalesBot:
                     # This allows the normal flow to generate a response
 
         # 1. Classify intent
+        classification_start = time.time()
         classification = self.classifier.classify(user_message, current_context)
         intent = classification["intent"]
         extracted = classification["extracted_data"]
+        classification_elapsed = (time.time() - classification_start) * 1000
+
+        # Decision Tracing: Record classification
+        if trace_builder:
+            trace_builder.record_classification(
+                result=classification,
+                all_scores=classification.get("all_scores", {intent: classification.get("confidence", 0.0)}),
+                elapsed_ms=classification_elapsed,
+            )
 
         # Track competitor mention for dynamic CTA
         if intent == "objection_competitor":
@@ -704,8 +762,28 @@ class SalesBot:
         # Phase 3: Check for objection
         objection_info = self._check_objection(user_message, collected_data)
 
+        # Decision Tracing: Record objection
+        if trace_builder and objection_info:
+            trace_builder.record_objection(
+                detected=True,
+                objection_type=objection_info.get("objection_type"),
+                strategy=objection_info.get("strategy"),
+                soft_close=objection_info.get("should_soft_close", False),
+            )
+
         # Phase 3: Update lead score
+        prev_lead_score = self.lead_scorer.current_score if flags.lead_scoring else 0
         self._update_lead_score(intent)
+        new_lead_score = self.lead_scorer.current_score if flags.lead_scoring else 0
+
+        # Decision Tracing: Record lead score
+        if trace_builder and flags.lead_scoring:
+            trace_builder.record_lead_score(
+                previous=prev_lead_score,
+                new=new_lead_score,
+                signals=self.lead_scorer.get_recent_signals() if hasattr(self.lead_scorer, 'get_recent_signals') else [],
+                temperature=self.lead_scorer.get_summary().get("temperature", "cold"),
+            )
 
         # =================================================================
         # Phase 5: Build ContextEnvelope for context-aware decisions
@@ -727,9 +805,15 @@ class SalesBot:
             response_directives = build_response_directives(context_envelope)
 
         # 2. Run state machine with context envelope
+        sm_start = time.time()
         sm_result = self.state_machine.process(
             intent, extracted, context_envelope=context_envelope
         )
+        sm_elapsed = (time.time() - sm_start) * 1000
+
+        # Decision Tracing: Record state machine result
+        if trace_builder:
+            trace_builder.record_state_machine(sm_result, elapsed_ms=sm_elapsed)
 
         # =================================================================
         # Phase 5: Apply DialoguePolicy overlay if enabled
@@ -759,6 +843,10 @@ class SalesBot:
                 else:
                     sm_result["next_state"] = policy_override.next_state
                     self.state_machine.state = policy_override.next_state
+
+        # Decision Tracing: Record policy override
+        if trace_builder:
+            trace_builder.record_policy_override(policy_override)
 
         # Build context for response generation
         # При наличии ResponseDirectives используем их instruction
@@ -817,10 +905,20 @@ class SalesBot:
             )
         else:
             # 3. Generate response
+            response_start = time.time()
             if fallback_response:
                 response = fallback_response["response"]
             else:
                 response = self.generator.generate(action, context)
+            response_elapsed = (time.time() - response_start) * 1000
+
+            # Decision Tracing: Record response generation
+            if trace_builder:
+                trace_builder.record_response(
+                    template_key=action,
+                    response_text=response,
+                    elapsed_ms=response_elapsed,
+                )
 
         # Phase 3: Apply CTA if appropriate
         if not fallback_response and not (objection_info and objection_info.get("should_soft_close")):
@@ -927,6 +1025,21 @@ class SalesBot:
         if sm_result["prev_state"] != next_state or extracted:
             self.guard.record_progress()
 
+        # Decision Tracing: Build and store final trace
+        decision_trace_dict = None
+        if trace_builder:
+            # Record fallback if used
+            if fallback_used:
+                trace_builder.record_fallback(
+                    tier=fallback_tier,
+                    reason=intervention,
+                )
+
+            # Build final trace
+            decision_trace = trace_builder.build()
+            self._decision_traces.append(decision_trace)
+            decision_trace_dict = decision_trace.to_dict()
+
         return {
             "response": response,
             "intent": intent,
@@ -942,6 +1055,8 @@ class SalesBot:
             "lead_score": self.lead_scorer.current_score if flags.lead_scoring else None,
             "objection_detected": objection_info is not None,
             "options": fallback_response.get("options") if fallback_response else None,
+            # Decision Tracing
+            "decision_trace": decision_trace_dict,
         }
 
     def get_metrics_summary(self) -> Dict:
@@ -965,6 +1080,19 @@ class SalesBot:
     def get_disambiguation_metrics(self) -> Dict:
         """Получить метрики disambiguation."""
         return self.disambiguation_metrics.get_summary()
+
+    def get_decision_traces(self) -> List[DecisionTrace]:
+        """Получить все трейсы решений."""
+        return self._decision_traces
+
+    def get_last_decision_trace(self) -> Optional[DecisionTrace]:
+        """Получить последний трейс решений."""
+        return self._decision_traces[-1] if self._decision_traces else None
+
+    @property
+    def turn(self) -> int:
+        """Текущий номер хода."""
+        return len(self.history)
 
     # =========================================================================
     # Phase 4: Disambiguation Methods

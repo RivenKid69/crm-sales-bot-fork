@@ -9,6 +9,7 @@ Ollama Client для CRM Sales Bot.
 - LLMStats: success_rate, avg_response_time
 - Retry: exponential backoff при ошибках
 - Fallback: graceful degradation при сбоях
+- LLMTrace: детальный трейсинг каждого вызова
 
 Запуск Ollama сервера:
     ollama serve
@@ -19,8 +20,9 @@ Ollama Client для CRM Sales Bot.
 """
 
 import time
+import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar, Tuple, Union
 
 import requests
 from pydantic import BaseModel
@@ -28,6 +30,7 @@ from pydantic import BaseModel
 from logger import logger
 from settings import settings
 from src.yaml_config.constants import LLM_FALLBACK_RESPONSES, LLM_DEFAULT_FALLBACK
+from src.decision_trace import LLMTrace
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -166,8 +169,10 @@ class OllamaClient:
         self,
         prompt: str,
         schema: Type[T],
-        allow_fallback: bool = True
-    ) -> Optional[T]:
+        allow_fallback: bool = True,
+        return_trace: bool = False,
+        purpose: str = "structured_generation",
+    ) -> Union[Optional[T], Tuple[Optional[T], LLMTrace]]:
         """
         Генерация с гарантированным JSON через Ollama structured output.
 
@@ -178,18 +183,32 @@ class OllamaClient:
             prompt: Промпт для LLM
             schema: Pydantic модель для валидации
             allow_fallback: Игнорируется (для совместимости)
+            return_trace: Если True, возвращает (result, LLMTrace)
+            purpose: Цель вызова (для трейсинга)
 
         Returns:
-            Экземпляр schema или None при ошибке
+            Экземпляр schema или None при ошибке. Если return_trace=True, возвращает tuple.
         """
         self._stats.total_requests += 1
         start_time = time.time()
+
+        # Создаем trace
+        trace = LLMTrace(
+            request_id=str(uuid.uuid4())[:8],
+            purpose=purpose,
+            prompt_user=prompt,
+            model_used=self.model,
+            circuit_breaker_state=self._circuit_breaker.status,
+        )
 
         # Circuit breaker check
         if self._enable_circuit_breaker and self._is_circuit_open():
             logger.warning("Circuit breaker open for structured generation")
             self._stats.fallback_used += 1
-            return None
+            trace.latency_ms = (time.time() - start_time) * 1000
+            trace.success = False
+            trace.error = "circuit_breaker_open"
+            return (None, trace) if return_trace else None
 
         last_error: Optional[Exception] = None
         delay = self.INITIAL_DELAY
@@ -209,6 +228,7 @@ class OllamaClient:
                         "model": self.model,
                         "messages": [{"role": "user", "content": prompt}],
                         "stream": False,
+                        "think": False,  # Disable thinking mode (qwen3, deepseek-r1)
                         "format": json_schema,  # Ollama: schema напрямую в format
                         "options": {
                             "temperature": 0.1,
@@ -223,8 +243,14 @@ class OllamaClient:
                 message = data.get("message", {})
                 content = message.get("content", "")
 
+                # Support for models with thinking mode (qwen3, deepseek, etc.)
+                # If content is empty but thinking is present, use thinking
                 if not content:
-                    raise ValueError("Empty content in response from Ollama")
+                    thinking = message.get("thinking", "")
+                    if thinking:
+                        content = thinking
+                    else:
+                        raise ValueError("Empty content in response from Ollama")
 
                 # Ollama гарантирует валидный JSON, валидируем через Pydantic
                 elapsed_ms = (time.time() - start_time) * 1000
@@ -232,7 +258,16 @@ class OllamaClient:
                 self._stats.total_response_time_ms += elapsed_ms
                 self._reset_failures()
 
-                return schema.model_validate_json(content)
+                # Обновляем trace
+                trace.latency_ms = elapsed_ms
+                trace.raw_response = content
+                trace.retry_count = attempt
+                trace.success = True
+                trace.tokens_input = self._estimate_tokens(prompt)
+                trace.tokens_output = self._estimate_tokens(content)
+
+                result = schema.model_validate_json(content)
+                return (result, trace) if return_trace else result
 
             except requests.exceptions.Timeout as e:
                 last_error = e
@@ -255,8 +290,14 @@ class OllamaClient:
         if self._enable_circuit_breaker:
             self._record_failure()
 
+        # Обновляем trace для неудачи
+        trace.latency_ms = (time.time() - start_time) * 1000
+        trace.retry_count = max_attempts
+        trace.success = False
+        trace.error = str(last_error)[:100] if last_error else "unknown"
+
         logger.error(f"Ollama structured all retries failed: {str(last_error)[:100] if last_error else 'unknown'}")
-        return None
+        return (None, trace) if return_trace else None
 
     # =========================================================================
     # FREE-FORM GENERATION (как в OllamaLLM)
@@ -266,8 +307,10 @@ class OllamaClient:
         self,
         prompt: str,
         state: Optional[str] = None,
-        allow_fallback: bool = True
-    ) -> str:
+        allow_fallback: bool = True,
+        return_trace: bool = False,
+        purpose: str = "generation",
+    ) -> Union[str, Tuple[str, LLMTrace]]:
         """
         Сгенерировать ответ с resilience.
 
@@ -275,18 +318,34 @@ class OllamaClient:
             prompt: Промпт для LLM
             state: Текущее состояние FSM (для fallback)
             allow_fallback: Разрешить fallback при ошибке
+            return_trace: Если True, возвращает (response, LLMTrace)
+            purpose: Цель вызова (для трейсинга)
 
         Returns:
-            Ответ LLM или fallback
+            Ответ LLM или fallback. Если return_trace=True, возвращает tuple.
         """
         self._stats.total_requests += 1
         start_time = time.time()
+
+        # Создаем trace
+        trace = LLMTrace(
+            request_id=str(uuid.uuid4())[:8],
+            purpose=purpose,
+            prompt_user=prompt,
+            model_used=self.model,
+            circuit_breaker_state=self._circuit_breaker.status,
+        )
 
         # Circuit breaker check
         if self._enable_circuit_breaker and self._is_circuit_open():
             logger.warning("Circuit breaker open, using fallback", state=state)
             self._stats.fallback_used += 1
-            return self._get_fallback(state) if allow_fallback else ""
+            trace.latency_ms = (time.time() - start_time) * 1000
+            trace.success = False
+            trace.error = "circuit_breaker_open"
+            response = self._get_fallback(state) if allow_fallback else ""
+            trace.raw_response = response
+            return (response, trace) if return_trace else response
 
         last_error: Optional[Exception] = None
         delay = self.INITIAL_DELAY
@@ -309,7 +368,15 @@ class OllamaClient:
                     elapsed_ms=round(elapsed_ms, 1)
                 )
 
-                return response_text
+                # Обновляем trace
+                trace.latency_ms = elapsed_ms
+                trace.raw_response = response_text
+                trace.retry_count = attempt
+                trace.success = True
+                trace.tokens_input = self._estimate_tokens(prompt)
+                trace.tokens_output = self._estimate_tokens(response_text)
+
+                return (response_text, trace) if return_trace else response_text
 
             except requests.exceptions.Timeout as e:
                 last_error = e
@@ -342,11 +409,19 @@ class OllamaClient:
             state=state
         )
 
+        # Обновляем trace для неудачи
+        trace.latency_ms = (time.time() - start_time) * 1000
+        trace.retry_count = max_attempts
+        trace.success = False
+        trace.error = str(last_error)[:100] if last_error else "unknown"
+
         if allow_fallback:
             self._stats.fallback_used += 1
-            return self._get_fallback(state)
+            response = self._get_fallback(state)
+            trace.raw_response = response
+            return (response, trace) if return_trace else response
 
-        return ""
+        return ("", trace) if return_trace else ""
 
     # =========================================================================
     # INTERNAL LLM CALL METHOD
@@ -368,6 +443,7 @@ class OllamaClient:
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
+                "think": False,  # Disable thinking mode (qwen3, deepseek-r1)
                 "options": {
                     "temperature": 0.7,
                     "num_predict": 256,
@@ -381,8 +457,14 @@ class OllamaClient:
         message = data.get("message", {})
         content = message.get("content", "")
 
+        # Support for models with thinking mode (qwen3, deepseek, etc.)
+        # If content is empty but thinking is present, use thinking
         if not content:
-            raise ValueError("Empty content in response from Ollama")
+            thinking = message.get("thinking", "")
+            if thinking:
+                content = thinking
+            else:
+                raise ValueError("Empty content in response from Ollama")
 
         return content
 
@@ -488,6 +570,17 @@ class OllamaClient:
         if state and state in self.FALLBACK_RESPONSES:
             return self.FALLBACK_RESPONSES[state]
         return self.DEFAULT_FALLBACK
+
+    def _estimate_tokens(self, text: str) -> int:
+        """
+        Оценка количества токенов.
+
+        Простая эвристика: ~4 символа на токен для русского текста.
+        """
+        if not text:
+            return 0
+        # Примерная оценка: 4 символа на токен для русского
+        return len(text) // 4
 
     # =========================================================================
     # STATS & HEALTH

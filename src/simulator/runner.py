@@ -57,6 +57,10 @@ class SimulationResult:
     # Phase 8: Rule traces for debugging conditional rules
     rule_traces: List[Dict[str, Any]] = field(default_factory=list)
 
+    # Decision Tracing: Full traces for all decision stages
+    decision_traces: List[Dict[str, Any]] = field(default_factory=list)
+    client_traces: List[Dict[str, Any]] = field(default_factory=list)
+
 
 class SimulationRunner:
     """Оркестратор массовых симуляций"""
@@ -186,6 +190,8 @@ class SimulationRunner:
         active_flow = flow_name or self.flow_name
 
         rule_traces = []  # Phase 8: Collect rule traces
+        decision_traces = []  # Decision Tracing: Full traces
+        client_traces = []  # Client agent traces
 
         try:
             # Импортируем SalesBot здесь чтобы избежать circular import
@@ -230,6 +236,11 @@ class SimulationRunner:
                             "trace": trace_data
                         })
 
+                    # Decision Tracing: Collect decision trace if available
+                    if "decision_trace" in bot_result and bot_result["decision_trace"]:
+                        decision_traces.append(bot_result["decision_trace"])
+                        turn_data["decision_trace"] = bot_result["decision_trace"]
+
                     dialogue.append(turn_data)
 
                     # Считаем fallback
@@ -246,6 +257,11 @@ class SimulationRunner:
 
                     # Клиент отвечает
                     client_message = client.respond(bot_result.get("response", ""))
+
+                    # Collect client agent trace if available
+                    client_trace = client.get_last_trace()
+                    if client_trace:
+                        client_traces.append(client_trace.to_dict())
 
                 except Exception as e:
                     errors.append(f"Turn {turn + 1}: {str(e)}")
@@ -298,7 +314,9 @@ class SimulationRunner:
                 final_lead_score=lead_score,
                 collected_data=collected_data,
                 errors=errors,
-                rule_traces=rule_traces  # Phase 8: Include rule traces
+                rule_traces=rule_traces,  # Phase 8: Include rule traces
+                decision_traces=decision_traces,  # Decision Tracing
+                client_traces=client_traces,  # Client agent traces
             )
 
         except Exception as e:
