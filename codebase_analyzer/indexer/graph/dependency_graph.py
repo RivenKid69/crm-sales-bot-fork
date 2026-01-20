@@ -352,6 +352,188 @@ class DependencyGraph:
             "methods": len(self._entities_by_type.get(EntityType.METHOD, [])),
         }
 
+    # =========================================================================
+    # Топологическая сортировка для bottom-up анализа
+    # =========================================================================
+
+    def get_all_entity_ids(self) -> list[str]:
+        """Get all entity IDs in the graph."""
+        return list(self._entities_by_id.keys())
+
+    def get_leaf_entities(self) -> list[str]:
+        """Get entities with no outgoing dependencies (leaf nodes).
+
+        These are entities that don't depend on any other internal entities.
+        They should be processed first in bottom-up analysis.
+        """
+        leaves: list[str] = []
+        for entity_id in self._entities_by_id:
+            if entity_id in self._graph:
+                # No outgoing edges = leaf node
+                if self._graph.out_degree(entity_id) == 0:
+                    leaves.append(entity_id)
+            else:
+                # Not in graph (no relations) = also a leaf
+                leaves.append(entity_id)
+        return leaves
+
+    def find_cycles(self) -> list[list[str]]:
+        """Find all cycles in the dependency graph.
+
+        Returns:
+            List of cycles, where each cycle is a list of entity IDs.
+        """
+        try:
+            cycles = list(nx.simple_cycles(self._graph))
+            return cycles
+        except nx.NetworkXError:
+            return []
+
+    def find_strongly_connected_components(self) -> list[set[str]]:
+        """Find strongly connected components (potential cycles).
+
+        Returns:
+            List of SCCs with more than one node (cycles).
+        """
+        sccs = list(nx.strongly_connected_components(self._graph))
+        # Filter to only SCCs with cycles (size > 1)
+        return [scc for scc in sccs if len(scc) > 1]
+
+    def break_cycles(self) -> list[tuple[str, str, dict]]:
+        """Break cycles by removing minimum weight edges.
+
+        Returns:
+            List of removed edges as (source, target, data) tuples.
+        """
+        removed_edges: list[tuple[str, str, dict]] = []
+        sccs = self.find_strongly_connected_components()
+
+        for scc in sccs:
+            # Find edges within this SCC
+            scc_subgraph = self._graph.subgraph(scc).copy()
+
+            while not nx.is_directed_acyclic_graph(scc_subgraph):
+                # Find edge with minimum weight to remove
+                min_edge = None
+                min_weight = float('inf')
+
+                for u, v, data in scc_subgraph.edges(data=True):
+                    weight = data.get('weight', 1.0)
+                    if weight < min_weight:
+                        min_weight = weight
+                        min_edge = (u, v, data)
+
+                if min_edge:
+                    u, v, data = min_edge
+                    scc_subgraph.remove_edge(u, v)
+                    # Also remove from main graph
+                    if self._graph.has_edge(u, v):
+                        edge_data = dict(self._graph.edges[u, v])
+                        self._graph.remove_edge(u, v)
+                        removed_edges.append((u, v, edge_data))
+                        logger.debug(f"Broke cycle by removing edge: {u} -> {v}")
+                else:
+                    break
+
+        return removed_edges
+
+    def get_topological_order(self, break_cycles_if_needed: bool = True) -> list[str]:
+        """Get entities in topological order (dependencies first).
+
+        Args:
+            break_cycles_if_needed: If True, break cycles before sorting.
+
+        Returns:
+            List of entity IDs in topological order.
+            Entities with no dependencies come first (leaves).
+
+        Raises:
+            nx.NetworkXUnfeasible: If graph has cycles and break_cycles_if_needed is False.
+        """
+        if break_cycles_if_needed:
+            removed = self.break_cycles()
+            if removed:
+                logger.info(f"Broke {len(removed)} edges to eliminate cycles")
+
+        try:
+            # Reverse topological sort: dependencies come BEFORE dependents
+            # For bottom-up: we want leaves first, so reverse it
+            order = list(nx.topological_sort(self._graph))
+            # Reverse so leaves (no out-edges) come first
+            return list(reversed(order))
+        except nx.NetworkXUnfeasible as e:
+            logger.error("Graph has cycles that couldn't be broken")
+            raise
+
+    def get_processing_levels(self, break_cycles_if_needed: bool = True) -> list[list[str]]:
+        """Get entities grouped by processing level for parallel execution.
+
+        Level 0: Leaf entities (no dependencies)
+        Level 1: Entities depending only on level 0
+        Level N: Entities depending on levels 0..N-1
+
+        This enables parallel processing within each level.
+
+        Returns:
+            List of levels, where each level is a list of entity IDs
+            that can be processed in parallel.
+        """
+        if break_cycles_if_needed:
+            self.break_cycles()
+
+        levels: list[list[str]] = []
+        processed: set[str] = set()
+        remaining: set[str] = set(self._entities_by_id.keys())
+
+        while remaining:
+            current_level: list[str] = []
+
+            for entity_id in list(remaining):
+                # Check if all dependencies are already processed
+                deps = [target for target, _ in self.get_dependencies(entity_id)]
+                unprocessed_deps = [d for d in deps if d in remaining and d != entity_id]
+
+                if not unprocessed_deps:
+                    current_level.append(entity_id)
+
+            if not current_level:
+                # No progress - remaining entities form a cycle
+                # Add them all to the current level
+                logger.warning(
+                    f"Circular dependencies detected among {len(remaining)} entities. "
+                    "Processing them together."
+                )
+                current_level = list(remaining)
+
+            levels.append(current_level)
+            for entity_id in current_level:
+                processed.add(entity_id)
+                remaining.discard(entity_id)
+
+        logger.info(
+            f"Organized {len(self._entities_by_id)} entities into "
+            f"{len(levels)} processing levels"
+        )
+        return levels
+
+    def get_dependency_ids(self, entity_id: str) -> list[str]:
+        """Get IDs of entities that this entity depends on.
+
+        Simplified version of get_dependencies that returns only IDs.
+        """
+        if entity_id not in self._graph:
+            return []
+        return [target for _, target in self._graph.out_edges(entity_id)]
+
+    def get_dependent_ids(self, entity_id: str) -> list[str]:
+        """Get IDs of entities that depend on this entity.
+
+        Simplified version of get_dependents that returns only IDs.
+        """
+        if entity_id not in self._graph:
+            return []
+        return [source for source, _ in self._graph.in_edges(entity_id)]
+
 
 def build_dependency_graph(file_entities: list[FileEntity]) -> DependencyGraph:
     """Build a dependency graph from a list of file entities.

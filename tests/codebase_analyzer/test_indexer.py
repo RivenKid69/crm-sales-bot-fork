@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from codebase_analyzer.config import AppConfig, IndexerConfig
-from codebase_analyzer.indexer.indexer import CodebaseIndexer, create_indexer
+from codebase_analyzer.indexer.indexer import CodebaseIndexer, IndexResult, create_indexer
 from codebase_analyzer.indexer.models.entities import EntityType
 from codebase_analyzer.indexer.models.relations import CodebaseStats
 
@@ -425,11 +425,14 @@ class TestFullIndexingPipeline:
         )
         indexer = CodebaseIndexer(config)
 
-        graph, stats = indexer.index()
+        result = indexer.index()
 
-        assert graph is not None
-        assert stats is not None
-        assert stats.total_files >= 1
+        assert isinstance(result, IndexResult)
+        assert result.graph is not None
+        assert result.stats is not None
+        assert result.stats.total_files >= 1
+        assert len(result.processing_levels) >= 0
+        assert len(result.topological_order) >= 0
 
     def test_index_with_explicit_root(self, simple_project: Path, temp_dir: Path):
         """Test index() with explicit project root."""
@@ -443,10 +446,10 @@ class TestFullIndexingPipeline:
         indexer = CodebaseIndexer(config)
 
         # Override with actual project
-        graph, stats = indexer.index(project_root=simple_project)
+        result = indexer.index(project_root=simple_project)
 
-        assert graph is not None
-        assert stats.total_files >= 1
+        assert result.graph is not None
+        assert result.stats.total_files >= 1
 
 
 # ============================================================================
@@ -711,10 +714,139 @@ class TestIntegration:
         indexer = CodebaseIndexer(config)
 
         # First index
-        graph1, stats1 = indexer.index()
+        result1 = indexer.index()
 
         # Second index (should work same way)
-        graph2, stats2 = indexer.index()
+        result2 = indexer.index()
 
         # Results should be consistent
-        assert stats1.total_files == stats2.total_files
+        assert result1.stats.total_files == result2.stats.total_files
+
+
+# ============================================================================
+# IndexResult Tests
+# ============================================================================
+
+
+class TestIndexResult:
+    """Tests for IndexResult dataclass."""
+
+    def test_create_empty_result(self):
+        """Should create an empty result."""
+        from codebase_analyzer.indexer.graph.dependency_graph import DependencyGraph
+
+        result = IndexResult(
+            graph=DependencyGraph(),
+            stats=CodebaseStats(),
+        )
+
+        assert result.total_entities == 0
+        assert result.level_count == 0
+        assert result.embeddings_generated is False
+        assert result.embedding_count == 0
+
+    def test_create_result_with_levels(self):
+        """Should create result with processing levels."""
+        from codebase_analyzer.indexer.graph.dependency_graph import DependencyGraph
+
+        result = IndexResult(
+            graph=DependencyGraph(),
+            stats=CodebaseStats(),
+            processing_levels=[["e1", "e2"], ["e3"]],
+            topological_order=["e1", "e2", "e3"],
+        )
+
+        assert result.total_entities == 3
+        assert result.level_count == 2
+
+    def test_broken_cycles_tracking(self):
+        """Should track broken cycles."""
+        from codebase_analyzer.indexer.graph.dependency_graph import DependencyGraph
+
+        result = IndexResult(
+            graph=DependencyGraph(),
+            stats=CodebaseStats(),
+            broken_cycles=[("a", "b"), ("c", "d")],
+        )
+
+        assert len(result.broken_cycles) == 2
+
+
+# ============================================================================
+# Processing Order Tests
+# ============================================================================
+
+
+class TestProcessingOrder:
+    """Tests for topological order and processing levels computation."""
+
+    def test_compute_processing_order(self, simple_project: Path):
+        """Test computing processing order from graph."""
+        config = AppConfig(
+            project_root=simple_project,
+            indexer=IndexerConfig(
+                include_patterns=["**/*.php", "**/*.go", "**/*.ts"],
+                exclude_patterns=[],
+            ),
+        )
+        indexer = CodebaseIndexer(config)
+        result = indexer.index()
+
+        # Should have processing levels
+        assert isinstance(result.processing_levels, list)
+        assert isinstance(result.topological_order, list)
+
+        # If we have entities, we should have processing levels
+        if result.total_entities > 0:
+            assert result.level_count >= 1
+
+    def test_processing_levels_cover_all_entities(self, simple_project: Path):
+        """Test that processing levels include all entities."""
+        config = AppConfig(
+            project_root=simple_project,
+            indexer=IndexerConfig(
+                include_patterns=["**/*.php", "**/*.go", "**/*.ts"],
+                exclude_patterns=[],
+            ),
+        )
+        indexer = CodebaseIndexer(config)
+        result = indexer.index()
+
+        # All entities in topological order should be in processing levels
+        entities_in_levels = set()
+        for level in result.processing_levels:
+            entities_in_levels.update(level)
+
+        assert entities_in_levels == set(result.topological_order)
+
+
+# ============================================================================
+# Get Entities for Analysis Tests
+# ============================================================================
+
+
+class TestGetEntitiesForAnalysis:
+    """Tests for get_entities_for_analysis method."""
+
+    def test_get_entities_for_analysis(self, simple_project: Path):
+        """Should extract entities for LLM analysis."""
+        config = AppConfig(
+            project_root=simple_project,
+            indexer=IndexerConfig(
+                include_patterns=["**/*.php", "**/*.go", "**/*.ts"],
+                exclude_patterns=[],
+            ),
+        )
+        indexer = CodebaseIndexer(config)
+        indexer.index()
+
+        entities = indexer.get_entities_for_analysis()
+
+        # Should return a list of CodeEntity objects
+        assert isinstance(entities, list)
+
+        # Each entity should have required attributes
+        for entity in entities:
+            assert hasattr(entity, "id")
+            assert hasattr(entity, "name")
+            assert hasattr(entity, "entity_type")

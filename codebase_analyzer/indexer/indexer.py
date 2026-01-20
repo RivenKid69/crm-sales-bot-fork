@@ -2,6 +2,7 @@
 
 import json
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator
 
@@ -9,11 +10,32 @@ from ..config import AppConfig, get_config
 from ..utils.logging import LogContext, get_logger
 from ..utils.progress import create_progress, get_metrics, reset_metrics
 from .graph.dependency_graph import DependencyGraph, build_dependency_graph
-from .models.entities import FileEntity, Language
+from .models.entities import FileEntity, Language, CodeEntity
 from .models.relations import CodebaseStats
 from .parsers.base import get_parser_for_file
 
 logger = get_logger("indexer")
+
+
+@dataclass
+class IndexResult:
+    """Result of indexing operation."""
+
+    graph: DependencyGraph
+    stats: CodebaseStats
+    processing_levels: list[list[str]] = field(default_factory=list)
+    topological_order: list[str] = field(default_factory=list)
+    broken_cycles: list[tuple[str, str]] = field(default_factory=list)
+    embeddings_generated: bool = False
+    embedding_count: int = 0
+
+    @property
+    def total_entities(self) -> int:
+        return len(self.topological_order)
+
+    @property
+    def level_count(self) -> int:
+        return len(self.processing_levels)
 
 
 class CodebaseIndexer:
@@ -228,14 +250,19 @@ class CodebaseIndexer:
         self._stats = stats
         return stats
 
-    def index(self, project_root: Path | None = None) -> tuple[DependencyGraph, CodebaseStats]:
+    def index(
+        self,
+        project_root: Path | None = None,
+        generate_embeddings: bool = False,
+    ) -> IndexResult:
         """Run the full indexing pipeline.
 
         Args:
             project_root: Optional project root to override config
+            generate_embeddings: Whether to generate code embeddings
 
         Returns:
-            Tuple of (dependency_graph, statistics)
+            IndexResult with graph, stats, and processing levels
         """
         if project_root:
             self.config.project_root = project_root
@@ -249,31 +276,133 @@ class CodebaseIndexer:
 
         if not files:
             logger.warning("No source files found to index")
-            return DependencyGraph(), CodebaseStats()
+            return IndexResult(
+                graph=DependencyGraph(),
+                stats=CodebaseStats(),
+            )
 
         # Parse files
         file_entities = self.parse_files(files)
 
         if not file_entities:
             logger.warning("No files were successfully parsed")
-            return DependencyGraph(), CodebaseStats()
+            return IndexResult(
+                graph=DependencyGraph(),
+                stats=CodebaseStats(),
+            )
 
         # Build graph
         graph = self.build_graph(file_entities)
 
+        # Compute topological order and processing levels
+        topological_order, processing_levels, broken_cycles = self._compute_processing_order(graph)
+
         # Compute stats
         stats = self.compute_stats()
+
+        # Generate embeddings if requested
+        embedding_count = 0
+        if generate_embeddings:
+            embedding_count = self._generate_embeddings(file_entities)
 
         # Print summary
         get_metrics().print_summary()
 
-        return graph, stats
+        return IndexResult(
+            graph=graph,
+            stats=stats,
+            processing_levels=processing_levels,
+            topological_order=topological_order,
+            broken_cycles=broken_cycles,
+            embeddings_generated=generate_embeddings,
+            embedding_count=embedding_count,
+        )
 
-    def save_index(self, output_dir: Path | None = None) -> Path:
+    def _compute_processing_order(
+        self,
+        graph: DependencyGraph,
+    ) -> tuple[list[str], list[list[str]], list[tuple[str, str]]]:
+        """Compute topological order and processing levels.
+
+        Returns:
+            Tuple of (topological_order, processing_levels, broken_cycles)
+        """
+        with LogContext("Computing processing order"):
+            # Break cycles if needed
+            broken_edges = graph.break_cycles()
+            broken_cycles = [(e[0], e[1]) for e in broken_edges]
+
+            if broken_cycles:
+                logger.info(f"Broke {len(broken_cycles)} cycles in dependency graph")
+
+            # Get topological order
+            topological_order = graph.get_topological_order(break_cycles_if_needed=False)
+
+            # Get processing levels for parallel execution
+            processing_levels = graph.get_processing_levels(break_cycles_if_needed=False)
+
+            logger.info(
+                f"Computed {len(processing_levels)} processing levels "
+                f"for {len(topological_order)} entities"
+            )
+
+        return topological_order, processing_levels, broken_cycles
+
+    def _generate_embeddings(self, file_entities: list[FileEntity]) -> int:
+        """Generate embeddings for all code entities.
+
+        Returns:
+            Number of embeddings generated
+        """
+        try:
+            from .embeddings import CodeEmbedder, EmbeddingStore, StoreConfig
+
+            with LogContext("Generating embeddings"):
+                # Collect all entities
+                all_entities: list[CodeEntity] = []
+                for fe in file_entities:
+                    all_entities.extend(fe.all_entities)
+
+                if not all_entities:
+                    return 0
+
+                # Initialize embedder and store
+                embedder = CodeEmbedder()
+                store_config = StoreConfig(
+                    mode="local",
+                    local_path=self.config.index_dir / "embeddings",
+                )
+                store = EmbeddingStore(store_config)
+
+                # Generate embeddings in batches
+                embeddings = embedder.embed_entities(
+                    all_entities,
+                    show_progress=True,
+                )
+
+                # Store embeddings
+                store.add_many(embeddings)
+
+                logger.info(f"Generated {len(embeddings)} embeddings")
+                return len(embeddings)
+
+        except ImportError as e:
+            logger.warning(f"Embeddings not available: {e}")
+            return 0
+        except Exception as e:
+            logger.error(f"Failed to generate embeddings: {e}")
+            return 0
+
+    def save_index(
+        self,
+        output_dir: Path | None = None,
+        index_result: IndexResult | None = None,
+    ) -> Path:
         """Save the index to disk.
 
         Args:
             output_dir: Directory to save the index
+            index_result: Optional index result with processing levels
 
         Returns:
             Path to the saved index directory
@@ -315,9 +444,45 @@ class CodebaseIndexer:
                 with open(stats_path, "w") as f:
                     json.dump(self._stats.to_dict(), f, indent=2)
 
+            # Save processing levels and topological order
+            if index_result:
+                order_path = output_dir / "processing_order.json"
+                order_data = {
+                    "topological_order": index_result.topological_order,
+                    "processing_levels": index_result.processing_levels,
+                    "broken_cycles": index_result.broken_cycles,
+                }
+                with open(order_path, "w") as f:
+                    json.dump(order_data, f, indent=2)
+
             logger.info(f"Index saved to {output_dir}")
 
         return output_dir
+
+    def get_entities_for_analysis(self) -> list[CodeEntity]:
+        """Get all code entities for LLM analysis.
+
+        Returns entities in a flat list suitable for summarization.
+        """
+        entities: list[CodeEntity] = []
+
+        for fe in self._file_entities:
+            # Add classes (but not the file entity itself)
+            for cls in fe.classes:
+                entities.append(cls)
+                # Add methods of the class
+                for method in cls.methods:
+                    entities.append(method)
+
+            # Add standalone functions
+            for func in fe.functions:
+                entities.append(func)
+
+            # Add components (React)
+            for comp in fe.components:
+                entities.append(comp)
+
+        return entities
 
     def load_index(self, index_dir: Path) -> bool:
         """Load a previously saved index.
