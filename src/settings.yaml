@@ -255,7 +255,7 @@ feature_flags:
   conversation_guard: true    # Защита от зацикливания
 
   # Фаза 2: Естественность диалога
-  tone_analysis: false        # Анализ тона клиента (включить после тестирования)
+  tone_analysis: true         # Анализ тона клиента (ВКЛЮЧЕНО - критично для frustration detection)
   response_variations: true   # Вариативность ответов (безопасно)
   personalization: false      # Персонализация на основе данных
 

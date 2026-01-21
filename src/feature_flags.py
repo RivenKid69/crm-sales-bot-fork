@@ -35,7 +35,7 @@ class FeatureFlags:
     # Дефолтные значения флагов (используются если не указаны в settings)
     DEFAULTS: Dict[str, bool] = {
         # Фаза 2: Естественность диалога
-        "tone_analysis": False,           # Анализ тона клиента
+        "tone_analysis": True,            # Анализ тона клиента (критично для frustration)
         "response_variations": True,      # Вариативность ответов (безопасно)
 
         # Фаза 3: Оптимизация SPIN Flow
