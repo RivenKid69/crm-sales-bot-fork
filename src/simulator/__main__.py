@@ -60,8 +60,8 @@ def create_parser():
     parser.add_argument(
         "--parallel", "-p",
         type=int,
-        default=1,
-        help="Количество параллельных потоков (по умолчанию: 1)"
+        default=8,
+        help="Количество параллельных потоков (по умолчанию: 8)"
     )
 
     parser.add_argument(
