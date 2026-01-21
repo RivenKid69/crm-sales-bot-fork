@@ -20,7 +20,9 @@ IntentType = Literal[
     "objection_complexity", "objection_competitor", "objection_trust",
     "objection_no_need", "rejection",
     # Управление диалогом
-    "unclear", "go_back", "correct_info"
+    "unclear", "go_back", "correct_info",
+    # Мета-интенты (управление стилем)
+    "request_brevity"
 ]
 
 PainCategory = Literal["losing_clients", "no_control", "manual_work"]

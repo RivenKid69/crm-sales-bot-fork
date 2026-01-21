@@ -96,13 +96,15 @@ class TestSchemas:
         assert restored.intent == "price_question"
         assert restored.confidence == 0.85
 
-    def test_all_33_intents_exist(self):
-        """Проверка что все 33 интента определены."""
+    def test_all_34_intents_exist(self):
+        """Проверка что все 34 интента определены (включая request_brevity)."""
         import typing
         from classifier.llm.schemas import IntentType
 
         intents = typing.get_args(IntentType)
-        assert len(intents) == 33
+        assert len(intents) == 34
+        # Проверяем что новый интент request_brevity добавлен
+        assert "request_brevity" in intents
 
     def test_pain_category_valid(self):
         """Проверка валидных категорий боли."""

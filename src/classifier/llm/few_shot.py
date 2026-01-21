@@ -124,6 +124,46 @@ FEW_SHOT_EXAMPLES = [
             }
         }
     },
+
+    # Запрос краткости (request_brevity)
+    {
+        "message": "не грузите меня, просто скажите суть",
+        "context": {},
+        "result": {
+            "intent": "request_brevity",
+            "confidence": 0.95,
+            "reasoning": "Клиент просит более краткий ответ, не возражение"
+        }
+    },
+    {
+        "message": "короче, давайте по делу",
+        "context": {},
+        "result": {
+            "intent": "request_brevity",
+            "confidence": 0.93,
+            "reasoning": "Запрос на краткость и конкретику"
+        }
+    },
+
+    # Конкуренты (objection_competitor)
+    {
+        "message": "у нас Poster, зачем нам вы?",
+        "context": {},
+        "result": {
+            "intent": "objection_competitor",
+            "confidence": 0.96,
+            "reasoning": "Клиент упоминает конкурента Poster как причину отказа"
+        }
+    },
+    {
+        "message": "мы уже используем iiko",
+        "context": {},
+        "result": {
+            "intent": "objection_competitor",
+            "confidence": 0.94,
+            "reasoning": "Клиент указывает на использование конкурентного продукта"
+        }
+    },
 ]
 
 

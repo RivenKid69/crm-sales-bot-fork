@@ -1,12 +1,14 @@
 """Промпты для LLM классификатора."""
 
+from .few_shot import get_few_shot_prompt
+
 SYSTEM_PROMPT = """/no_think
 Ты — классификатор интентов для CRM-бота продаж Wipon.
 
 ## Твоя задача:
 Определить интент (намерение) пользователя и извлечь полезные данные.
 
-## Доступные интенты (33 штуки):
+## Доступные интенты (34 штуки):
 
 ### Приветствия и общение:
 - greeting: приветствие ("привет", "здравствуйте", "добрый день")
@@ -54,6 +56,7 @@ SYSTEM_PROMPT = """/no_think
 - unclear: непонятное сообщение (абракадабра, одна буква)
 - go_back: вернуться назад ("стоп", "подождите", "вернёмся")
 - correct_info: исправление информации ("не так", "я имел в виду")
+- request_brevity: запрос краткости ("короче", "по сути", "не грузите", "скажите главное")
 
 ## Критические правила:
 
@@ -73,9 +76,14 @@ SYSTEM_PROMPT = """/no_think
    - "нет, дорого" → objection_price (есть причина)
    - "нет, не хочу" → rejection (категоричный отказ)
 
+5. **request_brevity vs objection_think**:
+   - "не грузите меня, скажите суть" → request_brevity (просит краткость)
+   - "подумаю об этом" → objection_think (возражение)
+   - "короче давайте" → request_brevity (просит краткость)
+
 ## Формат ответа:
 Верни JSON с полями:
-- intent: один из 33 интентов
+- intent: один из 34 интентов
 - confidence: число от 0 до 1
 - reasoning: краткое объяснение выбора
 - extracted_data: извлечённые данные (если есть)
@@ -83,9 +91,20 @@ SYSTEM_PROMPT = """/no_think
 
 def build_classification_prompt(
     message: str,
-    context: dict = None
+    context: dict = None,
+    n_few_shot: int = 5
 ) -> str:
-    """Построить промпт для классификации."""
+    """
+    Построить промпт для классификации.
+
+    Args:
+        message: Сообщение пользователя для классификации
+        context: Контекст диалога (state, spin_phase, last_action, last_intent)
+        n_few_shot: Количество few-shot примеров для включения в промпт
+
+    Returns:
+        Полный промпт для LLM классификатора
+    """
     context = context or {}
 
     context_parts = []
@@ -104,7 +123,12 @@ def build_classification_prompt(
 
     context_str = "\n".join(context_parts) if context_parts else "Нет контекста"
 
+    # Получаем few-shot примеры для улучшения классификации
+    few_shot_section = get_few_shot_prompt(n_few_shot) if n_few_shot > 0 else ""
+
     return f"""{SYSTEM_PROMPT}
+
+{few_shot_section}
 
 ## Контекст диалога:
 {context_str}

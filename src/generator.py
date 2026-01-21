@@ -380,6 +380,18 @@ class ResponseGenerator:
     # Интенты связанные с ценой - требуют специального шаблона
     PRICE_RELATED_INTENTS = {"price_question", "pricing_details"}
 
+    # Интенты связанные с возражениями - требуют специфичного шаблона
+    OBJECTION_RELATED_INTENTS = {
+        "objection_competitor",
+        "objection_price",
+        "objection_no_time",
+        "objection_think",
+        "objection_complexity",
+        "objection_trust",
+        "objection_no_need",
+        "objection_timing",
+    }
+
     # Порог схожести для детекции дубликатов
     SIMILARITY_THRESHOLD = 0.80
 
@@ -540,12 +552,32 @@ class ResponseGenerator:
         )
 
         # Выбираем шаблон
-        # === НОВОЕ: Intent-aware выбор шаблона для price-related вопросов ===
+        # === Intent-aware выбор шаблона для price-related вопросов ===
         # Price-related интенты ВСЕГДА получают pricing шаблон, независимо от action
         if intent in self.PRICE_RELATED_INTENTS:
             template_key = self._get_price_template_key(intent, action)
             logger.debug(
                 "Price-related intent detected, using pricing template",
+                intent=intent,
+                original_action=action,
+                template_key=template_key
+            )
+        # === Intent-aware выбор шаблона для objection-related интентов ===
+        # Objection интенты получают специфичный шаблон для типа возражения
+        elif intent in self.OBJECTION_RELATED_INTENTS:
+            template_key = self._get_objection_template_key(intent, action)
+            logger.debug(
+                "Objection-related intent detected, using specific template",
+                intent=intent,
+                original_action=action,
+                template_key=template_key
+            )
+        # === Intent-aware выбор шаблона для request_brevity ===
+        # Мета-интент: клиент хочет более краткие ответы
+        elif intent == "request_brevity":
+            template_key = "respond_briefly"
+            logger.debug(
+                "Brevity request detected, using respond_briefly template",
                 intent=intent,
                 original_action=action,
                 template_key=template_key
@@ -1044,6 +1076,50 @@ class ResponseGenerator:
             return "answer_pricing_details"
         # Fallback
         return "answer_with_facts"
+
+    def _get_objection_template_key(self, intent: str, action: str) -> str:
+        """
+        Выбрать шаблон для objection-related интентов.
+
+        Каждый тип возражения получает специфичный шаблон с релевантными
+        аргументами и подходом. Это позволяет:
+        - objection_competitor → сравнение с конкурентом из retrieved_facts
+        - objection_price → ценовые аргументы
+        - objection_no_time → предложить удобное время
+        - и т.д.
+
+        Args:
+            intent: Интент клиента (тип возражения)
+            action: Action от state machine
+
+        Returns:
+            Ключ шаблона
+        """
+        # Маппинг интента на специфичный шаблон
+        OBJECTION_TEMPLATE_MAP = {
+            "objection_competitor": "handle_objection_competitor",
+            "objection_price": "handle_objection_price",
+            "objection_no_time": "handle_objection_no_time",
+            "objection_think": "handle_objection_think",
+            "objection_complexity": "handle_objection_complexity",
+            "objection_trust": "handle_objection_trust",
+            "objection_no_need": "handle_objection_no_need",
+            "objection_timing": "handle_objection_timing",
+        }
+
+        template_key = OBJECTION_TEMPLATE_MAP.get(intent)
+
+        # Проверяем существует ли специфичный шаблон
+        if template_key:
+            # Проверяем в FlowConfig (YAML)
+            if self._flow and self._flow.get_template(template_key):
+                return template_key
+            # Проверяем в PROMPT_TEMPLATES (Python)
+            if template_key in PROMPT_TEMPLATES:
+                return template_key
+
+        # Fallback на generic handle_objection
+        return "handle_objection"
 
 
 if __name__ == "__main__":
