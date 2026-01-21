@@ -124,6 +124,138 @@ INTENT_LABELS: Dict[str, str] = {
     "repeat_request": "Повторить",
     "example_request": "Привести пример",
     "summary_request": "Подытожить",
+
+    # =================================================================
+    # ВОПРОСЫ ОБ ОБОРУДОВАНИИ (12)
+    # =================================================================
+    "question_equipment_general": "Узнать об оборудовании",
+    "question_pos_monoblock": "Узнать о моноблоках",
+    "question_scales": "Узнать о весах",
+    "question_scanner": "Узнать о сканерах",
+    "question_printer": "Узнать о принтерах",
+    "question_cash_drawer": "Узнать о денежном ящике",
+    "question_equipment_bundle": "Узнать о комплектах",
+    "question_equipment_specs": "Узнать характеристики",
+    "question_equipment_warranty": "Узнать о гарантии",
+    "question_equipment_install": "Узнать об установке",
+    "question_equipment_compat": "Узнать о совместимости",
+    "question_second_screen": "Узнать об экране покупателя",
+
+    # =================================================================
+    # ВОПРОСЫ О ТАРИФАХ (8)
+    # =================================================================
+    "question_tariff_mini": "Узнать о тарифе Mini",
+    "question_tariff_lite": "Узнать о тарифе Lite",
+    "question_tariff_standard": "Узнать о тарифе Standard",
+    "question_tariff_pro": "Узнать о тарифе Pro",
+    "question_tariff_comparison": "Сравнить тарифы",
+    "question_installment": "Узнать о рассрочке",
+    "question_trial_period": "Узнать о тестовом периоде",
+    "question_ofd_payment": "Узнать об оплате ОФД",
+
+    # =================================================================
+    # ВОПРОСЫ О ТИС (10)
+    # =================================================================
+    "question_tis_general": "Узнать о ТИС",
+    "question_tis_limits": "Узнать о лимитах ТИС",
+    "question_tis_price": "Узнать стоимость ТИС",
+    "question_tis_requirements": "Узнать требования ТИС",
+    "question_tis_benefits": "Узнать преимущества ТИС",
+    "question_tis_2026": "Узнать о ТИС 2026",
+    "question_tis_components": "Узнать состав ТИС",
+    "question_tis_multi_location": "ТИС для нескольких точек",
+    "question_tis_transition": "Узнать о переходе на ТИС",
+    "question_tis_reports": "Узнать об отчётности ТИС",
+
+    # =================================================================
+    # ВОПРОСЫ О НАЛОГАХ (8)
+    # =================================================================
+    "question_retail_tax_general": "Узнать о розничном налоге",
+    "question_retail_tax_rates": "Узнать ставки налога",
+    "question_retail_tax_oked": "Узнать про ОКЭД",
+    "question_retail_tax_reports": "Узнать об отчётности",
+    "question_retail_tax_transition": "Перейти на розничный налог",
+    "question_snr_comparison": "Сравнить налоговые режимы",
+    "question_vat_registration": "Узнать о регистрации НДС",
+    "question_tax_optimization": "Оптимизировать налоги",
+
+    # =================================================================
+    # БУХГАЛТЕРИЯ И ДОКУМЕНТЫ (8)
+    # =================================================================
+    "question_accounting_services": "Бухгалтерские услуги",
+    "question_esf_snt": "Узнать об ЭСФ/СНТ",
+    "question_form_910": "Узнать о форме 910",
+    "question_form_200": "Узнать о форме 200",
+    "question_form_300": "Узнать о форме 300",
+    "question_business_registration": "Открыть ИП/ТОО",
+    "question_business_closure": "Закрыть ИП/ТОО",
+    "question_document_flow": "Узнать о документах",
+
+    # =================================================================
+    # ИНТЕГРАЦИИ СПЕЦИФИЧНЫЕ (8)
+    # =================================================================
+    "question_bank_terminal": "Интеграция с терминалами",
+    "question_kaspi_integration": "Интеграция с Kaspi",
+    "question_halyk_integration": "Интеграция с Halyk",
+    "question_1c_integration": "Интеграция с 1С",
+    "question_iiko_integration": "Интеграция с iiko",
+    "question_ofd_connection": "Подключение к ОФД",
+    "question_marking_ismet": "Узнать о маркировке",
+    "question_cashback_loyalty": "Программа лояльности",
+
+    # =================================================================
+    # УЧЁТ И ОПЕРАЦИИ (10)
+    # =================================================================
+    "question_inventory": "Узнать о складском учёте",
+    "question_revision": "Узнать о ревизии",
+    "question_purchase_mgmt": "Узнать о закупках",
+    "question_sales_mgmt": "Узнать об учёте продаж",
+    "question_cash_operations": "Кассовые операции",
+    "question_returns_mgmt": "Узнать о возвратах",
+    "question_employee_control": "Контроль сотрудников",
+    "question_multi_location": "Несколько точек",
+    "question_promo_discounts": "Скидки и акции",
+    "question_price_labels": "Печать ценников",
+
+    # =================================================================
+    # ДОСТАВКА И СЕРВИС (6)
+    # =================================================================
+    "question_delivery": "Узнать о доставке",
+    "question_delivery_time": "Узнать сроки доставки",
+    "question_office_location": "Узнать адрес офиса",
+    "question_working_hours": "Узнать часы работы",
+    "request_refund": "Запросить возврат",
+    "request_equipment_return": "Вернуть оборудование",
+
+    # =================================================================
+    # БИЗНЕС-СЦЕНАРИИ (10)
+    # =================================================================
+    "question_grocery_store": "Для продуктового",
+    "question_restaurant_cafe": "Для ресторана/кафе",
+    "question_pharmacy": "Для аптеки",
+    "question_clothing_store": "Для магазина одежды",
+    "question_small_business": "Для малого бизнеса",
+    "question_network_stores": "Для сети магазинов",
+    "question_market_stall": "Для рынка/ярмарки",
+    "question_alcohol_tobacco": "Для алкоголя/табака",
+    "question_beauty_salon": "Для салона красоты",
+    "question_construction": "Для стройматериалов",
+
+    # =================================================================
+    # ТЕХНИЧЕСКИЕ ПРОБЛЕМЫ (6)
+    # =================================================================
+    "problem_technical": "Техническая проблема",
+    "problem_connection": "Проблема с подключением",
+    "problem_sync": "Проблема синхронизации",
+    "problem_fiscal": "Проблема с фискализацией",
+    "request_technical_support": "Запросить техподдержку",
+    "request_configuration": "Запросить настройку",
+
+    # =================================================================
+    # ЯЗЫК И ПРОЧЕЕ (2)
+    # =================================================================
+    "language_kazakh": "Говорить на казахском",
+    "payment_confirmation": "Подтвердить оплату",
 }
 
 
