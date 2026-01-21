@@ -343,7 +343,8 @@ class SimulationRunner:
     def run_e2e_batch(
         self,
         scenarios: List[Any],
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        parallel: int = 1
     ) -> List[Any]:
         """
         Запуск batch e2e сценариев с разными flows.
@@ -351,6 +352,7 @@ class SimulationRunner:
         Args:
             scenarios: Список E2EScenario
             progress_callback: Callback для отображения прогресса
+            parallel: Количество параллельных потоков (по умолчанию: 1)
 
         Returns:
             Список E2EResult
@@ -365,26 +367,52 @@ class SimulationRunner:
         evaluator = E2EEvaluator()
         results: List[E2EResult] = []
 
-        for idx, scenario in enumerate(scenarios):
-            # Запускаем симуляцию с конкретным flow
+        def _evaluate_scenario(idx: int, scenario) -> E2EResult:
+            """Выполняет симуляцию и оценку одного сценария."""
             sim_result = self._run_single(
                 sim_id=int(scenario.id) if scenario.id.isdigit() else idx,
                 persona_name=scenario.persona,
                 flow_name=scenario.flow
             )
+            return evaluator.evaluate(sim_result, scenario)
 
-            # Оцениваем результат
-            evaluation = evaluator.evaluate(sim_result, scenario)
-            results.append(evaluation)
+        if parallel <= 1:
+            # Последовательный запуск
+            for idx, scenario in enumerate(scenarios):
+                evaluation = _evaluate_scenario(idx, scenario)
+                results.append(evaluation)
 
-            if progress_callback:
-                progress_callback(evaluation)
-            elif self.verbose:
-                status = "PASS" if evaluation.passed else "FAIL"
-                print(f"  [{idx+1}/{len(scenarios)}] {status} {scenario.name}: "
-                      f"{evaluation.outcome} (score: {evaluation.score:.2f})")
+                if progress_callback:
+                    progress_callback(evaluation)
+                elif self.verbose:
+                    status = "PASS" if evaluation.passed else "FAIL"
+                    print(f"  [{idx+1}/{len(scenarios)}] {status} {scenario.name}: "
+                          f"{evaluation.outcome} (score: {evaluation.score:.2f})")
+        else:
+            # Параллельный запуск
+            with ThreadPoolExecutor(max_workers=parallel) as executor:
+                futures = {
+                    executor.submit(_evaluate_scenario, idx, scenario): (idx, scenario)
+                    for idx, scenario in enumerate(scenarios)
+                }
 
-        return results
+                for future in as_completed(futures):
+                    try:
+                        evaluation = future.result()
+                        results.append(evaluation)
+
+                        if progress_callback:
+                            progress_callback(evaluation)
+                        elif self.verbose:
+                            status = "PASS" if evaluation.passed else "FAIL"
+                            print(f"  [{len(results)}/{len(scenarios)}] {status} {evaluation.scenario_name}: "
+                                  f"{evaluation.outcome} (score: {evaluation.score:.2f})")
+                    except Exception as e:
+                        idx, scenario = futures[future]
+                        print(f"  [ERROR] Сценарий {scenario.name} провалился: {e}")
+
+        # Сортируем по scenario_id для стабильного порядка
+        return sorted(results, key=lambda r: r.scenario_id)
 
 
 def create_runner(verbose: bool = False) -> SimulationRunner:

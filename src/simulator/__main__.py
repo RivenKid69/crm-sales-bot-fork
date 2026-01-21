@@ -254,7 +254,7 @@ def run_e2e_mode(args):
         print(f"  [{completed[0]:2d}/{len(scenarios)}] {status} {result.scenario_name:25s} "
               f"→ {result.outcome:12s} (score: {result.score:.2f})")
 
-    results = runner.run_e2e_batch(scenarios, progress_callback=progress_callback)
+    results = runner.run_e2e_batch(scenarios, progress_callback=progress_callback, parallel=args.parallel)
 
     print("-" * 60)
     print()
