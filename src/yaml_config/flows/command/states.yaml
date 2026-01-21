@@ -1,46 +1,50 @@
 # =============================================================================
 # COMMAND OF SALE STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   command_authority:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Установить авторитет"
     parameters:
       next_phase_state: command_control
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      authority_established: take_control
-      expertise_recognized: acknowledge_and_continue
       unclear: demonstrate_expertise
     transitions:
-      authority_established: command_control
-      agreement: command_control
+      data_complete: command_control
 
   command_control:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Взять контроль над разговором"
     parameters:
       next_phase_state: command_close
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      control_gained: guide_conversation
-      resistance: assert_leadership
       unclear: redirect_conversation
     transitions:
-      control_gained: command_close
-      agreement: command_close
+      data_complete: command_close
 
   command_close:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Направить к закрытию"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      guided_to_close: direct_close
-      commitment: fast_close
       unclear: guide_to_decision
     transitions:
-      guided_to_close: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

@@ -1,64 +1,68 @@
 # =============================================================================
 # DEMO FIRST SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   demo_hook:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Зацепить интерес к демо"
     parameters:
       next_phase_state: demo_show
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      hooked: offer_demo
-      demo_request: start_demo
       unclear: create_curiosity
     transitions:
-      hooked: demo_show
-      agreement: demo_show
+      data_complete: demo_show
       demo_request: demo_show
 
   demo_show:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Показать продукт"
     parameters:
       next_phase_state: demo_qa
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      demo_completed: answer_questions
       question_features: demonstrate_feature
       unclear: continue_demo
     transitions:
-      demo_completed: demo_qa
-      agreement: demo_qa
-      questions_answered: demo_qa
+      data_complete: demo_qa
 
   demo_qa:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Ответить на вопросы"
     parameters:
       next_phase_state: demo_close
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      questions_answered: move_to_close
       question_features: answer_and_continue
       comparison: address_comparison
       unclear: invite_questions
     transitions:
-      questions_answered: demo_close
-      agreement: demo_close
-      commitment: close
+      data_complete: demo_close
 
   demo_close:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Закрыть после демо"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      closed: acknowledge_and_continue
-      commitment: fast_close
-      objection: address_concern
       unclear: propose_next_steps
     transitions:
-      closed: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

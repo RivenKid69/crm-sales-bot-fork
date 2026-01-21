@@ -1,52 +1,57 @@
 # =============================================================================
 # VALUE-BASED SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
+# Маппинг:
+#   value_drivers_found → info_provided, agreement
+#   impact_quantified → info_provided, agreement
+#   roi_accepted → agreement
 # =============================================================================
 
 states:
   value_discover:
     extends: _base_phase
     mixins:
+      - unified_progress
       - value_rules
     goal: "Найти драйверы ценности"
     parameters:
       next_phase_state: value_quantify
+      default_price_action: calculate_roi_response
+      default_unclear_action: continue_current_goal
     rules:
-      value_drivers_found: acknowledge_and_continue
-      value_question: calculate_roi_response
       unclear: explore_value_drivers
     transitions:
-      value_drivers_found: value_quantify
-      agreement: value_quantify
+      data_complete: value_quantify
 
   value_quantify:
     extends: _base_phase
     mixins:
+      - unified_progress
       - value_rules
     goal: "Квантифицировать влияние"
     parameters:
       next_phase_state: value_roi
+      default_price_action: calculate_roi_response
+      default_unclear_action: continue_current_goal
     rules:
-      impact_quantified: acknowledge_and_continue
-      roi_inquiry: present_business_case
       unclear: quantify_impact
     transitions:
-      impact_quantified: value_roi
-      agreement: value_roi
+      data_complete: value_roi
 
   value_roi:
     extends: _base_phase
     mixins:
+      - unified_progress
       - value_rules
     goal: "Представить ROI"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_roi
+      default_unclear_action: continue_current_goal
     rules:
-      roi_accepted: acknowledge_and_continue
-      cost_concern: answer_with_roi
       unclear: clarify_roi
     transitions:
-      roi_accepted: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

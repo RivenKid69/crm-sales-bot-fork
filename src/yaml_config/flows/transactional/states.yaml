@@ -1,54 +1,59 @@
 # =============================================================================
 # TRANSACTIONAL SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
+# Минимум разговоров, быстрое закрытие
 # =============================================================================
 
 states:
   trans_qualify:
     extends: _base_phase
     mixins:
+      - unified_progress
       - transactional_rules
     goal: "Быстро квалифицировать"
     parameters:
       next_phase_state: trans_offer
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      qualified: make_offer
-      any_response: keep_it_short
-      unclear: quick_question
+      unclear: quick_qualify
     transitions:
-      qualified: trans_offer
-      agreement: trans_offer
-      buying_signal: trans_close
+      data_complete: trans_offer
+      demo_request: close
+      callback_request: close
 
   trans_offer:
     extends: _base_phase
     mixins:
+      - unified_progress
       - transactional_rules
-    goal: "Сделать прямое предложение"
+    goal: "Сделать предложение"
     parameters:
       next_phase_state: trans_close
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      offer_received: move_to_close
-      buying_signal: fast_close
-      unclear: direct_offer
+      unclear: make_offer
     transitions:
-      offer_received: trans_close
-      agreement: trans_close
-      ready_to_buy: close
+      data_complete: trans_close
+      demo_request: close
+      callback_request: close
 
   trans_close:
     extends: _base_phase
     mixins:
+      - unified_progress
       - transactional_rules
     goal: "Быстро закрыть"
     parameters:
-      next_phase_state: presentation
+      next_phase_state: close
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      closed: acknowledge_and_continue
-      commitment: fast_close
-      unclear: direct_to_action
+      unclear: direct_close
     transitions:
-      closed: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: close
+      demo_request: close
+      callback_request: close
+      contact_provided: success

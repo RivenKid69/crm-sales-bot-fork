@@ -1,59 +1,64 @@
 # =============================================================================
 # SOCIAL SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   social_trust:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Построить доверие"
     parameters:
       next_phase_state: social_value
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      trust_built: share_value
-      social_proof_request: provide_testimonials
       unclear: build_credibility
     transitions:
-      trust_built: social_value
-      agreement: social_value
+      data_complete: social_value
 
   social_value:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Поделиться ценностью"
     parameters:
       next_phase_state: social_engage
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      value_shared: engage_deeper
-      content_interest: share_insights
       unclear: provide_value
     transitions:
-      value_shared: social_engage
-      agreement: social_engage
+      data_complete: social_engage
 
   social_engage:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Вовлечь в диалог"
     parameters:
       next_phase_state: social_convert
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      engaged: move_to_conversion
-      interaction: deepen_engagement
       unclear: encourage_engagement
     transitions:
-      engaged: social_convert
-      agreement: social_convert
+      data_complete: social_convert
 
   social_convert:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Конвертировать в клиента"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      converted: acknowledge_and_continue
-      ready_to_proceed: fast_close
       unclear: guide_to_conversion
     transitions:
-      converted: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

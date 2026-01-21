@@ -1,59 +1,64 @@
 # =============================================================================
 # SNAP SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   snap_simple:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Сделать всё максимально просто"
     parameters:
       next_phase_state: snap_value
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      simplicity_appreciated: acknowledge_and_continue
-      complex_question: simplify_answer
       unclear: keep_it_simple
     transitions:
-      simplicity_appreciated: snap_value
-      agreement: snap_value
+      data_complete: snap_value
 
   snap_value:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Показать незаменимую ценность"
     parameters:
       next_phase_state: snap_align
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      value_understood: acknowledge_and_continue
-      value_question: demonstrate_value
       unclear: clarify_value
     transitions:
-      value_understood: snap_align
-      agreement: snap_align
+      data_complete: snap_align
 
   snap_align:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Выровняться с приоритетами клиента"
     parameters:
       next_phase_state: snap_priority
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      aligned: acknowledge_and_continue
-      priority_mismatch: realign_priorities
       unclear: explore_priorities
     transitions:
-      aligned: snap_priority
-      agreement: snap_priority
+      data_complete: snap_priority
 
   snap_priority:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Поднять приоритет нашего решения"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      priority_raised: acknowledge_and_continue
-      urgency_created: fast_track_close
       unclear: create_urgency
     transitions:
-      priority_raised: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

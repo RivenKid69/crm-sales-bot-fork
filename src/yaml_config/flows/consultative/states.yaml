@@ -1,56 +1,53 @@
 # =============================================================================
 # CONSULTATIVE SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
-# (situation_provided, problem_revealed, etc.) через mixin phase_progress.
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   consult_understand:
     extends: _base_phase
     mixins:
+      - unified_progress
       - consultative_rules
     goal: "Глубоко понять ситуацию клиента"
     parameters:
-      next_phase_state: consult_advise  # FIX: Прогресс-интенты → следующая фаза
+      next_phase_state: consult_advise
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      situation_described: ask_clarifying_questions
-      technical_question: answer_as_consultant
       unclear: explore_situation
     transitions:
-      situation_understood: consult_advise
-      agreement: consult_advise
-      info_provided: consult_advise
+      data_complete: consult_advise
 
   consult_advise:
     extends: _base_phase
     mixins:
+      - unified_progress
       - consultative_rules
     goal: "Дать экспертный совет"
     parameters:
-      next_phase_state: consult_recommend  # FIX: Прогресс-интенты → следующая фаза
+      next_phase_state: consult_recommend
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      advice_request: provide_expert_advice
-      question_features: explain_as_expert
-      comparison: objective_comparison
       unclear: clarify_advice
     transitions:
-      advice_accepted: consult_recommend
-      agreement: consult_recommend
-      recommendation_request: consult_recommend
+      data_complete: consult_recommend
 
   consult_recommend:
     extends: _base_phase
     mixins:
+      - unified_progress
       - consultative_rules
     goal: "Рекомендовать оптимальное решение"
     parameters:
-      next_phase_state: presentation  # FIX: Прогресс-интенты → презентация
+      next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      recommendation_accepted: acknowledge_and_continue
-      objection: address_concern_objectively
       unclear: clarify_recommendation
     transitions:
-      recommendation_accepted: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

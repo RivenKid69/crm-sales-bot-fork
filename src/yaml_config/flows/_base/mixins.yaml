@@ -56,6 +56,7 @@ mixins:
   objection_handling:
     description: "Переходы для обработки возражений"
     transitions:
+      # Основные возражения
       objection_price:
         - when: objection_limit_reached
           then: soft_close
@@ -69,6 +70,24 @@ mixins:
           then: soft_close
         - handle_objection
       objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      # FIX: Добавлены недостающие objection handlers
+      # Эти интенты определены в classifier но не имели transitions
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_timing:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
@@ -130,102 +149,169 @@ mixins:
       - social_intents
 
 # =================================================================
+# UNIFIED PROGRESS: Универсальные прогресс-переходы для всех flows
+# =================================================================
+# Решает проблему рассинхронизации между classifier (33 интента)
+# и flow-specific transitions (107+ интентов).
+#
+# Принцип: все flows используют ОДИНАКОВЫЕ universal intents для прогресса.
+# Flow-specific логика реализуется через rules (actions), не transitions.
+# =================================================================
+  unified_progress:
+    description: "Universal progress transitions - работают со всеми classifier intents"
+    transitions:
+      # Основной прогресс - клиент согласен/предоставил информацию
+      agreement: "{{next_phase_state}}"
+      info_provided: "{{next_phase_state}}"
+      # SPIN-like progress intents
+      situation_provided: "{{next_phase_state}}"
+      problem_revealed: "{{next_phase_state}}"
+      implication_acknowledged: "{{next_phase_state}}"
+      need_expressed: "{{next_phase_state}}"
+      # Вопросы как сигнал интереса (остаёмся, но отвечаем)
+      # question_features и другие обрабатываются через rules
+    rules:
+      # Вопросы обрабатываем в текущем состоянии
+      question_features: answer_and_continue
+      question_integrations: answer_and_continue
+      comparison: answer_and_continue
+      consultation_request: acknowledge_and_continue
+
+# =================================================================
 # CHALLENGER SALE: Провокационный подход
 # =================================================================
+# FIX: Используем universal intents вместо flow-specific
   challenger_rules:
     description: "Правила для Challenger Sale - провокация, вызов статус-кво"
     rules:
-      insight_shared: deepen_insight
-      client_resistant: reframe_perspective
-      reframe_accepted: acknowledge_and_continue
-      status_quo_challenged: continue_current_goal
-    transitions:
-      commitment: close
+      # Маппинг: insight_shared → info_provided (через unified_progress)
+      # Маппинг: reframe_accepted → agreement (через unified_progress)
+      # Flow-specific actions для контента ответов
+      no_problem: reframe_perspective       # Клиент не видит проблем → бросаем вызов
+      problem_revealed: deepen_insight      # Клиент упомянул проблему → углубляем
+      need_expressed: acknowledge_and_continue
 
 # =================================================================
 # VALUE BASED: ROI и цифры
 # =================================================================
+# FIX: Используем universal intents
   value_rules:
     description: "Правила для Value-Based Selling - фокус на ROI"
     rules:
-      value_question: calculate_roi_response
-      roi_inquiry: present_business_case
-      savings_question: answer_with_facts
-      cost_concern: answer_with_roi
+      # Маппинг: value_question → price_question (classifier intent)
+      # Маппинг: roi_inquiry → price_question + pricing_details
+      price_question: calculate_roi_response
+      pricing_details: present_business_case
+      # Flow-specific для контекста value selling
+      problem_revealed: quantify_impact       # При проблеме → считаем влияние
+      need_expressed: present_roi             # При потребности → показываем ROI
 
 # =================================================================
 # CONSULTATIVE: Эксперт-консультант
 # =================================================================
+# FIX: Используем universal intents
   consultative_rules:
     description: "Экспертный консультативный подход"
     rules:
-      technical_question: answer_as_consultant
-      advice_request: provide_expert_advice
-      recommendation_request: recommend_solution
+      # Маппинг: technical_question → question_features/question_integrations
+      question_features: answer_as_consultant
+      question_integrations: answer_as_consultant
+      consultation_request: provide_expert_advice
+      # Клиент описывает проблему → рекомендуем решение
+      problem_revealed: recommend_solution
 
 # =================================================================
 # TRANSACTIONAL: Быстро и по делу
 # =================================================================
+# FIX: Используем universal intents
   transactional_rules:
     description: "Минимум разговоров, быстрое закрытие"
     rules:
-      any_response: keep_it_short
-      buying_signal: fast_close
+      # Короткие ответы на всё
+      question_features: answer_briefly
+      question_integrations: answer_briefly
+      price_question: answer_with_facts
+      pricing_details: answer_with_facts
     transitions:
-      buying_signal: close
-      ready_to_buy: close
+      # Маппинг: buying_signal → demo_request, callback_request (classifier intents)
+      demo_request: close
+      callback_request: close
+      contact_provided: success
 
 # =================================================================
 # SANDLER: Pain Funnel
 # =================================================================
+# FIX: Используем universal intents
   sandler_rules:
     description: "Sandler Method - глубокое исследование боли"
     rules:
-      pain_revealed: explore_pain_deeper
-      pain_confirmed: quantify_pain
-      budget_discussed: confirm_budget
+      # Маппинг: pain_revealed → problem_revealed (classifier intent)
+      problem_revealed: explore_pain_deeper
+      # При согласии с проблемой → квантифицируем
+      agreement: quantify_pain
+      # Маппинг: budget_discussed → info_provided + price context
+      info_provided: confirm_budget
     transitions:
-      pain_critical: close
+      # Критическая боль = strong agreement + demo_request
+      need_expressed: close
 
 # =================================================================
 # SOLUTION: Решение проблем
 # =================================================================
+# FIX: Используем universal intents
   solution_rules:
     description: "Solution Selling - глубокое понимание проблемы"
     rules:
-      problem_described: map_to_solution
-      solution_fit: prove_value
-      value_confirmed: acknowledge_and_continue
+      # Маппинг: problem_described → problem_revealed, situation_provided
+      situation_provided: map_to_solution
+      problem_revealed: map_to_solution
+      # Маппинг: solution_fit → agreement
+      agreement: prove_value
+      need_expressed: acknowledge_and_continue
 
 # =================================================================
 # INBOUND: Помощь, не продажа
 # =================================================================
+# FIX: Используем universal intents
   inbound_rules:
     description: "Inbound - помогаем, не продаём агрессивно"
     rules:
-      help_request: provide_helpful_answer
-      information_request: share_value
-      resource_request: offer_resource
+      # Маппинг: help_request → consultation_request
+      consultation_request: provide_helpful_answer
+      # Маппинг: information_request → question_features, question_integrations
+      question_features: share_value
+      question_integrations: share_value
+      # Клиент делится проблемой → предлагаем ресурс
+      problem_revealed: offer_resource
 
 # =================================================================
 # AIDA: Внимание-Интерес-Желание-Действие
 # =================================================================
+# FIX: Используем universal intents
   aida_rules:
     description: "AIDA marketing flow"
     rules:
-      attention_captured: build_interest
-      interest_shown: create_desire
-      desire_expressed: call_to_action
+      # Маппинг: attention_captured → agreement, info_provided (через unified_progress)
+      # Маппинг: interest_shown → question_features
+      question_features: create_desire
+      question_integrations: create_desire
+      # Маппинг: desire_expressed → need_expressed (через unified_progress)
+      # Actions для flow-specific контента
+      agreement: build_interest
 
 # =================================================================
 # GAP SELLING: Разрыв текущее vs желаемое
 # =================================================================
+# FIX: Используем universal intents
   gap_rules:
     description: "Gap Selling - показать разрыв"
     rules:
-      current_state_described: explore_future_state
-      gap_identified: present_solution
-      solution_accepted: acknowledge_and_continue
+      # Маппинг: current_state_described → situation_provided
+      situation_provided: explore_future_state
+      # Маппинг: gap_identified → problem_revealed
+      problem_revealed: present_solution
+      # Маппинг: solution_accepted → agreement
+      agreement: acknowledge_and_continue
 
 # =================================================================
 # PHASE PROGRESS: Прогресс-интенты для перехода между фазами

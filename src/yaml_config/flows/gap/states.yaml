@@ -1,67 +1,68 @@
 # =============================================================================
 # GAP SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   gap_current:
     extends: _base_phase
     mixins:
+      - unified_progress
       - gap_rules
     goal: "Понять текущее состояние"
     parameters:
       next_phase_state: gap_future
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      current_understood: explore_future_state
-      current_state_described: acknowledge_and_continue
       unclear: explore_current
     transitions:
-      current_understood: gap_future
-      agreement: gap_future
+      data_complete: gap_future
 
   gap_future:
     extends: _base_phase
     mixins:
+      - unified_progress
       - gap_rules
     goal: "Визуализировать желаемое будущее"
     parameters:
       next_phase_state: gap_analysis
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      future_visualized: identify_gap
-      future_described: acknowledge_and_continue
       unclear: explore_future
     transitions:
-      future_visualized: gap_analysis
-      agreement: gap_analysis
+      data_complete: gap_analysis
 
   gap_analysis:
     extends: _base_phase
     mixins:
+      - unified_progress
       - gap_rules
     goal: "Показать разрыв"
     parameters:
       next_phase_state: gap_solution
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      gap_identified: present_solution
-      gap_acknowledged: acknowledge_and_continue
       unclear: highlight_gap
     transitions:
-      gap_identified: gap_solution
-      agreement: gap_solution
+      data_complete: gap_solution
 
   gap_solution:
     extends: _base_phase
     mixins:
+      - unified_progress
       - gap_rules
     goal: "Показать как решение заполняет разрыв"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      solution_accepted: acknowledge_and_continue
-      solution_question: explain_fit
       unclear: clarify_solution
     transitions:
-      solution_accepted: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

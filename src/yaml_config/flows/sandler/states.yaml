@@ -1,80 +1,84 @@
 # =============================================================================
 # SANDLER METHOD STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   sandler_bonding:
     extends: _base_phase
     mixins:
+      - unified_progress
       - sandler_rules
     goal: "Установить доверительный контакт"
     parameters:
       next_phase_state: sandler_contract
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      rapport_built: acknowledge_and_continue
       small_talk: build_rapport
       unclear: gentle_exploration
     transitions:
-      rapport_built: sandler_contract
-      agreement: sandler_contract
+      data_complete: sandler_contract
 
   sandler_contract:
     extends: _base_phase
     mixins:
+      - unified_progress
       - sandler_rules
     goal: "Установить правила разговора"
     parameters:
       next_phase_state: sandler_pain
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      contract_agreed: acknowledge_and_continue
       unclear: explain_process
     transitions:
-      contract_agreed: sandler_pain
-      agreement: sandler_pain
+      data_complete: sandler_pain
 
   sandler_pain:
     extends: _base_phase
     mixins:
+      - unified_progress
       - sandler_rules
     goal: "Глубоко исследовать боль"
     parameters:
       next_phase_state: sandler_budget
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      pain_revealed: explore_pain_deeper
-      pain_confirmed: quantify_pain
-      surface_pain: dig_deeper
       unclear: probe_pain
     transitions:
-      pain_critical: sandler_budget
-      pain_confirmed: sandler_budget
+      data_complete: sandler_budget
 
   sandler_budget:
     extends: _base_phase
     mixins:
+      - unified_progress
       - sandler_rules
     goal: "Обсудить бюджет"
     parameters:
       next_phase_state: sandler_decision
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      budget_confirmed: acknowledge_and_continue
-      no_budget: explore_investment
       unclear: clarify_budget
     transitions:
-      budget_confirmed: sandler_decision
-      agreement: sandler_decision
+      data_complete: sandler_decision
 
   sandler_decision:
     extends: _base_phase
     mixins:
+      - unified_progress
       - sandler_rules
     goal: "Понять процесс принятия решения"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      decision_process_clear: acknowledge_and_continue
       unclear: explore_decision_process
     transitions:
-      decision_process_clear: presentation
-      agreement: presentation
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

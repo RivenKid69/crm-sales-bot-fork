@@ -1,57 +1,54 @@
 # =============================================================================
 # SOLUTION SELLING STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   solution_pain:
     extends: _base_phase
     mixins:
+      - unified_progress
       - solution_rules
     goal: "Глубоко понять боль клиента"
     parameters:
       next_phase_state: solution_map
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      pain_revealed: explore_pain_deeper
-      problem_described: map_to_solution
-      no_pain: create_pain_awareness
+      no_problem: create_pain_awareness
       unclear: clarify_pain
     transitions:
-      pain_confirmed: solution_map
-      problem_revealed: solution_map
-      agreement: solution_map
+      data_complete: solution_map
 
   solution_map:
     extends: _base_phase
     mixins:
+      - unified_progress
       - solution_rules
     goal: "Связать боль с нашим решением"
     parameters:
       next_phase_state: solution_value
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      solution_understood: prove_value
-      feature_question: explain_solution_fit
-      comparison: differentiate_solution
       unclear: clarify_solution
     transitions:
-      solution_fit: solution_value
-      agreement: solution_value
-      value_question: solution_value
+      data_complete: solution_value
 
   solution_value:
     extends: _base_phase
     mixins:
+      - unified_progress
       - solution_rules
     goal: "Доказать ценность решения"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      value_confirmed: acknowledge_and_continue
-      roi_question: present_business_case
-      skepticism: provide_proof
       unclear: clarify_value
     transitions:
-      value_confirmed: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

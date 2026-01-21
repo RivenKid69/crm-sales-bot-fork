@@ -45,6 +45,23 @@ states:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
+      # FIX: Добавлены недостающие objection handlers
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_timing:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
 
   # =================================================================
   # S - SITUATION: Понять текущую ситуацию клиента

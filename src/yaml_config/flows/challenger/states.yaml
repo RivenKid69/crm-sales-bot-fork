@@ -1,55 +1,58 @@
 # =============================================================================
 # CHALLENGER STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
-# (situation_provided, problem_revealed, etc.) через mixin phase_progress.
+# FIX: Переработано для использования universal intents
+# Маппинг:
+#   insight_accepted → agreement, info_provided
+#   reframe_accepted → agreement
+#   commitment → demo_request, agreement
 # =============================================================================
 
 states:
   challenger_teach:
     extends: _base_phase
     mixins:
+      - unified_progress
       - challenger_rules
     goal: "Поделиться инсайтом, вызвать переосмысление"
     parameters:
-      next_phase_state: challenger_tailor  # FIX: Прогресс-интенты → следующая фаза
+      next_phase_state: challenger_tailor
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      insight_accepted: deepen_insight
-      client_resistant: reframe_perspective
-      status_quo_defended: challenge_assumption
       unclear: clarify_insight
+      no_problem: challenge_assumption  # Клиент не видит проблем → бросаем вызов
     transitions:
-      insight_accepted: challenger_tailor
-      reframe_accepted: challenger_tailor
-      agreement: challenger_tailor
+      data_complete: challenger_tailor
 
   challenger_tailor:
     extends: _base_phase
     mixins:
+      - unified_progress
       - challenger_rules
     goal: "Кастомизировать решение под клиента"
     parameters:
-      next_phase_state: challenger_close  # FIX: Прогресс-интенты → следующая фаза
+      next_phase_state: challenger_close
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      solution_interest: tailor_message
-      specific_question: customize_response
       unclear: clarify_needs
     transitions:
-      solution_fit: challenger_close
-      agreement: challenger_close
-      commitment: challenger_close
+      data_complete: challenger_close
 
   challenger_close:
     extends: _base_phase
     mixins:
+      - unified_progress
       - challenger_rules
     goal: "Взять контроль и закрыть сделку"
     parameters:
-      next_phase_state: close  # FIX: Прогресс-интенты → close
+      next_phase_state: close
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      commitment: fast_close
-      hesitation: assert_leadership
       unclear: direct_to_action
     transitions:
-      commitment: close
-      agreement: close
+      data_complete: close
+      demo_request: close
+      callback_request: close

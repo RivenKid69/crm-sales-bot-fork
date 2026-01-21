@@ -1,46 +1,52 @@
 # =============================================================================
-# FAB STATES
+# FAB STATES (Features-Advantages-Benefits)
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   fab_features:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Представить ключевые функции"
     parameters:
       next_phase_state: fab_advantages
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      feature_understood: show_advantage
       question_features: explain_feature
       unclear: clarify_feature
     transitions:
-      feature_understood: fab_advantages
-      agreement: fab_advantages
+      data_complete: fab_advantages
 
   fab_advantages:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Показать преимущества"
     parameters:
       next_phase_state: fab_benefits
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      advantage_seen: translate_to_benefit
       comparison: highlight_advantage
       unclear: clarify_advantage
     transitions:
-      advantage_seen: fab_benefits
-      agreement: fab_benefits
+      data_complete: fab_benefits
 
   fab_benefits:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Перевести в выгоды для клиента"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      benefit_realized: acknowledge_and_continue
-      value_question: emphasize_benefit
       unclear: clarify_benefit
     transitions:
-      benefit_realized: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

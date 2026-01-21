@@ -1,66 +1,79 @@
 # =============================================================================
 # AIDA STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
+# Маппинг:
+#   attention_captured → agreement, info_provided
+#   interest_shown → question_features, agreement
+#   desire_expressed → need_expressed, agreement
+#   action_taken → demo_request, agreement
 # =============================================================================
 
 states:
   aida_attention:
     extends: _base_phase
     mixins:
+      - unified_progress  # FIX: Используем universal progress
       - aida_rules
     goal: "Захватить внимание"
     parameters:
       next_phase_state: aida_interest
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      attention_captured: build_interest
+      # Flow-specific actions
       unclear: grab_attention
+      greeting: grab_attention
     transitions:
-      attention_captured: aida_interest
-      agreement: aida_interest
+      # Universal intents для прогресса (из unified_progress mixin)
+      # agreement: aida_interest (from mixin)
+      # info_provided: aida_interest (from mixin)
+      data_complete: aida_interest
 
   aida_interest:
     extends: _base_phase
     mixins:
+      - unified_progress
       - aida_rules
     goal: "Развить интерес"
     parameters:
       next_phase_state: aida_desire
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      interest_shown: create_desire
-      question_features: build_interest
       unclear: develop_interest
     transitions:
-      interest_shown: aida_desire
-      agreement: aida_desire
+      data_complete: aida_desire
 
   aida_desire:
     extends: _base_phase
     mixins:
+      - unified_progress
       - aida_rules
     goal: "Создать желание"
     parameters:
       next_phase_state: aida_action
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      desire_expressed: call_to_action
-      value_question: increase_desire
       unclear: build_desire
     transitions:
-      desire_expressed: aida_action
-      agreement: aida_action
+      data_complete: aida_action
 
   aida_action:
     extends: _base_phase
     mixins:
+      - unified_progress
       - aida_rules
     goal: "Призвать к действию"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      action_taken: acknowledge_and_continue
-      hesitation: reinforce_action
       unclear: direct_to_action
     transitions:
-      action_taken: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      # Fast track to close on strong buying signals
+      demo_request: close
+      callback_request: close

@@ -1,59 +1,64 @@
 # =============================================================================
 # CUSTOMER CENTRIC STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   cc_listen:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Внимательно слушать клиента"
     parameters:
       next_phase_state: cc_understand
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      listened: acknowledge_and_continue
-      info_provided: active_listening
       unclear: encourage_sharing
     transitions:
-      listened: cc_understand
-      agreement: cc_understand
+      data_complete: cc_understand
 
   cc_understand:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Глубоко понять ситуацию"
     parameters:
       next_phase_state: cc_empower
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      understood: acknowledge_and_continue
-      clarification_needed: ask_clarifying_questions
       unclear: explore_deeper
     transitions:
-      understood: cc_empower
-      agreement: cc_empower
+      data_complete: cc_empower
 
   cc_empower:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Дать клиенту возможность принять решение"
     parameters:
       next_phase_state: cc_support
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      empowered: provide_options
-      decision_support: offer_guidance
       unclear: present_choices
     transitions:
-      empowered: cc_support
-      agreement: cc_support
+      data_complete: cc_support
 
   cc_support:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Поддержать в принятии решения"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      supported: acknowledge_and_continue
-      help_request: provide_support
       unclear: offer_assistance
     transitions:
-      supported: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

@@ -1,78 +1,92 @@
 # =============================================================================
 # MEDDIC STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   meddic_metrics:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Определить метрики успеха"
     parameters:
       next_phase_state: meddic_buyer
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      metrics_defined: acknowledge_and_continue
       unclear: explore_success_metrics
     transitions:
-      metrics_defined: meddic_buyer
-      agreement: meddic_buyer
+      data_complete: meddic_buyer
 
   meddic_buyer:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Идентифицировать экономического покупателя"
     parameters:
       next_phase_state: meddic_criteria
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      buyer_identified: acknowledge_and_continue
       unclear: identify_decision_maker
     transitions:
-      buyer_identified: meddic_criteria
-      agreement: meddic_criteria
+      data_complete: meddic_criteria
 
   meddic_criteria:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Понять критерии принятия решения"
     parameters:
       next_phase_state: meddic_process
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      criteria_understood: acknowledge_and_continue
       unclear: explore_criteria
     transitions:
-      criteria_understood: meddic_process
-      agreement: meddic_process
+      data_complete: meddic_process
 
   meddic_process:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Понять процесс принятия решения"
     parameters:
       next_phase_state: meddic_pain
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      process_mapped: acknowledge_and_continue
       unclear: map_decision_process
     transitions:
-      process_mapped: meddic_pain
-      agreement: meddic_pain
+      data_complete: meddic_pain
 
   meddic_pain:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Идентифицировать боль"
     parameters:
       next_phase_state: meddic_champion
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      pain_identified: acknowledge_and_continue
       unclear: explore_pain
     transitions:
-      pain_identified: meddic_champion
-      agreement: meddic_champion
+      data_complete: meddic_champion
 
   meddic_champion:
     extends: _base_phase
+    mixins:
+      - unified_progress
     goal: "Найти внутреннего чемпиона"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      champion_found: acknowledge_and_continue
       unclear: identify_champion
     transitions:
-      champion_found: presentation
-      agreement: presentation
+      data_complete: presentation
+      demo_request: close
+      callback_request: close

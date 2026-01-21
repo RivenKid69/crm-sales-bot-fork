@@ -1,67 +1,68 @@
 # =============================================================================
 # INBOUND SALES STATES
 # =============================================================================
-# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# FIX: Переработано для использования universal intents
 # =============================================================================
 
 states:
   inbound_identify:
     extends: _base_phase
     mixins:
+      - unified_progress
       - inbound_rules
     goal: "Идентифицировать кто к нам пришёл"
     parameters:
       next_phase_state: inbound_connect
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      identified: acknowledge_and_continue
-      help_request: provide_helpful_answer
       unclear: gentle_inquiry
     transitions:
-      identified: inbound_connect
-      agreement: inbound_connect
+      data_complete: inbound_connect
 
   inbound_connect:
     extends: _base_phase
     mixins:
+      - unified_progress
       - inbound_rules
     goal: "Установить связь"
     parameters:
       next_phase_state: inbound_explore
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      connected: acknowledge_and_continue
-      information_request: share_value
       unclear: build_connection
     transitions:
-      connected: inbound_explore
-      agreement: inbound_explore
+      data_complete: inbound_explore
 
   inbound_explore:
     extends: _base_phase
     mixins:
+      - unified_progress
       - inbound_rules
     goal: "Исследовать потребности"
     parameters:
       next_phase_state: inbound_advise
+      default_price_action: deflect_and_continue
+      default_unclear_action: continue_current_goal
     rules:
-      explored: acknowledge_and_continue
-      resource_request: offer_resource
       unclear: explore_needs
     transitions:
-      explored: inbound_advise
-      agreement: inbound_advise
+      data_complete: inbound_advise
 
   inbound_advise:
     extends: _base_phase
     mixins:
+      - unified_progress
       - inbound_rules
     goal: "Дать полезный совет"
     parameters:
       next_phase_state: presentation
+      default_price_action: answer_with_facts
+      default_unclear_action: continue_current_goal
     rules:
-      advised: acknowledge_and_continue
-      help_request: provide_helpful_answer
       unclear: offer_guidance
     transitions:
-      advised: presentation
-      agreement: presentation
-      commitment: close
+      data_complete: presentation
+      demo_request: close
+      callback_request: close
