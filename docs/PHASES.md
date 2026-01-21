@@ -691,20 +691,31 @@ result = classifier.classify("нас 10 человек")
 | 1 | Fallback | `multi_tier_fallback` | ✅ Production |
 | 1 | Guard | `conversation_guard` | ✅ Production |
 | 2 | Вариации | `response_variations` | ✅ Production |
-| 2 | Тон | `tone_analysis` | ⏸️ Testing |
+| 2 | Тон | `tone_analysis` | ✅ Production |
 | 2 | Cascade Tone | `cascade_tone_analyzer` | ✅ Production |
 | 2 | Tone Tier 2 | `tone_semantic_tier2` | ✅ Production |
 | 2 | Tone Tier 3 | `tone_llm_tier3` | ✅ Production |
+| 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
+| 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
+| 5 | Context Envelope | `context_full_envelope` | ✅ Production |
+| 5 | Response Directives | `context_response_directives` | ✅ Production |
+| 5 | Policy Overlays | `context_policy_overlays` | ✅ Production |
+| — | Response Dedup | `response_deduplication` | ✅ Production |
+| — | Price Override | `price_question_override` | ✅ Production |
+| — | Guard Informative | `guard_informative_intent_check` | ✅ Production |
+| — | Guard Skip Reset | `guard_skip_resets_fallback` | ✅ Production |
+| — | Confidence Router | `confidence_router` | ✅ Production |
+| — | Router Logging | `confidence_router_logging` | ✅ Production |
 | 3 | Скоринг | `lead_scoring` | ⏸️ Calibration |
 | 3 | Возражения | `objection_handler` | ⏸️ Testing |
 | 3 | CTA | `cta_generator` | ⏸️ Development |
 | 3 | Circular flow | `circular_flow` | ⏸️ Risky |
-| 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
-| 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
-| 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
-| 5 | Context Envelope | `context_full_envelope` | ✅ Production |
-| 5 | Policy Overlays | `context_policy_overlays` | ✅ Production |
 | 5 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Testing |
+| 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
+| V2 | Personalization | `personalization_v2` | ⏸️ Testing |
+| V2 | Adaptive Style | `personalization_adaptive_style` | ⏸️ Testing |
+| V2 | Semantic Industry | `personalization_semantic_industry` | ⏸️ Testing |
+| V2 | Session Memory | `personalization_session_memory` | ⏸️ Testing |
 
 **Легенда:**
 - ✅ Production — включено в production
@@ -717,17 +728,42 @@ result = classifier.classify("нас 10 человек")
 
 ```python
 GROUPS = {
+    # Основные фазы
     "phase_0": ["structured_logging", "metrics_tracking"],
     "phase_1": ["multi_tier_fallback", "conversation_guard"],
     "phase_2": ["tone_analysis", "response_variations", "personalization"],
     "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
     "phase_4": ["intent_disambiguation", "cascade_classifier", "semantic_objection_detection"],
-    "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
-    "risky": ["circular_flow", "lead_scoring"],
+
+    # Context Policy
     "context_phase_0": ["context_full_envelope", "context_shadow_mode"],
+    "context_phase_2": ["context_response_directives"],
     "context_phase_3": ["context_policy_overlays", "context_engagement_v2"],
+    "context_phase_5": ["context_cta_memory"],
+    "context_all": ["context_full_envelope", "context_shadow_mode", "context_response_directives",
+                    "context_policy_overlays", "context_engagement_v2", "context_cta_memory"],
+    "context_safe": ["context_full_envelope", "context_response_directives"],
+
+    # Cascade Tone Analyzer
     "phase_5_tone": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
+    "tone_safe": ["cascade_tone_analyzer"],
     "tone_full": ["cascade_tone_analyzer", "tone_semantic_tier2", "tone_llm_tier3"],
+
+    # Personalization v2
+    "personalization_v2_safe": ["personalization", "personalization_v2", "personalization_adaptive_style"],
+    "personalization_v2_full": ["personalization", "personalization_v2", "personalization_adaptive_style",
+                                 "personalization_semantic_industry", "personalization_session_memory"],
+
+    # BUG-001 FIX: Guard/Fallback
+    "guard_fixes": ["guard_informative_intent_check", "guard_skip_resets_fallback"],
+
+    # Robust Classification
+    "robust_classification": ["confidence_router", "confidence_router_logging"],
+
+    # Safety groups
+    "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking",
+             "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
+    "risky": ["circular_flow", "lead_scoring"],
 }
 ```
 

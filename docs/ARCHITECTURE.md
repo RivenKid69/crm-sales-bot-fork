@@ -640,21 +640,37 @@ if flags.llm_classifier:
     pass
 ```
 
-**Ключевые флаги:**
+**Ключевые флаги (включённые по умолчанию):**
 
-| Флаг | Default | Описание |
-|------|---------|----------|
-| `llm_classifier` | `True` | LLM классификатор вместо Hybrid |
-| `multi_tier_fallback` | `True` | 4-уровневый fallback |
-| `conversation_guard` | `True` | Защита от зацикливания |
-| `response_variations` | `True` | Вариативность ответов |
-| `cascade_tone_analyzer` | `True` | Каскадный анализатор тона |
-| `context_full_envelope` | `True` | Полный ContextEnvelope |
-| `context_policy_overlays` | `True` | DialoguePolicy overrides |
-| `cascade_classifier` | `True` | Каскадный классификатор |
-| `semantic_objection_detection` | `True` | Семантическая детекция возражений |
-| `tone_analysis` | `False` | Анализ тона клиента |
-| `lead_scoring` | `False` | Скоринг лидов |
+| Флаг | Описание |
+|------|----------|
+| `llm_classifier` | LLM классификатор вместо Hybrid |
+| `multi_tier_fallback` | 4-уровневый fallback |
+| `conversation_guard` | Защита от зацикливания |
+| `tone_analysis` | Анализ тона клиента |
+| `response_variations` | Вариативность ответов |
+| `cascade_tone_analyzer` | Каскадный анализатор тона |
+| `tone_semantic_tier2` | Tier 2: FRIDA semantic |
+| `tone_llm_tier3` | Tier 3: LLM fallback |
+| `cascade_classifier` | Каскадный классификатор |
+| `semantic_objection_detection` | Семантическая детекция возражений |
+| `context_full_envelope` | Полный ContextEnvelope |
+| `context_response_directives` | ResponseDirectives для генератора |
+| `context_policy_overlays` | DialoguePolicy overrides |
+| `response_deduplication` | Проверка на дублирующиеся ответы |
+| `price_question_override` | Intent-aware override для вопросов о цене |
+| `guard_informative_intent_check` | Проверка информативных интентов |
+| `guard_skip_resets_fallback` | Сброс fallback_response после skip |
+| `confidence_router` | Gap-based решения и graceful degradation |
+
+**Флаги в тестировании (выключены):**
+
+| Флаг | Описание |
+|------|----------|
+| `lead_scoring` | Скоринг лидов |
+| `objection_handler` | Продвинутая обработка возражений |
+| `cta_generator` | Генерация Call-to-Action |
+| `personalization_v2` | V2 engine с behavioral adaptation |
 
 **Override через env:**
 ```bash

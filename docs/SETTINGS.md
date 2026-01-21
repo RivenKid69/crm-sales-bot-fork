@@ -259,31 +259,52 @@ Feature flags позволяют постепенно включать новы�
 
 | Флаг | По умолчанию | Описание |
 |------|--------------|----------|
-| `llm_classifier` | `true` | **LLM классификатор вместо Hybrid** |
+| **LLM Classifier** | | |
+| `llm_classifier` | `true` | LLM классификатор вместо Hybrid |
+| **Фаза 0: Инфраструктура** | | |
 | `structured_logging` | `true` | JSON логи для production |
 | `metrics_tracking` | `true` | Трекинг метрик диалогов |
+| **Фаза 1: Защита** | | |
 | `multi_tier_fallback` | `true` | 4-уровневый fallback |
 | `conversation_guard` | `true` | Защита от зацикливания |
-| `tone_analysis` | `false` | Анализ тона клиента |
+| **Фаза 2: Естественность** | | |
+| `tone_analysis` | `true` | Анализ тона клиента |
 | `response_variations` | `true` | Вариативность ответов |
+| `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
+| `tone_semantic_tier2` | `true` | Tier 2: FRIDA semantic |
+| `tone_llm_tier3` | `true` | Tier 3: LLM fallback |
+| **Фаза 3: SPIN Optimization** | | |
 | `personalization` | `false` | Персонализация |
 | `lead_scoring` | `false` | Скоринг лидов |
 | `circular_flow` | `false` | Возврат назад по фазам |
 | `objection_handler` | `false` | Обработка возражений |
 | `cta_generator` | `false` | Call-to-Action |
+| **Фаза 4: Classification** | | |
 | `cascade_classifier` | `true` | Каскадный классификатор |
 | `semantic_objection_detection` | `true` | Семантическая детекция возражений |
 | `intent_disambiguation` | `false` | Уточнение намерения при близких scores |
-| `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
-| `tone_semantic_tier2` | `true` | Tier 2: FRIDA semantic |
-| `tone_llm_tier3` | `true` | Tier 3: LLM fallback |
+| **Фаза 5: Context Policy** | | |
 | `context_full_envelope` | `true` | Полный ContextEnvelope |
+| `context_response_directives` | `true` | ResponseDirectives для генератора |
 | `context_policy_overlays` | `true` | DialoguePolicy overrides |
 | `context_shadow_mode` | `false` | Shadow mode для policy |
-| `context_response_directives` | `false` | ResponseDirectives для генератора |
 | `context_engagement_v2` | `false` | Улучшенный расчёт engagement |
 | `context_cta_memory` | `false` | CTA с учётом episodic memory |
 | `dynamic_cta_fallback` | `false` | Динамические CTA в fallback |
+| **Response Quality** | | |
+| `response_deduplication` | `true` | Проверка на дублирующиеся ответы |
+| `price_question_override` | `true` | Intent-aware override для вопросов о цене |
+| **Guard/Fallback Fixes** | | |
+| `guard_informative_intent_check` | `true` | Проверка информативных интентов перед TIER_3 |
+| `guard_skip_resets_fallback` | `true` | Сброс fallback_response после skip action |
+| **Robust Classification** | | |
+| `confidence_router` | `true` | Gap-based решения и graceful degradation |
+| `confidence_router_logging` | `true` | Логирование слепых зон для self-learning |
+| **Personalization V2** | | |
+| `personalization_v2` | `false` | V2 engine с behavioral adaptation |
+| `personalization_adaptive_style` | `false` | AdaptiveStyleSelector |
+| `personalization_semantic_industry` | `false` | IndustryDetectorV2 semantic matching |
+| `personalization_session_memory` | `false` | EffectiveActionTracker |
 
 **Переопределение через env:**
 ```bash

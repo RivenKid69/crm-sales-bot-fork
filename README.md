@@ -587,6 +587,7 @@ sm = StateMachine(flow=flow)
 | 0 | Метрики | `metrics_tracking` | ✅ Production |
 | 1 | Fallback | `multi_tier_fallback` | ✅ Production |
 | 1 | Guard | `conversation_guard` | ✅ Production |
+| 2 | Анализ тона | `tone_analysis` | ✅ Production |
 | 2 | Cascade Tone | `cascade_tone_analyzer` | ✅ Production |
 | 2 | Tone Tier 2 | `tone_semantic_tier2` | ✅ Production |
 | 2 | Tone Tier 3 | `tone_llm_tier3` | ✅ Production |
@@ -594,12 +595,21 @@ sm = StateMachine(flow=flow)
 | 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
 | 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
 | 5 | Context Envelope | `context_full_envelope` | ✅ Production |
+| 5 | Response Directives | `context_response_directives` | ✅ Production |
 | 5 | Policy Overlays | `context_policy_overlays` | ✅ Production |
+| — | Response Dedup | `response_deduplication` | ✅ Production |
+| — | Price Override | `price_question_override` | ✅ Production |
+| — | Guard Informative | `guard_informative_intent_check` | ✅ Production |
+| — | Guard Skip Reset | `guard_skip_resets_fallback` | ✅ Production |
+| — | Confidence Router | `confidence_router` | ✅ Production |
+| — | Router Logging | `confidence_router_logging` | ✅ Production |
 | 3 | Скоринг | `lead_scoring` | ⏸️ Testing |
 | 3 | Возражения | `objection_handler` | ⏸️ Testing |
 | 3 | CTA | `cta_generator` | ⏸️ Development |
 | 3 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Testing |
 | 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
+| 3 | Circular flow | `circular_flow` | ⏸️ Risky |
+| V2 | Personalization V2 | `personalization_v2` | ⏸️ Testing |
 
 Подробнее: [docs/PHASES.md](docs/PHASES.md)
 
@@ -770,7 +780,7 @@ pip install -r requirements.txt
 Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17
-Feature Flags:            28 флагов
+Feature Flags:            35 флагов
 YAML Config Files:        11 в yaml_config/
 Modular Flows:            1 (spin_selling) + _base
 ```
