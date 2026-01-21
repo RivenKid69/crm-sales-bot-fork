@@ -12,6 +12,7 @@ from typing import Dict, Any, Optional, List, Set, Union, TYPE_CHECKING
 from dataclasses import dataclass, field
 import yaml
 import logging
+import re
 
 if TYPE_CHECKING:
     from src.conditions.registry import ConditionRegistry
@@ -1045,8 +1046,10 @@ class ConfigLoader:
         for key, value in state_config.items():
             if key in ("extends", "mixins", "abstract"):
                 continue  # Skip meta keys
-            if key in ("rules", "transitions"):
-                # Deep merge rules/transitions
+            if key in ("rules", "transitions", "parameters"):
+                # Deep merge rules/transitions/parameters
+                # This ensures parameters from base states (like _base_phase) are inherited
+                # and child states can override specific values while keeping others
                 if key not in result:
                     result[key] = {}
                 result[key] = self._deep_merge(result[key], value)
@@ -1080,6 +1083,9 @@ class ConfigLoader:
                     result["transitions"][intent] = target
 
         return result
+
+    # Regex pattern for template placeholders
+    _TEMPLATE_PATTERN = re.compile(r'\{\{(\w+)\}\}')
 
     def _resolve_parameters(
         self,
@@ -1115,6 +1121,108 @@ class ConfigLoader:
                     result = result.replace(placeholder, str(value))
             return result
         return config
+
+    def _find_unresolved_templates(
+        self,
+        config: Any,
+        path: str = ""
+    ) -> List[Dict[str, str]]:
+        """
+        Find all unresolved {{template}} placeholders in configuration.
+
+        This method recursively searches through the configuration to find
+        any {{variable}} placeholders that were not resolved during
+        parameter substitution.
+
+        Args:
+            config: Configuration to search (dict, list, str, or other)
+            path: Current path for error messages (e.g., "greeting.transitions.price_question")
+
+        Returns:
+            List of dicts with 'path' and 'template' keys for each unresolved template
+
+        Example:
+            >>> loader._find_unresolved_templates({"state": "{{entry_state}}"}, "greeting")
+            [{"path": "greeting.state", "template": "{{entry_state}}"}]
+        """
+        unresolved = []
+
+        if isinstance(config, dict):
+            for key, value in config.items():
+                new_path = f"{path}.{key}" if path else key
+                unresolved.extend(self._find_unresolved_templates(value, new_path))
+        elif isinstance(config, list):
+            for i, item in enumerate(config):
+                new_path = f"{path}[{i}]"
+                unresolved.extend(self._find_unresolved_templates(item, new_path))
+        elif isinstance(config, str):
+            matches = self._TEMPLATE_PATTERN.findall(config)
+            for match in matches:
+                unresolved.append({
+                    "path": path,
+                    "template": "{{" + match + "}}",
+                    "variable": match
+                })
+
+        return unresolved
+
+    def _validate_templates_resolved(
+        self,
+        states: Dict[str, Dict[str, Any]],
+        flow_name: str = ""
+    ) -> List[str]:
+        """
+        Validate that all templates in flow states are resolved.
+
+        After parameter substitution, there should be no remaining {{variable}}
+        placeholders. This method checks all states and returns errors for any
+        unresolved templates.
+
+        Args:
+            states: Dict of state_name -> state_config with resolved parameters
+            flow_name: Name of the flow for error context
+
+        Returns:
+            List of error messages for unresolved templates
+
+        Example errors:
+            - "Unresolved template {{entry_state}} in greeting.transitions.price_question.
+               Define 'entry_state' in flow.yaml variables or state parameters."
+        """
+        errors = []
+        flow_context = f" in flow '{flow_name}'" if flow_name else ""
+
+        for state_name, state_config in states.items():
+            # Skip abstract states (they are templates, not final states)
+            if state_config.get("abstract", False):
+                continue
+
+            unresolved = self._find_unresolved_templates(state_config, state_name)
+            for item in unresolved:
+                errors.append(
+                    f"Unresolved template {item['template']} at '{item['path']}'{flow_context}. "
+                    f"Define '{item['variable']}' in flow.yaml variables or state parameters."
+                )
+
+        return errors
+
+    def _get_required_template_variables(self) -> Dict[str, str]:
+        """
+        Get list of required template variables with their descriptions.
+
+        These are the standard template variables used across flows that
+        must be defined for proper flow operation.
+
+        Returns:
+            Dict mapping variable name to description
+        """
+        return {
+            "entry_state": "First qualification state after greeting (e.g., 'spin_situation', 'bant_budget')",
+            "next_phase_state": "State to transition to when current phase completes",
+            "prev_phase_state": "State to return to on go_back intent",
+            "default_price_action": "Default action for price questions (e.g., 'deflect_and_continue', 'answer_with_facts')",
+            "default_unclear_action": "Default action for unclear intents (e.g., 'continue_current_goal')",
+        }
 
     def _deep_merge(
         self,
@@ -1192,30 +1300,47 @@ class ConfigLoader:
         return templates
 
     def _validate_flow(self, flow: FlowConfig) -> None:
-        """Validate a loaded flow configuration."""
+        """
+        Validate a loaded flow configuration.
+
+        Validates:
+        1. Phase mapping references valid states
+        2. Entry points reference valid states
+        3. All transition targets exist
+        4. All {{template}} placeholders have been resolved
+
+        Args:
+            flow: FlowConfig to validate
+
+        Raises:
+            ConfigValidationError: If validation fails
+        """
         errors = []
         known_states = set(flow.states.keys())
 
-        # Validate phase mapping
+        # 1. Validate phase mapping
         for phase, state in flow.phase_mapping.items():
             if state not in known_states:
                 errors.append(
                     f"Phase '{phase}' maps to unknown state '{state}'"
                 )
 
-        # Validate entry points
+        # 2. Validate entry points
         for scenario, state in flow.entry_points.items():
             if state not in known_states:
                 errors.append(
                     f"Entry point '{scenario}' references unknown state '{state}'"
                 )
 
-        # Validate transitions
+        # 3. Validate transitions (skip unresolved templates - they'll be caught below)
         for state_name, state_config in flow.states.items():
             transitions = state_config.get("transitions", {})
             for intent, target in transitions.items():
                 if isinstance(target, str):
-                    if target not in known_states and not target.startswith("{{"):
+                    # Skip template placeholders - they'll be validated separately
+                    if target.startswith("{{") and target.endswith("}}"):
+                        continue
+                    if target not in known_states:
                         errors.append(
                             f"State '{state_name}' transition to unknown state '{target}'"
                         )
@@ -1224,13 +1349,25 @@ class ConfigLoader:
                         if isinstance(rule, dict):
                             then_target = rule.get("then")
                             if then_target and then_target not in known_states:
+                                # Skip template placeholders
+                                if isinstance(then_target, str) and then_target.startswith("{{"):
+                                    continue
                                 errors.append(
                                     f"State '{state_name}' rule transition to unknown state '{then_target}'"
                                 )
-                        elif isinstance(rule, str) and rule not in known_states:
-                            errors.append(
-                                f"State '{state_name}' fallback to unknown state '{rule}'"
-                            )
+                        elif isinstance(rule, str):
+                            # Skip template placeholders
+                            if rule.startswith("{{") and rule.endswith("}}"):
+                                continue
+                            if rule not in known_states:
+                                errors.append(
+                                    f"State '{state_name}' fallback to unknown state '{rule}'"
+                                )
+
+        # 4. Validate all templates have been resolved
+        # This is critical - unresolved templates will cause runtime errors
+        template_errors = self._validate_templates_resolved(flow.states, flow.name)
+        errors.extend(template_errors)
 
         if errors:
             raise ConfigValidationError(errors)
