@@ -61,6 +61,18 @@ states:
   greeting:
     extends: _base_greeting
     transitions:
+      # FIX: data_complete for skip_map (FallbackHandler tier_3 skip)
+      # When guard triggers skip in greeting, transition to entry_state
+      data_complete: "{{entry_state}}"
+
+      # SPIN-like intents → переход в основной flow
+      # FIX: Классификатор может вернуть эти intents даже в greeting
+      # Без этих transitions бот застревает при tier_3 fallback
+      situation_provided: "{{entry_state}}"
+      problem_revealed: "{{entry_state}}"
+      need_expressed: "{{entry_state}}"
+      implication_acknowledged: "{{entry_state}}"
+
       # Вопросы и интерес → переход в основной flow
       price_question: "{{entry_state}}"
       question_features: "{{entry_state}}"
@@ -141,6 +153,14 @@ states:
       default_price_action: answer_with_facts
       default_unclear_action: clarify_and_continue
     transitions:
+      # FIX: data_complete for skip_map (FallbackHandler tier_3 skip)
+      data_complete: close
+      # SPIN-like intents → return to entry_state (continue qualification)
+      situation_provided: "{{entry_state}}"
+      problem_revealed: "{{entry_state}}"
+      need_expressed: "{{entry_state}}"
+      implication_acknowledged: "{{entry_state}}"
+
       agreement: close
       objection_price: handle_objection
       rejection: soft_close
@@ -171,6 +191,14 @@ states:
       default_price_action: answer_with_facts
       default_unclear_action: clarify_and_continue
     transitions:
+      # FIX: data_complete for skip_map (FallbackHandler tier_3 skip)
+      data_complete: presentation
+      # SPIN-like intents → return to entry_state (continue qualification)
+      situation_provided: "{{entry_state}}"
+      problem_revealed: "{{entry_state}}"
+      need_expressed: "{{entry_state}}"
+      implication_acknowledged: "{{entry_state}}"
+
       agreement: close
       rejection: soft_close
       demo_request: close

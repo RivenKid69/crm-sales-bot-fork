@@ -153,7 +153,9 @@ class SalesBot:
 
         # Phase 1: Protection (controlled by feature flags)
         self.guard = ConversationGuard()
-        self.fallback = FallbackHandler()
+        # FIX: Pass flow to FallbackHandler so it uses flow-specific skip_map
+        # instead of DEFAULT_SKIP_MAP with hardcoded spin_situation
+        self.fallback = FallbackHandler(flow=self._flow, config=self._config)
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
         self.tone_analyzer = ToneAnalyzer()
