@@ -25,15 +25,17 @@ from src.decision_trace import ClientAgentTrace
 # =============================================================================
 
 # Ключевые слова для выбора опции по персоне
+# ВАЖНО: ключи - это persona.name (отображаемые имена из personas.py)
 PERSONA_OPTION_PREFERENCES: Dict[str, List[str]] = {
-    "price_sensitive": ["цен", "стоим", "прайс", "тариф", "скольк", "дорог"],
-    "competitor_user": ["конкур", "poster", "iiko", "r-keeper", "сравн", "другим"],
-    "technical": ["api", "интеграц", "безопас", "данн", "техн", "функци"],
-    "busy": [],  # Выбирает первый вариант
-    "aggressive": [],  # Может игнорировать кнопки
-    "happy_path": ["демо", "показ", "попробов", "функци", "узнать"],
-    "skeptic": ["другое", "свой"],  # Предпочитает свой вариант
-    "tire_kicker": ["подум", "потом", "другое"],
+    # Русские имена персон (как в Persona.name)
+    "Ценовик": ["цен", "стоим", "прайс", "тариф", "скольк", "дорог"],
+    "Пользователь конкурента": ["конкур", "poster", "iiko", "r-keeper", "сравн", "другим"],
+    "Технарь": ["api", "интеграц", "безопас", "данн", "техн", "функци"],
+    "Занятой": [],  # Выбирает первый вариант
+    "Агрессивный": [],  # Может игнорировать кнопки
+    "Идеальный клиент": ["демо", "показ", "попробов", "функци", "узнать"],
+    "Скептик": ["другое", "свой"],  # Предпочитает свой вариант
+    "Просто смотрю": ["подум", "потом", "другое"],
 }
 
 
@@ -202,11 +204,11 @@ class ClientAgent:
         persona_name = self.persona.name
 
         # Занятой/Агрессивный - просто первый вариант
-        if persona_name in ["busy", "aggressive"]:
+        if persona_name in ["Занятой", "Агрессивный"]:
             return 0, "quick_choice"
 
-        # Скептик/tire_kicker - с вероятностью выбирает "другое"
-        if persona_name in ["skeptic", "tire_kicker"]:
+        # Скептик/Просто смотрю - с вероятностью выбирает "другое"
+        if persona_name in ["Скептик", "Просто смотрю"]:
             if random.random() < 0.4:
                 # Ищем "другое" или последний вариант
                 for i, opt in enumerate(options):
@@ -251,8 +253,8 @@ class ClientAgent:
         """
         persona_name = self.persona.name
 
-        # Aggressive иногда игнорирует кнопки
-        if persona_name == "aggressive" and random.random() < 0.3:
+        # Агрессивный иногда игнорирует кнопки
+        if persona_name == "Агрессивный" and random.random() < 0.3:
             ignore_responses = [
                 "да говорите уже",
                 "ну давай короче",
@@ -260,8 +262,8 @@ class ClientAgent:
             ]
             return random.choice(ignore_responses)
 
-        # Busy - максимально коротко
-        if persona_name == "busy":
+        # Занятой - максимально коротко
+        if persona_name == "Занятой":
             return str(option_index + 1)
 
         # Выбираем формат ответа случайно

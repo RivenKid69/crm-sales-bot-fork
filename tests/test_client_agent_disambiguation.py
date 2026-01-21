@@ -30,7 +30,7 @@ def mock_llm():
 def happy_path_persona():
     """Идеальный клиент."""
     return Persona(
-        name="happy_path",
+        name="Идеальный клиент",  # Русское имя как в personas.py
         description="Заинтересованный клиент",
         max_turns=15,
         objection_probability=0.1,
@@ -43,7 +43,7 @@ def happy_path_persona():
 def busy_persona():
     """Занятой клиент."""
     return Persona(
-        name="busy",
+        name="Занятой",  # Русское имя как в personas.py
         description="Очень занятой клиент",
         max_turns=8,
         objection_probability=0.4,
@@ -56,7 +56,7 @@ def busy_persona():
 def price_sensitive_persona():
     """Ценовик."""
     return Persona(
-        name="price_sensitive",
+        name="Ценовик",  # Русское имя как в personas.py
         description="Клиент, для которого цена главное",
         max_turns=12,
         objection_probability=0.8,
@@ -69,7 +69,7 @@ def price_sensitive_persona():
 def aggressive_persona():
     """Агрессивный клиент."""
     return Persona(
-        name="aggressive",
+        name="Агрессивный",  # Русское имя как в personas.py
         description="Грубый и нетерпеливый",
         max_turns=8,
         objection_probability=0.7,
@@ -82,7 +82,7 @@ def aggressive_persona():
 def skeptic_persona():
     """Скептик."""
     return Persona(
-        name="skeptic",
+        name="Скептик",  # Русское имя как в personas.py
         description="Скептичный клиент",
         max_turns=12,
         objection_probability=0.6,
@@ -365,9 +365,10 @@ class TestPersonaPreferences:
 
     def test_preferences_defined_for_all_personas(self):
         """Все персоны имеют определённые предпочтения."""
+        # Используем русские имена как в personas.py
         expected_personas = [
-            "price_sensitive", "competitor_user", "technical",
-            "busy", "aggressive", "happy_path", "skeptic", "tire_kicker"
+            "Ценовик", "Пользователь конкурента", "Технарь",
+            "Занятой", "Агрессивный", "Идеальный клиент", "Скептик", "Просто смотрю"
         ]
 
         for persona in expected_personas:
@@ -376,7 +377,7 @@ class TestPersonaPreferences:
     def test_technical_prefers_api_options(self, mock_llm):
         """Технарь выбирает технические опции."""
         persona = Persona(
-            name="technical",
+            name="Технарь",  # Русское имя как в personas.py
             description="IT директор",
             max_turns=15,
             objection_probability=0.3,
@@ -394,7 +395,7 @@ class TestPersonaPreferences:
     def test_competitor_user_prefers_comparison(self, mock_llm):
         """Пользователь конкурента выбирает сравнение."""
         persona = Persona(
-            name="competitor_user",
+            name="Пользователь конкурента",  # Русское имя как в personas.py
             description="Использует Poster",
             max_turns=12,
             objection_probability=0.5,
