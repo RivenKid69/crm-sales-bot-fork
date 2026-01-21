@@ -1516,7 +1516,7 @@ class SalesBot:
                     "Policy override applied (disambiguation path)",
                     original_action=sm_result["action"],
                     override_action=override.action,
-                    reason=override.reason
+                    reason_codes=override.reason_codes
                 )
                 sm_result["action"] = override.action
                 if override.next_state:

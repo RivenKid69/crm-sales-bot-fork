@@ -692,3 +692,103 @@ class TestFeatureFlagsIntegration:
         assert not flags.context_policy_overlays  # Не в safe группе
 
         flags.clear_all_overrides()
+
+
+class TestPolicyOverrideLoggingRegression:
+    """Regression tests for PolicyOverride usage in bot.py logging.
+
+    Bug fixed: bot.py:1519 was using override.reason instead of
+    override.reason_codes, causing AttributeError.
+    """
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Включить feature flags."""
+        flags.set_override("context_policy_overlays", True)
+        yield
+        flags.clear_override("context_policy_overlays")
+
+    def test_policy_override_has_reason_codes_not_reason(self):
+        """Verify PolicyOverride uses reason_codes, not reason.
+
+        This test ensures the bug in bot.py:1519 doesn't regress.
+        The fix changed: reason=override.reason -> reason_codes=override.reason_codes
+        """
+        policy = DialoguePolicy()
+
+        # Создаём ситуацию, которая вызывает override
+        envelope = ContextEnvelope(
+            state="spin_situation",
+            is_stuck=True,
+            unclear_count=3,
+            reason_codes=[ReasonCode.POLICY_REPAIR_MODE.value],
+        )
+        sm_result = {"next_state": "spin_situation", "action": "ask_company_size"}
+
+        override = policy.maybe_override(sm_result, envelope)
+
+        # Override должен быть создан
+        assert override is not None
+        assert override.has_override
+
+        # CRITICAL: reason_codes должен существовать
+        assert hasattr(override, "reason_codes")
+        assert isinstance(override.reason_codes, list)
+
+        # CRITICAL: reason НЕ должен существовать
+        assert not hasattr(override, "reason"), \
+            "PolicyOverride should not have 'reason' attr - use 'reason_codes'"
+
+        # Симулируем использование как в bot.py:1515-1519
+        log_data = {
+            "original_action": sm_result["action"],
+            "override_action": override.action,
+            "reason_codes": override.reason_codes,  # Это правильный способ
+        }
+
+        # Должно работать без ошибок
+        assert "reason_codes" in log_data
+        assert log_data["override_action"] == "clarify_one_question"
+
+    def test_all_policy_decisions_use_reason_codes(self):
+        """Test that all PolicyDecision types produce valid reason_codes."""
+        policy = DialoguePolicy()
+
+        test_cases = [
+            # Repair: stuck
+            (
+                ContextEnvelope(state="spin_situation", is_stuck=True),
+                {"action": "ask"},
+                PolicyDecision.REPAIR_CLARIFY,
+            ),
+            # Repair: oscillation
+            (
+                ContextEnvelope(state="spin_problem", has_oscillation=True),
+                {"action": "ask"},
+                PolicyDecision.REPAIR_SUMMARIZE,
+            ),
+            # Objection: reframe
+            (
+                ContextEnvelope(
+                    state="handle_objection",
+                    repeated_objection_types=["price"],
+                    total_objections=2
+                ),
+                {"action": "handle"},
+                PolicyDecision.OBJECTION_REFRAME,
+            ),
+        ]
+
+        for envelope, sm_result, expected_decision in test_cases:
+            override = policy.maybe_override(sm_result, envelope)
+
+            if override and override.has_override:
+                # ВСЕГДА должен быть reason_codes
+                assert hasattr(override, "reason_codes"), \
+                    f"Missing reason_codes for {expected_decision}"
+                assert isinstance(override.reason_codes, list), \
+                    f"reason_codes should be list for {expected_decision}"
+
+                # reason НЕ должен существовать
+                assert not hasattr(override, "reason"), \
+                    f"Should not have 'reason' attr for {expected_decision}"

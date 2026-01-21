@@ -669,6 +669,56 @@ class TestPolicyOverride:
         assert d["signals_used"] == {"is_stuck": True}
         assert d["expected_effect"] == "Clarify"
 
+    def test_reason_codes_attribute_exists(self):
+        """Test that reason_codes attribute exists and is a list.
+
+        Regression test for bug: bot.py:1519 was using override.reason
+        instead of override.reason_codes.
+        """
+        override = PolicyOverride(
+            action="clarify",
+            reason_codes=["repair.stuck", "repair.unclear"]
+        )
+
+        # reason_codes должен существовать и быть списком
+        assert hasattr(override, "reason_codes")
+        assert isinstance(override.reason_codes, list)
+        assert override.reason_codes == ["repair.stuck", "repair.unclear"]
+
+    def test_reason_attribute_does_not_exist(self):
+        """Test that 'reason' attribute does NOT exist on PolicyOverride.
+
+        Regression test: Ensures we don't accidentally add 'reason' attribute
+        which would hide the bug where code incorrectly uses override.reason.
+        """
+        override = PolicyOverride(action="clarify")
+
+        # reason НЕ должен существовать
+        assert not hasattr(override, "reason"), \
+            "PolicyOverride should NOT have 'reason' attribute. Use 'reason_codes' instead."
+
+    def test_reason_codes_for_logging(self):
+        """Test that reason_codes can be safely used in logging context.
+
+        Simulates the usage pattern in bot.py:1519 where reason_codes
+        is passed to logger.info().
+        """
+        override = PolicyOverride(
+            action="clarify_one_question",
+            reason_codes=["policy.repair_mode", "repair.stuck"],
+            decision=PolicyDecision.REPAIR_CLARIFY
+        )
+
+        # Симулируем то, как это используется в bot.py
+        log_kwargs = {
+            "original_action": "ask_question",
+            "override_action": override.action,
+            "reason_codes": override.reason_codes  # Правильное использование
+        }
+
+        assert log_kwargs["reason_codes"] == ["policy.repair_mode", "repair.stuck"]
+        assert log_kwargs["override_action"] == "clarify_one_question"
+
 
 # =============================================================================
 # CONTEXT POLICY METRICS TESTS
