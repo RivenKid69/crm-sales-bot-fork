@@ -19,9 +19,7 @@ import sys
 import os
 from datetime import datetime
 
-# Принудительно используем CPU для sentence-transformers чтобы освободить VRAM для Ollama
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-# Также устанавливаем device через torch
+# FRIDA embeddings работают на GPU (достаточно VRAM для Ollama + FRIDA)
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = os.path.expanduser("~/.cache/sentence_transformers")
 
 # Добавляем путь к src
@@ -231,6 +229,30 @@ def run_e2e_mode(args):
         print("Ollama готов")
         print()
 
+        # Прогрев embedding моделей (до запуска параллельных потоков)
+        print("Прогрев embedding моделей...")
+        try:
+            from tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
+            analyzer = get_semantic_tone_analyzer()
+            if analyzer.is_available:
+                print("  Semantic tone analyzer: готов")
+            else:
+                print("  Semantic tone analyzer: недоступен")
+        except Exception as e:
+            print(f"  Semantic tone analyzer: ошибка - {e}")
+
+        try:
+            from knowledge.reranker import get_reranker
+            reranker = get_reranker()
+            if reranker.is_available():
+                print("  Reranker: готов")
+            else:
+                print("  Reranker: недоступен")
+        except Exception as e:
+            print(f"  Reranker: ошибка - {e}")
+
+        print()
+
     except Exception as e:
         print(f"ОШИБКА при инициализации Ollama: {e}")
         print("Запустите: ./scripts/start_ollama.sh")
@@ -400,6 +422,30 @@ def main():
             llm.reset_circuit_breaker()
 
         print("Ollama готов")
+        print()
+
+        # Прогрев embedding моделей (до запуска параллельных потоков)
+        print("Прогрев embedding моделей...")
+        try:
+            from tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
+            analyzer = get_semantic_tone_analyzer()
+            if analyzer.is_available:
+                print("  Semantic tone analyzer: готов")
+            else:
+                print("  Semantic tone analyzer: недоступен")
+        except Exception as e:
+            print(f"  Semantic tone analyzer: ошибка - {e}")
+
+        try:
+            from knowledge.reranker import get_reranker
+            reranker = get_reranker()
+            if reranker.is_available():
+                print("  Reranker: готов")
+            else:
+                print("  Reranker: недоступен")
+        except Exception as e:
+            print(f"  Reranker: ошибка - {e}")
+
         print()
 
     except Exception as e:
