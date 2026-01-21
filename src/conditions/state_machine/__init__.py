@@ -54,11 +54,24 @@ from src.conditions.state_machine.registry import (
     get_sm_registry,
 )
 
+# Contact validation utilities
+from src.conditions.state_machine.contact_validator import (
+    ContactValidator,
+    ContactType,
+    ValidationResult,
+    has_valid_contact,
+    get_validated_contact,
+    validate_contact_string,
+)
+
 # Import all conditions to register them
 from src.conditions.state_machine.conditions import (
     # Data conditions
     has_pricing_data,
     has_contact_info,
+    has_validated_contact,
+    has_valid_email,
+    has_valid_phone,
     has_company_size,
     has_pain_point,
     has_pain_and_company_size,
@@ -169,9 +182,19 @@ __all__ = [
     "sm_registry",
     "sm_condition",
     "get_sm_registry",
+    # Contact validation
+    "ContactValidator",
+    "ContactType",
+    "ValidationResult",
+    "has_valid_contact",
+    "get_validated_contact",
+    "validate_contact_string",
     # Data conditions
     "has_pricing_data",
     "has_contact_info",
+    "has_validated_contact",
+    "has_valid_email",
+    "has_valid_phone",
     "has_company_size",
     "has_pain_point",
     "has_pain_and_company_size",

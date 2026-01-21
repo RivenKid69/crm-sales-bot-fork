@@ -1614,11 +1614,20 @@ class DataExtractor:
             if message_lower in short_answers:
                 extracted["pain_point"] = short_answers[message_lower]
 
-        # === Контактная информация ===
-        # Email
+        # === Контактная информация (с валидацией) ===
+        # Используем ContactValidator для явной валидации и нормализации
+        # Это предотвращает ложные срабатывания и обеспечивает качество данных
+        from src.conditions.state_machine.contact_validator import ContactValidator
+        contact_validator = ContactValidator()
+
+        # Email (с валидацией)
         email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w{2,}', message)
         if email_match:
-            extracted["contact_info"] = email_match.group(0)
+            email_result = contact_validator.validate_email(email_match.group(0))
+            if email_result.is_valid:
+                # Сохраняем нормализованный email (lowercase)
+                extracted["contact_info"] = email_result.normalized_value
+                extracted["contact_type"] = "email"  # Явно указываем тип
 
         # Телефон (если email не найден)
         if "contact_info" not in extracted:
@@ -1635,8 +1644,15 @@ class DataExtractor:
             for pattern in phone_patterns:
                 phone_match = re.search(pattern, message)
                 if phone_match:
-                    extracted["contact_info"] = phone_match.group(0).strip()
-                    break
+                    phone_raw = phone_match.group(0).strip()
+                    phone_result = contact_validator.validate_phone(phone_raw)
+                    if phone_result.is_valid:
+                        # Сохраняем нормализованный телефон (+7XXXXXXXXXX)
+                        extracted["contact_info"] = phone_result.normalized_value
+                        extracted["contact_type"] = "phone"  # Явно указываем тип
+                        break
+                    # Если телефон невалиден, продолжаем искать
+                    # (не сохраняем невалидные паттерны типа 1234567890)
 
         # === Имя клиента ===
         name_patterns = [

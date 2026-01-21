@@ -39,15 +39,18 @@ def has_pricing_data(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "has_contact_info",
-    description="Check if contact information has been collected",
+    description="Check if contact information has been collected (any format, no strict validation)",
     requires_fields={"email", "phone", "contact", "contact_info"},
     category="data"
 )
 def has_contact_info(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if email, phone, or contact is available.
+    Returns True if email, phone, or contact is available in any format.
 
-    Used for demo_request transition to success state.
+    NOTE: This is a lenient check that only verifies presence, not validity.
+    For strict validation, use `has_validated_contact`.
+
+    Used for backward compatibility and cases where presence is sufficient.
     Checks both top-level fields and nested contact_info dict.
     """
     # Check top-level fields
@@ -57,13 +60,114 @@ def has_contact_info(ctx: EvaluatorContext) -> bool:
     # Check contact_info field
     contact_info = ctx.collected_data.get("contact_info")
 
-    # FIX: contact_info can be a string (direct phone/email from DataExtractor)
-    if isinstance(contact_info, str) and contact_info:
+    # contact_info can be a string (direct phone/email from DataExtractor)
+    if isinstance(contact_info, str) and contact_info.strip():
         return True
 
     # Or a dict with nested fields
     if isinstance(contact_info, dict):
         return bool(contact_info.get("email") or contact_info.get("phone") or contact_info.get("name"))
+
+    return False
+
+
+@sm_condition(
+    "has_validated_contact",
+    description="Check if contact information has been collected AND validated",
+    requires_fields={"email", "phone", "contact", "contact_info"},
+    category="data"
+)
+def has_validated_contact(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True only if valid email or phone is present.
+
+    Unlike `has_contact_info`, this condition performs strict validation:
+    - Email must match standard RFC pattern
+    - Phone must be a valid Russian number (+7/8 format with valid prefix)
+    - Filters out false positives like sequential digits (1234567890)
+
+    Use this condition for:
+    - ready_for_close decisions
+    - Success state transitions
+    - Any case where contact quality matters
+
+    Example:
+        "demo_request: [when: has_validated_contact, then: success]"
+    """
+    from src.conditions.state_machine.contact_validator import has_valid_contact
+    return has_valid_contact(ctx.collected_data)
+
+
+@sm_condition(
+    "has_valid_email",
+    description="Check if a valid email address has been collected",
+    requires_fields={"email", "contact_info"},
+    category="data"
+)
+def has_valid_email(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if a valid email address is present.
+
+    Validation includes:
+    - Standard email format (user@domain.tld)
+    - Reasonable length constraints
+    - Normalization to lowercase
+
+    Checks both top-level email and contact_info fields.
+    """
+    from src.conditions.state_machine.contact_validator import ContactValidator
+    validator = ContactValidator()
+
+    # Check top-level email
+    email = ctx.collected_data.get("email")
+    if email and validator.validate_email(email).is_valid:
+        return True
+
+    # Check contact_info
+    contact_info = ctx.collected_data.get("contact_info")
+    if isinstance(contact_info, str) and '@' in contact_info:
+        return validator.validate_email(contact_info).is_valid
+    if isinstance(contact_info, dict):
+        email = contact_info.get("email")
+        if email and validator.validate_email(email).is_valid:
+            return True
+
+    return False
+
+
+@sm_condition(
+    "has_valid_phone",
+    description="Check if a valid Russian phone number has been collected",
+    requires_fields={"phone", "contact_info"},
+    category="data"
+)
+def has_valid_phone(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if a valid Russian phone number is present.
+
+    Validation includes:
+    - Format: +7/8 with valid structure, or 10-digit local
+    - Valid mobile prefix (900-999) or city code (495, 812, etc.)
+    - Filters out invalid patterns (sequential, repeated digits)
+
+    Checks both top-level phone and contact_info fields.
+    """
+    from src.conditions.state_machine.contact_validator import ContactValidator
+    validator = ContactValidator()
+
+    # Check top-level phone
+    phone = ctx.collected_data.get("phone")
+    if phone and validator.validate_phone(phone).is_valid:
+        return True
+
+    # Check contact_info
+    contact_info = ctx.collected_data.get("contact_info")
+    if isinstance(contact_info, str) and '@' not in contact_info:
+        return validator.validate_phone(contact_info).is_valid
+    if isinstance(contact_info, dict):
+        phone = contact_info.get("phone")
+        if phone and validator.validate_phone(phone).is_valid:
+            return True
 
     return False
 
@@ -596,13 +700,34 @@ def ready_for_presentation(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "ready_for_close",
-    description="Check if ready to close (has contact info)",
-    requires_fields={"email", "phone", "contact"},
+    description="Check if ready to close deal (has VALIDATED contact info)",
+    requires_fields={"email", "phone", "contact", "contact_info"},
     category="combined"
 )
 def ready_for_close(ctx: EvaluatorContext) -> bool:
-    """Returns True if we have contact info and can close."""
-    return has_contact_info(ctx)
+    """
+    Returns True if we have VALIDATED contact info and can close.
+
+    EXPLICIT LOGIC:
+    This condition now uses strict validation to ensure contact quality.
+    A deal is ready to close only when:
+    1. Email is valid (RFC-compliant format), OR
+    2. Phone is valid (Russian format with valid prefix)
+
+    Invalid contact patterns are filtered out:
+    - Sequential numbers (1234567890)
+    - Repeated digits (1111111111)
+    - Invalid phone prefixes
+    - Malformed email addresses
+
+    Use cases:
+    - close state: agreement → success transition
+    - close state: demo_request → success transition
+    - Any transition requiring verified contact before success
+
+    Note: For backward compatibility or lenient checks, use `has_contact_info`.
+    """
+    return has_validated_contact(ctx)
 
 
 @sm_condition(
@@ -1062,6 +1187,9 @@ __all__ = [
     # Data conditions
     "has_pricing_data",
     "has_contact_info",
+    "has_validated_contact",
+    "has_valid_email",
+    "has_valid_phone",
     "has_company_size",
     "has_pain_point",
     "has_pain_and_company_size",
