@@ -124,8 +124,9 @@ states:
       callback_request: close
       go_back: greeting
       correct_info: greeting
-      rejection: soft_close
-      farewell: soft_close
+      # FIX: Убраны петли rejection/farewell → soft_close
+      # При rejection/farewell в soft_close — делаем action через rules, не transition
+      # Это предотвращает бесконечное повторение одинаковых ответов
       # Вопросы = проявление интереса
       price_question: presentation
       pricing_details: presentation
@@ -136,6 +137,10 @@ states:
       info_provided: "{{entry_state}}"
       situation_provided: "{{entry_state}}"
     rules:
+      # FIX: rejection/farewell обрабатываются через rules, не transitions
+      # Это позволяет генерировать вариативные прощальные ответы без зацикливания
+      rejection: polite_farewell
+      farewell: acknowledge_farewell
       price_question: answer_with_facts
       pricing_details: answer_with_facts
       question_features: answer_and_continue
@@ -143,6 +148,8 @@ states:
       comparison: answer_and_continue
       gratitude: acknowledge_farewell
       small_talk: polite_farewell
+      # Если клиент продолжает разговор после rejection — пробуем мягко вернуть
+      unclear: try_reengage
 
   # Презентация
   presentation:

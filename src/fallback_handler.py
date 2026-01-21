@@ -203,7 +203,8 @@ class FallbackHandler:
     ]
 
     # Дефолтные fallback сообщения (загружаются из YAML конфига)
-    DEFAULT_REPHRASE = FALLBACK_DEFAULT_REPHRASE or "Давайте попробую спросить иначе..."
+    # FIX: DEFAULT_REPHRASE теперь список для вариативности
+    DEFAULT_REPHRASE: List[str] = FALLBACK_DEFAULT_REPHRASE or ["Давайте попробую спросить иначе..."]
     DEFAULT_OPTIONS = FALLBACK_DEFAULT_OPTIONS or {
         "question": "Что вас интересует?",
         "options": ["Подробнее о системе", "Цены", "Демо", "Связаться позже"]
@@ -262,11 +263,18 @@ class FallbackHandler:
         templates = config.fallback.get("options_templates", {})
         return templates if templates else self.OPTIONS_TEMPLATES
 
-    def _load_default_rephrase(self, config: Optional["LoadedConfig"]) -> str:
-        """Load default rephrase from config or use class default."""
+    def _load_default_rephrase(self, config: Optional["LoadedConfig"]) -> List[str]:
+        """Load default rephrase from config or use class default.
+
+        FIX: Now returns List[str] for variability.
+        """
         if config is None:
             return self.DEFAULT_REPHRASE
-        return config.fallback.get("default_rephrase", self.DEFAULT_REPHRASE)
+        raw = config.fallback.get("default_rephrase", self.DEFAULT_REPHRASE)
+        # Handle both string and list formats
+        if isinstance(raw, list):
+            return raw
+        return [raw]
 
     def _load_default_options(
         self, config: Optional["LoadedConfig"]
@@ -432,7 +440,8 @@ class FallbackHandler:
         trace: Optional[EvaluationTrace] = None
     ) -> FallbackResponse:
         """Tier 1: Переформулировать вопрос"""
-        templates = self._rephrase_templates.get(state, [self._default_rephrase])
+        # FIX: _default_rephrase теперь список, не нужно оборачивать в []
+        templates = self._rephrase_templates.get(state, self._default_rephrase)
 
         # Evaluate if rephrase is appropriate using conditions
         if fb_context and trace:

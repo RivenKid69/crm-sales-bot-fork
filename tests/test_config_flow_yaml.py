@@ -312,14 +312,34 @@ class TestBaseStatesGreeting:
         assert transitions["farewell"] == "soft_close"
 
     def test_greeting_transitions_objection_price(self, base_states):
-        """Test greeting transitions for objection_price."""
+        """Test greeting transitions for objection_price.
+
+        FIX: Now uses conditional rules - handle_objection by default,
+        soft_close only when objection_limit_reached.
+        """
         transitions = base_states["states"]["greeting"]["transitions"]
-        assert transitions["objection_price"] == "handle_objection"
+        # New format: list with conditional rule
+        assert isinstance(transitions["objection_price"], list)
+        # Default (last item) is handle_objection
+        assert transitions["objection_price"][-1] == "handle_objection"
+        # Conditional rule for limit reached
+        assert transitions["objection_price"][0]["when"] == "objection_limit_reached"
+        assert transitions["objection_price"][0]["then"] == "soft_close"
 
     def test_greeting_transitions_objection_no_time(self, base_states):
-        """Test greeting transitions for objection_no_time."""
+        """Test greeting transitions for objection_no_time.
+
+        FIX: Now uses conditional rules - handle_objection by default,
+        soft_close only when objection_limit_reached.
+        """
         transitions = base_states["states"]["greeting"]["transitions"]
-        assert transitions["objection_no_time"] == "soft_close"
+        # New format: list with conditional rule
+        assert isinstance(transitions["objection_no_time"], list)
+        # Default (last item) is handle_objection
+        assert transitions["objection_no_time"][-1] == "handle_objection"
+        # Conditional goes to soft_close when limit reached
+        assert transitions["objection_no_time"][0]["when"] == "objection_limit_reached"
+        assert transitions["objection_no_time"][0]["then"] == "soft_close"
 
 
 class TestBaseStatesSuccess:
@@ -783,24 +803,43 @@ class TestMixinsObjectionHandling:
         assert "objection_handling" in mixins["mixins"]
 
     def test_objection_handling_transitions_price(self, mixins):
-        """Test objection_handling transitions for objection_price."""
+        """Test objection_handling transitions for objection_price.
+
+        FIX: Now uses conditional rules - handle_objection by default.
+        """
         transitions = mixins["mixins"]["objection_handling"]["transitions"]
-        assert transitions["objection_price"] == "handle_objection"
+        # New format: list with conditional rule
+        assert isinstance(transitions["objection_price"], list)
+        assert transitions["objection_price"][-1] == "handle_objection"
 
     def test_objection_handling_transitions_competitor(self, mixins):
-        """Test objection_handling transitions for objection_competitor."""
+        """Test objection_handling transitions for objection_competitor.
+
+        FIX: Now uses conditional rules - handle_objection by default.
+        """
         transitions = mixins["mixins"]["objection_handling"]["transitions"]
-        assert transitions["objection_competitor"] == "handle_objection"
+        assert isinstance(transitions["objection_competitor"], list)
+        assert transitions["objection_competitor"][-1] == "handle_objection"
 
     def test_objection_handling_transitions_no_time(self, mixins):
-        """Test objection_handling transitions for objection_no_time."""
+        """Test objection_handling transitions for objection_no_time.
+
+        FIX: Now uses conditional rules - handle_objection by default,
+        soft_close only when objection_limit_reached.
+        """
         transitions = mixins["mixins"]["objection_handling"]["transitions"]
-        assert transitions["objection_no_time"] == "soft_close"
+        assert isinstance(transitions["objection_no_time"], list)
+        assert transitions["objection_no_time"][-1] == "handle_objection"
 
     def test_objection_handling_transitions_think(self, mixins):
-        """Test objection_handling transitions for objection_think."""
+        """Test objection_handling transitions for objection_think.
+
+        FIX: Now uses conditional rules - handle_objection by default,
+        soft_close only when objection_limit_reached.
+        """
         transitions = mixins["mixins"]["objection_handling"]["transitions"]
-        assert transitions["objection_think"] == "soft_close"
+        assert isinstance(transitions["objection_think"], list)
+        assert transitions["objection_think"][-1] == "handle_objection"
 
 
 class TestMixinsDialogueRepair:

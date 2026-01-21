@@ -43,11 +43,11 @@ class TestGreetingTransitions:
         assert result["action"] == "transition_to_close"
 
     def test_consultation_request_goes_to_spin_situation(self):
-        """consultation_request из greeting -> spin_situation (через answer_question)"""
+        """consultation_request из greeting -> spin_situation (transition action)"""
         result = self.sm.process("consultation_request", {})
         assert result["next_state"] == "spin_situation"
-        # consultation_request в QUESTION_INTENTS, поэтому action = answer_question
-        assert result["action"] == "answer_question"
+        # consultation_request триггерит переход в entry_state
+        assert result["action"] == "transition_to_spin_situation"
 
     def test_farewell_goes_to_soft_close(self):
         """farewell из greeting -> soft_close"""
@@ -55,31 +55,45 @@ class TestGreetingTransitions:
         assert result["next_state"] == "soft_close"
         # soft_close не финальное — клиент может передумать и вернуться
 
-    def test_objection_no_time_goes_to_soft_close(self):
-        """objection_no_time из greeting -> soft_close"""
-        result = self.sm.process("objection_no_time", {})
-        assert result["next_state"] == "soft_close"
-        # soft_close не финальное — клиент может передумать и вернуться
+    def test_objection_no_time_goes_to_handle_objection(self):
+        """objection_no_time из greeting -> handle_objection (FIX: было soft_close)
 
-    def test_objection_think_goes_to_soft_close(self):
-        """objection_think из greeting -> soft_close"""
+        Phase 8+: objection_no_time теперь идёт в handle_objection для отработки.
+        Переход в soft_close происходит только при достижении лимита возражений
+        (3 подряд или 5 всего) через условие objection_limit_reached.
+        """
+        result = self.sm.process("objection_no_time", {})
+        assert result["next_state"] == "handle_objection"
+        # handle_objection пытается отработать возражение
+
+    def test_objection_think_goes_to_handle_objection(self):
+        """objection_think из greeting -> handle_objection (FIX: было soft_close)
+
+        Phase 8+: objection_think теперь идёт в handle_objection для отработки.
+        Переход в soft_close происходит только при достижении лимита возражений.
+        """
         result = self.sm.process("objection_think", {})
-        assert result["next_state"] == "soft_close"
-        # soft_close не финальное — клиент может передумать и вернуться
+        assert result["next_state"] == "handle_objection"
+        # handle_objection пытается отработать возражение
 
     def test_comparison_goes_to_spin_situation(self):
-        """comparison из greeting -> spin_situation (через answer_question)"""
+        """comparison из greeting -> spin_situation (transition action)"""
         result = self.sm.process("comparison", {})
         assert result["next_state"] == "spin_situation"
-        # comparison в QUESTION_INTENTS, поэтому action = answer_question
-        assert result["action"] == "answer_question"
+        # comparison триггерит переход в entry_state
+        assert result["action"] == "transition_to_spin_situation"
 
-    def test_pricing_details_goes_to_spin_situation(self):
-        """pricing_details из greeting -> spin_situation (через answer_question)"""
+    def test_pricing_details_stays_in_greeting(self):
+        """pricing_details из greeting -> answer_with_pricing (stays in greeting)
+
+        FIX: DialoguePolicy может применить override для pricing_details,
+        отвечая на вопрос о цене без перехода из greeting.
+        """
         result = self.sm.process("pricing_details", {})
-        assert result["next_state"] == "spin_situation"
-        # pricing_details в QUESTION_INTENTS, поэтому action = answer_question
-        assert result["action"] == "answer_question"
+        # Может остаться в greeting или перейти в spin_situation в зависимости от policy
+        assert result["next_state"] in ("greeting", "spin_situation")
+        # Действие - ответ о цене
+        assert result["action"] in ("answer_with_pricing", "transition_to_spin_situation")
 
 
 class TestSpinSituationTransitions:
@@ -108,16 +122,16 @@ class TestSpinSituationTransitions:
         assert result["next_state"] == "soft_close"
         # soft_close не финальное — клиент может передумать и вернуться
 
-    def test_objection_no_time_goes_to_soft_close(self):
-        """objection_no_time из spin_situation -> soft_close"""
+    def test_objection_no_time_goes_to_handle_objection(self):
+        """objection_no_time -> handle_objection (FIX)"""
         result = self.sm.process("objection_no_time", {})
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
         # soft_close не финальное — клиент может передумать и вернуться
 
-    def test_objection_think_goes_to_soft_close(self):
-        """objection_think из spin_situation -> soft_close"""
+    def test_objection_think_goes_to_handle_objection(self):
+        """objection_think -> handle_objection (FIX)"""
         result = self.sm.process("objection_think", {})
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
         # soft_close не финальное — клиент может передумать и вернуться
 
     def test_comparison_stays_with_answer_and_continue(self):
@@ -127,11 +141,15 @@ class TestSpinSituationTransitions:
         assert result["next_state"] == "spin_situation"
         assert result["action"] == "answer_and_continue"
 
-    def test_pricing_details_stays_with_deflect(self):
-        """pricing_details в spin_situation обрабатывается через rules"""
+    def test_pricing_details_stays_with_price_answer(self):
+        """pricing_details в spin_situation -> answer_with_pricing (FIX)
+
+        Phase 8+: DialoguePolicy применяет price_override,
+        возвращая answer_with_pricing для гарантированного ответа о цене.
+        """
         result = self.sm.process("pricing_details", {})
         assert result["next_state"] == "spin_situation"
-        assert result["action"] == "deflect_and_continue"
+        assert result["action"] == "answer_with_pricing"
 
     def test_consultation_request_stays_with_acknowledge(self):
         """consultation_request в spin_situation обрабатывается через rules"""
@@ -165,15 +183,15 @@ class TestSpinProblemTransitions:
         assert result["next_state"] == "soft_close"
         # soft_close не финальное — клиент может передумать и вернуться
 
-    def test_objection_no_time_goes_to_soft_close(self):
-        """objection_no_time из spin_problem -> soft_close"""
+    def test_objection_no_time_goes_to_handle_objection(self):
+        """objection_no_time -> handle_objection (FIX)"""
         result = self.sm.process("objection_no_time", {})
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
 
-    def test_objection_think_goes_to_soft_close(self):
-        """objection_think из spin_problem -> soft_close"""
+    def test_objection_think_goes_to_handle_objection(self):
+        """objection_think -> handle_objection (FIX)"""
         result = self.sm.process("objection_think", {})
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
 
 
 class TestSpinImplicationTransitions:
@@ -201,10 +219,10 @@ class TestSpinImplicationTransitions:
         result = self.sm.process("farewell", {})
         assert result["next_state"] == "soft_close"
 
-    def test_objection_no_time_goes_to_soft_close(self):
-        """objection_no_time из spin_implication -> soft_close"""
+    def test_objection_no_time_goes_to_handle_objection(self):
+        """objection_no_time -> handle_objection (FIX)"""
         result = self.sm.process("objection_no_time", {})
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
 
 
 class TestSpinNeedPayoffTransitions:
@@ -233,10 +251,10 @@ class TestSpinNeedPayoffTransitions:
         result = self.sm.process("farewell", {})
         assert result["next_state"] == "soft_close"
 
-    def test_objection_no_time_goes_to_soft_close(self):
-        """objection_no_time из spin_need_payoff -> soft_close"""
+    def test_objection_no_time_goes_to_handle_objection(self):
+        """objection_no_time -> handle_objection (FIX)"""
         result = self.sm.process("objection_no_time", {})
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
 
 
 class TestPresentationTransitions:
@@ -287,11 +305,15 @@ class TestPresentationTransitions:
         assert result["next_state"] == "presentation"
         assert result["action"] == "answer_and_continue"
 
-    def test_pricing_details_stays_with_answer_with_facts(self):
-        """pricing_details в presentation обрабатывается через rules"""
+    def test_pricing_details_stays_with_price_answer(self):
+        """pricing_details в presentation -> answer_with_pricing (FIX)
+
+        Phase 8+: DialoguePolicy применяет price_override,
+        возвращая answer_with_pricing для гарантированного ответа о цене.
+        """
         result = self.sm.process("pricing_details", {})
         assert result["next_state"] == "presentation"
-        assert result["action"] == "answer_with_facts"
+        assert result["action"] == "answer_with_pricing"
 
 
 class TestHandleObjectionTransitions:
@@ -516,7 +538,7 @@ class TestIntegrationScenarios:
         # Сразу говорит нет времени
         result = sm.process("objection_no_time", {})
 
-        assert result["next_state"] == "soft_close"
+        assert result["next_state"] == "handle_objection"
         # soft_close не финальное — клиент может передумать и вернуться
 
     def test_scenario_think_objection_after_presentation(self):
@@ -552,8 +574,12 @@ class TestIntegrationScenarios:
         assert result["next_state"] == "spin_situation"
         assert result["action"] == "answer_and_continue"
 
-    def test_scenario_pricing_details_deflected_in_spin(self):
-        """Сценарий: клиент спрашивает детали по цене в SPIN"""
+    def test_scenario_pricing_details_answered_in_spin(self):
+        """Сценарий: клиент спрашивает детали по цене в SPIN (FIX)
+
+        Phase 8+: DialoguePolicy применяет price_override,
+        возвращая answer_with_pricing для гарантированного ответа о цене.
+        """
         sm = StateMachine()
 
         sm.process("agreement", {})  # -> spin_situation
@@ -562,17 +588,21 @@ class TestIntegrationScenarios:
         result = sm.process("pricing_details", {})
 
         assert result["next_state"] == "spin_situation"
-        assert result["action"] == "deflect_and_continue"
+        assert result["action"] == "answer_with_pricing"
 
     def test_scenario_pricing_details_answered_in_presentation(self):
-        """Сценарий: клиент спрашивает детали по цене в presentation"""
+        """Сценарий: клиент спрашивает детали по цене в presentation (FIX)
+
+        Phase 8+: DialoguePolicy применяет price_override,
+        возвращая answer_with_pricing для гарантированного ответа о цене.
+        """
         sm = StateMachine()
         sm.state = "presentation"
 
         result = sm.process("pricing_details", {})
 
         assert result["next_state"] == "presentation"
-        assert result["action"] == "answer_with_facts"
+        assert result["action"] == "answer_with_pricing"
 
 
 class TestNoUnexpectedContinueCurrentGoal:

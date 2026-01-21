@@ -188,7 +188,12 @@ _fallback = _constants.get("fallback", {})
 
 FALLBACK_REPHRASE_TEMPLATES: Dict[str, List[str]] = _fallback.get("rephrase_templates", {})
 FALLBACK_OPTIONS_TEMPLATES: Dict[str, Dict[str, Any]] = _fallback.get("options_templates", {})
-FALLBACK_DEFAULT_REPHRASE: str = _fallback.get("default_rephrase", "Давайте попробую спросить иначе...")
+# FIX: default_rephrase теперь может быть списком для вариативности
+_default_rephrase_raw = _fallback.get("default_rephrase", "Давайте попробую спросить иначе...")
+FALLBACK_DEFAULT_REPHRASE: List[str] = (
+    _default_rephrase_raw if isinstance(_default_rephrase_raw, list)
+    else [_default_rephrase_raw]
+)
 FALLBACK_DEFAULT_OPTIONS: Dict[str, Any] = _fallback.get("default_options", {})
 
 
