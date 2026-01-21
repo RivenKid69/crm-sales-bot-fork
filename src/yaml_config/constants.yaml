@@ -101,12 +101,33 @@ intents:
 
   # Категории интентов (source of truth)
   categories:
+    # =================================================================
+    # БАЗОВЫЕ ВОЗРАЖЕНИЯ (18 интентов)
+    # =================================================================
     objection:
       - objection_price
       - objection_competitor
       - objection_no_time
       - objection_think
+      - objection_timing
+      - objection_complexity
+      - objection_trust
+      - objection_no_need
+      - objection_risk
+      - objection_team_resistance
+      - objection_security
+      - objection_bad_experience
+      - objection_priority
+      - objection_scale
+      - objection_change_management
+      - objection_contract_bound
+      - objection_company_policy
+      - objection_roi_doubt
+      - rejection
 
+    # =================================================================
+    # ПОЗИТИВНЫЕ СИГНАЛЫ (включая новые 8)
+    # =================================================================
     positive:
       - agreement
       - demo_request
@@ -123,7 +144,19 @@ intents:
       - comparison
       - greeting
       - gratitude
+      # Новые позитивные сигналы
+      - ready_to_buy
+      - budget_approved
+      - decision_maker_identified
+      - urgency_expressed
+      - competitor_dissatisfied
+      - expansion_planned
+      - positive_feedback
+      - internal_champion
 
+    # =================================================================
+    # БАЗОВЫЕ ВОПРОСЫ
+    # =================================================================
     question:
       - price_question
       - pricing_details
@@ -131,6 +164,18 @@ intents:
       - question_integrations
       - question_technical
       - comparison
+      - question_security
+      - question_support
+      - question_implementation
+      - question_training
+      - question_updates
+      - question_mobile
+      - question_offline
+      - question_data_migration
+      - question_customization
+      - question_reports
+      - question_automation
+      - question_scalability
 
     # НОВОЕ: Вопросы о цене (требуют ответа с ценой)
     price_related:
@@ -183,13 +228,318 @@ intents:
       - objection_competitor
       - objection_no_time
       - objection_think
+      - objection_timing
+      - objection_complexity
+      - objection_trust
+      - objection_no_need
 
-  # НОВОЕ: Маппинг intent → preferred action (override default behavior)
+    # =================================================================
+    # ВОПРОСЫ ОБ ОБОРУДОВАНИИ (12 интентов)
+    # =================================================================
+    equipment_questions:
+      - question_equipment_general
+      - question_pos_monoblock
+      - question_scales
+      - question_scanner
+      - question_printer
+      - question_cash_drawer
+      - question_equipment_bundle
+      - question_equipment_specs
+      - question_equipment_warranty
+      - question_equipment_install
+      - question_equipment_compat
+      - question_second_screen
+
+    # =================================================================
+    # ВОПРОСЫ О ТАРИФАХ (8 интентов)
+    # =================================================================
+    tariff_questions:
+      - question_tariff_mini
+      - question_tariff_lite
+      - question_tariff_standard
+      - question_tariff_pro
+      - question_tariff_comparison
+      - question_installment
+      - question_trial_period
+      - question_ofd_payment
+
+    # =================================================================
+    # ВОПРОСЫ О ТИС (10 интентов)
+    # =================================================================
+    tis_questions:
+      - question_tis_general
+      - question_tis_limits
+      - question_tis_price
+      - question_tis_requirements
+      - question_tis_benefits
+      - question_tis_2026
+      - question_tis_components
+      - question_tis_multi_location
+      - question_tis_transition
+      - question_tis_reports
+
+    # =================================================================
+    # ВОПРОСЫ О НАЛОГАХ (8 интентов)
+    # =================================================================
+    tax_questions:
+      - question_retail_tax_general
+      - question_retail_tax_rates
+      - question_retail_tax_oked
+      - question_retail_tax_reports
+      - question_retail_tax_transition
+      - question_snr_comparison
+      - question_vat_registration
+      - question_tax_optimization
+
+    # =================================================================
+    # БУХГАЛТЕРИЯ И ДОКУМЕНТЫ (8 интентов)
+    # =================================================================
+    accounting_questions:
+      - question_accounting_services
+      - question_esf_snt
+      - question_form_910
+      - question_form_200
+      - question_form_300
+      - question_business_registration
+      - question_business_closure
+      - question_document_flow
+
+    # =================================================================
+    # ИНТЕГРАЦИИ СПЕЦИФИЧНЫЕ (8 интентов)
+    # =================================================================
+    integration_specific:
+      - question_bank_terminal
+      - question_kaspi_integration
+      - question_halyk_integration
+      - question_1c_integration
+      - question_iiko_integration
+      - question_ofd_connection
+      - question_marking_ismet
+      - question_cashback_loyalty
+
+    # =================================================================
+    # УЧЁТ И ОПЕРАЦИИ (10 интентов)
+    # =================================================================
+    operations_questions:
+      - question_inventory
+      - question_revision
+      - question_purchase_mgmt
+      - question_sales_mgmt
+      - question_cash_operations
+      - question_returns_mgmt
+      - question_employee_control
+      - question_multi_location
+      - question_promo_discounts
+      - question_price_labels
+
+    # =================================================================
+    # ДОСТАВКА И СЕРВИС (6 интентов)
+    # =================================================================
+    delivery_service:
+      - question_delivery
+      - question_delivery_time
+      - question_office_location
+      - question_working_hours
+      - request_refund
+      - request_equipment_return
+
+    # =================================================================
+    # БИЗНЕС-СЦЕНАРИИ (18 интентов)
+    # =================================================================
+    business_scenarios:
+      # Основные (10)
+      - question_grocery_store
+      - question_restaurant_cafe
+      - question_pharmacy
+      - question_clothing_store
+      - question_small_business
+      - question_network_stores
+      - question_market_stall
+      - question_alcohol_tobacco
+      - question_beauty_salon
+      - question_construction
+      # Дополнительные (8)
+      - question_wholesale
+      - question_auto_parts
+      - question_electronics
+      - question_pet_shop
+      - question_flower_shop
+      - question_hotel
+      - question_service_center
+      - question_sports_shop
+
+    # =================================================================
+    # ТЕХНИЧЕСКИЕ ПРОБЛЕМЫ (6 интентов)
+    # =================================================================
+    technical_problems:
+      - problem_technical
+      - problem_connection
+      - problem_sync
+      - problem_fiscal
+      - request_technical_support
+      - request_configuration
+
+    # =================================================================
+    # РАЗГОВОРНЫЕ/ЭМОЦИОНАЛЬНЫЕ (10 интентов)
+    # =================================================================
+    conversational:
+      - compliment
+      - joke_response
+      - surprise_expression
+      - frustration_expression
+      - skepticism_expression
+      - curiosity_expression
+      - empathy_request
+      - confusion_expression
+      - impatience_expression
+      - relief_expression
+
+    # =================================================================
+    # ФИСКАЛИЗАЦИЯ (8 интентов)
+    # =================================================================
+    fiscal_questions:
+      - question_fiscal_general
+      - question_fiscal_receipt
+      - question_fiscal_z_report
+      - question_fiscal_x_report
+      - question_fiscal_kkm
+      - question_fiscal_ofd_wipon
+      - question_fiscal_correction
+      - question_fiscal_replacement
+
+    # =================================================================
+    # АНАЛИТИКА (8 интентов)
+    # =================================================================
+    analytics_questions:
+      - question_analytics_sales
+      - question_analytics_abc
+      - question_analytics_profit
+      - question_analytics_comparison
+      - question_analytics_realtime
+      - question_analytics_export
+      - question_analytics_custom
+      - question_analytics_dashboard
+
+    # =================================================================
+    # ПРОДУКТЫ WIPON (6 интентов)
+    # =================================================================
+    wipon_products:
+      - question_wipon_pro
+      - question_wipon_desktop
+      - question_wipon_kassa
+      - question_wipon_consulting
+      - question_wipon_cashback_app
+      - question_product_comparison
+
+    # =================================================================
+    # СОТРУДНИКИ/КАДРЫ (6 интентов)
+    # =================================================================
+    employee_questions:
+      - question_employees_salary
+      - question_employees_schedule
+      - question_employees_permissions
+      - question_employees_tracking
+      - question_employees_motivation
+      - question_employees_onboarding
+
+    # =================================================================
+    # ПРОМО/ЛОЯЛЬНОСТЬ (6 интентов)
+    # =================================================================
+    promo_loyalty:
+      - question_loyalty_program
+      - question_bonus_system
+      - question_discount_cards
+      - question_gift_cards
+      - question_customer_database
+      - question_sms_marketing
+
+    # =================================================================
+    # СТАБИЛЬНОСТЬ/НАДЁЖНОСТЬ (6 интентов)
+    # =================================================================
+    stability_questions:
+      - question_backup_restore
+      - question_uptime_sla
+      - question_server_location
+      - question_data_encryption
+      - question_disaster_recovery
+      - question_system_requirements
+
+    # =================================================================
+    # РЕГИОНЫ/ПРИСУТСТВИЕ (6 интентов)
+    # =================================================================
+    region_questions:
+      - question_region_almaty
+      - question_region_astana
+      - question_region_shymkent
+      - question_region_other
+      - question_pickup_office
+      - question_courier_service
+
+    # =================================================================
+    # ДОПОЛНИТЕЛЬНЫЕ ИНТЕГРАЦИИ (6 интентов)
+    # =================================================================
+    additional_integrations:
+      - question_glovo_wolt
+      - question_telegram_bot
+      - question_whatsapp_business
+      - question_instagram_shop
+      - question_website_widget
+      - question_delivery_services
+
+    # =================================================================
+    # ЭТАПЫ ПОКУПКИ (8 интентов)
+    # =================================================================
+    purchase_stages:
+      - request_proposal
+      - request_contract
+      - request_invoice
+      - request_discount
+      - negotiate_terms
+      - request_trial_extension
+      - request_references
+      - request_sla
+
+    # =================================================================
+    # ВОПРОСЫ О КОМПАНИИ (4 интента)
+    # =================================================================
+    company_info:
+      - company_info_question
+      - experience_question
+      - case_study_request
+      - roi_question
+
+    # =================================================================
+    # УПРАВЛЕНИЕ ДИАЛОГОМ (8 интентов)
+    # =================================================================
+    dialogue_control:
+      - unclear
+      - go_back
+      - correct_info
+      - request_brevity
+      - clarification_request
+      - repeat_request
+      - example_request
+      - summary_request
+
+  # =================================================================
+  # МАППИНГ intent → preferred action (override default behavior)
+  # NOTE: price_question/pricing_details используют условную логику в mixins,
+  # поэтому НЕ указываем их здесь как безусловный override
+  # =================================================================
   intent_action_overrides:
-    price_question: answer_with_pricing
-    pricing_details: answer_with_pricing
     question_features: answer_with_facts
     question_integrations: answer_with_facts
+    # Технические вопросы
+    question_equipment_general: answer_with_facts
+    question_tariff_comparison: answer_with_facts
+    question_tis_general: answer_with_facts
+    question_fiscal_general: answer_with_facts
+    # Бизнес-сценарии
+    question_grocery_store: answer_with_facts
+    question_restaurant_cafe: answer_with_facts
+    # Технические проблемы → поддержка
+    problem_technical: offer_support
+    request_technical_support: connect_to_support
 
 # =============================================================================
 # DIALOGUE POLICY SETTINGS

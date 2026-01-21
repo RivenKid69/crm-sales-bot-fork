@@ -347,6 +347,505 @@ mixins:
       need_expressed: "{{next_phase_state}}"
 
 # =================================================================
+# EXTENDED OBJECTION HANDLING: Все 18 типов возражений
+# =================================================================
+  extended_objection_handling:
+    description: "Обработка всех 18 типов возражений из schemas.py"
+    transitions:
+      # Основные возражения (4)
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      # Дополнительные возражения (14)
+      objection_timing:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_risk:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_team_resistance:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_security:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_bad_experience:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_priority:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_scale:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_change_management:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_contract_bound:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_company_policy:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_roi_doubt:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+
+# =================================================================
+# EQUIPMENT QUESTIONS: Вопросы об оборудовании (12 интентов)
+# =================================================================
+  equipment_questions:
+    description: "Обработка вопросов об оборудовании"
+    rules:
+      question_equipment_general: answer_with_facts
+      question_pos_monoblock: answer_with_facts
+      question_scales: answer_with_facts
+      question_scanner: answer_with_facts
+      question_printer: answer_with_facts
+      question_cash_drawer: answer_with_facts
+      question_equipment_bundle: answer_with_facts
+      question_equipment_specs: answer_with_facts
+      question_equipment_warranty: answer_with_facts
+      question_equipment_install: answer_with_facts
+      question_equipment_compat: answer_with_facts
+      question_second_screen: answer_with_facts
+
+# =================================================================
+# TARIFF QUESTIONS: Вопросы о тарифах (8 интентов)
+# =================================================================
+  tariff_questions:
+    description: "Обработка вопросов о тарифах"
+    rules:
+      question_tariff_mini: answer_with_facts
+      question_tariff_lite: answer_with_facts
+      question_tariff_standard: answer_with_facts
+      question_tariff_pro: answer_with_facts
+      question_tariff_comparison: answer_with_facts
+      question_installment: answer_with_facts
+      question_trial_period: answer_with_facts
+      question_ofd_payment: answer_with_facts
+
+# =================================================================
+# TIS QUESTIONS: Вопросы о ТИС (10 интентов)
+# =================================================================
+  tis_questions:
+    description: "Обработка вопросов о Трёхкомпонентной Интегрированной Системе"
+    rules:
+      question_tis_general: answer_with_facts
+      question_tis_limits: answer_with_facts
+      question_tis_price: answer_with_facts
+      question_tis_requirements: answer_with_facts
+      question_tis_benefits: answer_with_facts
+      question_tis_2026: answer_with_facts
+      question_tis_components: answer_with_facts
+      question_tis_multi_location: answer_with_facts
+      question_tis_transition: answer_with_facts
+      question_tis_reports: answer_with_facts
+
+# =================================================================
+# TAX QUESTIONS: Вопросы о налогах (8 интентов)
+# =================================================================
+  tax_questions:
+    description: "Обработка вопросов о налогах и СНР"
+    rules:
+      question_retail_tax_general: answer_with_facts
+      question_retail_tax_rates: answer_with_facts
+      question_retail_tax_oked: answer_with_facts
+      question_retail_tax_reports: answer_with_facts
+      question_retail_tax_transition: answer_with_facts
+      question_snr_comparison: answer_with_facts
+      question_vat_registration: answer_with_facts
+      question_tax_optimization: answer_with_facts
+
+# =================================================================
+# ACCOUNTING QUESTIONS: Бухгалтерия (8 интентов)
+# =================================================================
+  accounting_questions:
+    description: "Обработка вопросов о бухгалтерии и документах"
+    rules:
+      question_accounting_services: answer_with_facts
+      question_esf_snt: answer_with_facts
+      question_form_910: answer_with_facts
+      question_form_200: answer_with_facts
+      question_form_300: answer_with_facts
+      question_business_registration: answer_with_facts
+      question_business_closure: answer_with_facts
+      question_document_flow: answer_with_facts
+
+# =================================================================
+# INTEGRATION QUESTIONS: Интеграции (14 интентов)
+# =================================================================
+  integration_questions:
+    description: "Обработка вопросов об интеграциях"
+    rules:
+      # Специфичные интеграции (8)
+      question_bank_terminal: answer_with_facts
+      question_kaspi_integration: answer_with_facts
+      question_halyk_integration: answer_with_facts
+      question_1c_integration: answer_with_facts
+      question_iiko_integration: answer_with_facts
+      question_ofd_connection: answer_with_facts
+      question_marking_ismet: answer_with_facts
+      question_cashback_loyalty: answer_with_facts
+      # Дополнительные интеграции (6)
+      question_glovo_wolt: answer_with_facts
+      question_telegram_bot: answer_with_facts
+      question_whatsapp_business: answer_with_facts
+      question_instagram_shop: answer_with_facts
+      question_website_widget: answer_with_facts
+      question_delivery_services: answer_with_facts
+
+# =================================================================
+# OPERATIONS QUESTIONS: Учёт и операции (10 интентов)
+# =================================================================
+  operations_questions:
+    description: "Обработка вопросов об операциях и учёте"
+    rules:
+      question_inventory: answer_with_facts
+      question_revision: answer_with_facts
+      question_purchase_mgmt: answer_with_facts
+      question_sales_mgmt: answer_with_facts
+      question_cash_operations: answer_with_facts
+      question_returns_mgmt: answer_with_facts
+      question_employee_control: answer_with_facts
+      question_multi_location: answer_with_facts
+      question_promo_discounts: answer_with_facts
+      question_price_labels: answer_with_facts
+
+# =================================================================
+# BUSINESS SCENARIOS: Бизнес-сценарии (18 интентов)
+# =================================================================
+  business_scenarios:
+    description: "Обработка вопросов о бизнес-сценариях"
+    rules:
+      # Основные (10)
+      question_grocery_store: answer_with_facts
+      question_restaurant_cafe: answer_with_facts
+      question_pharmacy: answer_with_facts
+      question_clothing_store: answer_with_facts
+      question_small_business: answer_with_facts
+      question_network_stores: answer_with_facts
+      question_market_stall: answer_with_facts
+      question_alcohol_tobacco: answer_with_facts
+      question_beauty_salon: answer_with_facts
+      question_construction: answer_with_facts
+      # Дополнительные (8)
+      question_wholesale: answer_with_facts
+      question_auto_parts: answer_with_facts
+      question_electronics: answer_with_facts
+      question_pet_shop: answer_with_facts
+      question_flower_shop: answer_with_facts
+      question_hotel: answer_with_facts
+      question_service_center: answer_with_facts
+      question_sports_shop: answer_with_facts
+
+# =================================================================
+# TECHNICAL PROBLEMS: Технические проблемы (6 интентов)
+# =================================================================
+  technical_problems:
+    description: "Обработка технических проблем"
+    rules:
+      problem_technical: offer_support
+      problem_connection: offer_support
+      problem_sync: offer_support
+      problem_fiscal: offer_support
+      request_technical_support: connect_to_support
+      request_configuration: offer_setup_help
+
+# =================================================================
+# FISCAL QUESTIONS: Фискализация (8 интентов)
+# =================================================================
+  fiscal_questions:
+    description: "Обработка вопросов о фискализации"
+    rules:
+      question_fiscal_general: answer_with_facts
+      question_fiscal_receipt: answer_with_facts
+      question_fiscal_z_report: answer_with_facts
+      question_fiscal_x_report: answer_with_facts
+      question_fiscal_kkm: answer_with_facts
+      question_fiscal_ofd_wipon: answer_with_facts
+      question_fiscal_correction: answer_with_facts
+      question_fiscal_replacement: answer_with_facts
+
+# =================================================================
+# ANALYTICS QUESTIONS: Аналитика (8 интентов)
+# =================================================================
+  analytics_questions:
+    description: "Обработка вопросов об аналитике"
+    rules:
+      question_analytics_sales: answer_with_facts
+      question_analytics_abc: answer_with_facts
+      question_analytics_profit: answer_with_facts
+      question_analytics_comparison: answer_with_facts
+      question_analytics_realtime: answer_with_facts
+      question_analytics_export: answer_with_facts
+      question_analytics_custom: answer_with_facts
+      question_analytics_dashboard: answer_with_facts
+
+# =================================================================
+# WIPON PRODUCTS: Продукты Wipon (6 интентов)
+# =================================================================
+  wipon_products:
+    description: "Обработка вопросов о продуктах Wipon"
+    rules:
+      question_wipon_pro: answer_with_facts
+      question_wipon_desktop: answer_with_facts
+      question_wipon_kassa: answer_with_facts
+      question_wipon_consulting: answer_with_facts
+      question_wipon_cashback_app: answer_with_facts
+      question_product_comparison: answer_with_facts
+
+# =================================================================
+# EMPLOYEE QUESTIONS: Сотрудники/кадры (6 интентов)
+# =================================================================
+  employee_questions:
+    description: "Обработка вопросов о сотрудниках"
+    rules:
+      question_employees_salary: answer_with_facts
+      question_employees_schedule: answer_with_facts
+      question_employees_permissions: answer_with_facts
+      question_employees_tracking: answer_with_facts
+      question_employees_motivation: answer_with_facts
+      question_employees_onboarding: answer_with_facts
+
+# =================================================================
+# PROMO LOYALTY: Промо/лояльность (6 интентов)
+# =================================================================
+  promo_loyalty:
+    description: "Обработка вопросов о программах лояльности"
+    rules:
+      question_loyalty_program: answer_with_facts
+      question_bonus_system: answer_with_facts
+      question_discount_cards: answer_with_facts
+      question_gift_cards: answer_with_facts
+      question_customer_database: answer_with_facts
+      question_sms_marketing: answer_with_facts
+
+# =================================================================
+# STABILITY QUESTIONS: Стабильность (6 интентов)
+# =================================================================
+  stability_questions:
+    description: "Обработка вопросов о надёжности системы"
+    rules:
+      question_backup_restore: answer_with_facts
+      question_uptime_sla: answer_with_facts
+      question_server_location: answer_with_facts
+      question_data_encryption: answer_with_facts
+      question_disaster_recovery: answer_with_facts
+      question_system_requirements: answer_with_facts
+
+# =================================================================
+# REGION QUESTIONS: Регионы (6 интентов)
+# =================================================================
+  region_questions:
+    description: "Обработка вопросов о регионах"
+    rules:
+      question_region_almaty: answer_with_facts
+      question_region_astana: answer_with_facts
+      question_region_shymkent: answer_with_facts
+      question_region_other: answer_with_facts
+      question_pickup_office: answer_with_facts
+      question_courier_service: answer_with_facts
+
+# =================================================================
+# DELIVERY SERVICE: Доставка и сервис (6 интентов)
+# =================================================================
+  delivery_service:
+    description: "Обработка вопросов о доставке и сервисе"
+    rules:
+      question_delivery: answer_with_facts
+      question_delivery_time: answer_with_facts
+      question_office_location: answer_with_facts
+      question_working_hours: answer_with_facts
+      # Сервисные запросы обрабатываются через rules (не transitions)
+      request_refund: handle_service_request
+      request_equipment_return: handle_service_request
+
+# =================================================================
+# CONVERSATIONAL INTENTS: Разговорные/эмоциональные (10 интентов)
+# =================================================================
+  conversational_intents:
+    description: "Обработка эмоциональных и разговорных интентов"
+    rules:
+      compliment: acknowledge_and_continue
+      joke_response: acknowledge_and_continue
+      surprise_expression: acknowledge_and_continue
+      relief_expression: acknowledge_and_continue
+      curiosity_expression: engage_curiosity
+      # Негативные эмоции — эмпатия
+      frustration_expression: empathize_and_help
+      skepticism_expression: address_concerns
+      confusion_expression: clarify_and_help
+      impatience_expression: prioritize_response
+      empathy_request: show_understanding
+
+# =================================================================
+# PURCHASE STAGES: Этапы покупки (8 интентов)
+# =================================================================
+  purchase_stages:
+    description: "Обработка этапов покупки"
+    rules:
+      request_proposal: provide_proposal
+      request_contract: provide_contract_info
+      request_invoice: provide_invoice_info
+      request_discount: handle_discount_request
+      negotiate_terms: handle_negotiation
+      request_trial_extension: handle_trial_extension
+      request_references: provide_references
+      request_sla: provide_sla_info
+    transitions:
+      # Все эти → close (готовность к покупке)
+      request_proposal: close
+      request_contract: close
+      request_invoice: close
+
+# =================================================================
+# POSITIVE SIGNALS: Позитивные сигналы (8 новых интентов)
+# =================================================================
+  positive_signals:
+    description: "Обработка позитивных сигналов покупки"
+    transitions:
+      ready_to_buy: close
+      budget_approved: close
+      decision_maker_identified: "{{next_phase_state}}"
+      urgency_expressed: close
+      competitor_dissatisfied: "{{next_phase_state}}"
+      expansion_planned: "{{next_phase_state}}"
+      positive_feedback: "{{next_phase_state}}"
+      internal_champion: close
+
+# =================================================================
+# COMPANY INFO: Вопросы о компании (4 интента)
+# =================================================================
+  company_info:
+    description: "Обработка вопросов о компании Wipon"
+    rules:
+      company_info_question: answer_with_facts
+      experience_question: answer_with_facts
+      case_study_request: provide_case_study
+      roi_question: answer_with_roi
+
+# =================================================================
+# DIALOGUE CONTROL: Управление диалогом (8 интентов)
+# =================================================================
+  dialogue_control:
+    description: "Обработка мета-интентов управления диалогом"
+    rules:
+      unclear: "{{default_unclear_action}}"
+      request_brevity: respond_briefly
+      clarification_request: clarify_and_continue
+      repeat_request: repeat_previous
+      example_request: provide_example
+      summary_request: provide_summary
+    transitions:
+      go_back: "{{prev_phase_state}}"
+      correct_info: "{{prev_phase_state}}"
+
+# =================================================================
+# LANGUAGE HANDLING: Языковые интенты
+# =================================================================
+  language_handling:
+    description: "Обработка языковых особенностей"
+    rules:
+      language_kazakh: respond_in_kazakh
+      payment_confirmation: acknowledge_payment
+
+# =================================================================
+# EXTENDED PRODUCT QUESTIONS: Расширенные вопросы о продукте (14 интентов)
+# =================================================================
+  extended_product_questions:
+    description: "Обработка расширенных вопросов о продукте"
+    rules:
+      question_security: answer_with_facts
+      question_support: answer_with_facts
+      question_implementation: answer_with_facts
+      question_training: answer_with_facts
+      question_updates: answer_with_facts
+      question_mobile: answer_with_facts
+      question_offline: answer_with_facts
+      question_data_migration: answer_with_facts
+      question_customization: answer_with_facts
+      question_reports: answer_with_facts
+      question_automation: answer_with_facts
+      question_scalability: answer_with_facts
+
+# =================================================================
+# WIPON FULL: Полный набор правил для Wipon бота
+# Комбинация всех новых mixins
+# =================================================================
+  wipon_full:
+    description: "Полный набор правил для Wipon CRM Sales Bot"
+    includes:
+      - price_handling
+      - product_questions
+      - extended_product_questions
+      - extended_objection_handling
+      - dialogue_repair
+      - exit_intents
+      - close_shortcuts
+      - social_intents
+      - meta_intents
+      - equipment_questions
+      - tariff_questions
+      - tis_questions
+      - tax_questions
+      - accounting_questions
+      - integration_questions
+      - operations_questions
+      - business_scenarios
+      - technical_problems
+      - fiscal_questions
+      - analytics_questions
+      - wipon_products
+      - employee_questions
+      - promo_loyalty
+      - stability_questions
+      - region_questions
+      - delivery_service
+      - conversational_intents
+      - purchase_stages
+      - positive_signals
+      - company_info
+      - dialogue_control
+      - language_handling
+
+# =================================================================
 # ПАРАМЕТРЫ ПО УМОЛЧАНИЮ
 # =================================================================
 # Эти значения используются если параметр не указан в состоянии
@@ -354,3 +853,4 @@ defaults:
   default_price_action: deflect_and_continue
   default_unclear_action: continue_current_goal
   next_phase_state: presentation  # По умолчанию: переход к презентации
+  prev_phase_state: greeting  # По умолчанию: возврат на greeting

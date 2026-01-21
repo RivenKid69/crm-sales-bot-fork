@@ -14,12 +14,14 @@ states:
   # =================================================================
   # АБСТРАКТНЫЙ БАЗОВЫЙ SPIN STATE
   # =================================================================
-  # Все общие правила и переходы для SPIN фаз
+  # Все общие правила и переходы для SPIN фаз.
+  # Наследует от _base_phase, который включает все новые mixins (200+ интентов).
   _spin_base:
     abstract: true
     extends: _base_phase
     parameters:
-      next_phase_state: presentation  # FIX: Default for mixin phase_progress
+      next_phase_state: presentation  # Default: переход к презентации
+      prev_phase_state: greeting      # Default: возврат на greeting
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     transitions:
@@ -28,7 +30,18 @@ states:
       demo_request: close
       callback_request: close
       farewell: soft_close
-      # Возражения → handle_objection (soft_close только при лимите)
+      consultation_request: close
+      # Позитивные сигналы покупки → close
+      ready_to_buy: close
+      budget_approved: close
+      urgency_expressed: close
+      internal_champion: close
+      # Этапы покупки → close
+      request_proposal: close
+      request_contract: close
+      request_invoice: close
+      # Все 18 возражений → handle_objection (soft_close при лимите)
+      # Основные (4)
       objection_price:
         - when: objection_limit_reached
           then: soft_close
@@ -45,12 +58,12 @@ states:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
-      # FIX: Добавлены недостающие objection handlers
-      objection_complexity:
+      # Дополнительные (14)
+      objection_timing:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
-      objection_timing:
+      objection_complexity:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
@@ -62,6 +75,46 @@ states:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
+      objection_risk:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_team_resistance:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_security:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_bad_experience:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_priority:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_scale:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_change_management:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_contract_bound:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_company_policy:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_roi_doubt:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
 
   # =================================================================
   # S - SITUATION: Понять текущую ситуацию клиента
@@ -70,6 +123,9 @@ states:
     extends: _spin_base
     goal: "Понять текущую ситуацию клиента (размер, инструменты, процессы)"
     phase: situation
+    parameters:
+      next_phase_state: spin_problem
+      prev_phase_state: greeting
     required_data:
       - company_size
     optional_data:
@@ -80,6 +136,11 @@ states:
       data_complete: spin_problem
       situation_provided: spin_problem
       info_provided: spin_problem
+      # Позитивные сигналы продвигают flow
+      decision_maker_identified: spin_problem
+      competitor_dissatisfied: spin_problem
+      expansion_planned: spin_problem
+      positive_feedback: spin_problem
     rules:
       # Специфичный unclear для situation
       unclear:
@@ -94,6 +155,9 @@ states:
     extends: _spin_base
     goal: "Выявить проблемы и боли клиента"
     phase: problem
+    parameters:
+      next_phase_state: spin_implication
+      prev_phase_state: spin_situation
     required_data:
       - pain_point
     transitions:
@@ -105,6 +169,11 @@ states:
       no_problem: spin_implication
       # Если клиент сразу согласен — в презентацию
       agreement: presentation
+      # Позитивные сигналы продвигают flow
+      decision_maker_identified: spin_implication
+      competitor_dissatisfied: spin_implication
+      expansion_planned: spin_implication
+      positive_feedback: spin_implication
     rules:
       # Специфичный unclear для problem
       unclear:
@@ -121,6 +190,9 @@ states:
     extends: _spin_base
     goal: "Помочь осознать последствия и масштаб проблемы"
     phase: implication
+    parameters:
+      next_phase_state: spin_need_payoff
+      prev_phase_state: spin_problem
     # Set flag when entering this state (replaces hardcoded logic in state_machine.py)
     on_enter:
       set_flags:
@@ -137,6 +209,11 @@ states:
       # Согласие или "нет проблем" → следующая фаза
       agreement: spin_need_payoff
       no_problem: spin_need_payoff
+      # Позитивные сигналы продвигают flow
+      decision_maker_identified: spin_need_payoff
+      competitor_dissatisfied: spin_need_payoff
+      expansion_planned: spin_need_payoff
+      positive_feedback: spin_need_payoff
     rules:
       # Специфичный unclear для implication
       unclear:
@@ -153,6 +230,9 @@ states:
     extends: _spin_base
     goal: "Помочь клиенту сформулировать ценность решения"
     phase: need_payoff
+    parameters:
+      next_phase_state: presentation
+      prev_phase_state: spin_implication
     # Set flag when entering this state (replaces hardcoded logic in state_machine.py)
     on_enter:
       set_flags:
@@ -169,6 +249,11 @@ states:
       need_expressed: presentation
       # Нет потребности — soft close
       no_need: soft_close
+      # Позитивные сигналы продвигают к презентации
+      decision_maker_identified: presentation
+      competitor_dissatisfied: presentation
+      expansion_planned: presentation
+      positive_feedback: presentation
     rules:
       # Специфичный unclear для need_payoff
       unclear:

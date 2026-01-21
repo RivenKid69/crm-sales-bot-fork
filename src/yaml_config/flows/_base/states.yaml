@@ -42,16 +42,43 @@ states:
   _base_phase:
     abstract: true
     mixins:
-      - phase_progress      # NEW: Прогресс-интенты для автоматического перехода между фазами
+      - phase_progress      # Прогресс-интенты для автоматического перехода между фазами
       - price_handling
       - product_questions
-      - objection_handling
+      - extended_product_questions  # NEW: 14 дополнительных вопросов о продукте
+      - objection_handling          # Базовые 4 возражения (backwards compat)
+      - extended_objection_handling  # NEW: Все 18 типов возражений
       - dialogue_repair
       - exit_intents
       - close_shortcuts
       - social_intents
+      # NEW: Wipon-специфичные mixins
+      - equipment_questions      # 12 интентов об оборудовании
+      - tariff_questions         # 8 интентов о тарифах
+      - tis_questions            # 10 интентов о ТИС
+      - tax_questions            # 8 интентов о налогах
+      - accounting_questions     # 8 интентов о бухгалтерии
+      - integration_questions    # 14 интентов об интеграциях
+      - operations_questions     # 10 интентов об операциях
+      - business_scenarios       # 18 интентов о бизнес-сценариях
+      - technical_problems       # 6 интентов о тех. проблемах
+      - fiscal_questions         # 8 интентов о фискализации
+      - analytics_questions      # 8 интентов об аналитике
+      - wipon_products           # 6 интентов о продуктах Wipon
+      - employee_questions       # 6 интентов о сотрудниках
+      - promo_loyalty            # 6 интентов о лояльности
+      - stability_questions      # 6 интентов о стабильности
+      - region_questions         # 6 интентов о регионах
+      - delivery_service         # 6 интентов о доставке
+      - conversational_intents   # 10 эмоциональных интентов
+      - purchase_stages          # 8 интентов этапов покупки
+      - positive_signals         # 8 позитивных сигналов
+      - company_info             # 4 интента о компании
+      - dialogue_control         # 8 мета-интентов
+      - language_handling        # 2 языковых интента
     parameters:
       next_phase_state: presentation  # Переопределите в конкретном состоянии
+      prev_phase_state: greeting      # Предыдущее состояние для go_back
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
 
@@ -84,13 +111,37 @@ states:
       comparison: "{{entry_state}}"
       pricing_details: "{{entry_state}}"
       consultation_request: "{{entry_state}}"
+
+      # NEW: Вопросы об оборудовании/тарифах → entry_state
+      question_equipment_general: "{{entry_state}}"
+      question_tariff_comparison: "{{entry_state}}"
+      question_tis_general: "{{entry_state}}"
+      question_fiscal_general: "{{entry_state}}"
+
+      # NEW: Бизнес-сценарии → entry_state
+      question_grocery_store: "{{entry_state}}"
+      question_restaurant_cafe: "{{entry_state}}"
+      question_pharmacy: "{{entry_state}}"
+
+      # NEW: Позитивные сигналы → close
+      ready_to_buy: close
+      budget_approved: close
+      urgency_expressed: close
+      internal_champion: close
+
+      # NEW: Этапы покупки → close
+      request_proposal: close
+      request_contract: close
+      request_invoice: close
+
       # Клиент сразу хочет демо/звонок → close
       demo_request: close
       callback_request: close
       # Отказ → soft_close
       rejection: soft_close
       farewell: soft_close
-      # Возражения → handle_objection (soft_close только при лимите)
+
+      # Все 18 возражений → handle_objection (soft_close при лимите)
       objection_price:
         - when: objection_limit_reached
           then: soft_close
@@ -104,6 +155,62 @@ states:
           then: soft_close
         - handle_objection
       objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_timing:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_risk:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_team_resistance:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_security:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_bad_experience:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_priority:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_scale:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_change_management:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_contract_bound:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_company_policy:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_roi_doubt:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
@@ -159,6 +266,8 @@ states:
     goal: "Показать ценность продукта"
     required_data: []
     parameters:
+      next_phase_state: close
+      prev_phase_state: spin_need_payoff
       default_price_action: answer_with_facts
       default_unclear_action: clarify_and_continue
     transitions:
@@ -171,15 +280,42 @@ states:
       implication_acknowledged: "{{entry_state}}"
 
       agreement: close
-      objection_price: handle_objection
       rejection: soft_close
       demo_request: close
       callback_request: close
       consultation_request: close
       farewell: soft_close
+
+      # NEW: Позитивные сигналы → close
+      ready_to_buy: close
+      budget_approved: close
+      urgency_expressed: close
+      internal_champion: close
+
+      # NEW: Этапы покупки → close
+      request_proposal: close
+      request_contract: close
+      request_invoice: close
+
+      # Все 18 возражений → handle_objection
+      objection_price: handle_objection
+      objection_competitor: handle_objection
       objection_no_time: handle_objection
       objection_think: handle_objection
-      objection_competitor: handle_objection
+      objection_timing: handle_objection
+      objection_complexity: handle_objection
+      objection_trust: handle_objection
+      objection_no_need: handle_objection
+      objection_risk: handle_objection
+      objection_team_resistance: handle_objection
+      objection_security: handle_objection
+      objection_bad_experience: handle_objection
+      objection_priority: handle_objection
+      objection_scale: handle_objection
+      objection_change_management: handle_objection
+      objection_contract_bound: handle_objection
+      objection_company_policy: handle_objection
+      objection_roi_doubt: handle_objection
     rules:
       price_question: answer_with_facts
       pricing_details: answer_with_facts
@@ -197,6 +333,8 @@ states:
     goal: "Отработать возражение"
     required_data: []
     parameters:
+      next_phase_state: presentation
+      prev_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: clarify_and_continue
     transitions:
@@ -213,7 +351,24 @@ states:
       demo_request: close
       callback_request: close
       farewell: soft_close
+
+      # NEW: Позитивные сигналы → close
+      ready_to_buy: close
+      budget_approved: close
+      urgency_expressed: close
+      internal_champion: close
+
+      # NEW: Этапы покупки → close
+      request_proposal: close
+      request_contract: close
+      request_invoice: close
+
+      # Все 18 возражений → handle_objection (soft_close при лимите)
       objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
@@ -225,10 +380,63 @@ states:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
-      objection_competitor:
+      objection_timing:
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_risk:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_team_resistance:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_security:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_bad_experience:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_priority:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_scale:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_change_management:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_contract_bound:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_company_policy:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_roi_doubt:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+
       question_features: presentation
       question_integrations: presentation
       comparison: presentation
@@ -258,6 +466,8 @@ states:
     required_data:
       - contact_info
     parameters:
+      next_phase_state: success
+      prev_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: clarify_and_continue
     transitions:
@@ -279,12 +489,61 @@ states:
         - when: ready_for_close
           then: success
         - close
+
+      # NEW: Позитивные сигналы → success при готовности
+      ready_to_buy:
+        - when: ready_for_close
+          then: success
+        - close
+      budget_approved:
+        - when: ready_for_close
+          then: success
+        - close
+      urgency_expressed:
+        - when: ready_for_close
+          then: success
+        - close
+      internal_champion:
+        - when: ready_for_close
+          then: success
+        - close
+
+      # NEW: Этапы покупки → success при готовности
+      request_proposal:
+        - when: ready_for_close
+          then: success
+        - close
+      request_contract:
+        - when: ready_for_close
+          then: success
+        - close
+      request_invoice:
+        - when: ready_for_close
+          then: success
+        - close
+
       rejection: soft_close
       farewell: soft_close
+
+      # Все 18 возражений → handle_objection
       objection_price: handle_objection
+      objection_competitor: handle_objection
       objection_no_time: handle_objection
       objection_think: handle_objection
-      objection_competitor: handle_objection
+      objection_timing: handle_objection
+      objection_complexity: handle_objection
+      objection_trust: handle_objection
+      objection_no_need: handle_objection
+      objection_risk: handle_objection
+      objection_team_resistance: handle_objection
+      objection_security: handle_objection
+      objection_bad_experience: handle_objection
+      objection_priority: handle_objection
+      objection_scale: handle_objection
+      objection_change_management: handle_objection
+      objection_contract_bound: handle_objection
+      objection_company_policy: handle_objection
+      objection_roi_doubt: handle_objection
     rules:
       price_question: answer_with_facts
       pricing_details: answer_with_facts
