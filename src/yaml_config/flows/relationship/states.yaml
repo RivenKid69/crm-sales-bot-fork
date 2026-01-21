@@ -1,11 +1,15 @@
 # =============================================================================
 # RELATIONSHIP SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   rel_connect:
     extends: _base_phase
     goal: "Установить первый контакт"
+    parameters:
+      next_phase_state: rel_rapport
     rules:
       connected: acknowledge_and_continue
       greeting: warm_welcome
@@ -17,6 +21,8 @@ states:
   rel_rapport:
     extends: _base_phase
     goal: "Построить взаимопонимание"
+    parameters:
+      next_phase_state: rel_nurture
     rules:
       rapport_built: acknowledge_and_continue
       small_talk: build_rapport
@@ -28,6 +34,8 @@ states:
   rel_nurture:
     extends: _base_phase
     goal: "Развивать отношения"
+    parameters:
+      next_phase_state: rel_partnership
     rules:
       nurtured: acknowledge_and_continue
       interest_shown: deepen_relationship
@@ -39,6 +47,8 @@ states:
   rel_partnership:
     extends: _base_phase
     goal: "Сформировать партнёрство"
+    parameters:
+      next_phase_state: presentation
     rules:
       partnership_formed: acknowledge_and_continue
       commitment: formalize_partnership

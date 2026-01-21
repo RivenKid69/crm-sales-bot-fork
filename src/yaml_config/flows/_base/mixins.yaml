@@ -228,9 +228,32 @@ mixins:
       solution_accepted: acknowledge_and_continue
 
 # =================================================================
+# PHASE PROGRESS: Прогресс-интенты для перехода между фазами
+# =================================================================
+# Фундаментальное решение: когда клиент предоставляет информацию
+# (situation_provided, problem_revealed, etc.), это сигнал прогресса.
+# Вместо застревания в том же состоянии, переходим к следующей фазе.
+#
+# Использование: состояние должно определить параметр next_phase_state
+# Пример:
+#   bant_budget:
+#     extends: _base_phase
+#     parameters:
+#       next_phase_state: bant_authority
+# =================================================================
+  phase_progress:
+    description: "Переходы для прогресс-интентов (информация о ситуации, проблемах, потребностях)"
+    transitions:
+      situation_provided: "{{next_phase_state}}"
+      problem_revealed: "{{next_phase_state}}"
+      implication_acknowledged: "{{next_phase_state}}"
+      need_expressed: "{{next_phase_state}}"
+
+# =================================================================
 # ПАРАМЕТРЫ ПО УМОЛЧАНИЮ
 # =================================================================
 # Эти значения используются если параметр не указан в состоянии
 defaults:
   default_price_action: deflect_and_continue
   default_unclear_action: continue_current_goal
+  next_phase_state: presentation  # По умолчанию: переход к презентации

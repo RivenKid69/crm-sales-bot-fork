@@ -1,6 +1,9 @@
 # =============================================================================
 # CONSULTATIVE SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# (situation_provided, problem_revealed, etc.) через mixin phase_progress.
+# =============================================================================
 
 states:
   consult_understand:
@@ -8,6 +11,8 @@ states:
     mixins:
       - consultative_rules
     goal: "Глубоко понять ситуацию клиента"
+    parameters:
+      next_phase_state: consult_advise  # FIX: Прогресс-интенты → следующая фаза
     rules:
       situation_described: ask_clarifying_questions
       technical_question: answer_as_consultant
@@ -22,6 +27,8 @@ states:
     mixins:
       - consultative_rules
     goal: "Дать экспертный совет"
+    parameters:
+      next_phase_state: consult_recommend  # FIX: Прогресс-интенты → следующая фаза
     rules:
       advice_request: provide_expert_advice
       question_features: explain_as_expert
@@ -37,6 +44,8 @@ states:
     mixins:
       - consultative_rules
     goal: "Рекомендовать оптимальное решение"
+    parameters:
+      next_phase_state: presentation  # FIX: Прогресс-интенты → презентация
     rules:
       recommendation_accepted: acknowledge_and_continue
       objection: address_concern_objectively

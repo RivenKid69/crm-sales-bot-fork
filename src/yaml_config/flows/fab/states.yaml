@@ -1,11 +1,15 @@
 # =============================================================================
 # FAB STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   fab_features:
     extends: _base_phase
     goal: "Представить ключевые функции"
+    parameters:
+      next_phase_state: fab_advantages
     rules:
       feature_understood: show_advantage
       question_features: explain_feature
@@ -17,6 +21,8 @@ states:
   fab_advantages:
     extends: _base_phase
     goal: "Показать преимущества"
+    parameters:
+      next_phase_state: fab_benefits
     rules:
       advantage_seen: translate_to_benefit
       comparison: highlight_advantage
@@ -28,6 +34,8 @@ states:
   fab_benefits:
     extends: _base_phase
     goal: "Перевести в выгоды для клиента"
+    parameters:
+      next_phase_state: presentation
     rules:
       benefit_realized: acknowledge_and_continue
       value_question: emphasize_benefit

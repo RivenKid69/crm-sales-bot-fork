@@ -1,6 +1,8 @@
 # =============================================================================
 # SANDLER METHOD STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   sandler_bonding:
@@ -8,6 +10,8 @@ states:
     mixins:
       - sandler_rules
     goal: "Установить доверительный контакт"
+    parameters:
+      next_phase_state: sandler_contract
     rules:
       rapport_built: acknowledge_and_continue
       small_talk: build_rapport
@@ -21,6 +25,8 @@ states:
     mixins:
       - sandler_rules
     goal: "Установить правила разговора"
+    parameters:
+      next_phase_state: sandler_pain
     rules:
       contract_agreed: acknowledge_and_continue
       unclear: explain_process
@@ -33,6 +39,8 @@ states:
     mixins:
       - sandler_rules
     goal: "Глубоко исследовать боль"
+    parameters:
+      next_phase_state: sandler_budget
     rules:
       pain_revealed: explore_pain_deeper
       pain_confirmed: quantify_pain
@@ -47,6 +55,8 @@ states:
     mixins:
       - sandler_rules
     goal: "Обсудить бюджет"
+    parameters:
+      next_phase_state: sandler_decision
     rules:
       budget_confirmed: acknowledge_and_continue
       no_budget: explore_investment
@@ -60,6 +70,8 @@ states:
     mixins:
       - sandler_rules
     goal: "Понять процесс принятия решения"
+    parameters:
+      next_phase_state: presentation
     rules:
       decision_process_clear: acknowledge_and_continue
       unclear: explore_decision_process

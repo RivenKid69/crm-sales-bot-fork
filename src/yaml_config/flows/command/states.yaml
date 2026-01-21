@@ -1,11 +1,15 @@
 # =============================================================================
 # COMMAND OF SALE STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   command_authority:
     extends: _base_phase
     goal: "Установить авторитет"
+    parameters:
+      next_phase_state: command_control
     rules:
       authority_established: take_control
       expertise_recognized: acknowledge_and_continue
@@ -17,6 +21,8 @@ states:
   command_control:
     extends: _base_phase
     goal: "Взять контроль над разговором"
+    parameters:
+      next_phase_state: command_close
     rules:
       control_gained: guide_conversation
       resistance: assert_leadership
@@ -28,6 +34,8 @@ states:
   command_close:
     extends: _base_phase
     goal: "Направить к закрытию"
+    parameters:
+      next_phase_state: presentation
     rules:
       guided_to_close: direct_close
       commitment: fast_close

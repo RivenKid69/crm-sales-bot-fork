@@ -1,11 +1,15 @@
 # =============================================================================
 # NEAT SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   neat_needs:
     extends: _base_phase
     goal: "Выявить потребности"
+    parameters:
+      next_phase_state: neat_economic
     rules:
       needs_identified: acknowledge_and_continue
       problem_revealed: explore_needs
@@ -19,6 +23,8 @@ states:
     mixins:
       - value_rules
     goal: "Понять экономическое влияние"
+    parameters:
+      next_phase_state: neat_authority
     rules:
       economic_impact_understood: acknowledge_and_continue
       roi_inquiry: present_business_case
@@ -30,6 +36,8 @@ states:
   neat_authority:
     extends: _base_phase
     goal: "Получить доступ к ЛПР"
+    parameters:
+      next_phase_state: neat_timeline
     rules:
       authority_accessed: acknowledge_and_continue
       decision_maker: acknowledge_and_continue
@@ -41,6 +49,8 @@ states:
   neat_timeline:
     extends: _base_phase
     goal: "Установить временные рамки"
+    parameters:
+      next_phase_state: presentation
     rules:
       timeline_set: acknowledge_and_continue
       urgent_need: fast_track_close

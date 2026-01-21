@@ -1,6 +1,9 @@
 # =============================================================================
 # CHALLENGER STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# (situation_provided, problem_revealed, etc.) через mixin phase_progress.
+# =============================================================================
 
 states:
   challenger_teach:
@@ -8,6 +11,8 @@ states:
     mixins:
       - challenger_rules
     goal: "Поделиться инсайтом, вызвать переосмысление"
+    parameters:
+      next_phase_state: challenger_tailor  # FIX: Прогресс-интенты → следующая фаза
     rules:
       insight_accepted: deepen_insight
       client_resistant: reframe_perspective
@@ -23,6 +28,8 @@ states:
     mixins:
       - challenger_rules
     goal: "Кастомизировать решение под клиента"
+    parameters:
+      next_phase_state: challenger_close  # FIX: Прогресс-интенты → следующая фаза
     rules:
       solution_interest: tailor_message
       specific_question: customize_response
@@ -37,6 +44,8 @@ states:
     mixins:
       - challenger_rules
     goal: "Взять контроль и закрыть сделку"
+    parameters:
+      next_phase_state: close  # FIX: Прогресс-интенты → close
     rules:
       commitment: fast_close
       hesitation: assert_leadership

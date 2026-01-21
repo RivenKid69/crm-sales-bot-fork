@@ -1,6 +1,8 @@
 # =============================================================================
 # SOLUTION SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   solution_pain:
@@ -8,6 +10,8 @@ states:
     mixins:
       - solution_rules
     goal: "Глубоко понять боль клиента"
+    parameters:
+      next_phase_state: solution_map
     rules:
       pain_revealed: explore_pain_deeper
       problem_described: map_to_solution
@@ -23,6 +27,8 @@ states:
     mixins:
       - solution_rules
     goal: "Связать боль с нашим решением"
+    parameters:
+      next_phase_state: solution_value
     rules:
       solution_understood: prove_value
       feature_question: explain_solution_fit
@@ -38,6 +44,8 @@ states:
     mixins:
       - solution_rules
     goal: "Доказать ценность решения"
+    parameters:
+      next_phase_state: presentation
     rules:
       value_confirmed: acknowledge_and_continue
       roi_question: present_business_case

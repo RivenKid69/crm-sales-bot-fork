@@ -1,6 +1,8 @@
 # =============================================================================
 # TRANSACTIONAL SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   trans_qualify:
@@ -8,6 +10,8 @@ states:
     mixins:
       - transactional_rules
     goal: "Быстро квалифицировать"
+    parameters:
+      next_phase_state: trans_offer
     rules:
       qualified: make_offer
       any_response: keep_it_short
@@ -22,6 +26,8 @@ states:
     mixins:
       - transactional_rules
     goal: "Сделать прямое предложение"
+    parameters:
+      next_phase_state: trans_close
     rules:
       offer_received: move_to_close
       buying_signal: fast_close
@@ -36,6 +42,8 @@ states:
     mixins:
       - transactional_rules
     goal: "Быстро закрыть"
+    parameters:
+      next_phase_state: presentation
     rules:
       closed: acknowledge_and_continue
       commitment: fast_close

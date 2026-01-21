@@ -1,6 +1,8 @@
 # =============================================================================
 # AIDA STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   aida_attention:
@@ -8,6 +10,8 @@ states:
     mixins:
       - aida_rules
     goal: "Захватить внимание"
+    parameters:
+      next_phase_state: aida_interest
     rules:
       attention_captured: build_interest
       unclear: grab_attention
@@ -20,6 +24,8 @@ states:
     mixins:
       - aida_rules
     goal: "Развить интерес"
+    parameters:
+      next_phase_state: aida_desire
     rules:
       interest_shown: create_desire
       question_features: build_interest
@@ -33,6 +39,8 @@ states:
     mixins:
       - aida_rules
     goal: "Создать желание"
+    parameters:
+      next_phase_state: aida_action
     rules:
       desire_expressed: call_to_action
       value_question: increase_desire
@@ -46,6 +54,8 @@ states:
     mixins:
       - aida_rules
     goal: "Призвать к действию"
+    parameters:
+      next_phase_state: presentation
     rules:
       action_taken: acknowledge_and_continue
       hesitation: reinforce_action

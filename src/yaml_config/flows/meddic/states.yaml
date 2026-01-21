@@ -1,11 +1,15 @@
 # =============================================================================
 # MEDDIC STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   meddic_metrics:
     extends: _base_phase
     goal: "Определить метрики успеха"
+    parameters:
+      next_phase_state: meddic_buyer
     rules:
       metrics_defined: acknowledge_and_continue
       unclear: explore_success_metrics
@@ -16,6 +20,8 @@ states:
   meddic_buyer:
     extends: _base_phase
     goal: "Идентифицировать экономического покупателя"
+    parameters:
+      next_phase_state: meddic_criteria
     rules:
       buyer_identified: acknowledge_and_continue
       unclear: identify_decision_maker
@@ -26,6 +32,8 @@ states:
   meddic_criteria:
     extends: _base_phase
     goal: "Понять критерии принятия решения"
+    parameters:
+      next_phase_state: meddic_process
     rules:
       criteria_understood: acknowledge_and_continue
       unclear: explore_criteria
@@ -36,6 +44,8 @@ states:
   meddic_process:
     extends: _base_phase
     goal: "Понять процесс принятия решения"
+    parameters:
+      next_phase_state: meddic_pain
     rules:
       process_mapped: acknowledge_and_continue
       unclear: map_decision_process
@@ -46,6 +56,8 @@ states:
   meddic_pain:
     extends: _base_phase
     goal: "Идентифицировать боль"
+    parameters:
+      next_phase_state: meddic_champion
     rules:
       pain_identified: acknowledge_and_continue
       unclear: explore_pain
@@ -56,6 +68,8 @@ states:
   meddic_champion:
     extends: _base_phase
     goal: "Найти внутреннего чемпиона"
+    parameters:
+      next_phase_state: presentation
     rules:
       champion_found: acknowledge_and_continue
       unclear: identify_champion

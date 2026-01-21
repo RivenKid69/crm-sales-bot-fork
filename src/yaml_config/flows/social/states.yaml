@@ -1,11 +1,15 @@
 # =============================================================================
 # SOCIAL SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   social_trust:
     extends: _base_phase
     goal: "Построить доверие"
+    parameters:
+      next_phase_state: social_value
     rules:
       trust_built: share_value
       social_proof_request: provide_testimonials
@@ -17,6 +21,8 @@ states:
   social_value:
     extends: _base_phase
     goal: "Поделиться ценностью"
+    parameters:
+      next_phase_state: social_engage
     rules:
       value_shared: engage_deeper
       content_interest: share_insights
@@ -28,6 +34,8 @@ states:
   social_engage:
     extends: _base_phase
     goal: "Вовлечь в диалог"
+    parameters:
+      next_phase_state: social_convert
     rules:
       engaged: move_to_conversion
       interaction: deepen_engagement
@@ -39,6 +47,8 @@ states:
   social_convert:
     extends: _base_phase
     goal: "Конвертировать в клиента"
+    parameters:
+      next_phase_state: presentation
     rules:
       converted: acknowledge_and_continue
       ready_to_proceed: fast_close

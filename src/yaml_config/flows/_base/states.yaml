@@ -42,6 +42,7 @@ states:
   _base_phase:
     abstract: true
     mixins:
+      - phase_progress      # NEW: Прогресс-интенты для автоматического перехода между фазами
       - price_handling
       - product_questions
       - objection_handling
@@ -50,6 +51,7 @@ states:
       - close_shortcuts
       - social_intents
     parameters:
+      next_phase_state: presentation  # Переопределите в конкретном состоянии
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
 

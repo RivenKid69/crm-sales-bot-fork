@@ -19,6 +19,7 @@ states:
     abstract: true
     extends: _base_phase
     parameters:
+      next_phase_state: presentation  # FIX: Default for mixin phase_progress
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     transitions:

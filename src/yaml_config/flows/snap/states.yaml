@@ -1,11 +1,15 @@
 # =============================================================================
 # SNAP SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   snap_simple:
     extends: _base_phase
     goal: "Сделать всё максимально просто"
+    parameters:
+      next_phase_state: snap_value
     rules:
       simplicity_appreciated: acknowledge_and_continue
       complex_question: simplify_answer
@@ -17,6 +21,8 @@ states:
   snap_value:
     extends: _base_phase
     goal: "Показать незаменимую ценность"
+    parameters:
+      next_phase_state: snap_align
     rules:
       value_understood: acknowledge_and_continue
       value_question: demonstrate_value
@@ -28,6 +34,8 @@ states:
   snap_align:
     extends: _base_phase
     goal: "Выровняться с приоритетами клиента"
+    parameters:
+      next_phase_state: snap_priority
     rules:
       aligned: acknowledge_and_continue
       priority_mismatch: realign_priorities
@@ -39,6 +47,8 @@ states:
   snap_priority:
     extends: _base_phase
     goal: "Поднять приоритет нашего решения"
+    parameters:
+      next_phase_state: presentation
     rules:
       priority_raised: acknowledge_and_continue
       urgency_created: fast_track_close

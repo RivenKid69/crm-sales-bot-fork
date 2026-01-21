@@ -1,11 +1,15 @@
 # =============================================================================
 # DEMO FIRST SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   demo_hook:
     extends: _base_phase
     goal: "Зацепить интерес к демо"
+    parameters:
+      next_phase_state: demo_show
     rules:
       hooked: offer_demo
       demo_request: start_demo
@@ -18,6 +22,8 @@ states:
   demo_show:
     extends: _base_phase
     goal: "Показать продукт"
+    parameters:
+      next_phase_state: demo_qa
     rules:
       demo_completed: answer_questions
       question_features: demonstrate_feature
@@ -30,6 +36,8 @@ states:
   demo_qa:
     extends: _base_phase
     goal: "Ответить на вопросы"
+    parameters:
+      next_phase_state: demo_close
     rules:
       questions_answered: move_to_close
       question_features: answer_and_continue
@@ -43,6 +51,8 @@ states:
   demo_close:
     extends: _base_phase
     goal: "Закрыть после демо"
+    parameters:
+      next_phase_state: presentation
     rules:
       closed: acknowledge_and_continue
       commitment: fast_close

@@ -1,6 +1,8 @@
 # =============================================================================
 # GAP SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   gap_current:
@@ -8,6 +10,8 @@ states:
     mixins:
       - gap_rules
     goal: "Понять текущее состояние"
+    parameters:
+      next_phase_state: gap_future
     rules:
       current_understood: explore_future_state
       current_state_described: acknowledge_and_continue
@@ -21,6 +25,8 @@ states:
     mixins:
       - gap_rules
     goal: "Визуализировать желаемое будущее"
+    parameters:
+      next_phase_state: gap_analysis
     rules:
       future_visualized: identify_gap
       future_described: acknowledge_and_continue
@@ -34,6 +40,8 @@ states:
     mixins:
       - gap_rules
     goal: "Показать разрыв"
+    parameters:
+      next_phase_state: gap_solution
     rules:
       gap_identified: present_solution
       gap_acknowledged: acknowledge_and_continue
@@ -47,6 +55,8 @@ states:
     mixins:
       - gap_rules
     goal: "Показать как решение заполняет разрыв"
+    parameters:
+      next_phase_state: presentation
     rules:
       solution_accepted: acknowledge_and_continue
       solution_question: explain_fit

@@ -2,6 +2,10 @@
 # BANT STATES
 # =============================================================================
 # Состояния для BANT flow
+#
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# (situation_provided, problem_revealed, etc.) через mixin phase_progress.
+# Это предотвращает застревание бота при получении этих интентов.
 # =============================================================================
 
 states:
@@ -9,6 +13,8 @@ states:
   bant_budget:
     extends: _base_phase
     goal: "Выяснить бюджет клиента"
+    parameters:
+      next_phase_state: bant_authority  # FIX: Прогресс-интенты → следующая фаза
     rules:
       budget_confirmed: acknowledge_and_continue
       no_budget: explore_budget_options
@@ -23,6 +29,8 @@ states:
   bant_authority:
     extends: _base_phase
     goal: "Определить лицо принимающее решение"
+    parameters:
+      next_phase_state: bant_need  # FIX: Прогресс-интенты → следующая фаза
     rules:
       authority_confirmed: acknowledge_and_continue
       decision_maker: acknowledge_and_continue
@@ -37,6 +45,8 @@ states:
   bant_need:
     extends: _base_phase
     goal: "Выявить потребность"
+    parameters:
+      next_phase_state: bant_timeline  # FIX: Прогресс-интенты → следующая фаза
     rules:
       need_confirmed: acknowledge_and_continue
       problem_revealed: explore_need_deeper
@@ -51,6 +61,8 @@ states:
   bant_timeline:
     extends: _base_phase
     goal: "Определить сроки принятия решения"
+    parameters:
+      next_phase_state: presentation  # FIX: Прогресс-интенты → презентация
     rules:
       timeline_confirmed: acknowledge_and_continue
       urgent_need: fast_track_close

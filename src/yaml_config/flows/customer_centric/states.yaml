@@ -1,11 +1,15 @@
 # =============================================================================
 # CUSTOMER CENTRIC STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   cc_listen:
     extends: _base_phase
     goal: "Внимательно слушать клиента"
+    parameters:
+      next_phase_state: cc_understand
     rules:
       listened: acknowledge_and_continue
       info_provided: active_listening
@@ -17,6 +21,8 @@ states:
   cc_understand:
     extends: _base_phase
     goal: "Глубоко понять ситуацию"
+    parameters:
+      next_phase_state: cc_empower
     rules:
       understood: acknowledge_and_continue
       clarification_needed: ask_clarifying_questions
@@ -28,6 +34,8 @@ states:
   cc_empower:
     extends: _base_phase
     goal: "Дать клиенту возможность принять решение"
+    parameters:
+      next_phase_state: cc_support
     rules:
       empowered: provide_options
       decision_support: offer_guidance
@@ -39,6 +47,8 @@ states:
   cc_support:
     extends: _base_phase
     goal: "Поддержать в принятии решения"
+    parameters:
+      next_phase_state: presentation
     rules:
       supported: acknowledge_and_continue
       help_request: provide_support

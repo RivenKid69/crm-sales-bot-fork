@@ -1,6 +1,8 @@
 # =============================================================================
 # VALUE-BASED SELLING STATES
 # =============================================================================
+# FIX: Добавлен параметр next_phase_state для обработки прогресс-интентов
+# =============================================================================
 
 states:
   value_discover:
@@ -8,6 +10,8 @@ states:
     mixins:
       - value_rules
     goal: "Найти драйверы ценности"
+    parameters:
+      next_phase_state: value_quantify
     rules:
       value_drivers_found: acknowledge_and_continue
       value_question: calculate_roi_response
@@ -21,6 +25,8 @@ states:
     mixins:
       - value_rules
     goal: "Квантифицировать влияние"
+    parameters:
+      next_phase_state: value_roi
     rules:
       impact_quantified: acknowledge_and_continue
       roi_inquiry: present_business_case
@@ -34,6 +40,8 @@ states:
     mixins:
       - value_rules
     goal: "Представить ROI"
+    parameters:
+      next_phase_state: presentation
     rules:
       roi_accepted: acknowledge_and_continue
       cost_concern: answer_with_roi
