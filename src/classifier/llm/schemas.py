@@ -2,7 +2,7 @@
 from typing import Optional, Literal, List
 from pydantic import BaseModel, Field, field_validator
 
-# 150 интентов для CRM Sales Bot Wipon
+# 220 интентов для CRM Sales Bot Wipon
 IntentType = Literal[
     # =================================================================
     # ПРИВЕТСТВИЯ И ОБЩЕНИЕ (5)
@@ -255,6 +255,116 @@ IntentType = Literal[
     # =================================================================
     "language_kazakh",               # сообщение на казахском языке
     "payment_confirmation",          # подтверждение оплаты
+
+    # =================================================================
+    # РАЗГОВОРНЫЕ/ЭМОЦИОНАЛЬНЫЕ (10) - НОВЫЕ
+    # =================================================================
+    "compliment",                    # комплимент ("классный сервис", "молодцы")
+    "joke_response",                 # ответ на шутку/юмор
+    "surprise_expression",           # удивление ("ого", "ничего себе", "вау")
+    "frustration_expression",        # раздражение ("надоело", "достало")
+    "skepticism_expression",         # скептицизм ("сомневаюсь", "не верится")
+    "curiosity_expression",          # любопытство ("а что если", "интересно")
+    "empathy_request",               # запрос понимания ("войдите в положение")
+    "confusion_expression",          # замешательство ("запутался", "не понимаю")
+    "impatience_expression",         # нетерпение ("сколько ждать", "быстрее")
+    "relief_expression",             # облегчение ("ну слава богу", "наконец-то")
+
+    # =================================================================
+    # ВОПРОСЫ О ФИСКАЛИЗАЦИИ (8) - НОВЫЕ
+    # =================================================================
+    "question_fiscal_general",       # общие вопросы о фискализации
+    "question_fiscal_receipt",       # вопросы о чеках
+    "question_fiscal_z_report",      # вопросы о Z-отчёте
+    "question_fiscal_x_report",      # вопросы о X-отчёте
+    "question_fiscal_kkm",           # вопросы о ККМ/контрольно-кассовой машине
+    "question_fiscal_ofd_wipon",     # вопросы об ОФД Wipon
+    "question_fiscal_correction",    # вопросы о чеке коррекции
+    "question_fiscal_replacement",   # замена фискального накопителя
+
+    # =================================================================
+    # ВОПРОСЫ ОБ АНАЛИТИКЕ (8) - НОВЫЕ
+    # =================================================================
+    "question_analytics_sales",      # аналитика продаж
+    "question_analytics_abc",        # ABC-анализ товаров
+    "question_analytics_profit",     # анализ прибыли
+    "question_analytics_comparison", # сравнительная аналитика
+    "question_analytics_realtime",   # аналитика в реальном времени
+    "question_analytics_export",     # экспорт отчётов
+    "question_analytics_custom",     # кастомные отчёты
+    "question_analytics_dashboard",  # дашборд и графики
+
+    # =================================================================
+    # ВОПРОСЫ О ПРОДУКТАХ WIPON (6) - НОВЫЕ
+    # =================================================================
+    "question_wipon_pro",            # вопросы о Wipon Pro
+    "question_wipon_desktop",        # вопросы о Wipon Desktop
+    "question_wipon_kassa",          # вопросы о Wipon Kassa
+    "question_wipon_consulting",     # вопросы о Wipon Consulting
+    "question_wipon_cashback_app",   # приложение Wipon Cashback
+    "question_product_comparison",   # сравнение продуктов Wipon
+
+    # =================================================================
+    # ВОПРОСЫ О СОТРУДНИКАХ/КАДРАХ (6) - НОВЫЕ
+    # =================================================================
+    "question_employees_salary",     # расчёт зарплаты
+    "question_employees_schedule",   # графики работы
+    "question_employees_permissions",# настройка прав доступа
+    "question_employees_tracking",   # отслеживание работы сотрудников
+    "question_employees_motivation", # мотивация и KPI
+    "question_employees_onboarding", # обучение новых сотрудников
+
+    # =================================================================
+    # ДОПОЛНИТЕЛЬНЫЕ БИЗНЕС-СЦЕНАРИИ (8) - НОВЫЕ
+    # =================================================================
+    "question_wholesale",            # оптовая торговля
+    "question_auto_parts",           # автозапчасти
+    "question_electronics",          # электроника и техника
+    "question_pet_shop",             # зоомагазин
+    "question_flower_shop",          # цветочный магазин
+    "question_hotel",                # гостиница/хостел
+    "question_service_center",       # сервисный центр
+    "question_sports_shop",          # спортивные товары
+
+    # =================================================================
+    # ДОПОЛНИТЕЛЬНЫЕ ИНТЕГРАЦИИ (6) - НОВЫЕ
+    # =================================================================
+    "question_glovo_wolt",           # интеграция с Glovo/Wolt
+    "question_telegram_bot",         # Telegram бот
+    "question_whatsapp_business",    # WhatsApp Business
+    "question_instagram_shop",       # Instagram магазин
+    "question_website_widget",       # виджет для сайта
+    "question_delivery_services",    # службы доставки (СДЭК и др.)
+
+    # =================================================================
+    # ВОПРОСЫ О ПРОМО/ЛОЯЛЬНОСТИ (6) - НОВЫЕ
+    # =================================================================
+    "question_loyalty_program",      # программа лояльности
+    "question_bonus_system",         # бонусная система
+    "question_discount_cards",       # дисконтные карты
+    "question_gift_cards",           # подарочные карты/сертификаты
+    "question_customer_database",    # база клиентов
+    "question_sms_marketing",        # SMS-рассылки клиентам
+
+    # =================================================================
+    # ВОПРОСЫ О СТАБИЛЬНОСТИ/НАДЁЖНОСТИ (6) - НОВЫЕ
+    # =================================================================
+    "question_backup_restore",       # резервное копирование/восстановление
+    "question_uptime_sla",           # время работы/SLA
+    "question_server_location",      # расположение серверов
+    "question_data_encryption",      # шифрование данных
+    "question_disaster_recovery",    # восстановление после сбоя
+    "question_system_requirements",  # системные требования
+
+    # =================================================================
+    # ВОПРОСЫ О РЕГИОНАХ/ПРИСУТСТВИИ (6) - НОВЫЕ
+    # =================================================================
+    "question_region_almaty",        # работа в Алматы
+    "question_region_astana",        # работа в Астане
+    "question_region_shymkent",      # работа в Шымкенте
+    "question_region_other",         # другие регионы Казахстана
+    "question_pickup_office",        # самовывоз из офиса
+    "question_courier_service",      # курьерская служба Wipon
 ]
 
 PainCategory = Literal["losing_clients", "no_control", "manual_work"]

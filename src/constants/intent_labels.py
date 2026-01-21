@@ -256,6 +256,116 @@ INTENT_LABELS: Dict[str, str] = {
     # =================================================================
     "language_kazakh": "Говорить на казахском",
     "payment_confirmation": "Подтвердить оплату",
+
+    # =================================================================
+    # РАЗГОВОРНЫЕ/ЭМОЦИОНАЛЬНЫЕ (10)
+    # =================================================================
+    "compliment": "Комплимент",
+    "joke_response": "Ответ на шутку",
+    "surprise_expression": "Удивление",
+    "frustration_expression": "Раздражение",
+    "skepticism_expression": "Скептицизм",
+    "curiosity_expression": "Любопытство",
+    "empathy_request": "Просьба войти в положение",
+    "confusion_expression": "Замешательство",
+    "impatience_expression": "Нетерпение",
+    "relief_expression": "Облегчение",
+
+    # =================================================================
+    # ВОПРОСЫ О ФИСКАЛИЗАЦИИ (8)
+    # =================================================================
+    "question_fiscal_general": "Узнать о фискализации",
+    "question_fiscal_receipt": "Узнать о чеках",
+    "question_fiscal_z_report": "Узнать о Z-отчёте",
+    "question_fiscal_x_report": "Узнать о X-отчёте",
+    "question_fiscal_kkm": "Узнать о ККМ",
+    "question_fiscal_ofd_wipon": "Узнать об ОФД Wipon",
+    "question_fiscal_correction": "Узнать о коррекции чека",
+    "question_fiscal_replacement": "Замена фискального накопителя",
+
+    # =================================================================
+    # ВОПРОСЫ ОБ АНАЛИТИКЕ (8)
+    # =================================================================
+    "question_analytics_sales": "Аналитика продаж",
+    "question_analytics_abc": "ABC-анализ товаров",
+    "question_analytics_profit": "Анализ прибыли",
+    "question_analytics_comparison": "Сравнительная аналитика",
+    "question_analytics_realtime": "Реалтайм аналитика",
+    "question_analytics_export": "Экспорт отчётов",
+    "question_analytics_custom": "Кастомные отчёты",
+    "question_analytics_dashboard": "Дашборд и графики",
+
+    # =================================================================
+    # ВОПРОСЫ О ПРОДУКТАХ WIPON (6)
+    # =================================================================
+    "question_wipon_pro": "Узнать о Wipon Pro",
+    "question_wipon_desktop": "Узнать о Wipon Desktop",
+    "question_wipon_kassa": "Узнать о Wipon Kassa",
+    "question_wipon_consulting": "Бухгалтерия Wipon Consulting",
+    "question_wipon_cashback_app": "Приложение Wipon Cashback",
+    "question_product_comparison": "Сравнить продукты Wipon",
+
+    # =================================================================
+    # ВОПРОСЫ О СОТРУДНИКАХ/КАДРАХ (6)
+    # =================================================================
+    "question_employees_salary": "Расчёт зарплаты",
+    "question_employees_schedule": "Графики работы",
+    "question_employees_permissions": "Права доступа",
+    "question_employees_tracking": "Отслеживание работы",
+    "question_employees_motivation": "Мотивация и KPI",
+    "question_employees_onboarding": "Обучение сотрудников",
+
+    # =================================================================
+    # ДОПОЛНИТЕЛЬНЫЕ БИЗНЕС-СЦЕНАРИИ (8)
+    # =================================================================
+    "question_wholesale": "Для оптовой торговли",
+    "question_auto_parts": "Для автозапчастей",
+    "question_electronics": "Для электроники",
+    "question_pet_shop": "Для зоомагазина",
+    "question_flower_shop": "Для цветочного магазина",
+    "question_hotel": "Для гостиницы",
+    "question_service_center": "Для сервисного центра",
+    "question_sports_shop": "Для спорттоваров",
+
+    # =================================================================
+    # ДОПОЛНИТЕЛЬНЫЕ ИНТЕГРАЦИИ (6)
+    # =================================================================
+    "question_glovo_wolt": "Интеграция с Glovo/Wolt",
+    "question_telegram_bot": "Telegram бот",
+    "question_whatsapp_business": "WhatsApp Business",
+    "question_instagram_shop": "Instagram магазин",
+    "question_website_widget": "Виджет для сайта",
+    "question_delivery_services": "Службы доставки",
+
+    # =================================================================
+    # ВОПРОСЫ О ПРОМО/ЛОЯЛЬНОСТИ (6)
+    # =================================================================
+    "question_loyalty_program": "Программа лояльности",
+    "question_bonus_system": "Бонусная система",
+    "question_discount_cards": "Дисконтные карты",
+    "question_gift_cards": "Подарочные карты",
+    "question_customer_database": "База клиентов",
+    "question_sms_marketing": "SMS-рассылки",
+
+    # =================================================================
+    # ВОПРОСЫ О СТАБИЛЬНОСТИ/НАДЁЖНОСТИ (6)
+    # =================================================================
+    "question_backup_restore": "Резервное копирование",
+    "question_uptime_sla": "Время работы/SLA",
+    "question_server_location": "Расположение серверов",
+    "question_data_encryption": "Шифрование данных",
+    "question_disaster_recovery": "Восстановление после сбоя",
+    "question_system_requirements": "Системные требования",
+
+    # =================================================================
+    # ВОПРОСЫ О РЕГИОНАХ/ПРИСУТСТВИИ (6)
+    # =================================================================
+    "question_region_almaty": "Работа в Алматы",
+    "question_region_astana": "Работа в Астане",
+    "question_region_shymkent": "Работа в Шымкенте",
+    "question_region_other": "Другие регионы",
+    "question_pickup_office": "Самовывоз из офиса",
+    "question_courier_service": "Курьерская доставка",
 }
 
 
