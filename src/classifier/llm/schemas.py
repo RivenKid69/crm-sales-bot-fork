@@ -2,27 +2,130 @@
 from typing import Optional, Literal, List
 from pydantic import BaseModel, Field, field_validator
 
-# 33 интента из текущего INTENT_ROOTS
+# 80 интентов для CRM Sales Bot
 IntentType = Literal[
-    # Приветствия и общение
-    "greeting", "agreement", "gratitude", "farewell", "small_talk",
-    # Ценовые
-    "price_question", "pricing_details", "objection_price",
-    # Вопросы о продукте
-    "question_features", "question_integrations", "comparison",
-    # Запросы на контакт
-    "callback_request", "contact_provided", "demo_request", "consultation_request",
-    # SPIN данные
-    "situation_provided", "problem_revealed", "implication_acknowledged",
-    "need_expressed", "no_problem", "no_need", "info_provided",
-    # Возражения
-    "objection_no_time", "objection_timing", "objection_think",
-    "objection_complexity", "objection_competitor", "objection_trust",
-    "objection_no_need", "rejection",
-    # Управление диалогом
-    "unclear", "go_back", "correct_info",
-    # Мета-интенты (управление стилем)
-    "request_brevity"
+    # =================================================================
+    # ПРИВЕТСТВИЯ И ОБЩЕНИЕ (5)
+    # =================================================================
+    "greeting",      # приветствие
+    "agreement",     # согласие
+    "gratitude",     # благодарность
+    "farewell",      # прощание
+    "small_talk",    # болтовня/small talk
+
+    # =================================================================
+    # ЦЕНОВЫЕ ВОПРОСЫ (3)
+    # =================================================================
+    "price_question",   # вопрос о цене
+    "pricing_details",  # детали тарифов
+    "objection_price",  # возражение по цене
+
+    # =================================================================
+    # ВОПРОСЫ О ПРОДУКТЕ (14) - расширено с 3 до 14
+    # =================================================================
+    "question_features",       # вопрос о функциях
+    "question_integrations",   # вопрос об интеграциях
+    "comparison",              # сравнение с конкурентами
+    # Новые вопросы о продукте:
+    "question_security",       # вопросы о безопасности данных
+    "question_support",        # вопросы о техподдержке
+    "question_implementation", # вопросы о процессе внедрения
+    "question_training",       # вопросы об обучении персонала
+    "question_updates",        # вопросы об обновлениях системы
+    "question_mobile",         # вопросы о мобильном приложении
+    "question_offline",        # вопросы об офлайн-режиме
+    "question_data_migration", # вопросы о миграции данных
+    "question_customization",  # вопросы о кастомизации
+    "question_reports",        # вопросы об отчётах и аналитике
+    "question_automation",     # вопросы об автоматизации процессов
+    "question_scalability",    # вопросы о масштабируемости
+
+    # =================================================================
+    # ЗАПРОСЫ НА КОНТАКТ/ДЕЙСТВИЕ (4)
+    # =================================================================
+    "callback_request",       # запрос перезвона
+    "contact_provided",       # предоставление контакта
+    "demo_request",           # запрос демо
+    "consultation_request",   # запрос консультации
+
+    # =================================================================
+    # SPIN ДАННЫЕ (7)
+    # =================================================================
+    "situation_provided",         # информация о ситуации (S)
+    "problem_revealed",           # описание проблемы (P)
+    "implication_acknowledged",   # осознание последствий (I)
+    "need_expressed",             # выражение потребности (N)
+    "no_problem",                 # отрицание проблемы
+    "no_need",                    # отрицание потребности
+    "info_provided",              # предоставление информации
+
+    # =================================================================
+    # ВОЗРАЖЕНИЯ (18) - расширено с 8 до 18
+    # =================================================================
+    "objection_no_time",          # нет времени
+    "objection_timing",           # неподходящее время
+    "objection_think",            # нужно подумать
+    "objection_complexity",       # сложность внедрения
+    "objection_competitor",       # уже есть конкурент
+    "objection_trust",            # недоверие
+    "objection_no_need",          # не нужно
+    "rejection",                  # жёсткий отказ
+    # Новые возражения:
+    "objection_risk",             # боязнь рисков
+    "objection_team_resistance",  # сопротивление команды
+    "objection_security",         # опасения по безопасности
+    "objection_bad_experience",   # негативный опыт с CRM
+    "objection_priority",         # сейчас другие приоритеты
+    "objection_scale",            # масштаб не подходит
+    "objection_change_management",# сложность управления изменениями
+    "objection_contract_bound",   # связаны контрактом
+    "objection_company_policy",   # политика компании
+    "objection_roi_doubt",        # сомнения в окупаемости
+
+    # =================================================================
+    # ПОЗИТИВНЫЕ СИГНАЛЫ (8) - новая категория
+    # =================================================================
+    "ready_to_buy",               # готовность к покупке
+    "budget_approved",            # бюджет одобрен
+    "decision_maker_identified",  # определён ЛПР
+    "urgency_expressed",          # срочная потребность
+    "competitor_dissatisfied",    # недоволен текущим решением
+    "expansion_planned",          # планируется расширение
+    "positive_feedback",          # позитивный отзыв о демо/продукте
+    "internal_champion",          # внутренний адвокат продукта
+
+    # =================================================================
+    # ЭТАПЫ ПОКУПКИ (8) - новая категория
+    # =================================================================
+    "request_proposal",           # запрос коммерческого предложения
+    "request_contract",           # запрос договора
+    "request_invoice",            # запрос счёта
+    "request_discount",           # запрос скидки
+    "negotiate_terms",            # переговоры по условиям
+    "request_trial_extension",    # запрос продления триала
+    "request_references",         # запрос референсов/отзывов
+    "request_sla",                # запрос SLA/гарантий
+
+    # =================================================================
+    # ВОПРОСЫ О КОМПАНИИ (4) - новая категория
+    # =================================================================
+    "company_info_question",      # вопросы о компании Wipon
+    "experience_question",        # вопросы об опыте работы
+    "case_study_request",         # запрос кейсов
+    "roi_question",               # вопрос о ROI/окупаемости
+
+    # =================================================================
+    # УПРАВЛЕНИЕ ДИАЛОГОМ (8) - расширено с 4 до 8
+    # =================================================================
+    "unclear",                    # непонятное сообщение
+    "go_back",                    # вернуться назад
+    "correct_info",               # исправление информации
+    "request_brevity",            # запрос краткости
+    # Новые:
+    "clarification_request",      # просьба уточнить
+    "repeat_request",             # просьба повторить
+    "example_request",            # просьба привести пример
+    "summary_request",            # просьба подытожить
 ]
 
 PainCategory = Literal["losing_clients", "no_control", "manual_work"]
