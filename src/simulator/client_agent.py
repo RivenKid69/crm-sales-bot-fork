@@ -3,15 +3,38 @@ LLM-агент для имитации клиента.
 
 Использует LLM для генерации реалистичных ответов клиента
 на основе персоны и истории диалога.
+
+Поддерживает:
+- Генерацию ответов через LLM
+- Обработку disambiguation (нажатие на кнопки выбора)
+- Шум и персонализацию ответов
 """
 
 import random
+import re
 import time
 from typing import List, Dict, Any, Optional, Tuple
 
 from .personas import Persona
 from .noise import add_noise, add_heavy_noise, add_light_noise
 from src.decision_trace import ClientAgentTrace
+
+
+# =============================================================================
+# Disambiguation Detection & Handling
+# =============================================================================
+
+# Ключевые слова для выбора опции по персоне
+PERSONA_OPTION_PREFERENCES: Dict[str, List[str]] = {
+    "price_sensitive": ["цен", "стоим", "прайс", "тариф", "скольк", "дорог"],
+    "competitor_user": ["конкур", "poster", "iiko", "r-keeper", "сравн", "другим"],
+    "technical": ["api", "интеграц", "безопас", "данн", "техн", "функци"],
+    "busy": [],  # Выбирает первый вариант
+    "aggressive": [],  # Может игнорировать кнопки
+    "happy_path": ["демо", "показ", "попробов", "функци", "узнать"],
+    "skeptic": ["другое", "свой"],  # Предпочитает свой вариант
+    "tire_kicker": ["подум", "потом", "другое"],
+}
 
 
 class ClientAgent:
@@ -78,9 +101,204 @@ class ClientAgent:
         starter = self._apply_persona_noise(starter)
         return starter
 
+    # =========================================================================
+    # Disambiguation Handling (Button/Option Selection)
+    # =========================================================================
+
+    def _detect_disambiguation(self, bot_message: str) -> bool:
+        """
+        Определяет, содержит ли сообщение бота disambiguation (кнопки выбора).
+
+        Паттерны:
+        - Нумерованный список: "1. ... 2. ..."
+        - Inline формат: "X или Y?"
+        - Уточняющие вопросы: "Уточните", "Правильно ли я понял"
+
+        Args:
+            bot_message: Сообщение от бота
+
+        Returns:
+            True если это disambiguation
+        """
+        patterns = [
+            r"Уточните.*пожалуйста",
+            r"^\d+\.\s+.+",  # Начинается с "1. ..."
+            r"\n\d+\.\s+",  # Содержит перенос + "2. ..."
+            r"Вы хотите\s+.+\s+или\s+.+\?",  # "X или Y?"
+            r"Правильно ли я понял",
+            r"Что именно вас интересует",
+            r"или\s+.+\?$",  # Заканчивается на "или ...?"
+        ]
+
+        for pattern in patterns:
+            if re.search(pattern, bot_message, re.IGNORECASE | re.MULTILINE):
+                return True
+
+        return False
+
+    def _extract_options(self, bot_message: str) -> List[str]:
+        """
+        Извлекает варианты выбора из сообщения бота.
+
+        Args:
+            bot_message: Сообщение от бота
+
+        Returns:
+            Список вариантов (labels)
+        """
+        options = []
+
+        # Паттерн для нумерованных опций: "1. Узнать цену"
+        numbered_pattern = r"(\d+)\.\s+([^\n]+)"
+        matches = re.findall(numbered_pattern, bot_message)
+
+        if matches:
+            for num, label in matches:
+                label = label.strip()
+                # Исключаем служебные фразы
+                if "напишите" not in label.lower() and "своими словами" not in label.lower():
+                    options.append(label)
+
+        # Паттерн для inline формата: "X или Y?"
+        if not options:
+            inline_pattern = r"Вы хотите\s+(.+?)\s+или\s+(.+?)\?"
+            match = re.search(inline_pattern, bot_message, re.IGNORECASE)
+            if match:
+                options.append(match.group(1).strip())
+                options.append(match.group(2).strip())
+
+        # Паттерн для простого "X или Y?"
+        if not options:
+            simple_or_pattern = r"(.+?)\s+или\s+(.+?)\?$"
+            match = re.search(simple_or_pattern, bot_message.strip())
+            if match:
+                options.append(match.group(1).strip())
+                options.append(match.group(2).strip())
+
+        return options
+
+    def _choose_option(self, options: List[str], bot_message: str) -> Tuple[int, str]:
+        """
+        Выбирает опцию на основе персоны клиента.
+
+        Логика выбора:
+        - busy/aggressive: первая опция (быстро)
+        - skeptic/tire_kicker: "другое" или последняя
+        - price_sensitive: ищет ценовые опции
+        - technical: ищет технические опции
+        - competitor_user: ищет опции про конкурентов
+        - happy_path: первая релевантная или первая
+
+        Args:
+            options: Список вариантов
+            bot_message: Оригинальное сообщение (для контекста)
+
+        Returns:
+            Tuple[index, reason] - индекс выбранной опции и причина
+        """
+        if not options:
+            return 0, "no_options"
+
+        persona_name = self.persona.name
+
+        # Занятой/Агрессивный - просто первый вариант
+        if persona_name in ["busy", "aggressive"]:
+            return 0, "quick_choice"
+
+        # Скептик/tire_kicker - с вероятностью выбирает "другое"
+        if persona_name in ["skeptic", "tire_kicker"]:
+            if random.random() < 0.4:
+                # Ищем "другое" или последний вариант
+                for i, opt in enumerate(options):
+                    if "друг" in opt.lower():
+                        return i, "prefers_custom"
+                return len(options) - 1, "avoids_commitment"
+
+        # Поиск по ключевым словам персоны
+        preferences = PERSONA_OPTION_PREFERENCES.get(persona_name, [])
+        if preferences:
+            for i, opt in enumerate(options):
+                opt_lower = opt.lower()
+                for keyword in preferences:
+                    if keyword in opt_lower:
+                        return i, f"keyword_match:{keyword}"
+
+        # По умолчанию - первый вариант
+        return 0, "default_first"
+
+    def _generate_disambiguation_response(
+        self,
+        option_index: int,
+        options: List[str],
+        reason: str
+    ) -> str:
+        """
+        Генерирует ответ на disambiguation в стиле персоны.
+
+        Возможные форматы:
+        - Числовой: "1", "2"
+        - Словесный: "первый", "второй"
+        - Ключевое слово: "цена", "функции"
+        - Игнорирование кнопок (aggressive): свой текст
+
+        Args:
+            option_index: Индекс выбранной опции
+            options: Список вариантов
+            reason: Причина выбора
+
+        Returns:
+            Ответ клиента
+        """
+        persona_name = self.persona.name
+
+        # Aggressive иногда игнорирует кнопки
+        if persona_name == "aggressive" and random.random() < 0.3:
+            ignore_responses = [
+                "да говорите уже",
+                "ну давай короче",
+                "хватит вопросов, рассказывай",
+            ]
+            return random.choice(ignore_responses)
+
+        # Busy - максимально коротко
+        if persona_name == "busy":
+            return str(option_index + 1)
+
+        # Выбираем формат ответа случайно
+        response_type = random.choice(["numeric", "keyword", "natural"])
+
+        if response_type == "numeric":
+            # "1", "2", "3"
+            return str(option_index + 1)
+
+        elif response_type == "keyword" and option_index < len(options):
+            # Берём ключевое слово из опции
+            opt = options[option_index].lower()
+            # Убираем "узнать", "обсудить" и т.п.
+            for prefix in ["узнать ", "обсудить ", "получить ", "заказать "]:
+                opt = opt.replace(prefix, "")
+            # Берём первые 2 слова
+            words = opt.split()[:2]
+            if words:
+                return " ".join(words)
+            return str(option_index + 1)
+
+        else:
+            # Natural response - "да, первое", "второй вариант"
+            ordinals = ["первое", "второе", "третье", "четвёртое"]
+            if option_index < len(ordinals):
+                prefixes = ["", "да, ", "ну ", "хм, "]
+                prefix = random.choice(prefixes)
+                return f"{prefix}{ordinals[option_index]}"
+
+        return str(option_index + 1)
+
     def respond(self, bot_message: str) -> str:
         """
         Генерирует ответ клиента на сообщение бота.
+
+        Если бот показывает disambiguation (кнопки выбора), клиент
+        "нажимает" на подходящую кнопку на основе своей персоны.
 
         Args:
             bot_message: Сообщение бота
@@ -105,6 +323,42 @@ class ClientAgent:
                 trace.llm_latency_ms = 0
                 self._last_trace = trace
             return response
+
+        # =====================================================================
+        # Disambiguation Handling: "Нажатие на кнопку"
+        # =====================================================================
+        if self._detect_disambiguation(bot_message):
+            options = self._extract_options(bot_message)
+            if options:
+                option_index, reason = self._choose_option(options, bot_message)
+                response = self._generate_disambiguation_response(option_index, options, reason)
+
+                # Trace disambiguation decision
+                if trace:
+                    trace.disambiguation_decision = {
+                        "detected": True,
+                        "options": options,
+                        "chosen_index": option_index,
+                        "chosen_option": options[option_index] if option_index < len(options) else "N/A",
+                        "reason": reason,
+                    }
+                    trace.cleaned_response = response
+                    trace.llm_latency_ms = 0
+                    trace.leave_decision = {"should_leave": False, "reason": None}
+                    self._last_trace = trace
+
+                # Сохраняем в историю
+                self.history.append({
+                    "bot": bot_message,
+                    "client": response
+                })
+                self.turn += 1
+
+                return response
+
+        # =====================================================================
+        # Regular LLM-based Response Generation
+        # =====================================================================
 
         # Строим промпт
         prompt = self.SYSTEM_PROMPT.format(

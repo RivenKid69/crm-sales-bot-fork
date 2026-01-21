@@ -711,9 +711,11 @@ class ClientAgentTrace:
     variety_check: Dict[str, bool] = field(default_factory=dict)  # {similar_to_last, forced_alternative}
     leave_decision: Dict[str, Any] = field(default_factory=dict)  # {should_leave, reason}
     llm_latency_ms: float = 0.0
+    # Disambiguation handling (button selection)
+    disambiguation_decision: Dict[str, Any] = field(default_factory=dict)  # {detected, options, chosen_index, reason}
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "persona_name": self.persona_name,
             "persona_description": self.persona_description[:200] if self.persona_description else "",
             "prompt_sent_to_llm": self.prompt_sent_to_llm[:500] if self.prompt_sent_to_llm else "",
@@ -726,15 +728,26 @@ class ClientAgentTrace:
             "leave_decision": self.leave_decision,
             "llm_latency_ms": round(self.llm_latency_ms, 2),
         }
+        # Include disambiguation if it was triggered
+        if self.disambiguation_decision:
+            result["disambiguation_decision"] = self.disambiguation_decision
+        return result
 
     def to_compact_dict(self) -> Dict[str, Any]:
         """Сокращенная версия."""
-        return {
+        result = {
             "persona": self.persona_name,
             "response": self.cleaned_response[:100] if self.cleaned_response else "",
             "objection": self.objection_injected,
             "latency_ms": round(self.llm_latency_ms, 2),
         }
+        # Include disambiguation choice if triggered
+        if self.disambiguation_decision.get("detected"):
+            result["disambiguation"] = {
+                "chosen": self.disambiguation_decision.get("chosen_option", ""),
+                "reason": self.disambiguation_decision.get("reason", ""),
+            }
+        return result
 
 
 # =============================================================================
