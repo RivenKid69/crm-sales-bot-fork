@@ -457,7 +457,7 @@ class ClientAgent:
             return False
 
         # Случайный уход для некоторых персон
-        if self.persona.name in ["busy", "aggressive", "tire_kicker"]:
+        if self.persona.name in ["Занятой", "Агрессивный", "Просто смотрю"]:
             if self.turn > 3 and random.random() < 0.15:
                 self._decided_to_leave = True
                 return False
@@ -506,9 +506,9 @@ class ClientAgent:
 
     def _apply_persona_noise(self, text: str) -> str:
         """Применяет шум согласно персоне"""
-        if self.persona.name in ["aggressive", "busy"]:
+        if self.persona.name in ["Агрессивный", "Занятой"]:
             return add_heavy_noise(text)
-        elif self.persona.name in ["technical"]:
+        elif self.persona.name in ["Технарь"]:
             return add_light_noise(text)
         else:
             return add_noise(text)
@@ -547,7 +547,7 @@ class ClientAgent:
             return True
 
         # tire_kicker уходит рано
-        if self.persona.name == "tire_kicker" and self.turn > 4:
+        if self.persona.name == "Просто смотрю" and self.turn > 4:
             if random.random() < 0.4:
                 self._decided_to_leave = True
                 return True
@@ -557,9 +557,9 @@ class ClientAgent:
     def _generate_leave_message(self) -> str:
         """Генерирует сообщение об уходе"""
         leave_messages = {
-            "busy": ["всё, некогда", "потом", "ладно пока"],
-            "aggressive": ["всё хватит", "надоело", "пока"],
-            "tire_kicker": ["спс, подумаю", "ок понял, потом", "ладн посмотрим"],
+            "Занятой": ["всё, некогда", "потом", "ладно пока"],
+            "Агрессивный": ["всё хватит", "надоело", "пока"],
+            "Просто смотрю": ["спс, подумаю", "ок понял, потом", "ладн посмотрим"],
             "default": ["ладно, потом", "пока подумаю", "спасибо, до свидания"]
         }
 
