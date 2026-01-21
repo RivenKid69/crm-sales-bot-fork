@@ -103,6 +103,10 @@ class FeatureFlags:
         # === BUG-001 FIX: Guard/Fallback Intervention Fixes ===
         "guard_informative_intent_check": True,   # Проверка информативных интентов перед TIER_3
         "guard_skip_resets_fallback": True,       # Сброс fallback_response после skip action
+
+        # === Robust Classification: ConfidenceRouter ===
+        "confidence_router": True,                # Gap-based решения и graceful degradation
+        "confidence_router_logging": True,        # Логирование слепых зон для self-learning
     }
 
     # Группы флагов для удобного управления
@@ -140,6 +144,10 @@ class FeatureFlags:
         # BUG-001 FIX: Guard/Fallback groups
         "guard_fixes": [
             "guard_informative_intent_check", "guard_skip_resets_fallback"
+        ],
+        # Robust Classification groups
+        "robust_classification": [
+            "confidence_router", "confidence_router_logging"
         ],
     }
 
@@ -434,6 +442,20 @@ class FeatureFlags:
     def guard_skip_resets_fallback(self) -> bool:
         """Включён ли сброс fallback_response после skip action"""
         return self.is_enabled("guard_skip_resets_fallback")
+
+    # =========================================================================
+    # Robust Classification flags
+    # =========================================================================
+
+    @property
+    def confidence_router(self) -> bool:
+        """Включён ли ConfidenceRouter для graceful degradation"""
+        return self.is_enabled("confidence_router")
+
+    @property
+    def confidence_router_logging(self) -> bool:
+        """Включено ли логирование слепых зон для self-learning"""
+        return self.is_enabled("confidence_router_logging")
 
 
 # Singleton экземпляр

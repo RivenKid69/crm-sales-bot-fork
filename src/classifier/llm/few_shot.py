@@ -1,43 +1,33 @@
-"""Few-shot примеры для LLM классификатора."""
+"""Few-shot примеры для LLM классификатора с alternatives."""
 
 FEW_SHOT_EXAMPLES = [
-    # Приветствия
+    # Приветствия - однозначное
     {
         "message": "Привет!",
         "context": {},
         "result": {
             "intent": "greeting",
             "confidence": 0.98,
-            "reasoning": "Стандартное приветствие"
-        }
-    },
-    {
-        "message": "Здравствуйте, хотел бы узнать о вашем продукте",
-        "context": {},
-        "result": {
-            "intent": "greeting",
-            "confidence": 0.95,
-            "reasoning": "Приветствие с намерением узнать больше"
+            "reasoning": "Стандартное приветствие",
+            "alternatives": [
+                {"intent": "small_talk", "confidence": 0.15},
+                {"intent": "agreement", "confidence": 0.10}
+            ]
         }
     },
 
-    # Ценовые
+    # Ценовые - однозначное
     {
         "message": "Сколько стоит ваша система?",
         "context": {},
         "result": {
             "intent": "price_question",
             "confidence": 0.97,
-            "reasoning": "Прямой вопрос о цене"
-        }
-    },
-    {
-        "message": "Это слишком дорого для нас",
-        "context": {},
-        "result": {
-            "intent": "objection_price",
-            "confidence": 0.95,
-            "reasoning": "Возражение по цене, не вопрос"
+            "reasoning": "Прямой вопрос о цене",
+            "alternatives": [
+                {"intent": "pricing_details", "confidence": 0.25},
+                {"intent": "question_features", "confidence": 0.10}
+            ]
         }
     },
 
@@ -52,7 +42,149 @@ FEW_SHOT_EXAMPLES = [
             "extracted_data": {
                 "company_size": 15,
                 "business_type": "ресторан"
-            }
+            },
+            "alternatives": [
+                {"intent": "info_provided", "confidence": 0.30},
+                {"intent": "agreement", "confidence": 0.15}
+            ]
+        }
+    },
+
+    # ДВУСМЫСЛЕННОЕ - короткий ответ требует контекста
+    {
+        "message": "Да",
+        "context": {"last_action": "предложил демо"},
+        "result": {
+            "intent": "demo_request",
+            "confidence": 0.88,
+            "reasoning": "Согласие на демо после предложения",
+            "alternatives": [
+                {"intent": "agreement", "confidence": 0.75},
+                {"intent": "callback_request", "confidence": 0.20}
+            ]
+        }
+    },
+
+    # ДВУСМЫСЛЕННОЕ - request_brevity vs objection_think (ключевой кейс!)
+    {
+        "message": "не грузите меня, скажите суть",
+        "context": {},
+        "result": {
+            "intent": "request_brevity",
+            "confidence": 0.85,
+            "reasoning": "Клиент просит краткость, не возражает по сути",
+            "alternatives": [
+                {"intent": "objection_think", "confidence": 0.45},
+                {"intent": "objection_no_time", "confidence": 0.30}
+            ]
+        }
+    },
+
+    # ДВУСМЫСЛЕННОЕ - хватит болтать (должен поймать даже без точного примера)
+    {
+        "message": "короче давайте, хватит воды",
+        "context": {},
+        "result": {
+            "intent": "request_brevity",
+            "confidence": 0.90,
+            "reasoning": "Запрос на краткость и конкретику",
+            "alternatives": [
+                {"intent": "objection_no_time", "confidence": 0.35},
+                {"intent": "rejection", "confidence": 0.20}
+            ]
+        }
+    },
+
+    # Возражение конкурент - однозначное
+    {
+        "message": "у нас Poster, зачем нам вы?",
+        "context": {},
+        "result": {
+            "intent": "objection_competitor",
+            "confidence": 0.96,
+            "reasoning": "Клиент упоминает конкурента Poster как причину отказа",
+            "alternatives": [
+                {"intent": "comparison", "confidence": 0.40},
+                {"intent": "rejection", "confidence": 0.25}
+            ]
+        }
+    },
+
+    # ДВУСМЫСЛЕННОЕ - "ладно" может быть разным
+    {
+        "message": "ладно, давайте",
+        "context": {"last_action": "предложил демо"},
+        "result": {
+            "intent": "demo_request",
+            "confidence": 0.82,
+            "reasoning": "Неуверенное согласие на демо",
+            "alternatives": [
+                {"intent": "agreement", "confidence": 0.78},
+                {"intent": "objection_think", "confidence": 0.25}
+            ]
+        }
+    },
+
+    # Контакты - однозначное
+    {
+        "message": "+7 999 123 45 67",
+        "context": {},
+        "result": {
+            "intent": "contact_provided",
+            "confidence": 0.99,
+            "reasoning": "Клиент оставил номер телефона",
+            "extracted_data": {
+                "contact_info": "+7 999 123 45 67"
+            },
+            "alternatives": [
+                {"intent": "callback_request", "confidence": 0.20},
+                {"intent": "info_provided", "confidence": 0.10}
+            ]
+        }
+    },
+
+    # Rejection vs objection - важное различие
+    {
+        "message": "Нет, нам не интересно",
+        "context": {},
+        "result": {
+            "intent": "rejection",
+            "confidence": 0.92,
+            "reasoning": "Категоричный отказ без объяснения причины",
+            "alternatives": [
+                {"intent": "objection_no_need", "confidence": 0.55},
+                {"intent": "farewell", "confidence": 0.20}
+            ]
+        }
+    },
+
+    # ДВУСМЫСЛЕННОЕ - "не сейчас"
+    {
+        "message": "не сейчас",
+        "context": {},
+        "result": {
+            "intent": "objection_timing",
+            "confidence": 0.70,
+            "reasoning": "Отложенный интерес, не полный отказ",
+            "alternatives": [
+                {"intent": "rejection", "confidence": 0.55},
+                {"intent": "objection_no_time", "confidence": 0.50}
+            ]
+        }
+    },
+
+    # Возражение по цене - однозначное
+    {
+        "message": "Это слишком дорого для нас",
+        "context": {},
+        "result": {
+            "intent": "objection_price",
+            "confidence": 0.95,
+            "reasoning": "Возражение по цене, не вопрос",
+            "alternatives": [
+                {"intent": "rejection", "confidence": 0.30},
+                {"intent": "objection_no_need", "confidence": 0.20}
+            ]
         }
     },
 
@@ -67,101 +199,11 @@ FEW_SHOT_EXAMPLES = [
             "extracted_data": {
                 "pain_point": "теряем клиентов",
                 "pain_category": "losing_clients"
-            }
-        }
-    },
-
-    # Короткие ответы с контекстом
-    {
-        "message": "Да",
-        "context": {"last_action": "предложил демо"},
-        "result": {
-            "intent": "demo_request",
-            "confidence": 0.90,
-            "reasoning": "Согласие на демо после предложения"
-        }
-    },
-    {
-        "message": "Да",
-        "context": {"last_action": "спросил про проблемы"},
-        "result": {
-            "intent": "agreement",
-            "confidence": 0.85,
-            "reasoning": "Подтверждение наличия проблем"
-        }
-    },
-
-    # Возражения vs rejection
-    {
-        "message": "Нет, нам не интересно",
-        "context": {},
-        "result": {
-            "intent": "rejection",
-            "confidence": 0.92,
-            "reasoning": "Категоричный отказ без объяснения причины"
-        }
-    },
-    {
-        "message": "Нет, у нас уже есть iiko",
-        "context": {},
-        "result": {
-            "intent": "objection_competitor",
-            "confidence": 0.94,
-            "reasoning": "Отказ с указанием конкурента"
-        }
-    },
-
-    # Контакты
-    {
-        "message": "+7 999 123 45 67",
-        "context": {},
-        "result": {
-            "intent": "contact_provided",
-            "confidence": 0.99,
-            "reasoning": "Клиент оставил номер телефона",
-            "extracted_data": {
-                "contact_info": "+7 999 123 45 67"
-            }
-        }
-    },
-
-    # Запрос краткости (request_brevity)
-    {
-        "message": "не грузите меня, просто скажите суть",
-        "context": {},
-        "result": {
-            "intent": "request_brevity",
-            "confidence": 0.95,
-            "reasoning": "Клиент просит более краткий ответ, не возражение"
-        }
-    },
-    {
-        "message": "короче, давайте по делу",
-        "context": {},
-        "result": {
-            "intent": "request_brevity",
-            "confidence": 0.93,
-            "reasoning": "Запрос на краткость и конкретику"
-        }
-    },
-
-    # Конкуренты (objection_competitor)
-    {
-        "message": "у нас Poster, зачем нам вы?",
-        "context": {},
-        "result": {
-            "intent": "objection_competitor",
-            "confidence": 0.96,
-            "reasoning": "Клиент упоминает конкурента Poster как причину отказа"
-        }
-    },
-    {
-        "message": "мы уже используем iiko",
-        "context": {},
-        "result": {
-            "intent": "objection_competitor",
-            "confidence": 0.94,
-            "reasoning": "Клиент указывает на использование конкурентного продукта"
+            },
+            "alternatives": [
+                {"intent": "situation_provided", "confidence": 0.35},
+                {"intent": "info_provided", "confidence": 0.20}
+            ]
         }
     },
 ]

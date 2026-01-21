@@ -44,6 +44,9 @@ from response_variations import variations
 # Context Window for enhanced classification
 from context_window import ContextWindow
 
+# Robust Classification: ConfidenceRouter for graceful degradation
+from classifier.confidence_router import ConfidenceRouter, RouterDecision
+
 # Phase 5: Context-aware policy overlays
 from dialogue_policy import DialoguePolicy
 from context_envelope import build_context_envelope
@@ -168,6 +171,16 @@ class SalesBot:
         # Phase 4: Intent Disambiguation (controlled by feature flag)
         self._disambiguation_ui = None
         self.disambiguation_metrics = DisambiguationMetrics()
+
+        # Robust Classification: ConfidenceRouter for graceful degradation
+        self.confidence_router = ConfidenceRouter(
+            high_confidence=0.85,
+            medium_confidence=0.65,
+            low_confidence=0.45,
+            min_confidence=0.30,
+            gap_threshold=0.20,
+            log_uncertain=True
+        )
 
         # Phase 5: Context-aware policy overlays (controlled by feature flag)
         self.dialogue_policy = DialoguePolicy(
@@ -761,6 +774,72 @@ class SalesBot:
             competitor_name = self._extract_competitor_name(user_message)
             if competitor_name:
                 self.state_machine.collected_data["competitor_name"] = competitor_name
+
+        # =================================================================
+        # Robust Classification: ConfidenceRouter for graceful degradation
+        # =================================================================
+        if flags.confidence_router and intent != "disambiguation_needed":
+            # Добавляем оригинальное сообщение для логирования
+            classification["_original_message"] = user_message
+
+            router_result = self.confidence_router.route(classification)
+
+            logger.debug(
+                "ConfidenceRouter decision",
+                decision=router_result.decision.value,
+                intent=intent,
+                confidence=classification.get("confidence", 0.0),
+                gap=router_result.gap,
+            )
+
+            # Обработка решений роутера
+            if router_result.decision == RouterDecision.CONFIRM:
+                # Почти уверены - показываем один вариант с подтверждением
+                return self._initiate_disambiguation(
+                    classification={
+                        **classification,
+                        "disambiguation_options": [
+                            {"intent": intent, "label": router_result.confirm_question}
+                        ],
+                        "disambiguation_question": router_result.confirm_question,
+                        "original_intent": intent,
+                    },
+                    user_message=user_message,
+                    context=current_context,
+                    tone_info=tone_info
+                )
+
+            elif router_result.decision == RouterDecision.DISAMBIGUATE:
+                # Не уверены - показываем кнопки с вариантами
+                options = [
+                    {"intent": opt.intent, "label": opt.label, "confidence": opt.confidence}
+                    for opt in router_result.options
+                ]
+                return self._initiate_disambiguation(
+                    classification={
+                        **classification,
+                        "disambiguation_options": options,
+                        "disambiguation_question": "Уточните, пожалуйста:",
+                        "original_intent": intent,
+                    },
+                    user_message=user_message,
+                    context=current_context,
+                    tone_info=tone_info
+                )
+
+            elif router_result.decision == RouterDecision.FALLBACK:
+                # Совсем не поняли - human handoff
+                logger.warning(
+                    "ConfidenceRouter FALLBACK - low confidence",
+                    intent=intent,
+                    confidence=classification.get("confidence", 0.0),
+                )
+                # Используем clarify_and_continue с предложением связаться с человеком
+                intent = "unclear"
+                classification["intent"] = intent
+                classification["confidence"] = 0.3
+
+            # RouterDecision.EXECUTE - продолжаем как обычно
 
         # =================================================================
         # Phase 4: Handle disambiguation_needed intent

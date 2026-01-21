@@ -42,12 +42,23 @@ class ExtractedData(BaseModel):
     value_acknowledged: Optional[bool] = Field(None, description="Признана ли ценность")
 
 
+class IntentAlternative(BaseModel):
+    """Альтернативный интент с confidence."""
+    intent: IntentType = Field(..., description="Интент")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Уверенность 0-1")
+
+
 class ClassificationResult(BaseModel):
     """Результат классификации интента."""
-    intent: IntentType = Field(..., description="Определённый интент")
+    intent: IntentType = Field(..., description="Определённый интент (top-1)")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Уверенность 0-1")
     reasoning: str = Field(..., description="Объяснение выбора интента")
     extracted_data: ExtractedData = Field(default_factory=ExtractedData)
+    alternatives: List[IntentAlternative] = Field(
+        default_factory=list,
+        max_length=2,
+        description="Альтернативные интенты (top-2, top-3)"
+    )
 
 
 # =============================================================================

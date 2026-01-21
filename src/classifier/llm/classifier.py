@@ -70,12 +70,21 @@ class LLMClassifier:
 
             self._llm_successes += 1
 
+            # Формируем alternatives для ConfidenceRouter
+            alternatives = []
+            for alt in result.alternatives:
+                alternatives.append({
+                    "intent": alt.intent,
+                    "confidence": alt.confidence
+                })
+
             return {
                 "intent": result.intent,
                 "confidence": result.confidence,
                 "extracted_data": result.extracted_data.model_dump(exclude_none=True),
                 "method": "llm",
-                "reasoning": result.reasoning
+                "reasoning": result.reasoning,
+                "alternatives": alternatives
             }
 
         except Exception as e:
@@ -93,12 +102,16 @@ class LLMClassifier:
                 "intent": "unclear",
                 "confidence": 0.5,
                 "extracted_data": {},
-                "method": "llm_fallback"
+                "method": "llm_fallback",
+                "alternatives": []
             }
 
         try:
             result = self.fallback.classify(message, context)
             result["method"] = "llm_fallback"
+            # Добавляем alternatives если их нет (для совместимости со старым HybridClassifier)
+            if "alternatives" not in result:
+                result["alternatives"] = []
             return result
         except Exception as e:
             logger.error(f"Fallback classifier error: {e}")
@@ -106,7 +119,8 @@ class LLMClassifier:
                 "intent": "unclear",
                 "confidence": 0.3,
                 "extracted_data": {},
-                "method": "llm_fallback"
+                "method": "llm_fallback",
+                "alternatives": []
             }
 
     def get_stats(self) -> Dict[str, Any]:
