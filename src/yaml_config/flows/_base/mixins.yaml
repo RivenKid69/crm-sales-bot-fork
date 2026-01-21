@@ -49,13 +49,29 @@ mixins:
   # =================================================================
   # OBJECTION HANDLING: Обработка возражений
   # =================================================================
+  # FIX: Все возражения теперь направляются в handle_objection по умолчанию.
+  # Переход в soft_close происходит только при достижении лимита возражений
+  # (3 подряд или 5 всего) через условие objection_limit_reached.
+  # =================================================================
   objection_handling:
     description: "Переходы для обработки возражений"
     transitions:
-      objection_price: handle_objection
-      objection_competitor: handle_objection
-      objection_no_time: soft_close
-      objection_think: soft_close
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
 
   # =================================================================
   # DIALOGUE REPAIR: Восстановление диалога

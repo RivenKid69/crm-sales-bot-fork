@@ -27,11 +27,23 @@ states:
       demo_request: close
       callback_request: close
       farewell: soft_close
-      # Возражения → обработка или soft_close
-      objection_price: handle_objection
-      objection_competitor: handle_objection
-      objection_no_time: soft_close
-      objection_think: soft_close
+      # Возражения → handle_objection (soft_close только при лимите)
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
 
   # =================================================================
   # S - SITUATION: Понять текущую ситуацию клиента
