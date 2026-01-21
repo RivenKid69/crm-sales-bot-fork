@@ -4,9 +4,10 @@
 Включает:
 - ResponseGenerator: генерация ответов через LLM
 - PersonalizationEngine: персонализация на основе собранных данных
+- SafeDict: безопасная подстановка переменных в шаблоны
 """
 
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING, Any
 from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from knowledge.retriever import get_retriever
 from settings import settings
@@ -16,6 +17,67 @@ from feature_flags import flags
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
     from src.personalization import PersonalizationEngineV2
+
+
+# =============================================================================
+# SAFE TEMPLATE SUBSTITUTION
+# =============================================================================
+
+class SafeDict(dict):
+    """
+    Словарь с безопасной подстановкой для template.format().
+
+    Возвращает пустую строку для отсутствующих ключей вместо KeyError.
+    Это предотвращает падение форматирования и показ {переменных} клиенту.
+
+    Usage:
+        template = "Hello {name}, your pain is {pain_point}"
+        result = template.format_map(SafeDict({"name": "John"}))
+        # Result: "Hello John, your pain is "
+    """
+
+    def __missing__(self, key: str) -> str:
+        """Возвращает пустую строку для отсутствующих ключей."""
+        logger.debug(f"SafeDict: missing key '{key}', returning empty string")
+        return ""
+
+
+# Fallback значения для персонализационных переменных
+# Используются когда PersonalizationEngine v2 отключен или недоступен
+PERSONALIZATION_DEFAULTS: Dict[str, str] = {
+    # Style instructions (from PersonalizationResult)
+    "style_full_instruction": "",
+    "adaptive_style_instruction": "",
+    "adaptive_tactical_instruction": "",
+
+    # Business context (bc_* prefix)
+    "size_category": "small",
+    "bc_size_label": "",
+    "bc_pain_focus": "",
+    "bc_value_prop": "",
+    "bc_objection_counter": "",
+    "bc_demo_pitch": "",
+
+    # Industry context (ic_* prefix)
+    "industry": "",
+    "industry_confidence": "0",
+    "ic_keywords": "",
+    "ic_examples": "",
+    "ic_pain_examples": "",
+
+    # Session memory
+    "effective_actions_hint": "",
+
+    # Pain reference
+    "pain_reference": "",
+    "personalization_block": "",
+
+    # ResponseDirectives memory fields
+    "client_card": "",
+    "do_not_repeat": "",
+    "reference_pain": "",
+    "objection_summary": "",
+}
 
 
 # =============================================================================
@@ -535,15 +597,28 @@ class ResponseGenerator:
         objection_type = objection_info.get("objection_type", "")
         objection_counter = self._get_objection_counter(objection_type, collected)
 
-        variables = {
+        # === Собираем pain_point с корректной обработкой пустых значений ===
+        raw_pain_point = collected.get("pain_point")
+        # Если pain_point не собран или пустой, используем нейтральную формулировку
+        if raw_pain_point and raw_pain_point != "?" and str(raw_pain_point).strip():
+            pain_point_value = str(raw_pain_point).strip()
+        else:
+            pain_point_value = "текущие сложности"  # Нейтральная формулировка
+
+        # === Начинаем с fallback значений для персонализации ===
+        # Это гарантирует что все переменные определены, даже если personalization_v2 отключен
+        variables = dict(PERSONALIZATION_DEFAULTS)
+
+        # === Добавляем базовые переменные (перезаписывают fallback при наличии) ===
+        variables.update({
             "system": system_prompt,
             "user_message": user_message,
             "history": self.format_history(context.get("history", [])),
             "goal": context.get("goal", ""),
             "collected_data": str(collected),
             "missing_data": ", ".join(context.get("missing_data", [])) or "всё собрано",
-            "company_size": collected.get("company_size", "?"),
-            "pain_point": collected.get("pain_point", "?"),
+            "company_size": collected.get("company_size") or "не указан",
+            "pain_point": pain_point_value,
             "facts": facts,
             # База знаний
             "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
@@ -561,7 +636,7 @@ class ResponseGenerator:
             # Phase 3: Objection handling
             "objection_type": objection_type,
             "objection_counter": objection_counter,
-        }
+        })
 
         # === Personalization v2: Adaptive personalization ===
         if self.personalization_engine and flags.personalization_v2:
@@ -584,6 +659,12 @@ class ResponseGenerator:
                 )
             except Exception as e:
                 logger.warning(f"Personalization v2 failed: {e}")
+                # Fallback на legacy персонализацию при ошибке
+                self._apply_legacy_personalization(variables, collected)
+        else:
+            # === Legacy Personalization: используем когда v2 отключен ===
+            # Это гарантирует что bc_* переменные будут заполнены корректно
+            self._apply_legacy_personalization(variables, collected)
 
         # === ResponseDirectives integration ===
         response_directives = context.get("response_directives")
@@ -615,12 +696,10 @@ class ResponseGenerator:
             except Exception as e:
                 logger.warning(f"ResponseDirectives integration failed: {e}")
 
-        # Подставляем в шаблон
-        try:
-            prompt = template.format(**variables)
-        except KeyError as e:
-            print(f"Missing variable: {e}")
-            prompt = template
+        # Подставляем в шаблон с безопасной подстановкой
+        # SafeDict возвращает пустую строку для отсутствующих ключей,
+        # предотвращая KeyError и показ {переменных} клиенту
+        prompt = template.format_map(SafeDict(variables))
 
         # Генерируем с retry при китайских символах
         best_response = ""
@@ -695,6 +774,50 @@ class ResponseGenerator:
 
         # Fallback на PersonalizationEngine для персонализированного контраргумента
         return PersonalizationEngine.get_objection_counter(collected_data, objection_type)
+
+    def _apply_legacy_personalization(self, variables: Dict[str, Any], collected_data: Dict) -> None:
+        """
+        Применить legacy персонализацию когда PersonalizationEngine v2 отключен.
+
+        Заполняет bc_* переменные на основе размера компании и отрасли.
+        Это гарантирует что шаблоны с {bc_value_prop} и т.д. будут корректно заполнены.
+
+        Args:
+            variables: Словарь переменных для обновления (in-place)
+            collected_data: Собранные данные о клиенте
+        """
+        try:
+            context = PersonalizationEngine.get_context(collected_data)
+
+            # Business context (bc_* prefix)
+            bc = context.get("business_context") or {}
+            variables["size_category"] = context.get("size_category", "small")
+            variables["bc_size_label"] = bc.get("size_label", "")
+            variables["bc_pain_focus"] = bc.get("pain_focus", "")
+            variables["bc_value_prop"] = bc.get("value_prop", "")
+            variables["bc_objection_counter"] = bc.get("objection_counter", "")
+            variables["bc_demo_pitch"] = bc.get("demo_pitch", "")
+
+            # Industry context (ic_* prefix)
+            ic = context.get("industry_context") or {}
+            if ic:
+                variables["industry"] = context.get("industry", "")
+                variables["ic_keywords"] = ", ".join(ic.get("keywords", []))
+                variables["ic_examples"] = ", ".join(ic.get("examples", []))
+                variables["ic_pain_examples"] = ", ".join(ic.get("pain_examples", []))
+
+            # Pain reference
+            variables["pain_reference"] = context.get("pain_reference", "")
+
+            logger.debug(
+                "Legacy personalization applied",
+                size_category=variables.get("size_category"),
+                has_industry=bool(context.get("industry")),
+                has_pain_ref=bool(context.get("pain_reference")),
+            )
+        except Exception as e:
+            logger.warning(f"Legacy personalization failed: {e}")
+            # Переменные уже имеют fallback значения из PERSONALIZATION_DEFAULTS
 
     def _clean(self, text: str) -> str:
         """Убираем лишнее и фильтруем нерусский текст"""
