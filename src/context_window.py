@@ -33,6 +33,14 @@ from collections import Counter
 from enum import Enum
 import time
 
+# CRITICAL FIX: Import intent categories from single source of truth (constants.yaml)
+# This ensures ContextWindow uses the complete, up-to-date list of intents
+from src.yaml_config.constants import (
+    OBJECTION_INTENTS,
+    POSITIVE_INTENTS,
+    QUESTION_INTENTS,
+)
+
 if TYPE_CHECKING:
     from src.config_loader import LoadedConfig
 
@@ -669,26 +677,28 @@ class ContextWindow:
         turns: Список TurnContext
     """
 
-    # Интенты возражений
-    OBJECTION_INTENTS = {
-        "objection_price", "objection_competitor",
-        "objection_no_time", "objection_think",
-        "objection_timing", "objection_complexity",
-        "objection_no_need", "objection_trust"
-    }
+    # CRITICAL FIX: Use imported INTENT categories from yaml_config/constants.py
+    # This ensures consistency with IntentTracker and EvaluatorContext
+    # Convert to set for O(1) lookup (module-level constants are lists)
+    # These are class attributes for backward compatibility (tests use ContextWindow.OBJECTION_INTENTS)
+    OBJECTION_INTENTS: set = set(OBJECTION_INTENTS)
+    POSITIVE_INTENTS: set = set(POSITIVE_INTENTS)
+    QUESTION_INTENTS: set = set(QUESTION_INTENTS)
 
-    # Позитивные интенты (сбрасывают негативные паттерны)
-    POSITIVE_INTENTS = {
-        "agreement", "demo_request", "callback_request", "contact_provided",
-        "situation_provided", "problem_revealed", "implication_acknowledged",
-        "need_expressed", "info_provided", "gratitude"
-    }
+    @classmethod
+    def _get_objection_intents(cls) -> set:
+        """Get objection intents as set."""
+        return cls.OBJECTION_INTENTS
 
-    # Вопросительные интенты
-    QUESTION_INTENTS = {
-        "question_features", "question_integrations", "price_question",
-        "pricing_details", "comparison", "consultation_request"
-    }
+    @classmethod
+    def _get_positive_intents(cls) -> set:
+        """Get positive intents as set."""
+        return cls.POSITIVE_INTENTS
+
+    @classmethod
+    def _get_question_intents(cls) -> set:
+        """Get question intents as set."""
+        return cls.QUESTION_INTENTS
 
     def __init__(
         self,
@@ -934,10 +944,12 @@ class ContextWindow:
 
         # Маппим в категории: positive, objection, other
         categories = []
+        positive_set = self._get_positive_intents()
+        objection_set = self._get_objection_intents()
         for intent in history:
-            if intent in self.POSITIVE_INTENTS:
+            if intent in positive_set:
                 categories.append("positive")
-            elif intent in self.OBJECTION_INTENTS:
+            elif intent in objection_set:
                 categories.append("objection")
             else:
                 categories.append("other")
@@ -980,9 +992,10 @@ class ContextWindow:
         history = self.get_intent_history()
 
         # Ищем вопросительные интенты которые встречаются > 1 раза
+        question_set = self._get_question_intents()
         question_counts = Counter(
             intent for intent in history
-            if intent in self.QUESTION_INTENTS
+            if intent in question_set
         )
 
         for intent, count in question_counts.most_common(1):
@@ -998,17 +1011,20 @@ class ContextWindow:
     def get_objection_count(self, last_n: Optional[int] = None) -> int:
         """Подсчитать количество возражений."""
         history = self.get_intent_history(last_n)
-        return sum(1 for intent in history if intent in self.OBJECTION_INTENTS)
+        objection_set = self._get_objection_intents()
+        return sum(1 for intent in history if intent in objection_set)
 
     def get_positive_count(self, last_n: Optional[int] = None) -> int:
         """Подсчитать количество позитивных сигналов."""
         history = self.get_intent_history(last_n)
-        return sum(1 for intent in history if intent in self.POSITIVE_INTENTS)
+        positive_set = self._get_positive_intents()
+        return sum(1 for intent in history if intent in positive_set)
 
     def get_question_count(self, last_n: Optional[int] = None) -> int:
         """Подсчитать количество вопросов."""
         history = self.get_intent_history(last_n)
-        return sum(1 for intent in history if intent in self.QUESTION_INTENTS)
+        question_set = self._get_question_intents()
+        return sum(1 for intent in history if intent in question_set)
 
     def get_unclear_count(self, last_n: Optional[int] = None) -> int:
         """Подсчитать количество unclear интентов."""

@@ -224,6 +224,7 @@ intents:
     negative:
       - rejection
       - farewell
+      # All objection types (must be synced with objection category above)
       - objection_price
       - objection_competitor
       - objection_no_time
@@ -232,6 +233,16 @@ intents:
       - objection_complexity
       - objection_trust
       - objection_no_need
+      - objection_risk
+      - objection_team_resistance
+      - objection_security
+      - objection_bad_experience
+      - objection_priority
+      - objection_scale
+      - objection_change_management
+      - objection_contract_bound
+      - objection_company_policy
+      - objection_roi_doubt
 
     # =================================================================
     # ВОПРОСЫ ОБ ОБОРУДОВАНИИ (12 интентов)

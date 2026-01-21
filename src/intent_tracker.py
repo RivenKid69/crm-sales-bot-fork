@@ -17,65 +17,11 @@ from typing import Dict, List, Optional, Any, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 
-
-# Intent categories for tracking
-# This is the source of truth - shared with context_window.py (must stay in sync!)
-INTENT_CATEGORIES: Dict[str, List[str]] = {
-    "objection": [
-        "objection_price",
-        "objection_competitor",
-        "objection_no_time",
-        "objection_think",
-        # Additional objections (sync with context_window.OBJECTION_INTENTS)
-        "objection_timing",
-        "objection_complexity",
-        "objection_no_need",
-        "objection_trust",
-    ],
-    "positive": [
-        "agreement",
-        "demo_request",
-        "callback_request",
-        "contact_provided",
-        "consultation_request",
-        "situation_provided",
-        "problem_revealed",
-        "implication_acknowledged",
-        "need_expressed",
-        "info_provided",
-        "question_features",
-        "question_integrations",
-        "comparison",
-        "greeting",
-        "gratitude",
-    ],
-    "question": [
-        "price_question",
-        "question_features",
-        "question_integrations",
-        "question_technical",
-        "comparison",
-    ],
-    "spin_progress": [
-        "situation_provided",
-        "problem_revealed",
-        "implication_acknowledged",
-        "need_expressed",
-    ],
-    "negative": [
-        "rejection",
-        "farewell",
-        "objection_price",
-        "objection_competitor",
-        "objection_no_time",
-        "objection_think",
-        # Additional objections (sync with "objection" category)
-        "objection_timing",
-        "objection_complexity",
-        "objection_no_need",
-        "objection_trust",
-    ],
-}
+# CRITICAL FIX: Import INTENT_CATEGORIES from yaml_config/constants.py
+# which loads them from constants.yaml (single source of truth)
+# This ensures IntentTracker uses the complete, up-to-date list of intents
+# including all 19 objection types, 24 positive signals, 18 questions, etc.
+from src.yaml_config.constants import INTENT_CATEGORIES
 
 
 @dataclass

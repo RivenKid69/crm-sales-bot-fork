@@ -364,8 +364,9 @@ class TestCountersAndMetrics:
 
     def test_positive_count(self, mixed_window):
         """Подсчёт позитивных сигналов."""
-        # agreement (2), info_provided (1) = 3
-        assert mixed_window.get_positive_count() == 3
+        # greeting (1), agreement (2), info_provided (1), question_features (1) = 5
+        # Note: question_features and greeting are now positive intents per constants.yaml
+        assert mixed_window.get_positive_count() == 5
 
     def test_question_count(self, mixed_window):
         """Подсчёт вопросов."""
