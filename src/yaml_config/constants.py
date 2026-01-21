@@ -81,20 +81,113 @@ _categories = _intents.get("categories", {})
 
 GO_BACK_INTENTS: List[str] = _intents.get("go_back", [])
 
+# =============================================================================
+# БАЗОВЫЕ КАТЕГОРИИ (для обратной совместимости - экспортируются напрямую)
+# =============================================================================
 OBJECTION_INTENTS: List[str] = _categories.get("objection", [])
 POSITIVE_INTENTS: Set[str] = set(_categories.get("positive", []))
 QUESTION_INTENTS: List[str] = _categories.get("question", [])
 SPIN_PROGRESS_INTENT_LIST: List[str] = _categories.get("spin_progress", [])
 NEGATIVE_INTENTS: List[str] = _categories.get("negative", [])
+INFORMATIVE_INTENTS: List[str] = _categories.get("informative", [])
 
-# Full intent categories dict (for IntentTracker compatibility)
+# =============================================================================
+# НОВЫЕ КАТЕГОРИИ (150+ интентов) - загружаются из YAML
+# =============================================================================
+PRICE_RELATED_INTENTS: List[str] = _categories.get("price_related", [])
+QUESTION_REQUIRES_FACTS_INTENTS: List[str] = _categories.get("question_requires_facts", [])
+
+# Вопросы об оборудовании (12 интентов)
+EQUIPMENT_QUESTIONS: List[str] = _categories.get("equipment_questions", [])
+
+# Вопросы о тарифах (8 интентов)
+TARIFF_QUESTIONS: List[str] = _categories.get("tariff_questions", [])
+
+# Вопросы о ТИС (10 интентов)
+TIS_QUESTIONS: List[str] = _categories.get("tis_questions", [])
+
+# Вопросы о налогах (8 интентов)
+TAX_QUESTIONS: List[str] = _categories.get("tax_questions", [])
+
+# Бухгалтерия и документы (8 интентов)
+ACCOUNTING_QUESTIONS: List[str] = _categories.get("accounting_questions", [])
+
+# Интеграции специфичные (8 интентов)
+INTEGRATION_SPECIFIC: List[str] = _categories.get("integration_specific", [])
+
+# Учёт и операции (10 интентов)
+OPERATIONS_QUESTIONS: List[str] = _categories.get("operations_questions", [])
+
+# Доставка и сервис (6 интентов)
+DELIVERY_SERVICE: List[str] = _categories.get("delivery_service", [])
+
+# Бизнес-сценарии (18 интентов)
+BUSINESS_SCENARIOS: List[str] = _categories.get("business_scenarios", [])
+
+# Технические проблемы (6 интентов)
+TECHNICAL_PROBLEMS: List[str] = _categories.get("technical_problems", [])
+
+# Разговорные/эмоциональные (10 интентов)
+CONVERSATIONAL_INTENTS: List[str] = _categories.get("conversational", [])
+
+# Фискализация (8 интентов)
+FISCAL_QUESTIONS: List[str] = _categories.get("fiscal_questions", [])
+
+# Аналитика (8 интентов)
+ANALYTICS_QUESTIONS: List[str] = _categories.get("analytics_questions", [])
+
+# Продукты WIPON (6 интентов)
+WIPON_PRODUCTS: List[str] = _categories.get("wipon_products", [])
+
+# Сотрудники/кадры (6 интентов)
+EMPLOYEE_QUESTIONS: List[str] = _categories.get("employee_questions", [])
+
+# Промо/лояльность (6 интентов)
+PROMO_LOYALTY: List[str] = _categories.get("promo_loyalty", [])
+
+# Стабильность/надёжность (6 интентов)
+STABILITY_QUESTIONS: List[str] = _categories.get("stability_questions", [])
+
+# Регионы/присутствие (6 интентов)
+REGION_QUESTIONS: List[str] = _categories.get("region_questions", [])
+
+# Дополнительные интеграции (6 интентов)
+ADDITIONAL_INTEGRATIONS: List[str] = _categories.get("additional_integrations", [])
+
+# Этапы покупки (8 интентов)
+PURCHASE_STAGES: List[str] = _categories.get("purchase_stages", [])
+
+# Вопросы о компании (4 интента)
+COMPANY_INFO: List[str] = _categories.get("company_info", [])
+
+# Управление диалогом (8 интентов)
+DIALOGUE_CONTROL: List[str] = _categories.get("dialogue_control", [])
+
+# =============================================================================
+# INTENT_CATEGORIES - ПОЛНЫЙ СЛОВАРЬ ВСЕХ КАТЕГОРИЙ
+# =============================================================================
+# КРИТИЧНО: Это единственный источник истины для IntentTracker
+# Загружает ВСЕ категории из constants.yaml автоматически
+
 INTENT_CATEGORIES: Dict[str, List[str]] = {
-    "objection": OBJECTION_INTENTS,
-    "positive": list(POSITIVE_INTENTS),
-    "question": QUESTION_INTENTS,
-    "spin_progress": SPIN_PROGRESS_INTENT_LIST,
-    "negative": NEGATIVE_INTENTS,
+    category_name: list(category_intents) if isinstance(category_intents, list) else []
+    for category_name, category_intents in _categories.items()
 }
+
+# Гарантируем что базовые категории есть (для совместимости)
+if "objection" not in INTENT_CATEGORIES:
+    INTENT_CATEGORIES["objection"] = OBJECTION_INTENTS
+if "positive" not in INTENT_CATEGORIES:
+    INTENT_CATEGORIES["positive"] = list(POSITIVE_INTENTS)
+if "question" not in INTENT_CATEGORIES:
+    INTENT_CATEGORIES["question"] = QUESTION_INTENTS
+if "spin_progress" not in INTENT_CATEGORIES:
+    INTENT_CATEGORIES["spin_progress"] = SPIN_PROGRESS_INTENT_LIST
+if "negative" not in INTENT_CATEGORIES:
+    INTENT_CATEGORIES["negative"] = NEGATIVE_INTENTS
+
+# Intent action overrides (intent -> action mapping)
+INTENT_ACTION_OVERRIDES: Dict[str, str] = _intents.get("intent_action_overrides", {})
 
 
 # =============================================================================
@@ -222,14 +315,42 @@ __all__ = [
     "MAX_CONSECUTIVE_OBJECTIONS",
     "MAX_TOTAL_OBJECTIONS",
     "MAX_GOBACKS",
-    # Intent categories
+    # Intent categories - базовые
     "GO_BACK_INTENTS",
     "OBJECTION_INTENTS",
     "POSITIVE_INTENTS",
     "QUESTION_INTENTS",
     "SPIN_PROGRESS_INTENT_LIST",
     "NEGATIVE_INTENTS",
+    "INFORMATIVE_INTENTS",
+    "PRICE_RELATED_INTENTS",
+    "QUESTION_REQUIRES_FACTS_INTENTS",
+    # Intent categories - новые (150+ интентов)
+    "EQUIPMENT_QUESTIONS",
+    "TARIFF_QUESTIONS",
+    "TIS_QUESTIONS",
+    "TAX_QUESTIONS",
+    "ACCOUNTING_QUESTIONS",
+    "INTEGRATION_SPECIFIC",
+    "OPERATIONS_QUESTIONS",
+    "DELIVERY_SERVICE",
+    "BUSINESS_SCENARIOS",
+    "TECHNICAL_PROBLEMS",
+    "CONVERSATIONAL_INTENTS",
+    "FISCAL_QUESTIONS",
+    "ANALYTICS_QUESTIONS",
+    "WIPON_PRODUCTS",
+    "EMPLOYEE_QUESTIONS",
+    "PROMO_LOYALTY",
+    "STABILITY_QUESTIONS",
+    "REGION_QUESTIONS",
+    "ADDITIONAL_INTEGRATIONS",
+    "PURCHASE_STAGES",
+    "COMPANY_INFO",
+    "DIALOGUE_CONTROL",
+    # Главный словарь всех категорий
     "INTENT_CATEGORIES",
+    "INTENT_ACTION_OVERRIDES",
     # Policy
     "OVERLAY_ALLOWED_STATES",
     "PROTECTED_STATES",

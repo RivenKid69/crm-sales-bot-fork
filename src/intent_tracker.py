@@ -402,6 +402,214 @@ class IntentTracker:
         """Check if intent indicates SPIN progress."""
         return intent in INTENT_CATEGORIES.get("spin_progress", [])
 
+    # ==========================================================================
+    # НОВЫЕ HELPER-МЕТОДЫ для 150+ интентов (26 категорий из constants.yaml)
+    # ==========================================================================
+
+    def is_in_category(self, intent: str, category: str) -> bool:
+        """
+        Universal method to check if intent belongs to a category.
+
+        Args:
+            intent: Intent name to check
+            category: Category name (e.g., 'equipment_questions', 'tariff_questions')
+
+        Returns:
+            True if intent belongs to category
+        """
+        return intent in INTENT_CATEGORIES.get(category, [])
+
+    # --- Вопросы об оборудовании (12 интентов) ---
+    def is_equipment_question(self, intent: str) -> bool:
+        """Check if intent is an equipment question."""
+        return self.is_in_category(intent, "equipment_questions")
+
+    def equipment_questions_total(self) -> int:
+        """Get total count of equipment questions."""
+        return self.category_total("equipment_questions")
+
+    def equipment_questions_streak(self) -> int:
+        """Get consecutive count of equipment questions."""
+        return self.category_streak("equipment_questions")
+
+    # --- Вопросы о тарифах (8 интентов) ---
+    def is_tariff_question(self, intent: str) -> bool:
+        """Check if intent is a tariff question."""
+        return self.is_in_category(intent, "tariff_questions")
+
+    def tariff_questions_total(self) -> int:
+        """Get total count of tariff questions."""
+        return self.category_total("tariff_questions")
+
+    def tariff_questions_streak(self) -> int:
+        """Get consecutive count of tariff questions."""
+        return self.category_streak("tariff_questions")
+
+    # --- Вопросы о ТИС (10 интентов) ---
+    def is_tis_question(self, intent: str) -> bool:
+        """Check if intent is a TIS question."""
+        return self.is_in_category(intent, "tis_questions")
+
+    def tis_questions_total(self) -> int:
+        """Get total count of TIS questions."""
+        return self.category_total("tis_questions")
+
+    def tis_questions_streak(self) -> int:
+        """Get consecutive count of TIS questions."""
+        return self.category_streak("tis_questions")
+
+    # --- Бизнес-сценарии (18 интентов) ---
+    def is_business_scenario(self, intent: str) -> bool:
+        """Check if intent is a business scenario question."""
+        return self.is_in_category(intent, "business_scenarios")
+
+    def business_scenarios_total(self) -> int:
+        """Get total count of business scenario questions."""
+        return self.category_total("business_scenarios")
+
+    def business_scenarios_streak(self) -> int:
+        """Get consecutive count of business scenario questions."""
+        return self.category_streak("business_scenarios")
+
+    # --- Технические проблемы (6 интентов) ---
+    def is_technical_problem(self, intent: str) -> bool:
+        """Check if intent is a technical problem."""
+        return self.is_in_category(intent, "technical_problems")
+
+    def technical_problems_total(self) -> int:
+        """Get total count of technical problems."""
+        return self.category_total("technical_problems")
+
+    def technical_problems_streak(self) -> int:
+        """Get consecutive count of technical problems."""
+        return self.category_streak("technical_problems")
+
+    # --- Разговорные/эмоциональные (10 интентов) ---
+    def is_conversational(self, intent: str) -> bool:
+        """Check if intent is conversational/emotional."""
+        return self.is_in_category(intent, "conversational")
+
+    def conversational_total(self) -> int:
+        """Get total count of conversational intents."""
+        return self.category_total("conversational")
+
+    def conversational_streak(self) -> int:
+        """Get consecutive count of conversational intents."""
+        return self.category_streak("conversational")
+
+    # --- Информативные интенты (BUG-001 FIX) ---
+    def is_informative(self, intent: str) -> bool:
+        """Check if intent is informative (client providing data, not stuck)."""
+        return self.is_in_category(intent, "informative")
+
+    def informative_total(self) -> int:
+        """Get total count of informative intents."""
+        return self.category_total("informative")
+
+    # --- Этапы покупки (8 интентов) ---
+    def is_purchase_stage(self, intent: str) -> bool:
+        """Check if intent is a purchase stage action."""
+        return self.is_in_category(intent, "purchase_stages")
+
+    def purchase_stages_total(self) -> int:
+        """Get total count of purchase stage intents."""
+        return self.category_total("purchase_stages")
+
+    # --- Управление диалогом (8 интентов) ---
+    def is_dialogue_control(self, intent: str) -> bool:
+        """Check if intent is dialogue control."""
+        return self.is_in_category(intent, "dialogue_control")
+
+    def dialogue_control_total(self) -> int:
+        """Get total count of dialogue control intents."""
+        return self.category_total("dialogue_control")
+
+    # --- Price-related (требуют ответа с ценой) ---
+    def is_price_related(self, intent: str) -> bool:
+        """Check if intent is price-related (requires price answer)."""
+        return self.is_in_category(intent, "price_related")
+
+    def price_related_total(self) -> int:
+        """Get total count of price-related intents."""
+        return self.category_total("price_related")
+
+    # --- Негативные сигналы ---
+    def is_negative(self, intent: str) -> bool:
+        """Check if intent is negative (rejection/objection)."""
+        return self.is_in_category(intent, "negative")
+
+    def negative_total(self) -> int:
+        """Get total count of negative intents."""
+        return self.category_total("negative")
+
+    def negative_streak(self) -> int:
+        """Get consecutive count of negative intents."""
+        return self.category_streak("negative")
+
+    # ==========================================================================
+    # АГРЕГИРОВАННЫЕ МЕТОДЫ для паттернов поведения
+    # ==========================================================================
+
+    def get_category_counts(self) -> Dict[str, int]:
+        """
+        Get all category totals for the conversation.
+
+        Returns:
+            Dictionary of category -> total count
+
+        Example:
+            >>> tracker.get_category_counts()
+            {'objection': 2, 'equipment_questions': 3, 'positive': 5, ...}
+        """
+        return {
+            category: self.category_total(category)
+            for category in INTENT_CATEGORIES.keys()
+        }
+
+    def get_active_categories(self, min_count: int = 1) -> List[str]:
+        """
+        Get list of categories with at least min_count occurrences.
+
+        Args:
+            min_count: Minimum count to be considered active
+
+        Returns:
+            List of active category names
+        """
+        return [
+            category
+            for category, count in self.get_category_counts().items()
+            if count >= min_count
+        ]
+
+    def has_pattern(self, category: str, min_total: int = 0, min_streak: int = 0) -> bool:
+        """
+        Check if conversation has a pattern for a category.
+
+        Useful for detecting patterns like "client asked about equipment 3+ times"
+        or "3 consecutive objections".
+
+        Args:
+            category: Category to check
+            min_total: Minimum total count required
+            min_streak: Minimum consecutive count required
+
+        Returns:
+            True if pattern is detected
+
+        Example:
+            >>> tracker.has_pattern("equipment_questions", min_total=3)
+            True  # Client asked about equipment 3+ times
+
+            >>> tracker.has_pattern("objection", min_streak=3)
+            True  # 3 consecutive objections
+        """
+        if min_total > 0 and self.category_total(category) < min_total:
+            return False
+        if min_streak > 0 and self.category_streak(category) < min_streak:
+            return False
+        return min_total > 0 or min_streak > 0
+
     def __repr__(self) -> str:
         return (
             f"IntentTracker(last={self.last_intent!r}, "
