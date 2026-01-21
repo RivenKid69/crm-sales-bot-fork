@@ -5,7 +5,7 @@ CLI для запуска симуляций диалогов.
 Использование:
     python -m src.simulator -n 50 -o report.txt
     python -m src.simulator --count 10 --persona skeptic
-    python -m src.simulator -n 100 --parallel 4
+    python -m src.simulator -n 100 --parallel 8
 
 E2E тестирование 20 техник продаж:
     python -m src.simulator --e2e                    # 20 техник × 5 персон = 100 тестов
