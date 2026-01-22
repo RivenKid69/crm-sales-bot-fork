@@ -24,6 +24,12 @@ Key Components (Stage 2 - Data Models):
 
 Key Components (Stage 3 - DialogueBlackboard):
 - DialogueBlackboard: Central shared workspace for dialogue management
+
+Key Components (Stage 4 - Validator and Resolver):
+- ValidationError: Validation error for a proposal
+- ProposalValidator: Validates proposals before conflict resolution
+- ResolutionTrace: Trace of conflict resolution process
+- ConflictResolver: Resolves conflicts between proposals
 """
 
 from .enums import Priority, ProposalType
@@ -42,6 +48,8 @@ from .models import (
     ContextSnapshot,
 )
 from .blackboard import DialogueBlackboard
+from .proposal_validator import ValidationError, ProposalValidator
+from .conflict_resolver import ResolutionTrace, ConflictResolver
 
 __all__ = [
     # Enums
@@ -62,4 +70,9 @@ __all__ = [
     "ContextSnapshot",
     # Blackboard
     "DialogueBlackboard",
+    # Validator and Resolver (Stage 4)
+    "ValidationError",
+    "ProposalValidator",
+    "ResolutionTrace",
+    "ConflictResolver",
 ]
