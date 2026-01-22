@@ -592,9 +592,9 @@ class StateMachine:
                 return False
 
         # Compute phase from flow config if not provided
+        # FUNDAMENTAL FIX: Use FlowConfig.get_phase_for_state() for all flows
         if phase is None and self._flow:
-            state_config = self._flow.states.get(next_state, {})
-            phase = state_config.get("phase") or state_config.get("spin_phase")
+            phase = self._flow.get_phase_for_state(next_state)
 
         # ATOMIC UPDATE: All three attributes are updated together
         self.state = next_state
@@ -622,10 +622,17 @@ class StateMachine:
 
         This is a SAFETY NET for backward compatibility with code that
         still directly assigns to state_machine.state.
+
+        FUNDAMENTAL FIX: Uses FlowConfig.get_phase_for_state() which handles
+        both explicit phase fields (SPIN) and reverse mapping from phase_mapping
+        (BANT, MEDDIC, etc.).
         """
         if self._flow:
-            state_config = self._flow.states.get(self.state, {})
-            self.current_phase = state_config.get("phase") or state_config.get("spin_phase")
+            # Use FlowConfig's canonical phase resolution
+            # This handles ALL flows correctly:
+            # - SPIN: uses explicit state_config.phase
+            # - BANT, MEDDIC, etc.: uses reverse mapping from phases.mapping
+            self.current_phase = self._flow.get_phase_for_state(self.state)
 
     # =========================================================================
     # Phase 4: Objection tracking via IntentTracker

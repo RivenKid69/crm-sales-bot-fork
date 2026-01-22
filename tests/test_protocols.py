@@ -178,6 +178,23 @@ class TestMockImplementations:
             def is_final(self) -> bool:
                 return self._state == "closed"
 
+            def transition_to(
+                self,
+                next_state: str,
+                action: Optional[str] = None,
+                phase: Optional[str] = None,
+                source: str = "unknown",
+                validate: bool = True,
+            ) -> bool:
+                self._state = next_state
+                self._current_phase = phase
+                if action is not None:
+                    self._last_action = action
+                return True
+
+            def sync_phase_from_state(self) -> None:
+                pass
+
         mock_sm = MockStateMachine()
         assert isinstance(mock_sm, IStateMachine)
 
@@ -192,6 +209,20 @@ class TestMockImplementations:
 
             def to_dict(self) -> Dict[str, Any]:
                 return {"states": self.states}
+
+            @property
+            def phase_mapping(self) -> Dict[str, str]:
+                return {}
+
+            @property
+            def state_to_phase(self) -> Dict[str, str]:
+                return {}
+
+            def get_phase_for_state(self, state_name: str) -> Optional[str]:
+                return None
+
+            def is_phase_state(self, state_name: str) -> bool:
+                return False
 
         bb = DialogueBlackboard(
             state_machine=mock_sm,
@@ -261,6 +292,29 @@ class TestMockImplementations:
 
             def to_dict(self) -> Dict[str, Any]:
                 return {"states": self._states}
+
+            @property
+            def phase_mapping(self) -> Dict[str, str]:
+                mapping = {}
+                for state_name, state_config in self._states.items():
+                    phase = state_config.get("phase") or state_config.get("spin_phase")
+                    if phase:
+                        mapping[phase] = state_name
+                return mapping
+
+            @property
+            def state_to_phase(self) -> Dict[str, str]:
+                return {v: k for k, v in self.phase_mapping.items()}
+
+            def get_phase_for_state(self, state_name: str) -> Optional[str]:
+                state_config = self._states.get(state_name, {})
+                explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+                if explicit_phase:
+                    return explicit_phase
+                return self.state_to_phase.get(state_name)
+
+            def is_phase_state(self, state_name: str) -> bool:
+                return self.get_phase_for_state(state_name) is not None
 
         mock_config = MockFlowConfig({
             "greeting": {

@@ -157,6 +157,11 @@ class DialogueBlackboard:
         persona = current_collected.get("persona", "default")
 
         # Create immutable context snapshot
+        # FUNDAMENTAL FIX: Pass state_to_phase mapping for custom flows
+        state_to_phase = {}
+        if hasattr(self._flow_config, 'state_to_phase'):
+            state_to_phase = self._flow_config.state_to_phase
+
         self._context = ContextSnapshot(
             state=self._state_machine.state,
             collected_data=current_collected,
@@ -167,6 +172,7 @@ class DialogueBlackboard:
             persona=persona,
             state_config=state_config,
             flow_config=self._flow_config.to_dict() if hasattr(self._flow_config, 'to_dict') else {},
+            state_to_phase=state_to_phase,
             # Multi-tenancy support
             tenant_id=self._tenant_config.tenant_id,
             tenant_config=self._tenant_config,

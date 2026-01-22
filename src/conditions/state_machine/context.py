@@ -229,8 +229,15 @@ class EvaluatorContext:
             raise ValueError("turn_number cannot be negative")
 
         # Auto-compute current_phase from state if not provided
-        if self.current_phase is None and self.state in _STATE_TO_PHASE:
-            self.current_phase = _STATE_TO_PHASE[self.state]
+        # FUNDAMENTAL FIX: Use flow_config.get_phase_for_state() as primary source
+        # This ensures custom flows (BANT, MEDDIC, etc.) work correctly
+        if self.current_phase is None:
+            if self.flow_config is not None:
+                # Use FlowConfig's canonical phase resolution (handles ALL flows)
+                self.current_phase = self.flow_config.get_phase_for_state(self.state)
+            elif self.state in _STATE_TO_PHASE:
+                # Fallback to hardcoded SPIN mapping for backward compatibility
+                self.current_phase = _STATE_TO_PHASE[self.state]
 
         # Compute is_phase_state from current_phase
         if not self.is_phase_state and self.current_phase is not None:
@@ -272,11 +279,16 @@ class EvaluatorContext:
         """
         state = state_machine.state
         collected_data = getattr(state_machine, 'collected_data', {})
-        # Use current_phase (or spin_phase for backward compat)
+        flow_config = getattr(state_machine, '_flow', None)
+
+        # FUNDAMENTAL FIX: Use flow_config.get_phase_for_state() as primary source
+        # This ensures custom flows (BANT, MEDDIC, etc.) work correctly
         current_phase = getattr(state_machine, 'current_phase', None)
         if current_phase is None:
             current_phase = getattr(state_machine, 'spin_phase', None)
-        flow_config = getattr(state_machine, '_flow', None)
+        if current_phase is None and flow_config is not None:
+            # Use FlowConfig's canonical phase resolution
+            current_phase = flow_config.get_phase_for_state(state)
 
         # Compute missing required data
         missing = []

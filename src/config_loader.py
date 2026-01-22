@@ -299,6 +299,75 @@ class FlowConfig:
             return self.phases.get("skip_conditions", {})
         return {}
 
+    @property
+    def state_to_phase(self) -> Dict[str, str]:
+        """
+        Reverse mapping from state name to phase name.
+
+        Built automatically from phase_mapping. This is the FUNDAMENTAL
+        solution for phase resolution in custom flows.
+
+        Example:
+            # flow.yaml has:
+            # phases:
+            #   mapping:
+            #     budget: bant_budget
+            #     authority: bant_authority
+
+            flow.state_to_phase
+            # Returns: {"bant_budget": "budget", "bant_authority": "authority"}
+        """
+        return {v: k for k, v in self.phase_mapping.items()}
+
+    def get_phase_for_state(self, state_name: str) -> Optional[str]:
+        """
+        Get phase name for a state.
+
+        This is the CANONICAL method for resolving state -> phase mapping.
+        All components should use this method instead of hardcoded mappings.
+
+        Resolution order:
+        1. state_config.phase (explicit in state definition, e.g., SPIN states)
+        2. state_to_phase reverse mapping (from flow.phases.mapping)
+        3. None (not a phase state)
+
+        Args:
+            state_name: Name of the state to look up
+
+        Returns:
+            Phase name or None if state is not a phase state
+
+        Example:
+            # SPIN flow (explicit phase in state config)
+            flow.get_phase_for_state("spin_situation")  # "situation"
+
+            # BANT flow (uses reverse mapping)
+            flow.get_phase_for_state("bant_budget")  # "budget"
+
+            # Non-phase state
+            flow.get_phase_for_state("greeting")  # None
+        """
+        # 1. Check explicit phase in state config (highest priority)
+        state_config = self.states.get(state_name, {})
+        explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+        if explicit_phase:
+            return explicit_phase
+
+        # 2. Use reverse mapping from phase_mapping
+        return self.state_to_phase.get(state_name)
+
+    def is_phase_state(self, state_name: str) -> bool:
+        """
+        Check if a state is a phase state.
+
+        Args:
+            state_name: Name of the state to check
+
+        Returns:
+            True if state has an associated phase, False otherwise
+        """
+        return self.get_phase_for_state(state_name) is not None
+
     def get_state_for_phase(self, phase: str) -> Optional[str]:
         """Get state name for a phase."""
         return self.phase_mapping.get(phase)

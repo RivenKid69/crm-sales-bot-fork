@@ -501,8 +501,8 @@ class DialogueOrchestrator:
 
         # 1. ATOMIC STATE TRANSITION via transition_to()
         # This ensures state, current_phase, and last_action are always consistent
-        # Compute phase from flow config to pass explicitly
-        phase = next_config.get("phase") or next_config.get("spin_phase")
+        # FUNDAMENTAL FIX: Use FlowConfig.get_phase_for_state() for all flows
+        phase = self._flow_config.get_phase_for_state(decision.next_state)
         self._state_machine.transition_to(
             next_state=decision.next_state,
             action=final_action,
@@ -667,15 +667,12 @@ class DialogueOrchestrator:
             decision.is_final = True
 
         # Fill phase info
-        decision.spin_phase = (
-            next_config.get("phase") or next_config.get("spin_phase")
-        )
+        # FUNDAMENTAL FIX: Use FlowConfig.get_phase_for_state() for all flows
+        decision.spin_phase = self._flow_config.get_phase_for_state(decision.next_state)
 
         # Fill prev_phase for decision_trace phase tracking
-        prev_config = self._flow_config.states.get(prev_state, {})
-        decision.prev_phase = (
-            prev_config.get("phase") or prev_config.get("spin_phase")
-        )
+        # FUNDAMENTAL FIX: Use FlowConfig.get_phase_for_state() for all flows
+        decision.prev_phase = self._flow_config.get_phase_for_state(prev_state)
 
         # Fill stats
         decision.circular_flow = self._state_machine.circular_flow.get_stats()

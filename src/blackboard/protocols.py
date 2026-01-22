@@ -186,6 +186,29 @@ class IFlowConfig(Protocol):
         """Convert to dictionary."""
         ...
 
+    @property
+    def phase_mapping(self) -> Dict[str, str]:
+        """Get phase -> state mapping."""
+        ...
+
+    @property
+    def state_to_phase(self) -> Dict[str, str]:
+        """Get state -> phase mapping (reverse of phase_mapping)."""
+        ...
+
+    def get_phase_for_state(self, state_name: str) -> Optional[str]:
+        """
+        Get phase name for a state.
+
+        This is the CANONICAL method for resolving state -> phase mapping.
+        All components should use this method.
+        """
+        ...
+
+    def is_phase_state(self, state_name: str) -> bool:
+        """Check if a state is a phase state."""
+        ...
+
 
 @runtime_checkable
 class IContextEnvelope(Protocol):

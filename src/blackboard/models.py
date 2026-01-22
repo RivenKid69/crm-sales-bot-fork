@@ -259,6 +259,9 @@ class ContextSnapshot:
     persona: str
     state_config: Dict[str, Any]
     flow_config: Dict[str, Any]
+    # FUNDAMENTAL FIX: state_to_phase mapping for custom flows (BANT, MEDDIC, etc.)
+    # Built from FlowConfig.state_to_phase property
+    state_to_phase: Dict[str, str] = field(default_factory=dict)
     # Multi-tenancy support (DESIGN_PRINCIPLES.md Section 6)
     tenant_id: str = "default"
     tenant_config: Optional['TenantConfig'] = None
@@ -291,8 +294,20 @@ class ContextSnapshot:
 
     @property
     def current_phase(self) -> Optional[str]:
-        """Get current SPIN phase."""
-        return self.state_config.get("phase")
+        """
+        Get current phase name.
+
+        FUNDAMENTAL FIX: Uses state_to_phase mapping for custom flows.
+        Resolution order:
+        1. state_config.phase (explicit in state definition, e.g., SPIN)
+        2. state_to_phase reverse mapping (from flow.phases.mapping)
+        """
+        # 1. Check explicit phase in state config
+        explicit_phase = self.state_config.get("phase") or self.state_config.get("spin_phase")
+        if explicit_phase:
+            return explicit_phase
+        # 2. Use state_to_phase mapping (from FlowConfig)
+        return self.state_to_phase.get(self.state)
 
     def get_missing_required_data(self) -> List[str]:
         """Get list of required fields that are not yet collected."""

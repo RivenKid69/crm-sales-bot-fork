@@ -231,6 +231,35 @@ class MockFlowConfig:
             return on_enter.get("set_flags", {})
         return {}
 
+    @property
+    def phase_mapping(self) -> Dict[str, str]:
+        """Get phase -> state mapping."""
+        mapping = {}
+        for state_name, state_config in self._states.items():
+            phase = state_config.get("phase") or state_config.get("spin_phase")
+            if phase:
+                mapping[phase] = state_name
+        return mapping
+
+    @property
+    def state_to_phase(self) -> Dict[str, str]:
+        """Get state -> phase mapping (reverse of phase_mapping)."""
+        return {v: k for k, v in self.phase_mapping.items()}
+
+    def get_phase_for_state(self, state_name: str) -> Optional[str]:
+        """Get phase name for a state."""
+        # First check explicit phase in state config
+        state_config = self._states.get(state_name, {})
+        explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+        if explicit_phase:
+            return explicit_phase
+        # Fall back to reverse mapping
+        return self.state_to_phase.get(state_name)
+
+    def is_phase_state(self, state_name: str) -> bool:
+        """Check if a state is a phase state."""
+        return self.get_phase_for_state(state_name) is not None
+
 
 class SimpleTestSource(KnowledgeSource):
     """Simple test source that proposes a specific action."""
