@@ -56,6 +56,9 @@ from response_directives import build_response_directives
 from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
 from settings import settings
 
+# Blackboard Architecture: DialogueOrchestrator (Stage 14)
+from src.blackboard import create_orchestrator
+
 # Personalization v2: Adaptive personalization
 from src.personalization import EffectiveActionTracker
 
@@ -146,6 +149,19 @@ class SalesBot:
         )
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
+
+        # =========================================================================
+        # Stage 14: Blackboard DialogueOrchestrator
+        # =========================================================================
+        # Blackboard Orchestrator replaces state_machine.process() for dialogue
+        # management. StateMachine is still used for state/collected_data storage.
+        self._orchestrator = create_orchestrator(
+            state_machine=self.state_machine,
+            flow_config=self._flow,
+            persona_limits=self._load_persona_limits(),
+            enable_metrics=flags.metrics_tracking,
+            enable_debug_logging=enable_tracing,
+        )
 
         # Context from previous turn
         self.last_action: Optional[str] = None
@@ -903,11 +919,23 @@ class SalesBot:
         if flags.context_response_directives and context_envelope:
             response_directives = build_response_directives(context_envelope)
 
-        # 2. Run state machine with context envelope
+        # =========================================================================
+        # Stage 14: Blackboard replaces state_machine.process()
+        # =========================================================================
+        # БЫЛО:
+        #   sm_result = self.state_machine.process(
+        #       intent, extracted, context_envelope=context_envelope
+        #   )
+        #
+        # СТАЛО:
         sm_start = time.time()
-        sm_result = self.state_machine.process(
-            intent, extracted, context_envelope=context_envelope
+        decision = self._orchestrator.process_turn(
+            intent=intent,
+            extracted_data=extracted,
+            context_envelope=context_envelope,
         )
+        # Convert to sm_result dict for compatibility with DialoguePolicy/Generator
+        sm_result = decision.to_sm_result()
         sm_elapsed = (time.time() - sm_start) * 1000
 
         # Decision Tracing: Record state machine result
@@ -1157,6 +1185,28 @@ class SalesBot:
             # Decision Tracing
             "decision_trace": decision_trace_dict,
         }
+
+    def _load_persona_limits(self) -> Dict[str, Dict[str, int]]:
+        """
+        Load persona limits from flow configuration.
+
+        Returns:
+            Dict mapping persona names to their limits (consecutive, total)
+        """
+        # Default limits (used if not configured in YAML)
+        default_limits = {
+            "default": {"consecutive": 3, "total": 5},
+            "aggressive": {"consecutive": 5, "total": 8},
+            "busy": {"consecutive": 2, "total": 4},
+        }
+
+        # Try to get from flow config constants
+        if hasattr(self._flow, 'constants') and self._flow.constants:
+            limits = self._flow.constants.get("persona_limits", {})
+            if limits:
+                return limits
+
+        return default_limits
 
     def get_metrics_summary(self) -> Dict:
         """Получить сводку метрик текущего диалога."""
@@ -1482,15 +1532,8 @@ class SalesBot:
         # =================================================================
         objection_info = self._check_objection(user_message, collected_data) if user_message else None
 
-        # Обновляем собранные данные
-        if extracted:
-            self.state_machine.update_data(extracted)
-
-        # Обрабатываем через state machine
-        sm_result = self.state_machine.process(intent, extracted)
-
         # =================================================================
-        # Phase 5: Build ContextEnvelope for policy overlay
+        # Phase 5: Build ContextEnvelope for policy overlay (BEFORE process_turn)
         # =================================================================
         context_envelope = None
         if flags.context_full_envelope or flags.context_policy_overlays:
@@ -1502,6 +1545,16 @@ class SalesBot:
                 last_action=self.last_action,
                 last_intent=self.last_intent,
             )
+
+        # =========================================================================
+        # Stage 14: Blackboard replaces state_machine.process() (disambiguation path)
+        # =========================================================================
+        decision = self._orchestrator.process_turn(
+            intent=intent,
+            extracted_data=extracted,
+            context_envelope=context_envelope,
+        )
+        sm_result = decision.to_sm_result()
 
         # Build ResponseDirectives if flag enabled
         response_directives = None

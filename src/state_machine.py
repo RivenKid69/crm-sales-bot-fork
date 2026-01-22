@@ -51,40 +51,9 @@ if TYPE_CHECKING:
 
 
 # =============================================================================
-# Phase 4: RuleResult for StateMachine
+# Stage 14: RuleResult REMOVED - use src.rules.resolver.RuleResult instead
+# The Blackboard system now handles all rule resolution logic.
 # =============================================================================
-
-@dataclass
-class RuleResult:
-    """
-    Result of rule resolution.
-
-    Supports tuple unpacking for backward compatibility:
-        action, state = sm.apply_rules(intent)
-
-    Attributes:
-        action: The action to take
-        next_state: The next state (or current if None returned)
-        trace: Optional evaluation trace for debugging
-    """
-    action: str
-    next_state: str
-    trace: Optional[EvaluationTrace] = None
-
-    def __iter__(self) -> Iterator[Any]:
-        """Support tuple unpacking: action, state = result"""
-        yield self.action
-        yield self.next_state
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
-        result = {
-            "action": self.action,
-            "next_state": self.next_state,
-        }
-        if self.trace:
-            result["trace"] = self.trace.to_dict()
-        return result
 
 
 class CircularFlowManager:
@@ -950,657 +919,59 @@ class StateMachine:
         return None
 
     # =========================================================================
-    # Priority-Driven Rule Application (Этап 4)
+    # Stage 14: LEGACY METHODS REMOVED
     # =========================================================================
-
-    def _apply_priority(
-        self,
-        priority: Dict[str, Any],
-        intent: str,
-        config: Dict,
-        transitions: Dict,
-        rules: Dict,
-        ctx: Any,
-        trace: Optional['EvaluationTrace'] = None
-    ) -> Optional[Tuple[str, str]]:
-        """
-        Apply a single priority and return result if matched.
-
-        Args:
-            priority: Priority configuration from YAML
-            intent: Current intent
-            config: Current state configuration
-            transitions: State transitions
-            rules: State rules
-            ctx: EvaluatorContext for condition evaluation
-            trace: Optional trace for debugging
-
-        Returns:
-            Tuple[action, next_state] if priority matched, None otherwise
-        """
-        priority_name = priority.get("name", "unknown")
-
-        # Check if priority applies to this intent
-        if not self._priority_matches_intent(priority, intent, config):
-            return None
-
-        # Check condition if specified
-        condition = priority.get("condition")
-        condition_matched = False
-        if condition:
-            condition_matched = self._evaluate_priority_condition(condition, ctx, config)
-            if not condition_matched:
-                # Check 'else' clause
-                else_action = priority.get("else")
-                if else_action == "use_transitions":
-                    next_state = self._resolve_transition(intent, transitions, ctx, trace)
-                    if next_state:
-                        return f"transition_to_{next_state}", next_state
-                return None
-
-        # Mark soft_close as final when triggered by objection limit
-        if condition == "objection_limit_reached" and condition_matched:
-            action = priority.get("action", "")
-            if action == "transition_to_soft_close" or action.endswith("soft_close"):
-                self.collected_data["_objection_limit_final"] = True
-
-        # Check feature flag if specified
-        feature_flag = priority.get("feature_flag")
-        if feature_flag and not getattr(flags, feature_flag, False):
-            return None
-
-        # Handle the priority
-        handler = priority.get("handler")
-        if handler:
-            return self._call_priority_handler(handler, intent, config, transitions, ctx, trace)
-
-        # Direct action
-        action = priority.get("action")
-        if action:
-            if action == "final":
-                return "final", self.state
-            elif action.startswith("transition_to_"):
-                next_state = action.replace("transition_to_", "")
-                return action, next_state
-            return action, self.state
-
-        # Use transitions
-        if priority.get("use_transitions"):
-            trigger = priority.get("trigger")
-            if trigger:
-                # Use trigger as key (e.g., "data_complete", "any")
-                next_state = self._resolve_transition(trigger, transitions, ctx, trace)
-            else:
-                next_state = self._resolve_transition(intent, transitions, ctx, trace)
-            if next_state:
-                return f"transition_to_{next_state}", next_state
-
-        # Use resolver for rules
-        if priority.get("use_resolver") and priority.get("source") == "rules":
-            if intent in rules:
-                rule_value = rules[intent]
-                if isinstance(rule_value, (list, dict)):
-                    action = self._resolver.resolve_action(
-                        intent=intent,
-                        state_rules=rules,
-                        global_rules={},
-                        ctx=ctx,
-                        state=self.state,
-                        trace=trace
-                    )
-                    return action, self.state
-                else:
-                    return rule_value, self.state
-
-        # Default action from priority
-        default_action = priority.get("default_action")
-        if default_action:
-            next_state = self._resolve_transition(intent, transitions, ctx, trace) or self.state
-            return default_action, next_state
-
-        return None
-
-    def _priority_matches_intent(
-        self,
-        priority: Dict[str, Any],
-        intent: str,
-        config: Dict
-    ) -> bool:
-        """
-        Check if a priority matches the current intent.
-
-        Args:
-            priority: Priority configuration
-            intent: Current intent
-            config: State configuration
-
-        Returns:
-            True if priority applies to this intent
-        """
-        # Check specific intents list
-        intents = priority.get("intents", [])
-        if intents and intent in intents:
-            return True
-
-        # Check intent category
-        intent_category = priority.get("intent_category")
-        if intent_category:
-            category_intents = INTENT_CATEGORIES.get(intent_category, [])
-            if intent in category_intents:
-                return True
-
-        # Check trigger (special keys like "data_complete", "any")
-        trigger = priority.get("trigger")
-        if trigger:
-            return True  # Triggers always apply, actual logic is in handler
-
-        # Check source (e.g., "rules" - applies if intent is in state rules)
-        source = priority.get("source")
-        if source == "rules":
-            return intent in config.get("rules", {})
-
-        # Check condition-only priorities (like final_state)
-        if priority.get("condition") and not intents and not intent_category:
-            return True
-
-        # Check handler (like phase_progress_handler)
-        if priority.get("handler"):
-            return True
-
-        # Check use_transitions without specific intents
-        if priority.get("use_transitions") and not intents and not intent_category and not trigger:
-            return True
-
-        return False
-
-    def _evaluate_priority_condition(
-        self,
-        condition: str,
-        ctx: Any,
-        config: Dict
-    ) -> bool:
-        """
-        Evaluate a priority condition.
-
-        Args:
-            condition: Condition name
-            ctx: EvaluatorContext
-            config: State configuration
-
-        Returns:
-            True if condition is met
-        """
-        if condition == "is_final":
-            return config.get("is_final", False)
-        elif condition == "objection_limit_reached":
-            return self._check_objection_limit()
-        elif condition == "has_all_required_data":
-            return self._check_phase_data_complete(config)
-        else:
-            # Try to evaluate via condition registry
-            try:
-                return sm_registry.evaluate(condition, ctx)
-            except Exception:
-                return False
-
-    def _call_priority_handler(
-        self,
-        handler: str,
-        intent: str,
-        config: Dict,
-        transitions: Dict,
-        ctx: Any,
-        trace: Optional['EvaluationTrace'] = None
-    ) -> Optional[Tuple[str, str]]:
-        """
-        Call a priority handler method.
-
-        Args:
-            handler: Handler name
-            intent: Current intent
-            config: State configuration
-            transitions: State transitions
-            ctx: EvaluatorContext
-            trace: Optional trace
-
-        Returns:
-            Tuple[action, next_state] or None
-        """
-        if handler == "circular_flow_handler":
-            prev_state = self.circular_flow.go_back(self.state)
-            if prev_state:
-                return "go_back", prev_state
-            return None
-
-        elif handler == "phase_progress_handler":
-            spin_phase = self._get_current_phase()
-            if not spin_phase:
-                return None
-
-            progress_intents = self.progress_intents
-            if intent in progress_intents:
-                intent_phase = progress_intents[intent]
-                if self._is_phase_progression(intent_phase, spin_phase):
-                    next_state = self._resolve_transition(intent, transitions, ctx, trace)
-                    if next_state:
-                        return f"transition_to_{next_state}", next_state
-
-            # Auto-transition by data_complete within phase
-            if intent not in transitions and self._check_phase_data_complete(config):
-                next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
-                if next_state:
-                    # Check if next phase should be skipped
-                    next_config = self.states_config.get(next_state, {})
-                    next_phase = next_config.get("phase") or next_config.get("spin_phase")
-                    if next_phase and self._should_skip_phase(next_phase):
-                        skip_transitions = next_config.get("transitions", {})
-                        skip_next = self._resolve_transition("data_complete", skip_transitions, ctx, trace)
-                        if skip_next:
-                            next_state = skip_next
-                    return f"transition_to_{next_state}", next_state
-
-            return None
-
-        return None
-
-    def _apply_rules_priority_driven(
-        self,
-        intent: str,
-        config: Dict,
-        transitions: Dict,
-        rules: Dict,
-        ctx: Any,
-        trace: Optional['EvaluationTrace'] = None
-    ) -> Optional[Tuple[str, str]]:
-        """
-        Apply rules using priority-driven approach from FlowConfig.
-
-        Iterates through priorities sorted by priority number and applies
-        each one until a result is found.
-
-        Args:
-            intent: Current intent
-            config: State configuration
-            transitions: State transitions
-            rules: State rules
-            ctx: EvaluatorContext
-            trace: Optional trace for debugging
-
-        Returns:
-            Tuple[action, next_state] if any priority matched, None otherwise
-        """
-        # Sort priorities by priority number (lower = higher priority)
-        sorted_priorities = sorted(
-            self.priorities,
-            key=lambda p: p.get("priority", 999)
-        )
-
-        # Special handling for objection intents - save state before objection
-        if intent in OBJECTION_INTENTS:
-            if self._state_before_objection is None:
-                self._state_before_objection = self.state
-            logger.info(
-                "Objection recorded",
-                type=intent,
-                consecutive=self.intent_tracker.objection_consecutive(),
-                total=self.intent_tracker.objection_total()
-            )
-
-        # Reset state_before_objection on positive intents
-        if intent in POSITIVE_INTENTS:
-            self._state_before_objection = None
-
-        # =====================================================================
-        # PRIORITY OVERRIDE: Price-related questions
-        # Price questions have highest priority - ALWAYS return answer_with_pricing
-        # This ensures price questions are not deflected regardless of state rules
-        # =====================================================================
-        if flags.is_enabled("price_question_override"):
-            price_related_intents = self._get_intent_category("price_related") or {"price_question", "pricing_details"}
-            if intent in price_related_intents:
-                logger.debug(
-                    "Price-related intent detected (priority-driven), using pricing action",
-                    intent=intent,
-                    state=self.state
-                )
-                if trace:
-                    trace.set_result("answer_with_pricing", Resolution.CONDITION_MATCHED, "price_related_priority")
-                return "answer_with_pricing", self.state
-
-        # Iterate through priorities
-        for priority in sorted_priorities:
-            result = self._apply_priority(
-                priority, intent, config, transitions, rules, ctx, trace
-            )
-            if result:
-                return result
-
-        # No priority matched - return default
-        return "continue_current_goal", self.state
+    # The following methods have been REMOVED as part of Stage 14 migration:
+    #   - _apply_priority()
+    #   - _priority_matches_intent()
+    #   - _evaluate_priority_condition()
+    #   - _call_priority_handler()
+    #   - _apply_rules_priority_driven()
+    #   - apply_rules()
+    #
+    # All dialogue management logic is now handled by the Blackboard system:
+    #   from src.blackboard import create_orchestrator
+    #   orchestrator = create_orchestrator(state_machine, flow_config)
+    #   decision = orchestrator.process_turn(intent, extracted_data, context_envelope)
+    #
+    # See: src/blackboard/orchestrator.py for the new implementation.
+    # =========================================================================
 
     def apply_rules(self, intent: str, context_envelope: Any = None) -> Tuple[str, str]:
         """
-        Определяем действие и следующее состояние.
+        DEPRECATED: This method is deprecated in Stage 14.
 
-        Phase 4 Pipeline:
-        1. Record intent in IntentTracker (BEFORE conditions)
-        2. Build EvaluatorContext for condition evaluation
-        3. Apply priority-based rule resolution
-        4. Return (action, next_state) with optional trace
+        All dialogue management logic is now handled by the Blackboard system.
+        Use DialogueOrchestrator.process_turn() instead:
 
-        Phase 5: Context-aware conditions via context_envelope.
+            from src.blackboard import create_orchestrator
+            orchestrator = create_orchestrator(state_machine, flow_config)
+            decision = orchestrator.process_turn(intent, extracted_data, context_envelope)
+            sm_result = decision.to_sm_result()
 
-        Порядок приоритетов:
-        0. Финальное состояние
-        1. Rejection — критический интент
-        1.5. Go Back — возврат назад по фазам
-        1.7. Возражения с защитой от зацикливания (via IntentTracker)
-        2. State-specific rules (с поддержкой conditional rules)
-        3. Общий обработчик вопросов (QUESTION_INTENTS)
-        4. SPIN-специфичная логика
-        5. Переходы по интенту
-        6. Автопереход по data_complete
-        7. Автопереход по "any"
-        8. Default — оставаться в текущем состоянии
+        This stub is kept for backward compatibility with tests.
+        It raises DeprecationWarning and returns a default action.
 
         Args:
             intent: The intent to process
-            context_envelope: Optional ContextEnvelope with rich context signals
+            context_envelope: Optional ContextEnvelope (ignored)
 
         Returns:
-            Tuple[str, str]: (action, next_state)
+            Tuple[str, str]: ("continue_current_goal", current_state)
         """
-        # =====================================================================
-        # Phase 4 STEP 1: Record intent in IntentTracker FIRST
-        # This must happen BEFORE any condition evaluation
-        # EXCEPTION: Skip recording objections when limit already reached
-        # to prevent counter overflow (3→6) when soft_close continues
-        # =====================================================================
+        import warnings
+        warnings.warn(
+            "StateMachine.apply_rules() is deprecated. "
+            "Use DialogueOrchestrator.process_turn() from src.blackboard instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
+        # Record intent for tracking (still needed for compatibility)
         if not self._should_skip_objection_recording(intent):
             self.intent_tracker.record(intent, self.state)
 
-        # =====================================================================
-        # DAG STEP: Check if current state is a DAG node
-        # If so, process via DAG executor and return early
-        # =====================================================================
-        if self._dag_enabled and self._flow and self._flow.is_dag_state(self.state):
-            dag_result = self._apply_dag_rules(intent, context_envelope)
-            if dag_result is not None:
-                return dag_result
-
-        # =====================================================================
-        # Phase 4 STEP 2: Build EvaluatorContext for conditions
-        # Phase 5: Include context_envelope for context-aware conditions
-        # =====================================================================
-        config = self.states_config.get(self.state, {})
-        transitions = config.get("transitions", {})
-        rules = config.get("rules", {})
-        spin_phase = self._get_current_spin_phase()
-
-        # Build context for condition evaluation (with envelope if provided)
-        ctx = EvaluatorContext.from_state_machine(
-            self, intent, config, context_envelope=context_envelope
-        )
-
-        # Create trace if tracing is enabled
-        trace = None
-        if self._enable_tracing and self._trace_collector:
-            trace = self._trace_collector.create_trace(
-                rule_name=intent,
-                intent=intent,
-                state=self.state,
-                domain="state_machine"
-            )
-
-        # =====================================================================
-        # PRIORITY-DRIVEN APPROACH (Этап 4)
-        # When FlowConfig is available with priorities, use configurable logic
-        # =====================================================================
-        if self._flow and self.priorities:
-            result = self._apply_rules_priority_driven(
-                intent, config, transitions, rules, ctx, trace
-            )
-            if result:
-                action, next_state = result
-                if trace and not trace.final_action:
-                    trace.set_result(action, Resolution.SIMPLE)
-                self._last_trace = trace
-                return action, next_state
-
-        # =====================================================================
-        # LEGACY APPROACH: Hardcoded priorities (backward compatibility)
-        # Used when no FlowConfig or no priorities defined
-        # =====================================================================
-
-        # =====================================================================
-        # ПРИОРИТЕТ 0: Финальное состояние
-        # =====================================================================
-        if config.get("is_final"):
-            if trace:
-                trace.set_result("final", Resolution.SIMPLE)
-            self._last_trace = trace
-            return "final", self.state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 1: Rejection — всегда обрабатываем немедленно
-        # =====================================================================
-        if intent == "rejection":
-            next_state = self._resolve_transition("rejection", transitions, ctx, trace)
-            if next_state:
-                if trace and not trace.final_action:
-                    trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-                self._last_trace = trace
-                return f"transition_to_{next_state}", next_state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 1.5: Go Back — возврат назад по фазам
-        # Контролируется feature flag circular_flow (по умолчанию выключен)
-        # =====================================================================
-        if intent in GO_BACK_INTENTS and flags.circular_flow:
-            prev_state = self.circular_flow.go_back(self.state)
-            if prev_state:
-                if trace:
-                    trace.set_result("go_back", Resolution.SIMPLE)
-                self._last_trace = trace
-                return "go_back", prev_state
-            # Если возврат невозможен — продолжаем обычную обработку
-
-        # =====================================================================
-        # ПРИОРИТЕТ 1.7: Возражения с защитой от зацикливания
-        # Phase 4: Now using IntentTracker methods instead of ObjectionFlowManager
-        # =====================================================================
-        if intent in OBJECTION_INTENTS:
-            # Save state before objection for potential return
-            if self._state_before_objection is None:
-                self._state_before_objection = self.state
-
-            logger.info(
-                "Objection recorded",
-                type=intent,
-                consecutive=self.intent_tracker.objection_consecutive(),
-                total=self.intent_tracker.objection_total()
-            )
-
-            # Проверяем лимит возражений через IntentTracker
-            if self._check_objection_limit():
-                if trace:
-                    trace.set_result("objection_limit_reached", Resolution.CONDITION_MATCHED, "objection_limit_reached")
-                self._last_trace = trace
-                # Mark soft_close as final when triggered by objection limit
-                self.collected_data["_objection_limit_final"] = True
-                return "objection_limit_reached", "soft_close"
-
-            # Иначе обрабатываем через transitions (handle_objection или soft_close)
-            next_state = self._resolve_transition(intent, transitions, ctx, trace)
-            if next_state:
-                if trace and not trace.final_action:
-                    trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-                self._last_trace = trace
-                return f"transition_to_{next_state}", next_state
-
-        # Phase 4: Reset state_before_objection on positive intents
-        if intent in POSITIVE_INTENTS:
-            self._state_before_objection = None
-
-        # =====================================================================
-        # ПРИОРИТЕТ 1.9: Price-related questions (НОВОЕ)
-        # Вопросы о цене имеют ВЫСШИЙ ПРИОРИТЕТ над state rules
-        # ВСЕГДА возвращаем answer_with_pricing, независимо от того что
-        # написано в rules для этого intent
-        # =====================================================================
-        if flags.is_enabled("price_question_override"):
-            # Получаем категорию price_related из конфига
-            price_related_intents = self._get_intent_category("price_related") or {"price_question", "pricing_details"}
-
-            if intent in price_related_intents:
-                logger.debug(
-                    "Price-related intent detected, using pricing action (priority 1.9)",
-                    intent=intent,
-                    state=self.state
-                )
-                if trace:
-                    trace.set_result("answer_with_pricing", Resolution.CONDITION_MATCHED, "price_related_priority")
-                self._last_trace = trace
-                return "answer_with_pricing", self.state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 2: State-specific rules (с поддержкой conditional rules)
-        # Phase 4: Now supports conditional rules via RuleResolver
-        # =====================================================================
-        if intent in rules:
-            rule_value = rules[intent]
-
-            # Check if this is a conditional rule (list or dict) or simple string
-            if isinstance(rule_value, (list, dict)):
-                # Phase 4: Use RuleResolver for conditional rules
-                action = self._resolver.resolve_action(
-                    intent=intent,
-                    state_rules=rules,
-                    global_rules={},
-                    ctx=ctx,
-                    state=self.state,
-                    trace=trace
-                )
-                self._last_trace = trace
-                return action, self.state
-            else:
-                # Simple string rule - apply price_question fix
-                rule_action = rule_value
-
-                # =============================================================
-                # Phase 4: Price question fix via has_pricing_data condition
-                # Now using the registered condition instead of hardcoded check
-                # =============================================================
-                if intent == "price_question" and rule_action == "deflect_and_continue":
-                    # Use the registered condition from sm_registry
-                    try:
-                        has_pricing_data = sm_registry.evaluate("has_pricing_data", ctx, trace)
-                        if has_pricing_data:
-                            if trace:
-                                trace.set_result("answer_with_facts", Resolution.CONDITION_MATCHED, "has_pricing_data")
-                            self._last_trace = trace
-                            return "answer_with_facts", self.state
-                    except Exception as e:
-                        # Fallback to direct check if condition fails
-                        logger.warning("Condition evaluation failed, using fallback", error=str(e))
-                        if self.collected_data.get("company_size") or self.collected_data.get("users_count"):
-                            if trace:
-                                trace.set_result("answer_with_facts", Resolution.CONDITION_MATCHED, "has_pricing_data_fallback")
-                            self._last_trace = trace
-                            return "answer_with_facts", self.state
-
-                if trace:
-                    trace.set_result(rule_action, Resolution.SIMPLE)
-                self._last_trace = trace
-                return rule_action, self.state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 3: Общий обработчик вопросов
-        # Если клиент задаёт вопрос — сначала отвечаем, потом продолжаем
-        # =====================================================================
-        if intent in QUESTION_INTENTS:
-            next_state = self._resolve_transition(intent, transitions, ctx, trace) or self.state
-            if trace and not trace.final_action:
-                trace.set_result("answer_question", Resolution.SIMPLE)
-            self._last_trace = trace
-            return "answer_question", next_state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 4: SPIN-специфичная логика
-        # =====================================================================
-        if spin_phase:
-            progress_intents = self.spin_progress_intents
-            if intent in progress_intents:
-                intent_phase = progress_intents[intent]
-                if self._is_spin_phase_progression(intent_phase, spin_phase):
-                    next_state = self._resolve_transition(intent, transitions, ctx, trace)
-                    if next_state:
-                        if trace and not trace.final_action:
-                            trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-                        self._last_trace = trace
-                        return f"transition_to_{next_state}", next_state
-
-            # Автопереход по data_complete только если:
-            # 1. Данные собраны
-            # 2. Интент НЕ определён явно в transitions (no_need, no_problem и т.д.)
-            # Это позволяет явным интентам иметь приоритет над автопереходом
-            if intent not in transitions and self._check_spin_data_complete(config):
-                next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
-                if next_state:
-                    next_config = self.states_config.get(next_state, {})
-                    next_phase = next_config.get("spin_phase")
-                    if next_phase and self._should_skip_spin_phase(next_phase):
-                        skip_transitions = next_config.get("transitions", {})
-                        skip_next = self._resolve_transition("data_complete", skip_transitions, ctx, trace)
-                        if skip_next:
-                            next_state = skip_next
-                    if trace and not trace.final_action:
-                        trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-                    self._last_trace = trace
-                    return f"transition_to_{next_state}", next_state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 5: Переходы по интенту
-        # =====================================================================
-        next_state = self._resolve_transition(intent, transitions, ctx, trace)
-        if next_state:
-            if trace and not trace.final_action:
-                trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-            self._last_trace = trace
-            return f"transition_to_{next_state}", next_state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 6: Проверка data_complete для non-SPIN состояний
-        # =====================================================================
-        required = config.get("required_data", [])
-        if required:
-            missing = [f for f in required if not self.collected_data.get(f)]
-            if not missing:
-                next_state = self._resolve_transition("data_complete", transitions, ctx, trace)
-                if next_state:
-                    if trace and not trace.final_action:
-                        trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-                    self._last_trace = trace
-                    return f"transition_to_{next_state}", next_state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 7: Автопереход (для greeting)
-        # =====================================================================
-        next_state = self._resolve_transition("any", transitions, ctx, trace)
-        if next_state:
-            if trace and not trace.final_action:
-                trace.set_result(f"transition_to_{next_state}", Resolution.SIMPLE)
-            self._last_trace = trace
-            return f"transition_to_{next_state}", next_state
-
-        # =====================================================================
-        # ПРИОРИТЕТ 8: Default — остаёмся в текущем состоянии
-        # =====================================================================
-        # Всегда возвращаем валидный action, а не имя состояния
-        # generator.py использует spin_phase из контекста для выбора нужного шаблона
-        if trace:
-            trace.set_result("continue_current_goal", Resolution.DEFAULT)
-        self._last_trace = trace
+        # Return default - tests and legacy code may still call this
         return "continue_current_goal", self.state
 
     def get_last_trace(self) -> Optional[EvaluationTrace]:
@@ -1620,78 +991,61 @@ class StateMachine:
         context_envelope: Any = None
     ) -> Dict:
         """
-        Обработать интент, вернуть результат.
+        DEPRECATED: This method is deprecated in Stage 14.
 
-        Phase 4: Uses IntentTracker for history and stats.
-        Phase 5: Uses context_envelope for context-aware conditions.
+        All dialogue management logic is now handled by the Blackboard system.
+        Use DialogueOrchestrator.process_turn() instead:
+
+            from src.blackboard import create_orchestrator
+            orchestrator = create_orchestrator(state_machine, flow_config)
+            decision = orchestrator.process_turn(intent, extracted_data, context_envelope)
+            sm_result = decision.to_sm_result()
+
+        This stub is kept for backward compatibility with tests.
+        It performs minimal processing and returns a default result.
 
         Args:
             intent: The intent to process
             extracted_data: Optional extracted data to update
-            context_envelope: Optional ContextEnvelope with rich context signals
+            context_envelope: Optional ContextEnvelope (ignored)
+
+        Returns:
+            Dict with action, next_state, and compatibility fields
         """
+        import warnings
+        warnings.warn(
+            "StateMachine.process() is deprecated. "
+            "Use DialogueOrchestrator.process_turn() from src.blackboard instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         prev_state = self.state
 
         if extracted_data:
             self.update_data(extracted_data)
 
-        action, next_state = self.apply_rules(intent, context_envelope=context_envelope)
+        # Use deprecated apply_rules (which also warns)
+        # Suppress the nested warning to avoid double-warning
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            action, next_state = self.apply_rules(intent, context_envelope=context_envelope)
+
         self.state = next_state
-
-        # Store last_action for context
         self.last_action = action
-
-        # Update current phase from state config
         self.current_phase = self._get_current_phase()
 
-        # Check if state changed
-        state_changed = prev_state != next_state
-
-        # =====================================================================
-        # ON_ENTER: Set flags when entering a new state (generic mechanism)
-        # =====================================================================
-        # Replaces hardcoded checks like:
-        #   if next_state == "spin_implication": self.collected_data["implication_probed"] = True
-        # Now configured via YAML:
-        #   spin_implication:
-        #     on_enter:
-        #       set_flags:
-        #         implication_probed: true
-        if state_changed and self._flow:
-            on_enter_flags = self._flow.get_state_on_enter_flags(next_state)
-            for flag_name, flag_value in on_enter_flags.items():
-                self.collected_data[flag_name] = flag_value
-
         config = self.states_config.get(self.state, {})
-
-        # =====================================================================
-        # ON_ENTER: Execute action when entering a new state
-        # =====================================================================
-        # If state changed AND new state has on_enter config, use on_enter action.
-        # This allows states to show prompts/options immediately upon entry,
-        # regardless of what intent triggered the transition.
-        on_enter = config.get("on_enter")
-        if state_changed and on_enter:
-            on_enter_action = on_enter.get("action") if isinstance(on_enter, dict) else on_enter
-            if on_enter_action:
-                action = on_enter_action
-
         required = config.get("required_data", [])
         missing = [f for f in required if not self.collected_data.get(f)]
-
-        # Собираем optional данные для SPIN
         optional = config.get("optional_data", [])
         optional_missing = [f for f in optional if not self.collected_data.get(f)]
 
-        # Determine is_final
         is_final = config.get("is_final", False)
-        # Override for objection limit triggered soft_close
-        # When soft_close is reached via objection_limit, force it to be final
-        # This prevents dialog from continuing and objection counter overflow
         if self.state == "soft_close" and self.collected_data.get("_objection_limit_final"):
             is_final = True
 
-        result = {
+        return {
             "action": action,
             "prev_state": prev_state,
             "next_state": next_state,
@@ -1702,15 +1056,8 @@ class StateMachine:
             "is_final": is_final,
             "spin_phase": self.spin_phase,
             "circular_flow": self.circular_flow.get_stats(),
-            # Phase 4: Use IntentTracker-based stats (backward compat)
             "objection_flow": self._get_objection_stats(),
         }
-
-        # Phase 4: Add trace if enabled
-        if self._enable_tracing and self._last_trace:
-            result["trace"] = self._last_trace.to_dict()
-
-        return result
 
     # =========================================================================
     # Phase 4: Context building for external systems

@@ -77,7 +77,8 @@ class DialogueBlackboard:
         """
         self._state_machine = state_machine
         self._flow_config = flow_config
-        self._intent_tracker = intent_tracker or getattr(state_machine, '_intent_tracker', None)
+        # Try to get intent_tracker - StateMachine uses 'intent_tracker' (no underscore)
+        self._intent_tracker = intent_tracker or getattr(state_machine, 'intent_tracker', None) or getattr(state_machine, '_intent_tracker', None)
         self._tenant_config = tenant_config or DEFAULT_TENANT
 
         # === Context Layer (populated on begin_turn) ===

@@ -1,6 +1,13 @@
 """
 Tests for StateMachine with extended intent taxonomy (200+ intents).
 
+DEPRECATED (Stage 14): These tests use legacy state_machine.process() API
+which was replaced by DialogueOrchestrator in Stage 14 (Blackboard migration).
+The equivalent functionality is now tested via:
+- tests/test_blackboard_regression.py
+- tests/test_blackboard_integration.py
+- tests/test_bot_blackboard_integration.py
+
 These tests verify that the state machine correctly handles all new intent groups:
 - Equipment questions (12 intents)
 - Tariff questions (8 intents)
@@ -28,6 +35,12 @@ These tests verify that the state machine correctly handles all new intent group
 """
 
 import pytest
+
+# Stage 14: Mark all tests as xfail - legacy API deprecated
+pytestmark = pytest.mark.xfail(
+    reason="Stage 14: state_machine.process() deprecated, use DialogueOrchestrator instead",
+    strict=False
+)
 from src.state_machine import StateMachine
 
 

@@ -30,11 +30,15 @@ class TestDialogueBlackboard:
         sm = Mock()
         sm.state = "spin_situation"
         sm.collected_data = {"company_size": "50"}
-        sm._intent_tracker = Mock()
-        sm._intent_tracker.turn_number = 5
-        sm._intent_tracker.prev_intent = "greeting"
-        sm._intent_tracker.objection_consecutive.return_value = 0
-        sm._intent_tracker.objection_total.return_value = 0
+        # Create intent_tracker mock (StateMachine uses 'intent_tracker' without underscore)
+        tracker = Mock()
+        tracker.turn_number = 5
+        tracker.prev_intent = "greeting"
+        tracker.objection_consecutive.return_value = 0
+        tracker.objection_total.return_value = 0
+        sm.intent_tracker = tracker
+        # Also set _intent_tracker for backward compatibility
+        sm._intent_tracker = tracker
         return sm
 
     @pytest.fixture
@@ -105,7 +109,8 @@ class TestDialogueBlackboard:
             context_envelope=None,
         )
 
-        mock_state_machine._intent_tracker.record.assert_called_once_with(
+        # StateMachine uses 'intent_tracker' (without underscore)
+        mock_state_machine.intent_tracker.record.assert_called_once_with(
             "price_question", "spin_situation"
         )
 
