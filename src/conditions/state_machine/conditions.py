@@ -321,43 +321,47 @@ def technical_question_repeated_2x(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "objection_limit_reached",
-    description="Check if objection limit (3 consecutive or 5 total) has been reached",
+    description="Check if objection limit has been reached (configurable via constants.yaml)",
     category="intent"
 )
 def objection_limit_reached(ctx: EvaluatorContext) -> bool:
     """
     Returns True if objection limit has been reached.
 
-    Limits:
-    - 3 consecutive objections
-    - 5 total objections in conversation
+    Limits are configurable via constants.yaml:
+    - max_consecutive_objections (default: 3)
+    - max_total_objections (default: 5)
 
     Triggers transition to soft_close.
     """
     consecutive = ctx.get_category_streak("objection")
     total = ctx.get_category_total("objection")
 
-    return consecutive >= 3 or total >= 5
+    # Use limits from context (populated from YAML config)
+    return (
+        consecutive >= ctx.max_consecutive_objections
+        or total >= ctx.max_total_objections
+    )
 
 
 @sm_condition(
     "objection_consecutive_3x",
-    description="Check if 3+ consecutive objections",
+    description="Check if consecutive objection limit reached (configurable via constants.yaml)",
     category="intent"
 )
 def objection_consecutive_3x(ctx: EvaluatorContext) -> bool:
-    """Returns True if 3+ objections in a row."""
-    return ctx.get_category_streak("objection") >= 3
+    """Returns True if consecutive objections >= max_consecutive_objections."""
+    return ctx.get_category_streak("objection") >= ctx.max_consecutive_objections
 
 
 @sm_condition(
     "objection_total_5x",
-    description="Check if 5+ total objections in conversation",
+    description="Check if total objection limit reached (configurable via constants.yaml)",
     category="intent"
 )
 def objection_total_5x(ctx: EvaluatorContext) -> bool:
-    """Returns True if 5+ total objections."""
-    return ctx.get_category_total("objection") >= 5
+    """Returns True if total objections >= max_total_objections."""
+    return ctx.get_category_total("objection") >= ctx.max_total_objections
 
 
 @sm_condition(

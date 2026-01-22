@@ -129,35 +129,37 @@ def has_repeated_objections(ctx: PolicyContext) -> bool:
 )
 def total_objections_3_plus(ctx: PolicyContext) -> bool:
     """
-    Returns True if total objections is 3 or more.
+    Returns True if total objections >= max_consecutive_objections.
 
     At this point, escalation tactics should be considered.
+    Uses configurable limit from constants.yaml.
     """
-    return ctx.total_objections >= 3
+    return ctx.total_objections >= ctx.max_consecutive_objections
 
 
 @policy_condition(
     "total_objections_5_plus",
-    description="Check if total objections is 5 or more",
+    description="Check if total objections >= max_total_objections (configurable)",
     category="objection"
 )
 def total_objections_5_plus(ctx: PolicyContext) -> bool:
-    """Returns True if total objections is 5 or more."""
-    return ctx.total_objections >= 5
+    """Returns True if total objections >= max_total_objections (from constants.yaml)."""
+    return ctx.total_objections >= ctx.max_total_objections
 
 
 @policy_condition(
     "should_escalate_objection",
-    description="Check if objection handling should escalate",
+    description="Check if objection handling should escalate (configurable)",
     category="objection"
 )
 def should_escalate_objection(ctx: PolicyContext) -> bool:
     """
     Returns True if we should escalate objection handling.
 
-    Escalate when: 3+ objections OR repeated objection types.
+    Escalate when: total >= max_consecutive_objections OR repeated objection types.
+    Uses configurable limit from constants.yaml.
     """
-    return ctx.total_objections >= 3 or len(ctx.repeated_objection_types) > 0
+    return ctx.total_objections >= ctx.max_consecutive_objections or len(ctx.repeated_objection_types) > 0
 
 
 @policy_condition(

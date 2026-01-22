@@ -322,7 +322,7 @@ class DialoguePolicy:
             "total_objections": ctx.total_objections,
         }
 
-        # Эскалация при >= 3 возражениях
+        # Эскалация при достижении лимита возражений (configurable via constants.yaml)
         if policy_registry.evaluate("total_objections_3_plus", ctx, trace):
             if trace:
                 trace.set_result(

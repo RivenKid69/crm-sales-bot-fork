@@ -18,6 +18,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from .personas import Persona
 from .noise import add_noise, add_heavy_noise, add_light_noise
 from src.decision_trace import ClientAgentTrace
+from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS
 
 
 # =============================================================================
@@ -515,7 +516,8 @@ class ClientAgent:
 
     def _should_add_objection(self) -> bool:
         """Решает, добавить ли возражение"""
-        if self._objection_count >= 3:
+        # Use configurable limit from constants.yaml
+        if self._objection_count >= MAX_CONSECUTIVE_OBJECTIONS:
             return False
         return random.random() < self.persona.objection_probability * 0.3
 

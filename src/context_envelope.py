@@ -29,6 +29,9 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 import re
 
+# Import objection limits from YAML (single source of truth)
+from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS
+
 
 class ReasonCode(Enum):
     """
@@ -649,7 +652,8 @@ class ContextEnvelopeBuilder:
                 elif "competitor" in obj_type:
                     envelope.add_reason(ReasonCode.OBJECTION_REPEAT_COMPETITOR)
 
-        if envelope.total_objections >= 3:
+        # Use configurable limit from constants.yaml
+        if envelope.total_objections >= MAX_CONSECUTIVE_OBJECTIONS:
             envelope.add_reason(ReasonCode.OBJECTION_ESCALATE)
 
         # === Breakthrough signals (Level 3) ===

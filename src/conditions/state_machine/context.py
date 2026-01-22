@@ -14,7 +14,13 @@ from dataclasses import dataclass, field
 from src.intent_tracker import INTENT_CATEGORIES
 
 # Import SPIN constants for auto-computing phase from state
-from src.yaml_config.constants import SPIN_STATES, SPIN_PHASES
+from src.yaml_config.constants import (
+    SPIN_STATES,
+    SPIN_PHASES,
+    # Objection limits from YAML (single source of truth)
+    MAX_CONSECUTIVE_OBJECTIONS,
+    MAX_TOTAL_OBJECTIONS,
+)
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
@@ -212,6 +218,11 @@ class EvaluatorContext:
     in_fork: bool = False
     fork_id: Optional[str] = None
 
+    # === Objection limits (from YAML config, single source of truth) ===
+    # These are populated from constants.yaml via constants.py
+    max_consecutive_objections: int = field(default_factory=lambda: MAX_CONSECUTIVE_OBJECTIONS)
+    max_total_objections: int = field(default_factory=lambda: MAX_TOTAL_OBJECTIONS)
+
     def __post_init__(self):
         """Validate and compute derived fields."""
         if self.turn_number < 0:
@@ -324,6 +335,15 @@ class EvaluatorContext:
             in_fork = dag_depth > 0
             fork_id = dag_ctx.current_fork
 
+        # Extract objection limits from state_machine (which reads from YAML config)
+        # This ensures limits are configurable via constants.yaml
+        max_consecutive = getattr(
+            state_machine, 'max_consecutive_objections', MAX_CONSECUTIVE_OBJECTIONS
+        )
+        max_total = getattr(
+            state_machine, 'max_total_objections', MAX_TOTAL_OBJECTIONS
+        )
+
         return cls(
             collected_data=collected_data.copy() if collected_data else {},
             state=state,
@@ -357,6 +377,9 @@ class EvaluatorContext:
             dag_depth=dag_depth,
             in_fork=in_fork,
             fork_id=fork_id,
+            # Objection limits from config
+            max_consecutive_objections=max_consecutive,
+            max_total_objections=max_total,
         )
 
     @classmethod
@@ -390,6 +413,9 @@ class EvaluatorContext:
         dag_depth: int = 0,
         in_fork: bool = False,
         fork_id: Optional[str] = None,
+        # Objection limits (defaults from YAML config)
+        max_consecutive_objections: int = None,
+        max_total_objections: int = None,
     ) -> "EvaluatorContext":
         """
         Factory method to create a test context with defaults.
@@ -459,6 +485,17 @@ class EvaluatorContext:
             dag_depth=dag_depth,
             in_fork=in_fork,
             fork_id=fork_id,
+            # Objection limits (use YAML defaults if not specified)
+            max_consecutive_objections=(
+                max_consecutive_objections
+                if max_consecutive_objections is not None
+                else MAX_CONSECUTIVE_OBJECTIONS
+            ),
+            max_total_objections=(
+                max_total_objections
+                if max_total_objections is not None
+                else MAX_TOTAL_OBJECTIONS
+            ),
         )
 
     def has_field(self, field_name: str) -> bool:

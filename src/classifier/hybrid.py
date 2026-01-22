@@ -25,6 +25,8 @@ from src.yaml_config.constants import (
     SPIN_PHASE_CLASSIFICATION,
     SPIN_PROGRESS_INTENTS,
     SPIN_SHORT_ANSWER_CLASSIFICATION,
+    # Objection limits from YAML (single source of truth)
+    MAX_CONSECUTIVE_OBJECTIONS,
 )
 from .normalizer import TextNormalizer
 from .intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
@@ -700,7 +702,8 @@ class HybridClassifier:
         # -----------------------------------------------------------------
         objection_count = context.get("objection_count", 0)
 
-        if objection_count >= 3:
+        # Use configurable limit from constants.yaml
+        if objection_count >= MAX_CONSECUTIVE_OBJECTIONS:
             # Проверяем, не пытается ли клиент снова возразить
             objection_markers = [
                 "дорого", "дороговато", "бюджет",

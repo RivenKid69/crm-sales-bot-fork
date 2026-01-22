@@ -15,6 +15,9 @@ from src.yaml_config.constants import (
     OVERLAY_ALLOWED_STATES,
     PROTECTED_STATES,
     AGGRESSIVE_ACTIONS,
+    # Objection limits from YAML (single source of truth)
+    MAX_CONSECUTIVE_OBJECTIONS,
+    MAX_TOTAL_OBJECTIONS,
 )
 
 
@@ -108,6 +111,10 @@ class PolicyContext:
     frustration_level: int = 0
     guard_intervention: Optional[str] = None
 
+    # Objection limits (from YAML config, single source of truth)
+    max_consecutive_objections: int = field(default_factory=lambda: MAX_CONSECUTIVE_OBJECTIONS)
+    max_total_objections: int = field(default_factory=lambda: MAX_TOTAL_OBJECTIONS)
+
     def __post_init__(self):
         """Validate context fields after initialization."""
         if self.turn_number < 0:
@@ -178,6 +185,13 @@ class PolicyContext:
             # Guard signals
             frustration_level=envelope.frustration_level,
             guard_intervention=envelope.guard_intervention,
+            # Objection limits (from envelope if available, else from YAML config)
+            max_consecutive_objections=getattr(
+                envelope, 'max_consecutive_objections', MAX_CONSECUTIVE_OBJECTIONS
+            ),
+            max_total_objections=getattr(
+                envelope, 'max_total_objections', MAX_TOTAL_OBJECTIONS
+            ),
         )
 
     @classmethod
@@ -210,6 +224,9 @@ class PolicyContext:
         least_effective_action: Optional[str] = None,
         frustration_level: int = 0,
         guard_intervention: Optional[str] = None,
+        # Objection limits (defaults from YAML config)
+        max_consecutive_objections: int = None,
+        max_total_objections: int = None,
     ) -> "PolicyContext":
         """
         Factory method to create a test context with defaults.
@@ -245,6 +262,17 @@ class PolicyContext:
             least_effective_action=least_effective_action,
             frustration_level=frustration_level,
             guard_intervention=guard_intervention,
+            # Objection limits (use YAML defaults if not specified)
+            max_consecutive_objections=(
+                max_consecutive_objections
+                if max_consecutive_objections is not None
+                else MAX_CONSECUTIVE_OBJECTIONS
+            ),
+            max_total_objections=(
+                max_total_objections
+                if max_total_objections is not None
+                else MAX_TOTAL_OBJECTIONS
+            ),
         )
 
     def is_overlay_allowed(self) -> bool:

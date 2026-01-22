@@ -39,6 +39,8 @@ from src.yaml_config.constants import (
     OBJECTION_INTENTS,
     POSITIVE_INTENTS,
     QUESTION_INTENTS,
+    # Objection limits from YAML (single source of truth)
+    MAX_CONSECUTIVE_OBJECTIONS,
 )
 
 if TYPE_CHECKING:
@@ -1372,7 +1374,8 @@ class ContextWindow:
             base_score = max(0.0, base_score - 0.05)
 
         # Много возражений = сопротивление (-0.05)
-        if self.get_objection_count() >= 3:
+        # Use configurable limit from constants.yaml
+        if self.get_objection_count() >= MAX_CONSECUTIVE_OBJECTIONS:
             base_score = max(0.0, base_score - 0.05)
 
         return base_score

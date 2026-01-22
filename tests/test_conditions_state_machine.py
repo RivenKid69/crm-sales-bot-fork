@@ -1630,3 +1630,203 @@ class TestContextAwareConditions:
             confidence_trend="stable"
         )
         assert should_answer_directly(ctx_ok) is False
+
+
+# =============================================================================
+# CONFIGURABLE OBJECTION LIMITS TESTS
+# =============================================================================
+
+class TestConfigurableObjectionLimits:
+    """
+    Tests for configurable objection limits.
+
+    These tests verify that objection limits are properly:
+    1. Read from YAML config (constants.yaml)
+    2. Passed through EvaluatorContext
+    3. Used in condition functions instead of hardcoded values
+    """
+
+    def test_default_limits_from_yaml(self):
+        """Test that default limits come from YAML config."""
+        from src.yaml_config.constants import (
+            MAX_CONSECUTIVE_OBJECTIONS,
+            MAX_TOTAL_OBJECTIONS,
+        )
+
+        ctx = create_test_context()
+
+        # Default limits should match YAML config
+        assert ctx.max_consecutive_objections == MAX_CONSECUTIVE_OBJECTIONS
+        assert ctx.max_total_objections == MAX_TOTAL_OBJECTIONS
+
+    def test_custom_limits_in_context(self):
+        """Test that custom limits can be passed to context."""
+        # Create context with custom limits
+        ctx = create_test_context(
+            max_consecutive_objections=5,
+            max_total_objections=10,
+        )
+
+        assert ctx.max_consecutive_objections == 5
+        assert ctx.max_total_objections == 10
+
+    def test_objection_limit_reached_respects_custom_consecutive(self):
+        """Test objection_limit_reached uses custom consecutive limit."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 4)
+        tracker.set_category_total("objection", 2)
+
+        # With default limit (3), this should trigger
+        ctx_default = create_test_context(intent_tracker=tracker)
+        assert objection_limit_reached(ctx_default) is True
+
+        # With higher custom limit (5), this should NOT trigger
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_category_streak("objection", 4)
+        tracker2.set_category_total("objection", 2)
+        ctx_custom = create_test_context(
+            intent_tracker=tracker2,
+            max_consecutive_objections=5,
+            max_total_objections=10,
+        )
+        assert objection_limit_reached(ctx_custom) is False
+
+    def test_objection_limit_reached_respects_custom_total(self):
+        """Test objection_limit_reached uses custom total limit."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 1)
+        tracker.set_category_total("objection", 6)
+
+        # With default limit (5), this should trigger
+        ctx_default = create_test_context(intent_tracker=tracker)
+        assert objection_limit_reached(ctx_default) is True
+
+        # With higher custom limit (10), this should NOT trigger
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_category_streak("objection", 1)
+        tracker2.set_category_total("objection", 6)
+        ctx_custom = create_test_context(
+            intent_tracker=tracker2,
+            max_consecutive_objections=5,
+            max_total_objections=10,
+        )
+        assert objection_limit_reached(ctx_custom) is False
+
+    def test_objection_consecutive_3x_respects_custom_limit(self):
+        """Test objection_consecutive_3x uses context limit."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 4)
+
+        # With custom limit of 5, should NOT trigger
+        ctx = create_test_context(
+            intent_tracker=tracker,
+            max_consecutive_objections=5,
+        )
+        assert objection_consecutive_3x(ctx) is False
+
+        # With custom limit of 4, should trigger (exactly at limit)
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_category_streak("objection", 4)
+        ctx2 = create_test_context(
+            intent_tracker=tracker2,
+            max_consecutive_objections=4,
+        )
+        assert objection_consecutive_3x(ctx2) is True
+
+    def test_objection_total_5x_respects_custom_limit(self):
+        """Test objection_total_5x uses context limit."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_total("objection", 7)
+
+        # With custom limit of 10, should NOT trigger
+        ctx = create_test_context(
+            intent_tracker=tracker,
+            max_total_objections=10,
+        )
+        assert objection_total_5x(ctx) is False
+
+        # With custom limit of 7, should trigger (exactly at limit)
+        tracker2 = SimpleIntentTracker()
+        tracker2.set_category_total("objection", 7)
+        ctx2 = create_test_context(
+            intent_tracker=tracker2,
+            max_total_objections=7,
+        )
+        assert objection_total_5x(ctx2) is True
+
+    def test_limits_from_state_machine(self):
+        """Test that limits are extracted from state_machine."""
+
+        class MockStateMachine:
+            state = "greeting"
+            collected_data = {}
+            spin_phase = None
+            turn_number = 0
+            last_intent = None
+            intent_tracker = None
+            # Custom limits
+            max_consecutive_objections = 4
+            max_total_objections = 8
+
+        sm = MockStateMachine()
+        ctx = EvaluatorContext.from_state_machine(sm, "test", None)
+
+        assert ctx.max_consecutive_objections == 4
+        assert ctx.max_total_objections == 8
+
+    def test_limits_fallback_when_not_in_state_machine(self):
+        """Test fallback to YAML defaults when state_machine has no limits."""
+        from src.yaml_config.constants import (
+            MAX_CONSECUTIVE_OBJECTIONS,
+            MAX_TOTAL_OBJECTIONS,
+        )
+
+        class MockStateMachine:
+            state = "greeting"
+            collected_data = {}
+            spin_phase = None
+            turn_number = 0
+            last_intent = None
+            intent_tracker = None
+            # No max_consecutive_objections or max_total_objections
+
+        sm = MockStateMachine()
+        ctx = EvaluatorContext.from_state_machine(sm, "test", None)
+
+        # Should fall back to YAML defaults
+        assert ctx.max_consecutive_objections == MAX_CONSECUTIVE_OBJECTIONS
+        assert ctx.max_total_objections == MAX_TOTAL_OBJECTIONS
+
+    def test_edge_case_zero_limits(self):
+        """Test edge case with zero limits (immediate trigger)."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 0)
+        tracker.set_category_total("objection", 0)
+
+        # With zero limits, even 0 objections should trigger
+        ctx = create_test_context(
+            intent_tracker=tracker,
+            max_consecutive_objections=0,
+            max_total_objections=0,
+        )
+
+        assert objection_limit_reached(ctx) is True
+        assert objection_consecutive_3x(ctx) is True
+        assert objection_total_5x(ctx) is True
+
+    def test_edge_case_very_high_limits(self):
+        """Test edge case with very high limits (never trigger)."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 100)
+        tracker.set_category_total("objection", 100)
+
+        # With very high limits, even 100 objections should NOT trigger
+        ctx = create_test_context(
+            intent_tracker=tracker,
+            max_consecutive_objections=1000,
+            max_total_objections=1000,
+        )
+
+        assert objection_limit_reached(ctx) is False
+        assert objection_consecutive_3x(ctx) is False
+        assert objection_total_5x(ctx) is False

@@ -17,6 +17,8 @@ from .protocols import (
 from src.intent_tracker import IntentTracker
 from src.context_envelope import ContextEnvelope
 from src.config_loader import FlowConfig
+# Import objection limits from YAML (single source of truth)
+from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS, MAX_TOTAL_OBJECTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -205,12 +207,12 @@ class DialogueBlackboard:
         if intent not in OBJECTION_INTENTS:
             return False
 
-        # Get limits from flow config or use defaults
+        # Get limits from flow config or use YAML constants as defaults
         max_consecutive = self._flow_config.states.get("_limits", {}).get(
-            "max_consecutive_objections", 3
+            "max_consecutive_objections", MAX_CONSECUTIVE_OBJECTIONS
         )
         max_total = self._flow_config.states.get("_limits", {}).get(
-            "max_total_objections", 5
+            "max_total_objections", MAX_TOTAL_OBJECTIONS
         )
 
         # Check if limit already reached
