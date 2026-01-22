@@ -233,16 +233,138 @@ class TestIntentsConfiguration:
         assert "need_expressed" in spin_progress
 
     def test_categories_negative(self, constants):
-        """Test intents.categories.negative list."""
+        """Test intents.categories.negative - now a composed category.
+
+        negative is now defined via composed_categories in YAML and built
+        programmatically in constants.py by merging objection + exit categories.
+        This eliminates duplication and ensures automatic synchronization.
+        """
+        # Verify composed_categories definition exists
+        composed = constants["intents"].get("composed_categories", {})
+        assert "negative" in composed, "negative should be in composed_categories"
+        assert "includes" in composed["negative"], "negative should have includes"
+        assert "objection" in composed["negative"]["includes"]
+        assert "exit" in composed["negative"]["includes"]
+
+        # Verify exit category exists (base category for rejection/farewell)
         categories = constants["intents"]["categories"]
-        assert "negative" in categories
-        negative = categories["negative"]
+        assert "exit" in categories, "exit category should exist"
+        exit_intents = categories["exit"]
+        assert "rejection" in exit_intents
+        assert "farewell" in exit_intents
+
+        # Verify the resolved INTENT_CATEGORIES has negative properly composed
+        from src.yaml_config.constants import INTENT_CATEGORIES
+        assert "negative" in INTENT_CATEGORIES, "negative should be in INTENT_CATEGORIES"
+        negative = INTENT_CATEGORIES["negative"]
+        assert "rejection" in negative, "negative should include rejection (from exit)"
+        assert "farewell" in negative, "negative should include farewell (from exit)"
+        assert "objection_price" in negative, "negative should include objection_price"
+        assert "objection_competitor" in negative, "negative should include objection_competitor"
+        assert "objection_no_time" in negative, "negative should include objection_no_time"
+        assert "objection_think" in negative, "negative should include objection_think"
+
+
+class TestComposedCategories:
+    """Tests for composed categories feature - automatic category composition."""
+
+    def test_composed_categories_section_exists(self, constants):
+        """Test that composed_categories section exists in intents."""
+        assert "composed_categories" in constants["intents"]
+
+    def test_negative_is_composed(self, constants):
+        """Test that negative is properly defined as composed category."""
+        composed = constants["intents"]["composed_categories"]
+        assert "negative" in composed
+        assert "includes" in composed["negative"]
+        includes = composed["negative"]["includes"]
+        assert "objection" in includes
+        assert "exit" in includes
+
+    def test_blocking_is_composed(self, constants):
+        """Test that blocking is properly defined as composed category."""
+        composed = constants["intents"]["composed_categories"]
+        assert "blocking" in composed
+        includes = composed["blocking"]["includes"]
+        assert "objection" in includes
+        assert "exit" in includes
+        assert "technical_problems" in includes
+
+    def test_all_questions_is_composed(self, constants):
+        """Test that all_questions is properly defined as composed category."""
+        composed = constants["intents"]["composed_categories"]
+        assert "all_questions" in composed
+        includes = composed["all_questions"]["includes"]
+        assert "question" in includes
+        assert "equipment_questions" in includes
+        assert "tariff_questions" in includes
+
+    def test_composed_categories_have_descriptions(self, constants):
+        """Test that all composed categories have descriptions."""
+        composed = constants["intents"]["composed_categories"]
+        for name, spec in composed.items():
+            assert "description" in spec, f"Composed category '{name}' missing description"
+
+    def test_exit_category_exists(self, constants):
+        """Test that exit category exists as base category."""
+        categories = constants["intents"]["categories"]
+        assert "exit" in categories
+        exit_intents = categories["exit"]
+        assert "rejection" in exit_intents
+        assert "farewell" in exit_intents
+        assert len(exit_intents) == 2
+
+    def test_rejection_not_in_objection(self, constants):
+        """Test that rejection is NOT in objection category (semantic fix)."""
+        categories = constants["intents"]["categories"]
+        objections = categories["objection"]
+        assert "rejection" not in objections, \
+            "rejection should NOT be in objection - it's a final refusal, not a handleable objection"
+
+    def test_composed_category_resolution(self):
+        """Test that INTENT_CATEGORIES contains resolved composed categories."""
+        from src.yaml_config.constants import INTENT_CATEGORIES
+
+        # negative should exist and be properly composed
+        assert "negative" in INTENT_CATEGORIES
+        negative = INTENT_CATEGORIES["negative"]
+
+        # Should include objection intents
+        assert "objection_price" in negative
+        assert "objection_no_time" in negative
+
+        # Should include exit intents
         assert "rejection" in negative
         assert "farewell" in negative
-        assert "objection_price" in negative
-        assert "objection_competitor" in negative
-        assert "objection_no_time" in negative
-        assert "objection_think" in negative
+
+    def test_no_duplication_in_composed(self):
+        """Test that composed categories have no duplicate intents."""
+        from src.yaml_config.constants import INTENT_CATEGORIES
+
+        for name, intents in INTENT_CATEGORIES.items():
+            unique = set(intents)
+            assert len(intents) == len(unique), \
+                f"Category '{name}' has duplicates: {len(intents)} vs {len(unique)} unique"
+
+    def test_composed_categories_are_supersets(self):
+        """Test that composed categories are proper supersets of their includes."""
+        from src.yaml_config.constants import INTENT_CATEGORIES
+
+        # negative should be superset of objection and exit
+        negative_set = set(INTENT_CATEGORIES["negative"])
+        objection_set = set(INTENT_CATEGORIES["objection"])
+        exit_set = set(INTENT_CATEGORIES["exit"])
+
+        assert objection_set.issubset(negative_set), "objection should be subset of negative"
+        assert exit_set.issubset(negative_set), "exit should be subset of negative"
+
+        # blocking should be superset of objection, exit, and technical_problems
+        blocking_set = set(INTENT_CATEGORIES["blocking"])
+        technical_set = set(INTENT_CATEGORIES["technical_problems"])
+
+        assert objection_set.issubset(blocking_set), "objection should be subset of blocking"
+        assert exit_set.issubset(blocking_set), "exit should be subset of blocking"
+        assert technical_set.issubset(blocking_set), "technical_problems should be subset of blocking"
 
 
 class TestDialoguePolicyConfiguration:

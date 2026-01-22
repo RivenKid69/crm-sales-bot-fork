@@ -546,6 +546,19 @@ class IntentTracker:
         """Get consecutive count of negative intents."""
         return self.category_streak("negative")
 
+    # --- Exit интенты (rejection/farewell) ---
+    def is_exit(self, intent: str) -> bool:
+        """Check if intent is an exit intent (rejection/farewell)."""
+        return self.is_in_category(intent, "exit")
+
+    def exit_total(self) -> int:
+        """Get total count of exit intents."""
+        return self.category_total("exit")
+
+    def exit_streak(self) -> int:
+        """Get consecutive count of exit intents."""
+        return self.category_streak("exit")
+
     # ==========================================================================
     # АГРЕГИРОВАННЫЕ МЕТОДЫ для паттернов поведения
     # ==========================================================================

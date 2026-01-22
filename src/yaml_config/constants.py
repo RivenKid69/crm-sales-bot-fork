@@ -84,11 +84,12 @@ GO_BACK_INTENTS: List[str] = _intents.get("go_back", [])
 # =============================================================================
 # БАЗОВЫЕ КАТЕГОРИИ (для обратной совместимости - экспортируются напрямую)
 # =============================================================================
+# NOTE: NEGATIVE_INTENTS теперь composed category и определяется позже
+# после создания INTENT_CATEGORIES (см. секцию ниже)
 OBJECTION_INTENTS: List[str] = _categories.get("objection", [])
 POSITIVE_INTENTS: Set[str] = set(_categories.get("positive", []))
 QUESTION_INTENTS: List[str] = _categories.get("question", [])
 SPIN_PROGRESS_INTENT_LIST: List[str] = _categories.get("spin_progress", [])
-NEGATIVE_INTENTS: List[str] = _categories.get("negative", [])
 INFORMATIVE_INTENTS: List[str] = _categories.get("informative", [])
 
 # =============================================================================
@@ -168,23 +169,108 @@ DIALOGUE_CONTROL: List[str] = _categories.get("dialogue_control", [])
 # =============================================================================
 # КРИТИЧНО: Это единственный источник истины для IntentTracker
 # Загружает ВСЕ категории из constants.yaml автоматически
+#
+# Поддерживает два типа категорий:
+# 1. Базовые категории - определены напрямую как списки интентов
+# 2. Композитные категории - создаются путём объединения базовых категорий
+#    (определены в секции composed_categories)
 
-INTENT_CATEGORIES: Dict[str, List[str]] = {
+def _resolve_composed_categories(
+    base_categories: Dict[str, List[str]],
+    compositions: Dict[str, Dict[str, Any]]
+) -> Dict[str, List[str]]:
+    """
+    Resolve composed categories by merging base categories.
+
+    Args:
+        base_categories: Dictionary of base category name -> list of intents
+        compositions: Dictionary of composed category specs from YAML
+
+    Returns:
+        Dictionary with all categories (base + composed)
+
+    Raises:
+        ValueError: If a referenced category doesn't exist
+    """
+    result = dict(base_categories)
+
+    for composed_name, spec in compositions.items():
+        if not isinstance(spec, dict):
+            logger.warning(f"Invalid composed category spec for '{composed_name}': expected dict")
+            continue
+
+        includes = spec.get("includes", [])
+        if not includes:
+            logger.warning(f"Composed category '{composed_name}' has no includes")
+            continue
+
+        # Merge all included categories
+        merged_intents: List[str] = []
+        for included_category in includes:
+            if included_category not in result:
+                # Это может быть ссылка на ещё не созданную composed категорию
+                # или ошибка - категория не существует
+                logger.warning(
+                    f"Composed category '{composed_name}' references unknown category "
+                    f"'{included_category}'. Available: {list(result.keys())}"
+                )
+                continue
+            merged_intents.extend(result[included_category])
+
+        # Deduplicate while preserving order
+        seen: Set[str] = set()
+        unique_intents: List[str] = []
+        for intent in merged_intents:
+            if intent not in seen:
+                seen.add(intent)
+                unique_intents.append(intent)
+
+        result[composed_name] = unique_intents
+
+        description = spec.get("description", "")
+        logger.debug(
+            f"Created composed category '{composed_name}' with {len(unique_intents)} intents "
+            f"from {includes}. {description}"
+        )
+
+    return result
+
+
+# Step 1: Load base categories from YAML
+_base_categories: Dict[str, List[str]] = {
     category_name: list(category_intents) if isinstance(category_intents, list) else []
     for category_name, category_intents in _categories.items()
 }
 
-# Гарантируем что базовые категории есть (для совместимости)
-if "objection" not in INTENT_CATEGORIES:
-    INTENT_CATEGORIES["objection"] = OBJECTION_INTENTS
-if "positive" not in INTENT_CATEGORIES:
-    INTENT_CATEGORIES["positive"] = list(POSITIVE_INTENTS)
-if "question" not in INTENT_CATEGORIES:
-    INTENT_CATEGORIES["question"] = QUESTION_INTENTS
-if "spin_progress" not in INTENT_CATEGORIES:
-    INTENT_CATEGORIES["spin_progress"] = SPIN_PROGRESS_INTENT_LIST
-if "negative" not in INTENT_CATEGORIES:
-    INTENT_CATEGORIES["negative"] = NEGATIVE_INTENTS
+# Step 2: Load composed category definitions
+_composed_definitions: Dict[str, Dict[str, Any]] = _intents.get("composed_categories", {})
+
+# Step 3: Resolve composed categories (merge base categories)
+INTENT_CATEGORIES: Dict[str, List[str]] = _resolve_composed_categories(
+    _base_categories,
+    _composed_definitions
+)
+
+# Step 4: Validation - ensure critical categories exist
+_REQUIRED_CATEGORIES = ["objection", "positive", "question", "negative", "exit"]
+for _required in _REQUIRED_CATEGORIES:
+    if _required not in INTENT_CATEGORIES or not INTENT_CATEGORIES[_required]:
+        logger.warning(f"Required category '{_required}' is missing or empty in INTENT_CATEGORIES")
+
+# Step 5: Log category stats for debugging
+if logger.isEnabledFor(logging.DEBUG):
+    _base_count = len(_base_categories)
+    _composed_count = len(_composed_definitions)
+    _total_count = len(INTENT_CATEGORIES)
+    logger.debug(
+        f"INTENT_CATEGORIES loaded: {_base_count} base + {_composed_count} composed = "
+        f"{_total_count} total categories"
+    )
+
+# Legacy exports (for backwards compatibility)
+# These now reference the unified INTENT_CATEGORIES
+EXIT_INTENTS: List[str] = INTENT_CATEGORIES.get("exit", [])
+NEGATIVE_INTENTS: List[str] = INTENT_CATEGORIES.get("negative", [])
 
 # Intent action overrides (intent -> action mapping)
 INTENT_ACTION_OVERRIDES: Dict[str, str] = _intents.get("intent_action_overrides", {})
@@ -322,6 +408,7 @@ __all__ = [
     "QUESTION_INTENTS",
     "SPIN_PROGRESS_INTENT_LIST",
     "NEGATIVE_INTENTS",
+    "EXIT_INTENTS",
     "INFORMATIVE_INTENTS",
     "PRICE_RELATED_INTENTS",
     "QUESTION_REQUIRES_FACTS_INTENTS",

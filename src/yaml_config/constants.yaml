@@ -103,6 +103,9 @@ intents:
   categories:
     # =================================================================
     # БАЗОВЫЕ ВОЗРАЖЕНИЯ (18 интентов)
+    # ВАЖНО: rejection НЕ является возражением!
+    # - Возражение = "дорого", "нет времени" → можно обработать
+    # - Rejection = "не интересует" → финальный отказ
     # =================================================================
     objection:
       - objection_price
@@ -123,7 +126,14 @@ intents:
       - objection_contract_bound
       - objection_company_policy
       - objection_roi_doubt
+
+    # =================================================================
+    # ИНТЕНТЫ ЗАВЕРШЕНИЯ ДИАЛОГА (exit intents)
+    # Используются для перехода в soft_close
+    # =================================================================
+    exit:
       - rejection
+      - farewell
 
     # =================================================================
     # ПОЗИТИВНЫЕ СИГНАЛЫ (включая новые 8)
@@ -221,28 +231,13 @@ intents:
       - timeline_mentioned
       - decision_process_shared
 
-    negative:
-      - rejection
-      - farewell
-      # All objection types (must be synced with objection category above)
-      - objection_price
-      - objection_competitor
-      - objection_no_time
-      - objection_think
-      - objection_timing
-      - objection_complexity
-      - objection_trust
-      - objection_no_need
-      - objection_risk
-      - objection_team_resistance
-      - objection_security
-      - objection_bad_experience
-      - objection_priority
-      - objection_scale
-      - objection_change_management
-      - objection_contract_bound
-      - objection_company_policy
-      - objection_roi_doubt
+    # =================================================================
+    # COMPOSED CATEGORY: negative
+    # Определяется через composed_categories (см. ниже)
+    # НЕ РЕДАКТИРОВАТЬ ЗДЕСЬ - это placeholder для обратной совместимости
+    # Реальное содержимое генерируется автоматически в constants.py
+    # =================================================================
+    # negative: [] - будет заполнено автоматически из composed_categories
 
     # =================================================================
     # ВОПРОСЫ ОБ ОБОРУДОВАНИИ (12 интентов)
@@ -531,6 +526,54 @@ intents:
       - repeat_request
       - example_request
       - summary_request
+
+  # =================================================================
+  # COMPOSED CATEGORIES - Декларативная композиция категорий
+  # =================================================================
+  # Эти категории создаются автоматически путём объединения базовых категорий.
+  # Преимущества:
+  # 1. Single Source of Truth - базовые категории определены один раз
+  # 2. Автоматическая синхронизация - изменение objection обновляет negative
+  # 3. Нет дублирования - нет ручного копирования списков
+  # 4. Валидация - проверка что все referenced категории существуют
+  #
+  # Формат:
+  #   category_name:
+  #     includes: [list of base categories to merge]
+  #     description: "Human-readable description"
+  # =================================================================
+  composed_categories:
+    # negative = все негативные сигналы (возражения + exit)
+    negative:
+      includes:
+        - objection
+        - exit
+      description: "Все негативные сигналы (возражения + отказы/прощания)"
+
+    # blocking = интенты которые блокируют прогресс
+    blocking:
+      includes:
+        - objection
+        - exit
+        - technical_problems
+      description: "Интенты блокирующие прогресс диалога"
+
+    # all_questions = все типы вопросов (для fallback/routing)
+    all_questions:
+      includes:
+        - question
+        - price_related
+        - equipment_questions
+        - tariff_questions
+        - tis_questions
+        - tax_questions
+        - accounting_questions
+        - fiscal_questions
+        - analytics_questions
+        - stability_questions
+        - region_questions
+        - operations_questions
+      description: "Все категории вопросов для универсальной обработки"
 
   # =================================================================
   # МАППИНГ intent → preferred action (override default behavior)
