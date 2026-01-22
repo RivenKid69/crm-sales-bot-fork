@@ -36,6 +36,21 @@ Key Components (Stage 5 - KnowledgeSource and SourceRegistry):
 - SourceRegistry: Plugin registry for knowledge sources
 - SourceRegistration: Registration entry dataclass
 - register_source: Decorator for easy source registration
+
+Key Components (Stage 9 - DialogueEventBus):
+- EventType: Enum for event types
+- DialogueEvent: Base class for all dialogue events
+- TurnStartedEvent: Event emitted when a new turn begins
+- SourceContributedEvent: Event emitted when a Knowledge Source contributes
+- ProposalValidatedEvent: Event emitted after proposal validation
+- ConflictResolvedEvent: Event emitted after conflict resolution
+- DecisionCommittedEvent: Event emitted when decision is committed
+- StateTransitionedEvent: Event emitted when state actually changes
+- ErrorOccurredEvent: Event emitted when an error occurs
+- EventHandler: Type alias for event handlers
+- DialogueEventBus: Event bus for observability and analytics
+- MetricsCollector: Subscriber that collects metrics from events
+- DebugLogger: Subscriber that logs detailed debug information
 """
 
 from .enums import Priority, ProposalType
@@ -61,6 +76,21 @@ from .source_registry import (
     SourceRegistration,
     SourceRegistry,
     register_source,
+)
+from .event_bus import (
+    EventType,
+    DialogueEvent,
+    TurnStartedEvent,
+    SourceContributedEvent,
+    ProposalValidatedEvent,
+    ConflictResolvedEvent,
+    DecisionCommittedEvent,
+    StateTransitionedEvent,
+    ErrorOccurredEvent,
+    EventHandler,
+    DialogueEventBus,
+    MetricsCollector,
+    DebugLogger,
 )
 
 __all__ = [
@@ -92,4 +122,18 @@ __all__ = [
     "SourceRegistration",
     "SourceRegistry",
     "register_source",
+    # Event Bus (Stage 9)
+    "EventType",
+    "DialogueEvent",
+    "TurnStartedEvent",
+    "SourceContributedEvent",
+    "ProposalValidatedEvent",
+    "ConflictResolvedEvent",
+    "DecisionCommittedEvent",
+    "StateTransitionedEvent",
+    "ErrorOccurredEvent",
+    "EventHandler",
+    "DialogueEventBus",
+    "MetricsCollector",
+    "DebugLogger",
 ]
