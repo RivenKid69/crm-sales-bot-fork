@@ -1060,3 +1060,834 @@ class TestGetTurnSummary:
         assert "intent" in summary
         assert "state" in summary
         assert summary["intent"] == "greeting"
+
+
+# =============================================================================
+# STAGE 13: Extended Tests (Section 17.4 from Plan)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# The Core Problem Test - CRITICAL INTEGRATION TEST
+# -----------------------------------------------------------------------------
+
+class TestCoreProblem:
+    """
+    Tests for the core problem that Blackboard solves:
+    price_question + data_complete should BOTH be applied.
+    """
+
+    @pytest.fixture
+    def full_orchestrator(self):
+        """Create an orchestrator with full sources for integration testing."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {}
+
+        fc = MockFlowConfig(states={
+            "spin_situation": {
+                "goal": "Understand situation",
+                "phase": "situation",
+                "required_data": ["company_size"],
+                "is_final": False,
+                "transitions": {
+                    "data_complete": "spin_problem",
+                    "rejection": "soft_close",
+                    "any": "spin_problem",
+                },
+                "rules": {},
+            },
+            "spin_problem": {
+                "goal": "Identify problems",
+                "phase": "problem",
+                "required_data": [],
+                "is_final": False,
+                "transitions": {},
+                "rules": {},
+            },
+            "soft_close": {
+                "goal": "Graceful exit",
+                "is_final": True,
+                "transitions": {},
+                "rules": {},
+            },
+            "_limits": {
+                "max_consecutive_objections": 3,
+                "max_total_objections": 5,
+            },
+        })
+
+        return DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+
+    def test_price_question_with_data_complete_scenario(self, full_orchestrator):
+        """
+        CORE INTEGRATION TEST.
+
+        Scenario:
+        - Current state: spin_situation (requires company_size)
+        - User message: "У нас 15 человек. Сколько стоит?"
+        - Intent: price_question
+        - Extracted data: {company_size: "15"}
+
+        Expected:
+        - Action: answer_with_pricing (answer the price question)
+        - Next state: spin_problem (data is now complete, transition!)
+        """
+        sm = full_orchestrator._state_machine
+        sm._state = "spin_situation"
+        sm._collected_data = {}
+
+        # Add PriceQuestionSource and DataCollectorSource
+        from src.blackboard.sources.price_question import PriceQuestionSource
+        from src.blackboard.sources.data_collector import DataCollectorSource
+
+        full_orchestrator._sources.clear()
+        full_orchestrator.add_source(PriceQuestionSource())
+        full_orchestrator.add_source(DataCollectorSource())
+
+        # Simulate extracted data being added to collected_data
+        # (This would normally happen in bot.py before process_turn)
+        sm._collected_data["company_size"] = "15"
+
+        decision = full_orchestrator.process_turn(
+            intent="price_question",
+            extracted_data={"company_size": "15"},
+        )
+
+        # CRITICAL ASSERTIONS
+        assert decision.action == "answer_with_pricing", \
+            "Should answer the price question"
+        assert decision.next_state == "spin_problem", \
+            "Should ALSO transition to next phase (data is complete)"
+        assert "price_question_priority" in decision.reason_codes
+        assert "data_complete" in decision.reason_codes
+
+    def test_price_question_without_complete_data(self, full_orchestrator):
+        """Price question without completing data should not transition."""
+        sm = full_orchestrator._state_machine
+        sm._state = "spin_situation"
+        sm._collected_data = {}  # No data
+
+        from src.blackboard.sources.price_question import PriceQuestionSource
+        from src.blackboard.sources.data_collector import DataCollectorSource
+
+        full_orchestrator._sources.clear()
+        full_orchestrator.add_source(PriceQuestionSource())
+        full_orchestrator.add_source(DataCollectorSource())
+
+        decision = full_orchestrator.process_turn(
+            intent="price_question",
+            extracted_data={},  # No new data either
+        )
+
+        assert decision.action == "answer_with_pricing"
+        # No transition because data not complete - stays in current or fallback "any"
+        # (Depends on configuration)
+
+
+# -----------------------------------------------------------------------------
+# COMPATIBILITY TESTS (for bot.py integration)
+# -----------------------------------------------------------------------------
+
+class TestBotCompatibility:
+    """Tests ensuring full compatibility with bot.py expectations."""
+
+    @pytest.fixture
+    def orchestrator_for_compat(self):
+        """Create orchestrator for compatibility testing."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {"company_size": "15"}
+
+        fc = MockFlowConfig(states={
+            "spin_situation": {
+                "goal": "Understand situation",
+                "phase": "situation",
+                "required_data": ["company_size"],
+                "optional_data": ["industry"],
+                "is_final": False,
+                "transitions": {"data_complete": "spin_problem"},
+            },
+            "spin_problem": {
+                "goal": "Identify problems",
+                "phase": "problem",
+                "required_data": [],
+                "is_final": False,
+                "transitions": {},
+            },
+            "soft_close": {
+                "goal": "Graceful exit",
+                "is_final": True,
+                "transitions": {},
+            },
+        })
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        return orch
+
+    def test_to_sm_result_returns_all_required_fields(self, orchestrator_for_compat):
+        """
+        CRITICAL: to_sm_result() MUST return all fields expected by bot.py.
+
+        bot.py uses these fields:
+        - action, next_state (core)
+        - prev_state (for metrics)
+        - goal (for generator context)
+        - collected_data (full dict)
+        - missing_data, optional_data (for generator)
+        - is_final, spin_phase (for completion detection)
+        - circular_flow, objection_flow (for statistics)
+        """
+        orchestrator_for_compat.add_source(SimpleTestSource(action="test_action"))
+
+        decision = orchestrator_for_compat.process_turn(
+            intent="info_provided",
+            extracted_data={},
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # Assert ALL required fields are present
+        assert "action" in sm_result
+        assert "next_state" in sm_result
+        assert "prev_state" in sm_result
+        assert "goal" in sm_result
+        assert "collected_data" in sm_result
+        assert "missing_data" in sm_result
+        assert "optional_data" in sm_result
+        assert "is_final" in sm_result
+        assert "spin_phase" in sm_result
+        assert "circular_flow" in sm_result
+        assert "objection_flow" in sm_result
+
+        # Assert types are correct
+        assert isinstance(sm_result["collected_data"], dict)
+        assert isinstance(sm_result["missing_data"], list)
+        assert isinstance(sm_result["optional_data"], list)
+        assert isinstance(sm_result["is_final"], bool)
+
+    def test_to_sm_result_compatible_with_dialogue_policy(self, orchestrator_for_compat):
+        """
+        CRITICAL: sm_result must be modifiable in-place by DialoguePolicy.
+
+        DialoguePolicy does:
+            sm_result["action"] = override.action
+            sm_result["next_state"] = override.next_state
+        """
+        orchestrator_for_compat.add_source(SimpleTestSource(action="original_action"))
+
+        decision = orchestrator_for_compat.process_turn(
+            intent="greeting",
+            extracted_data={},
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # Verify it's a regular dict that can be modified in-place
+        assert isinstance(sm_result, dict)
+
+        # Simulate DialoguePolicy modification
+        original_action = sm_result["action"]
+        sm_result["action"] = "policy_override_action"
+        sm_result["next_state"] = "policy_override_state"
+
+        # Changes should persist
+        assert sm_result["action"] == "policy_override_action"
+        assert sm_result["next_state"] == "policy_override_state"
+
+    def test_to_sm_result_provides_goal_for_generator(self, orchestrator_for_compat):
+        """
+        Generator uses sm_result["goal"] for context.
+
+        context = {
+            "goal": sm_result["goal"],
+            ...
+        }
+        """
+        orchestrator_for_compat.add_source(SimpleTestSource(action="test"))
+
+        decision = orchestrator_for_compat.process_turn(
+            intent="greeting",
+            extracted_data={},
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # Goal should come from state config
+        assert sm_result["goal"] == "Understand situation"
+
+    def test_to_sm_result_includes_trace_field(self, orchestrator_for_compat):
+        """
+        to_sm_result should include trace field for decision_trace.py compatibility.
+        """
+        orchestrator_for_compat.add_source(SimpleTestSource(action="test"))
+
+        decision = orchestrator_for_compat.process_turn(
+            intent="greeting",
+            extracted_data={},
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # trace field should be present if resolution_trace exists
+        if decision.resolution_trace:
+            assert "trace" in sm_result
+            assert sm_result["trace"] == decision.resolution_trace
+
+    def test_to_sm_result_includes_prev_phase(self, orchestrator_for_compat):
+        """
+        to_sm_result should include prev_phase for decision_trace phase tracking.
+        """
+        orchestrator_for_compat.add_source(TransitionSource(next_state="spin_problem"))
+
+        decision = orchestrator_for_compat.process_turn(
+            intent="info_provided",
+            extracted_data={"company_size": "15"},
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # prev_phase should be present
+        assert "prev_phase" in sm_result
+
+
+# -----------------------------------------------------------------------------
+# EXTERNAL STATE CHANGES TESTS (Critical for bot.py integration)
+# -----------------------------------------------------------------------------
+
+class TestExternalStateChanges:
+    """
+    These tests verify that Blackboard correctly handles state changes
+    made by bot.py BEFORE or AFTER process_turn().
+    """
+
+    def test_blackboard_sees_external_state_change_before_process(self):
+        """
+        CRITICAL: Blackboard must see state changes made by bot.py BEFORE process_turn().
+
+        Scenario: Fallback "skip" action (bot.py line 743)
+        1. bot.py sets state_machine.state = "spin_problem" (skip action)
+        2. process_turn() is called
+        3. Blackboard should read "spin_problem" as current state
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig()
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(SimpleTestSource(action="test"))
+
+        # Simulate bot.py fallback skip (line 743) BEFORE calling process_turn
+        sm._state = "spin_problem"
+
+        decision = orch.process_turn(
+            intent="info_provided",
+            extracted_data={},
+        )
+
+        # Blackboard should have read "spin_problem" as current state, NOT "greeting"
+        assert decision.prev_state == "spin_problem"
+
+    def test_blackboard_sees_external_collected_data_before_process(self):
+        """
+        CRITICAL: Blackboard must see collected_data changes made BEFORE process_turn().
+
+        Scenario: Competitor extraction (bot.py lines 773-776)
+        1. bot.py sets collected_data["competitor_mentioned"] = True
+        2. process_turn() is called
+        3. Blackboard should see competitor_mentioned in collected_data
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {}
+
+        fc = MockFlowConfig()
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(SimpleTestSource(action="test"))
+
+        # Simulate bot.py competitor extraction (lines 773-776) BEFORE calling process_turn
+        sm._collected_data["competitor_mentioned"] = True
+        sm._collected_data["competitor_name"] = "Competitor X"
+
+        decision = orch.process_turn(
+            intent="info_provided",
+            extracted_data={},
+        )
+
+        # Blackboard should have seen the competitor data
+        sm_result = decision.to_sm_result()
+        assert sm_result["collected_data"].get("competitor_mentioned") is True
+        assert sm_result["collected_data"].get("competitor_name") == "Competitor X"
+
+    def test_dialogue_policy_can_override_state_after_process(self):
+        """
+        CRITICAL: DialoguePolicy can OVERWRITE state AFTER process_turn().
+
+        Scenario: DialoguePolicy override (bot.py line 944)
+        1. process_turn() is called, sets state to "spin_problem"
+        2. DialoguePolicy overrides to "spin_implication"
+        3. bot.py writes state_machine.state = "spin_implication"
+        4. This is NORMAL and EXPECTED behavior
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {"company_size": "15"}
+
+        fc = MockFlowConfig()
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(TransitionSource(next_state="spin_problem"))
+
+        decision = orch.process_turn(
+            intent="info_provided",
+            extracted_data={},
+        )
+
+        # process_turn completed, state was set via _apply_side_effects
+        original_next_state = decision.next_state
+
+        # Simulate DialoguePolicy override (line 944)
+        policy_override_state = "spin_implication"
+        sm._state = policy_override_state
+
+        # State should be overwritten
+        assert sm.state == policy_override_state
+        # This is expected - DialoguePolicy has final say
+
+    def test_orchestrator_reads_state_at_begin_turn(self):
+        """
+        Verify that state is read at the START of process_turn, not cached.
+
+        This ensures external state changes (fallback skip) are visible.
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig()
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(SimpleTestSource(action="test"))
+
+        # First call
+        decision1 = orch.process_turn(
+            intent="greeting",
+            extracted_data={},
+        )
+
+        # External state change between calls
+        sm._state = "spin_situation"
+
+        # Second call should see "spin_situation", not cached "greeting"
+        decision2 = orch.process_turn(
+            intent="info_provided",
+            extracted_data={},
+        )
+
+        assert decision2.prev_state == "spin_situation"
+
+    def test_disambiguation_not_affected_by_blackboard(self):
+        """
+        Verify that disambiguation state is NOT managed by Blackboard.
+
+        Disambiguation methods are called directly by bot.py and are
+        OUT OF SCOPE for Blackboard system.
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        # Add disambiguation-like attributes (would exist on real StateMachine)
+        sm.in_disambiguation = False
+        sm.disambiguation_context = None
+        sm.turns_since_last_disambiguation = 5
+
+        fc = MockFlowConfig()
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(SimpleTestSource(action="test"))
+
+        decision = orch.process_turn(
+            intent="greeting",
+            extracted_data={},
+        )
+
+        # Blackboard should complete without touching disambiguation
+        assert decision is not None
+        # Disambiguation state should be unchanged
+        assert sm.in_disambiguation is False
+
+    def test_compatibility_fields_filled_after_state_transition(self):
+        """
+        When state transitions, compatibility fields should reflect NEW state.
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {"company_size": "15"}
+
+        fc = MockFlowConfig(states={
+            "spin_situation": {
+                "goal": "Understand situation",
+                "phase": "situation",
+                "required_data": ["company_size"],
+                "is_final": False,
+                "transitions": {"data_complete": "spin_problem"},
+            },
+            "spin_problem": {
+                "goal": "Identify problems",
+                "phase": "problem",
+                "required_data": [],
+                "is_final": False,
+                "transitions": {},
+            },
+        })
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(TransitionSource(next_state="spin_problem"))
+
+        decision = orch.process_turn(
+            intent="info_provided",
+            extracted_data={},
+        )
+
+        # If transitioned to spin_problem, fields should reflect spin_problem config
+        if decision.next_state == "spin_problem":
+            assert decision.prev_state == "spin_situation"
+            assert decision.goal == "Identify problems"
+            assert decision.spin_phase == "problem"
+
+
+# -----------------------------------------------------------------------------
+# OBJECTION LIMIT TESTS
+# -----------------------------------------------------------------------------
+
+class TestObjectionLimits:
+    """Tests for objection limit handling."""
+
+    @pytest.fixture
+    def orchestrator_with_objection_guard(self):
+        """Create orchestrator with ObjectionGuardSource."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_problem")
+        sm._collected_data = {}
+
+        fc = MockFlowConfig(states={
+            "spin_problem": {
+                "goal": "Identify problems",
+                "phase": "problem",
+                "required_data": [],
+                "is_final": False,
+                "transitions": {},
+            },
+            "soft_close": {
+                "goal": "Graceful exit",
+                "is_final": True,
+                "transitions": {},
+            },
+            "_limits": {
+                "max_consecutive_objections": 3,
+                "max_total_objections": 5,
+            },
+        })
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+
+        from src.blackboard.sources.objection_guard import ObjectionGuardSource
+        orch.add_source(ObjectionGuardSource())
+
+        return orch
+
+    def test_objection_limit_triggers_soft_close(self, orchestrator_with_objection_guard):
+        """Exceeding objection limit should trigger soft_close."""
+        sm = orchestrator_with_objection_guard._state_machine
+
+        # Simulate high objection counts
+        sm._intent_tracker._objection_consecutive = 3
+        sm._intent_tracker._objection_total = 5
+
+        decision = orchestrator_with_objection_guard.process_turn(
+            intent="objection_price",
+            extracted_data={},
+        )
+
+        assert decision.action == "objection_limit_reached"
+        assert decision.next_state == "soft_close"
+
+    def test_objection_limit_sets_is_final_true(self, orchestrator_with_objection_guard):
+        """
+        CRITICAL: Objection limit should set is_final=True.
+
+        When objection limit is reached:
+        1. ObjectionGuardSource proposes _objection_limit_final data update
+        2. _fill_compatibility_fields checks for this flag
+        3. is_final is set to True (even if soft_close config has is_final=False)
+
+        This prevents dialogue continuation and objection counter overflow.
+        """
+        sm = orchestrator_with_objection_guard._state_machine
+        sm._collected_data = {}
+
+        # Simulate high objection counts
+        sm._intent_tracker._objection_consecutive = 3
+        sm._intent_tracker._objection_total = 5
+
+        decision = orchestrator_with_objection_guard.process_turn(
+            intent="objection_price",
+            extracted_data={},
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # CRITICAL ASSERTIONS
+        assert sm_result["next_state"] == "soft_close"
+        assert sm_result["is_final"] is True, \
+            "is_final MUST be True when objection limit reached"
+        assert sm_result["collected_data"].get("_objection_limit_final") is True, \
+            "_objection_limit_final flag MUST be set in collected_data"
+
+    def test_objection_within_limits_continues(self, orchestrator_with_objection_guard):
+        """Objections within limits should NOT trigger soft_close."""
+        sm = orchestrator_with_objection_guard._state_machine
+
+        # Low objection counts
+        sm._intent_tracker._objection_consecutive = 1
+        sm._intent_tracker._objection_total = 2
+
+        decision = orchestrator_with_objection_guard.process_turn(
+            intent="objection_price",
+            extracted_data={},
+        )
+
+        # Should NOT go to soft_close
+        assert decision.next_state != "soft_close" or decision.action != "objection_limit_reached"
+
+
+# -----------------------------------------------------------------------------
+# FACTORY FUNCTION TESTS (Extended)
+# -----------------------------------------------------------------------------
+
+class TestFactoryFunctionExtended:
+    """Extended tests for create_orchestrator() factory function."""
+
+    def test_create_orchestrator_with_custom_source(self):
+        """create_orchestrator should support custom sources via Plugin System."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig()
+
+        class MyCustomSource(KnowledgeSource):
+            """Custom source for testing."""
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="custom_action",
+                    priority=Priority.NORMAL,
+                    source_name=self.name,
+                    reason_code="custom_reason",
+                )
+
+        orchestrator = create_orchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            custom_sources=[MyCustomSource],
+        )
+
+        # Should have built-in sources + custom source
+        source_names = [s.name for s in orchestrator.sources]
+        assert "MyCustomSource" in source_names
+
+    def test_orchestrator_loads_sources_from_registry(self):
+        """DialogueOrchestrator should load sources from SourceRegistry."""
+        from src.blackboard.source_registry import register_builtin_sources
+
+        SourceRegistry.reset()
+        # Re-register built-in sources after reset
+        register_builtin_sources()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig()
+
+        orchestrator = create_orchestrator(
+            state_machine=sm,
+            flow_config=fc,
+        )
+
+        # Verify sources are loaded
+        source_names = [s.name for s in orchestrator.sources]
+
+        # Check that key sources are present (order may vary based on priority)
+        assert "PriceQuestionSource" in source_names
+        assert "DataCollectorSource" in source_names
+
+    def test_create_orchestrator_with_persona_limits(self):
+        """create_orchestrator should pass persona_limits to ObjectionGuardSource."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig()
+
+        custom_limits = {
+            "aggressive": {"consecutive": 10, "total": 15},
+            "default": {"consecutive": 5, "total": 10},
+        }
+
+        orchestrator = create_orchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            persona_limits=custom_limits,
+        )
+
+        # Find ObjectionGuardSource
+        objection_source = orchestrator.get_source("ObjectionGuardSource")
+
+        if objection_source:
+            # Custom limits should be applied
+            assert objection_source.persona_limits.get("aggressive", {}).get("consecutive") == 10
+
+
+# -----------------------------------------------------------------------------
+# SIDE EFFECTS TESTS (Extended)
+# -----------------------------------------------------------------------------
+
+class TestSideEffectsExtended:
+    """Extended tests for _apply_side_effects()."""
+
+    def test_side_effects_applied_correctly(self):
+        """
+        Side effects MUST be applied for bot.py compatibility:
+        - state_machine.state updated
+        - state_machine.last_action updated
+        - IntentTracker.record() called
+        """
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {"company_size": "15"}
+
+        fc = MockFlowConfig(states={
+            "spin_situation": {
+                "goal": "Understand situation",
+                "phase": "situation",
+                "required_data": ["company_size"],
+                "transitions": {"data_complete": "spin_problem"},
+            },
+            "spin_problem": {
+                "goal": "Identify problems",
+                "phase": "problem",
+                "required_data": [],
+            },
+        })
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+
+        # Add source that proposes action
+        orch.add_source(SimpleTestSource(action="custom_action"))
+        orch.add_source(TransitionSource(next_state="spin_problem"))
+
+        initial_turn = sm._intent_tracker.turn_number
+
+        orch.process_turn(
+            intent="info_provided",
+            extracted_data={"pain_point": "losing customers"},
+        )
+
+        # State should be updated
+        assert sm.state == "spin_problem"
+
+        # last_action should be updated
+        assert sm.last_action == "custom_action"
+
+        # IntentTracker should have recorded (turn number incremented)
+        assert sm._intent_tracker.turn_number == initial_turn + 1
+
+    def test_on_enter_flags_applied_on_transition(self):
+        """Test that on_enter flags are applied when state changes."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="spin_situation")
+        sm._collected_data = {}
+
+        fc = MockFlowConfig(states={
+            "spin_situation": {
+                "goal": "Understand situation",
+                "phase": "situation",
+                "transitions": {"data_complete": "spin_problem"},
+            },
+            "spin_problem": {
+                "goal": "Identify problems",
+                "phase": "problem",
+                "on_enter": {
+                    "set_flags": {"entered_problem": True},
+                },
+            },
+        })
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(TransitionSource(next_state="spin_problem"))
+
+        orch.process_turn(
+            intent="data_complete",
+            extracted_data={},
+        )
+
+        # on_enter flags should be applied
+        assert sm.collected_data.get("entered_problem") is True

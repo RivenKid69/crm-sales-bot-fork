@@ -403,8 +403,8 @@ class TestObjectionGuardSourceContributeExceeded:
         assert len(action_proposals) == 1
         assert action_proposals[0].type == ProposalType.ACTION
         assert action_proposals[0].value == "objection_limit_reached"
-        assert action_proposals[0].priority == Priority.HIGH
-        assert action_proposals[0].combinable is False  # BLOCKING!
+        assert action_proposals[0].priority == Priority.CRITICAL
+        assert action_proposals[0].combinable is True  # Allow transition to soft_close
         assert action_proposals[0].source_name == "ObjectionGuardSource"
         assert action_proposals[0].reason_code == "objection_limit_exceeded"
 
@@ -413,7 +413,7 @@ class TestObjectionGuardSourceContributeExceeded:
         assert len(transition_proposals) == 1
         assert transition_proposals[0].type == ProposalType.TRANSITION
         assert transition_proposals[0].value == "soft_close"
-        assert transition_proposals[0].priority == Priority.HIGH
+        assert transition_proposals[0].priority == Priority.CRITICAL
 
     def test_contribute_total_exceeded_proposes_action_and_transition(self):
         """Test that total limit exceeded proposes blocking action and transition."""
@@ -432,7 +432,7 @@ class TestObjectionGuardSourceContributeExceeded:
         action_proposals = bb.get_action_proposals()
         assert len(action_proposals) == 1
         assert action_proposals[0].value == "objection_limit_reached"
-        assert action_proposals[0].combinable is False
+        assert action_proposals[0].combinable is True  # Allow transition to soft_close
 
         transition_proposals = bb.get_transition_proposals()
         assert len(transition_proposals) == 1
@@ -906,18 +906,17 @@ class TestIntentProcessorSourceEnableDisable:
 class TestSourcesStage7Integration:
     """Integration tests for Stage 7 sources working together."""
 
-    def test_objection_guard_blocks_intent_processor(self):
+    def test_objection_guard_has_critical_priority(self):
         """
-        Test that ObjectionGuardSource blocking action should prevent
-        other actions from being combined.
+        Test that ObjectionGuardSource creates CRITICAL priority action.
 
         When objection limit is exceeded, we want:
-        - ObjectionGuardSource: objection_limit_reached (combinable=False)
-        - IntentProcessorSource: should not be combined with blocking action
-
-        The ConflictResolver will handle this, but we verify both sources contribute.
+        - ObjectionGuardSource: objection_limit_reached (Priority.CRITICAL, combinable=True)
+        - The CRITICAL priority ensures this action wins in conflict resolution
+        - combinable=True allows the transition to soft_close to happen
         """
         from src.blackboard.sources import ObjectionGuardSource, IntentProcessorSource
+        from src.blackboard.enums import Priority
 
         states = {
             "spin_situation": {
@@ -947,10 +946,12 @@ class TestSourcesStage7Integration:
         # Should have 2 proposals
         assert len(action_proposals) == 2
 
-        # Find the blocking one
-        blocking_proposals = [p for p in action_proposals if not p.combinable]
-        assert len(blocking_proposals) == 1
-        assert blocking_proposals[0].value == "objection_limit_reached"
+        # Find the CRITICAL priority one (objection_limit_reached)
+        critical_proposals = [p for p in action_proposals if p.priority == Priority.CRITICAL]
+        assert len(critical_proposals) == 1
+        assert critical_proposals[0].value == "objection_limit_reached"
+        # combinable=True to allow soft_close transition
+        assert critical_proposals[0].combinable is True
 
     def test_intent_processor_with_data_collector(self):
         """
@@ -1063,11 +1064,15 @@ class TestStage7CriteriaVerification:
         assert "_objection_limit_final" in data_updates
         assert data_updates["_objection_limit_final"] is True
 
-    def test_criterion_objection_guard_combinable_false(self):
+    def test_criterion_objection_guard_critical_priority(self):
         """
-        Plan criterion: ObjectionGuardSource.combinable = False (BLOCKING)
+        Plan criterion: ObjectionGuardSource uses CRITICAL priority and combinable=True.
+
+        Design note: combinable=True allows the soft_close transition to happen.
+        CRITICAL priority ensures this action wins over other proposals.
         """
         from src.blackboard.sources import ObjectionGuardSource
+        from src.blackboard.enums import Priority
 
         bb = create_blackboard(
             intent="objection_price",
@@ -1079,7 +1084,8 @@ class TestStage7CriteriaVerification:
 
         action_proposals = bb.get_action_proposals()
         assert len(action_proposals) == 1
-        assert action_proposals[0].combinable is False
+        assert action_proposals[0].priority == Priority.CRITICAL
+        assert action_proposals[0].combinable is True
 
     def test_criterion_objection_guard_proposes_soft_close(self):
         """
