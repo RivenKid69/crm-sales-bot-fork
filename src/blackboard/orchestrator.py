@@ -33,6 +33,9 @@ from .protocols import (
 # Import SourceRegistry (Plugin System)
 from .source_registry import SourceRegistry, register_builtin_sources
 
+# Import intent categories for objection tracking
+from src.yaml_config.constants import OBJECTION_INTENTS, POSITIVE_INTENTS
+
 logger = logging.getLogger(__name__)
 
 # Register built-in sources on module import
@@ -522,6 +525,98 @@ class DialogueOrchestrator:
         if decision.flags_to_set:
             for flag_name, flag_value in decision.flags_to_set.items():
                 self._state_machine.collected_data[flag_name] = flag_value
+
+        # 5. Track state before objection series (FIX: _state_before_objection tracking)
+        # This enables returning to the correct state after handling objections.
+        #
+        # Logic:
+        # - When entering handle_objection from a non-objection state: save prev_state
+        # - When a positive intent resets the objection streak: clear _state_before_objection
+        # - When leaving handle_objection normally: clear _state_before_objection
+        self._update_state_before_objection(
+            decision=decision,
+            prev_state=prev_state,
+            state_changed=state_changed,
+        )
+
+    def _update_state_before_objection(
+        self,
+        decision: ResolvedDecision,
+        prev_state: str,
+        state_changed: bool,
+    ) -> None:
+        """
+        Update _state_before_objection based on state transitions and intent patterns.
+
+        This method implements the objection series tracking:
+        1. When entering handle_objection from another state, save that state
+        2. When the objection streak is broken (positive intent), clear the saved state
+        3. When leaving handle_objection normally (not to another objection), clear it
+
+        The saved state is used by get_return_state() to determine where to return
+        after successfully handling an objection series.
+
+        Args:
+            decision: The resolved decision
+            prev_state: State before this turn
+            state_changed: Whether state transition occurred
+        """
+        # Guard: Skip if blackboard not initialized (can happen in tests)
+        # Check _current_intent directly to avoid RuntimeError from current_intent property
+        if self._blackboard._current_intent is None:
+            return
+
+        current_intent = self._blackboard._current_intent
+        next_state = decision.next_state
+
+        # Get the intent tracker for streak information
+        tracker = self._blackboard._intent_tracker
+
+        # CASE 1: Entering handle_objection from a non-objection handling state
+        # Save the state we came from (only once per objection series)
+        if (state_changed and
+            next_state == "handle_objection" and
+            prev_state != "handle_objection" and
+            self._state_machine._state_before_objection is None):
+
+            self._state_machine._state_before_objection = prev_state
+            logger.debug(
+                f"Saved state_before_objection: {prev_state} "
+                f"(entering handle_objection)"
+            )
+            return
+
+        # CASE 2: Positive intent breaks the objection streak
+        # IntentTracker automatically resets category_streak when a non-objection intent
+        # is recorded. If we have a saved state and the streak is now 0, clear it.
+        if (self._state_machine._state_before_objection is not None and
+            current_intent in POSITIVE_INTENTS):
+
+            # Check if objection streak was actually broken
+            objection_streak = tracker.objection_consecutive() if tracker else 0
+            if objection_streak == 0:
+                logger.debug(
+                    f"Clearing state_before_objection: positive intent '{current_intent}' "
+                    f"broke objection streak"
+                )
+                self._state_machine._state_before_objection = None
+                return
+
+        # CASE 3: Leaving handle_objection to a non-objection state
+        # (e.g., agreement -> close, or returning to previous state)
+        if (state_changed and
+            prev_state == "handle_objection" and
+            next_state != "handle_objection" and
+            self._state_machine._state_before_objection is not None):
+
+            # Only clear if the next state is NOT an objection-related transition
+            # (allows returning to saved state)
+            if current_intent not in OBJECTION_INTENTS:
+                logger.debug(
+                    f"Clearing state_before_objection: left handle_objection "
+                    f"to {next_state}"
+                )
+                self._state_machine._state_before_objection = None
 
     def _fill_compatibility_fields(
         self,

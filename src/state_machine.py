@@ -1072,8 +1072,46 @@ class StateMachine:
         if not self._should_skip_objection_recording(intent):
             self.intent_tracker.record(intent, self.state)
 
+        # FIX: Track state_before_objection for compatibility with tests
+        # This logic mirrors orchestrator._update_state_before_objection()
+        self._update_state_before_objection_legacy(intent)
+
         # Return default - tests and legacy code may still call this
         return "continue_current_goal", self.state
+
+    def _update_state_before_objection_legacy(self, intent: str) -> None:
+        """
+        Update _state_before_objection for legacy apply_rules() compatibility.
+
+        This method mirrors the logic in orchestrator._update_state_before_objection()
+        but works in the context of the deprecated apply_rules() method.
+
+        Used by tests that still call apply_rules() directly.
+
+        Args:
+            intent: The intent that was just recorded
+        """
+        # CASE 1: Objection intent - save current state if not already saved
+        if intent in OBJECTION_INTENTS:
+            if self._state_before_objection is None and self.state != "handle_objection":
+                self._state_before_objection = self.state
+                logger.debug(
+                    f"[legacy] Saved state_before_objection: {self.state} "
+                    f"(objection intent: {intent})"
+                )
+            return
+
+        # CASE 2: Positive intent - clear saved state if streak is broken
+        if intent in POSITIVE_INTENTS:
+            if self._state_before_objection is not None:
+                # IntentTracker already recorded the intent and reset the streak
+                objection_streak = self.intent_tracker.objection_consecutive()
+                if objection_streak == 0:
+                    logger.debug(
+                        f"[legacy] Clearing state_before_objection: "
+                        f"positive intent '{intent}' broke objection streak"
+                    )
+                    self._state_before_objection = None
 
     def get_last_trace(self) -> Optional[EvaluationTrace]:
         """Get the last evaluation trace (if tracing is enabled)."""

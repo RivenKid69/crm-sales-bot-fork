@@ -173,6 +173,21 @@ class E2EStateMachine:
     def update_data(self, data: Dict[str, Any]) -> None:
         self._collected_data.update(data)
 
+    def transition_to(
+        self,
+        next_state: str,
+        action: Optional[str] = None,
+        phase: Optional[str] = None,
+        source: str = "test",
+        validate: bool = True,
+    ) -> None:
+        """Atomic state transition (mirrors real StateMachine.transition_to)."""
+        self._state = next_state
+        if action is not None:
+            self._last_action = action
+        if phase is not None:
+            self._current_phase = phase
+
     def is_final(self) -> bool:
         return self._state in ("soft_close", "closed", "rejected", "success")
 
