@@ -16,6 +16,370 @@ Dialogue Blackboard System — Финальный План v2.1
 
 ════════════════════════════════════════════════════════════════════════════════
 
+################################################################################
+#                                                                              #
+#                    🤖 РАЗМЕТКА ЭТАПОВ ДЛЯ AI-АГЕНТА                         #
+#                                                                              #
+#  Этот план разделён на 14 этапов для последовательной реализации.           #
+#  Выполняй этапы СТРОГО ПО ПОРЯДКУ. После каждого этапа — проверка.          #
+#                                                                              #
+################################################################################
+
+┌──────┬─────────────────────────────────────┬────────┬─────────────┬──────────┐
+│ Этап │ Файлы                               │ ~Строк │ Разделы     │ Зависит  │
+├──────┼─────────────────────────────────────┼────────┼─────────────┼──────────┤
+│  1   │ __init__.py, protocols.py, enums.py │  170   │ 5.1,5.2,6.1 │ —        │
+│  2   │ models.py                           │  200   │ 6.2,6.3,6.4 │ 1        │
+│  3   │ blackboard.py                       │  350   │ 7           │ 1,2      │
+│  4   │ proposal_validator.py,              │  400   │ 10,11       │ 1,2      │
+│      │ conflict_resolver.py                │        │             │          │
+│  5   │ knowledge_source.py,                │  330   │ 8.1,8.2     │ 1        │
+│      │ source_registry.py                  │        │             │          │
+│  6   │ sources/: price_question.py,        │  230   │ 9.1,9.2     │ 3,5      │
+│      │ data_collector.py                   │        │             │          │
+│  7   │ sources/: objection_guard.py,       │  300   │ 9.3,9.4     │ 3,5      │
+│      │ intent_processor.py                 │        │             │          │
+│  8   │ sources/: transition_resolver.py,   │  270   │ 9.5,9.6     │ 3,5      │
+│      │ escalation.py                       │        │             │          │
+│  9   │ event_bus.py                        │  350   │ 12          │ 1,2      │
+│ 10   │ orchestrator.py                     │  420   │ 13          │ 1-9      │
+│ 11   │ tests/: test_protocols.py,          │  870   │ 17.0,17.1,  │ 1-4      │
+│      │ test_blackboard.py,                 │        │ 17.2        │          │
+│      │ test_conflict_resolver.py           │        │             │          │
+│ 12   │ tests/: test_source_registry.py,    │  550   │ 17.3,17.3.1 │ 5-8      │
+│      │ test_sources_*.py                   │        │             │          │
+│ 13   │ tests/: test_orchestrator.py,       │ 1000   │ 17.4,18,19  │ 10       │
+│      │ test_blackboard_integration.py,     │        │             │          │
+│      │ test_blackboard_regression.py       │        │             │          │
+│ 14   │ bot.py (модификация),               │ +100   │ 14,15.4,16  │ 1-13     │
+│      │ state_machine.py (удаление -650)    │ -650   │             │          │
+└──────┴─────────────────────────────────────┴────────┴─────────────┴──────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                         ДЕТАЛЬНОЕ ОПИСАНИЕ ЭТАПОВ
+═══════════════════════════════════════════════════════════════════════════════
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 1: Базовые структуры данных (часть 1)                                  ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/__init__.py (~30 строк)
+  • src/blackboard/protocols.py (~100 строк)
+  • src/blackboard/enums.py (~40 строк)
+
+РАЗДЕЛЫ ПЛАНА: 5.1, 5.2, 6.1
+
+ЧТО ДЕЛАТЬ:
+  1. Создать директорию src/blackboard/
+  2. Реализовать protocols.py: IStateMachine, IIntentTracker, IFlowConfig,
+     ITenantConfig, TenantConfig, DEFAULT_TENANT
+  3. Реализовать enums.py: Priority, ProposalType
+  4. Создать __init__.py с экспортами
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard import Priority, ProposalType"
+  python -c "from src.blackboard.protocols import IStateMachine, TenantConfig"
+
+ЗАВИСИМОСТИ: Нет
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 2: Базовые структуры данных (часть 2)                                  ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/models.py (~200 строк)
+
+РАЗДЕЛЫ ПЛАНА: 6.2, 6.3, 6.4
+
+ЧТО ДЕЛАТЬ:
+  1. Реализовать Proposal dataclass
+  2. Реализовать ContextSnapshot frozen dataclass с helper методами
+  3. Реализовать ResolvedDecision с to_sm_result() и _fill_compatibility_fields()
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.models import Proposal, ContextSnapshot, ResolvedDecision"
+
+ЗАВИСИМОСТИ: Этап 1
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 3: DialogueBlackboard                                                  ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/blackboard.py (~350 строк)
+
+РАЗДЕЛЫ ПЛАНА: 7 (полностью)
+
+ЧТО ДЕЛАТЬ:
+  1. Реализовать DialogueBlackboard class
+  2. Три слоя: Context (read-only), Proposal (sources пишут), Decision (resolver пишет)
+  3. Методы: begin_turn(), get_context(), propose_action(), propose_transition(),
+     propose_data_update(), get_proposals(), get_action_proposals(),
+     get_transition_proposals(), commit_decision(), get_decision()
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.blackboard import DialogueBlackboard"
+
+ЗАВИСИМОСТИ: Этапы 1, 2
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 4: ProposalValidator и ConflictResolver                                ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/proposal_validator.py (~150 строк)
+  • src/blackboard/conflict_resolver.py (~250 строк)
+
+РАЗДЕЛЫ ПЛАНА: 10, 11
+
+ЧТО ДЕЛАТЬ:
+  1. ProposalValidator: validate() с проверкой priority, action/transition values,
+     combinable flag, reason_code
+  2. ConflictResolver: resolve() с полной логикой combinable флага
+  3. resolve_with_fallback() для "any" transitions
+  4. rejected_proposals в результате
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.proposal_validator import ProposalValidator"
+  python -c "from src.blackboard.conflict_resolver import ConflictResolver"
+
+ЗАВИСИМОСТИ: Этапы 1, 2
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 5: KnowledgeSource базовый класс и SourceRegistry                      ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/knowledge_source.py (~80 строк)
+  • src/blackboard/source_registry.py (~250 строк)
+
+РАЗДЕЛЫ ПЛАНА: 8.1, 8.2
+
+ЧТО ДЕЛАТЬ:
+  1. KnowledgeSource ABC: name, enabled, should_contribute(), contribute()
+  2. SourceRegistry: register(), unregister(), list_registered(), create_sources(),
+     get_registration(), freeze(), reset()
+  3. SourceRegistration dataclass
+  4. @register_source декоратор
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.knowledge_source import KnowledgeSource"
+  python -c "from src.blackboard.source_registry import SourceRegistry, register_source"
+
+ЗАВИСИМОСТИ: Этап 1
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 6: Knowledge Sources (часть 1) — PriceQuestion и DataCollector         ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/sources/__init__.py (~30 строк)
+  • src/blackboard/sources/price_question.py (~100 строк)
+  • src/blackboard/sources/data_collector.py (~100 строк)
+
+РАЗДЕЛЫ ПЛАНА: 9.1, 9.2
+
+ЧТО ДЕЛАТЬ:
+  1. Создать директорию src/blackboard/sources/
+  2. PriceQuestionSource: КРИТИЧНО — combinable=True!
+     Intents: price_question, pricing_details, discount_request
+  3. DataCollectorSource: проверка required_data, propose_transition при data_complete
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.sources import PriceQuestionSource, DataCollectorSource"
+
+ЗАВИСИМОСТИ: Этапы 3, 5
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 7: Knowledge Sources (часть 2) — ObjectionGuard и IntentProcessor     ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/sources/objection_guard.py (~150 строк)
+  • src/blackboard/sources/intent_processor.py (~150 строк)
+
+РАЗДЕЛЫ ПЛАНА: 9.3, 9.4
+
+ЧТО ДЕЛАТЬ:
+  1. ObjectionGuardSource: persona_limits (aggressive: 5/8, busy: 2/4, default: 3/5),
+     КРИТИЧНО — propose_data_update("_objection_limit_final", True)
+  2. IntentProcessorSource: маппинг intent→action из rules конфига
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.sources import ObjectionGuardSource, IntentProcessorSource"
+
+ЗАВИСИМОСТИ: Этапы 3, 5
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 8: Knowledge Sources (часть 3) — TransitionResolver и Escalation       ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/sources/transition_resolver.py (~120 строк)
+  • src/blackboard/sources/escalation.py (~150 строк)
+
+РАЗДЕЛЫ ПЛАНА: 9.5, 9.6
+
+ЧТО ДЕЛАТЬ:
+  1. TransitionResolverSource: explicit transitions из config.transitions
+  2. EscalationSource: КРИТИЧНО — combinable=False! (блокирует все transitions)
+     Triggers: human_request, repeated_failures, explicit escalation intents
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.sources import TransitionResolverSource, EscalationSource"
+
+ЗАВИСИМОСТИ: Этапы 3, 5
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 9: DialogueEventBus                                                    ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/event_bus.py (~350 строк)
+
+РАЗДЕЛЫ ПЛАНА: 12 (полностью)
+
+ЧТО ДЕЛАТЬ:
+  1. Event классы: TurnStarted, SourceContributed, ProposalValidated,
+     ConflictResolved, DecisionCommitted, StateTransitioned
+  2. DialogueEventBus: subscribe(), unsubscribe(), emit()
+  3. Subscriber ABC
+  4. MetricsCollector, DebugLogger subscribers
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.event_bus import DialogueEventBus, TurnStarted, DecisionCommitted"
+
+ЗАВИСИМОСТИ: Этапы 1, 2
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 10: DialogueOrchestrator                                               ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • src/blackboard/orchestrator.py (~420 строк)
+
+РАЗДЕЛЫ ПЛАНА: 13 (полностью)
+
+ЧТО ДЕЛАТЬ:
+  1. DialogueOrchestrator class
+  2. process_turn(): координация всего пайплайна
+  3. _apply_side_effects(): IntentTracker.record(), state update, on_enter flags
+  4. add_source(), remove_source(), get_source()
+  5. create_orchestrator() factory function
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  python -c "from src.blackboard.orchestrator import DialogueOrchestrator, create_orchestrator"
+
+ЗАВИСИМОСТИ: Все этапы 1-9
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 11: Unit тесты (часть 1) — Protocols, Blackboard, ConflictResolver    ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • tests/test_protocols.py (~120 строк)
+  • tests/test_blackboard.py (~400 строк)
+  • tests/test_conflict_resolver.py (~350 строк)
+
+РАЗДЕЛЫ ПЛАНА: 17.0, 17.1, 17.2
+
+ЧТО ДЕЛАТЬ:
+  1. Тесты protocol compliance
+  2. Тесты DialogueBlackboard: begin_turn, get_context, propose_*, commit_decision
+  3. Тесты ConflictResolver: ВКЛЮЧАЯ CORE TEST price_question + data_complete
+  4. Тесты combinable=True (merge) и combinable=False (block)
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  pytest tests/test_protocols.py tests/test_blackboard.py tests/test_conflict_resolver.py -v
+
+ЗАВИСИМОСТИ: Этапы 1-4
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 12: Unit тесты (часть 2) — SourceRegistry и Sources                    ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • tests/test_source_registry.py (~200 строк)
+  • tests/test_sources_price.py (~100 строк)
+  • tests/test_sources_data.py (~100 строк)
+  • tests/test_sources_objection.py (~150 строк)
+
+РАЗДЕЛЫ ПЛАНА: 17.3, 17.3.1
+
+ЧТО ДЕЛАТЬ:
+  1. Тесты SourceRegistry: register, unregister, create_sources, @register_source
+  2. Тесты PriceQuestionSource: КРИТИЧНО — проверка combinable=True
+  3. Тесты DataCollectorSource: data_complete transition
+  4. Тесты ObjectionGuardSource: persona limits, _objection_limit_final flag
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  pytest tests/test_source_registry.py tests/test_sources_*.py -v
+
+ЗАВИСИМОСТИ: Этапы 5-8
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 13: Unit тесты (часть 3) + Integration + Regression                    ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ФАЙЛЫ:
+  • tests/test_orchestrator.py (~500 строк)
+  • tests/test_blackboard_integration.py (~300 строк)
+  • tests/test_blackboard_regression.py (~200 строк)
+
+РАЗДЕЛЫ ПЛАНА: 17.4, 18, 19
+
+ЧТО ДЕЛАТЬ:
+  1. Тесты Orchestrator: process_turn, _apply_side_effects, add/remove_source
+  2. COMPATIBILITY TESTS: to_sm_result(), DialoguePolicy integration
+  3. EXTERNAL STATE CHANGES TESTS: bot.py делает изменения до/после process_turn
+  4. Integration scenarios: price_question+data, objections, rejection
+  5. Regression scenarios
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  pytest tests/test_orchestrator.py tests/test_blackboard_integration.py tests/test_blackboard_regression.py -v
+
+ЗАВИСИМОСТИ: Этап 10
+───────────────────────────────────────────────────────────────────────────────
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓ ЭТАП 14: Интеграция с bot.py и удаление legacy                              ▓
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+⚠️  ВНИМАНИЕ: Самый рискованный этап. Делать в отдельной git ветке!
+
+ФАЙЛЫ (МОДИФИКАЦИЯ):
+  • src/bot.py — замена вызовов apply_rules() на DialogueOrchestrator
+  • src/state_machine.py — удаление ~650 строк legacy кода
+
+РАЗДЕЛЫ ПЛАНА: 14, 15.4, 16
+
+ЧТО ДЕЛАТЬ:
+  1. Модифицировать bot.py:
+     БЫЛО:  sm_result = self.state_machine.process(...)
+     СТАЛО: decision = self._orchestrator.process_turn(...)
+            sm_result = decision.to_sm_result()
+  2. Удалить из state_machine.py:
+     - apply_rules() (~324 строки)
+     - _apply_rules_priority_driven() (~74 строки)
+     - _apply_priority() (~106 строк)
+     - _priority_matches_intent() (~51 строка)
+     - _evaluate_priority_condition() (~29 строк)
+     - _call_priority_handler() (~59 строк)
+     - class RuleResult (~32 строки)
+  3. Проверить/удалить legacy flags из settings.yaml
+
+КРИТЕРИЙ ВЫПОЛНЕНИЯ:
+  grep -r "def apply_rules" src/                    → должен вернуть НИЧЕГО
+  grep -r "_apply_rules_priority_driven" src/       → должен вернуть НИЧЕГО
+  grep -r "class RuleResult" src/                   → должен вернуть НИЧЕГО
+  pytest tests/ -v                                  → ВСЕ тесты проходят
+
+ЗАВИСИМОСТИ: Все этапы 1-13
+───────────────────────────────────────────────────────────────────────────────
+
+################################################################################
+#                         КОНЕЦ РАЗМЕТКИ ЭТАПОВ                                #
+################################################################################
+
 Часть 1: Введение и Научная База
 1. Резюме
 Ключевая инновация: Action Selection и State Transition — НЕЗАВИСИМЫЕ процессы, которые объединяются ConflictResolver с поддержкой combinable флага.
@@ -553,6 +917,13 @@ Next State: spin_problem (CORRECTLY TRANSITIONED!)
 
 продолжай
 Часть 3: Детальная спецификация компонентов
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 1: Базовые структуры данных (часть 1) — НАЧАЛО <<<                 ║
+║  Файлы: __init__.py, protocols.py, enums.py                                  ║
+║  Разделы: 5.1, 5.2 (Priority, ProposalType), 5.1.1 (Protocols)               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 5. Core Data Structures
 5.1 Priority Enum
 
@@ -813,6 +1184,17 @@ class ProposalType(Enum):
     TRANSITION = auto()
     DATA_UPDATE = auto()
     FLAG_SET = auto()
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 1 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 2: Базовые структуры данных (часть 2) — НАЧАЛО <<<                 ║
+║  Файлы: models.py                                                            ║
+║  Разделы: 5.3, 5.4, 5.5 (Proposal, ResolvedDecision, ContextSnapshot)        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 5.3 Proposal Dataclass
 
 # src/blackboard/models.py
@@ -1159,6 +1541,16 @@ class ContextSnapshot:
         if self.tenant_config and self.tenant_config.features:
             return self.tenant_config.features.get(feature_name, True)
         return True  # Default: all features enabled
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 2 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 3: DialogueBlackboard — НАЧАЛО <<<                                 ║
+║  Файлы: blackboard.py                                                        ║
+║  Разделы: 6 (полностью)                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
 6. DialogueBlackboard
 
@@ -1642,6 +2034,17 @@ class DialogueBlackboard:
                 if self._turn_start_time else None
             ),
         }
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 3 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 5: KnowledgeSource и SourceRegistry — НАЧАЛО <<<                   ║
+║  Файлы: knowledge_source.py, source_registry.py                              ║
+║  Разделы: 7, 7.1                                                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 7. Knowledge Source Base Class
 
 # src/blackboard/knowledge_source.py
@@ -2072,8 +2475,20 @@ def register_builtin_sources() -> None:
 
 Продолжаю с четвёртой частью — Реализация Knowledge Sources.
 
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 5 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 продолжай
 Часть 4: Реализация Knowledge Sources
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 6: Knowledge Sources (часть 1) — НАЧАЛО <<<                        ║
+║  Файлы: sources/__init__.py, sources/price_question.py, sources/data_collector.py ║
+║  Разделы: 8.1, 8.2                                                           ║
+║  ⚠️  КРИТИЧНО: PriceQuestionSource.combinable = True                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 8. Knowledge Sources Implementation
 8.1 PriceQuestionSource
 
@@ -2310,6 +2725,18 @@ class DataCollectorSource(KnowledgeSource):
             transition=data_complete_target,
             reason=f"All required data collected: {required_fields}"
         )
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 6 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 7: Knowledge Sources (часть 2) — НАЧАЛО <<<                        ║
+║  Файлы: sources/objection_guard.py, sources/intent_processor.py              ║
+║  Разделы: 8.3, 8.4                                                           ║
+║  ⚠️  КРИТИЧНО: ObjectionGuardSource должен устанавливать _objection_limit_final ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 8.3 ObjectionGuardSource
 
 # src/blackboard/sources/objection_guard.py
@@ -2727,6 +3154,18 @@ class IntentProcessorSource(KnowledgeSource):
             "intent_tracker": ctx.intent_tracker,
             "context_envelope": ctx.context_envelope,
         }
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 7 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 8: Knowledge Sources (часть 3) — НАЧАЛО <<<                        ║
+║  Файлы: sources/transition_resolver.py, sources/escalation.py                ║
+║  Разделы: 8.5, 8.6                                                           ║
+║  ⚠️  КРИТИЧНО: EscalationSource.combinable = False (блокирует transitions!)  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 8.5 TransitionResolverSource
 
 # src/blackboard/sources/transition_resolver.py
@@ -3132,8 +3571,20 @@ class EscalationSource(KnowledgeSource):
         )
 Продолжаю с пятой частью — ConflictResolver, ProposalValidator, EventBus и Orchestrator.
 
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 8 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 продолжай
 Часть 5: ConflictResolver, ProposalValidator, EventBus и Orchestrator
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 4: ProposalValidator и ConflictResolver — НАЧАЛО <<<               ║
+║  Файлы: proposal_validator.py, conflict_resolver.py                          ║
+║  Разделы: 9, 10                                                              ║
+║  ⚠️  КРИТИЧНО: ConflictResolver должен правильно обрабатывать combinable!    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 9. ProposalValidator
 
 # src/blackboard/proposal_validator.py
@@ -3569,8 +4020,19 @@ class ConflictResolver:
                 decision.next_state = fallback_transition
                 decision.reason_codes.append("fallback_any_transition")
                 decision.resolution_trace["fallback_applied"] = True
-        
+
         return decision
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 4 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 9: DialogueEventBus — НАЧАЛО <<<                                   ║
+║  Файлы: event_bus.py                                                         ║
+║  Разделы: 11 (полностью)                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 11. DialogueEventBus
 
 # src/blackboard/event_bus.py
@@ -4064,6 +4526,18 @@ class DebugLogger:
             self._log_level,
             f"[Turn {event.turn_number}] {event.event_type.name}: {event.data}"
         )
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 9 — КОНЕЦ >>>                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 10: DialogueOrchestrator — НАЧАЛО <<<                              ║
+║  Файлы: orchestrator.py                                                      ║
+║  Разделы: 12 (полностью)                                                     ║
+║  Зависит от: ВСЕ предыдущие этапы (1-9)                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 12. DialogueOrchestrator
 
 # src/blackboard/orchestrator.py
@@ -4757,6 +5231,10 @@ def create_orchestrator(
     return orchestrator
 Продолжаю с шестой частью — Configuration, Migration Plan и Testing.
 
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 10 — КОНЕЦ >>>                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 продолжай
 Часть 6: Configuration, Migration Plan и Testing
 13. Configuration (YAML)
@@ -5146,6 +5624,15 @@ handoff_delayed:
     human_available: handoff_complete
     user_leave_contact: collect_callback
     timeout: soft_close
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 14: Интеграция с bot.py и удаление legacy — НАЧАЛО <<<             ║
+║  Файлы: src/bot.py (модификация), src/state_machine.py (удаление ~650 строк) ║
+║  Разделы: 14, 15.4, 16                                                       ║
+║  ⚠️  ВНИМАНИЕ: Самый рискованный этап! Делать в отдельной git ветке!         ║
+║  Зависит от: ВСЕ предыдущие этапы (1-13)                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 14. Integration with SalesBot (ПОЛНАЯ ЗАМЕНА)
 
 ================================================================================
@@ -5945,6 +6432,15 @@ IntentTracker.category_total()
 
 продолжай
 Часть 7: Testing Suite и Verification
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 11: Unit тесты (часть 1) — НАЧАЛО <<<                              ║
+║  Файлы: tests/test_protocols.py, tests/test_blackboard.py,                   ║
+║         tests/test_conflict_resolver.py                                      ║
+║  Разделы: 17.0, 17.1, 17.2                                                   ║
+║  ⚠️  ВКЛЮЧАЕТ CORE TEST: price_question + data_complete                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 17. Unit Tests
 17.0 Test Protocols (Hexagonal Architecture)
 
@@ -6978,8 +7474,21 @@ class TestConflictResolver:
             current_state="current",
             fallback_transition="fallback_state",
         )
-        
+
         assert decision.next_state == "current"  # Fallback not applied
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 11 — КОНЕЦ >>>                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 12: Unit тесты (часть 2) — НАЧАЛО <<<                              ║
+║  Файлы: tests/test_source_registry.py, tests/test_sources_price.py,          ║
+║         tests/test_sources_data.py, tests/test_sources_objection.py          ║
+║  Разделы: 17.3, 17.3.1                                                       ║
+║  ⚠️  Проверка combinable=True для PriceQuestionSource                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 17.3 Test Knowledge Sources
 
 # tests/test_sources_price.py
@@ -7521,6 +8030,18 @@ class TestRegisterSourceDecorator:
         # Should still be usable as a class
         instance = DecoratedSource(name="test")
         assert isinstance(instance, KnowledgeSource)
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 12 — КОНЕЦ >>>                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  >>> ЭТАП 13: Unit тесты (часть 3) + Integration + Regression — НАЧАЛО <<<   ║
+║  Файлы: tests/test_orchestrator.py, tests/test_blackboard_integration.py,    ║
+║         tests/test_blackboard_regression.py                                  ║
+║  Разделы: 17.4, 18, 19                                                       ║
+║  ⚠️  ВКЛЮЧАЕТ: Compatibility tests, External state changes tests             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
 17.4 Test Orchestrator Integration
 
@@ -8487,6 +9008,11 @@ class TestBlackboardRegression:
                 for code in scenario["expected_reason_codes"]:
                     assert code in decision.reason_codes, \
                         f"Scenario '{scenario['name']}': expected reason code {code} not found"
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 13 — КОНЕЦ >>>                                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 20. Verification Checklist
 
 20.1 Pre-Development Checklist (Phase 1)
@@ -8648,6 +9174,14 @@ Net Addition:  +4,020 lines
 - Удалён запутанный legacy код с early returns
 - Добавлена чистая, расширяемая архитектура
 - Полное тестовое покрытие
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  <<< ЭТАП 14 — КОНЕЦ >>>                                                     ║
+║                                                                              ║
+║  🎉 ПОЗДРАВЛЯЕМ! Все 14 этапов завершены.                                    ║
+║  Blackboard система полностью реализована и интегрирована.                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
 22. Заключение
 Данный план представляет собой полную спецификацию Dialogue Blackboard System с ПОЛНОЙ ЗАМЕНОЙ legacy системы.
 
