@@ -30,6 +30,12 @@ Key Components (Stage 4 - Validator and Resolver):
 - ProposalValidator: Validates proposals before conflict resolution
 - ResolutionTrace: Trace of conflict resolution process
 - ConflictResolver: Resolves conflicts between proposals
+
+Key Components (Stage 5 - KnowledgeSource and SourceRegistry):
+- KnowledgeSource: Abstract base class for knowledge sources
+- SourceRegistry: Plugin registry for knowledge sources
+- SourceRegistration: Registration entry dataclass
+- register_source: Decorator for easy source registration
 """
 
 from .enums import Priority, ProposalType
@@ -50,6 +56,12 @@ from .models import (
 from .blackboard import DialogueBlackboard
 from .proposal_validator import ValidationError, ProposalValidator
 from .conflict_resolver import ResolutionTrace, ConflictResolver
+from .knowledge_source import KnowledgeSource
+from .source_registry import (
+    SourceRegistration,
+    SourceRegistry,
+    register_source,
+)
 
 __all__ = [
     # Enums
@@ -75,4 +87,9 @@ __all__ = [
     "ProposalValidator",
     "ResolutionTrace",
     "ConflictResolver",
+    # KnowledgeSource and SourceRegistry (Stage 5)
+    "KnowledgeSource",
+    "SourceRegistration",
+    "SourceRegistry",
+    "register_source",
 ]
