@@ -46,8 +46,10 @@ bot.py, DialoguePolicy и Generator. Ключевые точки совмест�
    - Включает ВСЕ поля, которые ожидает bot.py:
      • action, next_state, prev_state
      • goal, collected_data, missing_data, optional_data
-     • is_final, spin_phase, circular_flow, objection_flow
+     • is_final, spin_phase, prev_phase, circular_flow, objection_flow
+     • trace (для decision_trace.py), reason_codes, resolution_trace
    - DialoguePolicy может модифицировать этот dict in-place
+   - _objection_limit_final флаг устанавливается через propose_data_update()
 
 2. Побочные эффекты (Side Effects)
    DialogueOrchestrator._apply_side_effects() выполняет:
@@ -56,7 +58,7 @@ bot.py, DialoguePolicy и Generator. Ключевые точки совмест�
    - state_machine.last_action = action
    - state_machine.current_phase = phase
    - on_enter flags при смене состояния
-   - data_updates → collected_data
+   - data_updates → collected_data (включая _objection_limit_final)
 
 3. Точка интеграции (bot.py)
    БЫЛО:  sm_result = self.state_machine.process(intent, extracted, context_envelope)
@@ -957,6 +959,7 @@ class ResolvedDecision:
     optional_data: List[str] = field(default_factory=list)
     is_final: bool = False
     spin_phase: Optional[str] = None
+    prev_phase: Optional[str] = None  # Phase before transition (for decision_trace)
     circular_flow: Dict[str, Any] = field(default_factory=dict)
     objection_flow: Dict[str, Any] = field(default_factory=dict)
 
@@ -989,7 +992,7 @@ class ResolvedDecision:
         Returns:
             Dict в формате, идентичном state_machine.process() output
         """
-        return {
+        result = {
             # Core fields (from Blackboard)
             "action": self.action,
             "next_state": self.next_state,
@@ -1002,6 +1005,7 @@ class ResolvedDecision:
             "optional_data": self.optional_data,
             "is_final": self.is_final,
             "spin_phase": self.spin_phase,
+            "prev_phase": self.prev_phase,  # For decision_trace phase tracking
             "circular_flow": self.circular_flow,
             "objection_flow": self.objection_flow,
 
@@ -1009,6 +1013,13 @@ class ResolvedDecision:
             "reason_codes": self.reason_codes,
             "resolution_trace": self.resolution_trace,
         }
+
+        # Add trace field for decision_trace.py compatibility
+        # (decision_trace.record_state_machine reads sm_result.get("trace"))
+        if self.resolution_trace:
+            result["trace"] = self.resolution_trace
+
+        return result
 
     def __repr__(self):
         return (f"ResolvedDecision(action='{self.action}', next_state='{self.next_state}', "
@@ -2475,7 +2486,17 @@ class ObjectionGuardSource(KnowledgeSource):
                 "trigger": reason_str,
             }
         )
-        
+
+        # CRITICAL: Set _objection_limit_final flag for is_final override
+        # This ensures soft_close triggered by objection limit is always final
+        # (prevents dialogue continuation and objection counter overflow)
+        blackboard.propose_data_update(
+            field="_objection_limit_final",
+            value=True,
+            source_name=self.name,
+            reason_code="objection_limit_exceeded"
+        )
+
         self._log_contribution(
             action="objection_limit_reached",
             transition="soft_close",
@@ -4595,6 +4616,12 @@ class DialogueOrchestrator:
         # Fill phase info
         decision.spin_phase = (
             next_config.get("phase") or next_config.get("spin_phase")
+        )
+
+        # Fill prev_phase for decision_trace phase tracking
+        prev_config = self._flow_config.states.get(prev_state, {})
+        decision.prev_phase = (
+            prev_config.get("phase") or prev_config.get("spin_phase")
         )
 
         # Fill stats
@@ -7223,10 +7250,44 @@ class TestObjectionGuardSource:
         ctx.persona = "unknown_persona"
         ctx.objection_consecutive = 3  # Default limit
         ctx.objection_total = 3
-        
+
         source.contribute(mock_blackboard)
-        
+
         mock_blackboard.propose_action.assert_called_once()
+
+    def test_contribute_sets_objection_limit_final_flag(self, source, mock_blackboard):
+        """
+        CRITICAL: contribute should propose _objection_limit_final data update.
+
+        This flag is required for is_final override in _fill_compatibility_fields().
+        Without it, soft_close triggered by objection limit won't be marked as final.
+        """
+        ctx = mock_blackboard.get_context.return_value
+        ctx.objection_consecutive = 3  # Trigger limit
+        ctx.objection_total = 3
+
+        source.contribute(mock_blackboard)
+
+        # Should propose data update for _objection_limit_final
+        mock_blackboard.propose_data_update.assert_called_once_with(
+            field="_objection_limit_final",
+            value=True,
+            source_name="ObjectionGuardSource",
+            reason_code="objection_limit_exceeded"
+        )
+
+    def test_is_final_true_when_objection_limit_reached(self, source, mock_blackboard):
+        """
+        Integration test: is_final should be True when soft_close is triggered by objection limit.
+
+        Flow:
+        1. ObjectionGuardSource proposes soft_close + _objection_limit_final
+        2. _fill_compatibility_fields checks for this flag
+        3. is_final is set to True even if soft_close config has is_final=False
+        """
+        # This test verifies the end-to-end behavior documented in the architecture
+        # Actual implementation tested in test_orchestrator.py
+        pass
 
 17.3.1 Test SourceRegistry (Plugin System)
 
@@ -7914,7 +7975,71 @@ class TestDialogueOrchestrator:
 
         assert decision.action == "objection_limit_reached"
         assert decision.next_state == "soft_close"
-    
+
+    def test_objection_limit_sets_is_final_true(self, orchestrator, mock_state_machine):
+        """
+        CRITICAL: Objection limit should set is_final=True.
+
+        When objection limit is reached:
+        1. ObjectionGuardSource proposes _objection_limit_final data update
+        2. _fill_compatibility_fields checks for this flag
+        3. is_final is set to True (even if soft_close config has is_final=False)
+
+        This prevents dialogue continuation and objection counter overflow.
+        """
+        mock_state_machine._intent_tracker.objection_consecutive.return_value = 3
+        mock_state_machine._intent_tracker.objection_total.return_value = 5
+        mock_state_machine.collected_data = {}
+
+        decision = orchestrator.process_turn(
+            intent="objection_price",
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # CRITICAL ASSERTIONS
+        assert sm_result["next_state"] == "soft_close"
+        assert sm_result["is_final"] == True, \
+            "is_final MUST be True when objection limit reached"
+        assert sm_result["collected_data"].get("_objection_limit_final") == True, \
+            "_objection_limit_final flag MUST be set in collected_data"
+
+    def test_to_sm_result_includes_trace_field(self, orchestrator, mock_state_machine):
+        """
+        to_sm_result should include trace field for decision_trace.py compatibility.
+        """
+        decision = orchestrator.process_turn(
+            intent="greeting",
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # trace field should be present if resolution_trace exists
+        if decision.resolution_trace:
+            assert "trace" in sm_result
+            assert sm_result["trace"] == decision.resolution_trace
+
+    def test_to_sm_result_includes_prev_phase(self, orchestrator, mock_state_machine):
+        """
+        to_sm_result should include prev_phase for decision_trace phase tracking.
+        """
+        mock_state_machine.state = "spin_situation"
+
+        decision = orchestrator.process_turn(
+            intent="info_provided",
+            extracted_data={"company_size": "15"},
+            context_envelope=None,
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # prev_phase should be present
+        assert "prev_phase" in sm_result
+
     # === Source management tests ===
     
     def test_add_source(self, orchestrator):
