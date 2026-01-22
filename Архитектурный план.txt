@@ -34,6 +34,41 @@ Migration: 6-8 недель с полной заменой старой сист
 
 Persona Limits: Включены динамические лимиты из YAML (aggressive: 5/8, busy: 2/4).
 
+================================================================================
+                    🔌 СОВМЕСТИМОСТЬ С СУЩЕСТВУЮЩИМ КОДОМ
+================================================================================
+
+Blackboard система спроектирована для БЕСШОВНОЙ интеграции с существующим
+bot.py, DialoguePolicy и Generator. Ключевые точки совместимости:
+
+1. ResolvedDecision.to_sm_result()
+   - Конвертирует результат Blackboard в формат Dict[str, Any]
+   - Включает ВСЕ поля, которые ожидает bot.py:
+     • action, next_state, prev_state
+     • goal, collected_data, missing_data, optional_data
+     • is_final, spin_phase, circular_flow, objection_flow
+   - DialoguePolicy может модифицировать этот dict in-place
+
+2. Побочные эффекты (Side Effects)
+   DialogueOrchestrator._apply_side_effects() выполняет:
+   - IntentTracker.record() — с логикой пропуска возражений при лимите
+   - state_machine.state = next_state
+   - state_machine.last_action = action
+   - state_machine.current_phase = phase
+   - on_enter flags при смене состояния
+   - data_updates → collected_data
+
+3. Точка интеграции (bot.py)
+   БЫЛО:  sm_result = self.state_machine.process(intent, extracted, context_envelope)
+   СТАЛО: decision = self._orchestrator.process_turn(intent, extracted, context_envelope)
+          sm_result = decision.to_sm_result()
+
+   ВСЁ ОСТАЛЬНОЕ БЕЗ ИЗМЕНЕНИЙ (DialoguePolicy, Generator, metrics).
+
+Подробности: см. Раздел 14 "Integration with SalesBot"
+
+================================================================================
+
 2. Научная база
 2.1 Blackboard Architecture
 Источники:
@@ -816,13 +851,19 @@ class Proposal:
 # src/blackboard/models.py
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.state_machine import StateMachine
 
 @dataclass
 class ResolvedDecision:
     """
     The final decision after conflict resolution.
-    
+
+    ВАЖНО: Этот класс должен обеспечивать полную совместимость с существующим
+    интерфейсом state_machine.process() для бесшовной интеграции с bot.py.
+
     Attributes:
         action: The action to execute (e.g., "answer_with_pricing")
         next_state: The state to transition to (or current state if no transition)
@@ -831,15 +872,38 @@ class ResolvedDecision:
         resolution_trace: Detailed trace of the resolution process
         data_updates: Data fields to update in collected_data
         flags_to_set: Flags to set after transition
+
+        # === COMPATIBILITY FIELDS (для совместимости с bot.py) ===
+        prev_state: State before this decision (needed for metrics, state change detection)
+        goal: Goal from state configuration (needed for generator context)
+        collected_data: Full collected_data dict AFTER applying data_updates
+        missing_data: List of missing required data fields
+        optional_data: List of missing optional data fields
+        is_final: Whether next_state is a final state
+        spin_phase: Current phase (from state config)
+        circular_flow: CircularFlowManager stats
+        objection_flow: Objection tracking stats
     """
+    # === CORE FIELDS ===
     action: str
     next_state: str
     reason_codes: List[str] = field(default_factory=list)
-    rejected_proposals: List[Proposal] = field(default_factory=list)
+    rejected_proposals: List['Proposal'] = field(default_factory=list)
     resolution_trace: Dict[str, Any] = field(default_factory=dict)
     data_updates: Dict[str, Any] = field(default_factory=dict)
     flags_to_set: Dict[str, Any] = field(default_factory=dict)
-    
+
+    # === COMPATIBILITY FIELDS (заполняются Orchestrator'ом) ===
+    prev_state: str = ""
+    goal: str = ""
+    collected_data: Dict[str, Any] = field(default_factory=dict)
+    missing_data: List[str] = field(default_factory=list)
+    optional_data: List[str] = field(default_factory=list)
+    is_final: bool = False
+    spin_phase: Optional[str] = None
+    circular_flow: Dict[str, Any] = field(default_factory=dict)
+    objection_flow: Dict[str, Any] = field(default_factory=dict)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization/logging."""
         return {
@@ -851,8 +915,45 @@ class ResolvedDecision:
             "resolution_trace": self.resolution_trace,
             "data_updates": self.data_updates,
             "flags_to_set": self.flags_to_set,
+            # Compatibility fields
+            "prev_state": self.prev_state,
+            "goal": self.goal,
+            "is_final": self.is_final,
+            "spin_phase": self.spin_phase,
         }
-    
+
+    def to_sm_result(self) -> Dict[str, Any]:
+        """
+        Convert to legacy sm_result format for full compatibility with bot.py.
+
+        КРИТИЧЕСКИ ВАЖНО: bot.py ожидает Dict с определёнными полями.
+        DialoguePolicy модифицирует этот dict in-place.
+        Generator использует goal, collected_data, missing_data, spin_phase.
+
+        Returns:
+            Dict в формате, идентичном state_machine.process() output
+        """
+        return {
+            # Core fields (from Blackboard)
+            "action": self.action,
+            "next_state": self.next_state,
+
+            # Compatibility fields (заполнены Orchestrator'ом)
+            "prev_state": self.prev_state,
+            "goal": self.goal,
+            "collected_data": self.collected_data,
+            "missing_data": self.missing_data,
+            "optional_data": self.optional_data,
+            "is_final": self.is_final,
+            "spin_phase": self.spin_phase,
+            "circular_flow": self.circular_flow,
+            "objection_flow": self.objection_flow,
+
+            # New fields (Blackboard-specific, для улучшенной трассировки)
+            "reason_codes": self.reason_codes,
+            "resolution_trace": self.resolution_trace,
+        }
+
     def __repr__(self):
         return (f"ResolvedDecision(action='{self.action}', next_state='{self.next_state}', "
                 f"reasons={self.reason_codes}, rejected={len(self.rejected_proposals)})")
@@ -1128,9 +1229,12 @@ class DialogueBlackboard:
         """
         self._turn_start_time = datetime.now()
         self._current_intent = intent
-        
+
         # Record intent in tracker (MUST happen first, before condition evaluation)
-        self._intent_tracker.record(intent, self._state_machine.state)
+        # ИСКЛЮЧЕНИЕ: Пропускаем запись возражений если лимит уже достигнут
+        # чтобы предотвратить переполнение счётчика (3→6) при продолжении soft_close
+        if not self._should_skip_objection_recording(intent):
+            self._intent_tracker.record(intent, self._state_machine.state)
         
         # Update collected_data with newly extracted data
         current_collected = dict(self._state_machine.collected_data)
@@ -1175,7 +1279,48 @@ class DialogueBlackboard:
             f"Blackboard turn started: intent={intent}, state={self._state_machine.state}, "
             f"turn={self._intent_tracker.turn_number}"
         )
-    
+
+    def _should_skip_objection_recording(self, intent: str) -> bool:
+        """
+        Check if objection recording should be skipped.
+
+        Prevents counter from growing beyond limit when soft_close
+        continues the dialog (e.g., when is_final=false).
+
+        This mirrors StateMachine._should_skip_objection_recording() for
+        compatibility with existing objection handling logic.
+
+        Args:
+            intent: The intent to check
+
+        Returns:
+            True if recording should be skipped (limit already reached)
+        """
+        from src.yaml_config.constants import OBJECTION_INTENTS
+
+        if intent not in OBJECTION_INTENTS:
+            return False
+
+        # Get limits from flow config or use defaults
+        max_consecutive = self._flow_config.states.get("_limits", {}).get(
+            "max_consecutive_objections", 3
+        )
+        max_total = self._flow_config.states.get("_limits", {}).get(
+            "max_total_objections", 5
+        )
+
+        # Check if limit already reached
+        consecutive = self._intent_tracker.objection_consecutive()
+        total = self._intent_tracker.objection_total()
+
+        if consecutive >= max_consecutive or total >= max_total:
+            logger.debug(
+                f"Skipping objection recording - limit already reached: "
+                f"consecutive={consecutive}, total={total}"
+            )
+            return True
+        return False
+
     def get_context(self) -> ContextSnapshot:
         """
         Get the immutable context snapshot.
@@ -4173,30 +4318,40 @@ class DialogueOrchestrator:
             
             # === STEP 5: Commit Decision ===
             self._blackboard.commit_decision(decision)
-            
+
             self._event_bus.emit(DecisionCommittedEvent(
                 turn_number=turn_number,
                 action=decision.action,
                 next_state=decision.next_state,
                 reason_codes=decision.reason_codes,
             ))
-            
+
             # Emit state transition event if state changed
-            if decision.next_state != current_state:
+            state_changed = decision.next_state != current_state
+            if state_changed:
                 self._event_bus.emit(StateTransitionedEvent(
                     turn_number=turn_number,
                     from_state=current_state,
                     to_state=decision.next_state,
                     trigger_reason=", ".join(decision.reason_codes),
                 ))
-            
+
+            # === STEP 6: Apply Side Effects (CRITICAL for bot.py compatibility) ===
+            # Эти побочные эффекты ранее выполнялись в state_machine.process()
+            # и ОБЯЗАТЕЛЬНЫ для корректной работы bot.py
+            self._apply_side_effects(decision, current_state, state_changed)
+
+            # === STEP 7: Fill Compatibility Fields ===
+            # bot.py ожидает полный sm_result dict с этими полями
+            self._fill_compatibility_fields(decision, current_state)
+
             turn_time_ms = (time.time() - turn_start_time) * 1000
-            
+
             logger.info(
                 f"Turn {turn_number} completed in {turn_time_ms:.1f}ms: "
                 f"action={decision.action}, next_state={decision.next_state}"
             )
-            
+
             return decision
             
         except Exception as e:
@@ -4247,14 +4402,153 @@ class DialogueOrchestrator:
             f"Creating fallback decision: reason={reason}, state={current_state}"
         )
         
-        return ResolvedDecision(
+        fallback = ResolvedDecision(
             action="continue_current_goal",
             next_state=current_state,  # Stay in current state
             reason_codes=[f"fallback_{reason}"],
             rejected_proposals=[],
             resolution_trace={"fallback": True, "reason": reason},
         )
-    
+        # Fill compatibility fields even for fallback
+        self._fill_compatibility_fields(fallback, current_state)
+        return fallback
+
+    # =========================================================================
+    # COMPATIBILITY METHODS (для интеграции с bot.py)
+    # =========================================================================
+
+    def _apply_side_effects(
+        self,
+        decision: ResolvedDecision,
+        prev_state: str,
+        state_changed: bool,
+    ) -> None:
+        """
+        Apply side effects that were previously in state_machine.process().
+
+        КРИТИЧЕСКИ ВАЖНО: Эти побочные эффекты необходимы для корректной работы:
+        1. IntentTracker.record() — история интентов для conditions
+        2. state update — переход состояния
+        3. last_action update — для контекстной классификации
+        4. current_phase update — для SPIN-фазы
+        5. on_enter flags — флаги при входе в состояние
+
+        Args:
+            decision: The resolved decision
+            prev_state: State before this turn
+            state_changed: Whether state transition occurred
+        """
+        # 1. Update state machine state
+        self._state_machine.state = decision.next_state
+
+        # 2. Update last_action for context
+        self._state_machine.last_action = decision.action
+
+        # 3. Update current phase from state config
+        next_config = self._flow_config.states.get(decision.next_state, {})
+        self._state_machine.current_phase = (
+            next_config.get("phase") or next_config.get("spin_phase")
+        )
+
+        # 4. Apply data_updates to collected_data
+        if decision.data_updates:
+            self._state_machine.update_data(decision.data_updates)
+
+        # 5. Apply on_enter flags when state changes
+        if state_changed:
+            on_enter_flags = self._flow_config.get_state_on_enter_flags(decision.next_state)
+            for flag_name, flag_value in on_enter_flags.items():
+                self._state_machine.collected_data[flag_name] = flag_value
+
+            # 6. Apply on_enter action override if configured
+            on_enter = next_config.get("on_enter")
+            if on_enter:
+                on_enter_action = (
+                    on_enter.get("action") if isinstance(on_enter, dict) else on_enter
+                )
+                if on_enter_action:
+                    decision.action = on_enter_action
+                    logger.debug(f"on_enter action override: {on_enter_action}")
+
+        # 7. Apply flags_to_set from decision
+        if decision.flags_to_set:
+            for flag_name, flag_value in decision.flags_to_set.items():
+                self._state_machine.collected_data[flag_name] = flag_value
+
+    def _fill_compatibility_fields(
+        self,
+        decision: ResolvedDecision,
+        prev_state: str,
+    ) -> None:
+        """
+        Fill compatibility fields in ResolvedDecision for bot.py.
+
+        bot.py ожидает следующие поля в sm_result:
+        - prev_state: для метрик и определения изменения состояния
+        - goal: для контекста генератора
+        - collected_data: полный dict после применения updates
+        - missing_data: список недостающих обязательных полей
+        - optional_data: список недостающих опциональных полей
+        - is_final: является ли состояние финальным
+        - spin_phase: текущая SPIN-фаза
+        - circular_flow: статистика CircularFlowManager
+        - objection_flow: статистика возражений
+
+        Args:
+            decision: ResolvedDecision to fill
+            prev_state: State before this turn
+        """
+        # Get state configuration
+        next_config = self._flow_config.states.get(decision.next_state, {})
+        required = next_config.get("required_data", [])
+        optional = next_config.get("optional_data", [])
+
+        # Fill compatibility fields
+        decision.prev_state = prev_state
+        decision.goal = next_config.get("goal", "")
+        decision.collected_data = self._state_machine.collected_data.copy()
+        decision.missing_data = [
+            f for f in required
+            if not self._state_machine.collected_data.get(f)
+        ]
+        decision.optional_data = [
+            f for f in optional
+            if not self._state_machine.collected_data.get(f)
+        ]
+
+        # Determine is_final (with objection limit override)
+        decision.is_final = next_config.get("is_final", False)
+        # Override: soft_close triggered by objection limit is always final
+        if (decision.next_state == "soft_close" and
+            self._state_machine.collected_data.get("_objection_limit_final")):
+            decision.is_final = True
+
+        # Fill phase info
+        decision.spin_phase = (
+            next_config.get("phase") or next_config.get("spin_phase")
+        )
+
+        # Fill stats
+        decision.circular_flow = self._state_machine.circular_flow.get_stats()
+        decision.objection_flow = self._get_objection_stats()
+
+    def _get_objection_stats(self) -> Dict[str, Any]:
+        """
+        Get objection statistics from IntentTracker.
+
+        Mirrors state_machine._get_objection_stats() for compatibility.
+        """
+        tracker = self._blackboard._intent_tracker
+        return {
+            "consecutive_objections": tracker.objection_consecutive(),
+            "total_objections": tracker.objection_total(),
+            "history": [
+                (r.intent, r.state)
+                for r in tracker.get_intents_by_category("objection")
+            ],
+            "return_state": self._state_machine._state_before_objection,
+        }
+
     def get_turn_summary(self) -> Dict[str, Any]:
         """Get summary of the last processed turn."""
         return self._blackboard.get_turn_summary()
@@ -4757,159 +5051,248 @@ handoff_delayed:
     user_leave_contact: collect_callback
     timeout: soft_close
 14. Integration with SalesBot (ПОЛНАЯ ЗАМЕНА)
-14.1 Updated bot.py — БЕЗ LEGACY КОДА
 
-# src/bot.py (ПОЛНАЯ ЗАМЕНА dialogue management)
+================================================================================
+                    ⚠️  КРИТИЧНО: СОВМЕСТИМОСТЬ С bot.py  ⚠️
 
-from typing import Dict, Any, Optional
-import logging
+    Существующий bot.py использует sm_result как Dict с конкретными полями.
+    DialoguePolicy модифицирует этот dict IN-PLACE.
+    Generator ожидает goal, collected_data, missing_data, spin_phase.
 
-from src.state_machine import StateMachine
-from src.config_loader import ConfigLoader
+    РЕШЕНИЕ: Используем decision.to_sm_result() для полной совместимости.
+================================================================================
 
-# Blackboard — ЕДИНСТВЕННАЯ система управления диалогом
-from src.blackboard.orchestrator import DialogueOrchestrator, create_orchestrator
-from src.blackboard.models import ResolvedDecision
+14.1 Изменения в точке интеграции (src/bot.py)
 
-logger = logging.getLogger(__name__)
+# ============================================================================
+# БЫЛО (state_machine.process):
+# ============================================================================
+#
+#   sm_result = self.state_machine.process(
+#       intent, extracted, context_envelope=context_envelope
+#   )
+#   # sm_result — это Dict с полями:
+#   # action, prev_state, next_state, goal, collected_data,
+#   # missing_data, optional_data, is_final, spin_phase,
+#   # circular_flow, objection_flow, trace
+#
+#   # DialoguePolicy модифицирует sm_result in-place:
+#   policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
+#   if policy_override:
+#       sm_result["action"] = policy_override.action
+#       sm_result["next_state"] = policy_override.next_state
+#
+#   # Generator использует sm_result напрямую:
+#   context = {
+#       "goal": sm_result["goal"],
+#       "collected_data": sm_result["collected_data"],
+#       "missing_data": sm_result["missing_data"],
+#       ...
+#   }
 
+# ============================================================================
+# СТАЛО (DialogueOrchestrator.process_turn):
+# ============================================================================
+#
+#   # 1. Получаем ResolvedDecision от Blackboard
+#   decision = self._orchestrator.process_turn(
+#       intent=intent,
+#       extracted_data=extracted,
+#       context_envelope=context_envelope,
+#   )
+#
+#   # 2. Конвертируем в sm_result dict для совместимости
+#   #    КРИТИЧНО: to_sm_result() возвращает Dict со ВСЕМИ полями,
+#   #    которые ожидают DialoguePolicy и Generator
+#   sm_result = decision.to_sm_result()
+#
+#   # 3. DialoguePolicy работает БЕЗ ИЗМЕНЕНИЙ (модифицирует dict in-place)
+#   policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
+#   if policy_override and policy_override.has_override:
+#       sm_result["action"] = policy_override.action
+#       if policy_override.next_state:
+#           sm_result["next_state"] = policy_override.next_state
+#           self.state_machine.state = policy_override.next_state
+#
+#   # 4. Generator работает БЕЗ ИЗМЕНЕНИЙ
+#   context = {
+#       "goal": sm_result["goal"],
+#       "collected_data": sm_result["collected_data"],
+#       "missing_data": sm_result["missing_data"],
+#       "spin_phase": sm_result.get("spin_phase"),
+#       "optional_data": sm_result.get("optional_data", []),
+#       ...
+#   }
+
+14.2 Полный пример интеграции
+
+# src/bot.py — МИНИМАЛЬНЫЕ ИЗМЕНЕНИЯ в методе process()
+
+def process(self, user_message: str) -> Dict[str, Any]:
+    """
+    Process a user message and generate a response.
+
+    ИЗМЕНЕНИЯ для Blackboard:
+    1. Заменён вызов state_machine.process() → orchestrator.process_turn()
+    2. Добавлен вызов decision.to_sm_result() для совместимости
+    3. ВСЁ ОСТАЛЬНОЕ БЕЗ ИЗМЕНЕНИЙ (DialoguePolicy, Generator, metrics)
+    """
+    # ... existing preprocessing (tone analysis, guard, fallback check) ...
+
+    # Classify intent (БЕЗ ИЗМЕНЕНИЙ)
+    classification = self._classify_intent(user_message)
+    intent = classification["intent"]
+    extracted = classification.get("extracted_data", {})
+
+    # Build context envelope (БЕЗ ИЗМЕНЕНИЙ)
+    context_envelope = self._build_context_envelope()
+
+    # =========================================================================
+    # ИЗМЕНЕНИЕ #1: Blackboard вместо state_machine.process()
+    # =========================================================================
+    # БЫЛО:
+    #   sm_result = self.state_machine.process(
+    #       intent, extracted, context_envelope=context_envelope
+    #   )
+    #
+    # СТАЛО:
+    decision = self._orchestrator.process_turn(
+        intent=intent,
+        extracted_data=extracted,
+        context_envelope=context_envelope,
+    )
+
+    # =========================================================================
+    # ИЗМЕНЕНИЕ #2: Конвертация в sm_result для совместимости
+    # =========================================================================
+    # КРИТИЧНО: to_sm_result() включает ВСЕ поля, которые ожидает bot.py:
+    # - prev_state (для метрик)
+    # - goal (для generator context)
+    # - collected_data (полный dict)
+    # - missing_data, optional_data (для generator)
+    # - is_final, spin_phase (для определения завершения)
+    # - circular_flow, objection_flow (для статистики)
+    # - reason_codes (NEW: для трассировки Blackboard решений)
+    sm_result = decision.to_sm_result()
+
+    # =========================================================================
+    # ВСЁ НИЖЕ — БЕЗ ИЗМЕНЕНИЙ (полная совместимость)
+    # =========================================================================
+
+    # DialoguePolicy overlay (БЕЗ ИЗМЕНЕНИЙ)
+    policy_override = None
+    if flags.context_policy_overlays:
+        policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
+    if policy_override and policy_override.has_override:
+        logger.info(
+            "DialoguePolicy override applied",
+            original_action=sm_result["action"],
+            override_action=policy_override.action,
+            reason_codes=policy_override.reason_codes,
+        )
+        if policy_override.action:
+            sm_result["action"] = policy_override.action
+        if policy_override.next_state:
+            sm_result["next_state"] = policy_override.next_state
+            self.state_machine.state = policy_override.next_state
+
+    # Build context for generator (БЕЗ ИЗМЕНЕНИЙ)
+    context = {
+        "user_message": user_message,
+        "intent": intent,
+        "state": sm_result["next_state"],
+        "history": self.history,
+        "goal": sm_result["goal"],
+        "collected_data": sm_result["collected_data"],
+        "missing_data": sm_result["missing_data"],
+        "spin_phase": sm_result.get("spin_phase"),
+        "optional_data": sm_result.get("optional_data", []),
+        # ... other existing fields ...
+    }
+
+    # Generate response (БЕЗ ИЗМЕНЕНИЙ)
+    action = sm_result["action"]
+    response = self.generator.generate(action, context)
+
+    # ... existing postprocessing (CTA, metrics, etc.) ...
+
+    # Return result (БЕЗ ИЗМЕНЕНИЙ + reason_codes)
+    return {
+        "response": response,
+        "intent": intent,
+        "action": action,
+        "state": sm_result["next_state"],
+        "is_final": sm_result["is_final"],
+        "spin_phase": sm_result.get("spin_phase"),
+        # NEW: Blackboard reason codes для debugging
+        "reason_codes": sm_result.get("reason_codes", []),
+    }
+
+14.3 Контрольный список совместимости
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    CHECKLIST: bot.py Compatibility                            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ✅ sm_result["action"]        — заполняется ResolvedDecision.action          │
+│  ✅ sm_result["next_state"]    — заполняется ResolvedDecision.next_state      │
+│  ✅ sm_result["prev_state"]    — заполняется _fill_compatibility_fields()     │
+│  ✅ sm_result["goal"]          — из state_config[next_state].goal             │
+│  ✅ sm_result["collected_data"]— полный dict ПОСЛЕ применения data_updates    │
+│  ✅ sm_result["missing_data"]  — вычисляется из required_data                 │
+│  ✅ sm_result["optional_data"] — вычисляется из optional_data                 │
+│  ✅ sm_result["is_final"]      — из state_config + objection_limit override   │
+│  ✅ sm_result["spin_phase"]    — из state_config.phase                        │
+│  ✅ sm_result["circular_flow"] — из state_machine.circular_flow.get_stats()   │
+│  ✅ sm_result["objection_flow"]— из _get_objection_stats()                    │
+│                                                                               │
+│  DialoguePolicy:                                                              │
+│  ✅ maybe_override(sm_result, envelope) — получает Dict, не ResolvedDecision  │
+│  ✅ Модификация in-place работает (sm_result — обычный dict)                  │
+│                                                                               │
+│  Generator:                                                                   │
+│  ✅ context["goal"] = sm_result["goal"]                                       │
+│  ✅ context["collected_data"] = sm_result["collected_data"]                   │
+│  ✅ context["missing_data"] = sm_result["missing_data"]                       │
+│  ✅ context["spin_phase"] = sm_result.get("spin_phase")                       │
+│                                                                               │
+│  Side Effects (выполняются в _apply_side_effects):                            │
+│  ✅ IntentTracker.record() — в begin_turn() (с objection skip логикой)        │
+│  ✅ state_machine.state = next_state                                          │
+│  ✅ state_machine.last_action = action                                        │
+│  ✅ state_machine.current_phase = phase                                       │
+│  ✅ on_enter flags — при смене состояния                                      │
+│  ✅ data_updates → collected_data                                             │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+14.4 Инициализация Orchestrator в SalesBot.__init__
 
 class SalesBot:
-    """
-    Main Sales Bot class.
+    def __init__(self, ...):
+        # ... existing initialization ...
 
-    Dialogue management полностью через Blackboard architecture.
-    НЕТ legacy кода, НЕТ feature flags для переключения систем.
-    """
+        # StateMachine остаётся для хранения state/collected_data
+        # apply_rules() УДАЛЁН, но класс сохраняется
+        self.state_machine = StateMachine(...)
 
-    def __init__(
-        self,
-        config_loader: Optional[ConfigLoader] = None,
-    ):
-        """Initialize the bot."""
-        self._config_loader = config_loader or ConfigLoader()
-
-        # StateMachine используется ТОЛЬКО для хранения state и collected_data
-        # apply_rules() УДАЛЁН
-        self._state_machine = StateMachine(
-            config_loader=self._config_loader,
-        )
-
-        # Blackboard orchestrator — единственная система dialogue management
-        self._orchestrator = self._create_orchestrator()
-
-        logger.info("SalesBot initialized with Blackboard architecture")
-
-    def _create_orchestrator(self) -> DialogueOrchestrator:
-        """
-        Create the Blackboard orchestrator.
-        """
-        # Load persona limits from config
-        constants = self._config_loader.load_constants()
-        persona_limits = constants.get("persona_limits", {})
-
-        # Convert to expected format
-        formatted_limits = {}
-        for persona, config in persona_limits.items():
-            formatted_limits[persona] = {
-                "consecutive": config.get("consecutive_objections", 3),
-                "total": config.get("total_objections", 5),
-            }
-
-        return create_orchestrator(
-            state_machine=self._state_machine,
-            flow_config=self._config_loader.get_flow_config(),
-            persona_limits=formatted_limits,
+        # Blackboard Orchestrator — единственная система dialogue management
+        self._orchestrator = create_orchestrator(
+            state_machine=self.state_machine,
+            flow_config=self._flow,
+            persona_limits=self._load_persona_limits(),
             enable_metrics=True,
-            enable_debug_logging=False,  # Set True for debugging
+            enable_debug_logging=settings.debug,
         )
 
-    @property
-    def orchestrator(self) -> DialogueOrchestrator:
-        """Get the orchestrator (for testing/debugging)."""
-        return self._orchestrator
-
-    def process(self, user_message: str) -> Dict[str, Any]:
-        """
-        Process a user message and generate a response.
-
-        This is the main entry point for the bot.
-
-        Args:
-            user_message: The user's message
-
-        Returns:
-            Dict with response, intent, action, state, etc.
-        """
-        # ... (existing preprocessing code: tone analysis, guard, etc.)
-
-        # Classify intent
-        classification = self._classify_intent(user_message)
-        intent = classification["intent"]
-        extracted_data = classification.get("extracted_data", {})
-
-        # Build context envelope
-        context_envelope = self._build_context_envelope()
-
-        # === DIALOGUE MANAGEMENT через Blackboard ===
-        previous_state = self._state_machine.state
-
-        decision = self._orchestrator.process_turn(
-            intent=intent,
-            extracted_data=extracted_data,
-            context_envelope=context_envelope,
-        )
-
-        # Update state (if transition happened)
-        if decision.next_state != previous_state:
-            self._state_machine.state = decision.next_state
-            logger.info(f"State transition: {previous_state} -> {decision.next_state}")
-
-        # Log decision details
-        logger.debug(
-            f"Blackboard decision: action={decision.action}, "
-            f"next_state={decision.next_state}, "
-            f"reasons={decision.reason_codes}"
-        )
-
-        # Generate response
-        response = self._generate_response(decision.action, context_envelope)
-
-        # ... (existing postprocessing code: CTA, metrics, etc.)
-
+    def _load_persona_limits(self) -> Dict[str, Dict[str, int]]:
+        """Load persona limits from constants.yaml."""
         return {
-            "response": response,
-            "intent": intent,
-            "action": decision.action,
-            "state": decision.next_state,
-            "previous_state": previous_state,
-            "reason_codes": decision.reason_codes,  # NEW: visibility into decision
-            "is_final": self._state_machine.is_final(),
-            "collected_data": dict(self._state_machine.collected_data),
+            "default": {"consecutive": 3, "total": 5},
+            "aggressive": {"consecutive": 5, "total": 8},
+            "busy": {"consecutive": 2, "total": 4},
+            # ... from yaml ...
         }
-
-    def get_turn_summary(self) -> Dict[str, Any]:
-        """
-        Get detailed summary of the last processed turn.
-
-        Useful for debugging and analytics.
-        """
-        return self._orchestrator.get_turn_summary()
-
-
-# ИЗМЕНЕНИЯ В bot.py (для справки):
-#
-# ПРИМЕЧАНИЕ: Shadow mode методы НЕ СУЩЕСТВОВАЛИ в кодовой базе,
-# так как стратегия "ПОЛНАЯ ЗАМЕНА" была выбрана изначально.
-# Основное изменение — замена вызова apply_rules() на Blackboard:
-#
-# БЫЛО:
-#   action, next_state = self._state_machine.apply_rules(intent, context_envelope)
-#
-# СТАЛО:
-#   decision = self._orchestrator.process(intent, context_envelope)
-#   action = decision.action
-#   next_state = decision.next_state
 15. Migration Plan (Updated: 6-8 weeks) — ПОЛНАЯ ЗАМЕНА
 15.1 Timeline Overview
 
@@ -7008,19 +7391,159 @@ class TestDialogueOrchestrator:
         # No transition because data not complete
         # (will use fallback "any" transition or stay in state)
     
+    # === COMPATIBILITY TESTS (для bot.py интеграции) ===
+
+    def test_to_sm_result_returns_all_required_fields(self, orchestrator, mock_state_machine):
+        """
+        CRITICAL: to_sm_result() MUST return all fields expected by bot.py.
+
+        bot.py использует следующие поля:
+        - action, next_state (core)
+        - prev_state (для метрик)
+        - goal (для generator context)
+        - collected_data (полный dict)
+        - missing_data, optional_data (для generator)
+        - is_final, spin_phase (для определения завершения)
+        - circular_flow, objection_flow (для статистики)
+        """
+        mock_state_machine.state = "spin_situation"
+        mock_state_machine.collected_data = {"company_size": "15"}
+        mock_state_machine.circular_flow = Mock()
+        mock_state_machine.circular_flow.get_stats.return_value = {"goback_count": 0}
+
+        decision = orchestrator.process_turn(
+            intent="info_provided",
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # Assert ALL required fields are present
+        assert "action" in sm_result
+        assert "next_state" in sm_result
+        assert "prev_state" in sm_result
+        assert "goal" in sm_result
+        assert "collected_data" in sm_result
+        assert "missing_data" in sm_result
+        assert "optional_data" in sm_result
+        assert "is_final" in sm_result
+        assert "spin_phase" in sm_result
+        assert "circular_flow" in sm_result
+        assert "objection_flow" in sm_result
+
+        # Assert types are correct
+        assert isinstance(sm_result["collected_data"], dict)
+        assert isinstance(sm_result["missing_data"], list)
+        assert isinstance(sm_result["optional_data"], list)
+        assert isinstance(sm_result["is_final"], bool)
+
+    def test_to_sm_result_compatible_with_dialogue_policy(self, orchestrator, mock_state_machine):
+        """
+        CRITICAL: sm_result must be modifiable in-place by DialoguePolicy.
+
+        DialoguePolicy does:
+            sm_result["action"] = override.action
+            sm_result["next_state"] = override.next_state
+        """
+        decision = orchestrator.process_turn(
+            intent="greeting",
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # Verify it's a regular dict that can be modified in-place
+        assert isinstance(sm_result, dict)
+
+        # Simulate DialoguePolicy modification
+        original_action = sm_result["action"]
+        sm_result["action"] = "policy_override_action"
+        sm_result["next_state"] = "policy_override_state"
+
+        # Changes should persist
+        assert sm_result["action"] == "policy_override_action"
+        assert sm_result["next_state"] == "policy_override_state"
+
+    def test_to_sm_result_provides_goal_for_generator(self, orchestrator, mock_state_machine):
+        """
+        Generator uses sm_result["goal"] for context.
+
+        context = {
+            "goal": sm_result["goal"],
+            ...
+        }
+        """
+        mock_state_machine.state = "spin_situation"
+
+        decision = orchestrator.process_turn(
+            intent="greeting",
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        sm_result = decision.to_sm_result()
+
+        # Goal should come from state config
+        assert sm_result["goal"] == "Understand situation"
+
+    def test_side_effects_applied_correctly(self, orchestrator, mock_state_machine):
+        """
+        Side effects MUST be applied for bot.py compatibility:
+        - state_machine.state updated
+        - state_machine.last_action updated
+        - IntentTracker.record() called
+        """
+        mock_state_machine.state = "spin_situation"
+        mock_state_machine.collected_data = {"company_size": "15"}
+
+        orchestrator.process_turn(
+            intent="info_provided",
+            extracted_data={"pain_point": "losing customers"},
+            context_envelope=None,
+        )
+
+        # State should be updated
+        # (mock will have been assigned)
+
+        # IntentTracker should have recorded the intent
+        mock_state_machine._intent_tracker.record.assert_called()
+
+    def test_compatibility_fields_filled_after_state_transition(
+        self, orchestrator, mock_state_machine
+    ):
+        """
+        When state transitions, compatibility fields should reflect NEW state.
+        """
+        mock_state_machine.state = "spin_situation"
+        mock_state_machine.collected_data = {"company_size": "15"}
+
+        decision = orchestrator.process_turn(
+            intent="info_provided",
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        # If transitioned to spin_problem, fields should reflect spin_problem config
+        if decision.next_state == "spin_problem":
+            assert decision.prev_state == "spin_situation"
+            assert decision.goal == "Identify problems"
+            assert decision.spin_phase == "problem"
+
     # === Objection limit tests ===
-    
+
     def test_objection_limit_triggers_soft_close(self, orchestrator, mock_state_machine):
         """Exceeding objection limit should trigger soft_close."""
         mock_state_machine._intent_tracker.objection_consecutive.return_value = 3
         mock_state_machine._intent_tracker.objection_total.return_value = 5
-        
+
         decision = orchestrator.process_turn(
             intent="objection_price",
             extracted_data={},
             context_envelope=None,
         )
-        
+
         assert decision.action == "objection_limit_reached"
         assert decision.next_state == "soft_close"
     
