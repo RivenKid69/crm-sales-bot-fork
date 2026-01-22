@@ -734,7 +734,7 @@ class ExtractedData(BaseModel):
     value_acknowledged: Optional[bool]
 
 class ClassificationResult(BaseModel):
-    intent: IntentType  # 33 интента
+    intent: IntentType  # 150+ интентов в 26 категориях
     confidence: float  # 0.0 - 1.0
     reasoning: str
     extracted_data: ExtractedData

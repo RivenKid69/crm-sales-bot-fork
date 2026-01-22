@@ -126,36 +126,38 @@ result = classifier.classify(
 
 ### Возможности
 
-- **33 интента** с описаниями и примерами
+- **150+ интентов** в 26 категориях (из `constants.yaml`)
 - **Structured output** — 100% валидный JSON через Ollama native format
 - **Извлечение данных** — company_size, pain_point, contact_info и др.
 - **Контекстная классификация** — учёт SPIN фазы и last_action
 - **Fallback** на HybridClassifier при ошибке Ollama
 
-### 33 интента
+### 26 категорий интентов (150+)
 
-**Приветствия и общение:**
-- `greeting` — приветствие
-- `agreement` — согласие
-- `gratitude` — благодарность
-- `farewell` — прощание
-- `small_talk` — разговор не по теме
+Все интенты определены в `yaml_config/constants.yaml` → `intents.categories`:
 
-**Ценовые вопросы:**
-- `price_question` — вопрос о цене
-- `pricing_details` — детали тарифов
-- `objection_price` — возражение по цене
+| Категория | Кол-во | Описание |
+|-----------|--------|----------|
+| objection | 18 | Возражения (price, timing, competitor, etc.) |
+| positive | 24 | Позитивные сигналы (agreement, demo_request, ready_to_buy) |
+| question | 18 | Базовые вопросы |
+| equipment_questions | 12 | Вопросы об оборудовании |
+| tariff_questions | 8 | Вопросы о тарифах |
+| tis_questions | 10 | Вопросы о ТИС |
+| tax_questions | 8 | Налоговые вопросы |
+| accounting_questions | 8 | Бухгалтерские вопросы |
+| integration_specific | 8 | Вопросы об интеграциях |
+| operations_questions | 10 | Операционные вопросы |
+| delivery_service | 6 | Доставка |
+| business_scenarios | 18 | Бизнес-сценарии |
+| technical_problems | 6 | Технические проблемы |
+| conversational | 10 | Разговорные (greeting, farewell, etc.) |
+| fiscal_questions | 8 | Фискальные вопросы |
+| analytics_questions | 8 | Аналитика |
+| wipon_products | 6 | Продукты Wipon |
+| employee_questions | 6+ | Вопросы о сотрудниках |
 
-**Вопросы о продукте:**
-- `question_features` — вопрос о функциях
-- `question_integrations` — вопрос об интеграциях
-- `comparison` — сравнение с конкурентами
-
-**Запросы на контакт:**
-- `callback_request` — запрос перезвона
-- `contact_provided` — предоставление контакта
-- `demo_request` — запрос демо
-- `consultation_request` — запрос консультации
+**Основные интенты для SPIN:**
 
 **SPIN данные:**
 - `situation_provided` — информация о ситуации
@@ -166,7 +168,8 @@ result = classifier.classify(
 - `no_need` — отрицание потребности
 - `info_provided` — предоставление информации
 
-**Возражения:**
+**Возражения (18 типов):**
+- `objection_price` — дорого
 - `objection_no_time` — нет времени
 - `objection_timing` — неподходящее время
 - `objection_think` — нужно подумать
@@ -175,11 +178,16 @@ result = classifier.classify(
 - `objection_trust` — недоверие
 - `objection_no_need` — не нужно
 - `rejection` — жёсткий отказ
+- И другие...
 
-**Управление диалогом:**
-- `unclear` — непонятное сообщение
-- `go_back` — вернуться назад
-- `correct_info` — исправление информации
+**Позитивные сигналы (24 типа):**
+- `agreement` — согласие
+- `demo_request` — запрос демо
+- `callback_request` — запрос перезвона
+- `contact_provided` — предоставление контакта
+- `ready_to_buy` — готов к покупке
+- `consultation_request` — запрос консультации
+- И другие...
 
 ### Pydantic схемы (schemas.py)
 
@@ -200,7 +208,7 @@ class ExtractedData(BaseModel):
 
 class ClassificationResult(BaseModel):
     """Результат классификации интента."""
-    intent: IntentType  # Literal из 33 интентов
+    intent: IntentType  # Literal из 150+ интентов
     confidence: float  # 0.0 - 1.0
     reasoning: str  # Объяснение выбора
     extracted_data: ExtractedData
@@ -209,7 +217,7 @@ class ClassificationResult(BaseModel):
 ### System Prompt (prompts.py)
 
 LLMClassifier использует детальный system prompt с:
-- Описанием всех 33 интентов
+- Описанием категорий интентов (из constants.yaml)
 - Критическими правилами (price_question vs objection_price)
 - Примерами неоднозначных случаев
 - Инструкциями по использованию контекста
@@ -411,17 +419,16 @@ classifier:
 
 ### Добавление нового интента
 
-**Для LLMClassifier:**
-
-1. Добавить в `classifier/llm/schemas.py`:
-```python
-IntentType = Literal[
-    # ...
-    "new_intent",
-]
+**1. Добавить в `yaml_config/constants.yaml`** (единый источник истины):
+```yaml
+intents:
+  categories:
+    your_category:
+      - new_intent
+      - another_intent
 ```
 
-2. Добавить в `classifier/llm/prompts.py`:
+**2. (Опционально) Добавить в `classifier/llm/prompts.py`:**
 ```python
 SYSTEM_PROMPT = """
 ...
@@ -430,14 +437,14 @@ SYSTEM_PROMPT = """
 """
 ```
 
-**Для HybridClassifier (опционально):**
+**Для HybridClassifier (fallback):**
 
-3. Добавить в `config.INTENT_ROOTS`:
+**3. Добавить в `config.INTENT_ROOTS`:**
 ```python
 "new_intent": ["корень1", "корень2"],
 ```
 
-4. Добавить паттерн в `classifier/intents/patterns.py`:
+**4. Добавить паттерн в `classifier/intents/patterns.py`:**
 ```python
 (r"regex_pattern", "new_intent", 0.95),
 ```

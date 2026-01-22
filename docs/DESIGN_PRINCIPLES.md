@@ -264,7 +264,7 @@ def create_bot(config: Config) -> SalesBot:
 │         │                          │                           │            │
 │  ┌──────▼───────┐  ┌───────────────▼────────────┐  ┌──────────▼─────────┐  │
 │  │ LLM Adapter  │  │ Knowledge Base Adapter     │  │ Storage Adapter    │  │
-│  │ (vLLM/GPT)   │  │ (Vector/SQL/Elastic)       │  │ (Redis/Postgres)   │  │
+│  │ (Ollama)     │  │ (Vector/SQL/Elastic)       │  │ (Redis/Postgres)   │  │
 │  └──────────────┘  └────────────────────────────┘  └────────────────────┘  │
 │                              Adapters (Infrastructure)                       │
 └─────────────────────────────────────────────────────────────────────────────┘

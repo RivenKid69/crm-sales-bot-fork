@@ -57,15 +57,15 @@ text = "".join([segment.text for segment in segments])
 
 ### LLM (Language Model)
 
-**Модель:** vLLM + Qwen3-4B-AWQ
+**Модель:** Ollama + Qwen3 14B
 
 Используется тот же SalesBot что и в текстовом режиме:
 
 ```python
 from bot import SalesBot
-from llm import VLLMClient
+from llm import OllamaClient
 
-llm = VLLMClient()
+llm = OllamaClient()
 bot = SalesBot(llm)
 
 # Обработка текста
@@ -111,8 +111,8 @@ class VoicePipeline:
         # STT
         self.whisper = WhisperModel("large-v3", device="cuda")
 
-        # LLM (vLLM + Qwen3-4B-AWQ)
-        self.llm = VLLMClient()
+        # LLM (Ollama + Qwen3 14B)
+        self.llm = OllamaClient()
         self.bot = SalesBot(self.llm)
 
         # TTS
@@ -300,7 +300,7 @@ python voice_pipeline.py --test
 | Компонент | Время | GPU |
 |-----------|-------|-----|
 | STT (10s audio) | ~1s | RTX 3080 |
-| LLM (response) | ~0.1-0.2s | vLLM |
+| LLM (response) | ~0.1-0.2s | Ollama |
 | TTS (100 chars) | ~0.5s | RTX 3080 |
 | **Итого** | **~1.5-2s** | |
 

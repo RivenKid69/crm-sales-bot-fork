@@ -101,7 +101,7 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
     │ • LLMClassifier (Ollama)  │   │ • SPIN flow логика        │
     │ • Structured output       │   │ • Priority-driven rules   │
     │ • HybridClassifier fallback│  │ • FlowConfig (YAML)       │
-    │ • 33 интента              │   │ • on_enter actions        │
+    │ • 150+ интентов           │   │ • on_enter actions        │
     └───────────────────────────┘   └─────────────┬─────────────┘
                                                   │
                   ┌───────────────────────────────▼───────────────┐
@@ -228,11 +228,19 @@ classifier/llm/
 ```
 
 **Возможности:**
-- 33 интента с описаниями и примерами
+- 150+ интентов в 26 категориях (из constants.yaml)
 - Structured output через Ollama native format
 - Извлечение данных (company_size, pain_point, etc.)
 - Контекстная классификация (учёт SPIN фазы)
-- Fallback на HybridClassifier при ошибке
+- Fallback на HybridClassifier при ошибке Ollama
+
+**Категории интентов:**
+- objection (18), positive (24), question (18)
+- equipment_questions (12), tariff_questions (8), tis_questions (10)
+- tax_questions (8), accounting_questions (8), integration_specific (8)
+- operations_questions (10), delivery_service (6), business_scenarios (18)
+- technical_problems (6), conversational (10), fiscal_questions (8)
+- analytics_questions (8), wipon_products (6), employee_questions (6+)
 
 **Пример результата:**
 ```json
@@ -449,19 +457,38 @@ src/dag/
 
 ```
 yaml_config/
-├── flows/                      # Модульные flow
+├── flows/                      # 22 модульных flow
 │   ├── _base/                  # Базовые компоненты
 │   │   ├── states.yaml         # Общие состояния (greeting, success, etc.)
 │   │   ├── mixins.yaml         # Переиспользуемые блоки правил
 │   │   └── priorities.yaml     # Приоритеты обработки
 │   │
-│   └── spin_selling/           # SPIN Selling flow
-│       ├── flow.yaml           # Конфигурация (phases, entry_points)
-│       └── states.yaml         # SPIN-состояния
+│   ├── spin_selling/           # SPIN Selling flow (по умолчанию)
+│   ├── aida/                   # AIDA flow
+│   ├── bant/                   # BANT flow
+│   ├── challenger/             # Challenger Sale
+│   ├── consultative/           # Consultative Selling
+│   ├── customer_centric/       # Customer Centric
+│   ├── demo_first/             # Demo First
+│   ├── fab/                    # Features-Advantages-Benefits
+│   ├── gap/                    # GAP Selling
+│   ├── inbound/                # Inbound Sales
+│   ├── meddic/                 # MEDDIC
+│   ├── neat/                   # NEAT Selling
+│   ├── relationship/           # Relationship Selling
+│   ├── sandler/                # Sandler
+│   ├── snap/                   # SNAP Selling
+│   ├── social/                 # Social Selling
+│   ├── solution/               # Solution Selling
+│   ├── transactional/          # Transactional Sales
+│   ├── value/                  # Value Selling
+│   └── examples/               # Примеры конфигураций
 │
-└── templates/                  # Шаблоны промптов
-    ├── _base/prompts.yaml      # Базовые шаблоны
-    └── spin_selling/prompts.yaml # SPIN шаблоны
+├── templates/                  # Шаблоны промптов
+│   ├── _base/prompts.yaml      # Базовые шаблоны
+│   └── spin_selling/prompts.yaml # SPIN шаблоны
+│
+└── constants.yaml              # ЕДИНЫЙ ИСТОЧНИК ИСТИНЫ (38K)
 ```
 
 ### ConfigLoader и FlowConfig
@@ -727,10 +754,10 @@ FALLBACK_RESPONSES = {
 |--------|------------|
 | `bot.py` | Оркестрация: classifier → state_machine → generator |
 | `llm.py` | OllamaClient с circuit breaker и retry |
-| `state_machine.py` | FSM с 10 состояниями и SPIN-логикой |
+| `state_machine.py` | FSM с модульной YAML конфигурацией |
 | `generator.py` | Генерация ответов через Ollama |
 | `classifier/unified.py` | Адаптер для переключения классификаторов |
-| `classifier/llm/` | LLM классификатор (33 интента) |
+| `classifier/llm/` | LLM классификатор (150+ интентов) |
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
 | `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
 | `knowledge/category_router.py` | LLM-классификация категорий |
@@ -862,12 +889,14 @@ pytest tests/test_config_*.py -v
 
 ### Добавление нового интента
 
-1. Добавить в `classifier/llm/prompts.py`:
+1. Добавить в `yaml_config/constants.yaml` → `intents.categories`:
+   - Категория и список интентов
+2. Добавить в `classifier/llm/prompts.py`:
    - Описание интента
    - Few-shot примеры
-2. (опционально) Добавить в `config.INTENT_ROOTS` и `config.INTENT_PHRASES`
-3. Добавить правила в `state_machine.py`
-4. Добавить промпт-шаблон в `config.PROMPT_TEMPLATES`
+3. (опционально) Добавить в `config.INTENT_ROOTS` и `config.INTENT_PHRASES`
+4. Добавить правила в соответствующий flow (`yaml_config/flows/*/states.yaml`)
+5. Добавить промпт-шаблон в `yaml_config/templates/`
 
 ### Расширение базы знаний
 

@@ -166,18 +166,23 @@ src/
 ├── # YAML Configuration (Phase 1 Parameterization)
 ├── config_loader.py        # Загрузчик YAML конфигурации
 ├── yaml_config/            # YAML конфигурация
-│   ├── constants.yaml      # Константы (limits, intents, policy)
+│   ├── constants.yaml      # ЕДИНЫЙ ИСТОЧНИК ИСТИНЫ (limits, intents, policy)
+│   ├── constants.py        # Python-обёртка для constants.yaml
 │   ├── spin/phases.yaml    # SPIN фазы
 │   ├── states/sales_flow.yaml  # Состояния диалога
 │   ├── conditions/custom.yaml  # Кастомные условия
-│   ├── flows/              # Модульные flow (extends/mixins)
+│   ├── flows/              # 22 модульных flow (extends/mixins)
 │   │   ├── _base/          # Базовые компоненты
-│   │   │   ├── states.yaml     # Общие состояния
-│   │   │   ├── mixins.yaml     # Переиспользуемые блоки правил
-│   │   │   └── priorities.yaml # Приоритеты обработки
-│   │   └── spin_selling/   # SPIN Selling flow
-│   │       ├── flow.yaml       # Конфигурация flow
-│   │       └── states.yaml     # SPIN-состояния
+│   │   ├── spin_selling/   # SPIN Selling (по умолчанию)
+│   │   ├── aida/           # AIDA flow
+│   │   ├── bant/           # BANT framework
+│   │   ├── challenger/     # Challenger Sale
+│   │   ├── consultative/   # Consultative Selling
+│   │   ├── meddic/         # MEDDIC
+│   │   ├── sandler/        # Sandler
+│   │   ├── snap/           # SNAP Selling
+│   │   ├── value/          # Value Selling
+│   │   └── ...             # И ещё 13 flow
 │   └── templates/          # Шаблоны промптов
 │       ├── _base/prompts.yaml  # Базовые шаблоны
 │       └── spin_selling/prompts.yaml  # SPIN шаблоны
@@ -466,7 +471,7 @@ classifier/
 ├── cascade.py           # CascadeClassifier — semantic fallback
 ├── disambiguation.py    # IntentDisambiguator
 ├── llm/                 # LLM классификатор (основной)
-│   ├── classifier.py    # LLMClassifier (vLLM + Outlines)
+│   ├── classifier.py    # LLMClassifier (Ollama + Structured Output)
 │   ├── prompts.py       # System prompt + few-shot примеры
 │   └── schemas.py       # Pydantic схемы (ClassificationResult, ExtractedData)
 ├── intents/
@@ -484,7 +489,7 @@ from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 ```
 
 ### Dual-mode классификация:
-- **LLM режим** (по умолчанию) — 33 интента через Ollama, structured output
+- **LLM режим** (по умолчанию) — 150+ интентов в 26 категориях через Ollama, structured output
 - **Hybrid режим** (fallback) — regex + pymorphy при ошибке LLM или `llm_classifier=false`
 
 ### Контекстная классификация:
@@ -769,18 +774,18 @@ pip install -r requirements.txt
 ## Метрики проекта
 
 ```
-Модулей Python:           102 в src/
-Тестовых файлов:          102 в tests/
+Модулей Python:           82 файла в src/
+Тестовых файлов:          102+ в tests/
 Секций в базе знаний:     1969 в 17 YAML файлах
-Интентов LLM:             33 в classifier/llm/
-Интентов Hybrid:          58 в INTENT_ROOTS
+Интентов:                 150+ в 26 категориях (constants.yaml)
 Паттернов опечаток:       663 в TYPO_FIXES
 Паттернов разделения:     170 в SPLIT_PATTERNS
 Приоритетных паттернов:   426 в PRIORITY_PATTERNS
 Паттернов болей:          240+ в pain_patterns
 Состояний диалога:        10 основных
 Категорий знаний:         17
-Feature Flags:            35 флагов
-YAML Config Files:        11 в yaml_config/
-Modular Flows:            1 (spin_selling) + _base
+Feature Flags:            35+ флагов
+YAML Config Files:        70+ в yaml_config/
+Modular Flows:            22 готовых сценария продаж
+Строк кода:               ~54,000 строк
 ```

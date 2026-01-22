@@ -139,7 +139,7 @@ sections:
          ▼
 ┌────────────────────┐
 │  4. CategoryRouter │  LLM-классификация категорий (опционально)
-│  (fallback)        │  vLLM + Outlines определяет релевантные категории
+│  (fallback)        │  Ollama определяет релевантные категории
 └────────┬───────────┘
          │ при необходимости
          ▼
@@ -200,7 +200,7 @@ sections:
 
 ```python
 # Запрос: "как подключить 1С к Wipon?"
-# CategoryRouter (vLLM + Outlines) определяет: ["integrations", "features"]
+# CategoryRouter (Ollama) определяет: ["integrations", "features"]
 # Structured output гарантирует валидный JSON с категориями
 # Поиск сужается до релевантных категорий
 
