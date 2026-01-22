@@ -651,6 +651,22 @@ class StateMachine:
             if value:
                 self.collected_data[key] = value
 
+    def is_final(self) -> bool:
+        """
+        Check if current state is a final state.
+
+        Returns:
+            True if current state is marked as final in config.
+        """
+        config = self._flow.states.get(self.state, {})
+        is_final_flag = config.get("is_final", False)
+
+        # Override for objection limit triggered soft_close
+        if self.state == "soft_close" and self.collected_data.get("_objection_limit_final"):
+            is_final_flag = True
+
+        return is_final_flag
+
     # =========================================================================
     # Disambiguation Methods
     # =========================================================================

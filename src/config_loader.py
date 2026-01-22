@@ -571,6 +571,25 @@ class FlowConfig:
         except Exception:
             return None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert FlowConfig to dictionary.
+
+        Returns:
+            Dict representation of the flow configuration.
+        """
+        return {
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "states": self.states,
+            "phases": self.phases,
+            "priorities": self.priorities,
+            "variables": self.variables,
+            "entry_points": self.entry_points,
+            "templates": self.templates,
+        }
+
 
 class ConfigLoader:
     """
