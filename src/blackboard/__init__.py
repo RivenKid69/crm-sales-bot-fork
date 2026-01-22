@@ -21,6 +21,9 @@ Key Components (Stage 2 - Data Models):
 - Proposal: A proposal made by a Knowledge Source
 - ResolvedDecision: The final decision after conflict resolution
 - ContextSnapshot: Immutable snapshot of dialogue context for Knowledge Sources
+
+Key Components (Stage 3 - DialogueBlackboard):
+- DialogueBlackboard: Central shared workspace for dialogue management
 """
 
 from .enums import Priority, ProposalType
@@ -38,6 +41,7 @@ from .models import (
     ResolvedDecision,
     ContextSnapshot,
 )
+from .blackboard import DialogueBlackboard
 
 __all__ = [
     # Enums
@@ -56,4 +60,6 @@ __all__ = [
     "Proposal",
     "ResolvedDecision",
     "ContextSnapshot",
+    # Blackboard
+    "DialogueBlackboard",
 ]
