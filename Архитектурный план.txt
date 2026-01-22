@@ -1,4 +1,21 @@
-Dialogue Blackboard System — Финальный План v2.0
+Dialogue Blackboard System — Финальный План v2.1
+════════════════════════════════════════════════════════════════════════════════
+
+                    ⚠️  СТРАТЕГИЯ МИГРАЦИИ: ПОЛНАЯ ЗАМЕНА  ⚠️
+
+    ❌ НЕТ shadow mode          — не запускаем обе системы параллельно
+    ❌ НЕТ gradual rollout      — не 10% → 25% → 50% → 100%
+    ❌ НЕТ legacy кода          — apply_rules() УДАЛЯЕТСЯ полностью
+    ❌ НЕТ feature flags        — для переключения между системами
+
+    ✅ ПОЛНАЯ замена            — Blackboard = единственная система
+    ✅ ЧИСТЫЙ codebase          — никакого мёртвого кода
+    ✅ 6-8 недель               — быстрее чем gradual approach
+
+    Rollback: git revert (только emergency)
+
+════════════════════════════════════════════════════════════════════════════════
+
 Часть 1: Введение и Научная База
 1. Резюме
 Ключевая инновация: Action Selection и State Transition — НЕЗАВИСИМЫЕ процессы, которые объединяются ConflictResolver с поддержкой combinable флага.
@@ -13,7 +30,7 @@ ConflictResolver — объединяет proposals с полной поддер
 DialogueOrchestrator — координатор всего процесса
 DialogueEventBus — observability и аналитика
 ProposalValidator — валидация proposals перед resolution
-Migration: 10-12 недель через Shadow Mode → A/B Testing с feature flags для мгновенного rollback.
+Migration: 6-8 недель с полной заменой старой системы. Никакого legacy кода — StateMachine.apply_rules() удаляется полностью.
 
 Persona Limits: Включены динамические лимиты из YAML (aggressive: 5/8, busy: 2/4).
 
@@ -77,7 +94,7 @@ Sales Chatbot Deployment (Avrion)
 
 Human escalation triggers
 Persona-based customization
-Gradual rollout with feature flags
+Comprehensive testing before deployment
 3. Корневая проблема
 3.1 Текущее поведение (СЛОМАНО)
 
@@ -4360,27 +4377,33 @@ def create_orchestrator(
 # ==============================================================================
 # BLACKBOARD SYSTEM CONFIGURATION
 # ==============================================================================
+#
+# NOTE: Blackboard — ЕДИНСТВЕННАЯ система управления диалогом.
+#       НЕТ feature flags для включения/выключения.
+#       НЕТ shadow mode.
+#       НЕТ gradual rollout.
 
 blackboard:
-  # Feature flag for gradual rollout
-  enabled: false  # Set to true to enable Blackboard system
-  
-  # Shadow mode: run both systems and compare results
-  shadow_mode: false
-  shadow_mode_log_divergences: true
-  
   # Validation settings
   validation:
     enabled: true
     strict_mode: false  # Treat warnings as errors
-    
+
   # Event bus settings
   event_bus:
     async_mode: false  # Set true for high-throughput scenarios
     history_size: 100
-    
+
   # Default action when no proposals
   default_action: "continue_current_goal"
+
+  # Debug logging (can be toggled without redeployment)
+  debug_logging: false
+
+# УДАЛЕНО (для справки):
+# - enabled: flag — Blackboard ВСЕГДА включён
+# - shadow_mode: — удалён полностью
+# - shadow_mode_log_divergences: — удалён полностью
 
 # ==============================================================================
 # KNOWLEDGE SOURCES CONFIGURATION (Plugin System)
@@ -4646,9 +4669,14 @@ intents:
     - question_customization
     - question_training
     # ... (rest of existing intents)
-13.2 Feature Flags (settings.yaml update)
+13.2 Feature Flags (settings.yaml update) — УПРОЩЁННАЯ ВЕРСИЯ
 
-# settings.yaml (additions)
+# settings.yaml (ПОСЛЕ МИГРАЦИИ)
+#
+# УДАЛЕНО всё что связано с legacy/blackboard switching:
+# - blackboard_enabled (больше не нужен — всегда Blackboard)
+# - blackboard_shadow_mode (удалён shadow mode)
+# - blackboard_traffic_percentage (удалён gradual rollout)
 
 feature_flags:
   # === EXISTING FLAGS (unchanged) ===
@@ -4660,41 +4688,25 @@ feature_flags:
   confidence_router: true        # Phase 4
   context_full_envelope: true    # Phase 5
   dialogue_policy: true          # Phase 5
-  
-  # === NEW BLACKBOARD FLAGS ===
-  
-  # Master switch for Blackboard architecture
-  blackboard_enabled: false
-  
-  # Shadow mode: run both old and new systems, compare results
-  blackboard_shadow_mode: false
-  
-  # Percentage of traffic to route through Blackboard (0-100)
-  # Used for gradual rollout: 0 -> 10 -> 25 -> 50 -> 100
-  blackboard_traffic_percentage: 0
-  
-  # Enable detailed Blackboard logging
+
+  # === BLACKBOARD OPERATIONAL FLAGS ===
+  # (НЕ для switching между системами — только для tuning)
+
+  # Enable detailed Blackboard logging (for debugging)
   blackboard_debug_logging: false
-  
+
   # Enable Blackboard metrics collection
   blackboard_metrics: true
-  
+
   # Enable proposal validation
   blackboard_validation: true
-  
-  # Individual Knowledge Source toggles (managed via SourceRegistry)
-  # These map to sources.{SourceName}.enabled in constants.yaml
-  # Sources can also be enabled/disabled via the Plugin System API:
-  #   SourceRegistry.get_registration("PriceQuestionSource").enabled = False
-  blackboard_source_price_question: true
-  blackboard_source_data_collector: true
-  blackboard_source_objection_guard: true
-  blackboard_source_intent_processor: true
-  blackboard_source_transition_resolver: true
-  blackboard_source_escalation: true
 
-  # Allow runtime registration of custom sources
-  blackboard_allow_custom_sources: true
+# УДАЛЁННЫЕ FLAGS (для справки):
+#
+# blackboard_enabled: УДАЛЁН — Blackboard теперь единственная система
+# blackboard_shadow_mode: УДАЛЁН — нет shadow mode
+# blackboard_traffic_percentage: УДАЛЁН — нет gradual rollout
+# blackboard_source_*: УДАЛЕНЫ — управление через constants.yaml
 13.3 Добавление human_handoff state
 
 # yaml_config/flows/_base/states.yaml (additions)
@@ -4744,20 +4756,18 @@ handoff_delayed:
     human_available: handoff_complete
     user_leave_contact: collect_callback
     timeout: soft_close
-14. Integration with SalesBot
-14.1 Updated bot.py
+14. Integration with SalesBot (ПОЛНАЯ ЗАМЕНА)
+14.1 Updated bot.py — БЕЗ LEGACY КОДА
 
-# src/bot.py (modifications)
+# src/bot.py (ПОЛНАЯ ЗАМЕНА dialogue management)
 
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 import logging
-import random
 
 from src.state_machine import StateMachine
 from src.config_loader import ConfigLoader
-from src.feature_flags import FeatureFlags
 
-# NEW: Blackboard imports
+# Blackboard — ЕДИНСТВЕННАЯ система управления диалогом
 from src.blackboard.orchestrator import DialogueOrchestrator, create_orchestrator
 from src.blackboard.models import ResolvedDecision
 
@@ -4766,388 +4776,161 @@ logger = logging.getLogger(__name__)
 
 class SalesBot:
     """
-    Main Sales Bot class with Blackboard architecture support.
-    
-    The bot can operate in three modes:
-    1. Legacy mode: Uses StateMachine.apply_rules() directly
-    2. Shadow mode: Runs both systems, compares, uses legacy result
-    3. Blackboard mode: Uses DialogueOrchestrator exclusively
-    
-    Mode is controlled by feature flags:
-    - blackboard_enabled: Master switch
-    - blackboard_shadow_mode: Enable shadow comparison
-    - blackboard_traffic_percentage: Gradual rollout percentage
+    Main Sales Bot class.
+
+    Dialogue management полностью через Blackboard architecture.
+    НЕТ legacy кода, НЕТ feature flags для переключения систем.
     """
-    
+
     def __init__(
         self,
         config_loader: Optional[ConfigLoader] = None,
-        feature_flags: Optional[FeatureFlags] = None,
     ):
         """Initialize the bot."""
         self._config_loader = config_loader or ConfigLoader()
-        self._flags = feature_flags or FeatureFlags()
-        
-        # Initialize state machine (always needed)
+
+        # StateMachine используется ТОЛЬКО для хранения state и collected_data
+        # apply_rules() УДАЛЁН
         self._state_machine = StateMachine(
             config_loader=self._config_loader,
         )
-        
-        # Initialize Blackboard orchestrator (lazy - created on first use)
-        self._orchestrator: Optional[DialogueOrchestrator] = None
-        
-        # Shadow mode comparison stats
-        self._shadow_stats = {
-            "total_comparisons": 0,
-            "action_matches": 0,
-            "state_matches": 0,
-            "full_matches": 0,
-            "divergences": [],
-        }
-        
-        logger.info("SalesBot initialized")
-    
-    def _get_orchestrator(self) -> DialogueOrchestrator:
+
+        # Blackboard orchestrator — единственная система dialogue management
+        self._orchestrator = self._create_orchestrator()
+
+        logger.info("SalesBot initialized with Blackboard architecture")
+
+    def _create_orchestrator(self) -> DialogueOrchestrator:
         """
-        Get or create the Blackboard orchestrator.
-        
-        Lazy initialization to avoid overhead when Blackboard is disabled.
+        Create the Blackboard orchestrator.
         """
-        if self._orchestrator is None:
-            # Load persona limits from config
-            constants = self._config_loader.load_constants()
-            persona_limits = constants.get("persona_limits", {})
-            
-            # Convert to expected format
-            formatted_limits = {}
-            for persona, config in persona_limits.items():
-                formatted_limits[persona] = {
-                    "consecutive": config.get("consecutive_objections", 3),
-                    "total": config.get("total_objections", 5),
-                }
-            
-            self._orchestrator = create_orchestrator(
-                state_machine=self._state_machine,
-                flow_config=self._config_loader.get_flow_config(),
-                persona_limits=formatted_limits,
-                enable_metrics=self._flags.is_enabled("blackboard_metrics"),
-                enable_debug_logging=self._flags.is_enabled("blackboard_debug_logging"),
-            )
-            
-            logger.info("Blackboard orchestrator initialized")
-        
-        return self._orchestrator
-    
-    def _should_use_blackboard(self) -> bool:
-        """
-        Determine if this request should use Blackboard.
-        
-        Based on:
-        1. blackboard_enabled flag
-        2. blackboard_traffic_percentage for gradual rollout
-        """
-        if not self._flags.is_enabled("blackboard_enabled"):
-            return False
-        
-        # Get traffic percentage (0-100)
-        traffic_pct = self._flags.get_value("blackboard_traffic_percentage", 0)
-        
-        if traffic_pct >= 100:
-            return True
-        
-        if traffic_pct <= 0:
-            return False
-        
-        # Random selection based on percentage
-        return random.randint(1, 100) <= traffic_pct
-    
-    def _should_run_shadow_mode(self) -> bool:
-        """Check if shadow mode is enabled."""
-        return (
-            self._flags.is_enabled("blackboard_enabled") and
-            self._flags.is_enabled("blackboard_shadow_mode")
+        # Load persona limits from config
+        constants = self._config_loader.load_constants()
+        persona_limits = constants.get("persona_limits", {})
+
+        # Convert to expected format
+        formatted_limits = {}
+        for persona, config in persona_limits.items():
+            formatted_limits[persona] = {
+                "consecutive": config.get("consecutive_objections", 3),
+                "total": config.get("total_objections", 5),
+            }
+
+        return create_orchestrator(
+            state_machine=self._state_machine,
+            flow_config=self._config_loader.get_flow_config(),
+            persona_limits=formatted_limits,
+            enable_metrics=True,
+            enable_debug_logging=False,  # Set True for debugging
         )
-    
+
+    @property
+    def orchestrator(self) -> DialogueOrchestrator:
+        """Get the orchestrator (for testing/debugging)."""
+        return self._orchestrator
+
     def process(self, user_message: str) -> Dict[str, Any]:
         """
         Process a user message and generate a response.
-        
+
         This is the main entry point for the bot.
-        
+
         Args:
             user_message: The user's message
-            
+
         Returns:
             Dict with response, intent, action, state, etc.
         """
         # ... (existing preprocessing code: tone analysis, guard, etc.)
-        
+
         # Classify intent
         classification = self._classify_intent(user_message)
         intent = classification["intent"]
         extracted_data = classification.get("extracted_data", {})
-        
-        # Build context envelope (Phase 5)
-        context_envelope = self._build_context_envelope() if self._flags.is_enabled("context_full_envelope") else None
-        
-        # === DIALOGUE MANAGEMENT ===
-        # Choose between Legacy, Shadow, or Blackboard mode
-        
-        if self._should_run_shadow_mode():
-            # Shadow mode: run both, compare, use legacy
-            action, next_state = self._process_shadow_mode(
-                intent=intent,
-                extracted_data=extracted_data,
-                context_envelope=context_envelope,
-            )
-        elif self._should_use_blackboard():
-            # Blackboard mode: use orchestrator
-            action, next_state = self._process_blackboard(
-                intent=intent,
-                extracted_data=extracted_data,
-                context_envelope=context_envelope,
-            )
-        else:
-            # Legacy mode: use apply_rules
-            action, next_state = self._process_legacy(
-                intent=intent,
-                context_envelope=context_envelope,
-            )
-        
-        # Update state
+
+        # Build context envelope
+        context_envelope = self._build_context_envelope()
+
+        # === DIALOGUE MANAGEMENT через Blackboard ===
         previous_state = self._state_machine.state
-        if next_state != previous_state:
-            self._state_machine.state = next_state
-            logger.info(f"State transition: {previous_state} -> {next_state}")
-        
-        # Generate response
-        response = self._generate_response(action, context_envelope)
-        
-        # ... (existing postprocessing code: CTA, metrics, etc.)
-        
-        return {
-            "response": response,
-            "intent": intent,
-            "action": action,
-            "state": next_state,
-            "previous_state": previous_state,
-            "is_final": self._state_machine.is_final(),
-            "collected_data": dict(self._state_machine.collected_data),
-        }
-    
-    def _process_legacy(
-        self,
-        intent: str,
-        context_envelope: Optional[Any],
-    ) -> Tuple[str, str]:
-        """
-        Process using legacy StateMachine.apply_rules().
-        
-        Args:
-            intent: Classified intent
-            context_envelope: Context envelope
-            
-        Returns:
-            Tuple of (action, next_state)
-        """
-        result = self._state_machine.apply_rules(
-            intent=intent,
-            context_envelope=context_envelope,
-        )
-        
-        # Handle both tuple and RuleResult returns
-        if hasattr(result, 'action'):
-            return result.action, result.next_state
-        return result
-    
-    def _process_blackboard(
-        self,
-        intent: str,
-        extracted_data: Dict[str, Any],
-        context_envelope: Optional[Any],
-    ) -> Tuple[str, str]:
-        """
-        Process using Blackboard DialogueOrchestrator.
-        
-        Args:
-            intent: Classified intent
-            extracted_data: Extracted data from message
-            context_envelope: Context envelope
-            
-        Returns:
-            Tuple of (action, next_state)
-        """
-        orchestrator = self._get_orchestrator()
-        
-        decision = orchestrator.process_turn(
+
+        decision = self._orchestrator.process_turn(
             intent=intent,
             extracted_data=extracted_data,
             context_envelope=context_envelope,
         )
-        
+
+        # Update state (if transition happened)
+        if decision.next_state != previous_state:
+            self._state_machine.state = decision.next_state
+            logger.info(f"State transition: {previous_state} -> {decision.next_state}")
+
+        # Log decision details
         logger.debug(
             f"Blackboard decision: action={decision.action}, "
             f"next_state={decision.next_state}, "
             f"reasons={decision.reason_codes}"
         )
-        
-        return decision.action, decision.next_state
-    
-    def _process_shadow_mode(
-        self,
-        intent: str,
-        extracted_data: Dict[str, Any],
-        context_envelope: Optional[Any],
-    ) -> Tuple[str, str]:
-        """
-        Process in shadow mode: run both systems and compare.
-        
-        Uses legacy result but logs divergences for analysis.
-        
-        Args:
-            intent: Classified intent
-            extracted_data: Extracted data from message
-            context_envelope: Context envelope
-            
-        Returns:
-            Tuple of (action, next_state) from LEGACY system
-        """
-        # Run legacy
-        legacy_action, legacy_state = self._process_legacy(
-            intent=intent,
-            context_envelope=context_envelope,
-        )
-        
-        # Run blackboard (save and restore state to avoid side effects)
-        saved_state = self._state_machine.state
-        saved_data = dict(self._state_machine.collected_data)
-        
-        try:
-            bb_action, bb_state = self._process_blackboard(
-                intent=intent,
-                extracted_data=extracted_data,
-                context_envelope=context_envelope,
-            )
-        finally:
-            # Restore state
-            self._state_machine.state = saved_state
-            self._state_machine.collected_data = saved_data
-        
-        # Compare results
-        self._compare_shadow_results(
-            intent=intent,
-            legacy_action=legacy_action,
-            legacy_state=legacy_state,
-            bb_action=bb_action,
-            bb_state=bb_state,
-        )
-        
-        # Return legacy result
-        return legacy_action, legacy_state
-    
-    def _compare_shadow_results(
-        self,
-        intent: str,
-        legacy_action: str,
-        legacy_state: str,
-        bb_action: str,
-        bb_state: str,
-    ) -> None:
-        """
-        Compare legacy and blackboard results, log divergences.
-        
-        Args:
-            intent: The intent being processed
-            legacy_action: Action from legacy system
-            legacy_state: State from legacy system
-            bb_action: Action from blackboard system
-            bb_state: State from blackboard system
-        """
-        self._shadow_stats["total_comparisons"] += 1
-        
-        action_match = legacy_action == bb_action
-        state_match = legacy_state == bb_state
-        full_match = action_match and state_match
-        
-        if action_match:
-            self._shadow_stats["action_matches"] += 1
-        if state_match:
-            self._shadow_stats["state_matches"] += 1
-        if full_match:
-            self._shadow_stats["full_matches"] += 1
-        
-        if not full_match:
-            divergence = {
-                "intent": intent,
-                "current_state": self._state_machine.state,
-                "legacy": {"action": legacy_action, "state": legacy_state},
-                "blackboard": {"action": bb_action, "state": bb_state},
-                "turn": self._state_machine._intent_tracker.turn_number,
-            }
-            
-            self._shadow_stats["divergences"].append(divergence)
-            
-            # Log divergence
-            logger.warning(
-                f"Shadow mode divergence: intent={intent}, "
-                f"legacy=({legacy_action}, {legacy_state}), "
-                f"blackboard=({bb_action}, {bb_state})"
-            )
-            
-            # Detailed logging if enabled
-            if self._flags.is_enabled("blackboard_debug_logging"):
-                logger.debug(f"Divergence details: {divergence}")
-    
-    def get_shadow_stats(self) -> Dict[str, Any]:
-        """
-        Get shadow mode comparison statistics.
-        
-        Returns:
-            Dict with comparison stats
-        """
-        total = self._shadow_stats["total_comparisons"]
-        if total == 0:
-            return {"message": "No shadow comparisons yet"}
-        
+
+        # Generate response
+        response = self._generate_response(decision.action, context_envelope)
+
+        # ... (existing postprocessing code: CTA, metrics, etc.)
+
         return {
-            "total_comparisons": total,
-            "action_match_rate": self._shadow_stats["action_matches"] / total,
-            "state_match_rate": self._shadow_stats["state_matches"] / total,
-            "full_match_rate": self._shadow_stats["full_matches"] / total,
-            "divergence_count": len(self._shadow_stats["divergences"]),
-            "recent_divergences": self._shadow_stats["divergences"][-10:],
+            "response": response,
+            "intent": intent,
+            "action": decision.action,
+            "state": decision.next_state,
+            "previous_state": previous_state,
+            "reason_codes": decision.reason_codes,  # NEW: visibility into decision
+            "is_final": self._state_machine.is_final(),
+            "collected_data": dict(self._state_machine.collected_data),
         }
-    
-    def reset_shadow_stats(self) -> None:
-        """Reset shadow mode statistics."""
-        self._shadow_stats = {
-            "total_comparisons": 0,
-            "action_matches": 0,
-            "state_matches": 0,
-            "full_matches": 0,
-            "divergences": [],
-        }
-15. Migration Plan (Updated: 10-12 weeks)
+
+    def get_turn_summary(self) -> Dict[str, Any]:
+        """
+        Get detailed summary of the last processed turn.
+
+        Useful for debugging and analytics.
+        """
+        return self._orchestrator.get_turn_summary()
+
+
+# УДАЛЁННЫЙ КОД (для справки что было убрано):
+#
+# - _process_legacy() — УДАЛЁН (использовал apply_rules)
+# - _process_shadow_mode() — УДАЛЁН (сравнение систем)
+# - _compare_shadow_results() — УДАЛЁН
+# - _should_use_blackboard() — УДАЛЁН (всегда Blackboard)
+# - _should_run_shadow_mode() — УДАЛЁН
+# - get_shadow_stats() — УДАЛЁН
+# - reset_shadow_stats() — УДАЛЁН
+# - _shadow_stats dictionary — УДАЛЁН
+# - FeatureFlags dependency для switching — УДАЛЁН
+15. Migration Plan (Updated: 6-8 weeks) — ПОЛНАЯ ЗАМЕНА
 15.1 Timeline Overview
 
-Week 1-2:   Phase 1 - Foundation (Core implementation)
-Week 3-4:   Phase 2 - Testing & Validation
-Week 5-6:   Phase 3 - Shadow Mode
-Week 7-8:   Phase 4 - Gradual Rollout (10% → 25% → 50%)
-Week 9-10:  Phase 5 - Full Rollout (100%)
-Week 11-12: Phase 6 - Cleanup & Documentation
+ПРИНЦИП: Никакого legacy кода. StateMachine.apply_rules() удаляется полностью.
+         Blackboard — единственная система управления диалогом.
+
+Week 1-2:   Phase 1 - Foundation (Core implementation + Unit tests)
+Week 3-4:   Phase 2 - Integration & Regression Testing
+Week 5-6:   Phase 3 - Legacy Removal & Full Deployment
+Week 7-8:   Phase 4 - Stabilization & Documentation (buffer)
 15.2 Phase 1: Foundation (Week 1-2)
 Goals:
 
 Implement all Blackboard components
 Unit tests for each component
-No integration with SalesBot yet
+Prepare integration points with SalesBot
 Tasks:
 
 
 Week 1:
 ├── Day 1-2: Core data structures
 │   ├── src/blackboard/__init__.py
+│   ├── src/blackboard/protocols.py (Hexagonal Architecture ports)
 │   ├── src/blackboard/enums.py (Priority, ProposalType)
 │   └── src/blackboard/models.py (Proposal, ResolvedDecision, ContextSnapshot)
 │
@@ -5164,8 +4947,8 @@ Week 1:
 Week 2:
 ├── Day 1-2: Knowledge Sources (Part 1) + Plugin System
 │   ├── src/blackboard/knowledge_source.py (base class)
-│   ├── src/blackboard/source_registry.py (Plugin System) ← NEW
-│   ├── tests/test_source_registry.py ← NEW
+│   ├── src/blackboard/source_registry.py (Plugin System)
+│   ├── tests/test_source_registry.py
 │   ├── src/blackboard/sources/__init__.py (with auto-registration)
 │   ├── src/blackboard/sources/price_question.py
 │   ├── src/blackboard/sources/data_collector.py
@@ -5182,272 +4965,283 @@ Week 2:
     ├── src/blackboard/event_bus.py
     ├── src/blackboard/orchestrator.py
     └── tests/test_orchestrator.py
+
 Deliverables:
 
 Complete /src/blackboard/ module
 100% unit test coverage for new code
-Feature flag blackboard_enabled = false
+
 Risk Mitigation:
 
-All code behind feature flag
-No changes to existing code
-Can be reverted by deleting /src/blackboard/
-15.3 Phase 2: Testing & Validation (Week 3-4)
+Comprehensive test suite before any integration
+All tests must pass before Phase 2
+15.3 Phase 2: Integration & Regression Testing (Week 3-4)
 Goals:
 
-Comprehensive integration tests
-Replay historical conversations
-Performance benchmarking
+Integrate Blackboard with SalesBot (replace apply_rules)
+Comprehensive regression tests
+Ensure behavioral parity for correct scenarios, improvements for buggy ones
 Tasks:
 
 
 Week 3:
-├── Day 1-2: Integration tests
-│   ├── tests/test_blackboard_integration.py
-│   ├── Test full pipeline: intent → decision
-│   └── Test all Knowledge Source combinations
+├── Day 1-2: SalesBot Integration
+│   ├── Modify src/bot.py to use DialogueOrchestrator
+│   ├── Remove ALL calls to StateMachine.apply_rules()
+│   ├── Update response generation to work with ResolvedDecision
+│   └── tests/test_bot_integration.py
 │
-├── Day 3-4: Regression tests
-│   ├── tests/test_blackboard_regression.py
-│   ├── Port existing state_machine tests to Blackboard
-│   └── Ensure identical behavior for known scenarios
+├── Day 3-4: Integration tests
+│   ├── tests/test_blackboard_integration.py
+│   ├── Test full pipeline: user_message → response
+│   ├── Test all Knowledge Source combinations
+│   └── Test all SPIN phases
 │
 └── Day 5: Edge case tests
     ├── tests/test_blackboard_edge_cases.py
     ├── Empty proposals
     ├── All sources disabled
     ├── Validation errors
-    └── Concurrent modifications
+    └── Error recovery
 
 Week 4:
-├── Day 1-2: Historical replay
+├── Day 1-2: Regression testing
+│   ├── tests/test_blackboard_regression.py
+│   ├── Port ALL existing state_machine tests
+│   ├── Document expected behavioral differences (bugs fixed)
+│   └── Ensure improvements work correctly
+│
+├── Day 3-4: Historical replay & Performance
 │   ├── scripts/replay_conversations.py
-│   ├── Replay 1000+ historical conversations
-│   └── Compare legacy vs Blackboard decisions
-│
-├── Day 3-4: Performance benchmarking
+│   ├── Replay historical conversations through new system
+│   ├── Verify improvements (price_question + data_complete)
 │   ├── scripts/benchmark_blackboard.py
-│   ├── Measure latency overhead
-│   ├── Memory usage
-│   └── Profile Knowledge Source execution
+│   └── Measure latency, memory
 │
-└── Day 5: Fix issues found
-    └── Address any bugs or performance issues
+└── Day 5: Bug fixes
+    └── Address any issues found during testing
+
 Deliverables:
 
-Integration test suite
-Regression test suite
+Working SalesBot with Blackboard (no legacy)
+Full test suite (unit + integration + regression)
 Performance benchmark results
-Historical replay comparison report
+Historical replay report showing improvements
+
 Success Criteria:
 
-All regression tests pass
-Historical replay shows < 5% divergence
+All tests pass
+Known bugs (price_question blocking) are fixed
 Latency overhead < 10ms per turn
-15.4 Phase 3: Shadow Mode (Week 5-6)
+No regressions in correct behavior
+15.4 Phase 3: Legacy Removal & Full Deployment (Week 5-6)
 Goals:
 
-Run both systems in production
-Collect divergence data
-No user impact
+ПОЛНОСТЬЮ удалить legacy код (apply_rules и связанное)
+Развернуть новую систему в production
+Убрать все feature flags переключения между системами
 Tasks:
 
 
 Week 5:
-├── Day 1-2: Integrate shadow mode into SalesBot
-│   ├── Update src/bot.py with shadow mode logic
-│   └── Add shadow comparison logging
+├── Day 1-2: Legacy Code Removal
+│   ├── DELETE: StateMachine.apply_rules() method
+│   ├── DELETE: StateMachine._check_data_complete()
+│   ├── DELETE: StateMachine._process_intent_rules()
+│   ├── DELETE: All priority-based rule processing in state_machine.py
+│   ├── KEEP: StateMachine.state, collected_data, is_final() (used by Blackboard)
+│   ├── KEEP: IntentTracker (used by Blackboard)
+│   └── Update imports throughout codebase
 │
-├── Day 3-4: Deploy shadow mode
-│   ├── Enable blackboard_shadow_mode = true
-│   ├── Monitor logs for divergences
-│   └── Set up alerting for high divergence rates
+├── Day 3-4: Configuration Cleanup
+│   ├── REMOVE: feature flags for legacy/blackboard switching
+│   ├── REMOVE: shadow_mode configuration
+│   ├── REMOVE: blackboard_traffic_percentage
+│   ├── UPDATE: constants.yaml (keep only Blackboard config)
+│   ├── UPDATE: settings.yaml (remove legacy flags)
+│   └── SIMPLIFY: bot.py (remove all legacy code paths)
 │
-└── Day 5: Analyze initial results
-    └── Review first 24 hours of shadow data
+└── Day 5: Final Integration Testing
+    ├── Run full test suite
+    ├── Manual smoke testing of all scenarios
+    └── Verify no references to deleted code
 
 Week 6:
-├── Day 1-3: Analyze divergences
-│   ├── Categorize divergence patterns
-│   ├── Identify root causes
-│   └── Determine which system is "correct"
+├── Day 1-2: Production Deployment
+│   ├── Deploy to staging environment
+│   ├── Full QA testing on staging
+│   ├── Deploy to production
+│   └── Monitor closely for first 48 hours
 │
-├── Day 4: Fix critical issues
-│   └── Address any bugs causing incorrect decisions
+├── Day 3-4: Production Monitoring
+│   ├── Monitor error rates
+│   ├── Monitor conversation metrics
+│   ├── Monitor performance metrics
+│   └── Address any production issues
 │
-└── Day 5: Shadow mode report
-    └── Document findings and readiness assessment
+└── Day 5: Phase 3 Complete
+    ├── Confirm stable operation
+    └── Document deployment results
+
 Deliverables:
 
-Shadow mode deployment
-Divergence analysis report
-Bug fixes for critical issues
+Clean codebase with NO legacy dialogue management code
+Production deployment of Blackboard system
+Monitoring dashboards
+
 Success Criteria:
 
-Shadow mode stable for 1 week
-Divergence rate < 10%
-No critical bugs in Blackboard decisions
-15.5 Phase 4: Gradual Rollout (Week 7-8)
+Zero references to apply_rules() in codebase
+All tests pass after legacy removal
+Production stable for 48+ hours
+No increase in error rates
+
+DELETED CODE (comprehensive list):
+
+# src/state_machine.py — УДАЛИТЬ:
+- apply_rules() method (~200 lines)
+- _check_data_complete() method
+- _process_intent_rules() method
+- _evaluate_rule_conditions() method
+- _get_priority_action() method
+- All RuleResult related code
+
+# src/bot.py — УДАЛИТЬ:
+- _process_legacy() method
+- _process_shadow_mode() method
+- _compare_shadow_results() method
+- _should_use_blackboard() method
+- _should_run_shadow_mode() method
+- get_shadow_stats() method
+- reset_shadow_stats() method
+- _shadow_stats dictionary
+- All conditional logic choosing between systems
+
+# yaml_config/settings.yaml — УДАЛИТЬ:
+- blackboard_enabled flag
+- blackboard_shadow_mode flag
+- blackboard_traffic_percentage flag
+- All legacy/blackboard switching flags
+
+# yaml_config/constants.yaml — УДАЛИТЬ:
+- shadow_mode section
+- Any legacy-specific configuration
+15.5 Phase 4: Stabilization & Documentation (Week 7-8) — BUFFER
 Goals:
 
-Incrementally route traffic to Blackboard
-Monitor for issues at each stage
-Quick rollback capability
+Стабилизация production системы
+Документация новой архитектуры
+Обучение команды
+Оптимизация по результатам мониторинга
 Tasks:
 
 
 Week 7:
-├── Day 1: 10% rollout
-│   ├── Set blackboard_traffic_percentage = 10
-│   ├── Monitor metrics closely
-│   └── 24-hour bake time
-│
-├── Day 2-3: 25% rollout
-│   ├── Set blackboard_traffic_percentage = 25
-│   └── 48-hour bake time
-│
-└── Day 4-5: 50% rollout
-    ├── Set blackboard_traffic_percentage = 50
-    └── 48-hour bake time
-
-Week 8:
-├── Day 1-2: Monitor 50% traffic
-│   ├── Analyze metrics
-│   ├── Compare conversation outcomes
-│   └── User feedback analysis
-│
-├── Day 3: Decision point
-│   ├── Go/No-Go for 100%
-│   └── Document any remaining concerns
-│
-└── Day 4-5: Prepare for full rollout
-    └── Final checks and documentation
-Rollout Stages:
-
-Stage	Percentage	Duration	Rollback Trigger
-1	10%	24 hours	Error rate > 1%
-2	25%	48 hours	Error rate > 0.5%
-3	50%	48 hours	Error rate > 0.1%
-4	100%	Permanent	Manual decision
-Rollback Procedure:
-
-
-# Immediate rollback (< 1 minute)
-kubectl set env deployment/salesbot BLACKBOARD_TRAFFIC_PERCENTAGE=0
-
-# Or via config
-sed -i 's/blackboard_traffic_percentage: .*/blackboard_traffic_percentage: 0/' settings.yaml
-kubectl rollout restart deployment/salesbot
-Deliverables:
-
-Gradual rollout to 50%
-Metrics dashboard
-Rollback procedures documented
-Success Criteria:
-
-Error rate < 0.1% at 50% traffic
-Conversation completion rate maintained
-No increase in state loops
-15.6 Phase 5: Full Rollout (Week 9-10)
-Goals:
-
-100% traffic through Blackboard
-Monitor production stability
-Legacy code remains as fallback
-Tasks:
-
-
-Week 9:
-├── Day 1: 100% rollout
-│   ├── Set blackboard_traffic_percentage = 100
-│   └── All traffic through Blackboard
-│
-├── Day 2-3: Intensive monitoring
-│   ├── 24/7 monitoring for first 48 hours
-│   └── Alert on any anomalies
-│
-└── Day 4-5: Stability confirmation
-    └── Confirm stable operation
-
-Week 10:
-├── Day 1-3: Extended monitoring
-│   └── Continue monitoring, address any issues
-│
-├── Day 4: Disable shadow mode
-│   ├── Set blackboard_shadow_mode = false
-│   └── Remove shadow comparison code
-│
-└── Day 5: Phase 5 complete
-    └── Document production stability
-Deliverables:
-
-100% traffic through Blackboard
-2 weeks stable production operation
-Shadow mode disabled
-Success Criteria:
-
-100% traffic for 2 weeks with no issues
-All KPIs maintained or improved
-No rollbacks needed
-15.7 Phase 6: Cleanup & Documentation (Week 11-12)
-Goals:
-
-Remove legacy code (optional, can defer)
-Complete documentation
-Knowledge transfer
-Tasks:
-
-
-Week 11:
-├── Day 1-2: Code cleanup
-│   ├── Remove shadow mode code from bot.py
-│   ├── Deprecate apply_rules() (add warnings)
-│   └── Clean up unused feature flags
+├── Day 1-2: Production Optimization
+│   ├── Analyze production metrics
+│   ├── Identify and fix any performance bottlenecks
+│   ├── Tune Knowledge Source configurations
+│   └── Optimize based on real usage patterns
 │
 ├── Day 3-4: Documentation
-│   ├── Architecture documentation
+│   ├── Architecture documentation (как работает Blackboard)
 │   ├── Knowledge Source development guide
 │   ├── Troubleshooting guide
-│   └── Runbook updates
+│   ├── Runbook updates
+│   └── API documentation for DialogueOrchestrator
 │
-└── Day 5: Code review
-    └── Review all changes for final merge
+└── Day 5: Code Quality
+    ├── Code review всего нового кода
+    ├── Ensure consistent code style
+    └── Add any missing docstrings/comments
 
-Week 12:
-├── Day 1-2: Knowledge transfer
+Week 8:
+├── Day 1-2: Knowledge Transfer
 │   ├── Team training session
-│   └── Q&A sessions
+│   ├── Q&A sessions
+│   ├── Pair programming на добавление нового Knowledge Source
+│   └── Review best practices
 │
-├── Day 3-4: Final testing
-│   ├── Full regression suite
-│   └── Load testing
+├── Day 3-4: Final Polish
+│   ├── Address any feedback from documentation review
+│   ├── Final test suite review
+│   ├── Performance optimization if needed
+│   └── Clean up any TODO comments
 │
-└── Day 5: Project completion
+└── Day 5: Project Completion
     ├── Final documentation review
-    └── Project retrospective
+    ├── Project retrospective
+    ├── Archive old documentation
+    └── Celebrate successful migration! 🎉
+
 Deliverables:
 
-Cleaned up codebase
+Stable production system (2+ weeks running)
 Complete documentation
 Team trained on new architecture
-Optional (can defer to Phase 7):
+Clean, maintainable codebase
 
-Full removal of StateMachine.apply_rules()
-This can be done 1-2 releases later for safety
+Success Criteria:
+
+No production incidents for 2 weeks
+All team members can explain Blackboard architecture
+At least one team member can add a new Knowledge Source independently
+Documentation complete and reviewed
+15.6 Rollback Strategy (Emergency Only)
+
+ВАЖНО: В этом плане нет постепенного отката. Если нужен откат — это git revert.
+
+Rollback Procedure (EMERGENCY ONLY):
+
+# Если обнаружена критическая проблема после deployment:
+
+# 1. Git revert к последнему стабильному коммиту
+git revert HEAD~N  # где N = количество коммитов Blackboard
+
+# 2. Или переключиться на pre-blackboard branch
+git checkout pre-blackboard-migration
+git push -f origin main
+
+# 3. Redeploy
+kubectl rollout restart deployment/salesbot
+
+Когда использовать откат:
+
+- Критические баги, влияющие на >10% пользователей
+- Полная неработоспособность бота
+- Data corruption
+
+Когда НЕ откатывать:
+
+- Мелкие баги (исправить в hotfix)
+- Производительность чуть хуже (оптимизировать)
+- Один-два edge cases не работают (исправить)
+
+Pre-deployment Checklist (чтобы избежать отката):
+
+- [ ] Все unit tests проходят
+- [ ] Все integration tests проходят
+- [ ] Все regression tests проходят
+- [ ] Historical replay показывает улучшения
+- [ ] Performance benchmark в пределах нормы
+- [ ] Manual testing всех основных сценариев
+- [ ] Code review пройден
 16. File Structure Summary
+
+=== НОВЫЕ ФАЙЛЫ (создаются) ===
 
 src/blackboard/
 ├── __init__.py                    # Module exports
-├── protocols.py                   # Hexagonal Architecture ports (IStateMachine, IFlowConfig, ITenantConfig) ← NEW
+├── protocols.py                   # Hexagonal Architecture ports (IStateMachine, IFlowConfig, ITenantConfig)
 ├── enums.py                       # Priority, ProposalType enums
-├── models.py                      # Proposal, ResolvedDecision, ContextSnapshot (with tenant support)
-├── blackboard.py                  # DialogueBlackboard class (with tenant support)
+├── models.py                      # Proposal, ResolvedDecision, ContextSnapshot
+├── blackboard.py                  # DialogueBlackboard class
 ├── knowledge_source.py            # KnowledgeSource ABC
 ├── source_registry.py             # SourceRegistry (Plugin System)
 ├── conflict_resolver.py           # ConflictResolver class
 ├── proposal_validator.py          # ProposalValidator class
 ├── event_bus.py                   # DialogueEventBus, events, subscribers
-├── orchestrator.py                # DialogueOrchestrator, factory function (with tenant support)
+├── orchestrator.py                # DialogueOrchestrator, factory function
 └── sources/
     ├── __init__.py                # Source exports + auto-registration
     ├── price_question.py          # PriceQuestionSource
@@ -5458,12 +5252,12 @@ src/blackboard/
     └── escalation.py              # EscalationSource
 
 tests/
-├── test_protocols.py              # Protocol compliance tests ← NEW
-├── test_blackboard.py             # DialogueBlackboard tests (including tenant tests)
+├── test_protocols.py              # Protocol compliance tests
+├── test_blackboard.py             # DialogueBlackboard tests
 ├── test_conflict_resolver.py      # ConflictResolver tests
 ├── test_proposal_validator.py     # ProposalValidator tests
 ├── test_event_bus.py              # EventBus tests
-├── test_orchestrator.py           # Orchestrator tests (including tenant tests)
+├── test_orchestrator.py           # Orchestrator tests
 ├── test_source_registry.py        # SourceRegistry tests
 ├── test_sources_price.py          # PriceQuestionSource tests
 ├── test_sources_data.py           # DataCollectorSource tests
@@ -5473,11 +5267,57 @@ tests/
 ├── test_sources_escalation.py     # EscalationSource tests
 ├── test_blackboard_integration.py # Integration tests
 ├── test_blackboard_regression.py  # Regression tests
-└── test_multi_tenancy.py          # Multi-tenancy isolation tests ← NEW
+└── test_multi_tenancy.py          # Multi-tenancy isolation tests
 
-yaml_config/
-├── constants.yaml                 # Updated with Blackboard config
-└── settings.yaml                  # Updated with feature flags
+=== МОДИФИЦИРУЕМЫЕ ФАЙЛЫ ===
+
+src/bot.py                         # ПЕРЕПИСАН: использует только Blackboard
+src/state_machine.py               # ОЧИЩЕН: удалён apply_rules() и связанный код
+yaml_config/constants.yaml         # ОБНОВЛЁН: Blackboard config
+yaml_config/settings.yaml          # ОЧИЩЕН: удалены legacy flags
+
+=== УДАЛЯЕМЫЙ КОД (из существующих файлов) ===
+
+# src/state_machine.py — УДАЛИТЬ (~300 строк):
+StateMachine.apply_rules()         # Основной метод legacy системы
+StateMachine._check_data_complete()
+StateMachine._process_intent_rules()
+StateMachine._evaluate_rule_conditions()
+StateMachine._get_priority_action()
+StateMachine._apply_rule_result()
+RuleResult class                   # Если определён здесь
+
+# src/bot.py — УДАЛИТЬ (~150 строк):
+SalesBot._process_legacy()
+SalesBot._process_shadow_mode()
+SalesBot._compare_shadow_results()
+SalesBot._should_use_blackboard()
+SalesBot._should_run_shadow_mode()
+SalesBot.get_shadow_stats()
+SalesBot.reset_shadow_stats()
+SalesBot._shadow_stats
+
+# yaml_config/settings.yaml — УДАЛИТЬ:
+blackboard_enabled
+blackboard_shadow_mode
+blackboard_traffic_percentage
+
+=== ЧТО ОСТАЁТСЯ В state_machine.py ===
+
+# StateMachine используется Blackboard для:
+StateMachine.state                 # property: текущее состояние
+StateMachine.collected_data        # property: собранные данные
+StateMachine.is_final()            # method: проверка финального состояния
+StateMachine._intent_tracker       # IntentTracker instance
+
+# IntentTracker остаётся полностью:
+IntentTracker.turn_number
+IntentTracker.prev_intent
+IntentTracker.record()
+IntentTracker.objection_consecutive()
+IntentTracker.objection_total()
+IntentTracker.total_count()
+IntentTracker.category_total()
 Продолжаю с седьмой частью — Testing Suite и Verification.
 
 продолжай
@@ -7431,36 +7271,52 @@ class TestBlackboardIntegration:
         assert decision.next_state in ["soft_close", "spin_situation"]
 
 
-class TestBlackboardVsLegacyComparison:
+class TestBugFixes:
     """
-    Tests that compare Blackboard results to expected legacy behavior.
-    
-    These tests document where Blackboard SHOULD differ from legacy
-    (fixing bugs) vs where it should behave the same.
+    Tests that verify Blackboard fixes known bugs from the old system.
+
+    NOTE: Legacy система полностью удалена, эти тесты документируют
+    исправленное поведение (не сравнивают с legacy).
     """
-    
-    def test_legacy_bug_price_blocks_transition(self):
+
+    def test_price_question_no_longer_blocks_transition(self):
         """
-        Document the legacy bug that Blackboard fixes.
-        
-        Legacy behavior (BUG):
+        Verify the core bug is fixed.
+
+        OLD BEHAVIOR (BUG):
         - price_question -> return("answer_with_pricing", SAME_STATE)
-        - data_complete check never reached
-        
-        Blackboard behavior (FIXED):
+        - data_complete check NEVER reached
+        - Bot stuck in spin_situation asking same questions
+
+        NEW BEHAVIOR (FIXED):
         - price_question -> propose_action("answer_with_pricing", combinable=True)
         - data_complete -> propose_transition("spin_problem")
-        - Both applied!
+        - BOTH applied — bot answers price AND advances to next phase
         """
-        # This test documents the expected behavioral difference
-        pass  # Actual test is in test_orchestrator.py
-    
-    def test_equivalent_behavior_normal_intent(self):
+        # Implementation in test_orchestrator.py::test_price_question_with_data_complete_scenario
+        pass
+
+    def test_persona_limits_respected(self):
         """
-        Verify Blackboard produces same result for normal intents.
+        Verify persona-specific objection limits work correctly.
+
+        - aggressive persona: 5 consecutive, 8 total
+        - busy persona: 2 consecutive, 4 total
+        - default: 3 consecutive, 5 total
         """
-        # For non-problematic intents, results should match legacy
-        pass  # Implement with real comparison
+        # Implementation in test_sources_objection.py
+        pass
+
+    def test_blocking_actions_work(self):
+        """
+        Verify combinable=False blocks transitions correctly.
+
+        - rejection -> blocks data_complete transition
+        - escalation -> blocks all other transitions
+        - objection_limit_reached -> blocks continuation
+        """
+        # Implementation in test_conflict_resolver.py
+        pass
 
 
 class TestPerformance:
@@ -7485,10 +7341,10 @@ from pathlib import Path
 
 class TestBlackboardRegression:
     """
-    Regression tests ensuring Blackboard matches expected behavior.
-    
-    These tests use recorded scenarios to verify consistent behavior
-    across code changes.
+    Regression tests ensuring Blackboard produces EXPECTED behavior.
+
+    NOTE: Эти тесты НЕ сравнивают с legacy системой (она удалена).
+    Они проверяют что Blackboard работает как ЗАДУМАНО.
     """
     
     @pytest.fixture
@@ -7619,18 +7475,56 @@ class TestBlackboardRegression:
                     assert code in decision.reason_codes, \
                         f"Scenario '{scenario['name']}': expected reason code {code} not found"
 20. Verification Checklist
-20.1 Pre-Deployment Checklist
 
-## Pre-Deployment Verification Checklist
+20.1 Pre-Development Checklist (Phase 1)
 
-### Unit Tests
+## Before Writing Any Code
+
+### Understanding
+- [ ] Полностью понял архитектуру Blackboard
+- [ ] Понял как работает combinable флаг
+- [ ] Понял разницу между 6 Knowledge Sources
+- [ ] Знаю что именно удаляется из legacy кода
+
+
+20.2 Pre-Integration Checklist (Phase 2)
+
+## Before Integrating with SalesBot
+
+### Unit Tests (MUST PASS)
 - [ ] All unit tests pass: `pytest tests/test_blackboard*.py -v`
 - [ ] Test coverage > 90%: `pytest --cov=src/blackboard tests/`
 - [ ] No flaky tests (run 3x): `pytest tests/ --count=3`
 
-### Integration Tests  
-- [ ] Integration tests pass: `pytest tests/test_blackboard_integration.py -v`
-- [ ] Regression tests pass: `pytest tests/test_blackboard_regression.py -v`
+### Core Functionality
+- [ ] PriceQuestionSource proposes combinable=True actions
+- [ ] DataCollectorSource proposes transitions correctly
+- [ ] ObjectionGuardSource respects persona limits
+- [ ] ConflictResolver merges combinable actions with transitions
+- [ ] ConflictResolver blocks transitions for combinable=False actions
+
+### Code Quality
+- [ ] No linting errors: `ruff check src/blackboard/`
+- [ ] Type hints complete: `mypy src/blackboard/`
+- [ ] Docstrings for all public methods
+
+
+20.3 Pre-Deployment Checklist (Phase 3)
+
+## Before Deploying to Production
+
+### All Tests MUST Pass
+- [ ] Unit tests: `pytest tests/test_blackboard*.py -v`
+- [ ] Integration tests: `pytest tests/test_blackboard_integration.py -v`
+- [ ] Regression tests: `pytest tests/test_blackboard_regression.py -v`
+- [ ] Full suite: `pytest tests/ -v`
+
+### Legacy Code Removal Verification
+- [ ] `grep -r "apply_rules" src/` returns NOTHING
+- [ ] `grep -r "_process_legacy" src/` returns NOTHING
+- [ ] `grep -r "shadow_mode" src/` returns NOTHING
+- [ ] `grep -r "blackboard_enabled" src/` returns NOTHING
+- [ ] `grep -r "traffic_percentage" src/` returns NOTHING
 
 ### Performance
 - [ ] process_turn latency < 10ms (p99)
@@ -7638,116 +7532,152 @@ class TestBlackboardRegression:
 - [ ] No memory leaks (run 1000 turns)
 
 ### Configuration
-- [ ] constants.yaml updated with persona_limits
-- [ ] settings.yaml updated with feature flags
+- [ ] constants.yaml has persona_limits
+- [ ] settings.yaml has NO legacy flags
 - [ ] All reason_codes documented
 
-### Code Quality
-- [ ] No linting errors: `ruff check src/blackboard/`
-- [ ] Type hints complete: `mypy src/blackboard/`
-- [ ] Docstrings for all public methods
+### Manual Testing
+- [ ] Scenario: price_question + data_complete → BOTH applied
+- [ ] Scenario: objection limit exceeded → soft_close
+- [ ] Scenario: rejection → blocks transitions
+- [ ] Scenario: normal SPIN flow → works correctly
+- [ ] Scenario: escalation request → human_handoff
 
-### Shadow Mode Readiness
-- [ ] Shadow comparison code tested
-- [ ] Divergence logging works
-- [ ] Metrics collection works
-20.2 Shadow Mode Verification
 
-## Shadow Mode Verification
+20.4 Post-Deployment Checklist (After Production Deploy)
 
-### Divergence Analysis
-- [ ] Divergence rate < 10%
-- [ ] All divergences categorized
-- [ ] No critical bugs in Blackboard decisions
+## First 48 Hours After Deployment
 
-### Categories to Track
-1. **Expected Divergences (Bugs Fixed)**
-   - [ ] price_question + data_complete now both apply
-   - [ ] Persona-specific limits now respected
-
-2. **Unexpected Divergences (Investigate)**
-   - [ ] Action differs for same input
-   - [ ] State transition differs unexpectedly
-
-### Metrics to Monitor
-- [ ] Action match rate > 90%
-- [ ] State match rate > 95%
-- [ ] No increase in conversation drop-offs
-- [ ] No increase in state loops
-20.3 Production Rollout Verification
-
-## Production Rollout Verification
-
-### At Each Percentage Stage (10%, 25%, 50%, 100%)
-
-#### Error Monitoring
-- [ ] Error rate < threshold (1% -> 0.5% -> 0.1%)
+### Error Monitoring
+- [ ] Error rate < 0.1%
 - [ ] No new error types
 - [ ] No increase in exceptions
 
-#### Business Metrics
-- [ ] Conversation completion rate stable
-- [ ] Lead conversion rate stable
+### Business Metrics
+- [ ] Conversation completion rate stable or improved
+- [ ] Lead conversion rate stable or improved
 - [ ] Average conversation length stable
 
-#### Technical Metrics
+### Technical Metrics
 - [ ] Response latency stable
 - [ ] Memory usage stable
 - [ ] CPU usage stable
 
-#### User Experience
-- [ ] No increase in negative feedback
-- [ ] No increase in escalation requests
-- [ ] State loop count decreased (improvement!)
+### Improvements (Expected!)
+- [ ] State loop count DECREASED (price_question bug fixed)
+- [ ] More successful phase transitions
+- [ ] Better handling of price questions with data
 
-### Rollback Triggers
-- [ ] Error rate > threshold -> ROLLBACK
-- [ ] Conversion rate drops > 5% -> ROLLBACK
-- [ ] Critical bug discovered -> ROLLBACK
-21. Summary: Key Files Created
-File	Lines (approx)	Purpose
-src/blackboard/__init__.py	30	Module exports
-src/blackboard/enums.py	40	Priority, ProposalType
-src/blackboard/models.py	200	Proposal, ResolvedDecision, ContextSnapshot
-src/blackboard/blackboard.py	350	DialogueBlackboard
-src/blackboard/knowledge_source.py	80	KnowledgeSource ABC
-src/blackboard/source_registry.py	250	SourceRegistry (Plugin System) ← NEW
-src/blackboard/proposal_validator.py	150	ProposalValidator
-src/blackboard/conflict_resolver.py	250	ConflictResolver
-src/blackboard/event_bus.py	350	EventBus, Events, Subscribers
-src/blackboard/orchestrator.py	420	DialogueOrchestrator (uses SourceRegistry)
-src/blackboard/sources/price_question.py	100	PriceQuestionSource
-src/blackboard/sources/data_collector.py	100	DataCollectorSource
-src/blackboard/sources/objection_guard.py	150	ObjectionGuardSource
-src/blackboard/sources/intent_processor.py	150	IntentProcessorSource
-src/blackboard/sources/transition_resolver.py	120	TransitionResolverSource
-src/blackboard/sources/escalation.py	150	EscalationSource
-Total New Code	~2,870
-tests/test_blackboard*.py	~1,500	Test suite
-tests/test_source_registry.py	~200	SourceRegistry tests ← NEW
-Total with Tests	~4,570
+### Emergency Rollback Triggers
+- [ ] Error rate > 1% for 15+ minutes → git revert
+- [ ] Bot completely non-functional → git revert
+- [ ] Data corruption detected → git revert
+21. Summary: Code Changes
+
+=== НОВЫЙ КОД ===
+
+File                                    Lines    Purpose
+─────────────────────────────────────────────────────────────────
+src/blackboard/__init__.py              30       Module exports
+src/blackboard/protocols.py             100      Hexagonal Architecture ports
+src/blackboard/enums.py                 40       Priority, ProposalType
+src/blackboard/models.py                200      Proposal, ResolvedDecision, ContextSnapshot
+src/blackboard/blackboard.py            350      DialogueBlackboard
+src/blackboard/knowledge_source.py      80       KnowledgeSource ABC
+src/blackboard/source_registry.py       250      SourceRegistry (Plugin System)
+src/blackboard/proposal_validator.py    150      ProposalValidator
+src/blackboard/conflict_resolver.py     250      ConflictResolver
+src/blackboard/event_bus.py             350      EventBus, Events, Subscribers
+src/blackboard/orchestrator.py          420      DialogueOrchestrator
+src/blackboard/sources/price_question.py    100  PriceQuestionSource
+src/blackboard/sources/data_collector.py    100  DataCollectorSource
+src/blackboard/sources/objection_guard.py   150  ObjectionGuardSource
+src/blackboard/sources/intent_processor.py  150  IntentProcessorSource
+src/blackboard/sources/transition_resolver.py 120 TransitionResolverSource
+src/blackboard/sources/escalation.py        150  EscalationSource
+─────────────────────────────────────────────────────────────────
+Total New Code                          ~2,990
+
+tests/test_blackboard*.py               ~1,700   Test suite
+─────────────────────────────────────────────────────────────────
+Total with Tests                        ~4,690
+
+
+=== УДАЛЯЕМЫЙ КОД ===
+
+File                     Lines Removed    What's Removed
+─────────────────────────────────────────────────────────────────
+src/state_machine.py     ~300            apply_rules() and related methods
+src/bot.py               ~150            Shadow mode, legacy processing
+yaml_config/settings.yaml ~20           Legacy feature flags
+─────────────────────────────────────────────────────────────────
+Total Removed            ~470
+
+
+=== NET CHANGE ===
+
+New Code:      +2,990 lines (production)
+New Tests:     +1,700 lines (tests)
+Removed Code:  -470 lines
+─────────────────────────────────────────────────────────────────
+Net Addition:  +4,220 lines
+
+Но важнее количества — КАЧЕСТВО:
+- Удалён запутанный legacy код с early returns
+- Добавлена чистая, расширяемая архитектура
+- Полное тестовое покрытие
 22. Заключение
-Данный план представляет собой полную спецификацию Dialogue Blackboard System с учётом всех рекомендованных улучшений:
+Данный план представляет собой полную спецификацию Dialogue Blackboard System с ПОЛНОЙ ЗАМЕНОЙ legacy системы.
 
-Ключевые улучшения внесённые в план:
+=== ПРИНЦИП МИГРАЦИИ ===
+
+❌ НЕТ shadow mode
+❌ НЕТ gradual rollout
+❌ НЕТ legacy кода после миграции
+❌ НЕТ feature flags для переключения между системами
+
+✅ ПОЛНАЯ замена apply_rules() на Blackboard
+✅ УДАЛЕНИЕ всего legacy кода
+✅ ЧИСТЫЙ codebase без "мёртвого" кода
+✅ Rollback только через git revert (emergency only)
+
+
+=== КЛЮЧЕВЫЕ ОСОБЕННОСТИ ПЛАНА ===
+
+Архитектура:
 ✅ SourceRegistry (Plugin System) — динамическая регистрация Knowledge Sources
 ✅ Configuration-driven sources — включение/отключение sources через YAML
 ✅ @register_source декоратор для простой регистрации custom sources
 ✅ combinable флаг полностью реализован в ConflictResolver
 ✅ rejected_proposals добавлен в Decision Layer для debugging
-✅ Чёткое разграничение между DataCollectorSource и TransitionResolverSource
-✅ Timeline расширен до 10-12 недель (реалистичнее)
-✅ EscalationSource добавлен как 6-й Knowledge Source
-✅ DialogueEventBus добавлен для observability
-✅ ProposalValidator добавлен для валидации
-✅ should_contribute() метод для performance optimization
-✅ Persona limits вынесены в constants.yaml
-✅ Reason codes полностью документированы
-Архитектурные гарантии:
-✅ Корневая проблема решена: price_question + data_complete применяются одновременно
-✅ Blocking actions работают: rejection и escalation блокируют transitions
-✅ Persona-specific limits: динамические лимиты по персонам
-✅ Безопасная миграция: Shadow Mode → A/B → Full rollout
-✅ Plugin Architecture: новые sources добавляются без изменения core кода
-✅ Мгновенный rollback: через feature flags
-✅ Полная observability: EventBus с метриками и логированием
+✅ 6 Knowledge Sources с чётким разделением ответственности
+✅ DialogueEventBus для observability
+✅ ProposalValidator для валидации
+✅ Hexagonal Architecture с Protocols для тестируемости
+
+Миграция:
+✅ 6-8 недель (вместо 10-12)
+✅ Phase 1-2: Implementation & Testing
+✅ Phase 3: Legacy Removal & Deployment
+✅ Phase 4: Stabilization (buffer)
+✅ Детальный список удаляемого кода
+
+Решение корневой проблемы:
+✅ price_question + data_complete применяются ОДНОВРЕМЕННО
+✅ Blocking actions (rejection, escalation) корректно блокируют transitions
+✅ Persona-specific objection limits
+
+
+=== ПОСЛЕ МИГРАЦИИ ===
+
+StateMachine остаётся, но ТОЛЬКО для:
+- Хранения текущего state
+- Хранения collected_data
+- IntentTracker
+
+StateMachine НЕ содержит:
+- apply_rules() — УДАЛЁН
+- _check_data_complete() — УДАЛЁН
+- Любую логику выбора action/transition — УДАЛЕНА
+
+Dialogue management = Blackboard. Точка.
