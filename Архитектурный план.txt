@@ -517,6 +517,173 @@ class Priority(IntEnum):
         if isinstance(other, Priority):
             return self.value < other.value
         return NotImplemented
+5.1.1 Protocols (Hexagonal Architecture Ports)
+
+# src/blackboard/protocols.py
+
+"""
+Protocols defining the contracts (ports) for Blackboard architecture.
+Following Hexagonal Architecture pattern from DESIGN_PRINCIPLES.md.
+
+These protocols enable:
+- Static type checking with mypy
+- Dependency Inversion (depend on abstractions, not concretions)
+- Easy mocking in tests
+- Clear boundaries between components
+"""
+
+from typing import Protocol, Dict, Any, Optional, List, runtime_checkable
+from dataclasses import dataclass
+
+
+@runtime_checkable
+class IStateMachine(Protocol):
+    """
+    Input Port: Contract for state machine implementations.
+
+    Allows DialogueBlackboard to work with any state machine
+    that implements this protocol.
+    """
+
+    @property
+    def state(self) -> str:
+        """Get current dialogue state."""
+        ...
+
+    @state.setter
+    def state(self, value: str) -> None:
+        """Set current dialogue state."""
+        ...
+
+    @property
+    def collected_data(self) -> Dict[str, Any]:
+        """Get collected data dictionary."""
+        ...
+
+    def is_final(self) -> bool:
+        """Check if current state is final."""
+        ...
+
+
+@runtime_checkable
+class IIntentTracker(Protocol):
+    """
+    Input Port: Contract for intent tracking.
+    """
+
+    @property
+    def turn_number(self) -> int:
+        """Get current turn number."""
+        ...
+
+    @property
+    def prev_intent(self) -> Optional[str]:
+        """Get previous intent."""
+        ...
+
+    def record(self, intent: str, state: str) -> None:
+        """Record an intent."""
+        ...
+
+    def objection_consecutive(self) -> int:
+        """Get consecutive objection count."""
+        ...
+
+    def objection_total(self) -> int:
+        """Get total objection count."""
+        ...
+
+    def total_count(self, intent: str) -> int:
+        """Get total count for specific intent."""
+        ...
+
+    def category_total(self, category: str) -> int:
+        """Get total count for intent category."""
+        ...
+
+
+@runtime_checkable
+class IFlowConfig(Protocol):
+    """
+    Input Port: Contract for flow configuration.
+    """
+
+    @property
+    def states(self) -> Dict[str, Dict[str, Any]]:
+        """Get states configuration."""
+        ...
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        ...
+
+
+@runtime_checkable
+class IContextEnvelope(Protocol):
+    """
+    Input Port: Contract for context envelope (Phase 5).
+    """
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        ...
+
+
+@runtime_checkable
+class ITenantConfig(Protocol):
+    """
+    Input Port: Contract for tenant configuration.
+
+    Supports multi-tenancy as described in DESIGN_PRINCIPLES.md Section 6.
+    """
+
+    @property
+    def tenant_id(self) -> str:
+        """Unique tenant identifier."""
+        ...
+
+    @property
+    def bot_name(self) -> str:
+        """Tenant's bot name."""
+        ...
+
+    @property
+    def tone(self) -> str:
+        """Tenant's preferred tone (professional, friendly, formal)."""
+        ...
+
+    @property
+    def features(self) -> Dict[str, bool]:
+        """Tenant-specific feature flags."""
+        ...
+
+    @property
+    def persona_limits_override(self) -> Optional[Dict[str, Dict[str, int]]]:
+        """Tenant-specific persona limits override."""
+        ...
+
+
+@dataclass
+class TenantConfig:
+    """
+    Default implementation of ITenantConfig.
+
+    Can be loaded from YAML or database per tenant.
+    """
+    tenant_id: str
+    bot_name: str = "Assistant"
+    tone: str = "professional"
+    features: Dict[str, bool] = None
+    persona_limits_override: Optional[Dict[str, Dict[str, int]]] = None
+
+    def __post_init__(self):
+        if self.features is None:
+            self.features = {}
+
+
+# Default tenant for single-tenant deployments
+DEFAULT_TENANT = TenantConfig(tenant_id="default")
+
 5.2 ProposalType Enum
 
 # src/blackboard/enums.py
@@ -677,18 +844,22 @@ class ResolvedDecision:
 # src/blackboard/models.py
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from src.intent_tracker import IntentTracker
 from src.context_envelope import ContextEnvelope
+
+# Import TenantConfig for multi-tenancy support
+if TYPE_CHECKING:
+    from .protocols import TenantConfig
 
 @dataclass(frozen=True)  # Immutable!
 class ContextSnapshot:
     """
     Immutable snapshot of dialogue context for Knowledge Sources.
-    
+
     This is the read-only view that Knowledge Sources use to make decisions.
     Sources cannot modify this directly - they can only propose changes.
-    
+
     Attributes:
         state: Current dialogue state (e.g., "spin_situation")
         collected_data: All collected data fields (immutable copy)
@@ -699,6 +870,8 @@ class ContextSnapshot:
         persona: Detected user persona (for dynamic limits)
         state_config: Configuration for current state
         flow_config: Configuration for current flow
+        tenant_id: Tenant identifier for multi-tenancy support
+        tenant_config: Tenant-specific configuration (feature flags, limits)
     """
     state: str
     collected_data: Dict[str, Any]
@@ -709,6 +882,9 @@ class ContextSnapshot:
     persona: str
     state_config: Dict[str, Any]
     flow_config: Dict[str, Any]
+    # Multi-tenancy support (DESIGN_PRINCIPLES.md Section 6)
+    tenant_id: str = "default"
+    tenant_config: Optional['TenantConfig'] = None
     
     # Computed properties for convenience
     @property
@@ -761,17 +937,62 @@ class ContextSnapshot:
         """Get rule for an intent in current state."""
         rules = self.state_config.get("rules", {})
         return rules.get(intent)
+
+    def get_persona_limit(self, persona: str, limit_type: str) -> Optional[int]:
+        """
+        Get persona-specific limit with tenant override support.
+
+        Multi-tenancy: Tenant config can override global persona limits.
+
+        Args:
+            persona: Persona name (e.g., "aggressive", "busy")
+            limit_type: Limit type ("consecutive" or "total")
+
+        Returns:
+            Limit value or None if not configured
+        """
+        # Check tenant override first
+        if self.tenant_config and self.tenant_config.persona_limits_override:
+            tenant_limits = self.tenant_config.persona_limits_override.get(persona, {})
+            if limit_type in tenant_limits:
+                return tenant_limits[limit_type]
+
+        # Fall back to global config (passed via flow_config.constants)
+        global_limits = self.flow_config.get("persona_limits", {}).get(persona, {})
+        return global_limits.get(limit_type)
+
+    def is_tenant_feature_enabled(self, feature_name: str) -> bool:
+        """
+        Check if a feature is enabled for current tenant.
+
+        Args:
+            feature_name: Feature flag name
+
+        Returns:
+            True if feature is enabled, False otherwise
+        """
+        if self.tenant_config and self.tenant_config.features:
+            return self.tenant_config.features.get(feature_name, True)
+        return True  # Default: all features enabled
+
 6. DialogueBlackboard
 
 # src/blackboard/blackboard.py
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from datetime import datetime
 import logging
 
 from .models import Proposal, ResolvedDecision, ContextSnapshot
 from .enums import Priority, ProposalType
+from .protocols import (
+    IStateMachine,
+    IIntentTracker,
+    IFlowConfig,
+    TenantConfig,
+    DEFAULT_TENANT,
+)
 from src.intent_tracker import IntentTracker
 from src.context_envelope import ContextEnvelope
 from src.config_loader import FlowConfig
@@ -782,64 +1003,87 @@ logger = logging.getLogger(__name__)
 class DialogueBlackboard:
     """
     Central shared workspace for dialogue management.
-    
+
     Implements the Blackboard architectural pattern with three layers:
     1. Context Layer (read-only) - current dialogue state
     2. Proposal Layer (write by sources) - proposed actions/transitions
     3. Decision Layer (write by resolver) - final resolved decision
-    
+
+    Hexagonal Architecture:
+        DialogueBlackboard depends on protocols (IStateMachine, IIntentTracker, IFlowConfig)
+        rather than concrete implementations. This allows easy testing and swapping
+        implementations without changing Blackboard code.
+
+    Multi-Tenancy:
+        Supports tenant-specific configuration via TenantConfig. Each tenant can have
+        custom persona limits, feature flags, and other settings.
+
     Usage:
         bb = DialogueBlackboard(state_machine, flow_config)
         bb.begin_turn(intent, extracted_data, context_envelope)
-        
+
         # Knowledge Sources contribute
         source.contribute(bb)
-        
+
         # Get context snapshot (read-only)
         ctx = bb.get_context()
-        
+
         # Propose changes
         bb.propose_action("answer_with_pricing", Priority.HIGH, combinable=True)
         bb.propose_transition("spin_problem", Priority.NORMAL)
-        
+
         # Resolve and commit
         decision = resolver.resolve(bb.get_proposals())
         bb.commit_decision(decision)
     """
-    
+
     def __init__(
         self,
-        state_machine,  # Reference to StateMachine instance
-        flow_config: FlowConfig,
-        intent_tracker: Optional[IntentTracker] = None
+        state_machine: 'IStateMachine',  # Protocol type for Hexagonal Architecture
+        flow_config: 'IFlowConfig',
+        intent_tracker: Optional['IIntentTracker'] = None,
+        tenant_config: Optional['TenantConfig'] = None  # Multi-tenancy support
     ):
         """
         Initialize the blackboard.
-        
+
         Args:
-            state_machine: Reference to the StateMachine instance
-            flow_config: Flow configuration (from ConfigLoader)
-            intent_tracker: IntentTracker instance (uses state_machine's if not provided)
+            state_machine: State machine implementing IStateMachine protocol
+            flow_config: Flow configuration implementing IFlowConfig protocol
+            intent_tracker: Intent tracker implementing IIntentTracker protocol
+                           (uses state_machine's if not provided)
+            tenant_config: Tenant-specific configuration (optional, uses DEFAULT_TENANT if not provided)
         """
         self._state_machine = state_machine
         self._flow_config = flow_config
         self._intent_tracker = intent_tracker or state_machine._intent_tracker
-        
+        self._tenant_config = tenant_config or DEFAULT_TENANT
+
         # === Context Layer (populated on begin_turn) ===
         self._context: Optional[ContextSnapshot] = None
-        
+
         # === Proposal Layer ===
         self._action_proposals: List[Proposal] = []
         self._transition_proposals: List[Proposal] = []
         self._data_updates: Dict[str, Any] = {}
         self._flags_to_set: Dict[str, Any] = {}
-        
+
         # === Decision Layer ===
         self._decision: Optional[ResolvedDecision] = None
-        
+
         # === Metadata ===
         self._turn_start_time: Optional[datetime] = None
         self._current_intent: Optional[str] = None
+
+    @property
+    def tenant_id(self) -> str:
+        """Get current tenant ID."""
+        return self._tenant_config.tenant_id
+
+    @property
+    def tenant_config(self) -> 'TenantConfig':
+        """Get current tenant configuration."""
+        return self._tenant_config
         
     # =========================================================================
     # CONTEXT LAYER (Read-Only)
@@ -896,6 +1140,9 @@ class DialogueBlackboard:
             persona=persona,
             state_config=state_config,
             flow_config=self._flow_config.to_dict() if hasattr(self._flow_config, 'to_dict') else {},
+            # Multi-tenancy support
+            tenant_id=self._tenant_config.tenant_id,
+            tenant_config=self._tenant_config,
         )
         
         # Clear proposal layer
@@ -3582,7 +3829,7 @@ class DebugLogger:
 
 # src/blackboard/orchestrator.py
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Type
 from datetime import datetime
 import logging
 import time
@@ -3604,6 +3851,14 @@ from .event_bus import (
 from .models import ResolvedDecision
 from .enums import Priority
 
+# Hexagonal Architecture: Import protocols (ports)
+from .protocols import (
+    IStateMachine,
+    IFlowConfig,
+    TenantConfig,
+    DEFAULT_TENANT,
+)
+
 # Import SourceRegistry (Plugin System)
 from .source_registry import SourceRegistry, register_builtin_sources
 
@@ -3616,13 +3871,24 @@ register_builtin_sources()
 class DialogueOrchestrator:
     """
     Main coordinator for the Dialogue Blackboard System.
-    
+
+    Hexagonal Architecture:
+        Orchestrator is the APPLICATION LAYER that coordinates domain logic.
+        It depends on PROTOCOLS (ports) rather than concrete implementations:
+        - IStateMachine: input port for state management
+        - IFlowConfig: input port for configuration
+        - IContextEnvelope: input port for context data
+
     Responsibilities:
         - Initialize and manage Knowledge Sources
         - Coordinate the turn processing pipeline
         - Handle validation and error recovery
         - Emit events for observability
-    
+
+    Multi-Tenancy:
+        Supports tenant-specific configuration via TenantConfig.
+        Each tenant can have custom feature flags, persona limits, etc.
+
     Pipeline:
         1. begin_turn() - Initialize blackboard for new turn
         2. Knowledge Sources contribute proposals
@@ -3630,40 +3896,44 @@ class DialogueOrchestrator:
         4. Resolve conflicts
         5. Commit decision
         6. Return result to caller (SalesBot)
-    
+
     Usage:
         orchestrator = DialogueOrchestrator(state_machine, flow_config)
         decision = orchestrator.process_turn(intent, extracted_data, context_envelope)
         # decision.action, decision.next_state, decision.reason_codes
     """
-    
+
     def __init__(
         self,
-        state_machine,
-        flow_config,
+        state_machine: 'IStateMachine',  # Protocol type (Hexagonal Architecture port)
+        flow_config: 'IFlowConfig',       # Protocol type (Hexagonal Architecture port)
         event_bus: Optional[DialogueEventBus] = None,
         enable_validation: bool = True,
         strict_validation: bool = False,
         persona_limits: Optional[Dict[str, Dict[str, int]]] = None,
+        tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
     ):
         """
         Initialize the orchestrator.
-        
+
         Args:
-            state_machine: Reference to StateMachine instance
-            flow_config: Flow configuration from ConfigLoader
+            state_machine: State machine implementing IStateMachine protocol
+            flow_config: Flow configuration implementing IFlowConfig protocol
             event_bus: Event bus for observability (created if not provided)
             enable_validation: Whether to validate proposals
             strict_validation: Whether to treat warnings as errors
             persona_limits: Custom persona limits for ObjectionGuardSource
+            tenant_config: Tenant-specific configuration (uses DEFAULT_TENANT if not provided)
         """
         self._state_machine = state_machine
         self._flow_config = flow_config
-        
-        # Initialize blackboard
+        self._tenant_config = tenant_config or DEFAULT_TENANT
+
+        # Initialize blackboard with tenant config
         self._blackboard = DialogueBlackboard(
             state_machine=state_machine,
             flow_config=flow_config,
+            tenant_config=self._tenant_config,
         )
         
         # Initialize event bus
@@ -3976,23 +4246,36 @@ class DialogueOrchestrator:
 # === Factory function for easy setup ===
 
 def create_orchestrator(
-    state_machine,
-    flow_config,
+    state_machine: 'IStateMachine',
+    flow_config: 'IFlowConfig',
     persona_limits: Optional[Dict[str, Dict[str, int]]] = None,
     enable_metrics: bool = True,
     enable_debug_logging: bool = False,
     custom_sources: Optional[List[Type[KnowledgeSource]]] = None,
+    tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
 ) -> DialogueOrchestrator:
     """
     Factory function to create a fully configured DialogueOrchestrator.
 
+    This is the COMPOSITION ROOT for the Blackboard system (DESIGN_PRINCIPLES.md).
+    All dependencies are wired here, not scattered throughout the codebase.
+
+    Hexagonal Architecture:
+        - state_machine must implement IStateMachine protocol
+        - flow_config must implement IFlowConfig protocol
+        - This allows easy testing with mock implementations
+
+    Multi-Tenancy:
+        Pass tenant_config to customize behavior per tenant.
+
     Args:
-        state_machine: StateMachine instance
-        flow_config: FlowConfig from ConfigLoader
+        state_machine: State machine implementing IStateMachine protocol
+        flow_config: Flow config implementing IFlowConfig protocol
         persona_limits: Custom persona limits (uses defaults if None)
         enable_metrics: Whether to enable metrics collection
         enable_debug_logging: Whether to enable debug event logging
         custom_sources: Optional list of custom KnowledgeSource classes to register
+        tenant_config: Tenant-specific configuration (optional)
 
     Returns:
         Configured DialogueOrchestrator instance
@@ -4010,8 +4293,25 @@ def create_orchestrator(
             flow_config,
             custom_sources=[MyCustomSource]
         )
+
+        # With tenant configuration
+        tenant = TenantConfig(
+            tenant_id="acme_corp",
+            bot_name="ACME Sales Assistant",
+            tone="friendly",
+            features={"escalation": True},
+        )
+        orchestrator = create_orchestrator(
+            state_machine,
+            flow_config,
+            tenant_config=tenant
+        )
     """
     from .event_bus import MetricsCollector, DebugLogger
+    from .protocols import DEFAULT_TENANT
+
+    # Use default tenant if not provided
+    tenant_config = tenant_config or DEFAULT_TENANT
 
     # Register custom sources if provided
     if custom_sources:
@@ -4044,6 +4344,7 @@ def create_orchestrator(
         event_bus=event_bus,
         enable_validation=True,
         persona_limits=persona_limits,
+        tenant_config=tenant_config,
     )
 
     return orchestrator
@@ -5137,15 +5438,16 @@ This can be done 1-2 releases later for safety
 
 src/blackboard/
 ├── __init__.py                    # Module exports
+├── protocols.py                   # Hexagonal Architecture ports (IStateMachine, IFlowConfig, ITenantConfig) ← NEW
 ├── enums.py                       # Priority, ProposalType enums
-├── models.py                      # Proposal, ResolvedDecision, ContextSnapshot
-├── blackboard.py                  # DialogueBlackboard class
+├── models.py                      # Proposal, ResolvedDecision, ContextSnapshot (with tenant support)
+├── blackboard.py                  # DialogueBlackboard class (with tenant support)
 ├── knowledge_source.py            # KnowledgeSource ABC
-├── source_registry.py             # SourceRegistry (Plugin System) ← NEW
+├── source_registry.py             # SourceRegistry (Plugin System)
 ├── conflict_resolver.py           # ConflictResolver class
 ├── proposal_validator.py          # ProposalValidator class
 ├── event_bus.py                   # DialogueEventBus, events, subscribers
-├── orchestrator.py                # DialogueOrchestrator, factory function
+├── orchestrator.py                # DialogueOrchestrator, factory function (with tenant support)
 └── sources/
     ├── __init__.py                # Source exports + auto-registration
     ├── price_question.py          # PriceQuestionSource
@@ -5156,12 +5458,13 @@ src/blackboard/
     └── escalation.py              # EscalationSource
 
 tests/
-├── test_blackboard.py             # DialogueBlackboard tests
+├── test_protocols.py              # Protocol compliance tests ← NEW
+├── test_blackboard.py             # DialogueBlackboard tests (including tenant tests)
 ├── test_conflict_resolver.py      # ConflictResolver tests
 ├── test_proposal_validator.py     # ProposalValidator tests
 ├── test_event_bus.py              # EventBus tests
-├── test_orchestrator.py           # Orchestrator tests
-├── test_source_registry.py        # SourceRegistry tests ← NEW
+├── test_orchestrator.py           # Orchestrator tests (including tenant tests)
+├── test_source_registry.py        # SourceRegistry tests
 ├── test_sources_price.py          # PriceQuestionSource tests
 ├── test_sources_data.py           # DataCollectorSource tests
 ├── test_sources_objection.py      # ObjectionGuardSource tests
@@ -5169,7 +5472,8 @@ tests/
 ├── test_sources_transition.py     # TransitionResolverSource tests
 ├── test_sources_escalation.py     # EscalationSource tests
 ├── test_blackboard_integration.py # Integration tests
-└── test_blackboard_regression.py  # Regression tests
+├── test_blackboard_regression.py  # Regression tests
+└── test_multi_tenancy.py          # Multi-tenancy isolation tests ← NEW
 
 yaml_config/
 ├── constants.yaml                 # Updated with Blackboard config
@@ -5179,6 +5483,176 @@ yaml_config/
 продолжай
 Часть 7: Testing Suite и Verification
 17. Unit Tests
+17.0 Test Protocols (Hexagonal Architecture)
+
+# tests/test_protocols.py
+
+"""
+Tests for Protocol compliance (Hexagonal Architecture).
+
+These tests verify that concrete implementations properly implement
+the required protocols, ensuring Dependency Inversion principle.
+"""
+
+import pytest
+from typing import Dict, Any, Optional
+
+from src.blackboard.protocols import (
+    IStateMachine,
+    IIntentTracker,
+    IFlowConfig,
+    ITenantConfig,
+    TenantConfig,
+    DEFAULT_TENANT,
+)
+
+
+class TestProtocolCompliance:
+    """Test that concrete classes implement protocols correctly."""
+
+    def test_state_machine_implements_protocol(self):
+        """Verify StateMachine implements IStateMachine protocol."""
+        from src.state_machine import StateMachine
+
+        # Runtime check using isinstance with runtime_checkable protocol
+        sm = StateMachine()
+        assert isinstance(sm, IStateMachine), (
+            "StateMachine must implement IStateMachine protocol"
+        )
+
+    def test_intent_tracker_implements_protocol(self):
+        """Verify IntentTracker implements IIntentTracker protocol."""
+        from src.intent_tracker import IntentTracker
+
+        tracker = IntentTracker()
+        assert isinstance(tracker, IIntentTracker), (
+            "IntentTracker must implement IIntentTracker protocol"
+        )
+
+    def test_flow_config_implements_protocol(self):
+        """Verify FlowConfig implements IFlowConfig protocol."""
+        from src.config_loader import FlowConfig
+
+        config = FlowConfig(states={}, constants={})
+        assert isinstance(config, IFlowConfig), (
+            "FlowConfig must implement IFlowConfig protocol"
+        )
+
+
+class TestTenantConfig:
+    """Test TenantConfig implementation."""
+
+    def test_default_tenant_exists(self):
+        """Verify DEFAULT_TENANT is available."""
+        assert DEFAULT_TENANT is not None
+        assert DEFAULT_TENANT.tenant_id == "default"
+
+    def test_tenant_config_creation(self):
+        """Test creating custom tenant config."""
+        tenant = TenantConfig(
+            tenant_id="acme_corp",
+            bot_name="ACME Assistant",
+            tone="friendly",
+            features={"escalation": True, "price_questions": False},
+            persona_limits_override={
+                "aggressive": {"consecutive": 10, "total": 15}
+            },
+        )
+
+        assert tenant.tenant_id == "acme_corp"
+        assert tenant.bot_name == "ACME Assistant"
+        assert tenant.tone == "friendly"
+        assert tenant.features["escalation"] is True
+        assert tenant.features["price_questions"] is False
+        assert tenant.persona_limits_override["aggressive"]["consecutive"] == 10
+
+    def test_tenant_config_default_features(self):
+        """Test that features defaults to empty dict."""
+        tenant = TenantConfig(tenant_id="test")
+        assert tenant.features == {}
+
+    def test_tenant_implements_protocol(self):
+        """Verify TenantConfig implements ITenantConfig protocol."""
+        tenant = TenantConfig(tenant_id="test")
+        assert isinstance(tenant, ITenantConfig)
+
+
+class TestMockImplementations:
+    """Test that mock implementations work with protocols."""
+
+    def test_mock_state_machine_for_testing(self):
+        """
+        Demonstrate how to create a mock that implements IStateMachine.
+
+        This is useful for unit testing without real StateMachine.
+        """
+        class MockStateMachine:
+            def __init__(self):
+                self._state = "greeting"
+                self._collected_data = {}
+                self._intent_tracker = MockIntentTracker()
+
+            @property
+            def state(self) -> str:
+                return self._state
+
+            @state.setter
+            def state(self, value: str) -> None:
+                self._state = value
+
+            @property
+            def collected_data(self) -> Dict[str, Any]:
+                return self._collected_data
+
+            def is_final(self) -> bool:
+                return self._state == "closed"
+
+        class MockIntentTracker:
+            @property
+            def turn_number(self) -> int:
+                return 1
+
+            @property
+            def prev_intent(self) -> Optional[str]:
+                return None
+
+            def record(self, intent: str, state: str) -> None:
+                pass
+
+            def objection_consecutive(self) -> int:
+                return 0
+
+            def objection_total(self) -> int:
+                return 0
+
+            def total_count(self, intent: str) -> int:
+                return 0
+
+            def category_total(self, category: str) -> int:
+                return 0
+
+        mock_sm = MockStateMachine()
+        assert isinstance(mock_sm, IStateMachine)
+
+        # Use mock in DialogueBlackboard
+        from src.blackboard.blackboard import DialogueBlackboard
+        from src.blackboard.protocols import DEFAULT_TENANT
+
+        class MockFlowConfig:
+            @property
+            def states(self) -> Dict[str, Dict[str, Any]]:
+                return {"greeting": {"goal": "Test"}}
+
+            def to_dict(self) -> Dict[str, Any]:
+                return {"states": self.states}
+
+        bb = DialogueBlackboard(
+            state_machine=mock_sm,
+            flow_config=MockFlowConfig(),
+            tenant_config=DEFAULT_TENANT,
+        )
+        assert bb.tenant_id == "default"
+
 17.1 Test DialogueBlackboard
 
 # tests/test_blackboard.py
@@ -5190,6 +5664,7 @@ from datetime import datetime
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.models import Proposal, ContextSnapshot
 from src.blackboard.enums import Priority, ProposalType
+from src.blackboard.protocols import TenantConfig, DEFAULT_TENANT
 
 
 class TestDialogueBlackboard:
@@ -5545,6 +6020,121 @@ class TestContextSnapshot:
     def test_current_phase_property(self, context_snapshot):
         """current_phase should return phase from state_config."""
         assert context_snapshot.current_phase == "situation"
+
+
+class TestMultiTenancy:
+    """Test multi-tenancy support in DialogueBlackboard."""
+
+    @pytest.fixture
+    def mock_state_machine(self):
+        """Create a mock state machine."""
+        sm = Mock()
+        sm.state = "greeting"
+        sm.collected_data = {}
+        sm._intent_tracker = Mock()
+        sm._intent_tracker.turn_number = 1
+        sm._intent_tracker.prev_intent = None
+        sm._intent_tracker.objection_consecutive.return_value = 0
+        sm._intent_tracker.objection_total.return_value = 0
+        return sm
+
+    @pytest.fixture
+    def mock_flow_config(self):
+        """Create a mock flow config."""
+        config = Mock()
+        config.states = {"greeting": {"goal": "Greet user"}}
+        config.to_dict.return_value = {
+            "states": config.states,
+            "persona_limits": {
+                "aggressive": {"consecutive": 5, "total": 8},
+                "default": {"consecutive": 3, "total": 5},
+            }
+        }
+        return config
+
+    def test_default_tenant_when_not_provided(self, mock_state_machine, mock_flow_config):
+        """Blackboard should use DEFAULT_TENANT when none provided."""
+        bb = DialogueBlackboard(
+            state_machine=mock_state_machine,
+            flow_config=mock_flow_config,
+        )
+        assert bb.tenant_id == "default"
+
+    def test_custom_tenant_config(self, mock_state_machine, mock_flow_config):
+        """Blackboard should use provided tenant config."""
+        tenant = TenantConfig(
+            tenant_id="acme_corp",
+            bot_name="ACME Bot",
+            tone="friendly",
+        )
+        bb = DialogueBlackboard(
+            state_machine=mock_state_machine,
+            flow_config=mock_flow_config,
+            tenant_config=tenant,
+        )
+        assert bb.tenant_id == "acme_corp"
+        assert bb.tenant_config.bot_name == "ACME Bot"
+
+    def test_tenant_in_context_snapshot(self, mock_state_machine, mock_flow_config):
+        """ContextSnapshot should include tenant information."""
+        tenant = TenantConfig(tenant_id="test_tenant")
+        bb = DialogueBlackboard(
+            state_machine=mock_state_machine,
+            flow_config=mock_flow_config,
+            tenant_config=tenant,
+        )
+        bb.begin_turn("greeting", {})
+        ctx = bb.get_context()
+
+        assert ctx.tenant_id == "test_tenant"
+        assert ctx.tenant_config is not None
+
+    def test_tenant_persona_limit_override(self, mock_state_machine, mock_flow_config):
+        """Tenant can override persona limits."""
+        # Tenant with custom limits for aggressive persona
+        tenant = TenantConfig(
+            tenant_id="enterprise",
+            persona_limits_override={
+                "aggressive": {"consecutive": 10, "total": 20},
+            }
+        )
+        bb = DialogueBlackboard(
+            state_machine=mock_state_machine,
+            flow_config=mock_flow_config,
+            tenant_config=tenant,
+        )
+        bb.begin_turn("greeting", {})
+        ctx = bb.get_context()
+
+        # Tenant override should take precedence
+        assert ctx.get_persona_limit("aggressive", "consecutive") == 10
+        assert ctx.get_persona_limit("aggressive", "total") == 20
+
+        # Non-overridden persona falls back to global
+        assert ctx.get_persona_limit("default", "consecutive") == 3
+
+    def test_tenant_feature_flags(self, mock_state_machine, mock_flow_config):
+        """Tenant can have custom feature flags."""
+        tenant = TenantConfig(
+            tenant_id="basic_tier",
+            features={
+                "escalation": False,  # Disabled for this tenant
+                "price_questions": True,
+            }
+        )
+        bb = DialogueBlackboard(
+            state_machine=mock_state_machine,
+            flow_config=mock_flow_config,
+            tenant_config=tenant,
+        )
+        bb.begin_turn("greeting", {})
+        ctx = bb.get_context()
+
+        assert ctx.is_tenant_feature_enabled("escalation") is False
+        assert ctx.is_tenant_feature_enabled("price_questions") is True
+        # Unknown features default to True
+        assert ctx.is_tenant_feature_enabled("unknown_feature") is True
+
 17.2 Test ConflictResolver
 
 # tests/test_conflict_resolver.py
