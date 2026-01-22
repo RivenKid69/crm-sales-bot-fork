@@ -527,6 +527,147 @@ class TestEdgeCases:
 
 
 # =============================================================================
+# Test Objection Limit Boundary (Bug Fix)
+# =============================================================================
+
+class TestObjectionLimitBoundary:
+    """
+    Test objection counter boundary behavior.
+
+    These tests verify the fix for objection counter overflow bug where
+    counter grows beyond limit (3→6) because soft_close.is_final=false
+    allowed the dialog to continue.
+
+    The fix has two parts:
+    1. Skip recording when limit already reached (_should_skip_objection_recording)
+    2. Make soft_close final when triggered by objection limit (_objection_limit_final flag)
+    """
+
+    def test_counter_stops_at_limit(self, sm):
+        """Counter should not increment beyond limit."""
+        # Record objections up to the limit
+        for i in range(MAX_CONSECUTIVE_OBJECTIONS):
+            sm.apply_rules(OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)])
+
+        # Counter should be at limit
+        assert sm.intent_tracker.objection_consecutive() == MAX_CONSECUTIVE_OBJECTIONS
+
+        # Now we're in soft_close, if dialog continues (because is_final might be false)
+        # additional objections should NOT increment the counter
+        current_count = sm.intent_tracker.objection_consecutive()
+
+        # Try to record more objections
+        for _ in range(3):
+            sm.apply_rules("objection_price")
+
+        # Counter should NOT have grown beyond limit
+        assert sm.intent_tracker.objection_consecutive() <= MAX_CONSECUTIVE_OBJECTIONS, (
+            f"Counter grew beyond limit: {sm.intent_tracker.objection_consecutive()} > {MAX_CONSECUTIVE_OBJECTIONS}. "
+            "Bug: objection recording not skipped when limit reached."
+        )
+
+    def test_soft_close_final_after_objection_limit(self, sm):
+        """soft_close is_final=True when triggered by objection limit."""
+        # Record objections up to the limit
+        for i in range(MAX_CONSECUTIVE_OBJECTIONS):
+            sm.process(OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)])
+
+        # Should be in soft_close with is_final=True
+        assert sm.state == "soft_close", f"Expected soft_close, got {sm.state}"
+
+        # Verify the flag was set
+        assert sm.collected_data.get("_objection_limit_final") == True, (
+            "_objection_limit_final flag not set when objection limit reached"
+        )
+
+        # Process another intent to get result
+        result = sm.process("greeting")  # Any intent
+
+        # is_final should be True because of objection_limit_final flag
+        assert result["is_final"] == True, (
+            "soft_close should be final when triggered by objection limit. "
+            "Bug: is_final not overridden by _objection_limit_final flag."
+        )
+
+    def test_soft_close_not_final_from_other_transitions(self, sm):
+        """soft_close is_final follows config when NOT triggered by objection limit."""
+        # Directly transition to soft_close without objection limit
+        sm.state = "greeting"
+        sm.apply_rules("rejection")  # This might lead to soft_close
+
+        # If we're in soft_close but not via objection limit
+        if sm.state == "soft_close":
+            # The _objection_limit_final flag should NOT be set
+            assert sm.collected_data.get("_objection_limit_final") is not True, (
+                "_objection_limit_final should not be set for non-objection-limit transitions"
+            )
+
+    def test_flag_cleared_on_reset(self, sm):
+        """_objection_limit_final cleared on reset()."""
+        # Record objections to trigger limit
+        for i in range(MAX_CONSECUTIVE_OBJECTIONS):
+            sm.apply_rules(OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)])
+
+        # Verify flag was set
+        assert sm.collected_data.get("_objection_limit_final") == True
+
+        # Reset
+        sm.reset()
+
+        # Flag should be cleared
+        assert sm.collected_data.get("_objection_limit_final") is None, (
+            "_objection_limit_final flag not cleared on reset()"
+        )
+
+    def test_should_skip_objection_recording_method(self, sm):
+        """_should_skip_objection_recording returns True when limit reached."""
+        # Initially should not skip
+        assert sm._should_skip_objection_recording("objection_price") == False
+
+        # Record objections up to limit
+        for i in range(MAX_CONSECUTIVE_OBJECTIONS):
+            sm.intent_tracker.record(
+                OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)],
+                sm.state
+            )
+
+        # Now should skip
+        assert sm._should_skip_objection_recording("objection_price") == True, (
+            "_should_skip_objection_recording should return True when limit reached"
+        )
+
+    def test_non_objection_intents_not_skipped(self, sm):
+        """Non-objection intents are never skipped."""
+        # Even at limit, non-objection intents should not be skipped
+        for i in range(MAX_CONSECUTIVE_OBJECTIONS):
+            sm.intent_tracker.record(
+                OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)],
+                sm.state
+            )
+
+        # Non-objection intents should not be skipped
+        assert sm._should_skip_objection_recording("greeting") == False
+        assert sm._should_skip_objection_recording("price_question") == False
+        assert sm._should_skip_objection_recording("agreement") == False
+
+    def test_total_limit_also_triggers_skip(self, sm):
+        """Total objection limit also triggers skip recording."""
+        # Interleave objections with positive intents to avoid consecutive limit
+        # but hit total limit
+        for i in range(MAX_TOTAL_OBJECTIONS):
+            sm.intent_tracker.record(
+                OBJECTION_INTENTS[i % len(OBJECTION_INTENTS)],
+                sm.state
+            )
+            if i < MAX_TOTAL_OBJECTIONS - 1:
+                # Record positive intent to break consecutive count
+                sm.intent_tracker.record("agreement", sm.state)
+
+        # Total limit reached, should skip
+        assert sm._should_skip_objection_recording("objection_price") == True
+
+
+# =============================================================================
 # Run Tests
 # =============================================================================
 

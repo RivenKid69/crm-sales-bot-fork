@@ -553,6 +553,10 @@ class StateMachine:
         self.last_action = None
         self._state_before_objection = None
 
+        # Clear objection limit flag (also cleared by collected_data = {} above,
+        # but explicit clear for documentation)
+        self.collected_data.pop("_objection_limit_final", None)
+
     # =========================================================================
     # Phase 4: Objection tracking via IntentTracker
     # =========================================================================
@@ -599,6 +603,36 @@ class StateMachine:
             )
             return True
 
+        return False
+
+    def _should_skip_objection_recording(self, intent: str) -> bool:
+        """
+        Check if objection recording should be skipped.
+
+        Prevents counter from growing beyond limit when soft_close
+        continues the dialog (e.g., when is_final=false).
+
+        Args:
+            intent: The intent to check
+
+        Returns:
+            True if recording should be skipped (limit already reached)
+        """
+        if intent not in OBJECTION_INTENTS:
+            return False
+
+        # Check if limit already reached
+        consecutive = self.intent_tracker.objection_consecutive()
+        total = self.intent_tracker.objection_total()
+
+        if consecutive >= self.max_consecutive_objections or total >= self.max_total_objections:
+            logger.debug(
+                "Skipping objection recording - limit already reached",
+                intent=intent,
+                consecutive=consecutive,
+                total=total
+            )
+            return True
         return False
 
     # Backward compatibility property for objection_flow
@@ -936,14 +970,23 @@ class StateMachine:
 
         # Check condition if specified
         condition = priority.get("condition")
-        if condition and not self._evaluate_priority_condition(condition, ctx, config):
-            # Check 'else' clause
-            else_action = priority.get("else")
-            if else_action == "use_transitions":
-                next_state = self._resolve_transition(intent, transitions, ctx, trace)
-                if next_state:
-                    return f"transition_to_{next_state}", next_state
-            return None
+        condition_matched = False
+        if condition:
+            condition_matched = self._evaluate_priority_condition(condition, ctx, config)
+            if not condition_matched:
+                # Check 'else' clause
+                else_action = priority.get("else")
+                if else_action == "use_transitions":
+                    next_state = self._resolve_transition(intent, transitions, ctx, trace)
+                    if next_state:
+                        return f"transition_to_{next_state}", next_state
+                return None
+
+        # Mark soft_close as final when triggered by objection limit
+        if condition == "objection_limit_reached" and condition_matched:
+            action = priority.get("action", "")
+            if action == "transition_to_soft_close" or action.endswith("soft_close"):
+                self.collected_data["_objection_limit_final"] = True
 
         # Check feature flag if specified
         feature_flag = priority.get("feature_flag")
@@ -1254,8 +1297,11 @@ class StateMachine:
         # =====================================================================
         # Phase 4 STEP 1: Record intent in IntentTracker FIRST
         # This must happen BEFORE any condition evaluation
+        # EXCEPTION: Skip recording objections when limit already reached
+        # to prevent counter overflow (3→6) when soft_close continues
         # =====================================================================
-        self.intent_tracker.record(intent, self.state)
+        if not self._should_skip_objection_recording(intent):
+            self.intent_tracker.record(intent, self.state)
 
         # =====================================================================
         # DAG STEP: Check if current state is a DAG node
@@ -1364,6 +1410,8 @@ class StateMachine:
                 if trace:
                     trace.set_result("objection_limit_reached", Resolution.CONDITION_MATCHED, "objection_limit_reached")
                 self._last_trace = trace
+                # Mark soft_close as final when triggered by objection limit
+                self.collected_data["_objection_limit_final"] = True
                 return "objection_limit_reached", "soft_close"
 
             # Иначе обрабатываем через transitions (handle_objection или soft_close)
@@ -1619,6 +1667,14 @@ class StateMachine:
         optional = config.get("optional_data", [])
         optional_missing = [f for f in optional if not self.collected_data.get(f)]
 
+        # Determine is_final
+        is_final = config.get("is_final", False)
+        # Override for objection limit triggered soft_close
+        # When soft_close is reached via objection_limit, force it to be final
+        # This prevents dialog from continuing and objection counter overflow
+        if self.state == "soft_close" and self.collected_data.get("_objection_limit_final"):
+            is_final = True
+
         result = {
             "action": action,
             "prev_state": prev_state,
@@ -1627,7 +1683,7 @@ class StateMachine:
             "collected_data": self.collected_data.copy(),
             "missing_data": missing,
             "optional_data": optional_missing,
-            "is_final": config.get("is_final", False),
+            "is_final": is_final,
             "spin_phase": self.spin_phase,
             "circular_flow": self.circular_flow.get_stats(),
             # Phase 4: Use IntentTracker-based stats (backward compat)

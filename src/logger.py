@@ -15,10 +15,17 @@ JSON-логи для production, readable для dev.
 import logging
 import json
 import os
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from settings import settings
+
+
+# Thread/context-local storage for conversation tracking
+# Uses ContextVar to ensure isolation between threads in parallel batch runs
+_conversation_id_var: ContextVar[Optional[str]] = ContextVar('conversation_id', default=None)
+_extra_context_var: ContextVar[Optional[Dict[str, Any]]] = ContextVar('extra_context', default=None)
 
 
 class StructuredLogger:
@@ -35,8 +42,8 @@ class StructuredLogger:
     def __init__(self, name: str):
         self.name = name
         self.logger = logging.getLogger(name)
-        self._conversation_id: Optional[str] = None
-        self._extra_context: Dict[str, Any] = {}
+        # Note: _conversation_id and _extra_context are now stored in ContextVars
+        # for thread-safety. Access via properties below.
 
         # Настройка логгера (только если еще не настроен)
         if not self.logger.handlers:
@@ -74,24 +81,35 @@ class StructuredLogger:
 
     @property
     def conversation_id(self) -> Optional[str]:
-        """Текущий conversation_id"""
-        return self._conversation_id
+        """Thread/context-local conversation_id"""
+        return _conversation_id_var.get()
 
     def set_conversation(self, conv_id: str) -> None:
-        """Установить conversation_id для трейсинга"""
-        self._conversation_id = conv_id
+        """Set conversation_id (thread/context-local)"""
+        _conversation_id_var.set(conv_id)
 
     def clear_conversation(self) -> None:
-        """Очистить conversation_id"""
-        self._conversation_id = None
+        """Clear conversation_id"""
+        _conversation_id_var.set(None)
+
+    @property
+    def _extra_context(self) -> Dict[str, Any]:
+        """Thread/context-local extra context"""
+        ctx = _extra_context_var.get()
+        if ctx is None:
+            ctx = {}
+            _extra_context_var.set(ctx)
+        return ctx
 
     def set_context(self, **kwargs: Any) -> None:
-        """Установить дополнительный контекст для всех логов"""
-        self._extra_context.update(kwargs)
+        """Set extra context (thread/context-local)"""
+        ctx = self._extra_context
+        ctx.update(kwargs)
+        _extra_context_var.set(ctx)
 
     def clear_context(self) -> None:
-        """Очистить дополнительный контекст"""
-        self._extra_context.clear()
+        """Clear extra context"""
+        _extra_context_var.set({})
 
     def _format_structured(self, level: str, message: str, **kwargs: Any) -> Dict[str, Any]:
         """Форматирование структурированного лога"""
@@ -103,8 +121,8 @@ class StructuredLogger:
         }
 
         # Добавляем conversation_id если есть
-        if self._conversation_id:
-            log_entry["conversation_id"] = self._conversation_id
+        if self.conversation_id:
+            log_entry["conversation_id"] = self.conversation_id
 
         # Добавляем постоянный контекст
         if self._extra_context:
@@ -133,8 +151,8 @@ class StructuredLogger:
             else:
                 full_message = message
 
-            if self._conversation_id:
-                full_message = f"[{self._conversation_id}] {full_message}"
+            if self.conversation_id:
+                full_message = f"[{self.conversation_id}] {full_message}"
 
             log_method(full_message)
 
@@ -172,8 +190,8 @@ class StructuredLogger:
             else:
                 full_message = message
 
-            if self._conversation_id:
-                full_message = f"[{self._conversation_id}] {full_message}"
+            if self.conversation_id:
+                full_message = f"[{self.conversation_id}] {full_message}"
 
             self.logger.exception(full_message)
 

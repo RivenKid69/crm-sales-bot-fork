@@ -424,5 +424,207 @@ class TestLoggerThreadSafety:
         assert len(errors) == 0, f"Errors during concurrent logging: {errors}"
 
 
+class TestLoggerContextIsolation:
+    """
+    Tests for thread-safe context isolation using ContextVar.
+
+    These tests verify that conversation_id and extra_context are isolated
+    between threads, preventing race conditions in parallel batch runs.
+    """
+
+    def test_conversation_id_isolated_between_threads(self):
+        """Each thread has its own conversation_id"""
+        import threading
+        import time
+
+        log = create_test_logger("isolation_conv")
+        results = {}
+        errors = []
+
+        def set_and_check_conversation(thread_id):
+            try:
+                conv_id = f"conv_{thread_id}"
+                log.set_conversation(conv_id)
+                time.sleep(0.01)  # Give other threads a chance to interfere
+                # Verify our conversation_id wasn't overwritten by another thread
+                actual = log.conversation_id
+                results[thread_id] = actual
+            except Exception as e:
+                errors.append(e)
+
+        threads = [
+            threading.Thread(target=set_and_check_conversation, args=(i,))
+            for i in range(10)
+        ]
+
+        for t in threads:
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        assert len(errors) == 0, f"Errors: {errors}"
+
+        # Each thread should have its own conversation_id preserved
+        for thread_id, actual in results.items():
+            expected = f"conv_{thread_id}"
+            assert actual == expected, (
+                f"Thread {thread_id} expected '{expected}' but got '{actual}'. "
+                "Race condition detected - conversation_id not isolated."
+            )
+
+    def test_context_isolated_between_threads(self):
+        """Each thread has its own extra_context"""
+        import threading
+        import time
+
+        log = create_test_logger("isolation_ctx")
+        results = {}
+        errors = []
+
+        def set_and_check_context(thread_id):
+            try:
+                log.set_context(thread_id=thread_id, unique_key=f"value_{thread_id}")
+                time.sleep(0.01)  # Give other threads a chance to interfere
+                # Verify our context wasn't overwritten by another thread
+                ctx = log._extra_context
+                results[thread_id] = ctx.copy()
+            except Exception as e:
+                errors.append(e)
+
+        threads = [
+            threading.Thread(target=set_and_check_context, args=(i,))
+            for i in range(10)
+        ]
+
+        for t in threads:
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        assert len(errors) == 0, f"Errors: {errors}"
+
+        # Each thread should have its own context preserved
+        for thread_id, ctx in results.items():
+            assert ctx.get("thread_id") == thread_id, (
+                f"Thread {thread_id} context corrupted: {ctx}. "
+                "Race condition detected - extra_context not isolated."
+            )
+            assert ctx.get("unique_key") == f"value_{thread_id}", (
+                f"Thread {thread_id} context corrupted: {ctx}. "
+                "Race condition detected - extra_context not isolated."
+            )
+
+    def test_clear_only_affects_current_thread(self):
+        """clear_conversation only clears current thread's conversation_id"""
+        import threading
+        import time
+
+        log = create_test_logger("isolation_clear")
+        barrier = threading.Barrier(2)
+        results = {"thread_0": None, "thread_1": None}
+        errors = []
+
+        def thread_0_clears():
+            try:
+                log.set_conversation("conv_0")
+                barrier.wait()  # Wait for thread_1 to set its conversation
+                time.sleep(0.005)  # Small delay
+                log.clear_conversation()
+                barrier.wait()  # Wait for thread_1 to check
+                results["thread_0"] = log.conversation_id
+            except Exception as e:
+                errors.append(e)
+
+        def thread_1_keeps():
+            try:
+                log.set_conversation("conv_1")
+                barrier.wait()  # Signal thread_0
+                barrier.wait()  # Wait for thread_0 to clear
+                time.sleep(0.005)
+                # Our conversation_id should NOT be affected by thread_0's clear
+                results["thread_1"] = log.conversation_id
+            except Exception as e:
+                errors.append(e)
+
+        t0 = threading.Thread(target=thread_0_clears)
+        t1 = threading.Thread(target=thread_1_keeps)
+
+        t0.start()
+        t1.start()
+
+        t0.join()
+        t1.join()
+
+        assert len(errors) == 0, f"Errors: {errors}"
+
+        # thread_0 should have None after clearing
+        assert results["thread_0"] is None, (
+            f"Thread 0 should have None after clear, got {results['thread_0']}"
+        )
+
+        # thread_1's conversation_id should be preserved
+        assert results["thread_1"] == "conv_1", (
+            f"Thread 1's conversation_id was affected by thread 0's clear. "
+            f"Expected 'conv_1', got '{results['thread_1']}'. "
+            "Race condition detected - clear affected other thread."
+        )
+
+    def test_clear_context_only_affects_current_thread(self):
+        """clear_context only clears current thread's extra_context"""
+        import threading
+        import time
+
+        log = create_test_logger("isolation_clear_ctx")
+        barrier = threading.Barrier(2)
+        results = {"thread_0": None, "thread_1": None}
+        errors = []
+
+        def thread_0_clears():
+            try:
+                log.set_context(user="user_0")
+                barrier.wait()
+                time.sleep(0.005)
+                log.clear_context()
+                barrier.wait()
+                results["thread_0"] = log._extra_context.copy()
+            except Exception as e:
+                errors.append(e)
+
+        def thread_1_keeps():
+            try:
+                log.set_context(user="user_1")
+                barrier.wait()
+                barrier.wait()
+                time.sleep(0.005)
+                results["thread_1"] = log._extra_context.copy()
+            except Exception as e:
+                errors.append(e)
+
+        t0 = threading.Thread(target=thread_0_clears)
+        t1 = threading.Thread(target=thread_1_keeps)
+
+        t0.start()
+        t1.start()
+
+        t0.join()
+        t1.join()
+
+        assert len(errors) == 0, f"Errors: {errors}"
+
+        # thread_0 should have empty context after clearing
+        assert results["thread_0"] == {}, (
+            f"Thread 0 should have empty context after clear, got {results['thread_0']}"
+        )
+
+        # thread_1's context should be preserved
+        assert results["thread_1"].get("user") == "user_1", (
+            f"Thread 1's context was affected by thread 0's clear. "
+            f"Expected user='user_1', got '{results['thread_1']}'. "
+            "Race condition detected - clear_context affected other thread."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
