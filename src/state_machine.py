@@ -527,6 +527,107 @@ class StateMachine:
         self.collected_data.pop("_objection_limit_final", None)
 
     # =========================================================================
+    # Atomic State Transition (FIX: Distributed State Mutation)
+    # =========================================================================
+
+    def transition_to(
+        self,
+        next_state: str,
+        action: Optional[str] = None,
+        phase: Optional[str] = None,
+        source: str = "unknown",
+        validate: bool = True,
+    ) -> bool:
+        """
+        Atomically transition to a new state with consistent updates.
+
+        This method is the SINGLE POINT OF CONTROL for state changes,
+        ensuring that state, current_phase, and last_action are always
+        consistent with each other.
+
+        DESIGN RATIONALE (FIX for Distributed State Mutation bug):
+        Previously, orchestrator and bot.py both directly modified
+        state_machine.state, leading to inconsistencies where:
+        - state = "spin_implication" (from bot.py)
+        - current_phase = "problem" (from orchestrator for different state)
+
+        This method ensures atomicity by:
+        1. Validating the target state exists (if validate=True)
+        2. Computing phase from flow config if not provided
+        3. Updating state, current_phase, last_action together
+        4. Logging the transition for debugging
+
+        Args:
+            next_state: Target state to transition to
+            action: Action that triggered this transition (optional)
+            phase: Phase for the new state (computed from config if not provided)
+            source: Identifier for debugging (e.g., "orchestrator", "policy_override")
+            validate: If True, validate that next_state exists in flow config
+
+        Returns:
+            True if transition was successful, False if validation failed
+
+        Example:
+            # Instead of:
+            #   state_machine.state = "spin_problem"
+            #   state_machine.current_phase = "problem"  # might forget this!
+            #
+            # Use:
+            state_machine.transition_to(
+                next_state="spin_problem",
+                action="ask_problem_questions",
+                source="orchestrator"
+            )
+        """
+        prev_state = self.state
+
+        # Validation: check if target state exists in flow config
+        if validate and self._flow:
+            if next_state not in self._flow.states:
+                logger.warning(
+                    f"transition_to: Invalid state '{next_state}' - not in flow config",
+                    source=source,
+                    current_state=prev_state,
+                )
+                return False
+
+        # Compute phase from flow config if not provided
+        if phase is None and self._flow:
+            state_config = self._flow.states.get(next_state, {})
+            phase = state_config.get("phase") or state_config.get("spin_phase")
+
+        # ATOMIC UPDATE: All three attributes are updated together
+        self.state = next_state
+        self.current_phase = phase
+        if action is not None:
+            self.last_action = action
+
+        # Log transition for debugging
+        if prev_state != next_state:
+            logger.debug(
+                f"State transition: {prev_state} -> {next_state}",
+                phase=phase,
+                action=action,
+                source=source,
+            )
+
+        return True
+
+    def sync_phase_from_state(self) -> None:
+        """
+        Synchronize current_phase with the current state.
+
+        Call this after external code directly modifies state_machine.state
+        to ensure current_phase is consistent.
+
+        This is a SAFETY NET for backward compatibility with code that
+        still directly assigns to state_machine.state.
+        """
+        if self._flow:
+            state_config = self._flow.states.get(self.state, {})
+            self.current_phase = state_config.get("phase") or state_config.get("spin_phase")
+
+    # =========================================================================
     # Phase 4: Objection tracking via IntentTracker
     # =========================================================================
 

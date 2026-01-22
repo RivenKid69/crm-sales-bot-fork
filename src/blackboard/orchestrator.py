@@ -452,7 +452,7 @@ class DialogueOrchestrator:
 
         CRITICALLY IMPORTANT: These side effects are necessary for correct operation:
         1. IntentTracker.record() - intent history for conditions
-        2. state update - state transition
+        2. state update - state transition (via transition_to for atomicity)
         3. last_action update - for contextual classification
         4. current_phase update - for SPIN phase
         5. on_enter flags - flags when entering state
@@ -465,49 +465,60 @@ class DialogueOrchestrator:
 
         ORDER OF CALLS in bot.py:
         1. state_machine.increment_turn()           # bot.py line 637
-        2. state_machine.state = skip_next_state    # bot.py line 743 (fallback)
+        2. state_machine.transition_to(skip_next_state, source="fallback_skip")
         3. collected_data["competitor"] = ...       # bot.py lines 773-776
         4. orchestrator.process_turn()              # bot.py -> HERE WE ARE
-        5. state_machine.state = policy_next_state  # bot.py line 944 (override)
+        5. state_machine.transition_to(policy_next_state, source="policy_override")
+
+        FIX (Distributed State Mutation bug):
+        Previously, this method directly assigned state, last_action, and current_phase
+        separately, which could lead to inconsistencies when bot.py also directly
+        modified state. Now we use transition_to() for atomic updates.
 
         Args:
             decision: The resolved decision
             prev_state: State before this turn
             state_changed: Whether state transition occurred
         """
-        # 1. Update state machine state
-        self._state_machine.state = decision.next_state
-
-        # 2. Update last_action for context
-        self._state_machine.last_action = decision.action
-
-        # 3. Update current phase from state config
+        # Get state configuration for on_enter logic
         next_config = self._flow_config.states.get(decision.next_state, {})
-        self._state_machine.current_phase = (
-            next_config.get("phase") or next_config.get("spin_phase")
-        )
 
-        # 4. Apply data_updates to collected_data
-        if decision.data_updates:
-            self._state_machine.update_data(decision.data_updates)
-
-        # 5. Apply on_enter flags when state changes
+        # Compute final action (considering on_enter override)
+        final_action = decision.action
         if state_changed:
-            on_enter_flags = self._flow_config.get_state_on_enter_flags(decision.next_state)
-            for flag_name, flag_value in on_enter_flags.items():
-                self._state_machine.collected_data[flag_name] = flag_value
-
-            # 6. Apply on_enter action override if configured
             on_enter = next_config.get("on_enter")
             if on_enter:
                 on_enter_action = (
                     on_enter.get("action") if isinstance(on_enter, dict) else on_enter
                 )
                 if on_enter_action:
-                    decision.action = on_enter_action
+                    final_action = on_enter_action
+                    decision.action = on_enter_action  # Update decision for consistency
                     logger.debug(f"on_enter action override: {on_enter_action}")
 
-        # 7. Apply flags_to_set from decision
+        # 1. ATOMIC STATE TRANSITION via transition_to()
+        # This ensures state, current_phase, and last_action are always consistent
+        # Compute phase from flow config to pass explicitly
+        phase = next_config.get("phase") or next_config.get("spin_phase")
+        self._state_machine.transition_to(
+            next_state=decision.next_state,
+            action=final_action,
+            phase=phase,
+            source="orchestrator",
+            validate=False,  # Already validated by ProposalValidator
+        )
+
+        # 2. Apply data_updates to collected_data
+        if decision.data_updates:
+            self._state_machine.update_data(decision.data_updates)
+
+        # 3. Apply on_enter flags when state changes
+        if state_changed:
+            on_enter_flags = self._flow_config.get_state_on_enter_flags(decision.next_state)
+            for flag_name, flag_value in on_enter_flags.items():
+                self._state_machine.collected_data[flag_name] = flag_value
+
+        # 4. Apply flags_to_set from decision
         if decision.flags_to_set:
             for flag_name, flag_value in decision.flags_to_set.items():
                 self._state_machine.collected_data[flag_name] = flag_value

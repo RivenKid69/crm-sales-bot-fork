@@ -28,18 +28,25 @@ class IStateMachine(Protocol):
     remain in StateMachine and are called directly from bot.py.
 
     Methods that Blackboard USES (via protocol):
-    - state (read/write)
+    - state (read/write) - DEPRECATED for direct write, use transition_to()
     - collected_data (read)
     - update_data() (write)
-    - current_phase (read/write)
-    - last_action (write)
+    - current_phase (read/write) - DEPRECATED for direct write, use transition_to()
+    - last_action (write) - DEPRECATED for direct write, use transition_to()
     - is_final()
+    - transition_to() - RECOMMENDED: atomic state transition with consistency
 
     Methods that bot.py calls DIRECTLY (out of scope for Blackboard):
     - increment_turn() - for disambiguation cooldown
     - enter_disambiguation() / exit_disambiguation() / resolve_disambiguation()
     - in_disambiguation / disambiguation_context / turns_since_last_disambiguation
     - reset() - for new conversation
+
+    STATE MUTATION POLICY:
+    All state changes SHOULD go through transition_to() to ensure atomicity
+    and consistency between state, current_phase, and last_action.
+    Direct assignment to state is supported for backward compatibility but
+    may lead to inconsistencies (e.g., state != phase mismatch).
     """
 
     @property
@@ -88,6 +95,42 @@ class IStateMachine(Protocol):
 
     def is_final(self) -> bool:
         """Check if current state is final."""
+        ...
+
+    def transition_to(
+        self,
+        next_state: str,
+        action: Optional[str] = None,
+        phase: Optional[str] = None,
+        source: str = "unknown",
+        validate: bool = True,
+    ) -> bool:
+        """
+        Atomically transition to a new state with consistent updates.
+
+        This method is the SINGLE POINT OF CONTROL for state changes,
+        ensuring that state, current_phase, and last_action are always
+        consistent with each other.
+
+        Args:
+            next_state: Target state to transition to
+            action: Action that triggered this transition (optional)
+            phase: Phase for the new state (computed from config if not provided)
+            source: Identifier for debugging (e.g., "orchestrator", "policy_override")
+            validate: If True, validate that next_state exists in flow config
+
+        Returns:
+            True if transition was successful, False if validation failed
+        """
+        ...
+
+    def sync_phase_from_state(self) -> None:
+        """
+        Synchronize current_phase with the current state.
+
+        Call this after external code directly modifies state_machine.state
+        to ensure current_phase is consistent.
+        """
         ...
 
 

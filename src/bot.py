@@ -754,9 +754,14 @@ class SalesBot:
                     }
 
                 # FIX: Handle "skip" action - apply state transition to break loops
+                # FIX (Distributed State Mutation): Use transition_to() for atomic update
                 elif fb_result.get("action") == "skip" and fb_result.get("next_state"):
                     skip_next_state = fb_result["next_state"]
-                    self.state_machine.state = skip_next_state
+                    self.state_machine.transition_to(
+                        next_state=skip_next_state,
+                        action="skip",
+                        source="fallback_skip",
+                    )
                     logger.info(
                         "Fallback skip applied - resetting fallback for normal generation",
                         from_state=current_state,
@@ -969,7 +974,13 @@ class SalesBot:
                     )
                 else:
                     sm_result["next_state"] = policy_override.next_state
-                    self.state_machine.state = policy_override.next_state
+                    # FIX (Distributed State Mutation): Use transition_to() for atomic update
+                    # This ensures current_phase is consistent with the new state
+                    self.state_machine.transition_to(
+                        next_state=policy_override.next_state,
+                        action=policy_override.action,
+                        source="policy_override",
+                    )
 
         # Decision Tracing: Record policy override
         if trace_builder:

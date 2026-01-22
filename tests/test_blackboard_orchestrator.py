@@ -89,6 +89,30 @@ class MockStateMachine:
     def is_final(self) -> bool:
         return self._state in ("closed", "rejected")
 
+    def transition_to(
+        self,
+        next_state: str,
+        action: Optional[str] = None,
+        phase: Optional[str] = None,
+        source: str = "unknown",
+        validate: bool = True,
+    ) -> bool:
+        """
+        Atomically transition to a new state with consistent updates.
+
+        FIX (Distributed State Mutation bug): This method ensures that
+        state, current_phase, and last_action are updated atomically.
+        """
+        self._state = next_state
+        self._current_phase = phase
+        if action is not None:
+            self._last_action = action
+        return True
+
+    def sync_phase_from_state(self) -> None:
+        """Synchronize current_phase with the current state."""
+        pass  # Mock doesn't have flow config to sync from
+
 
 class MockCircularFlow:
     """Mock CircularFlowManager."""
