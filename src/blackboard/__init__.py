@@ -51,6 +51,10 @@ Key Components (Stage 9 - DialogueEventBus):
 - DialogueEventBus: Event bus for observability and analytics
 - MetricsCollector: Subscriber that collects metrics from events
 - DebugLogger: Subscriber that logs detailed debug information
+
+Key Components (Stage 10 - DialogueOrchestrator):
+- DialogueOrchestrator: Main coordinator for the Dialogue Blackboard System
+- create_orchestrator: Factory function to create a fully configured orchestrator
 """
 
 from .enums import Priority, ProposalType
@@ -91,6 +95,10 @@ from .event_bus import (
     DialogueEventBus,
     MetricsCollector,
     DebugLogger,
+)
+from .orchestrator import (
+    DialogueOrchestrator,
+    create_orchestrator,
 )
 
 __all__ = [
@@ -136,4 +144,7 @@ __all__ = [
     "DialogueEventBus",
     "MetricsCollector",
     "DebugLogger",
+    # Orchestrator (Stage 10)
+    "DialogueOrchestrator",
+    "create_orchestrator",
 ]
