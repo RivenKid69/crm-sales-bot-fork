@@ -11,20 +11,22 @@ Each source has a single responsibility:
 - DataCollectorSource: Tracks data completeness and proposes transitions
 - ObjectionGuardSource: Monitors objection limits per persona (Этап 7)
 - IntentProcessorSource: Maps intents to actions via rules (Этап 7)
-
-Future sources (Этап 8):
-- TransitionResolverSource: Handles intent-based state transitions
-- EscalationSource: Detects escalation triggers for human handoff
+- TransitionResolverSource: Handles intent-based state transitions (Этап 8)
+- EscalationSource: Detects escalation triggers for human handoff (Этап 8)
 """
 
 from .price_question import PriceQuestionSource
 from .data_collector import DataCollectorSource
 from .objection_guard import ObjectionGuardSource
 from .intent_processor import IntentProcessorSource
+from .transition_resolver import TransitionResolverSource
+from .escalation import EscalationSource
 
 __all__ = [
     "PriceQuestionSource",
     "DataCollectorSource",
     "ObjectionGuardSource",
     "IntentProcessorSource",
+    "TransitionResolverSource",
+    "EscalationSource",
 ]
