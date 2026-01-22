@@ -4372,7 +4372,7 @@ def create_orchestrator(
 13. Configuration (YAML)
 13.1 Обновление constants.yaml
 
-# yaml_config/constants.yaml
+# src/yaml_config/constants.yaml
 
 # ==============================================================================
 # BLACKBOARD SYSTEM CONFIGURATION
@@ -4709,7 +4709,7 @@ feature_flags:
 # blackboard_source_*: УДАЛЕНЫ — управление через constants.yaml
 13.3 Добавление human_handoff state
 
-# yaml_config/flows/_base/states.yaml (additions)
+# src/yaml_config/flows/_base/states.yaml (additions)
 
 human_handoff:
   goal: "Передать разговор человеку"
@@ -4897,17 +4897,19 @@ class SalesBot:
         return self._orchestrator.get_turn_summary()
 
 
-# УДАЛЁННЫЙ КОД (для справки что было убрано):
+# ИЗМЕНЕНИЯ В bot.py (для справки):
 #
-# - _process_legacy() — УДАЛЁН (использовал apply_rules)
-# - _process_shadow_mode() — УДАЛЁН (сравнение систем)
-# - _compare_shadow_results() — УДАЛЁН
-# - _should_use_blackboard() — УДАЛЁН (всегда Blackboard)
-# - _should_run_shadow_mode() — УДАЛЁН
-# - get_shadow_stats() — УДАЛЁН
-# - reset_shadow_stats() — УДАЛЁН
-# - _shadow_stats dictionary — УДАЛЁН
-# - FeatureFlags dependency для switching — УДАЛЁН
+# ПРИМЕЧАНИЕ: Shadow mode методы НЕ СУЩЕСТВОВАЛИ в кодовой базе,
+# так как стратегия "ПОЛНАЯ ЗАМЕНА" была выбрана изначально.
+# Основное изменение — замена вызова apply_rules() на Blackboard:
+#
+# БЫЛО:
+#   action, next_state = self._state_machine.apply_rules(intent, context_envelope)
+#
+# СТАЛО:
+#   decision = self._orchestrator.process(intent, context_envelope)
+#   action = decision.action
+#   next_state = decision.next_state
 15. Migration Plan (Updated: 6-8 weeks) — ПОЛНАЯ ЗАМЕНА
 15.1 Timeline Overview
 
@@ -5045,21 +5047,24 @@ Tasks:
 
 Week 5:
 ├── Day 1-2: Legacy Code Removal
-│   ├── DELETE: StateMachine.apply_rules() method
-│   ├── DELETE: StateMachine._check_data_complete()
-│   ├── DELETE: StateMachine._process_intent_rules()
-│   ├── DELETE: All priority-based rule processing in state_machine.py
+│   ├── DELETE: StateMachine.apply_rules() method (строки 1265-1588)
+│   ├── DELETE: StateMachine._apply_rules_priority_driven() (строки 1190-1263)
+│   ├── DELETE: StateMachine._apply_priority() (строки 940-1045)
+│   ├── DELETE: StateMachine._priority_matches_intent() (строки 1047-1097)
+│   ├── DELETE: StateMachine._evaluate_priority_condition() (строки 1100-1128)
+│   ├── DELETE: StateMachine._call_priority_handler() (строки 1130-1188)
+│   ├── DELETE: class RuleResult (строки 58-89)
 │   ├── KEEP: StateMachine.state, collected_data, is_final() (used by Blackboard)
 │   ├── KEEP: IntentTracker (used by Blackboard)
 │   └── Update imports throughout codebase
 │
-├── Day 3-4: Configuration Cleanup
-│   ├── REMOVE: feature flags for legacy/blackboard switching
-│   ├── REMOVE: shadow_mode configuration
-│   ├── REMOVE: blackboard_traffic_percentage
+├── Day 3-4: Configuration Cleanup & Bot Integration
+│   ├── REMOVE: feature flags for legacy/blackboard switching (если существуют)
+│   ├── REMOVE: shadow_mode configuration (если существует)
+│   ├── REMOVE: blackboard_traffic_percentage (если существует)
 │   ├── UPDATE: constants.yaml (keep only Blackboard config)
-│   ├── UPDATE: settings.yaml (remove legacy flags)
-│   └── SIMPLIFY: bot.py (remove all legacy code paths)
+│   ├── UPDATE: settings.yaml (remove legacy flags если есть)
+│   └── MODIFY: bot.py (заменить вызовы apply_rules на Orchestrator)
 │
 └── Day 5: Final Integration Testing
     ├── Run full test suite
@@ -5098,34 +5103,32 @@ No increase in error rates
 
 DELETED CODE (comprehensive list):
 
-# src/state_machine.py — УДАЛИТЬ:
-- apply_rules() method (~200 lines)
-- _check_data_complete() method
-- _process_intent_rules() method
-- _evaluate_rule_conditions() method
-- _get_priority_action() method
-- All RuleResult related code
+# src/state_machine.py — УДАЛИТЬ (~650 строк):
+- apply_rules() method (строки 1265-1588, ~324 строки) — основной метод legacy системы
+- _apply_rules_priority_driven() method (строки 1190-1263, ~74 строки)
+- _apply_priority() method (строки 940-1045, ~106 строк)
+- _priority_matches_intent() method (строки 1047-1097, ~51 строка)
+- _evaluate_priority_condition() method (строки 1100-1128, ~29 строк)
+- _call_priority_handler() method (строки 1130-1188, ~59 строк)
+- class RuleResult (строки 58-89, ~32 строки)
 
-# src/bot.py — УДАЛИТЬ:
-- _process_legacy() method
-- _process_shadow_mode() method
-- _compare_shadow_results() method
-- _should_use_blackboard() method
-- _should_run_shadow_mode() method
-- get_shadow_stats() method
-- reset_shadow_stats() method
-- _shadow_stats dictionary
-- All conditional logic choosing between systems
+# src/bot.py — МОДИФИКАЦИЯ (НЕ удаление):
+# ПРИМЕЧАНИЕ: Shadow mode методы (_process_shadow_mode, _compare_shadow_results и т.д.)
+# НЕ СУЩЕСТВУЮТ в текущей кодовой базе, так как стратегия "ПОЛНАЯ ЗАМЕНА"
+# была выбрана изначально. Модификация bot.py заключается в:
+- Замене вызовов state_machine.apply_rules() на DialogueOrchestrator.process()
+- Интеграции с новым Blackboard API
+- Обновлении обработки результатов (ResolvedDecision вместо Tuple[str, str])
 
-# yaml_config/settings.yaml — УДАЛИТЬ:
+# src/settings.yaml — ПРОВЕРИТЬ И УДАЛИТЬ (если существуют):
 - blackboard_enabled flag
 - blackboard_shadow_mode flag
 - blackboard_traffic_percentage flag
-- All legacy/blackboard switching flags
+- Любые legacy/blackboard switching flags
 
-# yaml_config/constants.yaml — УДАЛИТЬ:
+# src/yaml_config/constants.yaml — ПРОВЕРИТЬ И УДАЛИТЬ (если существуют):
 - shadow_mode section
-- Any legacy-specific configuration
+- Любая legacy-specific configuration
 15.5 Phase 4: Stabilization & Documentation (Week 7-8) — BUFFER
 Goals:
 
@@ -5271,33 +5274,27 @@ tests/
 
 === МОДИФИЦИРУЕМЫЕ ФАЙЛЫ ===
 
-src/bot.py                         # ПЕРЕПИСАН: использует только Blackboard
+src/bot.py                         # МОДИФИЦИРОВАН: использует DialogueOrchestrator
 src/state_machine.py               # ОЧИЩЕН: удалён apply_rules() и связанный код
-yaml_config/constants.yaml         # ОБНОВЛЁН: Blackboard config
-yaml_config/settings.yaml          # ОЧИЩЕН: удалены legacy flags
+src/yaml_config/constants.yaml     # ОБНОВЛЁН: Blackboard config (если нужны изменения)
+src/settings.yaml                  # ОЧИЩЕН: удалены legacy flags (если существуют)
 
 === УДАЛЯЕМЫЙ КОД (из существующих файлов) ===
 
-# src/state_machine.py — УДАЛИТЬ (~300 строк):
-StateMachine.apply_rules()         # Основной метод legacy системы
-StateMachine._check_data_complete()
-StateMachine._process_intent_rules()
-StateMachine._evaluate_rule_conditions()
-StateMachine._get_priority_action()
-StateMachine._apply_rule_result()
-RuleResult class                   # Если определён здесь
+# src/state_machine.py — УДАЛИТЬ (~650 строк):
+StateMachine.apply_rules()                # строки 1265-1588 (~324 строки)
+StateMachine._apply_rules_priority_driven() # строки 1190-1263 (~74 строки)
+StateMachine._apply_priority()            # строки 940-1045 (~106 строк)
+StateMachine._priority_matches_intent()   # строки 1047-1097 (~51 строка)
+StateMachine._evaluate_priority_condition() # строки 1100-1128 (~29 строк)
+StateMachine._call_priority_handler()     # строки 1130-1188 (~59 строк)
+class RuleResult                          # строки 58-89 (~32 строки)
 
-# src/bot.py — УДАЛИТЬ (~150 строк):
-SalesBot._process_legacy()
-SalesBot._process_shadow_mode()
-SalesBot._compare_shadow_results()
-SalesBot._should_use_blackboard()
-SalesBot._should_run_shadow_mode()
-SalesBot.get_shadow_stats()
-SalesBot.reset_shadow_stats()
-SalesBot._shadow_stats
+# src/bot.py — МОДИФИЦИРОВАТЬ (не удалять методы):
+# Shadow mode методы (_process_shadow_mode и т.д.) НЕ СУЩЕСТВУЮТ в текущем коде.
+# Модификация: заменить вызовы apply_rules() на DialogueOrchestrator.process()
 
-# yaml_config/settings.yaml — УДАЛИТЬ:
+# src/settings.yaml — ПРОВЕРИТЬ И УДАЛИТЬ (если существуют):
 blackboard_enabled
 blackboard_shadow_mode
 blackboard_traffic_percentage
@@ -7520,11 +7517,12 @@ class TestBlackboardRegression:
 - [ ] Full suite: `pytest tests/ -v`
 
 ### Legacy Code Removal Verification
-- [ ] `grep -r "apply_rules" src/` returns NOTHING
-- [ ] `grep -r "_process_legacy" src/` returns NOTHING
-- [ ] `grep -r "shadow_mode" src/` returns NOTHING
-- [ ] `grep -r "blackboard_enabled" src/` returns NOTHING
-- [ ] `grep -r "traffic_percentage" src/` returns NOTHING
+- [ ] `grep -r "def apply_rules" src/` returns NOTHING
+- [ ] `grep -r "_apply_rules_priority_driven" src/` returns NOTHING
+- [ ] `grep -r "_apply_priority" src/` returns NOTHING
+- [ ] `grep -r "class RuleResult" src/` returns NOTHING
+- [ ] `grep -r "blackboard_enabled" src/yaml_config/` returns NOTHING
+- [ ] `grep -r "traffic_percentage" src/yaml_config/` returns NOTHING
 
 ### Performance
 - [ ] process_turn latency < 10ms (p99)
@@ -7607,20 +7605,28 @@ Total with Tests                        ~4,690
 
 File                     Lines Removed    What's Removed
 ─────────────────────────────────────────────────────────────────
-src/state_machine.py     ~300            apply_rules() and related methods
-src/bot.py               ~150            Shadow mode, legacy processing
-yaml_config/settings.yaml ~20           Legacy feature flags
+src/state_machine.py     ~650            apply_rules() и все связанные методы:
+                                         - apply_rules() (~324)
+                                         - _apply_rules_priority_driven() (~74)
+                                         - _apply_priority() (~106)
+                                         - _priority_matches_intent() (~51)
+                                         - _evaluate_priority_condition() (~29)
+                                         - _call_priority_handler() (~59)
+                                         - class RuleResult (~32)
+src/bot.py               ~0              Только МОДИФИКАЦИЯ (замена вызовов)
+                                         Shadow mode методов не существовало
+src/settings.yaml        ~20            Legacy feature flags (если существуют)
 ─────────────────────────────────────────────────────────────────
-Total Removed            ~470
+Total Removed            ~670
 
 
 === NET CHANGE ===
 
 New Code:      +2,990 lines (production)
 New Tests:     +1,700 lines (tests)
-Removed Code:  -470 lines
+Removed Code:  -670 lines (из state_machine.py)
 ─────────────────────────────────────────────────────────────────
-Net Addition:  +4,220 lines
+Net Addition:  +4,020 lines
 
 Но важнее количества — КАЧЕСТВО:
 - Удалён запутанный legacy код с early returns
@@ -7677,7 +7683,12 @@ StateMachine остаётся, но ТОЛЬКО для:
 
 StateMachine НЕ содержит:
 - apply_rules() — УДАЛЁН
-- _check_data_complete() — УДАЛЁН
+- _apply_rules_priority_driven() — УДАЛЁН
+- _apply_priority() — УДАЛЁН
+- _priority_matches_intent() — УДАЛЁН
+- _evaluate_priority_condition() — УДАЛЁН
+- _call_priority_handler() — УДАЛЁН
+- class RuleResult — УДАЛЁН
 - Любую логику выбора action/transition — УДАЛЕНА
 
 Dialogue management = Blackboard. Точка.
