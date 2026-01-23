@@ -6,6 +6,7 @@ import logging
 from ..knowledge_source import KnowledgeSource
 from ..blackboard import DialogueBlackboard
 from ..enums import Priority
+from src.conditions.state_machine.context import EvaluatorContext
 
 if TYPE_CHECKING:
     from src.rules.resolver import RuleResolver
@@ -234,12 +235,35 @@ class IntentProcessorSource(KnowledgeSource):
         logger.warning(f"Unknown rule type: {type(rule)}")
         return None
 
-    def _build_eval_context(self, ctx) -> Dict[str, Any]:
+    def _build_eval_context(self, ctx) -> EvaluatorContext:
         """Build evaluation context for condition registry."""
-        return {
-            "current_intent": ctx.current_intent,
-            "state": ctx.state,
-            "collected_data": ctx.collected_data,
-            "intent_tracker": ctx.intent_tracker,
-            "context_envelope": ctx.context_envelope,
-        }
+        envelope = ctx.context_envelope
+        current_phase = ctx.current_phase
+
+        return EvaluatorContext(
+            collected_data=dict(ctx.collected_data),
+            state=ctx.state,
+            turn_number=ctx.turn_number,
+            current_phase=current_phase,
+            is_phase_state=current_phase is not None,
+            current_intent=ctx.current_intent,
+            prev_intent=ctx.last_intent,
+            intent_tracker=ctx.intent_tracker,
+            missing_required_data=ctx.get_missing_required_data(),
+            config=ctx.state_config,
+            # Context-aware fields from envelope (if available)
+            frustration_level=getattr(envelope, "frustration_level", 0),
+            is_stuck=getattr(envelope, "is_stuck", False),
+            has_oscillation=getattr(envelope, "has_oscillation", False),
+            momentum_direction=getattr(envelope, "momentum_direction", "neutral"),
+            momentum=getattr(envelope, "momentum", 0.0),
+            engagement_level=getattr(envelope, "engagement_level", "medium"),
+            repeated_question=getattr(envelope, "repeated_question", None),
+            confidence_trend=getattr(envelope, "confidence_trend", "stable"),
+            total_objections=getattr(envelope, "total_objections", 0),
+            has_breakthrough=getattr(envelope, "has_breakthrough", False),
+            turns_since_breakthrough=getattr(envelope, "turns_since_breakthrough", None),
+            guard_intervention=getattr(envelope, "guard_intervention", None),
+            tone=getattr(envelope, "tone", None),
+            unclear_count=getattr(envelope, "unclear_count", 0),
+        )
