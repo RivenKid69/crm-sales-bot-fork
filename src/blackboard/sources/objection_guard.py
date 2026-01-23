@@ -6,6 +6,7 @@ import logging
 from ..knowledge_source import KnowledgeSource
 from ..blackboard import DialogueBlackboard
 from ..enums import Priority
+from src.yaml_config.constants import OBJECTION_INTENTS
 
 logger = logging.getLogger(__name__)
 
@@ -43,28 +44,9 @@ class ObjectionGuardSource(KnowledgeSource):
         "default": {"consecutive": 3, "total": 5},
     }
 
-    # Intents considered as objections
-    DEFAULT_OBJECTION_INTENTS: Set[str] = {
-        "objection_price",
-        "objection_competitor",
-        "objection_timing",
-        "objection_authority",
-        "objection_need",
-        "objection_trust",
-        "objection_budget",
-        "objection_features",
-        "objection_complexity",
-        "objection_support",
-        "objection_integration",
-        "objection_security",
-        "objection_scalability",
-        "objection_contract",
-        "objection_implementation",
-        "objection_training",
-        "objection_roi",
-        "objection_change",
-        "objection_generic",
-    }
+    # Intents considered as objections (single source of truth)
+    # Loaded from constants.yaml via src.yaml_config.constants
+    DEFAULT_OBJECTION_INTENTS: Set[str] = set(OBJECTION_INTENTS)
 
     def __init__(
         self,
@@ -84,7 +66,10 @@ class ObjectionGuardSource(KnowledgeSource):
         """
         super().__init__(name)
         self._persona_limits = persona_limits or self.DEFAULT_PERSONA_LIMITS
-        self._objection_intents = objection_intents or self.DEFAULT_OBJECTION_INTENTS
+        if objection_intents is None:
+            self._objection_intents = set(self.DEFAULT_OBJECTION_INTENTS)
+        else:
+            self._objection_intents = set(objection_intents)
 
     @property
     def persona_limits(self) -> Dict[str, Dict[str, int]]:

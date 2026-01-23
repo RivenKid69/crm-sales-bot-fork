@@ -640,6 +640,36 @@ class TestBoundaryConditions:
         # Under limit should NOT trigger soft_close
         assert decision.action != "objection_limit_reached"
 
+    def test_persona_limit_applies_to_objection_no_time(self):
+        """Busy persona limit should apply to objection_no_time intents."""
+        SourceRegistry.reset()
+
+        sm = RegressionStateMachine(
+            state="spin_problem",
+            collected_data={"persona": "busy"},
+            objection_consecutive=2,
+            objection_total=2,
+        )
+        fc = RegressionFlowConfig()
+
+        orchestrator = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+        )
+
+        from src.blackboard.sources.objection_guard import ObjectionGuardSource
+        orchestrator._sources.clear()
+        orchestrator.add_source(ObjectionGuardSource())
+
+        decision = orchestrator.process_turn(
+            intent="objection_no_time",
+            extracted_data={},
+        )
+
+        assert decision.action == "objection_limit_reached"
+        assert decision.next_state == "soft_close"
+        assert sm.collected_data.get("_objection_limit_final") is True
+
     def test_empty_collected_data(self):
         """Test behavior with empty collected_data."""
         SourceRegistry.reset()
