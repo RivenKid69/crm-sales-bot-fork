@@ -534,7 +534,23 @@ class DialogueOrchestrator:
             for flag_name, flag_value in decision.flags_to_set.items():
                 self._state_machine.collected_data[flag_name] = flag_value
 
-        # 5. Track state before objection series (FIX: _state_before_objection tracking)
+        # 5. DEFERRED GOBACK INCREMENT (BUGFIX for GoBackGuardSource)
+        # GoBackGuardSource no longer increments goback_count directly in contribute().
+        # Instead, it adds pending_goback_increment=True to the proposal metadata.
+        # We increment the counter here ONLY IF:
+        # 1. The action "acknowledge_go_back" won the conflict resolution
+        # 2. The state actually changed (transition happened)
+        # 3. The transition went to the expected prev_state
+        #
+        # This prevents incorrect counter increment when another source
+        # (e.g., ObjectionGuardSource with CRITICAL priority) blocks the go_back.
+        self._apply_deferred_goback_increment(
+            decision=decision,
+            prev_state=prev_state,
+            state_changed=state_changed,
+        )
+
+        # 6. Track state before objection series (FIX: _state_before_objection tracking)
         # This enables returning to the correct state after handling objections.
         #
         # Logic:
@@ -545,6 +561,82 @@ class DialogueOrchestrator:
             decision=decision,
             prev_state=prev_state,
             state_changed=state_changed,
+        )
+
+    def _apply_deferred_goback_increment(
+        self,
+        decision: ResolvedDecision,
+        prev_state: str,
+        state_changed: bool,
+    ) -> None:
+        """
+        Apply deferred goback_count increment after conflict resolution.
+
+        BUGFIX: GoBackGuardSource no longer increments goback_count directly.
+        Instead, it adds pending_goback_increment metadata to the proposal.
+        We increment the counter here ONLY IF:
+        1. The winning action is "acknowledge_go_back"
+        2. The state actually changed (transition happened)
+        3. The transition went to the expected target state
+
+        This prevents incorrect counter increment when another source with higher
+        priority (e.g., ObjectionGuardSource with CRITICAL) blocks the go_back.
+
+        Args:
+            decision: The resolved decision
+            prev_state: State before this turn
+            state_changed: Whether state transition occurred
+        """
+        # Only process if the winning action is acknowledge_go_back
+        if decision.action != "acknowledge_go_back":
+            return
+
+        # Only process if state actually changed (transition happened)
+        if not state_changed:
+            logger.debug(
+                "Deferred goback increment SKIPPED: state did not change "
+                f"(blocked by higher priority action/transition)"
+            )
+            return
+
+        # Get winning action metadata from resolution trace
+        winning_metadata = decision.resolution_trace.get("winning_action_metadata", {})
+
+        # Check if this was a pending goback increment
+        if not winning_metadata.get("pending_goback_increment"):
+            return
+
+        # Get expected target state from metadata
+        expected_to_state = winning_metadata.get("to_state")
+        actual_next_state = decision.next_state
+
+        # Verify the transition went to the expected state
+        # (handles edge case where a different transition won)
+        if expected_to_state and actual_next_state != expected_to_state:
+            logger.warning(
+                f"Deferred goback increment SKIPPED: transition went to "
+                f"{actual_next_state} instead of expected {expected_to_state}"
+            )
+            return
+
+        # Get CircularFlowManager and apply the increment
+        circular_flow = getattr(self._state_machine, 'circular_flow', None)
+        if circular_flow is None:
+            logger.warning("Cannot apply deferred goback increment: CircularFlowManager not available")
+            return
+
+        from_state = winning_metadata.get("from_state", prev_state)
+        to_state = actual_next_state
+
+        # Increment counter
+        circular_flow.goback_count += 1
+
+        # Record history
+        circular_flow.goback_history.append((from_state, to_state))
+
+        logger.info(
+            f"Deferred goback increment APPLIED: {from_state} -> {to_state}, "
+            f"count={circular_flow.goback_count}, remaining={circular_flow.get_remaining_gobacks()}"
         )
 
     def _update_state_before_objection(

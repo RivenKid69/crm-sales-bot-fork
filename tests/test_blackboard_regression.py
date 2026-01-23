@@ -441,8 +441,8 @@ class TestEdgeCaseRegression:
             extracted_data={},
         )
 
-        # Should use default action
-        assert decision.action == "continue"
+        # Should use default action (fixed in BUG 3: continue_current_goal)
+        assert decision.action == "continue_current_goal"
         # Should stay in current state
         assert decision.next_state == "spin_situation"
 

@@ -536,7 +536,8 @@ class TestProcessTurn:
 
         assert isinstance(decision, ResolvedDecision)
         # With no proposals, should use default action and stay in current state
-        assert decision.action == "continue"
+        # Note: default action is "continue_current_goal" (fixed in BUG 3)
+        assert decision.action == "continue_current_goal"
         assert decision.next_state == "spin_situation"
 
     def test_process_turn_with_source(self, orchestrator_no_sources):

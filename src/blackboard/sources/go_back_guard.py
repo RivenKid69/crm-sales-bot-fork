@@ -31,17 +31,27 @@ class GoBackGuardSource(KnowledgeSource):
 
     Responsibility:
         - Intercept go_back intents before TransitionResolverSource
-        - Check if go_back is allowed (via CircularFlowManager.can_go_back)
-        - If allowed: execute go_back (increment counter) and allow transition
-        - If NOT allowed: block transition and propose alternative action
+        - Check if go_back is allowed (limit not reached AND transition defined)
+        - If allowed: propose "acknowledge_go_back" action with DEFERRED increment
+        - If NOT allowed: block transition and propose "go_back_limit_reached" action
 
     Priority:
         Should run BEFORE TransitionResolverSource (priority_order < 50)
         so it can intercept and potentially block go_back transitions.
 
+    DEFERRED INCREMENT MECHANISM:
+        This source does NOT increment goback_count directly. Instead:
+        1. It adds pending_goback_increment=True to the proposal metadata
+        2. The Orchestrator increments the counter in _apply_deferred_goback_increment()
+           ONLY IF the go_back transition actually won the conflict resolution
+
+        This prevents incorrect counter increment when another source with higher
+        priority (e.g., ObjectionGuardSource with CRITICAL) blocks the go_back.
+
     Integration with CircularFlowManager:
-        - Uses state_machine.circular_flow.can_go_back() to check limits
-        - Uses state_machine.circular_flow.go_back() to execute and track
+        - Uses circular_flow.goback_count and max_gobacks to check limits
+        - Deferred increment updates circular_flow.goback_count and goback_history
+        - Respects both allowed_gobacks map AND YAML transitions (union)
 
     Why this source exists:
         The YAML transition for go_back (go_back: "{{prev_phase_state}}")
@@ -99,18 +109,26 @@ class GoBackGuardSource(KnowledgeSource):
 
         Algorithm:
         1. Get CircularFlowManager from state_machine
-        2. Check if go_back limit is reached (count >= max)
-        3. If limit NOT reached:
-           - Increment counter and record history
-           - Propose "acknowledge_go_back" action (combinable=True)
+        2. Check if go_back is allowed (considering both limit AND YAML transition)
+        3. If allowed:
+           - Propose "acknowledge_go_back" action with DEFERRED increment metadata
            - Let TransitionResolverSource handle the actual transition from YAML
-        4. If limit reached:
+           - Orchestrator will increment counter ONLY if transition actually happens
+        4. If NOT allowed:
            - Propose blocking action to prevent transition
            - Explain to user that they've used all go_back chances
 
-        FIX: We now check ONLY the goback count limit, not allowed_gobacks map.
-        The actual go_back target comes from YAML transitions ({{prev_phase_state}}),
-        not from CircularFlowManager.allowed_gobacks which only has SPIN states.
+        BUGFIXES APPLIED:
+        - BUG #1 FIXED: Counter is now incremented via DEFERRED mechanism.
+          We add pending_goback_increment=True to metadata, and orchestrator
+          increments the counter in _apply_side_effects() ONLY IF:
+          1. The action "acknowledge_go_back" won the conflict resolution
+          2. The state actually changed (transition happened)
+          This prevents incorrect increment when higher-priority sources block go_back.
+
+        - BUG #2 FIXED: We now check YAML transition availability BEFORE allowing.
+          If there's no go_back transition defined in YAML for the current state,
+          we don't propose the action at all (no counter waste).
 
         Args:
             blackboard: The dialogue blackboard to contribute to
@@ -136,125 +154,53 @@ class GoBackGuardSource(KnowledgeSource):
 
         current_state = ctx.state
 
-        # ======================================================================
-        # KNOWN BUG #2: Inconsistency with CircularFlowManager.can_go_back()
-        # ======================================================================
-        #
-        # PROBLEM:
-        #   CircularFlowManager.can_go_back() checks TWO conditions:
-        #     1. goback_count >= max_gobacks
-        #     2. current_state in allowed_gobacks
-        #
-        #   But GoBackGuardSource checks ONLY the first condition.
-        #   This causes counter to increment even when:
-        #     - State has no go_back transition in YAML (prev_state = None)
-        #     - State is not in allowed_gobacks map
-        #
-        # EXAMPLE:
-        #   1. User says "go_back" in "presentation" state
-        #   2. "presentation" has no go_back transition in YAML
-        #   3. GoBackGuardSource: limit not reached → count += 1
-        #   4. prev_state = None (no transition defined)
-        #   5. TransitionResolverSource: no go_back transition → stays in presentation
-        #   6. RESULT: count=1 but no go_back happened!
-        #
-        # THE COMMENT BELOW EXPLAINS WHY allowed_gobacks IS NOT CHECKED:
-        #   "go_back target comes from YAML transitions, not allowed_gobacks"
-        #   This is correct reasoning, BUT the counter still shouldn't increment
-        #   if there's no go_back transition defined.
-        #
-        # FIX REQUIRED:
-        #   Before incrementing counter, check:
-        #     prev_state = transitions.get("go_back")
-        #     if not prev_state:
-        #         return  # No go_back defined for this state
-        #
-        # SEVERITY: MEDIUM - wastes go_back quota in states without go_back
-        # ======================================================================
-        #
-        # Original comment (reasoning is correct, but implementation is buggy):
-        # FIX: Check ONLY the limit, not allowed_gobacks map
-        # The go_back target is defined in YAML transitions, not in allowed_gobacks
+        # BUGFIX #2: Check YAML transition availability FIRST
+        # This ensures we don't propose go_back for states that don't support it
+        transitions = ctx.state_config.get("transitions", {})
+        prev_state = transitions.get("go_back")
+
+        if not prev_state:
+            # No go_back transition defined in YAML for this state
+            # Check CircularFlowManager.allowed_gobacks as fallback
+            prev_state = circular_flow.allowed_gobacks.get(current_state)
+
+            if not prev_state:
+                logger.debug(
+                    f"GoBackGuard: No go_back transition defined for state={current_state}"
+                )
+                self._log_contribution(
+                    reason=f"No go_back transition defined for state {current_state}"
+                )
+                return
+
+        # Check limit
         limit_reached = circular_flow.goback_count >= circular_flow.max_gobacks
         remaining = circular_flow.get_remaining_gobacks()
 
         logger.debug(
             f"GoBackGuard check: state={current_state}, "
             f"limit_reached={limit_reached}, remaining={remaining}, "
-            f"count={circular_flow.goback_count}, max={circular_flow.max_gobacks}"
+            f"count={circular_flow.goback_count}, max={circular_flow.max_gobacks}, "
+            f"prev_state={prev_state}"
         )
 
         if not limit_reached:
-            # ALLOWED: Increment counter and let transition happen
-            # Get prev_state from YAML transitions (via flow config)
-            transitions = ctx.state_config.get("transitions", {})
-            prev_state = transitions.get("go_back")
-
-            # ======================================================================
-            # KNOWN BUG #1: Counter increments BEFORE conflict resolution
-            # ======================================================================
+            # ALLOWED: Propose action with DEFERRED increment
             #
-            # PROBLEM:
-            #   goback_count is incremented here, but the actual go_back transition
-            #   is decided later by ConflictResolver. If a higher-priority source
-            #   (e.g., ObjectionGuardSource with CRITICAL) proposes soft_close,
-            #   the go_back transition WON'T happen, but counter is ALREADY incremented.
+            # BUGFIX #1: We do NOT increment goback_count here!
+            # Instead, we add pending_goback_increment=True to metadata.
+            # The orchestrator will increment the counter in _apply_side_effects()
+            # ONLY IF:
+            # 1. This action won the conflict resolution (decision.action == "acknowledge_go_back")
+            # 2. The state actually changed to prev_state (transition happened)
             #
-            # EXAMPLE:
-            #   1. User says "go_back" while at objection limit
-            #   2. GoBackGuardSource: count=0 → count=1, proposes acknowledge_go_back
-            #   3. ObjectionGuardSource: proposes soft_close (CRITICAL priority)
-            #   4. ConflictResolver: CRITICAL wins → transition to soft_close
-            #   5. RESULT: count=1 but go_back never happened!
-            #
-            # THE OLD COMMENT BELOW IS INCORRECT:
-            #   It claims "GoBackGuardSource OWNS the go_back logic" but this ignores
-            #   that other sources can propose BLOCKING transitions with higher priority.
-            #
-            # FIX REQUIRED:
-            #   Option A: Increment counter in _apply_side_effects() AFTER resolution
-            #   Option B: Check if go_back transition actually won in commit phase
-            #   Option C: GoBackGuardSource proposes blocking action (combinable=False)
-            #             but this would break other valid transitions
-            #
-            # SEVERITY: MEDIUM - can waste go_back quota without actual go_back
-            # ======================================================================
-            #
-            # OLD COMMENT (kept for reference, but INCORRECT reasoning):
-            # This might look like a race condition because we increment goback_count
-            # BEFORE the conflict resolver decides whether the transition actually happens.
-            # However, this is correct because:
-            #
-            # 1. Single-threaded execution: Orchestrator calls sources sequentially
-            #    (orchestrator.py:259), so no concurrent access to circular_flow
-            #
-            # 2. GoBackGuardSource OWNS the go_back logic: We check the limit (line 141)
-            #    and increment (below) in the same synchronous contribute() call.
-            #    The count is already updated when we create proposals.
-            #
-            # 3. Deterministic flow: If limit is not reached, we WILL allow go_back.
-            #    The proposal we create (combinable=True) doesn't block the transition.
-            #    TransitionResolverSource handles the actual YAML transition separately.
-            #
-            # 4. No external record_goback() call: CircularFlowManager.go_back() is NOT
-            #    called from the blackboard pipeline. This source manages the count directly.
-            #
-            # Timeline per turn:
-            #   count=N → check limit → increment to N+1 → create proposal → resolution
-            # Next turn sees count=N+1 immediately.
-            #
-            # BUG #2 MANIFESTATION:
-            # Counter increments UNCONDITIONALLY here, but history only appends
-            # if prev_state is defined. This means:
-            #   - State without go_back in YAML: count increases, history unchanged
-            #   - Counter and history become inconsistent
-            circular_flow.goback_count += 1
-            if prev_state:  # BUG: This check should be BEFORE incrementing counter!
-                circular_flow.goback_history.append((current_state, prev_state))
+            # This prevents counter increment when:
+            # - ObjectionGuardSource (with CRITICAL priority) blocks go_back with soft_close
+            # - Any other higher-priority source blocks the transition
 
             logger.info(
-                f"GoBack executed: {current_state} -> {prev_state}, "
-                f"remaining={circular_flow.get_remaining_gobacks()}"
+                f"GoBack allowed (deferred increment): {current_state} -> {prev_state}, "
+                f"remaining={remaining}"
             )
 
             # Propose acknowledgment action (combinable with transition)
@@ -267,14 +213,17 @@ class GoBackGuardSource(KnowledgeSource):
                 metadata={
                     "from_state": current_state,
                     "to_state": prev_state,
-                    "remaining_gobacks": circular_flow.get_remaining_gobacks(),
-                    "goback_count": circular_flow.goback_count,
+                    # DEFERRED INCREMENT: Orchestrator uses this to increment
+                    # goback_count ONLY if this action wins AND transition happens
+                    "pending_goback_increment": True,
+                    "remaining_gobacks": remaining,
+                    "goback_count_before": circular_flow.goback_count,
                 }
             )
 
             self._log_contribution(
                 action="acknowledge_go_back",
-                reason=f"GoBack allowed: {current_state} -> {prev_state}"
+                reason=f"GoBack allowed (deferred): {current_state} -> {prev_state}"
             )
         else:
             # LIMIT REACHED: Block transition and explain
