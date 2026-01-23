@@ -94,6 +94,14 @@ states:
       # When guard triggers skip in greeting, transition to entry_state
       data_complete: "{{entry_state}}"
 
+      # STATE LOOP FIX: Fallback для greeting intent если застряли (3+ ходов)
+      # Это страховка если ClassificationRefinementLayer не сработал
+      # Если мы всё ещё получаем greeting intent после 3 ходов - выходим из greeting
+      greeting:
+        - when: turn_number_gte_3
+          then: "{{entry_state}}"
+        # Default: остаёмся (rule greet_back из _base_greeting сработает)
+
       # SPIN-like intents → переход в основной flow
       # FIX: Классификатор может вернуть эти intents даже в greeting
       # Без этих transitions бот застревает при tier_3 fallback

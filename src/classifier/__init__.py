@@ -19,6 +19,9 @@ from .intents import PRIORITY_PATTERNS, COMPILED_PRIORITY_PATTERNS
 # LLM классификатор
 from .llm import LLMClassifier, IntentType, ClassificationResult
 
+# Refinement layer (State Loop Fix)
+from .refinement import ClassificationRefinementLayer, RefinementContext
+
 __all__ = [
     # Классификаторы
     'HybridClassifier',
@@ -35,4 +38,7 @@ __all__ = [
     # LLM типы
     'IntentType',
     'ClassificationResult',
+    # Refinement (State Loop Fix)
+    'ClassificationRefinementLayer',
+    'RefinementContext',
 ]

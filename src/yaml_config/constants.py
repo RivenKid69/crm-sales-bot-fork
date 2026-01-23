@@ -387,6 +387,41 @@ LLM_DEFAULT_FALLBACK: str = _llm.get("default_fallback", "Произошла т�
 
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def get_short_answer_config() -> Dict[str, Dict[str, Any]]:
+    """
+    Get short_answer_classification config from constants.yaml.
+
+    Used by ClassificationRefinementLayer to refine LLM classification
+    for short messages based on SPIN phase context.
+
+    Returns:
+        Dict with phase -> {positive_intent, positive_confidence, negative_intent, ...}
+
+    Example:
+        >>> config = get_short_answer_config()
+        >>> config["situation"]
+        {'positive_intent': 'situation_provided', 'positive_confidence': 0.7}
+    """
+    return SPIN_SHORT_ANSWER_CLASSIFICATION
+
+
+def get_informative_intents() -> List[str]:
+    """
+    Get list of informative intents (client provides data, not stuck).
+
+    Used by ConversationGuard to check if client is providing information
+    before triggering TIER_3 fallback.
+
+    Returns:
+        List of intent names that indicate client is providing information.
+    """
+    return INFORMATIVE_INTENTS
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
@@ -470,4 +505,7 @@ __all__ = [
     # LLM
     "LLM_FALLBACK_RESPONSES",
     "LLM_DEFAULT_FALLBACK",
+    # Helper functions
+    "get_short_answer_config",
+    "get_informative_intents",
 ]

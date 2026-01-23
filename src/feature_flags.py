@@ -107,6 +107,9 @@ class FeatureFlags:
         # === Robust Classification: ConfidenceRouter ===
         "confidence_router": True,                # Gap-based решения и graceful degradation
         "confidence_router_logging": True,        # Логирование слепых зон для self-learning
+
+        # === State Loop Fix: Classification Refinement ===
+        "classification_refinement": True,        # Контекстное уточнение коротких ответов
     }
 
     # Группы флагов для удобного управления
@@ -148,6 +151,10 @@ class FeatureFlags:
         # Robust Classification groups
         "robust_classification": [
             "confidence_router", "confidence_router_logging"
+        ],
+        # State Loop Fix groups
+        "state_loop_fix": [
+            "classification_refinement"
         ],
     }
 
@@ -456,6 +463,15 @@ class FeatureFlags:
     def confidence_router_logging(self) -> bool:
         """Включено ли логирование слепых зон для self-learning"""
         return self.is_enabled("confidence_router_logging")
+
+    # =========================================================================
+    # State Loop Fix flags
+    # =========================================================================
+
+    @property
+    def classification_refinement(self) -> bool:
+        """Включено ли контекстное уточнение классификации коротких ответов"""
+        return self.is_enabled("classification_refinement")
 
 
 # Singleton экземпляр

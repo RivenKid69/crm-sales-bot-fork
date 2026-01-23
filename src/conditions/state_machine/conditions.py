@@ -642,6 +642,39 @@ def is_extended_conversation(ctx: EvaluatorContext) -> bool:
     return ctx.turn_number >= 20
 
 
+@sm_condition(
+    "turn_number_gte_3",
+    description="Check if turn number is 3 or more (State Loop Fix fallback)",
+    category="turn"
+)
+def turn_number_gte_3(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if turn_number >= 3.
+
+    Used as fallback condition for greeting state to prevent
+    State Loop bug where bot gets stuck in greeting.
+    """
+    return ctx.turn_number >= 3
+
+
+@sm_condition(
+    "greeting_too_long",
+    description="Check if stuck in greeting state too long (3+ turns)",
+    category="turn"
+)
+def greeting_too_long(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if in greeting state for 3+ turns.
+
+    This is a combined condition specifically for State Loop Fix:
+    - Current state is greeting
+    - Turn number >= 3
+
+    Triggers fallback transition to entry_state.
+    """
+    return ctx.state == "greeting" and ctx.turn_number >= 3
+
+
 # =============================================================================
 # COMBINED CONDITIONS - Complex conditions combining multiple checks
 # =============================================================================
@@ -1239,6 +1272,8 @@ __all__ = [
     "is_early_conversation",
     "is_late_conversation",
     "is_extended_conversation",
+    "turn_number_gte_3",
+    "greeting_too_long",
     # Combined conditions
     "can_answer_price",
     "should_deflect_price",
