@@ -1154,21 +1154,19 @@ class ConfigLoader:
         """Apply a mixin to a state configuration."""
         result = state_config.copy()
 
-        # Apply rules from mixin
+        # Apply rules from mixin (later mixins override earlier ones)
         if "rules" in mixin:
             if "rules" not in result:
                 result["rules"] = {}
             for intent, action in mixin["rules"].items():
-                if intent not in result["rules"]:
-                    result["rules"][intent] = action
+                result["rules"][intent] = action
 
-        # Apply transitions from mixin
+        # Apply transitions from mixin (later mixins override earlier ones)
         if "transitions" in mixin:
             if "transitions" not in result:
                 result["transitions"] = {}
             for intent, target in mixin["transitions"].items():
-                if intent not in result["transitions"]:
-                    result["transitions"][intent] = target
+                result["transitions"][intent] = target
 
         return result
 
