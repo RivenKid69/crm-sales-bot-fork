@@ -17,6 +17,7 @@ states:
     goal: "Найти драйверы ценности"
     parameters:
       next_phase_state: value_quantify
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: calculate_roi_response
       default_unclear_action: continue_current_goal
     rules:
@@ -32,6 +33,7 @@ states:
     goal: "Квантифицировать влияние"
     parameters:
       next_phase_state: value_roi
+      prev_phase_state: value_discover  # FIX: Go back to previous phase
       default_price_action: calculate_roi_response
       default_unclear_action: continue_current_goal
     rules:
@@ -47,6 +49,7 @@ states:
     goal: "Представить ROI"
     parameters:
       next_phase_state: presentation
+      prev_phase_state: value_quantify  # FIX: Go back to previous phase
       default_price_action: answer_with_roi
       default_unclear_action: continue_current_goal
     rules:

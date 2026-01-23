@@ -13,6 +13,7 @@ states:
     goal: "Установить доверительный контакт"
     parameters:
       next_phase_state: sandler_contract
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -29,6 +30,7 @@ states:
     goal: "Установить правила разговора"
     parameters:
       next_phase_state: sandler_pain
+      prev_phase_state: sandler_bonding  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -44,6 +46,7 @@ states:
     goal: "Глубоко исследовать боль"
     parameters:
       next_phase_state: sandler_budget
+      prev_phase_state: sandler_contract  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -59,6 +62,7 @@ states:
     goal: "Обсудить бюджет"
     parameters:
       next_phase_state: sandler_decision
+      prev_phase_state: sandler_pain  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
@@ -74,6 +78,7 @@ states:
     goal: "Понять процесс принятия решения"
     parameters:
       next_phase_state: presentation
+      prev_phase_state: sandler_budget  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:

@@ -278,8 +278,20 @@ def register_builtin_sources() -> None:
     from .sources.intent_processor import IntentProcessorSource
     from .sources.transition_resolver import TransitionResolverSource
     from .sources.escalation import EscalationSource
+    from .sources.go_back_guard import GoBackGuardSource
 
     # Register in recommended order (lower priority_order = earlier execution)
+
+    # FIX: GoBackGuardSource runs first to enforce go_back limits
+    # Must run BEFORE TransitionResolverSource to block transitions if limit reached
+    SourceRegistry.register(
+        GoBackGuardSource,
+        name="GoBackGuardSource",
+        priority_order=5,
+        config_key="go_back_guard",
+        description="Enforces go_back limits via CircularFlowManager"
+    )
+
     SourceRegistry.register(
         PriceQuestionSource,
         name="PriceQuestionSource",

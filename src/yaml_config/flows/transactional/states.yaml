@@ -13,6 +13,7 @@ states:
       - transactional_rules
     goal: "Быстро квалифицировать"
     parameters:
+      prev_phase_state: greeting
       next_phase_state: trans_offer
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
@@ -30,6 +31,7 @@ states:
       - transactional_rules
     goal: "Сделать предложение"
     parameters:
+      prev_phase_state: trans_qualify
       next_phase_state: trans_close
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
@@ -47,6 +49,7 @@ states:
       - transactional_rules
     goal: "Быстро закрыть"
     parameters:
+      prev_phase_state: trans_offer
       next_phase_state: close
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal

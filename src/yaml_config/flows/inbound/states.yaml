@@ -12,6 +12,7 @@ states:
       - inbound_rules
     goal: "Идентифицировать кто к нам пришёл"
     parameters:
+      prev_phase_state: greeting
       next_phase_state: inbound_connect
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -27,6 +28,7 @@ states:
       - inbound_rules
     goal: "Установить связь"
     parameters:
+      prev_phase_state: inbound_identify
       next_phase_state: inbound_explore
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -42,6 +44,7 @@ states:
       - inbound_rules
     goal: "Исследовать потребности"
     parameters:
+      prev_phase_state: inbound_connect
       next_phase_state: inbound_advise
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -57,6 +60,7 @@ states:
       - inbound_rules
     goal: "Дать полезный совет"
     parameters:
+      prev_phase_state: inbound_explore
       next_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal

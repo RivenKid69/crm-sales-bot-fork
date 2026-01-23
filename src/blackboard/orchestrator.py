@@ -122,7 +122,8 @@ class DialogueOrchestrator:
         )
 
         # Initialize conflict resolver
-        self._resolver = ConflictResolver(default_action="continue")
+        # FIX: Use continue_current_goal as default action (has template in prompts.yaml)
+        self._resolver = ConflictResolver(default_action="continue_current_goal")
 
         # Config-driven priority assignment (FlowConfig.priorities)
         self._priority_assigner = PriorityAssigner(self._flow_config)

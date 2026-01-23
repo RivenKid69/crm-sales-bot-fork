@@ -12,6 +12,7 @@ states:
     goal: "Определить метрики успеха"
     parameters:
       next_phase_state: meddic_buyer
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -26,6 +27,7 @@ states:
     goal: "Идентифицировать экономического покупателя"
     parameters:
       next_phase_state: meddic_criteria
+      prev_phase_state: meddic_metrics  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -40,6 +42,7 @@ states:
     goal: "Понять критерии принятия решения"
     parameters:
       next_phase_state: meddic_process
+      prev_phase_state: meddic_buyer  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -54,6 +57,7 @@ states:
     goal: "Понять процесс принятия решения"
     parameters:
       next_phase_state: meddic_pain
+      prev_phase_state: meddic_criteria  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -68,6 +72,7 @@ states:
     goal: "Идентифицировать боль"
     parameters:
       next_phase_state: meddic_champion
+      prev_phase_state: meddic_process  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -82,6 +87,7 @@ states:
     goal: "Найти внутреннего чемпиона"
     parameters:
       next_phase_state: presentation
+      prev_phase_state: meddic_pain  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:

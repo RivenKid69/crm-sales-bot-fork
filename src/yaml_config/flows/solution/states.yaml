@@ -13,6 +13,7 @@ states:
     goal: "Глубоко понять боль клиента"
     parameters:
       next_phase_state: solution_map
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -29,6 +30,7 @@ states:
     goal: "Связать боль с нашим решением"
     parameters:
       next_phase_state: solution_value
+      prev_phase_state: solution_pain  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -44,6 +46,7 @@ states:
     goal: "Доказать ценность решения"
     parameters:
       next_phase_state: presentation
+      prev_phase_state: solution_map  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:

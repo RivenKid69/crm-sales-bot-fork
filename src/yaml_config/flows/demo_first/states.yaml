@@ -11,6 +11,7 @@ states:
       - unified_progress
     goal: "Зацепить интерес к демо"
     parameters:
+      prev_phase_state: greeting
       next_phase_state: demo_show
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -26,6 +27,7 @@ states:
       - unified_progress
     goal: "Показать продукт"
     parameters:
+      prev_phase_state: demo_hook
       next_phase_state: demo_qa
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -41,6 +43,7 @@ states:
       - unified_progress
     goal: "Ответить на вопросы"
     parameters:
+      prev_phase_state: demo_show
       next_phase_state: demo_close
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
@@ -57,6 +60,7 @@ states:
       - unified_progress
     goal: "Закрыть после демо"
     parameters:
+      prev_phase_state: demo_qa
       next_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal

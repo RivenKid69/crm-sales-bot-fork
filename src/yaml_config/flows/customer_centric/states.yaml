@@ -11,6 +11,7 @@ states:
       - unified_progress
     goal: "Внимательно слушать клиента"
     parameters:
+      prev_phase_state: greeting
       next_phase_state: cc_understand
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -25,6 +26,7 @@ states:
       - unified_progress
     goal: "Глубоко понять ситуацию"
     parameters:
+      prev_phase_state: cc_listen
       next_phase_state: cc_empower
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -39,6 +41,7 @@ states:
       - unified_progress
     goal: "Дать клиенту возможность принять решение"
     parameters:
+      prev_phase_state: cc_understand
       next_phase_state: cc_support
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -53,6 +56,7 @@ states:
       - unified_progress
     goal: "Поддержать в принятии решения"
     parameters:
+      prev_phase_state: cc_empower
       next_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal

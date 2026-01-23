@@ -11,6 +11,7 @@ states:
       - unified_progress
     goal: "Установить первый контакт"
     parameters:
+      prev_phase_state: greeting
       next_phase_state: rel_rapport
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -26,6 +27,7 @@ states:
       - unified_progress
     goal: "Построить взаимопонимание"
     parameters:
+      prev_phase_state: rel_connect
       next_phase_state: rel_nurture
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -41,6 +43,7 @@ states:
       - unified_progress
     goal: "Развивать отношения"
     parameters:
+      prev_phase_state: rel_rapport
       next_phase_state: rel_partnership
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -55,6 +58,7 @@ states:
       - unified_progress
     goal: "Сформировать партнёрство"
     parameters:
+      prev_phase_state: rel_nurture
       next_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal

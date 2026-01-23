@@ -18,6 +18,7 @@ states:
     goal: "Захватить внимание"
     parameters:
       next_phase_state: aida_interest
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -38,6 +39,7 @@ states:
     goal: "Развить интерес"
     parameters:
       next_phase_state: aida_desire
+      prev_phase_state: aida_attention  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -53,6 +55,7 @@ states:
     goal: "Создать желание"
     parameters:
       next_phase_state: aida_action
+      prev_phase_state: aida_interest  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
@@ -68,6 +71,7 @@ states:
     goal: "Призвать к действию"
     parameters:
       next_phase_state: presentation
+      prev_phase_state: aida_desire  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:

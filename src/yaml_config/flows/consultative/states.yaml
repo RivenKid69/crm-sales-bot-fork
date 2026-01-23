@@ -13,6 +13,7 @@ states:
     goal: "Глубоко понять ситуацию клиента"
     parameters:
       next_phase_state: consult_advise
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -28,6 +29,7 @@ states:
     goal: "Дать экспертный совет"
     parameters:
       next_phase_state: consult_recommend
+      prev_phase_state: consult_understand  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -43,6 +45,7 @@ states:
     goal: "Рекомендовать оптимальное решение"
     parameters:
       next_phase_state: presentation
+      prev_phase_state: consult_advise  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:

@@ -11,6 +11,7 @@ states:
       - unified_progress
     goal: "Выявить потребности"
     parameters:
+      prev_phase_state: greeting
       next_phase_state: neat_economic
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -26,6 +27,7 @@ states:
       - value_rules
     goal: "Понять экономическое влияние"
     parameters:
+      prev_phase_state: neat_needs
       next_phase_state: neat_authority
       default_price_action: calculate_roi_response
       default_unclear_action: continue_current_goal
@@ -40,6 +42,7 @@ states:
       - unified_progress
     goal: "Получить доступ к ЛПР"
     parameters:
+      prev_phase_state: neat_economic
       next_phase_state: neat_timeline
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
@@ -54,6 +57,7 @@ states:
       - unified_progress
     goal: "Установить временные рамки"
     parameters:
+      prev_phase_state: neat_authority
       next_phase_state: presentation
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal

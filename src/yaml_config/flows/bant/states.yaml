@@ -25,6 +25,7 @@ states:
     goal: "Выяснить бюджет клиента"
     parameters:
       next_phase_state: bant_authority  # Required by _base_phase's phase_progress mixin
+      prev_phase_state: greeting  # FIX: First phase goes back to greeting
       default_price_action: answer_with_facts  # В budget фазе можно говорить о цене
       default_unclear_action: continue_current_goal
     rules:
@@ -50,6 +51,7 @@ states:
     goal: "Определить лицо принимающее решение"
     parameters:
       next_phase_state: bant_need  # Required by _base_phase's phase_progress mixin
+      prev_phase_state: bant_budget  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -74,6 +76,7 @@ states:
     goal: "Выявить потребность"
     parameters:
       next_phase_state: bant_timeline  # Required by _base_phase's phase_progress mixin
+      prev_phase_state: bant_authority  # FIX: Go back to previous phase
       default_price_action: deflect_and_continue
       default_unclear_action: continue_current_goal
     rules:
@@ -99,6 +102,7 @@ states:
     goal: "Определить сроки принятия решения"
     parameters:
       next_phase_state: presentation  # Required by _base_phase's phase_progress mixin
+      prev_phase_state: bant_need  # FIX: Go back to previous phase
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
