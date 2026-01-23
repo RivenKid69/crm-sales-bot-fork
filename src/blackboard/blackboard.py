@@ -147,6 +147,8 @@ class DialogueBlackboard:
         for key, value in extracted_data.items():
             if value is not None and value != "":
                 current_collected[key] = value
+                # Persist extracted data for future turns
+                self._state_machine.collected_data[key] = value
 
         # Get current state configuration
         state_config = self._flow_config.states.get(
