@@ -232,15 +232,27 @@ class RegressionFlowConfig:
 
     @property
     def state_to_phase(self) -> Dict[str, str]:
-        """Get state -> phase mapping."""
-        return {v: k for k, v in self.phase_mapping.items()}
+        """
+        Get complete state -> phase mapping.
+
+        This is the CANONICAL source of truth for state -> phase resolution.
+        Includes both reverse mapping from phase_mapping AND explicit phases
+        from state configs (explicit phases have higher priority).
+        """
+        # Start with reverse mapping from phase_mapping
+        result = {v: k for k, v in self.phase_mapping.items()}
+
+        # Override with explicit phases from state configs (higher priority)
+        for state_name, state_config in self._states.items():
+            explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+            if explicit_phase:
+                result[state_name] = explicit_phase
+
+        return result
 
     def get_phase_for_state(self, state_name: str) -> Optional[str]:
         """Get phase name for a state."""
-        state_config = self._states.get(state_name, {})
-        explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
-        if explicit_phase:
-            return explicit_phase
+        # Delegate to state_to_phase which contains the complete mapping
         return self.state_to_phase.get(state_name)
 
     def is_phase_state(self, state_name: str) -> bool:
@@ -933,3 +945,199 @@ class TestSmResultRegression:
         assert sm_result["action"] == "modified_action"
         assert sm_result["next_state"] == "modified_state"
         assert sm_result["custom_field"] == "custom_value"
+
+
+# =============================================================================
+# Phase Consistency Tests
+# =============================================================================
+
+class TestPhaseConsistency:
+    """
+    Regression tests for state_to_phase and get_phase_for_state consistency.
+
+    BUG FIX: Prior to this fix, state_to_phase only contained reverse mapping
+    from phase_mapping, while get_phase_for_state checked explicit phases first.
+    This caused inconsistent results when:
+    - A state had explicit phase in state config
+    - A state had phase mapping that differed from explicit phase
+
+    The fix ensures state_to_phase is the CANONICAL source of truth and includes
+    both explicit phases and reverse mapping (with explicit having priority).
+    """
+
+    def test_state_to_phase_includes_explicit_phases(self):
+        """state_to_phase should include explicit phases from state configs."""
+        states = {
+            "spin_situation": {"phase": "situation", "goal": "Gather situation"},
+            "spin_problem": {"phase": "problem", "goal": "Find problems"},
+            "greeting": {"goal": "Welcome user"},  # No phase
+        }
+        fc = RegressionFlowConfig(states=states)
+
+        state_to_phase = fc.state_to_phase
+
+        # Explicit phases should be in state_to_phase
+        assert state_to_phase.get("spin_situation") == "situation"
+        assert state_to_phase.get("spin_problem") == "problem"
+        # Non-phase state should not be in mapping
+        assert state_to_phase.get("greeting") is None
+
+    def test_state_to_phase_and_get_phase_for_state_consistent(self):
+        """state_to_phase and get_phase_for_state should return same values."""
+        states = {
+            "spin_situation": {"phase": "situation", "goal": "Gather situation"},
+            "spin_problem": {"spin_phase": "problem", "goal": "Find problems"},  # spin_phase variant
+            "bant_budget": {"goal": "Check budget"},  # No explicit phase
+            "greeting": {"goal": "Welcome user"},  # No phase
+        }
+        fc = RegressionFlowConfig(states=states)
+
+        # For all states, state_to_phase and get_phase_for_state should match
+        for state_name in states.keys():
+            from_property = fc.state_to_phase.get(state_name)
+            from_method = fc.get_phase_for_state(state_name)
+            assert from_property == from_method, (
+                f"Inconsistency for {state_name}: "
+                f"state_to_phase={from_property}, get_phase_for_state={from_method}"
+            )
+
+    def test_explicit_phase_overrides_mapping(self):
+        """
+        When a state has both explicit phase AND is in phase_mapping,
+        explicit phase should take priority.
+
+        This is the core bug scenario that was fixed.
+        """
+        # Create a config where:
+        # - phase_mapping says: mapped_phase -> my_state
+        # - state config says: my_state.phase = explicit_phase
+        states = {
+            "my_state": {
+                "phase": "explicit_phase",  # Explicit phase
+                "goal": "Test state",
+            }
+        }
+
+        class ConflictingFlowConfig(RegressionFlowConfig):
+            """FlowConfig with conflicting mapping."""
+
+            def __init__(self):
+                super().__init__(states=states)
+
+            @property
+            def phase_mapping(self) -> Dict[str, str]:
+                # This mapping conflicts with explicit phase in state config
+                return {"mapped_phase": "my_state"}
+
+        fc = ConflictingFlowConfig()
+
+        # Both should return explicit_phase (explicit has priority)
+        assert fc.state_to_phase.get("my_state") == "explicit_phase"
+        assert fc.get_phase_for_state("my_state") == "explicit_phase"
+
+    def test_mapping_only_states(self):
+        """States with only mapping (no explicit phase) should still work."""
+        # BANT-style flow where phases are defined only in mapping
+        states = {
+            "bant_budget": {"goal": "Check budget"},
+            "bant_authority": {"goal": "Check authority"},
+        }
+
+        class MappingOnlyFlowConfig(RegressionFlowConfig):
+            """FlowConfig with only mapping, no explicit phases."""
+
+            def __init__(self):
+                super().__init__(states=states)
+
+            @property
+            def phase_mapping(self) -> Dict[str, str]:
+                return {
+                    "budget": "bant_budget",
+                    "authority": "bant_authority",
+                }
+
+        fc = MappingOnlyFlowConfig()
+
+        # Should resolve from mapping
+        assert fc.state_to_phase.get("bant_budget") == "budget"
+        assert fc.state_to_phase.get("bant_authority") == "authority"
+        assert fc.get_phase_for_state("bant_budget") == "budget"
+        assert fc.get_phase_for_state("bant_authority") == "authority"
+
+    def test_mixed_explicit_and_mapping(self):
+        """
+        Mixed flow with some explicit phases and some mapping-only.
+
+        This is the real-world scenario (SPIN has explicit, BANT uses mapping).
+        """
+        states = {
+            # SPIN-style with explicit phase
+            "spin_situation": {"phase": "situation", "goal": "Gather situation"},
+            # BANT-style without explicit phase (uses mapping)
+            "bant_budget": {"goal": "Check budget"},
+            # Non-phase state
+            "greeting": {"goal": "Welcome"},
+        }
+
+        class MixedFlowConfig(RegressionFlowConfig):
+            """FlowConfig with mixed explicit and mapping phases."""
+
+            def __init__(self):
+                super().__init__(states=states)
+
+            @property
+            def phase_mapping(self) -> Dict[str, str]:
+                return {"budget": "bant_budget"}
+
+        fc = MixedFlowConfig()
+
+        # Explicit phase
+        assert fc.state_to_phase.get("spin_situation") == "situation"
+        assert fc.get_phase_for_state("spin_situation") == "situation"
+
+        # Mapping phase
+        assert fc.state_to_phase.get("bant_budget") == "budget"
+        assert fc.get_phase_for_state("bant_budget") == "budget"
+
+        # No phase
+        assert fc.state_to_phase.get("greeting") is None
+        assert fc.get_phase_for_state("greeting") is None
+
+    def test_spin_phase_key_supported(self):
+        """spin_phase key should be supported as alias for phase."""
+        states = {
+            "old_style_state": {"spin_phase": "legacy_phase", "goal": "Test"},
+        }
+        fc = RegressionFlowConfig(states=states)
+
+        assert fc.state_to_phase.get("old_style_state") == "legacy_phase"
+        assert fc.get_phase_for_state("old_style_state") == "legacy_phase"
+
+    def test_nonexistent_state_returns_none(self):
+        """Getting phase for nonexistent state should return None."""
+        fc = RegressionFlowConfig(states={
+            "existing": {"phase": "test_phase", "goal": "Test"},
+        })
+
+        assert fc.get_phase_for_state("nonexistent") is None
+        assert fc.state_to_phase.get("nonexistent") is None
+
+    def test_is_phase_state_consistent(self):
+        """is_phase_state should be consistent with get_phase_for_state."""
+        states = {
+            "phase_state": {"phase": "test_phase", "goal": "Test"},
+            "non_phase_state": {"goal": "Test"},
+        }
+        fc = RegressionFlowConfig(states=states)
+
+        # Phase state
+        assert fc.is_phase_state("phase_state") is True
+        assert fc.get_phase_for_state("phase_state") is not None
+
+        # Non-phase state
+        assert fc.is_phase_state("non_phase_state") is False
+        assert fc.get_phase_for_state("non_phase_state") is None
+
+        # Nonexistent state
+        assert fc.is_phase_state("nonexistent") is False
+        assert fc.get_phase_for_state("nonexistent") is None

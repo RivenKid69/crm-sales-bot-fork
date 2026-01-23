@@ -420,13 +420,23 @@ class TestMockImplementations:
 
             @property
             def state_to_phase(self) -> Dict[str, str]:
-                return {v: k for k, v in self.phase_mapping.items()}
+                """
+                Get complete state -> phase mapping.
+                Includes reverse mapping AND explicit phases from state configs.
+                """
+                # Start with reverse mapping from phase_mapping
+                result = {v: k for k, v in self.phase_mapping.items()}
+
+                # Override with explicit phases from state configs
+                for state_name, state_config in self._states.items():
+                    explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+                    if explicit_phase:
+                        result[state_name] = explicit_phase
+
+                return result
 
             def get_phase_for_state(self, state_name: str) -> Optional[str]:
-                state_config = self._states.get(state_name, {})
-                explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
-                if explicit_phase:
-                    return explicit_phase
+                # Delegate to state_to_phase which contains the complete mapping
                 return self.state_to_phase.get(state_name)
 
             def is_phase_state(self, state_name: str) -> bool:

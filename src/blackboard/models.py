@@ -298,17 +298,25 @@ class ContextSnapshot:
         """
         Get current phase name.
 
-        FUNDAMENTAL FIX: Uses state_to_phase mapping for custom flows.
-        Resolution order:
-        1. state_config.phase (explicit in state definition, e.g., SPIN)
-        2. state_to_phase reverse mapping (from flow.phases.mapping)
+        Uses state_to_phase mapping which is the CANONICAL source of truth
+        for state -> phase resolution. The mapping already includes:
+        - Reverse mapping from phase_mapping
+        - Explicit phases from state configs (higher priority)
+
+        Note: We also check state_config.phase as a fallback for backwards
+        compatibility with code that passes incomplete state_to_phase.
         """
-        # 1. Check explicit phase in state config
+        # Primary: use state_to_phase which contains complete mapping
+        phase = self.state_to_phase.get(self.state)
+        if phase:
+            return phase
+
+        # Fallback: check state_config.phase for backwards compatibility
         explicit_phase = self.state_config.get("phase") or self.state_config.get("spin_phase")
         if explicit_phase:
             return explicit_phase
-        # 2. Use state_to_phase mapping (from FlowConfig)
-        return self.state_to_phase.get(self.state)
+
+        return None
 
     def get_missing_required_data(self) -> List[str]:
         """Get list of required fields that are not yet collected."""

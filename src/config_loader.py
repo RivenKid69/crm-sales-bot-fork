@@ -302,22 +302,42 @@ class FlowConfig:
     @property
     def state_to_phase(self) -> Dict[str, str]:
         """
-        Reverse mapping from state name to phase name.
+        Complete mapping from state name to phase name.
 
-        Built automatically from phase_mapping. This is the FUNDAMENTAL
-        solution for phase resolution in custom flows.
+        This is the CANONICAL source of truth for state -> phase mapping.
+        Built from two sources (explicit phase has priority):
+
+        1. Reverse mapping from phase_mapping (flow.phases.mapping)
+        2. Explicit phase in state config (state.phase or state.spin_phase)
+
+        Resolution order ensures consistency with get_phase_for_state():
+        - Start with reverse mapping from phase_mapping
+        - Override with explicit phases from state configs (higher priority)
 
         Example:
-            # flow.yaml has:
-            # phases:
-            #   mapping:
-            #     budget: bant_budget
-            #     authority: bant_authority
+            # BANT flow (uses phase_mapping only):
+            # phases.mapping: {budget: bant_budget}
+            flow.state_to_phase  # {"bant_budget": "budget"}
 
-            flow.state_to_phase
-            # Returns: {"bant_budget": "budget", "bant_authority": "authority"}
+            # SPIN flow (uses explicit phase in state config):
+            # states.spin_situation.phase: "situation"
+            flow.state_to_phase  # {"spin_situation": "situation"}
+
+            # Mixed flow (explicit phase overrides mapping):
+            # phases.mapping: {phase_a: my_state}
+            # states.my_state.phase: "explicit_phase"
+            flow.state_to_phase  # {"my_state": "explicit_phase"}
         """
-        return {v: k for k, v in self.phase_mapping.items()}
+        # 1. Start with reverse mapping from phase_mapping
+        result = {v: k for k, v in self.phase_mapping.items()}
+
+        # 2. Override with explicit phases from state configs (higher priority)
+        for state_name, state_config in self.states.items():
+            explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+            if explicit_phase:
+                result[state_name] = explicit_phase
+
+        return result
 
     def get_phase_for_state(self, state_name: str) -> Optional[str]:
         """
@@ -326,10 +346,8 @@ class FlowConfig:
         This is the CANONICAL method for resolving state -> phase mapping.
         All components should use this method instead of hardcoded mappings.
 
-        Resolution order:
-        1. state_config.phase (explicit in state definition, e.g., SPIN states)
-        2. state_to_phase reverse mapping (from flow.phases.mapping)
-        3. None (not a phase state)
+        Delegates to state_to_phase property which contains the complete
+        mapping with proper resolution order (explicit phase > phase_mapping).
 
         Args:
             state_name: Name of the state to look up
@@ -347,13 +365,8 @@ class FlowConfig:
             # Non-phase state
             flow.get_phase_for_state("greeting")  # None
         """
-        # 1. Check explicit phase in state config (highest priority)
-        state_config = self.states.get(state_name, {})
-        explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
-        if explicit_phase:
-            return explicit_phase
-
-        # 2. Use reverse mapping from phase_mapping
+        # Delegate to state_to_phase which contains the complete mapping
+        # with proper resolution order (explicit phase > phase_mapping)
         return self.state_to_phase.get(state_name)
 
     def is_phase_state(self, state_name: str) -> bool:

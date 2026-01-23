@@ -193,7 +193,17 @@ class IFlowConfig(Protocol):
 
     @property
     def state_to_phase(self) -> Dict[str, str]:
-        """Get state -> phase mapping (reverse of phase_mapping)."""
+        """
+        Get complete state -> phase mapping.
+
+        This is the CANONICAL source of truth for state -> phase resolution.
+        Includes both:
+        - Reverse mapping from phase_mapping
+        - Explicit phases from state configs (higher priority)
+
+        Note: This is NOT just a reverse of phase_mapping. It includes
+        explicit phases defined in state configs which take precedence.
+        """
         ...
 
     def get_phase_for_state(self, state_name: str) -> Optional[str]:

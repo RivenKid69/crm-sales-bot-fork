@@ -140,15 +140,27 @@ class MockFlowConfig:
 
     @property
     def state_to_phase(self) -> Dict[str, str]:
-        """Get state -> phase mapping."""
-        return {v: k for k, v in self.phase_mapping.items()}
+        """
+        Get complete state -> phase mapping.
+
+        This is the CANONICAL source of truth for state -> phase resolution.
+        Includes both reverse mapping from phase_mapping AND explicit phases
+        from state configs (explicit phases have higher priority).
+        """
+        # Start with reverse mapping from phase_mapping
+        result = {v: k for k, v in self.phase_mapping.items()}
+
+        # Override with explicit phases from state configs (higher priority)
+        for state_name, state_config in self._states.items():
+            explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
+            if explicit_phase:
+                result[state_name] = explicit_phase
+
+        return result
 
     def get_phase_for_state(self, state_name: str) -> Optional[str]:
         """Get phase name for a state."""
-        state_config = self._states.get(state_name, {})
-        explicit_phase = state_config.get("phase") or state_config.get("spin_phase")
-        if explicit_phase:
-            return explicit_phase
+        # Delegate to state_to_phase which contains the complete mapping
         return self.state_to_phase.get(state_name)
 
     def is_phase_state(self, state_name: str) -> bool:
