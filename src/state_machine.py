@@ -63,6 +63,15 @@ class CircularFlowManager:
     Позволяет клиенту вернуться к предыдущей фазе,
     но ограничивает количество возвратов для предотвращения зацикливания.
 
+    UNIFIED GO_BACK LOGIC:
+        This class is the SINGLE SOURCE OF TRUTH for go_back logic.
+        It handles both:
+        1. allowed_gobacks map (legacy SPIN states from constants.yaml)
+        2. YAML transitions (go_back: "{{prev_phase_state}}" in any flow)
+
+        GoBackGuardSource should use methods from this class instead of
+        duplicating the logic.
+
     Attributes:
         goback_count: Количество совершённых возвратов
         goback_history: История возвратов (from_state, to_state)
@@ -99,29 +108,82 @@ class CircularFlowManager:
         self.goback_count: int = 0
         self.goback_history: List[tuple] = []
 
-    def can_go_back(self, current_state: str) -> bool:
+    def is_limit_reached(self) -> bool:
+        """Check if go_back limit is reached."""
+        return self.goback_count >= self.max_gobacks
+
+    def can_go_back(
+        self,
+        current_state: str,
+        yaml_transitions: Optional[Dict[str, Any]] = None
+    ) -> bool:
         """
         Проверить можно ли вернуться назад.
 
+        UNIFIED CHECK: This method checks both limit AND transition availability.
+        It's the CANONICAL way to check if go_back is allowed.
+
+        Priority:
+        1. Check limit first (count < max)
+        2. Check YAML transitions (if provided)
+        3. Fall back to allowed_gobacks map
+
         Args:
             current_state: Текущее состояние
+            yaml_transitions: Optional YAML transitions dict from state_config.
+                             If provided, checks yaml_transitions["go_back"] first.
 
         Returns:
-            True если возврат возможен
+            True если возврат возможен (limit not reached AND target exists)
         """
-        if self.goback_count >= self.max_gobacks:
-            logger.info(
-                "Go back limit reached",
-                current=current_state,
-                count=self.goback_count
+        # Check limit first
+        if self.is_limit_reached():
+            logger.debug(
+                f"Go back limit reached: count={self.goback_count}, max={self.max_gobacks}"
             )
             return False
 
-        return current_state in self.allowed_gobacks
+        # Check if target exists
+        target = self.get_go_back_target(current_state, yaml_transitions)
+        return target is not None
+
+    def get_go_back_target(
+        self,
+        current_state: str,
+        yaml_transitions: Optional[Dict[str, Any]] = None
+    ) -> Optional[str]:
+        """
+        Get the target state for go_back transition.
+
+        UNIFIED LOOKUP: This method is the CANONICAL way to get go_back target.
+
+        Priority:
+        1. YAML transitions (if provided and has go_back key)
+        2. allowed_gobacks map (legacy support)
+
+        Args:
+            current_state: Текущее состояние
+            yaml_transitions: Optional YAML transitions dict from state_config
+
+        Returns:
+            Target state name, or None if no go_back transition defined
+        """
+        # Priority 1: YAML transitions
+        if yaml_transitions:
+            yaml_target = yaml_transitions.get("go_back")
+            if yaml_target:
+                return yaml_target
+
+        # Priority 2: allowed_gobacks map (legacy)
+        return self.allowed_gobacks.get(current_state)
 
     def go_back(self, current_state: str) -> Optional[str]:
         """
-        Выполнить возврат назад.
+        Выполнить возврат назад (LEGACY METHOD).
+
+        DEPRECATED: Use can_go_back() + record_go_back() instead.
+        This method is kept for backward compatibility with code that
+        directly calls go_back() without the Blackboard pipeline.
 
         Args:
             current_state: Текущее состояние
@@ -134,16 +196,30 @@ class CircularFlowManager:
 
         prev_state = self.allowed_gobacks.get(current_state)
         if prev_state:
-            self.goback_count += 1
-            self.goback_history.append((current_state, prev_state))
-            logger.info(
-                "Go back executed",
-                from_state=current_state,
-                to_state=prev_state,
-                remaining=self.max_gobacks - self.goback_count
-            )
+            self.record_go_back(current_state, prev_state)
 
         return prev_state
+
+    def record_go_back(self, from_state: str, to_state: str) -> None:
+        """
+        Record a successful go_back transition.
+
+        This method is called by Orchestrator._apply_deferred_goback_increment()
+        AFTER the conflict resolution confirms that go_back actually happened.
+
+        This is part of the DEFERRED INCREMENT mechanism that prevents
+        incorrect counter increment when higher-priority sources block go_back.
+
+        Args:
+            from_state: State before go_back
+            to_state: State after go_back
+        """
+        self.goback_count += 1
+        self.goback_history.append((from_state, to_state))
+        logger.info(
+            f"Go back recorded: {from_state} -> {to_state}, "
+            f"count={self.goback_count}, remaining={self.get_remaining_gobacks()}"
+        )
 
     def get_remaining_gobacks(self) -> int:
         """Получить оставшееся количество возвратов"""

@@ -31,7 +31,7 @@ class GoBackGuardSource(KnowledgeSource):
 
     Responsibility:
         - Intercept go_back intents before TransitionResolverSource
-        - Check if go_back is allowed (limit not reached AND transition defined)
+        - Delegate go_back logic to CircularFlowManager (SINGLE SOURCE OF TRUTH)
         - If allowed: propose "acknowledge_go_back" action with DEFERRED increment
         - If NOT allowed: block transition and propose "go_back_limit_reached" action
 
@@ -39,19 +39,23 @@ class GoBackGuardSource(KnowledgeSource):
         Should run BEFORE TransitionResolverSource (priority_order < 50)
         so it can intercept and potentially block go_back transitions.
 
+    FUNDAMENTAL ARCHITECTURE:
+        CircularFlowManager is the SINGLE SOURCE OF TRUTH for go_back logic.
+        This source uses CircularFlowManager's methods:
+        - get_go_back_target(state, transitions): Get target state (YAML or allowed_gobacks)
+        - is_limit_reached(): Check if count >= max
+        - record_go_back(from, to): Called by Orchestrator after successful transition
+
+        This eliminates code duplication and ensures consistency.
+
     DEFERRED INCREMENT MECHANISM:
         This source does NOT increment goback_count directly. Instead:
         1. It adds pending_goback_increment=True to the proposal metadata
-        2. The Orchestrator increments the counter in _apply_deferred_goback_increment()
+        2. The Orchestrator calls circular_flow.record_go_back() in _apply_side_effects()
            ONLY IF the go_back transition actually won the conflict resolution
 
         This prevents incorrect counter increment when another source with higher
         priority (e.g., ObjectionGuardSource with CRITICAL) blocks the go_back.
-
-    Integration with CircularFlowManager:
-        - Uses circular_flow.goback_count and max_gobacks to check limits
-        - Deferred increment updates circular_flow.goback_count and goback_history
-        - Respects both allowed_gobacks map AND YAML transitions (union)
 
     Why this source exists:
         The YAML transition for go_back (go_back: "{{prev_phase_state}}")
@@ -153,28 +157,33 @@ class GoBackGuardSource(KnowledgeSource):
             return
 
         current_state = ctx.state
-
-        # BUGFIX #2: Check YAML transition availability FIRST
-        # This ensures we don't propose go_back for states that don't support it
         transitions = ctx.state_config.get("transitions", {})
-        prev_state = transitions.get("go_back")
+
+        # =====================================================================
+        # FUNDAMENTAL FIX: Use CircularFlowManager's unified methods
+        # =====================================================================
+        # CircularFlowManager is now the SINGLE SOURCE OF TRUTH for go_back logic.
+        # It handles both YAML transitions and allowed_gobacks map internally.
+        #
+        # This eliminates code duplication and ensures consistency between
+        # CircularFlowManager.can_go_back() and GoBackGuardSource logic.
+        # =====================================================================
+
+        # Get target state using CircularFlowManager's unified method
+        prev_state = circular_flow.get_go_back_target(current_state, transitions)
 
         if not prev_state:
-            # No go_back transition defined in YAML for this state
-            # Check CircularFlowManager.allowed_gobacks as fallback
-            prev_state = circular_flow.allowed_gobacks.get(current_state)
+            logger.debug(
+                f"GoBackGuard: No go_back transition defined for state={current_state}"
+            )
+            self._log_contribution(
+                reason=f"No go_back transition defined for state {current_state}"
+            )
+            return
 
-            if not prev_state:
-                logger.debug(
-                    f"GoBackGuard: No go_back transition defined for state={current_state}"
-                )
-                self._log_contribution(
-                    reason=f"No go_back transition defined for state {current_state}"
-                )
-                return
-
-        # Check limit
-        limit_reached = circular_flow.goback_count >= circular_flow.max_gobacks
+        # Check if go_back is allowed (limit + target existence)
+        # Note: We already know target exists, so this checks limit only
+        limit_reached = circular_flow.is_limit_reached()
         remaining = circular_flow.get_remaining_gobacks()
 
         logger.debug(

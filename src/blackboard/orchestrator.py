@@ -628,16 +628,9 @@ class DialogueOrchestrator:
         from_state = winning_metadata.get("from_state", prev_state)
         to_state = actual_next_state
 
-        # Increment counter
-        circular_flow.goback_count += 1
-
-        # Record history
-        circular_flow.goback_history.append((from_state, to_state))
-
-        logger.info(
-            f"Deferred goback increment APPLIED: {from_state} -> {to_state}, "
-            f"count={circular_flow.goback_count}, remaining={circular_flow.get_remaining_gobacks()}"
-        )
+        # Use CircularFlowManager.record_go_back() - the canonical method
+        # This ensures all go_back recording logic is centralized in CircularFlowManager
+        circular_flow.record_go_back(from_state, to_state)
 
     def _update_state_before_objection(
         self,

@@ -568,6 +568,7 @@ class TestRetrieverSingletonParameterChange:
 # ТЕСТЫ ДЛЯ STATE MACHINE — ПРИОРИТЕТ RULES И DEFLECT_AND_CONTINUE
 # =============================================================================
 
+@pytest.mark.skip(reason="StateMachine.process() is deprecated. Rule priority is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
 class TestStateMachineRulesPriority:
     """
     Тесты для проверки приоритета rules над QUESTION_INTENTS.
@@ -575,6 +576,9 @@ class TestStateMachineRulesPriority:
     Проблема: price_question входит в QUESTION_INTENTS и обрабатывался
     в ПРИОРИТЕТ 0, возвращая "answer_question". Rules с "deflect_and_continue"
     никогда не достигались для вопросов в SPIN-состояниях.
+
+    DEPRECATED: StateMachine.process() is deprecated. These behaviors are now
+    tested via DialogueOrchestrator in test_blackboard_bugfixes.py.
     """
 
     @pytest.fixture
@@ -745,6 +749,7 @@ class TestSpinPhaseProgression:
 # ТЕСТЫ ДЛЯ STATE MACHINE — ПРИОРИТЕТ КОММЕНТАРИЕВ
 # =============================================================================
 
+@pytest.mark.skip(reason="StateMachine.process() is deprecated. Priority order is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
 class TestStateMachinePriorityOrder:
     """
     Тесты для проверки корректного порядка приоритетов в apply_rules.
@@ -754,6 +759,9 @@ class TestStateMachinePriorityOrder:
     2. Rejection обрабатывается сразу
     3. Rules проверяются до QUESTION_INTENTS
     4. SPIN-логика работает корректно
+
+    DEPRECATED: StateMachine.process() is deprecated. These behaviors are now
+    tested via DialogueOrchestrator in test_blackboard_bugfixes.py.
     """
 
     @pytest.fixture

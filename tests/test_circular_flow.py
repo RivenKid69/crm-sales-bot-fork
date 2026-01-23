@@ -304,6 +304,7 @@ class TestGoBackIntentHandling:
         """correct_info интент определён"""
         assert "correct_info" in GO_BACK_INTENTS
 
+    @pytest.mark.skip(reason="StateMachine.process() is deprecated. go_back is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
     def test_go_back_intent_triggers_goback(self, enable_circular_flow):
         """go_back интент триггерит возврат (при включённом флаге)"""
         sm = StateMachine()
@@ -317,6 +318,7 @@ class TestGoBackIntentHandling:
         assert result["action"] == "go_back"
         assert result["next_state"] == "spin_situation"
 
+    @pytest.mark.skip(reason="StateMachine.process() is deprecated. go_back is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
     def test_correct_info_intent_triggers_goback(self, enable_circular_flow):
         """correct_info интент триггерит возврат (при включённом флаге)"""
         sm = StateMachine()
@@ -407,6 +409,7 @@ class TestAllowedGobacks:
 class TestEdgeCases:
     """Тесты граничных случаев"""
 
+    @pytest.mark.skip(reason="StateMachine.process() is deprecated. go_back is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
     def test_multiple_gobacks_same_state(self, enable_circular_flow):
         """Несколько возвратов из одного состояния (при включённом флаге)"""
         sm = StateMachine()
@@ -451,6 +454,7 @@ class TestEdgeCases:
 class TestIntegrationScenarios:
     """Интеграционные сценарии"""
 
+    @pytest.mark.skip(reason="StateMachine.process() is deprecated. go_back is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
     def test_typical_correction_flow(self, enable_circular_flow):
         """Типичный flow исправления (при включённом флаге)"""
         sm = StateMachine()
@@ -469,6 +473,7 @@ class TestIntegrationScenarios:
         assert result["next_state"] == "spin_situation"
         assert sm.circular_flow.goback_count == 1
 
+    @pytest.mark.skip(reason="StateMachine.process() is deprecated. go_back is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
     def test_goback_then_continue_normally(self, enable_circular_flow):
         """Возврат и продолжение нормально (при включённом флаге)"""
         sm = StateMachine()
@@ -484,6 +489,7 @@ class TestIntegrationScenarios:
         result = sm.process("situation_provided")
         # Должен продолжить обычную обработку
 
+    @pytest.mark.skip(reason="StateMachine.process() is deprecated. go_back is tested via DialogueOrchestrator in test_blackboard_bugfixes.py")
     def test_full_flow_with_gobacks(self, enable_circular_flow):
         """Полный flow с возвратами (при включённом флаге)"""
         sm = StateMachine()
