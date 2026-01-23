@@ -226,10 +226,33 @@ class TransitionResolverSource(KnowledgeSource):
         Returns:
             EvaluatorContext for condition evaluation
         """
+        envelope = ctx.context_envelope
+        current_phase = ctx.current_phase
+
         return EvaluatorContext(
             collected_data=dict(ctx.collected_data),
             state=ctx.state,
             turn_number=ctx.turn_number,
+            current_phase=current_phase,
+            is_phase_state=current_phase is not None,
             current_intent=ctx.current_intent,
+            prev_intent=ctx.last_intent,
             intent_tracker=ctx.intent_tracker,
+            missing_required_data=ctx.get_missing_required_data(),
+            config=ctx.state_config,
+            # Context-aware fields from envelope (if available)
+            frustration_level=getattr(envelope, "frustration_level", 0),
+            is_stuck=getattr(envelope, "is_stuck", False),
+            has_oscillation=getattr(envelope, "has_oscillation", False),
+            momentum_direction=getattr(envelope, "momentum_direction", "neutral"),
+            momentum=getattr(envelope, "momentum", 0.0),
+            engagement_level=getattr(envelope, "engagement_level", "medium"),
+            repeated_question=getattr(envelope, "repeated_question", None),
+            confidence_trend=getattr(envelope, "confidence_trend", "stable"),
+            total_objections=getattr(envelope, "total_objections", 0),
+            has_breakthrough=getattr(envelope, "has_breakthrough", False),
+            turns_since_breakthrough=getattr(envelope, "turns_since_breakthrough", None),
+            guard_intervention=getattr(envelope, "guard_intervention", None),
+            tone=getattr(envelope, "tone", None),
+            unclear_count=getattr(envelope, "unclear_count", 0),
         )
