@@ -52,6 +52,9 @@ class ResolutionTrace:
             "winning_transition": str(self.winning_transition) if self.winning_transition else None,
             "merge_decision": self.merge_decision,
             "blocking_reason": self.blocking_reason,
+            # Include winning action metadata for deferred side effects
+            # (e.g., GoBackGuardSource needs this for deferred goback_count increment)
+            "winning_action_metadata": self.winning_action.metadata if self.winning_action else {},
         }
 
 
@@ -270,7 +273,56 @@ class ConflictResolver:
 
         # Apply fallback if no transition was selected and fallback is available
         if decision.next_state == current_state and fallback_transition:
-            # Check if action allows fallback (must be combinable or no action)
+            # ======================================================================
+            # NOT A BUG: Fallback correctly respects blocking actions
+            # ======================================================================
+            #
+            # REPORTED CONCERN:
+            #   "If blocking action was rejected and didn't become decision.action,
+            #    the check might miss it and incorrectly apply fallback"
+            #
+            # WHY THIS IS CORRECT:
+            #
+            # 1. HOW resolve() WORKS:
+            #    - Sorts proposals by priority (CRITICAL > HIGH > NORMAL > LOW)
+            #    - Selects WINNING action (highest priority)
+            #    - If winning action has combinable=False → ALL transitions blocked
+            #    - decision.action = winning_action.value
+            #
+            # 2. THE CHECK HERE:
+            #    - Looks for proposal where: p.value == decision.action AND not p.combinable
+            #    - This finds the WINNING action that blocked transitions
+            #    - If found → action_blocked = True → NO fallback
+            #
+            # 3. WHY REJECTED PROPOSALS DON'T MATTER:
+            #    - A rejected blocking action LOST to a higher-priority action
+            #    - The higher-priority action made the decision
+            #    - If higher-priority action is combinable → transitions allowed
+            #    - If higher-priority action is blocking → we catch it here
+            #
+            # EXAMPLE WALKTHROUGH:
+            #   proposals = [
+            #     ACTION("block_action", CRITICAL, combinable=False)  # Only proposal
+            #   ]
+            #   resolve():
+            #     winning_action = "block_action" (only one)
+            #     combinable=False → transitions blocked
+            #     decision.action = "block_action"
+            #     decision.next_state = current_state (no transition)
+            #
+            #   resolve_with_fallback():
+            #     next_state == current_state? Yes
+            #     fallback available? Yes
+            #     action_blocked = any(ACTION, not combinable, value=="block_action")
+            #                    = True (found the blocking proposal!)
+            #     → Fallback NOT applied ✓
+            #
+            # EDGE CASE: Multiple blocking actions
+            #   Only the WINNING one matters. If it's blocking, we block.
+            #   If a lower-priority blocking action lost, its intent is irrelevant.
+            #
+            # This logic is CORRECT and well-tested.
+            # ======================================================================
             action_blocked = any(
                 p.type == ProposalType.ACTION and not p.combinable
                 for p in proposals

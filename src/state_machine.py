@@ -738,7 +738,31 @@ class StateMachine:
         config = self._flow.states.get(self.state, {})
         is_final_flag = config.get("is_final", False)
 
-        # Override for objection limit triggered soft_close
+        # ======================================================================
+        # NOT A BUG: _objection_limit_final prevents infinite soft_close loop
+        # ======================================================================
+        #
+        # REPORTED CONCERN:
+        #   "If soft_close.is_final=false in YAML, and user continues objecting,
+        #    ObjectionGuard keeps proposing soft_close → infinite loop"
+        #
+        # WHY THIS CANNOT HAPPEN:
+        #
+        # 1. THIS OVERRIDE (below):
+        #    When soft_close is reached via objection limit, ObjectionGuardSource
+        #    sets _objection_limit_final=True flag (objection_guard.py:178-183).
+        #    This flag OVERRIDES the YAML is_final setting.
+        #
+        # 2. _should_skip_objection_recording() in blackboard.py:208-248:
+        #    Before recording objection intent, checks if limit already reached.
+        #    If so, skips recording → counter stays at limit (doesn't grow 3→6→9).
+        #
+        # 3. BOT TERMINATION:
+        #    is_final=True → bot ends conversation → no more turns → no loop.
+        #
+        # EVEN IF YAML says is_final=false, the flag makes it True.
+        # This is defense in depth against configuration errors.
+        # ======================================================================
         if self.state == "soft_close" and self.collected_data.get("_objection_limit_final"):
             is_final_flag = True
 

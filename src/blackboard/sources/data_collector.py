@@ -85,33 +85,65 @@ class DataCollectorSource(KnowledgeSource):
         2. Check each field in collected_data
         3. If all required fields present -> propose data_complete transition
 
-        NOTE: Eventual Consistency by Design
-        -------------------------------------
+        ==========================================================================
+        NOT A BUG: Eventual Consistency by Design (Snapshot Isolation)
+        ==========================================================================
+
+        REPORTED CONCERN:
+          "data_complete triggers on NEXT turn, not same turn when data extracted"
+
+        WHY THIS IS CORRECT (architectural decision):
+
         This source reads from ctx.collected_data which is a FROZEN SNAPSHOT
         created at the beginning of the turn (blackboard.begin_turn()).
 
         If another source proposes DATA_UPDATE in the same turn, those updates
-        are NOT visible here. This is intentional, not a bug:
+        are NOT visible here. This is INTENTIONAL, not a bug:
 
-        1. Snapshot Isolation: All sources see the SAME consistent view of data.
-           This prevents race conditions and non-deterministic behavior.
+        1. SNAPSHOT ISOLATION:
+           - All sources see the SAME consistent view of data
+           - Prevents race conditions and non-deterministic behavior
+           - Source A cannot affect Source B's decisions mid-turn
 
-        2. Atomic Updates: DATA_UPDATE proposals are collected during the turn
-           and applied atomically in commit_decision() (blackboard.py:456-461).
+        2. ATOMIC UPDATES:
+           - DATA_UPDATE proposals are collected during the turn
+           - Applied atomically in commit_decision() (blackboard.py:456-461)
+           - Either all updates apply or none (transactional semantics)
 
-        3. Next Turn Visibility: Updated data is visible in the next turn's
-           snapshot. This is standard eventual consistency.
+        3. NEXT TURN VISIBILITY:
+           - Updated data is visible in the next turn's snapshot
+           - This is standard eventual consistency (like database MVCC)
 
-        Timeline:
-          Turn N: Source A proposes DATA_UPDATE("field", value)
-                  DataCollectorSource sees old snapshot (no "field")
-                  → data_complete NOT triggered
-          Turn N+1: New snapshot includes "field"
-                    DataCollectorSource sees updated data
-                    → data_complete triggered if all fields present
+        4. WHY NOT IMMEDIATE VISIBILITY:
+           - Would create ORDER DEPENDENCY between sources
+           - Source execution order would affect results
+           - Testing would become non-deterministic
+           - Debugging would be extremely difficult
 
-        This pattern (Snapshot + Deferred Apply) is similar to Event Sourcing
-        and database MVCC. It ensures deterministic, reproducible behavior.
+        TIMELINE EXAMPLE:
+          Turn N:   User says "Мы компания Acme, проблема с CRM"
+                    extracted_data = {company_name: "Acme", situation_data: "..."}
+                    Snapshot created BEFORE extracted_data written
+                    DataCollectorSource sees old snapshot (missing fields)
+                    → data_complete NOT triggered (correct!)
+                    → commit_decision() writes data to collected_data
+
+          Turn N+1: User says anything (even "да" or "хорошо")
+                    New snapshot includes company_name + situation_data
+                    DataCollectorSource sees complete data
+                    → data_complete triggered → transition to next phase
+
+        ARCHITECTURAL PATTERN:
+        This is similar to Event Sourcing and database MVCC (Multi-Version
+        Concurrency Control). It ensures deterministic, reproducible behavior.
+        Each turn is a "transaction" with consistent read snapshot.
+
+        ALTERNATIVE CONSIDERED:
+        "Apply extracted_data before creating snapshot" would:
+        - Break snapshot isolation guarantees
+        - Make source order matter (fragile design)
+        - Cause subtle bugs when sources interact
+        ==========================================================================
 
         Args:
             blackboard: The dialogue blackboard to contribute to

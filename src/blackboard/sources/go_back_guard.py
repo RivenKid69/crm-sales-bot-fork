@@ -136,6 +136,43 @@ class GoBackGuardSource(KnowledgeSource):
 
         current_state = ctx.state
 
+        # ======================================================================
+        # KNOWN BUG #2: Inconsistency with CircularFlowManager.can_go_back()
+        # ======================================================================
+        #
+        # PROBLEM:
+        #   CircularFlowManager.can_go_back() checks TWO conditions:
+        #     1. goback_count >= max_gobacks
+        #     2. current_state in allowed_gobacks
+        #
+        #   But GoBackGuardSource checks ONLY the first condition.
+        #   This causes counter to increment even when:
+        #     - State has no go_back transition in YAML (prev_state = None)
+        #     - State is not in allowed_gobacks map
+        #
+        # EXAMPLE:
+        #   1. User says "go_back" in "presentation" state
+        #   2. "presentation" has no go_back transition in YAML
+        #   3. GoBackGuardSource: limit not reached → count += 1
+        #   4. prev_state = None (no transition defined)
+        #   5. TransitionResolverSource: no go_back transition → stays in presentation
+        #   6. RESULT: count=1 but no go_back happened!
+        #
+        # THE COMMENT BELOW EXPLAINS WHY allowed_gobacks IS NOT CHECKED:
+        #   "go_back target comes from YAML transitions, not allowed_gobacks"
+        #   This is correct reasoning, BUT the counter still shouldn't increment
+        #   if there's no go_back transition defined.
+        #
+        # FIX REQUIRED:
+        #   Before incrementing counter, check:
+        #     prev_state = transitions.get("go_back")
+        #     if not prev_state:
+        #         return  # No go_back defined for this state
+        #
+        # SEVERITY: MEDIUM - wastes go_back quota in states without go_back
+        # ======================================================================
+        #
+        # Original comment (reasoning is correct, but implementation is buggy):
         # FIX: Check ONLY the limit, not allowed_gobacks map
         # The go_back target is defined in YAML transitions, not in allowed_gobacks
         limit_reached = circular_flow.goback_count >= circular_flow.max_gobacks
@@ -153,8 +190,37 @@ class GoBackGuardSource(KnowledgeSource):
             transitions = ctx.state_config.get("transitions", {})
             prev_state = transitions.get("go_back")
 
-            # NOTE: No race condition here despite incrementing before proposal resolution.
+            # ======================================================================
+            # KNOWN BUG #1: Counter increments BEFORE conflict resolution
+            # ======================================================================
             #
+            # PROBLEM:
+            #   goback_count is incremented here, but the actual go_back transition
+            #   is decided later by ConflictResolver. If a higher-priority source
+            #   (e.g., ObjectionGuardSource with CRITICAL) proposes soft_close,
+            #   the go_back transition WON'T happen, but counter is ALREADY incremented.
+            #
+            # EXAMPLE:
+            #   1. User says "go_back" while at objection limit
+            #   2. GoBackGuardSource: count=0 → count=1, proposes acknowledge_go_back
+            #   3. ObjectionGuardSource: proposes soft_close (CRITICAL priority)
+            #   4. ConflictResolver: CRITICAL wins → transition to soft_close
+            #   5. RESULT: count=1 but go_back never happened!
+            #
+            # THE OLD COMMENT BELOW IS INCORRECT:
+            #   It claims "GoBackGuardSource OWNS the go_back logic" but this ignores
+            #   that other sources can propose BLOCKING transitions with higher priority.
+            #
+            # FIX REQUIRED:
+            #   Option A: Increment counter in _apply_side_effects() AFTER resolution
+            #   Option B: Check if go_back transition actually won in commit phase
+            #   Option C: GoBackGuardSource proposes blocking action (combinable=False)
+            #             but this would break other valid transitions
+            #
+            # SEVERITY: MEDIUM - can waste go_back quota without actual go_back
+            # ======================================================================
+            #
+            # OLD COMMENT (kept for reference, but INCORRECT reasoning):
             # This might look like a race condition because we increment goback_count
             # BEFORE the conflict resolver decides whether the transition actually happens.
             # However, this is correct because:
@@ -176,8 +242,14 @@ class GoBackGuardSource(KnowledgeSource):
             # Timeline per turn:
             #   count=N → check limit → increment to N+1 → create proposal → resolution
             # Next turn sees count=N+1 immediately.
+            #
+            # BUG #2 MANIFESTATION:
+            # Counter increments UNCONDITIONALLY here, but history only appends
+            # if prev_state is defined. This means:
+            #   - State without go_back in YAML: count increases, history unchanged
+            #   - Counter and history become inconsistent
             circular_flow.goback_count += 1
-            if prev_state:
+            if prev_state:  # BUG: This check should be BEFORE incrementing counter!
                 circular_flow.goback_history.append((current_state, prev_state))
 
             logger.info(

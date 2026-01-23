@@ -209,6 +209,43 @@ class DialogueBlackboard:
         """
         Check if objection recording should be skipped.
 
+        ======================================================================
+        NOT A BUG: This is part of infinite loop prevention (see Bug #5)
+        ======================================================================
+
+        REPORTED CONCERN:
+          "ObjectionGuard keeps triggering because consecutive >= max"
+
+        WHY THIS PREVENTS THE LOOP:
+
+        1. WHEN LIMIT IS REACHED:
+           - ObjectionGuard proposes soft_close + _objection_limit_final flag
+           - Transition to soft_close happens
+           - is_final() returns True (due to flag override)
+
+        2. IF CONVERSATION SOMEHOW CONTINUES (edge case):
+           - User sends another objection intent
+           - THIS METHOD catches it BEFORE recording
+           - consecutive stays at max (e.g., 3), doesn't grow to 4, 5, 6...
+           - ObjectionGuard sees same values, proposes soft_close again
+           - But _objection_limit_final is ALREADY set
+           - is_final() returns True → conversation ends
+
+        3. WHY SKIP RECORDING:
+           - Without this, counter would grow: 3 → 4 → 5 → ...
+           - This wastes memory and confuses analytics
+           - With this, counter stays at limit (3)
+
+        TIMELINE:
+          Turn N:   3rd objection → limit reached → soft_close → flag set
+          Turn N+1: (if any) objection → skip recording → count=3 (not 4)
+                    → is_final=True → ends
+
+        This is defense in depth, working with:
+        - _objection_limit_final flag (objection_guard.py)
+        - is_final() override (state_machine.py)
+        ======================================================================
+
         Prevents counter from growing beyond limit when soft_close
         continues the dialog (e.g., when is_final=false).
 

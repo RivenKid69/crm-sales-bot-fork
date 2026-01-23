@@ -598,23 +598,42 @@ class DialogueOrchestrator:
         # IntentTracker automatically resets category_streak when a non-objection intent
         # is recorded. If we have a saved state and the streak is now 0, clear it.
         #
-        # NOTE ON TIMING (this is NOT a bug):
-        # The objection_streak check works correctly because of execution order:
+        # ==========================================================================
+        # NOT A BUG: _state_before_objection clearing on positive intent
+        # ==========================================================================
         #
-        # 1. begin_turn() is called FIRST (orchestrator.py:242-246)
-        #    → blackboard.begin_turn() calls IntentTracker.record() (blackboard.py:142-143)
-        #    → record() calls _update_categories() which RESETS objection streak to 0
-        #       if the new intent is NOT in "objection" category (intent_tracker.py:172-179)
+        # REPORTED CONCERN:
+        #   "When client says 'agreement' in handle_objection, _state_before_objection
+        #    is cleared prematurely because streak is already 0 from begin_turn()"
         #
-        # 2. _update_state_before_objection() is called LATER (orchestrator.py:544)
-        #    → By this point, streak is ALREADY reset
+        # WHY THIS IS CORRECT (by design):
         #
-        # Therefore: when we check objection_consecutive() here, it already reflects
-        # the current intent. If current_intent is "agreement" (positive, not objection),
-        # the streak was reset to 0 in step 1, and this condition correctly clears
-        # _state_before_objection.
+        # 1. SEMANTIC MEANING: A positive intent (agreement, interest, etc.) in
+        #    handle_objection means the objection is RESOLVED. The client accepted
+        #    our response. We no longer need to "return" to the previous state.
         #
-        # Call sequence: begin_turn() → record() → streak=0 → ... → here → check passes
+        # 2. TIMING IS INTENTIONAL:
+        #    - begin_turn() → record() → streak resets to 0 for non-objection
+        #    - _update_state_before_objection() runs AFTER, sees streak=0
+        #    - This is the CORRECT moment to clear: objection series ended
+        #
+        # 3. WHAT HAPPENS NEXT:
+        #    - handle_objection state has its own transitions in YAML
+        #    - "agreement" typically transitions to next logical state
+        #    - No need to artificially "return" when client is satisfied
+        #
+        # 4. ALTERNATIVE CONSIDERED:
+        #    "Keep _state_before_objection until we LEAVE handle_objection"
+        #    This would be wrong because:
+        #    - Multiple objections in a row would need the ORIGINAL state
+        #    - But after resolution, that state is no longer relevant
+        #    - The YAML transitions define the correct next state
+        #
+        # CALL SEQUENCE:
+        #   begin_turn() → record("agreement") → streak=0 → ... → here → clear ✓
+        #
+        # If different semantics are needed, this is a FEATURE REQUEST, not a bug.
+        # ==========================================================================
         if (self._state_machine._state_before_objection is not None and
             current_intent in POSITIVE_INTENTS):
 

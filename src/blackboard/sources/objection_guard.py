@@ -172,9 +172,46 @@ class ObjectionGuardSource(KnowledgeSource):
             }
         )
 
-        # CRITICAL: Set _objection_limit_final flag for is_final override
-        # This ensures soft_close triggered by objection limit is always final
-        # (prevents dialogue continuation and objection counter overflow)
+        # ======================================================================
+        # NOT A BUG: Infinite soft_close loop prevention mechanism
+        # ======================================================================
+        #
+        # REPORTED CONCERN:
+        #   "If soft_close.is_final=false in YAML, client can continue after
+        #    soft_close, but ObjectionGuard still sees consecutive >= max,
+        #    proposes soft_close again → infinite loop"
+        #
+        # WHY THIS CANNOT HAPPEN (defense in depth):
+        #
+        # LAYER 1: _objection_limit_final flag (set here)
+        #   - This flag OVERRIDES the YAML is_final setting
+        #   - state_machine.is_final() checks this flag (state_machine.py:741-745):
+        #       if self.state == "soft_close" and collected_data.get("_objection_limit_final"):
+        #           is_final_flag = True  # OVERRIDE!
+        #   - Even if YAML says is_final=false, this flag makes it True
+        #
+        # LAYER 2: _should_skip_objection_recording() (blackboard.py:208-248)
+        #   - BEFORE recording intent, checks if limit already reached
+        #   - If consecutive >= max OR total >= max → skip recording
+        #   - Counter stays at limit, doesn't grow to 3→6→9...
+        #
+        # LAYER 3: Bot behavior
+        #   - is_final=True → bot terminates conversation
+        #   - No more turns processed → no loop possible
+        #
+        # HOW IT WORKS:
+        #   Turn N:   3rd objection → limit reached → soft_close + flag set
+        #   Turn N+1: is_final() returns True (flag override) → conversation ends
+        #
+        # EVEN IF CONVERSATION CONTINUES (edge case):
+        #   Turn N+1: objection_price intent
+        #             _should_skip_objection_recording() → True → skip record
+        #             consecutive still = 3 (not 4)
+        #             ObjectionGuard proposes soft_close again
+        #             But flag is ALREADY set → is_final=True → ends
+        #
+        # This is a COMPLETE defense mechanism, not a bug.
+        # ======================================================================
         blackboard.propose_data_update(
             field="_objection_limit_final",
             value=True,
