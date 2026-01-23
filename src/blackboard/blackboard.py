@@ -278,6 +278,7 @@ class DialogueBlackboard:
         self,
         action: str,
         priority: Priority = Priority.NORMAL,
+        priority_rank: Optional[int] = None,
         combinable: bool = True,
         reason_code: str = "",
         source_name: str = "unknown",
@@ -303,6 +304,7 @@ class DialogueBlackboard:
             reason_code=reason_code or f"action_{action}",
             combinable=combinable,
             metadata=metadata or {},
+            priority_rank=priority_rank,
         )
 
         self._action_proposals.append(proposal)
@@ -316,6 +318,7 @@ class DialogueBlackboard:
         self,
         next_state: str,
         priority: Priority = Priority.NORMAL,
+        priority_rank: Optional[int] = None,
         reason_code: str = "",
         source_name: str = "unknown",
         metadata: Optional[Dict[str, Any]] = None
@@ -338,6 +341,7 @@ class DialogueBlackboard:
             reason_code=reason_code or f"transition_to_{next_state}",
             combinable=True,  # Transitions are always combinable
             metadata=metadata or {},
+            priority_rank=priority_rank,
         )
 
         self._transition_proposals.append(proposal)

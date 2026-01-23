@@ -124,8 +124,14 @@ class ConflictResolver:
         )
 
         # Step 2: Sort by priority (lower value = higher priority)
-        action_proposals.sort(key=lambda p: p.priority.value)
-        transition_proposals.sort(key=lambda p: p.priority.value)
+        # Use priority_rank as tie-breaker within the same Priority enum.
+        default_rank = 10_000
+        def _sort_key(p: Proposal):
+            rank = p.priority_rank if p.priority_rank is not None else default_rank
+            return (p.priority.value, rank)
+
+        action_proposals.sort(key=_sort_key)
+        transition_proposals.sort(key=_sort_key)
 
         # Record rankings for trace
         trace.action_ranking = [

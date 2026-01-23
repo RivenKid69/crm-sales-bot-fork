@@ -8,6 +8,7 @@ import time
 from .blackboard import DialogueBlackboard
 from .knowledge_source import KnowledgeSource
 from .conflict_resolver import ConflictResolver
+from .priority_assigner import PriorityAssigner
 from .proposal_validator import ProposalValidator, ValidationError
 from .event_bus import (
     DialogueEventBus,
@@ -122,6 +123,9 @@ class DialogueOrchestrator:
 
         # Initialize conflict resolver
         self._resolver = ConflictResolver(default_action="continue")
+
+        # Config-driven priority assignment (FlowConfig.priorities)
+        self._priority_assigner = PriorityAssigner(self._flow_config)
 
         # Initialize Knowledge Sources via Registry (Plugin System)
         # Sources are created in priority_order from SourceRegistry
@@ -288,8 +292,11 @@ class DialogueOrchestrator:
                     execution_time_ms=source_time_ms,
                 ))
 
-            # === STEP 3: Validate Proposals ===
+            # === STEP 3: Apply Priority Ordering (config-driven) ===
             proposals = self._blackboard.get_proposals()
+            self._priority_assigner.assign(proposals, self._blackboard.get_context())
+
+            # === STEP 4: Validate Proposals ===
             validation_errors: List[ValidationError] = []
 
             if self._enable_validation:

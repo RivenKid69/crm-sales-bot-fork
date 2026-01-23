@@ -50,6 +50,7 @@ class Proposal:
     reason_code: str
     combinable: bool = True  # Default: actions can coexist with transitions
     metadata: dict = field(default_factory=dict)
+    priority_rank: Optional[int] = None
     created_at: datetime = field(default_factory=datetime.now)
 
     def validate(self) -> List[str]:
