@@ -125,6 +125,22 @@ class ConflictResolver:
 
         # Step 2: Sort by priority (lower value = higher priority)
         # Use priority_rank as tie-breaker within the same Priority enum.
+        #
+        # NOTE ON TIE-BREAKING DETERMINISM:
+        # When two proposals have the same (priority, priority_rank), the result
+        # depends on their order in the input list. This is NOT a bug because:
+        #
+        # 1. Python list.sort() is STABLE - equal elements preserve relative order
+        # 2. Proposal order is DETERMINISTIC:
+        #    - Sources are created via SourceRegistry.create_sources() which sorts
+        #      by priority_order (see source_registry.py:187-190)
+        #    - Orchestrator iterates sources in fixed order (orchestrator.py:259)
+        #    - Each source adds proposals in deterministic code order
+        # 3. Therefore: same input → same source order → same proposal order → same result
+        #
+        # The behavior "different input order → different result" is EXPECTED for
+        # stable sort. This is by design, not a bug. If explicit ordering is needed
+        # for equal priorities, set distinct priority_rank values in Knowledge Sources.
         default_rank = 10_000
         def _sort_key(p: Proposal):
             rank = p.priority_rank if p.priority_rank is not None else default_rank

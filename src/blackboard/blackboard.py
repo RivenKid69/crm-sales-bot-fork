@@ -137,6 +137,17 @@ class DialogueBlackboard:
         self._current_intent = intent
 
         # Record intent in tracker (MUST happen first, before condition evaluation)
+        #
+        # CRITICAL TIMING: This record() call is the FIRST operation in the turn.
+        # IntentTracker.record() immediately updates category streaks:
+        # - If intent is in "objection" category → objection streak increments
+        # - If intent is NOT in "objection" category → objection streak resets to 0
+        #   (see intent_tracker.py:172-179 _update_categories)
+        #
+        # This timing is ESSENTIAL for _update_state_before_objection() in orchestrator.py
+        # which checks objection_consecutive() AFTER this point. The streak value
+        # already reflects the current intent by the time the check runs.
+        #
         # ИСКЛЮЧЕНИЕ: Пропускаем запись возражений если лимит уже достигнут
         # чтобы предотвратить переполнение счётчика (3→6) при продолжении soft_close
         if self._intent_tracker and not self._should_skip_objection_recording(intent):

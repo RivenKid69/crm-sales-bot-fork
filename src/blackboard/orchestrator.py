@@ -597,10 +597,29 @@ class DialogueOrchestrator:
         # CASE 2: Positive intent breaks the objection streak
         # IntentTracker automatically resets category_streak when a non-objection intent
         # is recorded. If we have a saved state and the streak is now 0, clear it.
+        #
+        # NOTE ON TIMING (this is NOT a bug):
+        # The objection_streak check works correctly because of execution order:
+        #
+        # 1. begin_turn() is called FIRST (orchestrator.py:242-246)
+        #    → blackboard.begin_turn() calls IntentTracker.record() (blackboard.py:142-143)
+        #    → record() calls _update_categories() which RESETS objection streak to 0
+        #       if the new intent is NOT in "objection" category (intent_tracker.py:172-179)
+        #
+        # 2. _update_state_before_objection() is called LATER (orchestrator.py:544)
+        #    → By this point, streak is ALREADY reset
+        #
+        # Therefore: when we check objection_consecutive() here, it already reflects
+        # the current intent. If current_intent is "agreement" (positive, not objection),
+        # the streak was reset to 0 in step 1, and this condition correctly clears
+        # _state_before_objection.
+        #
+        # Call sequence: begin_turn() → record() → streak=0 → ... → here → check passes
         if (self._state_machine._state_before_objection is not None and
             current_intent in POSITIVE_INTENTS):
 
             # Check if objection streak was actually broken
+            # (streak is already 0 because record() was called in begin_turn())
             objection_streak = tracker.objection_consecutive() if tracker else 0
             if objection_streak == 0:
                 logger.debug(
