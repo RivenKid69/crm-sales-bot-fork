@@ -200,6 +200,135 @@ class TestBuildPhaseMapping:
         assert mapping.get("close") == "presentation"
 
 
+class TestMultiFlowPhaseCoverage:
+    """
+    Parametrized tests to verify phase coverage works across ALL flows.
+
+    This ensures the fix is universal and not SPIN-specific.
+    """
+
+    # Flow configurations: (flow_name, states, expected_phases)
+    FLOW_TEST_CASES = [
+        # SPIN Selling
+        (
+            "spin_selling",
+            ["spin_situation", "spin_problem", "spin_implication", "spin_need_payoff"],
+            ["situation", "problem", "implication", "need_payoff"],
+        ),
+        # BANT
+        (
+            "bant",
+            ["bant_budget", "bant_authority", "bant_need", "bant_timeline"],
+            ["budget", "authority", "need", "timeline"],
+        ),
+        # Challenger Sale
+        (
+            "challenger",
+            ["challenger_teach", "challenger_tailor", "challenger_close"],
+            ["teach", "tailor", "take_control"],
+        ),
+        # Solution Selling (states from flow.yaml: solution_pain, solution_map, solution_value)
+        (
+            "solution",
+            ["solution_pain", "solution_map", "solution_value"],
+            ["pain_discovery", "solution_mapping", "value_proof"],
+        ),
+        # Consultative Selling (states from flow.yaml: consult_understand, consult_advise, consult_recommend)
+        (
+            "consultative",
+            ["consult_understand", "consult_advise", "consult_recommend"],
+            ["understand", "advise", "recommend"],
+        ),
+    ]
+
+    @pytest.fixture
+    def loader(self):
+        """Config loader instance."""
+        return ConfigLoader()
+
+    @pytest.mark.parametrize("flow_name,states,expected_phases", FLOW_TEST_CASES)
+    def test_flow_phase_mapping_is_correct(self, loader, flow_name, states, expected_phases):
+        """Test that each flow has correct state->phase mapping."""
+        flow_config = loader.load_flow(flow_name)
+        mapping = build_phase_mapping_from_flow(flow_config)
+
+        # Verify each state maps to expected phase
+        for state, phase in zip(states, expected_phases):
+            assert state in mapping, f"{flow_name}: state '{state}' not in mapping"
+            assert mapping[state] == phase, f"{flow_name}: {state} should map to {phase}, got {mapping[state]}"
+
+    @pytest.mark.parametrize("flow_name,states,expected_phases", FLOW_TEST_CASES)
+    def test_visited_states_extracts_phases_for_flow(self, loader, flow_name, states, expected_phases):
+        """Test that visited_states extraction works for each flow."""
+        flow_config = loader.load_flow(flow_name)
+
+        # Simulate fallback skip through first two states
+        dialogue = [
+            {"turn": 1, "state": "greeting", "visited_states": ["greeting"]},
+            {
+                "turn": 2,
+                "state": states[1] if len(states) > 1 else states[0],
+                "visited_states": ["greeting", states[0], states[1]] if len(states) > 1 else ["greeting", states[0]],
+            },
+            {"turn": 3, "state": "close", "visited_states": [states[-1], "close"]},
+        ]
+
+        phases = extract_phases_from_dialogue(dialogue, flow_config=flow_config)
+
+        # Should capture phases from visited_states
+        assert expected_phases[0] in phases, f"{flow_name}: first phase '{expected_phases[0]}' not extracted"
+        if len(expected_phases) > 1:
+            assert expected_phases[1] in phases, f"{flow_name}: second phase '{expected_phases[1]}' not extracted"
+        assert "presentation" in phases, f"{flow_name}: presentation phase not extracted from 'close' state"
+
+    @pytest.mark.parametrize("flow_name,states,expected_phases", FLOW_TEST_CASES)
+    def test_coverage_calculation_for_flow(self, loader, flow_name, states, expected_phases):
+        """Test that coverage calculation works correctly for each flow."""
+        flow_config = loader.load_flow(flow_name)
+
+        # Simulate reaching all phases + presentation
+        dialogue = [
+            {"turn": 1, "state": "greeting", "visited_states": ["greeting"]},
+        ]
+        # Add all states
+        for i, state in enumerate(states):
+            dialogue.append({
+                "turn": i + 2,
+                "state": state,
+                "visited_states": [state],
+            })
+        dialogue.append({
+            "turn": len(states) + 2,
+            "state": "close",
+            "visited_states": ["close"],
+        })
+
+        phases = extract_phases_from_dialogue(dialogue, flow_config=flow_config)
+        coverage = calculate_spin_coverage(phases, expected_phases=flow_config.phase_order)
+
+        # Should have full coverage (all phases + presentation)
+        assert coverage == 1.0, f"{flow_name}: expected 100% coverage, got {coverage}"
+
+    @pytest.mark.parametrize("flow_name,states,expected_phases", FLOW_TEST_CASES)
+    def test_partial_coverage_for_flow(self, loader, flow_name, states, expected_phases):
+        """Test partial coverage when only some phases are reached."""
+        flow_config = loader.load_flow(flow_name)
+
+        # Only visit first state + close
+        dialogue = [
+            {"turn": 1, "state": states[0], "visited_states": [states[0]]},
+            {"turn": 2, "state": "close", "visited_states": ["close"]},
+        ]
+
+        phases = extract_phases_from_dialogue(dialogue, flow_config=flow_config)
+        coverage = calculate_spin_coverage(phases, expected_phases=flow_config.phase_order)
+
+        # Should have partial coverage (first phase + presentation out of all phases + presentation)
+        expected_coverage = 2 / (len(expected_phases) + 1)  # 2 phases matched / total phases
+        assert abs(coverage - expected_coverage) < 0.01, \
+            f"{flow_name}: expected {expected_coverage:.2f} coverage, got {coverage:.2f}"
+
+
 class TestCalculateSpinCoverage:
     """Tests for calculate_spin_coverage.
 
