@@ -94,6 +94,40 @@ class EscalationSource(KnowledgeSource):
         self._misunderstanding_threshold = misunderstanding_threshold
         self._high_value_threshold = high_value_threshold
 
+    def _get_escalation_state(self, ctx) -> str:
+        """
+        Determine escalation state for current flow.
+
+        Resolution order:
+        1. entry_points.escalation (if defined and exists in states)
+        2. Fallback to 'soft_close' (exists in all flows via _base/states.yaml)
+
+        Args:
+            ctx: ContextSnapshot from blackboard
+
+        Returns:
+            State name to use for escalation transition
+        """
+        flow_config = ctx.flow_config
+        entry_points = flow_config.get("entry_points", {})
+        states = flow_config.get("states", {})
+
+        # Try entry_points.escalation first
+        escalation_state = entry_points.get("escalation")
+        if escalation_state and escalation_state in states:
+            return escalation_state
+
+        # Fallback to soft_close (exists in all flows)
+        if "soft_close" in states:
+            return "soft_close"
+
+        # Ultimate fallback (log warning)
+        logger.warning(
+            f"No escalation state found. entry_points.escalation={escalation_state}, "
+            f"soft_close exists={('soft_close' in states)}, available states={list(states.keys())[:5]}"
+        )
+        return "soft_close"
+
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """
         Quick check: any escalation signals present?
@@ -190,24 +224,28 @@ class EscalationSource(KnowledgeSource):
             }
         )
 
+        # Determine escalation state dynamically based on flow config
+        escalation_state = self._get_escalation_state(ctx)
+
         # Propose transition to escalation state
         blackboard.propose_transition(
-            next_state="human_handoff",
+            next_state=escalation_state,
             priority=escalation_priority,
             reason_code=f"escalation_{escalation_reason}",
             source_name=self.name,
             metadata={
                 "trigger": escalation_reason,
+                "resolved_state": escalation_state,
             }
         )
 
         self._log_contribution(
             action="escalate_to_human",
-            transition="human_handoff",
+            transition=escalation_state,
             reason=f"Escalation triggered: {escalation_reason}"
         )
 
         logger.info(
             f"Human escalation triggered: reason={escalation_reason}, "
-            f"intent={intent}, turn={ctx.turn_number}"
+            f"intent={intent}, turn={ctx.turn_number}, state={escalation_state}"
         )

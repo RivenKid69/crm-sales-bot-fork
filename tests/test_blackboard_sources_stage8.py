@@ -125,7 +125,11 @@ class MockIntentTracker:
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
 
-    def __init__(self, states: Optional[Dict[str, Dict[str, Any]]] = None):
+    def __init__(
+        self,
+        states: Optional[Dict[str, Dict[str, Any]]] = None,
+        entry_points: Optional[Dict[str, str]] = None,
+    ):
         self._states = states or {
             "greeting": {"goal": "Greet user", "phase": None},
             "spin_situation": {
@@ -147,13 +151,21 @@ class MockFlowConfig:
             "human_handoff": {"goal": "Transfer to human", "is_final": True},
             "_limits": {"max_consecutive_objections": 3, "max_total_objections": 5},
         }
+        self._entry_points = entry_points or {}
 
     @property
     def states(self) -> Dict[str, Dict[str, Any]]:
         return self._states
 
+    @property
+    def entry_points(self) -> Dict[str, str]:
+        return self._entry_points
+
     def to_dict(self) -> Dict[str, Any]:
-        return {"states": self._states}
+        return {
+            "states": self._states,
+            "entry_points": self._entry_points,
+        }
     @property
     def phase_mapping(self) -> Dict[str, str]:
         """Get phase -> state mapping."""
@@ -215,6 +227,7 @@ def create_blackboard(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
     states: Optional[Dict[str, Dict[str, Any]]] = None,
+    entry_points: Optional[Dict[str, str]] = None,
     intent: str = "greeting",
     extracted_data: Optional[Dict[str, Any]] = None,
     objection_consecutive: int = 0,
@@ -226,7 +239,7 @@ def create_blackboard(
     from src.blackboard.blackboard import DialogueBlackboard
 
     sm = MockStateMachine(state=state, collected_data=collected_data or {})
-    flow_config = MockFlowConfig(states=states)
+    flow_config = MockFlowConfig(states=states, entry_points=entry_points)
     tracker = MockIntentTracker(
         objection_consecutive=objection_consecutive,
         objection_total=objection_total
@@ -768,7 +781,11 @@ class TestEscalationSourceContributeExplicit:
         from src.blackboard.sources import EscalationSource
         from src.blackboard.enums import Priority, ProposalType
 
-        bb = create_blackboard(intent="request_human")
+        # With entry_points.escalation defined -> uses human_handoff
+        bb = create_blackboard(
+            intent="request_human",
+            entry_points={"escalation": "human_handoff"}
+        )
         source = EscalationSource()
 
         source.contribute(bb)
@@ -1171,10 +1188,15 @@ class TestStage8CriteriaVerification:
     def test_criterion_escalation_proposes_human_handoff(self):
         """
         Plan criterion: EscalationSource proposes human_handoff transition
+        when entry_points.escalation is defined.
         """
         from src.blackboard.sources import EscalationSource
 
-        bb = create_blackboard(intent="request_human")
+        # With entry_points.escalation defined -> uses human_handoff
+        bb = create_blackboard(
+            intent="request_human",
+            entry_points={"escalation": "human_handoff"}
+        )
         source = EscalationSource()
         source.contribute(bb)
 
@@ -1209,3 +1231,184 @@ class TestStage8CriteriaVerification:
 
         action_proposals = bb.get_action_proposals()
         assert action_proposals[0].priority == Priority.CRITICAL
+
+
+# =============================================================================
+# Tests for EscalationSource Flow-Aware Behavior
+# =============================================================================
+
+class TestEscalationSourceFlowAware:
+    """Test EscalationSource flow-aware escalation state resolution."""
+
+    def test_uses_entry_points_escalation_when_defined(self):
+        """Uses entry_points.escalation when defined and state exists."""
+        from src.blackboard.sources import EscalationSource
+
+        states = {
+            "greeting": {},
+            "human_handoff": {"is_final": True},
+            "soft_close": {"is_final": False},
+        }
+        entry_points = {"escalation": "human_handoff"}
+
+        bb = create_blackboard(
+            intent="request_human",
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "human_handoff"
+
+    def test_fallback_to_soft_close_when_no_escalation(self):
+        """Falls back to soft_close when entry_points.escalation not defined."""
+        from src.blackboard.sources import EscalationSource
+
+        states = {
+            "greeting": {},
+            "soft_close": {"is_final": False},
+            # NO human_handoff - simulates sales flow
+        }
+        entry_points = {"default": "greeting"}  # NO escalation defined
+
+        bb = create_blackboard(
+            intent="request_human",
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "soft_close"
+
+    def test_fallback_when_escalation_state_not_exists(self):
+        """Falls back to soft_close when entry_points.escalation points to non-existent state."""
+        from src.blackboard.sources import EscalationSource
+
+        states = {
+            "greeting": {},
+            "soft_close": {"is_final": False},
+            # NO human_handoff in states
+        }
+        entry_points = {"escalation": "human_handoff"}  # Points to non-existent state
+
+        bb = create_blackboard(
+            intent="request_human",
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "soft_close"  # Fallback
+
+    def test_metadata_includes_resolved_state(self):
+        """Metadata includes resolved_state for debugging."""
+        from src.blackboard.sources import EscalationSource
+
+        states = {
+            "greeting": {},
+            "soft_close": {"is_final": False},
+        }
+        entry_points = {}  # No escalation defined
+
+        bb = create_blackboard(
+            intent="request_human",
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].metadata.get("resolved_state") == "soft_close"
+
+    def test_support_flow_uses_human_handoff(self):
+        """Support flow correctly uses human_handoff via entry_points."""
+        from src.blackboard.sources import EscalationSource
+
+        # Mimics support_flow.yaml structure
+        states = {
+            "greeting": {},
+            "issue_classifier": {},
+            "human_handoff": {"is_final": True},
+            "soft_close": {"is_final": False},
+        }
+        entry_points = {
+            "default": "greeting",
+            "escalation": "human_handoff",
+        }
+
+        bb = create_blackboard(
+            intent="legal_question",  # Sensitive topic triggers escalation
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert proposals[0].value == "human_handoff"
+
+    def test_sales_flow_uses_soft_close(self):
+        """Sales flow uses soft_close as fallback (no human_handoff)."""
+        from src.blackboard.sources import EscalationSource
+
+        # Mimics spin_selling flow structure - NO human_handoff
+        states = {
+            "greeting": {},
+            "spin_situation": {},
+            "spin_problem": {},
+            "presentation": {},
+            "soft_close": {"is_final": False},
+            "success": {"is_final": True},
+        }
+        entry_points = {
+            "default": "greeting",
+            "hot_lead": "presentation",
+            # NO escalation entry point
+        }
+
+        bb = create_blackboard(
+            intent="gdpr_request",  # Sensitive topic triggers escalation
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "soft_close"
+
+    def test_custom_escalation_state(self):
+        """Flow can define custom escalation state via entry_points."""
+        from src.blackboard.sources import EscalationSource
+
+        states = {
+            "greeting": {},
+            "custom_escalation": {"is_final": True, "goal": "Custom escalation"},
+            "soft_close": {"is_final": False},
+        }
+        entry_points = {
+            "escalation": "custom_escalation",
+        }
+
+        bb = create_blackboard(
+            intent="speak_to_manager",
+            states=states,
+            entry_points=entry_points,
+        )
+        source = EscalationSource()
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert proposals[0].value == "custom_escalation"
