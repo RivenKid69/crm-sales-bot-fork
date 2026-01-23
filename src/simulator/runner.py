@@ -225,6 +225,11 @@ class SimulationRunner:
                         "intent": bot_result.get("intent", ""),
                         "action": bot_result.get("action", ""),
                         "confidence": bot_result.get("confidence", 0),
+                        # FIX: Include all visited states for accurate phase coverage
+                        # This is critical for fallback skip scenarios where bot transitions
+                        # through intermediate states in a single turn
+                        "visited_states": bot_result.get("visited_states", []),
+                        "initial_state": bot_result.get("initial_state", ""),
                     }
 
                     # Phase 8: Collect rule trace if available

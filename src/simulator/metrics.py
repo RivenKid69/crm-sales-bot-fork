@@ -349,6 +349,9 @@ def extract_phases_from_dialogue(
 
     Supports dynamic flow configurations - not just SPIN.
 
+    FIX: Now extracts phases from BOTH prev_state and next_state in decision_trace
+    to correctly capture phases that were visited briefly (e.g., after fallback skip).
+
     Args:
         dialogue: История диалога
         flow_config: FlowConfig object for dynamic phase mapping.
@@ -385,8 +388,53 @@ def extract_phases_from_dialogue(
         logger.debug("Using legacy SPIN phase mapping (no flow_config provided)")
 
     for turn in dialogue:
+        # FIX: Extract phases from ALL sources to ensure complete phase coverage
+        # Priority order:
+        # 1. visited_states (most reliable - explicit list of all states visited in this turn)
+        # 2. state field (legacy - only contains final state)
+        # 3. decision_trace (fallback for older data without visited_states)
+
+        # 1. PRIMARY: Use visited_states if available (most reliable)
+        # This explicitly tracks ALL states visited during a turn, including
+        # intermediate states from fallback skip scenarios
+        visited_states = turn.get("visited_states", [])
+        if visited_states:
+            for visited_state in visited_states:
+                if visited_state in mapping:
+                    phases.add(mapping[visited_state])
+            # If we have visited_states, we can skip other sources as they're redundant
+            continue
+
+        # 2. FALLBACK: Use "state" field (which is next_state in bot.py)
+        # Only reached if visited_states is not available (legacy data)
         state = turn.get("state", "")
         if state in mapping:
             phases.add(mapping[state])
+
+        # 3. FALLBACK: Check decision_trace for prev_state and next_state
+        # This captures states that were visited but not recorded in "state" field
+        # Only reached if visited_states is not available (legacy data)
+        decision_trace = turn.get("decision_trace")
+        if decision_trace:
+            state_machine = decision_trace.get("state_machine", {})
+
+            # Extract prev_state (state bot was IN when processing message)
+            prev_state = state_machine.get("prev_state", "")
+            if prev_state and prev_state in mapping:
+                phases.add(mapping[prev_state])
+
+            # Extract next_state (state bot transitioned TO)
+            next_state = state_machine.get("next_state", "")
+            if next_state and next_state in mapping:
+                phases.add(mapping[next_state])
+
+            # Also use explicit phase fields if available (more reliable)
+            prev_phase = state_machine.get("prev_phase")
+            if prev_phase:
+                phases.add(prev_phase)
+
+            next_phase = state_machine.get("next_phase")
+            if next_phase:
+                phases.add(next_phase)
 
     return list(phases)

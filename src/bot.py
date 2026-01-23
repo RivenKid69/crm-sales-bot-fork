@@ -673,6 +673,12 @@ class SalesBot:
         current_state = self.state_machine.state
         collected_data = self.state_machine.collected_data
 
+        # FIX: Track all visited states during this turn for accurate phase coverage
+        # This is critical for cases like fallback skip where bot transitions through
+        # intermediate states (e.g., greeting -> spin_situation -> spin_problem)
+        initial_state = current_state
+        visited_states = [initial_state]  # Start with initial state
+
         # Phase 2: Analyze tone
         tone_start = time.time()
         tone_info = self._analyze_tone(user_message)
@@ -748,6 +754,9 @@ class SalesBot:
                         "action": "soft_close",
                         "state": "soft_close",
                         "is_final": True,
+                        # FIX: Include visited_states for phase coverage tracking
+                        "visited_states": [initial_state, "soft_close"],
+                        "initial_state": initial_state,
                         "fallback_used": True,
                         "fallback_tier": intervention,
                         "options": fb_result.get("options"),
@@ -770,6 +779,9 @@ class SalesBot:
                     )
                     # Update current_state for rest of processing
                     current_state = skip_next_state
+                    # FIX: Record the skipped-to state for phase coverage tracking
+                    if skip_next_state not in visited_states:
+                        visited_states.append(skip_next_state)
                     # ✅ FIX BUG-001: Сбрасываем fallback_response чтобы сгенерировать
                     # нормальный ответ вместо tier_3 шаблона
                     fallback_response = None
@@ -1028,6 +1040,10 @@ class SalesBot:
         next_state = sm_result["next_state"]
         is_final = sm_result["is_final"]
 
+        # FIX: Record the final state for phase coverage tracking
+        if next_state not in visited_states:
+            visited_states.append(next_state)
+
         # If objection detected and needs soft close - override state machine result
         if objection_info and objection_info.get("should_soft_close"):
             action = "soft_close"
@@ -1185,6 +1201,11 @@ class SalesBot:
             "state": next_state,  # Используем локальную переменную
             "is_final": is_final,
             "spin_phase": sm_result.get("spin_phase"),
+            # FIX: All visited states during this turn for accurate phase coverage
+            # Critical for fallback skip scenarios where bot transitions through
+            # intermediate states (e.g., greeting -> spin_situation -> spin_problem)
+            "visited_states": visited_states,
+            "initial_state": initial_state,
             # Additional info
             "fallback_used": fallback_used,
             "fallback_tier": fallback_tier,
