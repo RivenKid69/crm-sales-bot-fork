@@ -1,0 +1,104 @@
+# =============================================================================
+# FAB PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для FAB flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "FAB - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: FAB
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Ответ на русском (2 предложения):
+
+  clarify_feature:
+    description: "FAB - уточнить ключевую функцию"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Feature (функция)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить, какая функция наиболее важна
+
+      Пример: "Понял. Какая функция для вас наиболее критична?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_advantage:
+    description: "FAB - уточнить преимущество"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Advantage (преимущество)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Уточнить, какое преимущество важнее
+
+      Пример: "Понял. Вам важнее скорость, прозрачность или контроль?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_benefit:
+    description: "FAB - уточнить выгоду"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Benefit (выгода)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Спросить, какой эффект клиенту важнее
+
+      Пример: "Понял. Какой эффект для вас важнее всего?"
+
+      Ответ на русском (2 предложения):

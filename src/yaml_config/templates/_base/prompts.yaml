@@ -200,10 +200,11 @@ templates:
   continue_current_goal:
     description: "Продолжить к текущей цели"
     parameters:
-      required: [system, collected_data, missing_data, history, user_message]
+      required: [system, goal, collected_data, missing_data, history, user_message]
     template: |
       {system}
 
+      Цель этапа: {goal}
       Уже знаем о клиенте: {collected_data}
       Нужно узнать: {missing_data}
 
@@ -214,7 +215,7 @@ templates:
 
       ВАЖНО - структура ответа:
       1. СНАЧАЛА кратко отреагируй на слова клиента (признай проблему, вырази понимание)
-      2. ПОТОМ естественно перейди к вопросу
+      2. ПОТОМ естественно перейди к вопросу, который продвигает цель этапа ({goal})
 
       Примеры хороших переходов:
       - "Понимаю, низкие продажи — это серьёзный вызов. Чтобы понять как помочь, подскажите — сколько человек у вас в команде продаж?"

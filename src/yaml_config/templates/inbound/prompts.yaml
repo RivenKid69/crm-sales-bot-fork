@@ -1,0 +1,199 @@
+# =============================================================================
+# INBOUND PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Inbound flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Inbound - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Inbound
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Дружелюбно отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Тон: полезный, без давления.
+      Ответ на русском (2 предложения):
+
+  gentle_inquiry:
+    description: "Inbound - мягкий вопрос"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Мягкое уточнение
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Задать мягкий вопрос о контексте
+
+      Пример: "Понял. С какой задачей вы чаще всего сталкиваетесь?"
+
+      Ответ на русском (2 предложения):
+
+  build_connection:
+    description: "Inbound - установить связь"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Связь
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить, что для клиента важно
+
+      Пример: "Понял. Что для вас сейчас самое важное в работе с клиентами?"
+
+      Ответ на русском (2 предложения):
+
+  explore_needs:
+    description: "Inbound - исследовать потребности"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Потребности
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить потребность или задачу
+
+      Пример: "Понял. Какую задачу вы хотите решить в первую очередь?"
+
+      Ответ на русском (2 предложения):
+
+  offer_guidance:
+    description: "Inbound - предложить помощь"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Помощь
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Предложить полезный следующий шаг
+
+      Пример: "Давайте подберём подходящее решение. Хотите короткое демо?"
+
+      Ответ на русском (2 предложения):
+
+  provide_helpful_answer:
+    description: "Inbound - полезный ответ"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент просит помощи. Нужно дать полезный ответ.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Дать короткий полезный ответ
+      2. Уточнить один параметр
+
+      Ответ на русском (2-3 предложения):
+
+  share_value:
+    description: "Inbound - поделиться ценностью"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент интересуется функционалом. Нужно показать ценность.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить ценность
+      2. Задать вопрос о релевантности
+
+      Пример: "Это помогает снизить потери и ускорить обработку. Вам это актуально?"
+
+      Ответ на русском (2 предложения):
+
+  offer_resource:
+    description: "Inbound - предложить ресурс"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент описал проблему. Можно предложить ресурс.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Предложить ресурс или следующий шаг
+
+      Пример: "Могу прислать короткое руководство с подходами. Куда удобнее отправить?"
+
+      Ответ на русском (2 предложения):

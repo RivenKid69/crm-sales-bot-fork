@@ -1,0 +1,176 @@
+# =============================================================================
+# GAP SELLING PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Gap Selling flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Gap - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Gap Selling
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН вопрос, который продвигает цель этапа ({goal})
+
+      Ответ на русском (2 предложения):
+
+  explore_current:
+    description: "Gap - исследовать текущее состояние"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Current State (текущее состояние)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Задать вопрос о текущем процессе/метрике
+
+      Пример: "Понял. Как сейчас устроен процесс и что в нём занимает больше всего времени?"
+
+      Ответ на русском (2 предложения):
+
+  explore_future:
+    description: "Gap - визуализировать желаемое будущее"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Future State (желаемое состояние)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Спросить, как выглядит идеальный результат
+
+      Пример: "Понял. Как должен выглядеть идеальный процесс через 3–6 месяцев?"
+
+      Ответ на русском (2 предложения):
+
+  highlight_gap:
+    description: "Gap - показать разрыв"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Gap (разрыв между текущим и желаемым)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить разрыв
+      2. Уточнить, что мешает его закрыть
+
+      Пример: "Похоже, есть разрыв между текущим процессом и желаемым результатом. Что сейчас больше всего мешает его закрыть?"
+
+      Ответ на русском (2 предложения):
+
+  explore_future_state:
+    description: "Gap - углубить будущее состояние"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Future State (углубление)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить понимание
+      2. Уточнить ключевые критерии идеального результата
+
+      Пример: "Понял. Какие 2–3 показателя скажут вам, что всё стало работать как нужно?"
+
+      Ответ на русском (2 предложения):
+
+  present_solution:
+    description: "Gap - показать решение для разрыва"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Solution Fit (решение для разрыва)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко связать разрыв с подходом к решению
+      2. Спросить, подходит ли такой подход
+
+      Пример: "Если закрыть разрыв, обычно помогает прозрачный процесс и единая система данных. Такой подход вам подходит?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_solution:
+    description: "Gap - уточнить решение"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент ответил неясно про решение. Нужно уточнить.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Спросить о критериях выбора решения
+
+      Пример: "Понял. По каким критериям вы будете выбирать решение?"
+
+      Ответ на русском (2 предложения):

@@ -1,0 +1,175 @@
+# =============================================================================
+# CONSULTATIVE SELLING PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Consultative flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Consultative - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Consultative
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН диагностический вопрос по цели ({goal})
+
+      Тон: экспертный, спокойный.
+      Ответ на русском (2 предложения):
+
+  explore_situation:
+    description: "Consultative - исследовать ситуацию"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Situation (понять контекст)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить понимание
+      2. Спросить про текущий процесс или инструмент
+
+      Пример: "Понял. Как сейчас организован процесс и чем вы пользуетесь?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_advice:
+    description: "Consultative - уточнить совет"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент ответил неясно. Нужно уточнить, чтобы дать совет.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Уточнить один ключевой параметр
+
+      Пример: "Понял. А сколько людей вовлечены в этот процесс?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_recommendation:
+    description: "Consultative - уточнить рекомендацию"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Нужно уточнить ожидания, чтобы дать рекомендацию.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Спросить про критерии успеха
+
+      Пример: "Понял. По каким критериям вы поймёте, что решение работает?"
+
+      Ответ на русском (2 предложения):
+
+  answer_as_consultant:
+    description: "Consultative - ответ как консультант"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент задаёт вопрос. Нужно ответить кратко и экспертно.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Дать короткий экспертный ответ
+      2. Уточнить один параметр для точности
+
+      Ответ на русском (2-3 предложения):
+
+  provide_expert_advice:
+    description: "Consultative - дать экспертный совет"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент просит консультацию.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Дать краткий совет или подход
+      2. Задать ОДИН вопрос для уточнения
+
+      Пример: "Понял. Обычно помогает стандартизировать этапы работы с клиентами. У вас есть единая схема этапов?"
+
+      Ответ на русском (2-3 предложения):
+
+  recommend_solution:
+    description: "Consultative - рекомендовать решение"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент описал проблему. Нужно дать рекомендацию.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко связать проблему с подходом к решению
+      2. Уточнить, что важнее всего в решении
+
+      Пример: "Понял. В таких случаях помогает единая CRM и прозрачная воронка. Что для вас важнее — скорость внедрения или гибкость?"
+
+      Ответ на русском (2-3 предложения):

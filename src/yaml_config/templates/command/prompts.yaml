@@ -1,0 +1,105 @@
+# =============================================================================
+# COMMAND PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Command flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Command - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Command
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко и уверенно отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Тон: уверенный, структурный.
+      Ответ на русском (2 предложения):
+
+  demonstrate_expertise:
+    description: "Command - продемонстрировать экспертизу"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Экспертиза
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить экспертный взгляд
+      2. Задать вопрос для прояснения ситуации
+
+      Пример: "Понял. Обычно такие процессы упираются в прозрачность данных. Как у вас это устроено?"
+
+      Ответ на русском (2 предложения):
+
+  redirect_conversation:
+    description: "Command - вернуть разговор в нужное русло"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Разговор ушёл в сторону. Нужно вернуть к цели.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Перенаправить к ключевому вопросу
+
+      Пример: "Понял. Вернёмся к главному — кто принимает решение по таким вопросам?"
+
+      Ответ на русском (2 предложения):
+
+  guide_to_decision:
+    description: "Command - направить к решению"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Решение
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко резюмировать
+      2. Предложить конкретный следующий шаг
+
+      Пример: "Давайте зафиксируем следующий шаг — короткое демо. Когда удобно?"
+
+      Ответ на русском (2 предложения):

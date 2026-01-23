@@ -1,0 +1,128 @@
+# =============================================================================
+# DEMO FIRST PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Demo First flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Demo First - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Demo First
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Ответ на русском (2 предложения):
+
+  create_curiosity:
+    description: "Demo First - создать интерес"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Интерес к демо
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко отметить пользу демо
+      2. Спросить, что клиент хотел бы увидеть
+
+      Пример: "Понял. Что хотите увидеть на демо в первую очередь?"
+
+      Ответ на русском (2 предложения):
+
+  continue_demo:
+    description: "Demo First - продолжить демо"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Демонстрация
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить интерес
+      2. Уточнить сценарий или задачу для показа
+
+      Пример: "Понял. Какой сценарий покажем — лиды, сделки или отчёты?"
+
+      Ответ на русском (2 предложения):
+
+  invite_questions:
+    description: "Demo First - пригласить вопросы"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Вопросы
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Предложить задать вопрос или уточнить деталь
+
+      Пример: "Понял. Есть вопросы по функционалу или интеграциям?"
+
+      Ответ на русском (2 предложения):
+
+  propose_next_steps:
+    description: "Demo First - предложить следующий шаг"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Следующий шаг
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подвести итог
+      2. Предложить следующий шаг (тест/созвон)
+
+      Пример: "Давайте запланируем тестовый период или короткий созвон для внедрения. Что удобнее?"
+
+      Ответ на русском (2 предложения):

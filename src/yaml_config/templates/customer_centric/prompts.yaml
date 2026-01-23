@@ -1,0 +1,129 @@
+# =============================================================================
+# CUSTOMER CENTRIC PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Customer Centric flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Customer Centric - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Customer Centric
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Тепло отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Тон: эмпатичный и уважительный.
+      Ответ на русском (2 предложения):
+
+  encourage_sharing:
+    description: "Customer Centric - поощрить рассказ"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Внимательно слушать
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Показать, что слушаешь
+      2. Попросить рассказать подробнее
+
+      Пример: "Понимаю. Можете рассказать чуть подробнее, как это выглядит у вас?"
+
+      Ответ на русском (2 предложения):
+
+  explore_deeper:
+    description: "Customer Centric - углубить понимание"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Глубже понять ситуацию
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить ключевую деталь
+
+      Пример: "Понял. А какая часть процесса вызывает больше всего сложностей?"
+
+      Ответ на русском (2 предложения):
+
+  present_choices:
+    description: "Customer Centric - предложить выбор"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Выбор решения
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить варианты
+      2. Спросить, какой вариант ближе
+
+      Пример: "Есть несколько подходов: быстрый запуск или более гибкая настройка. Что вам ближе?"
+
+      Ответ на русском (2 предложения):
+
+  offer_assistance:
+    description: "Customer Centric - поддержать в решении"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Поддержка
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Поддержать клиента
+      2. Предложить следующий шаг или помощь
+
+      Пример: "Давайте вместе посмотрим, что подойдёт лучше. Удобно перейти к короткому демо?"
+
+      Ответ на русском (2 предложения):

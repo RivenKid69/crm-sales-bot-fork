@@ -1,0 +1,127 @@
+# =============================================================================
+# TRANSACTIONAL PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Transactional flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Transactional - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Transactional
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН прямой вопрос по цели ({goal})
+
+      Тон: коротко и по делу.
+      Ответ на русском (1-2 предложения):
+
+  quick_qualify:
+    description: "Transactional - быстрая квалификация"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Быстрая квалификация
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Задать один короткий квалификационный вопрос
+
+      Пример: "Понял. Сколько человек будет пользоваться?"
+
+      Ответ на русском (1-2 предложения):
+
+  make_offer:
+    description: "Transactional - сделать предложение"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Предложение
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить предложение
+      2. Уточнить готовность продолжать
+
+      Пример: "Могу предложить быстрый запуск с базовым функционалом. Подходит?"
+
+      Ответ на русском (1-2 предложения):
+
+  direct_close:
+    description: "Transactional - прямое закрытие"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Закрытие
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Предложить следующий шаг (демо/контакт)
+
+      Пример: "Давайте зафиксируем следующий шаг — демо на 15 минут. Когда удобно?"
+
+      Ответ на русском (1-2 предложения):
+
+  answer_briefly:
+    description: "Transactional - краткий ответ"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент задаёт вопрос. Ответ нужен краткий.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Дать краткий ответ по сути
+      2. При необходимости задать один уточняющий вопрос
+
+      Ответ на русском (1-2 предложения):

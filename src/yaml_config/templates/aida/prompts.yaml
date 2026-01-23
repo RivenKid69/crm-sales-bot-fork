@@ -1,0 +1,178 @@
+# =============================================================================
+# AIDA PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для AIDA flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "AIDA - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: AIDA
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать на сообщение клиента
+      2. Задать ОДИН вопрос, который продвигает цель этапа ({goal})
+
+      Тон: энергичный, но без давления.
+      Ответ на русском (2 предложения):
+
+  grab_attention:
+    description: "AIDA - захватить внимание"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Attention (захватить внимание)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Сформулировать цепляющий вопрос о текущей ситуации
+
+      Пример: "Понимаю. А что сейчас больше всего мешает продажам?"
+
+      Ответ на русском (2 предложения):
+
+  develop_interest:
+    description: "AIDA - развить интерес"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Interest (развить интерес)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить интерес клиента
+      2. Задать вопрос, чтобы лучше понять его контекст
+
+      Пример: "Понял. А как сейчас устроен ваш процесс работы с клиентами?"
+
+      Ответ на русском (2 предложения):
+
+  build_desire:
+    description: "AIDA - сформировать желание"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Desire (сформировать желание)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить ценность
+      2. Уточнить, какой эффект клиенту важнее всего
+
+      Пример: "Понял. Что для вас важнее — скорость обработки или прозрачность по клиентам?"
+
+      Ответ на русском (2 предложения):
+
+  create_desire:
+    description: "AIDA - усилить желание через ценность"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Desire (усилить желание)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подчеркнуть выгоду
+      2. Задать ОДИН вопрос о приоритетной выгоде
+
+      Пример: "Понял. Вам важнее сократить время на рутину или повысить контроль за воронкой?"
+
+      Ответ на русском (2 предложения):
+
+  build_interest:
+    description: "AIDA - закрепить интерес"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Interest (закрепить интерес)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить интерес
+      2. Задать вопрос, который помогает двигаться к следующему этапу
+
+      Пример: "Отлично. Что бы вы хотели увидеть в первую очередь?"
+
+      Ответ на русском (2 предложения):
+
+  direct_to_action:
+    description: "AIDA - призыв к действию"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Action (призвать к действию)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Предложить следующий шаг (демо/созвон)
+      3. Уточнить удобное время
+
+      Пример: "Давайте покажу короткое демо — это займёт 15–20 минут. Когда удобно?"
+
+      Ответ на русском (2 предложения):

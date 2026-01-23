@@ -1,0 +1,128 @@
+# =============================================================================
+# NEAT PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для NEAT flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "NEAT - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: NEAT
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Ответ на русском (2 предложения):
+
+  clarify_needs:
+    description: "NEAT - уточнить потребности"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Need (потребности)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить понимание
+      2. Уточнить, какую задачу нужно решить в первую очередь
+
+      Пример: "Понял. Какая задача сейчас самая приоритетная?"
+
+      Ответ на русском (2 предложения):
+
+  quantify_impact:
+    description: "NEAT - квантифицировать влияние"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Economic Impact (влияние)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Уточнить влияние в терминах времени/денег/рисков
+
+      Пример: "Понял. Это больше про потери времени, денег или качества?"
+
+      Ответ на русском (2 предложения):
+
+  identify_authority:
+    description: "NEAT - уточнить доступ к ЛПР"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Access to Authority (ЛПР)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Уточнить, кто принимает финальное решение
+
+      Пример: "Понял. Кто у вас принимает финальное решение по таким вопросам?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_timeline:
+    description: "NEAT - уточнить сроки"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Timeline (сроки)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Спросить об ориентире по срокам
+
+      Пример: "Понял. Когда вы планируете принять решение — в этом месяце или позже?"
+
+      Ответ на русском (2 предложения):

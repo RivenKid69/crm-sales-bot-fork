@@ -1,0 +1,128 @@
+# =============================================================================
+# SOCIAL SELLING PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Social flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Social - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Social Selling
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Дружелюбно отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Ответ на русском (2 предложения):
+
+  build_credibility:
+    description: "Social - укрепить доверие"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Доверие
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Задать вопрос, чтобы лучше понять контекст
+
+      Пример: "Понял. С какими задачами по продажам сталкиваетесь чаще всего?"
+
+      Ответ на русском (2 предложения):
+
+  provide_value:
+    description: "Social - дать ценность"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Ценность
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко дать полезный инсайт
+      2. Спросить, актуально ли это
+
+      Пример: "Понял. Часто помогает единая воронка и прозрачные статусы. Это вам актуально?"
+
+      Ответ на русском (2 предложения):
+
+  encourage_engagement:
+    description: "Social - вовлечь в диалог"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Вовлечение
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Задать вопрос, чтобы вовлечь
+
+      Пример: "Понял. Какие инструменты вы уже пробовали?"
+
+      Ответ на русском (2 предложения):
+
+  guide_to_conversion:
+    description: "Social - направить к конверсии"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Конверсия
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко резюмировать
+      2. Предложить следующий шаг (демо/созвон)
+
+      Пример: "Давайте покажу на коротком демо, как это работает. Когда удобно?"
+
+      Ответ на русском (2 предложения):

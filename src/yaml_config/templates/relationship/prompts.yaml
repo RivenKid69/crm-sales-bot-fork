@@ -1,0 +1,129 @@
+# =============================================================================
+# RELATIONSHIP PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Relationship flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Relationship - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Relationship
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Тёпло отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Тон: дружелюбный, уважительный.
+      Ответ на русском (2 предложения):
+
+  initiate_connection:
+    description: "Relationship - установить контакт"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Первый контакт
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко поприветствовать и расположить
+      2. Задать открытый вопрос о целях клиента
+
+      Пример: "Рад знакомству! Что сейчас для вас наиболее важно в работе с клиентами?"
+
+      Ответ на русском (2 предложения):
+
+  find_common_ground:
+    description: "Relationship - найти общий контекст"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Взаимопонимание
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Уточнить детали, чтобы лучше понять контекст
+
+      Пример: "Понял. А какой у вас формат бизнеса и команда?"
+
+      Ответ на русском (2 предложения):
+
+  provide_value:
+    description: "Relationship - дать ценность"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Ценность
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить полезный подход
+      2. Задать вопрос о применимости
+
+      Пример: "Часто помогает единая воронка и контроль сроков. Это было бы полезно у вас?"
+
+      Ответ на русском (2 предложения):
+
+  propose_partnership:
+    description: "Relationship - предложить партнёрство"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Партнёрство
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко резюмировать ценность
+      2. Предложить следующий шаг
+
+      Пример: "Давайте посмотрим, как это может работать у вас на демо. Когда удобно?"
+
+      Ответ на русском (2 предложения):

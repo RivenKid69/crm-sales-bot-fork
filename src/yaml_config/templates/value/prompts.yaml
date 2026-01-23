@@ -1,0 +1,176 @@
+# =============================================================================
+# VALUE BASED SELLING PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для Value flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "Value - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: Value Based Selling
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН вопрос, который продвигает цель этапа ({goal})
+
+      Ответ на русском (2 предложения):
+
+  explore_value_drivers:
+    description: "Value - найти драйверы ценности"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Value Drivers (драйверы ценности)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить понимание
+      2. Спросить, какие показатели для них ключевые
+
+      Пример: "Понял. Какие показатели для вас самые важные — скорость, конверсия, снижение затрат?"
+
+      Ответ на русском (2 предложения):
+
+  quantify_impact:
+    description: "Value - квантифицировать влияние"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Quantify Impact (квантификация)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Уточнить масштаб влияния (время/деньги/риски)
+
+      Пример: "Понял. Это больше про потери времени, денег или качества?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_roi:
+    description: "Value - уточнить ожидания по ROI"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: ROI (ожидания)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Спросить, какой эффект они считают значимым
+
+      Пример: "Понял. Какой эффект для вас был бы заметным через 3–6 месяцев?"
+
+      Ответ на русском (2 предложения):
+
+  calculate_roi_response:
+    description: "Value - ответ с прикидкой ROI"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает про эффект/ROI.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко объяснить, что ROI зависит от вводных
+      2. Попросить один ключевой вводный показатель
+
+      Пример: "ROI зависит от объёма и текущих затрат. Сколько времени в среднем тратит менеджер на обработку одной заявки?"
+
+      Ответ на русском (2 предложения):
+
+  present_business_case:
+    description: "Value - представить бизнес-кейс"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Business Case (обоснование)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко связать решение с выгодой
+      2. Спросить, какие цифры важнее всего для принятия решения
+
+      Пример: "Понял. Какие цифры для вас решающие — экономия времени, рост конверсии или снижение потерь?"
+
+      Ответ на русском (2 предложения):
+
+  present_roi:
+    description: "Value - показать ROI"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: ROI (показать ценность)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить ожидаемую ценность без вымышленных цифр
+      2. Предложить следующий шаг для расчёта
+
+      Пример: "Понял. Давайте соберём пару вводных и я быстро прикину эффект. Сколько людей работает с клиентами?"
+
+      Ответ на русском (2 предложения):

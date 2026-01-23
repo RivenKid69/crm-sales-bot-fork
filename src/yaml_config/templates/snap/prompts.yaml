@@ -1,0 +1,129 @@
+# =============================================================================
+# SNAP PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для SNAP flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "SNAP - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: SNAP
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН простой вопрос по цели ({goal})
+
+      Тон: кратко, понятно, без лишних деталей.
+      Ответ на русском (2 предложения):
+
+  keep_it_simple:
+    description: "SNAP - сделать максимально просто"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Simple (простота)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Задать один простой вопрос без сложных формулировок
+
+      Пример: "Понял. Сколько человек будет пользоваться системой?"
+
+      Ответ на русском (2 предложения):
+
+  clarify_value:
+    description: "SNAP - прояснить ценность"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: iNvaluable (ценность)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко подтвердить
+      2. Спросить, какая ценность для клиента важнее всего
+
+      Пример: "Понял. Что для вас важнее — скорость, контроль или снижение ошибок?"
+
+      Ответ на русском (2 предложения):
+
+  explore_priorities:
+    description: "SNAP - выровнять приоритеты"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Align (выровнять приоритеты)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить, что услышал
+      2. Уточнить, что сейчас наиболее приоритетно
+
+      Пример: "Понял. Что сейчас для вас приоритетнее — быстро запустить или глубоко настроить?"
+
+      Ответ на русском (2 предложения):
+
+  create_urgency:
+    description: "SNAP - поднять приоритет"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Priorities (поднять приоритет)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить важность
+      2. Спросить о сроках или ближайшем окне решения
+
+      Пример: "Понял. Когда бы вы хотели увидеть первые результаты — в этом месяце или в следующем квартале?"
+
+      Ответ на русском (2 предложения):

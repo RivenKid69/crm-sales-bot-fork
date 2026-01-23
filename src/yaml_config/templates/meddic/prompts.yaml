@@ -1,0 +1,176 @@
+# =============================================================================
+# MEDDIC PROMPT TEMPLATES
+# =============================================================================
+# Версия: 1.0
+# Шаблоны промптов специфичные для MEDDIC flow.
+# Наследуют базовые шаблоны из _base/prompts.yaml
+# =============================================================================
+
+templates:
+  continue_current_goal:
+    description: "MEDDIC - продолжить текущую цель"
+    parameters:
+      required: [system, goal, collected_data, missing_data, history, user_message]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: MEDDIC
+      Цель этапа: {goal}
+
+      Уже знаем о клиенте: {collected_data}
+      Нужно узнать: {missing_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Твоя задача:
+      1. Коротко отреагировать
+      2. Задать ОДИН вопрос по цели ({goal})
+
+      Ответ на русском (2 предложения):
+
+  explore_success_metrics:
+    description: "MEDDIC - метрики успеха"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Metrics (метрики)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Спросить, какие метрики успеха важны
+
+      Пример: "Понял. По каким метрикам вы будете оценивать успех?"
+
+      Ответ на русском (2 предложения):
+
+  identify_decision_maker:
+    description: "MEDDIC - экономический покупатель"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Economic Buyer (ЛПР)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить, кто принимает финальное решение
+
+      Пример: "Понял. Кто принимает финальное решение по бюджету и выбору решения?"
+
+      Ответ на русском (2 предложения):
+
+  explore_criteria:
+    description: "MEDDIC - критерии решения"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Decision Criteria (критерии)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить критерии выбора
+
+      Пример: "Понял. Какие критерии для вас ключевые при выборе решения?"
+
+      Ответ на русском (2 предложения):
+
+  map_decision_process:
+    description: "MEDDIC - процесс принятия решения"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Decision Process (процесс)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Спросить, какие шаги и сроки в процессе
+
+      Пример: "Понял. Какие шаги обычно проходят и какие сроки ожидаете?"
+
+      Ответ на русском (2 предложения):
+
+  explore_pain:
+    description: "MEDDIC - выявить боль"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Identify Pain (боль)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить основную проблему
+
+      Пример: "Понял. Какая главная боль или сложность сейчас?"
+
+      Ответ на русском (2 предложения):
+
+  identify_champion:
+    description: "MEDDIC - найти внутреннего чемпиона"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      ЭТАП: Champion (внутренний помощник)
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Подтвердить
+      2. Уточнить, кто будет поддерживать внедрение внутри
+
+      Пример: "Понял. Кто внутри команды будет вести проект и помогать внедрению?"
+
+      Ответ на русском (2 предложения):
