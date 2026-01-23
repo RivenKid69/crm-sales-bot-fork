@@ -85,6 +85,34 @@ class DataCollectorSource(KnowledgeSource):
         2. Check each field in collected_data
         3. If all required fields present -> propose data_complete transition
 
+        NOTE: Eventual Consistency by Design
+        -------------------------------------
+        This source reads from ctx.collected_data which is a FROZEN SNAPSHOT
+        created at the beginning of the turn (blackboard.begin_turn()).
+
+        If another source proposes DATA_UPDATE in the same turn, those updates
+        are NOT visible here. This is intentional, not a bug:
+
+        1. Snapshot Isolation: All sources see the SAME consistent view of data.
+           This prevents race conditions and non-deterministic behavior.
+
+        2. Atomic Updates: DATA_UPDATE proposals are collected during the turn
+           and applied atomically in commit_decision() (blackboard.py:456-461).
+
+        3. Next Turn Visibility: Updated data is visible in the next turn's
+           snapshot. This is standard eventual consistency.
+
+        Timeline:
+          Turn N: Source A proposes DATA_UPDATE("field", value)
+                  DataCollectorSource sees old snapshot (no "field")
+                  → data_complete NOT triggered
+          Turn N+1: New snapshot includes "field"
+                    DataCollectorSource sees updated data
+                    → data_complete triggered if all fields present
+
+        This pattern (Snapshot + Deferred Apply) is similar to Event Sourcing
+        and database MVCC. It ensures deterministic, reproducible behavior.
+
         Args:
             blackboard: The dialogue blackboard to contribute to
         """

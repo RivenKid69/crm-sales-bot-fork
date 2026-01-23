@@ -153,7 +153,29 @@ class GoBackGuardSource(KnowledgeSource):
             transitions = ctx.state_config.get("transitions", {})
             prev_state = transitions.get("go_back")
 
-            # Manually increment counter and record history
+            # NOTE: No race condition here despite incrementing before proposal resolution.
+            #
+            # This might look like a race condition because we increment goback_count
+            # BEFORE the conflict resolver decides whether the transition actually happens.
+            # However, this is correct because:
+            #
+            # 1. Single-threaded execution: Orchestrator calls sources sequentially
+            #    (orchestrator.py:259), so no concurrent access to circular_flow
+            #
+            # 2. GoBackGuardSource OWNS the go_back logic: We check the limit (line 141)
+            #    and increment (below) in the same synchronous contribute() call.
+            #    The count is already updated when we create proposals.
+            #
+            # 3. Deterministic flow: If limit is not reached, we WILL allow go_back.
+            #    The proposal we create (combinable=True) doesn't block the transition.
+            #    TransitionResolverSource handles the actual YAML transition separately.
+            #
+            # 4. No external record_goback() call: CircularFlowManager.go_back() is NOT
+            #    called from the blackboard pipeline. This source manages the count directly.
+            #
+            # Timeline per turn:
+            #   count=N → check limit → increment to N+1 → create proposal → resolution
+            # Next turn sees count=N+1 immediately.
             circular_flow.goback_count += 1
             if prev_state:
                 circular_flow.goback_history.append((current_state, prev_state))
