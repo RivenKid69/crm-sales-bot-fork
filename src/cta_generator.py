@@ -68,6 +68,19 @@ class CTAGenerator:
     CTAS: Dict[str, List[str]] = {
         # В ранних состояниях CTA не добавляем
         "greeting": [],
+        "spin_situation": [],
+        "spin_problem": [],
+
+        # В средних SPIN состояниях — мягкие CTA (клиент уже понимает проблему)
+        "spin_implication": [
+            "Хотите посмотреть как это решается на демо?",
+            "Могу показать на примере — буквально 10 минут.",
+        ],
+        "spin_need_payoff": [
+            "Готовы посмотреть как это работает?",
+            "Давайте покажу на демо — увидите сами.",
+            "Хотите тестовый доступ?",
+        ],
 
         # В поздних состояниях — прямые CTA (defaults)
         "presentation": [
@@ -123,7 +136,7 @@ class CTAGenerator:
     MIN_TURNS_FOR_CTA = 3        # Минимум ходов до добавления CTA
 
     # Early states where CTA should not be added (loaded from config)
-    DEFAULT_EARLY_STATES = {"greeting"}
+    DEFAULT_EARLY_STATES = {"greeting", "spin_situation", "spin_problem"}
 
     def __init__(self, config: Optional["LoadedConfig"] = None):
         """

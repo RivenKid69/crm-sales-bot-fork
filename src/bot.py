@@ -38,7 +38,7 @@ from tone_analyzer import ToneAnalyzer
 # Phase 3: SPIN Flow Optimization
 from lead_scoring import LeadScorer, get_signal_from_intent
 from objection_handler import ObjectionHandler
-from cta_generator import CTAGenerator
+from cta_generator import CTAGenerator, CTAResult
 from response_variations import variations
 
 # Context Window for enhanced classification
@@ -570,18 +570,57 @@ class SalesBot:
         response: str,
         state: str,
         context: Dict
-    ) -> str:
-        """Добавить CTA к ответу если уместно (Phase 3)."""
+    ) -> CTAResult:
+        """
+        Добавить CTA к ответу если уместно (Phase 3).
+
+        Returns:
+            CTAResult with full information about CTA decision:
+            - cta_added: bool - whether CTA was added
+            - cta: Optional[str] - the CTA text if added
+            - final_response: str - response with or without CTA
+            - skip_reason: Optional[str] - why CTA was skipped
+        """
+        # Feature flag disabled - return result with cta_added=False
         if not flags.cta_generator:
-            return response
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="feature_flag_disabled"
+            )
 
         try:
             self.cta_generator.increment_turn()
-            result = self.cta_generator.append_cta(response, state, context)
+            # Use generate_cta_result() to get full CTAResult with tracking info
+            result = self.cta_generator.generate_cta_result(response, state, context)
+
+            if result.cta_added:
+                logger.info(
+                    "CTA applied to response",
+                    state=state,
+                    cta=result.cta[:30] if result.cta else None,
+                )
+            else:
+                logger.debug(
+                    "CTA skipped",
+                    state=state,
+                    reason=result.skip_reason,
+                )
+
             return result
+
         except Exception as e:
             logger.error("CTA generation failed", error=str(e))
-            return response
+            # Graceful degradation: return original response without CTA
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason=f"error_{type(e).__name__}"
+            )
 
     def _record_turn_metrics(
         self,
@@ -1044,6 +1083,19 @@ class SalesBot:
         if next_state not in visited_states:
             visited_states.append(next_state)
 
+        # =================================================================
+        # Response Generation and CTA Application (refactored for proper tracking)
+        # =================================================================
+        # Initialize CTA result for tracking
+        cta_result: CTAResult = CTAResult(
+            original_response="",
+            cta=None,
+            final_response="",
+            cta_added=False,
+            skip_reason="not_applicable"
+        )
+        response_elapsed: float = 0.0
+
         # If objection detected and needs soft close - override state machine result
         if objection_info and objection_info.get("should_soft_close"):
             action = "soft_close"
@@ -1052,37 +1104,57 @@ class SalesBot:
             # Безопасный доступ к response_parts с fallback
             response_parts = objection_info.get("response_parts") or {}
             response = response_parts.get("message") or "Хорошо, свяжитесь когда будет удобно."
+            # CTA not applicable for soft_close
+            cta_result = CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="soft_close_path"
+            )
             logger.info(
                 "Soft close triggered by objection handler",
                 objection_type=objection_info.get("objection_type"),
                 attempt_number=objection_info.get("attempt_number")
             )
-        else:
-            # 3. Generate response
+        elif fallback_response:
+            # Fallback path - CTA not applicable
             response_start = time.time()
-            if fallback_response:
-                response = fallback_response["response"]
-            else:
-                response = self.generator.generate(action, context)
+            response = fallback_response["response"]
+            response_elapsed = (time.time() - response_start) * 1000
+            cta_result = CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="fallback_path"
+            )
+        else:
+            # 3. Generate response (normal path)
+            response_start = time.time()
+            response = self.generator.generate(action, context)
             response_elapsed = (time.time() - response_start) * 1000
 
-            # Decision Tracing: Record response generation
-            if trace_builder:
-                trace_builder.record_response(
-                    template_key=action,
-                    response_text=response,
-                    elapsed_ms=response_elapsed,
-                )
-
-        # Phase 3: Apply CTA if appropriate
-        if not fallback_response and not (objection_info and objection_info.get("should_soft_close")):
-            response = self._apply_cta(
+            # Phase 3: Apply CTA BEFORE recording response (critical fix!)
+            cta_result = self._apply_cta(
                 response=response,
-                state=next_state,  # Используем локальную переменную
+                state=next_state,
                 context={
                     "frustration_level": frustration_level,
                     "last_action": self.last_action,
                 }
+            )
+            # Update response with CTA result
+            response = cta_result.final_response
+
+        # Decision Tracing: Record response generation WITH CTA info
+        if trace_builder:
+            trace_builder.record_response(
+                template_key=action,
+                response_text=response,
+                elapsed_ms=response_elapsed,
+                cta_added=cta_result.cta_added,
+                cta_type=cta_result.cta[:30] if cta_result.cta else None,
             )
 
         # 4. Save to history

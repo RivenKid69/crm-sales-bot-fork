@@ -263,7 +263,7 @@ feature_flags:
   lead_scoring: false         # Скоринг лидов (включить после калибровки)
   circular_flow: false        # Возврат назад по фазам (опасно, включать осторожно)
   objection_handler: false    # Продвинутая обработка возражений
-  cta_generator: false        # Генерация Call-to-Action
+  cta_generator: true         # Генерация Call-to-Action
 
 # -----------------------------------------------------------------------------
 # DEVELOPMENT (Режим разработки)
