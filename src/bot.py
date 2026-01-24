@@ -849,15 +849,20 @@ class SalesBot:
 
         # =================================================================
         # Robust Classification: ConfidenceRouter for graceful degradation
+        # NOTE: When unified_disambiguation is enabled, disambiguation logic
+        # is handled by DisambiguationDecisionEngine in UnifiedClassifier.
+        # ConfidenceRouter is only used as fallback for legacy compatibility.
         # =================================================================
-        if flags.confidence_router and intent != "disambiguation_needed":
+        if (flags.confidence_router
+            and not flags.unified_disambiguation
+            and intent != "disambiguation_needed"):
             # Добавляем оригинальное сообщение для логирования
             classification["_original_message"] = user_message
 
             router_result = self.confidence_router.route(classification)
 
             logger.debug(
-                "ConfidenceRouter decision",
+                "ConfidenceRouter decision (legacy mode)",
                 decision=router_result.decision.value,
                 intent=intent,
                 confidence=classification.get("confidence", 0.0),
@@ -915,6 +920,9 @@ class SalesBot:
 
         # =================================================================
         # Phase 4: Handle disambiguation_needed intent
+        # This handles both:
+        # 1. Legacy HybridClassifier disambiguation (intent_disambiguation flag)
+        # 2. New unified disambiguation (unified_disambiguation flag)
         # =================================================================
         if intent == "disambiguation_needed":
             options = classification.get("disambiguation_options", [])

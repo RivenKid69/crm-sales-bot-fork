@@ -947,13 +947,21 @@ class DecisionTraceBuilder:
         llm_ms: float = 0.0,
     ) -> "DecisionTraceBuilder":
         """Записать результат классификации."""
+        # Determine disambiguation_triggered from multiple sources:
+        # 1. Explicit flag from unified disambiguation (unified_disambiguation)
+        # 2. Legacy check: intent == "disambiguation_needed"
+        disambiguation_triggered = (
+            result.get("disambiguation_triggered", False) or
+            result.get("intent") == "disambiguation_needed"
+        )
+
         self._trace.classification = ClassificationTrace(
             top_intent=result.get("intent", ""),
             confidence=result.get("confidence", 0.0),
             all_scores=all_scores or result.get("all_scores", {}),
             method_used=result.get("method", ""),
             disambiguation_options=result.get("disambiguation_options", []),
-            disambiguation_triggered=result.get("intent") == "disambiguation_needed",
+            disambiguation_triggered=disambiguation_triggered,
             extracted_data=result.get("extracted_data", {}),
             classification_time_ms=elapsed_ms,
         )

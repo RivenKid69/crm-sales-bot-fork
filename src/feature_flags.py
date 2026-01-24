@@ -56,7 +56,8 @@ class FeatureFlags:
         "cta_generator": False,           # Генерация Call-to-Action
 
         # Фаза 4: Intent Disambiguation
-        "intent_disambiguation": False,   # Уточнение намерения при близких scores
+        "intent_disambiguation": False,   # Уточнение намерения при близких scores (legacy HybridClassifier)
+        "unified_disambiguation": True,   # Унифицированный disambiguation для LLM и Hybrid классификаторов
 
         # Фаза 4.5: Cascade Classifier (семантический fallback)
         "cascade_classifier": True,       # Каскадный классификатор с эмбеддингами
@@ -118,7 +119,7 @@ class FeatureFlags:
         "phase_1": ["multi_tier_fallback", "conversation_guard"],
         "phase_2": ["tone_analysis", "response_variations", "personalization"],
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
-        "phase_4": ["intent_disambiguation", "cascade_classifier", "semantic_objection_detection"],
+        "phase_4": ["intent_disambiguation", "unified_disambiguation", "cascade_classifier", "semantic_objection_detection"],
         "safe": ["response_variations", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
         "risky": ["circular_flow", "lead_scoring"],
         # Context Policy groups (PLAN_CONTEXT_POLICY.md)
@@ -332,8 +333,13 @@ class FeatureFlags:
 
     @property
     def intent_disambiguation(self) -> bool:
-        """Включено ли уточнение намерения при близких scores"""
+        """Включено ли уточнение намерения при близких scores (legacy)"""
         return self.is_enabled("intent_disambiguation")
+
+    @property
+    def unified_disambiguation(self) -> bool:
+        """Включён ли унифицированный disambiguation для LLM и Hybrid классификаторов"""
+        return self.is_enabled("unified_disambiguation")
 
     @property
     def dynamic_cta_fallback(self) -> bool:

@@ -73,6 +73,52 @@ MAX_GOBACKS: int = _limits.get("max_gobacks", 2)
 
 
 # =============================================================================
+# DISAMBIGUATION (Unified Disambiguation Decision Engine)
+# =============================================================================
+
+_disambiguation = _constants.get("disambiguation", {})
+_disambiguation_thresholds = _disambiguation.get("thresholds", {})
+_disambiguation_options = _disambiguation.get("options", {})
+
+DISAMBIGUATION_CONFIG: Dict[str, Any] = {
+    # Confidence thresholds
+    "high_confidence": _disambiguation_thresholds.get("high_confidence", 0.85),
+    "medium_confidence": _disambiguation_thresholds.get("medium_confidence", 0.65),
+    "low_confidence": _disambiguation_thresholds.get("low_confidence", 0.45),
+    "min_confidence": _disambiguation_thresholds.get("min_confidence", 0.30),
+
+    # Gap threshold
+    "gap_threshold": _disambiguation.get("gap_threshold", 0.20),
+    "max_score_gap": _disambiguation.get("gap_threshold", 0.20),  # Alias for legacy
+
+    # Options config
+    "max_options": _disambiguation_options.get("max_options", 3),
+    "min_option_confidence": _disambiguation_options.get("min_option_confidence", 0.25),
+
+    # Bypass and excluded intents
+    "bypass_disambiguation_intents": _disambiguation.get("bypass_intents", [
+        "rejection", "contact_provided", "demo_request"
+    ]),
+    "excluded_intents": _disambiguation.get("excluded_intents", [
+        "unclear", "small_talk"
+    ]),
+
+    # Cooldown
+    "cooldown_turns": _disambiguation.get("cooldown_turns", 3),
+}
+
+
+def get_disambiguation_config() -> Dict[str, Any]:
+    """
+    Get disambiguation configuration from YAML.
+
+    Returns:
+        Dict with all disambiguation settings
+    """
+    return DISAMBIGUATION_CONFIG.copy()
+
+
+# =============================================================================
 # INTENT CATEGORIES
 # =============================================================================
 

@@ -4,6 +4,12 @@
 Позволяет переключаться между LLM и Hybrid классификаторами.
 Включает ClassificationRefinementLayer для контекстного уточнения
 коротких ответов (State Loop Fix).
+
+Включает UnifiedDisambiguationLayer для принятия решений о необходимости
+уточнения намерения пользователя.
+
+Pipeline:
+    message → LLM/Hybrid Classifier → RefinementLayer → DisambiguationLayer → result
 """
 from typing import Dict, Optional, Any
 
@@ -21,8 +27,12 @@ class UnifiedClassifier:
     Если flags.classification_refinement == True: применяет
     ClassificationRefinementLayer для уточнения коротких ответов.
 
+    Если flags.unified_disambiguation == True: применяет
+    DisambiguationDecisionEngine для унифицированного анализа
+    необходимости уточнения намерения.
+
     Pipeline:
-        message → LLM/Hybrid Classifier → RefinementLayer → result
+        message → LLM/Hybrid Classifier → RefinementLayer → DisambiguationLayer → result
     """
 
     def __init__(self):
@@ -30,6 +40,7 @@ class UnifiedClassifier:
         self._hybrid = None
         self._llm = None
         self._refinement_layer = None
+        self._disambiguation_engine = None
 
     @property
     def hybrid(self):
@@ -55,6 +66,14 @@ class UnifiedClassifier:
             self._refinement_layer = ClassificationRefinementLayer()
         return self._refinement_layer
 
+    @property
+    def disambiguation_engine(self):
+        """Lazy init DisambiguationDecisionEngine."""
+        if self._disambiguation_engine is None:
+            from .disambiguation_engine import get_disambiguation_engine
+            self._disambiguation_engine = get_disambiguation_engine()
+        return self._disambiguation_engine
+
     def classify(self, message: str, context: Dict = None) -> Dict:
         """
         Классифицировать сообщение.
@@ -62,6 +81,7 @@ class UnifiedClassifier:
         Pipeline:
         1. Primary classification (LLM or Hybrid based on feature flag)
         2. Contextual refinement (if classification_refinement flag enabled)
+        3. Disambiguation analysis (if unified_disambiguation flag enabled)
 
         Args:
             message: Сообщение пользователя
@@ -75,6 +95,9 @@ class UnifiedClassifier:
             - method: str ("llm", "hybrid", или "llm_fallback")
             - refined: bool (если было уточнение)
             - original_intent: str (если было уточнение)
+            - disambiguation_triggered: bool (если нужно уточнение)
+            - disambiguation_options: list (если нужно уточнение)
+            - disambiguation_decision: str (если анализ проведён)
         """
         context = context or {}
 
@@ -88,7 +111,73 @@ class UnifiedClassifier:
         if flags.classification_refinement:
             result = self._apply_refinement(message, result, context)
 
+        # Step 3: Unified disambiguation analysis
+        if flags.unified_disambiguation:
+            result = self._apply_disambiguation(result, context)
+
         return result
+
+    def _apply_disambiguation(
+        self,
+        result: Dict,
+        context: Dict
+    ) -> Dict:
+        """
+        Apply DisambiguationDecisionEngine to analyze if disambiguation needed.
+
+        This provides unified disambiguation logic for both LLM and Hybrid
+        classifiers, replacing the separate ConfidenceRouter and
+        DisambiguationAnalyzer paths.
+
+        Args:
+            result: Classification result from primary classifier
+            context: Dialog context
+
+        Returns:
+            Result with disambiguation fields added (or original if no disambiguation)
+        """
+        try:
+            # Skip if already disambiguation_needed (from HybridClassifier)
+            if result.get("intent") == "disambiguation_needed":
+                result["disambiguation_triggered"] = True
+                return result
+
+            # Run disambiguation analysis
+            disambiguation_result = self.disambiguation_engine.analyze(result, context)
+
+            # Add disambiguation metadata to result
+            result["disambiguation_triggered"] = disambiguation_result.disambiguation_triggered
+            result["disambiguation_decision"] = disambiguation_result.decision.value
+            result["disambiguation_gap"] = disambiguation_result.gap
+            result["disambiguation_reasoning"] = disambiguation_result.reasoning
+
+            # If disambiguation needed, transform result
+            if disambiguation_result.needs_disambiguation:
+                # Merge disambiguation data into result
+                disambiguation_data = disambiguation_result.to_classification_result()
+                result.update(disambiguation_data)
+
+                logger.info(
+                    "Disambiguation triggered",
+                    extra={
+                        "original_intent": result.get("original_intent", result.get("intent")),
+                        "decision": disambiguation_result.decision.value,
+                        "confidence": result.get("confidence"),
+                        "gap": disambiguation_result.gap,
+                        "options_count": len(disambiguation_result.options),
+                    }
+                )
+
+            return result
+
+        except Exception as e:
+            # Fail-safe: return original result on any error
+            logger.warning(
+                "Disambiguation analysis failed, returning original result",
+                extra={"error": str(e), "intent": result.get("intent")}
+            )
+            result["disambiguation_triggered"] = False
+            return result
 
     def _apply_refinement(
         self,
@@ -140,9 +229,13 @@ class UnifiedClassifier:
         stats = {
             "active_classifier": "llm" if flags.llm_classifier else "hybrid",
             "refinement_enabled": flags.classification_refinement,
+            "unified_disambiguation_enabled": flags.unified_disambiguation,
         }
 
         if self._llm is not None:
             stats["llm_stats"] = self._llm.get_stats()
+
+        if self._disambiguation_engine is not None:
+            stats["disambiguation_stats"] = self._disambiguation_engine.get_stats()
 
         return stats
