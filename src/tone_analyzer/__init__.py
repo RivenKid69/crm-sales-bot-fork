@@ -18,6 +18,12 @@ Tone Analyzer Module.
 
 Для обратной совместимости также доступны:
     from tone_analyzer import ToneAnalyzer  # Alias для CascadeToneAnalyzer
+
+Enhanced with Intensity-based Frustration Calculation:
+    - Multiple signals = higher weight (intensity multipliers)
+    - Consecutive negative turns = faster escalation
+    - Pre-intervention for RUSHED users with high signal count
+    - "быстрее, не тяни, некогда" (3 RUSHED signals) now properly handled
 """
 
 from .models import Tone, Style, ToneAnalysis
@@ -30,6 +36,15 @@ from .markers import (
     MAX_FRUSTRATION,
 )
 from .frustration_tracker import FrustrationTracker
+from .frustration_intensity import (
+    FrustrationIntensityCalculator,
+    FrustrationIntensityRegistry,
+    IFrustrationIntensityCalculator,
+    IntensityConfig,
+    calculate_frustration_delta,
+    should_pre_intervene,
+    get_intervention_urgency,
+)
 from .regex_analyzer import RegexToneAnalyzer
 from .semantic_analyzer import (
     SemanticToneAnalyzer,
@@ -64,6 +79,15 @@ __all__ = [
 
     # Trackers
     "FrustrationTracker",
+
+    # Intensity-based frustration calculation (NEW)
+    "FrustrationIntensityCalculator",
+    "FrustrationIntensityRegistry",
+    "IFrustrationIntensityCalculator",
+    "IntensityConfig",
+    "calculate_frustration_delta",
+    "should_pre_intervene",
+    "get_intervention_urgency",
 
     # Analyzers
     "RegexToneAnalyzer",

@@ -96,14 +96,16 @@ class RegexToneAnalyzer:
         tone_scores: Dict[Tone, int] = {}
 
         # Поиск сигналов тона
+        # NOTE: Count ALL signals for intensity-based frustration calculation
+        # (Previous bug: break after first signal missed multi-signal intensity)
         for tone, patterns in self._compiled_patterns.items():
             for pattern in patterns:
                 if pattern.search(message_lower):
                     if tone not in detected_tones:
                         detected_tones.append(tone)
-                        tone_scores[tone] = tone_scores.get(tone, 0) + 1
+                    tone_scores[tone] = tone_scores.get(tone, 0) + 1
                     signals.append(f"{tone.value}:{pattern.pattern}")
-                    break  # Один паттерн на тон достаточно
+                    # DO NOT break here - count all signals for intensity calculation
 
         # Выбираем доминирующий тон по приоритету
         primary_tone = self._select_primary_tone(detected_tones)
@@ -111,8 +113,11 @@ class RegexToneAnalyzer:
         # Определяем стиль
         style = self._detect_style(message_lower)
 
-        # Обновляем frustration tracker
-        self._frustration_tracker.update(primary_tone)
+        # Get signal count for primary tone (for intensity-based calculation)
+        primary_signal_count = tone_scores.get(primary_tone, 1)
+
+        # Обновляем frustration tracker with signal count for intensity
+        self._frustration_tracker.update(primary_tone, signal_count=primary_signal_count)
 
         # Расчёт confidence
         if signals:
@@ -125,6 +130,12 @@ class RegexToneAnalyzer:
 
         latency_ms = (time.perf_counter() - start_time) * 1000
 
+        # Get intensity-based information from tracker
+        pre_intervention = self._frustration_tracker.pre_intervention_triggered
+        urgency = self._frustration_tracker.get_intervention_urgency()
+        should_exit = self._frustration_tracker.should_offer_exit()
+        consecutive_turns = self._frustration_tracker.consecutive_negative_turns
+
         result = ToneAnalysis(
             tone=primary_tone,
             style=style,
@@ -134,6 +145,12 @@ class RegexToneAnalyzer:
             tier_used="regex",
             tier_scores={t.value: s for t, s in tone_scores.items()},
             latency_ms=latency_ms,
+            # Intensity-based fields
+            signal_count=primary_signal_count,
+            pre_intervention_triggered=pre_intervention,
+            intervention_urgency=urgency,
+            should_offer_exit=should_exit,
+            consecutive_negative_turns=consecutive_turns,
         )
 
         # Логируем высокий frustration
@@ -192,6 +209,8 @@ class RegexToneAnalyzer:
         """
         Получить рекомендации для генерации ответа.
 
+        Enhanced with intensity-based pre-intervention logic.
+
         Args:
             analysis: Результат анализа тона
 
@@ -211,11 +230,75 @@ class RegexToneAnalyzer:
             "style_instruction": style_instruction,
             "should_apologize": False,
             "should_offer_exit": False,
-            "formality": "formal" if analysis.style == Style.FORMAL else "casual"
+            "formality": "formal" if analysis.style == Style.FORMAL else "casual",
+            # New intensity-based fields
+            "intervention_urgency": analysis.intervention_urgency,
+            "pre_intervention_triggered": analysis.pre_intervention_triggered,
         }
 
+        # Use urgency-based guidance for consistency
+        urgency = analysis.intervention_urgency
+
+        # Critical urgency = immediate soft close
+        if urgency == "critical":
+            guidance["max_words"] = 20
+            guidance["tone_instruction"] = (
+                "Будь МАКСИМАЛЬНО кратким. Одно предложение. "
+                "Извинись и предложи завершить разговор."
+            )
+            guidance["should_apologize"] = True
+            guidance["should_offer_exit"] = True
+
+        # High urgency = very short, offer exit
+        elif urgency == "high":
+            guidance["max_words"] = 25
+            guidance["tone_instruction"] = (
+                "Будь максимально кратким и по делу. "
+                "Не задавай лишних вопросов. Извинись за неудобства."
+            )
+            guidance["should_apologize"] = True
+            guidance["should_offer_exit"] = True
+
+        # Medium urgency = short, empathetic
+        elif urgency == "medium":
+            guidance["max_words"] = 35
+            guidance["tone_instruction"] = (
+                "Будь кратким и деловым. "
+                "Признай возможные неудобства."
+            )
+            guidance["should_apologize"] = True
+            # Offer exit for RUSHED users with medium urgency
+            if analysis.tone == Tone.RUSHED:
+                guidance["should_offer_exit"] = True
+
+        # Low urgency = slightly shorter
+        elif urgency == "low":
+            guidance["max_words"] = 45
+            guidance["tone_instruction"] = (
+                "Будь немного более кратким. "
+                "Клиент может быть слегка раздражён."
+            )
+
+        # Pre-intervention triggered but no urgency match = RUSHED special case
+        elif analysis.pre_intervention_triggered:
+            # User said something like "быстрее, не тяни, некогда" (3 RUSHED signals)
+            # but frustration level hasn't reached thresholds yet
+            guidance["max_words"] = 30
+            guidance["tone_instruction"] = (
+                "Клиент торопится. Отвечай коротко, без воды и вступлений. "
+                "Переходи к сути."
+            )
+            guidance["should_offer_exit"] = True
+            logger.info(
+                "Pre-intervention guidance applied",
+                tone=analysis.tone.value,
+                signal_count=analysis.signal_count,
+                frustration=analysis.frustration_level,
+            )
+
+        # Fallback to threshold-based for backward compatibility
         # Критический frustration — минимальные ответы, предложить выход
-        if analysis.frustration_level >= FRUSTRATION_THRESHOLDS["critical"]:
+        elif analysis.frustration_level >= FRUSTRATION_THRESHOLDS["critical"]:
             guidance["max_words"] = 20
             guidance["tone_instruction"] = (
                 "Будь МАКСИМАЛЬНО кратким. Одно предложение. "
@@ -245,10 +328,14 @@ class RegexToneAnalyzer:
 
         # Специфика по тону (если frustration низкий)
         elif analysis.tone == Tone.RUSHED:
+            # RUSHED users get shorter responses even at low frustration
             guidance["max_words"] = 30
             guidance["tone_instruction"] = (
                 "Коротко и по делу, без вступлений и воды."
             )
+            # Offer exit if multiple RUSHED signals (pre-intervention path)
+            if analysis.signal_count >= 2:
+                guidance["should_offer_exit"] = True
 
         elif analysis.tone == Tone.SKEPTICAL:
             guidance["tone_instruction"] = (

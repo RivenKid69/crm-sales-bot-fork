@@ -31,7 +31,11 @@ class Style(Enum):
 
 @dataclass
 class ToneAnalysis:
-    """Результат анализа тона."""
+    """
+    Результат анализа тона.
+
+    Enhanced with intensity-based fields for better frustration handling.
+    """
     tone: Tone                          # Основной тон сообщения
     style: Style                        # Стиль общения
     confidence: float                   # Уверенность в определении (0-1)
@@ -40,3 +44,10 @@ class ToneAnalysis:
     tier_used: str = "regex"            # Какой tier использовался: "regex" | "semantic" | "llm"
     tier_scores: Dict[str, float] = field(default_factory=dict)  # Scores от разных tiers
     latency_ms: float = 0.0             # Время анализа в мс
+
+    # Intensity-based fields (new)
+    signal_count: int = 1               # Total signals for primary tone
+    pre_intervention_triggered: bool = False  # Whether pre-intervention is needed
+    intervention_urgency: str = "none"  # Urgency level: none, low, medium, high, critical
+    should_offer_exit: bool = False     # Whether to offer exit to user
+    consecutive_negative_turns: int = 0  # Consecutive turns with negative tone

@@ -787,10 +787,11 @@ frustration:
   max_level: 10
 
   # Веса для накопления frustration (по тону сообщения)
+  # NOTE: These are BASE weights. Actual delta is calculated with intensity multipliers.
   weights:
     frustrated: 3      # Сильно увеличивает
     skeptical: 1       # Немного увеличивает
-    rushed: 1          # Немного увеличивает
+    rushed: 2          # ⚠️ UPDATED from 1 to 2: RUSHED users need faster response
     confused: 1        # Долгое непонимание = frustration
 
   # Веса для снижения frustration (decay)
@@ -819,6 +820,66 @@ frustration:
     warning: 4         # Начать сокращать ответы
     high: 7            # Предложить помощь/выход (= guard.high_frustration_threshold)
     critical: 9        # Мягкое завершение
+
+  # =============================================================================
+  # INTENSITY-BASED FRUSTRATION CALCULATION ⭐ NEW
+  # =============================================================================
+  # Calculates frustration delta based on signal count (intensity).
+  # Multiple signals of same tone = higher weight.
+  #
+  # Example: "быстрее, не тяни, некогда" (3 RUSHED signals)
+  #   - Base weight for RUSHED: 2
+  #   - Intensity multiplier for 3 signals: 2.0
+  #   - Delta: 2 * 2.0 = 4
+  #   - After 2 turns: frustration = 8 (above HIGH threshold of 7)
+  #   - Result: Intervention triggered!
+  #
+  # Root cause fix: Original bug counted only ONE signal per tone per message.
+  # With intensity calculation, explicit frustration ("быстрее, не тяни, некогда")
+  # is properly detected and escalated.
+  # =============================================================================
+  intensity:
+    # Base weights (override defaults from frustration.weights)
+    base_weights:
+      frustrated: 3    # Matches weights.frustrated
+      rushed: 2        # ⚠️ Higher than original (1) - RUSHED users need faster response
+      skeptical: 1     # Matches weights.skeptical
+      confused: 1      # Matches weights.confused
+
+    # Intensity multipliers based on signal count
+    # Format: {min_signals: multiplier}
+    # Higher signal count = stronger expression of frustration
+    intensity_multipliers:
+      1: 1.0           # 1 signal = base weight (no multiplier)
+      2: 1.5           # 2 signals = 1.5x base weight
+      3: 2.0           # 3+ signals = 2x base weight
+
+    # Consecutive turn bonus
+    # Frustration escalates faster with repeated negative tones
+    consecutive_turn_multiplier: 1.2   # 20% bonus per consecutive turn
+    consecutive_turn_threshold: 2      # Start bonus after 2+ consecutive turns
+
+    # Decay weights for positive tones
+    decay_weights:
+      neutral: 1
+      positive: 2
+      interested: 2
+
+    # Pre-intervention configuration
+    # Pre-intervention provides early guidance (shorter responses, offer exit)
+    # before reaching the HIGH threshold for full guard intervention.
+    #
+    # Trigger: RUSHED tone with >= rushed_pre_intervention_threshold signals
+    # OR: WARNING level frustration with any negative tone
+    rushed_pre_intervention_threshold: 2  # signals to trigger pre-intervention for RUSHED
+
+    # Urgency levels for response guidance
+    # Used by get_response_guidance() to determine how short/urgent response should be
+    urgency_thresholds:
+      low: 2           # = elevated threshold
+      medium: 4        # = warning threshold
+      high: 7          # = high threshold
+      critical: 9      # = critical threshold
 
 # =============================================================================
 # CIRCULAR FLOW (Go Back) SETTINGS

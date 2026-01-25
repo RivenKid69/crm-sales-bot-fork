@@ -385,6 +385,40 @@ FRUSTRATION_WEIGHTS: Dict[str, int] = _frustration.get("weights", {})
 FRUSTRATION_DECAY: Dict[str, int] = _frustration.get("decay", {})
 FRUSTRATION_THRESHOLDS: Dict[str, int] = _frustration.get("thresholds", {})
 
+# Intensity-based frustration configuration (NEW)
+# Used by FrustrationIntensityCalculator for signal-aware frustration calculation
+_frustration_intensity = _frustration.get("intensity", {})
+
+FRUSTRATION_INTENSITY_CONFIG: Dict[str, Any] = {
+    "base_weights": _frustration_intensity.get("base_weights", {
+        "frustrated": 3,
+        "rushed": 2,
+        "skeptical": 1,
+        "confused": 1,
+    }),
+    "intensity_multipliers": _frustration_intensity.get("intensity_multipliers", {
+        1: 1.0,
+        2: 1.5,
+        3: 2.0,
+    }),
+    "consecutive_turn_multiplier": _frustration_intensity.get("consecutive_turn_multiplier", 1.2),
+    "consecutive_turn_threshold": _frustration_intensity.get("consecutive_turn_threshold", 2),
+    "decay_weights": _frustration_intensity.get("decay_weights", {
+        "neutral": 1,
+        "positive": 2,
+        "interested": 2,
+    }),
+    "rushed_pre_intervention_threshold": _frustration_intensity.get(
+        "rushed_pre_intervention_threshold", 2
+    ),
+    "urgency_thresholds": _frustration_intensity.get("urgency_thresholds", {
+        "low": 2,
+        "medium": 4,
+        "high": 7,
+        "critical": 9,
+    }),
+}
+
 
 # =============================================================================
 # CIRCULAR FLOW SETTINGS
@@ -635,6 +669,40 @@ def get_confidence_calibration_config() -> Dict[str, Any]:
     })
 
 
+def get_frustration_intensity_config() -> Dict[str, Any]:
+    """
+    Get frustration_intensity config from constants.yaml.
+
+    Used by FrustrationIntensityCalculator for signal-aware frustration calculation.
+    This is the Single Source of Truth for intensity-based frustration handling.
+
+    Solves the frustration intervention bug:
+    - Original: Only ONE signal per tone counted per message
+    - Original: "быстрее, не тяни, некогда" (3 RUSHED signals) = +1 frustration
+    - Fixed: Multiple signals = higher weight (intensity-based calculation)
+    - Fixed: 3 RUSHED signals = base(2) * multiplier(2.0) = +4 frustration
+
+    Returns:
+        Dict with intensity configuration including:
+        - base_weights: Dict[str, int] - base weight per tone
+        - intensity_multipliers: Dict[int, float] - signal count -> multiplier
+        - consecutive_turn_multiplier: float - bonus for consecutive negative turns
+        - consecutive_turn_threshold: int - turns before bonus applies
+        - decay_weights: Dict[str, int] - decay per positive tone
+        - rushed_pre_intervention_threshold: int - signals to trigger pre-intervention
+
+    Example:
+        >>> config = get_frustration_intensity_config()
+        >>> config["base_weights"]["rushed"]
+        2
+        >>> config["intensity_multipliers"][3]
+        2.0
+        >>> config["rushed_pre_intervention_threshold"]
+        2
+    """
+    return FRUSTRATION_INTENSITY_CONFIG
+
+
 # =============================================================================
 # EXPORTS
 # =============================================================================
@@ -706,6 +774,7 @@ __all__ = [
     "FRUSTRATION_WEIGHTS",
     "FRUSTRATION_DECAY",
     "FRUSTRATION_THRESHOLDS",
+    "FRUSTRATION_INTENSITY_CONFIG",
     # Circular flow
     "ALLOWED_GOBACKS",
     # Context window
@@ -728,4 +797,5 @@ __all__ = [
     "get_disambiguation_config",
     "get_refinement_pipeline_config",
     "get_confidence_calibration_config",
+    "get_frustration_intensity_config",
 ]
