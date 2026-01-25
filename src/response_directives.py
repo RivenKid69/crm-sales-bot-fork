@@ -97,6 +97,10 @@ class ResponseDirectives:
     cta_soft: bool = False
     repair_mode: bool = False
 
+    # === Apology (SSoT: src/apology_ssot.py) ===
+    should_apologize: bool = False
+    should_offer_exit: bool = False
+
     # === Память ===
     client_card: str = ""
     objection_summary: str = ""
@@ -126,6 +130,10 @@ class ResponseDirectives:
                 "cta_soft": self.cta_soft,
                 "repair_mode": self.repair_mode,
             },
+            "apology": {
+                "should_apologize": self.should_apologize,
+                "should_offer_exit": self.should_offer_exit,
+            },
             "memory": {
                 "client_card": self.client_card,
                 "objection_summary": self.objection_summary,
@@ -148,6 +156,16 @@ class ResponseDirectives:
             return self.instruction
 
         parts = []
+
+        # === Apology instructions (FIRST priority - must be at start) ===
+        # SSoT: src/apology_ssot.py
+        if self.should_apologize:
+            from src.apology_ssot import get_apology_instruction
+            parts.append(get_apology_instruction())
+
+        if self.should_offer_exit:
+            from src.apology_ssot import get_exit_instruction
+            parts.append(get_exit_instruction())
 
         # Тон
         tone_map = {
@@ -324,6 +342,9 @@ class ResponseDirectivesBuilder:
 
         # === Заполняем память ===
         self._fill_memory(directives)
+
+        # === Apology flags (SSoT: src/apology_ssot.py) ===
+        self._fill_apology(directives)
 
         # === Генерируем инструкцию ===
         directives.instruction = directives.get_instruction()
@@ -510,6 +531,22 @@ class ResponseDirectivesBuilder:
     def _translate_objections(self, objection_types: List[str]) -> List[str]:
         """Перевести типы возражений в читаемый вид."""
         return [self.objection_translations.get(o, o) for o in objection_types]
+
+    def _fill_apology(self, directives: ResponseDirectives) -> None:
+        """
+        Fill apology flags from envelope using SSoT.
+
+        Uses apology_ssot module for threshold logic to ensure consistency
+        with frustration_thresholds SSoT.
+
+        SSoT: src/apology_ssot.py
+        """
+        from src.apology_ssot import should_apologize, should_offer_exit
+
+        # Use SSoT functions for threshold logic
+        frustration_level = self.envelope.frustration_level
+        directives.should_apologize = should_apologize(frustration_level)
+        directives.should_offer_exit = should_offer_exit(frustration_level)
 
     def build_context_summary(self) -> str:
         """

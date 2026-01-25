@@ -670,6 +670,9 @@ class ResponseGenerator:
             # Phase 3: Objection handling
             "objection_type": objection_type,
             "objection_counter": objection_counter,
+            # Apology system (SSoT: src/apology_ssot.py)
+            "should_apologize": context.get("should_apologize", False),
+            "should_offer_exit": context.get("should_offer_exit", False),
         })
 
         # === Question Deduplication: Prevent asking about already collected data ===
@@ -781,8 +784,10 @@ class ResponseGenerator:
 
                 # Сохраняем в историю для отслеживания
                 self._add_to_response_history(cleaned)
-                # Apply diversity post-processing before returning
-                return self._apply_diversity(cleaned, context)
+                # Apply post-processing before returning
+                processed = self._apply_diversity(cleaned, context)
+                processed = self._ensure_apology(processed, context)
+                return processed
 
             # Иначе чистим и сохраняем лучший результат
             cleaned = self._clean(response)
@@ -804,8 +809,10 @@ class ResponseGenerator:
             final_response = self._regenerate_with_diversity(prompt, context, final_response)
 
         self._add_to_response_history(final_response)
-        # Apply diversity post-processing before returning
-        return self._apply_diversity(final_response, context)
+        # Apply post-processing before returning
+        processed = self._apply_diversity(final_response, context)
+        processed = self._ensure_apology(processed, context)
+        return processed
 
     def _get_objection_counter(self, objection_type: str, collected_data: Dict) -> str:
         """
@@ -971,6 +978,72 @@ class ResponseGenerator:
             # Graceful degradation: return original on error
             logger.warning(f"Response diversity failed: {e}")
             return response
+
+    # =========================================================================
+    # Apology Post-Processing (SSoT: src/apology_ssot.py)
+    # =========================================================================
+
+    def _ensure_apology(self, response: str, context: Dict) -> str:
+        """
+        Ensure apology is present when required (guaranteed insertion).
+
+        If LLM didn't include apology despite instruction, prepend it.
+        Uses ResponseVariations for phrase selection (LRU rotation).
+
+        SSoT: src/apology_ssot.py
+
+        Args:
+            response: Bot response from LLM
+            context: Generation context with should_apologize flag
+
+        Returns:
+            Response with guaranteed apology if required
+        """
+        if not flags.is_enabled("apology_system"):
+            return response
+
+        if not context.get("should_apologize"):
+            return response
+
+        # Check if LLM already included apology
+        if self._has_apology(response):
+            return response
+
+        try:
+            # Get apology from ResponseVariations (LRU rotation)
+            from src.response_variations import variations
+            apology = variations.get_apology()
+
+            logger.debug(
+                "Apology prepended to response",
+                apology=apology,
+                response_start=response[:50],
+            )
+
+            # Prepend apology
+            return f"{apology} {response}"
+
+        except Exception as e:
+            # Graceful degradation: return original on error
+            logger.warning(f"Apology insertion failed: {e}")
+            return response
+
+    def _has_apology(self, response: str) -> bool:
+        """
+        Check if response already contains an apology phrase.
+
+        Uses apology markers from SSoT.
+
+        SSoT: src/apology_ssot.py
+
+        Args:
+            response: Bot response text
+
+        Returns:
+            True if response contains apology marker
+        """
+        from src.apology_ssot import has_apology
+        return has_apology(response)
 
     # =========================================================================
     # НОВОЕ: Deduplication методы

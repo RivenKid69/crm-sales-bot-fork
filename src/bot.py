@@ -1062,8 +1062,12 @@ class SalesBot:
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
             # Phase 2: Tone and style instructions
-            # ResponseDirectives instruction имеет приоритет если доступен
-            "tone_instruction": directive_instruction or tone_info.get("tone_instruction", ""),
+            # FIXED: Concatenate both instructions to preserve apology from tone_info
+            # SSoT: src/apology_ssot.py
+            "tone_instruction": " ".join(filter(None, [
+                directive_instruction,
+                tone_info.get("tone_instruction", "")
+            ])),
             "style_instruction": tone_info.get("style_instruction", ""),
             "frustration_level": frustration_level,
             "should_apologize": tone_info.get("should_apologize", False),
@@ -1704,8 +1708,12 @@ class SalesBot:
             "spin_phase": sm_result.get("spin_phase"),
             "optional_data": sm_result.get("optional_data", []),
             # Phase 2: Tone and style guidance
-            # ResponseDirectives instruction имеет приоритет если доступен
-            "tone_instruction": directive_instruction or tone_info.get("tone_instruction", ""),
+            # FIXED: Concatenate both instructions to preserve apology from tone_info
+            # SSoT: src/apology_ssot.py
+            "tone_instruction": " ".join(filter(None, [
+                directive_instruction,
+                tone_info.get("tone_instruction", "")
+            ])),
             "style_instruction": tone_info.get("style_instruction", ""),
             "should_apologize": tone_info.get("should_apologize", False),
             "should_offer_exit": tone_info.get("should_offer_exit", False),
