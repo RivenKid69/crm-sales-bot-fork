@@ -115,6 +115,9 @@ class FeatureFlags:
         # === Objection Stuck Fix: Objection Refinement ===
         "objection_refinement": True,             # Контекстная валидация objection классификаций
 
+        # === Composite Message Refinement: Data Priority ===
+        "composite_refinement": True,             # Приоритет извлечения данных над мета-интентами
+
         # === Response Diversity: Anti-Monotony Engine ===
         "response_diversity": True,               # Post-processing замена монотонных вступлений
         "response_diversity_logging": True,       # Логирование замен для мониторинга
@@ -175,6 +178,10 @@ class FeatureFlags:
         # Objection Stuck Fix groups
         "objection_stuck_fix": [
             "objection_refinement"
+        ],
+        # Composite Message Refinement groups
+        "composite_message_fix": [
+            "composite_refinement"
         ],
         # Response Diversity groups
         "response_diversity_all": [
@@ -520,6 +527,15 @@ class FeatureFlags:
     def objection_refinement(self) -> bool:
         """Включена ли контекстная валидация objection классификаций"""
         return self.is_enabled("objection_refinement")
+
+    # =========================================================================
+    # Composite Message Refinement flags
+    # =========================================================================
+
+    @property
+    def composite_refinement(self) -> bool:
+        """Включён ли рефайнмент составных сообщений с приоритетом данных"""
+        return self.is_enabled("composite_refinement")
 
 
 # Singleton экземпляр

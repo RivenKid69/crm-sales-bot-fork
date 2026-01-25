@@ -1708,6 +1708,264 @@ objection_refinement:
     min_turns_same_type: 3
 
 # =============================================================================
+# COMPOSITE MESSAGE REFINEMENT CONFIGURATION (Single Source of Truth)
+# =============================================================================
+# Контекстно-зависимый рефайнмент для составных сообщений.
+# Предотвращает ошибочную классификацию сообщений типа
+# "5 человек, больше не нужно, быстрее" как objection_think.
+#
+# Ключевой принцип: когда бот задал вопрос о данных и пользователь ответил
+# с извлекаемыми данными, приоритет отдаётся data intent над meta-intents.
+#
+# Архитектура (UNIVERSAL - работает с любым flow):
+#   - Работает с SPIN, BANT, custom flows или любой структурой диалога
+#   - Основной механизм: action_expects_data (действие бота → ожидаемый тип данных)
+#   - Fallback: data_expecting_states, data_expecting_phases
+#   - Fail-safe: возвращает оригинальный результат при любой ошибке
+#
+# Pipeline позиция:
+#   message → LLM/Hybrid → ClassificationRefinement → CompositeMessageRefinement →
+#   → ObjectionRefinement → DisambiguationLayer → result
+# =============================================================================
+composite_refinement:
+  # Включить рефайнмент составных сообщений
+  enabled: true
+
+  # Минимальная confidence для refined результата
+  min_confidence_for_refinement: 0.75
+
+  # Default intent когда данные извлечены в data-expecting контексте
+  default_data_intent: info_provided
+
+  # =========================================================================
+  # ACTION → EXPECTED DATA TYPE MAPPING (Primary Mechanism)
+  # =========================================================================
+  # Маппинг: действие бота → какой тип данных ожидаем в ответе
+  # Это основной механизм для определения контекста.
+  # Работает с любым flow, не только SPIN.
+  action_expects_data:
+    # Вопросы о компании/команде
+    ask_about_company: company_size
+    ask_about_team_size: company_size
+    ask_situation: company_size
+    transition_to_spin_situation: company_size
+
+    # Вопросы об инструментах
+    ask_about_current_tools: current_tools
+
+    # Вопросы о проблемах
+    ask_about_problem: pain_point
+    ask_problem: pain_point
+    transition_to_spin_problem: pain_point
+
+    # Вопросы о влиянии/последствиях
+    ask_about_impact: pain_impact
+    ask_implication: pain_impact
+    transition_to_spin_implication: pain_impact
+
+    # Вопросы о желаемом результате
+    ask_about_outcome: desired_outcome
+    ask_need_payoff: desired_outcome
+    transition_to_spin_need_payoff: desired_outcome
+
+    # Общие вопросы о данных
+    ask_for_clarification: any
+    clarify_one_question: any
+    continue_current_goal: any
+
+  # =========================================================================
+  # ACTION → TARGET INTENT MAPPING
+  # =========================================================================
+  # Маппинг: действие бота → какой intent использовать при успешной экстракции
+  action_data_intent:
+    # Situation-related actions → situation_provided
+    ask_about_company: situation_provided
+    ask_about_team_size: situation_provided
+    ask_situation: situation_provided
+    transition_to_spin_situation: situation_provided
+    ask_about_current_tools: situation_provided
+
+    # Problem-related actions → problem_revealed
+    ask_about_problem: problem_revealed
+    ask_problem: problem_revealed
+    transition_to_spin_problem: problem_revealed
+
+    # Implication-related actions → implication_acknowledged
+    ask_about_impact: implication_acknowledged
+    ask_implication: implication_acknowledged
+    transition_to_spin_implication: implication_acknowledged
+
+    # Need-payoff-related actions → need_expressed
+    ask_about_outcome: need_expressed
+    ask_need_payoff: need_expressed
+    transition_to_spin_need_payoff: need_expressed
+
+    # Default for other data-collecting actions
+    ask_for_clarification: info_provided
+    clarify_one_question: info_provided
+    continue_current_goal: info_provided
+
+  # =========================================================================
+  # DATA EXPECTING STATES (Fallback for state-based detection)
+  # =========================================================================
+  # Состояния, в которых мы ожидаем данные от пользователя
+  data_expecting_states:
+    - spin_situation
+    - spin_problem
+    - spin_implication
+    - spin_need_payoff
+    - data_collection
+    - qualification
+    - discovery
+
+  # =========================================================================
+  # DATA EXPECTING PHASES (Fallback for phase-based detection)
+  # =========================================================================
+  # Фазы диалога, в которых мы ожидаем данные
+  # Поддерживает SPIN, BANT и custom flows
+  data_expecting_phases:
+    # SPIN phases
+    - situation
+    - problem
+    - implication
+    - need_payoff
+    # BANT phases
+    - budget
+    - authority
+    - need
+    - timeline
+    # Generic phases
+    - data_collection
+    - qualification
+    - discovery
+
+  # =========================================================================
+  # DATA FIELDS CONFIGURATION
+  # =========================================================================
+  # Конфигурация полей данных для извлечения
+  data_fields:
+    company_size:
+      type: int
+      min: 1
+      max: 10000
+      extract_patterns:
+        - '(\d+)\s*(?:человек|чел\.?|сотрудник|менеджер|продавец|официант)'
+        - '(?:нас|у нас)\s*(\d+)'
+        - '(?:команда?|штат[еа]?)\s*(?:из|в|на)?\s*(\d+)'
+        - '^(\d+)\s*[,.]'
+        - '^(\d+)$'
+
+    current_tools:
+      type: enum
+      allowed_values:
+        - "Excel"
+        - "Google Таблицы"
+        - "1С"
+        - "Битрикс24"
+        - "AmoCRM"
+        - "вручную"
+        - "на бумаге"
+        - "в головах"
+        - "никак"
+      extract_patterns:
+        - '(?:в\s+)?excel'
+        - '(?:в\s+)?эксел'
+        - '(?:в\s+)?1[сc]'
+        - '(?:в\s+)?битрикс'
+        - '(?:в\s+)?амо'
+        - 'вручную|руками'
+        - '(?:на\s+)?бумаг'
+        - '(?:в\s+)?голов'
+        - 'никак|нигде'
+
+  # =========================================================================
+  # META SIGNALS CONFIGURATION
+  # =========================================================================
+  # Мета-сигналы которые НЕ являются основным интентом, но полезны
+  meta_signals:
+    request_brevity:
+      patterns:
+        - 'быстр'
+        - 'коротк'
+        - 'кратк'
+        - 'без лишн'
+        - 'по делу'
+        - 'короче'
+        - 'покороче'
+      intent_hint: request_brevity
+
+    impatience:
+      patterns:
+        - 'давай'
+        - 'давайте'
+        - 'скорее'
+        - 'уже'
+        - 'побыстр'
+      intent_hint: impatience_expression
+
+    confirmation:
+      patterns:
+        - '^да[,.]?\s'
+        - '^ок[,.]?\s'
+        - '^хорошо[,.]?\s'
+        - '^ладно[,.]?\s'
+      intent_hint: agreement
+
+  # =========================================================================
+  # AMBIGUOUS PATTERNS CONFIGURATION
+  # =========================================================================
+  # Амбигуозные фразы, которые требуют контекстного разрешения
+  ambiguous_patterns:
+    bolshe_ne_nuzhno:
+      # "больше не нужно" может означать:
+      # - "достаточно" (quantity clarification) - после вопроса о количестве
+      # - "не нужно вообще" (rejection) - в другом контексте
+      patterns:
+        - 'больше\s+не\s+(?:нужно|надо)'
+        - 'не\s+нужно\s+больше'
+        - 'хватит'
+        - 'достаточно'
+      # Действия, при которых это → data response (quantity clarification)
+      data_resolving_actions:
+        - ask_about_company
+        - ask_about_team_size
+        - ask_situation
+        - ask_for_clarification
+        - clarify_one_question
+      # Действия, при которых это → rejection
+      rejection_resolving_actions:
+        - offer_demo
+        - ask_for_contact
+        - transition_to_close
+        - propose_next_steps
+
+    ne_interesno:
+      patterns:
+        - 'не\s+интересно'
+        - 'не\s+интересует'
+      # Обычно rejection, но после демо может быть feedback
+      data_resolving_actions:
+        - show_feature
+        - demonstrate_product
+      rejection_resolving_actions:
+        - offer_demo
+        - ask_for_contact
+        - transition_to_presentation
+
+    poka_ne:
+      # "пока не знаю/готов" - может быть hesitation или info
+      patterns:
+        - 'пока\s+не\s+(?:знаю|готов|решил)'
+        - 'пока\s+не\s+могу\s+сказать'
+      data_resolving_actions:
+        - ask_about_budget
+        - ask_about_timeline
+        - ask_about_decision
+      rejection_resolving_actions:
+        - ask_for_commitment
+        - transition_to_close
+
+# =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
 # =============================================================================
 # guard.high_frustration_threshold ДОЛЖЕН быть равен frustration.thresholds.high

@@ -5,6 +5,9 @@
 Включает ClassificationRefinementLayer для контекстного уточнения
 коротких ответов (State Loop Fix).
 
+Включает CompositeMessageRefinementLayer для обработки составных сообщений
+с приоритетом извлечения данных (Composite Message Fix).
+
 Включает ObjectionRefinementLayer для контекстной валидации
 objection классификаций (Objection Stuck Fix).
 
@@ -12,7 +15,8 @@ objection классификаций (Objection Stuck Fix).
 уточнения намерения пользователя.
 
 Pipeline:
-    message → LLM/Hybrid Classifier → RefinementLayer → ObjectionRefinementLayer → DisambiguationLayer → result
+    message → LLM/Hybrid Classifier → RefinementLayer → CompositeRefinementLayer →
+    → ObjectionRefinementLayer → DisambiguationLayer → result
 """
 from typing import Dict, Optional, Any
 
@@ -30,6 +34,10 @@ class UnifiedClassifier:
     Если flags.classification_refinement == True: применяет
     ClassificationRefinementLayer для уточнения коротких ответов.
 
+    Если flags.composite_refinement == True: применяет
+    CompositeMessageRefinementLayer для обработки составных сообщений
+    с приоритетом извлечения данных.
+
     Если flags.objection_refinement == True: применяет
     ObjectionRefinementLayer для контекстной валидации objection классификаций.
 
@@ -38,7 +46,8 @@ class UnifiedClassifier:
     необходимости уточнения намерения.
 
     Pipeline:
-        message → LLM/Hybrid → RefinementLayer → ObjectionRefinementLayer → DisambiguationLayer → result
+        message → LLM/Hybrid → RefinementLayer → CompositeRefinementLayer →
+        → ObjectionRefinementLayer → DisambiguationLayer → result
     """
 
     def __init__(self):
@@ -46,6 +55,7 @@ class UnifiedClassifier:
         self._hybrid = None
         self._llm = None
         self._refinement_layer = None
+        self._composite_refinement_layer = None
         self._objection_refinement_layer = None
         self._disambiguation_engine = None
 
@@ -74,6 +84,14 @@ class UnifiedClassifier:
         return self._refinement_layer
 
     @property
+    def composite_refinement_layer(self):
+        """Lazy init CompositeMessageRefinementLayer."""
+        if self._composite_refinement_layer is None:
+            from .composite_refinement import CompositeMessageRefinementLayer
+            self._composite_refinement_layer = CompositeMessageRefinementLayer()
+        return self._composite_refinement_layer
+
+    @property
     def objection_refinement_layer(self):
         """Lazy init ObjectionRefinementLayer."""
         if self._objection_refinement_layer is None:
@@ -96,13 +114,15 @@ class UnifiedClassifier:
         Pipeline:
         1. Primary classification (LLM or Hybrid based on feature flag)
         2. Contextual refinement for short answers (State Loop Fix)
-        3. Objection refinement (Objection Stuck Fix)
-        4. Disambiguation analysis (if unified_disambiguation flag enabled)
+        3. Composite message refinement (Composite Message Fix)
+        4. Objection refinement (Objection Stuck Fix)
+        5. Disambiguation analysis (if unified_disambiguation flag enabled)
 
         Args:
             message: Сообщение пользователя
             context: Контекст диалога (state, spin_phase, last_action, last_intent,
-                     last_bot_message, turn_number, last_objection_turn, last_objection_type)
+                     last_bot_message, turn_number, last_objection_turn, last_objection_type,
+                     expects_data_type)
 
         Returns:
             Результат классификации с полями:
@@ -112,7 +132,8 @@ class UnifiedClassifier:
             - method: str ("llm", "hybrid", или "llm_fallback")
             - refined: bool (если было уточнение)
             - original_intent: str (если было уточнение)
-            - refinement_layer: str ("short_answer" или "objection")
+            - refinement_layer: str ("short_answer", "composite", или "objection")
+            - secondary_signals: list (если обнаружены мета-сигналы)
             - disambiguation_triggered: bool (если нужно уточнение)
             - disambiguation_options: list (если нужно уточнение)
             - disambiguation_decision: str (если анализ проведён)
@@ -129,11 +150,15 @@ class UnifiedClassifier:
         if flags.classification_refinement:
             result = self._apply_refinement(message, result, context)
 
-        # Step 3: Objection refinement (Objection Stuck Fix)
+        # Step 3: Composite message refinement (Composite Message Fix)
+        if flags.composite_refinement:
+            result = self._apply_composite_refinement(message, result, context)
+
+        # Step 4: Objection refinement (Objection Stuck Fix)
         if flags.objection_refinement:
             result = self._apply_objection_refinement(message, result, context)
 
-        # Step 4: Unified disambiguation analysis
+        # Step 5: Unified disambiguation analysis
         if flags.unified_disambiguation:
             result = self._apply_disambiguation(result, context)
 
@@ -246,6 +271,67 @@ class UnifiedClassifier:
             )
             return result
 
+    def _apply_composite_refinement(
+        self,
+        message: str,
+        result: Dict,
+        context: Dict
+    ) -> Dict:
+        """
+        Apply CompositeMessageRefinementLayer to handle composite messages.
+
+        This addresses misclassification of messages containing both data and
+        meta-signals, like "5 человек, больше не нужно, быстрее" which should
+        be classified as info_provided (with company_size=5) rather than
+        objection_think.
+
+        Works with any dialogue flow (SPIN, BANT, custom).
+
+        Args:
+            message: User's message
+            result: Classification result from previous layers
+            context: Dialog context with state, phase, last_action, etc.
+
+        Returns:
+            Refined result (or original if refinement not applicable)
+        """
+        try:
+            from .composite_refinement import CompositeMessageContext
+
+            composite_ctx = CompositeMessageContext(
+                message=message,
+                intent=result.get("intent", "unclear"),
+                confidence=result.get("confidence", 0.0),
+                current_phase=(
+                    context.get("current_phase") or
+                    context.get("spin_phase") or
+                    context.get("phase")
+                ),
+                state=context.get("state"),
+                last_action=context.get("last_action"),
+                extracted_data=result.get("extracted_data", {}),
+                turn_number=context.get("turn_number", 0),
+                expects_data_type=context.get("expects_data_type"),
+            )
+
+            refined_result = self.composite_refinement_layer.refine(
+                message, result, composite_ctx
+            )
+
+            return refined_result
+
+        except Exception as e:
+            # Fail-safe: return original result on any error
+            logger.warning(
+                "Composite refinement layer failed, returning original result",
+                extra={
+                    "error": str(e),
+                    "message": message[:50],
+                    "intent": result.get("intent")
+                }
+            )
+            return result
+
     def _apply_objection_refinement(
         self,
         message: str,
@@ -301,12 +387,16 @@ class UnifiedClassifier:
         stats = {
             "active_classifier": "llm" if flags.llm_classifier else "hybrid",
             "refinement_enabled": flags.classification_refinement,
+            "composite_refinement_enabled": flags.composite_refinement,
             "objection_refinement_enabled": flags.objection_refinement,
             "unified_disambiguation_enabled": flags.unified_disambiguation,
         }
 
         if self._llm is not None:
             stats["llm_stats"] = self._llm.get_stats()
+
+        if self._composite_refinement_layer is not None:
+            stats["composite_refinement_stats"] = self._composite_refinement_layer.get_stats()
 
         if self._objection_refinement_layer is not None:
             stats["objection_refinement_stats"] = self._objection_refinement_layer.get_stats()

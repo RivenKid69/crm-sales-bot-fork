@@ -495,6 +495,41 @@ def get_objection_refinement_config() -> Dict[str, Any]:
     return _constants.get("objection_refinement", {})
 
 
+def get_composite_refinement_config() -> Dict[str, Any]:
+    """
+    Get composite_refinement config from constants.yaml.
+
+    Used by CompositeMessageRefinementLayer to refine composite message
+    classifications (messages containing both data and meta-signals).
+
+    This configuration is FLOW-AGNOSTIC and works with any dialogue structure
+    (SPIN, BANT, custom flows, etc.).
+
+    Returns:
+        Dict with composite refinement configuration including:
+        - enabled: bool
+        - min_confidence_for_refinement: float
+        - default_data_intent: str
+        - action_expects_data: Dict[str, str] - action → expected data type
+        - action_data_intent: Dict[str, str] - action → target intent
+        - data_expecting_states: List[str]
+        - data_expecting_phases: List[str]
+        - data_fields: Dict[str, Dict] - field configurations
+        - meta_signals: Dict[str, Dict] - meta-signal configurations
+        - ambiguous_patterns: Dict[str, Dict] - ambiguity configurations
+
+    Example:
+        >>> config = get_composite_refinement_config()
+        >>> config["action_expects_data"]["ask_about_company"]
+        'company_size'
+        >>> config["action_data_intent"]["ask_about_company"]
+        'situation_provided'
+        >>> config["ambiguous_patterns"]["bolshe_ne_nuzhno"]["patterns"]
+        ['больше\\s+не\\s+(?:нужно|надо)', ...]
+    """
+    return _constants.get("composite_refinement", {})
+
+
 # =============================================================================
 # EXPORTS
 # =============================================================================
@@ -583,5 +618,6 @@ __all__ = [
     "get_short_answer_config",
     "get_informative_intents",
     "get_objection_refinement_config",
+    "get_composite_refinement_config",
     "get_disambiguation_config",
 ]
