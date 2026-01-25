@@ -13,6 +13,7 @@ from knowledge.retriever import get_retriever
 from settings import settings
 from logger import logger
 from feature_flags import flags
+from response_diversity import diversity_engine
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
@@ -754,7 +755,8 @@ class ResponseGenerator:
 
                 # Сохраняем в историю для отслеживания
                 self._add_to_response_history(cleaned)
-                return cleaned
+                # Apply diversity post-processing before returning
+                return self._apply_diversity(cleaned, context)
 
             # Иначе чистим и сохраняем лучший результат
             cleaned = self._clean(response)
@@ -776,7 +778,8 @@ class ResponseGenerator:
             final_response = self._regenerate_with_diversity(prompt, context, final_response)
 
         self._add_to_response_history(final_response)
-        return final_response
+        # Apply diversity post-processing before returning
+        return self._apply_diversity(final_response, context)
 
     def _get_objection_counter(self, objection_type: str, collected_data: Dict) -> str:
         """
@@ -894,6 +897,54 @@ class ResponseGenerator:
         text = re.sub(r'\s+', ' ', text).strip()
 
         return text
+
+    # =========================================================================
+    # Response Diversity Post-Processing
+    # =========================================================================
+
+    def _apply_diversity(self, response: str, context: Dict) -> str:
+        """
+        Применить post-processing для разнообразия ответов.
+
+        Заменяет монотонные вступления (например, "Понимаю") на альтернативы.
+        Управляется feature flag `response_diversity`.
+
+        Args:
+            response: Оригинальный ответ
+            context: Контекст генерации (intent, state, frustration_level)
+
+        Returns:
+            Обработанный ответ
+        """
+        if not flags.response_diversity:
+            return response
+
+        try:
+            # Формируем контекст для diversity engine
+            diversity_context = {
+                "intent": context.get("last_intent", ""),
+                "state": context.get("state", ""),
+                "frustration_level": context.get("frustration_level", 0),
+            }
+
+            result = diversity_engine.process_response(response, diversity_context)
+
+            if result.was_modified and flags.response_diversity_logging:
+                logger.info(
+                    "Response diversity applied",
+                    modification_type=result.modification_type,
+                    opening_used=result.opening_used,
+                    category=result.category_used,
+                    original_start=response[:40],
+                    new_start=result.processed[:40],
+                )
+
+            return result.processed
+
+        except Exception as e:
+            # Graceful degradation: return original on error
+            logger.warning(f"Response diversity failed: {e}")
+            return response
 
     # =========================================================================
     # НОВОЕ: Deduplication методы

@@ -237,7 +237,7 @@ class ObjectionHandler:
         ObjectionType.PRICE: ObjectionStrategy(
             framework=ObjectionFramework.FOUR_PS,
             response_template=(
-                "Понимаю, вопрос бюджета важен. "
+                "Да, вопрос бюджета важен. "
                 "Скажите, вы сравниваете с чем-то конкретным или просто кажется дорого в абсолюте?"
             ),
             follow_up_question="Кстати, посчитаем: сколько примерно теряете сейчас на {pain_point}?",
@@ -255,7 +255,7 @@ class ObjectionHandler:
         ObjectionType.NO_TIME: ObjectionStrategy(
             framework=ObjectionFramework.FOUR_PS,
             response_template=(
-                "Понимаю, времени всегда не хватает. "
+                "Да, времени всегда не хватает. "
                 "Когда было бы удобнее вернуться к разговору?"
             ),
             follow_up_question="Могу просто прислать информацию на почту — посмотрите когда будет время?",
@@ -265,7 +265,7 @@ class ObjectionHandler:
         ObjectionType.TIMING: ObjectionStrategy(
             framework=ObjectionFramework.FOUR_PS,
             response_template=(
-                "Понимаю, сейчас не лучший момент. "
+                "Да, сейчас не лучший момент. "
                 "Когда планируете вернуться к этому вопросу?"
             ),
             follow_up_question="Могу напомнить ближе к этому времени?",
@@ -275,7 +275,7 @@ class ObjectionHandler:
         ObjectionType.COMPLEXITY: ObjectionStrategy(
             framework=ObjectionFramework.FOUR_PS,
             response_template=(
-                "Понимаю опасения. На самом деле внедрение занимает 1-2 дня. "
+                "Слышу вас. На самом деле внедрение занимает 1-2 дня. "
                 "Данные переносим мы, обучение включено."
             ),
             follow_up_question="Что именно вызывает больше всего опасений?",
@@ -288,7 +288,7 @@ class ObjectionHandler:
         ObjectionType.THINK: ObjectionStrategy(
             framework=ObjectionFramework.THREE_FS,
             response_template=(
-                "Понимаю, решение важное — нужно обдумать. "
+                "Да, решение важное — нужно обдумать. "
                 "Многие клиенты говорили то же самое. "
                 "Они потом отмечали, что демо помогло определиться — увидели систему в деле."
             ),
@@ -299,7 +299,7 @@ class ObjectionHandler:
         ObjectionType.NO_NEED: ObjectionStrategy(
             framework=ObjectionFramework.THREE_FS,
             response_template=(
-                "Понимаю, если всё работает — зачем менять. "
+                "Логично, если всё работает — зачем менять. "
                 "Другие клиенты тоже так думали. "
                 "А потом считали сколько времени тратят на рутину — и удивлялись."
             ),
@@ -310,7 +310,7 @@ class ObjectionHandler:
         ObjectionType.TRUST: ObjectionStrategy(
             framework=ObjectionFramework.THREE_FS,
             response_template=(
-                "Понимаю сомнения — это нормально перед покупкой. "
+                "Сомнения — это нормально перед покупкой. "
                 "Многие клиенты сначала сомневались. "
                 "Сейчас они говорят, что зря не попробовали раньше."
             ),
@@ -322,7 +322,7 @@ class ObjectionHandler:
     # Шаблоны для soft close
     SOFT_CLOSE_TEMPLATES: List[str] = [
         "Хорошо, не буду настаивать. Оставлю контакты — свяжетесь когда будет удобно?",
-        "Понимаю. Могу прислать информацию на почту — посмотрите когда будет время?",
+        "Ясно. Могу прислать информацию на почту — посмотрите когда будет время?",
         "Окей, давайте так: я оставлю контакты, и вы свяжетесь когда созреет решение.",
     ]
 
