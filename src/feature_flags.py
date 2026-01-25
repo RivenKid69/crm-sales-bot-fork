@@ -121,6 +121,9 @@ class FeatureFlags:
         # === Universal Refinement Pipeline ===
         "refinement_pipeline": True,              # Использовать универсальный RefinementPipeline вместо отдельных слоёв
 
+        # === Confidence Calibration: Scientific LLM Confidence Calibration ===
+        "confidence_calibration": True,           # Калибровка confidence для решения проблемы overconfident LLM
+
         # === Response Diversity: Anti-Monotony Engine ===
         "response_diversity": True,               # Post-processing замена монотонных вступлений
         "response_diversity_logging": True,       # Логирование замен для мониторинга
@@ -191,7 +194,12 @@ class FeatureFlags:
             "refinement_pipeline",
             "classification_refinement",
             "composite_refinement",
-            "objection_refinement"
+            "objection_refinement",
+            "confidence_calibration"
+        ],
+        # Confidence Calibration groups
+        "confidence_calibration_all": [
+            "confidence_calibration"
         ],
         # Response Diversity groups
         "response_diversity_all": [
@@ -551,6 +559,15 @@ class FeatureFlags:
     def refinement_pipeline(self) -> bool:
         """Включён ли универсальный RefinementPipeline вместо отдельных слоёв"""
         return self.is_enabled("refinement_pipeline")
+
+    # =========================================================================
+    # Confidence Calibration flags
+    # =========================================================================
+
+    @property
+    def confidence_calibration(self) -> bool:
+        """Включена ли калибровка confidence для решения проблемы overconfident LLM"""
+        return self.is_enabled("confidence_calibration")
 
 
 # Singleton экземпляр

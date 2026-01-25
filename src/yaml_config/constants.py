@@ -559,6 +559,55 @@ def get_refinement_pipeline_config() -> Dict[str, Any]:
     })
 
 
+def get_confidence_calibration_config() -> Dict[str, Any]:
+    """
+    Get confidence_calibration config from constants.yaml.
+
+    Used by ConfidenceCalibrationLayer to configure calibration strategies.
+    This is the Single Source of Truth for confidence calibration.
+
+    Solves the fundamental LLM overconfidence problem:
+    - LLM generates confidence as text, not computed algorithmically
+    - Few-shot examples teach high confidence (0.85-0.98)
+    - Result: confidence 0.85-0.95 even with incorrect classification
+
+    Scientific Foundations:
+    - Entropy-based calibration (Shannon, 1948)
+    - Post-hoc calibration (Guo et al., 2017)
+    - Verbal confidence calibration (Tian et al., 2023)
+
+    Returns:
+        Dict with calibration configuration including:
+        - enabled: bool - master switch
+        - min_confidence_floor: float - minimum confidence after calibration
+        - max_confidence_ceiling: float - maximum confidence (can't be 100% sure)
+        - entropy_*: entropy strategy settings
+        - gap_*: gap strategy settings
+        - heuristic_*: heuristic strategy settings
+
+    Example:
+        >>> config = get_confidence_calibration_config()
+        >>> config["enabled"]
+        True
+        >>> config["entropy_threshold"]
+        0.5
+        >>> config["gap_threshold"]
+        0.2
+    """
+    return _constants.get("confidence_calibration", {
+        "enabled": True,
+        "min_confidence_floor": 0.1,
+        "max_confidence_ceiling": 0.95,
+        "entropy_enabled": True,
+        "entropy_threshold": 0.5,
+        "entropy_penalty_factor": 0.15,
+        "gap_enabled": True,
+        "gap_threshold": 0.2,
+        "gap_penalty_factor": 0.2,
+        "heuristic_enabled": True,
+    })
+
+
 # =============================================================================
 # EXPORTS
 # =============================================================================
@@ -650,4 +699,5 @@ __all__ = [
     "get_composite_refinement_config",
     "get_disambiguation_config",
     "get_refinement_pipeline_config",
+    "get_confidence_calibration_config",
 ]

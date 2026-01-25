@@ -13,6 +13,7 @@ Each adapter:
 Architecture:
     BaseRefinementLayer (refinement_pipeline.py)
            |
+           +--- ConfidenceCalibrationLayer (confidence_calibration.py) [CRITICAL priority]
            +--- ShortAnswerRefinementLayer (wraps refinement.py)
            +--- CompositeMessageLayer (wraps composite_refinement.py)
            +--- ObjectionRefinementLayer (wraps objection_refinement.py)
@@ -632,7 +633,7 @@ def verify_layers_registered() -> List[str]:
     from src.classifier.refinement_pipeline import RefinementLayerRegistry
 
     registry = RefinementLayerRegistry.get_registry()
-    expected = ["short_answer", "composite_message", "objection"]
+    expected = ["confidence_calibration", "short_answer", "composite_message", "objection"]
     registered = registry.get_all_names()
 
     for layer in expected:
@@ -641,6 +642,14 @@ def verify_layers_registered() -> List[str]:
 
     return registered
 
+
+# Import confidence_calibration to register the layer
+# This must be done AFTER the verify_layers_registered function definition
+# to avoid circular imports
+try:
+    from src.classifier import confidence_calibration  # noqa: F401
+except ImportError as e:
+    logger.warning(f"Could not import confidence_calibration: {e}")
 
 # Verify on import (DEBUG level)
 logger.debug(f"Refinement layers registered: {verify_layers_registered()}")

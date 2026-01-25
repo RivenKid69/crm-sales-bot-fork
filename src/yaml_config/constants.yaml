@@ -1988,6 +1988,14 @@ refinement_pipeline:
   # Каждый слой должен быть зарегистрирован в RefinementLayerRegistry
   # priority: CRITICAL (100) → HIGH (75) → NORMAL (50) → LOW (25) → FALLBACK (0)
   layers:
+    # Слой 0: Confidence Calibration (CRITICAL priority)
+    # Калибрует confidence ПЕРЕД другими слоями
+    # Решает проблему overconfident LLM (0.85-0.95 при неверной классификации)
+    - name: confidence_calibration
+      enabled: true
+      priority: CRITICAL  # 100 - runs first
+      feature_flag: confidence_calibration
+
     # Слой 1: Short Answer Refinement (State Loop Fix)
     # Уточняет короткие ответы типа "1", "да", "первое"
     - name: short_answer
@@ -2019,6 +2027,104 @@ refinement_pipeline:
 
     # Продолжать при ошибке слоя
     continue_on_error: true
+
+# =============================================================================
+# CONFIDENCE CALIBRATION (Scientific LLM Confidence Calibration)
+# =============================================================================
+# Решает фундаментальную проблему overconfident LLM:
+# - LLM генерирует confidence как текст, а не вычисляет алгоритмически
+# - Few-shot примеры учат высокой уверенности (0.85-0.98)
+# - Результат: confidence 0.85-0.95 даже при неверной классификации
+#
+# Научные основы:
+# - Entropy-based calibration (Shannon, 1948)
+# - Post-hoc calibration (Guo et al., 2017)
+# - Verbal confidence calibration (Tian et al., 2023)
+#
+# SSoT: src/classifier/confidence_calibration.py
+# =============================================================================
+confidence_calibration:
+  # Master switch
+  enabled: true
+
+  # Пороги confidence (floor/ceiling)
+  min_confidence_floor: 0.1      # Минимальный confidence после калибровки
+  max_confidence_ceiling: 0.95   # Максимальный confidence (нельзя быть 100% уверенным)
+
+  # =============================================================================
+  # ENTROPY STRATEGY
+  # =============================================================================
+  # Использует Shannon entropy для оценки неопределённости:
+  # - Высокая entropy = высокая неопределённость = понижаем confidence
+  # - Формула: H = -sum(p_i * log(p_i))
+  # =============================================================================
+  entropy_enabled: true
+  entropy_threshold: 0.5         # Выше этого порога - применяем штраф
+  entropy_penalty_factor: 0.15   # Множитель штрафа: penalty = excess_entropy * factor
+
+  # =============================================================================
+  # GAP STRATEGY
+  # =============================================================================
+  # Анализирует разрыв между top-1 и top-2 интентами:
+  # - Маленький gap = неоднозначная классификация = понижаем confidence
+  # =============================================================================
+  gap_enabled: true
+  gap_threshold: 0.2             # Минимальный gap для высокого confidence
+  gap_penalty_factor: 0.2        # Множитель штрафа за маленький gap
+  no_alternatives_penalty: 0.1   # Штраф если нет alternatives (подозрительно)
+  min_gap_for_high_confidence: 0.15  # Минимальный gap для confidence >= 0.85
+  high_confidence_small_gap_penalty: 0.1  # Доп. штраф за high conf + small gap
+
+  # =============================================================================
+  # HEURISTIC STRATEGY
+  # =============================================================================
+  # Pattern-based правила для известных ошибок LLM
+  # =============================================================================
+  heuristic_enabled: true
+
+  # Short message penalty
+  short_message_words: 3         # Сообщения <= N слов считаются короткими
+  short_message_penalty: 0.15    # Штраф за короткие сообщения с высоким confidence
+
+  # Overconfident intent penalty
+  overconfident_intent_penalty: 0.1
+  overconfident_intents:
+    - greeting
+    - farewell
+    - small_talk
+    - agreement
+    - gratitude
+
+  # Context mismatch penalty
+  context_mismatch_penalty: 0.1
+  data_expecting_actions:
+    - ask_about_company
+    - ask_about_problem
+    - ask_situation
+    - ask_problem
+    - ask_implication
+    - ask_need_payoff
+    - ask_for_clarification
+    - transition_to_spin_situation
+    - transition_to_spin_problem
+
+  data_intents:
+    - info_provided
+    - situation_provided
+    - problem_revealed
+    - implication_acknowledged
+    - need_expressed
+
+  # Objection overconfidence penalty
+  objection_overconfidence_penalty: 0.1
+  objection_intents:
+    - objection_price
+    - objection_no_time
+    - objection_think
+    - objection_no_need
+    - objection_competitor
+    - objection_timing
+    - objection_complexity
 
 # =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
