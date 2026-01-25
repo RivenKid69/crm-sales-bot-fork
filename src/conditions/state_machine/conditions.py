@@ -418,6 +418,45 @@ def is_spin_progress_intent(ctx: EvaluatorContext) -> bool:
     return ctx.current_intent in INTENT_CATEGORIES.get("spin_progress", [])
 
 
+@sm_condition(
+    "unclear_consecutive_3x",
+    description="Check if unclear intent repeated 3+ times consecutively",
+    category="intent"
+)
+def unclear_consecutive_3x(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if unclear has been returned 3+ times in a row.
+
+    This triggers escape from handle_objection to presentation,
+    preventing infinite stuck loops when classifier can't determine intent.
+
+    Part of Objection Stuck Fix (OBJECTION_STUCK_FIX_PLAN.md)
+    """
+    return ctx.get_intent_streak("unclear") >= 3
+
+
+@sm_condition(
+    "objection_repeated",
+    description="Check if same objection type repeated 2+ times consecutively",
+    category="intent"
+)
+def objection_repeated(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if same objection intent has been repeated 2+ times.
+
+    If user repeats the exact same objection, they're not convinced by
+    our handling and we should escalate to soft_close rather than
+    continue pushing.
+
+    Part of Objection Stuck Fix (OBJECTION_STUCK_FIX_PLAN.md)
+    """
+    if not ctx.current_intent:
+        return False
+
+    # Get streak for current specific intent (not category)
+    return ctx.get_intent_streak(ctx.current_intent) >= 2
+
+
 # =============================================================================
 # STATE CONDITIONS - Check dialogue state and phase
 # =============================================================================
@@ -1163,19 +1202,6 @@ def has_objection(ctx: EvaluatorContext) -> bool:
 
 
 @sm_condition(
-    "objection_repeated",
-    description="Check if same objection type is repeated (2+ times)",
-    category="intent"
-)
-def objection_repeated(ctx: EvaluatorContext) -> bool:
-    """Returns True if same objection has been repeated 2+ times."""
-    if not ctx.current_intent:
-        return False
-    # Check if current objection intent has a streak of 2+
-    return ctx.get_intent_streak(ctx.current_intent) >= 2
-
-
-@sm_condition(
     "has_multiple_questions",
     description="Check if client has asked multiple questions (3+ in conversation)",
     category="intent"
@@ -1321,7 +1347,6 @@ __all__ = [
     "unclear_count_high",
     "frustration_warning",
     "has_objection",
-    "objection_repeated",
     "has_multiple_questions",
     "engagement_declining",
     "lead_temperature_hot",

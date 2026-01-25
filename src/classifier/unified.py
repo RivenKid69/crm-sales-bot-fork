@@ -5,11 +5,14 @@
 Включает ClassificationRefinementLayer для контекстного уточнения
 коротких ответов (State Loop Fix).
 
+Включает ObjectionRefinementLayer для контекстной валидации
+objection классификаций (Objection Stuck Fix).
+
 Включает UnifiedDisambiguationLayer для принятия решений о необходимости
 уточнения намерения пользователя.
 
 Pipeline:
-    message → LLM/Hybrid Classifier → RefinementLayer → DisambiguationLayer → result
+    message → LLM/Hybrid Classifier → RefinementLayer → ObjectionRefinementLayer → DisambiguationLayer → result
 """
 from typing import Dict, Optional, Any
 
@@ -27,12 +30,15 @@ class UnifiedClassifier:
     Если flags.classification_refinement == True: применяет
     ClassificationRefinementLayer для уточнения коротких ответов.
 
+    Если flags.objection_refinement == True: применяет
+    ObjectionRefinementLayer для контекстной валидации objection классификаций.
+
     Если flags.unified_disambiguation == True: применяет
     DisambiguationDecisionEngine для унифицированного анализа
     необходимости уточнения намерения.
 
     Pipeline:
-        message → LLM/Hybrid Classifier → RefinementLayer → DisambiguationLayer → result
+        message → LLM/Hybrid → RefinementLayer → ObjectionRefinementLayer → DisambiguationLayer → result
     """
 
     def __init__(self):
@@ -40,6 +46,7 @@ class UnifiedClassifier:
         self._hybrid = None
         self._llm = None
         self._refinement_layer = None
+        self._objection_refinement_layer = None
         self._disambiguation_engine = None
 
     @property
@@ -67,6 +74,14 @@ class UnifiedClassifier:
         return self._refinement_layer
 
     @property
+    def objection_refinement_layer(self):
+        """Lazy init ObjectionRefinementLayer."""
+        if self._objection_refinement_layer is None:
+            from .objection_refinement import ObjectionRefinementLayer
+            self._objection_refinement_layer = ObjectionRefinementLayer()
+        return self._objection_refinement_layer
+
+    @property
     def disambiguation_engine(self):
         """Lazy init DisambiguationDecisionEngine."""
         if self._disambiguation_engine is None:
@@ -80,12 +95,14 @@ class UnifiedClassifier:
 
         Pipeline:
         1. Primary classification (LLM or Hybrid based on feature flag)
-        2. Contextual refinement (if classification_refinement flag enabled)
-        3. Disambiguation analysis (if unified_disambiguation flag enabled)
+        2. Contextual refinement for short answers (State Loop Fix)
+        3. Objection refinement (Objection Stuck Fix)
+        4. Disambiguation analysis (if unified_disambiguation flag enabled)
 
         Args:
             message: Сообщение пользователя
-            context: Контекст диалога (state, spin_phase, last_action, last_intent)
+            context: Контекст диалога (state, spin_phase, last_action, last_intent,
+                     last_bot_message, turn_number, last_objection_turn, last_objection_type)
 
         Returns:
             Результат классификации с полями:
@@ -95,6 +112,7 @@ class UnifiedClassifier:
             - method: str ("llm", "hybrid", или "llm_fallback")
             - refined: bool (если было уточнение)
             - original_intent: str (если было уточнение)
+            - refinement_layer: str ("short_answer" или "objection")
             - disambiguation_triggered: bool (если нужно уточнение)
             - disambiguation_options: list (если нужно уточнение)
             - disambiguation_decision: str (если анализ проведён)
@@ -111,7 +129,11 @@ class UnifiedClassifier:
         if flags.classification_refinement:
             result = self._apply_refinement(message, result, context)
 
-        # Step 3: Unified disambiguation analysis
+        # Step 3: Objection refinement (Objection Stuck Fix)
+        if flags.objection_refinement:
+            result = self._apply_objection_refinement(message, result, context)
+
+        # Step 4: Unified disambiguation analysis
         if flags.unified_disambiguation:
             result = self._apply_disambiguation(result, context)
 
@@ -224,16 +246,70 @@ class UnifiedClassifier:
             )
             return result
 
+    def _apply_objection_refinement(
+        self,
+        message: str,
+        result: Dict,
+        context: Dict
+    ) -> Dict:
+        """
+        Apply ObjectionRefinementLayer to validate objection classifications.
+
+        This addresses the Objection Stuck bug where messages like
+        "бюджет пока не определён" are incorrectly classified as objection_price
+        when the bot just asked about budget (making it an answer, not objection).
+
+        Args:
+            message: User's message
+            result: Classification result from previous layers
+            context: Dialog context with last_bot_message, last_action, etc.
+
+        Returns:
+            Refined result (or original if refinement not applicable)
+        """
+        try:
+            from .objection_refinement import ObjectionRefinementContext
+
+            objection_ctx = ObjectionRefinementContext(
+                message=message,
+                intent=result.get("intent", "unclear"),
+                confidence=result.get("confidence", 0.0),
+                last_bot_message=context.get("last_bot_message"),
+                last_action=context.get("last_action"),
+                state=context.get("state", "greeting"),
+                turn_number=context.get("turn_number", 0),
+                last_objection_turn=context.get("last_objection_turn"),
+                last_objection_type=context.get("last_objection_type"),
+            )
+
+            refined_result = self.objection_refinement_layer.refine(
+                message, result, objection_ctx
+            )
+
+            return refined_result
+
+        except Exception as e:
+            # Fail-safe: return original result on any error
+            logger.warning(
+                "Objection refinement layer failed, returning original result",
+                extra={"error": str(e), "message": message[:50], "intent": result.get("intent")}
+            )
+            return result
+
     def get_stats(self) -> Dict[str, Any]:
         """Получить статистику."""
         stats = {
             "active_classifier": "llm" if flags.llm_classifier else "hybrid",
             "refinement_enabled": flags.classification_refinement,
+            "objection_refinement_enabled": flags.objection_refinement,
             "unified_disambiguation_enabled": flags.unified_disambiguation,
         }
 
         if self._llm is not None:
             stats["llm_stats"] = self._llm.get_stats()
+
+        if self._objection_refinement_layer is not None:
+            stats["objection_refinement_stats"] = self._objection_refinement_layer.get_stats()
 
         if self._disambiguation_engine is not None:
             stats["disambiguation_stats"] = self._disambiguation_engine.get_stats()

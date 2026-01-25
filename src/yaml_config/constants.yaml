@@ -1584,6 +1584,130 @@ extraction:
       ❌ "типа это помогло бы" → contact_info (НЕПРАВИЛЬНО! Это desired_outcome)
 
 # =============================================================================
+# OBJECTION REFINEMENT CONFIGURATION (Single Source of Truth)
+# =============================================================================
+# Контекстная валидация и рефайнмент objection классификаций.
+# Предотвращает ложноположительные objection детекции путём проверки:
+# - Совпадения темы с последним вопросом бота
+# - Наличия вопросительных маркеров в сообщении
+# - Паттернов интереса vs реальных возражений
+# - Порогов confidence
+#
+# Часть Phase 5: Objection Stuck Fix (OBJECTION_STUCK_FIX_PLAN.md)
+# =============================================================================
+objection_refinement:
+  # Включить рефайнмент objection классификаций
+  enabled: true
+
+  # Минимальная confidence для принятия objection без дополнительной проверки
+  # Если confidence >= этого порога И нет явных сигналов ложноположительного,
+  # objection принимается как есть
+  min_confidence_to_accept: 0.85
+
+  # Паттерны, указывающие что это скорее ВОПРОС, а не возражение
+  # Если сообщение содержит эти маркеры, objection переклассифицируется
+  question_markers:
+    - "?"
+    - "какой"
+    - "какая"
+    - "какие"
+    - "сколько"
+    - "как"
+    - "когда"
+    - "где"
+    - "почему"
+    - "зачем"
+    - "что"
+    - "расскажите"
+    - "покажите"
+    - "объясните"
+
+  # Паттерны callback_request, маскирующиеся под objection_no_time
+  # "сейчас занят, позвоните завтра" → callback_request, НЕ objection_no_time
+  callback_patterns:
+    - "позвони"
+    - "перезвони"
+    - "напиши"
+    - "свяжи"
+    - "завтра"
+    - "потом"
+    - "позже"
+    - "на неделе"
+    - "через час"
+    - "через день"
+    - "вечером"
+    - "утром"
+    - "после обеда"
+
+  # Паттерны интереса, маскирующиеся под objection_think
+  # "подумать над предложением" → interest, НЕ objection_think
+  interest_patterns:
+    - "подумать над"
+    - "подумаю о"
+    - "подумаю над"
+    - "обдумать"
+    - "рассмотр"
+    - "изучить"
+    - "посмотреть"
+    - "ознакомиться"
+    - "пришлите"
+    - "отправьте"
+    - "скиньте"
+
+  # Маппинг objection → альтернативный intent при рефайнменте
+  # question_context: intent если сообщение похоже на вопрос
+  # info_context: intent если сообщение — ответ на вопрос бота
+  refinement_mapping:
+    objection_price:
+      question_context: price_question
+      info_context: info_provided
+    objection_no_time:
+      callback_context: callback_request
+      schedule_context: consultation_request
+    objection_think:
+      interest_context: agreement
+      question_context: question_features
+    objection_competitor:
+      question_context: comparison
+      info_context: info_provided
+    objection_complexity:
+      question_context: question_implementation
+      info_context: info_provided
+    objection_timing:
+      callback_context: callback_request
+      info_context: info_provided
+
+  # Действия бота, после которых ответ на ту же тему НЕ возражение
+  # Если бот спросил о бюджете и клиент упомянул бюджет — это ответ, не возражение
+  topic_alignment_actions:
+    budget:
+      - ask_about_budget
+      - ask_pricing_context
+      - discuss_pricing
+      - answer_with_facts
+      - answer_with_price_range
+    time:
+      - ask_about_timeline
+      - schedule_demo
+      - ask_availability
+      - ask_for_callback
+    competitor:
+      - ask_about_current_tools
+      - compare_features
+      - ask_about_experience
+    complexity:
+      - ask_about_team_size
+      - ask_about_implementation
+      - discuss_onboarding
+
+  # Cooldown настройки — предотвращение спама возражений
+  cooldown:
+    # Минимум ходов между любыми возражениями
+    min_turns_between_objections: 2
+    # Минимум ходов между одинаковыми типами возражений
+    min_turns_same_type: 3
+
+# =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
 # =============================================================================
 # guard.high_frustration_threshold ДОЛЖЕН быть равен frustration.thresholds.high

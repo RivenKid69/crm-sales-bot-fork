@@ -467,6 +467,34 @@ def get_informative_intents() -> List[str]:
     return INFORMATIVE_INTENTS
 
 
+def get_objection_refinement_config() -> Dict[str, Any]:
+    """
+    Get objection_refinement config from constants.yaml.
+
+    Used by ObjectionRefinementLayer to validate and refine objection
+    classifications using contextual signals.
+
+    Returns:
+        Dict with objection refinement configuration including:
+        - enabled: bool
+        - min_confidence_to_accept: float
+        - question_markers: List[str]
+        - callback_patterns: List[str]
+        - interest_patterns: List[str]
+        - refinement_mapping: Dict[str, Dict]
+        - topic_alignment_actions: Dict[str, List[str]]
+        - cooldown: Dict[str, int]
+
+    Example:
+        >>> config = get_objection_refinement_config()
+        >>> config["min_confidence_to_accept"]
+        0.85
+        >>> config["refinement_mapping"]["objection_price"]
+        {'question_context': 'price_question', 'info_context': 'info_provided'}
+    """
+    return _constants.get("objection_refinement", {})
+
+
 # =============================================================================
 # EXPORTS
 # =============================================================================
@@ -554,4 +582,6 @@ __all__ = [
     # Helper functions
     "get_short_answer_config",
     "get_informative_intents",
+    "get_objection_refinement_config",
+    "get_disambiguation_config",
 ]

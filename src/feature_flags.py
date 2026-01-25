@@ -111,6 +111,9 @@ class FeatureFlags:
 
         # === State Loop Fix: Classification Refinement ===
         "classification_refinement": True,        # Контекстное уточнение коротких ответов
+
+        # === Objection Stuck Fix: Objection Refinement ===
+        "objection_refinement": True,             # Контекстная валидация objection классификаций
     }
 
     # Группы флагов для удобного управления
@@ -156,6 +159,10 @@ class FeatureFlags:
         # State Loop Fix groups
         "state_loop_fix": [
             "classification_refinement"
+        ],
+        # Objection Stuck Fix groups
+        "objection_stuck_fix": [
+            "objection_refinement"
         ],
     }
 
@@ -478,6 +485,15 @@ class FeatureFlags:
     def classification_refinement(self) -> bool:
         """Включено ли контекстное уточнение классификации коротких ответов"""
         return self.is_enabled("classification_refinement")
+
+    # =========================================================================
+    # Objection Stuck Fix flags
+    # =========================================================================
+
+    @property
+    def objection_refinement(self) -> bool:
+        """Включена ли контекстная валидация objection классификаций"""
+        return self.is_enabled("objection_refinement")
 
 
 # Singleton экземпляр

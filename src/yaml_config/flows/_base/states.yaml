@@ -305,25 +305,81 @@ states:
       request_contract: close
       request_invoice: close
 
-      # Все 18 возражений → handle_objection
-      objection_price: handle_objection
-      objection_competitor: handle_objection
-      objection_no_time: handle_objection
-      objection_think: handle_objection
-      objection_timing: handle_objection
-      objection_complexity: handle_objection
-      objection_trust: handle_objection
-      objection_no_need: handle_objection
-      objection_risk: handle_objection
-      objection_team_resistance: handle_objection
-      objection_security: handle_objection
-      objection_bad_experience: handle_objection
-      objection_priority: handle_objection
-      objection_scale: handle_objection
-      objection_change_management: handle_objection
-      objection_contract_bound: handle_objection
-      objection_company_policy: handle_objection
-      objection_roi_doubt: handle_objection
+      # Все 18 возражений → handle_objection (С ПРОВЕРКОЙ ЛИМИТА!)
+      # FIX: Добавлена проверка objection_limit_reached для согласованности
+      # с greeting и handle_objection (OBJECTION_STUCK_FIX_PLAN.md)
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_timing:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_risk:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_team_resistance:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_security:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_bad_experience:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_priority:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_scale:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_change_management:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_contract_bound:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_company_policy:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_roi_doubt:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
     rules:
       price_question: answer_with_facts
       pricing_details: answer_with_facts
@@ -450,6 +506,14 @@ states:
       comparison: presentation
       consultation_request: close
       info_provided: "{{entry_state}}"
+
+      # NEW: Escape hatch для repeated unclear (OBJECTION_STUCK_FIX_PLAN.md)
+      # Если классификатор не может определить intent 3 раза подряд,
+      # возвращаемся к презентации вместо застревания
+      unclear:
+        - when: unclear_consecutive_3x
+          then: presentation
+        - handle_objection  # Default: продолжить работу с возражением
     rules:
       price_question:
         - when: can_handle_with_roi
@@ -533,25 +597,81 @@ states:
       rejection: soft_close
       farewell: soft_close
 
-      # Все 18 возражений → handle_objection
-      objection_price: handle_objection
-      objection_competitor: handle_objection
-      objection_no_time: handle_objection
-      objection_think: handle_objection
-      objection_timing: handle_objection
-      objection_complexity: handle_objection
-      objection_trust: handle_objection
-      objection_no_need: handle_objection
-      objection_risk: handle_objection
-      objection_team_resistance: handle_objection
-      objection_security: handle_objection
-      objection_bad_experience: handle_objection
-      objection_priority: handle_objection
-      objection_scale: handle_objection
-      objection_change_management: handle_objection
-      objection_contract_bound: handle_objection
-      objection_company_policy: handle_objection
-      objection_roi_doubt: handle_objection
+      # Все 18 возражений → handle_objection (С ПРОВЕРКОЙ ЛИМИТА!)
+      # FIX: Добавлена проверка objection_limit_reached для согласованности
+      # с greeting и handle_objection (OBJECTION_STUCK_FIX_PLAN.md)
+      objection_price:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_competitor:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_time:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_think:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_timing:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_complexity:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_trust:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_no_need:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_risk:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_team_resistance:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_security:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_bad_experience:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_priority:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_scale:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_change_management:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_contract_bound:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_company_policy:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
+      objection_roi_doubt:
+        - when: objection_limit_reached
+          then: soft_close
+        - handle_objection
     rules:
       price_question: answer_with_facts
       pricing_details: answer_with_facts
