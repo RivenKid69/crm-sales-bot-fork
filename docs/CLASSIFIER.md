@@ -332,17 +332,23 @@ PRIORITY_PATTERNS = [
 │   │                    RefinementPipeline                               │      │
 │   │                                                                     │      │
 │   │   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐          │      │
-│   │   │ ShortAnswer  │ → │ Composite    │ → │ Objection    │          │      │
-│   │   │ Layer        │   │ Message      │   │ Layer        │          │      │
-│   │   │ (HIGH)       │   │ (HIGH)       │   │ (NORMAL)     │          │      │
+│   │   │ Confidence   │ → │ ShortAnswer  │ → │ Composite    │ →        │      │
+│   │   │ Calibration  │   │ Layer        │   │ Message      │          │      │
+│   │   │ (CRITICAL)   │   │ (HIGH)       │   │ (HIGH)       │          │      │
 │   │   └──────────────┘   └──────────────┘   └──────────────┘          │      │
-│   │                                                                     │      │
+│   │                                                    │               │      │
+│   │                                              ┌─────▼──────┐        │      │
+│   │                                              │ Objection  │        │      │
+│   │                                              │ Layer      │        │      │
+│   │                                              │ (NORMAL)   │        │      │
+│   │                                              └────────────┘        │      │
 │   │   Features:                                                         │      │
 │   │   • Protocol Pattern (IRefinementLayer)                            │      │
 │   │   • Registry Pattern (dynamic registration)                        │      │
 │   │   • Priority-based execution order                                 │      │
 │   │   • Fail-safe (layer errors don't break pipeline)                  │      │
 │   │   • YAML configuration                                             │      │
+│   │   • Scientific confidence calibration (entropy, gap, heuristics)   │      │
 │   └─────────┬──────────────────────────────────────────────────────────┘      │
 │             │                                                                  │
 │             ▼                                                                  │
@@ -435,6 +441,39 @@ stats = pipeline.get_stats()
 
 ### Встроенные слои
 
+#### ConfidenceCalibrationLayer ⭐ NEW
+
+Научная калибровка LLM confidence для решения проблемы overconfident LLM. LLM часто возвращает высокий confidence (0.85-0.95) даже при неверной классификации.
+
+**Проблема:** LLM генерирует confidence как текст, а не вычисляет алгоритмически. Это приводит к overconfidence — высокой уверенности даже при ошибочной классификации.
+
+**Решение:** Три научно-обоснованные стратегии калибровки:
+
+1. **Entropy Strategy** — использует Shannon entropy для оценки неопределённости:
+   - Высокая entropy (распределение вероятностей по многим альтернативам) → понижаем confidence
+   - Формула: `H = -Σ(p_i × log(p_i))`
+
+2. **Gap Strategy** — анализирует разрыв между top-1 и top-2 интентами:
+   - Маленький gap → неоднозначная классификация → понижаем confidence
+   - Особый штраф за high confidence + small gap (подозрительно)
+
+3. **Heuristic Strategy** — pattern-based правила для известных ошибок LLM:
+   - Короткие сообщения с высоким confidence → подозрительно
+   - Overconfident intents (greeting, farewell, small_talk) → штраф
+
+```python
+# Пример: LLM вернул confidence 0.9 для "да"
+# Результат после калибровки:
+# - Entropy penalty: 0.05 (alternatives были)
+# - Gap penalty: 0.1 (gap между top-1 и top-2 < 0.2)
+# - Heuristic penalty: 0.15 (short message + high confidence)
+# Итого: 0.9 - 0.05 - 0.1 - 0.15 = 0.6
+```
+
+**Приоритет:** CRITICAL (100) — выполняется первым, до всех остальных слоёв.
+
+**SSoT:** `src/classifier/confidence_calibration.py`
+
 #### ShortAnswerRefinementLayer
 
 Уточняет классификацию коротких ответов ("да", "1", "ок") на основе контекста SPIN-фазы.
@@ -485,6 +524,10 @@ stats = pipeline.get_stats()
 refinement_pipeline:
   enabled: true
   layers:
+    - name: confidence_calibration
+      enabled: true
+      priority: CRITICAL  # 100 - runs first
+      feature_flag: confidence_calibration
     - name: short_answer
       enabled: true
       priority: HIGH
@@ -497,6 +540,27 @@ refinement_pipeline:
       enabled: true
       priority: NORMAL
       feature_flag: objection_refinement
+
+# Конфигурация калибровки confidence
+confidence_calibration:
+  enabled: true
+  min_confidence_floor: 0.1
+  max_confidence_ceiling: 0.95
+
+  # Entropy strategy
+  entropy_enabled: true
+  entropy_threshold: 0.5
+  entropy_penalty_factor: 0.15
+
+  # Gap strategy
+  gap_enabled: true
+  gap_threshold: 0.2
+  gap_penalty_factor: 0.2
+
+  # Heuristic strategy
+  heuristic_enabled: true
+  short_message_words: 3
+  short_message_penalty: 0.15
 ```
 
 **Feature Flags:**
@@ -505,6 +569,7 @@ refinement_pipeline:
 flags.is_enabled("refinement_pipeline")  # True по умолчанию
 
 # Отдельные слои
+flags.confidence_calibration     # confidence_calibration layer (CRITICAL) ⭐
 flags.classification_refinement  # short_answer layer
 flags.composite_refinement       # composite_message layer
 flags.objection_refinement       # objection layer
@@ -576,9 +641,10 @@ refinement_pipeline:
 |-----------|------|
 | Pipeline Core | `src/classifier/refinement_pipeline.py` |
 | Layer Adapters | `src/classifier/refinement_layers.py` |
-| Configuration | `src/yaml_config/constants.yaml` (секция `refinement_pipeline`) |
+| Confidence Calibration | `src/classifier/confidence_calibration.py` ⭐ |
+| Configuration | `src/yaml_config/constants.yaml` (секции `refinement_pipeline`, `confidence_calibration`) |
 | Feature Flags | `src/feature_flags.py` |
-| Tests | `tests/test_refinement_pipeline.py` |
+| Tests | `tests/test_refinement_pipeline.py`, `tests/test_confidence_calibration.py` ⭐ |
 
 ### Legacy Mode
 
@@ -684,6 +750,7 @@ stats = classifier.get_stats()
 
 # RefinementPipeline flags
 "refinement_pipeline": True          # Универсальный RefinementPipeline (рекомендуется)
+"confidence_calibration": True       # Научная калибровка LLM confidence ⭐ NEW
 "classification_refinement": True    # Уточнение коротких ответов (ShortAnswerRefinementLayer)
 "composite_refinement": True         # Приоритет данных в составных сообщениях (CompositeMessageLayer)
 "objection_refinement": True         # Контекстная валидация objection (ObjectionRefinementLayerAdapter)

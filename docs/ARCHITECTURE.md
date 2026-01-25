@@ -284,21 +284,20 @@ classifier/
 │                                                                                │
 │   message → LLM/Hybrid Classifier → RefinementPipeline → Disambiguation        │
 │                                            │                                   │
-│                    ┌───────────────────────┼───────────────────────┐          │
-│                    │                       │                       │          │
-│              ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼─────┐     │
-│              │ShortAnswer │          │Composite  │          │Objection  │     │
-│              │Refinement  │          │Message    │          │Refinement │     │
-│              │Layer       │          │Layer      │          │Layer      │     │
-│              │(priority:  │          │(priority: │          │(priority: │     │
-│              │ HIGH)      │          │ HIGH)     │          │ NORMAL)   │     │
-│              └────────────┘          └───────────┘          └───────────┘     │
-│                                                                                │
+│              ┌─────────────────────────────┼─────────────────────────────┐    │
+│              │                             │                             │    │
+│        ┌─────▼─────┐   ┌─────────────┐   ┌──────▼──────┐   ┌──────────┐ │    │
+│        │Confidence │ → │ShortAnswer  │ → │Composite    │ → │Objection │ │    │
+│        │Calibration│   │Refinement   │   │Message      │   │Refinement│ │    │
+│        │(CRITICAL) │   │(HIGH)       │   │(HIGH)       │   │(NORMAL)  │ │    │
+│        └───────────┘   └─────────────┘   └─────────────┘   └──────────┘ │    │
+│              ⭐ NEW                                                       │    │
 │   Architecture:                                                                │
 │   • Protocol Pattern (IRefinementLayer) — единый интерфейс для слоёв          │
 │   • Registry Pattern — динамическая регистрация слоёв                         │
 │   • Pipeline Pattern — последовательная обработка по приоритетам              │
 │   • Fail-Safe — ошибки слоя не ломают весь pipeline                           │
+│   • Scientific Calibration — entropy, gap, heuristic strategies ⭐            │
 │                                                                                │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -314,6 +313,7 @@ classifier/
 
 | Слой | Приоритет | Описание |
 |------|-----------|----------|
+| `confidence_calibration` | CRITICAL ⭐ | Научная калибровка LLM confidence (entropy, gap, heuristics) |
 | `short_answer` | HIGH | Уточнение коротких ответов ("да", "1") по контексту SPIN фазы |
 | `composite_message` | HIGH | Приоритет извлечения данных в составных сообщениях |
 | `objection` | NORMAL | Контекстная валидация objection-классификаций |
@@ -323,6 +323,10 @@ classifier/
 refinement_pipeline:
   enabled: true
   layers:
+    - name: confidence_calibration
+      enabled: true
+      priority: CRITICAL  # 100 - runs first ⭐
+      feature_flag: confidence_calibration
     - name: short_answer
       enabled: true
       priority: HIGH
@@ -335,12 +339,20 @@ refinement_pipeline:
       enabled: true
       priority: NORMAL
       feature_flag: objection_refinement
+
+# ⭐ NEW: Scientific confidence calibration
+confidence_calibration:
+  enabled: true
+  entropy_enabled: true       # Shannon entropy
+  gap_enabled: true           # Gap between top-1 and top-2
+  heuristic_enabled: true     # Pattern-based rules
 ```
 
 **SSoT:**
 - Pipeline: `src/classifier/refinement_pipeline.py`
 - Layers: `src/classifier/refinement_layers.py`
-- Config: `src/yaml_config/constants.yaml` (секция `refinement_pipeline`)
+- Confidence Calibration: `src/classifier/confidence_calibration.py` ⭐
+- Config: `src/yaml_config/constants.yaml` (секции `refinement_pipeline`, `confidence_calibration`)
 
 ## Поток данных
 
@@ -758,6 +770,7 @@ if flags.llm_classifier:
 | `guard_skip_resets_fallback` | Сброс fallback_response после skip |
 | `confidence_router` | Gap-based решения и graceful degradation |
 | `refinement_pipeline` | Универсальный RefinementPipeline вместо отдельных слоёв ⭐ |
+| `confidence_calibration` | Научная калибровка LLM confidence (entropy, gap, heuristics) ⭐ NEW |
 | `classification_refinement` | Уточнение классификации коротких ответов |
 | `composite_refinement` | Приоритет данных в составных сообщениях |
 | `objection_refinement` | Контекстная валидация objection-классификаций |
@@ -833,6 +846,7 @@ FALLBACK_RESPONSES = {
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
 | `classifier/refinement_pipeline.py` | **RefinementPipeline** (Protocol, Registry, Pipeline) ⭐ |
 | `classifier/refinement_layers.py` | **Адаптеры слоёв уточнения** (Short, Composite, Objection) ⭐ |
+| `classifier/confidence_calibration.py` | **ConfidenceCalibrationLayer** (научная калибровка LLM confidence) ⭐ NEW |
 | `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
 | `knowledge/category_router.py` | LLM-классификация категорий |
 | `knowledge/reranker.py` | Cross-encoder переоценка |
