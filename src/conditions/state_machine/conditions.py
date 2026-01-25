@@ -13,6 +13,16 @@ Part of Phase 2: StateMachine Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_condition
 
+# Import from Single Source of Truth for frustration thresholds
+from src.frustration_thresholds import (
+    FRUSTRATION_ELEVATED,
+    FRUSTRATION_MODERATE,
+    FRUSTRATION_WARNING,
+    is_frustration_elevated,
+    is_frustration_moderate,
+    is_frustration_warning,
+)
+
 
 # =============================================================================
 # DATA CONDITIONS - Check collected_data fields
@@ -788,30 +798,30 @@ def can_handle_with_roi(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "client_frustrated",
-    description="Check if client frustration level is high (>= 3)",
+    description=f"Check if client frustration level is moderate+ (>= {FRUSTRATION_MODERATE})",
     category="context"
 )
 def client_frustrated(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if client frustration level is 3 or higher.
+    Returns True if client frustration level is moderate or higher.
 
     When frustrated, avoid deflecting and be more direct.
     """
-    return ctx.frustration_level >= 3
+    return is_frustration_moderate(ctx.frustration_level)
 
 
 @sm_condition(
     "client_very_frustrated",
-    description="Check if client frustration level is very high (>= 4)",
+    description=f"Check if client frustration level is warning+ (>= {FRUSTRATION_WARNING})",
     category="context"
 )
 def client_very_frustrated(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if client frustration level is 4 or higher.
+    Returns True if client frustration level is warning or higher.
 
     Consider offering exit or immediate help.
     """
-    return ctx.frustration_level >= 4
+    return is_frustration_warning(ctx.frustration_level)
 
 
 @sm_condition(
@@ -999,16 +1009,16 @@ def needs_repair(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "should_be_careful",
-    description="Check if we should be careful (frustrated or negative momentum)",
+    description="Check if we should be careful (elevated frustration or negative momentum)",
     category="context"
 )
 def should_be_careful(ctx: EvaluatorContext) -> bool:
     """
     Returns True if we should be more careful with responses.
 
-    Triggers when client is frustrated or momentum is negative.
+    Triggers when client is frustrated (elevated+) or momentum is negative.
     """
-    return ctx.frustration_level >= 2 or ctx.momentum_direction == "negative"
+    return is_frustration_elevated(ctx.frustration_level) or ctx.momentum_direction == "negative"
 
 
 @sm_condition(
@@ -1039,7 +1049,7 @@ def should_answer_directly(ctx: EvaluatorContext) -> bool:
     Returns True if we should answer directly instead of deflecting.
 
     Triggers when:
-    - Client is frustrated (level >= 2)
+    - Client is frustrated (elevated+)
     - Question is repeated
     - Confidence is declining
     - FIX: Client tone is RUSHED (busy/aggressive personas want immediate answers)
@@ -1049,7 +1059,7 @@ def should_answer_directly(ctx: EvaluatorContext) -> bool:
     is_rushed = bool(ctx.tone and ctx.tone.lower() == "rushed")
 
     return (
-        ctx.frustration_level >= 2 or
+        is_frustration_elevated(ctx.frustration_level) or
         ctx.repeated_question is not None or
         ctx.confidence_trend == "decreasing" or
         is_rushed
@@ -1133,12 +1143,12 @@ def unclear_count_high(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "frustration_warning",
-    description="Check if frustration is at warning level (>= 2)",
+    description=f"Check if frustration is elevated (>= {FRUSTRATION_ELEVATED})",
     category="context"
 )
 def frustration_warning(ctx: EvaluatorContext) -> bool:
-    """Returns True if frustration level is at warning threshold (2+)."""
-    return ctx.frustration_level >= 2
+    """Returns True if frustration level is elevated or higher."""
+    return is_frustration_elevated(ctx.frustration_level)
 
 
 @sm_condition(

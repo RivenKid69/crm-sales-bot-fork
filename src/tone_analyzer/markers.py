@@ -6,11 +6,20 @@
 - INFORMAL_MARKERS: Маркеры неформального стиля
 - FRUSTRATION_WEIGHTS: Веса для накопительного frustration
 - FRUSTRATION_DECAY: Веса для снижения frustration
+- FRUSTRATION_THRESHOLDS: Re-exported from frustration_thresholds (SSoT)
+- MAX_FRUSTRATION: Re-exported from frustration_thresholds (SSoT)
 """
 
 from typing import Dict, List
 
 from .models import Tone
+
+# Import from Single Source of Truth for frustration thresholds
+# This ensures all components use the same threshold values
+from src.frustration_thresholds import (
+    FRUSTRATION_THRESHOLDS,
+    FRUSTRATION_MAX as MAX_FRUSTRATION,
+)
 
 
 # Маркеры тона (паттерны regex)
@@ -83,12 +92,6 @@ FRUSTRATION_DECAY: Dict[Tone, int] = {
     Tone.INTERESTED: 2,     # Хорошо снижает
 }
 
-# Пороги frustration
-FRUSTRATION_THRESHOLDS = {
-    "warning": 4,           # Начать сокращать ответы
-    "high": 7,              # Предложить помощь/выход
-    "critical": 9,          # Мягкое завершение
-}
-
-# Максимальный уровень frustration
-MAX_FRUSTRATION: int = 10
+# NOTE: FRUSTRATION_THRESHOLDS and MAX_FRUSTRATION are now imported from
+# src.frustration_thresholds (Single Source of Truth) at the top of this file.
+# This ensures consistency with conversation_guard.py and conditions.

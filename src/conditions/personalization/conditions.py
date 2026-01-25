@@ -20,6 +20,18 @@ from src.conditions.personalization.context import (
 )
 from src.conditions.personalization.registry import personalization_condition
 
+# Import from Single Source of Truth for frustration thresholds
+from src.frustration_thresholds import (
+    FRUSTRATION_ELEVATED,
+    FRUSTRATION_MODERATE,
+    FRUSTRATION_WARNING,
+    FRUSTRATION_HIGH,
+    is_frustration_elevated,
+    is_frustration_moderate,
+    is_frustration_warning,
+    is_frustration_high,
+)
+
 
 # =============================================================================
 # CTA CONDITIONS - CTA eligibility and selection
@@ -528,32 +540,32 @@ def frustration_none(ctx: PersonalizationContext) -> bool:
 
 @personalization_condition(
     "frustration_low",
-    description="Check if frustration level is low (1-2)",
+    description=f"Check if frustration level is low (1 to {FRUSTRATION_ELEVATED - 1})",
     category="tone"
 )
 def frustration_low(ctx: PersonalizationContext) -> bool:
-    """Returns True if frustration level is 1 or 2."""
-    return 1 <= ctx.frustration_level <= 2
+    """Returns True if frustration level is low (below elevated threshold)."""
+    return 1 <= ctx.frustration_level < FRUSTRATION_ELEVATED
 
 
 @personalization_condition(
     "frustration_moderate",
-    description="Check if frustration level is moderate (3-4)",
+    description=f"Check if frustration level is moderate ({FRUSTRATION_MODERATE}-{FRUSTRATION_WARNING - 1})",
     category="tone"
 )
 def frustration_moderate(ctx: PersonalizationContext) -> bool:
-    """Returns True if frustration level is 3 or 4."""
-    return 3 <= ctx.frustration_level <= 4
+    """Returns True if frustration level is moderate (between moderate and warning)."""
+    return FRUSTRATION_MODERATE <= ctx.frustration_level < FRUSTRATION_WARNING
 
 
 @personalization_condition(
     "frustration_high",
-    description="Check if frustration level is high (5+)",
+    description=f"Check if frustration level is high ({FRUSTRATION_HIGH}+)",
     category="tone"
 )
 def frustration_high(ctx: PersonalizationContext) -> bool:
-    """Returns True if frustration level is 5 or higher."""
-    return ctx.frustration_level >= 5
+    """Returns True if frustration level is high or higher."""
+    return is_frustration_high(ctx.frustration_level)
 
 
 @personalization_condition(
@@ -565,9 +577,9 @@ def needs_soft_approach(ctx: PersonalizationContext) -> bool:
     """
     Returns True if soft approach is needed.
 
-    Soft approach when: moderate frustration OR negative momentum OR low engagement.
+    Soft approach when: moderate+ frustration OR negative momentum OR low engagement.
     """
-    if ctx.frustration_level >= 3:
+    if is_frustration_moderate(ctx.frustration_level):
         return True
     if ctx.momentum_direction == "negative":
         return True
@@ -756,7 +768,7 @@ def ready_for_strong_cta(ctx: PersonalizationContext) -> bool:
         return False
     if ctx.engagement_level in ("low", "disengaged"):
         return False
-    if ctx.frustration_level >= 3:
+    if is_frustration_moderate(ctx.frustration_level):
         return False
     if ctx.state not in ("presentation", "close"):
         return False
@@ -820,11 +832,11 @@ def should_be_conservative(ctx: PersonalizationContext) -> bool:
     """
     Returns True if conservative approach is needed.
 
-    Conservative when: multiple objections OR frustration OR negative momentum.
+    Conservative when: multiple objections OR moderate+ frustration OR negative momentum.
     """
     if ctx.total_objections >= 2:
         return True
-    if ctx.frustration_level >= 3:
+    if is_frustration_moderate(ctx.frustration_level):
         return True
     if ctx.momentum_direction == "negative":
         return True
@@ -922,7 +934,7 @@ def optimal_for_demo_offer(ctx: PersonalizationContext) -> bool:
     """
     if ctx.state != "presentation":
         return False
-    if ctx.frustration_level >= 3:
+    if is_frustration_moderate(ctx.frustration_level):
         return False
     if ctx.engagement_level in ("low", "disengaged"):
         return False

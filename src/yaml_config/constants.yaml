@@ -799,9 +799,23 @@ frustration:
     positive: 2        # Хорошо снижает
     interested: 2      # Хорошо снижает
 
-  # ⚠️ Пороги frustration
+  # ⚠️ Пороги frustration (Single Source of Truth)
+  # Все компоненты ДОЛЖНЫ использовать эти пороги через src.frustration_thresholds!
+  #
+  # Шкала (0-10):
+  #   0-1:     Normal - нет раздражения
+  #   2:       Elevated - лёгкое раздражение, быть осторожнее
+  #   3:       Moderate - заметное раздражение, эмпатичный тон
+  #   4:       Warning - сокращать ответы
+  #   5-6:     High-Warning - сильное раздражение, рассмотреть intervention
+  #   7-8:     High - guard intervention срабатывает
+  #   9:       Critical - рекомендовать soft close
+  #   10:      Maximum - немедленный выход
+  #
   # ВАЖНО: thresholds.high ДОЛЖЕН быть равен guard.high_frustration_threshold!
   thresholds:
+    elevated: 2        # Лёгкое раздражение, скорректировать подход
+    moderate: 3        # Заметное раздражение, эмпатичный тон
     warning: 4         # Начать сокращать ответы
     high: 7            # Предложить помощь/выход (= guard.high_frustration_threshold)
     critical: 9        # Мягкое завершение

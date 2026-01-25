@@ -10,6 +10,13 @@ Part of Phase 7: Personalization Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 
+# Import from Single Source of Truth for frustration thresholds
+from src.frustration_thresholds import (
+    FRUSTRATION_MODERATE,
+    FRUSTRATION_WARNING,
+    FRUSTRATION_HIGH,
+)
+
 
 # CTA types for personalization
 CTA_TYPES = {
@@ -70,8 +77,9 @@ MEDIUM_COMPANY_THRESHOLD = 20
 LARGE_COMPANY_THRESHOLD = 50
 
 # Frustration thresholds for CTA
-SOFT_CTA_FRUSTRATION_THRESHOLD = 3
-NO_CTA_FRUSTRATION_THRESHOLD = 5
+# NOTE: Using centralized thresholds from src.frustration_thresholds
+SOFT_CTA_FRUSTRATION_THRESHOLD = FRUSTRATION_MODERATE  # Use soft CTA at moderate frustration
+NO_CTA_FRUSTRATION_THRESHOLD = FRUSTRATION_HIGH  # Skip CTA at high frustration
 
 # Minimum turns before CTA
 MIN_TURNS_FOR_CTA = 3

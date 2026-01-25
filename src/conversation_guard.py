@@ -30,6 +30,9 @@ from typing import Dict, List, Optional, Tuple
 
 from logger import logger
 
+# Import from Single Source of Truth for frustration thresholds
+from src.frustration_thresholds import FRUSTRATION_HIGH
+
 
 @dataclass
 class GuardConfig:
@@ -45,8 +48,10 @@ class GuardConfig:
     progress_check_interval: int = 5       # Каждые 5 turns проверяем прогресс
     min_unique_states_for_progress: int = 2  # Минимум уникальных состояний за интервал
 
-    # Frustration thresholds
-    high_frustration_threshold: int = 7    # Порог высокого раздражения
+    # Frustration thresholds - MUST use centralized value from frustration_thresholds
+    # NOTE: Using FRUSTRATION_HIGH ensures consistency with fallback conditions
+    # and personalization conditions. DO NOT hardcode a different value here!
+    high_frustration_threshold: int = FRUSTRATION_HIGH
 
     @classmethod
     def default(cls) -> "GuardConfig":

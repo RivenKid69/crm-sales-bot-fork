@@ -21,6 +21,16 @@ from src.conditions.policy.context import (
 )
 from src.conditions.policy.registry import policy_condition
 
+# Import from Single Source of Truth for frustration thresholds
+from src.frustration_thresholds import (
+    FRUSTRATION_ELEVATED,
+    FRUSTRATION_MODERATE,
+    FRUSTRATION_WARNING,
+    is_frustration_elevated,
+    is_frustration_moderate,
+    is_frustration_warning,
+)
+
 
 # =============================================================================
 # REPAIR CONDITIONS - Stuck, oscillation, repeated question
@@ -377,22 +387,22 @@ def has_guard_intervention(ctx: PolicyContext) -> bool:
 
 @policy_condition(
     "frustration_high",
-    description="Check if frustration level is high (3+)",
+    description=f"Check if frustration level is moderate+ ({FRUSTRATION_MODERATE}+)",
     category="guard"
 )
 def frustration_high(ctx: PolicyContext) -> bool:
-    """Returns True if frustration level is 3 or higher."""
-    return ctx.frustration_level >= 3
+    """Returns True if frustration level is moderate or higher."""
+    return is_frustration_moderate(ctx.frustration_level)
 
 
 @policy_condition(
     "frustration_critical",
-    description="Check if frustration level is critical (4+)",
+    description=f"Check if frustration level is warning+ ({FRUSTRATION_WARNING}+)",
     category="guard"
 )
 def frustration_critical(ctx: PolicyContext) -> bool:
-    """Returns True if frustration level is 4 or higher."""
-    return ctx.frustration_level >= 4
+    """Returns True if frustration level is warning or higher."""
+    return is_frustration_warning(ctx.frustration_level)
 
 
 @policy_condition(
@@ -404,9 +414,9 @@ def needs_empathy(ctx: PolicyContext) -> bool:
     """
     Returns True if response should include empathy.
 
-    When frustration is high or there are repeated objections.
+    When frustration is elevated+ or there are repeated objections.
     """
-    return ctx.frustration_level >= 2 or len(ctx.repeated_objection_types) > 0
+    return is_frustration_elevated(ctx.frustration_level) or len(ctx.repeated_objection_types) > 0
 
 
 # =============================================================================

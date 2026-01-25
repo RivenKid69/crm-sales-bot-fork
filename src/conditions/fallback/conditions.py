@@ -18,6 +18,17 @@ from src.conditions.fallback.context import (
 )
 from src.conditions.fallback.registry import fallback_condition
 
+# Import from Single Source of Truth for frustration thresholds
+from src.frustration_thresholds import (
+    FRUSTRATION_ELEVATED,
+    FRUSTRATION_MODERATE,
+    FRUSTRATION_WARNING,
+    FRUSTRATION_HIGH,
+    is_frustration_moderate,
+    is_frustration_warning,
+    is_frustration_high,
+)
+
 
 # =============================================================================
 # TIER CONDITIONS - Fallback tier escalation
@@ -33,9 +44,9 @@ def should_escalate_tier(ctx: FallbackContext) -> bool:
     Returns True if fallback should escalate to next tier.
 
     Escalate when: 2+ consecutive fallbacks at same tier
-    or high frustration level.
+    or moderate+ frustration level.
     """
-    return ctx.consecutive_fallbacks >= 2 or ctx.frustration_level >= 3
+    return ctx.consecutive_fallbacks >= 2 or is_frustration_moderate(ctx.frustration_level)
 
 
 @fallback_condition(
@@ -322,22 +333,22 @@ def has_rich_context(ctx: FallbackContext) -> bool:
 
 @fallback_condition(
     "frustration_high",
-    description="Check if frustration level is high (3+)",
+    description=f"Check if frustration level is moderate+ ({FRUSTRATION_MODERATE}+)",
     category="frustration"
 )
 def frustration_high(ctx: FallbackContext) -> bool:
-    """Returns True if frustration level is 3 or higher."""
-    return ctx.frustration_level >= 3
+    """Returns True if frustration level is moderate or higher."""
+    return is_frustration_moderate(ctx.frustration_level)
 
 
 @fallback_condition(
     "frustration_critical",
-    description="Check if frustration level is critical (4+)",
+    description=f"Check if frustration level is warning+ ({FRUSTRATION_WARNING}+)",
     category="frustration"
 )
 def frustration_critical(ctx: FallbackContext) -> bool:
-    """Returns True if frustration level is 4 or higher."""
-    return ctx.frustration_level >= 4
+    """Returns True if frustration level is warning or higher."""
+    return is_frustration_warning(ctx.frustration_level)
 
 
 @fallback_condition(
@@ -399,10 +410,10 @@ def should_offer_graceful_exit(ctx: FallbackContext) -> bool:
     """
     Returns True if graceful exit should be offered.
 
-    Conditions: critical frustration OR (too many fallbacks AND low engagement)
+    Conditions: warning+ frustration OR (too many fallbacks AND low engagement)
     OR negative momentum with high fallbacks.
     """
-    if ctx.frustration_level >= 4:
+    if is_frustration_warning(ctx.frustration_level):
         return True
     if ctx.total_fallbacks >= 5 and ctx.engagement_level in ("low", "disengaged"):
         return True
@@ -488,11 +499,11 @@ def should_skip_to_next_state(ctx: FallbackContext) -> bool:
     """
     Returns True if skip to next state should be offered.
 
-    Conditions: tier 3 AND (many fallbacks in state OR frustration moderate).
+    Conditions: tier 3 AND (many fallbacks in state OR frustration elevated+).
     """
     if ctx.current_tier != "fallback_tier_3":
         return False
-    return ctx.fallbacks_in_state >= 2 or ctx.frustration_level >= 2
+    return ctx.fallbacks_in_state >= 2 or ctx.frustration_level >= FRUSTRATION_ELEVATED
 
 
 @fallback_condition(
@@ -504,11 +515,11 @@ def can_try_rephrase(ctx: FallbackContext) -> bool:
     """
     Returns True if rephrase approach is appropriate.
 
-    Conditions: tier 1 AND not too many fallbacks AND frustration not high.
+    Conditions: tier 1 AND not too many fallbacks AND frustration below moderate.
     """
     if ctx.current_tier != "fallback_tier_1":
         return False
-    return ctx.total_fallbacks < 3 and ctx.frustration_level < 3
+    return ctx.total_fallbacks < 3 and ctx.frustration_level < FRUSTRATION_MODERATE
 
 
 @fallback_condition(
@@ -538,9 +549,13 @@ def needs_immediate_escalation(ctx: FallbackContext) -> bool:
     Returns True if immediate escalation to soft_close is needed.
 
     Emergency escalation when situation is critical.
+
+    Uses FRUSTRATION_HIGH threshold from src.frustration_thresholds
+    to ensure consistency with ConversationGuard.
     """
-    # Critical frustration always triggers immediate escalation
-    if ctx.frustration_level >= 5:
+    # High frustration always triggers immediate escalation
+    # NOTE: Uses centralized threshold to match guard.high_frustration_threshold
+    if is_frustration_high(ctx.frustration_level):
         return True
     # Too many consecutive fallbacks with negative momentum
     if ctx.consecutive_fallbacks >= 4 and ctx.momentum_direction == "negative":
@@ -560,10 +575,10 @@ def can_recover(ctx: FallbackContext) -> bool:
     """
     Returns True if conversation can still be recovered.
 
-    Recovery is possible when frustration is not critical
+    Recovery is possible when frustration is below warning threshold
     and we haven't exhausted fallback options.
     """
-    if ctx.frustration_level >= 4:
+    if is_frustration_warning(ctx.frustration_level):
         return False
     if ctx.total_fallbacks >= 6:
         return False
@@ -581,9 +596,9 @@ def should_personalize_response(ctx: FallbackContext) -> bool:
     """
     Returns True if fallback response should be personalized.
 
-    Personalization when: has contextual data AND not critical situation.
+    Personalization when: has contextual data AND not warning+ frustration.
     """
-    if ctx.frustration_level >= 4:
+    if is_frustration_warning(ctx.frustration_level):
         return False
     return has_contextual_data(ctx)
 
