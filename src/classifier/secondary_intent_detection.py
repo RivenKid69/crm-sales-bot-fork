@@ -1,0 +1,501 @@
+# src/classifier/secondary_intent_detection.py
+
+"""
+Secondary Intent Detection Layer.
+
+Architectural Solution for the "Lost Question" Bug.
+
+Problem:
+    When a user sends a composite message like "100 человек. Сколько стоит?",
+    the LLM classifier picks ONE primary intent (often info_provided for the data).
+    The question intent (price_question) is LOST.
+
+Solution:
+    This layer detects secondary intents (especially questions) in ANY message,
+    regardless of what primary intent was classified. These secondary intents
+    are stored in the result metadata and can be acted upon by Knowledge Sources.
+
+Architecture:
+    - Runs EARLY in the pipeline (HIGH priority, after confidence calibration)
+    - Does NOT change primary intent (preserves classifier decision)
+    - ADDS secondary_intents list to result metadata
+    - Uses keyword/pattern matching for reliability (no LLM dependency)
+    - Configuration-driven: patterns loaded from constants.yaml
+
+Design Principles:
+    - Non-destructive: Never overwrites primary intent
+    - Additive: Only adds metadata
+    - Fast: O(n) pattern matching, no external calls
+    - Fail-safe: Returns original on any error
+    - Universal: Works with ANY flow (SPIN, BANT, custom)
+
+Usage by Downstream Components:
+    - FactQuestionSource checks secondary_intents for question_* intents
+    - DialoguePolicy can use secondary_intents for overlay decisions
+    - Response generator can acknowledge both data and question
+
+Example:
+    Input:
+        message: "100 человек. Сколько стоит?"
+        intent: "info_provided"
+        confidence: 0.85
+
+    Output:
+        intent: "info_provided"  # UNCHANGED
+        confidence: 0.85         # UNCHANGED
+        secondary_intents: ["price_question"]  # ADDED
+        secondary_intent_confidence: {"price_question": 0.9}  # ADDED
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Set, Optional, Any, FrozenSet, Pattern
+import re
+import logging
+
+from src.classifier.refinement_pipeline import (
+    BaseRefinementLayer,
+    LayerPriority,
+    RefinementContext,
+    RefinementResult,
+    RefinementDecision,
+    register_refinement_layer,
+)
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class SecondaryIntentPattern:
+    """
+    Pattern definition for detecting secondary intents.
+
+    Attributes:
+        intent: Target intent name (e.g., "price_question")
+        patterns: List of regex patterns to match
+        keywords: Set of keywords for fast O(1) lookup
+        min_confidence: Minimum confidence for this detection
+        priority: Higher priority patterns are checked first
+    """
+    intent: str
+    patterns: List[str] = field(default_factory=list)
+    keywords: FrozenSet[str] = field(default_factory=frozenset)
+    min_confidence: float = 0.8
+    priority: int = 10
+
+
+# =============================================================================
+# DEFAULT PATTERNS (can be overridden from constants.yaml)
+# =============================================================================
+
+DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
+    # Price-related questions (highest priority)
+    "price_question": SecondaryIntentPattern(
+        intent="price_question",
+        patterns=[
+            r"сколько\s+стоит",
+            r"какая\s+цена",
+            r"по\s+цен[еам]",
+            r"почём",
+            r"прайс",
+            r"стоимость",
+            r"тариф[ыа]?\b",
+            r"расценк[иа]",
+            r"бюджет\s+какой",
+            r"во\s+сколько\s+обойд[её]тся",
+            r"сколько\s+будет\s+стоить",
+            r"цен[ау]\s+скаж",
+            r"давай(?:те)?\s+(?:уже\s+)?(?:по\s+)?(?:цене|ценам|стоимости)",
+        ],
+        keywords=frozenset({
+            "цена", "цену", "цены", "ценой", "ценам", "ценами",
+            "стоит", "стоимость", "стоимости",
+            "прайс", "тариф", "тарифы", "тарифа",
+            "расценки", "почём", "давайте",
+        }),
+        min_confidence=0.9,
+        priority=100,
+    ),
+
+    # Feature questions
+    "question_features": SecondaryIntentPattern(
+        intent="question_features",
+        patterns=[
+            r"какие\s+функци[ияй]",
+            r"что\s+(?:может|умеет|делает)",
+            r"(?:какие\s+)?возможност[иь]",
+            r"функционал",
+            r"как\s+работает",
+            r"расскажите\s+(?:про|о|об)",
+            r"что\s+система\s+умеет",
+        ],
+        keywords=frozenset({
+            "функции", "функционал", "возможности", "возможность",
+            "умеет", "может", "работает", "какие",
+        }),
+        min_confidence=0.85,
+        priority=80,
+    ),
+
+    # Integration questions
+    "question_integrations": SecondaryIntentPattern(
+        intent="question_integrations",
+        patterns=[
+            r"интеграци[яию]",
+            r"подключ(?:ить|ение|ается)",
+            r"синхрониз(?:ация|ировать)",
+            r"совместим(?:ость|о)",
+            r"api\b",
+            r"касп[иы]",
+            r"1с\b",
+        ],
+        keywords=frozenset({
+            "интеграция", "интеграции", "интегрируется",
+            "подключить", "подключение", "синхронизация",
+            "каспи", "kaspi", "1с", "api",
+        }),
+        min_confidence=0.85,
+        priority=70,
+    ),
+
+    # Technical questions
+    "question_technical": SecondaryIntentPattern(
+        intent="question_technical",
+        patterns=[
+            r"техническ(?:ий|ие|ая)",
+            r"как\s+настро(?:ить|йка)",
+            r"документаци[яию]",
+            r"инструкци[яию]",
+            r"требовани[яе]",
+        ],
+        keywords=frozenset({
+            "технический", "настройка", "документация",
+            "инструкция", "требования", "спецификация",
+        }),
+        min_confidence=0.8,
+        priority=60,
+    ),
+
+    # Equipment questions
+    "question_equipment": SecondaryIntentPattern(
+        intent="question_equipment_general",
+        patterns=[
+            r"оборудовани[ея]",
+            r"терминал",
+            r"касс(?:а|у|ы|овы[йм])",
+            r"сканер",
+            r"принтер",
+            r"весы\b",
+        ],
+        keywords=frozenset({
+            "оборудование", "терминал", "касса",
+            "сканер", "принтер", "весы", "моноблок",
+        }),
+        min_confidence=0.85,
+        priority=65,
+    ),
+
+    # Demo/callback requests (high priority - closing signals)
+    "demo_request": SecondaryIntentPattern(
+        intent="demo_request",
+        patterns=[
+            r"(?:покажите|показать)\s+(?:как|демо)",
+            r"демонстраци[яию]",
+            r"попробовать",
+            r"тест(?:овый|ировать)",
+            r"пробн(?:ый|ая|ую)",
+        ],
+        keywords=frozenset({
+            "демо", "демонстрация", "показать", "покажите",
+            "попробовать", "тестовый", "пробный",
+        }),
+        min_confidence=0.9,
+        priority=95,
+    ),
+
+    "callback_request": SecondaryIntentPattern(
+        intent="callback_request",
+        patterns=[
+            r"перезвон(?:ите|ить)",
+            r"позвон(?:ите|ить)",
+            r"свяж(?:итесь|усь)",
+            r"контакт(?:ы|ный)",
+            r"номер\s+телефон",
+        ],
+        keywords=frozenset({
+            "перезвоните", "позвоните", "свяжитесь",
+            "контакт", "контакты", "телефон",
+        }),
+        min_confidence=0.9,
+        priority=95,
+    ),
+
+    # Urgency signals (meta-intents)
+    "request_brevity": SecondaryIntentPattern(
+        intent="request_brevity",
+        patterns=[
+            r"короче",
+            r"быстрее",
+            r"давай(?:те)?\s+(?:уже\s+)?по\s+делу",
+            r"не\s+тян[иу]",
+            r"конкретн(?:о|ее)",
+            r"сразу\s+(?:к\s+делу|говори)",
+        ],
+        keywords=frozenset({
+            "короче", "быстрее", "конкретно",
+            "конкретнее", "сразу", "давайте", "давай",
+        }),
+        min_confidence=0.85,
+        priority=50,
+    ),
+}
+
+
+@register_refinement_layer("secondary_intent_detection")
+class SecondaryIntentDetectionLayer(BaseRefinementLayer):
+    """
+    Detects secondary intents in composite messages.
+
+    This layer ADDS secondary_intents metadata without changing the primary intent.
+    It enables downstream components (FactQuestionSource, DialoguePolicy) to
+    respond to questions even when they weren't the primary classification.
+
+    Key Design Decisions:
+        1. NON-DESTRUCTIVE: Never changes primary intent
+        2. PATTERN-BASED: Uses regex + keywords, no LLM dependency
+        3. CONFIGURABLE: Patterns can be extended via constants.yaml
+        4. FAIL-SAFE: Returns original result on any error
+
+    Example:
+        >>> layer = SecondaryIntentDetectionLayer()
+        >>> ctx = RefinementContext(
+        ...     message="100 человек. Сколько стоит?",
+        ...     intent="info_provided",
+        ...     confidence=0.85,
+        ... )
+        >>> result = layer.refine("100 человек. Сколько стоит?", {...}, ctx)
+        >>> result.secondary_signals
+        ['price_question']
+    """
+
+    LAYER_NAME = "secondary_intent_detection"
+    LAYER_PRIORITY = LayerPriority.HIGH  # Run early, after confidence calibration
+    FEATURE_FLAG = "secondary_intent_detection"  # Feature flag for gradual rollout
+
+    def __init__(self):
+        """Initialize with default patterns (can be overridden from config)."""
+        super().__init__()
+
+        # Load patterns from config or use defaults
+        self._patterns = self._load_patterns()
+
+        # Compile regex patterns for efficiency
+        self._compiled_patterns: Dict[str, List[Pattern]] = {}
+        self._compile_patterns()
+
+        # Stats for monitoring
+        self._detections_by_intent: Dict[str, int] = {}
+        self._multi_intent_count = 0
+
+        logger.debug(
+            f"{self.name} initialized with {len(self._patterns)} intent patterns"
+        )
+
+    def _get_config(self) -> Dict[str, Any]:
+        """Load configuration from constants.yaml."""
+        try:
+            from src.yaml_config.constants import get_secondary_intent_config
+            return get_secondary_intent_config()
+        except (ImportError, AttributeError):
+            # Config function not yet added, use defaults
+            return {}
+
+    def _load_patterns(self) -> Dict[str, SecondaryIntentPattern]:
+        """
+        Load patterns from config, merging with defaults.
+
+        Config can:
+        - Add new patterns
+        - Override existing patterns
+        - Disable patterns (enabled: false)
+        """
+        patterns = dict(DEFAULT_SECONDARY_INTENT_PATTERNS)
+
+        config_patterns = self._config.get("patterns", {})
+        for intent, config in config_patterns.items():
+            if not config.get("enabled", True):
+                # Pattern disabled in config
+                patterns.pop(intent, None)
+                continue
+
+            # Create or update pattern
+            patterns[intent] = SecondaryIntentPattern(
+                intent=intent,
+                patterns=config.get("patterns", []),
+                keywords=frozenset(config.get("keywords", [])),
+                min_confidence=config.get("min_confidence", 0.8),
+                priority=config.get("priority", 10),
+            )
+
+        return patterns
+
+    def _compile_patterns(self) -> None:
+        """Compile all regex patterns for efficiency."""
+        for intent, pattern_def in self._patterns.items():
+            compiled = []
+            for p in pattern_def.patterns:
+                try:
+                    compiled.append(re.compile(p, re.IGNORECASE))
+                except re.error as e:
+                    logger.warning(f"Invalid regex pattern for {intent}: {p} - {e}")
+            self._compiled_patterns[intent] = compiled
+
+    def _should_apply(self, ctx: RefinementContext) -> bool:
+        """
+        Always try to detect secondary intents.
+
+        We don't filter by primary intent because:
+        - ANY primary intent can have a secondary question
+        - "info_provided" + "price_question" is common
+        - "agreement" + "demo_request" is valuable
+        """
+        # Only skip for very short messages (unlikely to have multiple intents)
+        if len(ctx.message) < 10:
+            return False
+
+        return True
+
+    def _do_refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext
+    ) -> RefinementResult:
+        """
+        Detect secondary intents and add to metadata.
+
+        Algorithm:
+        1. Normalize message (lowercase)
+        2. Check keywords (O(n) where n = words in message)
+        3. Check regex patterns for keyword-matched intents
+        4. Rank by confidence and priority
+        5. Add to secondary_intents (excluding primary intent)
+        """
+        text = message.lower()
+        # Remove punctuation for keyword matching (keeps original text for regex)
+        # This ensures "стоит?" matches keyword "стоит"
+        text_clean = re.sub(r'[^\w\s]', ' ', text)
+        words = set(text_clean.split())
+
+        # Find matching intents
+        detected: List[tuple] = []  # (intent, confidence, priority)
+
+        for intent, pattern_def in self._patterns.items():
+            # Skip if this is the primary intent (no need to detect)
+            if intent == ctx.intent:
+                continue
+
+            # Fast keyword check first
+            keyword_match = bool(words & pattern_def.keywords)
+
+            # If keywords match, check patterns for confirmation
+            pattern_match = False
+            if keyword_match or pattern_def.keywords == frozenset():
+                # Check compiled patterns
+                for compiled in self._compiled_patterns.get(intent, []):
+                    if compiled.search(text):
+                        pattern_match = True
+                        break
+
+            # Determine confidence based on match type
+            if pattern_match:
+                confidence = pattern_def.min_confidence
+                detected.append((intent, confidence, pattern_def.priority))
+            elif keyword_match:
+                # Keyword-only match: lower confidence
+                confidence = pattern_def.min_confidence * 0.8
+                if confidence >= 0.6:  # Threshold for keyword-only
+                    detected.append((intent, confidence, pattern_def.priority))
+
+        # If no secondary intents detected, pass through
+        if not detected:
+            return self._pass_through(result, ctx)
+
+        # Sort by priority (descending), then confidence (descending)
+        detected.sort(key=lambda x: (x[2], x[1]), reverse=True)
+
+        # Extract intents and confidences
+        secondary_intents = [d[0] for d in detected]
+        secondary_confidences = {d[0]: d[1] for d in detected}
+
+        # Update stats
+        for intent in secondary_intents:
+            self._detections_by_intent[intent] = (
+                self._detections_by_intent.get(intent, 0) + 1
+            )
+        if len(secondary_intents) > 1:
+            self._multi_intent_count += 1
+
+        # Log detection
+        logger.info(
+            f"Secondary intents detected: {secondary_intents}",
+            extra={
+                "primary_intent": ctx.intent,
+                "secondary_intents": secondary_intents,
+                "message": message[:50],
+            }
+        )
+
+        # Create result with secondary intents (primary unchanged)
+        return RefinementResult(
+            decision=RefinementDecision.REFINED,  # Metadata was added
+            intent=ctx.intent,  # PRIMARY UNCHANGED
+            confidence=ctx.confidence,  # PRIMARY UNCHANGED
+            original_intent=ctx.intent,
+            refinement_reason="secondary_intents_detected",
+            layer_name=self.name,
+            extracted_data=result.get("extracted_data", {}),
+            secondary_signals=secondary_intents,  # THE KEY OUTPUT
+            metadata={
+                "secondary_intent_confidences": secondary_confidences,
+                "detection_method": "pattern_matching",
+            },
+        )
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get monitoring statistics."""
+        base_stats = super().get_stats()
+        base_stats.update({
+            "detections_by_intent": dict(self._detections_by_intent),
+            "multi_intent_count": self._multi_intent_count,
+            "patterns_count": len(self._patterns),
+        })
+        return base_stats
+
+
+# =============================================================================
+# HELPER FUNCTION FOR CONFIG
+# =============================================================================
+
+def get_default_secondary_intent_config() -> Dict[str, Any]:
+    """
+    Get default configuration for secondary intent detection.
+
+    This can be added to constants.yaml and loaded by the layer.
+
+    Returns:
+        Default configuration dict
+    """
+    return {
+        "enabled": True,
+        "min_message_length": 10,
+        "patterns": {
+            intent: {
+                "patterns": list(pattern.patterns),
+                "keywords": list(pattern.keywords),
+                "min_confidence": pattern.min_confidence,
+                "priority": pattern.priority,
+                "enabled": True,
+            }
+            for intent, pattern in DEFAULT_SECONDARY_INTENT_PATTERNS.items()
+        },
+    }

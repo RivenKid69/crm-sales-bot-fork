@@ -458,6 +458,189 @@ def objection_repeated(ctx: EvaluatorContext) -> bool:
 
 
 # =============================================================================
+# COUNT-BASED CONDITIONS (Lost Question Fix)
+# =============================================================================
+# FIX: Streak-based условия сбрасываются при чередовании интентов.
+# Count-based условия считают ОБЩЕЕ количество, не последовательное.
+#
+# Пример проблемы:
+#   Turn 1: "100 человек. Сколько стоит?" → info_provided (streak=0 для price)
+#   Turn 2: "Бюджет 500к. Не тяни, давай по делу" → info_provided (streak=0)
+#   Turn 3: "Цену скажи!" → price_question (streak=1, не 3!)
+#
+# Count-based условие поймает, что price_question был 3 раза в истории.
+# =============================================================================
+
+@sm_condition(
+    "price_total_count_3x",
+    description="Check if price_question occurred 3+ times TOTAL in conversation",
+    category="intent"
+)
+def price_total_count_3x(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if price_question has been asked 3+ times TOTAL.
+
+    This is more reliable than streak-based conditions because:
+    - Streak resets when ANY other intent occurs
+    - In composite messages, price_question might not be primary
+    - Count tracks ALL occurrences regardless of order
+
+    Use this for triggering answer_with_price_range.
+    """
+    return ctx.get_intent_count("price_question") >= 3
+
+
+@sm_condition(
+    "price_total_count_2x",
+    description="Check if price_question occurred 2+ times TOTAL in conversation",
+    category="intent"
+)
+def price_total_count_2x(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if price_question has been asked 2+ times TOTAL.
+
+    Softer trigger than 3x - useful for showing willingness to discuss price
+    while still trying to gather qualifying info.
+    """
+    return ctx.get_intent_count("price_question") >= 2
+
+
+@sm_condition(
+    "question_total_count_2x",
+    description="Check if any question intent occurred 2+ times TOTAL",
+    category="intent"
+)
+def question_total_count_2x(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if current question intent has been asked 2+ times TOTAL.
+
+    Works for any question_* intent. Useful for triggering detailed answers
+    when user shows persistent interest in a topic.
+    """
+    if not ctx.current_intent or not ctx.current_intent.startswith("question_"):
+        return False
+    return ctx.get_intent_count(ctx.current_intent) >= 2
+
+
+@sm_condition(
+    "unclear_total_count_3x",
+    description="Check if unclear occurred 3+ times TOTAL in conversation",
+    category="intent"
+)
+def unclear_total_count_3x(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if unclear has been returned 3+ times TOTAL.
+
+    Total count is more reliable for detecting communication issues
+    than streak-based which resets on any clear classification.
+    """
+    return ctx.get_intent_count("unclear") >= 3
+
+
+@sm_condition(
+    "has_secondary_price_question",
+    description="Check if secondary_intents contains price_question",
+    category="intent"
+)
+def has_secondary_price_question(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if secondary_intents metadata contains price_question.
+
+    This enables detection of price questions even when they were
+    lost in composite message classification.
+
+    Works with SecondaryIntentDetectionLayer.
+    """
+    # Check for secondary_intents in context
+    secondary = getattr(ctx, "secondary_intents", None)
+    if secondary and "price_question" in secondary:
+        return True
+
+    # Also check classification_result if available
+    classification = getattr(ctx, "classification_result", None)
+    if classification and isinstance(classification, dict):
+        secondary = classification.get("secondary_signals", [])
+        if secondary and "price_question" in secondary:
+            return True
+
+    return False
+
+
+@sm_condition(
+    "has_secondary_question_intent",
+    description="Check if secondary_intents contains any question_* intent",
+    category="intent"
+)
+def has_secondary_question_intent(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if secondary_intents contains any question intent.
+
+    This is the general check for detecting any lost question
+    in composite messages.
+
+    Works with SecondaryIntentDetectionLayer.
+    """
+    # Check for secondary_intents in context
+    secondary = getattr(ctx, "secondary_intents", None)
+    if secondary:
+        for intent in secondary:
+            if intent.startswith("question_") or intent in {
+                "price_question", "demo_request", "callback_request"
+            }:
+                return True
+
+    # Also check classification_result if available
+    classification = getattr(ctx, "classification_result", None)
+    if classification and isinstance(classification, dict):
+        secondary = classification.get("secondary_signals", [])
+        if secondary:
+            for intent in secondary:
+                if intent.startswith("question_") or intent in {
+                    "price_question", "demo_request", "callback_request"
+                }:
+                    return True
+
+    return False
+
+
+@sm_condition(
+    "should_answer_question_now",
+    description="Check if question should be answered immediately (frustrated or repeated)",
+    category="composite"
+)
+def should_answer_question_now(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if we should answer the question immediately.
+
+    Combines multiple signals:
+    - Elevated frustration (4+)
+    - Price asked 2+ times total
+    - Rushed tone ("давай по делу")
+    - Secondary question detected
+
+    This is the "should_answer_directly" logic but with total counts.
+    """
+    # Check frustration
+    if ctx.frustration_level >= 4:
+        return True
+
+    # Check price question count
+    if ctx.get_intent_count("price_question") >= 2:
+        return True
+
+    # Check tone
+    tone = getattr(ctx, "tone", None)
+    if tone and tone.lower() == "rushed":
+        return True
+
+    # Check for secondary price question
+    if has_secondary_price_question(ctx):
+        return True
+
+    return False
+
+
+# =============================================================================
 # STATE CONDITIONS - Check dialogue state and phase
 # =============================================================================
 

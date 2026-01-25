@@ -703,6 +703,65 @@ def get_frustration_intensity_config() -> Dict[str, Any]:
     return FRUSTRATION_INTENSITY_CONFIG
 
 
+def get_secondary_intent_config() -> Dict[str, Any]:
+    """
+    Get secondary_intent_detection config from constants.yaml.
+
+    Used by SecondaryIntentDetectionLayer for detecting lost questions
+    in composite messages.
+
+    This is part of the architectural solution for the "Lost Question" bug:
+    - When user sends "100 человек. Сколько стоит?"
+    - LLM picks info_provided as primary (data detected)
+    - price_question is LOST
+    - This layer detects price_question as secondary intent
+    - FactQuestionSource can then respond to the question
+
+    Returns:
+        Dict with secondary intent detection configuration including:
+        - enabled: bool - master switch
+        - min_message_length: int - minimum length for detection
+        - patterns: Dict[str, Dict] - intent -> pattern config
+
+    Example:
+        >>> config = get_secondary_intent_config()
+        >>> config["patterns"]["price_question"]["priority"]
+        100
+    """
+    return _constants.get("secondary_intent_detection", {
+        "enabled": True,
+        "min_message_length": 10,
+        "patterns": {},
+    })
+
+
+def get_fact_question_source_config() -> Dict[str, Any]:
+    """
+    Get fact_question_source config from constants.yaml.
+
+    Used by FactQuestionSource for handling all fact-based questions.
+    Works with SecondaryIntentDetectionLayer to detect lost questions.
+
+    Returns:
+        Dict with fact question source configuration including:
+        - enabled: bool - master switch
+        - fact_intents: List[str] - intents requiring factual answers
+        - default_actions: Dict[str, str] - intent-specific actions
+        - fallback_action: str - default action if no specific one
+
+    Example:
+        >>> config = get_fact_question_source_config()
+        >>> "question_features" in config["fact_intents"]
+        True
+    """
+    return _constants.get("fact_question_source", {
+        "enabled": True,
+        "fact_intents": [],
+        "default_actions": {},
+        "fallback_action": "answer_with_facts",
+    })
+
+
 # =============================================================================
 # EXPORTS
 # =============================================================================
@@ -798,4 +857,7 @@ __all__ = [
     "get_refinement_pipeline_config",
     "get_confidence_calibration_config",
     "get_frustration_intensity_config",
+    # FIX: New functions for Lost Question Fix
+    "get_secondary_intent_config",
+    "get_fact_question_source_config",
 ]

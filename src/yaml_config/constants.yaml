@@ -651,13 +651,26 @@ intents:
 # =============================================================================
 policy:
   # Состояния где разрешены оверлеи DialoguePolicy
+  # FIX: Добавлены BANT states для поддержки policy overlays в BANT flow
   overlay_allowed_states:
+    # SPIN states
     - spin_situation
     - spin_problem
     - spin_implication
     - spin_need_payoff
+    # BANT states (FIX: были пропущены, вызывало потерю вопросов в BANT flow)
+    - bant_budget
+    - bant_authority
+    - bant_need
+    - bant_timeline
+    # Common states
     - presentation
     - handle_objection
+    # Other flow states (для универсальности)
+    - discovery
+    - qualification
+    - needs_analysis
+    - solution_presentation
 
   # Защищённые состояния (без оверлеев)
   protected_states:
@@ -2091,21 +2104,29 @@ refinement_pipeline:
       priority: CRITICAL  # 100 - runs first
       feature_flag: confidence_calibration
 
-    # Слой 1: Short Answer Refinement (State Loop Fix)
+    # Слой 1: Secondary Intent Detection (Lost Question Fix)
+    # FIX: Детектирует вторичные интенты (вопросы) в составных сообщениях
+    # Решает проблему потери вопросов при классификации "100 человек. Сколько стоит?"
+    - name: secondary_intent_detection
+      enabled: true
+      priority: HIGH  # 75 - runs early, after confidence calibration
+      feature_flag: secondary_intent_detection
+
+    # Слой 2: Short Answer Refinement (State Loop Fix)
     # Уточняет короткие ответы типа "1", "да", "первое"
     - name: short_answer
       enabled: true
       priority: HIGH  # 75
       feature_flag: classification_refinement
 
-    # Слой 2: Composite Message Refinement
+    # Слой 3: Composite Message Refinement
     # Обрабатывает составные сообщения "5 человек, больше не нужно, быстрее"
     - name: composite_message
       enabled: true
       priority: HIGH  # 75
       feature_flag: composite_refinement
 
-    # Слой 3: Objection Refinement (Objection Stuck Fix)
+    # Слой 4: Objection Refinement (Objection Stuck Fix)
     # Валидирует objection классификации
     - name: objection
       enabled: true
@@ -2122,6 +2143,227 @@ refinement_pipeline:
 
     # Продолжать при ошибке слоя
     continue_on_error: true
+
+# =============================================================================
+# SECONDARY INTENT DETECTION (Lost Question Fix)
+# =============================================================================
+# Архитектурное решение проблемы "потерянных вопросов":
+# - Когда пользователь отправляет "100 человек. Сколько стоит?",
+#   LLM выбирает info_provided как primary intent
+# - Вопрос о цене ТЕРЯЕТСЯ
+# - Этот слой детектирует вторичные интенты и сохраняет их как metadata
+# - FactQuestionSource затем может ответить на вопрос
+#
+# SSoT: src/classifier/secondary_intent_detection.py
+# =============================================================================
+secondary_intent_detection:
+  # Master switch
+  enabled: true
+
+  # Минимальная длина сообщения для детекции (короткие маловероятно composite)
+  min_message_length: 10
+
+  # Паттерны для детекции вторичных интентов
+  # Каждый паттерн: intent -> {patterns, keywords, min_confidence, priority}
+  # Высокий priority = проверяется первым
+  patterns:
+    # Ценовые вопросы (высший приоритет - часто теряются)
+    price_question:
+      enabled: true
+      priority: 100
+      min_confidence: 0.9
+      patterns:
+        - "сколько\\s+стоит"
+        - "какая\\s+цена"
+        - "по\\s+цен[еам]"
+        - "почём"
+        - "прайс"
+        - "стоимость"
+        - "тариф[ыа]?\\b"
+        - "расценк[иа]"
+        - "бюджет\\s+какой"
+        - "во\\s+сколько\\s+обойд[её]тся"
+        - "сколько\\s+будет\\s+стоить"
+        - "цен[ау]\\s+скаж"
+        - "давай(?:те)?\\s+(?:уже\\s+)?(?:по\\s+)?(?:цене|ценам|стоимости)"
+      keywords:
+        - цена
+        - цену
+        - цены
+        - ценой
+        - ценам
+        - ценами
+        - стоит
+        - стоимость
+        - стоимости
+        - прайс
+        - тариф
+        - тарифы
+        - тарифа
+        - расценки
+        - почём
+        - давайте
+
+    # Демо/callback (сигналы закрытия - важно не потерять)
+    demo_request:
+      enabled: true
+      priority: 95
+      min_confidence: 0.9
+      patterns:
+        - "(?:покажите|показать)\\s+(?:как|демо)"
+        - "демонстраци[яию]"
+        - "попробовать"
+        - "тест(?:овый|ировать)"
+        - "пробн(?:ый|ая|ую)"
+      keywords:
+        - демо
+        - демонстрация
+        - показать
+        - покажите
+        - попробовать
+        - тестовый
+        - пробный
+
+    callback_request:
+      enabled: true
+      priority: 95
+      min_confidence: 0.9
+      patterns:
+        - "перезвон(?:ите|ить)"
+        - "позвон(?:ите|ить)"
+        - "свяж(?:итесь|усь)"
+      keywords:
+        - перезвоните
+        - позвоните
+        - свяжитесь
+
+    # Вопросы о функциях/возможностях
+    question_features:
+      enabled: true
+      priority: 80
+      min_confidence: 0.85
+      patterns:
+        - "какие\\s+функци[ияй]"
+        - "что\\s+(?:может|умеет|делает)"
+        - "(?:какие\\s+)?возможност[иь]"
+        - "функционал"
+        - "как\\s+работает"
+        - "расскажите\\s+(?:про|о|об)"
+        - "что\\s+система\\s+умеет"
+      keywords:
+        - функции
+        - функционал
+        - возможности
+        - возможность
+        - умеет
+        - может
+        - работает
+        - какие
+
+    # Вопросы об интеграциях
+    question_integrations:
+      enabled: true
+      priority: 70
+      min_confidence: 0.85
+      patterns:
+        - "интеграци[яию]"
+        - "подключ(?:ить|ение|ается)"
+        - "синхрониз(?:ация|ировать)"
+        - "совместим(?:ость|о)"
+        - "api\\b"
+        - "касп[иы]"
+        - "1с\\b"
+      keywords:
+        - интеграция
+        - интеграции
+        - интегрируется
+        - подключить
+        - подключение
+        - синхронизация
+        - каспи
+        - kaspi
+        - 1с
+        - api
+
+    # Сигналы срочности/нетерпения (мета-интенты)
+    request_brevity:
+      enabled: true
+      priority: 50
+      min_confidence: 0.85
+      patterns:
+        - "короче"
+        - "быстрее"
+        - "давай(?:те)?\\s+(?:уже\\s+)?по\\s+делу"
+        - "не\\s+тян[иу]"
+        - "конкретн(?:о|ее)"
+        - "сразу\\s+(?:к\\s+делу|говори)"
+      keywords:
+        - короче
+        - быстрее
+        - конкретно
+        - конкретнее
+        - сразу
+        - давайте
+        - давай
+
+# =============================================================================
+# FACT QUESTION SOURCE (Universal Fact-Based Question Handler)
+# =============================================================================
+# Универсальный Knowledge Source для всех fact-based вопросов.
+# Работает совместно с SecondaryIntentDetectionLayer:
+# 1. SecondaryIntentDetectionLayer детектирует вопросы в composite messages
+# 2. FactQuestionSource проверяет secondary_intents и отвечает
+#
+# SSoT: src/blackboard/sources/fact_question.py
+# =============================================================================
+fact_question_source:
+  # Master switch
+  enabled: true
+
+  # Интенты, требующие фактического ответа
+  # Эти интенты проверяются и как primary, и как secondary
+  fact_intents:
+    # Features and capabilities
+    - question_features
+    - question_capabilities
+    # Integrations
+    - question_integrations
+    - question_kaspi_integration
+    - question_bank_terminal
+    - question_1c_integration
+    # Technical
+    - question_technical
+    - question_security
+    # Equipment
+    - question_equipment_general
+    - question_pos_monoblock
+    - question_scales
+    - question_scanner
+    # Tariffs (excluding price)
+    - question_tariff_comparison
+    - question_tariff_mini
+    - question_tariff_lite
+    - question_tariff_standard
+    # TIS/Fiscal
+    - question_tis_general
+    - question_fiscal_general
+    # Business scenarios
+    - question_grocery_store
+    - question_restaurant_cafe
+    # Comparison
+    - comparison
+    - question_competitor
+
+  # Действия по умолчанию для специфичных интентов
+  # Если нет YAML rule, используется это
+  default_actions:
+    question_technical: answer_technical_question
+    question_security: answer_security_question
+    comparison: compare_with_competitor
+    question_support: explain_support_options
+
+  # Fallback action если нет специфичного
+  fallback_action: answer_with_facts
 
 # =============================================================================
 # CONFIDENCE CALIBRATION (Scientific LLM Confidence Calibration)

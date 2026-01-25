@@ -273,6 +273,7 @@ def register_builtin_sources() -> None:
     It should only be called after stages 6-8 are complete.
     """
     from .sources.price_question import PriceQuestionSource
+    from .sources.fact_question import FactQuestionSource  # FIX: Lost Question Fix
     from .sources.data_collector import DataCollectorSource
     from .sources.objection_guard import ObjectionGuardSource
     from .sources.objection_return import ObjectionReturnSource
@@ -299,6 +300,17 @@ def register_builtin_sources() -> None:
         priority_order=10,
         config_key="price_question",
         description="Handles price-related questions with combinable actions"
+    )
+
+    # FIX: FactQuestionSource handles ALL fact-based questions universally
+    # Works with SecondaryIntentDetectionLayer to detect lost questions
+    # Runs after PriceQuestionSource to avoid overlap
+    SourceRegistry.register(
+        FactQuestionSource,
+        name="FactQuestionSource",
+        priority_order=15,
+        config_key="fact_question_source",
+        description="Handles fact-based questions (features, integrations, technical, etc.)"
     )
 
     SourceRegistry.register(

@@ -633,7 +633,14 @@ def verify_layers_registered() -> List[str]:
     from src.classifier.refinement_pipeline import RefinementLayerRegistry
 
     registry = RefinementLayerRegistry.get_registry()
-    expected = ["confidence_calibration", "short_answer", "composite_message", "objection"]
+    # FIX: Added secondary_intent_detection to expected layers
+    expected = [
+        "confidence_calibration",
+        "secondary_intent_detection",  # NEW: Lost Question Fix
+        "short_answer",
+        "composite_message",
+        "objection",
+    ]
     registered = registry.get_all_names()
 
     for layer in expected:
@@ -650,6 +657,12 @@ try:
     from src.classifier import confidence_calibration  # noqa: F401
 except ImportError as e:
     logger.warning(f"Could not import confidence_calibration: {e}")
+
+# FIX: Import secondary_intent_detection to register the layer
+try:
+    from src.classifier import secondary_intent_detection  # noqa: F401
+except ImportError as e:
+    logger.warning(f"Could not import secondary_intent_detection: {e}")
 
 # Verify on import (DEBUG level)
 logger.debug(f"Refinement layers registered: {verify_layers_registered()}")

@@ -52,7 +52,9 @@ states:
     parameters:
       next_phase_state: bant_need  # Required by _base_phase's phase_progress mixin
       prev_phase_state: bant_budget  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      # FIX: Изменено с deflect_and_continue на условную логику
+      # Отвечаем на цену если: frustrated ИЛИ price спрошен 2+ раз ИЛИ secondary_intent
+      default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_authority_question
@@ -77,7 +79,9 @@ states:
     parameters:
       next_phase_state: bant_timeline  # Required by _base_phase's phase_progress mixin
       prev_phase_state: bant_authority  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      # FIX: Изменено с deflect_and_continue на answer_with_facts
+      # Клиент в need phase уже достаточно квалифицирован для обсуждения цены
+      default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_need_question

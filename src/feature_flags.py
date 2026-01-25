@@ -135,6 +135,10 @@ class FeatureFlags:
         # === Apology System: Guaranteed Apology Insertion ===
         # SSoT: src/apology_ssot.py
         "apology_system": True,                   # Гарантированное добавление извинений при frustration
+
+        # === Lost Question Fix: Secondary Intent Detection ===
+        # SSoT: src/classifier/secondary_intent_detection.py
+        "secondary_intent_detection": True,       # Детекция secondary intents в composite сообщениях
     }
 
     # Группы флагов для удобного управления
@@ -204,6 +208,10 @@ class FeatureFlags:
         # Response Diversity groups
         "response_diversity_all": [
             "response_diversity", "response_diversity_logging"
+        ],
+        # Lost Question Fix groups
+        "lost_question_fix": [
+            "secondary_intent_detection"
         ],
     }
 
@@ -568,6 +576,15 @@ class FeatureFlags:
     def confidence_calibration(self) -> bool:
         """Включена ли калибровка confidence для решения проблемы overconfident LLM"""
         return self.is_enabled("confidence_calibration")
+
+    # =========================================================================
+    # Lost Question Fix flags
+    # =========================================================================
+
+    @property
+    def secondary_intent_detection(self) -> bool:
+        """Включена ли детекция secondary intents в composite сообщениях"""
+        return self.is_enabled("secondary_intent_detection")
 
 
 # Singleton экземпляр
