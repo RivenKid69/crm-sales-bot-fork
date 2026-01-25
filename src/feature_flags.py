@@ -118,16 +118,20 @@ class FeatureFlags:
         # === Response Diversity: Anti-Monotony Engine ===
         "response_diversity": True,               # Post-processing замена монотонных вступлений
         "response_diversity_logging": True,       # Логирование замен для мониторинга
+
+        # === Question Deduplication: Prevent Re-asking Already Answered Questions ===
+        "question_deduplication": True,           # Фильтрация вопросов по collected_data
+        "question_deduplication_logging": True,   # Логирование фильтраций для мониторинга
     }
 
     # Группы флагов для удобного управления
     GROUPS: Dict[str, List[str]] = {
         "phase_0": ["structured_logging", "metrics_tracking"],
         "phase_1": ["multi_tier_fallback", "conversation_guard"],
-        "phase_2": ["tone_analysis", "response_variations", "personalization", "response_diversity"],
+        "phase_2": ["tone_analysis", "response_variations", "personalization", "response_diversity", "question_deduplication"],
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
         "phase_4": ["intent_disambiguation", "unified_disambiguation", "cascade_classifier", "semantic_objection_detection"],
-        "safe": ["response_variations", "response_diversity", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
+        "safe": ["response_variations", "response_diversity", "question_deduplication", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
         "risky": ["circular_flow", "lead_scoring"],
         # Context Policy groups (PLAN_CONTEXT_POLICY.md)
         "context_phase_0": ["context_full_envelope", "context_shadow_mode"],

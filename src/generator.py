@@ -14,6 +14,7 @@ from settings import settings
 from logger import logger
 from feature_flags import flags
 from response_diversity import diversity_engine
+from question_dedup import question_dedup_engine
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
@@ -670,6 +671,31 @@ class ResponseGenerator:
             "objection_type": objection_type,
             "objection_counter": objection_counter,
         })
+
+        # === Question Deduplication: Prevent asking about already collected data ===
+        # SSoT: src/yaml_config/question_dedup.yaml
+        if flags.is_enabled("question_deduplication") and spin_phase:
+            try:
+                dedup_context = question_dedup_engine.get_prompt_context(
+                    phase=spin_phase,
+                    collected_data=collected,
+                    missing_data=context.get("missing_data"),
+                )
+                # Добавляем переменные дедупликации в prompt
+                variables.update({
+                    "available_questions": dedup_context.get("available_questions", ""),
+                    "do_not_ask": dedup_context.get("do_not_ask", ""),
+                    "missing_data_questions": dedup_context.get("missing_data_questions", ""),
+                    "collected_fields_list": dedup_context.get("collected_fields_list", ""),
+                })
+                logger.debug(
+                    "Question deduplication applied",
+                    phase=spin_phase,
+                    available_questions=dedup_context.get("available_questions", "")[:100],
+                    do_not_ask=dedup_context.get("do_not_ask", "")[:100],
+                )
+            except Exception as e:
+                logger.warning(f"Question deduplication failed: {e}")
 
         # === Personalization v2: Adaptive personalization ===
         if self.personalization_engine and flags.personalization_v2:
