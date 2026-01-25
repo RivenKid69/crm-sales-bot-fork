@@ -467,6 +467,33 @@ def get_informative_intents() -> List[str]:
     return INFORMATIVE_INTENTS
 
 
+def get_objection_return_config() -> Dict[str, Any]:
+    """
+    Get objection_return config from constants.yaml.
+
+    Used by ObjectionReturnSource to determine when and how to return
+    to the previous phase after successfully handling an objection.
+
+    Returns:
+        Dict with objection return configuration including:
+        - enabled: bool (default True)
+        - use_positive_intents: bool (default True)
+        - return_intents: List[str] (custom intents if use_positive_intents is False)
+
+    Example:
+        >>> config = get_objection_return_config()
+        >>> config["enabled"]
+        True
+        >>> config["use_positive_intents"]
+        True
+    """
+    return _constants.get("objection_return", {
+        "enabled": True,
+        "use_positive_intents": True,
+        "return_intents": [],
+    })
+
+
 def get_objection_refinement_config() -> Dict[str, Any]:
     """
     Get objection_refinement config from constants.yaml.
@@ -695,6 +722,7 @@ __all__ = [
     # Helper functions
     "get_short_answer_config",
     "get_informative_intents",
+    "get_objection_return_config",
     "get_objection_refinement_config",
     "get_composite_refinement_config",
     "get_disambiguation_config",

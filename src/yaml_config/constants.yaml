@@ -1584,6 +1584,40 @@ extraction:
       ❌ "типа это помогло бы" → contact_info (НЕПРАВИЛЬНО! Это desired_outcome)
 
 # =============================================================================
+# OBJECTION RETURN CONFIGURATION (Knowledge Source for Phase Preservation)
+# =============================================================================
+# Возврат к предыдущей фазе после успешной обработки возражения.
+#
+# ПРОБЛЕМА, которую решает:
+#   Бот застревал в handle_objection без возврата к sales flow:
+#   bant_budget → handle_objection → close (фаза потеряна!)
+#
+# РЕШЕНИЕ:
+#   ObjectionReturnSource предлагает переход обратно к сохранённому состоянию:
+#   bant_budget → handle_objection → bant_budget (фаза сохранена!)
+#
+# МЕХАНИЗМ:
+#   1. При входе в handle_objection, orchestrator сохраняет prev_state
+#   2. При позитивном intent (agreement, interest), этот source
+#      предлагает переход обратно с HIGH приоритетом
+#   3. HIGH > NORMAL, поэтому return-переход побеждает YAML-переходы
+#
+# Часть фундаментального исправления Objection Stuck Bug
+# =============================================================================
+objection_return:
+  # Включить возврат к предыдущей фазе после objection handling
+  enabled: true
+
+  # Использовать POSITIVE_INTENTS как триггеры для возврата
+  # Если true, используются intents.categories.positive из этого файла
+  # Если false, можно задать кастомный список в return_intents
+  use_positive_intents: true
+
+  # Кастомный список интентов для возврата (используется если use_positive_intents: false)
+  # По умолчанию пустой - используется POSITIVE_INTENTS
+  return_intents: []
+
+# =============================================================================
 # OBJECTION REFINEMENT CONFIGURATION (Single Source of Truth)
 # =============================================================================
 # Контекстная валидация и рефайнмент objection классификаций.

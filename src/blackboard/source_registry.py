@@ -275,6 +275,7 @@ def register_builtin_sources() -> None:
     from .sources.price_question import PriceQuestionSource
     from .sources.data_collector import DataCollectorSource
     from .sources.objection_guard import ObjectionGuardSource
+    from .sources.objection_return import ObjectionReturnSource
     from .sources.intent_processor import IntentProcessorSource
     from .sources.transition_resolver import TransitionResolverSource
     from .sources.escalation import EscalationSource
@@ -314,6 +315,17 @@ def register_builtin_sources() -> None:
         priority_order=30,
         config_key="objection_guard",
         description="Monitors objection limits per persona"
+    )
+
+    # FIX: ObjectionReturnSource handles returning to previous phase after objection
+    # Must run AFTER ObjectionGuardSource (limit check) but BEFORE TransitionResolverSource
+    # Uses HIGH priority proposals to win over YAML transitions (NORMAL priority)
+    SourceRegistry.register(
+        ObjectionReturnSource,
+        name="ObjectionReturnSource",
+        priority_order=35,
+        config_key="objection_return",
+        description="Returns to previous phase after successful objection handling"
     )
 
     SourceRegistry.register(
