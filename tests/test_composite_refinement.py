@@ -695,14 +695,18 @@ class TestUnifiedClassifierIntegration:
 
         classifier = UnifiedClassifier()
 
-        # Check docstring mentions composite refinement in correct order
+        # Check docstring mentions composite refinement
         docstring = classifier.classify.__doc__
-        assert "Composite message refinement" in docstring
+        # New pipeline mode uses RefinementPipeline, legacy uses individual layers
+        assert "Composite message refinement" in docstring or "RefinementPipeline" in docstring
 
-        # Verify step numbers in comments (optional - implementation detail)
+        # Verify implementation supports composite refinement
         import inspect
         source = inspect.getsource(classifier.classify)
-        assert "Step 3: Composite message refinement" in source
+        # Either legacy step-by-step or new pipeline mode
+        has_legacy_composite = "composite_refinement" in source
+        has_pipeline = "refinement_pipeline" in source
+        assert has_legacy_composite or has_pipeline
 
 
 # =============================================================================

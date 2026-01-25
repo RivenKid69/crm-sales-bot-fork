@@ -2,21 +2,25 @@
 Унифицированный классификатор с feature flag.
 
 Позволяет переключаться между LLM и Hybrid классификаторами.
-Включает ClassificationRefinementLayer для контекстного уточнения
-коротких ответов (State Loop Fix).
 
-Включает CompositeMessageRefinementLayer для обработки составных сообщений
-с приоритетом извлечения данных (Composite Message Fix).
+Поддерживает два режима рефайнмента:
+1. Legacy mode: отдельные слои (ClassificationRefinementLayer, CompositeMessageRefinementLayer, etc.)
+2. Pipeline mode: универсальный RefinementPipeline с Registry pattern
 
-Включает ObjectionRefinementLayer для контекстной валидации
-objection классификаций (Objection Stuck Fix).
+Pipeline mode включается через feature flag "refinement_pipeline" (по умолчанию: True).
+Pipeline mode рекомендуется - он более расширяемый и поддерживаемый.
 
-Включает UnifiedDisambiguationLayer для принятия решений о необходимости
-уточнения намерения пользователя.
+Architecture:
+    message → LLM/Hybrid Classifier → RefinementPipeline → DisambiguationLayer → result
 
-Pipeline:
-    message → LLM/Hybrid Classifier → RefinementLayer → CompositeRefinementLayer →
-    → ObjectionRefinementLayer → DisambiguationLayer → result
+RefinementPipeline layers (in priority order):
+    1. ShortAnswerRefinementLayer (State Loop Fix)
+    2. CompositeMessageLayer (Composite Message Fix)
+    3. ObjectionRefinementLayerAdapter (Objection Stuck Fix)
+
+SSoT for pipeline: src/classifier/refinement_pipeline.py
+SSoT for layers: src/classifier/refinement_layers.py
+SSoT for config: src/yaml_config/constants.yaml (refinement_pipeline section)
 """
 from typing import Dict, Optional, Any
 
@@ -58,6 +62,8 @@ class UnifiedClassifier:
         self._composite_refinement_layer = None
         self._objection_refinement_layer = None
         self._disambiguation_engine = None
+        self._refinement_pipeline = None
+        self._pipeline_layers_registered = False
 
     @property
     def hybrid(self):
@@ -107,11 +113,30 @@ class UnifiedClassifier:
             self._disambiguation_engine = get_disambiguation_engine()
         return self._disambiguation_engine
 
+    @property
+    def refinement_pipeline(self):
+        """Lazy init RefinementPipeline with all layers."""
+        if self._refinement_pipeline is None:
+            # Register all layers first (idempotent)
+            if not self._pipeline_layers_registered:
+                # Import refinement_layers to register all layers
+                from . import refinement_layers  # noqa: F401
+                self._pipeline_layers_registered = True
+
+            from .refinement_pipeline import get_refinement_pipeline
+            self._refinement_pipeline = get_refinement_pipeline()
+        return self._refinement_pipeline
+
     def classify(self, message: str, context: Dict = None) -> Dict:
         """
         Классифицировать сообщение.
 
-        Pipeline:
+        Pipeline (with refinement_pipeline flag):
+        1. Primary classification (LLM or Hybrid based on feature flag)
+        2. RefinementPipeline (all layers in priority order)
+        3. Disambiguation analysis (if unified_disambiguation flag enabled)
+
+        Legacy Pipeline (without refinement_pipeline flag):
         1. Primary classification (LLM or Hybrid based on feature flag)
         2. Contextual refinement for short answers (State Loop Fix)
         3. Composite message refinement (Composite Message Fix)
@@ -132,8 +157,9 @@ class UnifiedClassifier:
             - method: str ("llm", "hybrid", или "llm_fallback")
             - refined: bool (если было уточнение)
             - original_intent: str (если было уточнение)
-            - refinement_layer: str ("short_answer", "composite", или "objection")
+            - refinement_layer: str ("short_answer", "composite_message", или "objection")
             - secondary_signals: list (если обнаружены мета-сигналы)
+            - refinement_chain: list (порядок слоёв, которые применили рефайнмент)
             - disambiguation_triggered: bool (если нужно уточнение)
             - disambiguation_options: list (если нужно уточнение)
             - disambiguation_decision: str (если анализ проведён)
@@ -146,23 +172,66 @@ class UnifiedClassifier:
         else:
             result = self.hybrid.classify(message, context)
 
-        # Step 2: Contextual refinement for short answers (State Loop Fix)
-        if flags.classification_refinement:
-            result = self._apply_refinement(message, result, context)
+        # Step 2: Refinement (pipeline or legacy)
+        if flags.is_enabled("refinement_pipeline"):
+            # New unified pipeline mode
+            result = self._apply_refinement_pipeline(message, result, context)
+        else:
+            # Legacy mode: individual layers
+            if flags.classification_refinement:
+                result = self._apply_refinement(message, result, context)
 
-        # Step 3: Composite message refinement (Composite Message Fix)
-        if flags.composite_refinement:
-            result = self._apply_composite_refinement(message, result, context)
+            if flags.composite_refinement:
+                result = self._apply_composite_refinement(message, result, context)
 
-        # Step 4: Objection refinement (Objection Stuck Fix)
-        if flags.objection_refinement:
-            result = self._apply_objection_refinement(message, result, context)
+            if flags.objection_refinement:
+                result = self._apply_objection_refinement(message, result, context)
 
-        # Step 5: Unified disambiguation analysis
+        # Step 3: Unified disambiguation analysis
         if flags.unified_disambiguation:
             result = self._apply_disambiguation(result, context)
 
         return result
+
+    def _apply_refinement_pipeline(
+        self,
+        message: str,
+        result: Dict,
+        context: Dict
+    ) -> Dict:
+        """
+        Apply unified RefinementPipeline to refine classification.
+
+        The pipeline runs all enabled layers in priority order:
+        1. ShortAnswerRefinementLayer (priority: HIGH)
+        2. CompositeMessageLayer (priority: HIGH)
+        3. ObjectionRefinementLayerAdapter (priority: NORMAL)
+
+        Each layer can refine the intent, confidence, and extracted_data.
+        The pipeline is fail-safe: individual layer failures don't crash the pipeline.
+
+        Args:
+            message: User's message
+            result: Classification result from primary classifier
+            context: Dialog context
+
+        Returns:
+            Refined result (or original if no refinement applied)
+        """
+        try:
+            refined_result = self.refinement_pipeline.refine(message, result, context)
+            return refined_result
+        except Exception as e:
+            # Fail-safe: return original result on any error
+            logger.warning(
+                "RefinementPipeline failed, returning original result",
+                extra={
+                    "error": str(e),
+                    "message": message[:50],
+                    "intent": result.get("intent")
+                }
+            )
+            return result
 
     def _apply_disambiguation(
         self,
@@ -386,6 +455,7 @@ class UnifiedClassifier:
         """Получить статистику."""
         stats = {
             "active_classifier": "llm" if flags.llm_classifier else "hybrid",
+            "refinement_pipeline_enabled": flags.is_enabled("refinement_pipeline"),
             "refinement_enabled": flags.classification_refinement,
             "composite_refinement_enabled": flags.composite_refinement,
             "objection_refinement_enabled": flags.objection_refinement,
@@ -395,6 +465,11 @@ class UnifiedClassifier:
         if self._llm is not None:
             stats["llm_stats"] = self._llm.get_stats()
 
+        # Pipeline mode stats
+        if self._refinement_pipeline is not None:
+            stats["refinement_pipeline_stats"] = self._refinement_pipeline.get_stats()
+
+        # Legacy mode stats (for backwards compatibility)
         if self._composite_refinement_layer is not None:
             stats["composite_refinement_stats"] = self._composite_refinement_layer.get_stats()
 

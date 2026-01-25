@@ -118,6 +118,9 @@ class FeatureFlags:
         # === Composite Message Refinement: Data Priority ===
         "composite_refinement": True,             # Приоритет извлечения данных над мета-интентами
 
+        # === Universal Refinement Pipeline ===
+        "refinement_pipeline": True,              # Использовать универсальный RefinementPipeline вместо отдельных слоёв
+
         # === Response Diversity: Anti-Monotony Engine ===
         "response_diversity": True,               # Post-processing замена монотонных вступлений
         "response_diversity_logging": True,       # Логирование замен для мониторинга
@@ -182,6 +185,13 @@ class FeatureFlags:
         # Composite Message Refinement groups
         "composite_message_fix": [
             "composite_refinement"
+        ],
+        # Universal Refinement Pipeline groups
+        "refinement_pipeline_all": [
+            "refinement_pipeline",
+            "classification_refinement",
+            "composite_refinement",
+            "objection_refinement"
         ],
         # Response Diversity groups
         "response_diversity_all": [
@@ -536,6 +546,11 @@ class FeatureFlags:
     def composite_refinement(self) -> bool:
         """Включён ли рефайнмент составных сообщений с приоритетом данных"""
         return self.is_enabled("composite_refinement")
+
+    @property
+    def refinement_pipeline(self) -> bool:
+        """Включён ли универсальный RefinementPipeline вместо отдельных слоёв"""
+        return self.is_enabled("refinement_pipeline")
 
 
 # Singleton экземпляр

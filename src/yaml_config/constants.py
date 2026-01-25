@@ -530,6 +530,35 @@ def get_composite_refinement_config() -> Dict[str, Any]:
     return _constants.get("composite_refinement", {})
 
 
+def get_refinement_pipeline_config() -> Dict[str, Any]:
+    """
+    Get refinement_pipeline config from constants.yaml.
+
+    Used by RefinementPipeline to configure layer order and settings.
+    This is the Single Source of Truth for the refinement pipeline.
+
+    Returns:
+        Dict with pipeline configuration including:
+        - enabled: bool - master switch for the pipeline
+        - layers: List[Dict] - ordered list of layer configurations
+          Each layer config:
+            - name: str - layer name (must be registered in RefinementLayerRegistry)
+            - enabled: bool - whether layer is enabled
+            - priority: int (optional) - override layer's default priority
+
+    Example:
+        >>> config = get_refinement_pipeline_config()
+        >>> config["enabled"]
+        True
+        >>> config["layers"][0]["name"]
+        'short_answer'
+    """
+    return _constants.get("refinement_pipeline", {
+        "enabled": True,
+        "layers": []
+    })
+
+
 # =============================================================================
 # EXPORTS
 # =============================================================================
@@ -620,4 +649,5 @@ __all__ = [
     "get_objection_refinement_config",
     "get_composite_refinement_config",
     "get_disambiguation_config",
+    "get_refinement_pipeline_config",
 ]

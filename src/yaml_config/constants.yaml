@@ -1966,6 +1966,61 @@ composite_refinement:
         - transition_to_close
 
 # =============================================================================
+# REFINEMENT PIPELINE CONFIGURATION (Single Source of Truth)
+# =============================================================================
+# Универсальная архитектура Refinement Pipeline для post-classification refinement.
+# Все слои рефайнмента управляются через этот конфиг.
+#
+# Архитектура:
+#   message → Classifier → RefinementPipeline → [Layer1] → [Layer2] → ... → result
+#
+# Слои выполняются в порядке приоритета (highest first).
+# Каждый слой может уточнить intent, confidence, extracted_data.
+# При ошибке слоя pipeline продолжает работу (fail-safe).
+#
+# SSoT: src/classifier/refinement_pipeline.py
+# =============================================================================
+refinement_pipeline:
+  # Master switch для всего pipeline
+  enabled: true
+
+  # Список слоёв в порядке выполнения
+  # Каждый слой должен быть зарегистрирован в RefinementLayerRegistry
+  # priority: CRITICAL (100) → HIGH (75) → NORMAL (50) → LOW (25) → FALLBACK (0)
+  layers:
+    # Слой 1: Short Answer Refinement (State Loop Fix)
+    # Уточняет короткие ответы типа "1", "да", "первое"
+    - name: short_answer
+      enabled: true
+      priority: HIGH  # 75
+      feature_flag: classification_refinement
+
+    # Слой 2: Composite Message Refinement
+    # Обрабатывает составные сообщения "5 человек, больше не нужно, быстрее"
+    - name: composite_message
+      enabled: true
+      priority: HIGH  # 75
+      feature_flag: composite_refinement
+
+    # Слой 3: Objection Refinement (Objection Stuck Fix)
+    # Валидирует objection классификации
+    - name: objection
+      enabled: true
+      priority: NORMAL  # 50
+      feature_flag: objection_refinement
+
+  # Глобальные настройки pipeline
+  settings:
+    # Логировать каждое решение слоя
+    verbose_logging: false
+
+    # Максимальное время на весь pipeline (ms)
+    max_pipeline_time_ms: 100
+
+    # Продолжать при ошибке слоя
+    continue_on_error: true
+
+# =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
 # =============================================================================
 # guard.high_frustration_threshold ДОЛЖЕН быть равен frustration.thresholds.high
