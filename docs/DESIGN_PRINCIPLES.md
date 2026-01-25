@@ -1210,6 +1210,10 @@ class LLMClassifier:
 @register_classifier("hybrid")
 class HybridClassifier:
     ...
+
+# ⭐ Real Implementation: RefinementLayerRegistry (src/classifier/refinement_pipeline.py)
+# See: RefinementLayerRegistry.register("short_answer", ShortAnswerRefinementLayer)
+# See: @register_refinement_layer("composite_message") decorator
 ```
 
 ---
@@ -1825,8 +1829,16 @@ class TestHybridClassifier(ClassifierContractTest):
   - [x] Multi-tenant isolation
   - [x] Stress/performance testing
   - [x] Config migration
-- [ ] **Refactor to Protocols/Interfaces**
-- [ ] **Registry pattern for all components**
+- [x] **RefinementPipeline** — Protocol + Registry pattern for classification refinement ⭐ NEW
+  - [x] IRefinementLayer Protocol
+  - [x] RefinementLayerRegistry (dynamic registration)
+  - [x] BaseRefinementLayer (template method pattern)
+  - [x] Layer adapters (ShortAnswer, Composite, Objection)
+  - [x] YAML configuration
+  - [x] Feature flag integration
+  - [x] 33 unit tests
+- [ ] **Refactor to Protocols/Interfaces** (остальные компоненты)
+- [ ] **Registry pattern for all components** (classifier, generator, knowledge)
 
 ### Phase 2: Plugin System (Q1 2026)
 
@@ -1867,16 +1879,16 @@ class TestHybridClassifier(ClassifierContractTest):
 При переходе к новой архитектуре:
 
 ```markdown
-- [ ] Выделить интерфейсы из существующих классов
-- [ ] Создать Registry для каждого типа компонента
-- [ ] Перенести конфигурацию из Python в YAML
+- [x] Выделить интерфейсы из существующих классов (IRefinementLayer Protocol) ⭐
+- [x] Создать Registry для каждого типа компонента (RefinementLayerRegistry) ⭐
+- [x] Перенести конфигурацию из Python в YAML (refinement_pipeline section)
 - [ ] Добавить DI через конструкторы
 - [ ] Создать Composition Root (factory)
 - [ ] Добавить Event Bus
 - [ ] Реализовать Plugin Manager
 - [ ] Добавить Tenant model
-- [ ] Написать contract tests
-- [ ] Обновить документацию
+- [x] Написать contract tests (33 unit tests for RefinementPipeline)
+- [x] Обновить документацию (ARCHITECTURE.md, CLASSIFIER.md, DESIGN_PRINCIPLES.md) ⭐
 ```
 
 ---
@@ -1899,4 +1911,4 @@ class TestHybridClassifier(ClassifierContractTest):
 ---
 
 *Документ создан: Январь 2026*
-*Последнее обновление: 18 Января 2026*
+*Последнее обновление: 25 Января 2026*

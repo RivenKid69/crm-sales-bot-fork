@@ -274,6 +274,74 @@ classifier/
     └── data_extractor.py    # Извлечение данных + pain_category
 ```
 
+### RefinementPipeline ⭐ NEW
+
+Универсальная архитектура уточнения классификации через расширяемый pipeline:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           RefinementPipeline                                   │
+│                                                                                │
+│   message → LLM/Hybrid Classifier → RefinementPipeline → Disambiguation        │
+│                                            │                                   │
+│                    ┌───────────────────────┼───────────────────────┐          │
+│                    │                       │                       │          │
+│              ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼─────┐     │
+│              │ShortAnswer │          │Composite  │          │Objection  │     │
+│              │Refinement  │          │Message    │          │Refinement │     │
+│              │Layer       │          │Layer      │          │Layer      │     │
+│              │(priority:  │          │(priority: │          │(priority: │     │
+│              │ HIGH)      │          │ HIGH)     │          │ NORMAL)   │     │
+│              └────────────┘          └───────────┘          └───────────┘     │
+│                                                                                │
+│   Architecture:                                                                │
+│   • Protocol Pattern (IRefinementLayer) — единый интерфейс для слоёв          │
+│   • Registry Pattern — динамическая регистрация слоёв                         │
+│   • Pipeline Pattern — последовательная обработка по приоритетам              │
+│   • Fail-Safe — ошибки слоя не ломают весь pipeline                           │
+│                                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Компоненты:**
+
+| Файл | Описание |
+|------|----------|
+| `refinement_pipeline.py` | Core: RefinementContext, IRefinementLayer, Registry, Pipeline |
+| `refinement_layers.py` | Адаптеры: ShortAnswerRefinementLayer, CompositeMessageLayer, ObjectionRefinementLayerAdapter |
+
+**Слои уточнения:**
+
+| Слой | Приоритет | Описание |
+|------|-----------|----------|
+| `short_answer` | HIGH | Уточнение коротких ответов ("да", "1") по контексту SPIN фазы |
+| `composite_message` | HIGH | Приоритет извлечения данных в составных сообщениях |
+| `objection` | NORMAL | Контекстная валидация objection-классификаций |
+
+**Конфигурация** (constants.yaml):
+```yaml
+refinement_pipeline:
+  enabled: true
+  layers:
+    - name: short_answer
+      enabled: true
+      priority: HIGH
+      feature_flag: classification_refinement
+    - name: composite_message
+      enabled: true
+      priority: HIGH
+      feature_flag: composite_refinement
+    - name: objection
+      enabled: true
+      priority: NORMAL
+      feature_flag: objection_refinement
+```
+
+**SSoT:**
+- Pipeline: `src/classifier/refinement_pipeline.py`
+- Layers: `src/classifier/refinement_layers.py`
+- Config: `src/yaml_config/constants.yaml` (секция `refinement_pipeline`)
+
 ## Поток данных
 
 ### 1. Входящее сообщение → Классификация
@@ -689,6 +757,10 @@ if flags.llm_classifier:
 | `guard_informative_intent_check` | Проверка информативных интентов |
 | `guard_skip_resets_fallback` | Сброс fallback_response после skip |
 | `confidence_router` | Gap-based решения и graceful degradation |
+| `refinement_pipeline` | Универсальный RefinementPipeline вместо отдельных слоёв ⭐ |
+| `classification_refinement` | Уточнение классификации коротких ответов |
+| `composite_refinement` | Приоритет данных в составных сообщениях |
+| `objection_refinement` | Контекстная валидация objection-классификаций |
 
 **Флаги в тестировании (выключены):**
 
@@ -759,6 +831,8 @@ FALLBACK_RESPONSES = {
 | `classifier/unified.py` | Адаптер для переключения классификаторов |
 | `classifier/llm/` | LLM классификатор (150+ интентов) |
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
+| `classifier/refinement_pipeline.py` | **RefinementPipeline** (Protocol, Registry, Pipeline) ⭐ |
+| `classifier/refinement_layers.py` | **Адаптеры слоёв уточнения** (Short, Composite, Objection) ⭐ |
 | `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
 | `knowledge/category_router.py` | LLM-классификация категорий |
 | `knowledge/reranker.py` | Cross-encoder переоценка |

@@ -27,6 +27,11 @@ classifier/
 ├── hybrid.py                # HybridClassifier — regex-based fallback
 ├── cascade.py               # CascadeClassifier — semantic fallback
 ├── disambiguation.py        # IntentDisambiguator
+├── refinement_pipeline.py   # RefinementPipeline — универсальный pipeline уточнения ⭐
+├── refinement_layers.py     # Адаптеры слоёв (Short, Composite, Objection) ⭐
+├── refinement.py            # ClassificationRefinementLayer (legacy)
+├── composite_refinement.py  # CompositeMessageRefinementLayer (legacy)
+├── objection_refinement.py  # ObjectionRefinementLayer (legacy)
 ├── llm/                     # LLM классификатор (основной)
 │   ├── __init__.py          # Экспорт LLMClassifier, schemas
 │   ├── classifier.py        # LLMClassifier
@@ -304,6 +309,291 @@ PRIORITY_PATTERNS = [
 ]
 ```
 
+## RefinementPipeline ⭐ NEW
+
+Универсальная архитектура для уточнения результатов классификации. Решает проблемы контекстной классификации через расширяемый pipeline слоёв.
+
+### Архитектура
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        Classification Flow                                     │
+│                                                                                │
+│   User Message                                                                 │
+│        │                                                                       │
+│        ▼                                                                       │
+│   ┌────────────────────┐                                                       │
+│   │  LLM/Hybrid        │  ← Primary Classification                             │
+│   │  Classifier        │                                                       │
+│   └─────────┬──────────┘                                                       │
+│             │                                                                  │
+│             ▼                                                                  │
+│   ┌────────────────────────────────────────────────────────────────────┐      │
+│   │                    RefinementPipeline                               │      │
+│   │                                                                     │      │
+│   │   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐          │      │
+│   │   │ ShortAnswer  │ → │ Composite    │ → │ Objection    │          │      │
+│   │   │ Layer        │   │ Message      │   │ Layer        │          │      │
+│   │   │ (HIGH)       │   │ (HIGH)       │   │ (NORMAL)     │          │      │
+│   │   └──────────────┘   └──────────────┘   └──────────────┘          │      │
+│   │                                                                     │      │
+│   │   Features:                                                         │      │
+│   │   • Protocol Pattern (IRefinementLayer)                            │      │
+│   │   • Registry Pattern (dynamic registration)                        │      │
+│   │   • Priority-based execution order                                 │      │
+│   │   • Fail-safe (layer errors don't break pipeline)                  │      │
+│   │   • YAML configuration                                             │      │
+│   └─────────┬──────────────────────────────────────────────────────────┘      │
+│             │                                                                  │
+│             ▼                                                                  │
+│   ┌────────────────────┐                                                       │
+│   │  Disambiguation    │  ← Optional: needs_disambiguation check               │
+│   │  Engine            │                                                       │
+│   └─────────┬──────────┘                                                       │
+│             │                                                                  │
+│             ▼                                                                  │
+│      Final Result                                                              │
+│                                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Ключевые компоненты
+
+#### 1. IRefinementLayer Protocol
+
+```python
+@runtime_checkable
+class IRefinementLayer(Protocol):
+    """Контракт для всех слоёв уточнения."""
+
+    @property
+    def name(self) -> str:
+        """Уникальное имя слоя."""
+        ...
+
+    @property
+    def priority(self) -> LayerPriority:
+        """Приоритет выполнения (CRITICAL > HIGH > NORMAL > LOW)."""
+        ...
+
+    def should_apply(self, ctx: RefinementContext) -> bool:
+        """Проверить, нужно ли применять слой."""
+        ...
+
+    def refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext
+    ) -> RefinementResult:
+        """Уточнить результат классификации."""
+        ...
+```
+
+#### 2. RefinementLayerRegistry
+
+```python
+# Регистрация слоя
+registry = RefinementLayerRegistry.get_registry()
+registry.register("my_layer", MyLayerClass)
+
+# Или через декоратор
+@register_refinement_layer("my_layer")
+class MyLayerClass(BaseRefinementLayer):
+    LAYER_NAME = "my_layer"
+
+    def _should_apply(self, ctx: RefinementContext) -> bool:
+        return ctx.intent == "some_intent"
+
+    def _do_refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext
+    ) -> RefinementResult:
+        # Уточнение логика
+        return self._refine_to(result, ctx, "new_intent", confidence=0.9)
+```
+
+#### 3. RefinementPipeline
+
+```python
+pipeline = get_refinement_pipeline()
+
+# Запуск уточнения
+refined_result = pipeline.refine(message, classification_result, context)
+
+# Статистика
+stats = pipeline.get_stats()
+# {
+#     "total_calls": 100,
+#     "refinements_applied": 15,
+#     "layers_stats": {"short_answer": {...}, "composite_message": {...}},
+#     ...
+# }
+```
+
+### Встроенные слои
+
+#### ShortAnswerRefinementLayer
+
+Уточняет классификацию коротких ответов ("да", "1", "ок") на основе контекста SPIN-фазы.
+
+**Проблема:** Короткие ответы "да", "1" классифицируются как `greeting` вместо `agreement` или `info_provided`.
+
+**Решение:** Анализ текущей фазы SPIN и предыдущего действия бота.
+
+```python
+# Пример: фаза "situation", last_action="ask_about_company"
+# Сообщение: "5"
+# Результат: greeting → info_provided (с company_size=5)
+```
+
+#### CompositeMessageLayer
+
+Обрабатывает составные сообщения с приоритетом извлечения данных.
+
+**Проблема:** "5 человек, больше не нужно, быстрее" классифицируется как `objection_think` вместо `info_provided` с company_size=5.
+
+**Решение:** Если сообщение содержит и данные, и мета-сигналы — приоритет данным.
+
+```python
+# Пример: "5 человек, быстрее давайте"
+# LLM: objection_timing (0.7)
+# После refinement: info_provided (0.85) с company_size=5, secondary_signals=["urgency"]
+```
+
+#### ObjectionRefinementLayerAdapter
+
+Валидирует objection-классификации с учётом контекста диалога.
+
+**Проблема:** "бюджет пока не определён" классифицируется как `objection_price`, хотя бот только что спросил о бюджете (это ответ, не возражение).
+
+**Решение:** Анализ last_bot_message и last_action для проверки релевантности возражения.
+
+```python
+# Пример: last_action="ask_about_budget"
+# Сообщение: "бюджет пока не определён"
+# LLM: objection_price
+# После refinement: info_provided (ответ на вопрос о бюджете)
+```
+
+### Конфигурация
+
+**constants.yaml:**
+```yaml
+refinement_pipeline:
+  enabled: true
+  layers:
+    - name: short_answer
+      enabled: true
+      priority: HIGH
+      feature_flag: classification_refinement
+    - name: composite_message
+      enabled: true
+      priority: HIGH
+      feature_flag: composite_refinement
+    - name: objection
+      enabled: true
+      priority: NORMAL
+      feature_flag: objection_refinement
+```
+
+**Feature Flags:**
+```python
+# Включить весь pipeline
+flags.is_enabled("refinement_pipeline")  # True по умолчанию
+
+# Отдельные слои
+flags.classification_refinement  # short_answer layer
+flags.composite_refinement       # composite_message layer
+flags.objection_refinement       # objection layer
+```
+
+### Создание нового слоя
+
+1. Создать класс, наследующий `BaseRefinementLayer`:
+
+```python
+# В refinement_layers.py или отдельном файле
+from src.classifier.refinement_pipeline import (
+    BaseRefinementLayer,
+    RefinementContext,
+    RefinementResult,
+    LayerPriority,
+    register_refinement_layer,
+)
+
+@register_refinement_layer("my_custom_layer")
+class MyCustomLayer(BaseRefinementLayer):
+    LAYER_NAME = "my_custom_layer"
+    DEFAULT_PRIORITY = LayerPriority.NORMAL
+
+    def _should_apply(self, ctx: RefinementContext) -> bool:
+        """Условие применения слоя."""
+        return ctx.intent in ["some_intent", "another_intent"]
+
+    def _do_refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext
+    ) -> RefinementResult:
+        """Логика уточнения."""
+        # Анализ и уточнение
+        if self._needs_refinement(message, ctx):
+            return self._refine_to(
+                result, ctx,
+                new_intent="refined_intent",
+                confidence=0.9,
+                metadata={"refined_by": "my_custom_layer"}
+            )
+        return self._pass_through(result, ctx)
+```
+
+2. Добавить конфигурацию в `constants.yaml`:
+
+```yaml
+refinement_pipeline:
+  layers:
+    # ... existing layers ...
+    - name: my_custom_layer
+      enabled: true
+      priority: NORMAL
+      feature_flag: my_custom_refinement  # optional
+```
+
+3. Добавить feature flag (опционально):
+
+```python
+# В feature_flags.py
+"my_custom_refinement": True,
+```
+
+### SSoT (Single Source of Truth)
+
+| Компонент | Файл |
+|-----------|------|
+| Pipeline Core | `src/classifier/refinement_pipeline.py` |
+| Layer Adapters | `src/classifier/refinement_layers.py` |
+| Configuration | `src/yaml_config/constants.yaml` (секция `refinement_pipeline`) |
+| Feature Flags | `src/feature_flags.py` |
+| Tests | `tests/test_refinement_pipeline.py` |
+
+### Legacy Mode
+
+При `flags.refinement_pipeline == False` используется legacy mode с отдельными слоями:
+
+```python
+# Legacy pipeline (deprecated):
+# 1. ClassificationRefinementLayer (refinement.py)
+# 2. CompositeMessageRefinementLayer (composite_refinement.py)
+# 3. ObjectionRefinementLayer (objection_refinement.py)
+
+# New pipeline (recommended):
+# RefinementPipeline с Registry pattern
+```
+
 ## DataExtractor
 
 Извлечение структурированных данных:
@@ -391,6 +681,12 @@ stats = classifier.get_stats()
 "llm_classifier": True               # Использовать LLM классификатор
 "cascade_classifier": True           # Каскадный классификатор для HybridClassifier
 "semantic_objection_detection": True # Семантическая детекция возражений
+
+# RefinementPipeline flags
+"refinement_pipeline": True          # Универсальный RefinementPipeline (рекомендуется)
+"classification_refinement": True    # Уточнение коротких ответов (ShortAnswerRefinementLayer)
+"composite_refinement": True         # Приоритет данных в составных сообщениях (CompositeMessageLayer)
+"objection_refinement": True         # Контекстная валидация objection (ObjectionRefinementLayerAdapter)
 ```
 
 ```bash
@@ -399,6 +695,9 @@ export FF_LLM_CLASSIFIER=false
 
 # Включить семантическую детекцию возражений
 export FF_SEMANTIC_OBJECTION_DETECTION=true
+
+# Отключить RefinementPipeline (использовать legacy mode)
+export FF_REFINEMENT_PIPELINE=false
 ```
 
 ### Настройки (settings.yaml)
@@ -469,8 +768,14 @@ pytest tests/test_classifier.py -v
 # Тесты LLM классификатора (требует Ollama)
 pytest tests/test_llm_classifier.py -v
 
+# Тесты RefinementPipeline (33 теста)
+pytest tests/test_refinement_pipeline.py -v
+
+# Тесты composite refinement
+pytest tests/test_composite_refinement.py -v
+
 # С покрытием
-pytest tests/test_classifier.py --cov=classifier --cov-report=html
+pytest tests/test_classifier.py tests/test_refinement_pipeline.py --cov=classifier --cov-report=html
 ```
 
 ## Производительность
