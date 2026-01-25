@@ -495,3 +495,164 @@ class TestRealWorldScenarios:
         assert refined.decision == RefinementDecision.REFINED
         assert refined.intent == "situation_provided"  # Primary preserved
         assert "question_integrations" in refined.secondary_signals
+
+
+# =============================================================================
+# LOST QUESTION BUG FIX TESTS - NEW PATTERNS
+# =============================================================================
+
+class TestLostQuestionBugFixPatterns:
+    """
+    Tests for the "Lost Question" bug fix - new secondary intent patterns.
+
+    Bug: Questions about data migration were being ignored because:
+    1. No secondary intent patterns for question_data_migration
+    2. No patterns for question_implementation, question_updates, etc.
+
+    Fix: Added patterns in constants.yaml for these question types.
+    """
+
+    def test_data_migration_pattern_exists(self, layer):
+        """Test that question_data_migration pattern is loaded from YAML."""
+        # Pattern should be loaded from YAML config
+        assert "question_data_migration" in layer._patterns, \
+            "question_data_migration pattern should be loaded from YAML"
+
+    def test_implementation_pattern_exists(self, layer):
+        """Test that question_implementation pattern is loaded from YAML."""
+        assert "question_implementation" in layer._patterns, \
+            "question_implementation pattern should be loaded from YAML"
+
+    def test_updates_pattern_exists(self, layer):
+        """Test that question_updates pattern is loaded from YAML."""
+        assert "question_updates" in layer._patterns, \
+            "question_updates pattern should be loaded from YAML"
+
+    def test_offline_pattern_exists(self, layer):
+        """Test that question_offline pattern is loaded from YAML."""
+        assert "question_offline" in layer._patterns, \
+            "question_offline pattern should be loaded from YAML"
+
+    def test_customization_pattern_exists(self, layer):
+        """Test that question_customization pattern is loaded from YAML."""
+        assert "question_customization" in layer._patterns, \
+            "question_customization pattern should be loaded from YAML"
+
+    def test_automation_pattern_exists(self, layer):
+        """Test that question_automation pattern is loaded from YAML."""
+        assert "question_automation" in layer._patterns, \
+            "question_automation pattern should be loaded from YAML"
+
+    def test_scalability_pattern_exists(self, layer):
+        """Test that question_scalability pattern is loaded from YAML."""
+        assert "question_scalability" in layer._patterns, \
+            "question_scalability pattern should be loaded from YAML"
+
+
+class TestDataMigrationSecondaryDetection:
+    """
+    Tests for detecting question_data_migration as secondary intent.
+
+    Bug scenario:
+    - Bot: "Какой у вас бюджет?"
+    - User: "100 человек. Как перенесёте данные?"
+    - Old behavior: Bot ignores question, asks about budget again
+    - New behavior: Bot detects question_data_migration, responds to question
+    """
+
+    def test_data_migration_detected_in_composite(self, layer, make_context, make_result):
+        """
+        Scenario: "100 человек. Как перенесёте данные?"
+        Primary: info_provided (100 человек = data)
+        Expected secondary: question_data_migration
+        """
+        message = "100 человек. Как перенесёте данные?"
+        ctx = make_context(message=message, intent="info_provided")
+        result = make_result(intent="info_provided")
+
+        refined = layer.refine(message, result, ctx)
+
+        assert refined.decision == RefinementDecision.REFINED
+        assert refined.intent == "info_provided"  # Primary preserved
+        assert "question_data_migration" in refined.secondary_signals, \
+            f"question_data_migration should be detected, got {refined.secondary_signals}"
+
+    def test_data_migration_detected_with_import(self, layer, make_context, make_result):
+        """
+        Scenario: "Да, интересно. А можно импортировать данные из Excel?"
+        Primary: agreement
+        Expected secondary: question_data_migration
+        """
+        message = "Да, интересно. А можно импортировать данные из Excel?"
+        ctx = make_context(message=message, intent="agreement")
+        result = make_result(intent="agreement")
+
+        refined = layer.refine(message, result, ctx)
+
+        assert refined.decision == RefinementDecision.REFINED
+        assert "question_data_migration" in refined.secondary_signals
+
+    def test_data_migration_detected_with_migration_word(self, layer, make_context, make_result):
+        """
+        Scenario: "Хорошо. Как работает миграция?"
+        Primary: agreement
+        Expected secondary: question_data_migration
+        """
+        message = "Хорошо. Как работает миграция?"
+        ctx = make_context(message=message, intent="agreement")
+        result = make_result(intent="agreement")
+
+        refined = layer.refine(message, result, ctx)
+
+        assert refined.decision == RefinementDecision.REFINED
+        assert "question_data_migration" in refined.secondary_signals
+
+
+class TestImplementationSecondaryDetection:
+    """Tests for detecting question_implementation as secondary intent."""
+
+    def test_implementation_detected_in_composite(self, layer, make_context, make_result):
+        """
+        Scenario: "Берём. Как происходит внедрение?"
+        Primary: agreement / ready_to_buy
+        Expected secondary: question_implementation
+        """
+        message = "Берём. Как происходит внедрение?"
+        ctx = make_context(message=message, intent="agreement")
+        result = make_result(intent="agreement")
+
+        refined = layer.refine(message, result, ctx)
+
+        assert refined.decision == RefinementDecision.REFINED
+        assert "question_implementation" in refined.secondary_signals, \
+            f"question_implementation should be detected, got {refined.secondary_signals}"
+
+    def test_implementation_with_training_question(self, layer, make_context, make_result):
+        """
+        Scenario: "Хорошо, подходит. Есть ли обучение при внедрении?"
+        """
+        message = "Хорошо, подходит. Есть ли обучение при внедрении?"
+        ctx = make_context(message=message, intent="agreement")
+        result = make_result(intent="agreement")
+
+        refined = layer.refine(message, result, ctx)
+
+        assert refined.decision == RefinementDecision.REFINED
+        assert "question_implementation" in refined.secondary_signals
+
+
+class TestOfflineSecondaryDetection:
+    """Tests for detecting question_offline as secondary intent."""
+
+    def test_offline_detected(self, layer, make_context, make_result):
+        """
+        Scenario: "Окей. А работает ли без интернета?"
+        """
+        message = "Окей. А работает ли без интернета?"
+        ctx = make_context(message=message, intent="agreement")
+        result = make_result(intent="agreement")
+
+        refined = layer.refine(message, result, ctx)
+
+        assert refined.decision == RefinementDecision.REFINED
+        assert "question_offline" in refined.secondary_signals

@@ -559,3 +559,144 @@ class TestRealWorldScenarios:
         assert len(blackboard._proposals) == 1
         proposal = blackboard._proposals[0]
         assert proposal["combinable"] is True  # Allows BANT to continue
+
+
+# =============================================================================
+# LOST QUESTION BUG FIX TESTS - NEW INTENTS
+# =============================================================================
+
+class TestLostQuestionBugFix:
+    """
+    Tests for the "Lost Question" bug fix.
+
+    Bug: When client asks "как перенесёте данные?" (how will you migrate data?),
+    the bot ignores the question and asks about budget.
+
+    Root cause: question_data_migration and other question intents were:
+    1. Not in fact_intents
+    2. Not in secondary_intent_detection patterns
+    3. Misclassified as objection_complexity
+
+    These tests verify the fix.
+    """
+
+    def test_question_data_migration_in_fact_intents(self, source):
+        """Test question_data_migration is now in fact intents (YAML config)."""
+        assert "question_data_migration" in source._fact_intents, \
+            "question_data_migration should be in fact_intents after fix"
+
+    def test_question_implementation_in_fact_intents(self, source):
+        """Test question_implementation is in fact intents."""
+        assert "question_implementation" in source._fact_intents, \
+            "question_implementation should be in fact_intents"
+
+    def test_question_updates_in_fact_intents(self, source):
+        """Test question_updates is in fact intents."""
+        assert "question_updates" in source._fact_intents, \
+            "question_updates should be in fact_intents"
+
+    def test_question_offline_in_fact_intents(self, source):
+        """Test question_offline is in fact intents."""
+        assert "question_offline" in source._fact_intents, \
+            "question_offline should be in fact_intents"
+
+    def test_question_customization_in_fact_intents(self, source):
+        """Test question_customization is in fact intents."""
+        assert "question_customization" in source._fact_intents, \
+            "question_customization should be in fact_intents"
+
+    def test_question_automation_in_fact_intents(self, source):
+        """Test question_automation is in fact intents."""
+        assert "question_automation" in source._fact_intents, \
+            "question_automation should be in fact_intents"
+
+    def test_question_scalability_in_fact_intents(self, source):
+        """Test question_scalability is in fact intents."""
+        assert "question_scalability" in source._fact_intents, \
+            "question_scalability should be in fact_intents"
+
+    def test_contribute_on_data_migration_primary(self, source, make_blackboard):
+        """Test contribution when primary intent is question_data_migration."""
+        blackboard = make_blackboard(current_intent="question_data_migration")
+
+        assert source.should_contribute(blackboard) is True
+        source.contribute(blackboard)
+
+        assert len(blackboard._proposals) == 1
+        proposal = blackboard._proposals[0]
+        assert proposal["action"] == "answer_with_facts"
+        assert proposal["priority"] == Priority.HIGH
+        assert proposal["combinable"] is True
+        assert proposal["metadata"]["fact_intent"] == "question_data_migration"
+
+    def test_contribute_on_data_migration_secondary(self, source, make_blackboard):
+        """
+        Test contribution when question_data_migration is secondary intent.
+
+        Scenario: User in BANT budget phase says
+        "100 человек. Как перенесёте данные?"
+        - Primary: info_provided (100 человек = data)
+        - Secondary: question_data_migration
+        """
+        blackboard = make_blackboard(
+            current_intent="info_provided",
+            secondary_intents=["question_data_migration"],
+            state="bant_budget",
+        )
+
+        assert source.should_contribute(blackboard) is True
+        source.contribute(blackboard)
+
+        assert len(blackboard._proposals) == 1
+        proposal = blackboard._proposals[0]
+        assert proposal["action"] == "answer_with_facts"
+        assert proposal["metadata"]["fact_intent"] == "question_data_migration"
+        assert proposal["metadata"]["detection_source"] == "secondary"
+
+    def test_contribute_on_implementation_secondary(self, source, make_blackboard):
+        """
+        Test contribution when question_implementation is secondary intent.
+
+        Scenario: "Да, интересно. Как происходит внедрение?"
+        - Primary: agreement
+        - Secondary: question_implementation
+        """
+        blackboard = make_blackboard(
+            current_intent="agreement",
+            secondary_intents=["question_implementation"]
+        )
+
+        assert source.should_contribute(blackboard) is True
+        source.contribute(blackboard)
+
+        assert len(blackboard._proposals) == 1
+        proposal = blackboard._proposals[0]
+        assert proposal["metadata"]["fact_intent"] == "question_implementation"
+
+    def test_yaml_config_loaded(self, source):
+        """Test that YAML config is properly loaded."""
+        # Config should be loaded
+        assert hasattr(source, "_config"), "Source should have _config from YAML"
+        assert source._config is not None, "Config should not be None"
+
+        # If YAML is loaded, fact_intents should come from it
+        if source._config.get("fact_intents"):
+            # Check that at least some intents from YAML are present
+            yaml_intents = set(source._config.get("fact_intents", []))
+            assert source._fact_intents & yaml_intents, \
+                "fact_intents should include intents from YAML config"
+
+    def test_yaml_default_actions_loaded(self, source):
+        """Test that default actions from YAML are merged."""
+        # Intent actions should include YAML overrides
+        assert hasattr(source, "_intent_actions"), \
+            "Source should have _intent_actions (merged from YAML)"
+
+        # Check that some expected actions are present
+        expected_actions = {
+            "question_technical": "answer_technical_question",
+            "comparison": "compare_with_competitor",
+        }
+        for intent, expected_action in expected_actions.items():
+            if intent in source._intent_actions:
+                assert source._intent_actions[intent] == expected_action

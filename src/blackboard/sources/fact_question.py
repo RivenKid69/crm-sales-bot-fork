@@ -191,17 +191,29 @@ class FactQuestionSource(KnowledgeSource):
 
         Args:
             fact_intents: Set of intents considered fact-requiring.
-                         Defaults to DEFAULT_FACT_INTENTS.
+                         Defaults to config from YAML, then DEFAULT_FACT_INTENTS.
             condition_registry: ConditionRegistry for conditional rules.
             name: Source name for logging
         """
         super().__init__(name)
 
+        # Load config from YAML (SSoT)
+        self._config = self._load_config()
+
         # Build fact intents set (exclude price intents to avoid overlap)
         if fact_intents is not None:
             self._fact_intents = fact_intents - self.EXCLUDED_INTENTS
         else:
-            self._fact_intents = set(self.DEFAULT_FACT_INTENTS)
+            # Priority: YAML config -> DEFAULT_FACT_INTENTS (fallback)
+            yaml_intents = self._config.get("fact_intents", [])
+            if yaml_intents:
+                self._fact_intents = set(yaml_intents) - self.EXCLUDED_INTENTS
+            else:
+                self._fact_intents = set(self.DEFAULT_FACT_INTENTS)
+
+        # Load default actions from YAML (merges with hardcoded)
+        yaml_actions = self._config.get("default_actions", {})
+        self._intent_actions = {**self.INTENT_SPECIFIC_ACTIONS, **yaml_actions}
 
         # Lazy initialization of condition registry
         if condition_registry is not None:
@@ -231,6 +243,28 @@ class FactQuestionSource(KnowledgeSource):
     def remove_fact_intent(self, intent: str) -> None:
         """Remove an intent from the fact intents set."""
         self._fact_intents.discard(intent)
+
+    @staticmethod
+    def _load_config() -> Dict[str, Any]:
+        """
+        Load fact_question_source config from YAML (SSoT).
+
+        Returns:
+            Configuration dict with fact_intents, default_actions, etc.
+            Falls back to empty dict on any error.
+        """
+        try:
+            from src.yaml_config.constants import get_fact_question_source_config
+            return get_fact_question_source_config()
+        except ImportError:
+            logger.warning(
+                "Could not import get_fact_question_source_config, "
+                "using DEFAULT_FACT_INTENTS as fallback"
+            )
+            return {}
+        except Exception as e:
+            logger.warning(f"Error loading fact_question_source config: {e}")
+            return {}
 
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """
@@ -353,10 +387,10 @@ class FactQuestionSource(KnowledgeSource):
                     f"Fact intent '{fact_intent}' resolved from YAML rule: {action}"
                 )
 
-        # Fallback: intent-specific or default action
+        # Fallback: intent-specific or default action (from YAML or hardcoded)
         if not action:
-            action = self.INTENT_SPECIFIC_ACTIONS.get(
-                fact_intent, self.DEFAULT_ACTION
+            action = self._intent_actions.get(
+                fact_intent, self._config.get("fallback_action", self.DEFAULT_ACTION)
             )
             rule_source = "fallback"
             logger.debug(

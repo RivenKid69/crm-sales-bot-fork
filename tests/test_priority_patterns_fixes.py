@@ -406,7 +406,11 @@ class TestPatternCompilation:
             "situation_provided", "problem_revealed", "implication_acknowledged",
             "need_expressed", "no_problem", "no_need", "info_provided",
             "objection_complexity", "objection_no_need", "objection_timing",
-            "objection_trust"
+            "objection_trust",
+            # Fact question intents (Lost Question Bug Fix)
+            "question_data_migration", "question_implementation", "question_updates",
+            "question_offline", "question_customization", "question_automation",
+            "question_scalability"
         }
         for pattern_str, intent, confidence in PRIORITY_PATTERNS:
             assert intent in valid_intents, \
@@ -464,6 +468,164 @@ class TestIntegrationWithNormalization:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
+
+
+# =============================================================================
+# LOST QUESTION BUG FIX TESTS
+# =============================================================================
+# These tests verify the fix for the "Lost Question" bug where
+# questions about data migration were misclassified as objection_complexity.
+# =============================================================================
+
+class TestQuestionDataMigrationPatterns:
+    """
+    Tests for question_data_migration patterns.
+
+    Bug: "как перенесёте данные?" was being classified as objection_complexity
+    Fix: Added priority patterns for question_data_migration BEFORE objection_complexity
+    """
+
+    # =========================================================================
+    # ДОЛЖНО матчиться как question_data_migration
+    # =========================================================================
+
+    @pytest.mark.parametrize("text,expected_intent", [
+        # Прямые вопросы о переносе данных
+        ("как перенесёте данные", "question_data_migration"),
+        ("как вы перенесёте данные", "question_data_migration"),
+        ("как переносите данные", "question_data_migration"),
+        ("как мигрируете данные", "question_data_migration"),
+
+        # Вопросы о процессе миграции
+        ("как происходит перенос данных", "question_data_migration"),
+        ("как работает миграция", "question_data_migration"),
+
+        # Вопросы о возможности переноса
+        ("можно перенести данные", "question_data_migration"),
+        ("можете перенести данные из excel", "question_data_migration"),
+        ("поможете с переносом данных", "question_data_migration"),
+        ("помогаете с миграцией", "question_data_migration"),
+
+        # Вопросы об импорте
+        ("можно импортировать данные", "question_data_migration"),
+        ("как импортировать из 1с", "question_data_migration"),
+        ("как перенести из excel", "question_data_migration"),
+
+        # Вопросы о сроках миграции
+        ("сколько займёт перенос", "question_data_migration"),
+        ("кто будет переносить данные", "question_data_migration"),
+
+        # С вопросительной интонацией
+        ("а данные как перенести?", "question_data_migration"),
+    ])
+    def test_question_data_migration_patterns_match(self, text, expected_intent):
+        """Проверяет что вопросы о миграции детектируются корректно."""
+        result = match_pattern(text)
+        assert result is not None, f"'{text}' should match question_data_migration pattern"
+        assert result[0] == expected_intent, \
+            f"'{text}' should be {expected_intent}, got {result[0] if result else 'None'}"
+
+    # =========================================================================
+    # НЕ ДОЛЖНО матчиться как question_data_migration (возражения остаются возражениями)
+    # =========================================================================
+
+    @pytest.mark.parametrize("text", [
+        # Это ВОЗРАЖЕНИЯ, не вопросы - должны быть objection_complexity
+        "надо переносить данные, это сложно",  # утверждение, не вопрос
+        "придётся мигрировать базу",  # утверждение
+        "миграция пугает",  # страх
+        "миграция сложная",  # утверждение
+    ])
+    def test_objections_should_not_match_question_migration(self, text):
+        """Проверяет что возражения НЕ классифицируются как вопросы о миграции."""
+        result = match_pattern(text)
+        # Должно быть либо objection_complexity, либо None (не question_data_migration)
+        if result is not None:
+            assert result[0] != "question_data_migration", \
+                f"'{text}' is an objection, should NOT be question_data_migration, got {result[0]}"
+
+
+class TestQuestionImplementationPatterns:
+    """Tests for question_implementation patterns."""
+
+    @pytest.mark.parametrize("text,expected_intent", [
+        # Вопросы о внедрении
+        ("как происходит внедрение", "question_implementation"),
+        ("как проходит настройка", "question_implementation"),
+        ("как внедряете", "question_implementation"),
+        ("как настраиваете систему", "question_implementation"),
+
+        # Вопросы о сроках
+        ("сколько займёт внедрение", "question_implementation"),
+        ("сколько времени занимает настройка", "question_implementation"),
+        ("как быстро можно внедрить", "question_implementation"),
+        ("за сколько можно запустить", "question_implementation"),
+
+        # Вопросы о поддержке
+        ("помогаете с внедрением", "question_implementation"),
+        ("поможете с настройкой", "question_implementation"),
+        ("есть ли обучение при внедрении", "question_implementation"),
+        ("кто будет внедрять", "question_implementation"),
+    ])
+    def test_question_implementation_patterns_match(self, text, expected_intent):
+        """Проверяет что вопросы о внедрении детектируются корректно."""
+        result = match_pattern(text)
+        assert result is not None, f"'{text}' should match question_implementation pattern"
+        assert result[0] == expected_intent, \
+            f"'{text}' should be {expected_intent}, got {result[0] if result else 'None'}"
+
+
+class TestQuestionOfflinePatterns:
+    """Tests for question_offline patterns."""
+
+    @pytest.mark.parametrize("text,expected_intent", [
+        ("работает ли без интернета", "question_offline"),
+        ("можно ли без интернета", "question_offline"),
+        ("что если нет интернета", "question_offline"),
+        ("офлайн режим", "question_offline"),
+        ("оффлайн работа", "question_offline"),
+    ])
+    def test_question_offline_patterns_match(self, text, expected_intent):
+        """Проверяет что вопросы об офлайне детектируются корректно."""
+        result = match_pattern(text)
+        assert result is not None, f"'{text}' should match question_offline pattern"
+        assert result[0] == expected_intent, \
+            f"'{text}' should be {expected_intent}, got {result[0] if result else 'None'}"
+
+
+class TestQuestionVsObjectionDistinction:
+    """
+    Tests ensuring proper distinction between questions and objections.
+
+    Key insight: The FORM matters, not just the topic.
+    - "как перенесёте данные?" = QUESTION (seeking info)
+    - "надо переносить данные" = OBJECTION (expressing concern)
+    """
+
+    @pytest.mark.parametrize("text,should_be_question", [
+        # Questions (interrogative form)
+        ("как перенесёте данные?", True),
+        ("можно ли перенести базу?", True),
+        ("поможете с миграцией?", True),
+
+        # Objections (declarative form expressing concern)
+        ("придётся переносить данные", False),  # objection_complexity
+        ("надо мигрировать базу", False),  # objection_complexity
+        ("миграция сложная штука", False),  # objection_complexity
+    ])
+    def test_question_vs_objection_form(self, text, should_be_question):
+        """Проверяет различение вопросов и возражений по форме."""
+        result = match_pattern(text)
+
+        if should_be_question:
+            assert result is not None, f"'{text}' should match a question pattern"
+            assert "question" in result[0], \
+                f"'{text}' should be classified as question_*, got {result[0]}"
+        else:
+            # Should be objection_complexity or not match question_* pattern
+            if result is not None:
+                assert "question_data_migration" != result[0], \
+                    f"'{text}' is an objection, should NOT be question_data_migration"
 
 
 if __name__ == "__main__":
