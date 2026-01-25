@@ -5,6 +5,7 @@ from logger import logger
 from llm import OllamaClient
 from .schemas import ClassificationResult
 from .prompts import build_classification_prompt
+from ..extractors.extraction_validator import validate_extracted_data
 
 
 class LLMClassifier:
@@ -35,6 +36,8 @@ class LLMClassifier:
         self._llm_calls = 0
         self._llm_successes = 0
         self._fallback_calls = 0
+        self._extraction_validations = 0
+        self._extraction_corrections = 0
 
     def classify(self, message: str, context: Dict = None) -> Dict:
         """
@@ -78,10 +81,31 @@ class LLMClassifier:
                     "confidence": alt.confidence
                 })
 
+            # Получаем raw extracted_data от LLM
+            raw_extracted = result.extracted_data.model_dump(exclude_none=True)
+
+            # Валидируем и очищаем extracted_data от галлюцинаций
+            self._extraction_validations += 1
+            validation_result = validate_extracted_data(raw_extracted, context)
+
+            if validation_result.removed_fields:
+                self._extraction_corrections += 1
+                logger.info(
+                    "Extraction validation corrected LLM output",
+                    extra={
+                        "removed": validation_result.removed_fields,
+                        "corrections": validation_result.corrected_fields,
+                        "errors": validation_result.errors,
+                    }
+                )
+
+            # Используем очищенные данные
+            validated_extracted = validation_result.validated_data
+
             return {
                 "intent": result.intent,
                 "confidence": result.confidence,
-                "extracted_data": result.extracted_data.model_dump(exclude_none=True),
+                "extracted_data": validated_extracted,
                 "method": "llm",
                 "reasoning": result.reasoning,
                 "alternatives": alternatives
@@ -126,11 +150,17 @@ class LLMClassifier:
     def get_stats(self) -> Dict[str, Any]:
         """Получить статистику классификатора."""
         success_rate = (self._llm_successes / self._llm_calls * 100) if self._llm_calls > 0 else 0
+        correction_rate = (
+            self._extraction_corrections / self._extraction_validations * 100
+        ) if self._extraction_validations > 0 else 0
 
         return {
             "llm_calls": self._llm_calls,
             "llm_successes": self._llm_successes,
             "fallback_calls": self._fallback_calls,
             "llm_success_rate": round(success_rate, 1),
+            "extraction_validations": self._extraction_validations,
+            "extraction_corrections": self._extraction_corrections,
+            "extraction_correction_rate": round(correction_rate, 1),
             "vllm_stats": self.vllm.get_stats_dict()
         }
