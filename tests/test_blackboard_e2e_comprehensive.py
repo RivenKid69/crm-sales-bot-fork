@@ -682,8 +682,8 @@ class TestKnowledgeSourcesIntegration:
         orchestrator = orchestrator_with_selected_sources([ObjectionGuardSource])
         sm = orchestrator._state_machine
         sm.state = "spin_problem"
-        sm._intent_tracker._objection_consecutive = 3
-        sm._intent_tracker._objection_total = 5
+        sm._intent_tracker._objection_consecutive = 4  # Updated: default consecutive limit is now 4
+        sm._intent_tracker._objection_total = 6  # Updated: default total limit is now 6
 
         decision = orchestrator.process_turn(
             intent="objection_price",

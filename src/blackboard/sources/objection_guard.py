@@ -34,14 +34,24 @@ class ObjectionGuardSource(KnowledgeSource):
     """
 
     # Default persona limits (loaded from constants.yaml in production)
+    # FIX: Names must match personas.py exactly (e.g., "skeptic" not "skeptical")
+    # Limits are calibrated based on objection_probability from personas.py:
+    # - Higher objection_probability → higher limits to avoid premature soft_close
     DEFAULT_PERSONA_LIMITS: Dict[str, Dict[str, int]] = {
-        "aggressive": {"consecutive": 5, "total": 8},
-        "price_sensitive": {"consecutive": 4, "total": 7},
-        "skeptical": {"consecutive": 4, "total": 6},
-        "busy": {"consecutive": 2, "total": 4},
+        # From personas.py with matching names:
+        "happy_path": {"consecutive": 3, "total": 5},      # objection_prob=0.1, rarely objects
+        "skeptic": {"consecutive": 4, "total": 7},         # objection_prob=0.6
+        "busy": {"consecutive": 3, "total": 5},            # objection_prob=0.4
+        "price_sensitive": {"consecutive": 5, "total": 9}, # objection_prob=0.8, needs more room
+        "competitor_user": {"consecutive": 4, "total": 7}, # objection_prob=0.5
+        "aggressive": {"consecutive": 5, "total": 8},      # objection_prob=0.7
+        "technical": {"consecutive": 4, "total": 6},       # objection_prob=0.3
+        "tire_kicker": {"consecutive": 6, "total": 12},    # objection_prob=0.9, NEEDS HIGH LIMITS!
+        # Legacy names (for backwards compatibility):
         "analytical": {"consecutive": 4, "total": 6},
         "friendly": {"consecutive": 4, "total": 7},
-        "default": {"consecutive": 3, "total": 5},
+        # Fallback:
+        "default": {"consecutive": 4, "total": 6},         # Increased from 3/5 to 4/6
     }
 
     # Intents considered as objections (single source of truth)

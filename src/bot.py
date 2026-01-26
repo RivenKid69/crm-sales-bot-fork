@@ -95,7 +95,8 @@ class SalesBot:
         llm,
         conversation_id: Optional[str] = None,
         enable_tracing: bool = False,
-        flow_name: Optional[str] = None
+        flow_name: Optional[str] = None,
+        persona: Optional[str] = None
     ):
         """
         Инициализация бота со всеми компонентами.
@@ -105,6 +106,7 @@ class SalesBot:
             conversation_id: Уникальный ID диалога (генерируется если не указан)
             enable_tracing: Включить трассировку условных правил (для симуляций)
             flow_name: Имя flow для загрузки (по умолчанию из settings.flow.active)
+            persona: Имя персоны клиента для ObjectionGuard лимитов (из симулятора)
         """
         # Генерируем ID диалога для трейсинга
         self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
@@ -149,6 +151,12 @@ class SalesBot:
         )
         self.generator = ResponseGenerator(llm)
         self.history: List[Dict] = []
+
+        # FIX: Store persona in collected_data for ObjectionGuard persona-specific limits
+        # This fixes the bug where 99% of simulated dialogues ended in soft_close
+        # because persona was not passed from simulator and default limits (3/5) were too strict
+        if persona:
+            self.state_machine.collected_data["persona"] = persona
 
         # =========================================================================
         # Stage 14: Blackboard DialogueOrchestrator
@@ -1308,12 +1316,28 @@ class SalesBot:
 
         Returns:
             Dict mapping persona names to their limits (consecutive, total)
+
+        FIX: Names must match personas.py exactly (e.g., "skeptic" not "skeptical")
+        Limits are calibrated based on objection_probability from personas.py:
+        - Higher objection_probability → higher limits to avoid premature soft_close
         """
         # Default limits (used if not configured in YAML)
+        # FIX: Include all personas from simulator/personas.py with matching names
         default_limits = {
-            "default": {"consecutive": 3, "total": 5},
-            "aggressive": {"consecutive": 5, "total": 8},
-            "busy": {"consecutive": 2, "total": 4},
+            # From personas.py with matching names:
+            "happy_path": {"consecutive": 3, "total": 5},      # objection_prob=0.1
+            "skeptic": {"consecutive": 4, "total": 7},         # objection_prob=0.6
+            "busy": {"consecutive": 3, "total": 5},            # objection_prob=0.4
+            "price_sensitive": {"consecutive": 5, "total": 9}, # objection_prob=0.8
+            "competitor_user": {"consecutive": 4, "total": 7}, # objection_prob=0.5
+            "aggressive": {"consecutive": 5, "total": 8},      # objection_prob=0.7
+            "technical": {"consecutive": 4, "total": 6},       # objection_prob=0.3
+            "tire_kicker": {"consecutive": 6, "total": 12},    # objection_prob=0.9
+            # Legacy names (for backwards compatibility):
+            "analytical": {"consecutive": 4, "total": 6},
+            "friendly": {"consecutive": 4, "total": 7},
+            # Fallback:
+            "default": {"consecutive": 4, "total": 6},         # Increased from 3/5
         }
 
         # Try to get from flow config constants

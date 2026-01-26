@@ -320,8 +320,8 @@ class TestBlackboardRegression:
                 "collected_data": {"company_size": "50"},
                 "intent": "objection_price",
                 "extracted_data": {},
-                "objection_consecutive": 3,
-                "objection_total": 5,
+                "objection_consecutive": 4,  # Updated: default consecutive limit is now 4
+                "objection_total": 6,  # Updated: default total limit is now 6
                 "expected_action": "objection_limit_reached",
                 "expected_state": "soft_close",
             },
@@ -597,11 +597,11 @@ class TestBoundaryConditions:
         """Test behavior when exactly at objection limit."""
         SourceRegistry.reset()
 
-        # At exact limit (3 consecutive)
+        # At exact limit (4 consecutive now, updated from 3)
         sm = RegressionStateMachine(
             state="spin_problem",
-            objection_consecutive=3,
-            objection_total=3,
+            objection_consecutive=4,  # Updated: default consecutive limit is now 4
+            objection_total=4,
         )
         fc = RegressionFlowConfig()
 
@@ -656,11 +656,12 @@ class TestBoundaryConditions:
         """Busy persona limit should apply to objection_no_time intents."""
         SourceRegistry.reset()
 
+        # busy persona limits: consecutive=3, total=5 (updated from 2/4)
         sm = RegressionStateMachine(
             state="spin_problem",
             collected_data={"persona": "busy"},
-            objection_consecutive=2,
-            objection_total=2,
+            objection_consecutive=3,  # Updated: busy consecutive limit is now 3
+            objection_total=3,
         )
         fc = RegressionFlowConfig()
 

@@ -1714,9 +1714,9 @@ class TestObjectionLimits:
         """Exceeding objection limit should trigger soft_close."""
         sm = orchestrator_with_objection_guard._state_machine
 
-        # Simulate high objection counts
-        sm._intent_tracker._objection_consecutive = 3
-        sm._intent_tracker._objection_total = 5
+        # Simulate high objection counts (updated: default limits are now 4/6)
+        sm._intent_tracker._objection_consecutive = 4
+        sm._intent_tracker._objection_total = 6
 
         decision = orchestrator_with_objection_guard.process_turn(
             intent="objection_price",
@@ -1740,9 +1740,9 @@ class TestObjectionLimits:
         sm = orchestrator_with_objection_guard._state_machine
         sm._collected_data = {}
 
-        # Simulate high objection counts
-        sm._intent_tracker._objection_consecutive = 3
-        sm._intent_tracker._objection_total = 5
+        # Simulate high objection counts (updated: default limits are now 4/6)
+        sm._intent_tracker._objection_consecutive = 4
+        sm._intent_tracker._objection_total = 6
 
         decision = orchestrator_with_objection_guard.process_turn(
             intent="objection_price",

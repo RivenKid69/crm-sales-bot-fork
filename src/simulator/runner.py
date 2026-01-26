@@ -202,7 +202,9 @@ class SimulationRunner:
             client = ClientAgent(self.client_llm, persona)
             # Phase 8: Enable tracing for conditional rules debugging
             # Pass flow_name to SalesBot (SalesBot already supports this!)
-            bot = SalesBot(self.bot_llm, enable_tracing=True, flow_name=active_flow)
+            # FIX: Pass persona_name to SalesBot for ObjectionGuard persona-specific limits
+            # This fixes the bug where 99% of simulated dialogues ended in soft_close
+            bot = SalesBot(self.bot_llm, enable_tracing=True, flow_name=active_flow, persona=persona_name)
 
             # Первое сообщение клиента
             client_message = client.start_conversation()

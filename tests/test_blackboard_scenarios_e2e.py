@@ -606,7 +606,7 @@ class TestPersonaScenarios:
         """Skeptical persona should tolerate more objections (4 consecutive)."""
         orchestrator = create_scenario_orchestrator(
             initial_state="spin_problem",
-            persona="skeptical",  # NOTE: "skeptical" not "skeptic" per ObjectionGuardSource
+            persona="skeptic",  # FIX: Changed from "skeptical" to "skeptic" to match personas.py
             sources=[ObjectionGuardSource]
         )
 
@@ -614,13 +614,13 @@ class TestPersonaScenarios:
         sm._intent_tracker._objection_consecutive = 3
         sm._intent_tracker._objection_total = 3
 
-        # 4th objection - should still be OK for skeptical (limit is 4)
+        # 4th objection - should still be OK for skeptic (limit is 4)
         decision = orchestrator.process_turn(intent="objection_price", extracted_data={})
 
-        # Should NOT trigger limit yet (skeptical has consecutive=4)
+        # Should NOT trigger limit yet (skeptic has consecutive=4)
         assert not (decision.action == "objection_limit_reached" and decision.next_state == "soft_close")
 
-        # 5th will trigger (skeptical limit is 4 consecutive)
+        # 5th will trigger (skeptic limit is 4 consecutive)
         sm._intent_tracker._objection_consecutive = 4
         sm._intent_tracker._objection_total = 4
 
@@ -745,14 +745,14 @@ class TestStressScenarios:
         sm._intent_tracker._objection_total = 1
         orchestrator.process_turn(intent="objection_no_time", extracted_data={})
 
-        # Third objection - should trigger limit for default persona
+        # Third objection - should NOT trigger limit yet for default persona (limit is 4)
         sm._intent_tracker._objection_consecutive = 2
         sm._intent_tracker._objection_total = 2
         d3 = orchestrator.process_turn(intent="objection_think", extracted_data={})
 
-        # At this point, with 3 consecutive objections for default persona
-        sm._intent_tracker._objection_consecutive = 3
-        sm._intent_tracker._objection_total = 3
+        # At this point, with 4 consecutive objections for default persona (updated from 3)
+        sm._intent_tracker._objection_consecutive = 4  # Updated: default consecutive limit is now 4
+        sm._intent_tracker._objection_total = 4
         d4 = orchestrator.process_turn(intent="objection_competitor", extracted_data={})
 
         assert d4.action == "objection_limit_reached"

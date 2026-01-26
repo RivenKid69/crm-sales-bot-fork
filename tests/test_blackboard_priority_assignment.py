@@ -5,6 +5,11 @@ def test_go_back_over_data_complete_priority():
     from src.config_loader import ConfigLoader
     from src.state_machine import StateMachine
     from src.blackboard.orchestrator import create_orchestrator
+    from src.blackboard.source_registry import SourceRegistry, register_builtin_sources
+
+    # Reset and re-register to ensure clean state
+    SourceRegistry.reset()
+    register_builtin_sources()
 
     loader = ConfigLoader()
     config = loader.load()

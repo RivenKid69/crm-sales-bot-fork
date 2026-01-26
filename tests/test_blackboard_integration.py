@@ -474,8 +474,8 @@ class TestBlackboardIntegration:
         SourceRegistry.reset()
 
         sm = IntegrationStateMachine(state="spin_problem")
-        sm._intent_tracker._objection_consecutive = 3
-        sm._intent_tracker._objection_total = 5
+        sm._intent_tracker._objection_consecutive = 4  # Updated: default consecutive limit is now 4
+        sm._intent_tracker._objection_total = 6  # Updated: default total limit is now 6
         fc = IntegrationFlowConfig()
 
         orchestrator = DialogueOrchestrator(
