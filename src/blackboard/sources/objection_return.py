@@ -211,6 +211,37 @@ class ObjectionReturnSource(KnowledgeSource):
         if hasattr(flow_config, 'get_phase_for_state'):
             phase = flow_config.get_phase_for_state(saved_state)
 
+        # FIX: Don't return to non-phase states (like greeting, handle_objection)
+        # This prevents the greeting ↔ handle_objection loop that causes 37% zero coverage.
+        #
+        # Root cause (commit 293109e):
+        #   ObjectionReturnSource was proposing HIGH priority transitions back to
+        #   saved states like "greeting" which have NO phase. This won over
+        #   TransitionResolver's NORMAL priority (e.g., agreement → close).
+        #
+        # Solution:
+        #   Only propose return transitions to states that have a SPIN phase.
+        #   For non-phase states, let TransitionResolver handle the transition
+        #   (e.g., agreement → close, or entry_state via flow configuration).
+        #
+        # Affected personas: skeptic, tire_kicker, competitor_user, aggressive
+        #   (all express objections BEFORE entering a phase, so _state_before_objection
+        #   gets saved as "greeting" which has no phase)
+        if phase is None:
+            self._log_contribution(
+                reason=f"Saved state '{saved_state}' has no phase (not a SPIN state), "
+                       f"skipping return. TransitionResolver will handle this."
+            )
+            logger.debug(
+                f"ObjectionReturnSource: skipping return to non-phase state",
+                extra={
+                    "saved_state": saved_state,
+                    "reason": "no_phase",
+                    "will_delegate_to": "TransitionResolverSource",
+                }
+            )
+            return
+
         # Propose transition with HIGH priority
         # This wins over NORMAL priority YAML transitions
         blackboard.propose_transition(

@@ -777,3 +777,296 @@ class TestSourceName:
 
         proposals = bb.get_transition_proposals()
         assert proposals[0].source_name == "CustomReturn"
+
+
+# =============================================================================
+# Tests for Non-Phase State Handling (37% Zero Coverage Fix)
+# =============================================================================
+
+class TestNonPhaseStateHandling:
+    """
+    Test that ObjectionReturnSource does NOT return to non-phase states.
+
+    Root Cause (commit 293109e):
+        ObjectionReturnSource was proposing HIGH priority transitions back to
+        saved states like "greeting" which have NO phase. This won over
+        TransitionResolver's NORMAL priority (e.g., agreement → close).
+
+    Result of bug:
+        greeting ↔ handle_objection loop → phases_reached = [] → 37% zero coverage
+
+    Affected personas: skeptic, tire_kicker, competitor_user, aggressive
+        (all express objections BEFORE entering a phase, so _state_before_objection
+        gets saved as "greeting" which has no phase)
+
+    Solution:
+        Only propose return transitions to states that have a SPIN phase.
+        For non-phase states, let TransitionResolver handle the transition.
+    """
+
+    @pytest.fixture
+    def source(self):
+        """Create an ObjectionReturnSource instance."""
+        return ObjectionReturnSource()
+
+    def test_no_return_to_greeting_state(self, source):
+        """
+        CRITICAL FIX: Do NOT return to 'greeting' which has no phase.
+
+        Scenario (skeptic persona):
+            1. greeting + "не уверен" → objection_think
+            2. _state_before_objection = "greeting"
+            3. handle_objection + "ладно" → agreement
+            4. ObjectionReturnSource SHOULD NOT propose greeting (no phase)
+            5. TransitionResolver handles: agreement → close/entry_state
+
+        Without this fix: Bot loops greeting ↔ handle_objection forever,
+        never reaching SPIN phases, phases_reached = [], coverage = 0.0
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="greeting"  # Non-phase state!
+        )
+
+        source.contribute(bb)
+
+        # Should NOT propose transition to greeting
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 0, \
+            "ObjectionReturnSource should NOT propose return to non-phase state 'greeting'"
+
+    def test_no_return_to_handle_objection_state(self, source):
+        """
+        Edge case: _state_before_objection is handle_objection itself.
+
+        This shouldn't happen in normal flow, but defensive check.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="handle_objection"  # Non-phase state!
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 0
+
+    def test_no_return_to_soft_close_state(self, source):
+        """
+        Edge case: _state_before_objection is soft_close (final, no phase).
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="soft_close"  # Non-phase state!
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 0
+
+    def test_no_return_to_close_state(self, source):
+        """
+        Edge case: _state_before_objection is close (final, no phase).
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="close"  # Non-phase state!
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 0
+
+    def test_returns_to_phase_state_bant_budget(self, source):
+        """
+        Verify: Still returns to phase states like bant_budget.
+
+        bant_budget has phase="budget", so it should work.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="bant_budget"  # Has phase!
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"
+
+    def test_returns_to_phase_state_bant_authority(self, source):
+        """
+        Verify: Still returns to phase states like bant_authority.
+
+        bant_authority has phase="authority", so it should work.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="bant_authority"  # Has phase!
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_authority"
+
+    def test_skeptic_persona_scenario(self, source):
+        """
+        Full skeptic persona scenario that caused 0% phase coverage.
+
+        Flow without fix:
+            1. greeting → "не уверен" → objection_think
+            2. greeting → handle_objection (save greeting)
+            3. handle_objection → "ладно" → agreement
+            4. ObjectionReturnSource: handle_objection → greeting (HIGH)
+            5. TransitionResolver: handle_objection → close (NORMAL)
+            6. HIGH wins → greeting (WRONG!)
+            7. Loop repeats, never enters SPIN phases
+
+        Flow with fix:
+            1-3. Same
+            4. ObjectionReturnSource: NO proposal (greeting has no phase)
+            5. TransitionResolver: handle_objection → close (NORMAL)
+            6. close wins → conversation ends properly
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="greeting"
+        )
+
+        source.contribute(bb)
+
+        # ObjectionReturnSource should NOT propose
+        assert len(bb.get_transition_proposals()) == 0
+
+        # TransitionResolver can now handle this (tested in integration tests)
+
+    def test_tire_kicker_persona_scenario(self, source):
+        """
+        tire_kicker: "Просто смотрю" → objection_no_need before entering phase.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="greeting"
+        )
+
+        source.contribute(bb)
+
+        assert len(bb.get_transition_proposals()) == 0
+
+    def test_competitor_user_persona_scenario(self, source):
+        """
+        competitor_user: "У нас уже есть решение" → objection_competitor before phase.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="interest",  # Shows interest after objection handling
+            state_before_objection="greeting"
+        )
+
+        source.contribute(bb)
+
+        assert len(bb.get_transition_proposals()) == 0
+
+    def test_aggressive_persona_scenario(self, source):
+        """
+        aggressive: Negative message → objection_* before entering phase.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="info_provided",  # Provides info after calming down
+            state_before_objection="greeting"
+        )
+
+        source.contribute(bb)
+
+        assert len(bb.get_transition_proposals()) == 0
+
+
+# =============================================================================
+# Tests for Phase Transition with Custom FlowConfig
+# =============================================================================
+
+class TestPhaseTransitionWithCustomFlowConfig:
+    """
+    Test ObjectionReturnSource with various FlowConfig configurations.
+
+    These tests verify that the phase detection works correctly with
+    different state-to-phase mappings.
+    """
+
+    @pytest.fixture
+    def source(self):
+        """Create an ObjectionReturnSource instance."""
+        return ObjectionReturnSource()
+
+    def test_spin_phases_return_works(self, source):
+        """Test that SPIN phase states (situation, problem, etc.) allow return."""
+        spin_states = {
+            "greeting": {"goal": "Greet"},
+            "spin_situation": {"goal": "Qualify situation", "phase": "situation"},
+            "spin_problem": {"goal": "Qualify problem", "phase": "problem"},
+            "spin_implication": {"goal": "Qualify implication", "phase": "implication"},
+            "spin_need_payoff": {"goal": "Qualify need", "phase": "need_payoff"},
+            "handle_objection": {"goal": "Handle objection"},
+        }
+
+        for state_name, state_config in spin_states.items():
+            if state_config.get("phase") is None:
+                continue  # Skip non-phase states
+
+            bb = create_blackboard(
+                state="handle_objection",
+                intent="agreement",
+                state_before_objection=state_name,
+                states=spin_states
+            )
+
+            source.contribute(bb)
+
+            proposals = bb.get_transition_proposals()
+            assert len(proposals) == 1, f"Should return to {state_name}"
+            assert proposals[0].value == state_name
+
+    def test_only_phase_states_get_return(self, source):
+        """Test that only states WITH phase get return proposals."""
+        mixed_states = {
+            "greeting": {"goal": "Greet"},  # No phase
+            "qualification": {"goal": "Qualify", "phase": "qualify"},  # Has phase
+            "handle_objection": {"goal": "Handle objection"},  # No phase
+            "presentation": {"goal": "Present", "phase": "present"},  # Has phase
+            "close": {"goal": "Close"},  # No phase
+        }
+
+        # States with phase should get return
+        for state_with_phase in ["qualification", "presentation"]:
+            bb = create_blackboard(
+                state="handle_objection",
+                intent="agreement",
+                state_before_objection=state_with_phase,
+                states=mixed_states
+            )
+            source.contribute(bb)
+            assert len(bb.get_transition_proposals()) == 1
+
+        # States without phase should NOT get return
+        for state_without_phase in ["greeting", "close"]:
+            bb = create_blackboard(
+                state="handle_objection",
+                intent="agreement",
+                state_before_objection=state_without_phase,
+                states=mixed_states
+            )
+            source.contribute(bb)
+            assert len(bb.get_transition_proposals()) == 0

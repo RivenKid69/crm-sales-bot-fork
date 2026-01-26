@@ -544,3 +544,267 @@ class TestIntegrationEdgeCases:
 
         # Should stay in current state
         assert decision.next_state == "handle_objection"
+
+
+# =============================================================================
+# Integration Tests: Non-Phase State Handling (37% Zero Coverage Fix)
+# =============================================================================
+
+class TestNonPhaseStateIntegration:
+    """
+    Integration tests for the 37% zero phase coverage bug fix.
+
+    Root Cause (commit 293109e):
+        ObjectionReturnSource was proposing HIGH priority transitions back to
+        saved states like "greeting" which have NO phase. This won over
+        TransitionResolver's NORMAL priority (e.g., agreement → close).
+
+    Problem:
+        Personas (skeptic, tire_kicker, competitor_user, aggressive) that
+        express objections BEFORE entering a SPIN phase get stuck in
+        greeting ↔ handle_objection loop.
+
+        phases_reached = [] → coverage = 0.0
+
+    Solution:
+        ObjectionReturnSource now checks if saved_state has a phase.
+        If not, it does NOT propose a transition, letting TransitionResolver
+        handle the flow (e.g., agreement → close).
+    """
+
+    def test_greeting_state_transition_resolver_wins(self):
+        """
+        CRITICAL: TransitionResolver should win when saved_state is 'greeting'.
+
+        Scenario (skeptic persona):
+            1. greeting + objection → handle_objection (save greeting)
+            2. handle_objection + agreement → ?
+            3. ObjectionReturnSource: NO proposal (greeting has no phase)
+            4. TransitionResolver: agreement → close (NORMAL)
+            5. Result: close (correct!)
+
+        Without fix:
+            3. ObjectionReturnSource: greeting (HIGH) ← BUG
+            5. Result: greeting (WRONG! Loop continues)
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="greeting"  # Non-phase state!
+        )
+
+        bb = setup["blackboard"]
+        objection_return = setup["objection_return_source"]
+        transition_resolver = setup["transition_resolver_source"]
+        resolver = setup["conflict_resolver"]
+
+        # Both sources contribute
+        objection_return.contribute(bb)
+        transition_resolver.contribute(bb)
+
+        proposals = bb.get_proposals()
+
+        # ObjectionReturnSource should NOT have a proposal
+        objection_proposals = [
+            p for p in proposals if p.source_name == "ObjectionReturnSource"
+        ]
+        assert len(objection_proposals) == 0, \
+            "ObjectionReturnSource should NOT propose return to non-phase state"
+
+        # Resolve conflict
+        decision = resolver.resolve(
+            proposals=proposals,
+            current_state="handle_objection"
+        )
+
+        # TransitionResolver should WIN → close
+        assert decision.next_state == "close", \
+            f"Expected 'close' but got '{decision.next_state}'. " \
+            "TransitionResolver should handle non-phase saved states."
+
+    def test_skeptic_persona_full_flow(self):
+        """
+        Full skeptic persona scenario that caused 0% phase coverage.
+
+        Persona behavior:
+            - Immediately doubts: "не уверен что мне это нужно"
+            - Classifier: objection_think
+            - This happens BEFORE entering any SPIN phase
+
+        Expected flow with fix:
+            1. greeting → objection_think → handle_objection (save "greeting")
+            2. Bot handles objection
+            3. Client: "ладно, может быть интересно" → agreement
+            4. ObjectionReturnSource: no proposal (greeting has no phase)
+            5. TransitionResolver: agreement → close
+            6. Conversation ends properly (or continues to entry_state)
+
+        The key is: no greeting ↔ handle_objection loop!
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="greeting"
+        )
+
+        bb = setup["blackboard"]
+
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        # Should NOT go back to greeting (that would cause the loop)
+        assert decision.next_state != "greeting", \
+            "BUG DETECTED: Still returning to greeting! Loop will occur."
+
+        # Should go to close (or entry_state per YAML)
+        assert decision.next_state == "close"
+
+    def test_tire_kicker_persona_scenario(self):
+        """
+        tire_kicker persona: "Просто смотрю" → objection_no_need
+
+        Same problem as skeptic - objection before entering phase.
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="interest",  # Shows interest after handling
+            state_before_objection="greeting"
+        )
+
+        bb = setup["blackboard"]
+
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        # Should NOT return to greeting
+        assert decision.next_state != "greeting"
+        assert decision.next_state == "close"
+
+    def test_competitor_user_persona_scenario(self):
+        """
+        competitor_user persona: "У нас уже есть решение" → objection_competitor
+
+        Same problem - objection before entering phase.
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="greeting"
+        )
+
+        bb = setup["blackboard"]
+
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        assert decision.next_state != "greeting"
+        assert decision.next_state == "close"
+
+    def test_phase_state_still_returns_correctly(self):
+        """
+        Verify: When saved_state HAS a phase, return still works.
+
+        This test ensures the fix doesn't break the normal case.
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="bant_budget"  # Has phase: budget
+        )
+
+        bb = setup["blackboard"]
+
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        # Should return to bant_budget (phase preserved)
+        assert decision.next_state == "bant_budget"
+
+    def test_multiple_objection_returns_to_phase(self):
+        """
+        Client raises objection, handles it, raises another, handles it.
+        Each time should return to the PHASE state.
+        """
+        # First objection from bant_budget
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="bant_budget"
+        )
+
+        bb = setup["blackboard"]
+
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        assert decision.next_state == "bant_budget"
+
+        # Second objection from same phase
+        setup2 = create_test_setup(
+            state="handle_objection",
+            intent="info_provided",
+            state_before_objection="bant_budget"
+        )
+
+        bb2 = setup2["blackboard"]
+
+        setup2["objection_return_source"].contribute(bb2)
+        setup2["transition_resolver_source"].contribute(bb2)
+
+        decision2 = setup2["conflict_resolver"].resolve(
+            proposals=bb2.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        assert decision2.next_state == "bant_budget"
+
+    def test_different_phase_states_return_correctly(self):
+        """
+        Test that all phase states return correctly.
+        """
+        phase_states = ["bant_budget", "bant_authority"]
+
+        for phase_state in phase_states:
+            setup = create_test_setup(
+                state="handle_objection",
+                intent="agreement",
+                state_before_objection=phase_state
+            )
+
+            bb = setup["blackboard"]
+
+            setup["objection_return_source"].contribute(bb)
+            setup["transition_resolver_source"].contribute(bb)
+
+            decision = setup["conflict_resolver"].resolve(
+                proposals=bb.get_proposals(),
+                current_state="handle_objection"
+            )
+
+            assert decision.next_state == phase_state, \
+                f"Failed for phase_state: {phase_state}"
