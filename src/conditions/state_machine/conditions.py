@@ -497,12 +497,17 @@ def objection_repeated(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "price_total_count_3x",
-    description="Check if price_question occurred 3+ times TOTAL in conversation",
+    description="Check if price-related intents occurred 3+ times TOTAL in conversation",
     category="intent"
 )
 def price_total_count_3x(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if price_question has been asked 3+ times TOTAL.
+    Returns True if price-related intents have been asked 3+ times TOTAL.
+
+    FIX: Now uses get_category_total("price_related") instead of get_intent_count.
+    This ensures consistency with:
+    - price_repeated_3x (uses category_streak)
+    - constants.yaml price_related category (Single Source of Truth)
 
     This is more reliable than streak-based conditions because:
     - Streak resets when ANY other intent occurs
@@ -511,22 +516,27 @@ def price_total_count_3x(ctx: EvaluatorContext) -> bool:
 
     Use this for triggering answer_with_price_range.
     """
-    return ctx.get_intent_count("price_question") >= 3
+    return ctx.get_category_total("price_related") >= 3
 
 
 @sm_condition(
     "price_total_count_2x",
-    description="Check if price_question occurred 2+ times TOTAL in conversation",
+    description="Check if price-related intents occurred 2+ times TOTAL in conversation",
     category="intent"
 )
 def price_total_count_2x(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if price_question has been asked 2+ times TOTAL.
+    Returns True if price-related intents have been asked 2+ times TOTAL.
+
+    FIX: Now uses get_category_total("price_related") instead of get_intent_count.
+    This ensures consistency with:
+    - price_repeated_2x (uses category_streak)
+    - constants.yaml price_related category (Single Source of Truth)
 
     Softer trigger than 3x - useful for showing willingness to discuss price
     while still trying to gather qualifying info.
     """
-    return ctx.get_intent_count("price_question") >= 2
+    return ctx.get_category_total("price_related") >= 2
 
 
 @sm_condition(
@@ -538,12 +548,14 @@ def question_total_count_2x(ctx: EvaluatorContext) -> bool:
     """
     Returns True if current question intent has been asked 2+ times TOTAL.
 
+    FIX: Now uses get_intent_total instead of get_intent_count.
+
     Works for any question_* intent. Useful for triggering detailed answers
     when user shows persistent interest in a topic.
     """
     if not ctx.current_intent or not ctx.current_intent.startswith("question_"):
         return False
-    return ctx.get_intent_count(ctx.current_intent) >= 2
+    return ctx.get_intent_total(ctx.current_intent) >= 2
 
 
 @sm_condition(
@@ -555,10 +567,12 @@ def unclear_total_count_3x(ctx: EvaluatorContext) -> bool:
     """
     Returns True if unclear has been returned 3+ times TOTAL.
 
+    FIX: Now uses get_intent_total instead of get_intent_count.
+
     Total count is more reliable for detecting communication issues
     than streak-based which resets on any clear classification.
     """
-    return ctx.get_intent_count("unclear") >= 3
+    return ctx.get_intent_total("unclear") >= 3
 
 
 @sm_condition(
@@ -636,9 +650,12 @@ def should_answer_question_now(ctx: EvaluatorContext) -> bool:
     """
     Returns True if we should answer the question immediately.
 
+    FIX: Now uses get_category_total("price_related") instead of get_intent_count.
+    This ensures consistency with price_total_count_2x and SSOT principle.
+
     Combines multiple signals:
     - Elevated frustration (4+)
-    - Price asked 2+ times total
+    - Price-related intents asked 2+ times total
     - Rushed tone ("давай по делу")
     - Secondary question detected
 
@@ -648,8 +665,8 @@ def should_answer_question_now(ctx: EvaluatorContext) -> bool:
     if ctx.frustration_level >= 4:
         return True
 
-    # Check price question count
-    if ctx.get_intent_count("price_question") >= 2:
+    # Check price-related intent count (uses category for SSOT consistency)
+    if ctx.get_category_total("price_related") >= 2:
         return True
 
     # Check tone

@@ -378,3 +378,122 @@ class TestRegression:
         # All exit intents should be in negative
         for intent in exit_intents:
             assert intent in negative, f"{intent} should be in negative category"
+
+
+# =============================================================================
+# TOTAL COUNT CONDITIONS TESTS (get_intent_count → get_intent_total fix)
+# =============================================================================
+
+class TestTotalCountConditionsFix:
+    """
+    Tests for total count conditions fix.
+
+    These conditions were using non-existent get_intent_count() method.
+    Fixed to use get_intent_total() or get_category_total() for SSOT consistency.
+    """
+
+    @pytest.fixture
+    def mock_context(self):
+        """Create a mock EvaluatorContext."""
+        ctx = MagicMock()
+        ctx.intent_tracker = IntentTracker()
+        ctx.collected_data = {}
+        ctx.current_intent = None
+        ctx.frustration_level = 0
+
+        # Setup methods to delegate to tracker
+        def get_category_total(category):
+            return ctx.intent_tracker.category_total(category)
+
+        def get_intent_total(intent):
+            return ctx.intent_tracker.total_count(intent)
+
+        def get_category_streak(category):
+            return ctx.intent_tracker.category_streak(category)
+
+        ctx.get_category_total = get_category_total
+        ctx.get_intent_total = get_intent_total
+        ctx.get_category_streak = get_category_streak
+        return ctx
+
+    def test_price_total_count_3x_uses_category_total(self, mock_context):
+        """Verify price_total_count_3x uses category_total, not intent_count."""
+        from src.conditions.state_machine.conditions import price_total_count_3x
+
+        # Record 3 different price-related intents
+        mock_context.intent_tracker.record("price_question", "spin_situation")
+        mock_context.intent_tracker.record("discount_request", "spin_situation")
+        mock_context.intent_tracker.record("pricing_details", "spin_situation")
+
+        # With SSOT fix, this should be True (uses category_total)
+        assert price_total_count_3x(mock_context) is True
+
+    def test_price_total_count_2x_uses_category_total(self, mock_context):
+        """Verify price_total_count_2x uses category_total, not intent_count."""
+        from src.conditions.state_machine.conditions import price_total_count_2x
+
+        # Record 2 different price-related intents
+        mock_context.intent_tracker.record("price_question", "spin_situation")
+        mock_context.intent_tracker.record("cost_inquiry", "spin_situation")
+
+        # With SSOT fix, this should be True
+        assert price_total_count_2x(mock_context) is True
+
+    def test_unclear_total_count_3x_uses_intent_total(self, mock_context):
+        """Verify unclear_total_count_3x uses get_intent_total."""
+        from src.conditions.state_machine.conditions import unclear_total_count_3x
+
+        # Record 3 unclear intents
+        mock_context.intent_tracker.record("unclear", "spin_situation")
+        mock_context.intent_tracker.record("unclear", "spin_situation")
+        mock_context.intent_tracker.record("unclear", "spin_situation")
+
+        assert unclear_total_count_3x(mock_context) is True
+
+    def test_question_total_count_2x_uses_intent_total(self, mock_context):
+        """Verify question_total_count_2x uses get_intent_total."""
+        from src.conditions.state_machine.conditions import question_total_count_2x
+
+        # Set current intent
+        mock_context.current_intent = "question_technical"
+
+        # Record 2 of the same question intent
+        mock_context.intent_tracker.record("question_technical", "spin_situation")
+        mock_context.intent_tracker.record("question_technical", "spin_situation")
+
+        assert question_total_count_2x(mock_context) is True
+
+    def test_should_answer_question_now_uses_category_total(self, mock_context):
+        """Verify should_answer_question_now uses category_total for price check."""
+        from src.conditions.state_machine.conditions import should_answer_question_now
+
+        # Record 2 different price-related intents
+        mock_context.intent_tracker.record("price_question", "spin_situation")
+        mock_context.intent_tracker.record("discount_request", "spin_situation")
+
+        # With SSOT fix, this should trigger on 2 price-related intents
+        assert should_answer_question_now(mock_context) is True
+
+    def test_price_total_not_confused_with_price_streak(self, mock_context):
+        """
+        Verify total count != streak count behavior.
+
+        Total should accumulate even when interrupted by other intents.
+        """
+        from src.conditions.state_machine.conditions import (
+            price_total_count_3x,
+            price_repeated_3x,
+        )
+
+        # Record price intents with interruption
+        mock_context.intent_tracker.record("price_question", "spin_situation")
+        mock_context.intent_tracker.record("agreement", "spin_situation")  # Interrupts streak
+        mock_context.intent_tracker.record("discount_request", "spin_situation")
+        mock_context.intent_tracker.record("agreement", "spin_situation")  # Interrupts streak
+        mock_context.intent_tracker.record("pricing_details", "spin_situation")
+
+        # Total should be 3 (all price intents counted)
+        assert price_total_count_3x(mock_context) is True
+
+        # Streak should be 1 (only last price intent, streak was reset)
+        assert price_repeated_3x(mock_context) is False
