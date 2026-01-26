@@ -3693,7 +3693,8 @@ confidence_calibration:
     - implication_acknowledged
     - need_expressed
 
-  # Objection overconfidence penalty
+  # Objection overconfidence penalty (Rule 4)
+  # FIX: Порог понижен с 0.9 до 0.8 в коде для обработки objection_think
   objection_overconfidence_penalty: 0.1
   objection_intents:
     - objection_price
@@ -3703,6 +3704,13 @@ confidence_calibration:
     - objection_competitor
     - objection_timing
     - objection_complexity
+
+  # Objection without alternatives penalty (Rule 5) - NEW
+  # FIX: LLM часто не возвращает alternatives для objection интентов
+  # Это делает entropy и gap стратегии неэффективными
+  # Добавляем специальный штраф для такого случая
+  objection_no_alternatives_penalty: 0.15     # Штраф за objection без alternatives
+  objection_no_alternatives_threshold: 0.75   # Порог confidence для применения
 
 # =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)

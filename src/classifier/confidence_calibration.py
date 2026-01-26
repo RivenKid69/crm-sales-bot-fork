@@ -379,18 +379,33 @@ class HeuristicCalibrationStrategy:
                 total_penalty += context_mismatch_penalty
                 penalties["context_mismatch_penalty"] = context_mismatch_penalty
 
-        # Rule 4: Objection without objection keywords
-        # Objection intents are often overconfident
+        # Rule 4: Objection with high confidence
+        # Objection intents are often overconfident - lowered threshold from 0.9 to 0.8
+        # FIX: Порог 0.9 был слишком высок - objection_think с confidence 0.80-0.89 не обрабатывался
         objection_intents = set(config.get("objection_intents", [
             "objection_price", "objection_no_time", "objection_think",
             "objection_no_need", "objection_competitor",
         ]))
         objection_penalty = config.get("objection_overconfidence_penalty", 0.1)
 
-        if ctx.intent in objection_intents and confidence >= 0.9:
-            # High confidence objection needs verification
+        if ctx.intent in objection_intents and confidence >= 0.8:
+            # High confidence objection needs verification (threshold lowered to 0.8)
             total_penalty += objection_penalty
             penalties["objection_overconfidence_penalty"] = objection_penalty
+
+        # Rule 5: Objection without alternatives - VERY suspicious
+        # FIX: LLM часто не возвращает alternatives для objection интентов
+        # Это делает entropy и gap стратегии неэффективными
+        # Добавляем дополнительный штраф для objection без alternatives
+        objection_no_alt_penalty = config.get("objection_no_alternatives_penalty", 0.15)
+        objection_no_alt_threshold = config.get("objection_no_alternatives_threshold", 0.75)
+
+        if (ctx.intent in objection_intents and
+            not alternatives and
+            confidence >= objection_no_alt_threshold):
+            # Objection with no alternatives is highly suspicious
+            total_penalty += objection_no_alt_penalty
+            penalties["objection_no_alternatives_penalty"] = objection_no_alt_penalty
 
         # Apply total penalty
         if total_penalty > 0:
@@ -484,6 +499,9 @@ class ConfidenceCalibrator:
                 "objection_price", "objection_no_time", "objection_think",
                 "objection_no_need", "objection_competitor",
             ],
+            # Rule 5: Objection without alternatives (FIX for LLM not returning alternatives)
+            "objection_no_alternatives_penalty": 0.15,
+            "objection_no_alternatives_threshold": 0.75,
         }
 
     def _init_strategies(self) -> None:

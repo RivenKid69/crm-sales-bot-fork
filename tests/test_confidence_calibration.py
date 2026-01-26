@@ -62,7 +62,11 @@ def default_config() -> Dict[str, Any]:
         "overconfident_intents": ["greeting", "farewell", "small_talk"],
         "data_expecting_actions": ["ask_about_company", "ask_situation"],
         "data_intents": ["info_provided", "situation_provided"],
-        "objection_intents": ["objection_price", "objection_no_time"],
+        # FIX: Added objection_think to match YAML config
+        "objection_intents": ["objection_price", "objection_no_time", "objection_think"],
+        # FIX: Rule 5 - penalty for objection without alternatives
+        "objection_no_alternatives_penalty": 0.15,
+        "objection_no_alternatives_threshold": 0.75,
     }
 
 
@@ -370,21 +374,101 @@ class TestHeuristicCalibrationStrategy:
         assert "context_mismatch_penalty" in penalties
 
     def test_objection_overconfidence_penalty(self, default_config):
-        """Very high confidence objection should be penalized."""
+        """High confidence objection should be penalized (threshold lowered to 0.8)."""
         strategy = HeuristicCalibrationStrategy({"enabled": True})
 
         context = RefinementContext(
             message="Нет, дорого",
             intent="objection_price",  # In objection_intents list
-            confidence=0.95,
+            confidence=0.85,  # Changed from 0.95 to test new threshold of 0.8
         )
 
         calibrated, reason, penalties = strategy.calibrate(
-            0.95, [], context, default_config
+            0.85, [], context, default_config
         )
 
-        assert calibrated < 0.95
+        # FIX: Rule 4 now triggers at 0.8 instead of 0.9
+        assert calibrated < 0.85
         assert "objection_overconfidence_penalty" in penalties
+
+    def test_objection_think_with_confidence_085(self, default_config):
+        """
+        FIX: objection_think with confidence 0.85 without alternatives should be penalized.
+
+        This is the exact scenario from the bug report:
+        - LLM returns objection_think with confidence 0.85
+        - No alternatives provided (LLM was "confident")
+        - Rule 4 (at 0.8) and Rule 5 (no alternatives) should both apply
+        - Final confidence should be <= 0.65
+        """
+        strategy = HeuristicCalibrationStrategy({"enabled": True})
+
+        context = RefinementContext(
+            message="Да но быстрее. Нет времени ждать",
+            intent="objection_think",  # In objection_intents list
+            confidence=0.85,
+        )
+
+        # NO alternatives - like in the real simulation
+        calibrated, reason, penalties = strategy.calibrate(
+            0.85, [], context, default_config
+        )
+
+        # Rule 4: objection with confidence >= 0.8 → penalty 0.1
+        # Rule 5: objection without alternatives with confidence >= 0.75 → penalty 0.15
+        # Total penalty: 0.25
+        # Expected: 0.85 - 0.25 = 0.60
+        assert calibrated <= 0.65, f"Expected <= 0.65, got {calibrated}"
+        assert "objection_overconfidence_penalty" in penalties
+        assert "objection_no_alternatives_penalty" in penalties
+
+    def test_objection_no_alternatives_penalty(self, default_config):
+        """
+        FIX: Rule 5 - Objection without alternatives should be heavily penalized.
+
+        When LLM returns objection intent with high confidence but no alternatives,
+        this is suspicious because:
+        1. Objections are often misclassified
+        2. No alternatives means entropy/gap strategies can't help
+        """
+        strategy = HeuristicCalibrationStrategy({"enabled": True})
+
+        context = RefinementContext(
+            message="Мне нужно подумать",
+            intent="objection_think",
+            confidence=0.80,  # Just at threshold
+        )
+
+        calibrated, reason, penalties = strategy.calibrate(
+            0.80, [], context, default_config
+        )
+
+        # Should apply both Rule 4 and Rule 5
+        assert "objection_overconfidence_penalty" in penalties
+        assert "objection_no_alternatives_penalty" in penalties
+        # Combined penalty should be significant
+        assert calibrated <= 0.65
+
+    def test_objection_with_alternatives_no_rule5(self, default_config):
+        """Objection WITH alternatives should NOT trigger Rule 5."""
+        strategy = HeuristicCalibrationStrategy({"enabled": True})
+
+        context = RefinementContext(
+            message="Мне нужно подумать",
+            intent="objection_think",
+            confidence=0.85,
+        )
+
+        # WITH alternatives - Rule 5 should NOT apply
+        alternatives = [{"intent": "objection_no_time", "confidence": 0.75}]
+        calibrated, reason, penalties = strategy.calibrate(
+            0.85, alternatives, context, default_config
+        )
+
+        # Rule 4 applies (confidence >= 0.8)
+        assert "objection_overconfidence_penalty" in penalties
+        # Rule 5 should NOT apply (alternatives exist)
+        assert "objection_no_alternatives_penalty" not in penalties
 
     def test_no_penalty_for_long_message(self, default_config, simple_context):
         """Long message should not trigger short message penalty."""
@@ -815,6 +899,156 @@ class TestCalibrationResult:
 
         assert result.confidence_delta == 0.0
         assert len(result.reasons) == 0
+
+
+# =============================================================================
+# REGRESSION TEST: Bug Report Scenario
+# =============================================================================
+
+class TestBugReportScenario:
+    """
+    Regression test for the exact scenario from the bug report.
+
+    Bug: objection_think with confidence 0.85 and NO alternatives
+    was not being properly calibrated because:
+    1. Rule 4 had threshold 0.9 (too high)
+    2. No special handling for objection without alternatives
+
+    After fix:
+    - Rule 4 threshold lowered to 0.8
+    - Rule 5 added: objection without alternatives penalty
+    """
+
+    def test_exact_bug_scenario_simulation_report(self, default_config):
+        """
+        Reproduce exact scenario from simulation_20260126_101945.
+
+        Input:
+            message: "Да но быстрее. Нет времени ждать. некогда"
+            intent: objection_think
+            confidence: 0.85
+            alternatives: [] (empty - LLM was "confident")
+
+        Expected behavior BEFORE fix:
+            - GapStrategy: 0.85 → 0.75 (no_alternatives_penalty 0.1)
+            - Rule 4: NOT triggered (0.75 < 0.9)
+            - Final: 0.75 (too high for ambiguous message!)
+
+        Expected behavior AFTER fix:
+            - GapStrategy: 0.85 → 0.75 (no_alternatives_penalty 0.1)
+            - Rule 4: TRIGGERED (0.75 >= 0.8? No, but original was 0.85)
+            - Rule 5: TRIGGERED (objection + no alternatives + confidence >= 0.75)
+            - Final: <= 0.65 (appropriate for ambiguous message)
+        """
+        calibrator = ConfidenceCalibrator(default_config)
+
+        context = RefinementContext(
+            message="Да но быстрее. Нет времени ждать. некогда",
+            intent="objection_think",
+            confidence=0.85,
+        )
+
+        # NO alternatives - exactly like in the simulation
+        result = calibrator.calibrate(0.85, [], context)
+
+        # BEFORE fix: confidence was 0.75 (only gap penalty)
+        # AFTER fix: should be significantly lower
+
+        # Verify calibration was applied
+        assert result.calibration_applied, "Calibration should be applied"
+
+        # Verify confidence is properly reduced
+        # Gap strategy: 0.85 → 0.75 (penalty 0.1)
+        # Heuristic Rule 4: 0.85 >= 0.8 → penalty 0.1
+        # Heuristic Rule 5: objection + no alternatives → penalty 0.15
+        # Total expected reduction: ~0.35
+        # Final: 0.85 - 0.35 = 0.50
+
+        # Allow some margin for strategy interactions
+        assert result.calibrated_confidence <= 0.65, \
+            f"Expected <= 0.65, got {result.calibrated_confidence}"
+
+        # Verify the right penalties were applied
+        assert "no_alternatives_penalty" in result.penalty_factors or \
+               "objection_overconfidence_penalty" in result.penalty_factors or \
+               "objection_no_alternatives_penalty" in result.penalty_factors, \
+            f"Expected objection-related penalty, got: {result.penalty_factors}"
+
+    def test_full_pipeline_objection_think_without_alternatives(self):
+        """
+        Test the full ConfidenceCalibrationLayer with bug scenario.
+
+        This tests the entire refine() method, not just calibrate().
+        """
+        layer = ConfidenceCalibrationLayer()
+
+        result = {
+            "intent": "objection_think",
+            "confidence": 0.85,
+            "alternatives": [],  # Empty - LLM was "confident"
+            "extracted_data": {},
+        }
+
+        context = RefinementContext(
+            message="Да но быстрее. Нет времени ждать. некогда",
+            intent="objection_think",
+            confidence=0.85,
+        )
+
+        refined = layer.refine(
+            "Да но быстрее. Нет времени ждать. некогда",
+            result,
+            context
+        )
+
+        # Should apply calibration
+        assert refined.decision == RefinementDecision.REFINED
+
+        # Confidence should be significantly reduced
+        assert refined.confidence <= 0.65, \
+            f"Expected <= 0.65, got {refined.confidence}"
+
+        # Intent should NOT change (calibration only affects confidence)
+        assert refined.intent == "objection_think"
+
+        # Metadata should contain calibration info
+        assert "calibration" in refined.metadata
+
+    def test_objection_think_with_alternatives_less_penalty(self, default_config):
+        """
+        When objection_think HAS alternatives, Rule 5 should NOT apply.
+
+        This verifies the fix is targeted and doesn't over-penalize
+        legitimate classifications with alternatives.
+        """
+        calibrator = ConfidenceCalibrator(default_config)
+
+        context = RefinementContext(
+            message="Мне нужно подумать об этом",
+            intent="objection_think",
+            confidence=0.85,
+        )
+
+        # WITH alternatives - legitimate classification
+        alternatives = [
+            {"intent": "objection_no_time", "confidence": 0.70},
+        ]
+
+        result = calibrator.calibrate(0.85, alternatives, context)
+
+        # Should still have some calibration, but less aggressive
+        assert result.calibration_applied
+
+        # Gap penalty should apply (gap = 0.85 - 0.70 = 0.15 < 0.2)
+        # Rule 4 applies (objection + confidence >= 0.8)
+        # Rule 5 should NOT apply (alternatives exist)
+
+        # Final confidence should be higher than without alternatives
+        # Estimated: 0.85 - 0.15 (gap+high_conf) - 0.1 (rule4) = 0.60
+        # But no Rule 5 penalty of 0.15
+
+        assert "objection_no_alternatives_penalty" not in result.penalty_factors, \
+            "Rule 5 should NOT apply when alternatives exist"
 
 
 if __name__ == "__main__":
