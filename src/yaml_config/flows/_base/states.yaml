@@ -427,76 +427,124 @@ states:
       request_contract: close
       request_invoice: close
 
-      # Все 18 возражений → handle_objection (soft_close при лимите)
+      # Все 18 возражений → handle_objection (с escape hatches)
+      # FIX: Zero phase coverage bug (OBJECTION_STUCK_FIX_PLAN.md)
+      # Priority order:
+      # 1. objection_loop_escape → entry_state (escape to start phases when stuck)
+      # 2. objection_limit_reached → soft_close (give up after too many objections)
+      # 3. handle_objection (normal: continue handling)
+      #
+      # The objection_loop_escape condition triggers when:
+      # - 3+ consecutive objections
+      # - We're in handle_objection (from non-phase state like greeting)
+      # - Client never gave positive response
+      # This allows tire_kicker/aggressive personas to enter sales phases
+      # instead of going straight to soft_close with 0% coverage.
       objection_price:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_competitor:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_no_time:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_think:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_timing:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_complexity:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_trust:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_no_need:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_risk:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_team_resistance:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_security:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_bad_experience:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_priority:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_scale:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_change_management:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_contract_bound:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_company_policy:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection
       objection_roi_doubt:
+        - when: objection_loop_escape
+          then: "{{entry_state}}"
         - when: objection_limit_reached
           then: soft_close
         - handle_objection

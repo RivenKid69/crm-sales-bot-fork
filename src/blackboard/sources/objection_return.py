@@ -30,12 +30,18 @@ import logging
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
-from src.yaml_config.constants import POSITIVE_INTENTS, QUESTION_INTENTS
+from src.yaml_config.constants import POSITIVE_INTENTS, QUESTION_INTENTS, OBJECTION_INTENTS
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
 
 logger = logging.getLogger(__name__)
+
+
+# Threshold for forcing exit from handle_objection when stuck in objection loop
+# If client gives N+ consecutive objections without positive response AND we came
+# from a non-phase state (greeting), force exit to entry_state
+OBJECTION_LOOP_ESCAPE_THRESHOLD = 3
 
 
 # Question intents that also trigger return (after refinement from objection_think)
@@ -163,6 +169,11 @@ class ObjectionReturnSource(KnowledgeSource):
         2. Current state is handle_objection
         3. _state_before_objection is set in state machine
         4. Current intent is a positive/return intent
+           OR current intent is an objection AND we're stuck in loop
+
+        The "stuck in loop" case handles personas like tire_kicker and aggressive
+        who NEVER give positive intents and would otherwise get stuck in
+        handle_objection until objection_limit_reached (soft_close).
 
         This is O(1) - fast checks only.
         """
@@ -179,22 +190,52 @@ class ObjectionReturnSource(KnowledgeSource):
         if not saved_state:
             return False
 
-        # Check if current intent triggers return
-        if blackboard.current_intent not in self._return_intents:
-            return False
+        # CASE 1: Positive/return intent triggers return to saved state
+        if blackboard.current_intent in self._return_intents:
+            return True
 
-        return True
+        # CASE 2: Objection loop escape - force exit when stuck
+        # This fixes the zero phase coverage bug for tire_kicker/aggressive personas
+        # who express only objection intents and never reach any phase.
+        if blackboard.current_intent in OBJECTION_INTENTS:
+            # Check if we're stuck in objection loop (N+ consecutive objections)
+            tracker = blackboard._intent_tracker
+            if tracker:
+                consecutive = tracker.objection_consecutive()
+                if consecutive >= OBJECTION_LOOP_ESCAPE_THRESHOLD:
+                    # Also check if saved state has no phase (came from greeting)
+                    # If we came from a phase state, we should wait for positive intent
+                    flow_config = blackboard._flow_config
+                    phase = None
+                    if hasattr(flow_config, 'get_phase_for_state'):
+                        phase = flow_config.get_phase_for_state(saved_state)
+
+                    # Only trigger escape if came from non-phase state
+                    if phase is None:
+                        return True
+
+        return False
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
-        Propose transition back to saved state.
+        Propose transition back to saved state or force exit from objection loop.
 
         Algorithm:
         1. Verify all conditions (re-check for safety)
         2. Get saved state from _state_before_objection
-        3. Validate that target state exists
-        4. Propose transition with HIGH priority
-        5. Log contribution for debugging/monitoring
+        3. Check for objection loop escape condition (stuck with no positive intent)
+        4. Validate that target state exists
+        5. Propose transition with appropriate priority
+        6. Log contribution for debugging/monitoring
+
+        Two modes of operation:
+        A) POSITIVE INTENT → return to saved state (normal flow)
+        B) OBJECTION LOOP ESCAPE → force exit to entry_state when stuck
+
+        Mode B fixes the zero phase coverage bug for tire_kicker/aggressive personas
+        who express only objection intents (90%/70% probability) and never give
+        positive responses. Without this fix, they would get stuck in handle_objection
+        until objection_limit_reached triggers soft_close, resulting in 0% phase coverage.
         """
         if not self._enabled:
             return
@@ -203,14 +244,9 @@ class ObjectionReturnSource(KnowledgeSource):
         if blackboard.current_state != self.OBJECTION_STATE:
             return
 
-        if blackboard.current_intent not in self._return_intents:
-            self._log_contribution(
-                reason=f"Intent {blackboard.current_intent} not in return_intents"
-            )
-            return
-
         state_machine = blackboard._state_machine
         ctx = blackboard.get_context()
+        flow_config = blackboard._flow_config
 
         # Get the saved state
         saved_state = getattr(state_machine, '_state_before_objection', None)
@@ -222,7 +258,6 @@ class ObjectionReturnSource(KnowledgeSource):
             return
 
         # Validate target state exists in flow config
-        flow_config = blackboard._flow_config
         if hasattr(flow_config, 'states') and saved_state not in flow_config.states:
             logger.warning(
                 f"ObjectionReturnSource: saved state '{saved_state}' "
@@ -238,6 +273,57 @@ class ObjectionReturnSource(KnowledgeSource):
         if hasattr(flow_config, 'get_phase_for_state'):
             phase = flow_config.get_phase_for_state(saved_state)
 
+        # ====================================================================
+        # CHECK FOR OBJECTION LOOP ESCAPE CONDITION
+        # ====================================================================
+        # FIX: Zero phase coverage bug for tire_kicker/aggressive personas
+        #
+        # Problem chain:
+        #   1. Client starts with objection in greeting state
+        #   2. _state_before_objection = "greeting" (no phase)
+        #   3. Client keeps giving objection intents (90% probability for tire_kicker)
+        #   4. ObjectionReturnSource only triggered on POSITIVE intent
+        #   5. No positive intent → stuck in handle_objection → handle_objection loop
+        #   6. Eventually objection_limit_reached → soft_close with 0% coverage
+        #
+        # Solution:
+        #   When stuck in objection loop (N+ consecutive objections, no phase),
+        #   force exit to entry_state even without positive intent.
+        #   This allows client to enter sales phases instead of going to soft_close.
+        # ====================================================================
+        is_objection_loop_escape = False
+        consecutive_objections = 0
+
+        if blackboard.current_intent in OBJECTION_INTENTS and phase is None:
+            tracker = blackboard._intent_tracker
+            if tracker:
+                consecutive_objections = tracker.objection_consecutive()
+                if consecutive_objections >= OBJECTION_LOOP_ESCAPE_THRESHOLD:
+                    is_objection_loop_escape = True
+                    logger.info(
+                        f"ObjectionReturnSource: objection loop escape triggered",
+                        extra={
+                            "consecutive_objections": consecutive_objections,
+                            "threshold": OBJECTION_LOOP_ESCAPE_THRESHOLD,
+                            "saved_state": saved_state,
+                            "current_intent": blackboard.current_intent,
+                        }
+                    )
+
+        # Check if we should handle this as positive intent return
+        is_positive_return = blackboard.current_intent in self._return_intents
+
+        # If neither condition is met, delegate to other sources
+        if not is_positive_return and not is_objection_loop_escape:
+            self._log_contribution(
+                reason=f"Intent {blackboard.current_intent} not in return_intents "
+                       f"and not objection loop escape"
+            )
+            return
+
+        # ====================================================================
+        # HANDLE NON-PHASE STATES (greeting, handle_objection)
+        # ====================================================================
         # FIX: Don't return to non-phase states (like greeting, handle_objection)
         # Route to entry_state instead to start the sales phases.
         #
@@ -252,6 +338,9 @@ class ObjectionReturnSource(KnowledgeSource):
         #   but ObjectionReturnSource runs first (priority_order 35 < 50), so its
         #   proposal wins. This routes the dialog to the first phase instead of closing.
         #
+        # ENHANCEMENT: Objection loop escape also uses this path to force exit
+        #   to entry_state when client gives N+ consecutive objections.
+        #
         # Affected personas: skeptic, tire_kicker, competitor_user, aggressive
         #   (all express objections BEFORE entering a phase, so _state_before_objection
         #   gets saved as "greeting" which has no phase)
@@ -264,6 +353,19 @@ class ObjectionReturnSource(KnowledgeSource):
                 entry_state = flow_config.get_variable("entry_state")
 
             if entry_state and entry_state in flow_config.states:
+                # Determine reason for transition
+                if is_objection_loop_escape:
+                    reason_code = "objection_loop_escape_to_entry_state"
+                    mechanism = "objection_loop_escape"
+                    reason_str = (
+                        f"Objection loop escape: {consecutive_objections} consecutive "
+                        f"objections from non-phase state '{saved_state}'"
+                    )
+                else:
+                    reason_code = "objection_return_to_entry_state"
+                    mechanism = "objection_return_fallback"
+                    reason_str = f"Fallback to entry_state: saved_state '{saved_state}' has no phase"
+
                 # FIX: Propose entry_state with NORMAL priority (not LOW)
                 # When objecting BEFORE entering any phase (e.g., from greeting),
                 # we should route to entry_state rather than closing the dialog.
@@ -278,7 +380,7 @@ class ObjectionReturnSource(KnowledgeSource):
                 blackboard.propose_transition(
                     next_state=entry_state,
                     priority=Priority.NORMAL,  # FIX: NORMAL instead of LOW
-                    reason_code="objection_return_to_entry_state",
+                    reason_code=reason_code,
                     source_name=self.name,
                     metadata={
                         "from_state": self.OBJECTION_STATE,
@@ -286,20 +388,24 @@ class ObjectionReturnSource(KnowledgeSource):
                         "trigger_intent": ctx.current_intent,
                         "original_saved_state": saved_state,
                         "reason": "saved_state_has_no_phase",
-                        "mechanism": "objection_return_fallback",
+                        "mechanism": mechanism,
+                        "is_objection_loop_escape": is_objection_loop_escape,
+                        "consecutive_objections": consecutive_objections,
                     }
                 )
                 self._log_contribution(
                     transition=entry_state,
-                    reason=f"Fallback to entry_state: saved_state '{saved_state}' has no phase"
+                    reason=reason_str
                 )
                 logger.debug(
-                    f"ObjectionReturnSource: proposing entry_state fallback",
+                    f"ObjectionReturnSource: proposing entry_state",
                     extra={
                         "saved_state": saved_state,
                         "entry_state": entry_state,
                         "reason": "no_phase",
-                        "priority": "NORMAL",  # FIX: Changed from LOW
+                        "priority": "NORMAL",
+                        "mechanism": mechanism,
+                        "is_objection_loop_escape": is_objection_loop_escape,
                     }
                 )
             else:

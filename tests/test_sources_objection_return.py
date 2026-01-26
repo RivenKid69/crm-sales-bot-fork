@@ -1144,3 +1144,210 @@ class TestPhaseTransitionWithCustomFlowConfig:
             assert len(proposals) == 1
             assert proposals[0].value == "qualification"  # Fallback to entry_state
             assert proposals[0].priority == Priority.NORMAL  # NORMAL priority (FIX: was LOW)
+
+
+# =============================================================================
+# Tests for Objection Loop Escape (Zero Phase Coverage Fix)
+# =============================================================================
+
+class TestObjectionLoopEscape:
+    """
+    Test that ObjectionReturnSource escapes from objection loop.
+
+    Root Cause (zero phase coverage for tire_kicker/aggressive):
+        1. Persona starts with objection in greeting state
+        2. _state_before_objection = "greeting" (no phase)
+        3. ObjectionReturnSource only triggered on POSITIVE intent
+        4. tire_kicker (90% objection prob) / aggressive (70%) NEVER give positive intent
+        5. Stuck in handle_objection → handle_objection loop
+        6. Eventually objection_limit_reached → soft_close with 0% coverage
+
+    Solution:
+        When stuck in objection loop (3+ consecutive objections from non-phase state),
+        force exit to entry_state even without positive intent.
+        This allows client to enter sales phases instead of going to soft_close.
+
+    Affected personas: tire_kicker, aggressive, price_sensitive
+        (all have high objection probability and may never give positive response)
+    """
+
+    @pytest.fixture
+    def source(self):
+        """Create an ObjectionReturnSource instance."""
+        return ObjectionReturnSource()
+
+    def test_should_contribute_true_for_objection_loop_escape(self, source):
+        """
+        should_contribute returns True when stuck in objection loop.
+
+        Conditions:
+        1. Current state is handle_objection
+        2. _state_before_objection is set (non-phase state like greeting)
+        3. Current intent is objection (NOT positive)
+        4. 3+ consecutive objections
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_think",  # NOT positive intent!
+            state_before_objection="greeting",  # Non-phase state
+            objection_consecutive=3  # 3+ consecutive objections
+        )
+
+        # should_contribute should return True for objection loop escape
+        assert source.should_contribute(bb) is True
+
+    def test_should_contribute_false_below_threshold(self, source):
+        """
+        should_contribute returns False when below escape threshold.
+
+        Note: begin_turn() calls tracker.record() which increments consecutive
+        for objection intents. So if we start with consecutive=1, after record()
+        it becomes 2, which is still below threshold (3).
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",
+            state_before_objection="greeting",
+            objection_consecutive=1  # After record() it will be 2, below threshold (3)
+        )
+
+        assert source.should_contribute(bb) is False
+
+    def test_should_contribute_false_for_phase_state(self, source):
+        """
+        should_contribute returns False for objection when came from phase state.
+
+        If we came from a phase state (like bant_budget), we should wait for
+        positive intent to return there, not force exit.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",
+            state_before_objection="bant_budget",  # HAS phase
+            objection_consecutive=3
+        )
+
+        assert source.should_contribute(bb) is False
+
+    def test_contribute_proposes_entry_state_on_objection_escape(self, source):
+        """
+        contribute proposes entry_state when objection loop escape triggered.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_no_time",  # Objection intent
+            state_before_objection="greeting",  # Non-phase state
+            objection_consecutive=3  # Triggers escape
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # entry_state
+        assert proposals[0].priority == Priority.NORMAL
+        assert proposals[0].reason_code == "objection_loop_escape_to_entry_state"
+
+    def test_contribute_metadata_includes_escape_info(self, source):
+        """
+        contribute metadata includes objection loop escape information.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_think",
+            state_before_objection="greeting",
+            objection_consecutive=4
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        metadata = proposals[0].metadata
+
+        assert metadata["is_objection_loop_escape"] is True
+        assert metadata["consecutive_objections"] == 4
+        assert metadata["mechanism"] == "objection_loop_escape"
+
+    def test_tire_kicker_scenario_objection_escape(self, source):
+        """
+        Full tire_kicker scenario: always objects, never positive.
+
+        tire_kicker: 90% objection probability, max_turns=6
+        Typical flow without fix:
+            Turn 1: greeting + "потом посмотрю" → objection_think
+            Turn 2: handle_objection + "не грузите" → objection_no_time
+            Turn 3: handle_objection + "неинтересно" → objection_no_need
+            Turn 4: handle_objection + "перезвоню" → objection_think
+            Turn 5: handle_objection + "хватит" → objection_no_time
+            Turn 6: handle_objection → max_turns reached → 0% coverage
+
+        With fix (objection_loop_escape at turn 3):
+            Turn 1-2: Same
+            Turn 3: objection_consecutive >= 3, non-phase state
+                    → objection_loop_escape → entry_state
+            Turn 4+: Client is in phase state, can progress
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_no_need",  # 3rd consecutive objection
+            state_before_objection="greeting",
+            objection_consecutive=3
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # Forces exit to phase
+        assert "objection_loop_escape" in proposals[0].reason_code
+
+    def test_aggressive_scenario_objection_escape(self, source):
+        """
+        aggressive: 70% objection probability, rude and impatient.
+
+        Without fix: high chance of 0% coverage (stuck in objection loop).
+        With fix: escape to entry_state after 3 consecutive objections.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_no_time",  # "Не грузите меня"
+            state_before_objection="greeting",
+            objection_consecutive=3
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"
+
+    def test_positive_intent_still_works_normally(self, source):
+        """
+        Verify: Positive intent still triggers normal return (not escape).
+
+        When client gives positive intent, use normal return mechanism,
+        not objection loop escape.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",  # POSITIVE intent
+            state_before_objection="greeting",
+            objection_consecutive=0  # Streak reset by positive intent
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # entry_state fallback
+        # Should be normal fallback, not escape
+        assert proposals[0].reason_code == "objection_return_to_entry_state"
+
+    def test_escape_threshold_is_configurable(self):
+        """
+        Verify: Escape threshold can be configured.
+        """
+        from src.blackboard.sources.objection_return import OBJECTION_LOOP_ESCAPE_THRESHOLD
+
+        # Default is 3
+        assert OBJECTION_LOOP_ESCAPE_THRESHOLD == 3

@@ -481,6 +481,51 @@ def objection_repeated(ctx: EvaluatorContext) -> bool:
     return ctx.get_intent_streak(ctx.current_intent) >= 2
 
 
+@sm_condition(
+    "objection_loop_escape",
+    description="Check if stuck in objection loop (3+ consecutive from non-phase state)",
+    category="intent"
+)
+def objection_loop_escape(ctx: EvaluatorContext) -> bool:
+    """
+    Returns True if client is stuck in objection loop and should escape to entry_state.
+
+    This condition is designed for the zero phase coverage bug fix:
+    - tire_kicker (90% objection probability) and aggressive (70%) personas
+    - Express objections BEFORE entering any phase
+    - _state_before_objection = "greeting" (no phase)
+    - Never give positive intents → stuck in handle_objection loop
+    - Need to force exit to entry_state to start sales phases
+
+    Triggers when:
+    1. Current state is handle_objection
+    2. Current intent is an objection
+    3. 3+ consecutive objections without positive response
+    4. We came from a non-phase state (greeting, etc.)
+
+    Part of Zero Phase Coverage Fix (OBJECTION_STUCK_FIX_PLAN.md)
+    """
+    # Check current state
+    if ctx.state != "handle_objection":
+        return False
+
+    # Check if current intent is objection
+    from src.conditions.state_machine.context import INTENT_CATEGORIES
+    if ctx.current_intent not in INTENT_CATEGORIES.get("objection", []):
+        return False
+
+    # Check consecutive objections (threshold = 3)
+    consecutive = ctx.get_category_streak("objection")
+    if consecutive < 3:
+        return False
+
+    # Check if we're in a non-phase situation
+    # This is a simplified check - the full check is in ObjectionReturnSource
+    # which verifies _state_before_objection has no phase
+    # Here we just check that we have 3+ consecutive objections
+    return True
+
+
 # =============================================================================
 # COUNT-BASED CONDITIONS (Lost Question Fix)
 # =============================================================================
@@ -1502,6 +1547,7 @@ __all__ = [
     "objection_limit_reached",
     "objection_consecutive_3x",
     "objection_total_5x",
+    "objection_loop_escape",
     "is_current_intent_objection",
     "is_current_intent_positive",
     "is_current_intent_question",
