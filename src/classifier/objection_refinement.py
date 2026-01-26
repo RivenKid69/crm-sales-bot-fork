@@ -139,6 +139,7 @@ class ObjectionRefinementLayer:
         self._question_markers = set(self._config.get("question_markers", []))
         self._callback_patterns = self._config.get("callback_patterns", [])
         self._interest_patterns = self._config.get("interest_patterns", [])
+        self._uncertainty_patterns = self._config.get("uncertainty_patterns", [])
         self._refinement_mapping = self._config.get("refinement_mapping", {})
         self._topic_actions = self._config.get("topic_alignment_actions", {})
         self._cooldown = self._config.get("cooldown", {})
@@ -146,6 +147,7 @@ class ObjectionRefinementLayer:
         # Compile patterns for efficiency
         self._callback_regex = self._compile_patterns(self._callback_patterns)
         self._interest_regex = self._compile_patterns(self._interest_patterns)
+        self._uncertainty_regex = self._compile_patterns(self._uncertainty_patterns)
 
         # Stats for monitoring
         self._refinements_total = 0
@@ -163,6 +165,7 @@ class ObjectionRefinementLayer:
                 "objection_types": len(self._objection_intents),
                 "callback_patterns": len(self._callback_patterns),
                 "interest_patterns": len(self._interest_patterns),
+                "uncertainty_patterns": len(self._uncertainty_patterns),
             }
         )
 
@@ -303,6 +306,8 @@ class ObjectionRefinementLayer:
         2. Question markers (message is a question, not objection)
         3. Callback patterns (objection_no_time → callback_request)
         4. Interest patterns (objection_think → interest)
+        5. Uncertainty patterns (objection_think → question)
+           FIX: Root Cause #2 - skeptic phrases like "не уверен нужно ли"
 
         Args:
             ctx: ObjectionRefinementContext
@@ -361,7 +366,22 @@ class ObjectionRefinementLayer:
                     refinement_reason="interest_pattern"
                 )
 
-        # Rule 5: Cooldown violation (optional - just log)
+        # Rule 5: Uncertainty patterns (objection_think → question)
+        # FIX: Root Cause #2 - skeptic personas use phrases like "не уверен нужно ли"
+        # which are implicit questions, not real objections.
+        # "зачем это нужно" (without "?") should be treated as question
+        if ctx.intent == "objection_think":
+            if self._uncertainty_regex.search(ctx.message):
+                alternative = self._get_uncertainty_alternative(ctx)
+                return RefinementResult(
+                    intent=alternative,
+                    confidence=0.7,
+                    refined=True,
+                    original_intent=ctx.intent,
+                    refinement_reason="uncertainty_pattern"
+                )
+
+        # Rule 6: Cooldown violation (optional - just log)
         if self._violates_cooldown(ctx):
             logger.debug(
                 "Objection within cooldown period",
@@ -476,6 +496,30 @@ class ObjectionRefinementLayer:
         """
         mapping = self._refinement_mapping.get(ctx.intent, {})
         return mapping.get("question_context")
+
+    def _get_uncertainty_alternative(self, ctx: ObjectionRefinementContext) -> str:
+        """
+        Get alternative intent for uncertainty context.
+
+        Handles skeptic personas who express uncertainty without explicit question words.
+        E.g., "не уверен нужно ли" is an implicit question about value proposition.
+
+        Args:
+            ctx: ObjectionRefinementContext
+
+        Returns:
+            Alternative intent name (defaults to question_features)
+        """
+        mapping = self._refinement_mapping.get(ctx.intent, {})
+        # Try uncertainty_context first, fall back to question_context
+        alternative = mapping.get("uncertainty_context")
+        if alternative:
+            return alternative
+        alternative = mapping.get("question_context")
+        if alternative:
+            return alternative
+        # Default for objection_think uncertainty
+        return "question_features"
 
     def _violates_cooldown(self, ctx: ObjectionRefinementContext) -> bool:
         """

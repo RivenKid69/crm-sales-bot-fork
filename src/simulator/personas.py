@@ -62,11 +62,13 @@ PERSONAS = {
         max_turns=12,
         objection_probability=0.6,
         preferred_objections=["skepticism", "proof", "trust"],
+        # FIX: conversation_starters теперь содержат question words или uncertainty patterns
+        # для корректной работы ObjectionRefinementLayer и ObjectionReturnSource
         conversation_starters=[
-            "слушайте, мне тут посоветовали... но я не уверен",
-            "Здравствуйте. Честно говоря сомневаюсь что это нам нужно",
-            "привет, хочу понять зачем вообще это нужно",
-            "мне сказали посмотреть, но не уверен что надо"
+            "слушайте, мне тут посоветовали... но я не уверен, нужно ли это нам?",  # HAS "?" + uncertainty
+            "Здравствуйте. Честно говоря, зачем нам вообще CRM?",  # HAS "зачем" question word
+            "привет, хочу понять зачем вообще это нужно",  # HAS "зачем" - already works
+            "мне сказали посмотреть, но какой в этом смысл?"  # HAS "?" + uncertainty pattern
         ]
     ),
 

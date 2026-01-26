@@ -326,6 +326,154 @@ class TestObjectionRefinementLayer:
         assert refined["intent"] == "question_features"
 
     # =========================================================================
+    # refine() tests - Uncertainty patterns (Rule 5)
+    # FIX: Root Cause #2 - skeptic personas use implicit question phrases
+    # =========================================================================
+
+    def test_refine_uncertainty_pattern_nado_li(self, layer):
+        """'надо ли' uncertainty pattern should be refined to question.
+
+        Note: Due to rule priority, may match interest_pattern first
+        if message contains patterns like 'не знаю' (added to interest_patterns).
+        """
+        ctx = ObjectionRefinementContext(
+            message="не знаю надо ли это нам",
+            intent="objection_think",
+            confidence=0.7,
+            last_bot_message="Что скажете?",
+            last_action="ask_feedback",
+            state="handle_objection",
+            turn_number=5,
+            last_objection_turn=None,
+            last_objection_type=None,
+        )
+        llm_result = {"intent": "objection_think", "confidence": 0.7}
+
+        refined = layer.refine(ctx.message, llm_result, ctx)
+
+        assert refined["refined"] is True
+        assert refined["intent"] == "question_features"
+        # Can be interest_pattern (higher priority) or uncertainty_pattern
+        assert refined["refinement_reason"] in ["interest_pattern", "uncertainty_pattern"]
+
+    def test_refine_uncertainty_pattern_nuzhno_li(self, layer):
+        """'нужно ли' uncertainty pattern should be refined to question.
+
+        Note: Due to rule priority, may match interest_pattern first
+        if message contains patterns like 'не уверен' (added to interest_patterns).
+        """
+        ctx = ObjectionRefinementContext(
+            message="не уверен нужно ли мне это",
+            intent="objection_think",
+            confidence=0.75,
+            last_bot_message=None,
+            last_action=None,
+            state="handle_objection",
+            turn_number=3,
+            last_objection_turn=None,
+            last_objection_type=None,
+        )
+        llm_result = {"intent": "objection_think", "confidence": 0.75}
+
+        refined = layer.refine(ctx.message, llm_result, ctx)
+
+        assert refined["refined"] is True
+        assert refined["intent"] == "question_features"
+        # Can be interest_pattern (higher priority) or uncertainty_pattern
+        assert refined["refinement_reason"] in ["interest_pattern", "uncertainty_pattern"]
+
+    def test_refine_uncertainty_pattern_zachem_eto(self, layer):
+        """'зачем это' uncertainty pattern should be refined to question.
+
+        Note: Due to rule priority, matches question_markers first
+        because 'зачем' is a question word.
+        """
+        ctx = ObjectionRefinementContext(
+            message="честно говоря не понимаю зачем это нужно",
+            intent="objection_think",
+            confidence=0.7,
+            last_bot_message=None,
+            last_action=None,
+            state="greeting",
+            turn_number=1,
+            last_objection_turn=None,
+            last_objection_type=None,
+        )
+        llm_result = {"intent": "objection_think", "confidence": 0.7}
+
+        refined = layer.refine(ctx.message, llm_result, ctx)
+
+        assert refined["refined"] is True
+        assert refined["intent"] == "question_features"
+        # 'зачем' is a question word, so question_markers rule triggers first
+        assert refined["refinement_reason"] in ["question_markers", "uncertainty_pattern"]
+
+    def test_refine_uncertainty_pattern_a_smysl(self, layer):
+        """'а смысл' uncertainty pattern should be refined to question."""
+        ctx = ObjectionRefinementContext(
+            message="а смысл переходить если у нас excel работает",
+            intent="objection_think",
+            confidence=0.65,
+            last_bot_message=None,
+            last_action=None,
+            state="handle_objection",
+            turn_number=4,
+            last_objection_turn=None,
+            last_objection_type=None,
+        )
+        llm_result = {"intent": "objection_think", "confidence": 0.65}
+
+        refined = layer.refine(ctx.message, llm_result, ctx)
+
+        assert refined["refined"] is True
+        assert refined["intent"] == "question_features"
+        assert refined["refinement_reason"] == "uncertainty_pattern"
+
+    def test_refine_skeptic_starter_not_sure(self, layer):
+        """Skeptic persona starter 'не уверен' should be refined via interest pattern."""
+        # This tests the expanded interest_patterns fix (Root Cause #1)
+        ctx = ObjectionRefinementContext(
+            message="слушайте, мне тут посоветовали... но я не уверен",
+            intent="objection_think",
+            confidence=0.7,
+            last_bot_message=None,
+            last_action=None,
+            state="greeting",
+            turn_number=1,
+            last_objection_turn=None,
+            last_objection_type=None,
+        )
+        llm_result = {"intent": "objection_think", "confidence": 0.7}
+
+        refined = layer.refine(ctx.message, llm_result, ctx)
+
+        assert refined["refined"] is True
+        assert refined["intent"] == "question_features"
+        # Can be either interest_pattern or uncertainty_pattern depending on match order
+        assert refined["refinement_reason"] in ["interest_pattern", "uncertainty_pattern"]
+
+    def test_refine_skeptic_starter_somnevayus(self, layer):
+        """Skeptic persona starter 'сомневаюсь' should be refined via interest pattern."""
+        # This tests the expanded interest_patterns fix (Root Cause #1)
+        ctx = ObjectionRefinementContext(
+            message="Здравствуйте. Честно говоря сомневаюсь что это нам нужно",
+            intent="objection_think",
+            confidence=0.75,
+            last_bot_message=None,
+            last_action=None,
+            state="greeting",
+            turn_number=1,
+            last_objection_turn=None,
+            last_objection_type=None,
+        )
+        llm_result = {"intent": "objection_think", "confidence": 0.75}
+
+        refined = layer.refine(ctx.message, llm_result, ctx)
+
+        assert refined["refined"] is True
+        assert refined["intent"] == "question_features"
+
+    # =========================================================================
     # refine() tests - No refinement needed
     # =========================================================================
 

@@ -1830,6 +1830,31 @@ objection_refinement:
     - "пришлите"
     - "отправьте"
     - "скиньте"
+    # Паттерны неуверенности (skeptic persona) - FIX for handle_objection stuck
+    - "не уверен"
+    - "не уверена"
+    - "сомневаюсь"
+    - "сомнева"
+    - "не знаю"
+    - "понять"
+    - "разобраться"
+    - "хочу понять"
+
+  # Паттерны неуверенности, указывающие на implicit вопрос
+  # "не уверен нужно ли" → скрытый вопрос, НЕ objection_think
+  # FIX: Root Cause #2 - нет rule для "uncertainty → question"
+  uncertainty_patterns:
+    - "надо ли"
+    - "нужно ли"
+    - "стоит ли"
+    - "а смысл"
+    - "толк какой"
+    - "зачем это"
+    - "нужно это"
+    - "надо это"
+    - "в чём смысл"
+    - "какой смысл"
+    - "есть ли смысл"
 
   # Маппинг objection → альтернативный intent при рефайнменте
   # question_context: intent если сообщение похоже на вопрос
@@ -1844,6 +1869,7 @@ objection_refinement:
     objection_think:
       interest_context: agreement
       question_context: question_features
+      uncertainty_context: question_features  # "не уверен нужно ли" → question
     objection_competitor:
       question_context: comparison
       info_context: info_provided

@@ -30,7 +30,7 @@ import logging
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
-from src.yaml_config.constants import POSITIVE_INTENTS
+from src.yaml_config.constants import POSITIVE_INTENTS, QUESTION_INTENTS
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
@@ -38,12 +38,26 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# Question intents that also trigger return (after refinement from objection_think)
+# FIX: Root Cause #4 - ObjectionReturnSource only worked for POSITIVE_INTENTS
+# Skeptic personas get objection_think refined to question_features, which needs
+# to trigger return to continue the sales flow.
+QUESTION_RETURN_INTENTS: Set[str] = {
+    "question_features",
+    "question_pricing",
+    "question_implementation",
+    "question_integration",
+    "question_demo",
+    "comparison",
+}
+
+
 class ObjectionReturnSource(KnowledgeSource):
     """
     Knowledge Source for returning to previous phase after objection handling.
 
     Responsibility:
-        - Detect when objection is successfully handled (positive intent)
+        - Detect when objection is successfully handled (positive intent OR question)
         - Propose transition back to saved state (_state_before_objection)
         - Preserve phase continuity in sales flow
 
@@ -51,7 +65,8 @@ class ObjectionReturnSource(KnowledgeSource):
         When entering handle_objection from a phase state (e.g., bant_budget),
         the orchestrator saves that state in _state_before_objection.
 
-        When the client shows agreement or interest (positive intent),
+        When the client shows agreement, interest, OR asks a question
+        (positive intent or question intent after refinement),
         this source proposes returning to that saved state with HIGH priority.
 
         This wins over YAML transitions (NORMAL priority) like:
@@ -62,6 +77,12 @@ class ObjectionReturnSource(KnowledgeSource):
 
         Instead of phase loss:
             bant_budget → handle_objection → close (via YAML)
+
+    FIX for handle_objection stuck:
+        Skeptic personas express uncertainty like "не уверен нужно ли" which gets
+        classified as objection_think. After ObjectionRefinementLayer Rule 5,
+        this becomes question_features. Now ObjectionReturnSource also triggers
+        on question intents, allowing return from handle_objection.
 
     Priority: HIGH
         - Must win over TransitionResolverSource (NORMAL priority YAML transitions)
@@ -81,11 +102,17 @@ class ObjectionReturnSource(KnowledgeSource):
                 → TransitionResolver proposes: handle_objection → close
                 → HIGH > NORMAL, ObjectionReturnSource wins
                 → Final transition: handle_objection → bant_budget ✓
+
+        Turn 2 (alternative): State=handle_objection, Intent=question_features
+                (after refinement from objection_think via uncertainty pattern)
+                → ObjectionReturnSource proposes: handle_objection → bant_budget
+                → Final transition: handle_objection → bant_budget ✓
     """
 
     # Positive intents that trigger return to previous phase
     # Loaded from constants.yaml via POSITIVE_INTENTS
-    DEFAULT_RETURN_INTENTS: Set[str] = set(POSITIVE_INTENTS)
+    # FIX: Now also includes question intents for skeptic persona handling
+    DEFAULT_RETURN_INTENTS: Set[str] = set(POSITIVE_INTENTS) | QUESTION_RETURN_INTENTS
 
     # State that handles objections
     OBJECTION_STATE: str = "handle_objection"
