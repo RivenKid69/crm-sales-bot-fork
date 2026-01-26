@@ -22,7 +22,7 @@ Solution:
 import pytest
 from typing import Dict, Any, Optional
 
-from src.blackboard.sources.objection_return import ObjectionReturnSource
+from src.blackboard.sources.objection_return import ObjectionReturnSource, QUESTION_RETURN_INTENTS
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
 from src.yaml_config.constants import POSITIVE_INTENTS
@@ -244,12 +244,16 @@ class TestObjectionReturnSourceInit:
         assert source.enabled is False
 
     def test_default_return_intents_are_positive_intents(self):
-        """Test that default return intents match POSITIVE_INTENTS."""
+        """Test that default return intents match POSITIVE_INTENTS + QUESTION_RETURN_INTENTS."""
         source = ObjectionReturnSource()
 
-        assert source.return_intents == set(POSITIVE_INTENTS)
+        # FIX: DEFAULT_RETURN_INTENTS includes both POSITIVE_INTENTS and QUESTION_RETURN_INTENTS
+        # This allows return from handle_objection on both positive signals AND questions
+        expected = set(POSITIVE_INTENTS) | QUESTION_RETURN_INTENTS
+        assert source.return_intents == expected
         assert "agreement" in source.return_intents
         assert "demo_request" in source.return_intents
+        assert "question_features" in source.return_intents  # From QUESTION_RETURN_INTENTS
 
 
 # =============================================================================
@@ -849,8 +853,8 @@ class TestNonPhaseStateHandling:
             "ObjectionReturnSource should propose entry_state fallback for non-phase state"
         assert proposals[0].value == "bant_budget", \
             "Should propose entry_state (bant_budget) not greeting"
-        assert proposals[0].priority == Priority.LOW, \
-            "Fallback should be LOW priority to allow TransitionResolver to win"
+        assert proposals[0].priority == Priority.NORMAL, \
+            "Fallback should be NORMAL priority to win over TransitionResolver"
 
     def test_no_return_to_handle_objection_state_fallback(self, source):
         """
@@ -868,7 +872,7 @@ class TestNonPhaseStateHandling:
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"  # entry_state fallback
-        assert proposals[0].priority == Priority.LOW
+        assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win over TransitionResolver
 
     def test_no_return_to_soft_close_state_fallback(self, source):
         """
@@ -886,7 +890,7 @@ class TestNonPhaseStateHandling:
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"  # entry_state fallback
-        assert proposals[0].priority == Priority.LOW
+        assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win over TransitionResolver
 
     def test_no_return_to_close_state_fallback(self, source):
         """
@@ -904,7 +908,7 @@ class TestNonPhaseStateHandling:
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"  # entry_state fallback
-        assert proposals[0].priority == Priority.LOW
+        assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win over TransitionResolver
 
     def test_no_fallback_without_entry_state(self, source):
         """
@@ -975,9 +979,10 @@ class TestNonPhaseStateHandling:
 
         Flow with fix:
             1-3. Same
-            4. ObjectionReturnSource: entry_state fallback (LOW)
+            4. ObjectionReturnSource: entry_state fallback (NORMAL)
             5. TransitionResolver: handle_objection → close (NORMAL)
-            6. NORMAL > LOW → close wins → conversation ends properly
+            6. ObjectionReturnSource runs first (priority_order 35 < 50) → entry_state wins
+            7. Conversation continues to phase states → proper phase coverage
         """
         bb = create_blackboard(
             state="handle_objection",
@@ -987,18 +992,18 @@ class TestNonPhaseStateHandling:
 
         source.contribute(bb)
 
-        # ObjectionReturnSource proposes entry_state fallback (LOW priority)
+        # ObjectionReturnSource proposes entry_state fallback (NORMAL priority)
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"  # entry_state fallback
-        assert proposals[0].priority == Priority.LOW  # Will lose to NORMAL
+        assert proposals[0].priority == Priority.NORMAL  # Will win (runs before TransitionResolver)
 
-        # TransitionResolver's NORMAL priority will win (tested in integration tests)
+        # ObjectionReturnSource runs before TransitionResolver → entry_state wins
 
     def test_tire_kicker_persona_scenario(self, source):
         """
         tire_kicker: "Просто смотрю" → objection_no_need before entering phase.
-        Proposes entry_state fallback with LOW priority.
+        Proposes entry_state fallback with NORMAL priority to win over TransitionResolver.
         """
         bb = create_blackboard(
             state="handle_objection",
@@ -1011,12 +1016,12 @@ class TestNonPhaseStateHandling:
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"
-        assert proposals[0].priority == Priority.LOW
+        assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win
 
     def test_competitor_user_persona_scenario(self, source):
         """
         competitor_user: "У нас уже есть решение" → objection_competitor before phase.
-        Proposes entry_state fallback with LOW priority.
+        Proposes entry_state fallback with NORMAL priority to win over TransitionResolver.
         """
         bb = create_blackboard(
             state="handle_objection",
@@ -1029,12 +1034,12 @@ class TestNonPhaseStateHandling:
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"
-        assert proposals[0].priority == Priority.LOW
+        assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win
 
     def test_aggressive_persona_scenario(self, source):
         """
         aggressive: Negative message → objection_* before entering phase.
-        Proposes entry_state fallback with LOW priority.
+        Proposes entry_state fallback with NORMAL priority to win over TransitionResolver.
         """
         bb = create_blackboard(
             state="handle_objection",
@@ -1047,7 +1052,7 @@ class TestNonPhaseStateHandling:
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"
-        assert proposals[0].priority == Priority.LOW
+        assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win
 
 
 # =============================================================================
@@ -1098,7 +1103,7 @@ class TestPhaseTransitionWithCustomFlowConfig:
             assert proposals[0].value == state_name
 
     def test_only_phase_states_get_return_with_fallback(self, source):
-        """Test that states WITH phase get HIGH priority return, without get LOW fallback."""
+        """Test that states WITH phase get HIGH priority return, without get NORMAL fallback."""
         mixed_states = {
             "greeting": {"goal": "Greet"},  # No phase
             "qualification": {"goal": "Qualify", "phase": "qualify"},  # Has phase
@@ -1124,7 +1129,8 @@ class TestPhaseTransitionWithCustomFlowConfig:
             assert proposals[0].value == state_with_phase  # Return to saved state
             assert proposals[0].priority == Priority.HIGH  # HIGH priority
 
-        # States without phase should get LOW priority fallback to entry_state
+        # States without phase should get NORMAL priority fallback to entry_state
+        # FIX: Changed from LOW to NORMAL so that entry_state wins over TransitionResolver
         for state_without_phase in ["greeting", "close"]:
             bb = create_blackboard(
                 state="handle_objection",
@@ -1137,4 +1143,4 @@ class TestPhaseTransitionWithCustomFlowConfig:
             proposals = bb.get_transition_proposals()
             assert len(proposals) == 1
             assert proposals[0].value == "qualification"  # Fallback to entry_state
-            assert proposals[0].priority == Priority.LOW  # LOW priority fallback
+            assert proposals[0].priority == Priority.NORMAL  # NORMAL priority (FIX: was LOW)

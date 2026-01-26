@@ -239,18 +239,18 @@ class ObjectionReturnSource(KnowledgeSource):
             phase = flow_config.get_phase_for_state(saved_state)
 
         # FIX: Don't return to non-phase states (like greeting, handle_objection)
-        # This prevents the greeting ↔ handle_objection loop that causes 37% zero coverage.
+        # Route to entry_state instead to start the sales phases.
         #
-        # Root cause (commit 293109e):
-        #   ObjectionReturnSource was proposing HIGH priority transitions back to
-        #   saved states like "greeting" which have NO phase. This won over
-        #   TransitionResolver's NORMAL priority (e.g., agreement → close).
+        # Bug history:
+        #   - Commit 293109e: ObjectionReturnSource was proposing HIGH priority back to
+        #     "greeting" (no phase), causing greeting ↔ handle_objection loop.
+        #   - Commit e41667b: Changed to LOW priority fallback to entry_state, but this
+        #     lost to TransitionResolver's NORMAL (agreement → close), causing 0% coverage.
         #
-        # Solution:
-        #   For non-phase saved states, propose entry_state as LOW priority fallback.
-        #   This allows:
-        #   - TransitionResolver with explicit transitions (agreement → close) to win (NORMAL)
-        #   - If no explicit transition exists, fallback to entry_state (LOW)
+        # Solution (current):
+        #   Propose entry_state with NORMAL priority. Both sources have equal priority,
+        #   but ObjectionReturnSource runs first (priority_order 35 < 50), so its
+        #   proposal wins. This routes the dialog to the first phase instead of closing.
         #
         # Affected personas: skeptic, tire_kicker, competitor_user, aggressive
         #   (all express objections BEFORE entering a phase, so _state_before_objection
@@ -264,12 +264,20 @@ class ObjectionReturnSource(KnowledgeSource):
                 entry_state = flow_config.get_variable("entry_state")
 
             if entry_state and entry_state in flow_config.states:
-                # Propose entry_state as LOW priority fallback
-                # This loses to TransitionResolver's NORMAL (agreement → close)
-                # but provides fallback for intents without explicit transitions
+                # FIX: Propose entry_state with NORMAL priority (not LOW)
+                # When objecting BEFORE entering any phase (e.g., from greeting),
+                # we should route to entry_state rather than closing the dialog.
+                #
+                # Bug fixed: Priority.LOW lost to TransitionResolver's NORMAL
+                # (agreement → close), causing 0% phase coverage for personas
+                # who object early (skeptic, tire_kicker, competitor_user, aggressive).
+                #
+                # With NORMAL priority, both sources have equal priority.
+                # ObjectionReturnSource runs before TransitionResolverSource
+                # (priority_order 35 < 50), so its proposal wins on equal priority.
                 blackboard.propose_transition(
                     next_state=entry_state,
-                    priority=Priority.LOW,  # Fallback - loses to NORMAL
+                    priority=Priority.NORMAL,  # FIX: NORMAL instead of LOW
                     reason_code="objection_return_to_entry_state",
                     source_name=self.name,
                     metadata={
@@ -291,7 +299,7 @@ class ObjectionReturnSource(KnowledgeSource):
                         "saved_state": saved_state,
                         "entry_state": entry_state,
                         "reason": "no_phase",
-                        "priority": "LOW",
+                        "priority": "NORMAL",  # FIX: Changed from LOW
                     }
                 )
             else:

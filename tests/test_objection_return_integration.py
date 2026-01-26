@@ -613,14 +613,15 @@ class TestNonPhaseStateIntegration:
 
         proposals = bb.get_proposals()
 
-        # ObjectionReturnSource proposes entry_state fallback with LOW priority
+        # ObjectionReturnSource proposes entry_state fallback with NORMAL priority
+        # FIX: Changed from LOW to NORMAL so entry_state wins over TransitionResolver
         objection_proposals = [
             p for p in proposals if p.source_name == "ObjectionReturnSource"
         ]
         assert len(objection_proposals) == 1, \
             "ObjectionReturnSource should propose entry_state fallback"
-        assert objection_proposals[0].priority == Priority.LOW, \
-            "Fallback should be LOW priority"
+        assert objection_proposals[0].priority == Priority.NORMAL, \
+            "Fallback should be NORMAL priority to win over TransitionResolver"
 
         # TransitionResolver proposes close with NORMAL priority
         transition_proposals = [
@@ -635,10 +636,11 @@ class TestNonPhaseStateIntegration:
             current_state="handle_objection"
         )
 
-        # TransitionResolver should WIN (NORMAL > LOW) → close
-        assert decision.next_state == "close", \
-            f"Expected 'close' but got '{decision.next_state}'. " \
-            "TransitionResolver with NORMAL should win over LOW fallback."
+        # ObjectionReturnSource should WIN (runs first due to priority_order 35 < 50)
+        # FIX: This is the CORRECT behavior - dialog goes to entry_state, not close
+        assert decision.next_state == "bant_budget", \
+            f"Expected 'bant_budget' (entry_state) but got '{decision.next_state}'. " \
+            "ObjectionReturnSource runs first and wins on equal NORMAL priority."
 
     def test_skeptic_persona_full_flow(self):
         """
@@ -679,15 +681,18 @@ class TestNonPhaseStateIntegration:
         assert decision.next_state != "greeting", \
             "BUG DETECTED: Still returning to greeting! Loop will occur."
 
-        # Should go to close (TransitionResolver wins with NORMAL > LOW)
-        assert decision.next_state == "close"
+        # FIX: Should go to entry_state (bant_budget), not close
+        # ObjectionReturnSource now uses NORMAL priority and wins (runs first)
+        assert decision.next_state == "bant_budget", \
+            "With fix: entry_state wins, conversation continues to phases"
 
     def test_tire_kicker_persona_scenario(self):
         """
         tire_kicker persona: "Просто смотрю" → objection_no_need
 
         Same problem as skeptic - objection before entering phase.
-        With fix: entry_state fallback (LOW) loses to TransitionResolver (NORMAL)
+        FIX: entry_state fallback (NORMAL) wins over TransitionResolver (NORMAL)
+        because ObjectionReturnSource runs first (priority_order 35 < 50).
         """
         setup = create_test_setup(
             state="handle_objection",
@@ -707,13 +712,15 @@ class TestNonPhaseStateIntegration:
 
         # Should NOT return to greeting
         assert decision.next_state != "greeting"
-        assert decision.next_state == "close"
+        # FIX: Goes to entry_state (bant_budget), not close
+        assert decision.next_state == "bant_budget"
 
     def test_competitor_user_persona_scenario(self):
         """
         competitor_user persona: "У нас уже есть решение" → objection_competitor
 
         Same problem - objection before entering phase.
+        FIX: entry_state wins with NORMAL priority.
         """
         setup = create_test_setup(
             state="handle_objection",
@@ -732,7 +739,8 @@ class TestNonPhaseStateIntegration:
         )
 
         assert decision.next_state != "greeting"
-        assert decision.next_state == "close"
+        # FIX: Goes to entry_state (bant_budget), not close
+        assert decision.next_state == "bant_budget"
 
     def test_phase_state_still_returns_correctly(self):
         """
