@@ -113,7 +113,11 @@ class MockIntentTracker:
 class MockFlowConfig:
     """Mock FlowConfig with handle_objection transitions."""
 
-    def __init__(self, states: Optional[Dict[str, Dict[str, Any]]] = None):
+    def __init__(
+        self,
+        states: Optional[Dict[str, Dict[str, Any]]] = None,
+        variables: Optional[Dict[str, Any]] = None
+    ):
         self._states = states or {
             "greeting": {"goal": "Greet user"},
             "bant_budget": {
@@ -138,6 +142,10 @@ class MockFlowConfig:
             },
             "close": {"goal": "Close the deal", "is_final": True},
             "soft_close": {"goal": "Soft close", "is_final": True},
+        }
+        # Default entry_state for testing fallback behavior
+        self.variables = variables if variables is not None else {
+            "entry_state": "bant_budget"
         }
 
     @property
@@ -178,6 +186,7 @@ def create_test_setup(
     states: Optional[Dict[str, Dict[str, Any]]] = None,
     intent: str = "greeting",
     state_before_objection: Optional[str] = None,
+    variables: Optional[Dict[str, Any]] = None,
 ):
     """Create a complete test setup with blackboard, sources, and resolver."""
     sm = MockStateMachine(
@@ -185,7 +194,7 @@ def create_test_setup(
         collected_data=collected_data or {},
         state_before_objection=state_before_objection
     )
-    flow_config = MockFlowConfig(states=states)
+    flow_config = MockFlowConfig(states=states, variables=variables)
     tracker = MockIntentTracker()
 
     bb = DialogueBlackboard(
@@ -579,9 +588,9 @@ class TestNonPhaseStateIntegration:
         Scenario (skeptic persona):
             1. greeting + objection → handle_objection (save greeting)
             2. handle_objection + agreement → ?
-            3. ObjectionReturnSource: NO proposal (greeting has no phase)
-            4. TransitionResolver: agreement → close (NORMAL)
-            5. Result: close (correct!)
+            3. ObjectionReturnSource: entry_state fallback (LOW priority)
+            4. TransitionResolver: agreement → close (NORMAL priority)
+            5. NORMAL > LOW → close wins (correct!)
 
         Without fix:
             3. ObjectionReturnSource: greeting (HIGH) ← BUG
@@ -604,12 +613,21 @@ class TestNonPhaseStateIntegration:
 
         proposals = bb.get_proposals()
 
-        # ObjectionReturnSource should NOT have a proposal
+        # ObjectionReturnSource proposes entry_state fallback with LOW priority
         objection_proposals = [
             p for p in proposals if p.source_name == "ObjectionReturnSource"
         ]
-        assert len(objection_proposals) == 0, \
-            "ObjectionReturnSource should NOT propose return to non-phase state"
+        assert len(objection_proposals) == 1, \
+            "ObjectionReturnSource should propose entry_state fallback"
+        assert objection_proposals[0].priority == Priority.LOW, \
+            "Fallback should be LOW priority"
+
+        # TransitionResolver proposes close with NORMAL priority
+        transition_proposals = [
+            p for p in proposals if p.source_name == "TransitionResolverSource"
+        ]
+        assert len(transition_proposals) == 1
+        assert transition_proposals[0].priority == Priority.NORMAL
 
         # Resolve conflict
         decision = resolver.resolve(
@@ -617,10 +635,10 @@ class TestNonPhaseStateIntegration:
             current_state="handle_objection"
         )
 
-        # TransitionResolver should WIN → close
+        # TransitionResolver should WIN (NORMAL > LOW) → close
         assert decision.next_state == "close", \
             f"Expected 'close' but got '{decision.next_state}'. " \
-            "TransitionResolver should handle non-phase saved states."
+            "TransitionResolver with NORMAL should win over LOW fallback."
 
     def test_skeptic_persona_full_flow(self):
         """
@@ -635,9 +653,9 @@ class TestNonPhaseStateIntegration:
             1. greeting → objection_think → handle_objection (save "greeting")
             2. Bot handles objection
             3. Client: "ладно, может быть интересно" → agreement
-            4. ObjectionReturnSource: no proposal (greeting has no phase)
-            5. TransitionResolver: agreement → close
-            6. Conversation ends properly (or continues to entry_state)
+            4. ObjectionReturnSource: entry_state fallback (LOW)
+            5. TransitionResolver: agreement → close (NORMAL)
+            6. NORMAL wins → close (no more loop!)
 
         The key is: no greeting ↔ handle_objection loop!
         """
@@ -661,7 +679,7 @@ class TestNonPhaseStateIntegration:
         assert decision.next_state != "greeting", \
             "BUG DETECTED: Still returning to greeting! Loop will occur."
 
-        # Should go to close (or entry_state per YAML)
+        # Should go to close (TransitionResolver wins with NORMAL > LOW)
         assert decision.next_state == "close"
 
     def test_tire_kicker_persona_scenario(self):
@@ -669,10 +687,11 @@ class TestNonPhaseStateIntegration:
         tire_kicker persona: "Просто смотрю" → objection_no_need
 
         Same problem as skeptic - objection before entering phase.
+        With fix: entry_state fallback (LOW) loses to TransitionResolver (NORMAL)
         """
         setup = create_test_setup(
             state="handle_objection",
-            intent="interest",  # Shows interest after handling
+            intent="agreement",  # Changed from interest (not in POSITIVE_INTENTS)
             state_before_objection="greeting"
         )
 

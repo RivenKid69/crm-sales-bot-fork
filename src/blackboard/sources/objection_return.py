@@ -220,26 +220,67 @@ class ObjectionReturnSource(KnowledgeSource):
         #   TransitionResolver's NORMAL priority (e.g., agreement → close).
         #
         # Solution:
-        #   Only propose return transitions to states that have a SPIN phase.
-        #   For non-phase states, let TransitionResolver handle the transition
-        #   (e.g., agreement → close, or entry_state via flow configuration).
+        #   For non-phase saved states, propose entry_state as LOW priority fallback.
+        #   This allows:
+        #   - TransitionResolver with explicit transitions (agreement → close) to win (NORMAL)
+        #   - If no explicit transition exists, fallback to entry_state (LOW)
         #
         # Affected personas: skeptic, tire_kicker, competitor_user, aggressive
         #   (all express objections BEFORE entering a phase, so _state_before_objection
         #   gets saved as "greeting" which has no phase)
         if phase is None:
-            self._log_contribution(
-                reason=f"Saved state '{saved_state}' has no phase (not a SPIN state), "
-                       f"skipping return. TransitionResolver will handle this."
-            )
-            logger.debug(
-                f"ObjectionReturnSource: skipping return to non-phase state",
-                extra={
-                    "saved_state": saved_state,
-                    "reason": "no_phase",
-                    "will_delegate_to": "TransitionResolverSource",
-                }
-            )
+            # Get entry_state from flow config as fallback destination
+            entry_state = None
+            if hasattr(flow_config, 'variables'):
+                entry_state = flow_config.variables.get("entry_state")
+            elif hasattr(flow_config, 'get_variable'):
+                entry_state = flow_config.get_variable("entry_state")
+
+            if entry_state and entry_state in flow_config.states:
+                # Propose entry_state as LOW priority fallback
+                # This loses to TransitionResolver's NORMAL (agreement → close)
+                # but provides fallback for intents without explicit transitions
+                blackboard.propose_transition(
+                    next_state=entry_state,
+                    priority=Priority.LOW,  # Fallback - loses to NORMAL
+                    reason_code="objection_return_to_entry_state",
+                    source_name=self.name,
+                    metadata={
+                        "from_state": self.OBJECTION_STATE,
+                        "to_state": entry_state,
+                        "trigger_intent": ctx.current_intent,
+                        "original_saved_state": saved_state,
+                        "reason": "saved_state_has_no_phase",
+                        "mechanism": "objection_return_fallback",
+                    }
+                )
+                self._log_contribution(
+                    transition=entry_state,
+                    reason=f"Fallback to entry_state: saved_state '{saved_state}' has no phase"
+                )
+                logger.debug(
+                    f"ObjectionReturnSource: proposing entry_state fallback",
+                    extra={
+                        "saved_state": saved_state,
+                        "entry_state": entry_state,
+                        "reason": "no_phase",
+                        "priority": "LOW",
+                    }
+                )
+            else:
+                # No entry_state available - delegate to TransitionResolver
+                self._log_contribution(
+                    reason=f"Saved state '{saved_state}' has no phase, no entry_state fallback. "
+                           f"Delegating to TransitionResolver."
+                )
+                logger.debug(
+                    f"ObjectionReturnSource: no fallback available",
+                    extra={
+                        "saved_state": saved_state,
+                        "reason": "no_phase_no_entry_state",
+                        "will_delegate_to": "TransitionResolverSource",
+                    }
+                )
             return
 
         # Propose transition with HIGH priority
