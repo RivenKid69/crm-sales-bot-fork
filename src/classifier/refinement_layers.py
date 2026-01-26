@@ -448,7 +448,16 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
     - Topic alignment with bot's last question
     - Question markers in message
     - Interest patterns vs real objections
+    - Uncertainty patterns (skeptic personas)
     - Confidence thresholds
+
+    FIX: Added Rule 5 (uncertainty_patterns) to match ObjectionRefinementLayer.
+    This was missing and caused ObjectionReturnSource to never trigger for
+    skeptic personas who express uncertainty like "не уверен нужно ли".
+
+    Without Rule 5, objection_think was NOT being refined to question_features,
+    so ObjectionReturnSource.should_contribute() returned False (objection_think
+    is not in return_intents), causing 37 dialogs with phases_reached: [].
     """
 
     LAYER_NAME = "objection"
@@ -459,6 +468,7 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
         super().__init__()
         self._callback_regex = None
         self._interest_regex = None
+        self._uncertainty_regex = None  # FIX: Added for Rule 5
         self._objection_intents: Set[str] = set()
         self._init_patterns()
 
@@ -474,9 +484,13 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
         """Initialize regex patterns from config."""
         callback_patterns = self._config.get("callback_patterns", [])
         interest_patterns = self._config.get("interest_patterns", [])
+        # FIX: Load uncertainty_patterns for Rule 5 (skeptic persona handling)
+        uncertainty_patterns = self._config.get("uncertainty_patterns", [])
 
         self._callback_regex = self._compile_patterns(callback_patterns)
         self._interest_regex = self._compile_patterns(interest_patterns)
+        # FIX: Initialize uncertainty regex for Rule 5
+        self._uncertainty_regex = self._compile_patterns(uncertainty_patterns)
 
         # Load objection intents
         try:
@@ -568,6 +582,32 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
                     result=result,
                 )
 
+        # Rule 5: Uncertainty patterns (objection_think → question)
+        # FIX: This rule was MISSING in the adapter but present in ObjectionRefinementLayer.
+        # Skeptic personas use phrases like "не уверен нужно ли", "сомневаюсь", "зачем это нужно"
+        # which are implicit questions about value proposition, not real objections.
+        #
+        # Without this rule:
+        #   - objection_think stays as objection_think
+        #   - ObjectionReturnSource.should_contribute() returns False
+        #   - Bot gets stuck in handle_objection → soft_close
+        #   - phases_reached: [] for 37 dialogs
+        #
+        # With this rule:
+        #   - objection_think → question_features (via uncertainty pattern)
+        #   - ObjectionReturnSource triggers return to phase
+        #   - Dialog continues normally through sales phases
+        if ctx.intent == "objection_think":
+            if self._uncertainty_regex and self._uncertainty_regex.search(message):
+                alternative = self._get_uncertainty_alternative(ctx)
+                return self._create_refined_result(
+                    new_intent=alternative,
+                    new_confidence=0.7,
+                    original_intent=ctx.intent,
+                    reason="uncertainty_pattern",
+                    result=result,
+                )
+
         # No refinement needed
         return self._pass_through(result, ctx)
 
@@ -617,6 +657,31 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
         """Get alternative intent for question context."""
         mapping = self._config.get("refinement_mapping", {}).get(ctx.intent, {})
         return mapping.get("question_context")
+
+    def _get_uncertainty_alternative(self, ctx: RefinementContext) -> str:
+        """
+        Get alternative intent for uncertainty context.
+
+        FIX: This method was MISSING in the adapter but present in ObjectionRefinementLayer.
+        It handles skeptic personas who express uncertainty without explicit question words.
+        E.g., "не уверен нужно ли" is an implicit question about value proposition.
+
+        Args:
+            ctx: RefinementContext
+
+        Returns:
+            Alternative intent name (defaults to question_features)
+        """
+        mapping = self._config.get("refinement_mapping", {}).get(ctx.intent, {})
+        # Try uncertainty_context first, fall back to question_context
+        alternative = mapping.get("uncertainty_context")
+        if alternative:
+            return alternative
+        alternative = mapping.get("question_context")
+        if alternative:
+            return alternative
+        # Default for objection_think uncertainty
+        return "question_features"
 
 
 # =============================================================================
