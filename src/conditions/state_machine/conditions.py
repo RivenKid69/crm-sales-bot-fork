@@ -293,40 +293,64 @@ def has_desired_outcome(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "price_repeated_3x",
-    description="Check if price_question intent repeated 3+ times consecutively",
+    description="Check if price-related intents repeated 3+ times consecutively",
     category="intent"
 )
 def price_repeated_3x(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if price_question has been asked 3+ times in a row.
+    Returns True if price-related intents have been asked 3+ times in a row.
 
     This triggers escalation to answer_with_price_range.
+
+    FIX: Now uses category_streak("price_related") instead of intent_streak("price_question").
+    This correctly tracks ALL price-related intents:
+    - price_question, pricing_details, cost_inquiry, discount_request,
+    - payment_terms, pricing_comparison, budget_question
+
+    Bug fixed: Previously streak was reset when client asked "и скидка есть?"
+    (discount_request) after "а какая цена?" (price_question), causing infinite
+    deflect loop because streak never reached 3.
     """
-    return ctx.get_intent_streak("price_question") >= 3
+    return ctx.get_category_streak("price_related") >= 3
 
 
 @sm_condition(
     "price_repeated_2x",
-    description="Check if price_question intent repeated 2+ times consecutively",
+    description="Check if price-related intents repeated 2+ times consecutively",
     category="intent"
 )
 def price_repeated_2x(ctx: EvaluatorContext) -> bool:
-    """Returns True if price_question has been asked 2+ times in a row."""
-    return ctx.get_intent_streak("price_question") >= 2
+    """
+    Returns True if price-related intents have been asked 2+ times in a row.
+
+    FIX: Now uses category_streak("price_related") instead of intent_streak("price_question").
+    See price_repeated_3x docstring for detailed bug description.
+    """
+    return ctx.get_category_streak("price_related") >= 2
 
 
 @sm_condition(
     "technical_question_repeated_2x",
-    description="Check if question_technical intent repeated 2+ times",
+    description="Check if technical questions repeated 2+ times consecutively",
     category="intent"
 )
 def technical_question_repeated_2x(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if technical question has been asked 2+ times.
+    Returns True if technical questions have been asked 2+ times in a row.
 
     This triggers offer_documentation_link action.
+
+    FIX: Now uses category_streak("technical_question") instead of intent_streak("question_technical").
+    This correctly tracks ALL technical question intents:
+    - question_technical, question_security, question_support, question_implementation,
+    - question_training, question_updates, question_mobile, question_offline,
+    - question_data_migration, question_customization, question_reports, question_automation,
+    - question_scalability
+
+    Bug fixed: Previously streak was reset when client asked about different technical topics
+    (e.g., question_security after question_technical), preventing the documentation link offer.
     """
-    return ctx.get_intent_streak("question_technical") >= 2
+    return ctx.get_category_streak("technical_question") >= 2
 
 
 @sm_condition(

@@ -13,10 +13,24 @@ import logging
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 
+# FIX: Import categories from centralized constants (Single Source of Truth)
+# This ensures EscalationSource stays synchronized with constants.yaml
+from src.yaml_config.constants import INTENT_CATEGORIES
+
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
 
 logger = logging.getLogger(__name__)
+
+
+def _get_category_intents(category: str) -> Set[str]:
+    """
+    Get intents for a category from INTENT_CATEGORIES.
+
+    Falls back to empty set if category not found.
+    """
+    intents = INTENT_CATEGORIES.get(category, [])
+    return set(intents) if intents else set()
 
 
 class EscalationSource(KnowledgeSource):
@@ -38,40 +52,46 @@ class EscalationSource(KnowledgeSource):
     Based on enterprise chatbot best practices:
     - Human escalation is critical for user satisfaction
     - Should be triggered proactively, not just reactively
+
+    FIX: Intent categories are now loaded from constants.yaml (Single Source of Truth)
+    instead of being hardcoded. This ensures synchronization across the system.
+    Categories used: escalation, frustration, sensitive (defined in constants.yaml)
     """
 
-    # Intents that explicitly request human
-    EXPLICIT_ESCALATION_INTENTS: Set[str] = {
-        "request_human",
-        "speak_to_manager",
-        "talk_to_person",
-        "need_help",
-        "not_a_bot",
-        "real_person",
-        "human_please",
-        "escalate",
+    # FIX: Load from constants.yaml instead of hardcoding
+    # This ensures synchronization with IntentTracker category_streak
+    EXPLICIT_ESCALATION_INTENTS: Set[str] = _get_category_intents("escalation")
+    FRUSTRATION_INTENTS: Set[str] = _get_category_intents("frustration")
+    SENSITIVE_INTENTS: Set[str] = _get_category_intents("sensitive")
+
+    # Fallback values if categories are missing from YAML (for backwards compatibility)
+    _FALLBACK_ESCALATION = {
+        "request_human", "speak_to_manager", "talk_to_person", "need_help",
+        "not_a_bot", "real_person", "human_please", "escalate",
+    }
+    _FALLBACK_FRUSTRATION = {
+        "frustrated", "angry", "complaint", "this_is_useless",
+        "not_helpful", "waste_of_time",
+    }
+    _FALLBACK_SENSITIVE = {
+        "legal_question", "compliance_question", "formal_complaint",
+        "refund_request", "contract_dispute", "data_deletion", "gdpr_request",
     }
 
-    # Intents indicating frustration
-    FRUSTRATION_INTENTS: Set[str] = {
-        "frustrated",
-        "angry",
-        "complaint",
-        "this_is_useless",
-        "not_helpful",
-        "waste_of_time",
-    }
+    @classmethod
+    def _ensure_intents_loaded(cls) -> None:
+        """Ensure intent sets are populated, using fallbacks if needed."""
+        if not cls.EXPLICIT_ESCALATION_INTENTS:
+            logger.warning("escalation category not found in constants.yaml, using fallback")
+            cls.EXPLICIT_ESCALATION_INTENTS = cls._FALLBACK_ESCALATION
 
-    # Sensitive topics requiring human
-    SENSITIVE_INTENTS: Set[str] = {
-        "legal_question",
-        "compliance_question",
-        "formal_complaint",
-        "refund_request",
-        "contract_dispute",
-        "data_deletion",
-        "gdpr_request",
-    }
+        if not cls.FRUSTRATION_INTENTS:
+            logger.warning("frustration category not found in constants.yaml, using fallback")
+            cls.FRUSTRATION_INTENTS = cls._FALLBACK_FRUSTRATION
+
+        if not cls.SENSITIVE_INTENTS:
+            logger.warning("sensitive category not found in constants.yaml, using fallback")
+            cls.SENSITIVE_INTENTS = cls._FALLBACK_SENSITIVE
 
     def __init__(
         self,
@@ -90,6 +110,10 @@ class EscalationSource(KnowledgeSource):
             name: Source name for logging
         """
         super().__init__(name)
+
+        # FIX: Ensure intent categories are loaded from constants.yaml
+        self._ensure_intents_loaded()
+
         self._frustration_threshold = frustration_threshold
         self._misunderstanding_threshold = misunderstanding_threshold
         self._high_value_threshold = high_value_threshold

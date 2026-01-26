@@ -187,6 +187,46 @@ intents:
       - farewell
 
     # =================================================================
+    # ЭСКАЛАЦИЯ - интенты требующие человека
+    # ВАЖНО: Синхронизирован с EscalationSource.EXPLICIT_ESCALATION_INTENTS
+    # =================================================================
+    escalation:
+      - request_human
+      - speak_to_manager
+      - talk_to_person
+      - need_help
+      - not_a_bot
+      - real_person
+      - human_please
+      - escalate
+
+    # =================================================================
+    # ФРУСТРАЦИЯ - интенты выражающие недовольство
+    # ВАЖНО: Синхронизирован с EscalationSource.FRUSTRATION_INTENTS
+    # Используется для category_streak в frustration tracking
+    # =================================================================
+    frustration:
+      - frustrated
+      - angry
+      - complaint
+      - this_is_useless
+      - not_helpful
+      - waste_of_time
+
+    # =================================================================
+    # ЧУВСТВИТЕЛЬНЫЕ ТЕМЫ - требуют человека
+    # ВАЖНО: Синхронизирован с EscalationSource.SENSITIVE_INTENTS
+    # =================================================================
+    sensitive:
+      - legal_question
+      - compliance_question
+      - formal_complaint
+      - refund_request
+      - contract_dispute
+      - data_deletion
+      - gdpr_request
+
+    # =================================================================
     # ПОЗИТИВНЫЕ СИГНАЛЫ (включая новые 8)
     # =================================================================
     positive:
@@ -238,10 +278,39 @@ intents:
       - question_automation
       - question_scalability
 
-    # НОВОЕ: Вопросы о цене (требуют ответа с ценой)
+    # =================================================================
+    # ВОПРОСЫ О ЦЕНЕ (требуют ответа с ценой)
+    # ВАЖНО: Должен быть синхронизирован с PriceQuestionSource.DEFAULT_PRICE_INTENTS
+    # Используется для category_streak в price_repeated_3x/2x условиях
+    # =================================================================
     price_related:
       - price_question
       - pricing_details
+      - cost_inquiry
+      - discount_request
+      - payment_terms
+      - pricing_comparison
+      - budget_question
+
+    # =================================================================
+    # ТЕХНИЧЕСКИЕ ВОПРОСЫ
+    # Используется для category_streak в technical_question_repeated_2x
+    # Группирует все интенты технических вопросов
+    # =================================================================
+    technical_question:
+      - question_technical
+      - question_security
+      - question_support
+      - question_implementation
+      - question_training
+      - question_updates
+      - question_mobile
+      - question_offline
+      - question_data_migration
+      - question_customization
+      - question_reports
+      - question_automation
+      - question_scalability
 
     # НОВОЕ: Вопросы требующие ответа фактами (не deflect)
     question_requires_facts:

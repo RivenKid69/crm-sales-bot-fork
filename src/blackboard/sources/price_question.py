@@ -18,11 +18,43 @@ from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 from src.conditions.state_machine.context import EvaluatorContext
 
+# FIX: Import from centralized constants (Single Source of Truth)
+# This ensures PriceQuestionSource stays synchronized with constants.yaml
+# and IntentTracker category_streak calculations
+from src.yaml_config.constants import INTENT_CATEGORIES
+
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
     from src.conditions.registry import ConditionRegistry
 
 logger = logging.getLogger(__name__)
+
+
+def _get_price_intents_from_config() -> Set[str]:
+    """
+    Get price-related intents from INTENT_CATEGORIES (constants.yaml).
+
+    This ensures synchronization with:
+    - conditions.py price_repeated_3x/2x (uses category_streak("price_related"))
+    - IntentTracker category tracking
+
+    Falls back to hardcoded set if category not found.
+    """
+    intents = INTENT_CATEGORIES.get("price_related", [])
+    if intents:
+        return set(intents)
+
+    # Fallback for backwards compatibility
+    logger.warning("price_related category not found in constants.yaml, using fallback")
+    return {
+        "price_question",
+        "pricing_details",
+        "cost_inquiry",
+        "discount_request",
+        "payment_terms",
+        "pricing_comparison",
+        "budget_question",
+    }
 
 
 class PriceQuestionSource(KnowledgeSource):
@@ -35,7 +67,7 @@ class PriceQuestionSource(KnowledgeSource):
         - Propose rule-based action OR fallback to "answer_with_pricing"
         - Always combinable=True (allows state transitions to proceed)
 
-    Intents handled:
+    Intents handled (from constants.yaml price_related category):
         - price_question
         - pricing_details
         - cost_inquiry
@@ -47,19 +79,14 @@ class PriceQuestionSource(KnowledgeSource):
     This source addresses the core problem: price questions should be answered
     WITHOUT blocking data_complete transitions.
 
-    FIX: Now respects YAML rules (e.g., value_rules defines price_question -> calculate_roi_response).
+    FIX: Now uses constants.yaml as Single Source of Truth for price intents.
+    This ensures synchronization with IntentTracker.category_streak("price_related")
+    and conditions.py price_repeated_3x/2x.
     """
 
-    # Default price-related intents (can be overridden from config)
-    DEFAULT_PRICE_INTENTS: Set[str] = {
-        "price_question",
-        "pricing_details",
-        "cost_inquiry",
-        "discount_request",
-        "payment_terms",
-        "pricing_comparison",
-        "budget_question",
-    }
+    # FIX: Load from constants.yaml instead of hardcoding
+    # This ensures synchronization across the system
+    DEFAULT_PRICE_INTENTS: Set[str] = _get_price_intents_from_config()
 
     # Fallback actions when no rule is defined
     DEFAULT_ACTIONS: Dict[str, str] = {

@@ -629,38 +629,53 @@ class TestIntentConditions:
     """Tests for intent-related conditions."""
 
     def test_price_repeated_3x(self):
-        """Test price_repeated_3x."""
+        """Test price_repeated_3x.
+
+        FIX: Now uses category_streak("price_related") instead of
+        intent_streak("price_question"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
-        tracker.set_intent_streak("price_question", 3)
+        # FIX: Use category_streak for price_related category
+        tracker.set_category_streak("price_related", 3)
         ctx = create_test_context(intent_tracker=tracker)
         assert price_repeated_3x(ctx) is True
 
         tracker2 = SimpleIntentTracker()
-        tracker2.set_intent_streak("price_question", 2)
+        tracker2.set_category_streak("price_related", 2)
         ctx2 = create_test_context(intent_tracker=tracker2)
         assert price_repeated_3x(ctx2) is False
 
     def test_price_repeated_2x(self):
-        """Test price_repeated_2x."""
+        """Test price_repeated_2x.
+
+        FIX: Now uses category_streak("price_related") instead of
+        intent_streak("price_question"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
-        tracker.set_intent_streak("price_question", 2)
+        # FIX: Use category_streak for price_related category
+        tracker.set_category_streak("price_related", 2)
         ctx = create_test_context(intent_tracker=tracker)
         assert price_repeated_2x(ctx) is True
 
         tracker2 = SimpleIntentTracker()
-        tracker2.set_intent_streak("price_question", 1)
+        tracker2.set_category_streak("price_related", 1)
         ctx2 = create_test_context(intent_tracker=tracker2)
         assert price_repeated_2x(ctx2) is False
 
     def test_technical_question_repeated_2x(self):
-        """Test technical_question_repeated_2x."""
+        """Test technical_question_repeated_2x.
+
+        FIX: Now uses category_streak("technical_question") instead of
+        intent_streak("question_technical"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
-        tracker.set_intent_streak("question_technical", 2)
+        # FIX: Use category_streak for technical_question category
+        tracker.set_category_streak("technical_question", 2)
         ctx = create_test_context(intent_tracker=tracker)
         assert technical_question_repeated_2x(ctx) is True
 
         tracker2 = SimpleIntentTracker()
-        tracker2.set_intent_streak("question_technical", 1)
+        tracker2.set_category_streak("technical_question", 1)
         ctx2 = create_test_context(intent_tracker=tracker2)
         assert technical_question_repeated_2x(ctx2) is False
 
@@ -918,9 +933,14 @@ class TestCombinedConditions:
         assert can_answer_price(ctx) is True
 
     def test_can_answer_price_with_repeated(self):
-        """Test can_answer_price with repeated question."""
+        """Test can_answer_price with repeated question.
+
+        FIX: Now uses category_streak("price_related") instead of
+        intent_streak("price_question"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
-        tracker.set_intent_streak("price_question", 3)
+        # FIX: Use category_streak for price_related category
+        tracker.set_category_streak("price_related", 3)
         ctx = create_test_context(intent_tracker=tracker)
         assert can_answer_price(ctx) is True
 
@@ -943,9 +963,14 @@ class TestCombinedConditions:
         assert should_deflect_price(ctx) is False
 
     def test_should_deflect_price_after_repeats(self):
-        """Test should_deflect_price after 3 repeats (should not deflect)."""
+        """Test should_deflect_price after 3 repeats (should not deflect).
+
+        FIX: Now uses category_streak("price_related") instead of
+        intent_streak("price_question"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
-        tracker.set_intent_streak("price_question", 3)
+        # FIX: Use category_streak for price_related category
+        tracker.set_category_streak("price_related", 3)
         ctx = create_test_context(
             intent_tracker=tracker,
             state="spin_situation"
@@ -1019,9 +1044,14 @@ class TestIntegration:
         assert has_pricing_data(ctx) is True
 
     def test_price_question_scenario_repeated(self):
-        """Test price question scenario with repeated asks."""
+        """Test price question scenario with repeated asks.
+
+        FIX: Now uses category_streak("price_related") instead of
+        intent_streak("price_question"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
-        tracker.set_intent_streak("price_question", 3)
+        # FIX: Use category_streak for price_related category
+        tracker.set_category_streak("price_related", 3)
 
         ctx = create_test_context(
             state="spin_problem",
@@ -1246,16 +1276,21 @@ class TestEdgeCases:
         assert is_extended_conversation(ctx_20) is True
 
     def test_boundary_streak_counts(self):
-        """Test boundary streak counts."""
+        """Test boundary streak counts.
+
+        FIX: Now uses category_streak("price_related") instead of
+        intent_streak("price_question"), so we test with category_streak.
+        """
         tracker = SimpleIntentTracker()
 
         # Exactly at boundaries
-        tracker.set_intent_streak("price_question", 2)
+        # FIX: Use category_streak for price_related category
+        tracker.set_category_streak("price_related", 2)
         ctx_2 = create_test_context(intent_tracker=tracker)
         assert price_repeated_2x(ctx_2) is True
         assert price_repeated_3x(ctx_2) is False
 
-        tracker.set_intent_streak("price_question", 3)
+        tracker.set_category_streak("price_related", 3)
         ctx_3 = create_test_context(intent_tracker=tracker)
         assert price_repeated_3x(ctx_3) is True
 
