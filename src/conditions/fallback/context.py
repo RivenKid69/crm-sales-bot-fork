@@ -84,6 +84,7 @@ class FallbackContext:
     frustration_level: int = 0
     momentum_direction: str = "neutral"
     engagement_level: str = "medium"
+    pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
 
     # Contextual data
     pain_category: Optional[str] = None
@@ -156,6 +157,7 @@ class FallbackContext:
             frustration_level=context.get("frustration_level", 0),
             momentum_direction=context.get("momentum_direction", "neutral"),
             engagement_level=context.get("engagement_level", "medium"),
+            pre_intervention_triggered=context.get("pre_intervention_triggered", False),
 
             # Contextual data
             pain_category=collected.get("pain_category"),
@@ -213,6 +215,7 @@ class FallbackContext:
             frustration_level=envelope.frustration_level,
             momentum_direction=envelope.momentum_direction,
             engagement_level=envelope.engagement_level,
+            pre_intervention_triggered=getattr(envelope, 'pre_intervention_triggered', False),
 
             # Contextual data
             pain_category=collected.get("pain_category"),
@@ -235,6 +238,7 @@ class FallbackContext:
         frustration_level: int = 0,
         momentum_direction: str = "neutral",
         engagement_level: str = "medium",
+        pre_intervention_triggered: bool = False,
         pain_category: Optional[str] = None,
         competitor_mentioned: bool = False,
         last_intent: Optional[str] = None,
@@ -258,6 +262,7 @@ class FallbackContext:
             frustration_level=frustration_level,
             momentum_direction=momentum_direction,
             engagement_level=engagement_level,
+            pre_intervention_triggered=pre_intervention_triggered,
             pain_category=pain_category,
             competitor_mentioned=competitor_mentioned,
             last_intent=last_intent,
@@ -309,6 +314,7 @@ class FallbackContext:
             "frustration_level": self.frustration_level,
             "momentum_direction": self.momentum_direction,
             "engagement_level": self.engagement_level,
+            "pre_intervention_triggered": self.pre_intervention_triggered,
             "pain_category": self.pain_category,
             "competitor_mentioned": self.competitor_mentioned,
             "last_intent": self.last_intent,

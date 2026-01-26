@@ -80,19 +80,27 @@ def should_apologize(frustration_level: int) -> bool:
     return frustration_level >= APOLOGY_THRESHOLD
 
 
-def should_offer_exit(frustration_level: int) -> bool:
+def should_offer_exit(
+    frustration_level: int,
+    pre_intervention_triggered: bool = False
+) -> bool:
     """
-    Check if exit offer is needed based on frustration level.
+    Check if exit offer is needed based on frustration level or pre-intervention.
 
-    Uses FRUSTRATION_HIGH threshold from frustration_thresholds SSoT.
+    Exit is offered when:
+    1. frustration_level >= EXIT_OFFER_THRESHOLD (7), OR
+    2. pre_intervention_triggered is True (WARNING level 5-6 with RUSHED/FRUSTRATED tone)
+
+    This ensures consistency with FrustrationIntensityCalculator's should_offer_exit logic.
 
     Args:
         frustration_level: Current frustration level (0-10)
+        pre_intervention_triggered: Whether pre-intervention was triggered at WARNING level
 
     Returns:
         True if exit offer should be included in response
     """
-    return frustration_level >= EXIT_OFFER_THRESHOLD
+    return frustration_level >= EXIT_OFFER_THRESHOLD or pre_intervention_triggered
 
 
 # =============================================================================

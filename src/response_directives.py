@@ -539,14 +539,22 @@ class ResponseDirectivesBuilder:
         Uses apology_ssot module for threshold logic to ensure consistency
         with frustration_thresholds SSoT.
 
+        IMPORTANT: For should_offer_exit, we must also consider pre_intervention_triggered
+        which is set by FrustrationIntensityCalculator at WARNING level (5-6) with certain
+        conditions (RUSHED tone, multiple signals). This ensures exit is offered not just
+        at HIGH frustration (7+), but also when pre-intervention is triggered.
+
         SSoT: src/apology_ssot.py
         """
         from src.apology_ssot import should_apologize, should_offer_exit
 
         # Use SSoT functions for threshold logic
         frustration_level = self.envelope.frustration_level
+        pre_intervention = getattr(self.envelope, 'pre_intervention_triggered', False)
+
         directives.should_apologize = should_apologize(frustration_level)
-        directives.should_offer_exit = should_offer_exit(frustration_level)
+        # Pass pre_intervention_triggered to ensure exit is offered at WARNING level too
+        directives.should_offer_exit = should_offer_exit(frustration_level, pre_intervention)
 
     def build_context_summary(self) -> str:
         """

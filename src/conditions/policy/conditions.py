@@ -377,12 +377,34 @@ def can_accelerate(ctx: PolicyContext) -> bool:
 
 @policy_condition(
     "has_guard_intervention",
-    description="Check if guard intervention is active",
+    description="Check if guard intervention or pre-intervention is active",
     category="guard"
 )
 def has_guard_intervention(ctx: PolicyContext) -> bool:
-    """Returns True if guard intervention is active."""
-    return ctx.guard_intervention is not None
+    """
+    Returns True if guard intervention OR pre-intervention is active.
+
+    Pre-intervention is triggered at WARNING frustration level (5-6) with
+    certain conditions (RUSHED tone, multiple signals), before full guard
+    intervention at HIGH level (7+).
+    """
+    return ctx.guard_intervention is not None or ctx.pre_intervention_triggered
+
+
+@policy_condition(
+    "has_pre_intervention",
+    description="Check if pre-intervention is triggered (WARNING level frustration)",
+    category="guard"
+)
+def has_pre_intervention(ctx: PolicyContext) -> bool:
+    """
+    Returns True if pre-intervention is triggered.
+
+    Pre-intervention occurs at WARNING frustration level (5-6) when certain
+    conditions are met (RUSHED tone, multiple frustration signals).
+    This is an early warning before full guard intervention at HIGH level (7+).
+    """
+    return ctx.pre_intervention_triggered
 
 
 @policy_condition(
@@ -649,6 +671,7 @@ __all__ = [
     "can_accelerate",
     # Guard conditions
     "has_guard_intervention",
+    "has_pre_intervention",
     "frustration_high",
     "frustration_critical",
     "needs_empathy",

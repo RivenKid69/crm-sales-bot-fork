@@ -93,6 +93,8 @@ class GuardState:
     # BUG-001 FIX: Track intents to detect informative responses
     intent_history: List[str] = field(default_factory=list)
     last_intent: str = ""
+    # Pre-intervention flag (WARNING level 5-6 with certain conditions)
+    pre_intervention_triggered: bool = False
 
 
 class ConversationGuard:
@@ -155,7 +157,8 @@ class ConversationGuard:
         message: str,
         collected_data: Dict,
         frustration_level: Optional[int] = None,
-        last_intent: str = ""  # BUG-001 FIX: Accept intent for informative check
+        last_intent: str = "",  # BUG-001 FIX: Accept intent for informative check
+        pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
     ) -> Tuple[bool, Optional[str]]:
         """
         Проверить состояние диалога и определить нужна ли интервенция.
@@ -166,6 +169,8 @@ class ConversationGuard:
             collected_data: Собранные данные о клиенте
             frustration_level: Уровень раздражения (0-10), если None - используется внутренний
             last_intent: Предыдущий intent клиента (для проверки информативности)
+            pre_intervention_triggered: Whether pre-intervention was triggered at WARNING level
+                                        (5-6 frustration with RUSHED/FRUSTRATED tone)
 
         Returns:
             Tuple[can_continue, intervention_action]
@@ -212,11 +217,15 @@ class ConversationGuard:
             )
             return False, self.TIER_4
 
-        # 3. Проверка высокого раздражения
-        if self._state.frustration_level >= self.config.high_frustration_threshold:
+        # 3. Проверка высокого раздражения ИЛИ pre_intervention_triggered
+        # Pre-intervention срабатывает при WARNING уровне (5-6) с определёнными условиями
+        # (RUSHED tone, multiple frustration signals), поэтому нужно проверять оба флага
+        if (self._state.frustration_level >= self.config.high_frustration_threshold
+                or pre_intervention_triggered):
             logger.warning(
-                "High frustration level",
+                "High frustration or pre-intervention triggered",
                 frustration_level=self._state.frustration_level,
+                pre_intervention=pre_intervention_triggered,
                 turns=self._state.turn_count
             )
             # Не прерываем, но рекомендуем мягкий подход

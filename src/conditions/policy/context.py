@@ -110,6 +110,7 @@ class PolicyContext:
     # Guard signals
     frustration_level: int = 0
     guard_intervention: Optional[str] = None
+    pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
 
     # Objection limits (from YAML config, single source of truth)
     max_consecutive_objections: int = field(default_factory=lambda: MAX_CONSECUTIVE_OBJECTIONS)
@@ -185,6 +186,7 @@ class PolicyContext:
             # Guard signals
             frustration_level=envelope.frustration_level,
             guard_intervention=envelope.guard_intervention,
+            pre_intervention_triggered=getattr(envelope, 'pre_intervention_triggered', False),
             # Objection limits (from envelope if available, else from YAML config)
             max_consecutive_objections=getattr(
                 envelope, 'max_consecutive_objections', MAX_CONSECUTIVE_OBJECTIONS
@@ -224,6 +226,7 @@ class PolicyContext:
         least_effective_action: Optional[str] = None,
         frustration_level: int = 0,
         guard_intervention: Optional[str] = None,
+        pre_intervention_triggered: bool = False,
         # Objection limits (defaults from YAML config)
         max_consecutive_objections: int = None,
         max_total_objections: int = None,
@@ -262,6 +265,7 @@ class PolicyContext:
             least_effective_action=least_effective_action,
             frustration_level=frustration_level,
             guard_intervention=guard_intervention,
+            pre_intervention_triggered=pre_intervention_triggered,
             # Objection limits (use YAML defaults if not specified)
             max_consecutive_objections=(
                 max_consecutive_objections
@@ -317,6 +321,7 @@ class PolicyContext:
             "least_effective_action": self.least_effective_action,
             "frustration_level": self.frustration_level,
             "guard_intervention": self.guard_intervention,
+            "pre_intervention_triggered": self.pre_intervention_triggered,
         }
 
     def __repr__(self) -> str:

@@ -410,10 +410,11 @@ def should_offer_graceful_exit(ctx: FallbackContext) -> bool:
     """
     Returns True if graceful exit should be offered.
 
-    Conditions: warning+ frustration OR (too many fallbacks AND low engagement)
-    OR negative momentum with high fallbacks.
+    Conditions: warning+ frustration OR pre_intervention_triggered
+    OR (too many fallbacks AND low engagement) OR negative momentum with high fallbacks.
     """
-    if is_frustration_warning(ctx.frustration_level):
+    # Warning frustration OR pre-intervention (WARNING level with RUSHED tone)
+    if is_frustration_warning(ctx.frustration_level) or ctx.pre_intervention_triggered:
         return True
     if ctx.total_fallbacks >= 5 and ctx.engagement_level in ("low", "disengaged"):
         return True
@@ -552,10 +553,14 @@ def needs_immediate_escalation(ctx: FallbackContext) -> bool:
 
     Uses FRUSTRATION_HIGH threshold from src.frustration_thresholds
     to ensure consistency with ConversationGuard.
+
+    Also checks pre_intervention_triggered which fires at WARNING level (5-6)
+    with certain conditions (RUSHED tone, multiple signals).
     """
-    # High frustration always triggers immediate escalation
+    # High frustration OR pre-intervention triggered
     # NOTE: Uses centralized threshold to match guard.high_frustration_threshold
-    if is_frustration_high(ctx.frustration_level):
+    # Pre-intervention fires earlier at WARNING level (5-6) with RUSHED/FRUSTRATED tone
+    if is_frustration_high(ctx.frustration_level) or ctx.pre_intervention_triggered:
         return True
     # Too many consecutive fallbacks with negative momentum
     if ctx.consecutive_fallbacks >= 4 and ctx.momentum_direction == "negative":

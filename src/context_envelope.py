@@ -212,6 +212,7 @@ class ContextEnvelope:
     frustration_level: int = 0
     should_apologize: bool = False
     should_offer_exit: bool = False
+    pre_intervention_triggered: bool = False  # Pre-intervention при WARNING уровне frustration
     guard_intervention: Optional[str] = None
 
     # === Meta ===
@@ -293,6 +294,7 @@ class ContextEnvelope:
             "frustration_level": self.frustration_level,
             "should_apologize": self.should_apologize,
             "should_offer_exit": self.should_offer_exit,
+            "pre_intervention_triggered": self.pre_intervention_triggered,
 
             # Паттерны для repair
             "is_stuck": self.is_stuck,
@@ -349,6 +351,7 @@ class ContextEnvelope:
             # Guard
             "frustration_level": self.frustration_level,
             "guard_intervention": self.guard_intervention,
+            "pre_intervention_triggered": self.pre_intervention_triggered,
         }
 
     def to_dict(self) -> Dict[str, Any]:
@@ -401,6 +404,7 @@ class ContextEnvelope:
             "tone": self.tone,
             "frustration_level": self.frustration_level,
             "guard_intervention": self.guard_intervention,
+            "pre_intervention_triggered": self.pre_intervention_triggered,
 
             # === Meta ===
             "total_turns": self.total_turns,
@@ -600,6 +604,9 @@ class ContextEnvelopeBuilder:
         envelope.frustration_level = self.tone_info.get("frustration_level", 0)
         envelope.should_apologize = self.tone_info.get("should_apologize", False)
         envelope.should_offer_exit = self.tone_info.get("should_offer_exit", False)
+        # Pre-intervention flag from FrustrationIntensityCalculator
+        # Triggers at WARNING level (5-6) with certain conditions (RUSHED tone, etc.)
+        envelope.pre_intervention_triggered = self.tone_info.get("pre_intervention_triggered", False)
 
     def _fill_guard_info(self, envelope: ContextEnvelope) -> None:
         """Заполнить информацию от guard."""

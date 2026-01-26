@@ -152,6 +152,7 @@ class PersonalizationContext:
     engagement_level: str = "medium"
     momentum_direction: str = "neutral"
     frustration_level: int = 0
+    pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
 
     # Objection context
     objection_type: Optional[str] = None
@@ -231,6 +232,7 @@ class PersonalizationContext:
             engagement_level=envelope.engagement_level,
             momentum_direction=envelope.momentum_direction,
             frustration_level=envelope.frustration_level,
+            pre_intervention_triggered=getattr(envelope, 'pre_intervention_triggered', False),
 
             # Objection context
             objection_type=envelope.first_objection_type,
@@ -302,6 +304,7 @@ class PersonalizationContext:
             engagement_level=context.get("engagement_level", "medium"),
             momentum_direction=context.get("momentum_direction", "neutral"),
             frustration_level=context.get("frustration_level", 0),
+            pre_intervention_triggered=context.get("pre_intervention_triggered", False),
 
             # Objection context
             objection_type=context.get("objection_type"),
@@ -335,6 +338,7 @@ class PersonalizationContext:
         engagement_level: str = "medium",
         momentum_direction: str = "neutral",
         frustration_level: int = 0,
+        pre_intervention_triggered: bool = False,
         objection_type: Optional[str] = None,
         total_objections: int = 0,
         repeated_objection_types: Optional[List[str]] = None,
@@ -365,6 +369,7 @@ class PersonalizationContext:
             engagement_level=engagement_level,
             momentum_direction=momentum_direction,
             frustration_level=frustration_level,
+            pre_intervention_triggered=pre_intervention_triggered,
             objection_type=objection_type,
             total_objections=total_objections,
             repeated_objection_types=repeated_objection_types or [],
@@ -435,8 +440,10 @@ class PersonalizationContext:
         return self.frustration_level >= SOFT_CTA_FRUSTRATION_THRESHOLD
 
     def should_skip_cta(self) -> bool:
-        """Check if CTA should be skipped due to high frustration."""
-        return self.frustration_level >= NO_CTA_FRUSTRATION_THRESHOLD
+        """Check if CTA should be skipped due to high frustration or pre-intervention."""
+        # Skip CTA at high frustration (7+) OR when pre-intervention triggered
+        # Pre-intervention fires at WARNING level (5-6) with RUSHED/FRUSTRATED tone
+        return self.frustration_level >= NO_CTA_FRUSTRATION_THRESHOLD or self.pre_intervention_triggered
 
     def is_enough_turns_for_cta(self) -> bool:
         """Check if enough turns have passed for CTA."""
@@ -473,6 +480,7 @@ class PersonalizationContext:
             "engagement_level": self.engagement_level,
             "momentum_direction": self.momentum_direction,
             "frustration_level": self.frustration_level,
+            "pre_intervention_triggered": self.pre_intervention_triggered,
             "objection_type": self.objection_type,
             "total_objections": self.total_objections,
             "repeated_objection_types": self.repeated_objection_types,

@@ -577,9 +577,13 @@ def needs_soft_approach(ctx: PersonalizationContext) -> bool:
     """
     Returns True if soft approach is needed.
 
-    Soft approach when: moderate+ frustration OR negative momentum OR low engagement.
+    Soft approach when: moderate+ frustration OR pre-intervention triggered
+    OR negative momentum OR low engagement.
     """
     if is_frustration_moderate(ctx.frustration_level):
+        return True
+    # Pre-intervention fires at WARNING level (5-6) with RUSHED/FRUSTRATED tone
+    if ctx.pre_intervention_triggered:
         return True
     if ctx.momentum_direction == "negative":
         return True
@@ -832,11 +836,15 @@ def should_be_conservative(ctx: PersonalizationContext) -> bool:
     """
     Returns True if conservative approach is needed.
 
-    Conservative when: multiple objections OR moderate+ frustration OR negative momentum.
+    Conservative when: multiple objections OR moderate+ frustration
+    OR pre-intervention triggered OR negative momentum.
     """
     if ctx.total_objections >= 2:
         return True
     if is_frustration_moderate(ctx.frustration_level):
+        return True
+    # Pre-intervention fires at WARNING level (5-6) with RUSHED/FRUSTRATED tone
+    if ctx.pre_intervention_triggered:
         return True
     if ctx.momentum_direction == "negative":
         return True
