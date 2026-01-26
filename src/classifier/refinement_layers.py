@@ -436,7 +436,180 @@ class CompositeMessageLayer(BaseRefinementLayer):
 
 
 # =============================================================================
-# LAYER 3: OBJECTION REFINEMENT (Objection Stuck Fix)
+# LAYER 3: FIRST CONTACT REFINEMENT (First Turn Objection Bug Fix)
+# =============================================================================
+
+
+@register_refinement_layer("first_contact")
+class FirstContactRefinementLayer(BaseRefinementLayer):
+    """
+    Refines objection classifications during first contact phase (turns 0-2).
+
+    Problem: LLM classifies cautious interest as objection on first turn.
+    Example: "слушайте мне тут посоветовали... но я не уверен"
+             LLM returns objection_trust → bot goes to handle_objection
+             Expected: consultation_request → bot greets and starts dialog
+
+    Semantic difference by turn_number:
+      turn=1: "не уверен" = modesty, cautious interest (want to learn more)
+      turn>3: "не уверен" = doubt after presentation (real objection)
+
+    This layer handles ONLY the first case (turn ≤ max_turn).
+
+    Architecture:
+    - OCP: New layer, doesn't modify existing ObjectionRefinementLayer
+    - SRP: Single responsibility - first contact classification
+    - Config-Driven: Patterns loaded from YAML
+    - Registry: Auto-registered via @register_refinement_layer decorator
+    """
+
+    LAYER_NAME = "first_contact"
+    LAYER_PRIORITY = LayerPriority.HIGH  # 75 - runs BEFORE objection refinement
+    FEATURE_FLAG = "first_contact_refinement"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._referral_regex: Optional[re.Pattern] = None
+        self._cautious_regex: Optional[re.Pattern] = None
+        self._first_contact_regex: Optional[re.Pattern] = None
+        self._suspicious_intents: Set[str] = set()
+        self._active_states: Set[str] = set()
+        self._init_patterns()
+
+    def _get_config(self) -> Dict[str, Any]:
+        """Load first_contact_refinement config from constants.yaml."""
+        try:
+            from src.yaml_config.constants import get_first_contact_refinement_config
+
+            return get_first_contact_refinement_config()
+        except ImportError:
+            return {}
+
+    def _init_patterns(self) -> None:
+        """Initialize regex patterns from config."""
+        # Load pattern lists
+        referral_patterns = self._config.get("referral_patterns", [])
+        cautious_patterns = self._config.get("cautious_interest_patterns", [])
+        first_contact_patterns = self._config.get("first_contact_patterns", [])
+
+        # Compile regexes
+        self._referral_regex = self._compile_patterns(referral_patterns)
+        self._cautious_regex = self._compile_patterns(cautious_patterns)
+        self._first_contact_regex = self._compile_patterns(first_contact_patterns)
+
+        # Load intent and state sets
+        self._suspicious_intents = set(self._config.get("suspicious_intents", []))
+        self._active_states = set(self._config.get("active_states", []))
+
+    @staticmethod
+    def _compile_patterns(patterns: List[str]) -> Optional[re.Pattern]:
+        """Compile patterns into single regex."""
+        if not patterns:
+            return None
+        escaped = [re.escape(p) for p in patterns]
+        return re.compile("|".join(escaped), re.IGNORECASE)
+
+    def _should_apply(self, ctx: RefinementContext) -> bool:
+        """
+        Check if first contact refinement should apply.
+
+        Conditions:
+        1. Layer is enabled in config
+        2. turn_number <= max_turn_number (early turns only)
+        3. state is in active_states (greeting, initial)
+        4. intent is in suspicious_intents (objection_* on turn=1 is suspicious)
+        """
+        if not self._config.get("enabled", True):
+            return False
+
+        max_turn = self._config.get("max_turn_number", 2)
+        if ctx.turn_number > max_turn:
+            return False
+
+        # State check - only apply in greeting/initial states
+        if ctx.state and self._active_states and ctx.state not in self._active_states:
+            return False
+
+        # Intent check - only refine suspicious intents
+        if ctx.intent not in self._suspicious_intents:
+            return False
+
+        return True
+
+    def _do_refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext,
+    ) -> RefinementResult:
+        """
+        Refine objection to consultation_request on first contact.
+
+        Logic:
+        - If message has referral pattern ("посоветовали") → refine
+        - If message has cautious interest pattern ("не уверен") → refine
+        - If message has first contact pattern ("слушайте") + any of above → refine
+
+        All patterns indicate cautious interest, NOT real objection.
+        """
+        text = message.lower()
+
+        # Check for patterns
+        has_referral = self._referral_regex and self._referral_regex.search(text)
+        has_cautious = self._cautious_regex and self._cautious_regex.search(text)
+        has_first_contact = (
+            self._first_contact_regex and self._first_contact_regex.search(text)
+        )
+
+        # Determine if refinement is needed
+        should_refine = False
+        reason_parts = []
+
+        if has_referral:
+            should_refine = True
+            reason_parts.append("referral")
+
+        if has_cautious:
+            should_refine = True
+            reason_parts.append("cautious_interest")
+
+        # First contact marker strengthens the case
+        if has_first_contact and (has_referral or has_cautious):
+            reason_parts.append("first_contact_marker")
+
+        # If no clear signal but it's turn 1 and objection, still refine
+        # because objection on turn=1 in greeting is almost always wrong
+        if not should_refine and ctx.turn_number <= 1 and ctx.state == "greeting":
+            # Even without explicit patterns, objection on turn=1 is suspicious
+            should_refine = True
+            reason_parts.append("early_turn_objection")
+
+        if should_refine:
+            target_intent = self._config.get("target_intent", "consultation_request")
+            refined_confidence = self._config.get("refined_confidence", 0.75)
+            reason = f"first_contact:{'+'.join(reason_parts)}"
+
+            return self._create_refined_result(
+                new_intent=target_intent,
+                new_confidence=refined_confidence,
+                original_intent=ctx.intent,
+                reason=reason,
+                result=result,
+                metadata={
+                    "turn_number": ctx.turn_number,
+                    "state": ctx.state,
+                    "has_referral": bool(has_referral),
+                    "has_cautious": bool(has_cautious),
+                    "has_first_contact": bool(has_first_contact),
+                },
+            )
+
+        # No refinement needed
+        return self._pass_through(result, ctx)
+
+
+# =============================================================================
+# LAYER 4: OBJECTION REFINEMENT (Objection Stuck Fix)
 # =============================================================================
 
 @register_refinement_layer("objection")
@@ -699,11 +872,13 @@ def verify_layers_registered() -> List[str]:
 
     registry = RefinementLayerRegistry.get_registry()
     # FIX: Added secondary_intent_detection to expected layers
+    # FIX: Added first_contact for First Turn Objection Bug Fix
     expected = [
         "confidence_calibration",
-        "secondary_intent_detection",  # NEW: Lost Question Fix
+        "secondary_intent_detection",  # Lost Question Fix
         "short_answer",
         "composite_message",
+        "first_contact",  # First Turn Objection Bug Fix
         "objection",
     ]
     registered = registry.get_all_names()

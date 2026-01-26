@@ -556,6 +556,43 @@ def get_objection_refinement_config() -> Dict[str, Any]:
     return _constants.get("objection_refinement", {})
 
 
+def get_first_contact_refinement_config() -> Dict[str, Any]:
+    """
+    Get first_contact_refinement config from constants.yaml.
+
+    Used by FirstContactRefinementLayer to refine early-turn classifications
+    where objection-like messages are actually cautious interest.
+
+    Problem: "слушайте мне тут посоветовали... но я не уверен" (turn=1)
+             LLM returns objection_trust → bot goes to handle_objection
+             Expected: consultation_request → bot greets and starts dialog
+
+    Semantic difference by turn_number:
+      turn=1: "не уверен" = modesty, cautious interest (want to learn more)
+      turn>3: "не уверен" = doubt after presentation (real objection)
+
+    Returns:
+        Dict with first contact refinement configuration including:
+        - enabled: bool
+        - max_turn_number: int (when layer stops applying)
+        - active_states: List[str] (states where layer is active)
+        - suspicious_intents: List[str] (intents to potentially refine)
+        - referral_patterns: List[str] (e.g., "посоветовали")
+        - cautious_interest_patterns: List[str] (e.g., "не уверен")
+        - first_contact_patterns: List[str] (e.g., "слушайте")
+        - target_intent: str (default: "consultation_request")
+        - refined_confidence: float (default: 0.75)
+
+    Example:
+        >>> config = get_first_contact_refinement_config()
+        >>> config["max_turn_number"]
+        2
+        >>> "посоветовали" in config["referral_patterns"]
+        True
+    """
+    return _constants.get("first_contact_refinement", {})
+
+
 def get_composite_refinement_config() -> Dict[str, Any]:
     """
     Get composite_refinement config from constants.yaml.
