@@ -212,6 +212,7 @@ class SimulationRunner:
             # Цикл диалога
             max_turns = 25
             fallback_count = 0
+            last_bot_is_final = False
 
             for turn in range(max_turns):
                 try:
@@ -232,6 +233,7 @@ class SimulationRunner:
                         # through intermediate states in a single turn
                         "visited_states": bot_result.get("visited_states", []),
                         "initial_state": bot_result.get("initial_state", ""),
+                        "is_final": bot_result.get("is_final", False),
                     }
 
                     # Phase 8: Collect rule trace if available
@@ -255,7 +257,8 @@ class SimulationRunner:
                         fallback_count += 1
 
                     # Проверяем завершение
-                    if bot_result.get("is_final", False):
+                    last_bot_is_final = bool(bot_result.get("is_final", False))
+                    if last_bot_is_final:
                         break
 
                     # Клиент решает продолжать ли
@@ -289,7 +292,7 @@ class SimulationRunner:
 
             # Определяем исход
             final_state = dialogue[-1]["state"] if dialogue else ""
-            is_final = len(dialogue) > 0
+            is_final = last_bot_is_final
             collected_data = {}
 
             if hasattr(bot, 'state_machine') and hasattr(bot.state_machine, 'collected_data'):

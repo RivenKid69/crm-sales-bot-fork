@@ -260,9 +260,20 @@ def determine_outcome(state: str, is_final: bool, collected_data: Dict) -> str:
     Returns:
         Строка исхода
     """
-    # Успех - получили контакт или запланировали демо
-    if "contact" in collected_data or "phone" in collected_data or "email" in collected_data:
-        return "success"
+    # Успех - получили валидный контакт или запланировали демо
+    try:
+        from src.conditions.state_machine.contact_validator import has_valid_contact
+        if has_valid_contact(collected_data):
+            return "success"
+    except Exception:
+        # Fallback: lenient check if validator is unavailable
+        if (
+            "contact_info" in collected_data or
+            "contact" in collected_data or
+            "phone" in collected_data or
+            "email" in collected_data
+        ):
+            return "success"
 
     if state in ["success", "demo_scheduled"]:
         return "success"

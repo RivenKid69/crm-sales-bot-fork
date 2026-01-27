@@ -57,6 +57,8 @@ class ClientAgent:
 3. НЕ будь слишком вежливым - это подозрительно
 4. НЕ используй формальные фразы типа "Благодарю за информацию"
 5. Веди себя СТРОГО согласно персоне
+6. Если продавец просит контакт (телефон или email), то дай реальный контакт
+   (если в описании персоны НЕ сказано "не даёшь контакты")
 
 МОЖЕШЬ:
 - Отвлекаться от темы
@@ -91,6 +93,9 @@ class ClientAgent:
         self._repeat_count = 0
         self._last_trace: Optional[ClientAgentTrace] = None
         self._enable_tracing = True
+        self._provided_contact = False
+        self._contact_value: Optional[str] = None
+        self._contact_type: Optional[str] = None
 
     def start_conversation(self) -> str:
         """
@@ -340,6 +345,26 @@ class ClientAgent:
             return response
 
         # =====================================================================
+        # Contact Request Handling
+        # =====================================================================
+        if self._is_contact_request(bot_message):
+            response = self._handle_contact_request()
+            if trace:
+                trace.cleaned_response = response
+                trace.llm_latency_ms = 0
+                trace.leave_decision = {"should_leave": False, "reason": "contact_request"}
+                self._last_trace = trace
+
+            # Сохраняем в историю
+            self.history.append({
+                "bot": bot_message,
+                "client": response
+            })
+            self.turn += 1
+            self._last_response = response
+            return response
+
+        # =====================================================================
         # Disambiguation Handling: "Нажатие на кнопку"
         # =====================================================================
         if self._detect_disambiguation(bot_message):
@@ -453,6 +478,110 @@ class ClientAgent:
         self.turn += 1
 
         return response
+
+    # =========================================================================
+    # Contact Request Detection & Response
+    # =========================================================================
+
+    def _is_contact_request(self, bot_message: str) -> bool:
+        """Heuristic detection for contact request from the bot."""
+        if not bot_message:
+            return False
+
+        patterns = [
+            r"остав(?:ь|ьте)\s+(?:контакт|телефон|номер|почт|e-?mail)",
+            r"остав(?:ите|ишь)\s+(?:контакт|телефон|номер|почт|e-?mail)",
+            r"подскаж(?:ите|и)\s+(?:номер|телефон|почт|e-?mail|контакт)",
+            r"как\s+(?:с\s+вами\s+)?связаться",
+            r"номер\s+(?:телефон|для\s+связи)",
+            r"контакт(?:ы|ный)?\s+для\s+связи",
+            r"ваш\s+(?:номер|телефон|почт|e-?mail)",
+            r"на\s+какой\s+e-?mail",
+            r"на\s+какую\s+почту",
+            r"куда\s+(?:прислать|отправить)\s+(?:информацию|детали|презентацию)",
+        ]
+
+        for pattern in patterns:
+            if re.search(pattern, bot_message, re.IGNORECASE):
+                return True
+
+        return False
+
+    def _handle_contact_request(self) -> str:
+        """Return contact info or refusal based on persona."""
+        if self.persona.name == "Просто смотрю":
+            refusals = [
+                "пока без контактов",
+                "контакты не оставляю",
+                "не хочу давать номер",
+                "пока просто смотрю, без контактов",
+            ]
+            return random.choice(refusals)
+
+        return self._generate_contact_response()
+
+    def _generate_contact_response(self) -> str:
+        """Generate a valid contact response (phone or email)."""
+        if not self._provided_contact or not self._contact_value:
+            contact_type = self._choose_contact_type()
+            contact_value = self._generate_contact_value(contact_type)
+            self._contact_type = contact_type
+            self._contact_value = contact_value
+            self._provided_contact = True
+
+        contact_type = self._contact_type or "email"
+        contact_value = self._contact_value or ""
+
+        persona = self.persona.name
+        if contact_type == "phone":
+            if persona == "Занятой":
+                return f"тел {contact_value}"
+            if persona == "Агрессивный":
+                return f"номер {contact_value}. быстро"
+            return random.choice([
+                f"мой номер {contact_value}",
+                f"телефон {contact_value}",
+                f"можете звонить на {contact_value}",
+            ])
+
+        # email
+        if persona == "Занятой":
+            return f"почта {contact_value}"
+        if persona == "Агрессивный":
+            return f"пиши на {contact_value}"
+        return random.choice([
+            f"почта {contact_value}",
+            f"можно написать на {contact_value}",
+            f"отправьте на {contact_value}",
+        ])
+
+    def _choose_contact_type(self) -> str:
+        """Choose contact type based on persona."""
+        persona = self.persona.name
+        if persona in ["Занятой", "Агрессивный", "Ценовик"]:
+            return "phone"
+        if persona in ["Технарь", "Пользователь конкурента"]:
+            return "email"
+        return random.choice(["phone", "email"])
+
+    def _generate_contact_value(self, contact_type: str) -> str:
+        """Return a valid phone/email suitable for validators."""
+        if contact_type == "phone":
+            phones = [
+                "+7 999 234-56-78",
+                "+7 925 456-78-90",
+                "+7 916 321-45-67",
+                "+7 903 548-12-39",
+            ]
+            return random.choice(phones)
+
+        emails = [
+            "ivan.petrov@mail.ru",
+            "olga.kim@gmail.com",
+            "sergey.ivanov@yandex.ru",
+            "aida.n@mail.ru",
+        ]
+        return random.choice(emails)
 
     def should_continue(self) -> bool:
         """
