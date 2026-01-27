@@ -628,13 +628,21 @@ def is_price_question(ctx: PolicyContext) -> bool:
     """
     Returns True if client is asking about price.
 
-    Price-related intents: price_question, pricing_details
+    Uses INTENT_CATEGORIES from constants.yaml as Single Source of Truth
+    for ALL price-related intents. Also checks secondary intents.
 
     Этот condition гарантирует что вопрос о цене получит
     правильный action (answer_with_pricing) независимо от state machine.
     """
-    price_related_intents = {"price_question", "pricing_details"}
-    return ctx.last_intent in price_related_intents
+    from src.yaml_config.constants import INTENT_CATEGORIES
+    price_intents = set(INTENT_CATEGORIES.get("price_related", []))
+    # Check primary intent
+    if ctx.last_intent in price_intents:
+        return True
+    # Check secondary intents
+    if ctx.secondary_intents:
+        return bool(price_intents & set(ctx.secondary_intents))
+    return False
 
 
 # Export all condition functions for testing

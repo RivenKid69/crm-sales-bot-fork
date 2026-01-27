@@ -139,18 +139,38 @@ class PriceQuestionSource(KnowledgeSource):
         """
         Quick check: is current intent price-related?
 
-        O(1) check against price intents set.
+        Checks primary intent AND secondary intents (from RefinementPipeline).
 
         Args:
             blackboard: The dialogue blackboard
 
         Returns:
-            True if current intent is price-related, False otherwise
+            True if current or secondary intent is price-related
         """
         if not self._enabled:
             return False
 
-        return blackboard.current_intent in self._price_intents
+        # Primary intent check
+        if blackboard.current_intent in self._price_intents:
+            return True
+
+        # Secondary intents check (pattern from FactQuestionSource)
+        ctx = blackboard.get_context()
+        secondary = self._get_secondary_intents(ctx)
+        return bool(secondary and (set(secondary) & self._price_intents))
+
+    def _get_secondary_intents(self, ctx: Any) -> List[str]:
+        """
+        Extract secondary intents from context.
+
+        Pattern from FactQuestionSource — checks context_envelope.secondary_intents.
+        """
+        envelope = getattr(ctx, 'context_envelope', None)
+        if envelope is not None:
+            secondary = getattr(envelope, 'secondary_intents', None)
+            if secondary:
+                return list(secondary)
+        return []
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """

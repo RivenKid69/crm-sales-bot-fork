@@ -112,6 +112,9 @@ class PolicyContext:
     guard_intervention: Optional[str] = None
     pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
 
+    # Secondary intents (from RefinementPipeline via ContextEnvelope)
+    secondary_intents: List[str] = field(default_factory=list)
+
     # Objection limits (from YAML config, single source of truth)
     max_consecutive_objections: int = field(default_factory=lambda: MAX_CONSECUTIVE_OBJECTIONS)
     max_total_objections: int = field(default_factory=lambda: MAX_TOTAL_OBJECTIONS)
@@ -187,6 +190,8 @@ class PolicyContext:
             frustration_level=envelope.frustration_level,
             guard_intervention=envelope.guard_intervention,
             pre_intervention_triggered=getattr(envelope, 'pre_intervention_triggered', False),
+            # Secondary intents
+            secondary_intents=getattr(envelope, 'secondary_intents', []) or [],
             # Objection limits (from envelope if available, else from YAML config)
             max_consecutive_objections=getattr(
                 envelope, 'max_consecutive_objections', MAX_CONSECUTIVE_OBJECTIONS
@@ -227,6 +232,8 @@ class PolicyContext:
         frustration_level: int = 0,
         guard_intervention: Optional[str] = None,
         pre_intervention_triggered: bool = False,
+        # Secondary intents for testing
+        secondary_intents: List[str] = None,
         # Objection limits (defaults from YAML config)
         max_consecutive_objections: int = None,
         max_total_objections: int = None,
@@ -266,6 +273,7 @@ class PolicyContext:
             frustration_level=frustration_level,
             guard_intervention=guard_intervention,
             pre_intervention_triggered=pre_intervention_triggered,
+            secondary_intents=secondary_intents or [],
             # Objection limits (use YAML defaults if not specified)
             max_consecutive_objections=(
                 max_consecutive_objections
@@ -322,6 +330,7 @@ class PolicyContext:
             "frustration_level": self.frustration_level,
             "guard_intervention": self.guard_intervention,
             "pre_intervention_triggered": self.pre_intervention_triggered,
+            "secondary_intents": self.secondary_intents,
         }
 
     def __repr__(self) -> str:

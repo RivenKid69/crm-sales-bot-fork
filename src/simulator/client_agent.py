@@ -400,13 +400,38 @@ class ClientAgent:
         # Regular LLM-based Response Generation
         # =====================================================================
 
+        # Build insistence block based on persona
+        insistence_block = ""
+        if self.persona.insistence_probability > 0.5:
+            insistence_block = """
+ВАЖНО: Если ты задал вопрос (особенно про цену), а собеседник не ответил прямо
+и вместо этого задал свой вопрос — НАСТАИВАЙ на своём вопросе.
+Переформулируй вопрос или скажи что тебе не ответили.
+НЕ отвечай на контр-вопрос пока не получишь ответ на свой."""
+        elif self.persona.insistence_probability > 0.2:
+            insistence_block = """
+Если ты задал вопрос, а собеседник не ответил — можешь ответить на его вопрос,
+но потом верни разговор к своему вопросу."""
+
+        # Build description with insistence
+        full_description = self.persona.description
+        if insistence_block:
+            full_description = self.persona.description + insistence_block
+
         # Строим промпт
         prompt = self.SYSTEM_PROMPT.format(
             persona_name=self.persona.name,
-            persona_description=self.persona.description,
+            persona_description=full_description,
             history=self._format_history(),
             bot_message=bot_message
         )
+
+        # Dynamic insistence: if bot deflected and client had a pending question
+        if (self.persona.insistence_probability > 0
+            and "?" in bot_message
+            and self._has_pending_question()
+            and random.random() < self.persona.insistence_probability):
+            prompt += "\nСЕЙЧАС: Собеседник не ответил на твой предыдущий вопрос. НАСТАИВАЙ!"
 
         if trace:
             trace.prompt_sent_to_llm = prompt
@@ -684,6 +709,15 @@ class ClientAgent:
 
         return response
 
+    def _has_pending_question(self) -> bool:
+        """Check if client had an unanswered question."""
+        if not self.history:
+            return False
+        last = self.history[-1].get("client", "")
+        return "?" in last or any(
+            w in last.lower() for w in ["стоит", "цен", "скольк", "прайс"]
+        )
+
     def _should_leave_now(self) -> bool:
         """Проверяет, пора ли уходить"""
         if self._decided_to_leave:
@@ -723,9 +757,10 @@ class ClientAgent:
 
     def _ensure_variety(self, response: str) -> str:
         """
-        Проверяет на повторы и форсирует разнообразие ответов.
+        Prevent identical client responses.
 
-        Если клиент повторяется 2+ раза - меняем стратегию.
+        Threshold raised from 2 to 4 to allow streak-based conditions
+        (price_repeated_3x, objection_consecutive_3x, etc.) to fire in simulation.
         """
         # Нормализуем для сравнения
         normalized = response.lower().strip()[:50]
@@ -735,8 +770,8 @@ class ClientAgent:
         if normalized == last_normalized or self._is_similar(normalized, last_normalized):
             self._repeat_count += 1
 
-            # При повторах - меняем стратегию
-            if self._repeat_count >= 2:
+            # При повторах - меняем стратегию (threshold raised from 2 to 4)
+            if self._repeat_count >= 4:
                 # Варианты выхода из цикла
                 alternatives = [
                     "ладно, давай дальше",

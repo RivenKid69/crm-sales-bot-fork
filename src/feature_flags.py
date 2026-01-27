@@ -142,6 +142,9 @@ class FeatureFlags:
         # === Lost Question Fix: Secondary Intent Detection ===
         # SSoT: src/classifier/secondary_intent_detection.py
         "secondary_intent_detection": True,       # Детекция secondary intents в composite сообщениях
+
+        # === Structural Frustration Detection ===
+        "structural_frustration_detection": True,  # Behavioral frustration from dialogue patterns
     }
 
     # Группы флагов для удобного управления

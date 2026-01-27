@@ -20,16 +20,60 @@ mixins:
   # PRICE HANDLING: Обработка ценовых вопросов
   # =================================================================
   price_handling:
-    description: "Правила для обработки вопросов о цене"
+    description: "Правила для обработки вопросов о цене (все 7 price_related интентов)"
     rules:
       price_question:
         - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
           then: answer_with_facts
         - when: should_answer_directly
           then: answer_with_facts
         - "{{default_price_action}}"
       pricing_details:
         - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+      cost_inquiry:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+      discount_request:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+      payment_terms:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+      pricing_comparison:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
+          then: answer_with_facts
+        - when: should_answer_directly
+          then: answer_with_facts
+        - "{{default_price_action}}"
+      budget_question:
+        - when: can_answer_price
+          then: answer_with_facts
+        - when: price_repeated_2x
           then: answer_with_facts
         - when: should_answer_directly
           then: answer_with_facts

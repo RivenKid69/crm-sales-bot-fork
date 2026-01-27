@@ -19,6 +19,7 @@ class Persona:
     description: str
     max_turns: int
     objection_probability: float
+    insistence_probability: float = 0.3  # Probability of insisting on unanswered questions
     preferred_objections: List[str] = field(default_factory=list)
     conversation_starters: List[str] = field(default_factory=list)
 
@@ -41,6 +42,7 @@ PERSONAS = {
 - Если спрашивают про проблемы - теряете клиентов, нет контроля продаж""",
         max_turns=15,
         objection_probability=0.1,
+        insistence_probability=0.1,
         preferred_objections=[],
         conversation_starters=[
             "Привет, хочу узнать про вашу CRM",
@@ -62,6 +64,7 @@ PERSONAS = {
 - Если спросят про команду - человек 8, небольшая компания""",
         max_turns=12,
         objection_probability=0.6,
+        insistence_probability=0.3,
         preferred_objections=["skepticism", "proof", "trust"],
         # FIX: conversation_starters теперь содержат question words или uncertainty patterns
         # для корректной работы ObjectionRefinementLayer и ObjectionReturnSource
@@ -85,6 +88,7 @@ PERSONAS = {
 - Говоришь "давайте короче", "некогда", "быстрее" """,
         max_turns=8,
         objection_probability=0.4,
+        insistence_probability=0.7,
         preferred_objections=["time", "busy"],
         conversation_starters=[
             "коротко - что за система?",
@@ -107,6 +111,7 @@ PERSONAS = {
 - Если узнал цену - говоришь что дорого""",
         max_turns=12,
         objection_probability=0.8,
+        insistence_probability=0.8,
         preferred_objections=["price", "discount", "expensive"],
         conversation_starters=[
             "Сколько стоит?",
@@ -128,6 +133,7 @@ PERSONAS = {
 - Боишься сложностей переезда""",
         max_turns=12,
         objection_probability=0.5,
+        insistence_probability=0.3,
         preferred_objections=["competitor", "migration", "features"],
         conversation_starters=[
             "мы сейчас на Poster, думаем менять",
@@ -150,6 +156,7 @@ PERSONAS = {
 - Если не нравится - говоришь прямо и грубо""",
         max_turns=8,
         objection_probability=0.7,
+        insistence_probability=0.6,
         preferred_objections=["waste_time", "annoyed"],
         conversation_starters=[
             "так, давайте без воды",
@@ -172,6 +179,7 @@ PERSONAS = {
 - Хочешь техническую документацию""",
         max_turns=15,
         objection_probability=0.3,
+        insistence_probability=0.2,
         preferred_objections=["technical", "integration", "security"],
         conversation_starters=[
             "Есть API для интеграции?",
@@ -194,6 +202,7 @@ PERSONAS = {
 - Через 3-4 хода хочешь уйти""",
         max_turns=6,
         objection_probability=0.9,
+        insistence_probability=0.1,
         preferred_objections=["not_now", "just_looking", "maybe_later"],
         conversation_starters=[
             "просто интересуюсь, что за система",

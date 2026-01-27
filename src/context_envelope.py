@@ -83,6 +83,9 @@ class ReasonCode(Enum):
     DISAMBIGUATION_NEEDED = "disambiguation.needed"
     DISAMBIGUATION_RESOLVED = "disambiguation.resolved"
 
+    # Secondary Intents
+    SECONDARY_INTENT_DETECTED = "secondary.intent_detected"
+
 
 @dataclass
 class ContextEnvelope:
@@ -214,6 +217,9 @@ class ContextEnvelope:
     should_offer_exit: bool = False
     pre_intervention_triggered: bool = False  # Pre-intervention при WARNING уровне frustration
     guard_intervention: Optional[str] = None
+
+    # === Secondary Intents (from RefinementPipeline) ===
+    secondary_intents: List[str] = field(default_factory=list)
 
     # === Meta ===
     total_turns: int = 0
@@ -436,6 +442,8 @@ class ContextEnvelopeBuilder:
         last_action: Optional[str] = None,
         last_intent: Optional[str] = None,
         use_v2_engagement: bool = False,
+        current_intent: Optional[str] = None,
+        classification_result: Optional[Dict] = None,
     ):
         """
         Инициализация builder.
@@ -448,6 +456,8 @@ class ContextEnvelopeBuilder:
             last_action: Последний action
             last_intent: Последний intent
             use_v2_engagement: Использовать улучшенный расчёт engagement
+            current_intent: Current turn intent (fixes 1-turn lag in repeated_question)
+            classification_result: Classification result dict (for secondary_signals)
         """
         self.state_machine = state_machine
         self.context_window = context_window
@@ -456,6 +466,8 @@ class ContextEnvelopeBuilder:
         self.last_action = last_action
         self.last_intent = last_intent
         self.use_v2_engagement = use_v2_engagement
+        self.current_intent = current_intent
+        self.classification_result = classification_result or {}
 
     def build(self) -> ContextEnvelope:
         """
@@ -479,6 +491,9 @@ class ContextEnvelopeBuilder:
 
         # Заполняем guard info
         self._fill_guard_info(envelope)
+
+        # Заполняем secondary intents из classification_result
+        self._fill_secondary_intents(envelope)
 
         # Добавляем last_action/intent
         envelope.last_action = self.last_action
@@ -547,7 +562,9 @@ class ContextEnvelopeBuilder:
         envelope.unclear_count = cw.get_unclear_count()
         envelope.has_oscillation = cw.detect_oscillation()
         envelope.is_stuck = cw.detect_stuck_pattern()
-        envelope.repeated_question = cw.detect_repeated_question()
+        envelope.repeated_question = cw.detect_repeated_question(
+            include_current_intent=self.current_intent
+        )
         envelope.confidence_trend = cw.get_confidence_trend()
         envelope.avg_confidence = cw.get_average_confidence()
         envelope.window_size = len(cw)
@@ -612,6 +629,12 @@ class ContextEnvelopeBuilder:
         """Заполнить информацию от guard."""
         envelope.guard_intervention = self.guard_info.get("intervention")
 
+    def _fill_secondary_intents(self, envelope: ContextEnvelope) -> None:
+        """Fill secondary intents from classification_result."""
+        secondary = self.classification_result.get("secondary_signals", [])
+        if secondary:
+            envelope.secondary_intents = list(secondary)
+
     def _compute_reason_codes(self, envelope: ContextEnvelope) -> None:
         """Вычислить reason codes на основе сигналов."""
 
@@ -672,6 +695,10 @@ class ContextEnvelopeBuilder:
                 if 1 <= envelope.turns_since_breakthrough <= 3:
                     envelope.add_reason(ReasonCode.BREAKTHROUGH_WINDOW)
                     envelope.add_reason(ReasonCode.BREAKTHROUGH_CTA)
+
+        # === Secondary Intent signals ===
+        if envelope.secondary_intents:
+            envelope.add_reason(ReasonCode.SECONDARY_INTENT_DETECTED)
 
         # === Guard signals ===
         if envelope.guard_intervention:
@@ -837,6 +864,8 @@ def build_context_envelope(
     last_action: Optional[str] = None,
     last_intent: Optional[str] = None,
     use_v2_engagement: bool = False,
+    current_intent: Optional[str] = None,
+    classification_result: Optional[Dict] = None,
 ) -> ContextEnvelope:
     """
     Удобная функция для создания ContextEnvelope.
@@ -849,6 +878,8 @@ def build_context_envelope(
         last_action: Последний action
         last_intent: Последний intent
         use_v2_engagement: Использовать улучшенный расчёт engagement
+        current_intent: Current turn intent (fixes 1-turn lag in repeated_question)
+        classification_result: Classification result dict (for secondary_signals)
 
     Returns:
         ContextEnvelope
@@ -861,4 +892,6 @@ def build_context_envelope(
         last_action=last_action,
         last_intent=last_intent,
         use_v2_engagement=use_v2_engagement,
+        current_intent=current_intent,
+        classification_result=classification_result,
     ).build()

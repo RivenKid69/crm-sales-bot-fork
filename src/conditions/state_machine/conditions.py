@@ -647,26 +647,15 @@ def unclear_total_count_3x(ctx: EvaluatorContext) -> bool:
 )
 def has_secondary_price_question(ctx: EvaluatorContext) -> bool:
     """
-    Returns True if secondary_intents metadata contains price_question.
+    Returns True if secondary_intents contains price_question.
 
     This enables detection of price questions even when they were
     lost in composite message classification.
 
     Works with SecondaryIntentDetectionLayer.
+    Now uses ctx.secondary_intents field directly (wired through ContextEnvelope).
     """
-    # Check for secondary_intents in context
-    secondary = getattr(ctx, "secondary_intents", None)
-    if secondary and "price_question" in secondary:
-        return True
-
-    # Also check classification_result if available
-    classification = getattr(ctx, "classification_result", None)
-    if classification and isinstance(classification, dict):
-        secondary = classification.get("secondary_signals", [])
-        if secondary and "price_question" in secondary:
-            return True
-
-    return False
+    return bool(ctx.secondary_intents and "price_question" in ctx.secondary_intents)
 
 
 @sm_condition(
@@ -682,27 +671,15 @@ def has_secondary_question_intent(ctx: EvaluatorContext) -> bool:
     in composite messages.
 
     Works with SecondaryIntentDetectionLayer.
+    Now uses ctx.secondary_intents field directly (wired through ContextEnvelope).
     """
-    # Check for secondary_intents in context
-    secondary = getattr(ctx, "secondary_intents", None)
-    if secondary:
-        for intent in secondary:
-            if intent.startswith("question_") or intent in {
-                "price_question", "demo_request", "callback_request"
-            }:
-                return True
-
-    # Also check classification_result if available
-    classification = getattr(ctx, "classification_result", None)
-    if classification and isinstance(classification, dict):
-        secondary = classification.get("secondary_signals", [])
-        if secondary:
-            for intent in secondary:
-                if intent.startswith("question_") or intent in {
-                    "price_question", "demo_request", "callback_request"
-                }:
-                    return True
-
+    if not ctx.secondary_intents:
+        return False
+    for intent in ctx.secondary_intents:
+        if intent.startswith("question_") or intent in {
+            "price_question", "demo_request", "callback_request"
+        }:
+            return True
     return False
 
 

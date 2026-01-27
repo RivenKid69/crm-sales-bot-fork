@@ -51,6 +51,7 @@ class FrustrationTracker:
         self._last_tone: Optional[Tone] = None
         self._intensity_calculator = None  # Lazy load to avoid circular imports
         self._pre_intervention_triggered: bool = False
+        self._last_decay_amount: int = 0  # Track last decay for structural frustration undo
 
     @property
     def level(self) -> int:
@@ -117,11 +118,17 @@ class FrustrationTracker:
         if tone in FRUSTRATION_WEIGHTS:
             weight = FRUSTRATION_WEIGHTS[tone]
             self._level = min(MAX_FRUSTRATION, self._level + weight)
+            self._last_decay_amount = 0  # No decay on increase
 
         # Снижение frustration (decay)
         elif tone in FRUSTRATION_DECAY:
             decay = FRUSTRATION_DECAY[tone]
+            actual_decay = min(decay, self._level)  # Capped by current level
+            self._last_decay_amount = actual_decay
             self._level = max(0, self._level - decay)
+
+        else:
+            self._last_decay_amount = 0  # No decay for unknown tones
 
         # Сохраняем историю только если уровень изменился
         # (избегаем засорения нулевыми записями для нейтральных тонов)
@@ -252,6 +259,7 @@ class FrustrationTracker:
         self._consecutive_negative_turns = 0
         self._last_tone = None
         self._pre_intervention_triggered = False
+        self._last_decay_amount = 0
 
     def is_warning(self) -> bool:
         """Достигнут ли порог предупреждения (elevated frustration)."""
@@ -276,3 +284,50 @@ class FrustrationTracker:
         Используется для синхронизации с внешними системами.
         """
         self._level = max(0, min(MAX_FRUSTRATION, level))
+
+    def apply_structural_delta(
+        self, delta: int, suppress_decay: bool = True,
+        signals: Optional[List[str]] = None
+    ) -> int:
+        """
+        Apply structural frustration delta AFTER tonal update() already ran.
+
+        Args:
+            delta: Structural frustration points to add
+            suppress_decay: If True, undoes the last tonal decay.
+                This prevents NEUTRAL (-1) from cancelling structural (+1).
+            signals: Names of structural signals for logging
+
+        Flow:
+            1. _analyze_tone() → frustration_tracker.update(NEUTRAL) → decay -1 applied
+            2. StructuralFrustrationDetector → delta = 2
+            3. apply_structural_delta(2, suppress_decay=True)
+               → undo decay (+1) → add delta (+2) → net change = +2
+
+        Returns:
+            New frustration level
+        """
+        if delta <= 0:
+            return self._level
+
+        old_level = self._level
+
+        # Undo last decay if structural signals indicate real frustration
+        if suppress_decay and self._last_decay_amount > 0:
+            self._level += self._last_decay_amount
+            self._last_decay_amount = 0
+
+        # Apply structural delta
+        self._level = min(MAX_FRUSTRATION, self._level + delta)
+
+        # Record in history
+        if self._level != old_level:
+            self._history.append({
+                "tone": "structural",
+                "old_level": old_level,
+                "new_level": self._level,
+                "delta": self._level - old_level,
+                "structural_signals": signals or [],
+            })
+
+        return self._level

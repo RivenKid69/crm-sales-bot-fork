@@ -984,27 +984,60 @@ class ContextWindow:
         # Все интенты одинаковые?
         return len(set(history)) == 1
 
-    def detect_repeated_question(self) -> Optional[str]:
+    # Only these categories group different intents as "same question":
+    # price_related: price_question + cost_inquiry = same repeated question (both about price)
+    # NOT technical_question — question_security ≠ question_support
+    REPEATABLE_QUESTION_CATEGORIES = {"price_related"}
+
+    def detect_repeated_question(
+        self, include_current_intent: Optional[str] = None
+    ) -> Optional[str]:
         """
-        Обнаружить повторный вопрос от клиента.
+        Detect repeated question with category grouping for price-related intents.
+
+        Fixes:
+        - 1-turn lag: include_current_intent adds current turn's intent
+        - Category match: uses REPEATABLE_QUESTION_CATEGORIES for semantic grouping
+
+        Args:
+            include_current_intent: Current turn intent to include (fixes 1-turn lag)
 
         Returns:
             Интент повторного вопроса или None
         """
-        history = self.get_intent_history()
+        history = list(self.get_intent_history())
+        if include_current_intent:
+            history.append(include_current_intent)
 
-        # Ищем вопросительные интенты которые встречаются > 1 раза
         question_set = self._get_question_intents()
-        question_counts = Counter(
-            intent for intent in history
-            if intent in question_set
-        )
 
-        for intent, count in question_counts.most_common(1):
+        # Category-based counts for specific categories where different intents
+        # mean the SAME question (e.g., price_question and cost_inquiry both ask about price)
+        category_counts: Dict[str, int] = {}
+        intent_to_category: Dict[str, str] = {}
+
+        for intent in history:
+            if intent not in question_set:
+                continue
+            category = self._get_repeatable_category(intent)
+            category_counts[category] = category_counts.get(category, 0) + 1
+            intent_to_category[intent] = category
+
+        for category, count in sorted(category_counts.items(), key=lambda x: -x[1]):
             if count >= 2:
-                return intent
-
+                # Return most recent intent in that category
+                for intent in reversed(history):
+                    if intent_to_category.get(intent) == category:
+                        return intent
         return None
+
+    def _get_repeatable_category(self, intent: str) -> str:
+        """Map intent to its category ONLY for categories where intents are semantically equivalent."""
+        from src.yaml_config.constants import INTENT_CATEGORIES
+        for category in self.REPEATABLE_QUESTION_CATEGORIES:
+            if intent in INTENT_CATEGORIES.get(category, []):
+                return category
+        return intent  # Not in a repeatable category → use exact intent
 
     # =========================================================================
     # Агрегированные метрики

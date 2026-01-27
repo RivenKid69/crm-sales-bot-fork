@@ -984,7 +984,22 @@ class SalesBot:
                 guard_info={"intervention": intervention} if intervention else None,
                 last_action=self.last_action,
                 last_intent=self.last_intent,
+                current_intent=intent,
+                classification_result=classification,
             )
+
+        # === Structural Frustration Detection (P3) ===
+        if flags.is_enabled("structural_frustration_detection") and context_envelope:
+            from src.tone_analyzer.structural_frustration import StructuralFrustrationDetector
+            sf = StructuralFrustrationDetector().analyze(self.context_window)
+            if sf.delta > 0:
+                new_level = self.tone_analyzer.frustration_tracker.apply_structural_delta(
+                    delta=sf.delta,
+                    suppress_decay=True,
+                    signals=sf.signals,
+                )
+                tone_info["frustration_level"] = new_level
+                context_envelope.frustration_level = new_level
 
         # Build ResponseDirectives if flag enabled
         response_directives = None
@@ -1684,6 +1699,8 @@ class SalesBot:
                 guard_info={"intervention": intervention} if intervention else None,
                 last_action=self.last_action,
                 last_intent=self.last_intent,
+                current_intent=intent,
+                classification_result=classification if isinstance(classification, dict) else None,
             )
 
         # =========================================================================

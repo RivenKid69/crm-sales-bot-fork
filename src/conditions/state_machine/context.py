@@ -209,6 +209,8 @@ class EvaluatorContext:
     tone: Optional[str] = None
     # Count of unclear intents
     unclear_count: int = 0
+    # Secondary intents (from RefinementPipeline via ContextEnvelope)
+    secondary_intents: List[str] = field(default_factory=list)
 
     # === DAG-specific fields ===
     is_dag_mode: bool = False
@@ -331,6 +333,11 @@ class EvaluatorContext:
             # FIX: Extract tone for busy/aggressive persona handling
             tone = getattr(context_envelope, 'tone', None)
 
+        # Extract secondary intents from envelope
+        secondary_intents = []
+        if context_envelope is not None:
+            secondary_intents = getattr(context_envelope, 'secondary_intents', []) or []
+
         # Extract DAG context if available
         is_dag_mode = False
         active_branches = []
@@ -382,6 +389,8 @@ class EvaluatorContext:
             turns_since_breakthrough=turns_since_breakthrough,
             guard_intervention=guard_intervention,
             tone=tone,
+            # Secondary intents
+            secondary_intents=list(secondary_intents),
             # DAG fields
             is_dag_mode=is_dag_mode,
             active_branches=active_branches,
@@ -418,6 +427,8 @@ class EvaluatorContext:
         turns_since_breakthrough: Optional[int] = None,
         guard_intervention: Optional[str] = None,
         tone: Optional[str] = None,
+        # Secondary intents for testing
+        secondary_intents: List[str] = None,
         # DAG fields for testing
         is_dag_mode: bool = False,
         active_branches: List[str] = None,
@@ -490,6 +501,8 @@ class EvaluatorContext:
             turns_since_breakthrough=turns_since_breakthrough,
             guard_intervention=guard_intervention,
             tone=tone,
+            # Secondary intents
+            secondary_intents=secondary_intents or [],
             # DAG fields
             is_dag_mode=is_dag_mode,
             active_branches=active_branches or [],
