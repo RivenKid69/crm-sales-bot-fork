@@ -16,24 +16,24 @@ logger = get_logger("summarizer")
 
 
 # System prompt for entity summarization
-SUMMARIZER_SYSTEM_PROMPT = """You are a code documentation expert.
-Analyze code and produce concise, accurate summaries.
+SUMMARIZER_SYSTEM_PROMPT = """Ты - дружелюбный наставник, который объясняет код начинающим разработчикам.
+Пиши понятно и просто, как будто объясняешь джуну за чашкой кофе.
 
-Rules:
-1. Focus on WHAT the code does, not HOW
-2. Use domain terminology when appropriate
-3. Be concise: 2-3 sentences for summary, one sentence for purpose
-4. Identify the business domain accurately (e.g., auth, payments, logging, config, api, database, utils)
-5. List only the most important behaviors (max 5)
-6. Respond ONLY in valid JSON format
+Правила:
+1. Объясняй ЧТО делает код простыми словами, избегай сложных терминов
+2. Используй аналогии из реальной жизни где уместно
+3. Будь дружелюбным: 2-3 предложения для описания, одно для цели
+4. Укажи область применения (например: авторизация, платежи, логирование, настройки, api, база данных, утилиты)
+5. Перечисли главные возможности понятным языком (максимум 5)
+6. Отвечай ТОЛЬКО валидным JSON без дополнительного текста
 
-Response format:
+Формат ответа:
 {
-  "summary": "2-3 sentences describing what this code does",
-  "purpose": "One sentence: why this exists",
-  "domain": "business domain name",
-  "key_behaviors": ["behavior1", "behavior2"],
-  "dependencies_used": ["dep1", "dep2"]
+  "summary": "2-3 предложения что делает этот код, понятно для новичка",
+  "purpose": "Одно предложение: зачем это нужно в проекте",
+  "domain": "область применения",
+  "key_behaviors": ["возможность1", "возможность2"],
+  "dependencies_used": ["зависимость1", "зависимость2"]
 }"""
 
 
@@ -45,20 +45,36 @@ class EntitySummarizer:
     codebases while preserving semantic information.
     """
 
+    # JSON schema for entity summary (used with Ollama format parameter)
+    ENTITY_SUMMARY_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "purpose": {"type": "string"},
+            "domain": {"type": "string"},
+            "key_behaviors": {"type": "array", "items": {"type": "string"}},
+            "dependencies_used": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["summary", "purpose", "domain", "key_behaviors", "dependencies_used"],
+    }
+
     def __init__(
         self,
-        api_base: str = "http://localhost:11434/v1",
+        api_base: str = "http://localhost:11434",
         model: str = "qwen3:14b",
         config: AppConfig | None = None,
     ):
         """Initialize summarizer.
 
         Args:
-            api_base: LLM API base URL (Ollama or vLLM compatible)
+            api_base: Ollama API base URL (e.g. http://localhost:11434)
             model: Model name to use
             config: Optional app configuration
         """
-        self.api_base = api_base
+        # Normalize base URL: strip /v1 suffix if present
+        self.api_base = api_base.rstrip("/")
+        if self.api_base.endswith("/v1"):
+            self.api_base = self.api_base[:-3]
         self.model = model
         self.config = config or get_config()
         self._summaries: dict[str, EntitySummary] = {}
@@ -175,32 +191,73 @@ Entity type: {entity_type}
 Respond in JSON format as specified."""
 
     async def _call_llm(self, prompt: str) -> dict[str, Any]:
-        """Call LLM API and return parsed response."""
+        """Call Ollama native API with two-step approach.
+
+        Step 1: LLM thinks freely (think=true, no format constraint)
+        Step 2: Feed reasoning back, request structured JSON (think=false, format=schema)
+
+        This preserves Qwen3 reasoning quality while ensuring reliable JSON output.
+        """
         client = await self._get_client()
+        total_in = 0
+        total_out = 0
 
         try:
-            resp = await client.post(
-                "/chat/completions",
+            # Step 1: Think freely
+            resp1 = await client.post(
+                "/api/chat",
                 json={
                     "model": self.model,
                     "messages": [
                         {"role": "system", "content": SUMMARIZER_SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},
                     ],
-                    "max_tokens": 500,
-                    "temperature": 0.1,
+                    "stream": False,
+                    "think": True,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 512,
+                    },
                 },
             )
-            resp.raise_for_status()
-            data = resp.json()
+            resp1.raise_for_status()
+            data1 = resp1.json()
+            msg1 = data1.get("message", {})
+            reasoning = msg1.get("content", "")
+            total_in += data1.get("prompt_eval_count", 0)
+            total_out += data1.get("eval_count", 0)
 
-            content = data["choices"][0]["message"]["content"]
-            usage = data.get("usage", {})
+            # Step 2: Format as structured JSON using the reasoning
+            resp2 = await client.post(
+                "/api/chat",
+                json={
+                    "model": self.model,
+                    "messages": [
+                        {"role": "system", "content": SUMMARIZER_SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                        {"role": "assistant", "content": reasoning},
+                        {"role": "user", "content": "Теперь оформи свой анализ в JSON формате как указано в инструкции."},
+                    ],
+                    "stream": False,
+                    "think": False,
+                    "format": self.ENTITY_SUMMARY_SCHEMA,
+                    "options": {
+                        "temperature": 0,
+                        "num_predict": 512,
+                    },
+                },
+            )
+            resp2.raise_for_status()
+            data2 = resp2.json()
+            msg2 = data2.get("message", {})
+            content = msg2.get("content", "")
+            total_in += data2.get("prompt_eval_count", 0)
+            total_out += data2.get("eval_count", 0)
 
             return {
                 "content": content,
-                "input_tokens": usage.get("prompt_tokens", 0),
-                "output_tokens": usage.get("completion_tokens", 0),
+                "input_tokens": total_in,
+                "output_tokens": total_out,
             }
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
@@ -222,6 +279,10 @@ Respond in JSON format as specified."""
 
         # Try to extract JSON from response
         try:
+            # Strip <think>...</think> tags (Qwen3 adds these)
+            content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
+            content = content.strip()
+
             # Handle markdown code blocks
             if "```json" in content:
                 match = re.search(r"```json\s*(.*?)\s*```", content, re.DOTALL)
@@ -232,9 +293,19 @@ Respond in JSON format as specified."""
                 if match:
                     content = match.group(1)
 
+            # Try to find raw JSON object if content doesn't start with {
+            content = content.strip()
+            if not content.startswith("{"):
+                # Find JSON object pattern
+                match = re.search(r"\{[\s\S]*\}", content)
+                if match:
+                    content = match.group(0)
+
             parsed = json.loads(content)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse JSON response for {entity_id}")
+            logger.debug(f"Parse error: {e}")
+            logger.debug(f"Raw content (first 500 chars): {content[:500]}")
             # Create fallback summary
             parsed = {
                 "summary": f"Code entity: {entity.name}",

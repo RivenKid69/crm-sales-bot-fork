@@ -24,29 +24,45 @@ logger = get_logger("pipeline")
 
 
 # System prompt for module summarization
-MODULE_SUMMARY_PROMPT = """You are a software architect analyzing a code module.
-Based on the summaries of its components, provide a module-level summary.
+MODULE_SUMMARY_PROMPT = """Ты - дружелюбный наставник для начинающих разработчиков.
+Объясни что делает этот модуль простым языком, как будто рассказываешь коллеге за чашкой кофе.
 
-Respond in JSON format:
+Важно:
+- Опиши подробно, какую роль модуль играет в системе
+- Объясни КАК модуль взаимодействует с другими модулями (кто его вызывает, кого вызывает он)
+- Используй аналогии из реальной жизни
+
+Отвечай ТОЛЬКО валидным JSON:
 {
-  "summary": "2-3 sentences describing the module's overall purpose",
-  "responsibilities": ["responsibility1", "responsibility2"],
-  "dependencies": ["module1", "module2"],
-  "exports": ["main_class1", "main_function1"]
+  "summary": "3-5 предложений подробно описывающих модуль и его роль в системе",
+  "role_in_system": "Одно предложение: какую роль играет модуль в общей архитектуре",
+  "responsibilities": ["что делает 1", "что делает 2", "что делает 3"],
+  "uses_modules": ["какие модули использует этот модуль и зачем"],
+  "used_by_modules": ["какие модули используют этот модуль и зачем"],
+  "dependencies": ["внешние зависимости (библиотеки, интерфейсы)"],
+  "exports": ["главные классы/функции которые экспортирует модуль"]
 }"""
 
 
 # System prompt for architecture synthesis
-ARCHITECTURE_PROMPT = """You are a senior software architect.
-Based on the module summaries, provide a high-level architecture overview.
+ARCHITECTURE_PROMPT = """Ты - опытный разработчик, который объясняет архитектуру проекта новичку.
+Опиши как устроена система простым языком, используя аналогии из реальной жизни.
 
-Respond in JSON format:
+Важно:
+- Покажи КАК модули связаны между собой
+- Опиши путь данных через систему
+- Используй понятные аналогии
+
+Отвечай ТОЛЬКО валидным JSON:
 {
-  "overview": "3-5 sentences describing the system's purpose and architecture",
-  "patterns_detected": ["pattern1", "pattern2"],
-  "tech_stack": ["technology1", "technology2"],
-  "data_flow": "Description of how data flows through the system",
-  "key_components": ["component1", "component2"]
+  "overview": "5-7 предложений подробно описывающих систему и её архитектуру",
+  "main_idea": "Одно предложение: главная идея/цель системы",
+  "patterns_detected": ["паттерн 1 и где он используется", "паттерн 2 и где он используется"],
+  "tech_stack": ["технология 1", "технология 2"],
+  "data_flow": "Подробное описание как данные проходят через систему: откуда приходят, как обрабатываются, куда уходят",
+  "module_relationships": ["Модуль A -> использует -> Модуль B для чего", "Модуль C -> зависит от -> Модуль D потому что"],
+  "key_components": ["ключевой компонент 1 и его роль", "ключевой компонент 2 и его роль"],
+  "entry_points": ["точка входа 1", "точка входа 2"]
 }"""
 
 
@@ -59,10 +75,43 @@ class AnalysisPipeline:
     3. Architecture synthesis (high-level overview)
     """
 
+    # JSON schema for module summary (Ollama format parameter)
+    MODULE_SUMMARY_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "role_in_system": {"type": "string"},
+            "responsibilities": {"type": "array", "items": {"type": "string"}},
+            "uses_modules": {"type": "array", "items": {"type": "string"}},
+            "used_by_modules": {"type": "array", "items": {"type": "string"}},
+            "dependencies": {"type": "array", "items": {"type": "string"}},
+            "exports": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["summary", "role_in_system", "responsibilities", "uses_modules",
+                      "used_by_modules", "dependencies", "exports"],
+    }
+
+    # JSON schema for architecture summary (Ollama format parameter)
+    ARCHITECTURE_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "overview": {"type": "string"},
+            "main_idea": {"type": "string"},
+            "patterns_detected": {"type": "array", "items": {"type": "string"}},
+            "tech_stack": {"type": "array", "items": {"type": "string"}},
+            "data_flow": {"type": "string"},
+            "module_relationships": {"type": "array", "items": {"type": "string"}},
+            "key_components": {"type": "array", "items": {"type": "string"}},
+            "entry_points": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["overview", "main_idea", "patterns_detected", "tech_stack",
+                      "data_flow", "module_relationships", "key_components", "entry_points"],
+    }
+
     def __init__(
         self,
         graph: DependencyGraph,
-        api_base: str = "http://localhost:11434/v1",
+        api_base: str = "http://localhost:11434",
         model: str = "qwen3:14b",
         config: AppConfig | None = None,
         cache: AnalysisCache | None = None,
@@ -71,19 +120,22 @@ class AnalysisPipeline:
 
         Args:
             graph: Populated dependency graph from indexer
-            api_base: LLM API base URL
+            api_base: Ollama API base URL (e.g. http://localhost:11434)
             model: Model name to use
             config: Optional app configuration
             cache: Optional analysis cache for incremental analysis
         """
         self.graph = graph
-        self.api_base = api_base
+        # Normalize base URL: strip /v1 suffix if present
+        self.api_base = api_base.rstrip("/")
+        if self.api_base.endswith("/v1"):
+            self.api_base = self.api_base[:-3]
         self.model = model
         self.config = config or get_config()
         self.cache = cache
 
         self.summarizer = EntitySummarizer(
-            api_base=api_base,
+            api_base=self.api_base,
             model=model,
             config=config,
         )
@@ -421,26 +473,59 @@ Domains covered: {', '.join(domains) if domains else 'general'}
 
 Summarize this module."""
 
-        # Call LLM
+        # Call LLM with two-step approach (think + structured output)
         client = await self._get_client()
+        total_in = 0
+        total_out = 0
         try:
-            resp = await client.post(
-                "/chat/completions",
+            messages = [
+                {"role": "system", "content": MODULE_SUMMARY_PROMPT},
+                {"role": "user", "content": prompt},
+            ]
+
+            # Step 1: Think freely
+            resp1 = await client.post(
+                "/api/chat",
                 json={
                     "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": MODULE_SUMMARY_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": 600,
-                    "temperature": 0.1,
+                    "messages": messages,
+                    "stream": False,
+                    "think": True,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 600,
+                    },
                 },
             )
-            resp.raise_for_status()
-            data = resp.json()
+            resp1.raise_for_status()
+            data1 = resp1.json()
+            reasoning = data1.get("message", {}).get("content", "")
+            total_in += data1.get("prompt_eval_count", 0)
+            total_out += data1.get("eval_count", 0)
 
-            content = data["choices"][0]["message"]["content"]
-            usage = data.get("usage", {})
+            # Step 2: Format as structured JSON
+            resp2 = await client.post(
+                "/api/chat",
+                json={
+                    "model": self.model,
+                    "messages": messages + [
+                        {"role": "assistant", "content": reasoning},
+                        {"role": "user", "content": "Теперь оформи свой анализ в JSON формате как указано в инструкции."},
+                    ],
+                    "stream": False,
+                    "think": False,
+                    "format": self.MODULE_SUMMARY_SCHEMA,
+                    "options": {
+                        "temperature": 0,
+                        "num_predict": 600,
+                    },
+                },
+            )
+            resp2.raise_for_status()
+            data2 = resp2.json()
+            content = data2.get("message", {}).get("content", "")
+            total_in += data2.get("prompt_eval_count", 0)
+            total_out += data2.get("eval_count", 0)
 
             # Parse JSON response
             parsed = self._parse_json_response(content)
@@ -454,9 +539,12 @@ Summarize this module."""
                 responsibilities=parsed.get("responsibilities", []),
                 dependencies=parsed.get("dependencies", []),
                 exports=parsed.get("exports", []),
+                role_in_system=parsed.get("role_in_system", ""),
+                uses_modules=parsed.get("uses_modules", []),
+                used_by_modules=parsed.get("used_by_modules", []),
                 entity_count=len(entity_summaries),
-                input_tokens=usage.get("prompt_tokens", 0),
-                output_tokens=usage.get("completion_tokens", 0),
+                input_tokens=total_in,
+                output_tokens=total_out,
             )
 
         except Exception as e:
@@ -490,26 +578,59 @@ Total modules: {len(module_summaries)}
 
 Provide a high-level architecture overview."""
 
-        # Call LLM
+        # Call LLM with two-step approach (think + structured output)
         client = await self._get_client()
+        total_in = 0
+        total_out = 0
         try:
-            resp = await client.post(
-                "/chat/completions",
+            messages = [
+                {"role": "system", "content": ARCHITECTURE_PROMPT},
+                {"role": "user", "content": prompt},
+            ]
+
+            # Step 1: Think freely
+            resp1 = await client.post(
+                "/api/chat",
                 json={
                     "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": ARCHITECTURE_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": 1500,
-                    "temperature": 0.1,
+                    "messages": messages,
+                    "stream": False,
+                    "think": True,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 1500,
+                    },
                 },
             )
-            resp.raise_for_status()
-            data = resp.json()
+            resp1.raise_for_status()
+            data1 = resp1.json()
+            reasoning = data1.get("message", {}).get("content", "")
+            total_in += data1.get("prompt_eval_count", 0)
+            total_out += data1.get("eval_count", 0)
 
-            content = data["choices"][0]["message"]["content"]
-            usage = data.get("usage", {})
+            # Step 2: Format as structured JSON
+            resp2 = await client.post(
+                "/api/chat",
+                json={
+                    "model": self.model,
+                    "messages": messages + [
+                        {"role": "assistant", "content": reasoning},
+                        {"role": "user", "content": "Теперь оформи свой анализ в JSON формате как указано в инструкции."},
+                    ],
+                    "stream": False,
+                    "think": False,
+                    "format": self.ARCHITECTURE_SCHEMA,
+                    "options": {
+                        "temperature": 0,
+                        "num_predict": 1500,
+                    },
+                },
+            )
+            resp2.raise_for_status()
+            data2 = resp2.json()
+            content = data2.get("message", {}).get("content", "")
+            total_in += data2.get("prompt_eval_count", 0)
+            total_out += data2.get("eval_count", 0)
 
             # Parse JSON response
             parsed = self._parse_json_response(content)
@@ -521,8 +642,11 @@ Provide a high-level architecture overview."""
                 tech_stack=parsed.get("tech_stack", []),
                 data_flow=parsed.get("data_flow", ""),
                 key_components=parsed.get("key_components", []),
-                input_tokens=usage.get("prompt_tokens", 0),
-                output_tokens=usage.get("completion_tokens", 0),
+                main_idea=parsed.get("main_idea", ""),
+                module_relationships=parsed.get("module_relationships", []),
+                entry_points=parsed.get("entry_points", []),
+                input_tokens=total_in,
+                output_tokens=total_out,
             )
 
         except Exception as e:
@@ -533,11 +657,15 @@ Provide a high-level architecture overview."""
             )
 
     def _parse_json_response(self, content: str) -> dict[str, Any]:
-        """Parse JSON from LLM response, handling markdown code blocks."""
+        """Parse JSON from LLM response, handling markdown code blocks and think tags."""
         import json
         import re
 
         try:
+            # Strip <think>...</think> tags (Qwen3 adds these)
+            content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
+            content = content.strip()
+
             # Handle markdown code blocks
             if "```json" in content:
                 match = re.search(r"```json\s*(.*?)\s*```", content, re.DOTALL)
@@ -548,6 +676,13 @@ Provide a high-level architecture overview."""
                 if match:
                     content = match.group(1)
 
+            # Try to find raw JSON object if content doesn't start with {
+            content = content.strip()
+            if not content.startswith("{"):
+                match = re.search(r"\{[\s\S]*\}", content)
+                if match:
+                    content = match.group(0)
+
             return json.loads(content)
         except json.JSONDecodeError:
             logger.warning("Failed to parse JSON response")
@@ -556,7 +691,7 @@ Provide a high-level architecture overview."""
 
 async def analyze_codebase(
     graph: DependencyGraph,
-    api_base: str = "http://localhost:11434/v1",
+    api_base: str = "http://localhost:11434",
     model: str = "qwen3:14b",
     output_path: Path | None = None,
     max_concurrent: int = 5,

@@ -72,6 +72,11 @@ class ModuleSummary:
     dependencies: list[str] = field(default_factory=list)  # Dependencies on other modules
     exports: list[str] = field(default_factory=list)  # Main exported entities
 
+    # Module relationships
+    role_in_system: str = ""  # Role of module in overall system
+    uses_modules: list[str] = field(default_factory=list)  # Modules this module uses
+    used_by_modules: list[str] = field(default_factory=list)  # Modules that use this module
+
     # Metrics
     entity_count: int = 0
     total_lines: int = 0
@@ -89,6 +94,9 @@ class ModuleSummary:
             "responsibilities": self.responsibilities,
             "dependencies": self.dependencies,
             "exports": self.exports,
+            "role_in_system": self.role_in_system,
+            "uses_modules": self.uses_modules,
+            "used_by_modules": self.used_by_modules,
             "entity_count": self.entity_count,
             "total_lines": self.total_lines,
             "input_tokens": self.input_tokens,
@@ -107,6 +115,9 @@ class ModuleSummary:
             responsibilities=data.get("responsibilities", []),
             dependencies=data.get("dependencies", []),
             exports=data.get("exports", []),
+            role_in_system=data.get("role_in_system", ""),
+            uses_modules=data.get("uses_modules", []),
+            used_by_modules=data.get("used_by_modules", []),
             entity_count=data.get("entity_count", 0),
             total_lines=data.get("total_lines", 0),
             input_tokens=data.get("input_tokens", 0),
@@ -127,6 +138,11 @@ class ArchitectureSummary:
     external_dependencies: list[str] = field(default_factory=list)  # External libs/services
     diagram_mermaid: str = ""  # Mermaid diagram code
 
+    # Extended architecture info
+    main_idea: str = ""  # One-sentence main purpose
+    module_relationships: list[str] = field(default_factory=list)  # How modules interact
+    entry_points: list[str] = field(default_factory=list)  # Main entry points
+
     # Metrics
     input_tokens: int = 0
     output_tokens: int = 0
@@ -142,6 +158,9 @@ class ArchitectureSummary:
             "key_components": self.key_components,
             "external_dependencies": self.external_dependencies,
             "diagram_mermaid": self.diagram_mermaid,
+            "main_idea": self.main_idea,
+            "module_relationships": self.module_relationships,
+            "entry_points": self.entry_points,
             "input_tokens": self.input_tokens,
             "output_tokens": self.output_tokens,
         }
@@ -158,6 +177,9 @@ class ArchitectureSummary:
             key_components=data.get("key_components", []),
             external_dependencies=data.get("external_dependencies", []),
             diagram_mermaid=data.get("diagram_mermaid", ""),
+            main_idea=data.get("main_idea", ""),
+            module_relationships=data.get("module_relationships", []),
+            entry_points=data.get("entry_points", []),
             input_tokens=data.get("input_tokens", 0),
             output_tokens=data.get("output_tokens", 0),
         )
