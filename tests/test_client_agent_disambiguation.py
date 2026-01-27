@@ -124,12 +124,25 @@ class TestDisambiguationDetection:
         message = "Правильно ли я понял — вас интересует цена?"
         assert agent._detect_disambiguation(message) is True
 
-    def test_detect_or_question(self, mock_llm, happy_path_persona):
-        """Детекция простого вопроса с 'или'."""
+    def test_not_detect_simple_or_question(self, mock_llm, happy_path_persona):
+        """
+        Простой вопрос с 'или' НЕ детектится как disambiguation.
+
+        FIX: Изменено поведение - простые вопросы типа "X или Y?"
+        теперь НЕ считаются disambiguation, потому что это могут быть
+        обычные SPIN/Challenger вопросы типа "скорость или функционал?"
+
+        Для детекции disambiguation нужны явные маркеры:
+        - Нумерованный список
+        - "Уточните, пожалуйста"
+        - "Правильно ли я понял"
+        - "Вы хотите X или Y?" (полное сообщение)
+        """
         agent = ClientAgent(mock_llm, happy_path_persona)
 
+        # Простой вопрос "X или Y?" НЕ должен детектиться
         message = "Узнать цену или обсудить функции?"
-        assert agent._detect_disambiguation(message) is True
+        assert agent._detect_disambiguation(message) is False
 
     def test_not_detect_regular_message(self, mock_llm, happy_path_persona):
         """Обычное сообщение не детектится как disambiguation."""
@@ -409,3 +422,104 @@ class TestPersonaPreferences:
 
         assert index == 1  # "Сравнить с Poster"
         assert "keyword_match" in reason
+
+
+# =============================================================================
+# Test Disambiguation Detection Fix (Option Selection Bug)
+# =============================================================================
+
+class TestDisambiguationDetectionFix:
+    """
+    Тесты исправления детекции disambiguation.
+
+    FIX: Убран слишком широкий паттерн r"или\s+.+\?$" который
+    ловил обычные SPIN/Challenger вопросы типа "скорость или функционал?"
+    и заставлял ClientAgent отвечать "1" вместо natural ответа.
+    """
+
+    def test_not_detect_simple_or_question(self, mock_llm, happy_path_persona):
+        """
+        Простой вопрос с 'или' НЕ должен детектиться как disambiguation.
+
+        FIX: Вопрос "Что приоритетнее — скорость или функционал?"
+        это SPIN/Challenger вопрос, не disambiguation!
+        """
+        agent = ClientAgent(mock_llm, happy_path_persona)
+
+        # Этот вопрос НЕ должен детектиться как disambiguation
+        message = "Что для вас приоритетнее — скорость или функционал?"
+        assert agent._detect_disambiguation(message) is False
+
+    def test_not_detect_challenger_priority_question(self, mock_llm, happy_path_persona):
+        """Challenger priority question не детектится как disambiguation."""
+        agent = ClientAgent(mock_llm, happy_path_persona)
+
+        messages = [
+            "Понял. Что сейчас для вас приоритетнее — быстро запустить или глубоко настроить?",
+            "Что для вас важнее — скорость, контроль или снижение ошибок?",
+            "Вам важнее скорость внедрения или гибкость настройки?",
+        ]
+
+        for msg in messages:
+            assert agent._detect_disambiguation(msg) is False, f"Should NOT detect: {msg}"
+
+    def test_detect_numbered_list_still_works(self, mock_llm, happy_path_persona):
+        """Нумерованный список всё ещё детектится как disambiguation."""
+        agent = ClientAgent(mock_llm, happy_path_persona)
+
+        message = """Уточните, пожалуйста:
+1. Узнать цену
+2. Узнать о функциях
+3. Другое"""
+
+        assert agent._detect_disambiguation(message) is True
+
+    def test_detect_explicit_clarification_still_works(self, mock_llm, happy_path_persona):
+        """Явные уточняющие фразы всё ещё детектятся."""
+        agent = ClientAgent(mock_llm, happy_path_persona)
+
+        messages = [
+            "Уточните, пожалуйста, что именно вас интересует?",
+            "Правильно ли я понял — вас интересует цена?",
+        ]
+
+        for msg in messages:
+            assert agent._detect_disambiguation(msg) is True, f"Should detect: {msg}"
+
+    def test_detect_explicit_choice_question(self, mock_llm, happy_path_persona):
+        """'Вы хотите X или Y?' детектится только если это единственный вопрос."""
+        agent = ClientAgent(mock_llm, happy_path_persona)
+
+        # Explicit choice question (full message = just this question)
+        assert agent._detect_disambiguation("Вы хотите узнать цену или записаться на демо?") is True
+
+    def test_spin_question_uses_llm_not_button(self, mock_llm, happy_path_persona):
+        """
+        На SPIN вопрос с 'или' клиент должен использовать LLM для ответа,
+        а не отвечать "1" как на кнопку.
+        """
+        agent = ClientAgent(mock_llm, happy_path_persona)
+
+        # SPIN priority question
+        message = "Что для вас приоритетнее — скорость или функционал?"
+
+        response = agent.respond(message)
+
+        # LLM должен был вызваться (это НЕ disambiguation)
+        mock_llm.generate.assert_called()
+
+    def test_numbered_list_does_not_call_llm(self, mock_llm, busy_persona):
+        """На нумерованный список клиент НЕ вызывает LLM."""
+        agent = ClientAgent(mock_llm, busy_persona)
+
+        message = """Уточните:
+1. Цена
+2. Функции
+3. Другое"""
+
+        response = agent.respond(message)
+
+        # LLM НЕ должен был вызываться (это disambiguation)
+        mock_llm.generate.assert_not_called()
+        # Busy выбирает первый вариант
+        assert response == "1"

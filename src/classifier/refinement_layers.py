@@ -66,11 +66,14 @@ class ShortAnswerRefinementLayer(BaseRefinementLayer):
     FEATURE_FLAG = "classification_refinement"
 
     # Intents that may need refinement (low-signal in short message context)
+    # FIX: Added request_brevity - LLM often misclassifies short answers like "1"
+    # as request_brevity when they're actually info_provided responses
     LOW_SIGNAL_INTENTS: Set[str] = {
         "greeting",
         "unclear",
         "small_talk",
         "gratitude",
+        "request_brevity",  # FIX: "1" often misclassified as request_brevity
     }
 
     # Actions that indicate we're awaiting data
@@ -858,6 +861,242 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
 
 
 # =============================================================================
+# LAYER 5: OPTION SELECTION REFINEMENT (Disambiguation Assist Fix)
+# =============================================================================
+
+
+@register_refinement_layer("option_selection")
+class OptionSelectionRefinementLayer(BaseRefinementLayer):
+    """
+    Refines short numeric/ordinal responses when bot asked a question with options.
+
+    Problem: Bot asks inline question like "Скорость или функционал?" (not in disambiguation mode).
+    Client (simulator) responds "1" thinking it's option selection.
+    LLM classifies "1" as request_brevity (0.9) instead of info_provided.
+
+    Solution: Detect when last_bot_message contains option patterns (X или Y?),
+    and short numeric answer ("1", "2", "первое") - refine to info_provided with
+    secondary signal indicating option selection.
+
+    Architecture:
+    - OCP: New layer, doesn't modify existing layers
+    - SRP: Single responsibility - option selection detection
+    - Config-Driven: Patterns loaded from YAML
+    - Registry: Auto-registered via @register_refinement_layer decorator
+
+    Research basis:
+    - Grice's Cooperative Principle: short answers in response to questions
+      carry implicature of answering that specific question
+    - Conversational repair research: numeric responses to binary questions
+      are understood as selections, not meta-comments
+    """
+
+    LAYER_NAME = "option_selection"
+    LAYER_PRIORITY = LayerPriority.HIGH  # 75 - runs early
+    FEATURE_FLAG = "option_selection_refinement"
+
+    # Patterns to detect option-bearing questions in bot message
+    OPTION_QUESTION_PATTERNS: List[str] = [
+        r"(.+?)\s+или\s+(.+?)\?",  # "X или Y?"
+        r"что\s+(?:для\s+вас\s+)?(?:важн|приоритетн|лучше)",  # Priority questions
+        r"(?:вам|вас)\s+(?:важн|интересн|нужн)",  # "Вам важнее..."
+        r"(?:выбер|предпочт)",  # "Выберите" / "Предпочитаете"
+    ]
+
+    # Patterns to detect numeric/ordinal selection answers
+    SELECTION_ANSWER_PATTERNS: List[str] = [
+        r"^1$",  # Just "1"
+        r"^2$",  # Just "2"
+        r"^3$",  # Just "3"
+        r"^перв",  # "первое", "первый"
+        r"^втор",  # "второе", "второй"
+        r"^трет",  # "третье", "третий"
+        r"^один$",
+        r"^два$",
+        r"^три$",
+    ]
+
+    # Intents that may be wrong when user is answering option question
+    SUSPICIOUS_INTENTS: Set[str] = {
+        "request_brevity",  # Main culprit
+        "greeting",
+        "unclear",
+        "small_talk",
+        "gratitude",
+        "objection_no_time",  # "1" might be misread as "hurry up"
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._option_question_regex: Optional[re.Pattern] = None
+        self._selection_answer_regex: Optional[re.Pattern] = None
+        self._init_patterns()
+
+    def _get_config(self) -> Dict[str, Any]:
+        """Load option_selection_refinement config from constants.yaml."""
+        try:
+            from src.yaml_config.constants import get_option_selection_config
+            return get_option_selection_config()
+        except (ImportError, AttributeError):
+            # Config function not yet added, use defaults
+            return {
+                "enabled": True,
+                "target_intent": "info_provided",
+                "refined_confidence": 0.75,
+                "secondary_signal": "option_selection",
+            }
+
+    def _init_patterns(self) -> None:
+        """Initialize regex patterns."""
+        # Load from config or use defaults
+        option_patterns = self._config.get(
+            "option_question_patterns",
+            self.OPTION_QUESTION_PATTERNS
+        )
+        selection_patterns = self._config.get(
+            "selection_answer_patterns",
+            self.SELECTION_ANSWER_PATTERNS
+        )
+
+        self._option_question_regex = self._compile_patterns(option_patterns)
+        self._selection_answer_regex = self._compile_patterns(selection_patterns)
+
+        # Load suspicious intents from config or use defaults
+        config_suspicious = self._config.get("suspicious_intents", [])
+        if config_suspicious:
+            self.SUSPICIOUS_INTENTS = set(config_suspicious)
+
+    @staticmethod
+    def _compile_patterns(patterns: List[str]) -> Optional[re.Pattern]:
+        """Compile patterns into single regex."""
+        if not patterns:
+            return None
+        return re.compile("|".join(patterns), re.IGNORECASE)
+
+    def _should_apply(self, ctx: RefinementContext) -> bool:
+        """
+        Check if option selection refinement should apply.
+
+        Conditions:
+        1. Layer is enabled in config
+        2. Intent is in suspicious_intents (might be wrong)
+        3. Message is short (selection-like)
+        4. last_bot_message contains option patterns
+        """
+        if not self._config.get("enabled", True):
+            return False
+
+        # Check 1: Is intent suspicious?
+        if ctx.intent not in self.SUSPICIOUS_INTENTS:
+            return False
+
+        # Check 2: Is message short enough to be selection?
+        if len(ctx.message.strip()) > 15:
+            return False
+
+        # Check 3: Does message match selection pattern?
+        if not self._is_selection_answer(ctx.message):
+            return False
+
+        # Check 4: Did bot ask an option question?
+        # Need last_bot_message in context
+        last_bot_msg = ctx.last_bot_message or ctx.metadata.get("last_bot_message", "")
+        if not last_bot_msg:
+            return False
+
+        if not self._is_option_question(last_bot_msg):
+            return False
+
+        return True
+
+    def _do_refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext,
+    ) -> RefinementResult:
+        """
+        Refine to info_provided with option_selection signal.
+
+        Logic:
+        - Extract which option was selected (1, 2, etc.)
+        - Refine intent to info_provided
+        - Add secondary_signal "option_selection"
+        - Add metadata about selected option index
+        """
+        # Extract selected option index
+        option_index = self._extract_option_index(message)
+
+        # Extract options from bot message for context
+        last_bot_msg = ctx.last_bot_message or ctx.metadata.get("last_bot_message", "")
+        extracted_options = self._extract_options_from_question(last_bot_msg)
+
+        target_intent = self._config.get("target_intent", "info_provided")
+        refined_confidence = self._config.get("refined_confidence", 0.75)
+        secondary_signal = self._config.get("secondary_signal", "option_selection")
+
+        # Build reason
+        reason_parts = ["option_selection"]
+        if option_index is not None:
+            reason_parts.append(f"index={option_index}")
+        if extracted_options:
+            reason_parts.append(f"options={len(extracted_options)}")
+
+        return self._create_refined_result(
+            new_intent=target_intent,
+            new_confidence=refined_confidence,
+            original_intent=ctx.intent,
+            reason=":".join(reason_parts),
+            result=result,
+            secondary_signals=[secondary_signal],
+            metadata={
+                "option_index": option_index,
+                "extracted_options": extracted_options,
+                "original_bot_question": last_bot_msg[:100] if last_bot_msg else None,
+            },
+        )
+
+    def _is_selection_answer(self, message: str) -> bool:
+        """Check if message looks like option selection."""
+        if not self._selection_answer_regex:
+            return False
+        text = message.lower().strip()
+        return bool(self._selection_answer_regex.search(text))
+
+    def _is_option_question(self, bot_message: str) -> bool:
+        """Check if bot message contains option patterns."""
+        if not self._option_question_regex:
+            return False
+        return bool(self._option_question_regex.search(bot_message))
+
+    def _extract_option_index(self, message: str) -> Optional[int]:
+        """Extract which option was selected (0-indexed)."""
+        text = message.lower().strip()
+
+        # Numeric
+        if text == "1" or text.startswith("перв") or text == "один":
+            return 0
+        if text == "2" or text.startswith("втор") or text == "два":
+            return 1
+        if text == "3" or text.startswith("трет") or text == "три":
+            return 2
+
+        return None
+
+    def _extract_options_from_question(self, bot_message: str) -> List[str]:
+        """Extract option labels from bot question."""
+        options = []
+
+        # Pattern: "X или Y?"
+        match = re.search(r"(.+?)\s+или\s+(.+?)\?", bot_message, re.IGNORECASE)
+        if match:
+            options.append(match.group(1).strip())
+            options.append(match.group(2).strip())
+
+        return options
+
+
+# =============================================================================
 # AUTO-REGISTRATION VERIFICATION
 # =============================================================================
 
@@ -873,6 +1112,7 @@ def verify_layers_registered() -> List[str]:
     registry = RefinementLayerRegistry.get_registry()
     # FIX: Added secondary_intent_detection to expected layers
     # FIX: Added first_contact for First Turn Objection Bug Fix
+    # FIX: Added option_selection for Disambiguation Assist Fix
     expected = [
         "confidence_calibration",
         "secondary_intent_detection",  # Lost Question Fix
@@ -880,6 +1120,7 @@ def verify_layers_registered() -> List[str]:
         "composite_message",
         "first_contact",  # First Turn Objection Bug Fix
         "objection",
+        "option_selection",  # Disambiguation Assist Fix
     ]
     registered = registry.get_all_names()
 

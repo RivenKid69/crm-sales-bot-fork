@@ -2313,6 +2313,15 @@ refinement_pipeline:
       priority: NORMAL  # 50
       feature_flag: objection_refinement
 
+    # Слой 5: Option Selection Refinement (Disambiguation Assist Fix)
+    # Обрабатывает короткие ответы ("1", "2", "первое") на вопросы с вариантами
+    # FIX: Решает проблему когда бот задаёт вопрос "скорость или функционал?"
+    # и клиент отвечает "1" - LLM неверно классифицирует как request_brevity
+    - name: option_selection
+      enabled: true
+      priority: HIGH  # 75 - runs before objection refinement
+      feature_flag: option_selection_refinement
+
   # Глобальные настройки pipeline
   settings:
     # Логировать каждое решение слоя
@@ -2323,6 +2332,62 @@ refinement_pipeline:
 
     # Продолжать при ошибке слоя
     continue_on_error: true
+
+# =============================================================================
+# OPTION SELECTION REFINEMENT (Disambiguation Assist Fix)
+# =============================================================================
+# Архитектурное решение проблемы "выбора варианта":
+# - Бот задаёт вопрос с вариантами: "скорость или функционал?"
+# - Клиент отвечает "1" или "первое"
+# - LLM неверно классифицирует как request_brevity (0.9)
+# - Этот слой детектирует паттерн и рефайнит к info_provided
+#
+# Research basis:
+# - Grice's Cooperative Principle: short answers carry implicature of answering
+# - Conversational repair: numeric responses to binary questions = selections
+#
+# SSoT: src/classifier/refinement_layers.py (OptionSelectionRefinementLayer)
+# =============================================================================
+option_selection_refinement:
+  # Master switch
+  enabled: true
+
+  # Target intent when option selection detected
+  target_intent: info_provided
+
+  # Confidence for refined result
+  refined_confidence: 0.75
+
+  # Secondary signal added to result
+  secondary_signal: option_selection
+
+  # Паттерны для детекции вопросов с вариантами в сообщении бота
+  option_question_patterns:
+    - "(.+?)\\s+или\\s+(.+?)\\?"  # "X или Y?"
+    - "что\\s+(?:для\\s+вас\\s+)?(?:важн|приоритетн|лучше)"  # Priority questions
+    - "(?:вам|вас)\\s+(?:важн|интересн|нужн)"  # "Вам важнее..."
+    - "(?:выбер|предпочт)"  # "Выберите" / "Предпочитаете"
+
+  # Паттерны для детекции ответов-выборов
+  selection_answer_patterns:
+    - "^1$"  # Just "1"
+    - "^2$"  # Just "2"
+    - "^3$"  # Just "3"
+    - "^перв"  # "первое", "первый"
+    - "^втор"  # "второе", "второй"
+    - "^трет"  # "третье", "третий"
+    - "^один$"
+    - "^два$"
+    - "^три$"
+
+  # Интенты, которые подозрительны при ответе на вопрос с вариантами
+  suspicious_intents:
+    - request_brevity  # Main culprit
+    - greeting
+    - unclear
+    - small_talk
+    - gratitude
+    - objection_no_time
 
 # =============================================================================
 # SECONDARY INTENT DETECTION (Lost Question Fix)

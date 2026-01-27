@@ -657,6 +657,59 @@ def get_refinement_pipeline_config() -> Dict[str, Any]:
     })
 
 
+def get_option_selection_config() -> Dict[str, Any]:
+    """
+    Get option_selection_refinement config from constants.yaml.
+
+    Used by OptionSelectionRefinementLayer to configure option selection detection.
+    Solves the "option selection" bug where LLM misclassifies "1", "2", "первое"
+    as request_brevity when they're actually answers to bot's option questions.
+
+    Problem Scenario:
+        Bot: "Что для вас приоритетнее — скорость или функционал?"
+        User: "1"
+        LLM: request_brevity (0.9) ← WRONG
+        Expected: info_provided with option_selection signal
+
+    Research Basis:
+        - Grice's Cooperative Principle (1975): short answers carry implicature
+        - Conversational repair research: numeric responses = selections
+
+    Returns:
+        Dict with option selection configuration including:
+        - enabled: bool - master switch
+        - target_intent: str - intent to refine to (default: info_provided)
+        - refined_confidence: float - confidence for refined result
+        - secondary_signal: str - signal to add to result
+        - option_question_patterns: List[str] - patterns for bot questions
+        - selection_answer_patterns: List[str] - patterns for user answers
+        - suspicious_intents: List[str] - intents that may be wrong
+
+    Example:
+        >>> config = get_option_selection_config()
+        >>> config["enabled"]
+        True
+        >>> config["target_intent"]
+        'info_provided'
+    """
+    return _constants.get("option_selection_refinement", {
+        "enabled": True,
+        "target_intent": "info_provided",
+        "refined_confidence": 0.75,
+        "secondary_signal": "option_selection",
+        "option_question_patterns": [
+            r"(.+?)\s+или\s+(.+?)\?",
+        ],
+        "selection_answer_patterns": [
+            r"^1$", r"^2$", r"^3$",
+            r"^перв", r"^втор", r"^трет",
+        ],
+        "suspicious_intents": [
+            "request_brevity", "greeting", "unclear", "small_talk",
+        ],
+    })
+
+
 def get_confidence_calibration_config() -> Dict[str, Any]:
     """
     Get confidence_calibration config from constants.yaml.

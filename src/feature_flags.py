@@ -118,6 +118,9 @@ class FeatureFlags:
         # === Composite Message Refinement: Data Priority ===
         "composite_refinement": True,             # Приоритет извлечения данных над мета-интентами
 
+        # === Option Selection Refinement: Disambiguation Assist Fix ===
+        "option_selection_refinement": True,      # Обработка выбора вариантов ("1", "2", "первое")
+
         # === Universal Refinement Pipeline ===
         "refinement_pipeline": True,              # Использовать универсальный RefinementPipeline вместо отдельных слоёв
 
