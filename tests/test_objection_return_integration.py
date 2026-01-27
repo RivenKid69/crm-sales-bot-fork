@@ -835,3 +835,151 @@ class TestNonPhaseStateIntegration:
 
             assert decision.next_state == phase_state, \
                 f"Failed for phase_state: {phase_state}"
+
+
+# =============================================================================
+# Integration Tests: Total-Based Objection Escape (Meta-Intent Streak Breaking Fix)
+# =============================================================================
+
+class TestTotalBasedEscapeIntegration:
+    """
+    Integration tests for total-based objection escape.
+
+    Verifies that when meta-intents break consecutive objection streak,
+    the total-based escape still routes to entry_state instead of soft_close.
+
+    Bug scenario:
+        1. tire_kicker/aggressive starts with objection from greeting
+        2. _state_before_objection = "greeting" (no phase)
+        3. Mix of objection intents and meta-intents (request_brevity)
+        4. Consecutive streak keeps resetting to 0 (never reaches 3)
+        5. Total keeps accumulating
+        6. WITHOUT FIX: total reaches 5 → objection_limit_reached → soft_close → 0% coverage
+        7. WITH FIX: total reaches 4 → total escape → entry_state → start phases
+    """
+
+    def test_total_escape_wins_over_yaml_for_non_phase(self):
+        """
+        ObjectionReturnSource total escape (NORMAL) should win over
+        TransitionResolver (NORMAL) due to priority_order (35 < 50).
+
+        Scenario:
+            - Non-phase saved state (greeting)
+            - Total objections at threshold (4)
+            - Consecutive below threshold (2, broken by meta-intents)
+            - ObjectionReturnSource proposes entry_state (NORMAL, first)
+            - TransitionResolver proposes handle_objection (NORMAL, second)
+            - First wins → entry_state
+        """
+        # Set tracker with total at threshold, consecutive below
+        tracker = MockIntentTracker(
+            objection_consecutive=1,  # After record: 2 (below 3)
+            objection_total=3,  # After record: 4 (at threshold)
+        )
+
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="objection_price",
+            state_before_objection="greeting",
+        )
+
+        # Replace tracker with our custom one
+        bb = setup["blackboard"]
+        bb._intent_tracker = tracker
+        # Re-record to update tracker
+        tracker.record("objection_price", "handle_objection")
+
+        objection_return = setup["objection_return_source"]
+        transition_resolver = setup["transition_resolver_source"]
+        resolver = setup["conflict_resolver"]
+
+        # Both sources contribute
+        objection_return.contribute(bb)
+        transition_resolver.contribute(bb)
+
+        proposals = bb.get_proposals()
+
+        # Resolve conflict
+        decision = resolver.resolve(
+            proposals=proposals,
+            current_state="handle_objection"
+        )
+
+        # ObjectionReturnSource should WIN (runs first, total escape)
+        assert decision.next_state == "bant_budget", \
+            f"Expected 'bant_budget' (entry_state) but got '{decision.next_state}'. " \
+            "Total escape should route to entry_state for non-phase states."
+
+    def test_total_escape_does_not_affect_phase_state_return(self):
+        """
+        Verify: Total escape does NOT interfere with phase state returns.
+
+        When saved state HAS a phase, the normal return (HIGH priority)
+        should still work, regardless of total objection count.
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="agreement",
+            state_before_objection="bant_budget",  # HAS phase
+        )
+
+        bb = setup["blackboard"]
+        objection_return = setup["objection_return_source"]
+        transition_resolver = setup["transition_resolver_source"]
+        resolver = setup["conflict_resolver"]
+
+        objection_return.contribute(bb)
+        transition_resolver.contribute(bb)
+
+        decision = resolver.resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        # Should return to bant_budget (phase preserved via HIGH priority)
+        assert decision.next_state == "bant_budget"
+
+    def test_meta_intent_streak_breaking_full_integration(self):
+        """
+        Full integration test simulating the exact meta-intent streak breaking bug.
+
+        Simulates:
+        1. Objection from greeting → handle_objection (save greeting)
+        2. In handle_objection: obj, obj, brevity(reset!), obj
+        3. 4th objection: consecutive=2, total=4
+        4. Total escape fires → entry_state
+        """
+        # Simulate after: obj, obj, brevity, obj, [current: obj]
+        # consecutive = 1 (reset after brevity, then 1 more)
+        # total = 3 (3 objections so far)
+        # Current turn: 4th objection → record: c=2, t=4
+        tracker = MockIntentTracker(
+            objection_consecutive=1,  # After record: 2
+            objection_total=3,  # After record: 4
+        )
+
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="objection_trust",  # 4th objection
+            state_before_objection="greeting",
+        )
+
+        bb = setup["blackboard"]
+        bb._intent_tracker = tracker
+        tracker.record("objection_trust", "handle_objection")
+
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        # Should escape to entry_state
+        assert decision.next_state != "greeting", \
+            "BUG: Still returning to greeting (loop!)"
+        assert decision.next_state != "soft_close", \
+            "BUG: Going to soft_close (0% coverage!)"
+        assert decision.next_state == "bant_budget", \
+            "Total escape should route to entry_state (bant_budget)"

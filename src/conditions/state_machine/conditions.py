@@ -483,7 +483,7 @@ def objection_repeated(ctx: EvaluatorContext) -> bool:
 
 @sm_condition(
     "objection_loop_escape",
-    description="Check if stuck in objection loop (3+ consecutive from non-phase state)",
+    description="Check if stuck in objection loop (3+ consecutive OR total approaching limit)",
     category="intent"
 )
 def objection_loop_escape(ctx: EvaluatorContext) -> bool:
@@ -500,8 +500,20 @@ def objection_loop_escape(ctx: EvaluatorContext) -> bool:
     Triggers when:
     1. Current state is handle_objection
     2. Current intent is an objection
-    3. 3+ consecutive objections without positive response
-    4. We came from a non-phase state (greeting, etc.)
+    3. EITHER:
+       a) 3+ consecutive objections without positive response (original)
+       b) Total objections approaching limit (max_total - 1) (FIX)
+
+    Case 3b fixes the meta-intent streak breaking bug:
+    - Meta-intents (request_brevity, etc.) reset consecutive streak to 0
+    - But total objections keep accumulating
+    - Without this fix, objection_limit_reached fires at total=max_total
+      → soft_close with 0% coverage
+    - With this fix, escape fires at total=max_total-1, one step before limit
+      → entry_state, giving client a chance to enter sales phases
+
+    In YAML transition order, objection_loop_escape is checked BEFORE
+    objection_limit_reached, so escape wins when both would be true.
 
     Part of Zero Phase Coverage Fix (OBJECTION_STUCK_FIX_PLAN.md)
     """
@@ -514,16 +526,24 @@ def objection_loop_escape(ctx: EvaluatorContext) -> bool:
     if ctx.current_intent not in INTENT_CATEGORIES.get("objection", []):
         return False
 
-    # Check consecutive objections (threshold = 3)
     consecutive = ctx.get_category_streak("objection")
-    if consecutive < 3:
-        return False
+    total = ctx.get_category_total("objection")
 
-    # Check if we're in a non-phase situation
-    # This is a simplified check - the full check is in ObjectionReturnSource
-    # which verifies _state_before_objection has no phase
-    # Here we just check that we have 3+ consecutive objections
-    return True
+    # CASE A: Consecutive-based escape (original)
+    # 3+ consecutive objections without positive response
+    if consecutive >= 3:
+        return True
+
+    # CASE B: Total-based escape (FIX for meta-intent streak breaking)
+    # Meta-intents like request_brevity break consecutive streak but don't
+    # reduce total. Fire escape when total reaches max_total - 1 to ensure
+    # escape fires BEFORE objection_limit_reached (which fires at max_total).
+    # This prevents the scenario where consecutive never reaches 3 but
+    # total reaches 5 → objection_limit_reached → soft_close → 0% coverage.
+    if total >= ctx.max_total_objections - 1:
+        return True
+
+    return False
 
 
 # =============================================================================

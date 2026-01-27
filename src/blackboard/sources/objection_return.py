@@ -30,7 +30,10 @@ import logging
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
-from src.yaml_config.constants import POSITIVE_INTENTS, QUESTION_INTENTS, OBJECTION_INTENTS
+from src.yaml_config.constants import (
+    POSITIVE_INTENTS, QUESTION_INTENTS, OBJECTION_INTENTS,
+    MAX_TOTAL_OBJECTIONS,
+)
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
@@ -42,6 +45,17 @@ logger = logging.getLogger(__name__)
 # If client gives N+ consecutive objections without positive response AND we came
 # from a non-phase state (greeting), force exit to entry_state
 OBJECTION_LOOP_ESCAPE_THRESHOLD = 3
+
+# Total-based escape threshold: fire escape before objection_limit_reached
+# objection_limit_reached fires at total >= MAX_TOTAL_OBJECTIONS (default: 5)
+# We fire escape at total >= MAX_TOTAL_OBJECTIONS - 1 (default: 4) to ensure
+# escape gets priority over limit when meta-intents break consecutive streak.
+#
+# FIX: Without this, meta-intents like request_brevity reset consecutive streak
+# to 0 but total keeps accumulating. When total reaches MAX_TOTAL_OBJECTIONS,
+# objection_limit_reached fires → soft_close with 0% coverage.
+# With this threshold, escape fires one step earlier → entry_state.
+OBJECTION_TOTAL_ESCAPE_THRESHOLD = MAX_TOTAL_OBJECTIONS - 1
 
 
 # Question intents that also trigger return (after refinement from objection_think)
@@ -90,6 +104,14 @@ class ObjectionReturnSource(KnowledgeSource):
         this becomes question_features. Now ObjectionReturnSource also triggers
         on question intents, allowing return from handle_objection.
 
+    FIX for meta-intent streak breaking (total-based escape):
+        Meta-intents like request_brevity reset consecutive objection streak to 0.
+        This prevents consecutive-based escape (needs 3+) from ever firing.
+        Meanwhile, total objections keep accumulating. When total reaches
+        max_total_objections (5), objection_limit_reached fires → soft_close → 0%.
+        Fix: Also trigger escape when total approaches limit (max_total - 1 = 4).
+        This fires escape one step before limit, preventing soft_close.
+
     Priority: HIGH
         - Must win over TransitionResolverSource (NORMAL priority YAML transitions)
         - Must NOT win over ObjectionGuardSource (CRITICAL priority limit exceeded)
@@ -113,6 +135,17 @@ class ObjectionReturnSource(KnowledgeSource):
                 (after refinement from objection_think via uncertainty pattern)
                 → ObjectionReturnSource proposes: handle_objection → bant_budget
                 → Final transition: handle_objection → bant_budget ✓
+
+        Total escape example (meta-intent breaks consecutive streak):
+                Turn 1: objection_price  → consecutive=1, total=1
+                Turn 2: objection_think  → consecutive=2, total=2
+                Turn 3: request_brevity  → consecutive=0, total=2 (streak broken!)
+                Turn 4: objection_trust  → consecutive=1, total=3
+                Turn 5: objection_price  → consecutive=2, total=4
+                        → total >= 4 (OBJECTION_TOTAL_ESCAPE_THRESHOLD)
+                        → Total escape fires → entry_state ✓
+                        (Without fix: consecutive never reaches 3, total reaches 5
+                         → objection_limit_reached → soft_close → 0% coverage)
     """
 
     # Positive intents that trigger return to previous phase
@@ -170,10 +203,14 @@ class ObjectionReturnSource(KnowledgeSource):
         3. _state_before_objection is set in state machine
         4. Current intent is a positive/return intent
            OR current intent is an objection AND we're stuck in loop
+           (either consecutive >= threshold OR total approaching limit)
 
         The "stuck in loop" case handles personas like tire_kicker and aggressive
         who NEVER give positive intents and would otherwise get stuck in
         handle_objection until objection_limit_reached (soft_close).
+
+        The "total approaching limit" case handles the meta-intent streak breaking
+        bug where request_brevity resets consecutive streak but total keeps growing.
 
         This is O(1) - fast checks only.
         """
@@ -194,24 +231,34 @@ class ObjectionReturnSource(KnowledgeSource):
         if blackboard.current_intent in self._return_intents:
             return True
 
-        # CASE 2: Objection loop escape - force exit when stuck
+        # CASE 2: Objection-based escape - force exit when stuck
         # This fixes the zero phase coverage bug for tire_kicker/aggressive personas
         # who express only objection intents and never reach any phase.
         if blackboard.current_intent in OBJECTION_INTENTS:
-            # Check if we're stuck in objection loop (N+ consecutive objections)
             tracker = blackboard._intent_tracker
             if tracker:
-                consecutive = tracker.objection_consecutive()
-                if consecutive >= OBJECTION_LOOP_ESCAPE_THRESHOLD:
-                    # Also check if saved state has no phase (came from greeting)
-                    # If we came from a phase state, we should wait for positive intent
-                    flow_config = blackboard._flow_config
-                    phase = None
-                    if hasattr(flow_config, 'get_phase_for_state'):
-                        phase = flow_config.get_phase_for_state(saved_state)
+                # Check if saved state has no phase (came from greeting)
+                # If we came from a phase state, we should wait for positive intent
+                flow_config = blackboard._flow_config
+                phase = None
+                if hasattr(flow_config, 'get_phase_for_state'):
+                    phase = flow_config.get_phase_for_state(saved_state)
 
-                    # Only trigger escape if came from non-phase state
-                    if phase is None:
+                # Only trigger escape if came from non-phase state
+                if phase is None:
+                    consecutive = tracker.objection_consecutive()
+                    total = tracker.objection_total()
+
+                    # CASE 2a: Consecutive-based escape (original)
+                    # N+ consecutive objections without positive response
+                    if consecutive >= OBJECTION_LOOP_ESCAPE_THRESHOLD:
+                        return True
+
+                    # CASE 2b: Total-based escape (FIX for meta-intent streak breaking)
+                    # Meta-intents like request_brevity break consecutive streak
+                    # but total keeps accumulating. Fire escape when total approaches
+                    # limit to prevent objection_limit_reached → soft_close → 0% coverage.
+                    if total >= OBJECTION_TOTAL_ESCAPE_THRESHOLD:
                         return True
 
         return False
@@ -223,19 +270,24 @@ class ObjectionReturnSource(KnowledgeSource):
         Algorithm:
         1. Verify all conditions (re-check for safety)
         2. Get saved state from _state_before_objection
-        3. Check for objection loop escape condition (stuck with no positive intent)
+        3. Check for objection escape conditions (stuck with no positive intent)
         4. Validate that target state exists
         5. Propose transition with appropriate priority
         6. Log contribution for debugging/monitoring
 
-        Two modes of operation:
+        Three modes of operation:
         A) POSITIVE INTENT → return to saved state (normal flow)
-        B) OBJECTION LOOP ESCAPE → force exit to entry_state when stuck
+        B) CONSECUTIVE ESCAPE → force exit to entry_state when 3+ consecutive
+        C) TOTAL ESCAPE → force exit when total approaching limit (meta-intent fix)
 
         Mode B fixes the zero phase coverage bug for tire_kicker/aggressive personas
         who express only objection intents (90%/70% probability) and never give
-        positive responses. Without this fix, they would get stuck in handle_objection
-        until objection_limit_reached triggers soft_close, resulting in 0% phase coverage.
+        positive responses.
+
+        Mode C fixes the meta-intent streak breaking bug where request_brevity
+        resets consecutive streak to 0 but total keeps accumulating. Without this,
+        objection_limit_reached fires at total=max_total → soft_close → 0% coverage.
+        With this, escape fires at total=max_total-1 → entry_state.
         """
         if not self._enabled:
             return
@@ -274,7 +326,7 @@ class ObjectionReturnSource(KnowledgeSource):
             phase = flow_config.get_phase_for_state(saved_state)
 
         # ====================================================================
-        # CHECK FOR OBJECTION LOOP ESCAPE CONDITION
+        # CHECK FOR OBJECTION ESCAPE CONDITIONS
         # ====================================================================
         # FIX: Zero phase coverage bug for tire_kicker/aggressive personas
         #
@@ -286,25 +338,52 @@ class ObjectionReturnSource(KnowledgeSource):
         #   5. No positive intent → stuck in handle_objection → handle_objection loop
         #   6. Eventually objection_limit_reached → soft_close with 0% coverage
         #
-        # Solution:
-        #   When stuck in objection loop (N+ consecutive objections, no phase),
-        #   force exit to entry_state even without positive intent.
-        #   This allows client to enter sales phases instead of going to soft_close.
+        # Solution (two escape paths):
+        #   A) Consecutive escape: N+ consecutive objections from non-phase state
+        #      → force exit to entry_state (original fix)
+        #   B) Total escape: total approaching limit from non-phase state
+        #      → force exit to entry_state (new fix for meta-intent streak breaking)
+        #
+        # Case B fixes the secondary bug where meta-intents (request_brevity)
+        # reset consecutive streak to 0 but total keeps accumulating.
+        # Without this fix, consecutive never reaches 3 but total reaches 5
+        # → objection_limit_reached → soft_close → 0% coverage.
         # ====================================================================
         is_objection_loop_escape = False
         consecutive_objections = 0
+        total_objections = 0
+        escape_trigger = None  # "consecutive" or "total"
 
         if blackboard.current_intent in OBJECTION_INTENTS and phase is None:
             tracker = blackboard._intent_tracker
             if tracker:
                 consecutive_objections = tracker.objection_consecutive()
+                total_objections = tracker.objection_total()
+
+                # CASE A: Consecutive-based escape (original)
                 if consecutive_objections >= OBJECTION_LOOP_ESCAPE_THRESHOLD:
                     is_objection_loop_escape = True
+                    escape_trigger = "consecutive"
                     logger.info(
-                        f"ObjectionReturnSource: objection loop escape triggered",
+                        f"ObjectionReturnSource: consecutive objection escape triggered",
                         extra={
                             "consecutive_objections": consecutive_objections,
                             "threshold": OBJECTION_LOOP_ESCAPE_THRESHOLD,
+                            "saved_state": saved_state,
+                            "current_intent": blackboard.current_intent,
+                        }
+                    )
+
+                # CASE B: Total-based escape (FIX for meta-intent streak breaking)
+                elif total_objections >= OBJECTION_TOTAL_ESCAPE_THRESHOLD:
+                    is_objection_loop_escape = True
+                    escape_trigger = "total"
+                    logger.info(
+                        f"ObjectionReturnSource: total objection escape triggered",
+                        extra={
+                            "total_objections": total_objections,
+                            "threshold": OBJECTION_TOTAL_ESCAPE_THRESHOLD,
+                            "consecutive_objections": consecutive_objections,
                             "saved_state": saved_state,
                             "current_intent": blackboard.current_intent,
                         }
@@ -354,7 +433,16 @@ class ObjectionReturnSource(KnowledgeSource):
 
             if entry_state and entry_state in flow_config.states:
                 # Determine reason for transition
-                if is_objection_loop_escape:
+                if is_objection_loop_escape and escape_trigger == "total":
+                    reason_code = "objection_total_escape_to_entry_state"
+                    mechanism = "objection_total_escape"
+                    reason_str = (
+                        f"Total objection escape: {total_objections} total "
+                        f"objections (threshold: {OBJECTION_TOTAL_ESCAPE_THRESHOLD}) "
+                        f"from non-phase state '{saved_state}' "
+                        f"(consecutive: {consecutive_objections}, broken by meta-intents)"
+                    )
+                elif is_objection_loop_escape:
                     reason_code = "objection_loop_escape_to_entry_state"
                     mechanism = "objection_loop_escape"
                     reason_str = (
@@ -390,7 +478,9 @@ class ObjectionReturnSource(KnowledgeSource):
                         "reason": "saved_state_has_no_phase",
                         "mechanism": mechanism,
                         "is_objection_loop_escape": is_objection_loop_escape,
+                        "escape_trigger": escape_trigger,
                         "consecutive_objections": consecutive_objections,
+                        "total_objections": total_objections,
                     }
                 )
                 self._log_contribution(
@@ -406,6 +496,9 @@ class ObjectionReturnSource(KnowledgeSource):
                         "priority": "NORMAL",
                         "mechanism": mechanism,
                         "is_objection_loop_escape": is_objection_loop_escape,
+                        "escape_trigger": escape_trigger,
+                        "consecutive_objections": consecutive_objections,
+                        "total_objections": total_objections,
                     }
                 )
             else:

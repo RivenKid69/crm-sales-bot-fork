@@ -48,6 +48,7 @@ from src.conditions.state_machine import (
     is_current_intent_positive,
     is_current_intent_question,
     is_spin_progress_intent,
+    objection_loop_escape,
     # State conditions
     is_spin_state,
     in_spin_phase,
@@ -1865,3 +1866,207 @@ class TestConfigurableObjectionLimits:
         assert objection_limit_reached(ctx) is False
         assert objection_consecutive_3x(ctx) is False
         assert objection_total_5x(ctx) is False
+
+
+# =============================================================================
+# OBJECTION LOOP ESCAPE CONDITION TESTS
+# =============================================================================
+
+class TestObjectionLoopEscapeCondition:
+    """
+    Tests for objection_loop_escape condition.
+
+    This condition fires when:
+    1. State is handle_objection
+    2. Current intent is objection
+    3. EITHER consecutive >= 3 OR total >= max_total - 1
+
+    The total-based check fixes the meta-intent streak breaking bug
+    where request_brevity resets consecutive streak but total accumulates.
+    """
+
+    def test_consecutive_escape_fires(self):
+        """objection_loop_escape fires at 3+ consecutive objections."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 3)
+        tracker.set_category_total("objection", 3)
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+        )
+
+        assert objection_loop_escape(ctx) is True
+
+    def test_consecutive_below_threshold_no_fire(self):
+        """objection_loop_escape does NOT fire below consecutive threshold."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 2)
+        tracker.set_category_total("objection", 2)
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+        )
+
+        assert objection_loop_escape(ctx) is False
+
+    def test_total_escape_fires(self):
+        """
+        objection_loop_escape fires when total >= max_total - 1.
+
+        This is the FIX for meta-intent streak breaking.
+        """
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 2)  # Below consecutive threshold
+        tracker.set_category_total("objection", 4)  # At total escape threshold (5-1=4)
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=5,  # Default
+        )
+
+        assert objection_loop_escape(ctx) is True
+
+    def test_total_below_threshold_no_fire(self):
+        """objection_loop_escape does NOT fire when total is below threshold."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 1)
+        tracker.set_category_total("objection", 3)  # Below threshold (5-1=4)
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=5,
+        )
+
+        assert objection_loop_escape(ctx) is False
+
+    def test_not_handle_objection_state_no_fire(self):
+        """objection_loop_escape does NOT fire outside handle_objection."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 5)
+        tracker.set_category_total("objection", 5)
+
+        ctx = create_test_context(
+            state="greeting",  # Not handle_objection!
+            current_intent="objection_price",
+            intent_tracker=tracker,
+        )
+
+        assert objection_loop_escape(ctx) is False
+
+    def test_non_objection_intent_no_fire(self):
+        """objection_loop_escape does NOT fire for non-objection intents."""
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 5)
+        tracker.set_category_total("objection", 5)
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="agreement",  # Not objection!
+            intent_tracker=tracker,
+        )
+
+        assert objection_loop_escape(ctx) is False
+
+    def test_total_escape_fires_before_limit(self):
+        """
+        Total escape fires at max_total - 1, BEFORE objection_limit_reached at max_total.
+
+        This is the key guarantee: escape fires one step before limit.
+        In YAML, escape is checked before limit, so escape wins.
+        """
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 1)  # Broken by meta-intents
+        tracker.set_category_total("objection", 4)  # max_total - 1
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=5,
+        )
+
+        # Escape fires at total=4
+        assert objection_loop_escape(ctx) is True
+
+        # But limit does NOT fire at total=4 (needs total >= 5)
+        assert objection_limit_reached(ctx) is False
+
+    def test_both_fire_at_max_total(self):
+        """
+        At total = max_total, BOTH escape and limit fire.
+        In YAML, escape is checked first, so escape wins.
+        """
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 1)
+        tracker.set_category_total("objection", 5)  # At max_total
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=5,
+        )
+
+        # Both fire
+        assert objection_loop_escape(ctx) is True
+        assert objection_limit_reached(ctx) is True
+
+    def test_meta_intent_streak_breaking_scenario(self):
+        """
+        Full scenario: meta-intents break consecutive, total triggers escape.
+
+        Sequence:
+        obj(1,1) → obj(2,2) → brevity(0,2) → obj(1,3) → obj(2,4)
+        At total=4: escape fires, consecutive=2 (below 3)
+        """
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 2)  # After: obj, brevity, obj, obj
+        tracker.set_category_total("objection", 4)  # 4 total objections
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=5,
+        )
+
+        # Consecutive escape: NO (2 < 3)
+        # Total escape: YES (4 >= 5-1)
+        assert objection_loop_escape(ctx) is True
+
+    def test_custom_max_total_affects_escape(self):
+        """
+        Custom max_total_objections affects the total escape threshold.
+        """
+        tracker = SimpleIntentTracker()
+        tracker.set_category_streak("objection", 1)
+        tracker.set_category_total("objection", 6)  # Need >= 7 for threshold=8-1=7
+
+        ctx = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=8,  # Custom higher limit
+        )
+
+        # total(6) < max_total-1(7), so NO escape
+        assert objection_loop_escape(ctx) is False
+
+        # Now at threshold
+        tracker.set_category_total("objection", 7)
+        ctx2 = create_test_context(
+            state="handle_objection",
+            current_intent="objection_price",
+            intent_tracker=tracker,
+            max_total_objections=8,
+        )
+
+        assert objection_loop_escape(ctx2) is True

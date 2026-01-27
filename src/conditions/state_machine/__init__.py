@@ -91,6 +91,7 @@ from src.conditions.state_machine.conditions import (
     is_current_intent_positive,
     is_current_intent_question,
     is_spin_progress_intent,
+    objection_loop_escape,
     # State conditions (generic)
     is_phase_state,
     in_phase,
@@ -214,6 +215,7 @@ __all__ = [
     "is_current_intent_positive",
     "is_current_intent_question",
     "is_spin_progress_intent",
+    "objection_loop_escape",
     # State conditions (generic)
     "is_phase_state",
     "in_phase",

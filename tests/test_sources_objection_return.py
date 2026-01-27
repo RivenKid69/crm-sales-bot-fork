@@ -1351,3 +1351,268 @@ class TestObjectionLoopEscape:
 
         # Default is 3
         assert OBJECTION_LOOP_ESCAPE_THRESHOLD == 3
+
+
+# =============================================================================
+# Tests for Total-Based Objection Escape (Meta-Intent Streak Breaking Fix)
+# =============================================================================
+
+class TestTotalBasedObjectionEscape:
+    """
+    Test that ObjectionReturnSource escapes when total objections approach limit,
+    even when consecutive streak is broken by meta-intents.
+
+    Root Cause (secondary zero phase coverage bug):
+        1. Persona starts with objection in greeting state
+        2. _state_before_objection = "greeting" (no phase)
+        3. Meta-intents like request_brevity break consecutive objection streak
+        4. Consecutive never reaches 3 (OBJECTION_LOOP_ESCAPE_THRESHOLD)
+        5. But total keeps accumulating
+        6. When total reaches max_total_objections (5), objection_limit_reached fires
+        7. objection_limit_reached → soft_close → 0% coverage
+
+    Solution:
+        Fire escape when total objections approach limit (max_total - 1 = 4).
+        This ensures escape fires BEFORE objection_limit_reached,
+        routing to entry_state instead of soft_close.
+
+    Affected scenario:
+        Turn 1: objection_price   → consecutive=1, total=1
+        Turn 2: objection_think   → consecutive=2, total=2
+        Turn 3: request_brevity   → consecutive=0 (RESET!), total=2
+        Turn 4: objection_trust   → consecutive=1, total=3
+        Turn 5: objection_price   → consecutive=2, total=4
+                → total >= 4 (OBJECTION_TOTAL_ESCAPE_THRESHOLD)
+                → Total escape fires → entry_state ✓
+    """
+
+    @pytest.fixture
+    def source(self):
+        """Create an ObjectionReturnSource instance."""
+        return ObjectionReturnSource()
+
+    def test_total_escape_threshold_is_correct(self):
+        """
+        Verify: Total escape threshold = max_total_objections - 1.
+        """
+        from src.blackboard.sources.objection_return import (
+            OBJECTION_TOTAL_ESCAPE_THRESHOLD,
+        )
+        from src.yaml_config.constants import MAX_TOTAL_OBJECTIONS
+
+        assert OBJECTION_TOTAL_ESCAPE_THRESHOLD == MAX_TOTAL_OBJECTIONS - 1
+        # With default max_total=5, threshold should be 4
+        assert OBJECTION_TOTAL_ESCAPE_THRESHOLD == 4
+
+    def test_should_contribute_true_for_total_escape(self, source):
+        """
+        should_contribute returns True when total objections reach threshold.
+
+        Note: MockIntentTracker.record() is called during begin_turn(),
+        incrementing consecutive+1 and total+1 for objection intents.
+        Initial values are set to (desired_after_record - 1).
+
+        After record: consecutive=2 (below 3), total=4 (at threshold)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",  # Objection intent → record +1
+            state_before_objection="greeting",  # Non-phase state
+            objection_consecutive=1,  # After record: 2 (below threshold 3)
+            objection_total=3,  # After record: 4 (at total escape threshold)
+        )
+
+        assert source.should_contribute(bb) is True
+
+    def test_should_contribute_false_below_total_threshold(self, source):
+        """
+        should_contribute returns False when total is below threshold
+        and consecutive is also below threshold.
+
+        After record: consecutive=1, total=3 (both below thresholds)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",  # record +1
+            state_before_objection="greeting",
+            objection_consecutive=0,  # After record: 1 (below 3)
+            objection_total=2,  # After record: 3 (below 4)
+        )
+
+        assert source.should_contribute(bb) is False
+
+    def test_should_contribute_false_for_phase_state_total_escape(self, source):
+        """
+        should_contribute returns False for total escape when saved state has phase.
+
+        Total escape only triggers for non-phase states (like greeting).
+        For phase states, we wait for positive intent to return.
+
+        After record: consecutive=2, total=4 (at threshold but phase state)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",  # record +1
+            state_before_objection="bant_budget",  # HAS phase
+            objection_consecutive=1,  # After record: 2
+            objection_total=3,  # After record: 4 (at threshold)
+        )
+
+        assert source.should_contribute(bb) is False
+
+    def test_contribute_proposes_entry_state_on_total_escape(self, source):
+        """
+        contribute proposes entry_state when total escape triggered.
+
+        After record: consecutive=1 (below 3), total=4 (at threshold)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_trust",  # Objection intent → record +1
+            state_before_objection="greeting",  # Non-phase state
+            objection_consecutive=0,  # After record: 1 (below 3)
+            objection_total=3,  # After record: 4 (at threshold)
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # entry_state
+        assert proposals[0].priority == Priority.NORMAL
+        assert proposals[0].reason_code == "objection_total_escape_to_entry_state"
+
+    def test_contribute_metadata_includes_total_escape_info(self, source):
+        """
+        contribute metadata includes total escape information.
+
+        After record: consecutive=1 (below 3), total=4 (at threshold)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",  # record +1
+            state_before_objection="greeting",
+            objection_consecutive=0,  # After record: 1 (below 3)
+            objection_total=3,  # After record: 4 (at threshold)
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        metadata = proposals[0].metadata
+
+        assert metadata["is_objection_loop_escape"] is True
+        assert metadata["escape_trigger"] == "total"
+        assert metadata["total_objections"] == 4
+        assert metadata["mechanism"] == "objection_total_escape"
+
+    def test_consecutive_escape_still_has_priority_over_total(self, source):
+        """
+        When both consecutive and total thresholds are met,
+        consecutive escape triggers first (it's checked first).
+
+        After record: consecutive=3 (at threshold), total=5 (above threshold)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",  # record +1
+            state_before_objection="greeting",
+            objection_consecutive=2,  # After record: 3 (at consecutive threshold)
+            objection_total=4,  # After record: 5 (above total threshold)
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        # Consecutive escape triggers first (checked before total)
+        assert proposals[0].reason_code == "objection_loop_escape_to_entry_state"
+        metadata = proposals[0].metadata
+        assert metadata["escape_trigger"] == "consecutive"
+
+    def test_meta_intent_streak_breaking_full_scenario(self, source):
+        """
+        Full scenario: meta-intents break consecutive streak, total triggers escape.
+
+        Simulates the exact bug:
+        - tire_kicker in greeting → objection → handle_objection (save greeting)
+        - obj(c=1,t=1), obj(c=2,t=2), brevity(c=0,t=2), obj(c=1,t=3)
+        - Now 4th objection intent arrives → record: c=1+1=2, t=3+1=4
+        - Total escape fires (4 >= 4) while consecutive doesn't (2 < 3)
+        """
+        # State before this turn: c=1, t=3 (broken by request_brevity)
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",  # 4th objection → record: c=2, t=4
+            state_before_objection="greeting",
+            objection_consecutive=1,  # After record: 2 (broken by brevity)
+            objection_total=3,  # After record: 4 (keeps accumulating)
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # entry_state
+        assert proposals[0].reason_code == "objection_total_escape_to_entry_state"
+
+    def test_total_escape_above_threshold(self, source):
+        """
+        Total escape should also fire when total exceeds threshold.
+
+        After record: consecutive=1, total=5 (above threshold 4)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_no_need",  # record +1
+            state_before_objection="greeting",
+            objection_consecutive=0,  # After record: 1
+            objection_total=4,  # After record: 5 (above threshold)
+        )
+
+        assert source.should_contribute(bb) is True
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"
+        assert proposals[0].reason_code == "objection_total_escape_to_entry_state"
+
+    def test_no_total_escape_for_positive_intent(self, source):
+        """
+        Positive intent should use normal return path, not total escape.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="agreement",  # POSITIVE intent
+            state_before_objection="greeting",
+            objection_consecutive=0,
+            objection_total=4,  # At total threshold, but positive intent
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # entry_state fallback
+        # Should be normal return, not total escape
+        assert proposals[0].reason_code == "objection_return_to_entry_state"
+
+    def test_no_total_escape_without_entry_state(self, source):
+        """
+        No total escape when flow has no entry_state defined.
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",
+            state_before_objection="greeting",
+            objection_consecutive=1,
+            objection_total=4,
+            variables={},  # No entry_state
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 0  # No fallback available
