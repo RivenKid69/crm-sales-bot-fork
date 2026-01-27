@@ -126,14 +126,16 @@ class QuestionDeduplicationEngine:
     Функции:
     1. Генерация списка доступных вопросов на основе missing_data
     2. Генерация инструкции "не спрашивай" на основе collected_data
-    3. Фильтрация вопросов по фазе SPIN
-    4. Метрики и мониторинг
+    3. Фильтрация вопросов по фазе (любой flow: SPIN, MEDDIC, BANT, etc.)
+    4. Generic fallback для фаз без phase-specific конфигурации
+    5. Метрики и мониторинг
     """
 
     CONFIG_PATH = Path(__file__).parent / "yaml_config" / "question_dedup.yaml"
 
     # Fallback вопросы если конфиг недоступен
     FALLBACK_QUESTIONS = {
+        # SPIN phases
         "situation": [
             "Сколько человек в вашей команде?",
             "Чем сейчас пользуетесь для учёта?",
@@ -150,6 +152,82 @@ class QuestionDeduplicationEngine:
         "need_payoff": [
             "Что было бы идеально для вас?",
             "Как должна работать система?",
+        ],
+        # MEDDIC phases
+        "metrics": [
+            "По каким метрикам оцениваете успех?",
+            "Какие KPI важны?",
+        ],
+        "buyer": [
+            "Кто принимает финальное решение?",
+            "С кем нужно согласовать?",
+        ],
+        "criteria": [
+            "Что для вас ключевое при выборе?",
+            "Какие критерии важны?",
+        ],
+        "process": [
+            "Какие шаги в процессе принятия решения?",
+            "Нужны ли согласования?",
+        ],
+        "pain": [
+            "Какая главная сложность?",
+            "Что мешает работать?",
+        ],
+        "champion": [
+            "Кто внутри команды будет вести проект?",
+            "Есть человек кто поможет внедрению?",
+        ],
+        # BANT phases
+        "budget": [
+            "Какой бюджет рассматриваете?",
+            "На какую сумму ориентируетесь?",
+        ],
+        "authority": [
+            "Кто принимает финальное решение?",
+            "Вы сами решаете или есть руководство?",
+        ],
+        "need": [
+            "Какая главная потребность сейчас?",
+            "Что хотели бы улучшить?",
+        ],
+        "timeline": [
+            "Когда планируете внедрение?",
+            "Какие сроки рассматриваете?",
+        ],
+        # Shared phases
+        "discover": [
+            "Расскажите о вашей компании?",
+            "Сколько человек в команде?",
+        ],
+        "interest": [
+            "Что вас заинтересовало?",
+            "Какой у вас формат бизнеса?",
+        ],
+        "desire": [
+            "Что хотели бы улучшить?",
+            "Какой результат был бы идеальным?",
+        ],
+        "features": [
+            "Сколько человек будет пользоваться?",
+            "Чем сейчас пользуетесь?",
+        ],
+        "advantages": [
+            "Какая главная сложность сейчас?",
+            "Что не устраивает?",
+        ],
+        "benefits": [
+            "Какой результат хотите получить?",
+            "Что было бы идеально?",
+        ],
+        "quantify": [
+            "Как это влияет на бизнес в цифрах?",
+            "Сколько теряете из-за этого?",
+        ],
+        # Default fallback
+        "_default": [
+            "Расскажите подробнее о вашей ситуации?",
+            "Что для вас сейчас самое важное?",
         ],
     }
 
@@ -227,7 +305,7 @@ class QuestionDeduplicationEngine:
         Получить список доступных вопросов для фазы.
 
         Args:
-            phase: Текущая фаза SPIN (situation, problem, implication, need_payoff)
+            phase: Текущая фаза (any flow phase: situation, problem, budget, metrics, etc.)
             collected_data: Уже собранные данные
             missing_data: Список полей которые ещё нужно собрать (опционально)
 
@@ -245,6 +323,11 @@ class QuestionDeduplicationEngine:
 
         # Определяем какие поля нужны для этой фазы
         phase_config = self._config.phase_questions.get(phase, {}) if self._config else {}
+
+        # If no phase-specific config exists, use generic dedup
+        if not phase_config:
+            return self._generic_dedup(phase, collected_data, missing_data)
+
         required_fields = set(phase_config.get("required_fields", []))
         optional_fields = set(phase_config.get("optional_fields", []))
         all_phase_fields = required_fields | optional_fields
@@ -301,6 +384,68 @@ class QuestionDeduplicationEngine:
             available_questions=available_questions,
             do_not_ask_fields=do_not_ask_fields,
             do_not_ask_instruction=do_not_ask_instruction,
+            available_questions_instruction=available_instruction,
+            all_data_collected=all_collected,
+            phase=phase,
+            filtered_count=filtered_count,
+        )
+
+    def _generic_dedup(
+        self,
+        phase: str,
+        collected_data: Dict[str, Any],
+        missing_data: Optional[List[str]] = None,
+    ) -> QuestionGenerationResult:
+        """
+        Universal dedup: works for any flow without phase-specific config.
+
+        Generates do_not_ask for ALL collected fields and uses fallback questions.
+        """
+        collected_fields = [
+            k for k, v in collected_data.items()
+            if v is not None and v != "" and v != 0
+        ]
+        do_not_ask = self._generate_do_not_ask_instruction(collected_fields, collected_data)
+
+        available_questions = []
+        if missing_data:
+            for field in missing_data:
+                field_config = self._config.data_fields.get(field, {}) if self._config else {}
+                related = field_config.get("related_questions", [])
+                if related:
+                    available_questions.append(choice(related))
+
+        # If no questions from data_fields, use fallback
+        if not available_questions:
+            fallback = self.FALLBACK_QUESTIONS.get(phase, self.FALLBACK_QUESTIONS.get("_default", []))
+            available_questions = fallback[:2]
+
+        available_instruction = self._generate_available_questions_instruction(available_questions)
+
+        all_collected = not bool(missing_data)
+        if all_collected:
+            self._metrics.phases_with_all_data += 1
+
+        filtered_count = len(collected_fields)
+        self._metrics.questions_filtered += filtered_count
+        self._metrics.questions_generated += len(available_questions)
+
+        for field in collected_fields:
+            self._metrics.filtered_fields[field] = (
+                self._metrics.filtered_fields.get(field, 0) + 1
+            )
+
+        logger.debug(
+            "Generic dedup applied (no phase config)",
+            phase=phase,
+            filtered_fields=collected_fields,
+            available_count=len(available_questions),
+        )
+
+        return QuestionGenerationResult(
+            available_questions=available_questions,
+            do_not_ask_fields=collected_fields,
+            do_not_ask_instruction=do_not_ask,
             available_questions_instruction=available_instruction,
             all_data_collected=all_collected,
             phase=phase,

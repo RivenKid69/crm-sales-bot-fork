@@ -12,6 +12,8 @@ states:
       - unified_progress
       - transactional_rules
     goal: "Быстро квалифицировать"
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: greeting
       next_phase_state: trans_offer
@@ -30,6 +32,11 @@ states:
       - unified_progress
       - transactional_rules
     goal: "Сделать предложение"
+    on_enter:
+      set_flags:
+        offer_made: true
+    required_data:
+      - offer_made
     parameters:
       prev_phase_state: trans_qualify
       next_phase_state: trans_close
@@ -48,6 +55,11 @@ states:
       - unified_progress
       - transactional_rules
     goal: "Быстро закрыть"
+    on_enter:
+      set_flags:
+        close_initiated: true
+    required_data:
+      - close_initiated
     parameters:
       prev_phase_state: trans_offer
       next_phase_state: close

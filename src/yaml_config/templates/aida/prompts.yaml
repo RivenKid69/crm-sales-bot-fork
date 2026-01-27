@@ -11,6 +11,7 @@ templates:
     description: "AIDA - продолжить текущую цель"
     parameters:
       required: [system, goal, collected_data, missing_data, history, user_message]
+      optional: [do_not_ask, available_questions]
     template: |
       {system}
 
@@ -19,6 +20,7 @@ templates:
 
       Уже знаем о клиенте: {collected_data}
       Нужно узнать: {missing_data}
+      {do_not_ask}
 
       Диалог:
       {history}
@@ -30,6 +32,8 @@ templates:
       2. Задать ОДИН вопрос, который продвигает цель этапа ({goal})
 
       Тон: энергичный, но без давления.
+      {available_questions}
+
       Ответ на русском (2 предложения):
 
   grab_attention:

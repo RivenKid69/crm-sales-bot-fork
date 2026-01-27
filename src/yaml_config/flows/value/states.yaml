@@ -15,6 +15,9 @@ states:
       - unified_progress
       - value_rules
     goal: "Найти драйверы ценности"
+    phase: discover
+    required_data:
+      - company_size
     parameters:
       next_phase_state: value_quantify
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -31,6 +34,9 @@ states:
       - unified_progress
       - value_rules
     goal: "Квантифицировать влияние"
+    phase: quantify
+    required_data:
+      - pain_impact
     parameters:
       next_phase_state: value_roi
       prev_phase_state: value_discover  # FIX: Go back to previous phase
@@ -47,6 +53,11 @@ states:
       - unified_progress
       - value_rules
     goal: "Представить ROI"
+    on_enter:
+      set_flags:
+        roi_probed: true
+    required_data:
+      - roi_probed
     parameters:
       next_phase_state: presentation
       prev_phase_state: value_quantify  # FIX: Go back to previous phase

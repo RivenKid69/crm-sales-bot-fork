@@ -11,6 +11,11 @@ states:
       - unified_progress
       - gap_rules
     goal: "Понять текущее состояние"
+    phase: discover
+    required_data:
+      - company_size
+    optional_data:
+      - current_tools
     parameters:
       next_phase_state: gap_future
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -27,6 +32,8 @@ states:
       - unified_progress
       - gap_rules
     goal: "Визуализировать желаемое будущее"
+    required_data:
+      - desired_outcome
     parameters:
       next_phase_state: gap_analysis
       prev_phase_state: gap_current  # FIX: Go back to previous phase
@@ -43,6 +50,9 @@ states:
       - unified_progress
       - gap_rules
     goal: "Показать разрыв"
+    phase: quantify
+    required_data:
+      - pain_impact
     parameters:
       next_phase_state: gap_solution
       prev_phase_state: gap_future  # FIX: Go back to previous phase
@@ -59,6 +69,11 @@ states:
       - unified_progress
       - gap_rules
     goal: "Показать как решение заполняет разрыв"
+    on_enter:
+      set_flags:
+        solution_probed: true
+    required_data:
+      - solution_probed
     parameters:
       next_phase_state: presentation
       prev_phase_state: gap_analysis  # FIX: Go back to previous phase

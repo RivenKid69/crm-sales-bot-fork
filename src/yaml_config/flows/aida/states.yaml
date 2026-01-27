@@ -16,6 +16,11 @@ states:
       - unified_progress  # FIX: Используем universal progress
       - aida_rules
     goal: "Захватить внимание"
+    on_enter:
+      set_flags:
+        attention_probed: true
+    required_data:
+      - attention_probed
     parameters:
       next_phase_state: aida_interest
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -37,6 +42,9 @@ states:
       - unified_progress
       - aida_rules
     goal: "Развить интерес"
+    phase: interest
+    required_data:
+      - company_size
     parameters:
       next_phase_state: aida_desire
       prev_phase_state: aida_attention  # FIX: Go back to previous phase
@@ -53,6 +61,9 @@ states:
       - unified_progress
       - aida_rules
     goal: "Создать желание"
+    phase: desire
+    required_data:
+      - pain_point
     parameters:
       next_phase_state: aida_action
       prev_phase_state: aida_interest  # FIX: Go back to previous phase
@@ -69,6 +80,11 @@ states:
       - unified_progress
       - aida_rules
     goal: "Призвать к действию"
+    on_enter:
+      set_flags:
+        action_probed: true
+    required_data:
+      - action_probed
     parameters:
       next_phase_state: presentation
       prev_phase_state: aida_desire  # FIX: Go back to previous phase

@@ -10,6 +10,9 @@ states:
     mixins:
       - unified_progress
     goal: "Представить ключевые функции"
+    phase: features
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: greeting
       next_phase_state: fab_advantages
@@ -26,6 +29,9 @@ states:
     mixins:
       - unified_progress
     goal: "Показать преимущества"
+    phase: advantages
+    required_data:
+      - pain_point
     parameters:
       prev_phase_state: fab_features
       next_phase_state: fab_benefits
@@ -42,6 +48,9 @@ states:
     mixins:
       - unified_progress
     goal: "Перевести в выгоды для клиента"
+    phase: benefits
+    required_data:
+      - desired_outcome
     parameters:
       prev_phase_state: fab_advantages
       next_phase_state: presentation

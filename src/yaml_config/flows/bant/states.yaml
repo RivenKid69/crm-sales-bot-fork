@@ -3,13 +3,9 @@
 # =============================================================================
 # FIX: Переработано для использования universal intents
 #
-# ВАЖНО: BANT НЕ использует unified_progress mixin напрямую, потому что
-# семантика другая - каждая фаза собирает специфичные данные (Budget, Authority,
-# Need, Timeline), и progress intents (situation_provided, problem_revealed)
-# должны маппиться на соответствующую фазу, а не на следующую.
-#
-# Например: situation_provided в bant_budget должен оставаться в budget
-# (клиент дал инфо о ситуации, но не о бюджете).
+# unified_progress mixin обеспечивает catch-all переходы для unexpected intents.
+# Custom rules (situation_provided, problem_revealed) переопределяют mixin —
+# BANT сохраняет qualification-gate семантику для этих intents.
 # =============================================================================
 
 states:
@@ -17,24 +13,27 @@ states:
   bant_budget:
     extends: _base_phase
     mixins:
+      - unified_progress
       - objection_handling
       - price_handling
       - product_questions
       - exit_intents
       - close_shortcuts
     goal: "Выяснить бюджет клиента"
+    phase: budget
+    required_data:
+      - budget_range
     parameters:
-      next_phase_state: bant_authority  # Required by _base_phase's phase_progress mixin
-      prev_phase_state: greeting  # FIX: First phase goes back to greeting
-      default_price_action: answer_with_facts  # В budget фазе можно говорить о цене
+      next_phase_state: bant_authority
+      prev_phase_state: greeting
+      default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_budget_question
-      # Progress intents: остаёмся в текущей фазе, просим уточнить бюджет
-      situation_provided: ask_about_budget   # Клиент рассказал о себе, но не о бюджете
-      problem_revealed: ask_about_budget     # Клиент рассказал о проблеме, но не о бюджете
+      # Override unified_progress: stay in budget for these intents
+      situation_provided: ask_about_budget
+      problem_revealed: ask_about_budget
     transitions:
-      # Прогресс только при явных BANT-related интентах
       agreement: bant_authority
       info_provided: bant_authority
       data_complete: bant_authority
@@ -43,22 +42,24 @@ states:
   bant_authority:
     extends: _base_phase
     mixins:
+      - unified_progress
       - objection_handling
       - price_handling
       - product_questions
       - exit_intents
       - close_shortcuts
     goal: "Определить лицо принимающее решение"
+    phase: authority
+    required_data:
+      - decision_maker
     parameters:
-      next_phase_state: bant_need  # Required by _base_phase's phase_progress mixin
-      prev_phase_state: bant_budget  # FIX: Go back to previous phase
-      # FIX: Изменено с deflect_and_continue на условную логику
-      # Отвечаем на цену если: frustrated ИЛИ price спрошен 2+ раз ИЛИ secondary_intent
+      next_phase_state: bant_need
+      prev_phase_state: bant_budget
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_authority_question
-      # Progress intents: остаёмся в текущей фазе, просим уточнить ЛПР
+      # Override unified_progress: stay in authority for these intents
       situation_provided: ask_about_authority
       problem_revealed: ask_about_authority
     transitions:
@@ -70,23 +71,24 @@ states:
   bant_need:
     extends: _base_phase
     mixins:
+      - unified_progress
       - objection_handling
       - price_handling
       - product_questions
       - exit_intents
       - close_shortcuts
     goal: "Выявить потребность"
+    phase: need
+    required_data:
+      - pain_point
     parameters:
-      next_phase_state: bant_timeline  # Required by _base_phase's phase_progress mixin
-      prev_phase_state: bant_authority  # FIX: Go back to previous phase
-      # FIX: Изменено с deflect_and_continue на answer_with_facts
-      # Клиент в need phase уже достаточно квалифицирован для обсуждения цены
+      next_phase_state: bant_timeline
+      prev_phase_state: bant_authority
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_need_question
       no_need: create_need_awareness
-      # В need фазе problem_revealed - это прогресс!
       problem_revealed: explore_need_deeper
     transitions:
       agreement: bant_timeline
@@ -98,20 +100,23 @@ states:
   bant_timeline:
     extends: _base_phase
     mixins:
+      - unified_progress
       - objection_handling
       - price_handling
       - product_questions
       - exit_intents
       - close_shortcuts
     goal: "Определить сроки принятия решения"
+    phase: timeline
+    required_data:
+      - decision_timeline
     parameters:
-      next_phase_state: presentation  # Required by _base_phase's phase_progress mixin
-      prev_phase_state: bant_need  # FIX: Go back to previous phase
+      next_phase_state: presentation
+      prev_phase_state: bant_need
       default_price_action: answer_with_facts
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_timeline_question
-      # В timeline всё идёт к презентации
       situation_provided: continue_current_goal
       problem_revealed: continue_current_goal
     transitions:

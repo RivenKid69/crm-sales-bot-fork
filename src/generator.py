@@ -589,8 +589,10 @@ class ResponseGenerator:
         else:
             template_key = action
 
-        # Для SPIN-фаз: если action == "continue_current_goal" и есть spin_phase,
-        # используем специфический SPIN-шаблон вместо generic continue_current_goal
+        # NOTE: "spin_phase" is a legacy name. This contains the current phase
+        # for ANY active flow (e.g., "situation" for SPIN, "budget" for BANT,
+        # "metrics" for MEDDIC). The dedup engine handles all phase names.
+        # Если есть phase-specific шаблон, используем его вместо generic continue_current_goal
         # НО только если это не price-related интент (price имеет приоритет)
         spin_phase = context.get("spin_phase", "")
         if template_key == "continue_current_goal" and spin_phase and intent not in self.PRICE_RELATED_INTENTS:
@@ -677,6 +679,7 @@ class ResponseGenerator:
 
         # === Question Deduplication: Prevent asking about already collected data ===
         # SSoT: src/yaml_config/question_dedup.yaml
+        # Works for all flows via phase name (SPIN, MEDDIC, BANT, etc.)
         if flags.is_enabled("question_deduplication") and spin_phase:
             try:
                 dedup_context = question_dedup_engine.get_prompt_context(

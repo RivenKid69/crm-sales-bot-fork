@@ -11,6 +11,9 @@ states:
       - unified_progress
       - consultative_rules
     goal: "Глубоко понять ситуацию клиента"
+    phase: understand
+    required_data:
+      - company_size
     parameters:
       next_phase_state: consult_advise
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -27,6 +30,9 @@ states:
       - unified_progress
       - consultative_rules
     goal: "Дать экспертный совет"
+    phase: advise
+    required_data:
+      - pain_point
     parameters:
       next_phase_state: consult_recommend
       prev_phase_state: consult_understand  # FIX: Go back to previous phase
@@ -43,6 +49,9 @@ states:
       - unified_progress
       - consultative_rules
     goal: "Рекомендовать оптимальное решение"
+    phase: recommend
+    required_data:
+      - desired_outcome
     parameters:
       next_phase_state: presentation
       prev_phase_state: consult_advise  # FIX: Go back to previous phase

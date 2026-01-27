@@ -10,6 +10,11 @@ states:
     mixins:
       - unified_progress
     goal: "Установить первый контакт"
+    on_enter:
+      set_flags:
+        connect_probed: true
+    required_data:
+      - connect_probed
     parameters:
       prev_phase_state: greeting
       next_phase_state: rel_rapport
@@ -26,6 +31,11 @@ states:
     mixins:
       - unified_progress
     goal: "Построить взаимопонимание"
+    on_enter:
+      set_flags:
+        rapport_probed: true
+    required_data:
+      - rapport_probed
     parameters:
       prev_phase_state: rel_connect
       next_phase_state: rel_nurture
@@ -42,6 +52,8 @@ states:
     mixins:
       - unified_progress
     goal: "Развивать отношения"
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: rel_rapport
       next_phase_state: rel_partnership
@@ -57,6 +69,8 @@ states:
     mixins:
       - unified_progress
     goal: "Сформировать партнёрство"
+    required_data:
+      - desired_outcome
     parameters:
       prev_phase_state: rel_nurture
       next_phase_state: presentation

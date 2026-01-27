@@ -10,6 +10,11 @@ states:
     mixins:
       - unified_progress
     goal: "Построить доверие"
+    on_enter:
+      set_flags:
+        trust_probed: true
+    required_data:
+      - trust_probed
     parameters:
       prev_phase_state: greeting
       next_phase_state: social_value
@@ -25,6 +30,11 @@ states:
     mixins:
       - unified_progress
     goal: "Поделиться ценностью"
+    on_enter:
+      set_flags:
+        value_shared: true
+    required_data:
+      - value_shared
     parameters:
       prev_phase_state: social_trust
       next_phase_state: social_engage
@@ -40,6 +50,9 @@ states:
     mixins:
       - unified_progress
     goal: "Вовлечь в диалог"
+    phase: engage
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: social_value
       next_phase_state: social_convert
@@ -55,6 +68,8 @@ states:
     mixins:
       - unified_progress
     goal: "Конвертировать в клиента"
+    required_data:
+      - desired_outcome
     parameters:
       prev_phase_state: social_engage
       next_phase_state: presentation

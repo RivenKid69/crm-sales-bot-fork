@@ -11,6 +11,7 @@ templates:
     description: "Inbound - продолжить текущую цель"
     parameters:
       required: [system, goal, collected_data, missing_data, history, user_message]
+      optional: [do_not_ask, available_questions]
     template: |
       {system}
 
@@ -19,6 +20,7 @@ templates:
 
       Уже знаем о клиенте: {collected_data}
       Нужно узнать: {missing_data}
+      {do_not_ask}
 
       Диалог:
       {history}
@@ -28,6 +30,7 @@ templates:
       Твоя задача:
       1. Дружелюбно отреагировать
       2. Задать ОДИН вопрос по цели ({goal})
+      {available_questions}
 
       Тон: полезный, без давления.
       Ответ на русском (2 предложения):

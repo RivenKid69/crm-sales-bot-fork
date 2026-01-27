@@ -62,7 +62,7 @@ class FieldConfig:
     name: str
     description: str
     field_type: str  # int, str, bool, enum
-    spin_phase: Optional[str]  # Which SPIN phase this field belongs to
+    spin_phase: Optional[str]  # Which flow phase this field belongs to (e.g., "situation", "budget", "metrics")
     validation: Dict[str, Any] = field(default_factory=dict)
     examples_valid: List[Dict[str, Any]] = field(default_factory=list)
     examples_invalid: List[Dict[str, Any]] = field(default_factory=list)
@@ -101,7 +101,7 @@ class ExtractionConfig:
         return self.fields.get(name)
 
     def get_fields_for_phase(self, phase: str) -> List[str]:
-        """Get list of fields for a SPIN phase."""
+        """Get list of fields for a flow phase (works for all flows: SPIN, MEDDIC, BANT, etc.)."""
         return self.phase_fields.get(phase, [])
 
 
@@ -230,10 +230,14 @@ def get_field_config(field_name: str) -> Optional[FieldConfig]:
 
 def get_phase_fields(phase: str) -> List[str]:
     """
-    Get list of fields expected in a SPIN phase.
+    Get list of fields expected in a flow phase.
+
+    Works for all flows: SPIN (situation, problem, implication, need_payoff),
+    MEDDIC (metrics, buyer, criteria, process, pain, champion),
+    BANT (budget, authority, need, timeline), and shared phases.
 
     Args:
-        phase: SPIN phase name (situation, problem, implication, need_payoff)
+        phase: Flow phase name (e.g., "situation", "budget", "metrics")
 
     Returns:
         List of field names, empty if phase not found
@@ -243,11 +247,11 @@ def get_phase_fields(phase: str) -> List[str]:
 
 def is_field_valid_for_phase(field_name: str, phase: str) -> bool:
     """
-    Check if a field is expected in the given SPIN phase.
+    Check if a field is expected in the given flow phase.
 
     Args:
         field_name: Field name to check
-        phase: Current SPIN phase
+        phase: Current flow phase (e.g., "situation", "budget", "metrics")
 
     Returns:
         True if field is expected in this phase or is phase-independent

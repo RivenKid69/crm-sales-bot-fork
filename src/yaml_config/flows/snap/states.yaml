@@ -10,6 +10,9 @@ states:
     mixins:
       - unified_progress
     goal: "Сделать всё максимально просто"
+    phase: simple
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: greeting
       next_phase_state: snap_value
@@ -25,6 +28,11 @@ states:
     mixins:
       - unified_progress
     goal: "Показать незаменимую ценность"
+    on_enter:
+      set_flags:
+        value_probed: true
+    required_data:
+      - value_probed
     parameters:
       prev_phase_state: snap_simple
       next_phase_state: snap_align
@@ -40,6 +48,9 @@ states:
     mixins:
       - unified_progress
     goal: "Выровняться с приоритетами клиента"
+    phase: align
+    required_data:
+      - pain_point
     parameters:
       prev_phase_state: snap_value
       next_phase_state: snap_priority
@@ -55,6 +66,11 @@ states:
     mixins:
       - unified_progress
     goal: "Поднять приоритет нашего решения"
+    on_enter:
+      set_flags:
+        priority_probed: true
+    required_data:
+      - priority_probed
     parameters:
       prev_phase_state: snap_align
       next_phase_state: presentation

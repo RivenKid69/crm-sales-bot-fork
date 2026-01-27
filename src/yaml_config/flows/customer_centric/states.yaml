@@ -10,6 +10,11 @@ states:
     mixins:
       - unified_progress
     goal: "Внимательно слушать клиента"
+    on_enter:
+      set_flags:
+        listen_probed: true
+    required_data:
+      - listen_probed
     parameters:
       prev_phase_state: greeting
       next_phase_state: cc_understand
@@ -25,6 +30,9 @@ states:
     mixins:
       - unified_progress
     goal: "Глубоко понять ситуацию"
+    phase: understand
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: cc_listen
       next_phase_state: cc_empower
@@ -40,6 +48,8 @@ states:
     mixins:
       - unified_progress
     goal: "Дать клиенту возможность принять решение"
+    required_data:
+      - pain_point
     parameters:
       prev_phase_state: cc_understand
       next_phase_state: cc_support
@@ -55,6 +65,8 @@ states:
     mixins:
       - unified_progress
     goal: "Поддержать в принятии решения"
+    required_data:
+      - desired_outcome
     parameters:
       prev_phase_state: cc_empower
       next_phase_state: presentation

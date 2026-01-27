@@ -10,6 +10,11 @@ states:
     mixins:
       - unified_progress
     goal: "Установить авторитет"
+    on_enter:
+      set_flags:
+        authority_established: true
+    required_data:
+      - authority_established
     parameters:
       prev_phase_state: greeting
       next_phase_state: command_control
@@ -25,6 +30,8 @@ states:
     mixins:
       - unified_progress
     goal: "Взять контроль над разговором"
+    required_data:
+      - pain_point
     parameters:
       prev_phase_state: command_authority
       next_phase_state: command_close
@@ -40,6 +47,11 @@ states:
     mixins:
       - unified_progress
     goal: "Направить к закрытию"
+    on_enter:
+      set_flags:
+        close_directed: true
+    required_data:
+      - close_directed
     parameters:
       prev_phase_state: command_control
       next_phase_state: presentation

@@ -10,6 +10,12 @@ states:
     mixins:
       - unified_progress
     goal: "Определить метрики успеха"
+    phase: metrics
+    required_data:
+      - success_metrics
+    optional_data:
+      - company_size
+      - business_type
     parameters:
       next_phase_state: meddic_buyer
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -25,6 +31,9 @@ states:
     mixins:
       - unified_progress
     goal: "Идентифицировать экономического покупателя"
+    phase: buyer
+    required_data:
+      - decision_maker
     parameters:
       next_phase_state: meddic_criteria
       prev_phase_state: meddic_metrics  # FIX: Go back to previous phase
@@ -40,6 +49,9 @@ states:
     mixins:
       - unified_progress
     goal: "Понять критерии принятия решения"
+    phase: criteria
+    required_data:
+      - decision_criteria
     parameters:
       next_phase_state: meddic_process
       prev_phase_state: meddic_buyer  # FIX: Go back to previous phase
@@ -55,6 +67,12 @@ states:
     mixins:
       - unified_progress
     goal: "Понять процесс принятия решения"
+    phase: process
+    on_enter:
+      set_flags:
+        process_probed: true
+    required_data:
+      - process_probed
     parameters:
       next_phase_state: meddic_pain
       prev_phase_state: meddic_criteria  # FIX: Go back to previous phase
@@ -70,6 +88,9 @@ states:
     mixins:
       - unified_progress
     goal: "Идентифицировать боль"
+    phase: pain
+    required_data:
+      - pain_point
     parameters:
       next_phase_state: meddic_champion
       prev_phase_state: meddic_process  # FIX: Go back to previous phase
@@ -85,6 +106,12 @@ states:
     mixins:
       - unified_progress
     goal: "Найти внутреннего чемпиона"
+    phase: champion
+    on_enter:
+      set_flags:
+        champion_probed: true
+    required_data:
+      - champion_probed
     parameters:
       next_phase_state: presentation
       prev_phase_state: meddic_pain  # FIX: Go back to previous phase

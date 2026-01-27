@@ -11,6 +11,11 @@ states:
       - unified_progress
       - sandler_rules
     goal: "Установить доверительный контакт"
+    on_enter:
+      set_flags:
+        bonding_probed: true
+    required_data:
+      - bonding_probed
     parameters:
       next_phase_state: sandler_contract
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -28,6 +33,11 @@ states:
       - unified_progress
       - sandler_rules
     goal: "Установить правила разговора"
+    on_enter:
+      set_flags:
+        contract_probed: true
+    required_data:
+      - contract_probed
     parameters:
       next_phase_state: sandler_pain
       prev_phase_state: sandler_bonding  # FIX: Go back to previous phase
@@ -44,6 +54,9 @@ states:
       - unified_progress
       - sandler_rules
     goal: "Глубоко исследовать боль"
+    phase: pain
+    required_data:
+      - pain_point
     parameters:
       next_phase_state: sandler_budget
       prev_phase_state: sandler_contract  # FIX: Go back to previous phase
@@ -60,6 +73,9 @@ states:
       - unified_progress
       - sandler_rules
     goal: "Обсудить бюджет"
+    phase: budget
+    required_data:
+      - budget_range
     parameters:
       next_phase_state: sandler_decision
       prev_phase_state: sandler_pain  # FIX: Go back to previous phase
@@ -76,6 +92,8 @@ states:
       - unified_progress
       - sandler_rules
     goal: "Понять процесс принятия решения"
+    required_data:
+      - decision_maker
     parameters:
       next_phase_state: presentation
       prev_phase_state: sandler_budget  # FIX: Go back to previous phase

@@ -10,6 +10,9 @@ states:
     mixins:
       - unified_progress
     goal: "Выявить потребности"
+    phase: need
+    required_data:
+      - pain_point
     parameters:
       prev_phase_state: greeting
       next_phase_state: neat_economic
@@ -26,6 +29,9 @@ states:
       - unified_progress
       - value_rules
     goal: "Понять экономическое влияние"
+    phase: quantify
+    required_data:
+      - pain_impact
     parameters:
       prev_phase_state: neat_needs
       next_phase_state: neat_authority
@@ -41,6 +47,9 @@ states:
     mixins:
       - unified_progress
     goal: "Получить доступ к ЛПР"
+    phase: authority
+    required_data:
+      - decision_maker
     parameters:
       prev_phase_state: neat_economic
       next_phase_state: neat_timeline
@@ -56,6 +65,9 @@ states:
     mixins:
       - unified_progress
     goal: "Установить временные рамки"
+    phase: timeline
+    required_data:
+      - decision_timeline
     parameters:
       prev_phase_state: neat_authority
       next_phase_state: presentation

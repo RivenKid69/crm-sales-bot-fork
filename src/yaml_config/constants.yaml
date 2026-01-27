@@ -59,6 +59,131 @@ spin:
       intent: need_expressed
       confidence: 0.9
 
+    # MEDDIC phases
+    metrics:
+      data_fields:
+        - success_metrics
+      intent: info_provided
+      confidence: 0.9
+    buyer:
+      data_fields:
+        - decision_maker
+      intent: info_provided
+      confidence: 0.9
+    criteria:
+      data_fields:
+        - decision_criteria
+      intent: info_provided
+      confidence: 0.9
+    process:
+      data_fields:
+        - decision_process
+      intent: info_provided
+      confidence: 0.9
+    pain:
+      data_fields:
+        - pain_point
+      intent: problem_revealed
+      confidence: 0.9
+    champion:
+      data_fields:
+        - champion_info
+      intent: info_provided
+      confidence: 0.9
+
+    # BANT phases
+    budget:
+      data_fields:
+        - budget_range
+      intent: info_provided
+      confidence: 0.9
+    authority:
+      data_fields:
+        - decision_maker
+      intent: info_provided
+      confidence: 0.9
+    need:
+      data_fields:
+        - pain_point
+      intent: problem_revealed
+      confidence: 0.9
+    timeline:
+      data_fields:
+        - decision_timeline
+      intent: info_provided
+      confidence: 0.9
+
+    # Shared phases
+    discover:
+      data_fields:
+        - company_size
+        - current_tools
+      intent: situation_provided
+      confidence: 0.9
+    interest:
+      data_fields:
+        - company_size
+      intent: info_provided
+      confidence: 0.9
+    desire:
+      data_fields:
+        - pain_point
+        - desired_outcome
+      intent: need_expressed
+      confidence: 0.9
+    features:
+      data_fields:
+        - company_size
+      intent: situation_provided
+      confidence: 0.9
+    advantages:
+      data_fields:
+        - pain_point
+      intent: problem_revealed
+      confidence: 0.9
+    benefits:
+      data_fields:
+        - desired_outcome
+      intent: need_expressed
+      confidence: 0.9
+    simple:
+      data_fields:
+        - company_size
+      intent: situation_provided
+      confidence: 0.9
+    align:
+      data_fields:
+        - pain_point
+      intent: problem_revealed
+      confidence: 0.9
+    understand:
+      data_fields:
+        - company_size
+        - current_tools
+      intent: situation_provided
+      confidence: 0.9
+    advise:
+      data_fields:
+        - pain_point
+      intent: problem_revealed
+      confidence: 0.9
+    recommend:
+      data_fields:
+        - desired_outcome
+      intent: need_expressed
+      confidence: 0.9
+    quantify:
+      data_fields:
+        - pain_impact
+        - financial_impact
+      intent: implication_acknowledged
+      confidence: 0.9
+    engage:
+      data_fields:
+        - company_size
+      intent: situation_provided
+      confidence: 0.9
+
   # Конфигурация классификации коротких ответов по фазам
   # Определяет какой интент возвращать при положительном/негативном ответе
   short_answer_classification:
@@ -1618,6 +1743,105 @@ extraction:
           - "phone"
           - "email"
 
+    # =========================================================================
+    # SHARED FIELDS (used across MEDDIC/BANT/Sandler/NEAT/etc.)
+    # =========================================================================
+
+    decision_maker:
+      description: "Лицо принимающее решение (ЛПР, руководитель, директор)"
+      type: str
+      spin_phase: authority
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Решение принимает директор", value: "директор" }
+          - { source: "Я сам решаю", value: "клиент (сам принимает)" }
+          - { source: "Нужно обсудить с руководством", value: "руководство" }
+        invalid:
+          - { value: "5 человек", reason: "Это company_size, не decision_maker" }
+          - { value: "проблемы с учётом", reason: "Это pain_point" }
+
+    budget_range:
+      description: "Бюджет или ценовые ожидания клиента"
+      type: str
+      spin_phase: budget
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Бюджет около 500 тысяч", value: "~500 000 руб" }
+          - { source: "До миллиона готовы", value: "до 1 000 000 руб" }
+          - { source: "Пока не определились", value: "не определён" }
+        invalid:
+          - { value: "10 человек", reason: "Это company_size" }
+
+    decision_timeline:
+      description: "Сроки принятия решения (когда планируют внедрять)"
+      type: str
+      spin_phase: timeline
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "До конца квартала хотим решить", value: "до конца квартала" }
+          - { source: "В ближайший месяц", value: "1 месяц" }
+          - { source: "Пока просто смотрим", value: "не определён" }
+        invalid:
+          - { value: "теряем клиентов", reason: "Это pain_point" }
+
+    decision_criteria:
+      description: "Критерии выбора решения (что важно при выборе)"
+      type: str
+      spin_phase: criteria
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Нам важна интеграция с 1С", value: "интеграция с 1С" }
+          - { source: "Главное чтобы было простое", value: "простота использования" }
+        invalid:
+          - { value: "Excel", reason: "Это current_tools" }
+
+    success_metrics:
+      description: "Метрики успеха клиента (KPI, целевые показатели)"
+      type: str
+      spin_phase: metrics
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Хотим увеличить продажи на 20%", value: "рост продаж на 20%" }
+          - { source: "Важно сократить потери клиентов", value: "сокращение оттока клиентов" }
+        invalid:
+          - { value: "10 менеджеров", reason: "Это company_size" }
+
+    champion_info:
+      description: "Внутренний чемпион — кто поддержит внедрение внутри компании"
+      type: str
+      spin_phase: champion
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Мария из отдела продаж будет вести", value: "Мария, отдел продаж" }
+          - { source: "Я сам буду продвигать", value: "клиент (сам)" }
+        invalid:
+          - { value: "директор", reason: "Это decision_maker, не champion" }
+
+    decision_process:
+      description: "Процесс принятия решения (шаги, согласования)"
+      type: str
+      spin_phase: process
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Сначала тест, потом совет директоров", value: "тест → совет директоров" }
+          - { source: "Я решу сам, без согласований", value: "без согласований" }
+        invalid:
+          - { value: "в течение месяца", reason: "Это decision_timeline" }
+
   # =========================================================================
   # FIELD GROUPS BY SPIN PHASE
   # =========================================================================
@@ -1625,6 +1849,7 @@ extraction:
   # Используется для контекстной валидации.
 
   phase_fields:
+    # Existing SPIN phases
     situation:
       - company_size
       - current_tools
@@ -1641,6 +1866,69 @@ extraction:
     any:
       - contact_info
       - contact_type
+
+    # MEDDIC phases
+    metrics:
+      - success_metrics
+      - company_size
+      - business_type
+    buyer:
+      - decision_maker
+    criteria:
+      - decision_criteria
+    process:
+      - decision_process
+    pain:
+      - pain_point
+      - pain_category
+    champion:
+      - champion_info
+
+    # BANT phases
+    budget:
+      - budget_range
+      - company_size
+    authority:
+      - decision_maker
+    need:
+      - pain_point
+    timeline:
+      - decision_timeline
+
+    # Shared phases (used by multiple flows)
+    discover:
+      - company_size
+      - current_tools
+      - business_type
+    interest:
+      - company_size
+      - business_type
+    desire:
+      - pain_point
+      - desired_outcome
+    features:
+      - company_size
+      - current_tools
+    advantages:
+      - pain_point
+    benefits:
+      - desired_outcome
+    simple:
+      - company_size
+    align:
+      - pain_point
+    understand:
+      - company_size
+      - current_tools
+    advise:
+      - pain_point
+    recommend:
+      - desired_outcome
+    quantify:
+      - pain_impact
+      - financial_impact
+    engage:
+      - company_size
 
   # =========================================================================
   # VALIDATION RULES

@@ -11,6 +11,8 @@ states:
       - unified_progress
       - solution_rules
     goal: "Глубоко понять боль клиента"
+    required_data:
+      - pain_point
     parameters:
       next_phase_state: solution_map
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -28,6 +30,11 @@ states:
       - unified_progress
       - solution_rules
     goal: "Связать боль с нашим решением"
+    on_enter:
+      set_flags:
+        map_probed: true
+    required_data:
+      - map_probed
     parameters:
       next_phase_state: solution_value
       prev_phase_state: solution_pain  # FIX: Go back to previous phase
@@ -44,6 +51,8 @@ states:
       - unified_progress
       - solution_rules
     goal: "Доказать ценность решения"
+    required_data:
+      - desired_outcome
     parameters:
       next_phase_state: presentation
       prev_phase_state: solution_map  # FIX: Go back to previous phase

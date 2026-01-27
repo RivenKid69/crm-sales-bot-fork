@@ -15,6 +15,11 @@ states:
       - unified_progress
       - challenger_rules
     goal: "Поделиться инсайтом, вызвать переосмысление"
+    on_enter:
+      set_flags:
+        teach_probed: true
+    required_data:
+      - teach_probed
     parameters:
       next_phase_state: challenger_tailor
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
@@ -32,6 +37,8 @@ states:
       - unified_progress
       - challenger_rules
     goal: "Кастомизировать решение под клиента"
+    required_data:
+      - pain_point
     parameters:
       next_phase_state: challenger_close
       prev_phase_state: challenger_teach  # FIX: Go back to previous phase
@@ -48,6 +55,11 @@ states:
       - unified_progress
       - challenger_rules
     goal: "Взять контроль и закрыть сделку"
+    on_enter:
+      set_flags:
+        close_probed: true
+    required_data:
+      - close_probed
     parameters:
       next_phase_state: close
       prev_phase_state: challenger_tailor  # FIX: Go back to previous phase

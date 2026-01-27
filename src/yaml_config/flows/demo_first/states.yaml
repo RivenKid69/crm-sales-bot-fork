@@ -10,6 +10,11 @@ states:
     mixins:
       - unified_progress
     goal: "Зацепить интерес к демо"
+    on_enter:
+      set_flags:
+        hook_probed: true
+    required_data:
+      - hook_probed
     parameters:
       prev_phase_state: greeting
       next_phase_state: demo_show
@@ -26,6 +31,11 @@ states:
     mixins:
       - unified_progress
     goal: "Показать продукт"
+    on_enter:
+      set_flags:
+        demo_shown: true
+    required_data:
+      - demo_shown
     parameters:
       prev_phase_state: demo_hook
       next_phase_state: demo_qa
@@ -42,6 +52,8 @@ states:
     mixins:
       - unified_progress
     goal: "Ответить на вопросы"
+    required_data:
+      - company_size
     parameters:
       prev_phase_state: demo_show
       next_phase_state: demo_close
@@ -59,6 +71,11 @@ states:
     mixins:
       - unified_progress
     goal: "Закрыть после демо"
+    on_enter:
+      set_flags:
+        demo_close_probed: true
+    required_data:
+      - demo_close_probed
     parameters:
       prev_phase_state: demo_qa
       next_phase_state: presentation

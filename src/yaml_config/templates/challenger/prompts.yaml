@@ -11,6 +11,7 @@ templates:
     description: "Challenger - продолжить текущую цель"
     parameters:
       required: [system, goal, collected_data, missing_data, history, user_message]
+      optional: [do_not_ask, available_questions]
     template: |
       {system}
 
@@ -19,6 +20,7 @@ templates:
 
       Уже знаем о клиенте: {collected_data}
       Нужно узнать: {missing_data}
+      {do_not_ask}
 
       Диалог:
       {history}
@@ -31,6 +33,8 @@ templates:
       3. Задай ОДИН вопрос, который продвигает цель этапа ({goal})
 
       Тон: уверенный, прямой, но уважительный. Не уходи в презентацию.
+      {available_questions}
+
       Ответ на русском (2-3 предложения):
 
   clarify_insight:

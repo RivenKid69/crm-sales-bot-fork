@@ -135,8 +135,67 @@ data_fields:
       - "Куда прислать информацию?"
     phases: [close]
 
+  # --- NEW: Shared fields for MEDDIC/BANT/Sandler/NEAT/etc. ---
+
+  decision_maker:
+    description: "Лицо принимающее решение"
+    extraction_hints: ["директор", "руководитель", "я решаю", "согласовать"]
+    related_questions:
+      - "Кто принимает финальное решение?"
+      - "С кем нужно согласовать?"
+      - "Вы сами принимаете решение или есть руководство?"
+    phases: [authority, buyer]
+
+  budget_range:
+    description: "Бюджет на решение"
+    extraction_hints: ["бюджет", "тысяч", "миллион", "готовы потратить"]
+    related_questions:
+      - "Какой бюджет рассматриваете?"
+      - "На какую сумму ориентируетесь?"
+    phases: [budget]
+
+  decision_timeline:
+    description: "Сроки принятия решения"
+    extraction_hints: ["месяц", "квартал", "скоро", "планируем"]
+    related_questions:
+      - "Когда планируете внедрение?"
+      - "В какие сроки хотите решить вопрос?"
+    phases: [timeline]
+
+  decision_criteria:
+    description: "Критерии выбора решения"
+    extraction_hints: ["важно", "критерий", "главное", "нужно чтобы"]
+    related_questions:
+      - "Что для вас ключевое при выборе?"
+      - "Какие требования к системе?"
+    phases: [criteria]
+
+  success_metrics:
+    description: "Метрики успеха (KPI)"
+    extraction_hints: ["увеличить", "сократить", "KPI", "показатель"]
+    related_questions:
+      - "По каким метрикам оцениваете успех?"
+      - "Какой результат хотите получить в цифрах?"
+    phases: [metrics]
+
+  champion_info:
+    description: "Внутренний чемпион проекта"
+    extraction_hints: ["будет вести", "отвечает", "продвигает"]
+    related_questions:
+      - "Кто внутри команды будет вести проект?"
+      - "Есть человек кто будет помогать внедрению?"
+    phases: [champion]
+
+  decision_process:
+    description: "Процесс принятия решения"
+    extraction_hints: ["этапы", "согласование", "совет", "тест"]
+    related_questions:
+      - "Какие шаги в процессе принятия решения?"
+      - "Нужны ли согласования?"
+    phases: [process]
+
 # =============================================================================
-# PHASE QUESTIONS — вопросы сгруппированные по фазам SPIN
+# PHASE QUESTIONS — вопросы сгруппированные по фазам
 # =============================================================================
 # Используется для генерации списка доступных вопросов на основе missing_data
 
@@ -189,6 +248,200 @@ phase_questions:
         - "Если бы остатки обновлялись автоматически — насколько это упростило бы работу?"
         - "Как изменилась бы ситуация, если бы вся информация о клиентах была в одном месте?"
         - "Что было бы, если бы вы видели все продажи в реальном времени?"
+
+  # --- MEDDIC phases ---
+
+  metrics:
+    goal: "Определить метрики успеха"
+    required_fields: [success_metrics]
+    optional_fields: [company_size, business_type]
+    question_templates:
+      success_metrics:
+        - "По каким метрикам вы будете оценивать успех внедрения?"
+        - "Какие KPI хотите улучшить с помощью новой системы?"
+      company_size:
+        - "Сколько человек в вашей команде?"
+      business_type:
+        - "Какой формат бизнеса?"
+
+  buyer:
+    goal: "Определить экономического покупателя"
+    required_fields: [decision_maker]
+    optional_fields: []
+    question_templates:
+      decision_maker:
+        - "Кто принимает финальное решение по бюджету?"
+        - "С кем нужно согласовать выбор решения?"
+
+  criteria:
+    goal: "Понять критерии выбора"
+    required_fields: [decision_criteria]
+    optional_fields: []
+    question_templates:
+      decision_criteria:
+        - "Что для вас ключевое при выборе системы?"
+        - "Какие требования к решению самые важные?"
+
+  process:
+    goal: "Понять процесс принятия решения"
+    required_fields: []
+    optional_fields: [decision_process]
+    question_templates:
+      decision_process:
+        - "Какие шаги обычно проходите при выборе решения?"
+
+  champion:
+    goal: "Найти внутреннего чемпиона"
+    required_fields: []
+    optional_fields: [champion_info]
+    question_templates:
+      champion_info:
+        - "Кто внутри команды будет вести проект внедрения?"
+
+  # Shared pain phase (used by MEDDIC, Sandler, etc.)
+  pain:
+    goal: "Выявить боль"
+    required_fields: [pain_point]
+    optional_fields: []
+    question_templates:
+      pain_point:
+        - "Какая главная сложность сейчас?"
+        - "Что мешает работать эффективнее?"
+
+  # --- BANT phases ---
+
+  budget:
+    goal: "Понять бюджет"
+    required_fields: [budget_range]
+    optional_fields: [company_size]
+    question_templates:
+      budget_range:
+        - "Какой бюджет рассматриваете на это решение?"
+        - "На какую сумму ориентируетесь?"
+      company_size:
+        - "Сколько человек будет пользоваться?"
+
+  authority:
+    goal: "Определить ЛПР"
+    required_fields: [decision_maker]
+    optional_fields: []
+    question_templates:
+      decision_maker:
+        - "Кто принимает финальное решение?"
+        - "Вы сами решаете или есть руководство?"
+
+  need:
+    goal: "Выявить потребность"
+    required_fields: [pain_point]
+    optional_fields: []
+    question_templates:
+      pain_point:
+        - "Какая главная потребность сейчас?"
+        - "Что хотели бы улучшить?"
+
+  timeline:
+    goal: "Установить сроки"
+    required_fields: [decision_timeline]
+    optional_fields: []
+    question_templates:
+      decision_timeline:
+        - "Когда планируете принять решение?"
+        - "В какие сроки хотите внедрить?"
+
+  # --- Generic shared phases ---
+
+  discover:
+    goal: "Понять ситуацию"
+    required_fields: [company_size]
+    optional_fields: [current_tools, business_type]
+    question_templates:
+      company_size:
+        - "Сколько человек в команде?"
+      current_tools:
+        - "Чем сейчас пользуетесь для учёта?"
+      business_type:
+        - "Какой у вас формат бизнеса?"
+
+  interest:
+    goal: "Выявить интерес"
+    required_fields: [company_size]
+    optional_fields: [business_type]
+    question_templates:
+      company_size:
+        - "Сколько человек в вашей команде?"
+      business_type:
+        - "Чем занимается ваша компания?"
+
+  desire:
+    goal: "Сформировать желание"
+    required_fields: [pain_point]
+    optional_fields: [desired_outcome]
+    question_templates:
+      pain_point:
+        - "Какая главная сложность сейчас?"
+      desired_outcome:
+        - "Какой результат был бы идеальным?"
+
+  features:
+    goal: "Понять потребности в функционале"
+    required_fields: [company_size]
+    optional_fields: [current_tools]
+    question_templates:
+      company_size:
+        - "Сколько человек будет пользоваться системой?"
+      current_tools:
+        - "Чем сейчас пользуетесь?"
+
+  advantages:
+    goal: "Показать преимущества"
+    required_fields: [pain_point]
+    optional_fields: []
+    question_templates:
+      pain_point:
+        - "Какая главная сложность в текущем процессе?"
+
+  benefits:
+    goal: "Донести выгоды"
+    required_fields: [desired_outcome]
+    optional_fields: []
+    question_templates:
+      desired_outcome:
+        - "Какой результат хотите получить?"
+
+  quantify:
+    goal: "Оцифровать влияние"
+    required_fields: [pain_impact]
+    optional_fields: [financial_impact]
+    question_templates:
+      pain_impact:
+        - "Как это влияет на бизнес в цифрах?"
+        - "Сколько теряете из-за этого?"
+
+  understand:
+    goal: "Понять ситуацию клиента"
+    required_fields: [company_size]
+    optional_fields: [current_tools]
+    question_templates:
+      company_size:
+        - "Сколько человек в вашей команде?"
+      current_tools:
+        - "Чем сейчас пользуетесь для работы?"
+
+  advise:
+    goal: "Дать экспертный совет"
+    required_fields: [pain_point]
+    optional_fields: []
+    question_templates:
+      pain_point:
+        - "Какая главная сложность?"
+
+  recommend:
+    goal: "Порекомендовать решение"
+    required_fields: [desired_outcome]
+    optional_fields: []
+    question_templates:
+      desired_outcome:
+        - "Какой результат хотите получить?"
 
 # =============================================================================
 # PROMPT INSTRUCTIONS — инструкции для промптов
