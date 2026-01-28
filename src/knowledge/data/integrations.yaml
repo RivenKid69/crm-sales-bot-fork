@@ -1206,7 +1206,30 @@ sections:
   - подключить api wipon
   - wipon api доступен
   - wipon api интеграция другие системы
-  facts: Да, есть API. Можно интегрировать Wipon с другими системами по документации.
+  # NEW: API-related keywords
+  - webhook
+  - rest
+  - endpoint
+  - токен
+  - token
+  urls:
+  - url: "https://wipon.kz/api/docs"
+    label: "API документация"
+    type: spec
+  - url: "https://wipon.kz/api/authentication"
+    label: "API аутентификация"
+    type: guide
+  - url: "https://wipon.kz/api/webhooks"
+    label: "Webhooks и уведомления"
+    type: guide
+  facts: 'Да, есть REST API. Можно интегрировать Wipon с другими системами.
+
+    **REST API:**
+    • Полный доступ к функциям системы
+    • OAuth 2.0 и API keys аутентификация
+    • Webhook уведомления о событиях
+
+    **Документация доступна по запросу.**'
 - topic: integrations_marking_support_1167
   priority: 10
   keywords:
@@ -1599,4 +1622,26 @@ sections:
   - api access tokens
   - webhook интеграция
   - api доступ получить
-  facts: Да. Есть API для интеграции с внешними системами.
+  # NEW: Extended API keywords
+  - sdk
+  - graphql
+  - soap
+  urls:
+  - url: "https://wipon.kz/developers"
+    label: "Портал для разработчиков"
+    type: doc
+  - url: "https://wipon.kz/api/docs"
+    label: "API Reference"
+    type: spec
+  - url: "https://wipon.kz/api/sdk"
+    label: "SDK и библиотеки"
+    type: guide
+  facts: 'Да, есть API для разработчиков.
+
+    **Возможности:**
+    • REST API с полной документацией
+    • OAuth 2.0 аутентификация
+    • Webhook уведомления
+    • SDK для популярных языков
+
+    Свяжитесь с поддержкой для получения доступа.'

@@ -140,6 +140,7 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
     "question_integrations": SecondaryIntentPattern(
         intent="question_integrations",
         patterns=[
+            # Existing patterns
             r"интеграци[яию]",
             r"подключ(?:ить|ение|ается)",
             r"синхрониз(?:ация|ировать)",
@@ -147,32 +148,129 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             r"api\b",
             r"касп[иы]",
             r"1с\b",
+
+            # NEW: API/Technical integration
+            r"webhook",
+            r"rest|soap|graphql",
+            r"запрос[ыа]?\s+(?:к\s+)?api",
+            r"эндпоинт[ыа]?|endpoint",
+            r"метод[ыа]?\s+api",
+            r"авторизаци[яи]\s+api",
+            r"ключ[ия]?\s+api",
+            r"токен[а]?",
+            r"импорт|экспорт",
+            r"обмен\s+данн",
         ],
         keywords=frozenset({
+            # Existing keywords
             "интеграция", "интеграции", "интегрируется",
             "подключить", "подключение", "синхронизация",
             "каспи", "kaspi", "1с", "api",
+
+            # NEW: API keywords
+            "webhook",
+            "rest", "soap", "graphql",
+            "эндпоинт", "endpoint",
+            "токен", "token",
+            "импорт", "экспорт",
+            "обмен", "exchange",
         }),
-        min_confidence=0.85,
-        priority=70,
+        min_confidence=0.8,
+        priority=65,
     ),
 
     # Technical questions
     "question_technical": SecondaryIntentPattern(
         intent="question_technical",
         patterns=[
+            # Existing patterns
             r"техническ(?:ий|ие|ая)",
             r"как\s+настро(?:ить|йка)",
             r"документаци[яию]",
             r"инструкци[яию]",
             r"требовани[яе]",
+
+            # NEW: Security/Technical patterns
+            r"\bssl\b|\btls\b|https",
+            r"шифровани[яе]|encryption",
+            r"сертификат[ыа]?|certificate",
+            r"протокол[ыа]?",
+            r"спецификаци[яи]",
+            r"тех\s*характеристик",
+            r"api\b|webhook",
+            r"интеграци[яи]\s+через",
+            r"sdk\b|библиотек",
+
+            # NEW: Implementation questions
+            r"как\s+(?:это\s+)?работа[её]т",
+            r"какие?\s+(?:параметры|настройки)",
+            r"где\s+(?:настра|конфигур)",
         ],
         keywords=frozenset({
+            # Existing keywords
             "технический", "настройка", "документация",
             "инструкция", "требования", "спецификация",
+
+            # NEW: Security/Technical
+            "ssl", "tls", "https",
+            "шифрование", "encryption",
+            "сертификат", "certificate",
+            "протокол", "protocols",
+
+            # NEW: API/Integration
+            "api", "webhook", "sdk",
+            "интеграция", "integration",
+            "библиотека", "library",
+
+            # NEW: Configuration
+            "параметры", "конфигурация",
+            "характеристики", "specs",
+        }),
+        min_confidence=0.75,  # Снизили с 0.8 для большего coverage
+        priority=60,
+    ),
+
+    # Security questions (NEW)
+    "question_security": SecondaryIntentPattern(
+        intent="question_security",
+        patterns=[
+            r"безопасност[ьи]",
+            r"защит[аыу](?:\s+данных)?",
+            r"\bssl\b|\btls\b",
+            r"шифровани[яе]",
+            r"сертификат[ыа]?",
+            r"аудит[а]?\s+безопасности",
+            r"gdpr|персональн[ыхм]*\s+данн",
+            r"конфиденциальност[ьи]",
+            r"двухфакторн|2fa|mfa",
+            r"аутентификаци[яи]",
+            r"авторизаци[яи]",
+            r"контроль\s+доступа",
+            r"роли\s+(?:и\s+)?права",
+            r"резервн(?:ое|ая)\s+копи",
+            r"бэкап|backup",
+            r"восстановлени[яе]",
+            r"отказоустойчив",
+        ],
+        keywords=frozenset({
+            "безопасность", "security",
+            "защита", "защиты",
+            "ssl", "tls", "https",
+            "шифрование", "encryption",
+            "сертификат", "certificate",
+            "аудит", "audit",
+            "gdpr", "персональные",
+            "конфиденциальность",
+            "двухфакторная", "2fa", "mfa",
+            "аутентификация", "authentication",
+            "авторизация", "authorization",
+            "доступа", "access",
+            "права", "permissions",
+            "бэкап", "backup",
+            "восстановление", "recovery",
         }),
         min_confidence=0.8,
-        priority=60,
+        priority=70,  # Выше question_technical (более специфичный)
     ),
 
     # Equipment questions

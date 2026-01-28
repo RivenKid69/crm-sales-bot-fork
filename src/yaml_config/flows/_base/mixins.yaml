@@ -40,6 +40,15 @@ mixins:
       question_features: answer_with_facts
       question_integrations: answer_with_facts
 
+      # NEW: Top-5 high-frequency fact intents (double coverage for safety)
+      # These ensure critical questions are ALWAYS answered, even if
+      # Secondary Intent Detection or taxonomy fallback fails
+      question_technical: answer_with_facts
+      question_security: answer_with_facts
+      question_support: answer_with_facts
+      comparison: answer_with_facts
+      question_implementation: answer_with_facts
+
       # Meta intents (dialogue control)
       request_brevity: respond_briefly
       unclear: clarify_one_question

@@ -459,6 +459,27 @@ sections:
   - надёжные
   - стабильность
   - стабильный
+  # NEW: Security-related keywords
+  - ssl
+  - tls
+  - https
+  - аудит
+  - security
+  - encryption
+  - certificate
+  urls:
+  - url: "https://wipon.kz/security"
+    label: "Безопасность и защита данных"
+    type: doc
+  - url: "https://wipon.kz/docs/ssl-certificates"
+    label: "SSL/TLS сертификаты"
+    type: spec
+  - url: "https://wipon.kz/docs/security-audit"
+    label: "Отчёты аудита безопасности"
+    type: doc
+  - url: "https://wipon.kz/docs/gdpr-compliance"
+    label: "Соответствие требованиям конфиденциальности"
+    type: doc
   facts: 'Безопасность данных в Wipon:
 
 

@@ -12,7 +12,7 @@ import sys
 import time
 import threading
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Set
+from typing import List, Optional, Tuple, Set, Dict, Any
 from enum import Enum
 from pathlib import Path
 
@@ -310,6 +310,80 @@ class CascadeRetriever:
         # Формируем строку
         facts = [r.section.facts.strip() for r in results]
         return "\n\n---\n\n".join(facts)
+
+    def retrieve_with_urls(
+        self,
+        message: str,
+        intent: str = None,
+        state: str = None,
+        categories: List[str] = None,
+        top_k: int = None
+    ) -> Tuple[str, List[Dict[str, str]]]:
+        """
+        Найти релевантные факты с URL-ссылками.
+
+        Возвращает как текстовые факты, так и структурированные URL
+        из найденных секций базы знаний.
+
+        Args:
+            message: Сообщение пользователя
+            intent: Классифицированный интент
+            state: Текущее состояние
+            categories: Список категорий для поиска
+            top_k: Максимум секций
+
+        Returns:
+            Tuple[str, List[Dict[str, str]]]:
+                - Строка с фактами, разделёнными "---"
+                - Список URL-объектов [{"url": ..., "label": ..., "type": ...}]
+        """
+        if not message or not message.strip():
+            return "", []
+
+        if top_k is None:
+            top_k = settings.retriever.default_top_k
+
+        # Определяем категории
+        if categories is None:
+            if intent:
+                if intent in INTENT_TO_CATEGORY:
+                    intent_categories = INTENT_TO_CATEGORY[intent]
+                    if intent_categories:
+                        categories = intent_categories
+                else:
+                    categories = ["faq", "features"]
+
+        search_top_k = self.rerank_candidates if self.reranker_enabled else top_k
+        results = self.search(message, categories=categories, top_k=search_top_k)
+
+        if not results:
+            return "", []
+
+        # Reranking if needed
+        if self.reranker_enabled and results[0].score < self.rerank_threshold:
+            reranker = get_reranker()
+            if reranker.is_available():
+                results = reranker.rerank(message, results, top_k)
+            else:
+                results = results[:top_k]
+        else:
+            results = results[:top_k]
+
+        # Собираем факты
+        facts = [r.section.facts.strip() for r in results]
+
+        # Собираем URLs из всех найденных секций
+        urls: List[Dict[str, str]] = []
+        seen_urls = set()  # Дедупликация
+        for r in results:
+            section_urls = getattr(r.section, 'urls', []) or []
+            for url_info in section_urls:
+                url = url_info.get('url', '')
+                if url and url not in seen_urls:
+                    urls.append(url_info)
+                    seen_urls.add(url)
+
+        return "\n\n---\n\n".join(facts), urls
 
     def search(
         self,

@@ -704,6 +704,141 @@ class FallbackMetrics:
 
 
 # =============================================================================
+# Secondary Intent Detection Metrics
+# =============================================================================
+
+class SecondaryIntentMetrics:
+    """Monitor secondary intent detection effectiveness.
+
+    Tracks detection rates, misses, and alerts when fact keywords
+    are present but not detected. This helps identify gaps in
+    secondary intent patterns.
+
+    Usage:
+        from metrics import SecondaryIntentMetrics
+
+        SecondaryIntentMetrics.record_detection(
+            message="100 человек. Как насчёт SSL?",
+            primary_intent="info_provided",
+            secondary_intents=["question_security"],
+        )
+    """
+
+    # Keywords that should trigger fact question detection
+    FACT_KEYWORDS = {
+        "ssl", "tls", "api", "webhook",
+        "безопасность", "аудит", "шифрование",
+        "интеграция", "настройка", "документация",
+    }
+
+    _detections: List[Dict[str, Any]] = []
+    _misses: List[Dict[str, Any]] = []
+
+    @classmethod
+    def record_detection(
+        cls,
+        message: str,
+        primary_intent: str,
+        secondary_intents: List[str],
+        expected_intents: Optional[List[str]] = None
+    ) -> None:
+        """
+        Record secondary intent detection for monitoring.
+
+        Args:
+            message: User message
+            primary_intent: Primary intent from classifier
+            secondary_intents: Detected secondary intents
+            expected_intents: Expected intents (for testing/validation)
+        """
+        import structlog
+        logger = structlog.get_logger(__name__)
+
+        # Check if fact keywords present but not detected
+        message_lower = message.lower()
+        has_fact_keyword = any(kw in message_lower for kw in cls.FACT_KEYWORDS)
+        has_fact_intent = any("question_" in i for i in secondary_intents)
+
+        record = {
+            "message": message[:100],
+            "primary_intent": primary_intent,
+            "secondary_intents": secondary_intents,
+            "has_fact_keyword": has_fact_keyword,
+            "has_fact_intent": has_fact_intent,
+            "detected_keywords": [kw for kw in cls.FACT_KEYWORDS if kw in message_lower],
+        }
+
+        if has_fact_keyword and not has_fact_intent:
+            # Detection miss - alert
+            cls._misses.append(record)
+            logger.warning(
+                "Secondary intent detection miss: fact keyword present but not detected",
+                message=message[:50],
+                primary_intent=primary_intent,
+                secondary_intents=secondary_intents,
+                detected_keywords=record["detected_keywords"],
+                alert="secondary_intent_miss"
+            )
+        else:
+            cls._detections.append(record)
+
+    @classmethod
+    def get_detection_rate(cls) -> float:
+        """Get detection success rate.
+
+        Returns:
+            Percentage of messages where fact keywords were correctly detected
+        """
+        total = len(cls._detections) + len(cls._misses)
+        if total == 0:
+            return 100.0
+        return (len(cls._detections) / total) * 100
+
+    @classmethod
+    def get_miss_rate(cls) -> float:
+        """Get detection miss rate (should be <5%).
+
+        Returns:
+            Percentage of messages with fact keywords that weren't detected
+        """
+        total = len(cls._detections) + len(cls._misses)
+        if total == 0:
+            return 0.0
+        return (len(cls._misses) / total) * 100
+
+    @classmethod
+    def get_summary(cls) -> Dict[str, Any]:
+        """Get summary of detection metrics.
+
+        Returns:
+            Dict with detection statistics
+        """
+        return {
+            "total_detections": len(cls._detections),
+            "total_misses": len(cls._misses),
+            "detection_rate": cls.get_detection_rate(),
+            "miss_rate": cls.get_miss_rate(),
+            "recent_misses": cls._misses[-10:],  # Last 10 misses for debugging
+            "missed_keywords": cls._get_missed_keyword_stats(),
+        }
+
+    @classmethod
+    def _get_missed_keyword_stats(cls) -> Dict[str, int]:
+        """Get statistics on which keywords are most commonly missed."""
+        from collections import Counter
+        all_missed_keywords = []
+        for miss in cls._misses:
+            all_missed_keywords.extend(miss.get("detected_keywords", []))
+        return dict(Counter(all_missed_keywords).most_common(10))
+
+    @classmethod
+    def reset(cls) -> None:
+        """Reset all metrics (for testing)."""
+        cls._detections = []
+        cls._misses = []
+
+
+# =============================================================================
 # CLI для демонстрации
 # =============================================================================
 

@@ -64,6 +64,7 @@ def _load_sections_from_file(filepath: Path) -> List[KnowledgeSection]:
             keywords=item["keywords"],
             facts=item["facts"],
             priority=item.get("priority", 5),
+            urls=item.get("urls", []),  # NEW: Load URLs from YAML
         )
         sections.append(section)
 

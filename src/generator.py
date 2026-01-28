@@ -479,7 +479,36 @@ class ResponseGenerator:
 
         # Default: features list (existing behavior)
         return ", ".join(KNOWLEDGE["features"])
-    
+
+    def _format_urls_for_response(self, urls: List[Dict[str, str]]) -> str:
+        """
+        Format URLs for inclusion in LLM response.
+
+        Takes structured URL data from knowledge base and formats it
+        as markdown links that can be included in the response.
+
+        Args:
+            urls: List of URL dicts with 'url', 'label', and optional 'type' keys
+
+        Returns:
+            Formatted string with URLs for the response, or empty string
+        """
+        if not urls:
+            return ""
+
+        lines = ["\n**Полезные ссылки:**"]
+        for url_info in urls[:5]:  # Limit to 5 URLs max
+            url = url_info.get("url", "")
+            label = url_info.get("label", "Подробнее")
+            url_type = url_info.get("type", "doc")
+
+            if url:
+                lines.append(f"• [{label}]({url})")
+
+        if len(lines) > 1:  # If we have any URLs
+            return "\n".join(lines)
+        return ""
+
     def format_history(self, history: List[Dict]) -> str:
         """Форматируем историю"""
         if not history:
@@ -560,14 +589,17 @@ class ResponseGenerator:
                 query=user_message[:50]
             )
 
-        # Вызываем retriever с категориями
-        retrieved_facts = retriever.retrieve(
+        # Вызываем retriever с категориями и URLs
+        retrieved_facts, retrieved_urls = retriever.retrieve_with_urls(
             message=user_message,
             intent=intent,
             state=state,
             categories=categories,
             top_k=self.retriever_top_k
         )
+
+        # Форматируем URLs для включения в ответ
+        formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
 
         # Выбираем шаблон
         # === Intent-aware выбор шаблона для price-related вопросов ===
@@ -675,6 +707,7 @@ class ResponseGenerator:
             "facts": facts,
             # База знаний
             "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
+            "retrieved_urls": formatted_urls,  # NEW: Structured URLs for documentation links
             "company_info": retriever.get_company_info(),
             # SPIN-специфичные данные
             "current_tools": current_tools,

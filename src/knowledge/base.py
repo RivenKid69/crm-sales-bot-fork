@@ -6,10 +6,11 @@
 - keywords: список ключевых слов для поиска
 - facts: текст с фактами (будет передан в LLM)
 - priority: приоритет при множественных совпадениях (1-10)
+- urls: структурированные ссылки на документацию
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Dict, Any
 
 
 @dataclass
@@ -20,6 +21,10 @@ class KnowledgeSection:
     keywords: List[str]     # ["тариф", "цена", "стоимость", "сколько"]
     facts: str              # Текст с фактами
     priority: int = 5       # 1-10, выше = важнее при конфликтах
+
+    # NEW: Structured URLs for documentation links
+    # Format: [{"url": "https://...", "label": "Description", "type": "doc|spec|guide"}]
+    urls: List[Dict[str, str]] = field(default_factory=list)
 
     # Для эмбеддингов (заполняется автоматически)
     embedding: Optional[List[float]] = field(default=None, repr=False)
