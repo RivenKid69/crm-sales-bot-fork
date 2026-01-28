@@ -81,10 +81,15 @@ def breakthrough_context():
 
 @pytest.fixture
 def frustrated_context():
-    """Context with high frustration."""
+    """Context with high frustration.
+
+    NOTE: Conditions system uses NO_CTA_FRUSTRATION_THRESHOLD=7 (from frustration_thresholds),
+    while legacy system uses FRUSTRATION_THRESHOLD=5. Using 7 ensures both systems
+    agree on skipping CTA.
+    """
     return {
         "collected_data": {},
-        "frustration_level": 5,
+        "frustration_level": 7,
         "engagement_level": "low",
         "momentum_direction": "negative",
         "has_breakthrough": False,
@@ -258,16 +263,18 @@ class TestGetOptimalCtaType:
 
         assert cta_type == "contact"
 
-    def test_info_cta_for_early_state(self, generator):
-        """Test info CTA for early state."""
+    def test_no_specific_cta_for_early_state(self, generator):
+        """Test no specific CTA type for early state (not in CTA_ELIGIBLE_STATES)."""
         context = {
             "frustration_level": 0,
             "engagement_level": "medium"
         }
 
-        cta_type = generator.get_optimal_cta_type("spin_implication", context)
+        # greeting is early phase and not in CTA_ELIGIBLE_STATES
+        # so no specific CTA type is recommended
+        cta_type = generator.get_optimal_cta_type("greeting", context)
 
-        assert cta_type == "info"
+        assert cta_type is None
 
     def test_trial_cta_for_hesitant_client(self, generator):
         """Test trial CTA for hesitant client."""
@@ -527,26 +534,55 @@ class TestConditionsIntegration:
 class TestComparisonWithLegacy:
     """Tests comparing condition-based vs legacy methods."""
 
-    def test_both_methods_agree_on_skip_question(self, generator, presentation_context):
-        """Test both methods skip when response ends with question."""
+    def test_question_gate_divergence_late_phase(self, generator, presentation_context):
+        """Test that legacy allows CTA on questions in late phase, conditions still blocks.
+
+        After phase-based CTA changes:
+        - Legacy: presentation is late phase -> question gate relaxed -> CTA allowed
+        - Conditions: still uses unconditional question gate -> CTA blocked
+        This divergence is intentional: conditions system is for personalization v2 (disabled).
+        """
         response = "Что вас интересует?"
 
-        # Legacy
+        # Legacy: late phase allows CTA even with question
         legacy_should, legacy_reason = generator.should_add_cta(
             "presentation",
             response,
             presentation_context
         )
 
-        # Conditions
+        # Conditions: unconditional question gate still blocks
         cond_should, cond_reason = generator.should_add_cta_with_conditions(
             "presentation",
             response,
             presentation_context
         )
 
-        assert legacy_should == cond_should
-        assert legacy_reason == cond_reason
+        assert legacy_should is True  # Late phase relaxed question gate
+        assert cond_should is False  # Conditions: unconditional question gate
+        assert cond_reason == "response_ends_with_question"
+
+    def test_both_methods_agree_on_skip_question_mid_phase(self, generator):
+        """Test both methods agree on skipping CTA for questions in mid phase."""
+        context = {"frustration_level": 0, "engagement_level": "medium"}
+        response = "Что вас интересует?"
+
+        # Legacy: mid phase blocks question-ending responses
+        legacy_should, legacy_reason = generator.should_add_cta(
+            "spin_implication",
+            response,
+            context
+        )
+
+        # Conditions: also blocks question-ending responses
+        cond_should, cond_reason = generator.should_add_cta_with_conditions(
+            "spin_implication",
+            response,
+            context
+        )
+
+        assert not legacy_should
+        assert not cond_should
 
     def test_both_methods_agree_on_wrong_state(self, generator, presentation_context):
         """Test both methods skip for wrong state."""
@@ -570,23 +606,25 @@ class TestComparisonWithLegacy:
         # Reasons may differ in wording but both should indicate state issue
 
     def test_both_methods_agree_on_high_frustration(self, generator, frustrated_context):
-        """Test both methods skip for high frustration."""
+        """Test both methods skip for high frustration (>=7)."""
         response = "Wipon решает проблему."
 
-        # Legacy
+        # Legacy (FRUSTRATION_THRESHOLD=5, frustrated_context has 7)
         legacy_should, _ = generator.should_add_cta(
             "presentation",
             response,
             frustrated_context
         )
 
-        # Conditions
+        # Conditions (NO_CTA_FRUSTRATION_THRESHOLD=7, frustrated_context has 7)
         cond_should, _ = generator.should_add_cta_with_conditions(
             "presentation",
             response,
             frustrated_context
         )
 
+        assert not legacy_should  # 7 >= 5
+        assert not cond_should    # 7 >= 7
         assert legacy_should == cond_should
 
 

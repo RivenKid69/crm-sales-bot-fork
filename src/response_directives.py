@@ -96,6 +96,8 @@ class ResponseDirectives:
     offer_choices: bool = False
     cta_soft: bool = False
     repair_mode: bool = False
+    repair_trigger: str = ""       # "stuck" | "oscillation" | "repeated_question"
+    repair_context: str = ""       # Context about what triggered repair
 
     # === Apology (SSoT: src/apology_ssot.py) ===
     should_apologize: bool = False
@@ -129,6 +131,8 @@ class ResponseDirectives:
                 "offer_choices": self.offer_choices,
                 "cta_soft": self.cta_soft,
                 "repair_mode": self.repair_mode,
+                "repair_trigger": self.repair_trigger,
+                "repair_context": self.repair_context,
             },
             "apology": {
                 "should_apologize": self.should_apologize,
@@ -185,7 +189,25 @@ class ResponseDirectives:
             parts.append(f"Можешь сослаться на: {self.client_card}")
 
         if self.repair_mode:
-            parts.append("Режим восстановления: перефразируй, уточни понимание.")
+            repair_parts = ["Режим восстановления диалога."]
+            if self.repair_trigger == "stuck":
+                repair_parts.append(
+                    "Клиент застрял — предложи 2-3 конкретных варианта "
+                    "следующего шага (демо, консультация, информация)."
+                )
+            elif self.repair_trigger == "oscillation":
+                repair_parts.append(
+                    "Диалог зациклился — кратко суммируй что обсудили "
+                    "и предложи конкретный следующий шаг."
+                )
+            elif self.repair_trigger == "repeated_question":
+                repair_parts.append(
+                    f"Клиент повторяет вопрос. {self.repair_context} "
+                    "Ответь по-другому, используя конкретные факты и цифры."
+                )
+            else:
+                repair_parts.append("Перефразируй и уточни понимание.")
+            parts.append(" ".join(repair_parts))
 
         if self.ask_clarifying:
             parts.append("Задай один конкретный уточняющий вопрос.")
@@ -427,10 +449,23 @@ class ResponseDirectivesBuilder:
             if envelope.is_stuck:
                 directives.offer_choices = True
                 directives.ask_clarifying = True
-
-            # При repeated question — уточняем
-            if envelope.repeated_question:
+                directives.repair_trigger = "stuck"
+            elif getattr(envelope, 'has_oscillation', False):
+                directives.repair_trigger = "oscillation"
+            elif envelope.repeated_question:
                 directives.ask_clarifying = True
+                directives.repair_trigger = "repeated_question"
+                # Break price-repair loop: include price data if repeated question is about price
+                if envelope.repeated_question in ("price_question", "pricing_details"):
+                    directives.repair_context = (
+                        "Клиент ПОВТОРНО спрашивает о цене! "
+                        "ОБЯЗАТЕЛЬНО назови цену: от 590 до 990₽/чел./мес."
+                    )
+                else:
+                    directives.repair_context = f"Повторяющийся вопрос: {envelope.repeated_question}"
+            # If repeated_question was already handled in stuck block, skip
+            elif not envelope.is_stuck:
+                pass  # Default repair_trigger stays ""
 
         # Summarize: если есть данные и не repair
         if envelope.client_has_data and not directives.repair_mode:

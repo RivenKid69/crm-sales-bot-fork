@@ -1195,6 +1195,11 @@ class SalesBot:
                 context={
                     "frustration_level": frustration_level,
                     "last_action": self.last_action,
+                    # Flow context for dynamic CTA phase resolution
+                    "flow_context": {
+                        "phase_order": list(self.state_machine.phase_order),
+                        "phase_states": dict(self.state_machine.phase_states),
+                    }
                 }
             )
             # Update response with CTA result
@@ -1339,6 +1344,9 @@ class SalesBot:
             "lead_score": self.lead_scorer.current_score if flags.lead_scoring else None,
             "objection_detected": objection_info is not None,
             "options": fallback_response.get("options") if fallback_response else None,
+            # CTA tracking
+            "cta_added": cta_result.cta_added if cta_result else False,
+            "cta_text": cta_result.cta if cta_result else None,
             # Decision Tracing
             "decision_trace": decision_trace_dict,
         }

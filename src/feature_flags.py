@@ -92,6 +92,9 @@ class FeatureFlags:
         "llm_classifier": True,            # Использовать LLM классификатор вместо Hybrid
 
         # === Personalization v2 (Adaptive Personalization) ===
+        # NOTE: personalization_v2 intentionally disabled — requires calibration
+        # of AdaptiveStyleSelector and IndustryDetectorV2 before production use.
+        # Legacy PersonalizationEngine (v1) is used as fallback via _apply_legacy_personalization().
         "personalization_v2": False,              # V2 engine с behavioral adaptation
         "personalization_adaptive_style": False,  # AdaptiveStyleSelector
         "personalization_semantic_industry": False,  # IndustryDetectorV2 semantic matching

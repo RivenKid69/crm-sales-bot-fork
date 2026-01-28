@@ -41,7 +41,7 @@ INTENT_TO_CATEGORY = {
     # =================================================================
     "price_question": ["pricing"],
     "pricing_details": ["pricing", "promotions"],
-    "question_features": ["features", "products", "tis", "analytics", "inventory"],
+    "question_features": ["features", "products", "tis", "analytics", "inventory", "support", "integrations"],
     "question_integrations": ["integrations"],
     "comparison": ["competitors", "products", "features"],
 

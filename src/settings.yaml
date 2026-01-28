@@ -96,7 +96,9 @@ generator:
   retriever_top_k: 2
 
   # Разрешённые английские слова (не считаются "иностранным языком")
+  # Используются как safety net при proportion-based detection
   allowed_english_words:
+    # Existing
     - "crm"
     - "api"
     - "ok"
@@ -110,6 +112,40 @@ generator:
     - "hr"
     - "pos"
     - "erp"
+    # Technical terms from knowledge base
+    - "rest"
+    - "oauth"
+    - "ssl"
+    - "tls"
+    - "jwt"
+    - "sla"
+    - "http"
+    - "https"
+    - "url"
+    - "usb"
+    - "wifi"
+    - "qr"
+    - "pdf"
+    - "sql"
+    - "csv"
+    - "ofd"
+    # Product/tariff terms
+    - "mini"
+    - "lite"
+    - "standard"
+    - "pro"
+    - "basic"
+    - "team"
+    - "business"
+    - "demo"
+    - "saas"
+    - "cloud"
+    - "online"
+    # Brand names from knowledge base
+    - "kaspi"
+    - "halyk"
+    - "iiko"
+    - "poster"
 
 # -----------------------------------------------------------------------------
 # TONE ANALYZER (Анализ тона клиента)

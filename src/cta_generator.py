@@ -31,6 +31,124 @@ from src.conditions.personalization import (
 )
 
 
+# =============================================================================
+# STATE → CANONICAL CTA PHASE MAPPING (Static fallback)
+# Dynamic resolution via _get_cta_phase() takes priority.
+# =============================================================================
+STATE_TO_CTA_PHASE: Dict[str, str] = {
+    # === Shared states ===
+    "greeting": "early",
+    "presentation": "late",
+    "handle_objection": "late",
+    "close": "close",
+    "soft_close": "close",
+    "success": "close",
+
+    # === SPIN ===
+    "spin_situation": "early", "spin_problem": "early",
+    "spin_implication": "mid", "spin_need_payoff": "mid",
+
+    # === BANT ===
+    "bant_budget": "early", "bant_authority": "early",
+    "bant_need": "mid", "bant_timeline": "mid",
+
+    # === CHALLENGER ===
+    "challenger_teach": "early",
+    "challenger_tailor": "mid", "challenger_close": "late",
+
+    # === COMMAND ===
+    "command_authority": "early",
+    "command_control": "mid", "command_close": "late",
+
+    # === CONSULTATIVE ===
+    "consult_understand": "early",
+    "consult_advise": "mid", "consult_recommend": "late",
+
+    # === CUSTOMER CENTRIC ===
+    "cc_listen": "early", "cc_understand": "early",
+    "cc_empower": "mid", "cc_support": "late",
+
+    # === DEMO FIRST ===
+    "demo_hook": "early", "demo_show": "mid",
+    "demo_qa": "mid", "demo_close": "late",
+
+    # === FAB ===
+    "fab_features": "early",
+    "fab_advantages": "mid", "fab_benefits": "late",
+
+    # === GAP ===
+    "gap_current": "early", "gap_future": "early",
+    "gap_analysis": "mid", "gap_solution": "late",
+
+    # === INBOUND ===
+    "inbound_identify": "early", "inbound_connect": "early",
+    "inbound_explore": "mid", "inbound_advise": "late",
+
+    # === MEDDIC ===
+    "meddic_metrics": "early", "meddic_buyer": "early",
+    "meddic_criteria": "mid", "meddic_process": "mid",
+    "meddic_pain": "mid", "meddic_champion": "late",
+
+    # === NEAT ===
+    "neat_needs": "early", "neat_economic": "mid",
+    "neat_authority": "mid", "neat_timeline": "mid",
+
+    # === RELATIONSHIP ===
+    "rel_connect": "early", "rel_rapport": "early",
+    "rel_nurture": "mid", "rel_partnership": "late",
+
+    # === SANDLER ===
+    "sandler_bonding": "early", "sandler_contract": "early",
+    "sandler_pain": "mid", "sandler_budget": "mid",
+    "sandler_decision": "late",
+
+    # === SNAP ===
+    "snap_simple": "early", "snap_value": "mid",
+    "snap_align": "mid", "snap_priority": "late",
+
+    # === SOCIAL ===
+    "social_trust": "early", "social_value": "mid",
+    "social_engage": "mid", "social_convert": "late",
+
+    # === SOLUTION ===
+    "solution_pain": "early",
+    "solution_map": "mid", "solution_value": "late",
+
+    # === TRANSACTIONAL ===
+    "trans_qualify": "early",
+    "trans_offer": "mid", "trans_close": "late",
+
+    # === VALUE ===
+    "value_discover": "early",
+    "value_quantify": "mid", "value_roi": "late",
+
+    # === AIDA ===
+    "aida_attention": "early", "aida_interest": "early",
+    "aida_desire": "mid", "aida_action": "late",
+}
+
+# Phase-based CTA templates (universal across all flows)
+CTA_BY_PHASE: Dict[str, List[str]] = {
+    "early": [],
+    "mid": [
+        "Хотите посмотреть как это решается на демо?",
+        "Могу показать на примере — буквально 10 минут.",
+        "Интересно увидеть решение?",
+    ],
+    "late": [
+        "Готовы попробовать?",
+        "Запланируем демо?",
+        "Хотите тестовый доступ?",
+        "Оставите контакт для связи?",
+    ],
+    "close": [
+        "Какой контакт для связи удобнее?",
+        "На какой email прислать информацию?",
+        "Когда удобно созвониться?",
+    ],
+}
+
+
 @dataclass
 class CTAResult:
     """
@@ -153,6 +271,10 @@ class CTAGenerator:
         self._cta_by_action = self._load_cta_by_action(config)
         self._early_states = self._load_early_states(config)
 
+        # Phase-based CTA (universal for all flows)
+        self._state_phase_map = STATE_TO_CTA_PHASE.copy()
+        self._cta_by_phase = self._load_cta_by_phase(config)
+
     def _load_ctas(self, config: Optional["LoadedConfig"]) -> Dict[str, List[str]]:
         """Load state-specific CTAs from config or use default."""
         if config is None:
@@ -176,6 +298,62 @@ class CTAGenerator:
         early = config.cta.get("early_states", [])
         return set(early) if early else self.DEFAULT_EARLY_STATES
 
+    def _load_cta_by_phase(self, config: Optional["LoadedConfig"]) -> Dict[str, List[str]]:
+        """Load phase-based CTA templates from config or use default."""
+        if config is None:
+            return CTA_BY_PHASE.copy()
+        by_phase = config.cta.get("by_phase", {})
+        return by_phase if by_phase else CTA_BY_PHASE.copy()
+
+    def _get_cta_phase(self, state: str, flow_context: Optional[Dict] = None) -> str:
+        """
+        Map any state to a canonical CTA phase.
+
+        Priority:
+        1. Hardcoded terminal states (presentation, close, etc.) — always correct
+        2. Dynamic computation from flow's phase_order — works for ANY flow
+        3. Static fallback map — covers known states
+        4. Default "early" — safe for unknown states
+        """
+        # 1. Universal terminal states
+        TERMINAL_PHASES = {
+            "greeting": "early",
+            "presentation": "late",
+            "handle_objection": "late",
+            "close": "close",
+            "soft_close": "close",
+            "success": "close",
+        }
+        if state in TERMINAL_PHASES:
+            return TERMINAL_PHASES[state]
+
+        # 2. Dynamic: compute from flow's phase_order (UNIVERSAL for any flow)
+        if flow_context:
+            phase_order = flow_context.get("phase_order", [])
+            phase_states = flow_context.get("phase_states", {})
+
+            # Find which position this state is at
+            for phase_name, phase_state in phase_states.items():
+                if phase_state == state and phase_name in phase_order:
+                    idx = phase_order.index(phase_name)
+                    total = len(phase_order)
+
+                    if total <= 1:
+                        return "mid"
+
+                    # First state → early
+                    if idx == 0:
+                        return "early"
+                    # Last state (next = presentation) → late
+                    elif idx == total - 1:
+                        return "late"
+                    # Everything in between → mid
+                    else:
+                        return "mid"
+
+        # 3. Static fallback for known states
+        return self._state_phase_map.get(state, "early")
+
     def reset(self) -> None:
         """Сброс для нового разговора"""
         self.used_ctas.clear()
@@ -194,23 +372,30 @@ class CTAGenerator:
         """
         Проверить нужно ли добавлять CTA.
 
+        Uses phase-based lookup: any state maps to early/mid/late/close phase.
+        early = no CTA, mid = soft CTA (blocked by question), late/close = CTA allowed.
+
         Args:
             state: Текущее состояние
             response: Текущий ответ
-            context: Контекст (frustration_level, last_action, etc.)
+            context: Контекст (frustration_level, last_action, flow_context, etc.)
 
         Returns:
             Tuple[bool, Optional[str]]: (нужно ли добавлять, причина пропуска)
         """
         context = context or {}
 
-        # 1. Проверяем есть ли CTA для этого состояния
-        if state not in self._ctas or not self._ctas[state]:
-            return False, "no_cta_for_state"
+        # 1. Get CTA phase for this state (universal for all flows)
+        flow_context = context.get("flow_context")
+        cta_phase = self._get_cta_phase(state, flow_context)
+        if cta_phase == "early":
+            return False, "early_phase_no_cta"
 
-        # 2. Проверяем не заканчивается ли ответ вопросом
+        # 2. Question gate — RELAXED for late/close phases
         if response.rstrip().endswith("?"):
-            return False, "response_ends_with_question"
+            if cta_phase == "mid":
+                return False, "response_ends_with_question"
+            # For late/close: allow CTA even after questions
 
         # 3. Проверяем frustration level
         frustration = context.get("frustration_level", 0)
@@ -226,25 +411,25 @@ class CTAGenerator:
         if last_action == "answer_question":
             return False, "just_answered_question"
 
-        # 6. Проверяем состояния где CTA не уместен
-        if state in self._early_states:
-            return False, "early_state"
-
         return True, None
 
     def get_cta(
         self,
         state: str,
         cta_type: Optional[str] = None,
-        soft: bool = False
+        soft: bool = False,
+        flow_context: Optional[Dict] = None
     ) -> Optional[str]:
         """
         Получить подходящий CTA.
+
+        State-specific first (preserves SPIN behavior), then phase fallback.
 
         Args:
             state: Текущее состояние
             cta_type: Тип CTA (demo, contact, trial, info)
             soft: Использовать мягкий CTA
+            flow_context: Flow context for dynamic phase resolution
 
         Returns:
             CTA или None
@@ -255,7 +440,12 @@ class CTAGenerator:
         elif cta_type and cta_type in self._cta_by_action:
             ctas = self._cta_by_action[cta_type]
         else:
+            # State-specific first (preserves SPIN behavior)
             ctas = self._ctas.get(state, [])
+            # Phase fallback for states not in state-specific CTA map
+            if not ctas:
+                phase = self._get_cta_phase(state, flow_context)
+                ctas = self._cta_by_phase.get(phase, [])
 
         if not ctas:
             return None
@@ -310,8 +500,9 @@ class CTAGenerator:
         context = context or {}
         cta_type = context.get("preferred_cta_type")
         soft = context.get("frustration_level", 0) >= 3  # Мягкий при среднем frustration
+        flow_context = context.get("flow_context")
 
-        cta = self.get_cta(state, cta_type=cta_type, soft=soft)
+        cta = self.get_cta(state, cta_type=cta_type, soft=soft, flow_context=flow_context)
         if not cta:
             return response
 
@@ -355,8 +546,9 @@ class CTAGenerator:
         context = context or {}
         cta_type = context.get("preferred_cta_type")
         soft = context.get("frustration_level", 0) >= 3
+        flow_context = context.get("flow_context")
 
-        cta = self.get_cta(state, cta_type=cta_type, soft=soft)
+        cta = self.get_cta(state, cta_type=cta_type, soft=soft, flow_context=flow_context)
         if not cta:
             return CTAResult(
                 original_response=response,

@@ -440,10 +440,9 @@ class ResponseGenerator:
             self.personalization_engine = PersonalizationEngineV2(retriever)
             logger.info("PersonalizationEngineV2 initialized")
 
-    def get_facts(self, company_size: int = None) -> str:
-        """Получить факты о продукте"""
+    def get_facts(self, company_size: int = None, intent: str = "") -> str:
+        """Получить факты о продукте, учитывая контекст интента."""
         # Явная проверка на None, чтобы 0 не считался False
-        # (хотя бизнес с 0 сотрудников нереален, лучше быть явным)
         if company_size is not None and company_size > 0:
             # Подбираем тариф
             if company_size <= 5:
@@ -452,16 +451,33 @@ class ResponseGenerator:
                 tariff = KNOWLEDGE["pricing"]["team"]
             else:
                 tariff = KNOWLEDGE["pricing"]["business"]
-            
+
             total = tariff["price"] * company_size
             discount = KNOWLEDGE["discount_annual"]
             annual = total * (1 - discount / 100)
-            
+
             return f"""Тариф: {tariff['name']}
 Цена: {tariff['price']}₽/мес за человека
 На {company_size} чел: {total}₽/мес
 При оплате за год: {annual:.0f}₽/мес (скидка {discount}%)"""
-        
+
+        # Intent-aware fallback when company_size unknown
+        # Price intents → return price range (not features)
+        if intent in self.PRICE_RELATED_INTENTS:
+            pricing = KNOWLEDGE.get("pricing", {})
+            basic = pricing.get("basic", {})
+            business = pricing.get("business", {})
+            team = pricing.get("team", {})
+            discount = KNOWLEDGE.get("discount_annual", 20)
+            return (
+                f"Тарифы Wipon:\n"
+                f"  {basic.get('name', 'Базовый')} (до 5 чел.): {basic.get('price', 990)}₽/чел./мес\n"
+                f"  {team.get('name', 'Команда')} (6-25 чел.): {team.get('price', 790)}₽/чел./мес\n"
+                f"  {business.get('name', 'Бизнес')} (26+ чел.): {business.get('price', 590)}₽/чел./мес\n"
+                f"При оплате за год скидка {discount}%"
+            )
+
+        # Default: features list (existing behavior)
         return ", ".join(KNOWLEDGE["features"])
     
     def format_history(self, history: List[Dict]) -> str:
@@ -484,19 +500,19 @@ class ResponseGenerator:
         return bool(re.search(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff]', text))
 
     def _has_english(self, text: str) -> bool:
-        """Проверяем есть ли английские слова (минимум 2 буквы подряд)"""
+        """Проверяем есть ли преимущественно английский текст (language switch).
+
+        Возвращает True только когда >50% букв — латиница,
+        что указывает на полное переключение языка (Qwen).
+        Технические термины в русском тексте (REST, OAuth, JWT) не считаются.
+        """
         import re
-        # Ищем английские слова (минимум 2 латинские буквы подряд)
-        # Исключаем: CRM, API, OK, ID и подобные аббревиатуры из settings
-
-        # Находим все английские слова
-        english_words = re.findall(r'\b[a-zA-Z]{2,}\b', text)
-
-        # Проверяем есть ли недопустимые английские слова
-        for word in english_words:
-            if word.lower() not in self.allowed_english:
-                return True
-        return False
+        russian_chars = len(re.findall(r'[а-яА-ЯёЁ]', text))
+        latin_chars = len(re.findall(r'[a-zA-Z]', text))
+        total_alpha = russian_chars + latin_chars
+        if total_alpha <= 10:
+            return False
+        return latin_chars / total_alpha > 0.5
 
     def _has_foreign_language(self, text: str) -> bool:
         """Проверяем есть ли иностранный текст (китайский или английский)"""
@@ -608,7 +624,8 @@ class ResponseGenerator:
 
         # Собираем переменные
         collected = context.get("collected_data", {})
-        facts = self.get_facts(collected.get("company_size"))
+        intent = context.get("intent", "")
+        facts = self.get_facts(collected.get("company_size"), intent=intent)
 
         # SPIN-специфичные данные
         current_tools = collected.get("current_tools", "не указано")
@@ -911,14 +928,21 @@ class ResponseGenerator:
         # Иероглифы + китайская пунктуация (。，！？：；「」『』【】)
         text = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\u3000-\u303f\uff00-\uffef]+', '', text)
 
-        # Удаляем английские слова (кроме разрешённых из settings)
-        def replace_english(match):
-            word = match.group(0)
-            if word.lower() in self.allowed_english:
-                return word
-            return ''
+        # Удаляем английские слова ТОЛЬКО если текст преимущественно на английском
+        # (Qwen language switch: >50% латиницы). Технические термины (REST, OAuth, JWT)
+        # в русском тексте (<30% латиницы) сохраняются.
+        russian_chars = len(re.findall(r'[а-яА-ЯёЁ]', text))
+        latin_chars = len(re.findall(r'[a-zA-Z]', text))
+        total_alpha = russian_chars + latin_chars
 
-        text = re.sub(r'\b[a-zA-Z]{2,}\b', replace_english, text)
+        if total_alpha > 10 and latin_chars / total_alpha > 0.5:
+            # Full-language switch detected — strip non-allowed English
+            def replace_english(match):
+                word = match.group(0)
+                if word.lower() in self.allowed_english:
+                    return word
+                return ''
+            text = re.sub(r'\b[a-zA-Z]{2,}\b', replace_english, text)
 
         # Удаляем строки начинающиеся с извинений на китайском
         lines = text.split('\n')

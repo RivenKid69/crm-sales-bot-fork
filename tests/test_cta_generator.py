@@ -59,7 +59,7 @@ class TestShouldAddCTA:
     """Тесты условий добавления CTA"""
 
     def test_no_cta_for_greeting(self):
-        """Нет CTA для greeting"""
+        """Нет CTA для greeting (early phase)"""
         generator = CTAGenerator()
         generator.turn_count = 5
 
@@ -70,7 +70,7 @@ class TestShouldAddCTA:
         )
 
         assert not should_add
-        assert reason == "no_cta_for_state"
+        assert reason == "early_phase_no_cta"
 
     def test_no_cta_for_spin_situation(self):
         """Нет CTA для spin_situation"""
@@ -85,8 +85,23 @@ class TestShouldAddCTA:
 
         assert not should_add
 
-    def test_no_cta_when_response_ends_with_question(self):
-        """Нет CTA если ответ заканчивается вопросом"""
+    def test_no_cta_when_response_ends_with_question_mid_phase(self):
+        """Нет CTA если ответ заканчивается вопросом в mid-phase"""
+        generator = CTAGenerator()
+        generator.turn_count = 5
+
+        # mid-phase state (spin_implication) blocks CTA on question
+        should_add, reason = generator.should_add_cta(
+            "spin_implication",
+            "Как это влияет на ваш бизнес?",
+            {}
+        )
+
+        assert not should_add
+        assert reason == "response_ends_with_question"
+
+    def test_cta_allowed_with_question_in_late_phase(self):
+        """CTA допускается в late/close фазах даже с вопросом (relaxed gate)"""
         generator = CTAGenerator()
         generator.turn_count = 5
 
@@ -96,8 +111,8 @@ class TestShouldAddCTA:
             {}
         )
 
-        assert not should_add
-        assert reason == "response_ends_with_question"
+        # Late phase: question gate is relaxed, CTA is allowed
+        assert should_add
 
     def test_no_cta_high_frustration(self):
         """Нет CTA при высоком frustration"""
@@ -507,7 +522,7 @@ class TestEdgeCases:
         assert "  " not in result.replace(response.rstrip(), "")
 
     def test_unknown_state(self):
-        """Неизвестное состояние"""
+        """Неизвестное состояние — defaults to early phase (safe, no CTA)"""
         generator = CTAGenerator()
         generator.turn_count = 5
 
@@ -518,7 +533,7 @@ class TestEdgeCases:
         )
 
         assert not should_add
-        assert reason == "no_cta_for_state"
+        assert reason == "early_phase_no_cta"
 
 
 class TestIntegrationScenarios:
@@ -577,8 +592,8 @@ class TestIntegrationScenarios:
 
         assert result.cta_added
 
-    def test_no_cta_spam(self):
-        """CTA не добавляется если уже есть вопрос"""
+    def test_no_cta_spam_mid_phase(self):
+        """CTA не добавляется если уже есть вопрос в mid-phase"""
         generator = CTAGenerator()
         generator.turn_count = 5
 
@@ -588,9 +603,10 @@ class TestIntegrationScenarios:
             "Хотите узнать больше?",
         ]
 
+        # In mid-phase (spin_implication), question gate blocks CTA
         for response in responses:
-            result = generator.generate_cta_result(response, "presentation", {})
-            assert not result.cta_added, f"CTA added to: {response}"
+            result = generator.generate_cta_result(response, "spin_implication", {})
+            assert not result.cta_added, f"CTA added to mid-phase question: {response}"
 
 
 if __name__ == "__main__":
