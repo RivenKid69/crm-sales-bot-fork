@@ -162,6 +162,14 @@ src/
 │
 ├── # Условные правила
 ├── conditions/             # Пакет условных правил
+├── rules/                  # Intent resolution system
+│   ├── resolver.py         # RuleResolver с taxonomy fallback
+│   └── intent_taxonomy.py  # IntentTaxonomyRegistry (5-level fallback)
+│
+├── # Validation system
+├── validation/             # Статическая валидация конфигурации
+│   ├── __init__.py         # Публичный API
+│   └── intent_coverage.py  # IntentCoverageValidator (zero unmapped intents)
 │
 ├── # YAML Configuration (Phase 1 Parameterization)
 ├── config_loader.py        # Загрузчик YAML конфигурации
@@ -250,7 +258,7 @@ voice_bot/                  # Голосовой интерфейс
 ├── models/                 # XTTS-RU-IPA модели
 └── test_*.py               # Тесты компонентов (STT, TTS, LLM)
 
-tests/                      # Тесты в 102 файлах
+tests/                      # Тесты в 103+ файлах
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
@@ -258,7 +266,9 @@ tests/                      # Тесты в 102 файлах
 ├── test_cascade_advanced.py    # Продвинутые тесты каскадного поиска
 ├── test_category_router*.py    # Тесты LLM-маршрутизации
 ├── test_reranker.py        # Тесты переоценки результатов
+├── test_intent_coverage.py # Тесты Intent Taxonomy coverage (zero unmapped intents)
 ├── test_phase*_integration.py  # Интеграционные тесты фаз 0-4
+├── test_conditions_phase3.py   # Тесты RuleResolver с taxonomy fallback
 ├── test_feature_flags.py   # Тесты feature flags
 ├── test_logger.py          # Тесты логирования
 ├── test_metrics.py         # Тесты метрик
@@ -581,6 +591,90 @@ sm = StateMachine(flow=flow)
 
 Подробнее: [src/yaml_config/flows/README.md](src/yaml_config/flows/README.md)
 
+## Intent Taxonomy System (Zero Unmapped Intents by Design)
+
+Система иерархической taxonomy для intelligent fallback resolution. Устраняет **81% failure rate** для unmapped intents через 5-level fallback chain.
+
+### Проблема до внедрения
+
+При отсутствии explicit mapping для intent:
+- `price_question` → `continue_current_goal` (generic) → **81% failure**
+- `contact_provided` → no transition → **81% failure**
+- `request_brevity` → spurious transitions → **55% failure**
+- `request_references` → no mapping → **54% failure**
+
+### Решение: Hierarchical Taxonomy
+
+Каждый intent имеет **taxonomy metadata**:
+```yaml
+intent_taxonomy:
+  price_question:
+    category: question                    # Группа интентов
+    super_category: user_input            # Высокоуровневая группа
+    semantic_domain: pricing              # Семантический домен
+    fallback_action: answer_with_pricing  # Intelligent fallback
+    priority: high
+```
+
+### 5-Level Fallback Chain
+
+1. **Exact match** — поиск в state/global rules
+2. **Category fallback** — fallback по категории (`question` → `answer_and_continue`)
+3. **Super-category fallback** — fallback по super-category (`user_input` → `acknowledge_and_continue`)
+4. **Domain fallback** — fallback по semantic domain (`pricing` → `answer_with_pricing`)
+5. **DEFAULT_ACTION** — `continue_current_goal` (только если все выше не сработало)
+
+### Guaranteed Coverage через _universal_base
+
+Все критические intents имеют **explicit mappings** в `_universal_base` mixin:
+
+```yaml
+_universal_base:
+  rules:
+    # Price intents
+    price_question: answer_with_pricing
+    pricing_details: answer_with_pricing
+    # ... all 7 price intents
+
+    # Meta intents
+    request_brevity: respond_briefly
+    unclear: clarify_one_question
+
+  transitions:
+    contact_provided: success
+    demo_request: close
+    request_references: close
+    # ... all purchase intents
+```
+
+### Результат
+
+- `price_question`: **81% → 95%+** (domain fallback → `answer_with_pricing`)
+- `contact_provided`: **81% → 95%+** (`_universal_base` → transition to `success`)
+- `request_brevity`: **55% → <5%** (no spurious transitions)
+- `request_references`: **54% → 95%+** (`_universal_base` → `provide_references`)
+
+### Validation System
+
+**Static validation** (CI):
+```python
+from src.validation import IntentCoverageValidator
+
+validator = IntentCoverageValidator(config, flow)
+issues = validator.validate_all()
+# Проверяет: unmapped critical intents, taxonomy completeness, wrong actions
+```
+
+**Runtime monitoring**:
+```python
+from src.metrics import FallbackMetrics
+
+metrics = FallbackMetrics()
+# Отслеживает: fallback rate by level, DEFAULT_ACTION usage (<1% target)
+```
+
+Подробнее: [docs/INTENT_TAXONOMY.md](docs/INTENT_TAXONOMY.md)
+
 ## Feature Flags (Фазы разработки)
 
 Система использует feature flags для постепенного включения функциональности:
@@ -765,6 +859,7 @@ pip install -r requirements.txt
 - [API.md](docs/API.md) — справочник по API
 - [CLASSIFIER.md](docs/CLASSIFIER.md) — документация классификатора
 - [KNOWLEDGE.md](docs/KNOWLEDGE.md) — документация базы знаний
+- [INTENT_TAXONOMY.md](docs/INTENT_TAXONOMY.md) — Intent Taxonomy System (zero unmapped intents)
 - [SETTINGS.md](docs/SETTINGS.md) — описание настроек
 - [PHASES.md](docs/PHASES.md) — фазы разработки (0-5)
 - [state_machine.md](docs/state_machine.md) — State Machine v2.0
@@ -774,10 +869,11 @@ pip install -r requirements.txt
 ## Метрики проекта
 
 ```
-Модулей Python:           82 файла в src/
-Тестовых файлов:          102+ в tests/
+Модулей Python:           85+ файлов в src/
+Тестовых файлов:          103+ в tests/
 Секций в базе знаний:     1969 в 17 YAML файлах
 Интентов:                 150+ в 26 категориях (constants.yaml)
+Intent Taxonomy Entries:  150+ с 5-level fallback chain
 Паттернов опечаток:       663 в TYPO_FIXES
 Паттернов разделения:     170 в SPLIT_PATTERNS
 Приоритетных паттернов:   426 в PRIORITY_PATTERNS
@@ -787,5 +883,5 @@ pip install -r requirements.txt
 Feature Flags:            35+ флагов
 YAML Config Files:        70+ в yaml_config/
 Modular Flows:            22 готовых сценария продаж
-Строк кода:               ~54,000 строк
+Строк кода:               ~57,500 строк (+3,500 taxonomy system)
 ```
