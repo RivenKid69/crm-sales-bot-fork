@@ -208,12 +208,19 @@ class TestTier3Skip:
             assert response.next_state == expected_next, \
                 f"Expected {expected_next} for {current_state}, got {response.next_state}"
 
-    def test_tier_3_unknown_state_to_presentation(self):
-        """Tier 3 defaults to presentation for unknown state"""
+    def test_tier_3_unknown_state_falls_to_tier_2(self):
+        """Tier 3 falls to tier_2 for unknown state (no blind default to presentation).
+
+        Fix 2: _find_valid_skip_target returns None for states not in skip_map,
+        causing tier_3 to fall back to tier_2 options instead of blindly
+        defaulting to 'presentation'.
+        """
         handler = FallbackHandler()
         response = handler.get_fallback("fallback_tier_3", "unknown_state")
 
-        assert response.next_state == "presentation"
+        # Should fall back to tier_2 (options) since no valid skip target
+        assert response.action == "continue"  # tier_2 returns "continue"
+        assert response.next_state is None
 
 
 class TestTier4Exit:

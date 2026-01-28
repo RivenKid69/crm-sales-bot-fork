@@ -182,7 +182,10 @@ class SalesBot:
         self.guard = ConversationGuard()
         # FIX: Pass flow to FallbackHandler so it uses flow-specific skip_map
         # instead of DEFAULT_SKIP_MAP with hardcoded spin_situation
-        self.fallback = FallbackHandler(flow=self._flow, config=self._config)
+        # FIX 3: Pass guard_config for configurable tier_2 escalation threshold
+        self.fallback = FallbackHandler(
+            flow=self._flow, config=self._config, guard_config=self.guard.config
+        )
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
         self.tone_analyzer = ToneAnalyzer()
@@ -736,14 +739,29 @@ class SalesBot:
         if trace_builder:
             trace_builder.record_tone(tone_info, elapsed_ms=tone_elapsed)
 
-        # Phase 1: Check guard for intervention
+        # FIX 1: Classify intent BEFORE guard check so guard uses current intent
+        classification_start = time.time()
+        classification = self.classifier.classify(user_message, current_context)
+        intent = classification["intent"]
+        extracted = classification["extracted_data"]
+        classification_elapsed = (time.time() - classification_start) * 1000
+
+        # Decision Tracing: Record classification
+        if trace_builder:
+            trace_builder.record_classification(
+                result=classification,
+                all_scores=classification.get("all_scores", {intent: classification.get("confidence", 0.0)}),
+                elapsed_ms=classification_elapsed,
+            )
+
+        # Phase 1: Check guard for intervention (now uses current intent)
         guard_start = time.time()
         intervention = self._check_guard(
             state=current_state,
             message=user_message,
             collected_data=collected_data,
             frustration_level=frustration_level,
-            last_intent=self.last_intent  # BUG-001 FIX: Pass intent for informative check
+            last_intent=intent  # FIX 1: Use current intent, not self.last_intent
         )
         guard_elapsed = (time.time() - guard_start) * 1000
 
@@ -768,8 +786,8 @@ class SalesBot:
                 intervention=intervention,
                 state=current_state,
                 context={
-                    "collected_data": collected_data,
-                    "last_intent": self.last_intent,
+                    "collected_data": {**collected_data, **extracted},  # FIX 1: Merge extracted for skip validation
+                    "last_intent": intent,  # FIX 1: Use current intent
                     "last_action": self.last_action,
                     "frustration_level": frustration_level,
                 }
@@ -829,24 +847,8 @@ class SalesBot:
                     # FIX: Record the skipped-to state for phase coverage tracking
                     if skip_next_state not in visited_states:
                         visited_states.append(skip_next_state)
-                    # ✅ FIX BUG-001: Сбрасываем fallback_response чтобы сгенерировать
-                    # нормальный ответ вместо tier_3 шаблона
+                    # FIX BUG-001: Reset fallback_response to generate normal response
                     fallback_response = None
-
-        # 1. Classify intent
-        classification_start = time.time()
-        classification = self.classifier.classify(user_message, current_context)
-        intent = classification["intent"]
-        extracted = classification["extracted_data"]
-        classification_elapsed = (time.time() - classification_start) * 1000
-
-        # Decision Tracing: Record classification
-        if trace_builder:
-            trace_builder.record_classification(
-                result=classification,
-                all_scores=classification.get("all_scores", {intent: classification.get("confidence", 0.0)}),
-                elapsed_ms=classification_elapsed,
-            )
 
         # Track competitor mention for dynamic CTA
         if intent == "objection_competitor":
@@ -1485,6 +1487,8 @@ class SalesBot:
             "state": self.state_machine.state,
             "is_final": False,
             "disambiguation_options": options,
+            "visited_states": [self.state_machine.state],
+            "initial_state": self.state_machine.state,
         }
 
     def _handle_disambiguation_response(self, user_message: str) -> Dict:
@@ -1630,6 +1634,7 @@ class SalesBot:
 
         current_state = self.state_machine.state
         collected_data = self.state_machine.collected_data
+        visited_states = [current_state]
 
         # =================================================================
         # Phase 2: Analyze tone (важно для frustration и guidance)
@@ -1651,7 +1656,7 @@ class SalesBot:
             message=user_message,
             collected_data=collected_data,
             frustration_level=frustration_level,
-            last_intent=self.last_intent  # BUG-001 FIX: Pass intent for informative check
+            last_intent=intent  # FIX 1+6: Use current intent, not self.last_intent
         ) if user_message else None
 
         fallback_used = False
@@ -1665,8 +1670,8 @@ class SalesBot:
                 intervention=intervention,
                 state=current_state,
                 context={
-                    "collected_data": collected_data,
-                    "last_intent": self.last_intent,
+                    "collected_data": {**collected_data, **extracted},  # FIX 6: Merge extracted for skip validation
+                    "last_intent": intent,  # FIX 1+6: Use current intent
                     "last_action": self.last_action,
                     "frustration_level": frustration_level,
                 }
@@ -1696,7 +1701,30 @@ class SalesBot:
                     "is_final": True,
                     "fallback_used": True,
                     "fallback_tier": intervention,
+                    "visited_states": [current_state, "soft_close"],
+                    "initial_state": current_state,
                 }
+
+            # FIX 6: Handle "skip" action - apply state transition in disambiguation path
+            elif fb_result.get("response") and fb_result.get("action") == "skip" and fb_result.get("next_state"):
+                skip_next_state = fb_result["next_state"]
+                self.state_machine.transition_to(
+                    next_state=skip_next_state,
+                    action="skip",
+                    source="fallback_skip",
+                )
+                logger.info(
+                    "Fallback skip applied in disambiguation path",
+                    from_state=current_state,
+                    to_state=skip_next_state,
+                    original_tier=intervention,
+                )
+                current_state = skip_next_state
+                if skip_next_state not in visited_states:
+                    visited_states.append(skip_next_state)
+                # Reset fallback to generate normal response
+                fallback_used = False
+                fallback_tier = None
 
         # =================================================================
         # Phase 3: Check for objection
@@ -1811,9 +1839,18 @@ class SalesBot:
         self.last_action = action
         self.last_intent = intent
 
+        # FIX 6: Record progress for Guard (prevents false "no progress" detection)
+        next_state = sm_result["next_state"]
+        if sm_result.get("prev_state") != next_state or extracted:
+            self.guard.record_progress()
+
+        # FIX 6: Track the final state in visited_states
+        if next_state not in visited_states:
+            visited_states.append(next_state)
+
         # Записываем метрики (с информацией о тоне и fallback)
         self._record_turn_metrics(
-            state=sm_result["next_state"],
+            state=next_state,
             intent=intent,
             tone=tone_info.get("tone"),
             fallback_used=fallback_used,
@@ -1837,10 +1874,14 @@ class SalesBot:
             "intent": intent,
             "confidence": confidence,
             "action": action,
-            "state": sm_result["next_state"],
+            "state": next_state,
             "extracted_data": extracted,
             "is_final": is_final,
             "spin_phase": sm_result.get("spin_phase"),
+            "visited_states": visited_states,
+            "initial_state": visited_states[0],
+            "fallback_used": fallback_used,
+            "fallback_tier": fallback_tier,
         }
 
     def _fallback_from_disambiguation(self, user_message: str = "") -> Dict:
@@ -1904,6 +1945,8 @@ class SalesBot:
             "action": "repeat_clarification",
             "state": self.state_machine.state,
             "is_final": False,
+            "visited_states": [self.state_machine.state],
+            "initial_state": self.state_machine.state,
         }
 
 

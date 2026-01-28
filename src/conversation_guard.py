@@ -48,6 +48,9 @@ class GuardConfig:
     progress_check_interval: int = 5       # Каждые 5 turns проверяем прогресс
     min_unique_states_for_progress: int = 2  # Минимум уникальных состояний за интервал
 
+    # FIX 3: Tier 2 self-loop escalation threshold
+    max_consecutive_tier_2: int = 3        # Escalate to tier_3 after N consecutive tier_2 in same state
+
     # Frustration thresholds - MUST use centralized value from frustration_thresholds
     # NOTE: Using FRUSTRATION_HIGH ensures consistency with fallback conditions
     # and personalization conditions. DO NOT hardcode a different value here!

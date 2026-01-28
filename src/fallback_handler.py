@@ -66,6 +66,9 @@ class FallbackStats:
     last_state: Optional[str] = None
     # Dynamic CTA tracking
     dynamic_cta_counts: Dict[str, int] = field(default_factory=dict)
+    # FIX 3: Tier 2 self-loop tracking
+    consecutive_tier_2_count: int = 0
+    consecutive_tier_2_state: Optional[str] = None
 
 
 class FallbackHandler:
@@ -215,7 +218,8 @@ class FallbackHandler:
         enable_tracing: bool = True,
         skip_map: Optional[Dict[str, str]] = None,
         flow: Optional["FlowConfig"] = None,
-        config: Optional["LoadedConfig"] = None
+        config: Optional["LoadedConfig"] = None,
+        guard_config: Optional[Any] = None,
     ):
         """
         Initialize FallbackHandler.
@@ -226,10 +230,19 @@ class FallbackHandler:
                       will try to get from flow.skip_map, or use DEFAULT_SKIP_MAP.
             flow: FlowConfig to get skip_map from (auto-builds from transitions)
             config: LoadedConfig for templates (rephrase, options, defaults)
+            guard_config: GuardConfig for configurable thresholds (e.g. max_consecutive_tier_2)
         """
         self._stats = FallbackStats()
         self._used_templates: Dict[str, List[str]] = {}  # Для избежания повторов
         self._enable_tracing = enable_tracing
+
+        # FIX 3: Configurable tier_2 escalation threshold
+        self._max_consecutive_tier_2 = (
+            guard_config.max_consecutive_tier_2 if guard_config and hasattr(guard_config, 'max_consecutive_tier_2') else 3
+        )
+
+        # FIX 2: Store flow reference for required_data validation in skip
+        self._flow = flow
 
         # Determine skip_map priority: explicit > flow > default
         if skip_map is not None:
@@ -362,6 +375,17 @@ class FallbackHandler:
         self._stats.last_tier = tier
         self._stats.last_state = state
 
+        # FIX 3: Track consecutive tier_2 for self-loop detection
+        if tier == "fallback_tier_2":
+            if self._stats.consecutive_tier_2_state == state:
+                self._stats.consecutive_tier_2_count += 1
+            else:
+                self._stats.consecutive_tier_2_count = 1
+                self._stats.consecutive_tier_2_state = state
+        else:
+            self._stats.consecutive_tier_2_count = 0
+            self._stats.consecutive_tier_2_state = None
+
         # Create context and trace for condition evaluation
         fb_context = self._create_fallback_context(tier, state, context)
         trace = self._create_trace(tier, state)
@@ -386,7 +410,12 @@ class FallbackHandler:
         if tier == "fallback_tier_1":
             response = self._tier_1_rephrase(state, context, fb_context, trace)
         elif tier == "fallback_tier_2":
-            response = self._tier_2_options(state, context, fb_context, trace)
+            # FIX 3: Escalate to tier_3 after N consecutive tier_2 in same state
+            if self._stats.consecutive_tier_2_count >= self._max_consecutive_tier_2:
+                self._stats.consecutive_tier_2_count = 0
+                response = self._tier_3_skip(state, context, fb_context, trace)
+            else:
+                response = self._tier_2_options(state, context, fb_context, trace)
         elif tier == "fallback_tier_3":
             response = self._tier_3_skip(state, context, fb_context, trace)
         else:  # tier_4 or soft_close
@@ -760,6 +789,39 @@ class FallbackHandler:
 
         return None
 
+    def _find_valid_skip_target(self, current_state: str, collected_data: Dict) -> Optional[str]:
+        """Walk skip_map chain, return first state whose required_data is satisfied.
+
+        IMPORTANT: on_enter.set_flags (auto-flags) are NOT counted.
+        Auto-flags are process markers set when entering a state — they
+        indicate "this phase was visited", not "data was collected from user".
+        For skip validation, only REAL data in collected_data counts.
+        """
+        if not self._flow:
+            return self._skip_map.get(current_state)
+
+        visited = {current_state}
+        candidate = self._skip_map.get(current_state)
+
+        while candidate and candidate not in visited:
+            state_config = self._flow.states.get(candidate)
+            if state_config is None:
+                return candidate  # Template var like {{entry_state}} — accept
+
+            required = state_config.get("required_data", [])
+            if not required:
+                return candidate  # No requirements — always valid
+
+            # Check ONLY real collected data, NOT auto-flags from on_enter
+            unsatisfied = [r for r in required if r not in collected_data]
+            if not unsatisfied:
+                return candidate
+
+            visited.add(candidate)
+            candidate = self._skip_map.get(candidate)
+
+        return None  # No valid target
+
     def _tier_3_skip(
         self,
         state: str,
@@ -780,7 +842,16 @@ class FallbackHandler:
                     frustration_level=fb_context.frustration_level
                 )
 
-        next_state = self._skip_map.get(state, "presentation")
+        # FIX 2: Validate required_data before skipping — walk skip_map chain
+        collected_data = context.get("collected_data", {})
+        next_state = self._find_valid_skip_target(state, collected_data)
+
+        if next_state is None:
+            # No valid skip target — escalate instead of blind default
+            if getattr(self._stats, 'consecutive_tier_2_count', 0) >= 3:
+                return self._tier_4_exit(context, trace)
+            return self._tier_2_options(state, context, fb_context, trace)
+
         message = self._get_unused_template("skip", self.SKIP_TEMPLATES)
 
         if trace:
