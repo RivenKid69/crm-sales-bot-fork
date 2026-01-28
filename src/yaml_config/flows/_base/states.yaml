@@ -42,6 +42,7 @@ states:
   _base_phase:
     abstract: true
     mixins:
+      - _universal_base     # FIRST: Guaranteed coverage for all critical intents
       - phase_progress      # Прогресс-интенты для автоматического перехода между фазами
       - price_handling
       - product_questions

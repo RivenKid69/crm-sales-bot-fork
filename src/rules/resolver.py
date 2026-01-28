@@ -13,12 +13,16 @@ Extended in Phase 1 (State Machine Parameterization) for AND/OR/NOT support.
 
 from typing import Dict, List, Optional, Any, Union, Set, Iterator, TYPE_CHECKING
 from dataclasses import dataclass, field
+import logging
 
 from src.conditions.registry import ConditionRegistry, ConditionNotFoundError
 from src.conditions.trace import EvaluationTrace, Resolution
 
 if TYPE_CHECKING:
     from src.conditions.expression_parser import ConditionExpressionParser
+    from src.rules.intent_taxonomy import IntentTaxonomyRegistry
+
+logger = logging.getLogger(__name__)
 
 
 # Type aliases for rule formats
@@ -168,10 +172,16 @@ class RuleResult:
         action: The resolved action (for rules)
         next_state: The resolved next state (for transitions), None = stay
         trace: Optional evaluation trace for debugging
+        is_fallback: Whether this result came from taxonomy fallback
+        fallback_level: Level of fallback used (exact, category, super_category, domain, default)
+        fallback_reason: Human-readable reason for fallback (for monitoring)
     """
     action: str
     next_state: Optional[str] = None
     trace: Optional[EvaluationTrace] = None
+    is_fallback: bool = False
+    fallback_level: Optional[str] = None
+    fallback_reason: Optional[str] = None
 
     def __iter__(self) -> Iterator[Any]:
         """
@@ -187,6 +197,9 @@ class RuleResult:
         result = {
             "action": self.action,
             "next_state": self.next_state,
+            "is_fallback": self.is_fallback,
+            "fallback_level": self.fallback_level,
+            "fallback_reason": self.fallback_reason,
         }
         if self.trace:
             result["trace"] = self.trace.to_dict()
@@ -235,7 +248,8 @@ class RuleResolver:
         self,
         registry: ConditionRegistry,
         default_action: str = None,
-        expression_parser: "ConditionExpressionParser" = None
+        expression_parser: "ConditionExpressionParser" = None,
+        taxonomy_registry: "IntentTaxonomyRegistry" = None
     ):
         """
         Initialize resolver.
@@ -244,10 +258,12 @@ class RuleResolver:
             registry: Condition registry to use for evaluation
             default_action: Default action when no rule matches
             expression_parser: Optional parser for composite conditions (AND/OR/NOT)
+            taxonomy_registry: Intent taxonomy registry for intelligent fallback
         """
         self.registry = registry
         self.default_action = default_action or self.DEFAULT_ACTION
         self.expression_parser = expression_parser
+        self.taxonomy_registry = taxonomy_registry
 
     def resolve_action(
         self,
@@ -257,14 +273,17 @@ class RuleResolver:
         ctx: Any,
         state: str = "",
         trace: Optional[EvaluationTrace] = None
-    ) -> str:
+    ) -> RuleResult:
         """
-        Resolve action for an intent.
+        Resolve action for an intent with taxonomy-based intelligent fallback.
 
         Resolution order:
-        1. state_rules[intent]
-        2. global_rules[intent]
-        3. default_action
+        1. state_rules[intent] (exact match)
+        2. global_rules[intent] (exact match)
+        3. Taxonomy category fallback
+        4. Taxonomy super-category fallback
+        5. Taxonomy domain fallback
+        6. default_action
 
         Args:
             intent: Intent to resolve
@@ -275,9 +294,9 @@ class RuleResolver:
             trace: Optional trace for debugging
 
         Returns:
-            Resolved action string
+            RuleResult with action, next_state, and fallback metadata
         """
-        # Try state rules first
+        # 1. Try state rules first (exact match)
         if intent in state_rules:
             result = self._evaluate_rule(
                 rule=state_rules[intent],
@@ -286,9 +305,16 @@ class RuleResolver:
                 trace=trace
             )
             if result is not None:
-                return result
+                return RuleResult(
+                    action=result,
+                    next_state=None,
+                    trace=trace,
+                    is_fallback=False,
+                    fallback_level="exact",
+                    fallback_reason=f"state_rule:{intent}"
+                )
 
-        # Try global rules
+        # 2. Try global rules (exact match)
         if intent in global_rules:
             result = self._evaluate_rule(
                 rule=global_rules[intent],
@@ -297,13 +323,74 @@ class RuleResolver:
                 trace=trace
             )
             if result is not None:
-                return result
+                return RuleResult(
+                    action=result,
+                    next_state=None,
+                    trace=trace,
+                    is_fallback=False,
+                    fallback_level="exact",
+                    fallback_reason=f"global_rule:{intent}"
+                )
 
-        # Fallback to default
+        # 3-6. Taxonomy fallback chain (if taxonomy registry available)
+        if self.taxonomy_registry is not None:
+            fallback_chain = self.taxonomy_registry.get_fallback_chain(intent)
+
+            # Skip first entry (exact level, already tried above)
+            for option in fallback_chain[1:]:
+                level = option.get("level")
+                action = option.get("action")
+                transition = option.get("transition")
+
+                if action:
+                    # Log fallback usage
+                    logger.info(
+                        "Taxonomy fallback applied",
+                        intent=intent,
+                        state=state,
+                        fallback_level=level,
+                        fallback_action=action,
+                        fallback_transition=transition
+                    )
+
+                    if trace:
+                        trace.set_result(action, Resolution.FALLBACK)
+
+                    return RuleResult(
+                        action=action,
+                        next_state=transition,
+                        trace=trace,
+                        is_fallback=True,
+                        fallback_level=level,
+                        fallback_reason=f"{level}_fallback:{intent}"
+                    )
+
+            # Should never reach here (default always in chain)
+            logger.error(
+                "Taxonomy fallback chain exhausted without default",
+                intent=intent,
+                state=state
+            )
+
+        # Final fallback to default (no taxonomy or chain exhausted)
         if trace:
             trace.set_result(self.default_action, Resolution.FALLBACK)
 
-        return self.default_action
+        logger.warning(
+            "Using DEFAULT_ACTION fallback (no taxonomy)",
+            intent=intent,
+            state=state,
+            default_action=self.default_action
+        )
+
+        return RuleResult(
+            action=self.default_action,
+            next_state=None,
+            trace=trace,
+            is_fallback=True,
+            fallback_level="default",
+            fallback_reason=f"no_taxonomy_or_exhausted:{intent}"
+        )
 
     def resolve_transition(
         self,

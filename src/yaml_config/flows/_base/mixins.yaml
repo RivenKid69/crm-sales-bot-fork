@@ -17,6 +17,75 @@
 
 mixins:
   # =================================================================
+  # UNIVERSAL BASE MIXIN - MANDATORY FOR ALL STATES
+  # =================================================================
+  # Guarantees ALL critical intents have explicit mappings.
+  # This mixin MUST be first in the _base_phase to provide guaranteed coverage.
+  # Other mixins can override these mappings with conditional logic.
+  # Relies on taxonomy fallback for non-critical intents.
+  # =================================================================
+  _universal_base:
+    description: "Universal base with GUARANTEED coverage for all critical intents"
+    rules:
+      # CRITICAL: Price intents (explicit mappings override taxonomy fallback)
+      price_question: answer_with_pricing
+      pricing_details: answer_with_pricing
+      cost_inquiry: answer_with_pricing
+      discount_request: answer_with_pricing
+      payment_terms: answer_with_pricing
+      pricing_comparison: answer_with_pricing
+      budget_question: answer_with_pricing
+
+      # Product questions
+      question_features: answer_with_facts
+      question_integrations: answer_with_facts
+
+      # Meta intents (dialogue control)
+      request_brevity: respond_briefly
+      unclear: clarify_one_question
+
+      # Purchase progression (critical for contact_provided fix)
+      demo_request: schedule_demo
+      callback_request: schedule_callback
+      request_references: provide_references
+      consultation_request: schedule_consultation
+
+    transitions:
+      # CRITICAL: Universal transitions for purchase intents
+      contact_provided: success
+      demo_request: close
+      callback_request: close
+      request_references: close
+      consultation_request: close
+
+      # Exit transitions
+      rejection: soft_close
+      farewell: soft_close
+
+      # Escalation transitions
+      request_human: escalated
+      speak_to_manager: escalated
+      talk_to_person: escalated
+      not_a_bot: escalated
+      real_person: escalated
+      human_please: escalated
+      escalate: escalated
+
+      # Technical problems
+      problem_technical: escalated
+      problem_connection: escalated
+      problem_sync: escalated
+      problem_fiscal: escalated
+      request_technical_support: escalated
+
+      # Sensitive intents
+      legal_question: escalated
+      formal_complaint: escalated
+      contract_dispute: escalated
+      data_deletion: escalated
+      gdpr_request: escalated
+
+  # =================================================================
   # PRICE HANDLING: Обработка ценовых вопросов
   # =================================================================
   price_handling:
@@ -24,59 +93,59 @@ mixins:
     rules:
       price_question:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
       pricing_details:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
       cost_inquiry:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
       discount_request:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
       payment_terms:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
       pricing_comparison:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
       budget_question:
         - when: can_answer_price
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: price_repeated_2x
-          then: answer_with_facts
+          then: answer_with_pricing
         - when: should_answer_directly
-          then: answer_with_facts
+          then: answer_with_pricing
         - "{{default_price_action}}"
 
   # =================================================================

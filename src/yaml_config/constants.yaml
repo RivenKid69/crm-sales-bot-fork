@@ -841,6 +841,2193 @@ intents:
     request_technical_support: connect_to_support
 
 # =============================================================================
+# INTENT TAXONOMY - Иерархическая система с intelligent fallback
+# =============================================================================
+# Resolution order для unmapped intent:
+# 1. Exact match (state/global rules)
+# 2. Category fallback (price_question → question category → answer_with_pricing)
+# 3. Super-category fallback (question → user_input → acknowledge_and_continue)
+# 4. Domain fallback (pricing domain → answer_with_pricing)
+# 5. DEFAULT_ACTION (только если всё выше failed)
+# =============================================================================
+intent_taxonomy:
+  # =================================================================
+  # PRICE INTENTS (7 intents) - CRITICAL for 81% failure fix
+  # =================================================================
+  price_question:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  pricing_details:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  cost_inquiry:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  discount_request:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  payment_terms:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  pricing_comparison:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  budget_question:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  # =================================================================
+  # PURCHASE PROGRESSION (critical for contact_provided fix)
+  # =================================================================
+  contact_provided:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: collect_contact
+    fallback_transition: success
+    priority: critical
+
+  demo_request:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: schedule_demo
+    fallback_transition: close
+    priority: critical
+
+  callback_request:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: schedule_callback
+    fallback_transition: close
+    priority: critical
+
+  request_references:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: provide_references
+    fallback_transition: close
+    priority: high
+
+  consultation_request:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: schedule_consultation
+    fallback_transition: close
+    priority: high
+
+  # =================================================================
+  # META INTENTS (dialogue control)
+  # =================================================================
+  request_brevity:
+    category: meta
+    super_category: dialogue_control
+    semantic_domain: style
+    fallback_action: respond_briefly
+    fallback_transition: null
+    priority: low
+
+  unclear:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: clarification
+    fallback_action: clarify_one_question
+    fallback_transition: null
+    priority: medium
+
+  go_back:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: navigation
+    fallback_action: handle_go_back
+    fallback_transition: null
+    priority: medium
+
+  correct_info:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: correction
+    fallback_action: acknowledge_correction
+    fallback_transition: null
+    priority: medium
+
+  clarification_request:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: clarification
+    fallback_action: provide_clarification
+    fallback_transition: null
+    priority: medium
+
+  repeat_request:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: clarification
+    fallback_action: repeat_last_message
+    fallback_transition: null
+    priority: low
+
+  example_request:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: clarification
+    fallback_action: provide_example
+    fallback_transition: null
+    priority: medium
+
+  summary_request:
+    category: dialogue_repair
+    super_category: dialogue_control
+    semantic_domain: clarification
+    fallback_action: provide_summary
+    fallback_transition: null
+    priority: medium
+
+  # =================================================================
+  # PRODUCT QUESTIONS
+  # =================================================================
+  question_features:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: high
+
+  question_integrations:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: high
+
+  question_technical:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  comparison:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: high
+
+  question_security:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: high
+
+  question_support:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_implementation:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_training:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_updates:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_mobile:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_offline:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_data_migration:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_customization:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_reports:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_automation:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_scalability:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # OBJECTIONS (18 intents)
+  # =================================================================
+  objection_price:
+    category: objection
+    super_category: user_concern
+    semantic_domain: pricing
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_competitor:
+    category: objection
+    super_category: user_concern
+    semantic_domain: market
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_no_time:
+    category: objection
+    super_category: user_concern
+    semantic_domain: timing
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_think:
+    category: objection
+    super_category: user_concern
+    semantic_domain: decision
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_timing:
+    category: objection
+    super_category: user_concern
+    semantic_domain: timing
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_complexity:
+    category: objection
+    super_category: user_concern
+    semantic_domain: implementation
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_trust:
+    category: objection
+    super_category: user_concern
+    semantic_domain: trust
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_no_need:
+    category: objection
+    super_category: user_concern
+    semantic_domain: value
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_risk:
+    category: objection
+    super_category: user_concern
+    semantic_domain: trust
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_team_resistance:
+    category: objection
+    super_category: user_concern
+    semantic_domain: implementation
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_security:
+    category: objection
+    super_category: user_concern
+    semantic_domain: trust
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_bad_experience:
+    category: objection
+    super_category: user_concern
+    semantic_domain: trust
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  objection_priority:
+    category: objection
+    super_category: user_concern
+    semantic_domain: timing
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_scale:
+    category: objection
+    super_category: user_concern
+    semantic_domain: implementation
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_change_management:
+    category: objection
+    super_category: user_concern
+    semantic_domain: implementation
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_contract_bound:
+    category: objection
+    super_category: user_concern
+    semantic_domain: timing
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_company_policy:
+    category: objection
+    super_category: user_concern
+    semantic_domain: decision
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: medium
+
+  objection_roi_doubt:
+    category: objection
+    super_category: user_concern
+    semantic_domain: value
+    fallback_action: handle_objection
+    fallback_transition: null
+    priority: high
+
+  # =================================================================
+  # EXIT INTENTS
+  # =================================================================
+  rejection:
+    category: exit
+    super_category: user_action
+    semantic_domain: termination
+    fallback_action: acknowledge_rejection
+    fallback_transition: soft_close
+    priority: critical
+
+  farewell:
+    category: exit
+    super_category: user_action
+    semantic_domain: termination
+    fallback_action: say_goodbye
+    fallback_transition: soft_close
+    priority: critical
+
+  # =================================================================
+  # ESCALATION INTENTS
+  # =================================================================
+  request_human:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  speak_to_manager:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  talk_to_person:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  need_help:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: offer_help
+    fallback_transition: null
+    priority: high
+
+  not_a_bot:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  real_person:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  human_please:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  escalate:
+    category: escalation
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  # =================================================================
+  # POSITIVE SIGNALS (extended set)
+  # =================================================================
+  agreement:
+    category: positive
+    super_category: user_action
+    semantic_domain: confirmation
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  situation_provided:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  problem_revealed:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  implication_acknowledged:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  need_expressed:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  info_provided:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: low
+
+  greeting:
+    category: positive
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: respond_greeting
+    fallback_transition: null
+    priority: low
+
+  gratitude:
+    category: positive
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_gratitude
+    fallback_transition: null
+    priority: low
+
+  ready_to_buy:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: guide_to_close
+    fallback_transition: close
+    priority: critical
+
+  budget_approved:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  decision_maker_identified:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  urgency_expressed:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  competitor_dissatisfied:
+    category: positive
+    super_category: user_action
+    semantic_domain: market
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  expansion_planned:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  positive_feedback:
+    category: positive
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_gratitude
+    fallback_transition: null
+    priority: low
+
+  internal_champion:
+    category: positive
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  # =================================================================
+  # EQUIPMENT QUESTIONS (12 intents)
+  # =================================================================
+  question_equipment_general:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_pos_monoblock:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_scales:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_scanner:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_printer:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_cash_drawer:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_equipment_bundle:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_equipment_specs:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_equipment_warranty:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_equipment_install:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_equipment_compat:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_second_screen:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # TARIFF QUESTIONS (8 intents)
+  # =================================================================
+  question_tariff_mini:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_tariff_lite:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_tariff_standard:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_tariff_pro:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_tariff_comparison:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_installment:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_trial_period:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_ofd_payment:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: medium
+
+  # =================================================================
+  # TIS QUESTIONS (10 intents)
+  # =================================================================
+  question_tis_general:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_limits:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_price:
+    category: question
+    super_category: user_input
+    semantic_domain: pricing
+    fallback_action: answer_with_pricing
+    priority: high
+
+  question_tis_requirements:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_benefits:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_2026:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_components:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_multi_location:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_transition:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tis_reports:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # TAX QUESTIONS (8 intents)
+  # =================================================================
+  question_retail_tax_general:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_retail_tax_rates:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_retail_tax_oked:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_retail_tax_reports:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_retail_tax_transition:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_snr_comparison:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_vat_registration:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_tax_optimization:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # ACCOUNTING QUESTIONS (8 intents)
+  # =================================================================
+  question_accounting_services:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_esf_snt:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_form_910:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_form_200:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_form_300:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_business_registration:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_business_closure:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_document_flow:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # PURCHASE STAGES (8 intents)
+  # =================================================================
+  request_proposal:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: provide_proposal
+    fallback_transition: close
+    priority: high
+
+  request_contract:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: provide_contract
+    fallback_transition: close
+    priority: high
+
+  request_invoice:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: provide_invoice
+    fallback_transition: close
+    priority: high
+
+  request_discount:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: handle_discount_request
+    fallback_transition: null
+    priority: high
+
+  negotiate_terms:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: negotiate_terms
+    fallback_transition: null
+    priority: high
+
+  request_trial_extension:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: handle_trial_extension
+    fallback_transition: null
+    priority: medium
+
+  request_sla:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: provide_sla
+    fallback_transition: close
+    priority: medium
+
+  # =================================================================
+  # BUSINESS SCENARIOS (18 intents)
+  # =================================================================
+  question_grocery_store:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_restaurant_cafe:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_pharmacy:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_clothing_store:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_small_business:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_network_stores:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_market_stall:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_alcohol_tobacco:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_beauty_salon:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_construction:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_wholesale:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_auto_parts:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_electronics:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_pet_shop:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_flower_shop:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_hotel:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_service_center:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_sports_shop:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # TECHNICAL PROBLEMS (6 intents)
+  # =================================================================
+  problem_technical:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: offer_support
+    fallback_transition: escalated
+    priority: high
+
+  problem_connection:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: offer_support
+    fallback_transition: escalated
+    priority: high
+
+  problem_sync:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: offer_support
+    fallback_transition: escalated
+    priority: high
+
+  problem_fiscal:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: offer_support
+    fallback_transition: escalated
+    priority: high
+
+  request_technical_support:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: connect_to_support
+    fallback_transition: escalated
+    priority: critical
+
+  request_configuration:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: offer_configuration_help
+    fallback_transition: null
+    priority: medium
+
+  # =================================================================
+  # FISCAL QUESTIONS (8 intents)
+  # =================================================================
+  question_fiscal_general:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_receipt:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_z_report:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_x_report:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_kkm:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_ofd_wipon:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_correction:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_fiscal_replacement:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # ANALYTICS QUESTIONS (8 intents)
+  # =================================================================
+  question_analytics_sales:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_abc:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_profit:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_comparison:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_realtime:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_export:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_custom:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_analytics_dashboard:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # WIPON PRODUCTS (6 intents)
+  # =================================================================
+  question_wipon_pro:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_wipon_desktop:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_wipon_kassa:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_wipon_consulting:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_wipon_cashback_app:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_product_comparison:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # INTEGRATION QUESTIONS (8 intents)
+  # =================================================================
+  question_bank_terminal:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_kaspi_integration:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_halyk_integration:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_1c_integration:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_iiko_integration:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_ofd_connection:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_marking_ismet:
+    category: question
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_cashback_loyalty:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # OPERATIONS QUESTIONS (10 intents)
+  # =================================================================
+  question_inventory:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_revision:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_purchase_mgmt:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_sales_mgmt:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_cash_operations:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_returns_mgmt:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_employee_control:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_multi_location:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_promo_discounts:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_price_labels:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # DELIVERY & SERVICE (6 intents)
+  # =================================================================
+  question_delivery:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_delivery_time:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_office_location:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_working_hours:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  request_refund:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: handle_refund_request
+    fallback_transition: escalated
+    priority: high
+
+  request_equipment_return:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: handle_return_request
+    fallback_transition: escalated
+    priority: high
+
+  # =================================================================
+  # EMPLOYEE QUESTIONS (6 intents)
+  # =================================================================
+  question_employees_salary:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_employees_schedule:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_employees_permissions:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_employees_tracking:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_employees_motivation:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_employees_onboarding:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # PROMO & LOYALTY (6 intents)
+  # =================================================================
+  question_loyalty_program:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_bonus_system:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_discount_cards:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_gift_cards:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_customer_database:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_sms_marketing:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # STABILITY QUESTIONS (6 intents)
+  # =================================================================
+  question_backup_restore:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_uptime_sla:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_server_location:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_data_encryption:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_disaster_recovery:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_system_requirements:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # REGION QUESTIONS (6 intents)
+  # =================================================================
+  question_region_almaty:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_region_astana:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_region_shymkent:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_region_other:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_pickup_office:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  question_courier_service:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: answer_with_facts
+    priority: low
+
+  # =================================================================
+  # ADDITIONAL INTEGRATIONS (6 intents)
+  # =================================================================
+  question_glovo_wolt:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_telegram_bot:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_whatsapp_business:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_instagram_shop:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_website_widget:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  question_delivery_services:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: medium
+
+  # =================================================================
+  # COMPANY INFO (4 intents)
+  # =================================================================
+  company_info_question:
+    category: question
+    super_category: user_input
+    semantic_domain: company
+    fallback_action: answer_with_facts
+    priority: low
+
+  experience_question:
+    category: question
+    super_category: user_input
+    semantic_domain: company
+    fallback_action: answer_with_facts
+    priority: low
+
+  case_study_request:
+    category: purchase_stage
+    super_category: user_action
+    semantic_domain: purchase
+    fallback_action: provide_case_studies
+    fallback_transition: null
+    priority: medium
+
+  roi_question:
+    category: question
+    super_category: user_input
+    semantic_domain: value
+    fallback_action: answer_with_facts
+    priority: high
+
+  # =================================================================
+  # CONVERSATIONAL/EMOTIONAL (10 intents)
+  # =================================================================
+  compliment:
+    category: conversational
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_gratitude
+    fallback_transition: null
+    priority: low
+
+  joke_response:
+    category: conversational
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: low
+
+  surprise_expression:
+    category: conversational
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: low
+
+  frustration_expression:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  skepticism_expression:
+    category: conversational
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: address_skepticism
+    fallback_transition: null
+    priority: medium
+
+  curiosity_expression:
+    category: conversational
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: low
+
+  empathy_request:
+    category: conversational
+    super_category: user_action
+    semantic_domain: emotion
+    fallback_action: show_empathy
+    fallback_transition: null
+    priority: medium
+
+  confusion_expression:
+    category: conversational
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: clarify_one_question
+    fallback_transition: null
+    priority: medium
+
+  impatience_expression:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  relief_expression:
+    category: conversational
+    super_category: user_action
+    semantic_domain: social
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: low
+
+  # =================================================================
+  # FRUSTRATION INTENTS (6 intents)
+  # =================================================================
+  frustrated:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  angry:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: critical
+
+  complaint:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  this_is_useless:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  not_helpful:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  waste_of_time:
+    category: frustration
+    super_category: user_concern
+    semantic_domain: emotion
+    fallback_action: empathize_and_help
+    fallback_transition: null
+    priority: high
+
+  # =================================================================
+  # SENSITIVE INTENTS (7 intents)
+  # =================================================================
+  legal_question:
+    category: sensitive
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  compliance_question:
+    category: sensitive
+    super_category: user_input
+    semantic_domain: compliance
+    fallback_action: answer_with_facts
+    fallback_transition: null
+    priority: high
+
+  formal_complaint:
+    category: sensitive
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  refund_request:
+    category: sensitive
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: handle_refund_request
+    fallback_transition: escalated
+    priority: high
+
+  contract_dispute:
+    category: sensitive
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  data_deletion:
+    category: sensitive
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  gdpr_request:
+    category: sensitive
+    super_category: user_action
+    semantic_domain: escalation
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+    priority: critical
+
+  # =================================================================
+  # ADDITIONAL INFORMATIVE INTENTS
+  # =================================================================
+  problem_mentioned:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  pain_mentioned:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  consequence_mentioned:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  benefit_acknowledged:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  question_answered:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: low
+
+  data_provided:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  clarification_provided:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  details_shared:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: medium
+
+  budget_mentioned:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  timeline_mentioned:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+  decision_process_shared:
+    category: positive
+    super_category: user_action
+    semantic_domain: information
+    fallback_action: acknowledge_and_continue
+    fallback_transition: null
+    priority: high
+
+# Category-level fallback actions
+taxonomy_category_defaults:
+  question:
+    fallback_action: answer_and_continue
+  positive:
+    fallback_action: acknowledge_and_continue
+  objection:
+    fallback_action: handle_objection
+  purchase_stage:
+    fallback_action: guide_to_next_step
+    fallback_transition: close
+  meta:
+    fallback_action: acknowledge_and_continue
+  dialogue_repair:
+    fallback_action: clarify_one_question
+  exit:
+    fallback_action: say_goodbye
+    fallback_transition: soft_close
+  escalation:
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+  frustration:
+    fallback_action: empathize_and_help
+  sensitive:
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+  technical_problem:
+    fallback_action: offer_support
+    fallback_transition: escalated
+  conversational:
+    fallback_action: acknowledge_and_continue
+
+# Super-category fallback
+taxonomy_super_category_defaults:
+  user_input:
+    fallback_action: acknowledge_and_continue
+  user_action:
+    fallback_action: guide_to_next_step
+  dialogue_control:
+    fallback_action: acknowledge_and_continue
+  user_concern:
+    fallback_action: empathize_and_help
+
+# Domain fallback (strongest semantic signal)
+taxonomy_domain_defaults:
+  pricing:
+    fallback_action: answer_with_pricing
+  product:
+    fallback_action: answer_with_facts
+  purchase:
+    fallback_action: guide_to_next_step
+    fallback_transition: close
+  support:
+    fallback_action: offer_support
+    fallback_transition: escalated
+  escalation:
+    fallback_action: escalate_to_human
+    fallback_transition: escalated
+  compliance:
+    fallback_action: answer_with_facts
+  service:
+    fallback_action: answer_with_facts
+  company:
+    fallback_action: answer_with_facts
+  value:
+    fallback_action: answer_with_facts
+  social:
+    fallback_action: acknowledge_and_continue
+  emotion:
+    fallback_action: empathize_and_help
+  clarification:
+    fallback_action: clarify_one_question
+  termination:
+    fallback_action: say_goodbye
+    fallback_transition: soft_close
+
+# =============================================================================
 # DIALOGUE POLICY SETTINGS
 # =============================================================================
 policy:

@@ -156,12 +156,15 @@ class TestResolverRegistryIntegration:
             "price_question": {"when": "has_pricing_data", "then": "answer_with_facts"}
         }
 
-        action = resolver.resolve_action(
+        result = resolver.resolve_action(
             intent="price_question",
             state_rules=state_rules,
             global_rules={},
             ctx=ctx
         )
+
+
+        action = result.action
 
         assert action == "answer_with_facts"
 
@@ -194,13 +197,16 @@ class TestResolverRegistryIntegration:
             ]
         }
 
-        action = resolver.resolve_action(
+        result = resolver.resolve_action(
             intent="price_question",
             state_rules=state_rules,
             global_rules={},
             ctx=ctx,
             trace=trace
         )
+
+
+        action = result.action
 
         assert trace.resolution == Resolution.CONDITION_MATCHED
         assert trace.matched_condition == "has_pricing_data"
@@ -229,7 +235,10 @@ class TestPriceQuestionScenarios:
             ]
         }
 
-        action = resolver.resolve_action("price_question", rules, {}, ctx)
+        result = resolver.resolve_action("price_question", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "answer_with_facts"
 
     def test_price_question_without_data_deflects(self, resolver):
@@ -247,7 +256,10 @@ class TestPriceQuestionScenarios:
             ]
         }
 
-        action = resolver.resolve_action("price_question", rules, {}, ctx)
+        result = resolver.resolve_action("price_question", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "deflect_and_continue"
 
     def test_price_question_repeated_3x_escalates(self, resolver):
@@ -269,7 +281,10 @@ class TestPriceQuestionScenarios:
             ]
         }
 
-        action = resolver.resolve_action("price_question", rules, {}, ctx)
+        result = resolver.resolve_action("price_question", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "answer_with_price_range"
 
     def test_price_question_data_takes_priority_over_repetition(self, resolver):
@@ -291,7 +306,10 @@ class TestPriceQuestionScenarios:
             ]
         }
 
-        action = resolver.resolve_action("price_question", rules, {}, ctx)
+        result = resolver.resolve_action("price_question", rules, {}, ctx)
+
+
+        action = result.action
         # First condition wins due to order
         assert action == "answer_with_facts"
 
@@ -446,7 +464,10 @@ class TestTechnicalQuestionEscalation:
             ]
         }
 
-        action = resolver.resolve_action("question_technical", rules, {}, ctx)
+        result = resolver.resolve_action("question_technical", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "offer_documentation_link"
 
     def test_technical_question_first_time_answers(self, resolver):
@@ -467,7 +488,10 @@ class TestTechnicalQuestionEscalation:
             ]
         }
 
-        action = resolver.resolve_action("question_technical", rules, {}, ctx)
+        result = resolver.resolve_action("question_technical", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "answer_technical"
 
 
@@ -496,7 +520,10 @@ class TestPriceObjectionWithROI:
             ]
         }
 
-        action = resolver.resolve_action("objection_price", rules, {}, ctx)
+        result = resolver.resolve_action("objection_price", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "handle_price_with_roi"
 
     def test_objection_price_with_size_only_uses_comparison(self, resolver):
@@ -514,7 +541,10 @@ class TestPriceObjectionWithROI:
             ]
         }
 
-        action = resolver.resolve_action("objection_price", rules, {}, ctx)
+        result = resolver.resolve_action("objection_price", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "handle_price_with_comparison"
 
     def test_objection_price_no_data_uses_generic(self, resolver):
@@ -532,7 +562,10 @@ class TestPriceObjectionWithROI:
             ]
         }
 
-        action = resolver.resolve_action("objection_price", rules, {}, ctx)
+        result = resolver.resolve_action("objection_price", rules, {}, ctx)
+
+
+        action = result.action
         assert action == "handle_price_objection_generic"
 
 
@@ -571,7 +604,9 @@ class TestFullConversationFlow:
                 "deflect_and_continue"
             ]
         }
-        action = resolver.resolve_action("price_question", rules, {}, ctx2)
+        result = resolver.resolve_action("price_question", rules, {}, ctx2)
+
+        action = result.action
         assert action == "deflect_and_continue"
 
         # Turn 3: Info provided (now have data)
@@ -591,7 +626,9 @@ class TestFullConversationFlow:
             current_intent="price_question",
             intent_tracker=tracker
         )
-        action = resolver.resolve_action("price_question", rules, {}, ctx4)
+        result = resolver.resolve_action("price_question", rules, {}, ctx4)
+
+        action = result.action
         assert action == "answer_with_facts"
 
     def test_objection_flow(self, resolver):
@@ -692,11 +729,11 @@ class TestBackwardCompatibility:
             "price_question": "deflect_and_continue"
         }
 
-        action1 = resolver.resolve_action("greeting", rules, {}, ctx)
-        action2 = resolver.resolve_action("price_question", rules, {}, ctx)
+        result1 = resolver.resolve_action("greeting", rules, {}, ctx)
+        result2 = resolver.resolve_action("price_question", rules, {}, ctx)
 
-        assert action1 == "greet_back"
-        assert action2 == "deflect_and_continue"
+        assert result1.action == "greet_back"
+        assert result2.action == "deflect_and_continue"
 
     def test_simple_string_transitions_work(self, resolver):
         """Test simple string transitions still work."""
@@ -723,12 +760,15 @@ class TestBackwardCompatibility:
             state="greeting"
         )
 
-        action = resolver.resolve_action(
+        result = resolver.resolve_action(
             "greeting",
             {"greeting": "greet_back"},
             {},
             ctx
         )
+
+
+        action = result.action
         next_state = resolver.resolve_transition(
             "greeting",
             {"greeting": "spin_situation"},

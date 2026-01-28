@@ -120,6 +120,24 @@ class LoadedConfig:
         """Get response directives configuration."""
         return self.constants.get("response_directives", {})
 
+    @property
+    def taxonomy_config(self) -> Dict[str, Any]:
+        """Get intent taxonomy configuration for intelligent fallback.
+
+        Returns:
+            Dict containing:
+                - intent_taxonomy: Taxonomy metadata for each intent
+                - taxonomy_category_defaults: Category-level fallback defaults
+                - taxonomy_super_category_defaults: Super-category fallback defaults
+                - taxonomy_domain_defaults: Domain-level fallback defaults
+        """
+        return {
+            "intent_taxonomy": self.constants.get("intent_taxonomy", {}),
+            "taxonomy_category_defaults": self.constants.get("taxonomy_category_defaults", {}),
+            "taxonomy_super_category_defaults": self.constants.get("taxonomy_super_category_defaults", {}),
+            "taxonomy_domain_defaults": self.constants.get("taxonomy_domain_defaults", {}),
+        }
+
     # SPIN convenience methods
     def get_spin_state(self, phase: str) -> Optional[str]:
         """Get state name for a SPIN phase."""
@@ -1561,6 +1579,7 @@ def validate_config_conditions(
     """
     from src.rules.resolver import RuleResolver
     from src.conditions.expression_parser import ConditionExpressionParser
+    from src.rules.intent_taxonomy import IntentTaxonomyRegistry
 
     # Create expression parser for composite conditions
     expression_parser = ConditionExpressionParser(
@@ -1568,11 +1587,15 @@ def validate_config_conditions(
         custom_conditions=config.custom_conditions
     )
 
-    # Create resolver with expression parser
+    # Create intent taxonomy registry for intelligent fallback
+    taxonomy_registry = IntentTaxonomyRegistry(config.taxonomy_config)
+
+    # Create resolver with expression parser and taxonomy
     resolver = RuleResolver(
         registry=registry,
         default_action=config.default_action,
-        expression_parser=expression_parser
+        expression_parser=expression_parser,
+        taxonomy_registry=taxonomy_registry
     )
 
     # Get known states

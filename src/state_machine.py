@@ -304,7 +304,7 @@ class StateMachine:
         # Phase 4: IntentTracker replaces ObjectionFlowManager
         self.intent_tracker = IntentTracker()
 
-        # Phase 4/Phase 1: RuleResolver with optional expression parser
+        # Phase 4/Phase 1: RuleResolver with optional expression parser and taxonomy
         if config:
             expression_parser = None
             if config.custom_conditions:
@@ -313,10 +313,16 @@ class StateMachine:
                     sm_registry,
                     config.custom_conditions
                 )
+
+            # Create taxonomy registry for intelligent fallback
+            from src.rules.intent_taxonomy import IntentTaxonomyRegistry
+            taxonomy_registry = IntentTaxonomyRegistry(config.taxonomy_config)
+
             self._resolver = RuleResolver(
                 sm_registry,
                 default_action=config.default_action,
-                expression_parser=expression_parser
+                expression_parser=expression_parser,
+                taxonomy_registry=taxonomy_registry
             )
         else:
             self._resolver = RuleResolver(sm_registry)

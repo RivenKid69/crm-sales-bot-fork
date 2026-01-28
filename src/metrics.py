@@ -541,6 +541,168 @@ class AggregatedMetrics:
         }
 
 
+@dataclass
+class FallbackMetrics:
+    """Metrics for tracking taxonomy fallback usage.
+
+    This class tracks how often taxonomy-based intelligent fallback is used
+    and at what level (category, super_category, domain, default).
+
+    The goal is to minimize DEFAULT_ACTION fallback usage (<1%) while
+    category/domain fallback should be 40-60% (intelligent fallback working).
+
+    Attributes:
+        total_fallbacks: Total number of fallback resolutions
+        fallback_by_intent: Count per intent that triggered fallback
+        fallback_by_level: Count per fallback level (exact, category, super_category, domain, default)
+        fallback_by_action: Count per fallback action used
+        default_fallback_intents: List of intents that hit DEFAULT_ACTION (should be empty)
+    """
+    total_fallbacks: int = 0
+    fallback_by_intent: Dict[str, int] = field(default_factory=dict)
+    fallback_by_level: Dict[str, int] = field(default_factory=dict)
+    fallback_by_action: Dict[str, int] = field(default_factory=dict)
+    default_fallback_intents: List[str] = field(default_factory=list)
+
+    def record_fallback(
+        self,
+        intent: str,
+        level: str,
+        action: str
+    ) -> None:
+        """Record a fallback resolution.
+
+        Args:
+            intent: The intent that triggered fallback
+            level: Fallback level (exact, category, super_category, domain, default)
+            action: The fallback action used
+        """
+        self.total_fallbacks += 1
+        self.fallback_by_intent[intent] = self.fallback_by_intent.get(intent, 0) + 1
+        self.fallback_by_level[level] = self.fallback_by_level.get(level, 0) + 1
+        self.fallback_by_action[action] = self.fallback_by_action.get(action, 0) + 1
+
+        # Track DEFAULT_ACTION fallback (should never happen with proper taxonomy)
+        if level == "default":
+            self.default_fallback_intents.append(intent)
+            import structlog
+            logger = structlog.get_logger(__name__)
+            logger.error(
+                "DEFAULT_ACTION fallback triggered",
+                intent=intent,
+                action=action,
+                total_default_fallbacks=len(self.default_fallback_intents)
+            )
+
+    def get_fallback_rate_by_level(self) -> Dict[str, float]:
+        """Get fallback rate percentage by level.
+
+        Returns:
+            Dict with level -> percentage
+        """
+        if self.total_fallbacks == 0:
+            return {}
+
+        return {
+            level: (count / self.total_fallbacks) * 100
+            for level, count in self.fallback_by_level.items()
+        }
+
+    def get_default_fallback_rate(self) -> float:
+        """Get DEFAULT_ACTION fallback rate (target: <1%).
+
+        Returns:
+            Percentage of fallbacks that hit DEFAULT_ACTION
+        """
+        if self.total_fallbacks == 0:
+            return 0.0
+
+        default_count = self.fallback_by_level.get("default", 0)
+        return (default_count / self.total_fallbacks) * 100
+
+    def get_intelligent_fallback_rate(self) -> float:
+        """Get intelligent fallback rate (category/domain, target: 40-60%).
+
+        Returns:
+            Percentage of fallbacks using category or domain fallback
+        """
+        if self.total_fallbacks == 0:
+            return 0.0
+
+        intelligent_count = (
+            self.fallback_by_level.get("category", 0) +
+            self.fallback_by_level.get("domain", 0)
+        )
+        return (intelligent_count / self.total_fallbacks) * 100
+
+    def get_summary(self) -> Dict[str, Any]:
+        """Get fallback metrics summary.
+
+        Returns:
+            Dict with summary statistics
+        """
+        return {
+            "total_fallbacks": self.total_fallbacks,
+            "default_fallback_rate": self.get_default_fallback_rate(),
+            "intelligent_fallback_rate": self.get_intelligent_fallback_rate(),
+            "fallback_by_level": self.fallback_by_level,
+            "fallback_rate_by_level": self.get_fallback_rate_by_level(),
+            "fallback_by_action": self.fallback_by_action,
+            "default_fallback_intents": self.default_fallback_intents,
+            "top_fallback_intents": sorted(
+                self.fallback_by_intent.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:10]
+        }
+
+    def check_health(self) -> Dict[str, Any]:
+        """Check if fallback metrics are healthy (meeting targets).
+
+        Targets:
+        - DEFAULT_ACTION fallback < 1%
+        - Intelligent fallback 40-60%
+
+        Returns:
+            Dict with health status and issues
+        """
+        issues = []
+        default_rate = self.get_default_fallback_rate()
+        intelligent_rate = self.get_intelligent_fallback_rate()
+
+        # Check DEFAULT_ACTION usage
+        if default_rate > 1.0:
+            issues.append({
+                "severity": "critical",
+                "type": "high_default_fallback",
+                "message": f"DEFAULT_ACTION fallback rate {default_rate:.1f}% exceeds target (<1%)",
+                "intents": self.default_fallback_intents
+            })
+
+        # Check intelligent fallback usage
+        if intelligent_rate < 40.0:
+            issues.append({
+                "severity": "warning",
+                "type": "low_intelligent_fallback",
+                "message": f"Intelligent fallback rate {intelligent_rate:.1f}% below target (40-60%)",
+            })
+        elif intelligent_rate > 60.0:
+            issues.append({
+                "severity": "info",
+                "type": "high_intelligent_fallback",
+                "message": f"Intelligent fallback rate {intelligent_rate:.1f}% above target (40-60%)",
+            })
+
+        is_healthy = len([i for i in issues if i["severity"] == "critical"]) == 0
+
+        return {
+            "is_healthy": is_healthy,
+            "default_fallback_rate": default_rate,
+            "intelligent_fallback_rate": intelligent_rate,
+            "issues": issues
+        }
+
+
 # =============================================================================
 # CLI для демонстрации
 # =============================================================================
