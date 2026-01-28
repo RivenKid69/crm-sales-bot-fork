@@ -222,6 +222,19 @@ class ConversationGuard:
         # (RUSHED tone, multiple frustration signals), поэтому нужно проверять оба флага
         if (self._state.frustration_level >= self.config.high_frustration_threshold
                 or pre_intervention_triggered):
+            # If client is engaged (asking questions, objecting, providing data),
+            # offer structured options (TIER_2) instead of skipping phase (TIER_3).
+            # The client may be frustrated BECAUSE their question wasn't answered —
+            # skipping the phase makes it worse. TIER_2 gives them structured choices,
+            # and policy layer can still override to answer directly.
+            if self._is_engagement_intent():
+                logger.info(
+                    "High frustration but client is engaged — TIER_2 instead of TIER_3",
+                    frustration_level=self._state.frustration_level,
+                    last_intent=self._state.last_intent,
+                )
+                return True, self.TIER_2
+
             logger.warning(
                 "High frustration or pre-intervention triggered",
                 frustration_level=self._state.frustration_level,
@@ -244,7 +257,7 @@ class ConversationGuard:
         same_state_count = self._count_recent_same_state(state)
         if same_state_count >= self.config.max_same_state:
             # BUG-001 FIX: Проверяем был ли последний intent информативным
-            if self._has_recent_informative_intent():
+            if self._is_engagement_intent():
                 logger.debug(
                     "State loop threshold reached but client is providing info - not triggering",
                     state=state,
@@ -337,48 +350,22 @@ class ConversationGuard:
 
         return unique_recent >= self.config.min_unique_states_for_progress
 
-    def _get_informative_intents(self) -> set:
-        """
-        BUG-001 FIX: Возвращает набор интентов, указывающих на информативные ответы.
+    # Blacklist: intents indicating client is NOT progressing
+    STUCK_INTENTS = frozenset({"unclear"})
 
-        Эти интенты означают что клиент предоставляет данные, а не застрял.
+    def _is_engagement_intent(self) -> bool:
         """
-        return {
-            # SPIN situation
-            "situation_provided",
-            "info_provided",
-            # SPIN problem
-            "problem_mentioned",
-            "pain_mentioned",
-            # SPIN implication
-            "implication_acknowledged",
-            "consequence_mentioned",
-            # SPIN need-payoff
-            "need_expressed",
-            "benefit_acknowledged",
-            # General informative
-            "question_answered",
-            "data_provided",
-            "clarification_provided",
-            "details_shared",
-            # Budget/timeline related
-            "budget_mentioned",
-            "timeline_mentioned",
-            "decision_process_shared",
-        }
+        Inverted stuck-detection: any classifiable intent except 'unclear'
+        indicates the client is actively engaged (asking questions, providing
+        data, raising objections, etc.) — NOT stuck in a loop.
 
-    def _has_recent_informative_intent(self) -> bool:
-        """
-        BUG-001 FIX: Проверяет был ли последний intent информативным.
-
-        Returns:
-            True если последний intent указывает что клиент предоставляет данные
+        This is fundamentally more robust than a whitelist of informative
+        intents: new intents added to the system are automatically treated
+        as engagement without manual updates.
         """
         if not self._state.last_intent:
             return False
-
-        informative_intents = self._get_informative_intents()
-        return self._state.last_intent in informative_intents
+        return self._state.last_intent not in self.STUCK_INTENTS
 
     def get_stats(self) -> Dict:
         """Получить статистику диалога"""

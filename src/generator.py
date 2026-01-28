@@ -675,15 +675,21 @@ class ResponseGenerator:
             # Apology system (SSoT: src/apology_ssot.py)
             "should_apologize": context.get("should_apologize", False),
             "should_offer_exit": context.get("should_offer_exit", False),
+            # Dedup fallback defaults (overwritten by dedup engine when active)
+            "do_not_ask": "",
+            "collected_fields_list": "",
+            "available_questions": "",
         })
 
         # === Question Deduplication: Prevent asking about already collected data ===
         # SSoT: src/yaml_config/question_dedup.yaml
         # Works for all flows via phase name (SPIN, MEDDIC, BANT, etc.)
-        if flags.is_enabled("question_deduplication") and spin_phase:
+        # Universal: inject dedup when collected_data exists, not just when spin_phase is set
+        if flags.is_enabled("question_deduplication") and (spin_phase or collected):
             try:
+                dedup_phase = spin_phase or context.get("state", "unknown")
                 dedup_context = question_dedup_engine.get_prompt_context(
-                    phase=spin_phase,
+                    phase=dedup_phase,
                     collected_data=collected,
                     missing_data=context.get("missing_data"),
                 )
@@ -696,7 +702,7 @@ class ResponseGenerator:
                 })
                 logger.debug(
                     "Question deduplication applied",
-                    phase=spin_phase,
+                    phase=dedup_phase,
                     available_questions=dedup_context.get("available_questions", "")[:100],
                     do_not_ask=dedup_context.get("do_not_ask", "")[:100],
                 )

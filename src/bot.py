@@ -1068,6 +1068,22 @@ class SalesBot:
         if trace_builder:
             trace_builder.record_policy_override(policy_override)
 
+        # === Universal: Policy override takes precedence over guard fallback ===
+        # Guard detects problems; policy decides the response action.
+        # If policy determined a specific action (price answer, objection reframe, etc.),
+        # that action takes precedence over the guard's generic fallback template.
+        if (fallback_response
+                and policy_override
+                and policy_override.has_override):
+            logger.info(
+                "Policy override clears guard fallback",
+                original_fallback_tier=fallback_tier,
+                override_action=policy_override.action,
+                override_decision=policy_override.decision.value,
+            )
+            fallback_response = None
+            fallback_used = False
+
         # Build context for response generation
         # При наличии ResponseDirectives используем их instruction
         directive_instruction = ""

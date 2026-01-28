@@ -189,23 +189,23 @@ class DialoguePolicy:
             override = self._handle_guard_intervention(ctx, sm_result, trace)
 
         # 1.5 НОВОЕ: Price question override (гарантирует ответ о цене)
-        if not override and policy_registry.evaluate("is_price_question", ctx, trace):
+        if (not override or not override.has_override) and policy_registry.evaluate("is_price_question", ctx, trace):
             override = self._apply_price_question_overlay(ctx, sm_result, trace)
 
         # 2. Repair mode (stuck, oscillation, repeated question)
-        if not override and policy_registry.evaluate("needs_repair", ctx, trace):
+        if (not override or not override.has_override) and policy_registry.evaluate("needs_repair", ctx, trace):
             override = self._apply_repair_overlay(ctx, sm_result, trace)
 
         # 3. Repeated objection escalation
-        if not override and policy_registry.evaluate("has_repeated_objections", ctx, trace):
+        if (not override or not override.has_override) and policy_registry.evaluate("has_repeated_objections", ctx, trace):
             override = self._apply_objection_overlay(ctx, sm_result, trace)
 
         # 4. Breakthrough window CTA
-        if not override and policy_registry.evaluate("in_breakthrough_window", ctx, trace):
+        if (not override or not override.has_override) and policy_registry.evaluate("in_breakthrough_window", ctx, trace):
             override = self._apply_breakthrough_overlay(ctx, sm_result, trace)
 
         # 5. Conservative mode (низкая confidence + aggressive action)
-        if not override and policy_registry.evaluate("should_apply_conservative_overlay", ctx, trace):
+        if (not override or not override.has_override) and policy_registry.evaluate("should_apply_conservative_overlay", ctx, trace):
             override = self._apply_conservative_overlay(ctx, sm_result, trace)
 
         # Записываем в историю only for actual overrides (NO_OVERRIDE pollutes stats)
@@ -386,11 +386,33 @@ class DialoguePolicy:
         """
         current_action = ctx.current_action
 
-        # Если action уже правильный — не меняем
+        # Если action уже правильный — проверяем нет ли pending guard fallback
         if current_action in ("answer_with_pricing", "answer_with_facts", "answer_pricing_details"):
+            if not ctx.guard_intervention:
+                # No guard fallback pending — action is correct as-is
+                if trace:
+                    trace.set_result(None, Resolution.NONE, matched_condition="price_action_already_correct")
+                return None
+            # Guard fallback is pending — produce explicit override to clear it in bot.py
+            # (preserve the current correct action)
             if trace:
-                trace.set_result(None, Resolution.NONE, matched_condition="price_action_already_correct")
-            return None
+                trace.set_result(
+                    current_action, Resolution.CONDITION_MATCHED,
+                    matched_condition="price_action_correct_but_guard_pending"
+                )
+            from logger import logger as _logger
+            _logger.info(
+                "Policy: Price action correct but guard fallback pending — explicit override",
+                action=current_action,
+                guard_intervention=ctx.guard_intervention,
+            )
+            return PolicyOverride(
+                action=current_action,  # Keep the SM's correct action
+                reason_codes=[ReasonCode.POLICY_PRICE_OVERRIDE.value],
+                decision=PolicyDecision.PRICE_QUESTION,
+                signals_used={"intent": ctx.last_intent, "guard_pending": True, "action_preserved": current_action},
+                expected_effect="Explicit override to clear guard fallback for price question",
+            )
 
         signals = {
             "intent": ctx.last_intent,

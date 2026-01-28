@@ -110,6 +110,11 @@ def create_mock_envelope(
     envelope.spin_phase = spin_phase
     envelope.total_turns = total_turns
     envelope.reason_codes = reason_codes or []
+    # Explicitly set pre_intervention_triggered to avoid Mock truthy bug:
+    # Mock(spec=ContextEnvelope) auto-creates a truthy Mock for unset attrs,
+    # which makes has_guard_intervention spuriously return True.
+    envelope.pre_intervention_triggered = False
+    envelope.secondary_intents = []
 
     # Mock has_reason method
     envelope.has_reason = Mock(return_value=False)
@@ -418,7 +423,13 @@ class TestOverlayPriority:
 
     @patch('dialogue_policy.flags')
     def test_guard_has_highest_priority(self, mock_flags, policy):
-        """Test that guard intervention has highest priority."""
+        """Test that guard intervention fires first, but NO_OVERRIDE allows
+        downstream overlays to provide a real action.
+
+        After the NO_OVERRIDE truthiness fix, guard NO_OVERRIDE is a pass-through:
+        it doesn't block subsequent overlays. If repair is triggered (is_stuck=True),
+        repair overlay provides the actual action.
+        """
         mock_flags.is_enabled.return_value = True
 
         envelope = create_mock_envelope(
@@ -432,8 +443,9 @@ class TestOverlayPriority:
 
         result = policy.maybe_override(sm_result, envelope)
 
-        assert result.decision == PolicyDecision.NO_OVERRIDE
-        assert ReasonCode.GUARD_INTERVENTION.value in result.reason_codes
+        # Guard fires first (NO_OVERRIDE), but repair overlay provides the real action
+        assert result is not None
+        assert result.has_override  # A real overlay was applied after guard pass-through
 
     @patch('dialogue_policy.flags')
     def test_repair_before_objection(self, mock_flags, policy):

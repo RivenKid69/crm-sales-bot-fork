@@ -378,22 +378,29 @@ class TestDialoguePolicy:
         assert len(policy._decision_history) == 0
 
     def test_priority_guard_first(self):
-        """Проверить приоритет guard intervention."""
+        """Проверить приоритет guard intervention.
+
+        After NO_OVERRIDE truthiness fix: guard fires first with NO_OVERRIDE,
+        but since it's a pass-through, the repair overlay (is_stuck=True)
+        provides the actual override action. The result has a real override,
+        not the guard's NO_OVERRIDE.
+        """
         policy = DialoguePolicy()
 
         envelope = ContextEnvelope(
             state="spin_situation",
             is_stuck=True,  # Repair trigger
-            guard_intervention="tier_2",  # Guard trigger (higher priority)
+            guard_intervention="tier_2",  # Guard trigger (fires first)
             reason_codes=[ReasonCode.POLICY_REPAIR_MODE.value],
         )
         sm_result = {"next_state": "spin_situation", "action": "ask"}
 
         result = policy.maybe_override(sm_result, envelope)
 
-        # Guard имеет приоритет, но не меняет action (guard обрабатывает сам)
+        # Guard fires first (NO_OVERRIDE pass-through), then repair overlay
+        # provides actual action since is_stuck=True
         assert result is not None
-        assert ReasonCode.GUARD_INTERVENTION.value in result.reason_codes
+        assert result.has_override  # Real overlay applied after guard pass-through
 
 
 class TestContextPolicyMetrics:

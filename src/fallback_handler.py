@@ -573,6 +573,27 @@ class FallbackHandler:
                 trace=trace
             )
 
+        # Use default_options as TIER_2 fallback instead of degrading to TIER_1
+        if self._default_options and self._default_options.get("options"):
+            collected = context.get("collected_data", {})
+            message = self._format_options_message(
+                question=self._default_options.get("question", "Что вас интересует?"),
+                options=self._default_options["options"],
+                collected_data=collected,
+            )
+            if trace:
+                trace.set_result("default_options_fallback", Resolution.DEFAULT, None)
+            logger.debug(
+                "TIER_2 using default_options (no state-specific template)",
+                state=state,
+            )
+            return FallbackResponse(
+                message=message,
+                options=self._default_options["options"].copy(),
+                action="continue",
+                next_state=None,
+                trace=trace,
+            )
         return self._tier_1_rephrase(state, context, trace=trace)
 
     def _select_dynamic_options_with_conditions(
@@ -810,7 +831,9 @@ class FallbackHandler:
         Помогает избежать повторений.
         """
         if not templates:
-            return self.DEFAULT_REPHRASE
+            if self.DEFAULT_REPHRASE:
+                return choice(self.DEFAULT_REPHRASE)
+            return "Давайте попробую спросить иначе..."
 
         if key not in self._used_templates:
             self._used_templates[key] = []

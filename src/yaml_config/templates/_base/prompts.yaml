@@ -133,6 +133,7 @@ templates:
     description: "Ответить на вопрос о цене - ОБЯЗАТЕЛЬНО с ценой"
     parameters:
       required: [system, retrieved_facts, history, user_message, company_size]
+      optional: [do_not_ask, collected_fields_list]
     template: |
       {system}
 
@@ -144,6 +145,10 @@ templates:
       ==========================
 
       Размер команды клиента: {company_size}
+
+      {do_not_ask}
+
+      Уже известно о клиенте: {collected_fields_list}
 
       Диалог:
       {history}
