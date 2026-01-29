@@ -122,6 +122,7 @@ class DialoguePolicy:
         "stuck": "clarify_one_question",
         "oscillation": "summarize_and_clarify",
         "repeated_question": "answer_with_summary",
+        "mirroring": "summarize_and_clarify",  # Soft reset for mirroring
     }
 
     # Mapping action для возражений
@@ -291,6 +292,12 @@ class DialoguePolicy:
             signals["repeated_question"] = ctx.repeated_question
             action = self.REPAIR_ACTIONS["repeated_question"]
             decision = PolicyDecision.REPAIR_CLARIFY
+
+        # Mirroring Loop Detection
+        elif policy_registry.evaluate("is_mirroring_bot", ctx, trace):
+            signals["is_mirroring"] = True
+            action = self.REPAIR_ACTIONS["mirroring"]
+            decision = PolicyDecision.REPAIR_SUMMARIZE
 
         if action:
             if trace:

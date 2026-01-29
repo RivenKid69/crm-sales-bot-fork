@@ -92,7 +92,10 @@ from src.conditions.policy.conditions import (
     should_avoid_least_effective,
     # Price question condition (НОВОЕ)
     is_price_question,
+    # Mirroring condition (НОВОЕ)
+    is_mirroring_bot,
 )
+from src.conditions.mirroring import is_mirroring_bot
 
 
 # Export all public components
@@ -158,4 +161,6 @@ __all__ = [
     "should_avoid_least_effective",
     # Price question condition (НОВОЕ)
     "is_price_question",
+    # Mirroring condition
+    "is_mirroring_bot",
 ]
