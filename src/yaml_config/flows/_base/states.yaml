@@ -25,6 +25,13 @@ states:
     abstract: true
     goal: "Поздороваться и узнать чем помочь"
     required_data: []
+    mixins:
+      - _universal_base
+      - dialogue_control
+    parameters:
+      default_price_action: answer_with_pricing
+      default_unclear_action: ask_how_to_help
+      prev_phase_state: greeting
     rules:
       greeting: greet_back
       unclear: ask_how_to_help
@@ -34,6 +41,12 @@ states:
   # Базовое терминальное состояние
   _base_terminal:
     abstract: true
+    mixins:
+      - _escalation_safety
+      - dialogue_control
+    parameters:
+      default_unclear_action: polite_farewell
+      prev_phase_state: greeting
     rules:
       farewell: polite_farewell
       gratitude: acknowledge_farewell
@@ -240,6 +253,7 @@ states:
   soft_close:
     extends: _base_terminal
     is_final: false
+    max_simulation_visits: 2    # Runner-only: terminate simulation after N total visits
     goal: "Вежливо завершить, оставить возможность вернуться"
     transitions:
       # Клиент передумал
@@ -283,7 +297,7 @@ states:
     parameters:
       next_phase_state: close
       prev_phase_state: spin_need_payoff
-      default_price_action: answer_with_facts
+      default_price_action: answer_with_pricing
       default_unclear_action: clarify_and_continue
     transitions:
       # FIX: data_complete for skip_map (FallbackHandler tier_3 skip)
@@ -388,8 +402,9 @@ states:
           then: soft_close
         - handle_objection
     rules:
-      price_question: answer_with_facts
-      pricing_details: answer_with_facts
+      # FIX Defect 6: Removed explicit price_question/pricing_details overrides.
+      # The price_handling mixin now handles these with proper conditional logic
+      # (can_answer_price, price_repeated_2x, should_answer_directly → answer_with_pricing).
       comparison: answer_and_continue
       consultation_request: acknowledge_and_continue
       question_features: answer_and_continue
@@ -401,12 +416,13 @@ states:
   # Обработка возражений
   handle_objection:
     extends: _base_phase
+    max_simulation_consecutive: 4  # Runner-only: terminate simulation after N consecutive visits
     goal: "Отработать возражение"
     required_data: []
     parameters:
       next_phase_state: presentation
       prev_phase_state: presentation
-      default_price_action: answer_with_facts
+      default_price_action: answer_with_pricing
       default_unclear_action: clarify_and_continue
     transitions:
       # FIX: data_complete for skip_map (FallbackHandler tier_3 skip)
@@ -570,14 +586,16 @@ states:
           then: presentation
         - handle_objection  # Default: продолжить работу с возражением
     rules:
+      # FIX Defect 6: Changed fallback from answer_with_facts to answer_with_pricing
+      # ROI-framing is correct for objection handling context
       price_question:
         - when: can_handle_with_roi
           then: answer_with_roi
-        - answer_with_facts
+        - answer_with_pricing
       pricing_details:
         - when: can_handle_with_roi
           then: answer_with_roi
-        - answer_with_facts
+        - answer_with_pricing
       comparison: answer_and_continue
       consultation_request: acknowledge_and_continue
       question_features: answer_and_continue

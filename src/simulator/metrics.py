@@ -102,9 +102,9 @@ class MetricsCollector:
     For multi-flow support, consider passing expected_phases to individual results.
     """
 
-    # Фазы загружаются из конфига + presentation для полного покрытия
-    # This is a default; actual phases should come from flow_config
-    METRICS_PHASES = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
+    # FIX Defect 4: Removed hardcoded "presentation" injection.
+    # Phases should come from flow_config, not hardcoded here.
+    METRICS_PHASES = list(SPIN_PHASES)
 
     # Alias for backward compatibility
     SPIN_PHASES = METRICS_PHASES
@@ -315,14 +315,12 @@ def calculate_spin_coverage(
     Returns:
         Покрытие от 0.0 до 1.0
     """
-    # Use provided expected_phases or fall back to SPIN for legacy compatibility
+    # FIX Defect 4: Use provided expected_phases or fall back to SPIN.
+    # No more hardcoded "presentation" injection — flow config controls phases.
     if expected_phases is None:
-        all_phases = SPIN_PHASES + ["presentation"] if "presentation" not in SPIN_PHASES else SPIN_PHASES
+        all_phases = list(SPIN_PHASES)
     else:
-        # Add presentation to expected phases if not already there
         all_phases = list(expected_phases)
-        if "presentation" not in all_phases:
-            all_phases = all_phases + ["presentation"]
 
     if not phases_reached or not all_phases:
         return 0.0
@@ -347,9 +345,13 @@ def build_phase_mapping_from_flow(flow_config: 'FlowConfig') -> Dict[str, str]:
     # FlowConfig.phase_mapping is {phase: state}, we need {state: phase}
     phase_mapping = {state: phase for phase, state in flow_config.phase_mapping.items()}
 
-    # Add common states that map to presentation phase
-    phase_mapping["presentation"] = "presentation"
-    phase_mapping["close"] = "presentation"
+    # FIX Defect 4: Add post_phases_state from flow config instead of hardcoding
+    post_phases_state = flow_config.post_phases_state
+    if post_phases_state:
+        phase_mapping[post_phases_state] = post_phases_state
+    # Map 'close' to itself (distinct state, not alias for presentation)
+    if "close" not in phase_mapping:
+        phase_mapping["close"] = "close"
 
     return phase_mapping
 

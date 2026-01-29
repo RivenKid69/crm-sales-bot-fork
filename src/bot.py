@@ -17,6 +17,7 @@
 
 import time
 import uuid
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
 
 from classifier import UnifiedClassifier
@@ -80,6 +81,13 @@ from src.decision_trace import (
     ContextWindowTrace,
     TurnSummary,
 )
+
+
+@dataclass
+class GuardResult:
+    """Result of a guard check, preserving both can_continue and intervention."""
+    can_continue: bool
+    intervention: Optional[str]
 
 
 class SalesBot:
@@ -408,15 +416,15 @@ class SalesBot:
         collected_data: Dict,
         frustration_level: int,
         last_intent: str = ""  # BUG-001 FIX: Pass intent for informative check
-    ) -> Optional[str]:
+    ) -> GuardResult:
         """
         Проверить ConversationGuard (Phase 1).
 
         Returns:
-            None если всё OK, иначе intervention action
+            GuardResult with can_continue flag and optional intervention
         """
         if not flags.conversation_guard:
-            return None
+            return GuardResult(can_continue=True, intervention=None)
 
         try:
             can_continue, intervention = self.guard.check(
@@ -433,7 +441,7 @@ class SalesBot:
                     intervention=intervention,
                     state=state
                 )
-                return intervention
+                return GuardResult(can_continue=False, intervention=intervention)
 
             if intervention:
                 logger.info(
@@ -441,12 +449,12 @@ class SalesBot:
                     intervention=intervention,
                     state=state
                 )
-                return intervention
+                return GuardResult(can_continue=True, intervention=intervention)
 
-            return None
+            return GuardResult(can_continue=True, intervention=None)
         except Exception as e:
             logger.error("Guard check failed", error=str(e))
-            return None
+            return GuardResult(can_continue=True, intervention=None)
 
     def _apply_fallback(
         self,
@@ -756,19 +764,21 @@ class SalesBot:
 
         # Phase 1: Check guard for intervention (now uses current intent)
         guard_start = time.time()
-        intervention = self._check_guard(
+        guard_result = self._check_guard(
             state=current_state,
             message=user_message,
             collected_data=collected_data,
             frustration_level=frustration_level,
             last_intent=intent  # FIX 1: Use current intent, not self.last_intent
         )
+        intervention = guard_result.intervention
         guard_elapsed = (time.time() - guard_start) * 1000
 
         # Decision Tracing: Record guard check
         if trace_builder:
             trace_builder.record_guard(
                 intervention=intervention,
+                can_continue=guard_result.can_continue,
                 frustration=frustration_level,
                 elapsed_ms=guard_elapsed
             )
@@ -776,6 +786,9 @@ class SalesBot:
         fallback_used = False
         fallback_tier = None
         fallback_response = None
+        # FIX Defect 3: Track fallback action/message for decision trace
+        fallback_action = None
+        fallback_message = None
 
         if intervention:
             fallback_used = True
@@ -795,6 +808,9 @@ class SalesBot:
 
             if fb_result.get("response"):
                 fallback_response = fb_result
+                # FIX Defect 3: Capture fallback details for decision trace
+                fallback_action = fb_result.get("action")
+                fallback_message = fb_result.get("response")
 
                 # If fallback action is "close" or "skip", update state
                 if fb_result.get("action") == "close":
@@ -1174,6 +1190,8 @@ class SalesBot:
             # Fallback path - CTA not applicable
             response_start = time.time()
             response = fallback_response["response"]
+            # FIX Defect 2: Propagate fallback action to output action variable
+            action = fallback_response.get("action", action)
             response_elapsed = (time.time() - response_start) * 1000
             cta_result = CTAResult(
                 original_response=response,
@@ -1317,6 +1335,8 @@ class SalesBot:
                 trace_builder.record_fallback(
                     tier=fallback_tier,
                     reason=intervention,
+                    action=fallback_action,
+                    message=fallback_message,
                 )
 
             # Build final trace
@@ -1659,16 +1679,18 @@ class SalesBot:
         # =================================================================
         # Phase 1: Check guard for intervention
         # =================================================================
-        intervention = self._check_guard(
+        guard_result = self._check_guard(
             state=current_state,
             message=user_message,
             collected_data=collected_data,
             frustration_level=frustration_level,
             last_intent=intent  # FIX 1+6: Use current intent, not self.last_intent
-        ) if user_message else None
+        ) if user_message else GuardResult(can_continue=True, intervention=None)
+        intervention = guard_result.intervention
 
         fallback_used = False
         fallback_tier = None
+        fallback_response = None  # FIX Defect 2: Track fallback response for advisory fallbacks
 
         if intervention:
             fallback_used = True
@@ -1733,6 +1755,10 @@ class SalesBot:
                 # Reset fallback to generate normal response
                 fallback_used = False
                 fallback_tier = None
+
+            # FIX Defect 2: Tier 1/2 advisory fallback — capture response for use below
+            elif fb_result.get("response"):
+                fallback_response = fb_result
 
         # =================================================================
         # Phase 3: Check for objection
@@ -1817,8 +1843,13 @@ class SalesBot:
             "response_directives": response_directives,
         }
 
-        action = sm_result["action"]
-        response = self.generator.generate(action, context)
+        # FIX Defect 2: Use fallback response/action when advisory fallback is active
+        if fallback_response:
+            action = fallback_response.get("action", sm_result["action"])
+            response = fallback_response["response"]
+        else:
+            action = sm_result["action"]
+            response = self.generator.generate(action, context)
 
         # Сохраняем в историю (с реальным сообщением пользователя)
         self.history.append({

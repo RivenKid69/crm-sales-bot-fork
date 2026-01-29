@@ -415,6 +415,27 @@ class FlowConfig:
         """Get state name for a phase."""
         return self.phase_mapping.get(phase)
 
+    @property
+    def simulation_limits(self) -> Dict[str, Dict[str, int]]:
+        """Get per-state simulation termination limits.
+
+        Reads max_simulation_visits and max_simulation_consecutive from state configs.
+        These are runner-only parameters that control simulation stagnation detection.
+
+        Returns:
+            Dict mapping state_name -> {"max_visits": N, "max_consecutive": N}
+        """
+        limits: Dict[str, Dict[str, int]] = {}
+        for state_name, state_config in self.states.items():
+            state_limits: Dict[str, int] = {}
+            if "max_simulation_visits" in state_config:
+                state_limits["max_visits"] = state_config["max_simulation_visits"]
+            if "max_simulation_consecutive" in state_config:
+                state_limits["max_consecutive"] = state_config["max_simulation_consecutive"]
+            if state_limits:
+                limits[state_name] = state_limits
+        return limits
+
     def get_entry_point(self, scenario: str = "default") -> str:
         """Get entry state for a scenario."""
         return self.entry_points.get(scenario, self.entry_points.get("default", "greeting"))
@@ -1064,10 +1085,21 @@ class ConfigLoader:
         # Build states with inheritance
         all_states = {}
 
-        # First, add base states (non-abstract)
-        for name, state_config in base_states.get("states", {}).items():
+        # First, add base states (non-abstract), resolving extends/mixins
+        all_base_states = base_states.get("states", {})
+        for name, state_config in all_base_states.items():
             if not state_config.get("abstract", False):
-                all_states[name] = state_config.copy()
+                # Resolve extends/mixins for base states too (not just flow-specific)
+                if "extends" in state_config or "mixins" in state_config:
+                    all_states[name] = self._resolve_state(
+                        state_name=name,
+                        state_config=state_config,
+                        all_states=all_base_states,
+                        mixins_registry=mixins_registry,
+                        variables=flow_config.get("variables", {})
+                    )
+                else:
+                    all_states[name] = state_config.copy()
 
         # Then, process flow-specific states
         for name, state_config in flow_states.get("states", {}).items():

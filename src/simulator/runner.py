@@ -214,6 +214,12 @@ class SimulationRunner:
             fallback_count = 0
             last_bot_is_final = False
 
+            # FIX Defect 7: Config-driven simulation stagnation detection
+            simulation_limits = flow_config.simulation_limits if flow_config else {}
+            state_visit_counts: Dict[str, int] = {}
+            state_consecutive_counts: Dict[str, int] = {}
+            prev_bot_state = ""
+
             for turn in range(max_turns):
                 try:
                     # Бот отвечает
@@ -261,6 +267,22 @@ class SimulationRunner:
                     if last_bot_is_final:
                         break
 
+                    # FIX Defect 7: Config-driven stagnation detection
+                    current_bot_state = bot_result.get("state", "")
+                    state_visit_counts[current_bot_state] = state_visit_counts.get(current_bot_state, 0) + 1
+                    if current_bot_state == prev_bot_state:
+                        state_consecutive_counts[current_bot_state] = state_consecutive_counts.get(current_bot_state, 0) + 1
+                    else:
+                        state_consecutive_counts = {current_bot_state: 1}
+                    prev_bot_state = current_bot_state
+
+                    if current_bot_state in simulation_limits:
+                        limits = simulation_limits[current_bot_state]
+                        if "max_visits" in limits and state_visit_counts[current_bot_state] >= limits["max_visits"]:
+                            break
+                        if "max_consecutive" in limits and state_consecutive_counts.get(current_bot_state, 0) >= limits["max_consecutive"]:
+                            break
+
                     # Клиент решает продолжать ли
                     if not client.should_continue():
                         break
@@ -285,6 +307,9 @@ class SimulationRunner:
             # Get flow_config from bot for dynamic phase extraction
             flow_config = getattr(bot, '_flow', None)
             expected_phases = flow_config.phase_order if flow_config else None
+            # FIX Defect 4: Include post_phases_state in expected phases from flow config
+            if expected_phases and flow_config and flow_config.post_phases_state:
+                expected_phases = list(expected_phases) + [flow_config.post_phases_state]
 
             # Извлекаем фазы и рассчитываем coverage с учётом flow
             phases = extract_phases_from_dialogue(dialogue, flow_config=flow_config)

@@ -17,6 +17,37 @@
 
 mixins:
   # =================================================================
+  # ESCALATION SAFETY MIXIN - FOR TERMINAL STATES
+  # =================================================================
+  # Provides escalation transitions safe for terminal states.
+  # Does NOT include exit/purchase transitions that could create loops
+  # (e.g., rejection → soft_close would loop in soft_close).
+  # Use _universal_base for non-terminal states instead.
+  # =================================================================
+  _escalation_safety:
+    description: "Escalation transitions safe for terminal states (no exit loops)"
+    rules:
+      request_brevity: respond_briefly
+    transitions:
+      request_human: escalated
+      speak_to_manager: escalated
+      talk_to_person: escalated
+      not_a_bot: escalated
+      real_person: escalated
+      human_please: escalated
+      escalate: escalated
+      problem_technical: escalated
+      problem_connection: escalated
+      problem_sync: escalated
+      problem_fiscal: escalated
+      request_technical_support: escalated
+      legal_question: escalated
+      formal_complaint: escalated
+      contract_dispute: escalated
+      data_deletion: escalated
+      gdpr_request: escalated
+
+  # =================================================================
   # UNIVERSAL BASE MIXIN - MANDATORY FOR ALL STATES
   # =================================================================
   # Guarantees ALL critical intents have explicit mappings.

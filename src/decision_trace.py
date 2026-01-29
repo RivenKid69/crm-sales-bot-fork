@@ -991,6 +991,7 @@ class DecisionTraceBuilder:
         self,
         intervention: Optional[str],
         reason: Optional[str] = None,
+        can_continue: Optional[bool] = None,
         frustration: int = 0,
         elapsed_ms: float = 0.0,
     ) -> "DecisionTraceBuilder":
@@ -998,7 +999,7 @@ class DecisionTraceBuilder:
         self._trace.guard_check = GuardCheckTrace(
             intervention_triggered=intervention is not None,
             trigger_reason=intervention or reason,
-            can_continue=intervention is None,
+            can_continue=can_continue if can_continue is not None else (intervention is None),
             frustration_at_check=frustration,
             check_time_ms=elapsed_ms,
         )
