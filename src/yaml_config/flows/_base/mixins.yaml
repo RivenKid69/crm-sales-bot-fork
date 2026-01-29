@@ -134,57 +134,57 @@ mixins:
       price_question:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
       pricing_details:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
       cost_inquiry:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
       discount_request:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
       payment_terms:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
       pricing_comparison:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
       budget_question:
         - when: can_answer_price
           then: answer_with_pricing
-        - when: price_repeated_2x
-          then: answer_with_pricing
         - when: should_answer_directly
+          then: answer_with_pricing_direct
+        - when: price_repeated_2x
           then: answer_with_pricing
         - "{{default_price_action}}"
 
@@ -196,7 +196,7 @@ mixins:
     rules:
       question_features: answer_and_continue
       question_integrations: answer_and_continue
-      comparison: answer_and_continue
+      comparison: answer_with_facts
       consultation_request: acknowledge_and_continue
 
   # =================================================================
@@ -338,7 +338,7 @@ mixins:
       # Вопросы обрабатываем в текущем состоянии
       question_features: answer_and_continue
       question_integrations: answer_and_continue
-      comparison: answer_and_continue
+      comparison: answer_with_facts
       consultation_request: acknowledge_and_continue
 
 # =================================================================

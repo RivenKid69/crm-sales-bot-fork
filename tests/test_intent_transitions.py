@@ -134,12 +134,12 @@ class TestSpinSituationTransitions:
         assert result["next_state"] == "handle_objection"
         # soft_close не финальное — клиент может передумать и вернуться
 
-    def test_comparison_stays_with_answer_and_continue(self):
+    def test_comparison_stays_with_answer_with_facts(self):
         """comparison в spin_situation обрабатывается через rules"""
         result = self.sm.process("comparison", {})
-        # comparison в rules -> answer_and_continue, остаёмся в том же состоянии
+        # comparison в rules -> answer_with_facts, остаёмся в том же состоянии
         assert result["next_state"] == "spin_situation"
-        assert result["action"] == "answer_and_continue"
+        assert result["action"] == "answer_with_facts"
 
     def test_pricing_details_stays_with_price_answer(self):
         """pricing_details в spin_situation -> answer_with_pricing (FIX)
@@ -299,11 +299,11 @@ class TestPresentationTransitions:
         result = self.sm.process("objection_competitor", {})
         assert result["next_state"] == "handle_objection"
 
-    def test_comparison_stays_with_answer_and_continue(self):
+    def test_comparison_stays_with_answer_with_facts(self):
         """comparison в presentation обрабатывается через rules"""
         result = self.sm.process("comparison", {})
         assert result["next_state"] == "presentation"
-        assert result["action"] == "answer_and_continue"
+        assert result["action"] == "answer_with_facts"
 
     def test_pricing_details_stays_with_price_answer(self):
         """pricing_details в presentation -> answer_with_pricing (FIX)
@@ -562,7 +562,7 @@ class TestIntegrationScenarios:
         assert result["next_state"] == "soft_close"
         # soft_close не финальное — клиент может передумать и вернуться
 
-    def test_scenario_comparison_gets_answer_and_continues(self):
+    def test_scenario_comparison_gets_answer_with_facts(self):
         """Сценарий: клиент спрашивает о сравнении с конкурентом"""
         sm = StateMachine()
 
@@ -572,7 +572,7 @@ class TestIntegrationScenarios:
         result = sm.process("comparison", {})
 
         assert result["next_state"] == "spin_situation"
-        assert result["action"] == "answer_and_continue"
+        assert result["action"] == "answer_with_facts"
 
     def test_scenario_pricing_details_answered_in_spin(self):
         """Сценарий: клиент спрашивает детали по цене в SPIN (FIX)

@@ -182,6 +182,7 @@ class SalesBot:
         # Context from previous turn
         self.last_action: Optional[str] = None
         self.last_intent: Optional[str] = None
+        self.last_bot_message: Optional[str] = None
 
         # Phase 0: Metrics (controlled by feature flag)
         self.metrics = ConversationMetrics(self.conversation_id)
@@ -261,6 +262,7 @@ class SalesBot:
         self.history = []
         self.last_action = None
         self.last_intent = None
+        self.last_bot_message = None
 
         # Reset Phase 0
         self.metrics = ConversationMetrics(self.conversation_id)
@@ -328,6 +330,7 @@ class SalesBot:
             "spin_phase": spin_phase,
             "last_action": self.last_action,
             "last_intent": self.last_intent,
+            "last_bot_message": self.last_bot_message,
             "turns_since_last_disambiguation": self.state_machine.turns_since_last_disambiguation,
         }
 
@@ -1269,6 +1272,7 @@ class SalesBot:
         # 5. Save context for next turn
         self.last_action = action
         self.last_intent = intent
+        self.last_bot_message = response
 
         # 6. Record metrics
         self._record_turn_metrics(
@@ -1877,6 +1881,7 @@ class SalesBot:
         # Обновляем контекст
         self.last_action = action
         self.last_intent = intent
+        self.last_bot_message = response
 
         # FIX 6: Record progress for Guard (prevents false "no progress" detection)
         next_state = sm_result["next_state"]

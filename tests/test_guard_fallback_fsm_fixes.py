@@ -374,13 +374,16 @@ class TestFix4SoftCloseNoPresentation:
         soft_close = config["states"]["soft_close"]
         transitions = soft_close.get("transitions", {})
 
-        # These should NOT be in transitions (removed by Fix 4)
+        # price_question/pricing_details should NOT be in transitions (removed by Fix 4)
         assert "price_question" not in transitions, \
             "price_question should not be a transition in soft_close (Fix 4)"
         assert "pricing_details" not in transitions, \
             "pricing_details should not be a transition in soft_close (Fix 4)"
-        assert "comparison" not in transitions, \
-            "comparison should not be a transition in soft_close (Fix 4)"
+        # comparison IS in transitions as parametric {{entry_state}} (Bug 5 fix)
+        # Original Fix 4 removed hardcoded comparison: presentation
+        # Bug 5 fix re-adds comparison: "{{entry_state}}" (safe, returns to origin)
+        assert transitions.get("comparison") == "{{entry_state}}", \
+            "comparison should transition to {{entry_state}} in soft_close (Bug 5 fix)"
 
     def test_soft_close_rules_still_handle_price(self):
         """soft_close rules still handle price_question with answer_with_facts."""
@@ -396,7 +399,7 @@ class TestFix4SoftCloseNoPresentation:
         # Rules should still handle these intents
         assert rules.get("price_question") == "answer_with_facts"
         assert rules.get("pricing_details") == "answer_with_facts"
-        assert rules.get("comparison") == "answer_and_continue"
+        assert rules.get("comparison") == "answer_with_facts"
 
     def test_soft_close_keeps_other_transitions(self):
         """soft_close still has transitions for agreement, demo_request, etc."""

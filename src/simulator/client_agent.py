@@ -280,8 +280,12 @@ class ClientAgent:
             ]
             return random.choice(ignore_responses)
 
-        # Занятой - максимально коротко
+        # Занятой - коротко, но полным текстом опции (не номером)
+        # Номер "1" может быть неправильно классифицирован как unclear
         if persona_name == "Занятой":
+            if option_index < len(options):
+                words = options[option_index].split()[:3]
+                return " ".join(words).lower()
             return str(option_index + 1)
 
         # Выбираем формат ответа случайно

@@ -26,7 +26,7 @@ states:
     parameters:
       next_phase_state: bant_authority
       prev_phase_state: greeting
-      default_price_action: answer_with_facts
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_budget_question
@@ -55,7 +55,7 @@ states:
     parameters:
       next_phase_state: bant_need
       prev_phase_state: bant_budget
-      default_price_action: answer_with_facts
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_authority_question
@@ -84,7 +84,7 @@ states:
     parameters:
       next_phase_state: bant_timeline
       prev_phase_state: bant_authority
-      default_price_action: answer_with_facts
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_need_question

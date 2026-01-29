@@ -259,7 +259,7 @@ class TestBaseStatesAbstract:
         """Test _base_phase.parameters."""
         state = base_states["states"]["_base_phase"]
         params = state["parameters"]
-        assert params["default_price_action"] == "deflect_and_continue"
+        assert params["default_price_action"] == "answer_with_pricing"
         assert params["default_unclear_action"] == "continue_current_goal"
 
 
@@ -407,7 +407,7 @@ class TestBaseStatesPresentation:
         """Test presentation.parameters."""
         state = base_states["states"]["presentation"]
         params = state["parameters"]
-        assert params["default_price_action"] == "answer_with_facts"
+        assert params["default_price_action"] == "answer_with_pricing"
         assert params["default_unclear_action"] == "clarify_and_continue"
 
     def test_presentation_transitions_agreement(self, base_states):
@@ -787,7 +787,7 @@ class TestMixinsProductQuestions:
     def test_product_questions_rules_comparison(self, mixins):
         """Test product_questions rules for comparison."""
         rules = mixins["mixins"]["product_questions"]["rules"]
-        assert rules["comparison"] == "answer_and_continue"
+        assert rules["comparison"] == "answer_with_facts"
 
     def test_product_questions_rules_consultation(self, mixins):
         """Test product_questions rules for consultation_request."""
@@ -939,7 +939,7 @@ class TestMixinsDefaults:
 
     def test_default_price_action(self, mixins):
         """Test defaults.default_price_action."""
-        assert mixins["defaults"]["default_price_action"] == "deflect_and_continue"
+        assert mixins["defaults"]["default_price_action"] == "answer_with_pricing"
 
     def test_default_unclear_action(self, mixins):
         """Test defaults.default_unclear_action."""

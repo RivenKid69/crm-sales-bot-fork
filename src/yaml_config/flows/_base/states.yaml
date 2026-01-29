@@ -274,6 +274,7 @@ states:
       consultation_request: close
       info_provided: "{{entry_state}}"
       situation_provided: "{{entry_state}}"
+      comparison: "{{entry_state}}"
     rules:
       # FIX: rejection/farewell обрабатываются через rules, не transitions
       # Это позволяет генерировать вариативные прощальные ответы без зацикливания
@@ -283,7 +284,7 @@ states:
       pricing_details: answer_with_facts
       question_features: answer_and_continue
       question_integrations: answer_and_continue
-      comparison: answer_and_continue
+      comparison: answer_with_facts
       gratitude: acknowledge_farewell
       small_talk: polite_farewell
       # Если клиент продолжает разговор после rejection — пробуем мягко вернуть
@@ -405,7 +406,7 @@ states:
       # FIX Defect 6: Removed explicit price_question/pricing_details overrides.
       # The price_handling mixin now handles these with proper conditional logic
       # (can_answer_price, price_repeated_2x, should_answer_directly → answer_with_pricing).
-      comparison: answer_and_continue
+      comparison: answer_with_facts
       consultation_request: acknowledge_and_continue
       question_features: answer_and_continue
       question_integrations: answer_and_continue
@@ -596,7 +597,7 @@ states:
         - when: can_handle_with_roi
           then: answer_with_roi
         - answer_with_pricing
-      comparison: answer_and_continue
+      comparison: answer_with_facts
       consultation_request: acknowledge_and_continue
       question_features: answer_and_continue
       question_integrations: answer_and_continue
@@ -748,7 +749,7 @@ states:
     rules:
       price_question: answer_with_facts
       pricing_details: answer_with_facts
-      comparison: answer_and_continue
+      comparison: answer_with_facts
       question_features: answer_and_continue
       question_integrations: answer_and_continue
       small_talk: small_talk_and_continue
