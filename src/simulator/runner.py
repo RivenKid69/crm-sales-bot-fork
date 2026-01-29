@@ -209,6 +209,9 @@ class SimulationRunner:
             # Первое сообщение клиента
             client_message = client.start_conversation()
 
+            # Get flow_config from bot for configuration access
+            flow_config = getattr(bot, '_flow', None)
+
             # Цикл диалога
             max_turns = 25
             fallback_count = 0
@@ -304,8 +307,7 @@ class SimulationRunner:
             # Собираем результат
             duration = time.time() - start_time
 
-            # Get flow_config from bot for dynamic phase extraction
-            flow_config = getattr(bot, '_flow', None)
+            # Get expected phases from flow_config for phase extraction
             expected_phases = flow_config.phase_order if flow_config else None
             # FIX Defect 4: Include post_phases_state in expected phases from flow config
             if expected_phases and flow_config and flow_config.post_phases_state:

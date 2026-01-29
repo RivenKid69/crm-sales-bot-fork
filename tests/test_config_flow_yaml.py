@@ -416,9 +416,12 @@ class TestBaseStatesPresentation:
         assert transitions["agreement"] == "close"
 
     def test_presentation_transitions_objection_price(self, base_states):
-        """Test presentation transitions for objection_price."""
+        """Test presentation transitions for objection_price (conditional)."""
         transitions = base_states["states"]["presentation"]["transitions"]
-        assert transitions["objection_price"] == "handle_objection"
+        objection = transitions["objection_price"]
+        # Conditional: objection_limit_reached → soft_close, default → handle_objection
+        assert isinstance(objection, list)
+        assert objection[-1] == "handle_objection"
 
 
 class TestBaseStatesHandleObjection:

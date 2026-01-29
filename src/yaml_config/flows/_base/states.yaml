@@ -297,7 +297,7 @@ states:
     required_data: []
     parameters:
       next_phase_state: close
-      prev_phase_state: spin_need_payoff
+      prev_phase_state: greeting
       default_price_action: answer_with_pricing
       default_unclear_action: clarify_and_continue
     transitions:
