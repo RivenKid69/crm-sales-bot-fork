@@ -11,7 +11,7 @@ import random
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from .personas import get_all_persona_names
+from src.simulator.personas import get_all_persona_names
 
 
 @dataclass

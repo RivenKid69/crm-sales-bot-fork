@@ -28,7 +28,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from logger import logger
+from src.logger import logger
 
 # Import from Single Source of Truth for frustration thresholds
 from src.frustration_thresholds import FRUSTRATION_HIGH

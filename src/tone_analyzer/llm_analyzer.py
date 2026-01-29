@@ -10,7 +10,7 @@ LLM анализатор тона (Tier 3).
 import time
 from typing import Dict, Optional, Tuple
 
-from logger import logger
+from src.logger import logger
 
 from .models import Tone
 
@@ -78,7 +78,7 @@ class LLMToneAnalyzer:
         """Lazy initialization LLM клиента."""
         if self._llm is None:
             try:
-                from llm import OllamaLLM
+                from src.llm import OllamaLLM
                 self._llm = OllamaLLM()
             except ImportError:
                 logger.warning("OllamaLLM not available")

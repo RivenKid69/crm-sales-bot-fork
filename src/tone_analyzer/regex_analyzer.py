@@ -9,8 +9,8 @@ import re
 import time
 from typing import Dict, List, Optional, Tuple
 
-from logger import logger
-from settings import settings
+from src.logger import logger
+from src.settings import settings
 
 from .models import Tone, Style, ToneAnalysis
 from .markers import (

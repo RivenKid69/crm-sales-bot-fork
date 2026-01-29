@@ -9,11 +9,11 @@
 - INTENT_EXAMPLES: примеры для семантической классификации
 """
 
-from .patterns import PRIORITY_PATTERNS, COMPILED_PRIORITY_PATTERNS
-from .root_classifier import RootClassifier
-from .lemma_classifier import LemmaClassifier
-from .semantic import SemanticClassifier, get_semantic_classifier, SemanticResult
-from .examples import INTENT_EXAMPLES, get_all_intents, get_examples_for_intent
+from src.classifier.intents.patterns import PRIORITY_PATTERNS, COMPILED_PRIORITY_PATTERNS
+from src.classifier.intents.root_classifier import RootClassifier
+from src.classifier.intents.lemma_classifier import LemmaClassifier
+from src.classifier.intents.semantic import SemanticClassifier, get_semantic_classifier, SemanticResult
+from src.classifier.intents.examples import INTENT_EXAMPLES, get_all_intents, get_examples_for_intent
 
 __all__ = [
     'RootClassifier',

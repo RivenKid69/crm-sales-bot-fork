@@ -16,7 +16,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from logger import logger
+from src.logger import logger
 
 
 class RouterDecision(Enum):

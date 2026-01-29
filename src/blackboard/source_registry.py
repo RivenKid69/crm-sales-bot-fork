@@ -12,7 +12,7 @@ from typing import Dict, Type, List, Optional, Any, Callable
 from dataclasses import dataclass
 import logging
 
-from .knowledge_source import KnowledgeSource
+from src.blackboard.knowledge_source import KnowledgeSource
 
 logger = logging.getLogger(__name__)
 

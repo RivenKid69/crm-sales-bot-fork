@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import yaml
 
-from logger import logger
+from src.logger import logger
 
 
 # =============================================================================

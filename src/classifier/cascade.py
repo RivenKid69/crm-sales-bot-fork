@@ -16,9 +16,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Any
 
-from logger import logger
+from src.logger import logger
 
-from .intents import (
+from src.classifier.intents import (
     COMPILED_PRIORITY_PATTERNS,
     RootClassifier,
     LemmaClassifier,

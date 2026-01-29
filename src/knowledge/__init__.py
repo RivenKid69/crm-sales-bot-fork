@@ -14,16 +14,16 @@
     kassa = WIPON_KNOWLEDGE.get_by_topic("wipon_kassa")
 """
 
-from .base import KnowledgeBase, KnowledgeSection
-from .loader import load_knowledge_base
-from .retriever import (
+from src.knowledge.base import KnowledgeBase, KnowledgeSection
+from src.knowledge.loader import load_knowledge_base
+from src.knowledge.retriever import (
     CascadeRetriever,
     KnowledgeRetriever,  # Alias для обратной совместимости
     MatchStage,
     SearchResult,
     get_retriever,
 )
-from .lemmatizer import Lemmatizer, get_lemmatizer
+from src.knowledge.lemmatizer import Lemmatizer, get_lemmatizer
 
 # Глобальный экземпляр (ленивая загрузка)
 _knowledge_base = None

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, TYPE_CHECKING
 import re
 
-from logger import logger
+from src.logger import logger
 
 if TYPE_CHECKING:
     from knowledge.retriever import CascadeRetriever

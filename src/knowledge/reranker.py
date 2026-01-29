@@ -9,10 +9,7 @@ import threading
 from typing import List, Optional
 from dataclasses import dataclass
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from settings import settings
+from src.settings import settings
 
 
 @dataclass

@@ -8,13 +8,13 @@
 """
 
 from typing import Dict, List, Optional, TYPE_CHECKING, Any
-from config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
-from knowledge.retriever import get_retriever
-from settings import settings
-from logger import logger
-from feature_flags import flags
-from response_diversity import diversity_engine
-from question_dedup import question_dedup_engine
+from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
+from src.knowledge.retriever import get_retriever
+from src.settings import settings
+from src.logger import logger
+from src.feature_flags import flags
+from src.response_diversity import diversity_engine
+from src.question_dedup import question_dedup_engine
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
@@ -421,7 +421,7 @@ class ResponseGenerator:
         # CategoryRouter: LLM-классификация категорий перед поиском
         self.category_router = None
         if settings.get_nested("category_router.enabled", False):
-            from knowledge.category_router import CategoryRouter
+            from src.knowledge.category_router import CategoryRouter
             self.category_router = CategoryRouter(
                 llm=llm,
                 top_k=settings.get_nested("category_router.top_k", 3),
@@ -1191,7 +1191,7 @@ class ResponseGenerator:
         prompt: str,
         context: Dict,
         original_response: str,
-        max_attempts: int = 2
+        max_attempts: int = 4
     ) -> str:
         """
         Перегенерировать ответ с инструкцией о разнообразии.
@@ -1207,20 +1207,29 @@ class ResponseGenerator:
         """
         history = context.get("history", [])
 
-        # Собираем предыдущие ответы для инструкции
+        # Собираем предыдущие ответы для инструкции (диалог + внутренний кеш)
+        # Увеличиваем лимит символов для лучшего контекста
         recent_responses = []
+        
+        # 1. Из истории диалога
         for turn in history[-3:]:
             if turn.get("bot"):
-                recent_responses.append(turn["bot"][:80])
+                recent_responses.append(turn["bot"][:150])
+        
+        # 2. Из внутреннего кеша генератора (чтобы не повторять только что сказанное)
+        for resp in self._response_history[-3:]:
+            if resp[:150] not in recent_responses:
+                recent_responses.append(resp[:150])
 
         diversity_instruction = f"""
 ⚠️ ВАЖНО: Твой предыдущий ответ слишком похож на уже данные.
-НЕ ПОВТОРЯЙ эти ответы: {recent_responses}
+НЕ ПОВТОРЯЙ эти ответы (даже частично): {recent_responses}
 
 Сформулируй ответ ИНАЧЕ:
-- Используй ДРУГИЕ слова и фразы
-- Измени структуру предложения
-- Если задаёшь вопрос — задай его по-другому
+- Используй ДРУГИЕ слова и синонимы
+- Измени структуру предложения и порядок слов
+- Если задаёшь вопрос — сформулируй его по-новому
+- НЕ используй стандартные вступления из предыдущих попыток
 
 """
         modified_prompt = diversity_instruction + prompt
@@ -1236,7 +1245,7 @@ class ResponseGenerator:
                 if not cleaned:
                     continue
 
-                # Проверяем уникальность
+                # Проверяем уникальность (использует и history, и _response_history)
                 if not self._is_duplicate(cleaned, history):
                     logger.info(
                         "Regeneration successful",
@@ -1244,12 +1253,21 @@ class ResponseGenerator:
                     )
                     return cleaned
 
-                # Сохраняем лучший результат (наименее похожий)
+                # Сохраняем лучший результат (наименее похожий на ВСЮ историю)
+                # FIX: Теперь учитываем и history, и self._response_history, 
+                # чтобы "лучший" вариант не оказался дубликатом из внутреннего кеша.
                 max_sim = 0.0
+                
+                # Сравниваем с историей диалога
                 for turn in history[-3:]:
                     if turn.get("bot"):
                         sim = self._compute_similarity(cleaned, turn["bot"])
                         max_sim = max(max_sim, sim)
+                
+                # Сравниваем с внутренней историей генератора
+                for prev in self._response_history[-3:]:
+                    sim = self._compute_similarity(cleaned, prev)
+                    max_sim = max(max_sim, sim)
 
                 if max_sim < best_similarity:
                     best_similarity = max_sim

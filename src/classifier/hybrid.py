@@ -19,8 +19,8 @@ Cascade Pipeline (когда flags.cascade_classifier включён):
 import re
 from typing import Dict, Optional, Any
 
-from config import CLASSIFIER_CONFIG
-from feature_flags import flags
+from src.config import CLASSIFIER_CONFIG
+from src.feature_flags import flags
 from src.yaml_config.constants import (
     SPIN_PHASE_CLASSIFICATION,
     SPIN_PROGRESS_INTENTS,
@@ -28,10 +28,10 @@ from src.yaml_config.constants import (
     # Objection limits from YAML (single source of truth)
     MAX_CONSECUTIVE_OBJECTIONS,
 )
-from .normalizer import TextNormalizer
-from .intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
-from .intents.semantic import get_semantic_classifier, SemanticClassifier
-from .extractors import DataExtractor
+from src.classifier.normalizer import TextNormalizer
+from src.classifier.intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
+from src.classifier.intents.semantic import get_semantic_classifier, SemanticClassifier
+from src.classifier.extractors import DataExtractor
 
 
 class HybridClassifier:
@@ -77,7 +77,7 @@ class HybridClassifier:
     def disambiguation_analyzer(self):
         """Lazy initialization of DisambiguationAnalyzer."""
         if self._disambiguation_analyzer is None:
-            from .disambiguation import DisambiguationAnalyzer
+            from src.classifier.disambiguation import DisambiguationAnalyzer
             self._disambiguation_analyzer = DisambiguationAnalyzer(self.config)
         return self._disambiguation_analyzer
 

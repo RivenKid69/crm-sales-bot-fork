@@ -11,8 +11,8 @@ import threading
 import time
 from typing import Dict, List, Optional
 
-from logger import logger
-from feature_flags import flags
+from src.logger import logger
+from src.feature_flags import flags
 
 from .models import Tone, Style, ToneAnalysis
 from .regex_analyzer import RegexToneAnalyzer

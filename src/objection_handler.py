@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Pattern
 from enum import Enum
 
-from logger import logger
+from src.logger import logger
 
 
 class ObjectionType(Enum):

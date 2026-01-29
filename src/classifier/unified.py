@@ -24,8 +24,8 @@ SSoT for config: src/yaml_config/constants.yaml (refinement_pipeline section)
 """
 from typing import Dict, Optional, Any
 
-from logger import logger
-from feature_flags import flags
+from src.logger import logger
+from src.feature_flags import flags
 
 
 class UnifiedClassifier:
@@ -69,7 +69,7 @@ class UnifiedClassifier:
     def hybrid(self):
         """Lazy init HybridClassifier."""
         if self._hybrid is None:
-            from .hybrid import HybridClassifier
+            from src.classifier.hybrid import HybridClassifier
             self._hybrid = HybridClassifier()
         return self._hybrid
 
@@ -77,7 +77,7 @@ class UnifiedClassifier:
     def llm(self):
         """Lazy init LLMClassifier с HybridClassifier как fallback."""
         if self._llm is None:
-            from .llm import LLMClassifier
+            from src.classifier.llm import LLMClassifier
             self._llm = LLMClassifier(fallback_classifier=self.hybrid)
         return self._llm
 
@@ -85,7 +85,7 @@ class UnifiedClassifier:
     def refinement_layer(self):
         """Lazy init ClassificationRefinementLayer."""
         if self._refinement_layer is None:
-            from .refinement import ClassificationRefinementLayer
+            from src.classifier.refinement import ClassificationRefinementLayer
             self._refinement_layer = ClassificationRefinementLayer()
         return self._refinement_layer
 
@@ -93,7 +93,7 @@ class UnifiedClassifier:
     def composite_refinement_layer(self):
         """Lazy init CompositeMessageRefinementLayer."""
         if self._composite_refinement_layer is None:
-            from .composite_refinement import CompositeMessageRefinementLayer
+            from src.classifier.composite_refinement import CompositeMessageRefinementLayer
             self._composite_refinement_layer = CompositeMessageRefinementLayer()
         return self._composite_refinement_layer
 
@@ -101,7 +101,7 @@ class UnifiedClassifier:
     def objection_refinement_layer(self):
         """Lazy init ObjectionRefinementLayer."""
         if self._objection_refinement_layer is None:
-            from .objection_refinement import ObjectionRefinementLayer
+            from src.classifier.objection_refinement import ObjectionRefinementLayer
             self._objection_refinement_layer = ObjectionRefinementLayer()
         return self._objection_refinement_layer
 
@@ -109,7 +109,7 @@ class UnifiedClassifier:
     def disambiguation_engine(self):
         """Lazy init DisambiguationDecisionEngine."""
         if self._disambiguation_engine is None:
-            from .disambiguation_engine import get_disambiguation_engine
+            from src.classifier.disambiguation_engine import get_disambiguation_engine
             self._disambiguation_engine = get_disambiguation_engine()
         return self._disambiguation_engine
 
@@ -120,10 +120,10 @@ class UnifiedClassifier:
             # Register all layers first (idempotent)
             if not self._pipeline_layers_registered:
                 # Import refinement_layers to register all layers
-                from . import refinement_layers  # noqa: F401
+                from src.classifier import refinement_layers  # noqa: F401
                 self._pipeline_layers_registered = True
 
-            from .refinement_pipeline import get_refinement_pipeline
+            from src.classifier.refinement_pipeline import get_refinement_pipeline
             self._refinement_pipeline = get_refinement_pipeline()
         return self._refinement_pipeline
 
@@ -316,7 +316,7 @@ class UnifiedClassifier:
             Refined result (or original if refinement not applicable)
         """
         try:
-            from .refinement import RefinementContext
+            from src.classifier.refinement import RefinementContext
 
             refinement_ctx = RefinementContext(
                 message=message,
@@ -365,7 +365,7 @@ class UnifiedClassifier:
             Refined result (or original if refinement not applicable)
         """
         try:
-            from .composite_refinement import CompositeMessageContext
+            from src.classifier.composite_refinement import CompositeMessageContext
 
             composite_ctx = CompositeMessageContext(
                 message=message,
@@ -423,7 +423,7 @@ class UnifiedClassifier:
             Refined result (or original if refinement not applicable)
         """
         try:
-            from .objection_refinement import ObjectionRefinementContext
+            from src.classifier.objection_refinement import ObjectionRefinementContext
 
             objection_ctx = ObjectionRefinementContext(
                 message=message,

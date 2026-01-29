@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Any, Tuple
 import time
 
-from logger import logger
+from src.logger import logger
 
 
 class DisambiguationDecision(Enum):

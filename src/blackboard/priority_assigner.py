@@ -11,7 +11,7 @@ priority_rank for tie-breaking within the same Priority enum.
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from feature_flags import flags
+from src.feature_flags import flags
 from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_registry
 from src.yaml_config.constants import INTENT_CATEGORIES, GO_BACK_INTENTS

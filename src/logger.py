@@ -19,7 +19,7 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from settings import settings
+from src.settings import settings
 
 
 # Thread/context-local storage for conversation tracking

@@ -31,7 +31,7 @@ import time
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig, LoadedConfig
 
-from logger import logger
+from src.logger import logger
 from src.conditions.fallback import (
     FallbackContext,
     fallback_registry,

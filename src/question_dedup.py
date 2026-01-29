@@ -41,7 +41,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
-from logger import logger
+from src.logger import logger
 
 
 # =============================================================================

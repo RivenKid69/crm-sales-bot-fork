@@ -16,13 +16,13 @@ Each source has a single responsibility:
 - EscalationSource: Detects escalation triggers for human handoff (Этап 8)
 """
 
-from .price_question import PriceQuestionSource
-from .data_collector import DataCollectorSource
-from .objection_guard import ObjectionGuardSource
-from .objection_return import ObjectionReturnSource
-from .intent_processor import IntentProcessorSource
-from .transition_resolver import TransitionResolverSource
-from .escalation import EscalationSource
+from src.blackboard.sources.price_question import PriceQuestionSource
+from src.blackboard.sources.data_collector import DataCollectorSource
+from src.blackboard.sources.objection_guard import ObjectionGuardSource
+from src.blackboard.sources.objection_return import ObjectionReturnSource
+from src.blackboard.sources.intent_processor import IntentProcessorSource
+from src.blackboard.sources.transition_resolver import TransitionResolverSource
+from src.blackboard.sources.escalation import EscalationSource
 
 __all__ = [
     "PriceQuestionSource",

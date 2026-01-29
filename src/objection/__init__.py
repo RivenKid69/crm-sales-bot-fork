@@ -15,7 +15,7 @@
         print(f"Тип: {result.primary_type}, Tier: {result.tier_used}")
 """
 
-from objection.cascade_detector import (
+from src.objection.cascade_detector import (
     CascadeObjectionDetector,
     ObjectionDetectionResult,
     get_cascade_objection_detector,

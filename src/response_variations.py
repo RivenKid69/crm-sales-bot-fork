@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from random import choice, random
 from typing import Dict, List
 
-from logger import logger
+from src.logger import logger
 
 
 @dataclass

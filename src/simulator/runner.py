@@ -13,12 +13,11 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Добавляем путь к src
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from .personas import PERSONAS, get_all_persona_names
-from .client_agent import ClientAgent
-from .metrics import (
+
+from src.simulator.personas import PERSONAS, get_all_persona_names
+from src.simulator.client_agent import ClientAgent
+from src.simulator.metrics import (
     determine_outcome,
     calculate_spin_coverage,
     extract_phases_from_dialogue
@@ -195,7 +194,7 @@ class SimulationRunner:
 
         try:
             # Импортируем SalesBot здесь чтобы избежать circular import
-            from bot import SalesBot
+            from src.bot import SalesBot
 
             # Создаём агентов
             persona = PERSONAS[persona_name]
@@ -394,8 +393,8 @@ class SimulationRunner:
         Returns:
             Список E2EResult
         """
-        from .e2e_scenarios import E2EScenario
-        from .e2e_evaluator import E2EEvaluator, E2EResult
+        from src.simulator.e2e_scenarios import E2EScenario
+        from src.simulator.e2e_evaluator import E2EEvaluator, E2EResult
 
         # Сбрасываем circuit breaker перед началом batch
         if hasattr(self.bot_llm, 'reset_circuit_breaker'):
@@ -462,7 +461,7 @@ def create_runner(verbose: bool = False) -> SimulationRunner:
     Returns:
         Настроенный SimulationRunner
     """
-    from llm import OllamaLLM
+    from src.llm import OllamaLLM
 
     llm = OllamaLLM()
     return SimulationRunner(bot_llm=llm, client_llm=llm, verbose=verbose)

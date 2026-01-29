@@ -5,9 +5,9 @@ from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from datetime import datetime
 import logging
 
-from .models import Proposal, ResolvedDecision, ContextSnapshot
-from .enums import Priority, ProposalType
-from .protocols import (
+from src.blackboard.models import Proposal, ResolvedDecision, ContextSnapshot
+from src.blackboard.enums import Priority, ProposalType
+from src.blackboard.protocols import (
     IStateMachine,
     IIntentTracker,
     IFlowConfig,

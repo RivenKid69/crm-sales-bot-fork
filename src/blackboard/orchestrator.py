@@ -5,12 +5,12 @@ from datetime import datetime
 import logging
 import time
 
-from .blackboard import DialogueBlackboard
-from .knowledge_source import KnowledgeSource
-from .conflict_resolver import ConflictResolver
-from .priority_assigner import PriorityAssigner
-from .proposal_validator import ProposalValidator, ValidationError
-from .event_bus import (
+from src.blackboard.blackboard import DialogueBlackboard
+from src.blackboard.knowledge_source import KnowledgeSource
+from src.blackboard.conflict_resolver import ConflictResolver
+from src.blackboard.priority_assigner import PriorityAssigner
+from src.blackboard.proposal_validator import ProposalValidator, ValidationError
+from src.blackboard.event_bus import (
     DialogueEventBus,
     TurnStartedEvent,
     SourceContributedEvent,
@@ -20,11 +20,11 @@ from .event_bus import (
     StateTransitionedEvent,
     ErrorOccurredEvent,
 )
-from .models import ResolvedDecision
-from .enums import Priority
+from src.blackboard.models import ResolvedDecision
+from src.blackboard.enums import Priority
 
 # Hexagonal Architecture: Import protocols (ports)
-from .protocols import (
+from src.blackboard.protocols import (
     IStateMachine,
     IFlowConfig,
     TenantConfig,
@@ -32,7 +32,7 @@ from .protocols import (
 )
 
 # Import SourceRegistry (Plugin System)
-from .source_registry import SourceRegistry, register_builtin_sources
+from src.blackboard.source_registry import SourceRegistry, register_builtin_sources
 
 # Import intent categories for objection tracking
 from src.yaml_config.constants import OBJECTION_INTENTS, POSITIVE_INTENTS

@@ -8,7 +8,7 @@ Fallback классификация через pymorphy2/3
 import re
 from typing import Dict, List, Tuple
 
-from config import INTENT_PHRASES, CLASSIFIER_CONFIG
+from src.config import INTENT_PHRASES, CLASSIFIER_CONFIG
 
 # Попытка импорта pymorphy (2 или 3)
 try:

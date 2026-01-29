@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .runner import SimulationResult
-    from .e2e_scenarios import E2EScenario
+    from src.simulator.runner import SimulationResult
+    from src.simulator.e2e_scenarios import E2EScenario
 
 
 @dataclass

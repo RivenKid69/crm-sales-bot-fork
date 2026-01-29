@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from src.config_loader import LoadedConfig
 
 try:
-    from logger import logger
+    from src.logger import logger
 except ImportError:
     from src.logger import logger
 from src.conditions.personalization import (

@@ -8,8 +8,8 @@ DisambiguationAnalyzer - анализ scores для принятия решен�
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from config import DISAMBIGUATION_CONFIG, CLASSIFIER_CONFIG
-from constants.intent_labels import get_label
+from src.config import DISAMBIGUATION_CONFIG, CLASSIFIER_CONFIG
+from src.constants.intent_labels import get_label
 
 
 @dataclass

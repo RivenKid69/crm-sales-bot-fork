@@ -15,8 +15,8 @@ import re
 import time
 from typing import List, Dict, Any, Optional, Tuple
 
-from .personas import Persona
-from .noise import add_noise, add_heavy_noise, add_light_noise
+from src.simulator.personas import Persona
+from src.simulator.noise import add_noise, add_heavy_noise, add_light_noise
 from src.decision_trace import ClientAgentTrace
 from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS
 

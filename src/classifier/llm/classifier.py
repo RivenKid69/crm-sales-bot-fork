@@ -1,11 +1,11 @@
 """LLM-based классификатор интентов."""
 from typing import Dict, Optional, Any
 
-from logger import logger
-from llm import OllamaClient
-from .schemas import ClassificationResult
-from .prompts import build_classification_prompt
-from ..extractors.extraction_validator import validate_extracted_data
+from src.logger import logger
+from src.llm import OllamaClient
+from src.classifier.llm.schemas import ClassificationResult
+from src.classifier.llm.prompts import build_classification_prompt
+from src.classifier.extractors.extraction_validator import validate_extracted_data
 
 
 class LLMClassifier:

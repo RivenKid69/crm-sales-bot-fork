@@ -22,9 +22,9 @@ Configuration:
 from typing import Tuple, Dict, Optional, List, Any, Iterator, TYPE_CHECKING
 from dataclasses import dataclass
 
-from feature_flags import flags
-from logger import logger
-from settings import settings
+from src.feature_flags import flags
+from src.logger import logger
+from src.settings import settings
 
 # Phase 4: Conditional Rules imports
 from src.intent_tracker import IntentTracker

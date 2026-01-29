@@ -15,8 +15,8 @@ Usage:
 
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 
-from feature_flags import flags
-from logger import logger
+from src.feature_flags import flags
+from src.logger import logger
 
 from src.personalization.result import (
     StyleParameters,
@@ -29,8 +29,8 @@ from src.personalization.industry_detector import IndustryDetectorV2, IndustryDe
 from src.personalization.action_tracker import EffectiveActionTracker
 
 if TYPE_CHECKING:
-    from context_envelope import ContextEnvelope
-    from knowledge.retriever import CascadeRetriever
+    from src.context_envelope import ContextEnvelope
+    from src.knowledge.retriever import CascadeRetriever
 
 
 class PersonalizationEngineV2:

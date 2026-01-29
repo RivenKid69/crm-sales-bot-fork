@@ -32,8 +32,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
-from context_envelope import ContextEnvelope, ReasonCode
-from feature_flags import flags
+from src.context_envelope import ContextEnvelope, ReasonCode
+from src.feature_flags import flags
 from src.conditions.policy import (
     PolicyContext,
     policy_registry,
@@ -223,7 +223,7 @@ class DialoguePolicy:
 
             # Shadow mode: возвращаем None но логируем
             if self.shadow_mode:
-                from logger import logger
+                from src.logger import logger
                 logger.info(
                     "Policy shadow decision",
                     decision=override.decision.value,
@@ -407,7 +407,7 @@ class DialoguePolicy:
                     current_action, Resolution.CONDITION_MATCHED,
                     matched_condition="price_action_correct_but_guard_pending"
                 )
-            from logger import logger as _logger
+            from src.logger import logger as _logger
             _logger.info(
                 "Policy: Price action correct but guard fallback pending — explicit override",
                 action=current_action,

@@ -9,7 +9,7 @@ import threading
 import time
 from typing import Dict, List, Optional, Tuple, Any
 
-from logger import logger
+from src.logger import logger
 
 from .models import Tone
 from .examples import TONE_EXAMPLES
@@ -75,7 +75,7 @@ class SemanticToneAnalyzer:
 
                 # Получаем имя модели из settings
                 try:
-                    from settings import settings
+                    from src.settings import settings
                     model_name = getattr(
                         getattr(settings, 'retriever', None),
                         'embedder_model',

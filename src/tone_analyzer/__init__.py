@@ -26,8 +26,8 @@ Enhanced with Intensity-based Frustration Calculation:
     - "быстрее, не тяни, некогда" (3 RUSHED signals) now properly handled
 """
 
-from .models import Tone, Style, ToneAnalysis
-from .markers import (
+from src.tone_analyzer.models import Tone, Style, ToneAnalysis
+from src.tone_analyzer.markers import (
     TONE_MARKERS,
     INFORMAL_MARKERS,
     FRUSTRATION_WEIGHTS,
@@ -35,8 +35,8 @@ from .markers import (
     FRUSTRATION_THRESHOLDS,
     MAX_FRUSTRATION,
 )
-from .frustration_tracker import FrustrationTracker
-from .frustration_intensity import (
+from src.tone_analyzer.frustration_tracker import FrustrationTracker
+from src.tone_analyzer.frustration_intensity import (
     FrustrationIntensityCalculator,
     FrustrationIntensityRegistry,
     IFrustrationIntensityCalculator,
@@ -45,20 +45,20 @@ from .frustration_intensity import (
     should_pre_intervene,
     get_intervention_urgency,
 )
-from .regex_analyzer import RegexToneAnalyzer
-from .semantic_analyzer import (
+from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+from src.tone_analyzer.semantic_analyzer import (
     SemanticToneAnalyzer,
     get_semantic_tone_analyzer,
     reset_semantic_tone_analyzer,
 )
-from .llm_analyzer import LLMToneAnalyzer
-from .cascade_analyzer import (
+from src.tone_analyzer.llm_analyzer import LLMToneAnalyzer
+from src.tone_analyzer.cascade_analyzer import (
     CascadeToneAnalyzer,
     CascadeToneConfig,
     get_cascade_tone_analyzer,
     reset_cascade_tone_analyzer,
 )
-from .examples import TONE_EXAMPLES
+from src.tone_analyzer.examples import TONE_EXAMPLES
 
 # Обратная совместимость: ToneAnalyzer = CascadeToneAnalyzer
 ToneAnalyzer = CascadeToneAnalyzer
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # Включаем все tier'ы для демо
-    from feature_flags import flags
+    from src.feature_flags import flags
     flags.set_override("cascade_tone_analyzer", True)
     flags.set_override("tone_semantic_tier2", True)
     flags.set_override("tone_llm_tier3", False)  # LLM отключен для быстрого демо

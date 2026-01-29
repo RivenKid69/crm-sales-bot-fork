@@ -7,8 +7,8 @@
 
 from typing import Dict, Tuple
 
-from config import INTENT_ROOTS, CLASSIFIER_CONFIG
-from .patterns import COMPILED_PRIORITY_PATTERNS
+from src.config import INTENT_ROOTS, CLASSIFIER_CONFIG
+from src.classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
 
 
 class RootClassifier:

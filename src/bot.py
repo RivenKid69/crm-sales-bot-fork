@@ -20,42 +20,42 @@ import uuid
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
 
-from classifier import UnifiedClassifier
-from state_machine import StateMachine
-from generator import ResponseGenerator
+from src.classifier import UnifiedClassifier
+from src.state_machine import StateMachine
+from src.generator import ResponseGenerator
 
 # Phase 0: Infrastructure
-from logger import logger
-from feature_flags import flags
-from metrics import ConversationMetrics, ConversationOutcome, DisambiguationMetrics
+from src.logger import logger
+from src.feature_flags import flags
+from src.metrics import ConversationMetrics, ConversationOutcome, DisambiguationMetrics
 
 # Phase 1: Protection and Reliability
-from conversation_guard import ConversationGuard
-from fallback_handler import FallbackHandler
+from src.conversation_guard import ConversationGuard
+from src.fallback_handler import FallbackHandler
 
 # Phase 2: Natural Dialogue
-from tone_analyzer import ToneAnalyzer
+from src.tone_analyzer import ToneAnalyzer
 
 # Phase 3: SPIN Flow Optimization
-from lead_scoring import LeadScorer, get_signal_from_intent
-from objection_handler import ObjectionHandler
-from cta_generator import CTAGenerator, CTAResult
-from response_variations import variations
+from src.lead_scoring import LeadScorer, get_signal_from_intent
+from src.objection_handler import ObjectionHandler
+from src.cta_generator import CTAGenerator, CTAResult
+from src.response_variations import variations
 
 # Context Window for enhanced classification
-from context_window import ContextWindow
+from src.context_window import ContextWindow
 
 # Robust Classification: ConfidenceRouter for graceful degradation
-from classifier.confidence_router import ConfidenceRouter, RouterDecision
+from src.classifier.confidence_router import ConfidenceRouter, RouterDecision
 
 # Phase 5: Context-aware policy overlays
-from dialogue_policy import DialoguePolicy
-from context_envelope import build_context_envelope
-from response_directives import build_response_directives
+from src.dialogue_policy import DialoguePolicy
+from src.context_envelope import build_context_envelope
+from src.response_directives import build_response_directives
 
 # Phase DAG: Modular Flow System & YAML Parameterization
 from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
-from settings import settings
+from src.settings import settings
 
 # Blackboard Architecture: DialogueOrchestrator (Stage 14)
 from src.blackboard import create_orchestrator
@@ -302,7 +302,7 @@ class SalesBot:
     def disambiguation_ui(self):
         """Lazy initialization of DisambiguationUI."""
         if self._disambiguation_ui is None:
-            from disambiguation_ui import DisambiguationUI
+            from src.disambiguation_ui import DisambiguationUI
             self._disambiguation_ui = DisambiguationUI()
         return self._disambiguation_ui
 

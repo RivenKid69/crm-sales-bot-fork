@@ -26,7 +26,7 @@ from enum import Enum
 if TYPE_CHECKING:
     from src.config_loader import LoadedConfig
 
-from logger import logger
+from src.logger import logger
 
 
 class LeadTemperature(Enum):

@@ -17,7 +17,7 @@ Feature Flags для CRM Sales Bot.
 """
 
 from typing import Any, Dict, List, Set
-from settings import settings
+from src.settings import settings
 
 
 class FeatureFlags:

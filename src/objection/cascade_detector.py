@@ -22,7 +22,7 @@ import time
 from objection_handler import ObjectionHandler, ObjectionType
 from classifier.intents.semantic import get_semantic_classifier
 from feature_flags import flags
-from logger import logger
+from src.logger import logger
 
 
 @dataclass

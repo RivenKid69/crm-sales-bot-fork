@@ -27,8 +27,8 @@ from typing import Any, Dict, Optional, Type, TypeVar, Tuple, Union
 import requests
 from pydantic import BaseModel
 
-from logger import logger
-from settings import settings
+from src.logger import logger
+from src.settings import settings
 from src.yaml_config.constants import LLM_FALLBACK_RESPONSES, LLM_DEFAULT_FALLBACK
 from src.decision_trace import LLMTrace
 
@@ -666,7 +666,7 @@ if __name__ == "__main__":
 
         # Structured output demo
         print("\n--- Structured Output Demo ---")
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
         result = llm.generate_structured(
             "Классифицируй сообщение: 'Сколько стоит ваша система?'",
             ClassificationResult

@@ -22,12 +22,10 @@ from datetime import datetime
 # FRIDA embeddings работают на GPU (достаточно VRAM для Ollama + FRIDA)
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = os.path.expanduser("~/.cache/sentence_transformers")
 
-# Добавляем путь к src
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from simulator.runner import SimulationRunner
-from simulator.report import ReportGenerator
-from simulator.personas import get_all_persona_names
+from src.simulator.runner import SimulationRunner
+from src.simulator.report import ReportGenerator
+from src.simulator.personas import get_all_persona_names
 
 
 def create_parser():
@@ -133,12 +131,12 @@ def run_e2e_mode(args):
     Tests all 20 (or a specific) sales technique flows.
     Each technique is tested with N random personas (default: 5).
     """
-    from simulator.e2e_scenarios import (
+    from src.simulator.e2e_scenarios import (
         ALL_SCENARIOS,
         get_scenario_by_flow,
         expand_scenarios_with_personas
     )
-    from simulator.report import generate_e2e_report
+    from src.simulator.report import generate_e2e_report
 
     # Заголовок
     print()
@@ -183,13 +181,13 @@ def run_e2e_mode(args):
     try:
         # Инициализация Ollama
         print("Инициализация Ollama...")
-        from llm import OllamaClient
+        from src.llm import OllamaClient
         llm = OllamaClient()
 
         # Прогрев Ollama
         print("Прогрев Ollama (загрузка модели в VRAM)...")
         import requests
-        from settings import settings
+        from src.settings import settings
 
         warmup_success = False
         warmup_url = f"{settings.llm.base_url.rstrip('/')}/api/chat"
@@ -232,7 +230,7 @@ def run_e2e_mode(args):
         # Прогрев embedding моделей (до запуска параллельных потоков)
         print("Прогрев embedding моделей...")
         try:
-            from tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
+            from src.tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
             analyzer = get_semantic_tone_analyzer()
             if analyzer.is_available:
                 print("  Semantic tone analyzer: готов")
@@ -242,7 +240,7 @@ def run_e2e_mode(args):
             print(f"  Semantic tone analyzer: ошибка - {e}")
 
         try:
-            from knowledge.reranker import get_reranker
+            from src.knowledge.reranker import get_reranker
             reranker = get_reranker()
             if reranker.is_available():
                 print("  Reranker: готов")
@@ -377,13 +375,13 @@ def main():
     try:
         # Импортируем Ollama
         print("Инициализация Ollama...")
-        from llm import OllamaClient
+        from src.llm import OllamaClient
         llm = OllamaClient()
 
         # Прогрев Ollama - делаем тестовый запрос чтобы модель загрузилась
         print("Прогрев Ollama (загрузка модели в VRAM)...")
         import requests
-        from settings import settings
+        from src.settings import settings
 
         warmup_success = False
         warmup_url = f"{settings.llm.base_url.rstrip('/')}/api/chat"

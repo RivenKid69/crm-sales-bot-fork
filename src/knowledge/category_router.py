@@ -14,13 +14,9 @@ import json
 import re
 import time
 from typing import List, Optional, Protocol, Type, TypeVar
-
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from pydantic import BaseModel
-from logger import logger
+
+from src.logger import logger
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -155,8 +151,8 @@ class CategoryRouter:
 
         Гарантирует валидный JSON через Pydantic схему.
         """
-        from config import CATEGORY_ROUTER_PROMPT_STRUCTURED
-        from classifier.llm import CategoryResult
+        from src.config import CATEGORY_ROUTER_PROMPT_STRUCTURED
+        from src.classifier.llm import CategoryResult
 
         prompt = CATEGORY_ROUTER_PROMPT_STRUCTURED.format(
             query=query,
@@ -178,7 +174,7 @@ class CategoryRouter:
 
         Обратная совместимость для LLM без structured output.
         """
-        from config import CATEGORY_ROUTER_PROMPT
+        from src.config import CATEGORY_ROUTER_PROMPT
 
         prompt = CATEGORY_ROUTER_PROMPT.format(
             query=query,

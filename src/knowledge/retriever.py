@@ -16,10 +16,8 @@ from typing import List, Optional, Tuple, Set, Dict, Any
 from enum import Enum
 from pathlib import Path
 
-# Добавляем родительскую директорию для импорта settings
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from settings import settings
-from logger import logger
+from src.settings import settings
+from src.logger import logger
 
 from .base import KnowledgeSection, KnowledgeBase
 from .loader import load_knowledge_base

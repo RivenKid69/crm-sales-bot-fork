@@ -57,8 +57,8 @@ Key Components (Stage 10 - DialogueOrchestrator):
 - create_orchestrator: Factory function to create a fully configured orchestrator
 """
 
-from .enums import Priority, ProposalType
-from .protocols import (
+from src.blackboard.enums import Priority, ProposalType
+from src.blackboard.protocols import (
     IStateMachine,
     IIntentTracker,
     IFlowConfig,
@@ -67,21 +67,21 @@ from .protocols import (
     TenantConfig,
     DEFAULT_TENANT,
 )
-from .models import (
+from src.blackboard.models import (
     Proposal,
     ResolvedDecision,
     ContextSnapshot,
 )
-from .blackboard import DialogueBlackboard
-from .proposal_validator import ValidationError, ProposalValidator
-from .conflict_resolver import ResolutionTrace, ConflictResolver
-from .knowledge_source import KnowledgeSource
-from .source_registry import (
+from src.blackboard.blackboard import DialogueBlackboard
+from src.blackboard.proposal_validator import ValidationError, ProposalValidator
+from src.blackboard.conflict_resolver import ResolutionTrace, ConflictResolver
+from src.blackboard.knowledge_source import KnowledgeSource
+from src.blackboard.source_registry import (
     SourceRegistration,
     SourceRegistry,
     register_source,
 )
-from .event_bus import (
+from src.blackboard.event_bus import (
     EventType,
     DialogueEvent,
     TurnStartedEvent,
@@ -96,7 +96,7 @@ from .event_bus import (
     MetricsCollector,
     DebugLogger,
 )
-from .orchestrator import (
+from src.blackboard.orchestrator import (
     DialogueOrchestrator,
     create_orchestrator,
 )

@@ -1,5 +1,5 @@
 """LLM-based classifier module."""
-from .schemas import (
+from src.classifier.llm.schemas import (
     IntentType,
     ExtractedData,
     ClassificationResult,
@@ -7,7 +7,7 @@ from .schemas import (
     CategoryType,
     CategoryResult,
 )
-from .classifier import LLMClassifier
+from src.classifier.llm.classifier import LLMClassifier
 
 __all__ = [
     "IntentType",

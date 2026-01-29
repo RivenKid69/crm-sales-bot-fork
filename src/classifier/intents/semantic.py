@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 
-from .examples import INTENT_EXAMPLES
+from src.classifier.intents.examples import INTENT_EXAMPLES
 
 
 class SemanticMatchType(Enum):
@@ -92,7 +92,7 @@ class SemanticClassifier:
             return self.model_name
 
         try:
-            from settings import settings
+            from src.settings import settings
             return getattr(
                 getattr(settings, 'retriever', None),
                 'embedder_model',
