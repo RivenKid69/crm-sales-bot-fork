@@ -872,6 +872,9 @@ class ConfigLoader:
                 # - String (state name)
                 # - List of conditional rules
                 if isinstance(target, str):
+                    # Skip template variables like {{entry_state}} — resolved at runtime
+                    if "{{" in target and "}}" in target:
+                        continue
                     if target not in known_states:
                         errors.append(
                             f"Unknown state '{target}' in "
@@ -882,12 +885,15 @@ class ConfigLoader:
                     for rule in target:
                         if isinstance(rule, dict):
                             then_target = rule.get("then")
-                            if then_target and then_target not in known_states:
+                            if then_target and "{{" not in str(then_target) and then_target not in known_states:
                                 errors.append(
                                     f"Unknown state '{then_target}' in "
                                     f"{state_name}.transitions.{intent} rule"
                                 )
                         elif isinstance(rule, str):
+                            # Skip template variables
+                            if "{{" in rule and "}}" in rule:
+                                continue
                             # Default fallback state
                             if rule not in known_states:
                                 errors.append(

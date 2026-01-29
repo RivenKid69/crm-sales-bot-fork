@@ -230,6 +230,12 @@ states:
     is_final: true
     goal: "Завершить успешно"
 
+  # Эскалация на оператора (клиент просит человека)
+  escalated:
+    extends: _base_terminal
+    is_final: true
+    goal: "Передать клиента оператору"
+
   # Мягкое завершение (дверь открыта)
   soft_close:
     extends: _base_terminal

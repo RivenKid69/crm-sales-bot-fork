@@ -282,6 +282,10 @@ def determine_outcome(state: str, is_final: bool, collected_data: Dict) -> str:
     if state in ["rejection", "rejected"]:
         return "rejection"
 
+    # Эскалация на оператора
+    if state in ["escalated"]:
+        return "soft_close"
+
     # Мягкое закрытие
     if state in ["soft_close"]:
         return "soft_close"
