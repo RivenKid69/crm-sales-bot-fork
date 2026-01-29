@@ -624,7 +624,7 @@ class TestFeatureFlagsIntegration:
 
     def test_context_policy_disabled(self):
         """Проверить что policy отключён без флага."""
-        flags.clear_all_overrides()
+        flags.set_override("context_policy_overlays", False)
 
         policy = DialoguePolicy()
 
@@ -638,6 +638,7 @@ class TestFeatureFlagsIntegration:
         override = policy.maybe_override(sm_result, envelope)
 
         assert override is None
+        flags.clear_override("context_policy_overlays")
 
     def test_engagement_v2_flag(self):
         """Проверить использование v2 engagement по флагу."""
@@ -685,11 +686,15 @@ class TestFeatureFlagsIntegration:
 
     def test_safe_flags_only(self):
         """Проверить работу только с safe флагами."""
+        flags.clear_all_overrides()
+        flags.set_override("context_policy_overlays", False)
         flags.enable_group("context_safe")
 
         assert flags.context_full_envelope
         assert flags.context_response_directives
         assert not flags.context_policy_overlays  # Не в safe группе
+
+        flags.clear_override("context_policy_overlays")
 
         flags.clear_all_overrides()
 

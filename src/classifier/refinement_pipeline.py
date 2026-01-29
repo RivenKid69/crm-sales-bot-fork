@@ -624,6 +624,16 @@ class RefinementLayerRegistry:
     def get_registry(cls) -> "RefinementLayerRegistry":
         """Get singleton registry instance."""
         if cls._instance is None:
+            # Instrumentation: Trace where the registry is being created
+            import traceback
+            import os
+            stack = "".join(traceback.format_stack()[-3:])
+            logger.info(
+                f"DEBUG: Creating NEW RefinementLayerRegistry instance. "
+                f"Class location: {cls.__module__}. Registry ID: {id(cls)}, "
+                f"CWD: {os.getcwd()}, PID: {os.getpid()}"
+            )
+            # logger.debug(f"DEBUG: Registry creation stack:\n{stack}")
             cls._instance = cls()
         return cls._instance
 

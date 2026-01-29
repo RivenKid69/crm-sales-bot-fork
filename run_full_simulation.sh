@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 
 # Параметры симуляции
 PARALLEL_THREADS=8
-PERSONAS_PER_FLOW=8
+PERSONAS_PER_FLOW=5
 TOTAL_SIMULATIONS=$((20 * PERSONAS_PER_FLOW))  # 20 флоу × 8 персон = 160
 
 # Генерация имени файла с датой и временем
@@ -131,7 +131,7 @@ echo ""
 
 START_TIME=$(date +%s)
 
-python -m src.simulator \
+python3 -m src.simulator \
     --e2e \
     --personas ${PERSONAS_PER_FLOW} \
     --parallel ${PARALLEL_THREADS} \

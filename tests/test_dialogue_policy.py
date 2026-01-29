@@ -380,10 +380,9 @@ class TestDialoguePolicy:
     def test_priority_guard_first(self):
         """Проверить приоритет guard intervention.
 
-        After NO_OVERRIDE truthiness fix: guard fires first with NO_OVERRIDE,
-        but since it's a pass-through, the repair overlay (is_stuck=True)
-        provides the actual override action. The result has a real override,
-        not the guard's NO_OVERRIDE.
+        Guard intervention (e.g. TIER_2) must stop the policy evaluation
+        to prevent repair overlays (like answer_with_summary) from clearing
+        the guard's fallback response and causing a loop.
         """
         policy = DialoguePolicy()
 
@@ -397,10 +396,12 @@ class TestDialoguePolicy:
 
         result = policy.maybe_override(sm_result, envelope)
 
-        # Guard fires first (NO_OVERRIDE pass-through), then repair overlay
-        # provides actual action since is_stuck=True
+        # Guard fires first and we MUST stop there.
+        # handle_guard_intervention returns NO_OVERRIDE (action=None).
         assert result is not None
-        assert result.has_override  # Real overlay applied after guard pass-through
+        assert not result.has_override
+        assert result.decision == PolicyDecision.NO_OVERRIDE
+        assert ReasonCode.GUARD_INTERVENTION.value in result.reason_codes
 
 
 class TestContextPolicyMetrics:

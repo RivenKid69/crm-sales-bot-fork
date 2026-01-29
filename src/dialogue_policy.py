@@ -187,6 +187,13 @@ class DialoguePolicy:
         # 1. Guard intervention имеет высший приоритет
         if policy_registry.evaluate("has_guard_intervention", ctx, trace):
             override = self._handle_guard_intervention(ctx, sm_result, trace)
+            # Если есть интервенция гуарда, мы ДОЛЖНЫ остановиться здесь,
+            # чтобы не перекрыть её ремонтными экшнами (repair mode),
+            # которые могут привести к бесконечному циклу.
+            if ctx.guard_intervention:
+                if trace:
+                    trace.set_result("guard_stop", Resolution.STOP)
+                return override
 
         # 1.5 НОВОЕ: Price question override (гарантирует ответ о цене)
         if (not override or not override.has_override) and policy_registry.evaluate("is_price_question", ctx, trace):
