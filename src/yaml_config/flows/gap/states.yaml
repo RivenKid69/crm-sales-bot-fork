@@ -19,7 +19,7 @@ states:
     parameters:
       next_phase_state: gap_future
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: explore_current
@@ -37,7 +37,7 @@ states:
     parameters:
       next_phase_state: gap_analysis
       prev_phase_state: gap_current  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: explore_future
@@ -56,7 +56,7 @@ states:
     parameters:
       next_phase_state: gap_solution
       prev_phase_state: gap_future  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: highlight_gap

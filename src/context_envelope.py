@@ -221,6 +221,9 @@ class ContextEnvelope:
     # === Secondary Intents (from RefinementPipeline) ===
     secondary_intents: List[str] = field(default_factory=list)
 
+    # === Current Intent (current turn, not previous) ===
+    current_intent: Optional[str] = None
+
     # === Meta ===
     total_turns: int = 0
     window_size: int = 0
@@ -498,6 +501,9 @@ class ContextEnvelopeBuilder:
         # Добавляем last_action/intent
         envelope.last_action = self.last_action
         envelope.last_intent = self.last_intent
+
+        # Bridge current_intent to envelope (fixes 1-turn lag for policy)
+        envelope.current_intent = self.current_intent
 
         # Вычисляем reason codes
         self._compute_reason_codes(envelope)

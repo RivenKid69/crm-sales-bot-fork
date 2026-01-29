@@ -249,12 +249,13 @@ disambiguation:
     max_options: 3             # Максимум вариантов (+ "Другое")
     min_option_confidence: 0.25  # Минимальная confidence для включения в опции
 
-  # Интенты которые bypass disambiguation (критические действия)
-  # Для них не показываем уточнение даже при низкой уверенности
-  bypass_intents:
-    - rejection         # Жёсткий отказ - сразу обрабатываем
-    - contact_provided  # Дали контакт - сразу фиксируем
-    - demo_request      # Хотят демо - сразу записываем
+  # DEPRECATED: bypass intents are now derived from intent_taxonomy
+  # (entries with bypass_disambiguation: true)
+  # Use IntentTaxonomyRegistry.get_bypass_intents() at runtime.
+  # bypass_intents:
+  #   - rejection
+  #   - contact_provided
+  #   - demo_request
 
   # Интенты которые исключаются из опций disambiguation
   # Не показываем их пользователю как варианты
@@ -860,6 +861,7 @@ intent_taxonomy:
     semantic_domain: pricing
     fallback_action: answer_with_pricing
     priority: high
+    bypass_disambiguation: true
 
   pricing_details:
     category: question
@@ -867,6 +869,7 @@ intent_taxonomy:
     semantic_domain: pricing
     fallback_action: answer_with_pricing
     priority: high
+    bypass_disambiguation: true
 
   cost_inquiry:
     category: question
@@ -874,6 +877,7 @@ intent_taxonomy:
     semantic_domain: pricing
     fallback_action: answer_with_pricing
     priority: high
+    bypass_disambiguation: true
 
   discount_request:
     category: question
@@ -913,6 +917,7 @@ intent_taxonomy:
     fallback_action: collect_contact
     fallback_transition: success
     priority: critical
+    bypass_disambiguation: true
 
   demo_request:
     category: positive
@@ -921,6 +926,7 @@ intent_taxonomy:
     fallback_action: schedule_demo
     fallback_transition: close
     priority: critical
+    bypass_disambiguation: true
 
   callback_request:
     category: positive
@@ -929,6 +935,7 @@ intent_taxonomy:
     fallback_action: schedule_callback
     fallback_transition: close
     priority: critical
+    bypass_disambiguation: true
 
   request_references:
     category: purchase_stage
@@ -1285,6 +1292,7 @@ intent_taxonomy:
     fallback_action: acknowledge_rejection
     fallback_transition: soft_close
     priority: critical
+    bypass_disambiguation: true
 
   farewell:
     category: exit
@@ -1435,6 +1443,7 @@ intent_taxonomy:
     fallback_action: guide_to_close
     fallback_transition: close
     priority: critical
+    bypass_disambiguation: true
 
   budget_approved:
     category: positive

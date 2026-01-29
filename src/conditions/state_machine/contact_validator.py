@@ -79,9 +79,17 @@ class ContactValidator:
 
     # Valid Russian mobile prefixes (900-999 range)
     VALID_MOBILE_PREFIXES = set(range(900, 1000))
+    # Valid Kazakhstan mobile prefixes
+    VALID_KZ_MOBILE_PREFIXES = set(range(700, 710)) | {747, 771} | set(range(775, 779))
 
-    # Additional valid city codes (Moscow, SPb, etc.)
+    # Russian city codes (Moscow, SPb, etc.)
     VALID_CITY_CODES = {495, 499, 812, 343, 383, 861}
+    # Kazakhstan city codes
+    VALID_KZ_CITY_CODES = {727, 717}
+
+    # Combined defaults (used when no config provided)
+    _DEFAULT_PREFIXES = VALID_MOBILE_PREFIXES | VALID_KZ_MOBILE_PREFIXES
+    _DEFAULT_CITY_CODES = VALID_CITY_CODES | VALID_KZ_CITY_CODES
 
     # Minimum name length to be considered valid
     MIN_NAME_LENGTH = 2
@@ -95,6 +103,30 @@ class ContactValidator:
         re.compile(r'^0987654321$'),  # Reverse sequential
         re.compile(r'^0000000000$'),  # All zeros
     ]
+
+    @classmethod
+    def _build_valid_prefixes(cls, config: dict) -> set:
+        """Build valid prefix set from config (SSoT)."""
+        prefixes = set()
+        ru_range = config.get("ru_mobile_range", [900, 999])
+        prefixes |= set(range(ru_range[0], ru_range[1] + 1))
+        for r in config.get("kz_mobile_ranges", []):
+            prefixes |= set(range(r[0], r[1] + 1))
+        prefixes |= set(config.get("kz_mobile_explicit", []))
+        return prefixes
+
+    @classmethod
+    def _build_city_codes(cls, config: dict) -> set:
+        """Build city codes set from config (SSoT)."""
+        return set(config.get("city_codes", [495, 499, 812]))
+
+    def __init__(self, phone_config: dict = None):
+        if phone_config:
+            self.valid_prefixes = self._build_valid_prefixes(phone_config)
+            self.valid_city_codes = self._build_city_codes(phone_config)
+        else:
+            self.valid_prefixes = self._DEFAULT_PREFIXES
+            self.valid_city_codes = self._DEFAULT_CITY_CODES
 
     def validate_email(self, value: str) -> ValidationResult:
         """
@@ -190,7 +222,7 @@ class ContactValidator:
                 prefix = int(groups[0])
 
                 # Validate prefix
-                if prefix not in self.VALID_MOBILE_PREFIXES and prefix not in self.VALID_CITY_CODES:
+                if prefix not in self.valid_prefixes and prefix not in self.valid_city_codes:
                     return ValidationResult(
                         is_valid=False,
                         contact_type=ContactType.PHONE,

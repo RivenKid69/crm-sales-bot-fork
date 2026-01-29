@@ -374,7 +374,7 @@ def extract_phases_from_dialogue(
     Returns:
         Список достигнутых фаз
     """
-    phases = set()
+    phases = dict()
 
     # Build phase mapping from flow_config, direct mapping, or legacy SPIN
     if flow_config is not None:
@@ -412,7 +412,7 @@ def extract_phases_from_dialogue(
         if visited_states:
             for visited_state in visited_states:
                 if visited_state in mapping:
-                    phases.add(mapping[visited_state])
+                    phases[mapping[visited_state]] = True
             # If we have visited_states, we can skip other sources as they're redundant
             continue
 
@@ -420,7 +420,7 @@ def extract_phases_from_dialogue(
         # Only reached if visited_states is not available (legacy data)
         state = turn.get("state", "")
         if state in mapping:
-            phases.add(mapping[state])
+            phases[mapping[state]] = True
 
         # 3. FALLBACK: Check decision_trace for prev_state and next_state
         # This captures states that were visited but not recorded in "state" field
@@ -432,20 +432,20 @@ def extract_phases_from_dialogue(
             # Extract prev_state (state bot was IN when processing message)
             prev_state = state_machine.get("prev_state", "")
             if prev_state and prev_state in mapping:
-                phases.add(mapping[prev_state])
+                phases[mapping[prev_state]] = True
 
             # Extract next_state (state bot transitioned TO)
             next_state = state_machine.get("next_state", "")
             if next_state and next_state in mapping:
-                phases.add(mapping[next_state])
+                phases[mapping[next_state]] = True
 
             # Also use explicit phase fields if available (more reliable)
             prev_phase = state_machine.get("prev_phase")
             if prev_phase:
-                phases.add(prev_phase)
+                phases[prev_phase] = True
 
             next_phase = state_machine.get("next_phase")
             if next_phase:
-                phases.add(next_phase)
+                phases[next_phase] = True
 
-    return list(phases)
+    return list(phases.keys())

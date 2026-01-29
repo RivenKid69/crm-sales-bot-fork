@@ -121,6 +121,18 @@ class LoadedConfig:
         return self.constants.get("response_directives", {})
 
     @property
+    def taxonomy_bypass_intents(self) -> List[str]:
+        """Compute bypass intents from taxonomy (SSoT).
+
+        Returns intents with bypass_disambiguation: true in intent_taxonomy.
+        """
+        taxonomy = self.constants.get("intent_taxonomy", {})
+        return [
+            intent for intent, meta in taxonomy.items()
+            if isinstance(meta, dict) and meta.get("bypass_disambiguation", False)
+        ]
+
+    @property
     def taxonomy_config(self) -> Dict[str, Any]:
         """Get intent taxonomy configuration for intelligent fallback.
 

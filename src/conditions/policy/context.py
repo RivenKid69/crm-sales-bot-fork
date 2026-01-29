@@ -79,6 +79,7 @@ class PolicyContext:
     current_phase: Optional[str] = None
     last_action: Optional[str] = None
     last_intent: Optional[str] = None
+    current_intent: Optional[str] = None
     current_action: Optional[str] = None
 
     # Legacy alias for spin_phase is added via property after dataclass fields
@@ -160,6 +161,7 @@ class PolicyContext:
             current_phase=getattr(envelope, 'current_phase', None) or getattr(envelope, 'spin_phase', None),
             last_action=envelope.last_action,
             last_intent=envelope.last_intent,
+            current_intent=getattr(envelope, 'current_intent', None),
             current_action=current_action,
 
             # Level 1 signals
@@ -210,6 +212,7 @@ class PolicyContext:
         current_phase: Optional[str] = None,
         last_action: Optional[str] = None,
         last_intent: Optional[str] = None,
+        current_intent: Optional[str] = None,
         current_action: Optional[str] = None,
         is_stuck: bool = False,
         has_oscillation: bool = False,
@@ -251,6 +254,7 @@ class PolicyContext:
             current_phase=current_phase,
             last_action=last_action,
             last_intent=last_intent,
+            current_intent=current_intent,
             current_action=current_action,
             is_stuck=is_stuck,
             has_oscillation=has_oscillation,
@@ -308,6 +312,7 @@ class PolicyContext:
             "spin_phase": self.spin_phase,
             "last_action": self.last_action,
             "last_intent": self.last_intent,
+            "current_intent": self.current_intent,
             "current_action": self.current_action,
             "is_stuck": self.is_stuck,
             "has_oscillation": self.has_oscillation,

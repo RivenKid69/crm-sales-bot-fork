@@ -295,7 +295,7 @@ states:
       question_integrations: presentation
       comparison: presentation
       consultation_request: close
-      info_provided: spin_situation
+      info_provided: "{{entry_state}}"
     rules:
       price_question:
         - when: can_handle_with_roi
@@ -380,7 +380,7 @@ states:
       question_integrations: spin_situation
       comparison: presentation
       consultation_request: close
-      info_provided: spin_situation
+      info_provided: "{{entry_state}}"
       situation_provided: spin_situation
     rules:
       price_question: answer_with_facts

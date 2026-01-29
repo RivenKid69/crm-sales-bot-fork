@@ -19,7 +19,7 @@ states:
     parameters:
       next_phase_state: sandler_contract
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       small_talk: build_rapport
@@ -41,7 +41,7 @@ states:
     parameters:
       next_phase_state: sandler_pain
       prev_phase_state: sandler_bonding  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: explain_process
@@ -60,7 +60,7 @@ states:
     parameters:
       next_phase_state: sandler_budget
       prev_phase_state: sandler_contract  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: probe_pain

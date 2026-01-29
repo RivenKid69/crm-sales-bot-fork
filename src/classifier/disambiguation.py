@@ -45,6 +45,20 @@ class DisambiguationAnalyzer:
         self.config = config or CLASSIFIER_CONFIG
         self.disambiguation_config = DISAMBIGUATION_CONFIG
 
+    def _get_bypass_intents(self) -> list:
+        """Get bypass intents from taxonomy (SSoT), fallback to config."""
+        try:
+            from src.config_loader import get_config
+            config = get_config()
+            bypass = config.taxonomy_bypass_intents
+            if bypass:
+                return bypass
+        except Exception:
+            pass
+        return self.disambiguation_config.get("bypass_disambiguation_intents", [
+            "rejection", "contact_provided", "demo_request"
+        ])
+
     def analyze(
         self,
         root_scores: Dict[str, int],
@@ -91,8 +105,8 @@ class DisambiguationAnalyzer:
                 merged_scores=merged
             )
 
-        # Шаг 5: Проверить bypass условия
-        bypass_intents = self.disambiguation_config["bypass_disambiguation_intents"]
+        # Шаг 5: Проверить bypass условия (taxonomy-driven SSoT)
+        bypass_intents = self._get_bypass_intents()
         if top_intent in bypass_intents:
             return DisambiguationResult(
                 needs_disambiguation=False,

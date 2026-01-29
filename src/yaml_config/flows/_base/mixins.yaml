@@ -12,7 +12,7 @@
 #         - price_handling
 #         - exit_intents
 #       parameters:
-#         default_price_action: deflect_and_continue
+#         default_price_action: answer_with_pricing
 # =============================================================================
 
 mixins:
@@ -972,7 +972,7 @@ mixins:
 # =================================================================
 # Эти значения используются если параметр не указан в состоянии
 defaults:
-  default_price_action: deflect_and_continue
+  default_price_action: answer_with_pricing
   default_unclear_action: continue_current_goal
   next_phase_state: presentation  # По умолчанию: переход к презентации
   prev_phase_state: greeting  # По умолчанию: возврат на greeting

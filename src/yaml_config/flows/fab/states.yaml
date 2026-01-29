@@ -16,7 +16,7 @@ states:
     parameters:
       prev_phase_state: greeting
       next_phase_state: fab_advantages
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       question_features: explain_feature
@@ -35,7 +35,7 @@ states:
     parameters:
       prev_phase_state: fab_features
       next_phase_state: fab_benefits
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       comparison: highlight_advantage

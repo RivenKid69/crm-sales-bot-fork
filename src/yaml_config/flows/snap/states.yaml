@@ -16,7 +16,7 @@ states:
     parameters:
       prev_phase_state: greeting
       next_phase_state: snap_value
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: keep_it_simple
@@ -36,7 +36,7 @@ states:
     parameters:
       prev_phase_state: snap_simple
       next_phase_state: snap_align
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: clarify_value
@@ -54,7 +54,7 @@ states:
     parameters:
       prev_phase_state: snap_value
       next_phase_state: snap_priority
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: explore_priorities

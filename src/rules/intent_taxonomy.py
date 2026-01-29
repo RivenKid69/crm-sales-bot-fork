@@ -41,6 +41,7 @@ class IntentTaxonomy:
     fallback_action: str
     fallback_transition: Optional[str] = None
     priority: str = "medium"
+    bypass_disambiguation: bool = False
 
 
 class IntentTaxonomyRegistry:
@@ -90,7 +91,8 @@ class IntentTaxonomyRegistry:
                     semantic_domain=meta["semantic_domain"],
                     fallback_action=meta["fallback_action"],
                     fallback_transition=meta.get("fallback_transition"),
-                    priority=meta.get("priority", "medium")
+                    priority=meta.get("priority", "medium"),
+                    bypass_disambiguation=meta.get("bypass_disambiguation", False),
                 )
             except KeyError as e:
                 logger.error(
@@ -242,6 +244,20 @@ class IntentTaxonomyRegistry:
         return [
             intent for intent, tax in self.taxonomy.items()
             if tax.priority == "critical"
+        ]
+
+    def get_bypass_intents(self) -> List[str]:
+        """Return all intents that should bypass disambiguation.
+
+        SSoT: taxonomy entries with bypass_disambiguation=true are the
+        authoritative source. No separate static list needed.
+
+        Returns:
+            List of intent names that bypass disambiguation
+        """
+        return [
+            intent for intent, tax in self.taxonomy.items()
+            if tax.bypass_disambiguation
         ]
 
     def validate_completeness(self, all_intents: List[str]) -> Dict[str, List[str]]:

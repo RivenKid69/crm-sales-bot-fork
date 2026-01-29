@@ -18,7 +18,7 @@ states:
     parameters:
       prev_phase_state: greeting
       next_phase_state: social_value
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: build_credibility
@@ -38,7 +38,7 @@ states:
     parameters:
       prev_phase_state: social_trust
       next_phase_state: social_engage
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: provide_value
@@ -56,7 +56,7 @@ states:
     parameters:
       prev_phase_state: social_value
       next_phase_state: social_convert
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: encourage_engagement

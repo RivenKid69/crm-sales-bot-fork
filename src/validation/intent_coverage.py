@@ -495,3 +495,15 @@ def validate_intent_coverage(config: "LoadedConfig", flow: "FlowConfig" = None) 
             "low": len(by_severity["low"]),
         }
     }
+
+
+def validate_template_dedup_coverage(templates: dict) -> List[str]:
+    """Ensure all templates with optional do_not_ask actually use {do_not_ask} in body."""
+    issues = []
+    for name, tmpl in templates.items():
+        optional = tmpl.get("parameters", {}).get("optional", [])
+        if "do_not_ask" in optional:
+            body = tmpl.get("template", "")
+            if "{do_not_ask}" not in body:
+                issues.append(f"Template '{name}' declares do_not_ask but doesn't use it")
+    return issues

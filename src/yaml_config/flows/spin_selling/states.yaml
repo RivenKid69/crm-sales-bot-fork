@@ -22,7 +22,7 @@ states:
     parameters:
       next_phase_state: presentation  # Default: переход к презентации
       prev_phase_state: greeting      # Default: возврат на greeting
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     transitions:
       # Общие переходы для всех SPIN фаз

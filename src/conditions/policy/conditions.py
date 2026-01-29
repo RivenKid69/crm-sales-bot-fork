@@ -636,10 +636,10 @@ def is_price_question(ctx: PolicyContext) -> bool:
     """
     from src.yaml_config.constants import INTENT_CATEGORIES
     price_intents = set(INTENT_CATEGORIES.get("price_related", []))
-    # Check primary intent
-    if ctx.last_intent in price_intents:
+    # Check CURRENT turn's primary intent (not last_intent which is previous turn)
+    if ctx.current_intent and ctx.current_intent in price_intents:
         return True
-    # Check secondary intents
+    # Check secondary intents (already from current turn via classification_result)
     if ctx.secondary_intents:
         return bool(price_intents & set(ctx.secondary_intents))
     return False

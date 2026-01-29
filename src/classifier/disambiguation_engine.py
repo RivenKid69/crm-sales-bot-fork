@@ -176,12 +176,8 @@ class DisambiguationConfig:
     max_options: int = 3
     min_option_confidence: float = 0.25
 
-    # Bypass conditions
-    bypass_intents: List[str] = field(default_factory=lambda: [
-        "rejection",
-        "contact_provided",
-        "demo_request",
-    ])
+    # Bypass conditions (populated from taxonomy at runtime)
+    bypass_intents: List[str] = field(default_factory=list)
 
     excluded_intents: List[str] = field(default_factory=lambda: [
         "unclear",
@@ -190,6 +186,23 @@ class DisambiguationConfig:
 
     # Cooldown
     cooldown_turns: int = 3
+
+    @staticmethod
+    def _get_taxonomy_bypass_intents() -> List[str]:
+        """Get bypass intents from taxonomy (SSoT).
+
+        Falls back to hardcoded list if taxonomy is unavailable.
+        """
+        try:
+            from src.config_loader import get_config
+            config = get_config()
+            bypass = config.taxonomy_bypass_intents
+            if bypass:
+                return bypass
+        except Exception:
+            pass
+        # Fallback for when config is not yet loaded
+        return ["rejection", "contact_provided", "demo_request"]
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "DisambiguationConfig":
@@ -210,9 +223,7 @@ class DisambiguationConfig:
             gap_threshold=config.get("gap_threshold", config.get("max_score_gap", 0.20)),
             max_options=config.get("max_options", 3),
             min_option_confidence=config.get("min_option_confidence", 0.25),
-            bypass_intents=config.get("bypass_disambiguation_intents", [
-                "rejection", "contact_provided", "demo_request"
-            ]),
+            bypass_intents=config.get("bypass_intents_override", []) or cls._get_taxonomy_bypass_intents(),
             excluded_intents=config.get("excluded_intents", ["unclear", "small_talk"]),
             cooldown_turns=config.get("cooldown_turns", 3),
         )

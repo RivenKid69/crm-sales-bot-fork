@@ -24,7 +24,7 @@ states:
     parameters:
       next_phase_state: aida_interest
       prev_phase_state: greeting  # FIX: First phase goes back to greeting
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       # Flow-specific actions
@@ -48,7 +48,7 @@ states:
     parameters:
       next_phase_state: aida_desire
       prev_phase_state: aida_attention  # FIX: Go back to previous phase
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: develop_interest

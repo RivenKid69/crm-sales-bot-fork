@@ -18,7 +18,7 @@ states:
     parameters:
       prev_phase_state: greeting
       next_phase_state: rel_rapport
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       greeting: warm_welcome
@@ -39,7 +39,7 @@ states:
     parameters:
       prev_phase_state: rel_connect
       next_phase_state: rel_nurture
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       small_talk: build_rapport
@@ -57,7 +57,7 @@ states:
     parameters:
       prev_phase_state: rel_rapport
       next_phase_state: rel_partnership
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: provide_value

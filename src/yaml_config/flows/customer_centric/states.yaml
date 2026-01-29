@@ -18,7 +18,7 @@ states:
     parameters:
       prev_phase_state: greeting
       next_phase_state: cc_understand
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: encourage_sharing
@@ -36,7 +36,7 @@ states:
     parameters:
       prev_phase_state: cc_listen
       next_phase_state: cc_empower
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: explore_deeper
@@ -53,7 +53,7 @@ states:
     parameters:
       prev_phase_state: cc_understand
       next_phase_state: cc_support
-      default_price_action: deflect_and_continue
+      default_price_action: answer_with_pricing
       default_unclear_action: continue_current_goal
     rules:
       unclear: present_choices
