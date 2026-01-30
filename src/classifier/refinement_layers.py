@@ -1238,5 +1238,11 @@ try:
 except ImportError as e:
     logger.warning(f"Could not import secondary_intent_detection: {e}")
 
+# Import disambiguation_resolution_layer to register the layer
+try:
+    from src.classifier import disambiguation_resolution_layer  # noqa: F401
+except ImportError as e:
+    logger.warning(f"Could not import disambiguation_resolution_layer: {e}")
+
 # Verify on import (DEBUG level)
 logger.debug(f"Refinement layers registered: {verify_layers_registered()}")

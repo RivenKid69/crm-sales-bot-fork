@@ -706,21 +706,14 @@ class TestDisambiguationUICustomInputIntegration:
             {"intent": "question_features", "label": "Узнать о функциях"}
         ]
 
-        # Сначала инициируем disambiguation
-        classification = {
-            "intent": "disambiguation_needed",
-            "disambiguation_options": options,
-            "disambiguation_question": "Уточните:",
-            "extracted_data": {},
-            "original_scores": {"price_question": 0.5, "question_features": 0.48},
-            "confidence": 0.5,
-            "original_intent": "price_question"
-        }
-        bot._initiate_disambiguation(
-            classification=classification,
-            user_message="тест",
-            context={},
-            tone_info={"frustration_level": 0}
+        # Инициируем disambiguation через state_machine (как делает Blackboard pipeline)
+        bot.state_machine.enter_disambiguation(
+            options=options,
+            extracted_data={},
+        )
+        bot.disambiguation_metrics.record_disambiguation(
+            options=["price_question", "question_features"],
+            scores={"price_question": 0.5, "question_features": 0.48},
         )
 
         # Выбираем свой вариант
@@ -1362,22 +1355,14 @@ class TestDisambiguationIntegrationMetrics:
             {"intent": "question_features", "label": "Узнать о функциях"}
         ]
 
-        # Используем _initiate_disambiguation напрямую
-        classification = {
-            "intent": "disambiguation_needed",
-            "disambiguation_options": options,
-            "disambiguation_question": "Уточните:",
-            "extracted_data": {},
-            "original_scores": {"price_question": 0.5, "question_features": 0.48},
-            "confidence": 0.5,
-            "original_intent": "price_question"
-        }
-
-        bot._initiate_disambiguation(
-            classification=classification,
-            user_message="тест",
-            context={},
-            tone_info={"frustration_level": 0}
+        # Инициируем disambiguation через state_machine (как делает Blackboard pipeline)
+        bot.state_machine.enter_disambiguation(
+            options=options,
+            extracted_data={},
+        )
+        bot.disambiguation_metrics.record_disambiguation(
+            options=["price_question", "question_features"],
+            scores={"price_question": 0.5, "question_features": 0.48},
         )
 
         assert bot.disambiguation_metrics.total_disambiguations == 1
@@ -1484,22 +1469,14 @@ class TestDisambiguationEndToEnd:
             {"intent": "question_features", "label": "Узнать о функциях"}
         ]
 
-        # Симулируем disambiguation
-        classification = {
-            "intent": "disambiguation_needed",
-            "disambiguation_options": options,
-            "disambiguation_question": "Уточните:",
-            "extracted_data": {},
-            "original_scores": {"price_question": 0.5, "question_features": 0.48},
-            "confidence": 0.5,
-            "original_intent": "price_question"
-        }
-
-        bot._initiate_disambiguation(
-            classification=classification,
-            user_message="тест",
-            context={},
-            tone_info={"frustration_level": 0}
+        # Инициируем disambiguation через state_machine (как делает Blackboard pipeline)
+        bot.state_machine.enter_disambiguation(
+            options=options,
+            extracted_data={},
+        )
+        bot.disambiguation_metrics.record_disambiguation(
+            options=["price_question", "question_features"],
+            scores={"price_question": 0.5, "question_features": 0.48},
         )
 
         # Разрешаем через process

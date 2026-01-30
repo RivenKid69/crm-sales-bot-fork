@@ -163,6 +163,10 @@ class ResolvedDecision:
     circular_flow: Dict[str, Any] = field(default_factory=dict)
     objection_flow: Dict[str, Any] = field(default_factory=dict)
 
+    # Disambiguation metadata (filled by Orchestrator for ask_clarification path)
+    disambiguation_options: List[Dict[str, Any]] = field(default_factory=list)
+    disambiguation_question: str = ""
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization/logging."""
         return {
@@ -218,6 +222,11 @@ class ResolvedDecision:
         # (decision_trace.record_state_machine reads sm_result.get("trace"))
         if self.resolution_trace:
             result["trace"] = self.resolution_trace
+
+        # Disambiguation metadata (for bot.py ask_clarification response path)
+        if self.disambiguation_options:
+            result["disambiguation_options"] = self.disambiguation_options
+            result["disambiguation_question"] = self.disambiguation_question
 
         return result
 

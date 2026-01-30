@@ -809,6 +809,12 @@ class DialogueOrchestrator:
         decision.circular_flow = self._state_machine.circular_flow.get_stats()
         decision.objection_flow = self._get_objection_stats()
 
+        # Disambiguation metadata (for bot.py ask_clarification response path)
+        if decision.action == "ask_clarification":
+            winning_meta = decision.resolution_trace.get("winning_action_metadata", {})
+            decision.disambiguation_options = winning_meta.get("disambiguation_options", [])
+            decision.disambiguation_question = winning_meta.get("disambiguation_question", "")
+
     def _get_objection_stats(self) -> Dict[str, Any]:
         """
         Get objection statistics from IntentTracker.

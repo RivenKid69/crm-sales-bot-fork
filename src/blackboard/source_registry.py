@@ -274,6 +274,7 @@ def register_builtin_sources() -> None:
     """
     from .sources.price_question import PriceQuestionSource
     from .sources.fact_question import FactQuestionSource  # FIX: Lost Question Fix
+    from .sources.disambiguation import DisambiguationSource
     from .sources.data_collector import DataCollectorSource
     from .sources.objection_guard import ObjectionGuardSource
     from .sources.objection_return import ObjectionReturnSource
@@ -293,6 +294,17 @@ def register_builtin_sources() -> None:
         priority_order=5,
         config_key="go_back_guard",
         description="Enforces go_back limits via CircularFlowManager"
+    )
+
+    # DisambiguationSource: Handles disambiguation as blocking Blackboard proposal
+    # After GoBackGuardSource (5), before PriceQuestionSource (10)
+    # combinable=False ensures transitions are blocked while asking clarification
+    SourceRegistry.register(
+        DisambiguationSource,
+        name="DisambiguationSource",
+        priority_order=8,
+        config_key="disambiguation",
+        description="Handles disambiguation as blocking Blackboard proposal"
     )
 
     SourceRegistry.register(

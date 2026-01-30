@@ -46,7 +46,7 @@ from src.response_variations import variations
 from src.context_window import ContextWindow
 
 # Robust Classification: ConfidenceRouter for graceful degradation
-from src.classifier.confidence_router import ConfidenceRouter, RouterDecision
+from src.classifier.confidence_router import ConfidenceRouter
 
 # Phase 5: Context-aware policy overlays
 from src.dialogue_policy import DialoguePolicy
@@ -337,6 +337,10 @@ class SalesBot:
         # Добавляем флаг disambiguation если активен
         if self.state_machine.in_disambiguation:
             context["in_disambiguation"] = True
+            context["disambiguation_options"] = (
+                self.state_machine.disambiguation_context.get("options", [])
+                if self.state_machine.disambiguation_context else []
+            )
 
         # =================================================================
         # РАСШИРЕННЫЙ КОНТЕКСТ из ContextWindow (Уровень 1)
@@ -723,16 +727,11 @@ class SalesBot:
         if flags.metrics_tracking:
             self.metrics.start_turn_timer()
 
-        # =================================================================
-        # Phase 4: Handle disambiguation response if in disambiguation mode
-        # =================================================================
-        if self.state_machine.in_disambiguation:
-            return self._handle_disambiguation_response(user_message)
-
         # Get current context
         current_context = self._get_classification_context()
         current_state = self.state_machine.state
         collected_data = self.state_machine.collected_data
+        was_in_disambiguation = self.state_machine.in_disambiguation
 
         # FIX: Track all visited states during this turn for accurate phase coverage
         # This is critical for cases like fallback skip where bot transitions through
@@ -763,6 +762,24 @@ class SalesBot:
                 result=classification,
                 all_scores=classification.get("all_scores", {intent: classification.get("confidence", 0.0)}),
                 elapsed_ms=classification_elapsed,
+            )
+
+        # Exit disambiguation: if we were in disambiguation mode at the start of this
+        # turn, the user's message is a response to the disambiguation question.
+        # DisambiguationResolutionLayer already resolved options (Path B → REFINED).
+        # For Path A (critical intent) and Path C (custom input), the LLM classification
+        # is the answer. In all cases, exit disambiguation now.
+        if was_in_disambiguation:
+            resolved_intent = classification.get("intent", "custom_input")
+            attempt = (
+                self.state_machine.disambiguation_context.get("attempt", 1)
+                if self.state_machine.disambiguation_context else 1
+            )
+            self.state_machine.exit_disambiguation()
+            self.disambiguation_metrics.record_resolution(
+                resolved_intent=resolved_intent,
+                attempt=attempt,
+                success=True,
             )
 
         # Phase 1: Check guard for intervention (now uses current intent)
@@ -876,96 +893,13 @@ class SalesBot:
             if competitor_name:
                 self.state_machine.collected_data["competitor_name"] = competitor_name
 
-        # =================================================================
-        # Robust Classification: ConfidenceRouter for graceful degradation
-        # NOTE: When unified_disambiguation is enabled, disambiguation logic
-        # is handled by DisambiguationDecisionEngine in UnifiedClassifier.
-        # ConfidenceRouter is only used as fallback for legacy compatibility.
-        # =================================================================
-        if (flags.confidence_router
-            and not flags.unified_disambiguation
-            and intent != "disambiguation_needed"):
-            # Добавляем оригинальное сообщение для логирования
-            classification["_original_message"] = user_message
-
-            router_result = self.confidence_router.route(classification)
-
-            logger.debug(
-                "ConfidenceRouter decision (legacy mode)",
-                decision=router_result.decision.value,
-                intent=intent,
-                confidence=classification.get("confidence", 0.0),
-                gap=router_result.gap,
-            )
-
-            # Обработка решений роутера
-            if router_result.decision == RouterDecision.CONFIRM:
-                # Почти уверены - показываем один вариант с подтверждением
-                return self._initiate_disambiguation(
-                    classification={
-                        **classification,
-                        "disambiguation_options": [
-                            {"intent": intent, "label": router_result.confirm_question}
-                        ],
-                        "disambiguation_question": router_result.confirm_question,
-                        "original_intent": intent,
-                    },
-                    user_message=user_message,
-                    context=current_context,
-                    tone_info=tone_info
-                )
-
-            elif router_result.decision == RouterDecision.DISAMBIGUATE:
-                # Не уверены - показываем кнопки с вариантами
-                options = [
-                    {"intent": opt.intent, "label": opt.label, "confidence": opt.confidence}
-                    for opt in router_result.options
-                ]
-                return self._initiate_disambiguation(
-                    classification={
-                        **classification,
-                        "disambiguation_options": options,
-                        "disambiguation_question": "Уточните, пожалуйста:",
-                        "original_intent": intent,
-                    },
-                    user_message=user_message,
-                    context=current_context,
-                    tone_info=tone_info
-                )
-
-            elif router_result.decision == RouterDecision.FALLBACK:
-                # Совсем не поняли - human handoff
-                logger.warning(
-                    "ConfidenceRouter FALLBACK - low confidence",
-                    intent=intent,
-                    confidence=classification.get("confidence", 0.0),
-                )
-                # Используем clarify_and_continue с предложением связаться с человеком
-                intent = "unclear"
-                classification["intent"] = intent
-                classification["confidence"] = 0.3
-
-            # RouterDecision.EXECUTE - продолжаем как обычно
-
-        # =================================================================
-        # Phase 4: Handle disambiguation_needed intent
-        # This handles both:
-        # 1. Legacy HybridClassifier disambiguation (intent_disambiguation flag)
-        # 2. New unified disambiguation (unified_disambiguation flag)
-        # =================================================================
+        # disambiguation_needed intent: fallback to original intent if no options
+        # (with options, DisambiguationSource handles it via Blackboard)
         if intent == "disambiguation_needed":
             options = classification.get("disambiguation_options", [])
             if not options:
-                # Fallback to original intent if no options
                 intent = classification.get("original_intent", "unclear")
                 classification["intent"] = intent
-            else:
-                return self._initiate_disambiguation(
-                    classification=classification,
-                    user_message=user_message,
-                    context=current_context,
-                    tone_info=tone_info
-                )
 
         # Phase 3: Check for objection
         objection_info = self._check_objection(user_message, collected_data)
@@ -1202,6 +1136,36 @@ class SalesBot:
                 final_response=response,
                 cta_added=False,
                 skip_reason="fallback_path"
+            )
+        elif action == "ask_clarification":
+            # Disambiguation path — format question via DisambiguationUI
+            disambiguation_options = sm_result.get("disambiguation_options", [])
+            disambiguation_question = sm_result.get("disambiguation_question", "")
+            extracted = classification.get("extracted_data", {})
+
+            response = self.disambiguation_ui.format_question(
+                question=disambiguation_question,
+                options=disambiguation_options,
+                context={**current_context, "frustration_level": frustration_level},
+            )
+
+            self.state_machine.enter_disambiguation(
+                options=disambiguation_options,
+                extracted_data=extracted,
+            )
+
+            self.disambiguation_metrics.record_disambiguation(
+                options=[o["intent"] for o in disambiguation_options],
+                scores=classification.get("original_scores", {}),
+            )
+
+            # CTA not applicable for disambiguation
+            cta_result = CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="disambiguation_path",
             )
         else:
             # 3. Generate response (normal path)
@@ -1448,550 +1412,7 @@ class SalesBot:
         """Текущий номер хода."""
         return len(self.history)
 
-    # =========================================================================
-    # Phase 4: Disambiguation Methods
-    # =========================================================================
 
-    def _initiate_disambiguation(
-        self,
-        classification: Dict,
-        user_message: str,
-        context: Dict,
-        tone_info: Dict
-    ) -> Dict:
-        """
-        Инициировать режим disambiguation.
-
-        Args:
-            classification: Результат классификации с disambiguation_options
-            user_message: Исходное сообщение пользователя
-            context: Текущий контекст
-            tone_info: Информация о тоне
-
-        Returns:
-            Dict с ответом disambiguation
-        """
-        options = classification["disambiguation_options"]
-        question = classification.get("disambiguation_question", "")
-        extracted_data = classification.get("extracted_data", {})
-
-        # Входим в режим disambiguation
-        self.state_machine.enter_disambiguation(
-            options=options,
-            extracted_data=extracted_data
-        )
-
-        # Форматируем вопрос пользователю
-        response = self.disambiguation_ui.format_question(
-            question=question,
-            options=options,
-            context={
-                **context,
-                "frustration_level": tone_info.get("frustration_level", 0)
-            }
-        )
-
-        # Сохраняем в историю
-        self.history.append({
-            "user": user_message,
-            "bot": response,
-            "disambiguation": True,
-        })
-
-        # Записываем метрики
-        self.disambiguation_metrics.record_disambiguation(
-            options=[o["intent"] for o in options],
-            scores=classification.get("original_scores", {})
-        )
-
-        # Логируем
-        logger.info(
-            "Disambiguation triggered",
-            options=[o["intent"] for o in options],
-            top_confidence=classification.get("confidence"),
-            original_intent=classification.get("original_intent")
-        )
-
-        return {
-            "response": response,
-            "intent": "disambiguation_needed",
-            "action": "ask_clarification",
-            "state": self.state_machine.state,
-            "is_final": False,
-            "disambiguation_options": options,
-            "visited_states": [self.state_machine.state],
-            "initial_state": self.state_machine.state,
-        }
-
-    def _handle_disambiguation_response(self, user_message: str) -> Dict:
-        """
-        Обработать ответ пользователя в режиме disambiguation.
-
-        Args:
-            user_message: Ответ пользователя
-
-        Returns:
-            Dict с результатом обработки
-        """
-        context = self.state_machine.disambiguation_context
-        if not context:
-            # Guard: если контекста нет, выходим из disambiguation
-            self.state_machine.exit_disambiguation()
-            logger.warning("Disambiguation context is None, exiting")
-            return self._continue_with_classification(
-                classification={
-                    "intent": "unclear",
-                    "confidence": 0.3,
-                    "extracted_data": {},
-                    "method": "disambiguation_error"
-                },
-                user_message=user_message  # Передаём сообщение пользователя
-            )
-
-        options = context["options"]
-        extracted_data = context.get("extracted_data", {})
-        attempt = context.get("attempt", 1)
-
-        # Сначала проверяем критические интенты (контакт, отказ, демо)
-        # Они имеют приоритет над disambiguation
-        current_context = self._get_classification_context()
-        current_context["in_disambiguation"] = True
-
-        quick_check = self.classifier.classify(user_message, current_context)
-
-        if quick_check["intent"] in ["contact_provided", "rejection", "demo_request"]:
-            # Критический интент - выходим из disambiguation и обрабатываем
-            self.state_machine.exit_disambiguation()
-            merged_extracted = {**extracted_data, **quick_check.get("extracted_data", {})}
-            quick_check["extracted_data"] = merged_extracted
-
-            logger.info(
-                "Disambiguation interrupted by critical intent",
-                intent=quick_check["intent"]
-            )
-
-            return self._continue_with_classification(
-                classification=quick_check,
-                user_message=user_message
-            )
-
-        # Пробуем распознать ответ на disambiguation
-        resolved_intent = self.disambiguation_ui.parse_answer(
-            answer=user_message,
-            options=options
-        )
-
-        # Проверяем, выбрал ли пользователь "свой вариант" или написал что-то нераспознанное
-        from disambiguation_ui import DisambiguationUI
-        is_custom_input = (
-            resolved_intent == DisambiguationUI.CUSTOM_INPUT_MARKER
-            or resolved_intent is None
-        )
-
-        if is_custom_input:
-            # Пользователь ввёл свой вариант - классифицируем его сообщение напрямую
-            self.state_machine.exit_disambiguation()
-
-            self.disambiguation_metrics.record_resolution(
-                resolved_intent="custom_input",
-                attempt=attempt,
-                success=True
-            )
-
-            logger.info(
-                "Disambiguation: user provided custom input, classifying",
-                attempt=attempt,
-                user_message=user_message
-            )
-
-            # Классифицируем сообщение пользователя напрямую
-            new_classification = self.classifier.classify(user_message, current_context)
-            merged_extracted = {**extracted_data, **new_classification.get("extracted_data", {})}
-            new_classification["extracted_data"] = merged_extracted
-
-            return self._continue_with_classification(
-                classification=new_classification,
-                user_message=user_message
-            )
-
-        # Успешно распознали ответ как одну из опций
-        current_state, intent = self.state_machine.resolve_disambiguation(resolved_intent)
-
-        self.disambiguation_metrics.record_resolution(
-            resolved_intent=resolved_intent,
-            attempt=attempt,
-            success=True
-        )
-
-        logger.info(
-            "Disambiguation resolved",
-            resolved_intent=resolved_intent,
-            attempt=attempt
-        )
-
-        return self._continue_with_classification(
-            classification={
-                "intent": resolved_intent,
-                "confidence": 0.9,
-                "extracted_data": extracted_data,
-                "method": "disambiguation_resolved"
-            },
-            user_message=user_message
-        )
-
-    def _continue_with_classification(
-        self,
-        classification: Dict,
-        user_message: str = ""
-    ) -> Dict:
-        """
-        Продолжить обработку с заданной классификацией.
-
-        Включает все фазы защиты:
-        - Phase 1: Guard check
-        - Phase 2: Tone analysis
-        - Phase 3: Objection handling
-        - Phase 5: Policy overlay
-
-        Args:
-            classification: Результат классификации
-            user_message: Сообщение пользователя (для истории)
-
-        Returns:
-            Dict с результатом обработки
-        """
-        intent = classification["intent"]
-        extracted = classification.get("extracted_data", {})
-        confidence = classification.get("confidence", 0.5)
-
-        current_state = self.state_machine.state
-        collected_data = self.state_machine.collected_data
-        visited_states = [current_state]
-
-        # =================================================================
-        # Phase 2: Analyze tone (важно для frustration и guidance)
-        # =================================================================
-        tone_info = self._analyze_tone(user_message) if user_message else {
-            "tone_instruction": "",
-            "style_instruction": "",
-            "frustration_level": 0,
-            "should_apologize": False,
-            "should_offer_exit": False,
-        }
-        frustration_level = tone_info.get("frustration_level", 0)
-
-        # =================================================================
-        # Phase 1: Check guard for intervention
-        # =================================================================
-        guard_result = self._check_guard(
-            state=current_state,
-            message=user_message,
-            collected_data=collected_data,
-            frustration_level=frustration_level,
-            last_intent=intent  # FIX 1+6: Use current intent, not self.last_intent
-        ) if user_message else GuardResult(can_continue=True, intervention=None)
-        intervention = guard_result.intervention
-
-        fallback_used = False
-        fallback_tier = None
-        fallback_response = None  # FIX Defect 2: Track fallback response for advisory fallbacks
-
-        if intervention:
-            fallback_used = True
-            fallback_tier = intervention
-
-            fb_result = self._apply_fallback(
-                intervention=intervention,
-                state=current_state,
-                context={
-                    "collected_data": {**collected_data, **extracted},  # FIX 6: Merge extracted for skip validation
-                    "last_intent": intent,  # FIX 1+6: Use current intent
-                    "last_action": self.last_action,
-                    "frustration_level": frustration_level,
-                }
-            )
-
-            if fb_result.get("response") and fb_result.get("action") == "close":
-                self._record_turn_metrics(
-                    state=current_state,
-                    intent="fallback_close",
-                    tone=tone_info.get("tone"),
-                    fallback_used=True,
-                    fallback_tier=intervention
-                )
-
-                self.history.append({
-                    "user": user_message,
-                    "bot": fb_result["response"]
-                })
-
-                self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
-
-                return {
-                    "response": fb_result["response"],
-                    "intent": "fallback_close",
-                    "action": "soft_close",
-                    "state": "soft_close",
-                    "is_final": True,
-                    "fallback_used": True,
-                    "fallback_tier": intervention,
-                    "visited_states": [current_state, "soft_close"],
-                    "initial_state": current_state,
-                }
-
-            # FIX 6: Handle "skip" action - apply state transition in disambiguation path
-            elif fb_result.get("response") and fb_result.get("action") == "skip" and fb_result.get("next_state"):
-                skip_next_state = fb_result["next_state"]
-                self.state_machine.transition_to(
-                    next_state=skip_next_state,
-                    action="skip",
-                    source="fallback_skip",
-                )
-                logger.info(
-                    "Fallback skip applied in disambiguation path",
-                    from_state=current_state,
-                    to_state=skip_next_state,
-                    original_tier=intervention,
-                )
-                current_state = skip_next_state
-                if skip_next_state not in visited_states:
-                    visited_states.append(skip_next_state)
-                # Reset fallback to generate normal response
-                fallback_used = False
-                fallback_tier = None
-
-            # FIX Defect 2: Tier 1/2 advisory fallback — capture response for use below
-            elif fb_result.get("response"):
-                fallback_response = fb_result
-
-        # =================================================================
-        # Phase 3: Check for objection
-        # =================================================================
-        objection_info = self._check_objection(user_message, collected_data) if user_message else None
-
-        # =================================================================
-        # Phase 5: Build ContextEnvelope for policy overlay (BEFORE process_turn)
-        # =================================================================
-        context_envelope = None
-        if flags.context_full_envelope or flags.context_policy_overlays:
-            context_envelope = build_context_envelope(
-                state_machine=self.state_machine,
-                context_window=self.context_window,
-                tone_info=tone_info,
-                guard_info={"intervention": intervention} if intervention else None,
-                last_action=self.last_action,
-                last_intent=self.last_intent,
-                current_intent=intent,
-                classification_result=classification if isinstance(classification, dict) else None,
-            )
-
-        # =========================================================================
-        # Stage 14: Blackboard replaces state_machine.process() (disambiguation path)
-        # =========================================================================
-        decision = self._orchestrator.process_turn(
-            intent=intent,
-            extracted_data=extracted,
-            context_envelope=context_envelope,
-        )
-        sm_result = decision.to_sm_result()
-
-        # Build ResponseDirectives if flag enabled
-        response_directives = None
-        if flags.context_response_directives and context_envelope:
-            response_directives = build_response_directives(context_envelope)
-
-        # Phase 5: Apply dialogue policy overlays
-        if flags.context_policy_overlays and context_envelope:
-            override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
-            if override and override.has_override:
-                logger.info(
-                    "Policy override applied (disambiguation path)",
-                    original_action=sm_result["action"],
-                    override_action=override.action,
-                    reason_codes=override.reason_codes
-                )
-                sm_result["action"] = override.action
-                if override.next_state:
-                    sm_result["next_state"] = override.next_state
-
-        # Контекст для генерации ответа
-        # При наличии ResponseDirectives используем их instruction
-        directive_instruction = ""
-        if response_directives:
-            directive_instruction = response_directives.get_instruction()
-
-        context = {
-            "user_message": user_message,
-            "intent": intent,
-            "state": sm_result["next_state"],
-            "history": self.history,
-            "goal": sm_result["goal"],
-            "collected_data": sm_result["collected_data"],
-            "missing_data": sm_result["missing_data"],
-            "spin_phase": sm_result.get("spin_phase"),
-            "optional_data": sm_result.get("optional_data", []),
-            # Phase 2: Tone and style guidance
-            # FIXED: Concatenate both instructions to preserve apology from tone_info
-            # SSoT: src/apology_ssot.py
-            "tone_instruction": " ".join(filter(None, [
-                directive_instruction,
-                tone_info.get("tone_instruction", "")
-            ])),
-            "style_instruction": tone_info.get("style_instruction", ""),
-            "should_apologize": tone_info.get("should_apologize", False),
-            "should_offer_exit": tone_info.get("should_offer_exit", False),
-            "max_words": tone_info.get("max_words", 50),
-            # Phase 3: Objection info
-            "objection_info": objection_info,
-            # Phase 2: ResponseDirectives для generator
-            "response_directives": response_directives,
-        }
-
-        # FIX Defect 2: Use fallback response/action when advisory fallback is active
-        if fallback_response:
-            action = fallback_response.get("action", sm_result["action"])
-            response = fallback_response["response"]
-        else:
-            action = sm_result["action"]
-            response = self.generator.generate(action, context)
-
-        # Сохраняем в историю (с реальным сообщением пользователя)
-        self.history.append({
-            "user": user_message,  # Сохраняем ответ пользователя на disambiguation
-            "bot": response,
-            "intent": intent,
-            "action": action,
-        })
-
-        # Сохраняем в context_window (для синхронизации с history)
-        self.context_window.add_turn_from_dict(
-            user_message=user_message,
-            bot_response=response,
-            intent=intent,
-            confidence=confidence,
-            action=action,
-            state=current_state,
-            next_state=sm_result["next_state"],
-            method=classification.get("method", "disambiguation_resolved"),
-            extracted_data=extracted,
-            is_fallback=fallback_used,
-            fallback_tier=fallback_tier,
-        )
-
-        # Обновляем контекст
-        self.last_action = action
-        self.last_intent = intent
-        self.last_bot_message = response
-
-        # FIX 6: Record progress for Guard (prevents false "no progress" detection)
-        next_state = sm_result["next_state"]
-        if sm_result.get("prev_state") != next_state or extracted:
-            self.guard.record_progress()
-
-        # FIX 6: Track the final state in visited_states
-        if next_state not in visited_states:
-            visited_states.append(next_state)
-
-        # Записываем метрики (с информацией о тоне и fallback)
-        self._record_turn_metrics(
-            state=next_state,
-            intent=intent,
-            tone=tone_info.get("tone"),
-            fallback_used=fallback_used,
-            fallback_tier=fallback_tier
-        )
-
-        # Проверяем финальное состояние
-        is_final = sm_result["is_final"]
-        if is_final:
-            if intent == "rejection":
-                self._finalize_metrics(ConversationOutcome.REJECTED)
-            elif "contact_provided" in self.metrics.intents_sequence:
-                self._finalize_metrics(ConversationOutcome.SUCCESS)
-            elif "demo_request" in self.metrics.intents_sequence:
-                self._finalize_metrics(ConversationOutcome.DEMO_SCHEDULED)
-            else:
-                self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
-
-        return {
-            "response": response,
-            "intent": intent,
-            "confidence": confidence,
-            "action": action,
-            "state": next_state,
-            "extracted_data": extracted,
-            "is_final": is_final,
-            "spin_phase": sm_result.get("spin_phase"),
-            "visited_states": visited_states,
-            "initial_state": visited_states[0],
-            "fallback_used": fallback_used,
-            "fallback_tier": fallback_tier,
-        }
-
-    def _fallback_from_disambiguation(self, user_message: str = "") -> Dict:
-        """
-        Выйти из disambiguation с fallback на unclear.
-
-        Args:
-            user_message: Последнее сообщение пользователя (для истории)
-
-        Returns:
-            Dict с результатом
-        """
-        context = self.state_machine.disambiguation_context
-        extracted_data = context.get("extracted_data", {}) if context else {}
-        attempt = context.get("attempt", 0) if context else 0
-
-        self.disambiguation_metrics.record_resolution(
-            resolved_intent="unclear",
-            attempt=attempt,
-            success=False
-        )
-
-        logger.warning(
-            "Disambiguation failed, falling back to unclear",
-            attempts=attempt
-        )
-
-        self.state_machine.exit_disambiguation()
-
-        return self._continue_with_classification(
-            classification={
-                "intent": "unclear",
-                "confidence": 0.3,
-                "extracted_data": extracted_data,
-                "method": "disambiguation_fallback"
-            },
-            user_message=user_message
-        )
-
-    def _repeat_disambiguation_question(self, context: Dict) -> Dict:
-        """
-        Повторить вопрос disambiguation.
-
-        Args:
-            context: Контекст disambiguation
-
-        Returns:
-            Dict с повторным вопросом
-        """
-        options = context["options"]
-        response = self.disambiguation_ui.format_repeat_question(options)
-
-        logger.info(
-            "Disambiguation repeat",
-            attempt=context.get("attempt", 2)
-        )
-
-        return {
-            "response": response,
-            "intent": "disambiguation_needed",
-            "action": "repeat_clarification",
-            "state": self.state_machine.state,
-            "is_final": False,
-            "visited_states": [self.state_machine.state],
-            "initial_state": self.state_machine.state,
-        }
 
 
 def run_interactive(bot: SalesBot):

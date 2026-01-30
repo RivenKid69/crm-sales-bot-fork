@@ -140,6 +140,10 @@ class RefinementContext:
     confidence: float = 0.0
     extracted_data: Dict[str, Any] = field(default_factory=dict)
 
+    # Disambiguation context
+    in_disambiguation: bool = False
+    disambiguation_options: List[Dict[str, Any]] = field(default_factory=list)
+
     # Extensible metadata
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -170,6 +174,8 @@ class RefinementContext:
             intent=result.get("intent", self.intent),
             confidence=result.get("confidence", self.confidence),
             extracted_data=result.get("extracted_data", self.extracted_data),
+            in_disambiguation=self.in_disambiguation,
+            disambiguation_options=self.disambiguation_options,
             metadata={**self.metadata, **result.get("refinement_metadata", {})},
         )
 
@@ -985,6 +991,8 @@ class RefinementPipeline:
             intent=result.get("intent", "unclear"),
             confidence=result.get("confidence", 0.0),
             extracted_data=result.get("extracted_data", {}),
+            in_disambiguation=context.get("in_disambiguation", False),
+            disambiguation_options=context.get("disambiguation_options", []),
         )
 
     def get_stats(self) -> Dict[str, Any]:
