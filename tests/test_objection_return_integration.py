@@ -983,3 +983,115 @@ class TestTotalBasedEscapeIntegration:
             "BUG: Going to soft_close (0% coverage!)"
         assert decision.next_state == "bant_budget", \
             "Total escape should route to entry_state (bant_budget)"
+
+
+# =============================================================================
+# Integration Tests: Price Question Return (SSOT-based)
+# =============================================================================
+
+class TestPriceQuestionReturnIntegration:
+    """
+    Integration tests verifying that price-related intents exit handle_objection
+    via ObjectionReturnSource (HIGH priority) winning over absent transitions.
+
+    Root Cause Fixed:
+        7 price-related intents had no transition in handle_objection YAML,
+        causing bot to stay in handle_objection forever (black hole).
+        Now ObjectionReturnSource includes all price intents via SSOT.
+    """
+
+    PRICE_INTENTS = [
+        "price_question",
+        "pricing_details",
+        "cost_inquiry",
+        "discount_request",
+        "payment_terms",
+        "pricing_comparison",
+        "budget_question",
+    ]
+
+    def test_price_question_returns_to_saved_phase(self):
+        """
+        ObjectionReturnSource (HIGH) wins over absent transition for price_question.
+
+        Scenario:
+            1. Client in bant_budget, raises objection
+            2. Bot handles objection
+            3. Client asks "Сколько стоит?" → price_question
+            4. No YAML transition for price_question in handle_objection
+            5. ObjectionReturnSource proposes: bant_budget (HIGH priority)
+            6. ObjectionReturnSource WINS → phase preserved
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="price_question",
+            state_before_objection="bant_budget"
+        )
+
+        bb = setup["blackboard"]
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        assert decision.next_state == "bant_budget", \
+            f"Expected bant_budget but got {decision.next_state}. " \
+            "Price question should return to saved phase."
+
+    @pytest.mark.parametrize("intent", PRICE_INTENTS)
+    def test_all_7_price_intents_return_to_saved_phase(self, intent):
+        """All 7 price-related intents should return to saved phase state."""
+        setup = create_test_setup(
+            state="handle_objection",
+            intent=intent,
+            state_before_objection="bant_budget"
+        )
+
+        bb = setup["blackboard"]
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        assert decision.next_state == "bant_budget", \
+            f"Price intent '{intent}' did not return to saved phase. " \
+            f"Got: {decision.next_state}"
+
+    def test_busy_persona_price_question_exits_objection(self):
+        """
+        Busy persona scenario: objection from greeting, then price question.
+
+        Scenario:
+            1. busy persona: "некогда" → objection_no_time → handle_objection (save greeting)
+            2. Bot handles objection
+            3. Client: "ну ладно, а сколько стоит?" → price_question
+            4. ObjectionReturnSource: entry_state (NORMAL) because greeting has no phase
+            5. Client exits handle_objection → can proceed to phases
+        """
+        setup = create_test_setup(
+            state="handle_objection",
+            intent="price_question",
+            state_before_objection="greeting"  # Non-phase state
+        )
+
+        bb = setup["blackboard"]
+        setup["objection_return_source"].contribute(bb)
+        setup["transition_resolver_source"].contribute(bb)
+
+        decision = setup["conflict_resolver"].resolve(
+            proposals=bb.get_proposals(),
+            current_state="handle_objection"
+        )
+
+        assert decision.next_state != "greeting", \
+            "Should not return to greeting (no phase)"
+        assert decision.next_state != "handle_objection", \
+            "Should not stay stuck in handle_objection"
+        assert decision.next_state == "bant_budget", \
+            f"Expected entry_state (bant_budget) but got {decision.next_state}"

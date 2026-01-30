@@ -761,6 +761,17 @@ intents:
       - roi_question
 
     # =================================================================
+    # ВОПРОСЫ ВЫЗЫВАЮЩИЕ ВОЗВРАТ ИЗ handle_objection
+    # Вопросы которые НЕ входят в positive или price_related,
+    # но сигнализируют о вовлечённости клиента и должны вызвать
+    # возврат к сохранённому состоянию из handle_objection.
+    # ВАЖНО: Синхронизирован с ObjectionReturnSource
+    # =================================================================
+    objection_return_questions:
+      - question_implementation
+      - question_demo
+
+    # =================================================================
     # УПРАВЛЕНИЕ ДИАЛОГОМ (8 интентов)
     # =================================================================
     dialogue_control:
@@ -820,6 +831,15 @@ intents:
         - region_questions
         - operations_questions
       description: "Все категории вопросов для универсальной обработки"
+
+    # objection_return_triggers = все интенты вызывающие возврат из handle_objection
+    # ВАЖНО: Единственный источник истины для ObjectionReturnSource.DEFAULT_RETURN_INTENTS
+    objection_return_triggers:
+      includes:
+        - positive
+        - price_related
+        - objection_return_questions
+      description: "SSOT: Интенты вызывающие возврат из handle_objection в сохранённое состояние"
 
   # =================================================================
   # МАППИНГ intent → preferred action (override default behavior)

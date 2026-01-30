@@ -22,10 +22,10 @@ Solution:
 import pytest
 from typing import Dict, Any, Optional
 
-from src.blackboard.sources.objection_return import ObjectionReturnSource, QUESTION_RETURN_INTENTS
+from src.blackboard.sources.objection_return import ObjectionReturnSource
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
-from src.yaml_config.constants import POSITIVE_INTENTS
+from src.yaml_config.constants import POSITIVE_INTENTS, PRICE_RELATED_INTENTS, OBJECTION_RETURN_TRIGGERS
 
 
 # =============================================================================
@@ -243,17 +243,21 @@ class TestObjectionReturnSourceInit:
 
         assert source.enabled is False
 
-    def test_default_return_intents_are_positive_intents(self):
-        """Test that default return intents match POSITIVE_INTENTS + QUESTION_RETURN_INTENTS."""
+    def test_default_return_intents_match_ssot(self):
+        """Test that default return intents match OBJECTION_RETURN_TRIGGERS from SSOT."""
         source = ObjectionReturnSource()
-
-        # FIX: DEFAULT_RETURN_INTENTS includes both POSITIVE_INTENTS and QUESTION_RETURN_INTENTS
-        # This allows return from handle_objection on both positive signals AND questions
-        expected = set(POSITIVE_INTENTS) | QUESTION_RETURN_INTENTS
+        expected = set(OBJECTION_RETURN_TRIGGERS)
         assert source.return_intents == expected
-        assert "agreement" in source.return_intents
-        assert "demo_request" in source.return_intents
-        assert "question_features" in source.return_intents  # From QUESTION_RETURN_INTENTS
+        # Verify key intents are included
+        assert "agreement" in source.return_intents        # from positive
+        assert "price_question" in source.return_intents   # from price_related
+        assert "pricing_details" in source.return_intents  # from price_related
+        assert "question_features" in source.return_intents # from positive
+        assert "question_implementation" in source.return_intents  # from objection_return_questions
+        assert "question_demo" in source.return_intents    # from objection_return_questions
+        # Verify typos are gone
+        assert "question_pricing" not in source.return_intents
+        assert "question_integration" not in source.return_intents
 
 
 # =============================================================================
@@ -1616,3 +1620,91 @@ class TestTotalBasedObjectionEscape:
 
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 0  # No fallback available
+
+
+# =============================================================================
+# Tests for Price Question Return (SSOT-based)
+# =============================================================================
+
+class TestPriceQuestionReturn:
+    """
+    Test that all 7 price-related intents trigger return from handle_objection.
+
+    Root Cause Fixed:
+        QUESTION_RETURN_INTENTS had "question_pricing" (typo, not a real intent)
+        and missed all 6 other price_related intents.
+        Now OBJECTION_RETURN_TRIGGERS (SSOT) includes the full price_related category.
+    """
+
+    PRICE_INTENTS = [
+        "price_question",
+        "pricing_details",
+        "cost_inquiry",
+        "discount_request",
+        "payment_terms",
+        "pricing_comparison",
+        "budget_question",
+    ]
+
+    @pytest.fixture
+    def source(self):
+        """Create an ObjectionReturnSource instance."""
+        return ObjectionReturnSource()
+
+    @pytest.mark.parametrize("intent", PRICE_INTENTS)
+    def test_should_contribute_true_for_all_price_related_intents(self, source, intent):
+        """should_contribute returns True for each of the 7 price-related intents."""
+        bb = create_blackboard(
+            state="handle_objection",
+            intent=intent,
+            state_before_objection="bant_budget"
+        )
+        assert source.should_contribute(bb) is True, f"Failed for price intent: {intent}"
+
+    @pytest.mark.parametrize("intent", PRICE_INTENTS)
+    def test_contribute_returns_to_phase_state_on_price_question(self, source, intent):
+        """contribute returns to saved phase state for price intents."""
+        bb = create_blackboard(
+            state="handle_objection",
+            intent=intent,
+            state_before_objection="bant_budget"
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"
+        assert proposals[0].priority == Priority.HIGH
+
+    @pytest.mark.parametrize("intent", PRICE_INTENTS)
+    def test_contribute_returns_to_entry_state_for_non_phase(self, source, intent):
+        """contribute falls back to entry_state when saved_state has no phase."""
+        bb = create_blackboard(
+            state="handle_objection",
+            intent=intent,
+            state_before_objection="greeting"
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_transition_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "bant_budget"  # entry_state fallback
+        assert proposals[0].priority == Priority.NORMAL
+
+    def test_price_related_intents_from_ssot(self):
+        """Verify that all 7 price intents are in OBJECTION_RETURN_TRIGGERS from SSOT."""
+        expected_price_intents = set(self.PRICE_INTENTS)
+        triggers_set = set(OBJECTION_RETURN_TRIGGERS)
+        assert expected_price_intents <= triggers_set, (
+            f"Missing price intents in SSOT: {expected_price_intents - triggers_set}"
+        )
+
+    def test_price_related_intents_match_category(self):
+        """Verify PRICE_RELATED_INTENTS category matches expected intents."""
+        expected = set(self.PRICE_INTENTS)
+        actual = set(PRICE_RELATED_INTENTS)
+        assert expected == actual, (
+            f"PRICE_RELATED_INTENTS mismatch. Missing: {expected - actual}, Extra: {actual - expected}"
+        )

@@ -31,8 +31,9 @@ import logging
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 from src.yaml_config.constants import (
-    POSITIVE_INTENTS, QUESTION_INTENTS, OBJECTION_INTENTS,
+    OBJECTION_INTENTS,
     MAX_TOTAL_OBJECTIONS,
+    OBJECTION_RETURN_TRIGGERS,
 )
 
 if TYPE_CHECKING:
@@ -58,26 +59,12 @@ OBJECTION_LOOP_ESCAPE_THRESHOLD = 3
 OBJECTION_TOTAL_ESCAPE_THRESHOLD = MAX_TOTAL_OBJECTIONS - 1
 
 
-# Question intents that also trigger return (after refinement from objection_think)
-# FIX: Root Cause #4 - ObjectionReturnSource only worked for POSITIVE_INTENTS
-# Skeptic personas get objection_think refined to question_features, which needs
-# to trigger return to continue the sales flow.
-QUESTION_RETURN_INTENTS: Set[str] = {
-    "question_features",
-    "question_pricing",
-    "question_implementation",
-    "question_integration",
-    "question_demo",
-    "comparison",
-}
-
-
 class ObjectionReturnSource(KnowledgeSource):
     """
     Knowledge Source for returning to previous phase after objection handling.
 
     Responsibility:
-        - Detect when objection is successfully handled (positive intent OR question)
+        - Detect when objection is successfully handled (return intent from SSOT)
         - Propose transition back to saved state (_state_before_objection)
         - Preserve phase continuity in sales flow
 
@@ -85,8 +72,9 @@ class ObjectionReturnSource(KnowledgeSource):
         When entering handle_objection from a phase state (e.g., bant_budget),
         the orchestrator saves that state in _state_before_objection.
 
-        When the client shows agreement, interest, OR asks a question
-        (positive intent or question intent after refinement),
+        Return intents are loaded from constants.yaml SSOT via composed category
+        objection_return_triggers = positive + price_related + objection_return_questions.
+        When the client expresses any of these intents,
         this source proposes returning to that saved state with HIGH priority.
 
         This wins over YAML transitions (NORMAL priority) like:
@@ -148,10 +136,10 @@ class ObjectionReturnSource(KnowledgeSource):
                          → objection_limit_reached → soft_close → 0% coverage)
     """
 
-    # Positive intents that trigger return to previous phase
-    # Loaded from constants.yaml via POSITIVE_INTENTS
-    # FIX: Now also includes question intents for skeptic persona handling
-    DEFAULT_RETURN_INTENTS: Set[str] = set(POSITIVE_INTENTS) | QUESTION_RETURN_INTENTS
+    # Return intents loaded from constants.yaml (SSOT)
+    # Composed category: positive + price_related + objection_return_questions
+    # Defined in constants.yaml → composed_categories → objection_return_triggers
+    DEFAULT_RETURN_INTENTS: Set[str] = set(OBJECTION_RETURN_TRIGGERS)
 
     # State that handles objections
     OBJECTION_STATE: str = "handle_objection"
@@ -167,7 +155,7 @@ class ObjectionReturnSource(KnowledgeSource):
 
         Args:
             return_intents: Set of intents that trigger return to previous state.
-                           Defaults to POSITIVE_INTENTS from constants.yaml.
+                           Defaults to OBJECTION_RETURN_TRIGGERS from constants.yaml (SSOT).
             enabled: Whether this source is enabled (default True)
             name: Source name for logging
         """

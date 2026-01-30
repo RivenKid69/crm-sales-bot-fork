@@ -142,6 +142,7 @@ INFORMATIVE_INTENTS: List[str] = _categories.get("informative", [])
 # НОВЫЕ КАТЕГОРИИ (150+ интентов) - загружаются из YAML
 # =============================================================================
 PRICE_RELATED_INTENTS: List[str] = _categories.get("price_related", [])
+OBJECTION_RETURN_QUESTIONS: List[str] = _categories.get("objection_return_questions", [])
 QUESTION_REQUIRES_FACTS_INTENTS: List[str] = _categories.get("question_requires_facts", [])
 
 # Вопросы об оборудовании (12 интентов)
@@ -298,7 +299,7 @@ INTENT_CATEGORIES: Dict[str, List[str]] = _resolve_composed_categories(
 )
 
 # Step 4: Validation - ensure critical categories exist
-_REQUIRED_CATEGORIES = ["objection", "positive", "question", "negative", "exit"]
+_REQUIRED_CATEGORIES = ["objection", "positive", "question", "negative", "exit", "objection_return_triggers"]
 for _required in _REQUIRED_CATEGORIES:
     if _required not in INTENT_CATEGORIES or not INTENT_CATEGORIES[_required]:
         logger.warning(f"Required category '{_required}' is missing or empty in INTENT_CATEGORIES")
@@ -317,6 +318,11 @@ if logger.isEnabledFor(logging.DEBUG):
 # These now reference the unified INTENT_CATEGORIES
 EXIT_INTENTS: List[str] = INTENT_CATEGORIES.get("exit", [])
 NEGATIVE_INTENTS: List[str] = INTENT_CATEGORIES.get("negative", [])
+
+# SSOT: Composed category for objection return triggers
+# Loaded from constants.yaml → composed_categories → objection_return_triggers
+# Contains: positive + price_related + objection_return_questions
+OBJECTION_RETURN_TRIGGERS: List[str] = INTENT_CATEGORIES.get("objection_return_triggers", [])
 
 # Intent action overrides (intent -> action mapping)
 INTENT_ACTION_OVERRIDES: Dict[str, str] = _intents.get("intent_action_overrides", {})
@@ -877,6 +883,8 @@ __all__ = [
     "EXIT_INTENTS",
     "INFORMATIVE_INTENTS",
     "PRICE_RELATED_INTENTS",
+    "OBJECTION_RETURN_QUESTIONS",
+    "OBJECTION_RETURN_TRIGGERS",
     "QUESTION_REQUIRES_FACTS_INTENTS",
     # Intent categories - новые (150+ интентов)
     "EQUIPMENT_QUESTIONS",
