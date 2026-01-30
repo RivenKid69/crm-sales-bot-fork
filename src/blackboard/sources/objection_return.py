@@ -47,6 +47,14 @@ logger = logging.getLogger(__name__)
 # from a non-phase state (greeting), force exit to entry_state
 OBJECTION_LOOP_ESCAPE_THRESHOLD = 3
 
+# Phase-origin escape threshold: lower threshold for phase-origin states
+# When saved_state HAS a phase (came from real flow state like bant_budget)
+# and consecutive >= threshold, allow early escape back to phase state.
+# Lower than OBJECTION_LOOP_ESCAPE_THRESHOLD because:
+# - Phase-origin means dialog already started → more value to preserve
+# - Busy personas (max_turns=8) exhaust turns before standard threshold (3)
+PHASE_ORIGIN_ESCAPE_THRESHOLD = 2
+
 # Total-based escape threshold: fire escape before objection_limit_reached
 # objection_limit_reached fires at total >= MAX_TOTAL_OBJECTIONS (default: 5)
 # We fire escape at total >= MAX_TOTAL_OBJECTIONS - 1 (default: 4) to ensure
@@ -249,6 +257,17 @@ class ObjectionReturnSource(KnowledgeSource):
                     if total >= OBJECTION_TOTAL_ESCAPE_THRESHOLD:
                         return True
 
+                # CASE 3: Phase-origin early return
+                # When saved_state HAS a phase (came from real flow state like bant_budget)
+                # and consecutive >= PHASE_ORIGIN_ESCAPE_THRESHOLD, allow escape.
+                # Lower threshold than non-phase origin because:
+                # - Phase-origin means dialog already started → more value to preserve
+                # - Busy personas (max_turns=8) exhaust turns before standard threshold (3)
+                if phase is not None:
+                    consecutive = tracker.objection_consecutive()
+                    if consecutive >= PHASE_ORIGIN_ESCAPE_THRESHOLD:
+                        return True
+
         return False
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
@@ -338,9 +357,29 @@ class ObjectionReturnSource(KnowledgeSource):
         # → objection_limit_reached → soft_close → 0% coverage.
         # ====================================================================
         is_objection_loop_escape = False
+        is_phase_origin_escape = False
         consecutive_objections = 0
         total_objections = 0
-        escape_trigger = None  # "consecutive" or "total"
+        escape_trigger = None  # "consecutive", "total", or "phase_origin"
+
+        if blackboard.current_intent in OBJECTION_INTENTS and phase is not None:
+            # CASE C: Phase-origin early return → back to saved phase state (HIGH priority)
+            tracker = blackboard._intent_tracker
+            if tracker:
+                consecutive_objections = tracker.objection_consecutive()
+                if consecutive_objections >= PHASE_ORIGIN_ESCAPE_THRESHOLD:
+                    is_phase_origin_escape = True
+                    escape_trigger = "phase_origin"
+                    logger.info(
+                        f"ObjectionReturnSource: phase-origin escape triggered",
+                        extra={
+                            "consecutive_objections": consecutive_objections,
+                            "threshold": PHASE_ORIGIN_ESCAPE_THRESHOLD,
+                            "saved_state": saved_state,
+                            "target_phase": phase,
+                            "current_intent": blackboard.current_intent,
+                        }
+                    )
 
         if blackboard.current_intent in OBJECTION_INTENTS and phase is None:
             tracker = blackboard._intent_tracker
@@ -381,10 +420,37 @@ class ObjectionReturnSource(KnowledgeSource):
         is_positive_return = blackboard.current_intent in self._return_intents
 
         # If neither condition is met, delegate to other sources
-        if not is_positive_return and not is_objection_loop_escape:
+        if not is_positive_return and not is_objection_loop_escape and not is_phase_origin_escape:
             self._log_contribution(
                 reason=f"Intent {blackboard.current_intent} not in return_intents "
                        f"and not objection loop escape"
+            )
+            return
+
+        # ====================================================================
+        # HANDLE PHASE-ORIGIN ESCAPE (CASE C)
+        # ====================================================================
+        # When saved_state HAS a phase and consecutive objections >= threshold,
+        # return to saved phase state with HIGH priority.
+        if is_phase_origin_escape and phase is not None:
+            blackboard.propose_transition(
+                next_state=saved_state,
+                priority=Priority.HIGH,
+                reason_code="objection_phase_origin_escape",
+                source_name=self.name,
+                metadata={
+                    "from_state": self.OBJECTION_STATE,
+                    "to_state": saved_state,
+                    "trigger_intent": ctx.current_intent,
+                    "target_phase": phase,
+                    "mechanism": "phase_origin_escape",
+                    "consecutive_objections": consecutive_objections,
+                }
+            )
+            self._log_contribution(
+                transition=saved_state,
+                reason=f"Phase-origin escape: {consecutive_objections} consecutive "
+                       f"objections → return to {saved_state} (phase: {phase})"
             )
             return
 

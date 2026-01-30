@@ -214,6 +214,8 @@ limits:
   max_total_objections: 5
   # Максимум возвратов назад по SPIN
   max_gobacks: 2
+  # Phase-origin objection escape threshold (lower than standard 3)
+  phase_origin_objection_escape: 2
 
 # =============================================================================
 # DISAMBIGUATION (Unified Disambiguation Decision Engine)
@@ -772,6 +774,15 @@ intents:
       - question_demo
 
     # =================================================================
+    # ДОПОЛНИТЕЛЬНЫЕ ИНТЕНТЫ ДЛЯ БЕЗОПАСНОСТИ GREETING (2 интента)
+    # Интенты которые не входят в technical_problems, но должны быть
+    # перенаправлены в entry_state из greeting-состояний.
+    # =================================================================
+    greeting_additional_redirects:
+      - request_references     # greeting + "клиенты" → misclass as reference request
+      - contact_provided       # greeting + premature contact → skip qualification
+
+    # =================================================================
     # УПРАВЛЕНИЕ ДИАЛОГОМ (8 интентов)
     # =================================================================
     dialogue_control:
@@ -831,6 +842,15 @@ intents:
         - region_questions
         - operations_questions
       description: "Все категории вопросов для универсальной обработки"
+
+    # greeting_redirect_intents = все интенты для безопасного перенаправления в greeting
+    # SSOT: Единственный источник истины для greeting safety overrides.
+    # Паттерн идентичен objection_return_triggers (commit 01252ba).
+    greeting_redirect_intents:
+      includes:
+        - technical_problems              # problem_sync, problem_connection, etc. (6 intents)
+        - greeting_additional_redirects   # request_references, contact_provided (2 intents)
+      description: "SSOT: Интенты перенаправляемые в entry_state из greeting-состояний"
 
     # objection_return_triggers = все интенты вызывающие возврат из handle_objection
     # ВАЖНО: Единственный источник истины для ObjectionReturnSource.DEFAULT_RETURN_INTENTS
@@ -6398,6 +6418,49 @@ confidence_calibration:
   # Добавляем специальный штраф для такого случая
   objection_no_alternatives_penalty: 0.15     # Штраф за objection без alternatives
   objection_no_alternatives_threshold: 0.75   # Порог confidence для применения
+
+# =============================================================================
+# STALL DETECTION (Phase 5: Flow State Stall Detection)
+# =============================================================================
+# Detects when dialog is stuck in the same state without data progress.
+# Different from is_stuck (unclear intents) — this is about off-topic questions.
+stall_detection:
+  enabled: true
+  stall_threshold: 3
+  exempt_states: [greeting, handle_objection, presentation, close, soft_close, success, escalated]
+
+# =============================================================================
+# GREETING CONTEXT REFINEMENT (Phase 3: Category-Driven Refinement Layer)
+# =============================================================================
+# Refines misclassified intents in greeting context to safe targets.
+# Uses SSOT categories — adding intent to technical_problems → auto-included.
+greeting_context_refinement:
+  enabled: true
+  max_turn_number: 3
+  active_states: [greeting]
+  # SSOT: Load suspicious intents from categories (not hardcoded list)
+  suspicious_intent_categories:
+    - technical_problems          # problem_sync, problem_connection, etc.
+  additional_suspicious_intents:
+    - request_references          # Not in technical_problems but needs refinement
+  # Default: any suspicious intent → problem_revealed
+  default_target: problem_revealed
+  # Overrides for intents that map to different targets
+  target_overrides:
+    request_references: need_expressed
+    request_technical_support: consultation_request
+    request_configuration: consultation_request
+  refined_confidence: 0.75
+
+# =============================================================================
+# GREETING STATE SAFETY (Phase 1: Category-Based Mixin Override)
+# =============================================================================
+# Overrides greeting-state transitions for intents that would otherwise
+# lead to terminal states (escalated/success) via _universal_base.
+# Uses greeting_redirect_intents composed category from SSOT.
+greeting_state_safety:
+  enabled: true
+  redirect_to: "{{entry_state}}"
 
 # =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)

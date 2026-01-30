@@ -1217,21 +1217,42 @@ class TestObjectionLoopEscape:
 
         assert source.should_contribute(bb) is False
 
-    def test_should_contribute_false_for_phase_state(self, source):
+    def test_should_contribute_false_for_phase_state_below_threshold(self, source):
         """
-        should_contribute returns False for objection when came from phase state.
+        should_contribute returns False for objection when came from phase state
+        and consecutive objections are below PHASE_ORIGIN_ESCAPE_THRESHOLD.
 
-        If we came from a phase state (like bant_budget), we should wait for
-        positive intent to return there, not force exit.
+        If we came from a phase state (like bant_budget) with low consecutive
+        objections, we should wait for positive intent to return there.
+
+        After record: consecutive=1 (below PHASE_ORIGIN_ESCAPE_THRESHOLD=2)
         """
         bb = create_blackboard(
             state="handle_objection",
             intent="objection_price",
             state_before_objection="bant_budget",  # HAS phase
-            objection_consecutive=3
+            objection_consecutive=0  # After record: 1 (below threshold 2)
         )
 
         assert source.should_contribute(bb) is False
+
+    def test_should_contribute_true_for_phase_origin_escape(self, source):
+        """
+        should_contribute returns True for phase-origin escape (CASE 3).
+
+        When saved_state HAS a phase and consecutive objections >= PHASE_ORIGIN_ESCAPE_THRESHOLD,
+        we allow early escape back to the phase state to preserve dialog progress.
+
+        After record: consecutive=2 (at PHASE_ORIGIN_ESCAPE_THRESHOLD=2)
+        """
+        bb = create_blackboard(
+            state="handle_objection",
+            intent="objection_price",
+            state_before_objection="bant_budget",  # HAS phase
+            objection_consecutive=1  # After record: 2 (at threshold)
+        )
+
+        assert source.should_contribute(bb) is True
 
     def test_contribute_proposes_entry_state_on_objection_escape(self, source):
         """
@@ -1458,7 +1479,7 @@ class TestTotalBasedObjectionEscape:
             state="handle_objection",
             intent="objection_price",  # record +1
             state_before_objection="bant_budget",  # HAS phase
-            objection_consecutive=1,  # After record: 2
+            objection_consecutive=0,  # After record: 1 (below PHASE_ORIGIN_ESCAPE_THRESHOLD=2)
             objection_total=3,  # After record: 4 (at threshold)
         )
 

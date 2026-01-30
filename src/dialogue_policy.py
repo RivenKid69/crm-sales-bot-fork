@@ -123,6 +123,7 @@ class DialoguePolicy:
         "oscillation": "summarize_and_clarify",
         "repeated_question": "answer_with_summary",
         "mirroring": "summarize_and_clarify",  # Soft reset for mirroring
+        "stall": "nudge_progress",
     }
 
     # Mapping action для возражений
@@ -298,6 +299,13 @@ class DialoguePolicy:
             signals["is_mirroring"] = True
             action = self.REPAIR_ACTIONS["mirroring"]
             decision = PolicyDecision.REPAIR_SUMMARIZE
+
+        # Stall Detection (same state N turns without data progress)
+        elif policy_registry.evaluate("is_stalled", ctx, trace):
+            signals["is_stalled"] = True
+            signals["consecutive_same_state"] = ctx.consecutive_same_state
+            action = self.REPAIR_ACTIONS["stall"]
+            decision = PolicyDecision.REPAIR_CLARIFY
 
         if action:
             if trace:

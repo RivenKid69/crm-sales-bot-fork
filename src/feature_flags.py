@@ -148,6 +148,10 @@ class FeatureFlags:
 
         # === Structural Frustration Detection ===
         "structural_frustration_detection": True,  # Behavioral frustration from dialogue patterns
+
+        # === Greeting State Safety (Phase 1: Dialog Failure Fix) ===
+        "greeting_state_safety": True,             # Category-based greeting transition overrides
+        "greeting_context_refinement": True,       # Greeting context refinement layer
     }
 
     # Группы флагов для удобного управления

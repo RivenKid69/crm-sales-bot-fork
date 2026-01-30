@@ -1114,6 +1114,9 @@ class ConfigLoader:
             )
             all_states[name] = resolved
 
+        # Apply greeting state safety overrides (SSOT category-driven, via existing _apply_mixin)
+        self._apply_greeting_safety_overrides(all_states, all_base_states, flow_states)
+
         # Resolve variables in all states
         # Merge flow variables with state-level parameters
         variables = flow_config.get("variables", {})
@@ -1250,6 +1253,35 @@ class ConfigLoader:
                 result["transitions"][intent] = target
 
         return result
+
+    def _apply_greeting_safety_overrides(self, all_states, all_base_states, flow_states):
+        """Apply SSOT category-driven safety overrides to greeting-type states.
+
+        Uses existing _apply_mixin() mechanism — no new paradigm.
+        Follows same SSOT pattern as objection_return_triggers (commit 01252ba).
+        """
+        from src.feature_flags import flags
+        if not flags.is_enabled("greeting_state_safety"):
+            return
+
+        from src.yaml_config.constants import GREETING_REDIRECT_INTENTS, get_greeting_safety_config
+        safety_config = get_greeting_safety_config()
+        if not safety_config.get("enabled", False) or not GREETING_REDIRECT_INTENTS:
+            return
+
+        redirect_to = safety_config.get("redirect_to", "{{entry_state}}")
+
+        # Generate safety mixin from SSOT composed category
+        safety_mixin = {
+            "transitions": {intent: redirect_to for intent in GREETING_REDIRECT_INTENTS}
+        }
+
+        # Detect greeting-type states and apply via existing _apply_mixin()
+        original_configs = {**all_base_states, **flow_states.get("states", {})}
+        for name, sc in original_configs.items():
+            if sc.get("extends") == "_base_greeting" and name in all_states:
+                all_states[name] = self._apply_mixin(all_states[name], safety_mixin)
+                logger.debug(f"Greeting safety: applied {len(GREETING_REDIRECT_INTENTS)} overrides to '{name}'")
 
     # Regex pattern for template placeholders
     _TEMPLATE_PATTERN = re.compile(r'\{\{(\w+)\}\}')

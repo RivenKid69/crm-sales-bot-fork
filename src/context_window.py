@@ -984,6 +984,23 @@ class ContextWindow:
         # Все интенты одинаковые?
         return len(set(history)) == 1
 
+    def get_consecutive_same_state(self) -> int:
+        """Count consecutive turns in the same state from the end of history.
+
+        Returns:
+            Number of consecutive turns in the current state (1 = just arrived).
+        """
+        if not self.turns:
+            return 0
+        current_state = self.turns[-1].state
+        count = 0
+        for turn in reversed(self.turns):
+            if turn.state == current_state:
+                count += 1
+            else:
+                break
+        return count
+
     # Only these categories group different intents as "same question":
     # price_related: price_question + cost_inquiry = same repeated question (both about price)
     # NOT technical_question — question_security ≠ question_support

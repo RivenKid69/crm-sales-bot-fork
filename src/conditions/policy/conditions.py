@@ -645,6 +645,37 @@ def is_price_question(ctx: PolicyContext) -> bool:
     return False
 
 
+# =============================================================================
+# STALL DETECTION - Same state N turns without progress
+# =============================================================================
+
+@policy_condition(
+    "is_stalled",
+    description="Detect flow state stall: same state N turns without data progress",
+    category="repair"
+)
+def is_stalled(ctx: PolicyContext) -> bool:
+    """
+    Detect flow state stall: same state N turns without data progress.
+
+    Different from is_stuck (which detects repeated unclear intents).
+    Stall means the dialog is running but not progressing — user asks
+    off-topic questions (price_question, request_brevity) that get handled
+    by rules but don't cause state transitions.
+
+    Uses consecutive_same_state from ContextWindow.
+    """
+    from src.yaml_config.constants import _constants
+    config = _constants.get("stall_detection", {})
+    if not config.get("enabled", True):
+        return False
+    threshold = config.get("stall_threshold", 3)
+    exempt = set(config.get("exempt_states", []))
+    if ctx.state in exempt:
+        return False
+    return ctx.consecutive_same_state >= threshold and not ctx.is_progressing
+
+
 # Export all condition functions for testing
 __all__ = [
     # Repair conditions

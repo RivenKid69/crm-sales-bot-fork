@@ -174,6 +174,7 @@ class ContextEnvelope:
     unclear_count: int = 0
     has_oscillation: bool = False
     is_stuck: bool = False
+    consecutive_same_state: int = 0
     repeated_question: Optional[str] = None
     confidence_trend: str = "unknown"
     avg_confidence: float = 0.0
@@ -568,6 +569,7 @@ class ContextEnvelopeBuilder:
         envelope.unclear_count = cw.get_unclear_count()
         envelope.has_oscillation = cw.detect_oscillation()
         envelope.is_stuck = cw.detect_stuck_pattern()
+        envelope.consecutive_same_state = cw.get_consecutive_same_state()
         envelope.repeated_question = cw.detect_repeated_question(
             include_current_intent=self.current_intent
         )

@@ -612,6 +612,98 @@ class FirstContactRefinementLayer(BaseRefinementLayer):
 
 
 # =============================================================================
+# LAYER 3.5: GREETING CONTEXT REFINEMENT (Dialog Failure Fix)
+# =============================================================================
+
+
+@register_refinement_layer("greeting_context")
+class GreetingContextRefinementLayer(BaseRefinementLayer):
+    """
+    Refines technical/misclassified intents in greeting context.
+
+    Problem: In greeting state, intents like problem_sync, request_references
+    get classified by LLM but lead to escalated/close via _universal_base transitions.
+    This layer redirects them to problem_revealed/need_expressed for flow entry.
+
+    Uses SSOT categories from constants.yaml — adding intent to technical_problems
+    category automatically includes it in suspicious_intents.
+    """
+
+    LAYER_NAME = "greeting_context"
+    LAYER_PRIORITY = LayerPriority.HIGH  # 75
+    FEATURE_FLAG = "greeting_context_refinement"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._suspicious_intents: Set[str] = set()
+        self._active_states: Set[str] = set()
+        self._target_overrides: Dict[str, str] = {}
+        self._init_suspicious_intents()
+
+    def _get_config(self) -> Dict[str, Any]:
+        """Load greeting_context_refinement config from constants.yaml."""
+        try:
+            from src.yaml_config.constants import get_greeting_context_refinement_config
+            return get_greeting_context_refinement_config()
+        except ImportError:
+            return {}
+
+    def _init_suspicious_intents(self) -> None:
+        """Load suspicious intents from SSOT categories, not hardcoded list."""
+        from src.yaml_config.constants import INTENT_CATEGORIES
+
+        categories = self._config.get("suspicious_intent_categories", [])
+        self._suspicious_intents = set()
+        for cat in categories:
+            self._suspicious_intents.update(INTENT_CATEGORIES.get(cat, []))
+        # Also allow explicit additions for edge cases
+        explicit = self._config.get("additional_suspicious_intents", [])
+        self._suspicious_intents.update(explicit)
+
+        self._active_states = set(self._config.get("active_states", ["greeting"]))
+        self._target_overrides = self._config.get("target_overrides", {})
+
+    def _should_apply(self, ctx: RefinementContext) -> bool:
+        """Check if greeting context refinement should apply."""
+        if not self._config.get("enabled", True):
+            return False
+
+        max_turn = self._config.get("max_turn_number", 3)
+
+        # Apply in greeting state OR early turns with no state
+        in_greeting = ctx.state in self._active_states
+        early_no_state = ctx.state is None and ctx.turn_number <= max_turn
+
+        if not (in_greeting or early_no_state):
+            return False
+
+        if ctx.intent not in self._suspicious_intents:
+            return False
+
+        return True
+
+    def _do_refine(
+        self,
+        message: str,
+        result: Dict[str, Any],
+        ctx: RefinementContext,
+    ) -> RefinementResult:
+        """Refine suspicious intent in greeting context to safe target."""
+        default_target = self._config.get("default_target", "problem_revealed")
+        target = self._target_overrides.get(ctx.intent, default_target)
+        confidence = self._config.get("refined_confidence", 0.75)
+
+        return self._create_refined_result(
+            new_intent=target,
+            new_confidence=confidence,
+            original_intent=ctx.intent,
+            reason=f"greeting_context:{ctx.intent}→{target}",
+            result=result,
+            metadata={"state": ctx.state, "turn": ctx.turn_number},
+        )
+
+
+# =============================================================================
 # LAYER 4: OBJECTION REFINEMENT (Objection Stuck Fix)
 # =============================================================================
 
@@ -1119,6 +1211,7 @@ def verify_layers_registered() -> List[str]:
         "short_answer",
         "composite_message",
         "first_contact",  # First Turn Objection Bug Fix
+        "greeting_context",  # Dialog Failure Fix
         "objection",
         "option_selection",  # Disambiguation Assist Fix
     ]

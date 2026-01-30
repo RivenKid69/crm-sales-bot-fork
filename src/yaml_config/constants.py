@@ -299,7 +299,7 @@ INTENT_CATEGORIES: Dict[str, List[str]] = _resolve_composed_categories(
 )
 
 # Step 4: Validation - ensure critical categories exist
-_REQUIRED_CATEGORIES = ["objection", "positive", "question", "negative", "exit", "objection_return_triggers"]
+_REQUIRED_CATEGORIES = ["objection", "positive", "question", "negative", "exit", "objection_return_triggers", "greeting_redirect_intents"]
 for _required in _REQUIRED_CATEGORIES:
     if _required not in INTENT_CATEGORIES or not INTENT_CATEGORIES[_required]:
         logger.warning(f"Required category '{_required}' is missing or empty in INTENT_CATEGORIES")
@@ -323,6 +323,11 @@ NEGATIVE_INTENTS: List[str] = INTENT_CATEGORIES.get("negative", [])
 # Loaded from constants.yaml → composed_categories → objection_return_triggers
 # Contains: positive + price_related + objection_return_questions
 OBJECTION_RETURN_TRIGGERS: List[str] = INTENT_CATEGORIES.get("objection_return_triggers", [])
+
+# SSOT: Composed category for greeting state safety overrides
+# Loaded from constants.yaml → composed_categories → greeting_redirect_intents
+# Contains: technical_problems + greeting_additional_redirects
+GREETING_REDIRECT_INTENTS: List[str] = INTENT_CATEGORIES.get("greeting_redirect_intents", [])
 
 # Intent action overrides (intent -> action mapping)
 INTENT_ACTION_OVERRIDES: Dict[str, str] = _intents.get("intent_action_overrides", {})
@@ -765,6 +770,21 @@ def get_confidence_calibration_config() -> Dict[str, Any]:
     })
 
 
+def get_greeting_safety_config() -> Dict[str, Any]:
+    """Get greeting_state_safety config. SSOT for greeting state transition safety."""
+    return _constants.get("greeting_state_safety", {})
+
+
+def get_greeting_context_refinement_config() -> Dict[str, Any]:
+    """Get greeting_context_refinement config. Uses category-based SSOT for suspicious intents."""
+    return _constants.get("greeting_context_refinement", {})
+
+
+def get_stall_detection_config() -> Dict[str, Any]:
+    """Get stall_detection config for flow state stall detection."""
+    return _constants.get("stall_detection", {})
+
+
 def get_frustration_intensity_config() -> Dict[str, Any]:
     """
     Get frustration_intensity config from constants.yaml.
@@ -885,6 +905,7 @@ __all__ = [
     "PRICE_RELATED_INTENTS",
     "OBJECTION_RETURN_QUESTIONS",
     "OBJECTION_RETURN_TRIGGERS",
+    "GREETING_REDIRECT_INTENTS",
     "QUESTION_REQUIRES_FACTS_INTENTS",
     # Intent categories - новые (150+ интентов)
     "EQUIPMENT_QUESTIONS",
@@ -948,6 +969,9 @@ __all__ = [
     # Helper functions
     "get_short_answer_config",
     "get_informative_intents",
+    "get_greeting_safety_config",
+    "get_greeting_context_refinement_config",
+    "get_stall_detection_config",
     "get_objection_return_config",
     "get_objection_refinement_config",
     "get_composite_refinement_config",

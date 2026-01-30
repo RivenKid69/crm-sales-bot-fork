@@ -86,6 +86,7 @@ class PolicyContext:
 
     # Level 1 signals (Repair)
     is_stuck: bool = False
+    consecutive_same_state: int = 0
     has_oscillation: bool = False
     repeated_question: Optional[str] = None
     confidence_trend: str = "stable"
@@ -166,6 +167,7 @@ class PolicyContext:
 
             # Level 1 signals
             is_stuck=envelope.is_stuck,
+            consecutive_same_state=getattr(envelope, 'consecutive_same_state', 0),
             has_oscillation=envelope.has_oscillation,
             repeated_question=envelope.repeated_question,
             confidence_trend=envelope.confidence_trend,
@@ -215,6 +217,7 @@ class PolicyContext:
         current_intent: Optional[str] = None,
         current_action: Optional[str] = None,
         is_stuck: bool = False,
+        consecutive_same_state: int = 0,
         has_oscillation: bool = False,
         repeated_question: Optional[str] = None,
         confidence_trend: str = "stable",
@@ -257,6 +260,7 @@ class PolicyContext:
             current_intent=current_intent,
             current_action=current_action,
             is_stuck=is_stuck,
+            consecutive_same_state=consecutive_same_state,
             has_oscillation=has_oscillation,
             repeated_question=repeated_question,
             confidence_trend=confidence_trend,
@@ -315,6 +319,7 @@ class PolicyContext:
             "current_intent": self.current_intent,
             "current_action": self.current_action,
             "is_stuck": self.is_stuck,
+            "consecutive_same_state": self.consecutive_same_state,
             "has_oscillation": self.has_oscillation,
             "repeated_question": self.repeated_question,
             "confidence_trend": self.confidence_trend,
