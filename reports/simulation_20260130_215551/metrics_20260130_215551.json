@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "timestamp": "2026-01-30 21:55:51",
+    "timestamp_iso": "2026-01-30T22:16:46.436757",
+    "version": "1.0",
+    "model": "qwen3:14b"
+  },
+  "parameters": {
+    "total_dialogs": 100,
+    "total_flows": 20,
+    "total_personas": 8,
+    "parallel_threads": 8
+  },
+  "summary": {
+    "total": 100,
+    "passed": 55,
+    "failed": 45,
+    "pass_rate_percent": 55.00000000000001,
+    "avg_score": 0.6349800000000001,
+    "min_score": 0.2375,
+    "max_score": 1.0
+  },
+  "performance": {
+    "duration_seconds": 1244.3557705879211,
+    "duration_minutes": 20.739262843132018,
+    "avg_time_per_dialog_seconds": 12.443557705879211,
+    "dialogs_per_minute": 4.821772150552393
+  },
+  "outcomes": {
+    "soft_close": 39,
+    "abandoned": 45,
+    "success": 16
+  },
+  "flow_scores": {
+    "spin_selling": {
+      "avg": 0.5415,
+      "count": 5
+    },
+    "bant": {
+      "avg": 0.4240625,
+      "count": 4
+    },
+    "challenger": {
+      "avg": 0.7141666666666667,
+      "count": 3
+    },
+    "solution": {
+      "avg": 0.7029166666666667,
+      "count": 3
+    },
+    "consultative": {
+      "avg": 0.7179166666666666,
+      "count": 3
+    },
+    "sandler": {
+      "avg": 0.7129285714285715,
+      "count": 7
+    },
+    "meddic": {
+      "avg": 0.57375,
+      "count": 6
+    },
+    "snap": {
+      "avg": 0.52575,
+      "count": 5
+    },
+    "value": {
+      "avg": 0.5595833333333333,
+      "count": 6
+    },
+    "inbound": {
+      "avg": 0.63875,
+      "count": 5
+    },
+    "aida": {
+      "avg": 0.660625,
+      "count": 4
+    },
+    "fab": {
+      "avg": 0.5215,
+      "count": 5
+    },
+    "neat": {
+      "avg": 0.7222500000000001,
+      "count": 5
+    },
+    "gap": {
+      "avg": 0.49700000000000005,
+      "count": 5
+    },
+    "command": {
+      "avg": 0.7265,
+      "count": 5
+    },
+    "social": {
+      "avg": 0.7100000000000001,
+      "count": 6
+    },
+    "customer_centric": {
+      "avg": 0.6702083333333334,
+      "count": 6
+    },
+    "relationship": {
+      "avg": 0.7491666666666666,
+      "count": 6
+    },
+    "transactional": {
+      "avg": 0.6675,
+      "count": 5
+    },
+    "demo_first": {
+      "avg": 0.6639583333333333,
+      "count": 6
+    }
+  },
+  "persona_scores": {
+    "aggressive": {
+      "avg": 0.6885892857142857,
+      "count": 14
+    },
+    "busy": {
+      "avg": 0.50890625,
+      "count": 8
+    },
+    "happy_path": {
+      "avg": 0.6417045454545455,
+      "count": 11
+    },
+    "skeptic": {
+      "avg": 0.6538214285714287,
+      "count": 14
+    },
+    "tire_kicker": {
+      "avg": 0.6030000000000001,
+      "count": 17
+    },
+    "price_sensitive": {
+      "avg": 0.5816666666666667,
+      "count": 12
+    },
+    "competitor_user": {
+      "avg": 0.6849772727272727,
+      "count": 11
+    },
+    "technical": {
+      "avg": 0.6775769230769231,
+      "count": 13
+    }
+  },
+  "system_info": {
+    "timestamp": "2026-01-30T21:55:51.189097",
+    "cpu": {
+      "cores_physical": 16,
+      "cores_logical": 32,
+      "percent_total": 0.7,
+      "percent_per_core": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        27.3,
+        9.1,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        0.0,
+        9.1,
+        0.0,
+        9.1,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "freq_mhz": 3505.5135625
+    },
+    "memory": {
+      "total_gb": 60.47,
+      "available_gb": 30.07,
+      "used_gb": 30.4,
+      "percent": 50.3
+    },
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 5090",
+      "memory_total_mb": 32607,
+      "memory_free_mb": 31717,
+      "memory_used_mb": 395,
+      "utilization_percent": 1,
+      "temperature_c": 42,
+      "power_draw_w": 14.53,
+      "power_limit_w": 600.0
+    }
+  },
+  "resource_monitoring": {
+    "samples_count": 248,
+    "cpu_avg": 5.764919354838709,
+    "cpu_max": 8.4,
+    "memory_avg": 60.954032258064515,
+    "memory_max": 61.6,
+    "gpu_utilization_avg": 92.18548387096774,
+    "gpu_utilization_max": 99,
+    "gpu_memory_max_mb": 31885,
+    "gpu_temperature_max_c": 68
+  }
+}
