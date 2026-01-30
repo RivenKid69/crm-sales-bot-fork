@@ -1,22 +1,24 @@
 # Design Document: Архитектура и Принципы Проектирования
 
-> **Версия:** 1.0
+> **Версия:** 2.0
 > **Дата:** Январь 2026
-> **Статус:** Draft
+> **Статус:** Active
 
 ---
 
 ## Содержание
 
 1. [Vision и Цели](#1-vision-и-цели)
-2. [Архитектурные Принципы](#2-архитектурные-принципы)
-3. [Plugin Architecture](#3-plugin-architecture)
-4. [Configuration-Driven Development](#4-configuration-driven-development)
-5. [Абстракции и Контракты](#5-абстракции-и-контракты)
-6. [Multi-Tenancy и Изоляция](#6-multi-tenancy-и-изоляция)
-7. [Расширяемость Flow](#7-расширяемость-flow)
-8. [Best Practices](#8-best-practices)
-9. [Roadmap](#9-roadmap)
+2. [Классические Архитектурные Принципы](#2-классические-архитектурные-принципы)
+3. [Операционные Архитектурные Принципы](#3-операционные-архитектурные-принципы)
+4. [Blackboard Architecture](#4-blackboard-architecture)
+5. [Plugin Architecture](#5-plugin-architecture)
+6. [Configuration-Driven Development](#6-configuration-driven-development)
+7. [Абстракции и Контракты](#7-абстракции-и-контракты)
+8. [Multi-Tenancy и Изоляция](#8-multi-tenancy-и-изоляция)
+9. [Расширяемость Flow](#9-расширяемость-flow)
+10. [Best Practices](#10-best-practices)
+11. [Roadmap](#11-roadmap)
 
 ---
 
@@ -54,7 +56,8 @@
 | Цель | Метрика | Текущий статус |
 |------|---------|----------------|
 | **Zero-code flow creation** | Новый flow без Python | ✅ YAML flows |
-| **Domain independence** | Нет hardcode бизнес-логики | 🔄 Частично |
+| **Domain independence** | Нет hardcode бизнес-логики | 🔄 Частично (composed_categories) |
+| **Blackboard decision-making** | Все решения через proposals | ✅ 10 Knowledge Sources |
 | **Plugin extensibility** | Добавление функций через плагины | 📋 Planned |
 | **Multi-tenant ready** | Изоляция данных между клиентами | 📋 Planned |
 | **LLM agnostic** | Поддержка любой LLM | 🔄 Частично |
@@ -89,7 +92,7 @@ flow:
 
 ---
 
-## 2. Архитектурные Принципы
+## 2. Классические Архитектурные Принципы
 
 ### 2.1 SOLID в контексте платформы
 
@@ -311,9 +314,485 @@ class EventBus:
 
 ---
 
-## 3. Plugin Architecture
+## 3. Операционные Архитектурные Принципы
 
-### 3.1 Концепция Plugin System
+> Принципы из Раздела 2 описывают _классические_ паттерны проектирования.
+> Этот раздел кодифицирует **операционные принципы**, выведенные из реального
+> опыта разработки — каждый подкреплён конкретным коммитом и примером кода.
+
+### 3.1 SSOT через YAML (Single Source of Truth)
+
+**Принцип:** Любое знание о предметной области (список интентов, группировка категорий,
+пороговые значения) должно быть определено **ровно в одном месте** — в YAML-конфигурации.
+Python-код читает эти определения, но никогда не дублирует их.
+
+**Коммит-референс:** `01252ba`, `7c74854`
+
+**Анти-паттерн — дублирование в Python:**
+
+```python
+# ❌ ПЛОХО: Хардкод в Python (реальный баг из кодовой базы)
+QUESTION_RETURN_INTENTS = {
+    "question_pricing",       # ← опечатка! Правильно: price_question
+    "question_competitors",   # ← отсутствовали 6 из 7 price-интентов
+    "question_implementation",
+}
+
+def handle_objection(self, intent):
+    if intent in QUESTION_RETURN_INTENTS:
+        return "return_to_previous"  # Пропускает price_comparison и др.
+```
+
+**Правильный подход — SSOT через YAML:**
+
+```yaml
+# ✅ ХОРОШО: Единственный источник истины
+composed_categories:
+  objection_return_triggers:
+    union:
+      - positive             # greeting, agreement, thanks, ...
+      - price_related        # ВСЕ price-интенты автоматически
+      - objection_return_questions  # question_competitors, question_integration, ...
+```
+
+```python
+# Python только ЧИТАЕТ конфигурацию
+def handle_objection(self, intent):
+    triggers = self.config["composed_categories"]["objection_return_triggers"]
+    if intent in triggers:
+        return "return_to_previous"
+```
+
+**Правило:** Если один и тот же список интентов нужен в двух местах — он должен быть
+определён в YAML как `composed_category` и ссылаться по имени. Хардкод в Python запрещён.
+
+---
+
+### 3.2 Blackboard Pipeline Authority
+
+**Принцип:** Все решения о действиях и переходах принимаются **только через Blackboard pipeline**.
+Knowledge Source предлагает (propose), ConflictResolver разрешает конфликты, Orchestrator
+применяет результат. Прямое изменение состояния вне pipeline запрещено.
+
+**Коммит-референс:** `c3736dd`, `0634e7b`, `b717adb`
+
+**Анти-паттерн — прямое управление состоянием:**
+
+```python
+# ❌ ПЛОХО: Прямое изменение состояния, минуя Blackboard
+def _handle_special_case(self):
+    sm_result = {}
+    sm_result["next_state"] = "some_state"     # Прямая запись
+    sm_result["action"] = "special_action"     # Без proposal/resolution
+    self.state_machine.transition_to("some_state")  # Ручной переход
+    return sm_result
+    # Пропущено: context_window, action_tracker, lead_score,
+    #            decision_trace, guard_state, visited_states
+```
+
+**Правильный подход — Knowledge Source:**
+
+```python
+# ✅ ХОРОШО: StallGuardSource (реальный код из c3736dd)
+class StallGuardSource(KnowledgeSource):
+    """Registered at priority_order=45 via SourceRegistry."""
+
+    def should_contribute(self, blackboard):
+        """O(1) gate — быстрая проверка без side effects."""
+        ctx = blackboard.get_context()
+        return (self._enabled
+                and ctx.feature_flags.get("stall_guard_enabled", False)
+                and ctx.turn_number > self._min_turns)
+
+    def contribute(self, blackboard):
+        """Propose через blackboard — ConflictResolver решает."""
+        blackboard.propose_transition(
+            next_state=self._escape_state,
+            priority=Priority.HIGH,
+            reason_code="stall_guard_escape",
+            source_name=self.name,
+        )
+```
+
+**Правило:** Новая поведенческая логика = новый Knowledge Source, зарегистрированный
+через `SourceRegistry.register()`. Прямая запись в `sm_result` вне Orchestrator запрещена.
+
+---
+
+### 3.3 Open/Closed через Registry + Feature Flags
+
+**Принцип:** Новая функциональность добавляется через **регистрацию в реестре** и
+активируется **feature flag'ом**. Существующий код не модифицируется.
+
+**Коммит-референс:** `84bbde0`, `ba260d1`, `c3736dd`
+
+**Анти-паттерн — inline модификация:**
+
+```python
+# ❌ ПЛОХО: Добавление логики внутрь существующего метода
+def process_classification(self, result):
+    # ... существующая логика ...
+
+    # ДОБАВЛЕНО: новая обработка (модификация существующего кода)
+    if result.intent == "option_selection":
+        result = self._handle_option_selection(result)
+
+    return result
+```
+
+**Правильный подход — Registry + Decorator:**
+
+```python
+# ✅ ХОРОШО: OptionSelectionRefinementLayer (реальный код из 84bbde0)
+@register_refinement_layer("option_selection")
+class OptionSelectionRefinementLayer(BaseRefinementLayer):
+    """Добавлена через декоратор — ноль изменений в существующих layers."""
+
+    def refine(self, result, context):
+        if self._is_option_selection(result, context):
+            return self._resolve_option(result, context)
+        return result
+```
+
+```yaml
+# Активация через YAML — не требует изменений в коде
+refinement_pipeline:
+  layers:
+    - name: option_selection
+      enabled: true        # Feature flag
+      priority: 25
+```
+
+**Для Knowledge Sources — тот же паттерн:**
+
+```python
+# Регистрация без модификации существующих Sources
+SourceRegistry.register(
+    source_class=StallGuardSource,
+    name="StallGuardSource",
+    priority_order=45,
+    config_key="stall_guard",
+)
+```
+
+**Правило:** Добавление функциональности без `git diff` в существующих файлах (кроме YAML-конфига).
+Три точки расширения: `@register_refinement_layer`, `SourceRegistry.register`, условия через `ConditionRegistry`.
+
+---
+
+### 3.4 Defense-in-Depth (Эшелонированная защита)
+
+**Принцип:** Критическое поведение защищается **несколькими независимыми слоями** в разных
+подсистемах. Отказ одного слоя не приводит к полному отказу — следующий слой перехватывает.
+
+**Коммит-референс:** `e47da0a`, `c3736dd`
+
+**Анти-паттерн — единственная точка защиты:**
+
+```python
+# ❌ ПЛОХО: Одна проверка на всё
+def process(self, intent):
+    if intent == "greeting" and self.state != "greeting":
+        return "ignore"  # Единственная защита. Если сломается — катастрофа.
+```
+
+**Правильный подход — 5 фаз в 5 подсистемах:**
+
+```
+Commit e47da0a: 5-phase defense-in-depth для greeting safety
+
+Phase 1: State Machine (greeting_safety mixin)
+  └─ transitions: { greeting: null }          # Блокировка на уровне SM
+
+Phase 2: Classifier (semantic examples)
+  └─ 7 intent descriptions + примеры          # Лучшая классификация
+
+Phase 3: Refinement Layer
+  └─ GreetingContextRefinementLayer           # Постклассификационная коррекция
+
+Phase 4: Blackboard Source
+  └─ Phase-origin objection escape            # Обработка в Blackboard
+
+Phase 5: Policy Condition
+  └─ is_stalled detection                     # Финальная сеть безопасности
+```
+
+**Правило:** Для критических поведенческих гарантий — минимум 3 независимых уровня защиты.
+Каждый уровень работает в своей подсистеме и может быть протестирован изолированно.
+
+---
+
+### 3.5 Single Pipeline Invariant (Единый конвейер)
+
+**Принцип:** Каждое сообщение пользователя проходит через **один и тот же конвейер**
+от начала до конца. Параллельные пути обработки (forked pipelines) запрещены.
+
+**Коммит-референс:** `37e2e3f`, `0f68b09`
+
+**Анти-паттерн — параллельные конвейеры:**
+
+```python
+# ❌ ПЛОХО: Два конвейера с разной полнотой обработки
+class Bot:
+    def process(self, message):
+        # КОНВЕЙЕР 1: Полный — 14 полей, transition_to(), все context updates
+        result = self.orchestrator.process_turn(...)
+        self._update_context_window(result)
+        self._update_action_tracker(result)
+        self._update_lead_score(result)
+        return result
+
+    def _continue_with_classification(self, intent):
+        # КОНВЕЙЕР 2: Неполный — 8 полей, НЕТ transition_to()
+        sm_result = self.state_machine.process(intent)
+        sm_result["next_state"] = sm_result.get("next_state", "")
+        # ПРОПУЩЕНО: context_window, action_tracker, lead_score,
+        #            decision_trace, visited_states, guard_state
+        return sm_result
+```
+
+**Правильный подход — единый pipeline:**
+
+```python
+# ✅ ХОРОШО: Все пути сходятся к одному Orchestrator pipeline
+class Bot:
+    def process(self, message):
+        # Единственный путь обработки — всегда полный
+        decision = self.orchestrator.process_turn(
+            blackboard=self.blackboard,
+            intent=classified_intent,
+            extracted_data=data,
+        )
+        # Orchestrator гарантирует: transition_to(), context updates,
+        # decision_trace, visited_states — ВСЕГДА
+        return decision.to_sm_result()
+```
+
+**Правило:** `Orchestrator.process_turn()` — единственная точка принятия решений.
+Любой обходной путь (disambiguation, fallback, retry) должен в итоге вызвать `process_turn()`.
+Если метод возвращает `sm_result` минуя Orchestrator — это баг.
+
+---
+
+### 3.6 Composed Categories (Композитные категории)
+
+**Принцип:** Интенты организованы в **иерархическую таксономию** с 5 уровнями
+fallback-разрешения. Группировка интентов определяется через `composed_categories` в YAML,
+а не через плоские списки в Python.
+
+**Коммит-референс:** `01252ba`, `7c74854`
+
+**Анти-паттерн — плоские списки:**
+
+```python
+# ❌ ПЛОХО: Плоские списки с дублированием
+POSITIVE_INTENTS = {"greeting", "agreement", "thanks"}
+PRICE_INTENTS = {"price_question", "price_comparison", "budget_question"}
+RETURN_INTENTS = {"greeting", "agreement", "thanks",   # ← дублирование
+                  "price_question", "price_comparison"} # ← неполный список
+```
+
+**Правильный подход — таксономия + composed categories:**
+
+```yaml
+# ✅ ХОРОШО: Иерархическая таксономия
+intent_taxonomy:
+  price_question:
+    category: price_related         # Уровень 1
+    super_category: information     # Уровень 2
+    semantic_domain: commercial     # Уровень 3
+
+  agreement:
+    category: positive
+    super_category: engagement
+    semantic_domain: rapport
+
+# Composed categories — union/intersection без дублирования
+composed_categories:
+  objection_return_triggers:
+    union:
+      - positive              # Все интенты категории positive
+      - price_related         # Все интенты категории price_related
+      - objection_return_questions
+```
+
+**Fallback chain (5 уровней):**
+
+```
+Intent → Exact Match
+  └─ не найден → Category (taxonomy_category_defaults)
+       └─ не найден → Super-Category (taxonomy_super_category_defaults)
+            └─ не найден → Domain (taxonomy_domain_defaults)
+                 └─ не найден → Default (глобальный fallback)
+```
+
+**Правило:** Для группировки интентов — только `composed_categories` (union/intersection).
+Для обработки неизвестных интентов — таксономия с fallback chain.
+Плоские `set()` и `list` интентов в Python запрещены.
+
+---
+
+## 4. Blackboard Architecture
+
+> Blackboard — центральная архитектура принятия решений. Все Knowledge Sources
+> вносят предложения (proposals), ConflictResolver разрешает конфликты по приоритетам,
+> Orchestrator применяет финальное решение.
+
+### 4.1 Обзор архитектуры
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Blackboard Architecture                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                    Knowledge Sources (10 registered)                   │  │
+│  │                                                                       │  │
+│  │  [5]  GoBackGuard    [10] PriceHandler    [15] IntentRules            │  │
+│  │  [20] DataCollector  [25] ObjectionGuard  [30] TransitionResolver     │  │
+│  │  [35] FallbackAction [40] FactQuestion    [45] StallGuard             │  │
+│  │  [50] DefaultAction  [60] ReturnIntent                                │  │
+│  │                                                                       │  │
+│  │  Каждый source: should_contribute() → contribute() → propose()        │  │
+│  └───────────────────────────────┬───────────────────────────────────────┘  │
+│                                  │ proposals                                │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                       Conflict Resolver                                │  │
+│  │                                                                       │  │
+│  │  1. Separate: ACTION proposals | TRANSITION proposals                 │  │
+│  │  2. Sort: CRITICAL > HIGH > NORMAL > LOW                              │  │
+│  │  3. Select: winning_action (highest priority)                         │  │
+│  │  4. Check: combinable flag                                            │  │
+│  │     • combinable=false → BLOCK all transitions                        │  │
+│  │     • combinable=true  → MERGE action + transition                    │  │
+│  │  5. Build: ResolvedDecision(action, next_state, reason_codes)         │  │
+│  └───────────────────────────────┬───────────────────────────────────────┘  │
+│                                  │ decision                                 │
+│                                  ▼                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                         Orchestrator                                   │  │
+│  │                                                                       │  │
+│  │  Step 1: begin_turn()          — snapshot context                     │  │
+│  │  Step 2: KS.contribute()       — collect proposals                    │  │
+│  │  Step 3: assign priorities     — from YAML config                     │  │
+│  │  Step 4: conflict_resolve()    — produce ResolvedDecision             │  │
+│  │  Step 5: commit()              — apply data_updates, flags            │  │
+│  │  Step 6: side_effects()        — transition_to(), context sync        │  │
+│  │  Step 7: fill_compat_fields()  — prev_state, goal, collected_data     │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Контракт Knowledge Source
+
+Каждый Knowledge Source реализует два метода:
+
+```python
+class KnowledgeSource(ABC):
+    """Базовый класс для всех Knowledge Sources."""
+
+    @abstractmethod
+    def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
+        """
+        O(1) gate — быстрая проверка без side effects.
+
+        Возвращает True если source хочет внести предложение.
+        НЕ ДОЛЖЕН: модифицировать blackboard, вызывать LLM, делать I/O.
+        """
+        pass
+
+    @abstractmethod
+    def contribute(self, blackboard: 'DialogueBlackboard') -> None:
+        """
+        Основная логика — анализ контекста и внесение предложений.
+
+        Вызывает blackboard.propose_action() и/или
+        blackboard.propose_transition() для внесения предложений.
+        НЕ ДОЛЖЕН: напрямую менять состояние, вызывать transition_to().
+        """
+        pass
+```
+
+### 4.3 Типы предложений (Proposals)
+
+```python
+class ProposalType(Enum):
+    ACTION = "action"           # Предложение действия (action для генератора)
+    TRANSITION = "transition"   # Предложение перехода в другое состояние
+
+class Priority(IntEnum):
+    CRITICAL = 0   # Блокирующие действия (rejection, escalation)
+    HIGH = 1       # Важные действия (price, objection handling)
+    NORMAL = 2     # Стандартная обработка (intent rules, data collection)
+    LOW = 3        # Fallback (continue, default)
+
+@dataclass
+class Proposal:
+    type: ProposalType
+    value: str              # Имя действия или целевое состояние
+    priority: Priority
+    combinable: bool        # True = можно совмещать с transition
+    reason_code: str        # Для трассировки: "price_question_detected"
+    source_name: str        # Имя Knowledge Source
+    priority_rank: int      # Для тонкой сортировки внутри Priority
+    metadata: Dict          # Дополнительные данные
+```
+
+**Ключевая инновация — флаг `combinable`:**
+
+- `combinable=True`: действие сосуществует с переходом.
+  Пример: `answer_with_pricing` (action) + `data_complete → next_phase` (transition)
+- `combinable=False`: действие **блокирует** все переходы.
+  Пример: `handle_rejection` блокирует любой переход — диалог остаётся в текущем состоянии
+
+### 4.4 Алгоритм ConflictResolver
+
+```
+Input:  proposals[] — от всех Knowledge Sources
+Output: ResolvedDecision(action, next_state, reason_codes)
+
+1. SEPARATE proposals → action_proposals[], transition_proposals[]
+2. SORT each by (priority.value ASC, priority_rank ASC)  // stable sort
+3. winning_action = action_proposals[0]                    // highest priority
+4. IF winning_action.combinable == false:
+     → BLOCK all transitions
+     → next_state = current_state
+   ELSE:
+     → winning_transition = transition_proposals[0]
+     → MERGE action + transition
+5. FALLBACK: если нет transition и есть "any" trigger → apply fallback
+6. RETURN ResolvedDecision(action, next_state, reason_codes, trace)
+```
+
+### 4.5 Регистрация Sources
+
+```python
+# src/blackboard/source_registry.py
+# Порядок определяет очерёдность вызова contribute()
+# (НЕ приоритет — приоритет задаётся в самих proposals)
+
+SourceRegistry.register(GoBackGuardSource,       name="GoBackGuard",       priority_order=5)
+SourceRegistry.register(PriceHandlerSource,      name="PriceHandler",      priority_order=10)
+SourceRegistry.register(IntentRulesSource,       name="IntentRules",       priority_order=15)
+SourceRegistry.register(DataCollectorSource,     name="DataCollector",     priority_order=20)
+SourceRegistry.register(ObjectionGuardSource,    name="ObjectionGuard",    priority_order=25)
+SourceRegistry.register(TransitionResolverSource,name="TransitionResolver",priority_order=30)
+SourceRegistry.register(FallbackActionSource,    name="FallbackAction",    priority_order=35)
+SourceRegistry.register(FactQuestionSource,      name="FactQuestion",      priority_order=40)
+SourceRegistry.register(StallGuardSource,        name="StallGuard",        priority_order=45)
+SourceRegistry.register(DefaultActionSource,     name="DefaultAction",     priority_order=50)
+```
+
+> **Важно:** `priority_order` определяет порядок *вызова* sources, а не приоритет их
+> предложений. Приоритет определяется `Priority` enum в каждом `Proposal`.
+
+---
+
+## 5. Plugin Architecture
+
+### 5.1 Концепция Plugin System
 
 Плагины позволяют расширять функциональность без модификации core:
 
@@ -346,7 +825,7 @@ class EventBus:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Plugin Interface
+### 5.2 Plugin Interface
 
 ```python
 from abc import ABC, abstractmethod
@@ -469,7 +948,7 @@ class MiddlewarePlugin(BasePlugin):
         pass
 ```
 
-### 3.3 Plugin Discovery и Loading
+### 5.3 Plugin Discovery и Loading
 
 ```python
 class PluginManager:
@@ -524,7 +1003,7 @@ class PluginManager:
         return results
 ```
 
-### 3.4 Пример Plugin: CRM Integration
+### 5.4 Пример Plugin: CRM Integration
 
 ```yaml
 # plugins/salesforce_crm/plugin.yaml
@@ -609,7 +1088,7 @@ class SalesforceCRMPlugin(ActionPlugin):
         pass  # Cleanup if needed
 ```
 
-### 3.5 Hook Points
+### 5.5 Hook Points
 
 ```python
 class HookPoints:
@@ -645,9 +1124,9 @@ class HookPoints:
 
 ---
 
-## 4. Configuration-Driven Development
+## 6. Configuration-Driven Development
 
-### 4.1 Иерархия конфигурации
+### 6.1 Иерархия конфигурации
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -677,7 +1156,7 @@ class HookPoints:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Структура конфигурации
+### 6.2 Структура конфигурации
 
 ```
 config/
@@ -715,7 +1194,7 @@ config/
     └── hubspot/
 ```
 
-### 4.3 Унифицированный ConfigLoader
+### 6.3 Унифицированный ConfigLoader
 
 ```python
 from dataclasses import dataclass, field
@@ -858,7 +1337,7 @@ class UnifiedConfigLoader:
         return config
 ```
 
-### 4.4 Validation Schema
+### 6.4 Validation Schema
 
 ```python
 from pydantic import BaseModel, Field, validator
@@ -918,9 +1397,9 @@ class FlowConfig(BaseModel):
 
 ---
 
-## 5. Абстракции и Контракты
+## 7. Абстракции и Контракты
 
-### 5.1 Core Contracts
+### 7.1 Core Contracts
 
 ```python
 from abc import ABC, abstractmethod
@@ -1138,7 +1617,7 @@ class BaseBot(ABC):
         pass
 ```
 
-### 5.2 Registry Pattern для расширяемости
+### 7.2 Registry Pattern для расширяемости
 
 ```python
 from typing import TypeVar, Generic, Dict, Type, Callable
@@ -1218,9 +1697,9 @@ class HybridClassifier:
 
 ---
 
-## 6. Multi-Tenancy и Изоляция
+## 8. Multi-Tenancy и Изоляция
 
-### 6.1 Tenant Model
+### 8.1 Tenant Model
 
 ```python
 @dataclass
@@ -1298,7 +1777,7 @@ class TenantManager:
         )
 ```
 
-### 6.2 Context Isolation
+### 8.2 Context Isolation
 
 ```python
 class TenantContext(IContext):
@@ -1338,7 +1817,7 @@ class TenantContext(IContext):
         self._storage.save(self)
 ```
 
-### 6.3 Resource Isolation
+### 8.3 Resource Isolation
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -1370,9 +1849,9 @@ class TenantContext(IContext):
 
 ---
 
-## 7. Расширяемость Flow
+## 9. Расширяемость Flow
 
-### 7.1 Flow Composition
+### 9.1 Flow Composition
 
 ```yaml
 # flows/composite_flow/flow.yaml
@@ -1452,7 +1931,7 @@ flow:
             is_final: true
 ```
 
-### 7.2 Custom State Types
+### 9.2 Custom State Types
 
 ```yaml
 # config/platform/state_types.yaml
@@ -1516,7 +1995,7 @@ state_types:
         type: string
 ```
 
-### 7.3 Dynamic Flow Modification
+### 9.3 Dynamic Flow Modification
 
 ```python
 class FlowModifier:
@@ -1594,9 +2073,9 @@ class FlowModifier:
 
 ---
 
-## 8. Best Practices
+## 10. Best Practices
 
-### 8.1 Основано на исследованиях
+### 10.1 Основано на исследованиях
 
 | Практика | Источник | Применение |
 |----------|----------|------------|
@@ -1608,7 +2087,7 @@ class FlowModifier:
 | **Hexagonal Architecture** | Alistair Cockburn | Ports & Adapters |
 | **Domain-Driven Design** | Eric Evans | Bounded contexts |
 
-### 8.2 Coding Guidelines
+### 10.2 Coding Guidelines
 
 ```python
 # =============================================================================
@@ -1717,7 +2196,7 @@ class Config:
         return replace(self, **kwargs)  # Returns new instance
 ```
 
-### 8.3 Testing Guidelines
+### 10.3 Testing Guidelines
 
 ```python
 # =============================================================================
@@ -1812,9 +2291,9 @@ class TestHybridClassifier(ClassifierContractTest):
 
 ---
 
-## 9. Roadmap
+## 11. Roadmap
 
-### Phase 1: Foundation (Current)
+### Phase 1: Foundation (Complete)
 
 - [x] YAML-based configuration v2.0
 - [x] DAG State Machine
@@ -1829,14 +2308,34 @@ class TestHybridClassifier(ClassifierContractTest):
   - [x] Multi-tenant isolation
   - [x] Stress/performance testing
   - [x] Config migration
-- [x] **RefinementPipeline** — Protocol + Registry pattern for classification refinement ⭐ NEW
+- [x] **RefinementPipeline** — Protocol + Registry pattern for classification refinement
   - [x] IRefinementLayer Protocol
   - [x] RefinementLayerRegistry (dynamic registration)
   - [x] BaseRefinementLayer (template method pattern)
-  - [x] Layer adapters (ShortAnswer, Composite, Objection)
+  - [x] Layer adapters (ShortAnswer, Composite, Objection, GreetingContext, OptionSelection)
   - [x] YAML configuration
   - [x] Feature flag integration
   - [x] 33 unit tests
+
+### Phase 1b: Blackboard Architecture (Current)
+
+- [x] **Blackboard Architecture** — центральная система принятия решений
+  - [x] DialogueBlackboard (proposal collection)
+  - [x] ConflictResolver (priority-based resolution with combinable flag)
+  - [x] Orchestrator (7-step pipeline)
+  - [x] 10 Knowledge Sources (SourceRegistry + priority_order)
+  - [x] ResolvedDecision → sm_result compatibility layer
+- [x] **Операционные принципы** — кодифицированы из реального опыта
+  - [x] SSOT через YAML (composed_categories, intent_taxonomy)
+  - [x] Blackboard Pipeline Authority (все решения через proposals)
+  - [x] OCP через Registry + Feature Flags
+  - [x] Defense-in-Depth (эшелонированная защита)
+  - [x] Single Pipeline Invariant
+  - [x] Composed Categories (5-level fallback chain)
+- [ ] **Disambiguation через Blackboard** — устранение параллельного конвейера
+  - [ ] DisambiguationSource (Knowledge Source)
+  - [ ] DisambiguationResolutionLayer (Refinement Layer)
+  - [ ] Удаление ~470 строк дублированного кода в bot.py
 - [ ] **Refactor to Protocols/Interfaces** (остальные компоненты)
 - [ ] **Registry pattern for all components** (classifier, generator, knowledge)
 
@@ -1879,16 +2378,19 @@ class TestHybridClassifier(ClassifierContractTest):
 При переходе к новой архитектуре:
 
 ```markdown
-- [x] Выделить интерфейсы из существующих классов (IRefinementLayer Protocol) ⭐
-- [x] Создать Registry для каждого типа компонента (RefinementLayerRegistry) ⭐
-- [x] Перенести конфигурацию из Python в YAML (refinement_pipeline section)
+- [x] Выделить интерфейсы из существующих классов (IRefinementLayer Protocol)
+- [x] Создать Registry для каждого типа компонента (RefinementLayerRegistry, SourceRegistry)
+- [x] Перенести конфигурацию из Python в YAML (refinement_pipeline, composed_categories, intent_taxonomy)
+- [x] Реализовать Blackboard Architecture (10 Knowledge Sources, ConflictResolver, Orchestrator)
+- [x] Кодифицировать операционные принципы (SSOT, Pipeline Authority, OCP, Defense-in-Depth, Single Pipeline, Composed Categories)
 - [ ] Добавить DI через конструкторы
 - [ ] Создать Composition Root (factory)
 - [ ] Добавить Event Bus
 - [ ] Реализовать Plugin Manager
 - [ ] Добавить Tenant model
 - [x] Написать contract tests (33 unit tests for RefinementPipeline)
-- [x] Обновить документацию (ARCHITECTURE.md, CLASSIFIER.md, DESIGN_PRINCIPLES.md) ⭐
+- [x] Обновить документацию (ARCHITECTURE.md, CLASSIFIER.md, DESIGN_PRINCIPLES.md v2.0)
+- [ ] Устранить параллельный конвейер disambiguation (DisambiguationSource + ResolutionLayer)
 ```
 
 ---
@@ -1897,6 +2399,14 @@ class TestHybridClassifier(ClassifierContractTest):
 
 | Термин | Определение |
 |--------|-------------|
+| **Blackboard** | Центральная архитектура принятия решений через proposals |
+| **Knowledge Source** | Компонент Blackboard, вносящий предложения (proposals) |
+| **Proposal** | Предложение действия (ACTION) или перехода (TRANSITION) |
+| **ConflictResolver** | Компонент, разрешающий конфликты между proposals по приоритетам |
+| **Orchestrator** | 7-шаговый конвейер обработки turn в Blackboard |
+| **Combinable** | Флаг proposal: true = совместим с transition, false = блокирует |
+| **Composed Category** | YAML-определённое объединение категорий интентов |
+| **Intent Taxonomy** | Иерархическая классификация: intent → category → super_category → domain |
 | **Tenant** | Клиент платформы с изолированной конфигурацией |
 | **Flow** | Определение диалогового сценария в YAML |
 | **State** | Узел в графе диалога |
@@ -1907,8 +2417,11 @@ class TestHybridClassifier(ClassifierContractTest):
 | **Mixin** | Переиспользуемый блок правил |
 | **DAG** | Directed Acyclic Graph — граф без циклов |
 | **Registry** | Реестр для dynamic lookup компонентов |
+| **SSOT** | Single Source of Truth — единый источник истины |
+| **Defense-in-Depth** | Эшелонированная защита: несколько слоёв в разных подсистемах |
 
 ---
 
 *Документ создан: Январь 2026*
-*Последнее обновление: 25 Января 2026*
+*Последнее обновление: 30 Января 2026*
+*Версия 2.0: Добавлены Операционные Принципы (Раздел 3) и Blackboard Architecture (Раздел 4)*
