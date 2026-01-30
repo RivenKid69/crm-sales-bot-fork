@@ -152,6 +152,15 @@ class FeatureFlags:
         # === Greeting State Safety (Phase 1: Dialog Failure Fix) ===
         "greeting_state_safety": True,             # Category-based greeting transition overrides
         "greeting_context_refinement": True,       # Greeting context refinement layer
+
+        # === First Contact Refinement (Objection in First Contact) ===
+        "first_contact_refinement": True,          # First contact objection refinement layer
+
+        # === Universal Stall Guard (Defense-in-Depth: Max Turns in State) ===
+        "universal_stall_guard": True,             # Universal max-turns-in-state forced ejection
+
+        # === Simulation Diagnostic Mode ===
+        "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
     }
 
     # Группы флагов для удобного управления
@@ -212,7 +221,8 @@ class FeatureFlags:
             "classification_refinement",
             "composite_refinement",
             "objection_refinement",
-            "confidence_calibration"
+            "confidence_calibration",
+            "first_contact_refinement"
         ],
         # Confidence Calibration groups
         "confidence_calibration_all": [
@@ -225,6 +235,14 @@ class FeatureFlags:
         # Lost Question Fix groups
         "lost_question_fix": [
             "secondary_intent_detection"
+        ],
+        # Universal Stall Guard groups
+        "stall_guard": [
+            "universal_stall_guard"
+        ],
+        # Refinement pipeline: include first_contact_refinement
+        "refinement_pipeline_first_contact": [
+            "first_contact_refinement"
         ],
     }
 
@@ -598,6 +616,33 @@ class FeatureFlags:
     def secondary_intent_detection(self) -> bool:
         """Включена ли детекция secondary intents в composite сообщениях"""
         return self.is_enabled("secondary_intent_detection")
+
+    # =========================================================================
+    # First Contact Refinement flags
+    # =========================================================================
+
+    @property
+    def first_contact_refinement(self) -> bool:
+        """Включён ли рефайнмент возражений при первом контакте"""
+        return self.is_enabled("first_contact_refinement")
+
+    # =========================================================================
+    # Universal Stall Guard flags
+    # =========================================================================
+
+    @property
+    def universal_stall_guard(self) -> bool:
+        """Включён ли универсальный max-turns-in-state guard"""
+        return self.is_enabled("universal_stall_guard")
+
+    # =========================================================================
+    # Simulation Diagnostic Mode flags
+    # =========================================================================
+
+    @property
+    def simulation_diagnostic_mode(self) -> bool:
+        """Включён ли диагностический режим с повышенными лимитами"""
+        return self.is_enabled("simulation_diagnostic_mode")
 
 
 # Singleton экземпляр

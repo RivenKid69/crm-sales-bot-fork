@@ -218,6 +218,33 @@ class SimulationRunner:
 
             # FIX Defect 7: Config-driven simulation stagnation detection
             simulation_limits = flow_config.simulation_limits if flow_config else {}
+
+            # Diagnostic mode: override limits for bug detection
+            try:
+                from src.feature_flags import flags as _ff
+                if _ff.is_enabled("simulation_diagnostic_mode"):
+                    from src.yaml_config.constants import _constants
+                    diag = _constants.get("simulation", {}).get("diagnostic", {})
+                    if diag:
+                        # Override handle_objection max_consecutive
+                        ho_max = diag.get("handle_objection_max_consecutive")
+                        if ho_max and "handle_objection" in simulation_limits:
+                            simulation_limits = dict(simulation_limits)
+                            simulation_limits["handle_objection"] = {
+                                **simulation_limits["handle_objection"],
+                                "max_consecutive": ho_max,
+                            }
+                        # Override soft_close max_visits
+                        sc_max = diag.get("soft_close_max_visits")
+                        if sc_max and "soft_close" in simulation_limits:
+                            simulation_limits = dict(simulation_limits)
+                            simulation_limits["soft_close"] = {
+                                **simulation_limits["soft_close"],
+                                "max_visits": sc_max,
+                            }
+            except ImportError:
+                pass
+
             state_visit_counts: Dict[str, int] = {}
             state_consecutive_counts: Dict[str, int] = {}
             prev_bot_state = ""

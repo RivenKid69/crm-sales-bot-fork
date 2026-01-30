@@ -6427,7 +6427,20 @@ confidence_calibration:
 stall_detection:
   enabled: true
   stall_threshold: 3
-  exempt_states: [greeting, handle_objection, presentation, close, soft_close, success, escalated]
+  # RC3 FIX: presentation REMOVED — was causing 34 stuck dialogs (Bug 3.1)
+  # Soft nudge (is_stalled) now fires at threshold=3 for presentation
+  # StallGuardSource fires later as hard ejection at max_turns_in_state=5
+  exempt_states: [greeting, handle_objection, close, soft_close, success, escalated]
+
+# =============================================================================
+# SIMULATION DIAGNOSTIC MODE
+# =============================================================================
+# Higher limits for simulation runs to expose real stuck durations.
+# Controlled by feature flag: simulation_diagnostic_mode (default: False)
+simulation:
+  diagnostic:
+    handle_objection_max_consecutive: 10
+    soft_close_max_visits: 5
 
 # =============================================================================
 # GREETING CONTEXT REFINEMENT (Phase 3: Category-Driven Refinement Layer)

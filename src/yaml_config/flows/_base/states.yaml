@@ -54,6 +54,8 @@ states:
   # Базовое состояние для фаз (SPIN, BANT, etc.)
   _base_phase:
     abstract: true
+    max_turns_in_state: 6           # Universal TTL: forced transition after N consecutive turns
+    max_turns_fallback: "{{next_phase_state}}"  # Where to eject on TTL (template resolved at load time)
     mixins:
       - _universal_base     # FIRST: Guaranteed coverage for all critical intents
       - phase_progress      # Прогресс-интенты для автоматического перехода между фазами
@@ -103,6 +105,8 @@ states:
   # Приветствие
   greeting:
     extends: _base_greeting
+    max_turns_in_state: 4
+    max_turns_fallback: "{{entry_state}}"
     transitions:
       # FIX: data_complete for skip_map (FallbackHandler tier_3 skip)
       # When guard triggers skip in greeting, transition to entry_state
@@ -155,6 +159,26 @@ states:
       request_proposal: close
       request_contract: close
       request_invoice: close
+
+      # RC1 FIX: Meta-intent escape transitions
+      # Same pattern as greeting intent escape (line 114).
+      # Turns 1-2: rules fire (ask_how_to_help, small_talk_and_continue, etc.)
+      # Turn 3+: transition to entry_state — dialog progresses
+      # Turn 4: StallGuardSource fires as backup safety net
+      unclear:
+        - when: turn_number_gte_3
+          then: "{{entry_state}}"
+        # Default: stay in greeting (rule ask_how_to_help fires)
+
+      small_talk:
+        - when: turn_number_gte_3
+          then: "{{entry_state}}"
+        # Default: stay in greeting (rule small_talk_and_continue fires)
+
+      gratitude:
+        - when: turn_number_gte_3
+          then: "{{entry_state}}"
+        # Default: stay in greeting (rule acknowledge_and_continue fires)
 
       # Клиент сразу хочет демо/звонок → close
       demo_request: close
@@ -241,6 +265,7 @@ states:
   success:
     extends: _base_terminal
     is_final: true
+    max_turns_in_state: 0     # 0 = disabled (terminal state)
     goal: "Завершить успешно"
 
   # Эскалация на оператора (клиент просит человека)
@@ -253,6 +278,7 @@ states:
   soft_close:
     extends: _base_terminal
     is_final: false
+    max_turns_in_state: 0     # 0 = disabled (terminal state)
     max_simulation_visits: 2    # Runner-only: terminate simulation after N total visits
     goal: "Вежливо завершить, оставить возможность вернуться"
     transitions:
@@ -293,6 +319,8 @@ states:
   # Презентация
   presentation:
     extends: _base_phase
+    max_turns_in_state: 5
+    max_turns_fallback: close
     goal: "Показать ценность продукта"
     required_data: []
     parameters:
@@ -417,6 +445,8 @@ states:
   # Обработка возражений
   handle_objection:
     extends: _base_phase
+    max_turns_in_state: 4
+    max_turns_fallback: "{{entry_state}}"
     max_simulation_consecutive: 4  # Runner-only: terminate simulation after N consecutive visits
     goal: "Отработать возражение"
     required_data: []
@@ -608,6 +638,8 @@ states:
   # Закрытие (взять контакт)
   close:
     extends: _base_phase
+    max_turns_in_state: 6
+    max_turns_fallback: soft_close
     goal: "Взять контакт или назначить демо"
     required_data:
       - contact_info

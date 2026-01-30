@@ -281,6 +281,7 @@ def register_builtin_sources() -> None:
     from .sources.transition_resolver import TransitionResolverSource
     from .sources.escalation import EscalationSource
     from .sources.go_back_guard import GoBackGuardSource
+    from .sources.stall_guard import StallGuardSource
 
     # Register in recommended order (lower priority_order = earlier execution)
 
@@ -346,6 +347,17 @@ def register_builtin_sources() -> None:
         priority_order=40,
         config_key="intent_processor",
         description="Maps intents to actions via rules"
+    )
+
+    # StallGuardSource: Universal max-turns-in-state safety net
+    # After ObjectionReturnSource (35) — precise return on positive intents first
+    # Before TransitionResolverSource (50) — safety net catches stuck states
+    SourceRegistry.register(
+        StallGuardSource,
+        name="StallGuardSource",
+        priority_order=45,
+        config_key="stall_guard",
+        description="Universal max-turns-in-state safety net"
     )
 
     SourceRegistry.register(

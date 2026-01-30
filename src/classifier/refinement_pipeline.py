@@ -799,6 +799,9 @@ class RefinementPipeline:
         # Initialize layers
         self._initialize_layers()
 
+        # Verify all layer feature flags exist in DEFAULTS
+        self._verify_feature_flags()
+
         logger.info(
             "RefinementPipeline initialized",
             extra={
@@ -806,6 +809,31 @@ class RefinementPipeline:
                 "layers": [l.name for l in self._layers],
             }
         )
+
+    def _verify_feature_flags(self) -> None:
+        """
+        Verify all layer feature flags exist in FeatureFlags.DEFAULTS.
+        Auto-register missing flags with default=True and emit WARNING.
+
+        Prevents the pattern where a layer is written with FEATURE_FLAG
+        but the flag is never added to DEFAULTS — making the layer dead code.
+        """
+        try:
+            from src.feature_flags import FeatureFlags, flags
+        except ImportError:
+            return
+
+        for layer in self._layers:
+            flag_name = getattr(layer, 'FEATURE_FLAG', None)
+            if flag_name and flag_name not in FeatureFlags.DEFAULTS:
+                logger.warning(
+                    f"FEATURE FLAG MISSING: Layer '{layer.name}' uses "
+                    f"flag '{flag_name}' not in FeatureFlags.DEFAULTS. "
+                    f"Auto-registering as True. Add it to DEFAULTS explicitly."
+                )
+                FeatureFlags.DEFAULTS[flag_name] = True
+                if flag_name not in flags._flags:
+                    flags._flags[flag_name] = True
 
     def _load_config(self) -> Dict[str, Any]:
         """Load pipeline configuration from constants.yaml."""
