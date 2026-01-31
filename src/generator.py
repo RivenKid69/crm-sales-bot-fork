@@ -7,6 +7,7 @@
 - SafeDict: безопасная подстановка переменных в шаблоны
 """
 
+import random
 from typing import Dict, List, Optional, TYPE_CHECKING, Any
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from src.knowledge.retriever import get_retriever
@@ -440,6 +441,53 @@ class ResponseGenerator:
             self.personalization_engine = PersonalizationEngineV2(retriever)
             logger.info("PersonalizationEngineV2 initialized")
 
+        # Bug #9: Auto-discovered product overview from knowledge base (SSOT)
+        self._product_overview: List[str] = []
+        self._init_product_overview()
+
+    def _init_product_overview(self) -> None:
+        """
+        Load product overview labels from KB sections with priority <= 8.
+
+        These are overview sections (not detailed FAQ entries with priority 10).
+        Each section's .facts first line serves as a short summary label.
+        Runs ONCE at startup — O(n) scan of sections, cached forever.
+        """
+        try:
+            retriever = get_retriever()
+            kb = retriever.kb
+            overviews = []
+            seen = set()
+            for section in kb.sections:
+                if section.priority <= 8:
+                    first_line = section.facts.split("\n")[0].strip()
+                    # Clean up trailing colons for label use
+                    label = first_line.rstrip(":")
+                    # Skip very short labels (FAQ answers like "Да", "Нет")
+                    # and skip duplicates
+                    if label and len(label) >= 10 and label not in seen:
+                        overviews.append(label)
+                        seen.add(label)
+            self._product_overview = overviews
+            logger.info(
+                "Product overview initialized from KB",
+                overview_count=len(overviews),
+            )
+        except Exception as e:
+            logger.warning("Failed to init product overview from KB", error=str(e))
+            self._product_overview = []
+
+    def _get_product_overview(self) -> str:
+        """
+        Return a random subset of 6 product overview labels.
+
+        Each call returns a DIFFERENT random subset to prevent LLM fixation.
+        """
+        if not self._product_overview:
+            return ""
+        sample_size = min(6, len(self._product_overview))
+        return ", ".join(random.sample(self._product_overview, sample_size))
+
     def get_facts(self, company_size: int = None, intent: str = "") -> str:
         """Получить факты о продукте, учитывая контекст интента."""
         # Явная проверка на None, чтобы 0 не считался False
@@ -477,8 +525,8 @@ class ResponseGenerator:
                 f"При оплате за год скидка {discount}%"
             )
 
-        # Default: features list (existing behavior)
-        return ", ".join(KNOWLEDGE["features"])
+        # Default: dynamic product overview from KB (Bug #9 fix — SSOT)
+        return self._get_product_overview()
 
     def _format_urls_for_response(self, urls: List[Dict[str, str]]) -> str:
         """

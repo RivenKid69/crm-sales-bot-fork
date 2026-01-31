@@ -1,0 +1,54 @@
+# Fallback dynamic CTA options — pain→question mapping (Bug #9 SSOT fix)
+# Product feature options are now sourced from KB at runtime.
+# Only questions and generic CTA actions are defined here.
+
+competitor_mentioned:
+  question: "Что важнее всего при выборе системы?"
+  generic_options:
+    - "Посмотреть демо"
+    - "Узнать цены"
+  priority: 10
+
+pain_losing_clients:
+  question: "Что поможет решить эту проблему?"
+  generic_options:
+    - "Посмотреть как это работает"
+  priority: 8
+
+pain_no_control:
+  question: "Какой контроль для вас важнее?"
+  generic_options:
+    - "Посмотреть как это работает"
+  priority: 8
+
+pain_manual_work:
+  question: "Что хотелось бы автоматизировать?"
+  generic_options:
+    - "Посмотреть возможности"
+  priority: 8
+
+large_company:
+  question: "Что важнее для вашей команды?"
+  generic_options:
+    - "Запланировать демо"
+  priority: 5
+
+small_company:
+  question: "С чего хотите начать?"
+  generic_options:
+    - "Попробовать бесплатно"
+  priority: 5
+
+after_price_question:
+  question: "Что ещё хотите узнать?"
+  generic_options:
+    - "Условия оплаты"
+    - "Есть ли пробный период"
+    - "Запланировать демо"
+  priority: 7
+
+after_features_question:
+  question: "Какие функции интересуют больше всего?"
+  generic_options:
+    - "Показать всё на демо"
+  priority: 6

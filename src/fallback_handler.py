@@ -24,9 +24,12 @@ Part of Phase 6: Fallback Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 """
 
 from dataclasses import dataclass, field
-from random import choice
+from pathlib import Path
+from random import choice, sample
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import time
+
+import yaml
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig, LoadedConfig
@@ -88,89 +91,10 @@ class FallbackHandler:
     # Tier 2: Предложить варианты (кнопки) — загружается из YAML конфига
     OPTIONS_TEMPLATES: Dict[str, Dict[str, Any]] = FALLBACK_OPTIONS_TEMPLATES or {}
 
-    # Динамические подсказки по контексту (priority descending)
-    DYNAMIC_CTA_OPTIONS: Dict[str, Dict[str, Any]] = {
-        "competitor_mentioned": {
-            "question": "Что важнее всего при выборе системы?",
-            "options": [
-                "Сравнить функции с {competitor}",
-                "Узнать о переходе с {competitor}",
-                "Посмотреть демо",
-                "Узнать цены"
-            ],
-            "priority": 10
-        },
-        "pain_losing_clients": {
-            "question": "Что поможет решить эту проблему?",
-            "options": [
-                "Автоматические напоминания клиентам",
-                "Контроль работы менеджеров",
-                "Аналитика по клиентам",
-                "Посмотреть как это работает"
-            ],
-            "priority": 8
-        },
-        "pain_no_control": {
-            "question": "Какой контроль для вас важнее?",
-            "options": [
-                "Видеть всех клиентов в одном месте",
-                "Контроль задач и сроков",
-                "Отчёты и аналитика",
-                "Посмотреть как это работает"
-            ],
-            "priority": 8
-        },
-        "pain_manual_work": {
-            "question": "Что хотелось бы автоматизировать?",
-            "options": [
-                "Напоминания и follow-up",
-                "Отчёты и документы",
-                "Распределение заявок",
-                "Посмотреть возможности"
-            ],
-            "priority": 8
-        },
-        "large_company": {
-            "question": "Что важнее для вашей команды?",
-            "options": [
-                "Интеграции с другими системами",
-                "Права доступа и роли",
-                "Масштабируемость",
-                "Запланировать демо"
-            ],
-            "priority": 5
-        },
-        "small_company": {
-            "question": "С чего хотите начать?",
-            "options": [
-                "Узнать базовые функции",
-                "Быстрый старт за 15 минут",
-                "Узнать стоимость",
-                "Попробовать бесплатно"
-            ],
-            "priority": 5
-        },
-        "after_price_question": {
-            "question": "Что ещё хотите узнать?",
-            "options": [
-                "Условия оплаты",
-                "Есть ли пробный период",
-                "Что входит в тариф",
-                "Запланировать демо"
-            ],
-            "priority": 7
-        },
-        "after_features_question": {
-            "question": "Какие функции интересуют больше всего?",
-            "options": [
-                "Автоматизация рутины",
-                "Аналитика и отчёты",
-                "Интеграции",
-                "Показать всё на демо"
-            ],
-            "priority": 6
-        },
-    }
+    # Динамические подсказки по контексту — loaded from YAML + KB at runtime (Bug #9 SSOT fix)
+    # Questions and generic actions come from fallback_options.yaml.
+    # Product feature options are sourced from KB via product_overviews.
+    DYNAMIC_CTA_OPTIONS: Dict[str, Dict[str, Any]] = {}  # Populated at __init__
 
     # Подпись для текстовых вариантов
     OPTIONS_FOOTER = "\nНапишите номер или ответьте своими словами."
@@ -213,6 +137,9 @@ class FallbackHandler:
         "options": ["Подробнее о системе", "Цены", "Демо", "Связаться позже"]
     }
 
+    # Path to fallback options YAML
+    _FALLBACK_OPTIONS_YAML = Path(__file__).parent / "yaml_config" / "fallback_options.yaml"
+
     def __init__(
         self,
         enable_tracing: bool = True,
@@ -220,6 +147,7 @@ class FallbackHandler:
         flow: Optional["FlowConfig"] = None,
         config: Optional["LoadedConfig"] = None,
         guard_config: Optional[Any] = None,
+        product_overviews: Optional[List[str]] = None,
     ):
         """
         Initialize FallbackHandler.
@@ -231,10 +159,15 @@ class FallbackHandler:
             flow: FlowConfig to get skip_map from (auto-builds from transitions)
             config: LoadedConfig for templates (rephrase, options, defaults)
             guard_config: GuardConfig for configurable thresholds (e.g. max_consecutive_tier_2)
+            product_overviews: KB-sourced product overview labels for dynamic CTA options
         """
         self._stats = FallbackStats()
         self._used_templates: Dict[str, List[str]] = {}  # Для избежания повторов
         self._enable_tracing = enable_tracing
+        self._product_overviews = product_overviews or []
+
+        # Bug #9: Build DYNAMIC_CTA_OPTIONS from YAML + KB overviews
+        self.DYNAMIC_CTA_OPTIONS = self._build_dynamic_cta_options()
 
         # FIX 3: Configurable tier_2 escalation threshold
         self._max_consecutive_tier_2 = (
@@ -257,6 +190,44 @@ class FallbackHandler:
         self._options_templates = self._load_options_templates(config)
         self._default_rephrase = self._load_default_rephrase(config)
         self._default_options = self._load_default_options(config)
+
+    def _build_dynamic_cta_options(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Build DYNAMIC_CTA_OPTIONS from YAML config + KB product overviews.
+
+        Questions and generic CTA actions come from fallback_options.yaml.
+        Product feature options (3 per pain) are random.sample from KB overviews.
+        """
+        # Load YAML config
+        yaml_config: Dict[str, Any] = {}
+        try:
+            if self._FALLBACK_OPTIONS_YAML.exists():
+                with open(self._FALLBACK_OPTIONS_YAML, "r", encoding="utf-8") as f:
+                    yaml_config = yaml.safe_load(f) or {}
+        except Exception as e:
+            logger.warning("Failed to load fallback_options.yaml", error=str(e))
+
+        result: Dict[str, Dict[str, Any]] = {}
+        for pain_key, pain_cfg in yaml_config.items():
+            question = pain_cfg.get("question", "")
+            generic_options = pain_cfg.get("generic_options", [])
+            priority = pain_cfg.get("priority", 5)
+
+            # Build options: KB-sourced feature labels + generic actions
+            feature_options: List[str] = []
+            if self._product_overviews:
+                n_features = max(1, 4 - len(generic_options))
+                n_features = min(n_features, 3, len(self._product_overviews))
+                feature_options = sample(self._product_overviews, n_features)
+
+            options = feature_options + generic_options
+            result[pain_key] = {
+                "question": question,
+                "options": options[:4],  # Cap at 4 options
+                "priority": priority,
+            }
+
+        return result
 
     def _load_rephrase_templates(
         self, config: Optional["LoadedConfig"]

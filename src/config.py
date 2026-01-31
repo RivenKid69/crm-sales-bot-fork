@@ -3347,12 +3347,7 @@ KNOWLEDGE = {
         "team": {"name": "Команда", "price": 790, "users": "6-25"},
         "business": {"name": "Бизнес", "price": 590, "users": "26+"}
     },
-    "features": [
-        "Воронка продаж",
-        "Автоматические напоминания", 
-        "История клиента",
-        "Отчёты"
-    ],
+    # "features" removed — now sourced from knowledge retriever (SSOT: features.yaml)
     "discount_annual": 20
 }
 

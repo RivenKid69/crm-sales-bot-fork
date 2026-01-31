@@ -253,6 +253,23 @@ class CTAGenerator:
     FRUSTRATION_THRESHOLD = 5    # Не добавлять при высоком frustration
     MIN_TURNS_FOR_CTA = 3        # Минимум ходов до добавления CTA
 
+    # Bug #11: Backing-off phrases — CTA contradicts these sentiments
+    BACK_OFF_PATTERNS: List[str] = [
+        "не будем настаивать",
+        "не будем торопить",
+        "не буду настаивать",
+        "не буду торопить",
+        "не буду давить",
+        "когда будете готовы",
+        "решать вам",
+        "решение за вами",
+        "не спешите",
+        "подумайте спокойно",
+    ]
+
+    # Actions that semantically conflict with CTA
+    SOFT_CLOSE_ACTIONS = {"soft_close", "objection_limit_reached"}
+
     # Early states where CTA should not be added (loaded from config)
     DEFAULT_EARLY_STATES = {"greeting", "spin_situation", "spin_problem"}
 
@@ -363,6 +380,11 @@ class CTAGenerator:
         """Увеличить счётчик ходов"""
         self.turn_count += 1
 
+    def _has_backoff_language(self, response: str) -> bool:
+        """Check if response contains backing-off language that conflicts with CTA."""
+        response_lower = response.lower()
+        return any(pattern in response_lower for pattern in self.BACK_OFF_PATTERNS)
+
     def should_add_cta(
         self,
         state: str,
@@ -410,6 +432,15 @@ class CTAGenerator:
         last_action = context.get("last_action", "")
         if last_action == "answer_question":
             return False, "just_answered_question"
+
+        # 6. Bug #11: Backoff language gate — CTA contradicts backing-off sentiment
+        if self._has_backoff_language(response):
+            return False, "response_contains_backoff"
+
+        # 7. Bug #11: Action gate — soft_close/objection_limit_reached skip CTA
+        action = context.get("action", "")
+        if action in self.SOFT_CLOSE_ACTIONS:
+            return False, "action_is_soft_close"
 
         return True, None
 

@@ -158,6 +158,7 @@ class FeatureFlags:
 
         # === Universal Stall Guard (Defense-in-Depth: Max Turns in State) ===
         "universal_stall_guard": True,             # Universal max-turns-in-state forced ejection
+        "stall_guard_dual_proposal": True,         # Bug #19: StallGuard proposes action + transition
 
         # === Data-Aware Refinement (Stall Prevention) ===
         "data_aware_refinement": True,             # Promote unclear→info_provided when data extracted
@@ -644,6 +645,11 @@ class FeatureFlags:
     def universal_stall_guard(self) -> bool:
         """Включён ли универсальный max-turns-in-state guard"""
         return self.is_enabled("universal_stall_guard")
+
+    @property
+    def stall_guard_dual_proposal(self) -> bool:
+        """Bug #19: StallGuard proposes action + transition simultaneously"""
+        return self.is_enabled("stall_guard_dual_proposal")
 
     # =========================================================================
     # Simulation Diagnostic Mode flags

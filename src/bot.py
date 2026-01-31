@@ -192,8 +192,10 @@ class SalesBot:
         # FIX: Pass flow to FallbackHandler so it uses flow-specific skip_map
         # instead of DEFAULT_SKIP_MAP with hardcoded spin_situation
         # FIX 3: Pass guard_config for configurable tier_2 escalation threshold
+        # Bug #9: Pass product_overviews from generator for KB-sourced CTA options
         self.fallback = FallbackHandler(
-            flow=self._flow, config=self._config, guard_config=self.guard.config
+            flow=self._flow, config=self._config, guard_config=self.guard.config,
+            product_overviews=self.generator._product_overview,
         )
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
@@ -1067,6 +1069,19 @@ class SalesBot:
             fallback_response = None
             fallback_used = False
 
+        # === Bug #19: StallGuard takes precedence over guard fallback ===
+        # When StallGuard fires (dual proposal), its action should override
+        # ConversationGuard's fallback response (Scenario B fix).
+        if (fallback_response
+                and sm_result.get("action") in ("stall_guard_eject", "stall_guard_nudge")):
+            logger.info(
+                "StallGuard clears guard fallback",
+                original_fallback_tier=fallback_tier,
+                stall_guard_action=sm_result["action"],
+            )
+            fallback_response = None
+            fallback_used = False
+
         # Build context for response generation
         # При наличии ResponseDirectives используем их instruction
         directive_instruction = ""
@@ -1112,6 +1127,17 @@ class SalesBot:
         action = sm_result["action"]
         next_state = sm_result["next_state"]
         is_final = sm_result["is_final"]
+
+        # Bug #19: Remap stall_guard actions to valid template actions
+        if action == "stall_guard_eject":
+            action = f"transition_to_{next_state}"
+            # Fallback to continue_current_goal if specific transition template doesn't exist
+            if not self.generator._get_template(action):
+                action = "continue_current_goal"
+        elif action == "stall_guard_nudge":
+            action = "continue_conversation"
+            if not self.generator._get_template(action):
+                action = "continue_current_goal"
 
         # FIX: Record the final state for phase coverage tracking
         if next_state not in visited_states:
@@ -1250,12 +1276,15 @@ class SalesBot:
             response_elapsed = (time.time() - response_start) * 1000
 
             # Phase 3: Apply CTA BEFORE recording response (critical fix!)
+            # Bug #11: Pass action + objection_info for semantic CTA gating
             cta_result = self._apply_cta(
                 response=response,
                 state=next_state,
                 context={
                     "frustration_level": frustration_level,
                     "last_action": self.last_action,
+                    "action": action,
+                    "objection_info": objection_info,
                     # Flow context for dynamic CTA phase resolution
                     "flow_context": {
                         "phase_order": list(self.state_machine.phase_order),

@@ -102,9 +102,12 @@ class StallGuardSource(KnowledgeSource):
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
-        Propose forced transition to escape stalled state.
+        Propose forced transition (and optionally action) to escape stalled state.
 
         Two-tier: hard (HIGH) at max_turns, soft (NORMAL) below.
+        Bug #19: With stall_guard_dual_proposal flag, also proposes action
+        to prevent blocking by other sources, ConversationGuard preemption,
+        DialoguePolicy override, and self-loop fallback.
         """
         if not self._enabled:
             return
@@ -119,15 +122,36 @@ class StallGuardSource(KnowledgeSource):
             priority = Priority.HIGH
             reason_code = "max_turns_in_state_exceeded"
             mechanism = "stall_guard_hard"
+            action_name = "stall_guard_eject"
         else:
             priority = Priority.NORMAL
             reason_code = "stall_soft_progression"
             mechanism = "stall_guard_soft"
+            action_name = "stall_guard_nudge"
 
         logger.info(
             f"StallGuardSource: {mechanism} from '{ctx.state}' → '{fallback}' "
             f"(consecutive={consecutive}, max={max_turns})"
         )
+
+        # Bug #19: Dual propose — action + transition (gated by feature flag)
+        # Pattern follows ObjectionGuardSource: combinable=True allows own transition through.
+        # Priority matches transition priority for consistent resolution.
+        if flags.is_enabled("stall_guard_dual_proposal"):
+            blackboard.propose_action(
+                action=action_name,
+                priority=priority,
+                combinable=True,
+                reason_code=reason_code,
+                source_name=self.name,
+                metadata={
+                    "from_state": ctx.state,
+                    "to_state": fallback,
+                    "consecutive_turns": consecutive,
+                    "max_turns_in_state": max_turns,
+                    "mechanism": mechanism,
+                },
+            )
 
         blackboard.propose_transition(
             next_state=fallback,
