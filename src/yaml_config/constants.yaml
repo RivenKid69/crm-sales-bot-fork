@@ -4712,6 +4712,10 @@ composite_refinement:
     clarify_one_question: any
     continue_current_goal: any
 
+    # BUG #2 FIX: answer_with_pricing template asks "Сколько сотрудников?",
+    # so next user message in this context may contain company_size
+    answer_with_pricing: company_size
+
   # =========================================================================
   # ACTION → TARGET INTENT MAPPING
   # =========================================================================
@@ -4743,6 +4747,12 @@ composite_refinement:
     ask_for_clarification: info_provided
     clarify_one_question: info_provided
     continue_current_goal: info_provided
+
+    # BUG #2 FIX: CRITICAL — map to price_question, NOT info_provided.
+    # This PRESERVES the intent so price template selection still fires.
+    # Without this, CompositeMessageLayer would change price_question → info_provided,
+    # breaking the entire price response chain.
+    answer_with_pricing: price_question
 
   # =========================================================================
   # DATA EXPECTING STATES (Fallback for state-based detection)

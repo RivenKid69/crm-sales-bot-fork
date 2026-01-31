@@ -146,6 +146,8 @@ from src.conditions.state_machine.conditions import (
     should_be_careful,
     can_accelerate,
     should_answer_directly,
+    # Phase completion conditions
+    has_completed_minimum_phases,
 )
 
 
@@ -270,4 +272,6 @@ __all__ = [
     "should_be_careful",
     "can_accelerate",
     "should_answer_directly",
+    # Phase completion conditions
+    "has_completed_minimum_phases",
 ]

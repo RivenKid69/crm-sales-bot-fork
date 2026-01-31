@@ -165,6 +165,9 @@ class FeatureFlags:
         # === Phase Exhausted Source (Guard-Blackboard Race Fix) ===
         "phase_exhausted_source": True,            # PhaseExhaustedSource: options menu when phase stuck
 
+        # === Phase Completion Gating (Bug #3 Fix) ===
+        "phase_completion_gating": True,           # has_completed_minimum_phases condition
+
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
     }

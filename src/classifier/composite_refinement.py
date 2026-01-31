@@ -20,7 +20,10 @@ Architecture:
 
 Pipeline Position:
     message → LLM/Hybrid → ClassificationRefinement → CompositeMessageRefinement →
-    → ObjectionRefinement → DisambiguationLayer → result
+    → ObjectionRefinement → DataAwareRefinement → ... → result
+
+    INVARIANT: CompositeMessageLayer MUST run BEFORE DataAwareRefinementLayer
+    so price_question intent is preserved (not overwritten by unclear→info_provided).
 
 Design Principles:
     - Flow-Agnostic: Works with SPIN, BANT, custom flows or any dialogue structure
@@ -164,6 +167,13 @@ class CompositeMessageRefinementLayer:
         "request_brevity",
         "greeting",
         "gratitude",
+        # BUG #2 FIX: Price intents — composite messages like "500. Скока стоит?"
+        # contain extractable data that was blocked by this gate.
+        # Combined with action_data_intent mapping (Fix 1d), the intent is PRESERVED
+        # as price_question (not changed to info_provided).
+        "price_question",
+        "pricing_details",
+        "cost_inquiry",
     })
 
     def __init__(self):
@@ -193,6 +203,12 @@ class CompositeMessageRefinementLayer:
 
         # Confidence threshold for refinement
         self._min_confidence = self._config.get("min_confidence_for_refinement", 0.75)
+
+        # BUG #2 FIX: Validate required mappings at startup
+        if "answer_with_pricing" not in self._action_expects_data:
+            logger.warning("Missing action_expects_data['answer_with_pricing'] — Bug #2 fix incomplete")
+        if "answer_with_pricing" not in self._action_data_intent:
+            logger.warning("Missing action_data_intent['answer_with_pricing'] — Bug #2 fix incomplete")
 
         # Compile patterns for efficiency
         self._compiled_patterns: Dict[str, Pattern] = {}

@@ -93,10 +93,23 @@ mixins:
     transitions:
       # CRITICAL: Universal transitions for purchase intents
       contact_provided: success
-      demo_request: close
-      callback_request: close
-      request_references: close
-      consultation_request: close
+      # BUG #3 FIX: Conditional close for purchase intents.
+      # Without guard, cooperative users skip all phases (0% coverage).
+      # When condition is False: NO transition fires, but the RULE still executes
+      # (schedule_demo, schedule_callback, etc.) — so user gets acknowledgment
+      # while conversation continues in current phase.
+      demo_request:
+        - when: has_completed_minimum_phases
+          then: close
+      callback_request:
+        - when: has_completed_minimum_phases
+          then: close
+      request_references:
+        - when: has_completed_minimum_phases
+          then: close
+      consultation_request:
+        - when: has_completed_minimum_phases
+          then: close
 
       # Exit transitions
       rejection: soft_close
@@ -283,8 +296,12 @@ mixins:
   close_shortcuts:
     description: "Быстрые переходы к закрытию при запросе демо/звонка"
     transitions:
-      demo_request: close
-      callback_request: close
+      demo_request:
+        - when: has_completed_minimum_phases
+          then: close
+      callback_request:
+        - when: has_completed_minimum_phases
+          then: close
 
   # =================================================================
   # SOCIAL INTENTS: Социальные интенты

@@ -1521,6 +1521,49 @@ def lead_temperature_cold(ctx: EvaluatorContext) -> bool:
     return temp == "cold"
 
 
+# =============================================================================
+# PHASE COMPLETION CONDITIONS - Guard close shortcuts
+# =============================================================================
+
+@sm_condition(
+    "has_completed_minimum_phases",
+    description="Check if enough phases completed to allow close shortcut",
+    category="combined"
+)
+def has_completed_minimum_phases(ctx: EvaluatorContext) -> bool:
+    """
+    BUG #3 FIX: Prevents cooperative users from skipping all phases.
+    Returns True when conversation has enough progress for close shortcuts.
+
+    Criteria (any one sufficient):
+    - Current state is terminal/presentation (always allow)
+    - Has minimum qualification data (company_size + pain_point)
+    - Turn number >= 6 (3 full exchanges = sufficient engagement)
+    """
+    from src.feature_flags import flags
+    if not flags.is_enabled("phase_completion_gating"):
+        return True  # Disabled = always allow close (backward compat)
+
+    # Terminal/presentation states — always allow
+    if ctx.state in ("presentation", "close", "soft_close", "handle_objection", "escalated"):
+        return True
+
+    # Has minimum qualification data
+    has_size = bool(ctx.collected_data.get("company_size"))
+    has_pain = bool(
+        ctx.collected_data.get("pain_point") or
+        ctx.collected_data.get("pain_category")
+    )
+    if has_size and has_pain:
+        return True
+
+    # Sufficient engagement (3 full exchanges)
+    if ctx.turn_number >= 6:
+        return True
+
+    return False
+
+
 # Export all condition functions for testing
 __all__ = [
     # Data conditions
@@ -1619,4 +1662,6 @@ __all__ = [
     "lead_temperature_hot",
     "lead_temperature_very_hot",
     "lead_temperature_cold",
+    # Phase completion conditions
+    "has_completed_minimum_phases",
 ]

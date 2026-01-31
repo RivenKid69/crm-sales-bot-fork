@@ -759,6 +759,13 @@ class ResponseGenerator:
             except Exception as e:
                 logger.warning(f"Question deduplication failed: {e}")
 
+        # BUG #2 FIX: Prevent template from asking about already-known data
+        if collected.get("company_size") and not variables.get("do_not_ask"):
+            variables["do_not_ask"] = (
+                "⚠️ НЕ СПРАШИВАЙ о размере команды/количестве сотрудников — "
+                f"уже известно: {collected['company_size']} человек."
+            )
+
         # === Personalization v2: Adaptive personalization ===
         if self.personalization_engine and flags.personalization_v2:
             try:
@@ -1295,20 +1302,29 @@ class ResponseGenerator:
 
     def _get_price_template_key(self, intent: str, action: str) -> str:
         """
-        Выбрать шаблон для price-related вопросов.
-
-        Args:
-            intent: Интент клиента
-            action: Action от state machine
-
-        Returns:
-            Ключ шаблона
+        Select template for price-related questions.
+        Priority: action from policy overlay > intent-based default.
         """
+        # BUG #2 FIX: If policy overlay (price_handling mixin) selected a
+        # specific pricing template via conditions (should_answer_directly,
+        # price_repeated_2x), honor it. Previously this method always returned
+        # answer_with_pricing, making answer_with_pricing_direct dead code.
+        PRICING_ACTIONS = {
+            "answer_with_pricing",
+            "answer_with_pricing_direct",
+            "answer_pricing_details",
+            "answer_with_facts",
+            "answer_with_roi",
+            "calculate_roi_response",
+        }
+        if action in PRICING_ACTIONS:
+            return action
+
+        # Fallback: intent-based default (backward compatible)
         if intent == "price_question":
             return "answer_with_pricing"
         elif intent == "pricing_details":
             return "answer_pricing_details"
-        # Fallback
         return "answer_with_facts"
 
     def _get_objection_template_key(self, intent: str, action: str) -> str:

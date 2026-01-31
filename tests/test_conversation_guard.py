@@ -33,7 +33,7 @@ class TestGuardConfig:
         assert config.max_turns == 25
         assert config.max_phase_attempts == 3
         assert config.max_same_state == 4
-        assert config.max_same_message == 2
+        assert config.max_same_message == 3  # BUG #4 FIX: raised from 2 to 3
         assert config.timeout_seconds == 1800
 
     def test_strict_config(self):
@@ -130,9 +130,10 @@ class TestMessageLoopDetection:
     """Tests for message loop detection"""
 
     def test_detects_exact_message_repeat(self):
-        """Detects when user sends same message twice"""
+        """Detects when user sends same message 3 times (BUG #4: raised from 2 to 3)"""
         guard = ConversationGuard()
 
+        guard.check("state1", "same message", {})
         guard.check("state1", "same message", {})
         can_continue, intervention = guard.check("state1", "same message", {})
 
@@ -144,6 +145,7 @@ class TestMessageLoopDetection:
         guard = ConversationGuard()
 
         guard.check("state1", "Same Message", {})
+        guard.check("state1", "same message", {})
         can_continue, intervention = guard.check("state1", "same message", {})
 
         assert intervention == "fallback_tier_2"
@@ -153,6 +155,7 @@ class TestMessageLoopDetection:
         guard = ConversationGuard()
 
         guard.check("state1", "  same message  ", {})
+        guard.check("state1", "same message", {})
         can_continue, intervention = guard.check("state1", "same message", {})
 
         assert intervention == "fallback_tier_2"

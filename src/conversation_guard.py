@@ -41,7 +41,7 @@ class GuardConfig:
     max_turns: int = 25                    # Средний sales диалог: 8-15 turns
     max_phase_attempts: int = 3            # LivePerson recommendation
     max_same_state: int = 4                # Loop detection
-    max_same_message: int = 2              # Exact repeat detection
+    max_same_message: int = 3              # BUG #4 FIX: raised from 2 — two identical is too aggressive
     timeout_seconds: int = 1800            # 30 минут
 
     # Пороги прогресса
