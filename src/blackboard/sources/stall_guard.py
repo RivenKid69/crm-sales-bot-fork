@@ -66,18 +66,15 @@ class StallGuardSource(KnowledgeSource):
         """
         Quick check: should we force a state transition?
 
-        Conditions (ALL must be true):
-        1. Source is enabled (self._enabled)
-        2. Feature flag universal_stall_guard is enabled
-        3. Current state has max_turns_in_state > 0
-        4. Consecutive turns in same state >= max_turns_in_state
+        Two-tier threshold:
+        - Hard (unconditional): consecutive >= max_turns_in_state
+        - Soft (conditional): consecutive >= max(max_turns - 1, 3),
+          only when NOT progressing AND no data extracted this turn.
 
         This is O(1) — fast checks only.
         """
-        # Pattern: self._enabled first (base class contract)
         if not self._enabled:
             return False
-        # Pattern: feature flag check (same as other flag-gated sources)
         if not flags.is_enabled("universal_stall_guard"):
             return False
 
@@ -87,49 +84,68 @@ class StallGuardSource(KnowledgeSource):
             return False
 
         consecutive = self._get_consecutive_same_state(ctx)
-        return consecutive >= max_turns
+
+        # Hard threshold: unconditional (existing behavior)
+        if consecutive >= max_turns:
+            return True
+
+        # Soft threshold: max_turns - 1, but at least 3.
+        # Only when NOT progressing AND no data extracted this turn.
+        soft_threshold = max(max_turns - 1, 3)
+        if consecutive >= soft_threshold:
+            envelope = ctx.context_envelope
+            is_progressing = getattr(envelope, 'is_progressing', False) if envelope else False
+            has_data = getattr(envelope, 'has_extracted_data', False) if envelope else False
+            return not is_progressing and not has_data
+
+        return False
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
         Propose forced transition to escape stalled state.
 
-        Algorithm:
-        1. Get context snapshot (immutable)
-        2. Determine fallback state (context-aware for detour states)
-        3. Propose transition with HIGH priority
+        Two-tier: hard (HIGH) at max_turns, soft (NORMAL) below.
         """
         if not self._enabled:
             return
 
         ctx = blackboard.get_context()
         fallback = self._get_fallback_state(ctx, blackboard)
-
         consecutive = self._get_consecutive_same_state(ctx)
         max_turns = ctx.state_config.get("max_turns_in_state", 0)
 
+        # Two-tier: hard (HIGH) at max_turns, soft (NORMAL) below
+        if consecutive >= max_turns:
+            priority = Priority.HIGH
+            reason_code = "max_turns_in_state_exceeded"
+            mechanism = "stall_guard_hard"
+        else:
+            priority = Priority.NORMAL
+            reason_code = "stall_soft_progression"
+            mechanism = "stall_guard_soft"
+
         logger.info(
-            f"StallGuardSource: ejecting from '{ctx.state}' → '{fallback}' "
+            f"StallGuardSource: {mechanism} from '{ctx.state}' → '{fallback}' "
             f"(consecutive={consecutive}, max={max_turns})"
         )
 
-        # Pattern: exact propose_transition signature from blackboard.py
         blackboard.propose_transition(
             next_state=fallback,
-            priority=Priority.HIGH,
-            reason_code="max_turns_in_state_exceeded",
+            priority=priority,
+            reason_code=reason_code,
             source_name=self.name,
             metadata={
                 "from_state": ctx.state,
                 "to_state": fallback,
                 "consecutive_turns": consecutive,
                 "max_turns_in_state": max_turns,
-                "mechanism": "stall_guard",
+                "mechanism": mechanism,
             },
         )
 
         self._log_contribution(
             transition=fallback,
-            reason=f"TTL exceeded: {consecutive}/{max_turns} turns in {ctx.state}"
+            reason=f"{mechanism}: {consecutive}/{max_turns} turns in {ctx.state}"
         )
 
     def _get_consecutive_same_state(self, ctx: 'ContextSnapshot') -> int:

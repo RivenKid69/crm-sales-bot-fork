@@ -159,6 +159,9 @@ class FeatureFlags:
         # === Universal Stall Guard (Defense-in-Depth: Max Turns in State) ===
         "universal_stall_guard": True,             # Universal max-turns-in-state forced ejection
 
+        # === Data-Aware Refinement (Stall Prevention) ===
+        "data_aware_refinement": True,             # Promote unclear→info_provided when data extracted
+
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
     }
@@ -222,7 +225,8 @@ class FeatureFlags:
             "composite_refinement",
             "objection_refinement",
             "confidence_calibration",
-            "first_contact_refinement"
+            "first_contact_refinement",
+            "data_aware_refinement"
         ],
         # Confidence Calibration groups
         "confidence_calibration_all": [

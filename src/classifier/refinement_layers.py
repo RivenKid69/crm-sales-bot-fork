@@ -1244,5 +1244,11 @@ try:
 except ImportError as e:
     logger.warning(f"Could not import disambiguation_resolution_layer: {e}")
 
+# Import data_aware_refinement to register the layer
+try:
+    from src.classifier import data_aware_refinement  # noqa: F401
+except ImportError as e:
+    logger.warning(f"Could not import data_aware_refinement: {e}")
+
 # Verify on import (DEBUG level)
 logger.debug(f"Refinement layers registered: {verify_layers_registered()}")

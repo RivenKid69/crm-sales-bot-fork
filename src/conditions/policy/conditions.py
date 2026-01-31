@@ -673,7 +673,9 @@ def is_stalled(ctx: PolicyContext) -> bool:
     exempt = set(config.get("exempt_states", []))
     if ctx.state in exempt:
         return False
-    return ctx.consecutive_same_state >= threshold and not ctx.is_progressing
+    return (ctx.consecutive_same_state >= threshold
+            and not ctx.is_progressing
+            and not ctx.has_extracted_data)
 
 
 # Export all condition functions for testing

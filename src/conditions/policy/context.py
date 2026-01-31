@@ -100,6 +100,7 @@ class PolicyContext:
     funnel_velocity: float = 0.0
     is_progressing: bool = False
     is_regressing: bool = False
+    has_extracted_data: bool = False
 
     # Level 3 signals (Episodic memory)
     total_objections: int = 0
@@ -181,6 +182,7 @@ class PolicyContext:
             funnel_velocity=envelope.funnel_velocity,
             is_progressing=envelope.is_progressing,
             is_regressing=envelope.is_regressing,
+            has_extracted_data=getattr(envelope, 'has_extracted_data', False),
 
             # Level 3 signals
             total_objections=envelope.total_objections,
@@ -229,6 +231,7 @@ class PolicyContext:
         funnel_velocity: float = 0.0,
         is_progressing: bool = False,
         is_regressing: bool = False,
+        has_extracted_data: bool = False,
         total_objections: int = 0,
         repeated_objection_types: List[str] = None,
         has_breakthrough: bool = False,
@@ -272,6 +275,7 @@ class PolicyContext:
             funnel_velocity=funnel_velocity,
             is_progressing=is_progressing,
             is_regressing=is_regressing,
+            has_extracted_data=has_extracted_data,
             total_objections=total_objections,
             repeated_objection_types=repeated_objection_types or [],
             has_breakthrough=has_breakthrough,
@@ -331,6 +335,7 @@ class PolicyContext:
             "funnel_velocity": self.funnel_velocity,
             "is_progressing": self.is_progressing,
             "is_regressing": self.is_regressing,
+            "has_extracted_data": self.has_extracted_data,
             "total_objections": self.total_objections,
             "repeated_objection_types": self.repeated_objection_types,
             "has_breakthrough": self.has_breakthrough,

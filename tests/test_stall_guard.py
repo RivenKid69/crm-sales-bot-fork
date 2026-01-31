@@ -201,7 +201,7 @@ class TestStallGuardSourceFires:
         assert call_kwargs["reason_code"] == "max_turns_in_state_exceeded"
         assert call_kwargs["source_name"] == "StallGuardSource"
         assert "mechanism" in call_kwargs["metadata"]
-        assert call_kwargs["metadata"]["mechanism"] == "stall_guard"
+        assert call_kwargs["metadata"]["mechanism"] == "stall_guard_hard"
 
     def test_priority_below_objection_return(self):
         """StallGuardSource priority_order (45) > ObjectionReturnSource (35)."""
@@ -482,10 +482,10 @@ class TestMaxTurnsInStateConfig:
         return data.get("states", {})
 
     def test_base_phase_has_max_turns(self):
-        """_base_phase must have max_turns_in_state=6."""
+        """_base_phase must have max_turns_in_state=5."""
         states = self._load_states()
         base_phase = states.get("_base_phase", {})
-        assert base_phase.get("max_turns_in_state") == 6
+        assert base_phase.get("max_turns_in_state") == 5
 
     def test_greeting_has_max_turns_4(self):
         """greeting must have max_turns_in_state=4."""
@@ -625,3 +625,605 @@ class TestSimulationDiagnosticConfig:
         diag = sim.get("diagnostic", {})
         assert diag["handle_objection_max_consecutive"] == 10
         assert diag["soft_close_max_visits"] == 5
+
+
+# =============================================================================
+# UNIT TESTS: Two-Tier StallGuard (FIX 2)
+# =============================================================================
+
+
+class TestStallGuardTwoTier:
+    """Tests for two-tier StallGuard: soft (NORMAL) and hard (HIGH)."""
+
+    def _make_source(self):
+        from src.blackboard.sources.stall_guard import StallGuardSource
+        return StallGuardSource()
+
+    def _make_blackboard(self, state="presentation", max_turns=5,
+                         consecutive=5, fallback="close",
+                         is_progressing=False, has_extracted_data=False,
+                         state_before_objection=None):
+        bb = MagicMock()
+
+        envelope = Mock()
+        envelope.consecutive_same_state = consecutive
+        envelope.is_progressing = is_progressing
+        envelope.has_extracted_data = has_extracted_data
+
+        ctx = Mock()
+        ctx.state = state
+        ctx.state_config = {
+            "max_turns_in_state": max_turns,
+            "max_turns_fallback": fallback,
+        }
+        ctx.context_envelope = envelope
+        bb.get_context.return_value = ctx
+
+        sm = Mock()
+        sm._state_before_objection = state_before_objection
+        bb._state_machine = sm
+
+        return bb
+
+    def test_hard_threshold_fires_unconditionally(self):
+        """Hard threshold (consecutive >= max_turns) always fires."""
+        source = self._make_source()
+        bb = self._make_blackboard(max_turns=5, consecutive=5, is_progressing=True)
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            assert source.should_contribute(bb) is True
+
+    def test_hard_threshold_uses_high_priority(self):
+        """Hard threshold proposes with Priority.HIGH."""
+        from src.blackboard.enums import Priority
+        source = self._make_source()
+        bb = self._make_blackboard(max_turns=5, consecutive=5)
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            source.contribute(bb)
+        call_kwargs = bb.propose_transition.call_args.kwargs
+        assert call_kwargs["priority"] == Priority.HIGH
+        assert call_kwargs["reason_code"] == "max_turns_in_state_exceeded"
+        assert call_kwargs["metadata"]["mechanism"] == "stall_guard_hard"
+
+    def test_soft_threshold_fires_when_not_progressing(self):
+        """Soft threshold (max_turns - 1) fires when not progressing and no data."""
+        source = self._make_source()
+        bb = self._make_blackboard(
+            max_turns=5, consecutive=4,
+            is_progressing=False, has_extracted_data=False,
+        )
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            assert source.should_contribute(bb) is True
+
+    def test_soft_threshold_uses_normal_priority(self):
+        """Soft threshold proposes with Priority.NORMAL."""
+        from src.blackboard.enums import Priority
+        source = self._make_source()
+        bb = self._make_blackboard(
+            max_turns=5, consecutive=4,
+            is_progressing=False, has_extracted_data=False,
+        )
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            source.contribute(bb)
+        call_kwargs = bb.propose_transition.call_args.kwargs
+        assert call_kwargs["priority"] == Priority.NORMAL
+        assert call_kwargs["reason_code"] == "stall_soft_progression"
+        assert call_kwargs["metadata"]["mechanism"] == "stall_guard_soft"
+
+    def test_soft_threshold_blocked_by_is_progressing(self):
+        """Soft threshold does NOT fire when is_progressing is True."""
+        source = self._make_source()
+        bb = self._make_blackboard(
+            max_turns=5, consecutive=4,
+            is_progressing=True, has_extracted_data=False,
+        )
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            assert source.should_contribute(bb) is False
+
+    def test_soft_threshold_blocked_by_has_extracted_data(self):
+        """Soft threshold does NOT fire when has_extracted_data is True."""
+        source = self._make_source()
+        bb = self._make_blackboard(
+            max_turns=5, consecutive=4,
+            is_progressing=False, has_extracted_data=True,
+        )
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            assert source.should_contribute(bb) is False
+
+    def test_soft_threshold_minimum_3(self):
+        """Soft threshold must be at least 3 (for greeting with max_turns=4)."""
+        source = self._make_source()
+        # max_turns=4 → soft_threshold=max(3,3)=3. consecutive=3 should fire.
+        bb = self._make_blackboard(
+            state="greeting", max_turns=4, consecutive=3,
+            is_progressing=False, has_extracted_data=False,
+            fallback="spin_situation",
+        )
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            assert source.should_contribute(bb) is True
+
+    def test_below_soft_threshold_does_not_fire(self):
+        """Below soft threshold (consecutive < max_turns-1) does not fire."""
+        source = self._make_source()
+        bb = self._make_blackboard(max_turns=5, consecutive=3)
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+            assert source.should_contribute(bb) is False
+
+    def test_greeting_timeline_soft_at_3_hard_at_4(self):
+        """Greeting (max=4): soft at turn 3, hard at turn 4."""
+        source = self._make_source()
+        with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
+            mock_flags.is_enabled.return_value = True
+
+            # Turn 2: no fire
+            bb2 = self._make_blackboard(
+                state="greeting", max_turns=4, consecutive=2,
+                fallback="spin_situation",
+            )
+            assert source.should_contribute(bb2) is False
+
+            # Turn 3: soft fire (not progressing, no data)
+            bb3 = self._make_blackboard(
+                state="greeting", max_turns=4, consecutive=3,
+                is_progressing=False, has_extracted_data=False,
+                fallback="spin_situation",
+            )
+            assert source.should_contribute(bb3) is True
+
+            # Turn 4: hard fire (unconditional)
+            bb4 = self._make_blackboard(
+                state="greeting", max_turns=4, consecutive=4,
+                is_progressing=True,  # Even progressing
+                fallback="spin_situation",
+            )
+            assert source.should_contribute(bb4) is True
+
+
+# =============================================================================
+# UNIT TESTS: is_stalled with has_extracted_data guard (FIX 1b)
+# =============================================================================
+
+
+class TestIsStalledWithExtractedData:
+    """Tests for is_stalled condition with has_extracted_data guard."""
+
+    def test_stalled_without_data(self):
+        """is_stalled fires when no data extracted and not progressing."""
+        from src.conditions.policy.conditions import is_stalled
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context(
+            state="presentation",
+            consecutive_same_state=4,
+            is_progressing=False,
+            has_extracted_data=False,
+        )
+        assert is_stalled(ctx) is True
+
+    def test_not_stalled_with_extracted_data(self):
+        """is_stalled should NOT fire when has_extracted_data is True."""
+        from src.conditions.policy.conditions import is_stalled
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context(
+            state="presentation",
+            consecutive_same_state=4,
+            is_progressing=False,
+            has_extracted_data=True,
+        )
+        assert is_stalled(ctx) is False
+
+    def test_not_stalled_when_progressing(self):
+        """is_stalled should NOT fire when is_progressing is True."""
+        from src.conditions.policy.conditions import is_stalled
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context(
+            state="presentation",
+            consecutive_same_state=4,
+            is_progressing=True,
+            has_extracted_data=False,
+        )
+        assert is_stalled(ctx) is False
+
+    def test_not_stalled_below_threshold(self):
+        """is_stalled should NOT fire below stall_threshold."""
+        from src.conditions.policy.conditions import is_stalled
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context(
+            state="presentation",
+            consecutive_same_state=2,
+            is_progressing=False,
+            has_extracted_data=False,
+        )
+        assert is_stalled(ctx) is False
+
+
+# =============================================================================
+# UNIT TESTS: ContextEnvelope consecutive_same_state off-by-one fix (FIX 1)
+# =============================================================================
+
+
+class TestConsecutiveSameStateOffByOne:
+    """Tests for the off-by-one fix in build_context_envelope."""
+
+    def _make_turn(self, state="presentation"):
+        """Create a minimal turn mock."""
+        turn = Mock()
+        turn.state = state
+        return turn
+
+    def test_first_turn_returns_1(self):
+        """First turn (no turns in window) should return 1."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.state_machine = Mock()
+        builder.state_machine.state = "greeting"
+        builder.state_machine.collected_data = {}
+        builder.state_machine.in_disambiguation = False
+
+        cw = Mock()
+        cw.turns = []
+        cw.get_consecutive_same_state.return_value = 0
+        cw.detect_stuck_pattern.return_value = False
+        cw.detect_repeated_question.return_value = None
+        cw.get_confidence_trend.return_value = "stable"
+        cw.get_average_confidence.return_value = 0.5
+        cw.__len__ = lambda self: 0
+        cw.get_last_turn.return_value = None
+        cw.get_intent_history.return_value = []
+        cw.get_action_history.return_value = []
+        cw.get_objection_count.return_value = 0
+        cw.get_positive_count.return_value = 0
+        cw.get_question_count.return_value = 0
+        cw.get_unclear_count.return_value = 0
+        cw.detect_oscillation.return_value = False
+        cw.get_structured_context.return_value = {}
+        cw.get_momentum.return_value = 0.0
+        cw.get_episodic_context.return_value = {}
+
+        builder.context_window = cw
+        builder.use_v2_engagement = False
+        builder.current_intent = "greeting"
+
+        envelope = Mock()
+        envelope.state = "greeting"
+        envelope.intent_history = []
+        envelope.objection_count = 0
+        envelope.total_objections = 0
+
+        builder._fill_from_context_window(envelope)
+        assert envelope.consecutive_same_state == 1
+
+    def test_same_state_adds_one(self):
+        """Same state as last turn should return raw_count + 1."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.state_machine = Mock()  # Needed for _fill_from_context_window check
+
+        cw = Mock()
+        turns = [self._make_turn("presentation"), self._make_turn("presentation")]
+        cw.turns = turns
+        cw.get_consecutive_same_state.return_value = 2
+        cw.detect_stuck_pattern.return_value = False
+        cw.detect_repeated_question.return_value = None
+        cw.get_confidence_trend.return_value = "stable"
+        cw.get_average_confidence.return_value = 0.5
+        cw.__len__ = lambda self: 2
+        cw.get_last_turn.return_value = turns[-1]
+        cw.get_intent_history.return_value = []
+        cw.get_action_history.return_value = []
+        cw.get_objection_count.return_value = 0
+        cw.get_positive_count.return_value = 0
+        cw.get_question_count.return_value = 0
+        cw.get_unclear_count.return_value = 0
+        cw.detect_oscillation.return_value = False
+        cw.get_structured_context.return_value = {}
+        cw.get_momentum.return_value = 0.0
+        cw.get_episodic_context.return_value = {}
+
+        builder.context_window = cw
+        builder.use_v2_engagement = False
+        builder.current_intent = "info_provided"
+
+        envelope = Mock()
+        envelope.state = "presentation"
+        envelope.intent_history = []
+        envelope.objection_count = 0
+        envelope.total_objections = 0
+
+        builder._fill_from_context_window(envelope)
+        assert envelope.consecutive_same_state == 3  # 2 + 1
+
+    def test_state_changed_returns_1(self):
+        """Different state from last turn should return 1."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.state_machine = Mock()  # Needed for _fill_from_context_window check
+
+        cw = Mock()
+        turns = [self._make_turn("greeting")]
+        cw.turns = turns
+        cw.get_consecutive_same_state.return_value = 1
+        cw.detect_stuck_pattern.return_value = False
+        cw.detect_repeated_question.return_value = None
+        cw.get_confidence_trend.return_value = "stable"
+        cw.get_average_confidence.return_value = 0.5
+        cw.__len__ = lambda self: 1
+        cw.get_last_turn.return_value = turns[-1]
+        cw.get_intent_history.return_value = []
+        cw.get_action_history.return_value = []
+        cw.get_objection_count.return_value = 0
+        cw.get_positive_count.return_value = 0
+        cw.get_question_count.return_value = 0
+        cw.get_unclear_count.return_value = 0
+        cw.detect_oscillation.return_value = False
+        cw.get_structured_context.return_value = {}
+        cw.get_momentum.return_value = 0.0
+        cw.get_episodic_context.return_value = {}
+
+        builder.context_window = cw
+        builder.use_v2_engagement = False
+        builder.current_intent = "info_provided"
+
+        envelope = Mock()
+        envelope.state = "presentation"  # Different from last turn's "greeting"
+        envelope.intent_history = []
+        envelope.objection_count = 0
+        envelope.total_objections = 0
+
+        builder._fill_from_context_window(envelope)
+        assert envelope.consecutive_same_state == 1
+
+
+# =============================================================================
+# UNIT TESTS: has_extracted_data in ContextEnvelope (FIX 1b)
+# =============================================================================
+
+
+class TestHasExtractedDataEnvelope:
+    """Tests for has_extracted_data field population in ContextEnvelope."""
+
+    def test_meaningful_data_sets_flag(self):
+        """has_extracted_data should be True when meaningful data extracted."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.classification_result = {
+            "extracted_data": {"company_size": "50", "option_index": 1}
+        }
+        builder.state_machine = None
+        builder.context_window = None
+        builder.tone_info = {}
+        builder.guard_info = {}
+        builder.last_action = None
+        builder.last_intent = None
+        builder.current_intent = None
+        builder.use_v2_engagement = False
+
+        envelope = builder.build()
+        assert envelope.has_extracted_data is True
+
+    def test_trivial_data_does_not_set_flag(self):
+        """has_extracted_data should be False for trivial fields only."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.classification_result = {
+            "extracted_data": {"option_index": 1, "high_interest": True}
+        }
+        builder.state_machine = None
+        builder.context_window = None
+        builder.tone_info = {}
+        builder.guard_info = {}
+        builder.last_action = None
+        builder.last_intent = None
+        builder.current_intent = None
+        builder.use_v2_engagement = False
+
+        envelope = builder.build()
+        assert envelope.has_extracted_data is False
+
+    def test_empty_data_does_not_set_flag(self):
+        """has_extracted_data should be False when no data extracted."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.classification_result = {"extracted_data": {}}
+        builder.state_machine = None
+        builder.context_window = None
+        builder.tone_info = {}
+        builder.guard_info = {}
+        builder.last_action = None
+        builder.last_intent = None
+        builder.current_intent = None
+        builder.use_v2_engagement = False
+
+        envelope = builder.build()
+        assert envelope.has_extracted_data is False
+
+    def test_none_values_ignored(self):
+        """has_extracted_data should ignore None values in meaningful fields."""
+        from src.context_envelope import ContextEnvelopeBuilder
+        builder = ContextEnvelopeBuilder.__new__(ContextEnvelopeBuilder)
+        builder.classification_result = {
+            "extracted_data": {"company_size": None, "role": ""}
+        }
+        builder.state_machine = None
+        builder.context_window = None
+        builder.tone_info = {}
+        builder.guard_info = {}
+        builder.last_action = None
+        builder.last_intent = None
+        builder.current_intent = None
+        builder.use_v2_engagement = False
+
+        envelope = builder.build()
+        assert envelope.has_extracted_data is False
+
+
+# =============================================================================
+# UNIT TESTS: DataAwareRefinementLayer (FIX 4)
+# =============================================================================
+
+
+class TestDataAwareRefinementLayer:
+    """Tests for DataAwareRefinementLayer."""
+
+    def _make_ctx(self, intent="unclear", extracted_data=None):
+        from src.classifier.refinement_pipeline import RefinementContext
+        return RefinementContext(
+            message="торгуем электроникой",
+            state="spin_situation",
+            intent=intent,
+            confidence=0.4,
+            extracted_data=extracted_data or {},
+        )
+
+    def test_promotes_unclear_with_meaningful_data(self):
+        """Should promote unclear → info_provided when meaningful data present."""
+        from src.classifier.data_aware_refinement import DataAwareRefinementLayer
+        layer = DataAwareRefinementLayer()
+
+        ctx = self._make_ctx(
+            intent="unclear",
+            extracted_data={"business_type": "electronics", "option_index": 1},
+        )
+        result = {"intent": "unclear", "confidence": 0.4, "extracted_data": ctx.extracted_data}
+        refined = layer._do_refine("торгуем электроникой", result, ctx)
+        assert refined.intent == "info_provided"
+        assert refined.confidence == 0.75
+        assert "data_aware" in refined.refinement_reason
+
+    def test_does_not_promote_without_meaningful_data(self):
+        """Should pass through when only trivial fields extracted."""
+        from src.classifier.data_aware_refinement import DataAwareRefinementLayer
+        layer = DataAwareRefinementLayer()
+
+        ctx = self._make_ctx(
+            intent="unclear",
+            extracted_data={"option_index": 1},
+        )
+        result = {"intent": "unclear", "confidence": 0.4, "extracted_data": ctx.extracted_data}
+        refined = layer._do_refine("1", result, ctx)
+        assert refined.intent == "unclear"
+
+    def test_should_not_apply_non_unclear(self):
+        """Should not apply when intent is not 'unclear'."""
+        from src.classifier.data_aware_refinement import DataAwareRefinementLayer
+        layer = DataAwareRefinementLayer()
+        ctx = self._make_ctx(
+            intent="greeting",
+            extracted_data={"company_size": "50"},
+        )
+        assert layer._should_apply(ctx) is False
+
+    def test_should_not_apply_no_extracted_data(self):
+        """Should not apply when no extracted data at all."""
+        from src.classifier.data_aware_refinement import DataAwareRefinementLayer
+        layer = DataAwareRefinementLayer()
+        ctx = self._make_ctx(intent="unclear", extracted_data={})
+        assert layer._should_apply(ctx) is False
+
+    def test_should_apply_unclear_with_data(self):
+        """Should apply when intent is unclear and extracted data exists."""
+        from src.classifier.data_aware_refinement import DataAwareRefinementLayer
+        layer = DataAwareRefinementLayer()
+        ctx = self._make_ctx(
+            intent="unclear",
+            extracted_data={"pain_point": "slow processes"},
+        )
+        assert layer._should_apply(ctx) is True
+
+
+# =============================================================================
+# UNIT TESTS: Feature Flag for data_aware_refinement (FIX 4 wiring)
+# =============================================================================
+
+
+class TestDataAwareRefinementFeatureFlag:
+    """Tests for data_aware_refinement feature flag."""
+
+    def test_flag_in_defaults(self):
+        """data_aware_refinement flag must exist in DEFAULTS and be enabled."""
+        from src.feature_flags import FeatureFlags
+        assert "data_aware_refinement" in FeatureFlags.DEFAULTS
+        assert FeatureFlags.DEFAULTS["data_aware_refinement"] is True
+
+    def test_flag_in_pipeline_group(self):
+        """data_aware_refinement must be in refinement_pipeline_all group."""
+        from src.feature_flags import FeatureFlags
+        group = FeatureFlags.GROUPS.get("refinement_pipeline_all", [])
+        assert "data_aware_refinement" in group
+
+
+# =============================================================================
+# UNIT TESTS: PolicyContext has_extracted_data transport (FIX 1b)
+# =============================================================================
+
+
+class TestPolicyContextHasExtractedData:
+    """Tests for has_extracted_data in PolicyContext."""
+
+    def test_field_exists_default_false(self):
+        """PolicyContext should have has_extracted_data defaulting to False."""
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context()
+        assert ctx.has_extracted_data is False
+
+    def test_field_settable_via_create_test_context(self):
+        """has_extracted_data should be settable via create_test_context."""
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context(has_extracted_data=True)
+        assert ctx.has_extracted_data is True
+
+    def test_field_in_to_dict(self):
+        """has_extracted_data should appear in to_dict output."""
+        from src.conditions.policy.context import PolicyContext
+        ctx = PolicyContext.create_test_context(has_extracted_data=True)
+        d = ctx.to_dict()
+        assert "has_extracted_data" in d
+        assert d["has_extracted_data"] is True
+
+    def test_from_envelope_transfers_field(self):
+        """from_envelope should copy has_extracted_data from envelope."""
+        from src.conditions.policy.context import PolicyContext
+        envelope = Mock()
+        envelope.collected_data = {}
+        envelope.state = "presentation"
+        envelope.total_turns = 3
+        envelope.current_phase = "presentation"
+        envelope.spin_phase = None
+        envelope.last_action = None
+        envelope.last_intent = None
+        envelope.current_intent = None
+        envelope.is_stuck = False
+        envelope.consecutive_same_state = 2
+        envelope.has_oscillation = False
+        envelope.repeated_question = None
+        envelope.confidence_trend = "stable"
+        envelope.unclear_count = 0
+        envelope.momentum = 0.0
+        envelope.momentum_direction = "neutral"
+        envelope.engagement_level = "medium"
+        envelope.engagement_trend = "stable"
+        envelope.funnel_velocity = 0.0
+        envelope.is_progressing = False
+        envelope.is_regressing = False
+        envelope.has_extracted_data = True
+        envelope.total_objections = 0
+        envelope.repeated_objection_types = []
+        envelope.has_breakthrough = False
+        envelope.turns_since_breakthrough = None
+        envelope.most_effective_action = None
+        envelope.least_effective_action = None
+        envelope.frustration_level = 0
+        envelope.guard_intervention = None
+        envelope.pre_intervention_triggered = False
+        envelope.secondary_intents = []
+        envelope.max_consecutive_objections = 3
+        envelope.max_total_objections = 5
+
+        ctx = PolicyContext.from_envelope(envelope)
+        assert ctx.has_extracted_data is True

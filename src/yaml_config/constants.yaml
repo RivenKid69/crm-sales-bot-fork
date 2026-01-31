@@ -4964,6 +4964,14 @@ refinement_pipeline:
       priority: HIGH  # 75 - runs before objection refinement
       feature_flag: option_selection_refinement
 
+    # Слой 6: Data-Aware Refinement (Stall Prevention Layer 1)
+    # Promotes 'unclear' → 'info_provided' when DataExtractor found meaningful data
+    # Defense-in-depth: catches cases where patterns miss but DataExtractor succeeds
+    - name: data_aware
+      enabled: true
+      priority: NORMAL  # 50 - runs after pattern-based layers
+      feature_flag: data_aware_refinement
+
   # Глобальные настройки pipeline
   settings:
     # Логировать каждое решение слоя

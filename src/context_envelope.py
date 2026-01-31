@@ -192,6 +192,7 @@ class ContextEnvelope:
     funnel_progress: int = 0
     is_progressing: bool = False
     is_regressing: bool = False
+    has_extracted_data: bool = False  # Whether DataExtractor found data in current message
 
     # === Level 3: Episodic Memory ===
     first_objection_type: Optional[str] = None
@@ -506,6 +507,23 @@ class ContextEnvelopeBuilder:
         # Bridge current_intent to envelope (fixes 1-turn lag for policy)
         envelope.current_intent = self.current_intent
 
+        # Flag: did DataExtractor find meaningful data in the current message?
+        # Uses same whitelist as DataAwareRefinementLayer — excludes trivial fields
+        # (option_index, high_interest, value_acknowledged, preferred_channel, contact_type)
+        _MEANINGFUL_EXTRACT_FIELDS = frozenset({
+            "company_size", "pain_point", "pain_category", "role",
+            "timeline", "contact_info", "budget_range",
+            "current_tools", "business_type", "users_count",
+            "pain_impact", "financial_impact", "desired_outcome",
+            "urgency", "client_name",
+        })
+        extracted = self.classification_result.get("extracted_data", {})
+        envelope.has_extracted_data = any(
+            v is not None and v != ""
+            for k, v in extracted.items()
+            if k in _MEANINGFUL_EXTRACT_FIELDS
+        )
+
         # Вычисляем reason codes
         self._compute_reason_codes(envelope)
 
@@ -569,7 +587,20 @@ class ContextEnvelopeBuilder:
         envelope.unclear_count = cw.get_unclear_count()
         envelope.has_oscillation = cw.detect_oscillation()
         envelope.is_stuck = cw.detect_stuck_pattern()
-        envelope.consecutive_same_state = cw.get_consecutive_same_state()
+        raw_count = cw.get_consecutive_same_state()
+        # TIMING FIX: build_context_envelope() runs BEFORE add_turn_from_dict()
+        # (bot.py:935 vs bot.py:1210), so the current turn is NOT in the window.
+        # Compensate by checking if current state matches last recorded turn's state.
+        # envelope.state is already set from state_machine in _fill_from_state_machine().
+        if not cw.turns:
+            # First turn of dialog — we ARE in this state
+            envelope.consecutive_same_state = 1
+        elif cw.turns[-1].state == envelope.state:
+            # Still in same state — add 1 for current (unrecorded) turn
+            envelope.consecutive_same_state = raw_count + 1
+        else:
+            # State changed since last turn — this is turn 1 in new state
+            envelope.consecutive_same_state = 1
         envelope.repeated_question = cw.detect_repeated_question(
             include_current_intent=self.current_intent
         )
