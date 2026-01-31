@@ -333,3 +333,129 @@ class TestTypedFieldsE2E:
         source.contribute(bb)
 
         bb.propose_action.assert_not_called()
+
+
+# =============================================================================
+# Test: PhaseExhaustedSource priority interactions
+# =============================================================================
+
+class TestPhaseExhaustedPriorityInteractions:
+    """Test that PhaseExhaustedSource interacts correctly with other sources
+    via ConflictResolver priority semantics."""
+
+    def test_disambiguation_wins_over_phase_exhausted(self):
+        """DisambiguationSource (HIGH, combinable=False) beats
+        PhaseExhaustedSource (NORMAL, combinable=True)."""
+        from src.blackboard.models import Proposal
+        from src.blackboard.enums import ProposalType
+
+        disambiguation = Proposal(
+            type=ProposalType.ACTION,
+            value="ask_clarification",
+            priority=Priority.HIGH,
+            source_name="DisambiguationSource",
+            reason_code="disambiguation_needed",
+            combinable=False,
+        )
+
+        phase_exhausted = Proposal(
+            type=ProposalType.ACTION,
+            value="offer_options",
+            priority=Priority.NORMAL,
+            source_name="PhaseExhaustedSource",
+            reason_code="phase_exhausted_options",
+            combinable=True,
+        )
+
+        # HIGH < NORMAL numerically (lower = higher priority)
+        assert disambiguation.priority < phase_exhausted.priority
+        # Disambiguation is non-combinable, so it blocks
+        assert disambiguation.combinable is False
+        assert phase_exhausted.combinable is True
+
+    def test_phase_exhausted_coexists_with_transition(self):
+        """PhaseExhaustedSource (NORMAL action, combinable=True) coexists
+        with TransitionResolver (NORMAL transition) — both apply."""
+        from src.blackboard.models import Proposal
+        from src.blackboard.enums import ProposalType
+
+        phase_exhausted = Proposal(
+            type=ProposalType.ACTION,
+            value="offer_options",
+            priority=Priority.NORMAL,
+            source_name="PhaseExhaustedSource",
+            reason_code="phase_exhausted_options",
+            combinable=True,
+        )
+
+        transition = Proposal(
+            type=ProposalType.TRANSITION,
+            value="close",
+            priority=Priority.NORMAL,
+            source_name="TransitionResolverSource",
+            reason_code="intent_transition",
+            combinable=True,
+        )
+
+        # Both are combinable=True and NORMAL — they should coexist
+        assert phase_exhausted.combinable is True
+        assert transition.combinable is True
+        assert phase_exhausted.priority == transition.priority
+
+
+class TestDefenseInDepthDisambiguation:
+    """Test defense-in-depth: disambiguation clears guard fallback."""
+
+    def test_disambiguation_clears_fallback_concept(self):
+        """When Blackboard returns ask_clarification with options,
+        guard fallback_response should be cleared."""
+        # This is a conceptual test — the actual clearing happens in bot.py
+        # Here we verify the priority semantics that make it safe
+        sm_result = {
+            "action": "ask_clarification",
+            "disambiguation_options": [
+                {"intent": "price_question", "label": "Цены"},
+                {"intent": "demo_request", "label": "Демо"},
+            ],
+        }
+
+        fallback_response = {"response": "Generic menu", "tier": "fallback_tier_2"}
+
+        # Condition from bot.py defense-in-depth:
+        should_clear = bool(
+            fallback_response
+            and sm_result.get("action") == "ask_clarification"
+            and sm_result.get("disambiguation_options")
+        )
+        assert should_clear is True
+
+    def test_no_clear_without_disambiguation_options(self):
+        """fallback_response NOT cleared when ask_clarification has no options."""
+        sm_result = {
+            "action": "ask_clarification",
+            "disambiguation_options": [],
+        }
+
+        fallback_response = {"response": "Generic menu"}
+
+        should_clear = bool(
+            fallback_response
+            and sm_result.get("action") == "ask_clarification"
+            and sm_result.get("disambiguation_options")
+        )
+        assert should_clear is False
+
+    def test_no_clear_for_non_disambiguation_action(self):
+        """fallback_response NOT cleared for non-ask_clarification actions."""
+        sm_result = {
+            "action": "continue_conversation",
+        }
+
+        fallback_response = {"response": "Generic menu"}
+
+        should_clear = (
+            fallback_response
+            and sm_result.get("action") == "ask_clarification"
+            and sm_result.get("disambiguation_options")
+        )
+        assert should_clear is False

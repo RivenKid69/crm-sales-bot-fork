@@ -625,6 +625,15 @@ class FallbackHandler:
             )
         return self._tier_1_rephrase(state, context, trace=trace)
 
+    def generate_options_menu(self, state: str, context: Dict) -> FallbackResponse:
+        """Generate options menu response for Blackboard PhaseExhaustedSource.
+
+        Uses static options (state-specific or default from YAML).
+        Bypasses get_fallback() to avoid incrementing fallback stats/counters.
+        Called from bot.py when Blackboard decides action="offer_options".
+        """
+        return self._get_static_tier_2_options(state, context)
+
     def _select_dynamic_options_with_conditions(
         self,
         collected: Dict,

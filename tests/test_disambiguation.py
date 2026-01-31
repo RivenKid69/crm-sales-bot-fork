@@ -387,6 +387,38 @@ class TestDisambiguationUIParseKeyword:
         result = ui.parse_answer("цена", options)
         assert result is None
 
+    def test_parse_podrobnee_keyword(self, ui):
+        """Парсинг ключевого слова 'подробнее о системе' -> question_features."""
+        options = [
+            {"intent": "question_features", "label": "Подробнее о системе"},
+            {"intent": "price_question", "label": "Цены"},
+        ]
+        assert ui.parse_answer("подробнее о системе", options) == "question_features"
+
+    def test_parse_sistema_keyword(self, ui):
+        """Парсинг ключевого слова 'о системе' -> question_features."""
+        options = [
+            {"intent": "question_features", "label": "О системе"},
+            {"intent": "demo_request", "label": "Демо"},
+        ]
+        assert ui.parse_answer("расскажите о системе", options) == "question_features"
+
+    def test_parse_pozhje_keyword(self, ui):
+        """Парсинг ключевого слова 'связаться позже' -> callback_request."""
+        options = [
+            {"intent": "callback_request", "label": "Связаться позже"},
+            {"intent": "demo_request", "label": "Демо"},
+        ]
+        assert ui.parse_answer("связаться позже", options) == "callback_request"
+
+    def test_parse_pozhe_standalone(self, ui):
+        """Парсинг 'позже' -> callback_request."""
+        options = [
+            {"intent": "callback_request", "label": "Связаться позже"},
+            {"intent": "question_features", "label": "Функции"},
+        ]
+        assert ui.parse_answer("позже", options) == "callback_request"
+
 
 class TestDisambiguationUIParseEmpty:
     """Тесты парсинга пустых ответов"""

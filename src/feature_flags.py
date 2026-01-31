@@ -162,6 +162,9 @@ class FeatureFlags:
         # === Data-Aware Refinement (Stall Prevention) ===
         "data_aware_refinement": True,             # Promote unclear→info_provided when data extracted
 
+        # === Phase Exhausted Source (Guard-Blackboard Race Fix) ===
+        "phase_exhausted_source": True,            # PhaseExhaustedSource: options menu when phase stuck
+
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
     }

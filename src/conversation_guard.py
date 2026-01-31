@@ -276,20 +276,9 @@ class ConversationGuard:
                 )
                 return True, self.TIER_3  # Предложить skip
 
-        # 6. Проверка попыток в фазе (но только если нет прогресса в данных)
-        # NOTE: Используем > (не >=) для консистентности с max_turns:
-        # max_phase_attempts=3 означает "разрешить 3 попытки, на 4й сработать"
-        phase_attempts = self._state.phase_attempts[state]
-        if phase_attempts > self.config.max_phase_attempts:
-            new_data_count = len(collected_data)
-            if new_data_count <= self._state.collected_data_count:
-                logger.warning(
-                    "Phase exhausted without progress",
-                    state=state,
-                    attempts=phase_attempts,
-                    data_count=new_data_count
-                )
-                return True, self.TIER_2
+        # 6. Phase exhaustion — REMOVED: Now handled by PhaseExhaustedSource
+        # inside the Blackboard pipeline (Principle 3.2: Blackboard Pipeline Authority).
+        # See src/blackboard/sources/phase_exhausted.py
 
         # Обновляем счётчик собранных данных
         self._state.collected_data_count = len(collected_data)

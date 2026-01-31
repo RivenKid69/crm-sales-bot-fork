@@ -1039,6 +1039,20 @@ class SalesBot:
             fallback_response = None
             fallback_used = False
 
+        # === Defense-in-depth: Disambiguation takes precedence over guard fallback ===
+        # Protects against remaining Guard checks (frustration TIER_2, message_loop TIER_2)
+        # that could conflict with DisambiguationSource's ask_clarification.
+        if (fallback_response
+                and sm_result.get("action") == "ask_clarification"
+                and sm_result.get("disambiguation_options")):
+            logger.info(
+                "Disambiguation clears guard fallback",
+                original_fallback_tier=fallback_tier,
+                disambiguation_options_count=len(sm_result["disambiguation_options"]),
+            )
+            fallback_response = None
+            fallback_used = False
+
         # Build context for response generation
         # При наличии ResponseDirectives используем их instruction
         directive_instruction = ""
@@ -1185,6 +1199,36 @@ class SalesBot:
                     cta_added=False,
                     skip_reason="disambiguation_path",
                 )
+        elif action == "offer_options":
+            # Phase-exhausted options path — decision from Blackboard PhaseExhaustedSource.
+            # Since combinable=True, a transition may have also been applied.
+            # If state progressed → generate normal response (transition wins over options).
+            # If state unchanged → show options menu (bot is truly stuck).
+            response_start = time.time()
+            if next_state != current_state:
+                # Transition happened — progress, don't show stale options
+                action = "continue_conversation"
+                response = self.generator.generate(action, context)
+            else:
+                # No transition — truly stuck, show options menu
+                fb_result = self.fallback.generate_options_menu(
+                    state=current_state,
+                    context={
+                        "collected_data": {**collected_data, **extracted},
+                        "last_intent": intent,
+                        "last_action": self.last_action,
+                        "frustration_level": frustration_level,
+                    }
+                )
+                response = fb_result.message
+            response_elapsed = (time.time() - response_start) * 1000
+            cta_result = CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="phase_exhausted_options",
+            )
         else:
             # 3. Generate response (normal path)
             response_start = time.time()

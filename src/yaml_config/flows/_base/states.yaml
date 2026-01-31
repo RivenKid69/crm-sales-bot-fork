@@ -55,6 +55,7 @@ states:
   _base_phase:
     abstract: true
     max_turns_in_state: 5           # Universal TTL: forced transition after N consecutive turns
+    phase_exhaust_threshold: 3      # Offer options after N turns without progress
     max_turns_fallback: "{{next_phase_state}}"  # Where to eject on TTL (template resolved at load time)
     mixins:
       - _universal_base     # FIRST: Guaranteed coverage for all critical intents

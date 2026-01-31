@@ -283,6 +283,7 @@ def register_builtin_sources() -> None:
     from .sources.escalation import EscalationSource
     from .sources.go_back_guard import GoBackGuardSource
     from .sources.stall_guard import StallGuardSource
+    from .sources.phase_exhausted import PhaseExhaustedSource
 
     # Register in recommended order (lower priority_order = earlier execution)
 
@@ -359,6 +360,17 @@ def register_builtin_sources() -> None:
         priority_order=40,
         config_key="intent_processor",
         description="Maps intents to actions via rules"
+    )
+
+    # PhaseExhaustedSource: Offers options menu when phase stuck without progress
+    # After IntentProcessorSource (40) — intent processing happens first
+    # Before StallGuardSource (45) — softer mechanism fires first
+    SourceRegistry.register(
+        PhaseExhaustedSource,
+        name="PhaseExhaustedSource",
+        priority_order=43,
+        config_key="phase_exhausted",
+        description="Offers options menu when phase exhausted without progress"
     )
 
     # StallGuardSource: Universal max-turns-in-state safety net

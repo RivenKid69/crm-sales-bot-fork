@@ -251,10 +251,15 @@ class TestMaxTurnsLimit:
 
 
 class TestPhaseExhaustion:
-    """Tests for phase exhaustion detection"""
+    """Tests for phase exhaustion detection.
 
-    def test_detects_phase_exhaustion_without_progress(self):
-        """Detects phase exhaustion when no data progress"""
+    NOTE: Check 6 (phase_exhausted → TIER_2) was removed from ConversationGuard
+    and migrated to PhaseExhaustedSource inside the Blackboard pipeline.
+    These tests verify the old check 6 no longer fires from the Guard.
+    """
+
+    def test_phase_exhaustion_no_longer_fires_from_guard(self):
+        """Check 6 removed: phase exhaustion no longer produces TIER_2 from guard."""
         config = GuardConfig(max_phase_attempts=2)
         guard = ConversationGuard(config)
 
@@ -263,22 +268,35 @@ class TestPhaseExhaustion:
         can_continue, intervention = guard.check("spin_situation", "msg3", {})
 
         assert can_continue is True
-        assert intervention == "fallback_tier_2"
+        # Old behavior was intervention == "fallback_tier_2"
+        # New behavior: no intervention from guard (handled by PhaseExhaustedSource)
+        assert intervention != "fallback_tier_2"
+
+    def test_other_checks_still_work_after_check6_removal(self):
+        """Verify other guard checks (timeout, max_turns, etc.) still function."""
+        # Timeout still works
+        config = GuardConfig(timeout_seconds=0)
+        guard = ConversationGuard(config)
+        import time
+        time.sleep(0.01)
+        can_continue, intervention = guard.check("state1", "msg", {})
+        assert can_continue is False
+        assert intervention == "soft_close"
 
     def test_allows_more_attempts_with_data_progress(self):
-        """Allows more attempts if collecting data"""
+        """Allows more attempts if collecting data (check 6 removed, always passes now)."""
         config = GuardConfig(max_phase_attempts=2)
         guard = ConversationGuard(config)
 
         guard.check("spin_situation", "msg1", {})
-        guard.check("spin_situation", "msg2", {"company_size": 10})  # Data collected
+        guard.check("spin_situation", "msg2", {"company_size": 10})
         can_continue, intervention = guard.check(
             "spin_situation",
             "msg3",
-            {"company_size": 10, "industry": "retail"}  # More data
+            {"company_size": 10, "industry": "retail"}
         )
 
-        # Should not trigger phase exhaustion due to data progress
+        # With check 6 removed, no phase exhaustion intervention from guard
         assert intervention is None or intervention != "fallback_tier_2"
 
 

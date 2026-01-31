@@ -39,12 +39,12 @@ class DisambiguationUI:
     # Ключевые слова для каждого интента
     INTENT_KEYWORDS: Dict[str, List[str]] = {
         "price_question": ["цен", "стоим", "прайс", "скольк"],
-        "question_features": ["функци", "возможност", "умеет"],
+        "question_features": ["функци", "возможност", "умеет", "подробн", "систем"],
         "question_integrations": ["интеграц", "подключ", "1с", "kaspi"],
         "objection_price": ["дорог", "дешев"],
         "agreement": ["да", "давайте", "хорошо", "продолж"],
         "demo_request": ["демо", "показ", "попробов"],
-        "callback_request": ["перезвон", "позвон", "свяж"],
+        "callback_request": ["перезвон", "позвон", "свяж", "позже"],
     }
 
     def format_question(
