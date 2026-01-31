@@ -325,7 +325,8 @@ class SimulationRunner:
                         client_traces.append(client_trace.to_dict())
 
                 except Exception as e:
-                    errors.append(f"Turn {turn + 1}: {str(e)}")
+                    tb_str = traceback.format_exc()
+                    errors.append(f"Turn {turn + 1}: {str(e)}\n{tb_str}")
                     if self.verbose:
                         traceback.print_exc()
                     break
@@ -388,7 +389,8 @@ class SimulationRunner:
 
         except Exception as e:
             duration = time.time() - start_time
-            errors.append(f"Fatal: {str(e)}")
+            tb_str = traceback.format_exc()
+            errors.append(f"Fatal: {str(e)}\n{tb_str}")
             if self.verbose:
                 traceback.print_exc()
 

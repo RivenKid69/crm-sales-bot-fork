@@ -194,7 +194,7 @@ class DialoguePolicy:
             # которые могут привести к бесконечному циклу.
             if ctx.guard_intervention:
                 if trace:
-                    trace.set_result("guard_stop", Resolution.STOP)
+                    trace.set_result("guard_stop", Resolution.NONE)
                 return override
 
         # 1.5 НОВОЕ: Price question override (гарантирует ответ о цене)

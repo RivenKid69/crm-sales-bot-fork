@@ -577,7 +577,7 @@ def main():
                 "outcome": result.outcome,
                 "score": result.score,
                 "phases_reached": result.phases_reached,
-                "turn_count": result.details.get("turn_count", 0),
+                "turn_count": result.turns,
                 "coverage": result.details.get("phases", {}).get("coverage", 0.0),
             }
             detailed_results.append(result_info)

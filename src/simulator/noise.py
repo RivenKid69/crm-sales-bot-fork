@@ -118,7 +118,7 @@ def _add_typo(text: str) -> str:
             match = pattern.search(text)
             if match:
                 original = match.group()
-                if original[0].isupper():
+                if original[0].isupper() and typo:
                     typo = typo[0].upper() + typo[1:]
                 text = pattern.sub(typo, text, count=1)
             break

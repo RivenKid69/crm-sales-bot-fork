@@ -297,13 +297,13 @@ class ResponseDiversityEngine:
         # Если вступление пустое — возвращаем без него
         if not opening:
             # Capitalize first letter of rest
-            if rest_of_response:
+            if len(rest_of_response) >= 1:
                 rest_of_response = rest_of_response[0].upper() + rest_of_response[1:]
             return rest_of_response, None, category
 
         # Собираем новый ответ
         # Capitalize first letter of rest if needed
-        if rest_of_response and opening.endswith((".", "!", "?")):
+        if len(rest_of_response) >= 1 and opening.endswith((".", "!", "?")):
             rest_of_response = rest_of_response[0].upper() + rest_of_response[1:]
 
         processed = f"{opening} {rest_of_response}".strip()

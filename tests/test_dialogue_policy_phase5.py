@@ -423,29 +423,30 @@ class TestOverlayPriority:
 
     @patch('dialogue_policy.flags')
     def test_guard_has_highest_priority(self, mock_flags, policy):
-        """Test that guard intervention fires first, but NO_OVERRIDE allows
-        downstream overlays to provide a real action.
+        """Test that guard intervention fires first and blocks all downstream overlays.
 
-        After the NO_OVERRIDE truthiness fix, guard NO_OVERRIDE is a pass-through:
-        it doesn't block subsequent overlays. If repair is triggered (is_stuck=True),
-        repair overlay provides the actual action.
+        When guard intervention is present, maybe_override() returns early with
+        NO_OVERRIDE to prevent repair/breakthrough overlays from overriding
+        the guard's decision. This avoids infinite loops from repair actions
+        conflicting with guard intervention.
         """
         mock_flags.is_enabled.return_value = True
 
         envelope = create_mock_envelope(
             state="spin_situation",
             guard_intervention="frustration_high",
-            is_stuck=True,  # Would trigger repair
+            is_stuck=True,  # Would trigger repair, but guard blocks it
             has_breakthrough=True,
-            turns_since_breakthrough=2  # Would trigger breakthrough
+            turns_since_breakthrough=2  # Would trigger breakthrough, but guard blocks it
         )
         sm_result = {"action": "ask_question"}
 
         result = policy.maybe_override(sm_result, envelope)
 
-        # Guard fires first (NO_OVERRIDE), but repair overlay provides the real action
+        # Guard fires and returns early — NO_OVERRIDE because guard handles everything
         assert result is not None
-        assert result.has_override  # A real overlay was applied after guard pass-through
+        assert not result.has_override  # Guard blocks downstream overlays
+        assert result.decision == PolicyDecision.NO_OVERRIDE
 
     @patch('dialogue_policy.flags')
     def test_repair_before_objection(self, mock_flags, policy):

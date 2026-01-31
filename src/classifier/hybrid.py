@@ -691,7 +691,7 @@ class HybridClassifier:
 
             recent_objections = sum(1 for i in last_intents if i in objection_intents)
 
-            if recent_objections >= 1 and last_intents[-1] == "agreement":
+            if last_intents and recent_objections >= 1 and last_intents[-1] == "agreement":
                 # Это не настоящее согласие — клиент колеблется
                 # Снижаем уверенность но не меняем интент
                 # (это будет учтено в state machine)
