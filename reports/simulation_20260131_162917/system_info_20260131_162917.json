@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-01-31T16:29:17.283662",
+  "cpu": {
+    "cores_physical": 16,
+    "cores_logical": 32,
+    "percent_total": 0.6,
+    "percent_per_core": [
+      10.0,
+      9.1,
+      10.0,
+      0.0,
+      9.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      10.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      10.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "freq_mhz": 3105.28790625
+  },
+  "memory": {
+    "total_gb": 60.47,
+    "available_gb": 29.97,
+    "used_gb": 30.5,
+    "percent": 50.4
+  },
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5090",
+    "memory_total_mb": 32607,
+    "memory_free_mb": 31736,
+    "memory_used_mb": 376,
+    "utilization_percent": 4,
+    "temperature_c": 44,
+    "power_draw_w": 8.28,
+    "power_limit_w": 600.0
+  }
+}

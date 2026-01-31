@@ -1,0 +1,126 @@
+2026-01-31 16:29:17 | INFO     | MainThread   | ================================================================================
+2026-01-31 16:29:17 | INFO     | MainThread   | НАЧАЛО СИМУЛЯЦИИ: 2026-01-31 16:29:17
+2026-01-31 16:29:17 | INFO     | MainThread   | ================================================================================
+2026-01-31 16:29:17 | INFO     | MainThread   | Параметры: диалогов=100, флоу=20, персон=8, потоков=8
+2026-01-31 16:29:17 | INFO     | MainThread   | Переменные окружения настроены для 8 потоков
+2026-01-31 16:29:18 | INFO     | MainThread   | Система: CPU=32 ядер, RAM=60.47GB, GPU=NVIDIA GeForce RTX 5090
+2026-01-31 16:29:18 | INFO     | MainThread   | Ollama: OK
+2026-01-31 16:29:18 | INFO     | MainThread   | Модель qwen3:14b: OK
+2026-01-31 16:29:18 | INFO     | MainThread   | Прогрев модели Qwen3 14B (загрузка в VRAM)...
+2026-01-31 16:29:19 | INFO     | MainThread   | Модель загружена в VRAM за 1.6 сек
+2026-01-31 16:29:20 | INFO     | MainThread   | Модули симулятора загружены
+2026-01-31 16:29:26 | INFO     | MainThread   | Semantic Tone Analyzer: OK
+2026-01-31 16:29:28 | INFO     | MainThread   | Reranker: OK
+2026-01-31 16:29:28 | INFO     | MainThread   | Сгенерировано 160 комбинаций (20×8)
+2026-01-31 16:29:28 | INFO     | MainThread   | Выбрано 100 сценариев из 160
+2026-01-31 16:29:28 | INFO     | MainThread   | Флоу: 20, Персон: 8
+2026-01-31 16:29:28 | INFO     | MainThread   | SimulationRunner готов
+2026-01-31 16:29:28 | INFO     | MainThread   | ============================================================
+2026-01-31 16:29:28 | INFO     | MainThread   | НАЧАЛО СИМУЛЯЦИИ
+2026-01-31 16:29:28 | INFO     | MainThread   | ============================================================
+2026-01-31 16:30:18 | INFO     | MainThread   | [1/100] PASS Value-Based Selling (aggressive) outcome=soft_close score=0.646
+2026-01-31 16:30:33 | INFO     | MainThread   | [2/100] PASS NEAT Selling (aggressive) outcome=soft_close score=0.635
+2026-01-31 16:30:38 | INFO     | MainThread   | [3/100] PASS Challenger Sale (aggressive) outcome=soft_close score=0.865
+2026-01-31 16:30:38 | INFO     | MainThread   | [4/100] PASS Transactional Selling (aggressive) outcome=soft_close score=0.795
+2026-01-31 16:31:08 | INFO     | MainThread   | [5/100] PASS Consultative Selling (aggressive) outcome=soft_close score=0.646
+2026-01-31 16:31:19 | INFO     | MainThread   | [6/100] PASS Inbound Sales (tire_kicker) outcome=soft_close score=0.781
+2026-01-31 16:31:31 | INFO     | MainThread   | [7/100] PASS NEAT Selling (price_sensitive) outcome=soft_close score=0.890
+2026-01-31 16:31:56 | INFO     | MainThread   | [8/100] PASS Command of Sale (aggressive) outcome=soft_close score=0.745
+2026-01-31 16:32:13 | INFO     | MainThread   | [9/100] PASS NEAT Selling (skeptic) outcome=soft_close score=0.781
+2026-01-31 16:32:34 | INFO     | MainThread   | [10/100] PASS BANT (skeptic) outcome=soft_close score=0.781
+2026-01-31 16:32:34 | INFO     | MainThread   | [11/100] PASS Transactional Selling (competitor_user) outcome=success score=0.920
+2026-01-31 16:32:56 | INFO     | MainThread   | [12/100] PASS Value-Based Selling (technical) outcome=soft_close score=0.860
+2026-01-31 16:33:54 | INFO     | MainThread   | [13/100] FAIL SNAP Selling (busy) outcome=abandoned score=0.650
+2026-01-31 16:33:56 | INFO     | MainThread   | [14/100] PASS Consultative Selling (skeptic) outcome=soft_close score=0.841
+2026-01-31 16:34:29 | INFO     | MainThread   | [15/100] FAIL Command of Sale (competitor_user) outcome=abandoned score=0.665
+2026-01-31 16:34:32 | INFO     | MainThread   | [16/100] FAIL MEDDIC (competitor_user) outcome=abandoned score=0.680
+2026-01-31 16:35:01 | INFO     | MainThread   | [17/100] PASS Inbound Sales (price_sensitive) outcome=success score=1.000
+2026-01-31 16:35:06 | INFO     | MainThread   | [18/100] PASS SNAP Selling (competitor_user) outcome=soft_close score=0.920
+2026-01-31 16:35:37 | INFO     | MainThread   | [19/100] PASS AIDA (skeptic) outcome=soft_close score=0.871
+2026-01-31 16:35:38 | INFO     | MainThread   | [20/100] PASS Sandler Method (skeptic) outcome=soft_close score=0.988
+2026-01-31 16:36:10 | INFO     | MainThread   | [21/100] PASS FAB Selling (happy_path) outcome=soft_close score=0.890
+2026-01-31 16:36:15 | INFO     | MainThread   | [22/100] FAIL Gap Selling (competitor_user) outcome=abandoned score=0.680
+2026-01-31 16:36:19 | INFO     | MainThread   | [23/100] PASS MEDDIC (aggressive) outcome=soft_close score=0.586
+2026-01-31 16:36:48 | INFO     | MainThread   | [24/100] PASS Solution Selling (technical) outcome=success score=1.000
+2026-01-31 16:37:26 | INFO     | MainThread   | [25/100] FAIL BANT (price_sensitive) outcome=abandoned score=0.680
+2026-01-31 16:37:42 | INFO     | MainThread   | [26/100] FAIL Demo First (busy) outcome=abandoned score=0.613
+2026-01-31 16:37:48 | INFO     | MainThread   | [27/100] PASS AIDA (aggressive) outcome=soft_close score=0.744
+2026-01-31 16:37:57 | INFO     | MainThread   | [28/100] PASS Consultative Selling (technical) outcome=success score=1.000
+2026-01-31 16:38:06 | INFO     | MainThread   | [29/100] PASS Challenger Sale (competitor_user) outcome=success score=0.920
+2026-01-31 16:38:06 | INFO     | MainThread   | [30/100] PASS Challenger Sale (technical) outcome=success score=0.920
+2026-01-31 16:38:23 | INFO     | MainThread   | [31/100] FAIL MEDDIC (price_sensitive) outcome=abandoned score=0.560
+2026-01-31 16:38:37 | INFO     | MainThread   | [32/100] PASS Value-Based Selling (competitor_user) outcome=success score=1.000
+2026-01-31 16:38:55 | INFO     | MainThread   | [33/100] PASS NEAT Selling (tire_kicker) outcome=soft_close score=0.673
+2026-01-31 16:39:19 | INFO     | MainThread   | [34/100] FAIL Customer Centric (tire_kicker) outcome=abandoned score=0.522
+2026-01-31 16:39:24 | INFO     | MainThread   | [35/100] PASS Demo First (tire_kicker) outcome=soft_close score=0.781
+2026-01-31 16:39:39 | INFO     | MainThread   | [36/100] FAIL NEAT Selling (busy) outcome=abandoned score=0.541
+2026-01-31 16:39:42 | INFO     | MainThread   | [37/100] PASS Inbound Sales (skeptic) outcome=soft_close score=0.901
+2026-01-31 16:39:45 | INFO     | MainThread   | [38/100] PASS AIDA (busy) outcome=soft_close score=0.763
+2026-01-31 16:40:01 | INFO     | MainThread   | [39/100] FAIL Command of Sale (busy) outcome=abandoned score=0.680
+2026-01-31 16:40:04 | INFO     | MainThread   | [40/100] PASS Transactional Selling (happy_path) outcome=soft_close score=0.890
+2026-01-31 16:40:09 | INFO     | MainThread   | [41/100] FAIL Social Selling (busy) outcome=abandoned score=0.631
+2026-01-31 16:41:02 | INFO     | MainThread   | [42/100] PASS MEDDIC (happy_path) outcome=success score=0.843
+2026-01-31 16:41:26 | INFO     | MainThread   | [43/100] PASS Challenger Sale (skeptic) outcome=soft_close score=0.940
+2026-01-31 16:41:36 | INFO     | MainThread   | [44/100] PASS Relationship Selling (competitor_user) outcome=success score=0.963
+2026-01-31 16:41:39 | INFO     | MainThread   | [45/100] PASS Transactional Selling (skeptic) outcome=soft_close score=0.940
+2026-01-31 16:42:54 | INFO     | MainThread   | [46/100] FAIL Sandler Method (competitor_user) outcome=abandoned score=0.653
+2026-01-31 16:43:15 | INFO     | MainThread   | [47/100] PASS SPIN Selling (technical) outcome=success score=1.000
+2026-01-31 16:43:16 | INFO     | MainThread   | [48/100] FAIL Inbound Sales (aggressive) outcome=abandoned score=0.680
+2026-01-31 16:43:30 | INFO     | MainThread   | [49/100] FAIL Solution Selling (competitor_user) outcome=abandoned score=0.680
+2026-01-31 16:43:48 | INFO     | MainThread   | [50/100] PASS AIDA (price_sensitive) outcome=success score=1.000
+2026-01-31 16:44:03 | INFO     | MainThread   | [51/100] PASS Command of Sale (skeptic) outcome=soft_close score=1.000
+2026-01-31 16:44:10 | INFO     | MainThread   | [52/100] FAIL Challenger Sale (busy) outcome=abandoned score=0.595
+2026-01-31 16:44:49 | INFO     | MainThread   | [53/100] PASS AIDA (technical) outcome=success score=0.985
+2026-01-31 16:44:49 | INFO     | MainThread   | [54/100] PASS Solution Selling (aggressive) outcome=soft_close score=0.684
+2026-01-31 16:45:18 | INFO     | MainThread   | [55/100] FAIL Gap Selling (busy) outcome=abandoned score=0.560
+2026-01-31 16:45:31 | INFO     | MainThread   | [56/100] PASS Social Selling (tire_kicker) outcome=soft_close score=0.673
+2026-01-31 16:45:42 | INFO     | MainThread   | [57/100] PASS Solution Selling (tire_kicker) outcome=soft_close score=0.721
+2026-01-31 16:45:48 | INFO     | MainThread   | [58/100] PASS Customer Centric (aggressive) outcome=soft_close score=0.744
+2026-01-31 16:45:53 | INFO     | MainThread   | [59/100] FAIL BANT (technical) outcome=abandoned score=0.665
+2026-01-31 16:46:13 | INFO     | MainThread   | [60/100] PASS Sandler Method (tire_kicker) outcome=soft_close score=0.844
+2026-01-31 16:46:29 | INFO     | MainThread   | [61/100] PASS Command of Sale (technical) outcome=success score=0.920
+2026-01-31 16:46:34 | INFO     | MainThread   | [62/100] PASS Value-Based Selling (busy) outcome=soft_close score=0.703
+2026-01-31 16:46:36 | INFO     | MainThread   | [63/100] PASS NEAT Selling (happy_path) outcome=soft_close score=0.725
+2026-01-31 16:47:11 | INFO     | MainThread   | [64/100] PASS Relationship Selling (technical) outcome=success score=1.000
+2026-01-31 16:47:18 | INFO     | MainThread   | [65/100] PASS Transactional Selling (tire_kicker) outcome=soft_close score=0.820
+2026-01-31 16:47:40 | INFO     | MainThread   | [66/100] PASS Consultative Selling (price_sensitive) outcome=soft_close score=0.684
+2026-01-31 16:48:00 | INFO     | MainThread   | [67/100] FAIL Relationship Selling (busy) outcome=abandoned score=0.661
+2026-01-31 16:49:00 | INFO     | MainThread   | [68/100] FAIL Solution Selling (busy) outcome=abandoned score=0.680
+2026-01-31 16:49:11 | INFO     | MainThread   | [69/100] PASS Social Selling (happy_path) outcome=soft_close score=0.815
+2026-01-31 16:49:14 | INFO     | MainThread   | [70/100] FAIL SPIN Selling (busy) outcome=abandoned score=0.680
+2026-01-31 16:49:18 | INFO     | MainThread   | [71/100] FAIL Value-Based Selling (tire_kicker) outcome=abandoned score=0.601
+2026-01-31 16:49:25 | INFO     | MainThread   | [72/100] FAIL NEAT Selling (competitor_user) outcome=abandoned score=0.680
+2026-01-31 16:49:33 | INFO     | MainThread   | [73/100] PASS SNAP Selling (technical) outcome=success score=1.000
+2026-01-31 16:49:49 | INFO     | MainThread   | [74/100] PASS SNAP Selling (price_sensitive) outcome=success score=1.000
+2026-01-31 16:50:14 | INFO     | MainThread   | [75/100] PASS Command of Sale (happy_path) outcome=success score=0.570
+2026-01-31 16:50:18 | INFO     | MainThread   | [76/100] PASS Sandler Method (price_sensitive) outcome=soft_close score=0.866
+2026-01-31 16:50:22 | INFO     | MainThread   | [77/100] FAIL Demo First (skeptic) outcome=abandoned score=0.414
+2026-01-31 16:50:31 | INFO     | MainThread   | [78/100] PASS BANT (happy_path) outcome=success score=0.715
+2026-01-31 16:50:31 | INFO     | MainThread   | [79/100] FAIL FAB Selling (skeptic) outcome=abandoned score=0.665
+2026-01-31 16:51:14 | INFO     | MainThread   | [80/100] PASS SPIN Selling (happy_path) outcome=success score=0.644
+2026-01-31 16:52:00 | INFO     | MainThread   | [81/100] PASS Command of Sale (price_sensitive) outcome=soft_close score=1.000
+2026-01-31 16:52:15 | INFO     | MainThread   | [82/100] PASS MEDDIC (skeptic) outcome=soft_close score=0.703
+2026-01-31 16:52:19 | INFO     | MainThread   | [83/100] PASS BANT (competitor_user) outcome=success score=1.000
+2026-01-31 16:52:49 | INFO     | MainThread   | [84/100] PASS Demo First (technical) outcome=success score=1.000
+2026-01-31 16:52:55 | INFO     | MainThread   | [85/100] FAIL Solution Selling (price_sensitive) outcome=abandoned score=0.680
+2026-01-31 16:53:14 | INFO     | MainThread   | [86/100] PASS Customer Centric (happy_path) outcome=soft_close score=0.834
+2026-01-31 16:53:16 | INFO     | MainThread   | [87/100] PASS SPIN Selling (price_sensitive) outcome=success score=1.000
+2026-01-31 16:53:32 | INFO     | MainThread   | [88/100] PASS Challenger Sale (price_sensitive) outcome=soft_close score=0.915
+2026-01-31 16:53:56 | INFO     | MainThread   | [89/100] FAIL Demo First (competitor_user) outcome=abandoned score=0.680
+2026-01-31 16:54:14 | INFO     | MainThread   | [90/100] PASS Gap Selling (skeptic) outcome=soft_close score=0.654
+2026-01-31 16:54:28 | INFO     | MainThread   | [91/100] PASS Customer Centric (price_sensitive) outcome=success score=1.000
+2026-01-31 16:54:50 | INFO     | MainThread   | [92/100] PASS Value-Based Selling (skeptic) outcome=soft_close score=0.740
+2026-01-31 16:55:00 | INFO     | MainThread   | [93/100] PASS Consultative Selling (happy_path) outcome=soft_close score=0.901
+2026-01-31 16:55:37 | INFO     | MainThread   | [94/100] PASS BANT (tire_kicker) outcome=soft_close score=0.673
+2026-01-31 16:55:43 | INFO     | MainThread   | [95/100] FAIL NEAT Selling (technical) outcome=abandoned score=0.665
+2026-01-31 16:55:47 | INFO     | MainThread   | [96/100] PASS Social Selling (technical) outcome=success score=1.000
+2026-01-31 16:55:59 | INFO     | MainThread   | [97/100] FAIL Inbound Sales (busy) outcome=abandoned score=0.680
+2026-01-31 16:56:07 | INFO     | MainThread   | [98/100] PASS Solution Selling (skeptic) outcome=soft_close score=0.920
+2026-01-31 16:56:08 | INFO     | MainThread   | [99/100] FAIL Social Selling (skeptic) outcome=abandoned score=0.650
+2026-01-31 16:56:16 | INFO     | MainThread   | [100/100] PASS AIDA (competitor_user) outcome=success score=1.000
+2026-01-31 16:56:18 | INFO     | MainThread   | ============================================================
+2026-01-31 16:56:18 | INFO     | MainThread   | СИМУЛЯЦИЯ ЗАВЕРШЕНА
+2026-01-31 16:56:18 | INFO     | MainThread   | Результат: 71/100 PASS (71.0%)
+2026-01-31 16:56:18 | INFO     | MainThread   | Средний score: 0.7864
+2026-01-31 16:56:18 | INFO     | MainThread   | Время: 1609.8 сек
+2026-01-31 16:56:18 | INFO     | MainThread   | ============================================================

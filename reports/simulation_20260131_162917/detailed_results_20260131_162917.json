@@ -1,0 +1,1810 @@
+{
+  "metadata": {
+    "timestamp": "2026-01-31 16:29:17",
+    "total_results": 100
+  },
+  "results": [
+    {
+      "index": 1,
+      "timestamp": "2026-01-31T16:30:18.055984",
+      "scenario_id": "09_aggressive",
+      "scenario_name": "Value-Based Selling (aggressive)",
+      "flow": "value",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.64625,
+      "phases_reached": [
+        "discover_value"
+      ],
+      "turn_count": 3,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 2,
+      "timestamp": "2026-01-31T16:30:33.694302",
+      "scenario_id": "13_aggressive",
+      "scenario_name": "NEAT Selling (aggressive)",
+      "flow": "neat",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.635,
+      "phases_reached": [
+        "needs"
+      ],
+      "turn_count": 4,
+      "coverage": 0.25
+    },
+    {
+      "index": 3,
+      "timestamp": "2026-01-31T16:30:38.335107",
+      "scenario_id": "03_aggressive",
+      "scenario_name": "Challenger Sale (aggressive)",
+      "flow": "challenger",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.865,
+      "phases_reached": [
+        "teach",
+        "tailor"
+      ],
+      "turn_count": 3,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 4,
+      "timestamp": "2026-01-31T16:30:38.584389",
+      "scenario_id": "19_aggressive",
+      "scenario_name": "Transactional Selling (aggressive)",
+      "flow": "transactional",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.795,
+      "phases_reached": [
+        "quick_qualification"
+      ],
+      "turn_count": 5,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 5,
+      "timestamp": "2026-01-31T16:31:08.337952",
+      "scenario_id": "05_aggressive",
+      "scenario_name": "Consultative Selling (aggressive)",
+      "flow": "consultative",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.64625,
+      "phases_reached": [
+        "understand"
+      ],
+      "turn_count": 3,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 6,
+      "timestamp": "2026-01-31T16:31:19.056588",
+      "scenario_id": "10_tire_kicker",
+      "scenario_name": "Inbound Sales (tire_kicker)",
+      "flow": "inbound",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.78125,
+      "phases_reached": [
+        "identify",
+        "connect"
+      ],
+      "turn_count": 7,
+      "coverage": 0.5
+    },
+    {
+      "index": 7,
+      "timestamp": "2026-01-31T16:31:31.573675",
+      "scenario_id": "13_price_sensitive",
+      "scenario_name": "NEAT Selling (price_sensitive)",
+      "flow": "neat",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.8900000000000001,
+      "phases_reached": [
+        "needs",
+        "economic_impact",
+        "access_authority"
+      ],
+      "turn_count": 9,
+      "coverage": 0.75
+    },
+    {
+      "index": 8,
+      "timestamp": "2026-01-31T16:31:56.346370",
+      "scenario_id": "15_aggressive",
+      "scenario_name": "Command of Sale (aggressive)",
+      "flow": "command",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.745,
+      "phases_reached": [
+        "establish_authority"
+      ],
+      "turn_count": 3,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 9,
+      "timestamp": "2026-01-31T16:32:13.150194",
+      "scenario_id": "13_skeptic",
+      "scenario_name": "NEAT Selling (skeptic)",
+      "flow": "neat",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.78125,
+      "phases_reached": [
+        "needs",
+        "economic_impact"
+      ],
+      "turn_count": 7,
+      "coverage": 0.5
+    },
+    {
+      "index": 10,
+      "timestamp": "2026-01-31T16:32:34.205236",
+      "scenario_id": "02_skeptic",
+      "scenario_name": "BANT (skeptic)",
+      "flow": "bant",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.78125,
+      "phases_reached": [
+        "budget",
+        "authority"
+      ],
+      "turn_count": 7,
+      "coverage": 0.5
+    },
+    {
+      "index": 11,
+      "timestamp": "2026-01-31T16:32:34.598410",
+      "scenario_id": "19_competitor_user",
+      "scenario_name": "Transactional Selling (competitor_user)",
+      "flow": "transactional",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.92,
+      "phases_reached": [
+        "quick_qualification",
+        "direct_offer",
+        "fast_close",
+        "close"
+      ],
+      "turn_count": 11,
+      "coverage": 1.0
+    },
+    {
+      "index": 12,
+      "timestamp": "2026-01-31T16:32:56.797421",
+      "scenario_id": "09_technical",
+      "scenario_name": "Value-Based Selling (technical)",
+      "flow": "value",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.86,
+      "phases_reached": [
+        "discover_value",
+        "quantify_impact"
+      ],
+      "turn_count": 12,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 13,
+      "timestamp": "2026-01-31T16:33:54.433063",
+      "scenario_id": "08_busy",
+      "scenario_name": "SNAP Selling (busy)",
+      "flow": "snap",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.65,
+      "phases_reached": [
+        "simple",
+        "invaluable",
+        "align"
+      ],
+      "turn_count": 9,
+      "coverage": 0.75
+    },
+    {
+      "index": 14,
+      "timestamp": "2026-01-31T16:33:56.899742",
+      "scenario_id": "05_skeptic",
+      "scenario_name": "Consultative Selling (skeptic)",
+      "flow": "consultative",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.84125,
+      "phases_reached": [
+        "understand",
+        "advise"
+      ],
+      "turn_count": 7,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 15,
+      "timestamp": "2026-01-31T16:34:29.758718",
+      "scenario_id": "15_competitor_user",
+      "scenario_name": "Command of Sale (competitor_user)",
+      "flow": "command",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.665,
+      "phases_reached": [
+        "establish_authority",
+        "control_conversation",
+        "guide_to_close",
+        "presentation",
+        "close"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 16,
+      "timestamp": "2026-01-31T16:34:32.455205",
+      "scenario_id": "07_competitor_user",
+      "scenario_name": "MEDDIC (competitor_user)",
+      "flow": "meddic",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "metrics",
+        "economic_buyer",
+        "decision_criteria",
+        "decision_process",
+        "identify_pain"
+      ],
+      "turn_count": 13,
+      "coverage": 0.8333333333333334
+    },
+    {
+      "index": 17,
+      "timestamp": "2026-01-31T16:35:01.111803",
+      "scenario_id": "10_price_sensitive",
+      "scenario_name": "Inbound Sales (price_sensitive)",
+      "flow": "inbound",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "identify",
+        "connect",
+        "explore",
+        "advise"
+      ],
+      "turn_count": 11,
+      "coverage": 1.0
+    },
+    {
+      "index": 18,
+      "timestamp": "2026-01-31T16:35:06.485260",
+      "scenario_id": "08_competitor_user",
+      "scenario_name": "SNAP Selling (competitor_user)",
+      "flow": "snap",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.92,
+      "phases_reached": [
+        "simple",
+        "invaluable",
+        "align",
+        "priority",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 19,
+      "timestamp": "2026-01-31T16:35:37.621568",
+      "scenario_id": "11_skeptic",
+      "scenario_name": "AIDA (skeptic)",
+      "flow": "aida",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.8712500000000001,
+      "phases_reached": [
+        "attention",
+        "interest",
+        "desire"
+      ],
+      "turn_count": 7,
+      "coverage": 0.75
+    },
+    {
+      "index": 20,
+      "timestamp": "2026-01-31T16:35:38.466484",
+      "scenario_id": "06_skeptic",
+      "scenario_name": "Sandler Method (skeptic)",
+      "flow": "sandler",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.988,
+      "phases_reached": [
+        "bonding",
+        "upfront_contract",
+        "pain_funnel",
+        "budget"
+      ],
+      "turn_count": 10,
+      "coverage": 0.8
+    },
+    {
+      "index": 21,
+      "timestamp": "2026-01-31T16:36:10.892682",
+      "scenario_id": "12_happy_path",
+      "scenario_name": "FAB Selling (happy_path)",
+      "flow": "fab",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.89,
+      "phases_reached": [
+        "feature",
+        "advantage"
+      ],
+      "turn_count": 4,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 22,
+      "timestamp": "2026-01-31T16:36:15.193839",
+      "scenario_id": "14_competitor_user",
+      "scenario_name": "Gap Selling (competitor_user)",
+      "flow": "gap",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "current_state",
+        "future_state",
+        "gap_analysis",
+        "solution_fit",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 23,
+      "timestamp": "2026-01-31T16:36:19.345312",
+      "scenario_id": "07_aggressive",
+      "scenario_name": "MEDDIC (aggressive)",
+      "flow": "meddic",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.58625,
+      "phases_reached": [
+        "metrics"
+      ],
+      "turn_count": 3,
+      "coverage": 0.16666666666666666
+    },
+    {
+      "index": 24,
+      "timestamp": "2026-01-31T16:36:48.556576",
+      "scenario_id": "04_technical",
+      "scenario_name": "Solution Selling (technical)",
+      "flow": "solution",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "pain_discovery",
+        "solution_mapping",
+        "value_proof"
+      ],
+      "turn_count": 10,
+      "coverage": 1.0
+    },
+    {
+      "index": 25,
+      "timestamp": "2026-01-31T16:37:26.861807",
+      "scenario_id": "02_price_sensitive",
+      "scenario_name": "BANT (price_sensitive)",
+      "flow": "bant",
+      "persona": "price_sensitive",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "budget",
+        "authority",
+        "need",
+        "timeline",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 26,
+      "timestamp": "2026-01-31T16:37:42.838265",
+      "scenario_id": "20_busy",
+      "scenario_name": "Demo First (busy)",
+      "flow": "demo_first",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6125,
+      "phases_reached": [
+        "hook",
+        "demo",
+        "qa"
+      ],
+      "turn_count": 6,
+      "coverage": 0.75
+    },
+    {
+      "index": 27,
+      "timestamp": "2026-01-31T16:37:48.828220",
+      "scenario_id": "11_aggressive",
+      "scenario_name": "AIDA (aggressive)",
+      "flow": "aida",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.74375,
+      "phases_reached": [
+        "attention",
+        "interest"
+      ],
+      "turn_count": 5,
+      "coverage": 0.5
+    },
+    {
+      "index": 28,
+      "timestamp": "2026-01-31T16:37:57.609406",
+      "scenario_id": "05_technical",
+      "scenario_name": "Consultative Selling (technical)",
+      "flow": "consultative",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "understand",
+        "advise",
+        "recommend",
+        "presentation"
+      ],
+      "turn_count": 12,
+      "coverage": 1.0
+    },
+    {
+      "index": 29,
+      "timestamp": "2026-01-31T16:38:06.228152",
+      "scenario_id": "03_competitor_user",
+      "scenario_name": "Challenger Sale (competitor_user)",
+      "flow": "challenger",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.92,
+      "phases_reached": [
+        "teach",
+        "tailor",
+        "take_control",
+        "close"
+      ],
+      "turn_count": 7,
+      "coverage": 1.0
+    },
+    {
+      "index": 30,
+      "timestamp": "2026-01-31T16:38:06.639387",
+      "scenario_id": "03_technical",
+      "scenario_name": "Challenger Sale (technical)",
+      "flow": "challenger",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.92,
+      "phases_reached": [
+        "teach",
+        "tailor",
+        "take_control"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 31,
+      "timestamp": "2026-01-31T16:38:23.245085",
+      "scenario_id": "07_price_sensitive",
+      "scenario_name": "MEDDIC (price_sensitive)",
+      "flow": "meddic",
+      "persona": "price_sensitive",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.56,
+      "phases_reached": [
+        "metrics",
+        "economic_buyer",
+        "decision_criteria"
+      ],
+      "turn_count": 13,
+      "coverage": 0.5
+    },
+    {
+      "index": 32,
+      "timestamp": "2026-01-31T16:38:37.740711",
+      "scenario_id": "09_competitor_user",
+      "scenario_name": "Value-Based Selling (competitor_user)",
+      "flow": "value",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "discover_value",
+        "quantify_impact",
+        "present_roi",
+        "presentation"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 33,
+      "timestamp": "2026-01-31T16:38:55.309462",
+      "scenario_id": "13_tire_kicker",
+      "scenario_name": "NEAT Selling (tire_kicker)",
+      "flow": "neat",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.6725000000000001,
+      "phases_reached": [
+        "needs"
+      ],
+      "turn_count": 6,
+      "coverage": 0.25
+    },
+    {
+      "index": 34,
+      "timestamp": "2026-01-31T16:39:19.553482",
+      "scenario_id": "17_tire_kicker",
+      "scenario_name": "Customer Centric (tire_kicker)",
+      "flow": "customer_centric",
+      "persona": "tire_kicker",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.5225,
+      "phases_reached": [
+        "listen",
+        "understand"
+      ],
+      "turn_count": 6,
+      "coverage": 0.5
+    },
+    {
+      "index": 35,
+      "timestamp": "2026-01-31T16:39:24.058276",
+      "scenario_id": "20_tire_kicker",
+      "scenario_name": "Demo First (tire_kicker)",
+      "flow": "demo_first",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.78125,
+      "phases_reached": [
+        "hook",
+        "demo"
+      ],
+      "turn_count": 7,
+      "coverage": 0.5
+    },
+    {
+      "index": 36,
+      "timestamp": "2026-01-31T16:39:39.997080",
+      "scenario_id": "13_busy",
+      "scenario_name": "NEAT Selling (busy)",
+      "flow": "neat",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.54125,
+      "phases_reached": [
+        "needs",
+        "economic_impact"
+      ],
+      "turn_count": 7,
+      "coverage": 0.5
+    },
+    {
+      "index": 37,
+      "timestamp": "2026-01-31T16:39:42.268348",
+      "scenario_id": "10_skeptic",
+      "scenario_name": "Inbound Sales (skeptic)",
+      "flow": "inbound",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.9012500000000001,
+      "phases_reached": [
+        "identify",
+        "connect",
+        "explore",
+        "advise"
+      ],
+      "turn_count": 7,
+      "coverage": 1.0
+    },
+    {
+      "index": 38,
+      "timestamp": "2026-01-31T16:39:45.855714",
+      "scenario_id": "11_busy",
+      "scenario_name": "AIDA (busy)",
+      "flow": "aida",
+      "persona": "busy",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.7625000000000001,
+      "phases_reached": [
+        "attention",
+        "interest"
+      ],
+      "turn_count": 6,
+      "coverage": 0.5
+    },
+    {
+      "index": 39,
+      "timestamp": "2026-01-31T16:40:01.837425",
+      "scenario_id": "15_busy",
+      "scenario_name": "Command of Sale (busy)",
+      "flow": "command",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "establish_authority",
+        "control_conversation",
+        "guide_to_close",
+        "presentation"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 40,
+      "timestamp": "2026-01-31T16:40:04.957959",
+      "scenario_id": "19_happy_path",
+      "scenario_name": "Transactional Selling (happy_path)",
+      "flow": "transactional",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.89,
+      "phases_reached": [
+        "quick_qualification",
+        "direct_offer"
+      ],
+      "turn_count": 4,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 41,
+      "timestamp": "2026-01-31T16:40:09.679067",
+      "scenario_id": "16_busy",
+      "scenario_name": "Social Selling (busy)",
+      "flow": "social",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6312500000000001,
+      "phases_reached": [
+        "build_trust",
+        "share_value",
+        "engage"
+      ],
+      "turn_count": 7,
+      "coverage": 0.75
+    },
+    {
+      "index": 42,
+      "timestamp": "2026-01-31T16:41:02.855662",
+      "scenario_id": "07_happy_path",
+      "scenario_name": "MEDDIC (happy_path)",
+      "flow": "meddic",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.8425,
+      "phases_reached": [
+        "metrics",
+        "economic_buyer",
+        "decision_criteria",
+        "close"
+      ],
+      "turn_count": 6,
+      "coverage": 0.5
+    },
+    {
+      "index": 43,
+      "timestamp": "2026-01-31T16:41:26.694556",
+      "scenario_id": "03_skeptic",
+      "scenario_name": "Challenger Sale (skeptic)",
+      "flow": "challenger",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.94,
+      "phases_reached": [
+        "teach",
+        "tailor"
+      ],
+      "turn_count": 7,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 44,
+      "timestamp": "2026-01-31T16:41:36.877036",
+      "scenario_id": "18_competitor_user",
+      "scenario_name": "Relationship Selling (competitor_user)",
+      "flow": "relationship",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.9625,
+      "phases_reached": [
+        "connect",
+        "build_rapport",
+        "nurture",
+        "partnership"
+      ],
+      "turn_count": 6,
+      "coverage": 1.0
+    },
+    {
+      "index": 45,
+      "timestamp": "2026-01-31T16:41:39.840964",
+      "scenario_id": "19_skeptic",
+      "scenario_name": "Transactional Selling (skeptic)",
+      "flow": "transactional",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.94,
+      "phases_reached": [
+        "quick_qualification",
+        "direct_offer"
+      ],
+      "turn_count": 7,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 46,
+      "timestamp": "2026-01-31T16:42:54.563369",
+      "scenario_id": "06_competitor_user",
+      "scenario_name": "Sandler Method (competitor_user)",
+      "flow": "sandler",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.653,
+      "phases_reached": [
+        "bonding",
+        "upfront_contract",
+        "pain_funnel",
+        "budget"
+      ],
+      "turn_count": 13,
+      "coverage": 0.8
+    },
+    {
+      "index": 47,
+      "timestamp": "2026-01-31T16:43:15.996304",
+      "scenario_id": "01_technical",
+      "scenario_name": "SPIN Selling (technical)",
+      "flow": "spin_selling",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "situation",
+        "problem",
+        "implication",
+        "need_payoff",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 48,
+      "timestamp": "2026-01-31T16:43:16.226341",
+      "scenario_id": "10_aggressive",
+      "scenario_name": "Inbound Sales (aggressive)",
+      "flow": "inbound",
+      "persona": "aggressive",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "identify",
+        "connect",
+        "explore",
+        "advise"
+      ],
+      "turn_count": 8,
+      "coverage": 1.0
+    },
+    {
+      "index": 49,
+      "timestamp": "2026-01-31T16:43:30.572698",
+      "scenario_id": "04_competitor_user",
+      "scenario_name": "Solution Selling (competitor_user)",
+      "flow": "solution",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "pain_discovery",
+        "solution_mapping",
+        "value_proof",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 50,
+      "timestamp": "2026-01-31T16:43:48.429998",
+      "scenario_id": "11_price_sensitive",
+      "scenario_name": "AIDA (price_sensitive)",
+      "flow": "aida",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "attention",
+        "interest",
+        "desire",
+        "action",
+        "presentation",
+        "close"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 51,
+      "timestamp": "2026-01-31T16:44:03.659322",
+      "scenario_id": "15_skeptic",
+      "scenario_name": "Command of Sale (skeptic)",
+      "flow": "command",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 1.0,
+      "phases_reached": [
+        "establish_authority",
+        "control_conversation",
+        "guide_to_close",
+        "presentation"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 52,
+      "timestamp": "2026-01-31T16:44:10.912247",
+      "scenario_id": "03_busy",
+      "scenario_name": "Challenger Sale (busy)",
+      "flow": "challenger",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.595,
+      "phases_reached": [
+        "teach",
+        "tailor"
+      ],
+      "turn_count": 5,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 53,
+      "timestamp": "2026-01-31T16:44:49.014052",
+      "scenario_id": "11_technical",
+      "scenario_name": "AIDA (technical)",
+      "flow": "aida",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.985,
+      "phases_reached": [
+        "attention",
+        "interest",
+        "desire",
+        "action",
+        "presentation"
+      ],
+      "turn_count": 16,
+      "coverage": 1.0
+    },
+    {
+      "index": 54,
+      "timestamp": "2026-01-31T16:44:49.304926",
+      "scenario_id": "04_aggressive",
+      "scenario_name": "Solution Selling (aggressive)",
+      "flow": "solution",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.6837500000000001,
+      "phases_reached": [
+        "pain_discovery"
+      ],
+      "turn_count": 5,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 55,
+      "timestamp": "2026-01-31T16:45:18.809641",
+      "scenario_id": "14_busy",
+      "scenario_name": "Gap Selling (busy)",
+      "flow": "gap",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.56,
+      "phases_reached": [
+        "current_state",
+        "future_state"
+      ],
+      "turn_count": 8,
+      "coverage": 0.5
+    },
+    {
+      "index": 56,
+      "timestamp": "2026-01-31T16:45:31.088125",
+      "scenario_id": "16_tire_kicker",
+      "scenario_name": "Social Selling (tire_kicker)",
+      "flow": "social",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.6725000000000001,
+      "phases_reached": [
+        "build_trust"
+      ],
+      "turn_count": 6,
+      "coverage": 0.25
+    },
+    {
+      "index": 57,
+      "timestamp": "2026-01-31T16:45:42.941712",
+      "scenario_id": "04_tire_kicker",
+      "scenario_name": "Solution Selling (tire_kicker)",
+      "flow": "solution",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.7212500000000001,
+      "phases_reached": [
+        "pain_discovery"
+      ],
+      "turn_count": 7,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 58,
+      "timestamp": "2026-01-31T16:45:48.262681",
+      "scenario_id": "17_aggressive",
+      "scenario_name": "Customer Centric (aggressive)",
+      "flow": "customer_centric",
+      "persona": "aggressive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.74375,
+      "phases_reached": [
+        "listen",
+        "understand"
+      ],
+      "turn_count": 5,
+      "coverage": 0.5
+    },
+    {
+      "index": 59,
+      "timestamp": "2026-01-31T16:45:53.412151",
+      "scenario_id": "02_technical",
+      "scenario_name": "BANT (technical)",
+      "flow": "bant",
+      "persona": "technical",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.665,
+      "phases_reached": [
+        "budget",
+        "authority",
+        "need",
+        "timeline"
+      ],
+      "turn_count": 16,
+      "coverage": 1.0
+    },
+    {
+      "index": 60,
+      "timestamp": "2026-01-31T16:46:13.978706",
+      "scenario_id": "06_tire_kicker",
+      "scenario_name": "Sandler Method (tire_kicker)",
+      "flow": "sandler",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.8440000000000001,
+      "phases_reached": [
+        "bonding",
+        "upfront_contract"
+      ],
+      "turn_count": 6,
+      "coverage": 0.4
+    },
+    {
+      "index": 61,
+      "timestamp": "2026-01-31T16:46:29.206450",
+      "scenario_id": "15_technical",
+      "scenario_name": "Command of Sale (technical)",
+      "flow": "command",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.92,
+      "phases_reached": [
+        "establish_authority",
+        "control_conversation",
+        "guide_to_close",
+        "presentation",
+        "close"
+      ],
+      "turn_count": 11,
+      "coverage": 1.0
+    },
+    {
+      "index": 62,
+      "timestamp": "2026-01-31T16:46:34.787584",
+      "scenario_id": "09_busy",
+      "scenario_name": "Value-Based Selling (busy)",
+      "flow": "value",
+      "persona": "busy",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.7025,
+      "phases_reached": [
+        "discover_value"
+      ],
+      "turn_count": 6,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 63,
+      "timestamp": "2026-01-31T16:46:36.601172",
+      "scenario_id": "13_happy_path",
+      "scenario_name": "NEAT Selling (happy_path)",
+      "flow": "neat",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.7250000000000001,
+      "phases_reached": [
+        "needs",
+        "economic_impact"
+      ],
+      "turn_count": 4,
+      "coverage": 0.5
+    },
+    {
+      "index": 64,
+      "timestamp": "2026-01-31T16:47:11.001641",
+      "scenario_id": "18_technical",
+      "scenario_name": "Relationship Selling (technical)",
+      "flow": "relationship",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "connect",
+        "build_rapport",
+        "nurture",
+        "partnership",
+        "presentation",
+        "close"
+      ],
+      "turn_count": 14,
+      "coverage": 1.0
+    },
+    {
+      "index": 65,
+      "timestamp": "2026-01-31T16:47:18.757661",
+      "scenario_id": "19_tire_kicker",
+      "scenario_name": "Transactional Selling (tire_kicker)",
+      "flow": "transactional",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.82,
+      "phases_reached": [
+        "quick_qualification"
+      ],
+      "turn_count": 6,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 66,
+      "timestamp": "2026-01-31T16:47:40.856140",
+      "scenario_id": "05_price_sensitive",
+      "scenario_name": "Consultative Selling (price_sensitive)",
+      "flow": "consultative",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.6837500000000001,
+      "phases_reached": [
+        "understand"
+      ],
+      "turn_count": 5,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 67,
+      "timestamp": "2026-01-31T16:48:00.744849",
+      "scenario_id": "18_busy",
+      "scenario_name": "Relationship Selling (busy)",
+      "flow": "relationship",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.66125,
+      "phases_reached": [
+        "connect",
+        "build_rapport",
+        "nurture",
+        "partnership"
+      ],
+      "turn_count": 7,
+      "coverage": 1.0
+    },
+    {
+      "index": 68,
+      "timestamp": "2026-01-31T16:49:00.676105",
+      "scenario_id": "04_busy",
+      "scenario_name": "Solution Selling (busy)",
+      "flow": "solution",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "pain_discovery",
+        "solution_mapping",
+        "value_proof"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 69,
+      "timestamp": "2026-01-31T16:49:11.896722",
+      "scenario_id": "16_happy_path",
+      "scenario_name": "Social Selling (happy_path)",
+      "flow": "social",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.8150000000000001,
+      "phases_reached": [
+        "build_trust",
+        "share_value",
+        "engage"
+      ],
+      "turn_count": 4,
+      "coverage": 0.75
+    },
+    {
+      "index": 70,
+      "timestamp": "2026-01-31T16:49:14.598068",
+      "scenario_id": "01_busy",
+      "scenario_name": "SPIN Selling (busy)",
+      "flow": "spin_selling",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "situation",
+        "problem",
+        "implication",
+        "need_payoff"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 71,
+      "timestamp": "2026-01-31T16:49:18.125066",
+      "scenario_id": "09_tire_kicker",
+      "scenario_name": "Value-Based Selling (tire_kicker)",
+      "flow": "value",
+      "persona": "tire_kicker",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.60125,
+      "phases_reached": [
+        "discover_value",
+        "quantify_impact"
+      ],
+      "turn_count": 7,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 72,
+      "timestamp": "2026-01-31T16:49:25.750657",
+      "scenario_id": "13_competitor_user",
+      "scenario_name": "NEAT Selling (competitor_user)",
+      "flow": "neat",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "needs",
+        "economic_impact",
+        "access_authority",
+        "timeline"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 73,
+      "timestamp": "2026-01-31T16:49:33.303418",
+      "scenario_id": "08_technical",
+      "scenario_name": "SNAP Selling (technical)",
+      "flow": "snap",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "simple",
+        "invaluable",
+        "align",
+        "priority",
+        "presentation"
+      ],
+      "turn_count": 12,
+      "coverage": 1.0
+    },
+    {
+      "index": 74,
+      "timestamp": "2026-01-31T16:49:49.320858",
+      "scenario_id": "08_price_sensitive",
+      "scenario_name": "SNAP Selling (price_sensitive)",
+      "flow": "snap",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "simple",
+        "invaluable",
+        "align",
+        "priority",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 75,
+      "timestamp": "2026-01-31T16:50:14.160973",
+      "scenario_id": "15_happy_path",
+      "scenario_name": "Command of Sale (happy_path)",
+      "flow": "command",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.5700000000000001,
+      "phases_reached": [
+        "close"
+      ],
+      "turn_count": 4,
+      "coverage": 0.0
+    },
+    {
+      "index": 76,
+      "timestamp": "2026-01-31T16:50:18.015580",
+      "scenario_id": "06_price_sensitive",
+      "scenario_name": "Sandler Method (price_sensitive)",
+      "flow": "sandler",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.866,
+      "phases_reached": [
+        "bonding",
+        "upfront_contract",
+        "pain_funnel"
+      ],
+      "turn_count": 4,
+      "coverage": 0.6
+    },
+    {
+      "index": 77,
+      "timestamp": "2026-01-31T16:50:22.032623",
+      "scenario_id": "20_skeptic",
+      "scenario_name": "Demo First (skeptic)",
+      "flow": "demo_first",
+      "persona": "skeptic",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.41375,
+      "phases_reached": [
+        "hook"
+      ],
+      "turn_count": 5,
+      "coverage": 0.25
+    },
+    {
+      "index": 78,
+      "timestamp": "2026-01-31T16:50:31.236421",
+      "scenario_id": "02_happy_path",
+      "scenario_name": "BANT (happy_path)",
+      "flow": "bant",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.715,
+      "phases_reached": [
+        "budget",
+        "close"
+      ],
+      "turn_count": 4,
+      "coverage": 0.25
+    },
+    {
+      "index": 79,
+      "timestamp": "2026-01-31T16:50:31.280009",
+      "scenario_id": "12_skeptic",
+      "scenario_name": "FAB Selling (skeptic)",
+      "flow": "fab",
+      "persona": "skeptic",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.665,
+      "phases_reached": [
+        "feature",
+        "advantage",
+        "benefit"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 80,
+      "timestamp": "2026-01-31T16:51:14.616470",
+      "scenario_id": "01_happy_path",
+      "scenario_name": "SPIN Selling (happy_path)",
+      "flow": "spin_selling",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "success",
+      "score": 0.64375,
+      "phases_reached": [
+        "close"
+      ],
+      "turn_count": 5,
+      "coverage": 0.0
+    },
+    {
+      "index": 81,
+      "timestamp": "2026-01-31T16:52:00.201714",
+      "scenario_id": "15_price_sensitive",
+      "scenario_name": "Command of Sale (price_sensitive)",
+      "flow": "command",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 1.0,
+      "phases_reached": [
+        "establish_authority",
+        "control_conversation",
+        "guide_to_close",
+        "presentation",
+        "close"
+      ],
+      "turn_count": 12,
+      "coverage": 1.0
+    },
+    {
+      "index": 82,
+      "timestamp": "2026-01-31T16:52:15.049393",
+      "scenario_id": "07_skeptic",
+      "scenario_name": "MEDDIC (skeptic)",
+      "flow": "meddic",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.7025,
+      "phases_reached": [
+        "metrics",
+        "economic_buyer"
+      ],
+      "turn_count": 6,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 83,
+      "timestamp": "2026-01-31T16:52:19.773400",
+      "scenario_id": "02_competitor_user",
+      "scenario_name": "BANT (competitor_user)",
+      "flow": "bant",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "budget",
+        "authority",
+        "need",
+        "timeline"
+      ],
+      "turn_count": 8,
+      "coverage": 1.0
+    },
+    {
+      "index": 84,
+      "timestamp": "2026-01-31T16:52:49.409215",
+      "scenario_id": "20_technical",
+      "scenario_name": "Demo First (technical)",
+      "flow": "demo_first",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "hook",
+        "demo",
+        "qa",
+        "close",
+        "presentation"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 85,
+      "timestamp": "2026-01-31T16:52:55.950315",
+      "scenario_id": "04_price_sensitive",
+      "scenario_name": "Solution Selling (price_sensitive)",
+      "flow": "solution",
+      "persona": "price_sensitive",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "pain_discovery",
+        "solution_mapping",
+        "value_proof",
+        "presentation",
+        "close"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 86,
+      "timestamp": "2026-01-31T16:53:14.091514",
+      "scenario_id": "17_happy_path",
+      "scenario_name": "Customer Centric (happy_path)",
+      "flow": "customer_centric",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.8337500000000001,
+      "phases_reached": [
+        "listen",
+        "understand",
+        "empower"
+      ],
+      "turn_count": 5,
+      "coverage": 0.75
+    },
+    {
+      "index": 87,
+      "timestamp": "2026-01-31T16:53:16.476535",
+      "scenario_id": "01_price_sensitive",
+      "scenario_name": "SPIN Selling (price_sensitive)",
+      "flow": "spin_selling",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "situation",
+        "problem",
+        "implication",
+        "need_payoff",
+        "presentation"
+      ],
+      "turn_count": 12,
+      "coverage": 1.0
+    },
+    {
+      "index": 88,
+      "timestamp": "2026-01-31T16:53:32.815556",
+      "scenario_id": "03_price_sensitive",
+      "scenario_name": "Challenger Sale (price_sensitive)",
+      "flow": "challenger",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.915,
+      "phases_reached": [
+        "teach",
+        "tailor"
+      ],
+      "turn_count": 5,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "index": 89,
+      "timestamp": "2026-01-31T16:53:56.930326",
+      "scenario_id": "20_competitor_user",
+      "scenario_name": "Demo First (competitor_user)",
+      "flow": "demo_first",
+      "persona": "competitor_user",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "hook",
+        "demo",
+        "qa",
+        "close",
+        "presentation"
+      ],
+      "turn_count": 13,
+      "coverage": 1.0
+    },
+    {
+      "index": 90,
+      "timestamp": "2026-01-31T16:54:14.772195",
+      "scenario_id": "14_skeptic",
+      "scenario_name": "Gap Selling (skeptic)",
+      "flow": "gap",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.65375,
+      "phases_reached": [
+        "current_state"
+      ],
+      "turn_count": 5,
+      "coverage": 0.25
+    },
+    {
+      "index": 91,
+      "timestamp": "2026-01-31T16:54:28.926839",
+      "scenario_id": "17_price_sensitive",
+      "scenario_name": "Customer Centric (price_sensitive)",
+      "flow": "customer_centric",
+      "persona": "price_sensitive",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "listen",
+        "understand",
+        "empower",
+        "support"
+      ],
+      "turn_count": 10,
+      "coverage": 1.0
+    },
+    {
+      "index": 92,
+      "timestamp": "2026-01-31T16:54:50.604587",
+      "scenario_id": "09_skeptic",
+      "scenario_name": "Value-Based Selling (skeptic)",
+      "flow": "value",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.74,
+      "phases_reached": [
+        "discover_value",
+        "close"
+      ],
+      "turn_count": 8,
+      "coverage": 0.3333333333333333
+    },
+    {
+      "index": 93,
+      "timestamp": "2026-01-31T16:55:00.729702",
+      "scenario_id": "05_happy_path",
+      "scenario_name": "Consultative Selling (happy_path)",
+      "flow": "consultative",
+      "persona": "happy_path",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.9012500000000001,
+      "phases_reached": [
+        "understand",
+        "advise",
+        "recommend",
+        "presentation"
+      ],
+      "turn_count": 7,
+      "coverage": 1.0
+    },
+    {
+      "index": 94,
+      "timestamp": "2026-01-31T16:55:37.257787",
+      "scenario_id": "02_tire_kicker",
+      "scenario_name": "BANT (tire_kicker)",
+      "flow": "bant",
+      "persona": "tire_kicker",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.6725000000000001,
+      "phases_reached": [
+        "budget"
+      ],
+      "turn_count": 6,
+      "coverage": 0.25
+    },
+    {
+      "index": 95,
+      "timestamp": "2026-01-31T16:55:43.132012",
+      "scenario_id": "13_technical",
+      "scenario_name": "NEAT Selling (technical)",
+      "flow": "neat",
+      "persona": "technical",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.665,
+      "phases_reached": [
+        "needs",
+        "economic_impact",
+        "access_authority",
+        "timeline"
+      ],
+      "turn_count": 16,
+      "coverage": 1.0
+    },
+    {
+      "index": 96,
+      "timestamp": "2026-01-31T16:55:47.649444",
+      "scenario_id": "16_technical",
+      "scenario_name": "Social Selling (technical)",
+      "flow": "social",
+      "persona": "technical",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "build_trust",
+        "share_value",
+        "engage",
+        "convert"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 97,
+      "timestamp": "2026-01-31T16:55:59.265889",
+      "scenario_id": "10_busy",
+      "scenario_name": "Inbound Sales (busy)",
+      "flow": "inbound",
+      "persona": "busy",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.6799999999999999,
+      "phases_reached": [
+        "identify",
+        "connect",
+        "explore",
+        "advise"
+      ],
+      "turn_count": 9,
+      "coverage": 1.0
+    },
+    {
+      "index": 98,
+      "timestamp": "2026-01-31T16:56:07.629149",
+      "scenario_id": "04_skeptic",
+      "scenario_name": "Solution Selling (skeptic)",
+      "flow": "solution",
+      "persona": "skeptic",
+      "passed": true,
+      "outcome": "soft_close",
+      "score": 0.92,
+      "phases_reached": [
+        "pain_discovery",
+        "solution_mapping",
+        "value_proof"
+      ],
+      "turn_count": 10,
+      "coverage": 1.0
+    },
+    {
+      "index": 99,
+      "timestamp": "2026-01-31T16:56:08.560172",
+      "scenario_id": "16_skeptic",
+      "scenario_name": "Social Selling (skeptic)",
+      "flow": "social",
+      "persona": "skeptic",
+      "passed": false,
+      "outcome": "abandoned",
+      "score": 0.65,
+      "phases_reached": [
+        "build_trust",
+        "share_value",
+        "engage",
+        "close"
+      ],
+      "turn_count": 13,
+      "coverage": 0.75
+    },
+    {
+      "index": 100,
+      "timestamp": "2026-01-31T16:56:16.087666",
+      "scenario_id": "11_competitor_user",
+      "scenario_name": "AIDA (competitor_user)",
+      "flow": "aida",
+      "persona": "competitor_user",
+      "passed": true,
+      "outcome": "success",
+      "score": 1.0,
+      "phases_reached": [
+        "attention",
+        "interest",
+        "desire",
+        "action",
+        "presentation"
+      ],
+      "turn_count": 10,
+      "coverage": 1.0
+    }
+  ]
+}
