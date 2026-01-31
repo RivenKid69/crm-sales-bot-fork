@@ -179,6 +179,8 @@ class DisambiguationConfig:
     # Bypass conditions (populated from taxonomy at runtime)
     bypass_intents: List[str] = field(default_factory=list)
 
+    compound_bypass_intents: List[str] = field(default_factory=list)
+
     excluded_intents: List[str] = field(default_factory=lambda: [
         "unclear",
         "small_talk",
@@ -224,6 +226,9 @@ class DisambiguationConfig:
             max_options=config.get("max_options", 3),
             min_option_confidence=config.get("min_option_confidence", 0.25),
             bypass_intents=config.get("bypass_intents_override", []) or cls._get_taxonomy_bypass_intents(),
+            compound_bypass_intents=config.get("compound_bypass_intents") or [
+                "greeting", "farewell", "small_talk", "gratitude"
+            ],
             excluded_intents=config.get("excluded_intents", ["unclear", "small_talk"]),
             cooldown_turns=config.get("cooldown_turns", 3),
         )
@@ -298,7 +303,7 @@ class DisambiguationDecisionEngine:
             alternatives = classification.get("alternatives", [])
 
             # Step 1: Check bypass conditions
-            bypass_result = self._check_bypass_conditions(intent, confidence, context)
+            bypass_result = self._check_bypass_conditions(intent, confidence, context, alternatives)
             if bypass_result:
                 self._decisions_count[DisambiguationDecision.EXECUTE] += 1
                 return self._build_result(
@@ -370,7 +375,8 @@ class DisambiguationDecisionEngine:
         self,
         intent: str,
         confidence: float,
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        alternatives: Optional[List[Dict]] = None,
     ) -> Optional[str]:
         """
         Проверить условия bypass (когда disambiguation не нужен).
@@ -394,6 +400,21 @@ class DisambiguationDecisionEngine:
         # Bypass 4: Very high confidence
         if confidence >= self.config.high_confidence + 0.10:  # 0.95+
             return f"Very high confidence: {confidence:.2f}"
+
+        # Bypass 5: Compound social message with substantive alternatives
+        # E.g., "здравствуйте, нам нужна CRM" = greeting + info_provided
+        # Not ambiguous — SecondaryIntentDetection handles the secondary downstream.
+        if self.config.compound_bypass_intents and intent in self.config.compound_bypass_intents:
+            substantive = [
+                a for a in (alternatives or [])
+                if a.get("intent") not in self.config.compound_bypass_intents
+                and a.get("confidence", 0) >= self.config.min_option_confidence
+            ]
+            if substantive:
+                return (
+                    f"Compound {intent} with substantive alternatives: "
+                    f"{[a['intent'] for a in substantive]}"
+                )
 
         return None
 

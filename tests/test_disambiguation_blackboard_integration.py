@@ -150,12 +150,8 @@ class TestSourceProposal:
 
         ctx = MagicMock()
         envelope = MagicMock()
-        envelope.classification_result = {
-            "disambiguation_options": [
-                {"intent": "price_question", "label": "Цены"},
-            ],
-            "disambiguation_question": "Уточните:",
-        }
+        envelope.disambiguation_options = [{"intent": "price_question", "label": "Цены"}]
+        envelope.disambiguation_question = "Уточните:"
         ctx.context_envelope = envelope
         bb.get_context.return_value = ctx
 
@@ -279,3 +275,61 @@ class TestConflictResolverSemantics:
     def test_critical_beats_high(self):
         """CRITICAL (escalation) should win over HIGH (disambiguation)."""
         assert Priority.CRITICAL < Priority.HIGH  # Lower value = higher priority
+
+
+# =============================================================================
+# Test: Typed fields E2E (ContextEnvelope → DisambiguationSource)
+# =============================================================================
+
+class TestTypedFieldsE2E:
+    """End-to-end: typed disambiguation fields on ContextEnvelope flow
+    correctly through DisambiguationSource into proposal metadata."""
+
+    def test_typed_fields_produce_correct_proposal_metadata(self):
+        """ContextEnvelope with typed fields → Source reads them → correct proposal."""
+        from src.context_envelope import ContextEnvelope
+
+        source = DisambiguationSource()
+        options = [
+            {"intent": "price_question", "label": "Цены"},
+            {"intent": "demo_request", "label": "Демо"},
+        ]
+
+        # Build a real ContextEnvelope with typed fields
+        envelope = ContextEnvelope()
+        envelope.disambiguation_options = options
+        envelope.disambiguation_question = "Уточните, пожалуйста:"
+
+        # Wire into mock blackboard
+        bb = MagicMock()
+        bb.current_intent = "disambiguation_needed"
+        ctx = MagicMock()
+        ctx.context_envelope = envelope
+        bb.get_context.return_value = ctx
+
+        source.contribute(bb)
+
+        bb.propose_action.assert_called_once()
+        call_kwargs = bb.propose_action.call_args[1]
+        assert call_kwargs["action"] == "ask_clarification"
+        assert call_kwargs["metadata"]["disambiguation_options"] == options
+        assert call_kwargs["metadata"]["disambiguation_question"] == "Уточните, пожалуйста:"
+
+    def test_empty_typed_fields_no_proposal(self):
+        """ContextEnvelope with empty typed fields → Source skips proposal (Defense Layer 1)."""
+        from src.context_envelope import ContextEnvelope
+
+        source = DisambiguationSource()
+
+        # Build a real ContextEnvelope with default (empty) fields
+        envelope = ContextEnvelope()
+
+        bb = MagicMock()
+        bb.current_intent = "disambiguation_needed"
+        ctx = MagicMock()
+        ctx.context_envelope = envelope
+        bb.get_context.return_value = ctx
+
+        source.contribute(bb)
+
+        bb.propose_action.assert_not_called()

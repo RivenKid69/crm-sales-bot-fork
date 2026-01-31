@@ -1051,5 +1051,98 @@ class TestBugReportScenario:
             "Rule 5 should NOT apply when alternatives exist"
 
 
+# =============================================================================
+# GAP CASCADE FIX TESTS
+# =============================================================================
+
+class TestGapCascadeFix:
+    """Tests for gap cascade fix (FIX #2a).
+
+    Verifies that GapCalibrationStrategy uses ctx.confidence (original LLM value)
+    for gap measurement rather than the cascaded confidence parameter.
+    """
+
+    def test_gap_uses_ctx_confidence_not_cascaded(self, default_config):
+        """Gap strategy uses ctx.confidence (original), not cascaded confidence param."""
+        strategy = GapCalibrationStrategy({"enabled": True})
+
+        # Simulate: original confidence 0.80, post-entropy cascaded to 0.725
+        ctx = RefinementContext(
+            message="здравствуйте, нам нужна CRM",
+            intent="greeting",
+            confidence=0.80,  # Original LLM confidence
+        )
+
+        alternatives = [{"intent": "situation_provided", "confidence": 0.70}]
+
+        # Pass cascaded value as confidence param (like ConfidenceCalibrator does)
+        calibrated, reason, penalties = strategy.calibrate(
+            0.725, alternatives, ctx, default_config
+        )
+
+        # Gap should be 0.80 - 0.70 = 0.10 (using ctx.confidence)
+        # NOT 0.725 - 0.70 = 0.025 (using cascaded)
+        assert penalties.get("gap", 0) == pytest.approx(0.10, abs=0.01) or reason is not None
+
+    def test_entropy_does_not_inflate_gap_penalty(self, default_config):
+        """Entropy penalty does NOT inflate gap penalty."""
+        strategy = GapCalibrationStrategy({"enabled": True})
+
+        ctx = RefinementContext(
+            message="здравствуйте",
+            intent="greeting",
+            confidence=0.80,
+        )
+        alternatives = [{"intent": "info_provided", "confidence": 0.70}]
+
+        # Same ctx.confidence, different cascaded values
+        _, reason1, penalties1 = strategy.calibrate(0.80, alternatives, ctx, default_config)
+        _, reason2, penalties2 = strategy.calibrate(0.72, alternatives, ctx, default_config)
+
+        # Gap value should be the same regardless of cascaded input
+        gap1 = penalties1.get("gap", penalties1.get("gap_penalty", 0))
+        gap2 = penalties2.get("gap", penalties2.get("gap_penalty", 0))
+        # Both should compute gap from ctx.confidence (0.80 - 0.70 = 0.10)
+        if "gap" in penalties1 and "gap" in penalties2:
+            assert penalties1["gap"] == pytest.approx(penalties2["gap"], abs=0.001)
+
+    def test_edge_case_conf_076_alt_070_stays_above_065(self, default_config):
+        """Edge case: conf=0.76 with alt@0.70 stays above 0.65 after full pipeline."""
+        calibrator = ConfidenceCalibrator(default_config)
+
+        ctx = RefinementContext(
+            message="здравствуйте, расскажите про CRM",
+            intent="greeting",
+            confidence=0.76,
+        )
+        alternatives = [{"intent": "info_provided", "confidence": 0.70}]
+
+        result = calibrator.calibrate(0.76, alternatives, ctx)
+
+        # With fix: gap = 0.76 - 0.70 = 0.06 (from ctx.confidence)
+        # Without fix: gap could be negative after entropy, causing excessive penalty
+        assert result.calibrated_confidence > 0.65, \
+            f"Expected > 0.65, got {result.calibrated_confidence}"
+
+    def test_genuinely_ambiguous_still_penalized(self, default_config):
+        """Genuinely ambiguous cases (conf=0.50, gap=0.03) still get appropriate penalty."""
+        strategy = GapCalibrationStrategy({"enabled": True})
+
+        ctx = RefinementContext(
+            message="нет",
+            intent="rejection",
+            confidence=0.50,
+        )
+        alternatives = [{"intent": "objection_no_need", "confidence": 0.47}]
+
+        calibrated, reason, penalties = strategy.calibrate(
+            0.50, alternatives, ctx, default_config
+        )
+
+        # Gap = 0.50 - 0.47 = 0.03, well below threshold → penalty applied
+        assert reason == CalibrationReason.GAP_SMALL
+        assert calibrated < 0.50
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

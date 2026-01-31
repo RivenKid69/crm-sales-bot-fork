@@ -198,6 +198,35 @@ class TestContextEnvelope:
         assert d["total_turns"] == 5
         assert d["objection_count"] == 1
 
+    def test_disambiguation_fields_defaults(self):
+        """Verify disambiguation_options defaults to [] and disambiguation_question defaults to ''."""
+        envelope = ContextEnvelope()
+
+        assert envelope.disambiguation_options == []
+        assert isinstance(envelope.disambiguation_options, list)
+        assert envelope.disambiguation_question == ""
+        assert isinstance(envelope.disambiguation_question, str)
+
+    def test_to_dict_includes_disambiguation(self):
+        """Verify to_dict() includes both disambiguation fields."""
+        options = [
+            {"intent": "company_size", "label": "Company size"},
+            {"intent": "pain_point", "label": "Pain point"},
+        ]
+        question = "What did you mean?"
+
+        envelope = ContextEnvelope(
+            disambiguation_options=options,
+            disambiguation_question=question,
+        )
+
+        d = envelope.to_dict()
+
+        assert "disambiguation_options" in d
+        assert "disambiguation_question" in d
+        assert d["disambiguation_options"] == options
+        assert d["disambiguation_question"] == question
+
 
 class TestPIIRedactor:
     """Тесты для PIIRedactor."""
@@ -444,6 +473,33 @@ class TestContextEnvelopeBuilder:
         )
         builder._compute_reason_codes(envelope2)
         assert envelope2.has_reason(ReasonCode.POLICY_ACCELERATE)
+
+    def test_builder_fills_disambiguation_from_classification_result(self):
+        """Builder should populate disambiguation fields from classification_result."""
+        options = [
+            {"intent": "company_size", "label": "Company size"},
+            {"intent": "pain_point", "label": "Pain point"},
+        ]
+        question = "Could you clarify what you meant?"
+
+        builder = ContextEnvelopeBuilder(
+            classification_result={
+                "disambiguation_options": options,
+                "disambiguation_question": question,
+            }
+        )
+        envelope = builder.build()
+
+        assert envelope.disambiguation_options == options
+        assert envelope.disambiguation_question == question
+
+    def test_builder_with_none_classification_result(self):
+        """Builder with classification_result=None should leave disambiguation at defaults."""
+        builder = ContextEnvelopeBuilder(classification_result=None)
+        envelope = builder.build()
+
+        assert envelope.disambiguation_options == []
+        assert envelope.disambiguation_question == ""
 
 
 class TestBuildContextEnvelope:

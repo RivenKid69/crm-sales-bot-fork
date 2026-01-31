@@ -149,6 +149,10 @@ class ContextEnvelope:
         should_offer_exit: Предложить ли выход
         guard_intervention: Интервенция guard (или None)
 
+        # === Disambiguation (from classification result) ===
+        disambiguation_options: Варианты для disambiguation UI
+        disambiguation_question: Вопрос для disambiguation UI
+
         # === Meta ===
         total_turns: Общее количество ходов
         window_size: Размер окна
@@ -225,6 +229,10 @@ class ContextEnvelope:
 
     # === Current Intent (current turn, not previous) ===
     current_intent: Optional[str] = None
+
+    # === Disambiguation (from classification result, for Blackboard KnowledgeSources) ===
+    disambiguation_options: List[Dict[str, Any]] = field(default_factory=list)
+    disambiguation_question: str = ""
 
     # === Meta ===
     total_turns: int = 0
@@ -417,6 +425,10 @@ class ContextEnvelope:
             "guard_intervention": self.guard_intervention,
             "pre_intervention_triggered": self.pre_intervention_triggered,
 
+            # === Disambiguation ===
+            "disambiguation_options": self.disambiguation_options,
+            "disambiguation_question": self.disambiguation_question,
+
             # === Meta ===
             "total_turns": self.total_turns,
             "reason_codes": self.reason_codes,
@@ -499,6 +511,9 @@ class ContextEnvelopeBuilder:
 
         # Заполняем secondary intents из classification_result
         self._fill_secondary_intents(envelope)
+
+        # Заполняем disambiguation fields из classification_result
+        self._fill_disambiguation(envelope)
 
         # Добавляем last_action/intent
         envelope.last_action = self.last_action
@@ -673,6 +688,14 @@ class ContextEnvelopeBuilder:
         secondary = self.classification_result.get("secondary_signals", [])
         if secondary:
             envelope.secondary_intents = list(secondary)
+
+    def _fill_disambiguation(self, envelope: ContextEnvelope) -> None:
+        """Fill disambiguation fields from classification_result."""
+        options = self.classification_result.get("disambiguation_options", [])
+        question = self.classification_result.get("disambiguation_question", "")
+        if options:
+            envelope.disambiguation_options = list(options)
+            envelope.disambiguation_question = question
 
     def _compute_reason_codes(self, envelope: ContextEnvelope) -> None:
         """Вычислить reason codes на основе сигналов."""

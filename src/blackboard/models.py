@@ -224,6 +224,8 @@ class ResolvedDecision:
             result["trace"] = self.resolution_trace
 
         # Disambiguation metadata (for bot.py ask_clarification response path)
+        # NOTE: Intentional falsy check — empty list is NOT included in sm_result.
+        # bot.py Defense Layer 2 handles the fallback if options are unexpectedly empty.
         if self.disambiguation_options:
             result["disambiguation_options"] = self.disambiguation_options
             result["disambiguation_question"] = self.disambiguation_question

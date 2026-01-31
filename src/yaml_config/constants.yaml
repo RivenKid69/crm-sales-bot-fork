@@ -265,6 +265,15 @@ disambiguation:
     - unclear           # Не предлагаем "непонятно" как выбор
     - small_talk        # Не предлагаем "поболтать" как выбор
 
+  # Compound message bypass: skip disambiguation when a social intent has
+  # substantive (non-social) alternatives — indicates multi-intent, not ambiguity.
+  # E.g., "hello, we need a CRM system" = greeting + info_provided
+  compound_bypass_intents:
+    - greeting
+    - farewell
+    - small_talk
+    - gratitude
+
   # Cooldown: сколько ходов ждать между disambiguation
   # Чтобы не раздражать пользователя частыми уточнениями
   cooldown_turns: 3

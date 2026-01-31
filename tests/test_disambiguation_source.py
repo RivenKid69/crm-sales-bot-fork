@@ -37,10 +37,8 @@ class MockBlackboard:
     def get_context(self):
         ctx = MagicMock()
         envelope = MagicMock()
-        envelope.classification_result = {
-            "disambiguation_options": self._options,
-            "disambiguation_question": self._question,
-        }
+        envelope.disambiguation_options = self._options
+        envelope.disambiguation_question = self._question
         ctx.context_envelope = envelope
         return ctx
 
@@ -162,8 +160,8 @@ class TestContribute:
 
         assert len(bb._proposals) == 0
 
-    def test_empty_options_still_proposes(self, source):
-        """Even with empty options, the source proposes (bot.py handles the edge case)."""
+    def test_empty_options_does_not_propose(self, source):
+        """Empty options: source skips proposal (Defense Layer 1)."""
         bb = MockBlackboard(
             intent="disambiguation_needed",
             options=[],
@@ -172,9 +170,7 @@ class TestContribute:
 
         source.contribute(bb)
 
-        assert len(bb._proposals) == 1
-        proposal = bb._proposals[0]
-        assert proposal["metadata"]["disambiguation_options"] == []
+        assert len(bb._proposals) == 0
 
 
 # =============================================================================
@@ -207,20 +203,20 @@ class TestContextEnvelopeEdgeCases:
 
         source.contribute(bb)
 
-        assert len(bb._proposals) == 1
-        proposal = bb._proposals[0]
-        assert proposal["metadata"]["disambiguation_options"] == []
-        assert proposal["metadata"]["disambiguation_question"] == ""
+        # None envelope → empty options → guard skips proposal (Defense Layer 1)
+        assert len(bb._proposals) == 0
 
     def test_no_classification_result_attribute(self, source):
         """Handle case where classification_result attribute is missing."""
         bb = MockBlackboard(intent="disambiguation_needed")
         ctx = MagicMock()
-        ctx.context_envelope = MagicMock(spec=[])  # No attributes
+        envelope = MagicMock()
+        envelope.disambiguation_options = []
+        envelope.disambiguation_question = ""
+        ctx.context_envelope = envelope
         bb.get_context = lambda: ctx
 
         source.contribute(bb)
 
-        assert len(bb._proposals) == 1
-        proposal = bb._proposals[0]
-        assert proposal["metadata"]["disambiguation_options"] == []
+        # Empty options → no proposal (Defense Layer 1)
+        assert len(bb._proposals) == 0

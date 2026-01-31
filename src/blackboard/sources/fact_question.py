@@ -321,13 +321,6 @@ class FactQuestionSource(KnowledgeSource):
             if secondary:
                 return list(secondary)
 
-            # Check in classification_result
-            classification = getattr(envelope, "classification_result", None)
-            if classification and isinstance(classification, dict):
-                secondary = classification.get("secondary_signals", [])
-                if secondary:
-                    return list(secondary)
-
         return []
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:

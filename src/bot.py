@@ -1138,35 +1138,53 @@ class SalesBot:
                 skip_reason="fallback_path"
             )
         elif action == "ask_clarification":
-            # Disambiguation path — format question via DisambiguationUI
             disambiguation_options = sm_result.get("disambiguation_options", [])
             disambiguation_question = sm_result.get("disambiguation_question", "")
-            extracted = classification.get("extracted_data", {})
 
-            response = self.disambiguation_ui.format_question(
-                question=disambiguation_question,
-                options=disambiguation_options,
-                context={**current_context, "frustration_level": frustration_level},
-            )
+            if not disambiguation_options:
+                # Defense Layer 2: empty options → generate normal response
+                logger.warning(
+                    "ask_clarification with empty disambiguation_options, "
+                    "falling back to continue_conversation"
+                )
+                action = "continue_conversation"  # Fix action for context_window recording
+                response_start = time.time()
+                response = self.generator.generate(action, context)
+                response_elapsed = (time.time() - response_start) * 1000
+                cta_result = CTAResult(
+                    original_response=response,
+                    cta=None,
+                    final_response=response,
+                    cta_added=False,
+                    skip_reason="disambiguation_empty_fallback",
+                )
+            else:
+                # Normal disambiguation path
+                extracted = classification.get("extracted_data", {})
 
-            self.state_machine.enter_disambiguation(
-                options=disambiguation_options,
-                extracted_data=extracted,
-            )
+                response = self.disambiguation_ui.format_question(
+                    question=disambiguation_question,
+                    options=disambiguation_options,
+                    context={**current_context, "frustration_level": frustration_level},
+                )
 
-            self.disambiguation_metrics.record_disambiguation(
-                options=[o["intent"] for o in disambiguation_options],
-                scores=classification.get("original_scores", {}),
-            )
+                self.state_machine.enter_disambiguation(
+                    options=disambiguation_options,
+                    extracted_data=extracted,
+                )
 
-            # CTA not applicable for disambiguation
-            cta_result = CTAResult(
-                original_response=response,
-                cta=None,
-                final_response=response,
-                cta_added=False,
-                skip_reason="disambiguation_path",
-            )
+                self.disambiguation_metrics.record_disambiguation(
+                    options=[o["intent"] for o in disambiguation_options],
+                    scores=classification.get("original_scores", {}),
+                )
+
+                cta_result = CTAResult(
+                    original_response=response,
+                    cta=None,
+                    final_response=response,
+                    cta_added=False,
+                    skip_reason="disambiguation_path",
+                )
         else:
             # 3. Generate response (normal path)
             response_start = time.time()

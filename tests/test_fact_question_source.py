@@ -32,7 +32,6 @@ class MockContextEnvelope:
     repeated_question: Optional[str] = None
     tone: Optional[str] = None
     secondary_intents: List[str] = field(default_factory=list)
-    classification_result: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -70,7 +69,6 @@ class MockBlackboard:
         # Create context envelope with secondary intents
         envelope = MockContextEnvelope(
             secondary_intents=self._secondary_intents,
-            classification_result={"secondary_signals": self._secondary_intents}
         )
 
         # Create context snapshot

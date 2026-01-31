@@ -274,8 +274,9 @@ class GapCalibrationStrategy:
             alt.get("confidence", 0.0) for alt in alternatives
         )
 
-        # Calculate gap
-        gap = confidence - top_alt_confidence
+        # Use original LLM confidence for gap measurement (avoid entropy cascade)
+        original_confidence = ctx.confidence if hasattr(ctx, 'confidence') else confidence
+        gap = original_confidence - top_alt_confidence
 
         # Get thresholds from config
         gap_threshold = config.get("gap_threshold", 0.2)
@@ -288,7 +289,7 @@ class GapCalibrationStrategy:
             penalty = deficit * gap_penalty_factor
 
             # Extra penalty for very high confidence with small gap
-            if confidence >= 0.85 and gap < min_gap_for_high_confidence:
+            if original_confidence >= 0.85 and gap < min_gap_for_high_confidence:
                 penalty += config.get("high_confidence_small_gap_penalty", 0.1)
 
             calibrated = max(0.1, confidence - penalty)

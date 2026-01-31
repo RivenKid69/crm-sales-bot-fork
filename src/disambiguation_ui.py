@@ -64,6 +64,10 @@ class DisambiguationUI:
         Returns:
             Форматированный вопрос
         """
+        # Defense Layer 3: empty options → generic question instead of broken numbered list
+        if not options:
+            return "Уточните, пожалуйста, что именно вас интересует?"
+
         spin_phase = context.get("spin_phase")
         frustration = context.get("frustration_level", 0)
 

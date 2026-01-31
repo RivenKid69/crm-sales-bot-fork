@@ -51,13 +51,19 @@ class DisambiguationSource(KnowledgeSource):
         ctx = blackboard.get_context()
         envelope = ctx.context_envelope
 
-        # Extract options/question from classification result (via context_envelope)
-        classification_result = {}
+        # Read typed fields from ContextEnvelope (populated by Builder from classification_result)
+        options = []
+        question = ""
         if envelope is not None:
-            classification_result = getattr(envelope, 'classification_result', None) or {}
+            options = envelope.disambiguation_options
+            question = envelope.disambiguation_question
 
-        options = classification_result.get("disambiguation_options", [])
-        question = classification_result.get("disambiguation_question", "")
+        if not options:
+            logger.warning(
+                "DisambiguationSource: empty disambiguation_options on envelope, "
+                "skipping ask_clarification proposal",
+            )
+            return
 
         blackboard.propose_action(
             action="ask_clarification",

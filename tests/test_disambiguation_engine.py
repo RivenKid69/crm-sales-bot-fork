@@ -81,8 +81,8 @@ class TestDisambiguationConfig:
     """Tests for DisambiguationConfig dataclass."""
 
     def test_default_values(self):
-        """Default config has expected values."""
-        config = DisambiguationConfig()
+        """Default config (via from_config) has expected values."""
+        config = DisambiguationConfig.from_config({})
 
         assert config.high_confidence == 0.85
         assert config.medium_confidence == 0.65
@@ -101,7 +101,7 @@ class TestDisambiguationConfig:
             "high_confidence": 0.90,
             "gap_threshold": 0.30,
             "max_options": 5,
-            "bypass_disambiguation_intents": ["custom_bypass"],
+            "bypass_intents_override": ["custom_bypass"],
             "excluded_intents": ["custom_excluded"],
         }
 
@@ -265,8 +265,13 @@ class TestDecisionMatrix:
 class TestBypassConditions:
     """Tests for bypass conditions."""
 
-    def test_bypass_intent_always_executes(self, engine):
+    def test_bypass_intent_always_executes(self):
         """Bypass intents always return EXECUTE."""
+        config = DisambiguationConfig(
+            bypass_intents=["rejection", "contact_provided", "demo_request"],
+        )
+        bypass_engine = DisambiguationDecisionEngine(config)
+
         for bypass_intent in ["rejection", "contact_provided", "demo_request"]:
             classification = {
                 "intent": bypass_intent,
@@ -274,7 +279,7 @@ class TestBypassConditions:
                 "alternatives": [],
             }
 
-            result = engine.analyze(classification, {})
+            result = bypass_engine.analyze(classification, {})
 
             assert result.decision == DisambiguationDecision.EXECUTE
             assert "Bypass intent" in result.reasoning
@@ -815,3 +820,89 @@ class TestYAMLConfigLoading:
         assert engine.config is not None
         assert engine.config.high_confidence > 0
         assert engine.config.gap_threshold > 0
+
+
+# =============================================================================
+# TEST: Compound Bypass (Bypass 5)
+# =============================================================================
+
+class TestCompoundBypass:
+    """Tests for compound social message bypass (Bypass 5)."""
+
+    def test_compound_greeting_with_substantive_alternative(self):
+        """Compound bypass: greeting + [info_provided@0.65] → EXECUTE."""
+        config = DisambiguationConfig(
+            compound_bypass_intents=["greeting", "farewell", "small_talk", "gratitude"],
+        )
+        engine = DisambiguationDecisionEngine(config)
+
+        classification = {
+            "intent": "greeting",
+            "confidence": 0.75,
+            "alternatives": [
+                {"intent": "info_provided", "confidence": 0.65},
+            ],
+        }
+
+        result = engine.analyze(classification, {})
+
+        assert result.decision == DisambiguationDecision.EXECUTE
+        assert "Compound" in result.reasoning
+
+    def test_no_bypass_standalone_greeting(self):
+        """No bypass: standalone greeting (no alternatives) → normal decision path."""
+        config = DisambiguationConfig(
+            compound_bypass_intents=["greeting", "farewell", "small_talk", "gratitude"],
+        )
+        engine = DisambiguationDecisionEngine(config)
+
+        classification = {
+            "intent": "greeting",
+            "confidence": 0.75,
+            "alternatives": [],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # No substantive alternatives → normal path, not compound bypass
+        assert "Compound" not in result.reasoning
+
+    def test_no_bypass_social_only_alternatives(self):
+        """No bypass: greeting + [farewell@0.70] (social-only alternatives) → normal path."""
+        config = DisambiguationConfig(
+            compound_bypass_intents=["greeting", "farewell", "small_talk", "gratitude"],
+        )
+        engine = DisambiguationDecisionEngine(config)
+
+        classification = {
+            "intent": "greeting",
+            "confidence": 0.75,
+            "alternatives": [
+                {"intent": "farewell", "confidence": 0.70},
+            ],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # farewell is also in compound_bypass_intents → not substantive → no compound bypass
+        assert "Compound" not in result.reasoning
+
+    def test_no_bypass_non_social_primary(self):
+        """No bypass: info_provided + [price_question@0.60] (non-social primary) → normal path."""
+        config = DisambiguationConfig(
+            compound_bypass_intents=["greeting", "farewell", "small_talk", "gratitude"],
+        )
+        engine = DisambiguationDecisionEngine(config)
+
+        classification = {
+            "intent": "info_provided",
+            "confidence": 0.70,
+            "alternatives": [
+                {"intent": "price_question", "confidence": 0.60},
+            ],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # info_provided is NOT in compound_bypass_intents → bypass 5 doesn't apply
+        assert "Compound" not in result.reasoning
