@@ -324,6 +324,11 @@ class SimulationRunner:
                     if client_trace:
                         client_traces.append(client_trace.to_dict())
 
+                    # Prevent off-by-one: if respond() exhausted turn budget, stop before
+                    # next bot.process() adds an extra dialogue entry.
+                    if client.is_budget_exhausted():
+                        break
+
                 except Exception as e:
                     tb_str = traceback.format_exc()
                     errors.append(f"Turn {turn + 1}: {str(e)}\n{tb_str}")

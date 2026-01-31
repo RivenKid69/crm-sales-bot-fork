@@ -809,6 +809,7 @@ class SalesBot:
         # FIX Defect 3: Track fallback action/message for decision trace
         fallback_action = None
         fallback_message = None
+        rephrase_mode = False
 
         if intervention:
             fallback_used = True
@@ -827,10 +828,19 @@ class SalesBot:
             )
 
             if fb_result.get("response"):
-                fallback_response = fb_result
-                # FIX Defect 3: Capture fallback details for decision trace
-                fallback_action = fb_result.get("action")
-                fallback_message = fb_result.get("response")
+                if fb_result.get("action") == "continue":
+                    # Tier 1 rephrase: don't use template as full response.
+                    # Let generator produce actual rephrased question.
+                    fallback_response = None
+                    rephrase_mode = True
+                    # Still track for metrics
+                    fallback_action = "continue"
+                    fallback_message = fb_result.get("response")
+                else:
+                    fallback_response = fb_result
+                    # FIX Defect 3: Capture fallback details for decision trace
+                    fallback_action = fb_result.get("action")
+                    fallback_message = fb_result.get("response")
 
                 # If fallback action is "close" or "skip", update state
                 if fb_result.get("action") == "close":
@@ -950,7 +960,7 @@ class SalesBot:
             if sf.delta > 0:
                 new_level = self.tone_analyzer.frustration_tracker.apply_structural_delta(
                     delta=sf.delta,
-                    suppress_decay=True,
+                    suppress_decay=(sf.delta >= 2),
                     signals=sf.signals,
                 )
                 tone_info["frustration_level"] = new_level
@@ -960,6 +970,10 @@ class SalesBot:
         response_directives = None
         if flags.context_response_directives and context_envelope:
             response_directives = build_response_directives(context_envelope)
+
+        # Propagate rephrase_mode to directives (if directives are active)
+        if rephrase_mode and response_directives:
+            response_directives.rephrase_mode = True
 
         # =========================================================================
         # Stage 14: Blackboard replaces state_machine.process()

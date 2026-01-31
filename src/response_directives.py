@@ -98,6 +98,8 @@ class ResponseDirectives:
     repair_mode: bool = False
     repair_trigger: str = ""       # "stuck" | "oscillation" | "repeated_question"
     repair_context: str = ""       # Context about what triggered repair
+    rephrase_mode: bool = False    # Parallel to repair_mode: rephrase current question
+    prioritize_contact: bool = False  # Fast-track contact collection for rushed clients
 
     # === Apology (SSoT: src/apology_ssot.py) ===
     should_apologize: bool = False
@@ -188,6 +190,12 @@ class ResponseDirectives:
         if self.summarize_client and self.client_card:
             parts.append(f"Можешь сослаться на: {self.client_card}")
 
+        if self.rephrase_mode:
+            parts.append(
+                "Переформулируй текущий вопрос другими словами. "
+                "Не повторяй его дословно."
+            )
+
         if self.repair_mode:
             repair_parts = ["Режим восстановления диалога."]
             if self.repair_trigger == "stuck":
@@ -214,6 +222,12 @@ class ResponseDirectives:
 
         if self.offer_choices:
             parts.append("Предложи 2-3 варианта ответа.")
+
+        if self.prioritize_contact:
+            parts.append(
+                "Клиент торопится. Запроси контактные данные (телефон или email) "
+                "для продолжения разговора. Встрой запрос естественно в ответ."
+            )
 
         if self.cta_soft:
             parts.append("Добавь мягкий призыв к следующему шагу.")
@@ -260,8 +274,8 @@ class ResponseDirectivesBuilder:
     # Defaults (используются если конфиг недоступен)
     _DEFAULT_MAX_SUMMARY_LINES = 6
     _DEFAULT_TONE_THRESHOLDS = {
-        "empathetic_frustration": 3,
-        "validate_frustration": 2,
+        "empathetic_frustration": 5,
+        "validate_frustration": 4,
     }
     _DEFAULT_MAX_WORDS = {
         "high_frustration": 40,
@@ -474,6 +488,38 @@ class ResponseDirectivesBuilder:
         # CTA soft: при breakthrough window
         if envelope.has_reason(ReasonCode.BREAKTHROUGH_CTA):
             directives.cta_soft = True
+
+        # Fast-track: rushed client + no contact + sufficient engagement
+        if self._should_fast_track_contact():
+            directives.prioritize_contact = True
+
+    def _should_fast_track_contact(self) -> bool:
+        """Fast-track contact collection for time-constrained conversations.
+
+        Uses Tone enum value (lowercase) and has_valid_contact from SSOT module.
+        """
+        envelope = self.envelope
+
+        # Only for RUSHED clients (Tone.RUSHED.value = "rushed", lowercase!)
+        if envelope.tone != "rushed":
+            return False
+
+        # Already have contact — use SSOT validator
+        try:
+            from src.conditions.state_machine.contact_validator import has_valid_contact
+            if has_valid_contact(envelope.collected_data):
+                return False
+        except ImportError:
+            # Defense-in-depth: if validator unavailable, check raw fields
+            if any(k in envelope.collected_data for k in ("contact_info", "email", "phone")):
+                return False
+
+        # Need minimum engagement (4+ turns)
+        # Field is total_turns (not turn_number!) per context_envelope.py:238
+        if envelope.total_turns < 4:
+            return False
+
+        return True
 
     def _fill_memory(self, directives: ResponseDirectives) -> None:
         """Заполнить память для персонализации."""

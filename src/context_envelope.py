@@ -766,7 +766,8 @@ class ContextEnvelopeBuilder:
         if envelope.guard_intervention:
             envelope.add_reason(ReasonCode.GUARD_INTERVENTION)
 
-        if envelope.frustration_level >= 3:
+        from src.frustration_thresholds import FRUSTRATION_WARNING
+        if envelope.frustration_level >= FRUSTRATION_WARNING:
             envelope.add_reason(ReasonCode.GUARD_FRUSTRATION)
 
         # === Policy signals (derived) ===

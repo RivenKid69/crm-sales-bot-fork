@@ -3666,11 +3666,12 @@ cta:
 response_directives:
   # === Пороги для определения тона ===
   tone_thresholds:
-    # Порог frustration для EMPATHETIC тона (>= threshold)
-    empathetic_frustration: 3
+    # Between WARNING(4) and HIGH(7) by design: real frustration hits 5 fast
+    # (FRUSTRATED +3 + 2×SKEPTICAL +2 = 5), false positives stay at 3
+    empathetic_frustration: 5
 
-    # Порог frustration для VALIDATE (>= threshold)
-    validate_frustration: 2
+    # Matches FRUSTRATION_WARNING from frustration_thresholds.py
+    validate_frustration: 4
 
   # === Лимиты длины ответа (max_words) ===
   max_words:

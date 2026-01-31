@@ -612,6 +612,14 @@ class ClientAgent:
         ]
         return random.choice(emails)
 
+    def is_budget_exhausted(self) -> bool:
+        """Check if hard turn limit has been reached (no random factor).
+
+        Unlike should_continue(), this is a pure deterministic check
+        suitable for post-respond boundary validation in the runner.
+        """
+        return self.turn >= self.persona.max_turns
+
     def should_continue(self) -> bool:
         """
         Решает, продолжать ли диалог.
