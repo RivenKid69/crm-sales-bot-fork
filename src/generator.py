@@ -814,6 +814,25 @@ class ResponseGenerator:
                 f"уже известно: {collected['company_size']} человек."
             )
 
+        # BUG #23: Prevent template from asking about contact when already known
+        try:
+            from src.conditions.state_machine.contact_validator import has_valid_contact
+            if has_valid_contact(collected):
+                contact_val = (
+                    collected.get("contact_info")
+                    or collected.get("email")
+                    or collected.get("phone")
+                    or "уже получен"
+                )
+                contact_warning = (
+                    "⚠️ НЕ СПРАШИВАЙ контактные данные (телефон/email) — "
+                    f"уже известно: {contact_val}."
+                )
+                existing = variables.get("do_not_ask", "")
+                variables["do_not_ask"] = f"{existing}\n{contact_warning}" if existing else contact_warning
+        except ImportError:
+            pass
+
         # === Personalization v2: Adaptive personalization ===
         if self.personalization_engine and flags.personalization_v2:
             try:

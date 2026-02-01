@@ -400,6 +400,10 @@ FRUSTRATION_THRESHOLDS: Dict[str, int] = _frustration.get("thresholds", {})
 # Used by FrustrationIntensityCalculator for signal-aware frustration calculation
 _frustration_intensity = _frustration.get("intensity", {})
 
+# Tone-aware apology configuration (BUG #22)
+_apology_config = _frustration.get("apology", {})
+APOLOGY_TONE_OVERRIDES: Dict[str, int] = _apology_config.get("tone_overrides", {})
+
 FRUSTRATION_INTENSITY_CONFIG: Dict[str, Any] = {
     "base_weights": _frustration_intensity.get("base_weights", {
         "frustrated": 3,
@@ -953,6 +957,7 @@ __all__ = [
     "FRUSTRATION_DECAY",
     "FRUSTRATION_THRESHOLDS",
     "FRUSTRATION_INTENSITY_CONFIG",
+    "APOLOGY_TONE_OVERRIDES",
     # Circular flow
     "ALLOWED_GOBACKS",
     # Context window

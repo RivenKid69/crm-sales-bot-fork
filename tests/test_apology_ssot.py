@@ -337,6 +337,130 @@ class TestGeneratorApology:
         assert instruction  # Not empty
 
 
+class TestBug22ToneAwareApology:
+    """BUG #22: Tone-aware apology — skeptical users should not get apology at warning level."""
+
+    def test_skeptical_at_warning_no_apology(self):
+        """should_apologize(4, 'skeptical') == False — skeptics need facts, not apology."""
+        assert should_apologize(APOLOGY_THRESHOLD, tone="skeptical") is False
+
+    def test_skeptical_at_high_still_apologize(self):
+        """should_apologize(7, 'skeptical') == True — at HIGH threshold, everyone gets apology."""
+        assert should_apologize(7, tone="skeptical") is True
+
+    def test_none_tone_backward_compat(self):
+        """should_apologize(4, None) == True — backward-compatible, no tone = default behavior."""
+        assert should_apologize(APOLOGY_THRESHOLD, tone=None) is True
+
+    def test_frustrated_at_warning_still_apologize(self):
+        """should_apologize(4, 'frustrated') == True — frustrated users still get apology."""
+        assert should_apologize(APOLOGY_THRESHOLD, tone="frustrated") is True
+
+    def test_yaml_tone_overrides_loaded(self):
+        """Verify APOLOGY_TONE_OVERRIDES has skeptical: 7 from YAML."""
+        from src.yaml_config.constants import APOLOGY_TONE_OVERRIDES
+        assert "skeptical" in APOLOGY_TONE_OVERRIDES
+        assert APOLOGY_TONE_OVERRIDES["skeptical"] == 7
+
+    def test_validate_thresholds_catches_invalid_override(self):
+        """Invalid YAML config raises ValueError during validation."""
+        from src.yaml_config.constants import APOLOGY_TONE_OVERRIDES
+        from src.apology_ssot import validate_thresholds as _validate
+
+        original = APOLOGY_TONE_OVERRIDES.copy()
+        try:
+            # Inject invalid override (below APOLOGY_THRESHOLD)
+            APOLOGY_TONE_OVERRIDES["test_invalid"] = 1
+            with pytest.raises(ValueError, match="APOLOGY_TONE_OVERRIDES"):
+                _validate()
+        finally:
+            # Restore original
+            APOLOGY_TONE_OVERRIDES.clear()
+            APOLOGY_TONE_OVERRIDES.update(original)
+
+    def test_skeptical_below_threshold_no_apology(self):
+        """should_apologize(3, 'skeptical') == False — below base threshold."""
+        assert should_apologize(3, tone="skeptical") is False
+
+    def test_unknown_tone_default_behavior(self):
+        """should_apologize(4, 'unknown_tone') == True — unknown tone uses default."""
+        assert should_apologize(APOLOGY_THRESHOLD, tone="unknown_tone") is True
+
+    def test_case_insensitive_tone(self):
+        """Tone matching is case-insensitive."""
+        assert should_apologize(APOLOGY_THRESHOLD, tone="SKEPTICAL") is False
+        assert should_apologize(APOLOGY_THRESHOLD, tone="Skeptical") is False
+
+
+class TestBug22RegexAnalyzer:
+    """BUG #22: regex_analyzer urgency branches — Path A tests."""
+
+    def test_medium_urgency_skeptical_no_apology(self):
+        """urgency='medium' + SKEPTICAL → should_apologize=False."""
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.models import Tone, Style, ToneAnalysis
+
+        analyzer = RegexToneAnalyzer()
+        # Create analysis with SKEPTICAL tone and medium urgency
+        analysis = ToneAnalysis(
+            tone=Tone.SKEPTICAL,
+            style=Style.FORMAL,
+            confidence=0.85,
+            frustration_level=4,
+            signals=["skeptical:test"],
+            tier_used="regex",
+            intervention_urgency="medium",
+        )
+        guidance = analyzer.get_response_guidance(analysis)
+        assert guidance["should_apologize"] is False
+
+    def test_medium_urgency_frustrated_still_apologize(self):
+        """urgency='medium' + FRUSTRATED → should_apologize=True."""
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.models import Tone, Style, ToneAnalysis
+
+        analyzer = RegexToneAnalyzer()
+        analysis = ToneAnalysis(
+            tone=Tone.FRUSTRATED,
+            style=Style.FORMAL,
+            confidence=0.85,
+            frustration_level=4,
+            signals=["frustrated:test"],
+            tier_used="regex",
+            intervention_urgency="medium",
+        )
+        guidance = analyzer.get_response_guidance(analysis)
+        assert guidance["should_apologize"] is True
+
+    def test_high_urgency_skeptical_still_apologize(self):
+        """urgency='high' + SKEPTICAL → should_apologize=True (high is beyond override)."""
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.models import Tone, Style, ToneAnalysis
+
+        analyzer = RegexToneAnalyzer()
+        analysis = ToneAnalysis(
+            tone=Tone.SKEPTICAL,
+            style=Style.FORMAL,
+            confidence=0.90,
+            frustration_level=7,
+            signals=["skeptical:test"],
+            tier_used="regex",
+            intervention_urgency="high",
+        )
+        guidance = analyzer.get_response_guidance(analysis)
+        assert guidance["should_apologize"] is True
+
+
+class TestBug22ResponseVariations:
+    """BUG #22: No anglicisms in APOLOGIES list."""
+
+    def test_no_anglicisms_in_apologies(self):
+        """No 'сорри' in APOLOGIES list."""
+        from src.response_variations import ResponseVariations
+        for phrase in ResponseVariations.APOLOGIES:
+            assert "сорри" not in phrase.lower(), f"Anglicism found: {phrase}"
+
+
 class TestFeatureFlag:
     """Tests for apology_system feature flag."""
 

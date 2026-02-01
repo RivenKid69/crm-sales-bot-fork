@@ -3273,6 +3273,14 @@ frustration:
     high: 7            # Предложить помощь/выход (= guard.high_frustration_threshold)
     critical: 9        # Мягкое завершение
 
+  # Tone-aware apology thresholds (BUG #22)
+  # Tones listed here use elevated threshold instead of default WARNING(4)
+  # Rationale: skepticism is a business question, not frustration
+  apology:
+    default_threshold: 4            # = thresholds.warning
+    tone_overrides:
+      skeptical: 7                  # Don't apologize to skeptics below HIGH
+
   # =============================================================================
   # INTENSITY-BASED FRUSTRATION CALCULATION ⭐ NEW
   # =============================================================================

@@ -1405,6 +1405,8 @@ class SalesBot:
                     "last_action": self.last_action,
                     "action": action,
                     "objection_info": objection_info,
+                    # BUG #23: Pass collected_data for contact gate
+                    "collected_data": self.state_machine.collected_data,
                     # Flow context for dynamic CTA phase resolution
                     "flow_context": {
                         "phase_order": list(self.state_machine.phase_order),

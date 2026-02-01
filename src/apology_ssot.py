@@ -35,14 +35,16 @@ Usage:
 Part of Apology System Unification (fixing should_apologize bug).
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import logging
 
 from src.frustration_thresholds import (
     FRUSTRATION_WARNING,
     FRUSTRATION_HIGH,
     FRUSTRATION_CRITICAL,
+    FRUSTRATION_MAX,
 )
+from src.yaml_config.constants import APOLOGY_TONE_OVERRIDES
 
 if TYPE_CHECKING:
     from src.response_variations import ResponseVariations
@@ -65,19 +67,31 @@ EXIT_OFFER_THRESHOLD: int = FRUSTRATION_HIGH
 # DECISION FUNCTIONS
 # =============================================================================
 
-def should_apologize(frustration_level: int) -> bool:
+def should_apologize(frustration_level: int, tone: Optional[str] = None) -> bool:
     """
-    Check if apology is needed based on frustration level.
+    Check if apology is needed based on frustration level and tone.
 
     Uses FRUSTRATION_WARNING threshold from frustration_thresholds SSoT.
+    Tone-specific overrides are sourced from constants.yaml (SSOT).
+
+    BUG #22: Skepticism is a business question, not frustration.
+    Skeptical users get a higher threshold (from YAML) before apology fires.
+
+    Backward-compatible: tone=None preserves existing behavior.
 
     Args:
         frustration_level: Current frustration level (0-10)
+        tone: Optional tone string (e.g., "skeptical", "frustrated")
 
     Returns:
         True if apology should be included in response
     """
-    return frustration_level >= APOLOGY_THRESHOLD
+    if frustration_level < APOLOGY_THRESHOLD:
+        return False
+    # SSOT: tone-specific threshold from constants.yaml
+    if tone and tone.lower() in APOLOGY_TONE_OVERRIDES:
+        return frustration_level >= APOLOGY_TONE_OVERRIDES[tone.lower()]
+    return True
 
 
 def should_offer_exit(
@@ -227,9 +241,19 @@ def validate_thresholds() -> bool:
             f"EXIT_OFFER_THRESHOLD ({EXIT_OFFER_THRESHOLD})"
         )
 
+    # Validate tone overrides are within valid range (BUG #22)
+    for tone_name, threshold in APOLOGY_TONE_OVERRIDES.items():
+        if not (APOLOGY_THRESHOLD <= threshold <= FRUSTRATION_MAX):
+            raise ValueError(
+                f"APOLOGY_TONE_OVERRIDES[{tone_name}]={threshold} "
+                f"must be between APOLOGY_THRESHOLD({APOLOGY_THRESHOLD}) "
+                f"and FRUSTRATION_MAX({FRUSTRATION_MAX})"
+            )
+
     logger.info(
         f"Apology thresholds validated: "
-        f"apology_at={APOLOGY_THRESHOLD}, exit_at={EXIT_OFFER_THRESHOLD}"
+        f"apology_at={APOLOGY_THRESHOLD}, exit_at={EXIT_OFFER_THRESHOLD}, "
+        f"tone_overrides={APOLOGY_TONE_OVERRIDES}"
     )
     return True
 

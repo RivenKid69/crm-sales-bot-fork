@@ -633,7 +633,9 @@ class ResponseDirectivesBuilder:
         frustration_level = self.envelope.frustration_level
         pre_intervention = getattr(self.envelope, 'pre_intervention_triggered', False)
 
-        directives.should_apologize = should_apologize(frustration_level)
+        # BUG #22: Pass tone for tone-aware apology thresholds (SSOT)
+        tone = getattr(self.envelope, 'tone', None)
+        directives.should_apologize = should_apologize(frustration_level, tone=tone)
         # Pass pre_intervention_triggered to ensure exit is offered at WARNING level too
         directives.should_offer_exit = should_offer_exit(frustration_level, pre_intervention)
 

@@ -262,14 +262,23 @@ class RegexToneAnalyzer:
         # Medium urgency = short, empathetic
         elif urgency == "medium":
             guidance["max_words"] = 35
-            guidance["tone_instruction"] = (
-                "Будь кратким и деловым. "
-                "Признай возможные неудобства."
-            )
-            guidance["should_apologize"] = True
-            # Offer exit for RUSHED users with medium urgency
-            if analysis.tone == Tone.RUSHED:
-                guidance["should_offer_exit"] = True
+            if analysis.tone == Tone.SKEPTICAL:
+                # BUG #22: Skepticism is not frustration. Facts, not apology.
+                guidance["tone_instruction"] = (
+                    "Будь кратким и деловым. "
+                    "Приведи конкретные факты и цифры. "
+                    "НЕ извиняйся — клиент задаёт деловые вопросы."
+                )
+                guidance["should_apologize"] = False
+            else:
+                guidance["tone_instruction"] = (
+                    "Будь кратким и деловым. "
+                    "Признай возможные неудобства."
+                )
+                guidance["should_apologize"] = True
+                # Offer exit for RUSHED users with medium urgency
+                if analysis.tone == Tone.RUSHED:
+                    guidance["should_offer_exit"] = True
 
         # Low urgency = slightly shorter
         elif urgency == "low":
@@ -320,11 +329,20 @@ class RegexToneAnalyzer:
         # Повышенный frustration — сокращаем ответы
         elif analysis.frustration_level >= FRUSTRATION_THRESHOLDS["warning"]:
             guidance["max_words"] = 40
-            guidance["tone_instruction"] = (
-                "Будь кратким и деловым. "
-                "Признай возможные неудобства."
-            )
-            guidance["should_apologize"] = True
+            if analysis.tone == Tone.SKEPTICAL:
+                # BUG #22: Skepticism is not frustration. Facts, not apology.
+                guidance["tone_instruction"] = (
+                    "Будь кратким и деловым. "
+                    "Приведи конкретные факты и цифры. "
+                    "НЕ извиняйся — клиент задаёт деловые вопросы."
+                )
+                guidance["should_apologize"] = False
+            else:
+                guidance["tone_instruction"] = (
+                    "Будь кратким и деловым. "
+                    "Признай возможные неудобства."
+                )
+                guidance["should_apologize"] = True
 
         # Специфика по тону (если frustration низкий)
         elif analysis.tone == Tone.RUSHED:

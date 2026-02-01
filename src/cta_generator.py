@@ -424,6 +424,16 @@ class CTAGenerator:
         if frustration >= self.FRUSTRATION_THRESHOLD:
             return False, f"high_frustration_{frustration}"
 
+        # 3.5 BUG #23: Skip contact CTA when contact already collected
+        collected_data = context.get("collected_data", {})
+        if collected_data and cta_phase == "close":
+            try:
+                from src.conditions.state_machine.contact_validator import has_valid_contact
+                if has_valid_contact(collected_data):
+                    return False, "contact_already_collected"
+            except ImportError:
+                pass  # Graceful degradation
+
         # 4. Проверяем не слишком ли рано
         if self.turn_count < self.MIN_TURNS_FOR_CTA:
             return False, f"too_early_turn_{self.turn_count}"
