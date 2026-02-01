@@ -114,6 +114,7 @@ class PolicyContext:
     frustration_level: int = 0
     guard_intervention: Optional[str] = None
     pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
+    stall_guard_cooldown: bool = False  # True when last_action was stall_guard_*
 
     # Secondary intents (from RefinementPipeline via ContextEnvelope)
     secondary_intents: List[str] = field(default_factory=list)
@@ -196,6 +197,11 @@ class PolicyContext:
             frustration_level=envelope.frustration_level,
             guard_intervention=envelope.guard_intervention,
             pre_intervention_triggered=getattr(envelope, 'pre_intervention_triggered', False),
+            stall_guard_cooldown=(
+                getattr(envelope, 'last_action', None) in (
+                    'stall_guard_eject', 'stall_guard_nudge'
+                )
+            ),
             # Secondary intents
             secondary_intents=getattr(envelope, 'secondary_intents', []) or [],
             # Objection limits (from envelope if available, else from YAML config)
@@ -241,6 +247,7 @@ class PolicyContext:
         frustration_level: int = 0,
         guard_intervention: Optional[str] = None,
         pre_intervention_triggered: bool = False,
+        stall_guard_cooldown: bool = False,
         # Secondary intents for testing
         secondary_intents: List[str] = None,
         # Objection limits (defaults from YAML config)
@@ -285,6 +292,7 @@ class PolicyContext:
             frustration_level=frustration_level,
             guard_intervention=guard_intervention,
             pre_intervention_triggered=pre_intervention_triggered,
+            stall_guard_cooldown=stall_guard_cooldown,
             secondary_intents=secondary_intents or [],
             # Objection limits (use YAML defaults if not specified)
             max_consecutive_objections=(
@@ -345,6 +353,7 @@ class PolicyContext:
             "frustration_level": self.frustration_level,
             "guard_intervention": self.guard_intervention,
             "pre_intervention_triggered": self.pre_intervention_triggered,
+            "stall_guard_cooldown": self.stall_guard_cooldown,
             "secondary_intents": self.secondary_intents,
         }
 

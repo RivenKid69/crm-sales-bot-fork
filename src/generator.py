@@ -612,7 +612,16 @@ class ResponseGenerator:
                 return template
 
         # Fallback to Python PROMPT_TEMPLATES
-        return PROMPT_TEMPLATES.get(template_key, PROMPT_TEMPLATES.get("continue_current_goal", ""))
+        result = PROMPT_TEMPLATES.get(template_key)
+        if result:
+            return result
+
+        from src.logger import logger
+        logger.warning(
+            "Template not found, falling back to continue_current_goal",
+            requested_template=template_key,
+        )
+        return PROMPT_TEMPLATES.get("continue_current_goal", "")
 
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""

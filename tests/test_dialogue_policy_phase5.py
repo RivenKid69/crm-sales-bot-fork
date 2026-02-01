@@ -16,6 +16,7 @@ from typing import Dict, Any
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from dialogue_policy import (
+    CascadeDisposition,
     DialoguePolicy,
     PolicyDecision,
     PolicyOverride,
@@ -75,6 +76,7 @@ def create_mock_envelope(
     frustration_level: int = 0,
     guard_intervention: str = None,
     last_intent: str = None,
+    current_intent: str = None,
     last_action: str = None,
     collected_data: Dict[str, Any] = None,
     spin_phase: str = None,
@@ -105,6 +107,7 @@ def create_mock_envelope(
     envelope.frustration_level = frustration_level
     envelope.guard_intervention = guard_intervention
     envelope.last_intent = last_intent
+    envelope.current_intent = current_intent
     envelope.last_action = last_action
     envelope.collected_data = collected_data or {}
     envelope.spin_phase = spin_phase
@@ -534,7 +537,7 @@ class TestShadowMode:
     """Tests for shadow mode functionality."""
 
     @patch('dialogue_policy.flags')
-    @patch('logger.logger')
+    @patch('src.logger.logger')
     def test_shadow_mode_returns_none(self, mock_logger, mock_flags, shadow_policy):
         """Test that shadow mode returns None but logs."""
         mock_flags.is_enabled.return_value = True
@@ -550,7 +553,7 @@ class TestShadowMode:
         assert result is None
         # Decision should be recorded in history
         assert len(shadow_policy._decision_history) == 1
-        # Logger should be called (from logger.logger.info)
+        # Logger should be called (from src.logger.logger.info)
         mock_logger.info.assert_called()
 
 
@@ -890,3 +893,236 @@ class TestEdgeCases:
         # Results should be independent
         assert result1.decision == PolicyDecision.REPAIR_CLARIFY
         assert result2.decision == PolicyDecision.BREAKTHROUGH_CTA
+
+
+# =============================================================================
+# BUG #5 FIX: CASCADE DISPOSITION & PRIORITY INVERSION TESTS
+# =============================================================================
+
+class TestCascadeDisposition:
+    """Tests for CascadeDisposition and should_stop_cascade."""
+
+    def test_cascade_disposition_default_is_stop(self):
+        """Default cascade disposition must be STOP (safe-by-default)."""
+        override = PolicyOverride()
+        assert override.cascade_disposition == CascadeDisposition.STOP
+
+    def test_should_stop_cascade_action_always_stops(self):
+        """Action override always stops cascade regardless of disposition."""
+        # Action + STOP
+        o1 = PolicyOverride(action="clarify", cascade_disposition=CascadeDisposition.STOP)
+        assert o1.should_stop_cascade is True
+
+        # Action + PASS — still stops because action is set
+        o2 = PolicyOverride(action="clarify", cascade_disposition=CascadeDisposition.PASS)
+        assert o2.should_stop_cascade is True
+
+    def test_should_stop_cascade_no_action_stop(self):
+        """No action + STOP → stops cascade."""
+        o = PolicyOverride(action=None, cascade_disposition=CascadeDisposition.STOP)
+        assert o.should_stop_cascade is True
+
+    def test_should_stop_cascade_no_action_pass(self):
+        """No action + PASS → does NOT stop cascade."""
+        o = PolicyOverride(action=None, cascade_disposition=CascadeDisposition.PASS)
+        assert o.should_stop_cascade is False
+
+    def test_to_dict_includes_cascade_disposition(self):
+        """to_dict must include cascade_disposition field."""
+        o = PolicyOverride(cascade_disposition=CascadeDisposition.PASS)
+        d = o.to_dict()
+        assert d["cascade_disposition"] == "pass"
+
+
+class TestPriceOverlayProtection:
+    """Bug #1: Price overlay must protect correct action from lower overlays."""
+
+    @patch('dialogue_policy.flags')
+    def test_price_overlay_protects_correct_action(self, mock_flags, policy):
+        """SM returns answer_with_pricing + is_price_question + repeated_question.
+        Price overlay should return PRICE_ALREADY_CORRECT and block repair."""
+        mock_flags.is_enabled.return_value = True
+
+        envelope = create_mock_envelope(
+            state="spin_situation",
+            last_intent="price_question",
+            current_intent="price_question",
+            repeated_question="price_question",  # Would trigger repair
+        )
+        sm_result = {"action": "answer_with_pricing"}
+
+        result = policy.maybe_override(sm_result, envelope)
+
+        # Price overlay fires first, recognizes action is correct, returns STOP
+        assert result is not None
+        assert result.decision == PolicyDecision.PRICE_ALREADY_CORRECT
+        assert result.action is None  # Does NOT change action
+        assert not result.has_override  # bot.py will NOT apply
+        assert result.should_stop_cascade  # Cascade stops — repair doesn't fire
+
+
+class TestBreakthroughBlocksConservative:
+    """Bug #3: Breakthrough CTA must block conservative overlay."""
+
+    @patch('dialogue_policy.flags')
+    def test_breakthrough_blocks_conservative(self, mock_flags, policy):
+        """Breakthrough + aggressive action + decreasing confidence.
+        Breakthrough STOP (default) must block conservative."""
+        mock_flags.is_enabled.return_value = True
+
+        envelope = create_mock_envelope(
+            state="spin_problem",
+            has_breakthrough=True,
+            turns_since_breakthrough=2,
+            confidence_trend="decreasing",
+            momentum_direction="negative",
+        )
+        sm_result = {"action": "transition_to_presentation"}
+
+        result = policy.maybe_override(sm_result, envelope)
+
+        # Breakthrough fires at p4 with STOP default, blocks conservative at p5
+        assert result is not None
+        assert result.decision == PolicyDecision.BREAKTHROUGH_CTA
+        # Conservative did NOT override
+        assert result.action is None  # Breakthrough doesn't change action
+
+
+class TestRepairYieldsToObjection:
+    """Bug #4: Repair must yield to objection handler in handle_objection state."""
+
+    @patch('dialogue_policy.flags')
+    def test_repair_yields_to_objection_in_handle_objection(self, mock_flags, policy):
+        """state=handle_objection + repeated_question + repeated_objection_types.
+        Repair should yield (None), objection should fire."""
+        mock_flags.is_enabled.return_value = True
+
+        envelope = create_mock_envelope(
+            state="handle_objection",
+            repeated_question="price_question",  # Would trigger repair
+            repeated_objection_types=["objection_price"],  # Triggers objection
+            total_objections=2,
+        )
+        sm_result = {"action": "handle_objection"}
+
+        result = policy.maybe_override(sm_result, envelope)
+
+        # Repair yields in handle_objection state (Bug #4 fix),
+        # objection overlay fires instead
+        assert result is not None
+        assert result.decision == PolicyDecision.OBJECTION_REFRAME
+        assert result.action == "reframe_value"
+
+
+class TestRepairSkipsProtectedAction:
+    """Bug #5: Repair must skip when current action already answers the question."""
+
+    @patch('dialogue_policy.flags')
+    def test_repair_skips_protected_action(self, mock_flags, policy):
+        """repeated_question + current_action='answer_with_facts' → REPAIR_SKIPPED."""
+        mock_flags.is_enabled.return_value = True
+
+        envelope = create_mock_envelope(
+            state="spin_situation",
+            repeated_question="price_question",
+        )
+        sm_result = {"action": "answer_with_facts"}
+
+        result = policy.maybe_override(sm_result, envelope)
+
+        assert result is not None
+        assert result.decision == PolicyDecision.REPAIR_SKIPPED
+        assert result.action is None  # Does NOT change action
+        assert result.should_stop_cascade  # Cascade stops
+
+
+class TestStallGuardCooldown:
+    """Bug #7: StallGuard cooldown suppresses repair on next turn."""
+
+    def test_stall_guard_cooldown_suppresses_repair(self):
+        """last_action='stall_guard_eject' + is_stuck=True → needs_repair=False."""
+        ctx = PolicyContext.create_test_context(
+            state="spin_situation",
+            is_stuck=True,
+            stall_guard_cooldown=True,
+        )
+        result = policy_registry.evaluate("needs_repair", ctx)
+        assert result is False
+
+    def test_no_cooldown_allows_repair(self):
+        """Without cooldown, is_stuck → needs_repair=True."""
+        ctx = PolicyContext.create_test_context(
+            state="spin_situation",
+            is_stuck=True,
+            stall_guard_cooldown=False,
+        )
+        result = policy_registry.evaluate("needs_repair", ctx)
+        assert result is True
+
+
+class TestNarrowedPriceCategory:
+    """Bug #6: Narrow category grouping for repeated question detection."""
+
+    def test_price_question_and_pricing_details_not_repeated(self):
+        """price_question + pricing_details should NOT be treated as repeated
+        with narrow groups (pricing_details is NOT in price_core)."""
+        from context_window import ContextWindow, TurnContext
+        cw = ContextWindow(max_size=5)
+        # Add a turn with price_question intent
+        cw.add_turn(TurnContext(user_message="how much?", intent="price_question"))
+
+        result = cw.detect_repeated_question(include_current_intent="pricing_details")
+
+        # pricing_details is NOT in price_core group, so exact match needed.
+        # price_question ≠ pricing_details → not repeated
+        assert result is None
+
+    def test_same_price_question_repeated(self):
+        """price_question asked twice → repeated."""
+        from context_window import ContextWindow, TurnContext
+        cw = ContextWindow(max_size=5)
+        cw.add_turn(TurnContext(user_message="how much?", intent="price_question"))
+
+        result = cw.detect_repeated_question(include_current_intent="price_question")
+
+        # Exact same intent → repeated
+        assert result == "price_question"
+
+
+class TestTemplateAndYAMLSSoT:
+    """Template and YAML SSOT verification tests."""
+
+    def test_answer_with_summary_template_exists(self):
+        """answer_with_summary must exist in PROMPT_TEMPLATES."""
+        from config import PROMPT_TEMPLATES
+        assert "answer_with_summary" in PROMPT_TEMPLATES
+        assert len(PROMPT_TEMPLATES["answer_with_summary"]) > 0
+
+    def test_repair_actions_yaml_ssot(self):
+        """DialoguePolicy.REPAIR_ACTIONS should have 5 entries from YAML."""
+        assert len(DialoguePolicy.REPAIR_ACTIONS) == 5
+        assert "stuck" in DialoguePolicy.REPAIR_ACTIONS
+        assert "oscillation" in DialoguePolicy.REPAIR_ACTIONS
+        assert "repeated_question" in DialoguePolicy.REPAIR_ACTIONS
+        assert "mirroring" in DialoguePolicy.REPAIR_ACTIONS
+        assert "stall" in DialoguePolicy.REPAIR_ACTIONS
+
+    def test_all_repair_actions_have_templates(self):
+        """Every action in REPAIR_ACTIONS must have a template
+        in either PROMPT_TEMPLATES (config.py) or prompts.yaml."""
+        from config import PROMPT_TEMPLATES
+        import yaml
+        from pathlib import Path
+        base = Path(__file__).parent / ".." / "src" / "yaml_config" / "templates" / "_base" / "prompts.yaml"
+        yaml_templates = set()
+        if base.exists():
+            with open(base) as f:
+                data = yaml.safe_load(f) or {}
+            yaml_templates = set((data.get("templates") or {}).keys())
+
+        all_templates = set(PROMPT_TEMPLATES.keys()) | yaml_templates
+
+        for trigger, action in DialoguePolicy.REPAIR_ACTIONS.items():
+            assert action in all_templates, (
+                f"REPAIR_ACTIONS['{trigger}'] → '{action}' has no template"
+            )

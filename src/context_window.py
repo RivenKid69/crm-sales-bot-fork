@@ -1001,10 +1001,10 @@ class ContextWindow:
                 break
         return count
 
-    # Only these categories group different intents as "same question":
-    # price_related: price_question + cost_inquiry = same repeated question (both about price)
-    # NOT technical_question — question_security ≠ question_support
-    REPEATABLE_QUESTION_CATEGORIES = {"price_related"}
+    # Narrow intent groups for repeated-question detection (from YAML SSOT).
+    # Only semantically equivalent intents are grouped.
+    from src.yaml_config.constants import REPEATABLE_INTENT_GROUPS as _REPEATABLE_INTENT_GROUPS
+    REPEATABLE_QUESTION_CATEGORIES = set(_REPEATABLE_INTENT_GROUPS.keys())
 
     def detect_repeated_question(
         self, include_current_intent: Optional[str] = None
@@ -1049,12 +1049,13 @@ class ContextWindow:
         return None
 
     def _get_repeatable_category(self, intent: str) -> str:
-        """Map intent to its category ONLY for categories where intents are semantically equivalent."""
-        from src.yaml_config.constants import INTENT_CATEGORIES
-        for category in self.REPEATABLE_QUESTION_CATEGORIES:
-            if intent in INTENT_CATEGORIES.get(category, []):
-                return category
-        return intent  # Not in a repeatable category → use exact intent
+        """Map intent to repeatable group ONLY for semantically equivalent intents.
+        Uses YAML-defined groups (SSOT) instead of hardcoded categories."""
+        from src.yaml_config.constants import REPEATABLE_INTENT_GROUPS
+        for group_name, intents in REPEATABLE_INTENT_GROUPS.items():
+            if intent in intents:
+                return group_name
+        return intent  # Not grouped → exact match
 
     # =========================================================================
     # Агрегированные метрики

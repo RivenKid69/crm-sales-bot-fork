@@ -388,6 +388,10 @@ OVERLAY_ALLOWED_STATES: Set[str] = set(_policy.get("overlay_allowed_states", [])
 PROTECTED_STATES: Set[str] = set(_policy.get("protected_states", []))
 AGGRESSIVE_ACTIONS: Set[str] = set(_policy.get("aggressive_actions", []))
 REPAIR_ACTIONS: Dict[str, str] = _policy.get("repair_actions", {})
+REPAIR_PROTECTED_ACTIONS: Set[str] = set(_policy.get("repair_protected_actions", []))
+REPEATABLE_INTENT_GROUPS: Dict[str, Set[str]] = {
+    k: set(v) for k, v in _policy.get("repeatable_intent_groups", {}).items()
+}
 OBJECTION_ESCALATION_ACTIONS: Dict[str, str] = _policy.get("objection_actions", {})
 
 
@@ -1000,6 +1004,8 @@ __all__ = [
     "PROTECTED_STATES",
     "AGGRESSIVE_ACTIONS",
     "REPAIR_ACTIONS",
+    "REPAIR_PROTECTED_ACTIONS",
+    "REPEATABLE_INTENT_GROUPS",
     "OBJECTION_ESCALATION_ACTIONS",
     # Lead scoring
     "LEAD_SCORING_POSITIVE_WEIGHTS",

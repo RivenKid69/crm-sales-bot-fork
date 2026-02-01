@@ -14,6 +14,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from dialogue_policy import (
+    CascadeDisposition,
     DialoguePolicy,
     PolicyDecision,
     PolicyOverride,
@@ -36,6 +37,9 @@ class TestPolicyDecision:
         assert PolicyDecision.OBJECTION_ESCALATE.value == "objection_escalate"
         assert PolicyDecision.BREAKTHROUGH_CTA.value == "breakthrough_cta"
         assert PolicyDecision.CONSERVATIVE.value == "conservative"
+        assert PolicyDecision.PRICE_QUESTION.value == "price_question"
+        assert PolicyDecision.PRICE_ALREADY_CORRECT.value == "price_already_correct"
+        assert PolicyDecision.REPAIR_SKIPPED.value == "repair_skipped"
 
 
 class TestPolicyOverride:
@@ -78,6 +82,7 @@ class TestPolicyOverride:
         assert d["decision"] == "objection_reframe"
         assert d["reason_codes"] == ["objection.repeat"]
         assert d["signals_used"] == {"total_objections": 2}
+        assert d["cascade_disposition"] == "stop"  # Default is STOP
 
 
 class TestDialoguePolicy:

@@ -88,6 +88,7 @@ templates:
 
   answer_with_facts:
     description: "Ответить по фактам"
+    addresses_question: true
     parameters:
       required: [system, facts, history, user_message]
       optional: [goal]
@@ -110,6 +111,7 @@ templates:
 
   answer_with_range_and_qualify:
     description: "Ответить диапазоном цен и уточнить"
+    addresses_question: true
     parameters:
       required: [system, facts, history, user_message]
     template: |
@@ -136,6 +138,7 @@ templates:
   # НОВОЕ: Ответить на вопрос о цене (ОБЯЗАТЕЛЬНО с ценой)
   answer_with_pricing:
     description: "Ответить на вопрос о цене - ОБЯЗАТЕЛЬНО с ценой"
+    addresses_question: true
     parameters:
       required: [system, facts, retrieved_facts, history, user_message, company_size]
       optional: [do_not_ask, collected_fields_list]
@@ -193,6 +196,7 @@ templates:
 
   answer_with_pricing_direct:
     description: "Ответить ТОЛЬКО ценой, без дополнительных вопросов (frustrated/rushed)"
+    addresses_question: true
     parameters:
       required: [system, facts, retrieved_facts, history, user_message, company_size]
       optional: [collected_fields_list]
@@ -231,6 +235,7 @@ templates:
 
   answer_pricing_details:
     description: "Ответить на вопрос о деталях тарифов"
+    addresses_question: true
     parameters:
       required: [system, retrieved_facts, history, user_message]
     template: |
@@ -299,6 +304,7 @@ templates:
 
   answer_question:
     description: "Ответить на вопрос клиента"
+    addresses_question: true
     parameters:
       required: [system, retrieved_facts, history, user_message]
     template: |
@@ -326,6 +332,7 @@ templates:
 
   answer_with_knowledge:
     description: "Ответить используя базу знаний"
+    addresses_question: true
     parameters:
       required: [system, retrieved_facts, company_size, pain_point, history, user_message]
     template: |
@@ -353,6 +360,7 @@ templates:
 
   answer_and_continue:
     description: "Ответить и продолжить разговор"
+    addresses_question: true
     parameters:
       required: [system, history, user_message, spin_phase, collected_data, facts]
       optional: [goal]
@@ -465,6 +473,7 @@ templates:
 
   handle_objection:
     description: "Обработка возражения о цене"
+    addresses_question: true
     parameters:
       required: [system, pain_point, company_size, facts, history, user_message]
     template: |
@@ -495,6 +504,7 @@ templates:
 
   handle_objection_no_time:
     description: "Обработка возражения 'нет времени'"
+    addresses_question: true
     parameters:
       required: [system, history, user_message, collected_data]
     template: |
@@ -520,6 +530,7 @@ templates:
 
   handle_objection_think:
     description: "Обработка возражения 'надо подумать'"
+    addresses_question: true
     parameters:
       required: [system, history, user_message, collected_data]
     template: |
@@ -733,6 +744,39 @@ templates:
       Пример: "Да, интеграция с 1С есть. А скажите, какой у вас основной запрос к системе автоматизации?"
 
       Ответ на русском (2 предложения):
+
+  answer_with_summary:
+    description: "Ответить на повторный вопрос с фактами и резюме"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+      optional: [retrieved_facts, goal]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент повторяет вопрос — значит предыдущий ответ был недостаточным.
+      Нужно ответить конкретнее, используя факты.
+
+      === ФАКТЫ ===
+      {retrieved_facts}
+      =============
+
+      Что мы уже обсудили: {collected_data}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Цель текущего этапа: {goal}
+
+      Твоя задача:
+      1. Кратко признай что уже обсуждали это (1 фраза, без извинений)
+      2. Дай КОНКРЕТНЫЙ ответ с цифрами/фактами из секции ФАКТЫ
+      3. Если фактов нет — честно скажи что уточнишь и вернёшься
+      4. Задай ОДИН вопрос по цели этапа
+
+      Ответ на русском (2-3 предложения, ОБЯЗАТЕЛЬНО включи конкретный ответ):
 
   close_answer_and_collect:
     description: "Ответить на вопрос и попросить контакт"

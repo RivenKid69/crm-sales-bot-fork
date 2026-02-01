@@ -29,7 +29,7 @@ DialoguePolicy добавляет гибкость в поведение бот�
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Callable, Dict, List, Optional, Any, Set
 from enum import Enum
 
 from src.context_envelope import ContextEnvelope, ReasonCode
@@ -39,6 +39,20 @@ from src.conditions.policy import (
     policy_registry,
 )
 from src.conditions.trace import EvaluationTrace, Resolution
+from src.yaml_config.constants import (
+    REPAIR_ACTIONS as _YAML_REPAIR_ACTIONS,
+    REPAIR_PROTECTED_ACTIONS,
+)
+
+
+class CascadeDisposition(Enum):
+    """Explicit cascade control for PolicyOverride.
+
+    STOP: "I made a decision. Do NOT consult lower-priority overlays." (DEFAULT)
+    PASS: "I have no opinion. Continue to lower-priority overlays."
+    """
+    STOP = "stop"   # Default — safe-by-default
+    PASS = "pass"   # Explicit opt-in to cascade continuation
 
 
 class PolicyDecision(Enum):
@@ -51,7 +65,9 @@ class PolicyDecision(Enum):
     OBJECTION_ESCALATE = "objection_escalate"  # Эскалация возражения
     BREAKTHROUGH_CTA = "breakthrough_cta"    # Мягкий CTA после прорыва
     CONSERVATIVE = "conservative"             # Консервативный режим
-    PRICE_QUESTION = "price_question"        # НОВОЕ: Override для вопроса о цене
+    PRICE_QUESTION = "price_question"        # Override для вопроса о цене
+    PRICE_ALREADY_CORRECT = "price_already_correct"  # Цена уже правильная
+    REPAIR_SKIPPED = "repair_skipped"        # Repair пропущен (action уже отвечает)
 
 
 @dataclass
@@ -75,11 +91,20 @@ class PolicyOverride:
     signals_used: Dict[str, Any] = field(default_factory=dict)
     expected_effect: str = ""
     trace: Optional[EvaluationTrace] = None
+    cascade_disposition: CascadeDisposition = CascadeDisposition.STOP
 
     @property
     def has_override(self) -> bool:
-        """Есть ли override."""
+        """Есть ли override (action change). Used by bot.py to apply action."""
         return self.action is not None
+
+    @property
+    def should_stop_cascade(self) -> bool:
+        """Whether this decision halts the priority cascade.
+        Action override always stops cascade regardless of disposition."""
+        if self.action is not None:
+            return True  # Action override always stops
+        return self.cascade_disposition == CascadeDisposition.STOP
 
     def to_dict(self) -> Dict[str, Any]:
         """Сериализовать в словарь."""
@@ -90,6 +115,7 @@ class PolicyOverride:
             "decision": self.decision.value,
             "signals_used": self.signals_used,
             "expected_effect": self.expected_effect,
+            "cascade_disposition": self.cascade_disposition.value,
         }
         if self.trace:
             result["trace"] = self.trace.to_dict()
@@ -117,14 +143,8 @@ class DialoguePolicy:
         override = policy.maybe_override(sm_result, envelope)
     """
 
-    # Mapping action для repair mode
-    REPAIR_ACTIONS = {
-        "stuck": "clarify_one_question",
-        "oscillation": "summarize_and_clarify",
-        "repeated_question": "answer_with_summary",
-        "mirroring": "summarize_and_clarify",  # Soft reset for mirroring
-        "stall": "nudge_progress",
-    }
+    # Mapping action для repair mode (from YAML SSOT)
+    REPAIR_ACTIONS = _YAML_REPAIR_ACTIONS
 
     # Mapping action для возражений
     OBJECTION_ACTIONS = {
@@ -132,6 +152,26 @@ class DialoguePolicy:
         "escalate": "handle_repeated_objection",
         "empathize": "empathize_and_redirect",
     }
+
+    @staticmethod
+    def _load_addressing_templates() -> Set[str]:
+        """Auto-derive repair-protected actions from templates tagged addresses_question: true."""
+        from pathlib import Path
+        try:
+            import yaml
+        except ImportError:
+            return set()
+        base = Path(__file__).parent / "yaml_config" / "templates" / "_base" / "prompts.yaml"
+        try:
+            with open(base) as f:
+                data = yaml.safe_load(f) or {}
+            templates = data.get("templates", {})
+            return {
+                name for name, config in templates.items()
+                if isinstance(config, dict) and config.get("addresses_question", False)
+            }
+        except Exception:
+            return set()
 
     def __init__(self, shadow_mode: bool = False, trace_enabled: bool = False):
         """
@@ -142,6 +182,24 @@ class DialoguePolicy:
         self.shadow_mode = shadow_mode
         self.trace_enabled = trace_enabled
         self._decision_history: List[PolicyOverride] = []
+        # Merge explicit YAML list + auto-derived from template tags
+        self._repair_protected: Set[str] = REPAIR_PROTECTED_ACTIONS | self._load_addressing_templates()
+        self._validate_action_templates()
+
+    def _validate_action_templates(self):
+        """Cross-check all policy action mappings against available templates."""
+        from src.config import PROMPT_TEMPLATES
+
+        all_actions = set(self.REPAIR_ACTIONS.values()) | set(self.OBJECTION_ACTIONS.values())
+        missing = [a for a in all_actions if a not in PROMPT_TEMPLATES]
+
+        if missing:
+            from src.logger import logger
+            logger.error(
+                "POLICY ACTION→TEMPLATE VALIDATION FAILED: actions without templates",
+                missing_templates=missing,
+                note="These actions will silently fall back to continue_current_goal",
+            )
 
     def maybe_override(
         self,
@@ -205,25 +263,17 @@ class DialoguePolicy:
                     trace.set_result("guard_stop", Resolution.NONE)
                 return override
 
-        # 1.5 НОВОЕ: Price question override (гарантирует ответ о цене)
-        if (not override or not override.has_override) and policy_registry.evaluate("is_price_question", ctx, trace):
-            override = self._apply_price_question_overlay(ctx, sm_result, trace)
-
-        # 2. Repair mode (stuck, oscillation, repeated question)
-        if (not override or not override.has_override) and policy_registry.evaluate("needs_repair", ctx, trace):
-            override = self._apply_repair_overlay(ctx, sm_result, trace)
-
-        # 3. Repeated objection escalation
-        if (not override or not override.has_override) and policy_registry.evaluate("has_repeated_objections", ctx, trace):
-            override = self._apply_objection_overlay(ctx, sm_result, trace)
-
-        # 4. Breakthrough window CTA
-        if (not override or not override.has_override) and policy_registry.evaluate("in_breakthrough_window", ctx, trace):
-            override = self._apply_breakthrough_overlay(ctx, sm_result, trace)
-
-        # 5. Conservative mode (низкая confidence + aggressive action)
-        if (not override or not override.has_override) and policy_registry.evaluate("should_apply_conservative_overlay", ctx, trace):
-            override = self._apply_conservative_overlay(ctx, sm_result, trace)
+        # 1.5 – 5: Standard cascade — one line per overlay
+        override = self._eval_cascade_overlay(override, "is_price_question",
+            self._apply_price_question_overlay, ctx, sm_result, trace)
+        override = self._eval_cascade_overlay(override, "needs_repair",
+            self._apply_repair_overlay, ctx, sm_result, trace)
+        override = self._eval_cascade_overlay(override, "has_repeated_objections",
+            self._apply_objection_overlay, ctx, sm_result, trace)
+        override = self._eval_cascade_overlay(override, "in_breakthrough_window",
+            self._apply_breakthrough_overlay, ctx, sm_result, trace)
+        override = self._eval_cascade_overlay(override, "should_apply_conservative_overlay",
+            self._apply_conservative_overlay, ctx, sm_result, trace)
 
         # Записываем в историю only for actual overrides (NO_OVERRIDE pollutes stats)
         if override and override.has_override:
@@ -244,6 +294,36 @@ class DialoguePolicy:
 
         return override
 
+    def _eval_cascade_overlay(
+        self,
+        override: Optional[PolicyOverride],
+        condition_name: str,
+        overlay_fn: Callable,
+        ctx: PolicyContext,
+        sm_result: Dict[str, Any],
+        trace: Optional[EvaluationTrace] = None,
+    ) -> Optional[PolicyOverride]:
+        """Evaluate one overlay in the priority cascade.
+
+        Centralizes cascade logic. Adding a new overlay = one line.
+        """
+        # Previous overlay stopped cascade — skip
+        if override and override.should_stop_cascade:
+            return override
+
+        # Condition not met — skip
+        if not policy_registry.evaluate(condition_name, ctx, trace):
+            return override
+
+        # Evaluate overlay
+        result = overlay_fn(ctx, sm_result, trace)
+
+        # None = overlay abstains — keep previous result
+        if result is None:
+            return override
+
+        return result
+
     def _handle_guard_intervention(
         self,
         ctx: PolicyContext,
@@ -251,7 +331,9 @@ class DialoguePolicy:
         trace: Optional[EvaluationTrace] = None
     ) -> Optional[PolicyOverride]:
         """Обработать интервенцию guard."""
-        # Guard уже обрабатывается в bot.py, здесь только логируем
+        # Guard уже обрабатывается в bot.py, здесь только логируем.
+        # Explicit PASS: pre-intervention doesn't block cascade.
+        # Actual guard_intervention uses early return at the call site.
         if trace:
             trace.set_result("guard_handled", Resolution.NONE)
 
@@ -261,6 +343,7 @@ class DialoguePolicy:
             decision=PolicyDecision.NO_OVERRIDE,
             signals_used={"guard_intervention": ctx.guard_intervention},
             expected_effect="Guard handles intervention",
+            cascade_disposition=CascadeDisposition.PASS,
         )
 
     def _apply_repair_overlay(
@@ -282,6 +365,17 @@ class DialoguePolicy:
         - summarize_and_clarify: суммировать + уточнить
         - answer_with_summary: ответить + краткое резюме
         """
+        # Bug #4: In handle_objection, yield to objection overlay (p3) when
+        # trigger is only repeated_question (not stuck/oscillation which are more severe)
+        if (ctx.state == "handle_objection"
+                and ctx.repeated_question is not None
+                and not ctx.is_stuck
+                and not ctx.has_oscillation):
+            if trace:
+                trace.set_result(None, Resolution.NONE,
+                    matched_condition="repair_yields_to_objection_handler")
+            return None  # Explicit abstain — let objection overlay handle it
+
         signals = {}
         action = None
         decision = PolicyDecision.NO_OVERRIDE
@@ -298,6 +392,19 @@ class DialoguePolicy:
             decision = PolicyDecision.REPAIR_SUMMARIZE
 
         elif policy_registry.evaluate("has_repeated_question", ctx, trace):
+            # Bug #5: If current action already answers the question, protect it
+            if ctx.current_action in self._repair_protected:
+                if trace:
+                    trace.set_result(None, Resolution.NONE,
+                        matched_condition="repair_skipped_action_already_correct")
+                return PolicyOverride(
+                    action=None,
+                    decision=PolicyDecision.REPAIR_SKIPPED,
+                    signals_used={"repeated_question": ctx.repeated_question,
+                                  "action_preserved": ctx.current_action},
+                    expected_effect="Action already addresses question, skip repair",
+                    # cascade_disposition=STOP (default) — protect from all lower overlays
+                )
             signals["repeated_question"] = ctx.repeated_question
             action = self.REPAIR_ACTIONS["repeated_question"]
             decision = PolicyDecision.REPAIR_CLARIFY
@@ -419,10 +526,22 @@ class DialoguePolicy:
         # Если action уже правильный — проверяем нет ли pending guard fallback
         if current_action in ("answer_with_pricing", "answer_with_facts", "answer_pricing_details"):
             if not ctx.guard_intervention:
-                # No guard fallback pending — action is correct as-is
+                # No guard fallback pending — action is correct.
+                # Return PRICE_ALREADY_CORRECT with STOP (default) to protect
+                # this correct action from lower-priority overlays (repair, etc.)
                 if trace:
-                    trace.set_result(None, Resolution.NONE, matched_condition="price_action_already_correct")
-                return None
+                    trace.set_result(
+                        current_action, Resolution.CONDITION_MATCHED,
+                        matched_condition="price_action_already_correct"
+                    )
+                return PolicyOverride(
+                    action=None,  # Don't change action — has_override=False, bot.py won't apply
+                    reason_codes=[ReasonCode.POLICY_PRICE_OVERRIDE.value],
+                    decision=PolicyDecision.PRICE_ALREADY_CORRECT,
+                    signals_used={"intent": ctx.current_intent, "action_approved": current_action},
+                    expected_effect="Protect correct price action from lower-priority overlays",
+                    # cascade_disposition=STOP (default) — blocks repair, objection, etc.
+                )
             # Guard fallback is pending — produce explicit override to clear it in bot.py
             # (preserve the current correct action)
             if trace:

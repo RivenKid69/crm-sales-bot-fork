@@ -90,7 +90,10 @@ def needs_repair(ctx: PolicyContext) -> bool:
     Returns True if any repair condition is triggered.
 
     Combines: is_stuck OR has_oscillation OR has_repeated_question.
+    Suppressed during stall_guard cooldown (turn after StallGuard action).
     """
+    if ctx.stall_guard_cooldown:
+        return False
     return ctx.is_stuck or ctx.has_oscillation or ctx.repeated_question is not None
 
 

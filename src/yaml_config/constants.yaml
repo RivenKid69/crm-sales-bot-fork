@@ -3153,6 +3153,32 @@ policy:
     stuck: clarify_one_question
     oscillation: summarize_and_clarify
     repeated_question: answer_with_summary
+    mirroring: summarize_and_clarify
+    stall: nudge_progress
+
+  # Actions protected from repair override (already answer the user's question)
+  repair_protected_actions:
+    - answer_with_pricing
+    - answer_with_pricing_direct
+    - answer_with_facts
+    - answer_pricing_details
+    - answer_with_knowledge
+    - answer_question
+    - answer_and_continue
+    - answer_with_summary
+    - handle_objection
+    - handle_repeated_objection
+    - reframe_value
+    - empathize_and_redirect
+    - offer_options
+
+  # Narrow intent groups for repeated-question detection.
+  # Only semantically equivalent intents should be grouped.
+  # discount_request, payment_terms, etc. are NOT the same as price_question.
+  repeatable_intent_groups:
+    price_core:
+      - price_question
+      - cost_inquiry
 
   # Mapping для возражений
   objection_actions:
