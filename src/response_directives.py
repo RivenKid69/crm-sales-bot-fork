@@ -467,16 +467,29 @@ class ResponseDirectivesBuilder:
             elif getattr(envelope, 'has_oscillation', False):
                 directives.repair_trigger = "oscillation"
             elif envelope.repeated_question:
-                directives.ask_clarifying = True
                 directives.repair_trigger = "repeated_question"
-                # Break price-repair loop: include price data if repeated question is about price
-                if envelope.repeated_question in ("price_question", "pricing_details"):
+                # Bug #10: Don't set ask_clarifying when repeated question is a
+                # known answerable type (price, technical, features, etc.)
+                # For these, the policy overlay + generator will select the correct
+                # answer template. Adding "ask clarifying" conflicts with answer-first.
+                from src.yaml_config.constants import INTENT_CATEGORIES
+                _answerable = (
+                    set(INTENT_CATEGORIES.get("price_related", []))
+                    | set(INTENT_CATEGORIES.get("question", []))
+                )
+                if envelope.repeated_question not in _answerable:
+                    directives.ask_clarifying = True
+                # Category-aware repair context
+                _price = set(INTENT_CATEGORIES.get("price_related", []))
+                if envelope.repeated_question in _price:
                     directives.repair_context = (
                         "Клиент ПОВТОРНО спрашивает о цене! "
                         "ОБЯЗАТЕЛЬНО назови цену: от 590 до 990₽/чел./мес."
                     )
                 else:
-                    directives.repair_context = f"Повторяющийся вопрос: {envelope.repeated_question}"
+                    directives.repair_context = (
+                        f"Повторяющийся вопрос: {envelope.repeated_question}"
+                    )
             # If repeated_question was already handled in stuck block, skip
             elif not envelope.is_stuck:
                 pass  # Default repair_trigger stays ""

@@ -139,7 +139,8 @@ class PriceQuestionSource(KnowledgeSource):
         """
         Quick check: is current intent price-related?
 
-        Checks primary intent AND secondary intents (from RefinementPipeline).
+        Checks primary intent, secondary intents (from RefinementPipeline),
+        AND repeated_question (historical — catches classifier misses).
 
         Args:
             blackboard: The dialogue blackboard
@@ -150,14 +151,24 @@ class PriceQuestionSource(KnowledgeSource):
         if not self._enabled:
             return False
 
-        # Primary intent check
+        # Check 1: Primary intent
         if blackboard.current_intent in self._price_intents:
             return True
 
-        # Secondary intents check (pattern from FactQuestionSource)
+        # Check 2: Secondary intents
         ctx = blackboard.get_context()
         secondary = self._get_secondary_intents(ctx)
-        return bool(secondary and (set(secondary) & self._price_intents))
+        if secondary and (set(secondary) & self._price_intents):
+            return True
+
+        # Bug #10 Check 3: repeated_question fallback (catches classifier misses)
+        envelope = getattr(ctx, 'context_envelope', None)
+        if envelope:
+            rq = getattr(envelope, 'repeated_question', None)
+            if rq and rq in self._price_intents:
+                return True
+
+        return False
 
     def _get_secondary_intents(self, ctx: Any) -> List[str]:
         """
@@ -193,10 +204,26 @@ class PriceQuestionSource(KnowledgeSource):
 
         ctx = blackboard.get_context()
         intent = ctx.current_intent
+        detection_source = "primary"
 
+        # Bug #10: Resolve intent from multiple sources (like FactQuestionSource pattern)
         if intent not in self._price_intents:
-            self._log_contribution(reason="Intent not price-related")
-            return
+            # Priority 2: Secondary intents
+            secondary = self._get_secondary_intents(ctx)
+            price_secondary = [i for i in (secondary or []) if i in self._price_intents]
+            if price_secondary:
+                intent = price_secondary[0]
+                detection_source = "secondary"
+            else:
+                # Priority 3: repeated_question fallback
+                envelope = getattr(ctx, 'context_envelope', None)
+                rq = getattr(envelope, 'repeated_question', None) if envelope else None
+                if rq and rq in self._price_intents:
+                    intent = rq
+                    detection_source = "repeated_question"
+                else:
+                    self._log_contribution(reason="Intent not price-related")
+                    return
 
         # FIX: First, check YAML rules in state config
         rules = ctx.state_config.get("rules", {})
@@ -230,6 +257,7 @@ class PriceQuestionSource(KnowledgeSource):
                 "original_intent": intent,
                 "has_pricing_data": has_pricing,
                 "rule_source": rule_source,
+                "detection_source": detection_source,
             }
         )
 

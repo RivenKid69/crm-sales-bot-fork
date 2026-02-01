@@ -272,7 +272,8 @@ class FactQuestionSource(KnowledgeSource):
 
         Returns True if:
         1. Primary intent is a fact-requiring question, OR
-        2. Secondary intents contain a fact-requiring question
+        2. Secondary intents contain a fact-requiring question, OR
+        3. repeated_question is a fact-requiring question (Bug #10 fallback)
 
         O(1) complexity for primary check, O(n) for secondary where n is small.
 
@@ -297,6 +298,13 @@ class FactQuestionSource(KnowledgeSource):
             for intent in secondary_intents:
                 if intent in self._fact_intents:
                     return True
+
+        # Bug #10 Check 3: repeated_question fallback (catches classifier misses)
+        envelope = getattr(ctx, 'context_envelope', None) if ctx else None
+        if envelope:
+            rq = getattr(envelope, 'repeated_question', None)
+            if rq and rq in self._fact_intents:
+                return True
 
         return False
 
@@ -361,6 +369,15 @@ class FactQuestionSource(KnowledgeSource):
                     detection_source = "secondary"
                     self._secondary_detections += 1
                     break
+
+        # Priority 3: repeated_question fallback (Bug #10)
+        if fact_intent is None:
+            envelope = getattr(ctx, 'context_envelope', None)
+            if envelope:
+                rq = getattr(envelope, 'repeated_question', None)
+                if rq and rq in self._fact_intents:
+                    fact_intent = rq
+                    detection_source = "repeated_question"
 
         if fact_intent is None:
             self._log_contribution(reason="No fact intent found")

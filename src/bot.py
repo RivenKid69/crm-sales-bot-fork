@@ -995,14 +995,8 @@ class SalesBot:
                 tone_info["frustration_level"] = new_level
                 context_envelope.frustration_level = new_level
 
-        # Build ResponseDirectives if flag enabled
+        # Bug #10: Defer ResponseDirectives until AFTER policy override
         response_directives = None
-        if flags.context_response_directives and context_envelope:
-            response_directives = build_response_directives(context_envelope)
-
-        # Propagate rephrase_mode to directives (if directives are active)
-        if rephrase_mode and response_directives:
-            response_directives.rephrase_mode = True
 
         # =========================================================================
         # Stage 14: Blackboard replaces state_machine.process()
@@ -1067,6 +1061,15 @@ class SalesBot:
         # Decision Tracing: Record policy override
         if trace_builder:
             trace_builder.record_policy_override(policy_override)
+
+        # Bug #10: Build ResponseDirectives AFTER policy override.
+        # Ensures directives reflect the final action, not pre-override state.
+        if flags.context_response_directives and context_envelope:
+            response_directives = build_response_directives(context_envelope)
+
+        # Propagate rephrase_mode to directives (moved from pre-override location)
+        if rephrase_mode and response_directives:
+            response_directives.rephrase_mode = True
 
         # === Defense-in-depth block (old path only) ===
         # In new pipeline path, conflict resolution handles all of this.

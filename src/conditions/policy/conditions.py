@@ -629,22 +629,49 @@ def should_avoid_least_effective(ctx: PolicyContext) -> bool:
 )
 def is_price_question(ctx: PolicyContext) -> bool:
     """
-    Returns True if client is asking about price.
+    Checks THREE sources (Bug #10):
+    1. Primary intent (current turn)
+    2. Secondary intents (compound message detection)
+    3. Repeated question (historical — catches classifier misses)
 
-    Uses INTENT_CATEGORIES from constants.yaml as Single Source of Truth
-    for ALL price-related intents. Also checks secondary intents.
-
-    Этот condition гарантирует что вопрос о цене получит
-    правильный action (answer_with_pricing) независимо от state machine.
+    Uses INTENT_CATEGORIES from constants.yaml as Single Source of Truth.
     """
     from src.yaml_config.constants import INTENT_CATEGORIES
     price_intents = set(INTENT_CATEGORIES.get("price_related", []))
-    # Check CURRENT turn's primary intent (not last_intent which is previous turn)
     if ctx.current_intent and ctx.current_intent in price_intents:
         return True
-    # Check secondary intents (already from current turn via classification_result)
     if ctx.secondary_intents:
-        return bool(price_intents & set(ctx.secondary_intents))
+        if price_intents & set(ctx.secondary_intents):
+            return True
+    # Bug #10: repeated_question fallback
+    if ctx.repeated_question and ctx.repeated_question in price_intents:
+        return True
+    return False
+
+
+# =============================================================================
+# ANSWERABLE QUESTION CONDITION (Bug #10) - Any known question type
+# =============================================================================
+
+@policy_condition(
+    "is_answerable_question",
+    description="Check if client asks any known answerable question",
+    category="question"
+)
+def is_answerable_question(ctx: PolicyContext) -> bool:
+    """Universal version of is_price_question for ALL question types."""
+    from src.yaml_config.constants import INTENT_CATEGORIES
+    answerable = (
+        set(INTENT_CATEGORIES.get("question", []))
+        | set(INTENT_CATEGORIES.get("price_related", []))
+    )
+    if ctx.current_intent and ctx.current_intent in answerable:
+        return True
+    if ctx.secondary_intents:
+        if answerable & set(ctx.secondary_intents):
+            return True
+    if ctx.repeated_question and ctx.repeated_question in answerable:
+        return True
     return False
 
 
@@ -736,4 +763,6 @@ __all__ = [
     "should_avoid_least_effective",
     # Price question condition (НОВОЕ)
     "is_price_question",
+    # Answerable question condition (Bug #10)
+    "is_answerable_question",
 ]

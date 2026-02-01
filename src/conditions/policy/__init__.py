@@ -92,6 +92,8 @@ from src.conditions.policy.conditions import (
     should_avoid_least_effective,
     # Price question condition (НОВОЕ)
     is_price_question,
+    # Answerable question condition (Bug #10)
+    is_answerable_question,
 )
 from src.conditions.mirroring import is_mirroring_bot
 
@@ -159,6 +161,8 @@ __all__ = [
     "should_avoid_least_effective",
     # Price question condition (НОВОЕ)
     "is_price_question",
+    # Answerable question condition (Bug #10)
+    "is_answerable_question",
     # Mirroring condition
     "is_mirroring_bot",
 ]

@@ -405,9 +405,25 @@ class DialoguePolicy:
                     expected_effect="Action already addresses question, skip repair",
                     # cascade_disposition=STOP (default) — protect from all lower overlays
                 )
-            signals["repeated_question"] = ctx.repeated_question
-            action = self.REPAIR_ACTIONS["repeated_question"]
-            decision = PolicyDecision.REPAIR_CLARIFY
+            # Bug #10: if repeated question is answerable, skip repair
+            elif policy_registry.evaluate("is_answerable_question", ctx, trace):
+                if trace:
+                    trace.set_result(None, Resolution.NONE,
+                        matched_condition="repair_yields_to_question_answer")
+                return PolicyOverride(
+                    action=None,
+                    decision=PolicyDecision.REPAIR_SKIPPED,
+                    signals_used={
+                        "repeated_question": ctx.repeated_question,
+                        "reason": "answerable_question_type",
+                    },
+                    expected_effect="Answerable question — skip repair, let generator handle",
+                    cascade_disposition=CascadeDisposition.PASS,
+                )
+            else:
+                signals["repeated_question"] = ctx.repeated_question
+                action = self.REPAIR_ACTIONS["repeated_question"]
+                decision = PolicyDecision.REPAIR_CLARIFY
 
         # Mirroring Loop Detection
         elif policy_registry.evaluate("is_mirroring_bot", ctx, trace):
@@ -575,7 +591,7 @@ class DialoguePolicy:
                 matched_condition="is_price_question"
             )
 
-        from logger import logger
+        from src.logger import logger
         logger.info(
             "Policy: Price question override applied",
             original_action=current_action,

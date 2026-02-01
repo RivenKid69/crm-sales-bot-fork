@@ -694,6 +694,33 @@ class ResponseGenerator:
         else:
             template_key = action
 
+        # Bug #10: Universal answer-template forcing for repeated questions.
+        # When user repeatedly asked a known question but classifier missed it
+        # on this turn, force an answering template instead of SPIN/generic.
+        # Analogous to existing price template forcing at L664.
+        _ctx_envelope = context.get("context_envelope")
+        if _ctx_envelope and getattr(_ctx_envelope, 'repeated_question', None):
+            from src.yaml_config.constants import INTENT_CATEGORIES, REPAIR_PROTECTED_ACTIONS
+            _rq = _ctx_envelope.repeated_question
+            _answerable = (
+                set(INTENT_CATEGORIES.get("question", []))
+                | set(INTENT_CATEGORIES.get("price_related", []))
+            )
+            # Only force if: (1) repeated question is answerable, (2) current
+            # template is NOT already an answering template
+            if _rq in _answerable and template_key not in REPAIR_PROTECTED_ACTIONS:
+                _price = set(INTENT_CATEGORIES.get("price_related", []))
+                if _rq in _price:
+                    template_key = self._get_price_template_key(_rq, action)
+                else:
+                    template_key = "answer_with_knowledge"
+                logger.debug(
+                    "Repeated question forcing answer template",
+                    repeated_question=_rq,
+                    original_template=action,
+                    forced_template=template_key,
+                )
+
         # NOTE: "spin_phase" is a legacy name. This contains the current phase
         # for ANY active flow (e.g., "situation" for SPIN, "budget" for BANT,
         # "metrics" for MEDDIC). The dedup engine handles all phase names.
