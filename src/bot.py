@@ -1301,9 +1301,12 @@ class SalesBot:
                 skip_reason="phase_exhausted_options",
             )
         elif action == "guard_rephrase":
-            # TIER_1: generator produces rephrased question
+            # TIER_1: generator produces rephrased question (state-aware resolution)
             response_start = time.time()
-            response = self.generator.generate("continue_current_goal", context)
+            rephrase_template = f"{current_state}_continue_goal"
+            if not self.generator._get_template(rephrase_template):
+                rephrase_template = "continue_current_goal"
+            response = self.generator.generate(rephrase_template, context)
             response_elapsed = (time.time() - response_start) * 1000
             cta_result = CTAResult(
                 original_response=response, cta=None, final_response=response,

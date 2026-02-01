@@ -247,12 +247,13 @@ def _resolve_composed_categories(
             continue
 
         includes = spec.get("includes", [])
-        if not includes:
-            logger.warning(f"Composed category '{composed_name}' has no includes")
+        direct_intents = spec.get("direct_intents", [])
+        if not includes and not direct_intents:
+            logger.warning(f"Composed category '{composed_name}' has no includes or direct_intents")
             continue
 
         # Merge all included categories
-        merged_intents: List[str] = []
+        merged_intents: List[str] = list(direct_intents)
         for included_category in includes:
             if included_category not in result:
                 # Это может быть ссылка на ещё не созданную composed категорию
@@ -853,6 +854,19 @@ def get_secondary_intent_config() -> Dict[str, Any]:
         "min_message_length": 10,
         "patterns": {},
     })
+
+
+def get_intent_pattern_guard_config() -> Dict[str, Any]:
+    """
+    Get intent_pattern_guard config from constants.yaml.
+
+    Used by IntentPatternGuardSource for configurable pattern detection.
+
+    Returns:
+        Dict with pattern guard configuration including:
+        - patterns: Dict of pattern_name -> pattern config
+    """
+    return _intents.get("intent_pattern_guard", {"patterns": {}})
 
 
 def get_fact_question_source_config() -> Dict[str, Any]:

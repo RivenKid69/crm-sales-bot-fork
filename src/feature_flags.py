@@ -174,6 +174,10 @@ class FeatureFlags:
 
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
+
+        # === Bug #31-33 fixes ===
+        "intent_pattern_guard": False,             # Configurable intent pattern detection (Change 7)
+        "comparison_refinement": False,            # Comparison refinement layer (Change 8)
     }
 
     # Группы флагов для удобного управления
@@ -671,6 +675,20 @@ class FeatureFlags:
     def simulation_diagnostic_mode(self) -> bool:
         """Включён ли диагностический режим с повышенными лимитами"""
         return self.is_enabled("simulation_diagnostic_mode")
+
+    # =========================================================================
+    # Bug #31-33 fixes flags
+    # =========================================================================
+
+    @property
+    def intent_pattern_guard(self) -> bool:
+        """Включён ли configurable intent pattern guard"""
+        return self.is_enabled("intent_pattern_guard")
+
+    @property
+    def comparison_refinement(self) -> bool:
+        """Включён ли comparison refinement layer"""
+        return self.is_enabled("comparison_refinement")
 
 
 # Singleton экземпляр

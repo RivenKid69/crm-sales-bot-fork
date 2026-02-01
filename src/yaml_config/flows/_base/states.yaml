@@ -782,9 +782,9 @@ states:
     rules:
       price_question: answer_with_facts
       pricing_details: answer_with_facts
-      comparison: answer_with_facts
-      question_features: answer_and_continue
-      question_integrations: answer_and_continue
+      comparison: close_answer_and_collect
+      question_features: close_answer_and_collect
+      question_integrations: close_answer_and_collect
       small_talk: small_talk_and_continue
       gratitude: acknowledge_and_continue
       unclear: clarify_and_continue

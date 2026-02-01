@@ -285,6 +285,7 @@ def register_builtin_sources() -> None:
     from .sources.stall_guard import StallGuardSource
     from .sources.phase_exhausted import PhaseExhaustedSource
     from .sources.conversation_guard_ks import ConversationGuardSource
+    from .sources.intent_pattern_guard import IntentPatternGuardSource
 
     # Register in recommended order (lower priority_order = earlier execution)
 
@@ -346,6 +347,18 @@ def register_builtin_sources() -> None:
         priority_order=20,
         config_key="data_collector",
         description="Tracks data completeness and proposes transitions"
+    )
+
+    # IntentPatternGuardSource: Configurable pattern detection for any intent category
+    # After DataCollectorSource (20), before ObjectionGuardSource (30)
+    # Feature-flagged: off by default (intent_pattern_guard flag)
+    SourceRegistry.register(
+        IntentPatternGuardSource,
+        name="IntentPatternGuardSource",
+        priority_order=25,
+        config_key="intent_pattern_guard",
+        enabled_by_default=True,
+        description="Configurable intent pattern detection (comparison fatigue, etc.)"
     )
 
     SourceRegistry.register(

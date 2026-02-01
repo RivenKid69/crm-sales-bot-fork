@@ -861,6 +861,16 @@ intents:
         - greeting_additional_redirects   # request_references, contact_provided (2 intents)
       description: "SSOT: Интенты перенаправляемые в entry_state из greeting-состояний"
 
+    # comparison_like = comparison-related intents for pattern detection
+    comparison_like:
+      includes: []
+      direct_intents:
+        - comparison
+        - question_product_comparison
+        - question_tariff_comparison
+        - question_snr_comparison
+      description: "Comparison-related intents for pattern detection"
+
     # objection_return_triggers = все интенты вызывающие возврат из handle_objection
     # ВАЖНО: Единственный источник истины для ObjectionReturnSource.DEFAULT_RETURN_INTENTS
     objection_return_triggers:
@@ -889,6 +899,25 @@ intents:
     # Технические проблемы → поддержка
     problem_technical: offer_support
     request_technical_support: connect_to_support
+
+  # =================================================================
+  # INTENT PATTERN GUARD CONFIG
+  # Configurable pattern detection for any intent category.
+  # =================================================================
+  intent_pattern_guard:
+    patterns:
+      comparison_like:
+        intents:
+          - comparison
+          - question_product_comparison
+          - question_tariff_comparison
+          - question_snr_comparison
+        persona_limits:
+          default: { streak: 3, total: 5 }
+          competitor_user: { streak: 4, total: 7 }
+          tire_kicker: { streak: 5, total: 9 }
+        close_action: close_answer_and_collect
+        default_action: nudge_progress
 
 # =============================================================================
 # INTENT TAXONOMY - Иерархическая система с intelligent fallback
@@ -3563,6 +3592,13 @@ fallback:
         - "Систематизация процессов"
         - "Лучший сервис клиентам"
         - "Всё вместе"
+    close:
+      question: "Как удобнее продолжить?"
+      options:
+        - "Оставить номер для связи"
+        - "Отправьте информацию на email"
+        - "Запишите на демо"
+        - "Пока не интересует"
 
   # Дефолтные значения
   # FIX: Добавлена вариативность в default_rephrase (было одна фраза, повторялась 123 раза)
