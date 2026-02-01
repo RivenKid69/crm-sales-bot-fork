@@ -121,6 +121,12 @@ def create_parser():
         help="Random seed для воспроизводимости выбора персон"
     )
 
+    parser.add_argument(
+        "--no-kb-questions",
+        action="store_true",
+        help="Отключить KB-вопросы клиента (для сравнения)"
+    )
+
     return parser
 
 
@@ -256,8 +262,18 @@ def run_e2e_mode(args):
         print("Запустите: ./scripts/start_ollama.sh")
         sys.exit(1)
 
+    # Load KB question pool
+    kb_pool = None
+    if not args.no_kb_questions:
+        from src.simulator.kb_questions import load_kb_question_pool
+        kb_pool = load_kb_question_pool()
+        if kb_pool:
+            print(f"KB question pool: {kb_pool.total_questions} вопросов загружено")
+        print()
+
     # Создаём runner
-    runner = SimulationRunner(bot_llm=llm, client_llm=llm, verbose=args.verbose)
+    runner = SimulationRunner(bot_llm=llm, client_llm=llm, verbose=args.verbose,
+                              kb_question_pool=kb_pool)
 
     # Запускаем e2e тесты
     print(f"Запуск {len(scenarios)} e2e тестов...")
@@ -323,6 +339,22 @@ def run_e2e_mode(args):
             print(f"      {status} {persona:18s} → {r.outcome:12s} (score: {r.score:.2f})")
 
     print()
+
+    # KB Coverage Report
+    if kb_pool:
+        all_kb_topics = set()
+        total_kb_used = 0
+        for r in results:
+            total_kb_used += r.kb_questions_used
+            for topic in r.kb_topics_covered:
+                all_kb_topics.add(topic)
+
+        print("KB QUESTION COVERAGE")
+        print("-" * 60)
+        print(f"  Total KB questions asked: {total_kb_used}")
+        print(f"  Unique topics covered:    {len(all_kb_topics)}")
+        print(f"  Pool size:                {kb_pool.total_questions}")
+        print()
 
     # Сохранение отчёта
     if args.output:
@@ -451,12 +483,22 @@ def main():
         print("Запустите: ./scripts/start_ollama.sh")
         sys.exit(1)
 
+    # Load KB question pool
+    kb_pool = None
+    if not args.no_kb_questions:
+        from src.simulator.kb_questions import load_kb_question_pool
+        kb_pool = load_kb_question_pool()
+        if kb_pool:
+            print(f"KB question pool: {kb_pool.total_questions} вопросов загружено")
+        print()
+
     # Создаём runner
     runner = SimulationRunner(
         bot_llm=llm,
         client_llm=llm,
         verbose=args.verbose,
-        flow_name=args.flow
+        flow_name=args.flow,
+        kb_question_pool=kb_pool,
     )
 
     # Запускаем симуляции

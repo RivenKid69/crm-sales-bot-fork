@@ -75,16 +75,23 @@ class ClientAgent:
 
 Ответь как клиент (1-2 коротких предложения, максимум 30 слов):"""
 
-    def __init__(self, llm: Any, persona: Persona):
+    def __init__(self, llm: Any, persona: Persona, kb_pool=None, persona_key: Optional[str] = None):
         """
         Инициализация агента клиента.
 
         Args:
             llm: LLM для генерации ответов
             persona: Персона клиента
+            kb_pool: KBQuestionPool instance (optional)
+            persona_key: Persona key string for KB pool lookups (e.g. "technical")
         """
         self.llm = llm
         self.persona = persona
+        self.kb_pool = kb_pool
+        self._persona_key = persona_key or "happy_path"
+        self._asked_topics: set = set()
+        self._kb_questions_used: int = 0
+        self._kb_starter_topic: Optional[str] = None
         self.history: List[Dict[str, str]] = []
         self.turn = 0
         self._decided_to_leave = False
@@ -101,11 +108,25 @@ class ClientAgent:
         """
         Генерирует первое сообщение клиента.
 
+        May use a KB-grounded question as starter with capped probability
+        to preserve persona intent diversity.
+
         Returns:
             Стартовое сообщение
         """
+        # Cap at 0.4 for starters — original starters are designed for correct intent classification
+        starter_prob = min(self.persona.kb_question_probability, 0.4)
+
+        if self.kb_pool and random.random() < starter_prob:
+            kb_q = self.kb_pool.get_starter(self._persona_key)
+            if kb_q:
+                self._asked_topics.add(kb_q.source_topic)
+                self._kb_questions_used += 1
+                self._kb_starter_topic = kb_q.source_topic
+                return self._apply_persona_noise(kb_q.text)
+
+        # Fallback to original behavior
         starter = random.choice(self.persona.conversation_starters)
-        # Добавляем шум к стартеру
         starter = self._apply_persona_noise(starter)
         return starter
 
@@ -458,41 +479,65 @@ class ClientAgent:
         if trace:
             trace.llm_latency_ms = llm_elapsed
 
-        # Проверяем на повтор и форсируем разнообразие
-        original_response = response
-        response = self._ensure_variety(response)
-        if trace and response != original_response:
-            trace.variety_check = {"similar_to_last": True, "forced_alternative": True}
-        else:
+        # === KB Follow-up Injection (before noise/objection) ===
+        # Only inject when bot is NOT asking a question (to preserve phase progression)
+        kb_injected = False
+        bot_is_asking = bot_message.rstrip().endswith("?")
+
+        if (
+            self.kb_pool is not None
+            and not bot_is_asking
+            and self._kb_questions_used < 4
+            and random.random() < self.persona.kb_question_probability * 0.4
+        ):
+            kb_q = self.kb_pool.get_followup(self._persona_key, self._asked_topics)
+            if kb_q:
+                self._asked_topics.add(kb_q.source_topic)
+                self._kb_questions_used += 1
+                ack = random.choice(["ок", "понял", "ага", "хорошо", "ну ладно"])
+                response = f"{ack}. {kb_q.text}"
+                kb_injected = True
+                if trace:
+                    trace.kb_question_used = kb_q.text
+                    trace.kb_question_source = kb_q.source_topic
+
+        # Skip noise/objection if KB question replaced the response
+        if not kb_injected:
+            # Проверяем на повтор и форсируем разнообразие
+            original_response = response
+            response = self._ensure_variety(response)
+            if trace and response != original_response:
+                trace.variety_check = {"similar_to_last": True, "forced_alternative": True}
+            else:
+                if trace:
+                    trace.variety_check = {"similar_to_last": False, "forced_alternative": False}
+
+            # Применяем шум согласно персоне
+            before_noise = response
+            response = self._apply_persona_noise(response)
+            if trace and response != before_noise:
+                # Track what noise was applied
+                trace.noise_applied = {"modified": True}
+
+            # Проверяем, нужно ли добавить возражение
+            objection_roll = random.random()
+            objection_threshold = self.persona.objection_probability * 0.3
+            should_add_objection = self._objection_count < 3 and objection_roll < objection_threshold
+
             if trace:
-                trace.variety_check = {"similar_to_last": False, "forced_alternative": False}
+                trace.objection_decision = {
+                    "roll": round(objection_roll, 3),
+                    "threshold": round(objection_threshold, 3),
+                    "injected": should_add_objection,
+                }
 
-        # Применяем шум согласно персоне
-        before_noise = response
-        response = self._apply_persona_noise(response)
-        if trace and response != before_noise:
-            # Track what noise was applied
-            trace.noise_applied = {"modified": True}
-
-        # Проверяем, нужно ли добавить возражение
-        objection_roll = random.random()
-        objection_threshold = self.persona.objection_probability * 0.3
-        should_add_objection = self._objection_count < 3 and objection_roll < objection_threshold
-
-        if trace:
-            trace.objection_decision = {
-                "roll": round(objection_roll, 3),
-                "threshold": round(objection_threshold, 3),
-                "injected": should_add_objection,
-            }
-
-        if should_add_objection:
-            before_objection = response
-            response = self._inject_objection(response)
-            if trace and response != before_objection:
-                # Extract the injected objection
-                injected_part = response.replace(before_objection, "").strip()
-                trace.objection_injected = injected_part
+            if should_add_objection:
+                before_objection = response
+                response = self._inject_objection(response)
+                if trace and response != before_objection:
+                    # Extract the injected objection
+                    injected_part = response.replace(before_objection, "").strip()
+                    trace.objection_injected = injected_part
 
         if trace:
             trace.cleaned_response = response
@@ -821,6 +866,9 @@ class ClientAgent:
             "turns": self.turn,
             "objections": self._objection_count,
             "left_early": self._decided_to_leave,
+            "kb_questions_used": self._kb_questions_used,
+            "kb_topics_covered": list(self._asked_topics),
+            "kb_starter_topic": self._kb_starter_topic,
         }
 
     def get_last_trace(self) -> Optional[ClientAgentTrace]:

@@ -53,6 +53,8 @@ class E2EResult:
     decision_traces: List[Dict[str, Any]] = field(default_factory=list)
     client_traces: List[Dict[str, Any]] = field(default_factory=list)
     rule_traces: List[Dict[str, Any]] = field(default_factory=list)
+    kb_questions_used: int = 0
+    kb_topics_covered: List[str] = field(default_factory=list)
 
 
 class E2EEvaluator:
@@ -171,6 +173,8 @@ class E2EEvaluator:
             decision_traces=result.decision_traces,
             client_traces=result.client_traces,
             rule_traces=result.rule_traces,
+            kb_questions_used=getattr(result, 'kb_questions_used', 0),
+            kb_topics_covered=getattr(result, 'kb_topics_covered', []),
         )
 
     def _evaluate_outcome(

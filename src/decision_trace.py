@@ -713,6 +713,9 @@ class ClientAgentTrace:
     llm_latency_ms: float = 0.0
     # Disambiguation handling (button selection)
     disambiguation_decision: Dict[str, Any] = field(default_factory=dict)  # {detected, options, chosen_index, reason}
+    # KB question injection
+    kb_question_used: Optional[str] = None
+    kb_question_source: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -731,6 +734,10 @@ class ClientAgentTrace:
         # Include disambiguation if it was triggered
         if self.disambiguation_decision:
             result["disambiguation_decision"] = self.disambiguation_decision
+        # Include KB question if used
+        if self.kb_question_used:
+            result["kb_question_used"] = self.kb_question_used
+            result["kb_question_source"] = self.kb_question_source
         return result
 
     def to_compact_dict(self) -> Dict[str, Any]:

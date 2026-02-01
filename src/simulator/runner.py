@@ -50,6 +50,10 @@ class SimulationResult:
     final_lead_score: float = 0.0
     collected_data: Dict[str, Any] = field(default_factory=dict)
 
+    # KB questions
+    kb_questions_used: int = 0
+    kb_topics_covered: List[str] = field(default_factory=list)
+
     # Ошибки
     errors: List[str] = field(default_factory=list)
 
@@ -69,7 +73,8 @@ class SimulationRunner:
         bot_llm,
         client_llm=None,
         verbose: bool = False,
-        flow_name: Optional[str] = None
+        flow_name: Optional[str] = None,
+        kb_question_pool=None,
     ):
         """
         Инициализация runner'а.
@@ -79,11 +84,13 @@ class SimulationRunner:
             client_llm: LLM для клиента (если None, используется bot_llm)
             verbose: Выводить подробную информацию
             flow_name: Имя flow для использования (None = default из settings)
+            kb_question_pool: KBQuestionPool instance for KB-grounded questions
         """
         self.bot_llm = bot_llm
         self.client_llm = client_llm or bot_llm
         self.verbose = verbose
         self.flow_name = flow_name
+        self.kb_question_pool = kb_question_pool
 
     def run_batch(
         self,
@@ -198,7 +205,11 @@ class SimulationRunner:
 
             # Создаём агентов
             persona = PERSONAS[persona_name]
-            client = ClientAgent(self.client_llm, persona)
+            client = ClientAgent(
+                self.client_llm, persona,
+                kb_pool=self.kb_question_pool,
+                persona_key=persona_name,
+            )
             # Phase 8: Enable tracing for conditional rules debugging
             # Pass flow_name to SalesBot (SalesBot already supports this!)
             # FIX: Pass persona_name to SalesBot for ObjectionGuard persona-specific limits
@@ -386,6 +397,8 @@ class SimulationRunner:
                 fallback_count=fallback_count,
                 final_lead_score=lead_score,
                 collected_data=collected_data,
+                kb_questions_used=client_summary.get("kb_questions_used", 0),
+                kb_topics_covered=client_summary.get("kb_topics_covered", []),
                 errors=errors,
                 rule_traces=rule_traces,  # Phase 8: Include rule traces
                 decision_traces=decision_traces,  # Decision Tracing
@@ -496,6 +509,9 @@ def create_runner(verbose: bool = False) -> SimulationRunner:
         Настроенный SimulationRunner
     """
     from src.llm import OllamaLLM
+    from src.simulator.kb_questions import load_kb_question_pool
 
     llm = OllamaLLM()
-    return SimulationRunner(bot_llm=llm, client_llm=llm, verbose=verbose)
+    pool = load_kb_question_pool()  # returns None if file missing
+    return SimulationRunner(bot_llm=llm, client_llm=llm, verbose=verbose,
+                            kb_question_pool=pool)
