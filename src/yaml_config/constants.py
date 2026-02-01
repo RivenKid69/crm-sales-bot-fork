@@ -142,7 +142,8 @@ INFORMATIVE_INTENTS: List[str] = _categories.get("informative", [])
 # НОВЫЕ КАТЕГОРИИ (150+ интентов) - загружаются из YAML
 # =============================================================================
 PRICE_RELATED_INTENTS: List[str] = _categories.get("price_related", [])
-OBJECTION_RETURN_QUESTIONS: List[str] = _categories.get("objection_return_questions", [])
+# REMOVED: objection_return_questions base category (BUG #4 fix)
+# All question intents are now covered by composed all_questions category
 QUESTION_REQUIRES_FACTS_INTENTS: List[str] = _categories.get("question_requires_facts", [])
 
 # Вопросы об оборудовании (12 интентов)
@@ -229,15 +230,19 @@ def _resolve_composed_categories(
     """
     Resolve composed categories by merging base categories.
 
+    Supports three composition mechanisms:
+    1. auto_include.intent_prefix — auto-includes any base category containing
+       at least one intent matching the prefix (scans base_categories only)
+    2. includes — explicit list of categories to merge (can reference
+       already-resolved composed categories)
+    3. direct_intents — explicit list of individual intents
+
     Args:
         base_categories: Dictionary of base category name -> list of intents
         compositions: Dictionary of composed category specs from YAML
 
     Returns:
         Dictionary with all categories (base + composed)
-
-    Raises:
-        ValueError: If a referenced category doesn't exist
     """
     result = dict(base_categories)
 
@@ -248,16 +253,37 @@ def _resolve_composed_categories(
 
         includes = spec.get("includes", [])
         direct_intents = spec.get("direct_intents", [])
-        if not includes and not direct_intents:
-            logger.warning(f"Composed category '{composed_name}' has no includes or direct_intents")
+        auto_include = spec.get("auto_include", {})
+
+        if not includes and not direct_intents and not auto_include:
+            logger.warning(f"Composed category '{composed_name}' has no includes, direct_intents, or auto_include")
             continue
 
-        # Merge all included categories
         merged_intents: List[str] = list(direct_intents)
+
+        # Auto-include base categories matching intent prefix pattern
+        if auto_include:
+            prefix = auto_include.get("intent_prefix", "")
+            exclude_categories = set(auto_include.get("exclude_categories", []))
+            if prefix:
+                auto_included = []
+                for cat_name, cat_intents in base_categories.items():
+                    if cat_name == composed_name:
+                        continue  # skip self-reference
+                    if cat_name in exclude_categories:
+                        continue  # explicitly excluded
+                    if any(intent.startswith(prefix) for intent in cat_intents):
+                        merged_intents.extend(cat_intents)
+                        auto_included.append(cat_name)
+                if auto_included:
+                    logger.debug(
+                        f"Auto-included {len(auto_included)} categories into "
+                        f"'{composed_name}' by prefix '{prefix}': {auto_included}"
+                    )
+
+        # Explicit includes (runs on result — can reference already-resolved composed categories)
         for included_category in includes:
             if included_category not in result:
-                # Это может быть ссылка на ещё не созданную composed категорию
-                # или ошибка - категория не существует
                 logger.warning(
                     f"Composed category '{composed_name}' references unknown category "
                     f"'{included_category}'. Available: {list(result.keys())}"
@@ -315,6 +341,24 @@ if logger.isEnabledFor(logging.DEBUG):
         f"{_total_count} total categories"
     )
 
+# Step 6: Validate no ghost question intents in categories
+def _validate_no_ghost_intents(categories: Dict[str, List[str]]) -> None:
+    """Warn about question_* intents not in classifier taxonomy (INTENT_ROOTS)."""
+    try:
+        from src.config import INTENT_ROOTS
+        known = set(INTENT_ROOTS.keys())
+        for cat_name, intents in categories.items():
+            for intent in intents:
+                if intent.startswith("question_") and intent not in known:
+                    logger.warning(
+                        f"Ghost intent '{intent}' in category '{cat_name}': "
+                        f"not in INTENT_ROOTS (classifier cannot generate it)"
+                    )
+    except ImportError:
+        pass  # Graceful degradation if config not available
+
+_validate_no_ghost_intents(INTENT_CATEGORIES)
+
 # Legacy exports (for backwards compatibility)
 # These now reference the unified INTENT_CATEGORIES
 EXIT_INTENTS: List[str] = INTENT_CATEGORIES.get("exit", [])
@@ -322,7 +366,7 @@ NEGATIVE_INTENTS: List[str] = INTENT_CATEGORIES.get("negative", [])
 
 # SSOT: Composed category for objection return triggers
 # Loaded from constants.yaml → composed_categories → objection_return_triggers
-# Contains: positive + price_related + objection_return_questions
+# Contains: positive + price_related + all_questions
 OBJECTION_RETURN_TRIGGERS: List[str] = INTENT_CATEGORIES.get("objection_return_triggers", [])
 
 # SSOT: Composed category for greeting state safety overrides
@@ -921,7 +965,7 @@ __all__ = [
     "EXIT_INTENTS",
     "INFORMATIVE_INTENTS",
     "PRICE_RELATED_INTENTS",
-    "OBJECTION_RETURN_QUESTIONS",
+    # REMOVED: "OBJECTION_RETURN_QUESTIONS" (BUG #4 fix — replaced by all_questions)
     "OBJECTION_RETURN_TRIGGERS",
     "GREETING_REDIRECT_INTENTS",
     "QUESTION_REQUIRES_FACTS_INTENTS",

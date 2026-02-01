@@ -45,20 +45,18 @@ class TestYamlIntentCategories:
         assert 'pricing_details' in price_related
 
     def test_question_requires_facts_category_exists(self):
-        """Категория question_requires_facts должна существовать."""
-        import yaml
+        """Категория question_requires_facts должна существовать (as composed category)."""
+        from src.yaml_config.constants import INTENT_CATEGORIES
 
-        constants_path = os.path.join(src_path, 'yaml_config', 'constants.yaml')
-        with open(constants_path, 'r', encoding='utf-8') as f:
-            constants = yaml.safe_load(f)
+        # BUG #4 FIX: question_requires_facts is now a composed category (includes all_questions)
+        assert 'question_requires_facts' in INTENT_CATEGORIES
 
-        categories = constants['intents']['categories']
-        assert 'question_requires_facts' in categories
-
-        requires_facts = categories['question_requires_facts']
+        requires_facts = INTENT_CATEGORIES['question_requires_facts']
         assert 'price_question' in requires_facts
         assert 'pricing_details' in requires_facts
         assert 'question_features' in requires_facts
+        # Now includes ALL question intents, not just 4
+        assert 'question_security' in requires_facts
 
     def test_intent_action_overrides_exists(self):
         """Секция intent_action_overrides должна существовать."""

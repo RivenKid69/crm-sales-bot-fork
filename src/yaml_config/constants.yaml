@@ -449,12 +449,8 @@ intents:
       - question_automation
       - question_scalability
 
-    # НОВОЕ: Вопросы требующие ответа фактами (не deflect)
-    question_requires_facts:
-      - price_question
-      - pricing_details
-      - question_features
-      - question_integrations
+    # MOVED: question_requires_facts → composed_categories (BUG #4 fix)
+    # Now includes all_questions instead of hardcoded 4 intents
 
     spin_progress:
       - situation_provided
@@ -771,16 +767,9 @@ intents:
       - case_study_request
       - roi_question
 
-    # =================================================================
-    # ВОПРОСЫ ВЫЗЫВАЮЩИЕ ВОЗВРАТ ИЗ handle_objection
-    # Вопросы которые НЕ входят в positive или price_related,
-    # но сигнализируют о вовлечённости клиента и должны вызвать
-    # возврат к сохранённому состоянию из handle_objection.
-    # ВАЖНО: Синхронизирован с ObjectionReturnSource
-    # =================================================================
-    objection_return_questions:
-      - question_implementation
-      - question_demo
+    # REMOVED: objection_return_questions (BUG #4 fix)
+    # All question intents now covered by composed all_questions category
+    # via auto_include.intent_prefix: "question_"
 
     # =================================================================
     # ДОПОЛНИТЕЛЬНЫЕ ИНТЕНТЫ ДЛЯ БЕЗОПАСНОСТИ GREETING (2 интента)
@@ -836,21 +825,19 @@ intents:
       description: "Интенты блокирующие прогресс диалога"
 
     # all_questions = все типы вопросов (для fallback/routing)
+    # BUG #4 FIX: all_questions uses auto-discovery for question_* categories
+    # auto_include scans base_categories for any with question_* intents (7+ categories auto-discovered)
+    # explicit includes cover edge cases where intents don't have question_* prefix
     all_questions:
+      auto_include:
+        intent_prefix: "question_"    # Auto-include ALL base categories with question_* intents
+        exclude_categories:           # Categories with question_* intents that are NOT question categories
+          - positive                  # Has question_features, question_integrations but is a positive category
+          - informative               # Has question_answered but is an informative category
       includes:
-        - question
-        - price_related
-        - equipment_questions
-        - tariff_questions
-        - tis_questions
-        - tax_questions
-        - accounting_questions
-        - fiscal_questions
-        - analytics_questions
-        - stability_questions
-        - region_questions
-        - operations_questions
-      description: "Все категории вопросов для универсальной обработки"
+        - price_related               # Has price_question (not question_* prefix)
+        - company_info                # Has company_info_question, experience_question (not question_* prefix)
+      description: "Все вопросные категории (auto-discovered + 2 explicit edge cases)"
 
     # greeting_redirect_intents = все интенты для безопасного перенаправления в greeting
     # SSOT: Единственный источник истины для greeting safety overrides.
@@ -873,12 +860,19 @@ intents:
 
     # objection_return_triggers = все интенты вызывающие возврат из handle_objection
     # ВАЖНО: Единственный источник истины для ObjectionReturnSource.DEFAULT_RETURN_INTENTS
+    # BUG #4 FIX: ALL questions = engagement signal (was: only 2 ghost intents)
     objection_return_triggers:
       includes:
-        - positive
-        - price_related
-        - objection_return_questions
+        - positive         # 23 positive signals
+        - price_related    # 7 pricing (overlap with all_questions — auto-deduped)
+        - all_questions    # FIX RC-1: ALL questions = engagement signal
       description: "SSOT: Интенты вызывающие возврат из handle_objection в сохранённое состояние"
+
+    # BUG #4 FIX: question_requires_facts as composed category (was: 4 hardcoded intents)
+    question_requires_facts:
+      includes:
+        - all_questions
+      description: "Вопросы требующие ответа фактами (не deflect)"
 
   # =================================================================
   # МАППИНГ intent → preferred action (override default behavior)

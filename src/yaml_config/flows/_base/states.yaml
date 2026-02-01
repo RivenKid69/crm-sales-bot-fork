@@ -448,7 +448,7 @@ states:
     extends: _base_phase
     max_turns_in_state: 4
     max_turns_fallback: "{{entry_state}}"
-    max_simulation_consecutive: 4  # Runner-only: terminate simulation after N consecutive visits
+    # max_simulation_consecutive: auto-derived from max_turns_in_state + 1 (BUG #4 fix RC-3)
     goal: "Отработать возражение"
     required_data: []
     parameters:
@@ -604,6 +604,9 @@ states:
           then: soft_close
         - handle_objection
 
+      # Defense-in-depth: these transitions are overridden by ObjectionReturnSource (HIGH priority)
+      # which returns to _state_before_objection for ALL question intents.
+      # Kept as fallback if ObjectionReturnSource is disabled.
       question_features: presentation
       question_integrations: presentation
       comparison: presentation

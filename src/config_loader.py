@@ -422,6 +422,10 @@ class FlowConfig:
         Reads max_simulation_visits and max_simulation_consecutive from state configs.
         These are runner-only parameters that control simulation stagnation detection.
 
+        BUG #4 FIX (RC-3): Auto-derives max_simulation_consecutive from max_turns_in_state + 1
+        when not explicitly set. This ensures simulator limit > TTL so bot's escape mechanisms
+        (StallGuard) fire first. Guard: skip states with max_turns_in_state=0 (terminal states).
+
         Returns:
             Dict mapping state_name -> {"max_visits": N, "max_consecutive": N}
         """
@@ -432,6 +436,11 @@ class FlowConfig:
                 state_limits["max_visits"] = state_config["max_simulation_visits"]
             if "max_simulation_consecutive" in state_config:
                 state_limits["max_consecutive"] = state_config["max_simulation_consecutive"]
+            # FIX RC-3: Auto-derive from TTL if not explicitly set
+            # Simulator limit = TTL + 1, so bot's escape mechanisms (StallGuard) fire first
+            # Guard: skip states with max_turns_in_state=0 (disabled/terminal, e.g. close, soft_close)
+            elif state_config.get("max_turns_in_state", 0) > 0:
+                state_limits["max_consecutive"] = state_config["max_turns_in_state"] + 1
             if state_limits:
                 limits[state_name] = state_limits
         return limits

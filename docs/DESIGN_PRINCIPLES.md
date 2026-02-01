@@ -352,7 +352,7 @@ composed_categories:
     union:
       - positive             # greeting, agreement, thanks, ...
       - price_related        # ВСЕ price-интенты автоматически
-      - objection_return_questions  # question_competitors, question_integration, ...
+      - all_questions        # ALL question categories (auto-discovered + explicit)
 ```
 
 ```python
@@ -613,7 +613,7 @@ composed_categories:
     union:
       - positive              # Все интенты категории positive
       - price_related         # Все интенты категории price_related
-      - objection_return_questions
+      - all_questions         # ALL question categories (auto-discovered)
 ```
 
 **Fallback chain (5 уровней):**

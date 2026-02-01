@@ -81,7 +81,7 @@ class ObjectionReturnSource(KnowledgeSource):
         the orchestrator saves that state in _state_before_objection.
 
         Return intents are loaded from constants.yaml SSOT via composed category
-        objection_return_triggers = positive + price_related + objection_return_questions.
+        objection_return_triggers = positive + price_related + all_questions.
         When the client expresses any of these intents,
         this source proposes returning to that saved state with HIGH priority.
 
@@ -145,7 +145,7 @@ class ObjectionReturnSource(KnowledgeSource):
     """
 
     # Return intents loaded from constants.yaml (SSOT)
-    # Composed category: positive + price_related + objection_return_questions
+    # Composed category: positive + price_related + all_questions
     # Defined in constants.yaml → composed_categories → objection_return_triggers
     DEFAULT_RETURN_INTENTS: Set[str] = set(OBJECTION_RETURN_TRIGGERS)
 

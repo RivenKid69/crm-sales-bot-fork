@@ -253,8 +253,10 @@ class TestObjectionReturnSourceInit:
         assert "price_question" in source.return_intents   # from price_related
         assert "pricing_details" in source.return_intents  # from price_related
         assert "question_features" in source.return_intents # from positive
-        assert "question_implementation" in source.return_intents  # from objection_return_questions
-        assert "question_demo" in source.return_intents    # from objection_return_questions
+        # BUG #4 FIX: all_questions now included — verify domain question intents
+        assert "question_security" in source.return_intents          # from question (via all_questions)
+        assert "question_equipment_general" in source.return_intents # from equipment_questions (via all_questions)
+        assert "question_loyalty_program" in source.return_intents   # from promo_loyalty (via all_questions auto-discovered)
         # Verify typos are gone
         assert "question_pricing" not in source.return_intents
         assert "question_integration" not in source.return_intents
