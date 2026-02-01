@@ -98,6 +98,9 @@ class GuardState:
     last_intent: str = ""
     # Pre-intervention flag (WARNING level 5-6 with certain conditions)
     pre_intervention_triggered: bool = False
+    # TIER_2 self-loop escalation (moved from FallbackHandler)
+    consecutive_tier_2_count: int = 0
+    consecutive_tier_2_state: Optional[str] = None
 
 
 class ConversationGuard:
@@ -294,6 +297,35 @@ class ConversationGuard:
                 return True, self.TIER_1
 
         return True, None
+
+    def _apply_tier_2_escalation(
+        self, state: str, tier: str
+    ) -> str:
+        """
+        Track consecutive TIER_2 in same state and escalate to TIER_3 if threshold reached.
+
+        Moved from FallbackHandler to keep detection logic co-located with detection state.
+        """
+        if tier == self.TIER_2:
+            if self._state.consecutive_tier_2_state == state:
+                self._state.consecutive_tier_2_count += 1
+            else:
+                self._state.consecutive_tier_2_count = 1
+                self._state.consecutive_tier_2_state = state
+
+            if self._state.consecutive_tier_2_count >= self.config.max_consecutive_tier_2:
+                self._state.consecutive_tier_2_count = 0
+                logger.info(
+                    "TIER_2 self-loop escalation to TIER_3",
+                    state=state,
+                    threshold=self.config.max_consecutive_tier_2,
+                )
+                return self.TIER_3
+        else:
+            self._state.consecutive_tier_2_count = 0
+            self._state.consecutive_tier_2_state = None
+
+        return tier
 
     def record_progress(self) -> None:
         """

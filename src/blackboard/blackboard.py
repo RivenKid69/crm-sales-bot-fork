@@ -117,7 +117,9 @@ class DialogueBlackboard:
         self,
         intent: str,
         extracted_data: Dict[str, Any],
-        context_envelope: Optional[ContextEnvelope] = None
+        context_envelope: Optional[ContextEnvelope] = None,
+        user_message: str = "",
+        frustration_level: int = 0,
     ) -> None:
         """
         Begin a new dialogue turn.
@@ -189,6 +191,9 @@ class DialogueBlackboard:
             # Multi-tenancy support
             tenant_id=self._tenant_config.tenant_id,
             tenant_config=self._tenant_config,
+            # Guard-class sources (ConversationGuardSource)
+            user_message=user_message,
+            frustration_level=frustration_level,
         )
 
         # Clear proposal layer

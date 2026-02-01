@@ -162,8 +162,12 @@ class DialoguePolicy:
         if not flags.is_enabled("context_policy_overlays"):
             return None
 
-        # Bug #19: StallGuard actions must not be overridden by policy
-        if sm_result.get("action") in ("stall_guard_eject", "stall_guard_nudge"):
+        # Guard and StallGuard actions must not be overridden by policy
+        if sm_result.get("action") in (
+            "stall_guard_eject", "stall_guard_nudge",
+            "guard_rephrase", "guard_offer_options",
+            "guard_skip_phase", "guard_soft_close",
+        ):
             return None
 
         # Создаём PolicyContext из envelope

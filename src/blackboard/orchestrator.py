@@ -87,6 +87,8 @@ class DialogueOrchestrator:
         strict_validation: bool = False,
         persona_limits: Optional[Dict[str, Dict[str, int]]] = None,
         tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
+        guard: Optional[Any] = None,
+        fallback_handler: Optional[Any] = None,
     ):
         """
         Initialize the orchestrator.
@@ -103,6 +105,8 @@ class DialogueOrchestrator:
         self._state_machine = state_machine
         self._flow_config = flow_config
         self._tenant_config = tenant_config or DEFAULT_TENANT
+        self._guard = guard
+        self._fallback_handler = fallback_handler
 
         # Initialize blackboard with tenant config
         self._blackboard = DialogueBlackboard(
@@ -133,6 +137,10 @@ class DialogueOrchestrator:
         # Configuration can enable/disable individual sources
         source_configs = {
             "ObjectionGuardSource": {"persona_limits": persona_limits},
+            "ConversationGuardSource": {
+                "guard": self._guard,
+                "fallback_handler": self._fallback_handler,
+            },
         }
 
         self._sources: List[KnowledgeSource] = SourceRegistry.create_sources(
@@ -219,6 +227,8 @@ class DialogueOrchestrator:
         intent: str,
         extracted_data: Dict[str, Any],
         context_envelope: Optional[Any] = None,
+        user_message: str = "",
+        frustration_level: int = 0,
     ) -> ResolvedDecision:
         """
         Process a dialogue turn through the Blackboard system.
@@ -243,6 +253,8 @@ class DialogueOrchestrator:
                 intent=intent,
                 extracted_data=extracted_data,
                 context_envelope=context_envelope,
+                user_message=user_message,
+                frustration_level=frustration_level,
             )
 
             self._event_bus.emit(TurnStartedEvent(
@@ -847,6 +859,8 @@ def create_orchestrator(
     enable_debug_logging: bool = False,
     custom_sources: Optional[List[Type[KnowledgeSource]]] = None,
     tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
+    guard: Optional[Any] = None,
+    fallback_handler: Optional[Any] = None,
 ) -> DialogueOrchestrator:
     """
     Factory function to create a fully configured DialogueOrchestrator.
@@ -939,6 +953,8 @@ def create_orchestrator(
         enable_validation=True,
         persona_limits=persona_limits,
         tenant_config=tenant_config,
+        guard=guard,
+        fallback_handler=fallback_handler,
     )
 
     return orchestrator

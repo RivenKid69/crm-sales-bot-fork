@@ -277,6 +277,10 @@ class ContextSnapshot:
     # Multi-tenancy support (DESIGN_PRINCIPLES.md Section 6)
     tenant_id: str = "default"
     tenant_config: Optional['TenantConfig'] = None
+    # Guard-class sources need raw message (loop detection) and frustration
+    # (independent of context_envelope which may be None if feature flags off)
+    user_message: str = ""
+    frustration_level: int = 0
 
     # Computed properties for convenience
     @property

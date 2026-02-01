@@ -23,6 +23,7 @@ from src.blackboard.sources.objection_return import ObjectionReturnSource
 from src.blackboard.sources.intent_processor import IntentProcessorSource
 from src.blackboard.sources.transition_resolver import TransitionResolverSource
 from src.blackboard.sources.escalation import EscalationSource
+from src.blackboard.sources.conversation_guard_ks import ConversationGuardSource
 
 __all__ = [
     "PriceQuestionSource",
@@ -32,4 +33,5 @@ __all__ = [
     "IntentProcessorSource",
     "TransitionResolverSource",
     "EscalationSource",
+    "ConversationGuardSource",
 ]

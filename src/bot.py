@@ -166,19 +166,6 @@ class SalesBot:
         if persona:
             self.state_machine.collected_data["persona"] = persona
 
-        # =========================================================================
-        # Stage 14: Blackboard DialogueOrchestrator
-        # =========================================================================
-        # Blackboard Orchestrator replaces state_machine.process() for dialogue
-        # management. StateMachine is still used for state/collected_data storage.
-        self._orchestrator = create_orchestrator(
-            state_machine=self.state_machine,
-            flow_config=self._flow,
-            persona_limits=self._load_persona_limits(),
-            enable_metrics=flags.metrics_tracking,
-            enable_debug_logging=enable_tracing,
-        )
-
         # Context from previous turn
         self.last_action: Optional[str] = None
         self.last_intent: Optional[str] = None
@@ -196,6 +183,22 @@ class SalesBot:
         self.fallback = FallbackHandler(
             flow=self._flow, config=self._config, guard_config=self.guard.config,
             product_overviews=self.generator._product_overview,
+        )
+
+        # =========================================================================
+        # Stage 14: Blackboard DialogueOrchestrator
+        # =========================================================================
+        # Blackboard Orchestrator replaces state_machine.process() for dialogue
+        # management. StateMachine is still used for state/collected_data storage.
+        # NOTE: Must be after self.guard and self.fallback initialization.
+        self._orchestrator = create_orchestrator(
+            state_machine=self.state_machine,
+            flow_config=self._flow,
+            persona_limits=self._load_persona_limits(),
+            enable_metrics=flags.metrics_tracking,
+            enable_debug_logging=enable_tracing,
+            guard=self.guard,
+            fallback_handler=self.fallback,
         )
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
@@ -784,119 +787,143 @@ class SalesBot:
                 success=True,
             )
 
-        # Phase 1: Check guard for intervention (now uses current intent)
-        guard_start = time.time()
-        guard_result = self._check_guard(
-            state=current_state,
-            message=user_message,
-            collected_data=collected_data,
-            frustration_level=frustration_level,
-            last_intent=intent  # FIX 1: Use current intent, not self.last_intent
-        )
-        intervention = guard_result.intervention
-        guard_elapsed = (time.time() - guard_start) * 1000
+        # Phase 1: Check guard for intervention
+        # guard_options: used for guard_offer_options action in new pipeline path
+        guard_options = None
 
-        # Decision Tracing: Record guard check
-        if trace_builder:
-            trace_builder.record_guard(
-                intervention=intervention,
-                can_continue=guard_result.can_continue,
-                frustration=frustration_level,
-                elapsed_ms=guard_elapsed
-            )
+        if flags.conversation_guard_in_pipeline:
+            # New path: Guard runs inside Blackboard pipeline as ConversationGuardSource
+            # No external guard check, no fallback_response, no defense-in-depth block
+            intervention = None
+            fallback_response = None
+            fallback_used = False
+            fallback_tier = None
+            fallback_action = None
+            fallback_message = None
+            rephrase_mode = False
 
-        fallback_used = False
-        fallback_tier = None
-        fallback_response = None
-        # FIX Defect 3: Track fallback action/message for decision trace
-        fallback_action = None
-        fallback_message = None
-        rephrase_mode = False
-
-        if intervention:
-            fallback_used = True
-            fallback_tier = intervention
-
-            # Apply fallback
-            fb_result = self._apply_fallback(
-                intervention=intervention,
+            # Decision Tracing: Record guard check as skipped (handled by pipeline)
+            if trace_builder:
+                trace_builder.record_guard(
+                    intervention=None,
+                    can_continue=True,
+                    frustration=frustration_level,
+                    elapsed_ms=0.0,
+                )
+        else:
+            # Old path: external guard check + fallback + defense-in-depth
+            guard_start = time.time()
+            guard_result = self._check_guard(
                 state=current_state,
-                context={
-                    "collected_data": {**collected_data, **extracted},  # FIX 1: Merge extracted for skip validation
-                    "last_intent": intent,  # FIX 1: Use current intent
-                    "last_action": self.last_action,
-                    "frustration_level": frustration_level,
-                }
+                message=user_message,
+                collected_data=collected_data,
+                frustration_level=frustration_level,
+                last_intent=intent  # FIX 1: Use current intent, not self.last_intent
             )
+            intervention = guard_result.intervention
+            guard_elapsed = (time.time() - guard_start) * 1000
 
-            if fb_result.get("response"):
-                if fb_result.get("action") == "continue":
-                    # Tier 1 rephrase: don't use template as full response.
-                    # Let generator produce actual rephrased question.
-                    fallback_response = None
-                    rephrase_mode = True
-                    # Still track for metrics
-                    fallback_action = "continue"
-                    fallback_message = fb_result.get("response")
-                else:
-                    fallback_response = fb_result
-                    # FIX Defect 3: Capture fallback details for decision trace
-                    fallback_action = fb_result.get("action")
-                    fallback_message = fb_result.get("response")
+            # Decision Tracing: Record guard check
+            if trace_builder:
+                trace_builder.record_guard(
+                    intervention=intervention,
+                    can_continue=guard_result.can_continue,
+                    frustration=frustration_level,
+                    elapsed_ms=guard_elapsed
+                )
 
-                # If fallback action is "close" or "skip", update state
-                if fb_result.get("action") == "close":
-                    self._record_turn_metrics(
-                        state=current_state,
-                        intent="fallback_close",
-                        tone=tone_info.get("tone"),
-                        fallback_used=True,
-                        fallback_tier=intervention
-                    )
+            fallback_used = False
+            fallback_tier = None
+            fallback_response = None
+            # FIX Defect 3: Track fallback action/message for decision trace
+            fallback_action = None
+            fallback_message = None
+            rephrase_mode = False
 
-                    self.history.append({
-                        "user": user_message,
-                        "bot": fb_result["response"]
-                    })
+            if intervention:
+                fallback_used = True
+                fallback_tier = intervention
 
-                    self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
-
-                    return {
-                        "response": fb_result["response"],
-                        "intent": "fallback_close",
-                        "action": "soft_close",
-                        "state": "soft_close",
-                        "is_final": True,
-                        # FIX: Include visited_states for phase coverage tracking
-                        "visited_states": [initial_state, "soft_close"],
-                        "initial_state": initial_state,
-                        "fallback_used": True,
-                        "fallback_tier": intervention,
-                        "options": fb_result.get("options"),
+                # Apply fallback
+                fb_result = self._apply_fallback(
+                    intervention=intervention,
+                    state=current_state,
+                    context={
+                        "collected_data": {**collected_data, **extracted},  # FIX 1: Merge extracted for skip validation
+                        "last_intent": intent,  # FIX 1: Use current intent
+                        "last_action": self.last_action,
+                        "frustration_level": frustration_level,
                     }
+                )
 
-                # FIX: Handle "skip" action - apply state transition to break loops
-                # FIX (Distributed State Mutation): Use transition_to() for atomic update
-                elif fb_result.get("action") == "skip" and fb_result.get("next_state"):
-                    skip_next_state = fb_result["next_state"]
-                    self.state_machine.transition_to(
-                        next_state=skip_next_state,
-                        action="skip",
-                        source="fallback_skip",
-                    )
-                    logger.info(
-                        "Fallback skip applied - resetting fallback for normal generation",
-                        from_state=current_state,
-                        to_state=skip_next_state,
-                        original_tier=intervention
-                    )
-                    # Update current_state for rest of processing
-                    current_state = skip_next_state
-                    # FIX: Record the skipped-to state for phase coverage tracking
-                    if skip_next_state not in visited_states:
-                        visited_states.append(skip_next_state)
-                    # FIX BUG-001: Reset fallback_response to generate normal response
-                    fallback_response = None
+                if fb_result.get("response"):
+                    if fb_result.get("action") == "continue":
+                        # Tier 1 rephrase: don't use template as full response.
+                        # Let generator produce actual rephrased question.
+                        fallback_response = None
+                        rephrase_mode = True
+                        # Still track for metrics
+                        fallback_action = "continue"
+                        fallback_message = fb_result.get("response")
+                    else:
+                        fallback_response = fb_result
+                        # FIX Defect 3: Capture fallback details for decision trace
+                        fallback_action = fb_result.get("action")
+                        fallback_message = fb_result.get("response")
+
+                    # If fallback action is "close" or "skip", update state
+                    if fb_result.get("action") == "close":
+                        self._record_turn_metrics(
+                            state=current_state,
+                            intent="fallback_close",
+                            tone=tone_info.get("tone"),
+                            fallback_used=True,
+                            fallback_tier=intervention
+                        )
+
+                        self.history.append({
+                            "user": user_message,
+                            "bot": fb_result["response"]
+                        })
+
+                        self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
+
+                        return {
+                            "response": fb_result["response"],
+                            "intent": "fallback_close",
+                            "action": "soft_close",
+                            "state": "soft_close",
+                            "is_final": True,
+                            # FIX: Include visited_states for phase coverage tracking
+                            "visited_states": [initial_state, "soft_close"],
+                            "initial_state": initial_state,
+                            "fallback_used": True,
+                            "fallback_tier": intervention,
+                            "options": fb_result.get("options"),
+                        }
+
+                    # FIX: Handle "skip" action - apply state transition to break loops
+                    # FIX (Distributed State Mutation): Use transition_to() for atomic update
+                    elif fb_result.get("action") == "skip" and fb_result.get("next_state"):
+                        skip_next_state = fb_result["next_state"]
+                        self.state_machine.transition_to(
+                            next_state=skip_next_state,
+                            action="skip",
+                            source="fallback_skip",
+                        )
+                        logger.info(
+                            "Fallback skip applied - resetting fallback for normal generation",
+                            from_state=current_state,
+                            to_state=skip_next_state,
+                            original_tier=intervention
+                        )
+                        # Update current_state for rest of processing
+                        current_state = skip_next_state
+                        # FIX: Record the skipped-to state for phase coverage tracking
+                        if skip_next_state not in visited_states:
+                            visited_states.append(skip_next_state)
+                        # FIX BUG-001: Reset fallback_response to generate normal response
+                        fallback_response = None
 
         # Track competitor mention for dynamic CTA
         if intent == "objection_competitor":
@@ -991,6 +1018,8 @@ class SalesBot:
             intent=intent,
             extracted_data=extracted,
             context_envelope=context_envelope,
+            user_message=user_message,
+            frustration_level=frustration_level,
         )
         # Convert to sm_result dict for compatibility with DialoguePolicy/Generator
         sm_result = decision.to_sm_result()
@@ -1039,48 +1068,44 @@ class SalesBot:
         if trace_builder:
             trace_builder.record_policy_override(policy_override)
 
-        # === Universal: Policy override takes precedence over guard fallback ===
-        # Guard detects problems; policy decides the response action.
-        # If policy determined a specific action (price answer, objection reframe, etc.),
-        # that action takes precedence over the guard's generic fallback template.
-        if (fallback_response
-                and policy_override
-                and policy_override.has_override):
-            logger.info(
-                "Policy override clears guard fallback",
-                original_fallback_tier=fallback_tier,
-                override_action=policy_override.action,
-                override_decision=policy_override.decision.value,
-            )
-            fallback_response = None
-            fallback_used = False
+        # === Defense-in-depth block (old path only) ===
+        # In new pipeline path, conflict resolution handles all of this.
+        if not flags.conversation_guard_in_pipeline:
+            # === Universal: Policy override takes precedence over guard fallback ===
+            if (fallback_response
+                    and policy_override
+                    and policy_override.has_override):
+                logger.info(
+                    "Policy override clears guard fallback",
+                    original_fallback_tier=fallback_tier,
+                    override_action=policy_override.action,
+                    override_decision=policy_override.decision.value,
+                )
+                fallback_response = None
+                fallback_used = False
 
-        # === Defense-in-depth: Disambiguation takes precedence over guard fallback ===
-        # Protects against remaining Guard checks (frustration TIER_2, message_loop TIER_2)
-        # that could conflict with DisambiguationSource's ask_clarification.
-        if (fallback_response
-                and sm_result.get("action") == "ask_clarification"
-                and sm_result.get("disambiguation_options")):
-            logger.info(
-                "Disambiguation clears guard fallback",
-                original_fallback_tier=fallback_tier,
-                disambiguation_options_count=len(sm_result["disambiguation_options"]),
-            )
-            fallback_response = None
-            fallback_used = False
+            # === Defense-in-depth: Disambiguation takes precedence over guard fallback ===
+            if (fallback_response
+                    and sm_result.get("action") == "ask_clarification"
+                    and sm_result.get("disambiguation_options")):
+                logger.info(
+                    "Disambiguation clears guard fallback",
+                    original_fallback_tier=fallback_tier,
+                    disambiguation_options_count=len(sm_result["disambiguation_options"]),
+                )
+                fallback_response = None
+                fallback_used = False
 
-        # === Bug #19: StallGuard takes precedence over guard fallback ===
-        # When StallGuard fires (dual proposal), its action should override
-        # ConversationGuard's fallback response (Scenario B fix).
-        if (fallback_response
-                and sm_result.get("action") in ("stall_guard_eject", "stall_guard_nudge")):
-            logger.info(
-                "StallGuard clears guard fallback",
-                original_fallback_tier=fallback_tier,
-                stall_guard_action=sm_result["action"],
-            )
-            fallback_response = None
-            fallback_used = False
+            # === Bug #19: StallGuard takes precedence over guard fallback ===
+            if (fallback_response
+                    and sm_result.get("action") in ("stall_guard_eject", "stall_guard_nudge")):
+                logger.info(
+                    "StallGuard clears guard fallback",
+                    original_fallback_tier=fallback_tier,
+                    stall_guard_action=sm_result["action"],
+                )
+                fallback_response = None
+                fallback_used = False
 
         # Build context for response generation
         # При наличии ResponseDirectives используем их instruction
@@ -1127,6 +1152,12 @@ class SalesBot:
         action = sm_result["action"]
         next_state = sm_result["next_state"]
         is_final = sm_result["is_final"]
+
+        # 9e: Set rephrase_mode for guard_rephrase action (new pipeline path)
+        if flags.conversation_guard_in_pipeline and action == "guard_rephrase":
+            rephrase_mode = True
+            if response_directives:
+                response_directives.rephrase_mode = True
 
         # Bug #19: Remap stall_guard actions to valid template actions
         if action == "stall_guard_eject":
@@ -1269,6 +1300,95 @@ class SalesBot:
                 cta_added=False,
                 skip_reason="phase_exhausted_options",
             )
+        elif action == "guard_rephrase":
+            # TIER_1: generator produces rephrased question
+            response_start = time.time()
+            response = self.generator.generate("continue_current_goal", context)
+            response_elapsed = (time.time() - response_start) * 1000
+            cta_result = CTAResult(
+                original_response=response, cta=None, final_response=response,
+                cta_added=False, skip_reason="guard_rephrase_path",
+            )
+        elif action == "guard_offer_options":
+            # TIER_2: fallback options menu
+            response_start = time.time()
+            guard_fb = self.fallback.get_fallback(
+                tier="fallback_tier_2",
+                state=current_state,
+                context={
+                    "collected_data": {**collected_data, **extracted},
+                    "last_intent": intent,
+                    "last_action": self.last_action,
+                    "frustration_level": frustration_level,
+                }
+            )
+            response = guard_fb.message
+            guard_options = guard_fb.options
+            response_elapsed = (time.time() - response_start) * 1000
+            fallback_used = True
+            fallback_tier = "fallback_tier_2"
+            fallback_action = "guard_offer_options"
+            fallback_message = response
+            intervention = sm_result.get("resolution_trace", {}).get(
+                "winning_action_metadata", {}
+            ).get("tier")
+            cta_result = CTAResult(
+                original_response=response, cta=None, final_response=response,
+                cta_added=False, skip_reason="guard_options_path",
+            )
+        elif action == "guard_skip_phase":
+            # TIER_3: state already transitioned by orchestrator _apply_side_effects
+            response_start = time.time()
+            response = self.generator.generate("continue_conversation", context)
+            response_elapsed = (time.time() - response_start) * 1000
+            fallback_used = True
+            fallback_tier = "fallback_tier_3"
+            fallback_action = "guard_skip_phase"
+            fallback_message = response
+            intervention = sm_result.get("resolution_trace", {}).get(
+                "winning_action_metadata", {}
+            ).get("tier")
+            cta_result = CTAResult(
+                original_response=response, cta=None, final_response=response,
+                cta_added=False, skip_reason="guard_skip_path",
+            )
+        elif action == "guard_soft_close":
+            # TIER_4: graceful exit
+            response_start = time.time()
+            guard_fb = self.fallback.get_fallback(
+                tier="soft_close",
+                state=current_state,
+                context={
+                    "collected_data": {**collected_data, **extracted},
+                    "last_intent": intent,
+                    "last_action": self.last_action,
+                    "frustration_level": frustration_level,
+                }
+            )
+            response = guard_fb.message
+            response_elapsed = (time.time() - response_start) * 1000
+            is_final = True
+            fallback_used = True
+            fallback_tier = "soft_close"
+            cta_result = CTAResult(
+                original_response=response, cta=None, final_response=response,
+                cta_added=False, skip_reason="guard_soft_close_path",
+            )
+            # Finalize metrics
+            self._record_turn_metrics(
+                state=current_state, intent="fallback_close",
+                tone=tone_info.get("tone"), fallback_used=True, fallback_tier="soft_close",
+            )
+            self.history.append({"user": user_message, "bot": response})
+            self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
+            return {
+                "response": response, "intent": "fallback_close",
+                "action": "soft_close", "state": "soft_close", "is_final": True,
+                "visited_states": [initial_state, "soft_close"],
+                "initial_state": initial_state,
+                "fallback_used": True, "fallback_tier": "soft_close",
+                "options": None,
+            }
         else:
             # 3. Generate response (normal path)
             response_start = time.time()
@@ -1436,7 +1556,9 @@ class SalesBot:
             "frustration_level": frustration_level,
             "lead_score": self.lead_scorer.current_score if flags.lead_scoring else None,
             "objection_detected": objection_info is not None,
-            "options": fallback_response.get("options") if fallback_response else None,
+            "options": guard_options if action == "guard_offer_options" else (
+                fallback_response.get("options") if (not flags.conversation_guard_in_pipeline and fallback_response) else None
+            ),
             # CTA tracking
             "cta_added": cta_result.cta_added if cta_result else False,
             "cta_text": cta_result.cta if cta_result else None,

@@ -284,6 +284,7 @@ def register_builtin_sources() -> None:
     from .sources.go_back_guard import GoBackGuardSource
     from .sources.stall_guard import StallGuardSource
     from .sources.phase_exhausted import PhaseExhaustedSource
+    from .sources.conversation_guard_ks import ConversationGuardSource
 
     # Register in recommended order (lower priority_order = earlier execution)
 
@@ -295,6 +296,18 @@ def register_builtin_sources() -> None:
         priority_order=5,
         config_key="go_back_guard",
         description="Enforces go_back limits via CircularFlowManager"
+    )
+
+    # ConversationGuardSource: Wraps ConversationGuard as Blackboard Knowledge Source
+    # After GoBackGuardSource (5), before DisambiguationSource (8)
+    # Gradual rollout: off by default (enabled via conversation_guard_in_pipeline flag)
+    SourceRegistry.register(
+        ConversationGuardSource,
+        name="ConversationGuardSource",
+        priority_order=7,
+        config_key="conversation_guard",
+        enabled_by_default=False,
+        description="Conversation safety: loops, timeouts, frustration detection"
     )
 
     # DisambiguationSource: Handles disambiguation as blocking Blackboard proposal

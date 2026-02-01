@@ -169,6 +169,9 @@ class FeatureFlags:
         # === Phase Completion Gating (Bug #3 Fix) ===
         "phase_completion_gating": True,           # has_completed_minimum_phases condition
 
+        # === ConversationGuard in Pipeline (Bug #3 Fix) ===
+        "conversation_guard_in_pipeline": False,   # Gradual rollout: guard inside Blackboard pipeline
+
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
     }
@@ -176,7 +179,7 @@ class FeatureFlags:
     # Группы флагов для удобного управления
     GROUPS: Dict[str, List[str]] = {
         "phase_0": ["structured_logging", "metrics_tracking"],
-        "phase_1": ["multi_tier_fallback", "conversation_guard"],
+        "phase_1": ["multi_tier_fallback", "conversation_guard", "conversation_guard_in_pipeline"],
         "phase_2": ["tone_analysis", "response_variations", "personalization", "response_diversity", "question_deduplication", "apology_system"],
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
         "phase_4": ["intent_disambiguation", "unified_disambiguation", "cascade_classifier", "semantic_objection_detection"],
@@ -650,6 +653,15 @@ class FeatureFlags:
     def stall_guard_dual_proposal(self) -> bool:
         """Bug #19: StallGuard proposes action + transition simultaneously"""
         return self.is_enabled("stall_guard_dual_proposal")
+
+    # =========================================================================
+    # ConversationGuard in Pipeline flags (Bug #3 Fix)
+    # =========================================================================
+
+    @property
+    def conversation_guard_in_pipeline(self) -> bool:
+        """Включён ли ConversationGuard внутри Blackboard pipeline"""
+        return self.is_enabled("conversation_guard_in_pipeline")
 
     # =========================================================================
     # Simulation Diagnostic Mode flags
