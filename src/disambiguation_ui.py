@@ -9,7 +9,7 @@ DisambiguationUI - форматирование вопросов и парсин
 import re
 from typing import Dict, List, Optional, Tuple
 
-from constants.intent_labels import INTENT_LABELS
+from src.constants.intent_labels import INTENT_LABELS
 
 
 class DisambiguationUI:
