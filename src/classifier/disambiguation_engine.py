@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import time
 
 from src.logger import logger
+from src.constants.intent_labels import INTENT_LABELS
 
 
 class DisambiguationDecision(Enum):
@@ -105,55 +106,6 @@ class DisambiguationResult:
             "disambiguation_reasoning": self.reasoning,
         }
 
-
-# =============================================================================
-# INTENT LABELS (маппинг интентов на человекопонятные названия)
-# =============================================================================
-
-INTENT_LABELS = {
-    # Ценовые
-    "price_question": "Узнать цену",
-    "pricing_details": "Детали тарифов",
-    "objection_price": "Обсудить стоимость",
-
-    # Вопросы
-    "question_features": "Узнать о функциях",
-    "question_integrations": "Об интеграциях",
-    "comparison": "Сравнить с другими",
-
-    # Запросы
-    "demo_request": "Записаться на демо",
-    "callback_request": "Заказать звонок",
-    "consultation_request": "Получить консультацию",
-    "contact_provided": "Оставить контакт",
-
-    # Возражения
-    "objection_no_time": "Нет времени сейчас",
-    "objection_timing": "Обсудить сроки",
-    "objection_think": "Нужно подумать",
-    "objection_competitor": "Сравнить с конкурентом",
-    "objection_complexity": "Обсудить сложность",
-    "objection_trust": "Узнать о надёжности",
-    "objection_no_need": "Объяснить зачем нужно",
-
-    # SPIN
-    "situation_provided": "Рассказать о компании",
-    "problem_revealed": "Обсудить проблемы",
-    "need_expressed": "Обсудить потребности",
-    "info_provided": "Предоставить информацию",
-
-    # Управление
-    "request_brevity": "Короткий ответ",
-    "agreement": "Продолжить",
-    "rejection": "Завершить разговор",
-    "unclear": "Уточнить вопрос",
-
-    # Общее
-    "greeting": "Поздороваться",
-    "small_talk": "Поболтать",
-    "gratitude": "Поблагодарить",
-    "farewell": "Попрощаться",
-}
 
 
 @dataclass

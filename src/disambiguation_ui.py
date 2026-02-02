@@ -154,9 +154,9 @@ class DisambiguationUI:
         Получить label для опции.
 
         Приоритет:
-        1. option["label"] (если явно задан)
-        2. INTENT_LABELS[option["intent"]]
-        3. option["intent"] (fallback)
+        1. INTENT_LABELS[option["intent"]] (SSoT — всегда авторитетен)
+        2. option["label"] (если явно задан и отличается от raw intent)
+        3. Fallback на intent или "Другое"
 
         Args:
             option: Опция {intent, label?, confidence}
@@ -164,9 +164,17 @@ class DisambiguationUI:
         Returns:
             Человекочитаемый label (никогда не возвращает None)
         """
-        if option.get("label"):
-            return option["label"]
-        return INTENT_LABELS.get(option["intent"], option["intent"])
+        intent = option.get("intent", "")
+        # Layer 1: SSoT is always authoritative
+        ssot_label = INTENT_LABELS.get(intent)
+        if ssot_label:
+            return ssot_label
+        # Layer 2: Use explicit label only if it's not the raw intent name
+        label = option.get("label")
+        if label and label != intent:
+            return label
+        # Layer 3: Final fallback
+        return intent or "Другое"
 
     def _format_numbered(self, options: List[Dict]) -> str:
         """Форматирование с нумерованным списком."""

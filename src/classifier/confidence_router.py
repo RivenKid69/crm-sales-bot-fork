@@ -17,6 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.logger import logger
+from src.constants.intent_labels import INTENT_LABELS
 
 
 class RouterDecision(Enum):
@@ -56,51 +57,6 @@ class RouterResult:
     gap: Optional[float] = None  # Разница между top-1 и top-2
     alternatives_count: int = 0
 
-
-# Маппинг интентов на человекопонятные названия для кнопок
-INTENT_LABELS = {
-    # Ценовые
-    "price_question": "Узнать цену",
-    "pricing_details": "Детали тарифов",
-    "objection_price": "Обсудить стоимость",
-
-    # Вопросы
-    "question_features": "Узнать о функциях",
-    "question_integrations": "Об интеграциях",
-    "comparison": "Сравнить с другими",
-
-    # Запросы
-    "demo_request": "Записаться на демо",
-    "callback_request": "Заказать звонок",
-    "consultation_request": "Получить консультацию",
-    "contact_provided": "Оставить контакт",
-
-    # Возражения
-    "objection_no_time": "Нет времени сейчас",
-    "objection_timing": "Обсудить сроки",
-    "objection_think": "Нужно подумать",
-    "objection_competitor": "Сравнить с конкурентом",
-    "objection_complexity": "Обсудить сложность",
-    "objection_trust": "Узнать о надёжности",
-    "objection_no_need": "Объяснить зачем нужно",
-
-    # SPIN
-    "situation_provided": "Рассказать о компании",
-    "problem_revealed": "Обсудить проблемы",
-    "need_expressed": "Обсудить потребности",
-
-    # Управление
-    "request_brevity": "Короткий ответ",
-    "agreement": "Продолжить",
-    "rejection": "Завершить разговор",
-    "unclear": "Уточнить вопрос",
-
-    # Общее
-    "greeting": "Поздороваться",
-    "small_talk": "Поболтать",
-    "gratitude": "Поблагодарить",
-    "farewell": "Попрощаться",
-}
 
 
 class ConfidenceRouter:

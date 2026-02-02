@@ -22,8 +22,8 @@ from src.classifier.disambiguation_engine import (
     DisambiguationOption,
     get_disambiguation_engine,
     reset_disambiguation_engine,
-    INTENT_LABELS,
 )
+from src.constants.intent_labels import INTENT_LABELS
 
 
 # =============================================================================

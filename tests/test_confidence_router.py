@@ -12,9 +12,9 @@ from classifier.confidence_router import (
     RouterDecision,
     RouterResult,
     DisambiguationOption,
-    INTENT_LABELS,
     get_confidence_router,
 )
+from constants.intent_labels import INTENT_LABELS
 
 
 class TestRouterDecisions:
@@ -255,9 +255,13 @@ class TestIntentLabels:
             assert len(INTENT_LABELS[intent]) > 0
 
     def test_labels_are_human_readable(self):
-        """Labels человекочитаемые (на русском)."""
+        """Labels человекочитаемые (на русском, кроме брендов)."""
+        # Brand names legitimately in Latin script
+        brand_exceptions = {"question_whatsapp_business"}
         # Проверяем что labels содержат русские буквы
         for intent, label in INTENT_LABELS.items():
+            if intent in brand_exceptions:
+                continue
             assert any(ord(c) >= 0x0400 and ord(c) <= 0x04FF for c in label), \
                 f"Label for {intent} should be in Russian"
 
