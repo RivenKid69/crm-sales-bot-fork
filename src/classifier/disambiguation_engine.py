@@ -677,7 +677,7 @@ def get_disambiguation_engine(
             # Priority 2: Try Python config
             if engine_config is None:
                 try:
-                    from config import DISAMBIGUATION_CONFIG
+                    from src.config import DISAMBIGUATION_CONFIG
                     engine_config = DisambiguationConfig.from_config(DISAMBIGUATION_CONFIG)
                     logger.debug("Loaded disambiguation config from config.py")
                 except ImportError:

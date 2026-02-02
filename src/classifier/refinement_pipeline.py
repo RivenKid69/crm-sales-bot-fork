@@ -540,7 +540,7 @@ class BaseRefinementLayer(ABC):
             return True
 
         try:
-            from feature_flags import flags
+            from src.feature_flags import flags
             return flags.is_enabled(self.FEATURE_FLAG)
         except ImportError:
             return True

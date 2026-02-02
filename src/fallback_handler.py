@@ -487,7 +487,7 @@ class FallbackHandler:
         4. company_size → масштаб решения
         5. Fallback к статичным если контекст пуст
         """
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         if not flags.is_enabled("dynamic_cta_fallback"):
             return self._get_static_tier_2_options(state, context, trace)

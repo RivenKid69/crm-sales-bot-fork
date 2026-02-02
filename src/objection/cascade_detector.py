@@ -19,9 +19,9 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 import time
 
-from objection_handler import ObjectionHandler, ObjectionType
-from classifier.intents.semantic import get_semantic_classifier
-from feature_flags import flags
+from src.objection_handler import ObjectionHandler, ObjectionType
+from src.classifier.intents.semantic import get_semantic_classifier
+from src.feature_flags import flags
 from src.logger import logger
 
 
