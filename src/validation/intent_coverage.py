@@ -121,6 +121,9 @@ class IntentCoverageValidator:
         issues.extend(self.validate_fact_question_pattern_coverage())
         issues.extend(self.validate_pattern_keyword_completeness())
 
+        # NEW: Template existence validation (Bug #1 fix)
+        issues.extend(self.validate_template_existence())
+
         logger.info(
             "Intent coverage validation complete",
             total_issues=len(issues),
@@ -360,6 +363,81 @@ class IntentCoverageValidator:
         if self.flow and hasattr(self.flow, "mixins"):
             return self.flow.mixins.get("price_handling")
         return None
+
+    def validate_template_existence(self) -> List[CoverageIssue]:
+        """Validate that all referenced actions have corresponding templates.
+
+        Collects action names from:
+        - _universal_base rules
+        - intent_taxonomy fallback_actions
+        - REPAIR_ACTIONS, OBJECTION_ACTIONS (dialogue_policy)
+        - INTENT_SPECIFIC_ACTIONS (fact_question.py)
+
+        Checks each against FlowConfig templates and PROMPT_TEMPLATES.
+
+        Returns:
+            List of CoverageIssue for actions without templates
+        """
+        issues = []
+
+        from src.config import PROMPT_TEMPLATES
+        from src.yaml_config.constants import REPAIR_ACTIONS, OBJECTION_ESCALATION_ACTIONS
+
+        # Collect all action names
+        all_actions: Set[str] = set()
+
+        # From REPAIR_ACTIONS
+        all_actions.update(REPAIR_ACTIONS.values())
+
+        # From OBJECTION_ACTIONS
+        all_actions.update(OBJECTION_ESCALATION_ACTIONS.values())
+
+        # From INTENT_SPECIFIC_ACTIONS
+        try:
+            from src.blackboard.sources.fact_question import FactQuestionSource
+            if hasattr(FactQuestionSource, 'INTENT_SPECIFIC_ACTIONS'):
+                all_actions.update(FactQuestionSource.INTENT_SPECIFIC_ACTIONS.values())
+        except ImportError:
+            pass
+
+        # From _universal_base rules
+        universal_base = self._get_universal_base_mixin()
+        if universal_base:
+            rules = universal_base.get("rules", {})
+            for action in rules.values():
+                if isinstance(action, str):
+                    all_actions.add(action)
+
+        # From intent_taxonomy fallback_actions
+        intent_taxonomy = self.taxonomy_config.get("intent_taxonomy", {})
+        for entry in intent_taxonomy.values():
+            if isinstance(entry, dict):
+                fa = entry.get("fallback_action")
+                if fa:
+                    all_actions.add(fa)
+
+        # Exclude meta-actions that are handled specially (not templates)
+        excluded = {
+            "offer_options", "guard_offer_options", "guard_rephrase",
+            "stall_guard_eject", "guard_soft_close", "guard_skip_phase",
+            "ask_clarification",
+        }
+        all_actions -= excluded
+
+        # Check each action
+        for action in sorted(all_actions):
+            in_yaml = self.flow and self.flow.get_template(action)
+            in_python = action in PROMPT_TEMPLATES
+            if not in_yaml and not in_python:
+                issues.append(CoverageIssue(
+                    severity="critical",
+                    intent=None,
+                    issue_type="missing_template",
+                    message=f"Action '{action}' referenced in policy/rules but has no template",
+                    location="templates/_base/prompts.yaml or config.py"
+                ))
+
+        return issues
 
     def _get_secondary_intent_patterns(self) -> Dict[str, Any]:
         """Get secondary intent patterns from the classifier.

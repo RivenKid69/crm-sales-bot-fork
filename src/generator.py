@@ -620,6 +620,8 @@ class ResponseGenerator:
         logger.warning(
             "Template not found, falling back to continue_current_goal",
             requested_template=template_key,
+            flow_available=self._flow is not None,
+            flow_name=self._flow.name if self._flow else None,
         )
         return PROMPT_TEMPLATES.get("continue_current_goal", "")
 
@@ -1412,15 +1414,8 @@ class ResponseGenerator:
         # specific pricing template via conditions (should_answer_directly,
         # price_repeated_2x), honor it. Previously this method always returned
         # answer_with_pricing, making answer_with_pricing_direct dead code.
-        PRICING_ACTIONS = {
-            "answer_with_pricing",
-            "answer_with_pricing_direct",
-            "answer_pricing_details",
-            "answer_with_facts",
-            "answer_with_roi",
-            "calculate_roi_response",
-        }
-        if action in PRICING_ACTIONS:
+        from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
+        if action in PRICING_CORRECT_ACTIONS:
             return action
 
         # Fallback: intent-based default (backward compatible)

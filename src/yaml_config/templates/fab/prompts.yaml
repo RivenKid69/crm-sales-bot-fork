@@ -105,3 +105,29 @@ templates:
       Пример: "Понял. Какой эффект для вас важнее всего?"
 
       Ответ на русском (2 предложения):
+
+  explain_feature:
+    description: "FAB - объяснить функцию через Feature → Advantage → Benefit"
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      МЕТОДОЛОГИЯ: FAB (Feature → Advantage → Benefit)
+      ЭТАП: Объяснение функции
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Назови конкретную функцию (Feature)
+      2. Объясни её преимущество (Advantage)
+      3. Покажи выгоду для клиента (Benefit)
+
+      Пример: "У нас есть автоматическая воронка продаж — это экономит время на ручном переносе. Для вашей команды это значит +2 часа в день на реальные продажи."
+
+      Ответ на русском (2-3 предложения):

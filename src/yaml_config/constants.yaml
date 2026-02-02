@@ -3171,6 +3171,18 @@ policy:
     - reframe_value
     - empathize_and_redirect
     - offer_options
+    - explain_feature
+    - demonstrate_feature
+
+  # SSOT: Actions that correctly handle pricing.
+  # Used by: price overlay (dialogue_policy), generator price template selection.
+  pricing_correct_actions:
+    - answer_with_pricing
+    - answer_with_pricing_direct
+    - answer_pricing_details
+    - answer_with_facts
+    - answer_with_roi
+    - calculate_roi_response
 
   # Narrow intent groups for repeated-question detection.
   # Only semantically equivalent intents should be grouped.

@@ -157,7 +157,7 @@ class SalesBot:
             config=self._config,
             flow=self._flow,
         )
-        self.generator = ResponseGenerator(llm)
+        self.generator = ResponseGenerator(llm, flow=self._flow)
         self.history: List[Dict] = []
 
         # FIX: Store persona in collected_data for ObjectionGuard persona-specific limits
@@ -226,7 +226,8 @@ class SalesBot:
         # Phase 5: Context-aware policy overlays (controlled by feature flag)
         self.dialogue_policy = DialoguePolicy(
             shadow_mode=False,  # Применять решения (не только логировать)
-            trace_enabled=enable_tracing
+            trace_enabled=enable_tracing,
+            flow=self._flow,
         )
 
         # Context Window: расширенный контекст для классификатора
@@ -1396,6 +1397,25 @@ class SalesBot:
                 "options": None,
             }
         else:
+            # Defense-in-depth: verify template exists before generation
+            if not self.generator._get_template(action):
+                original_action = action
+                # Context-aware fallback based on intent type
+                from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
+                from src.yaml_config.constants import QUESTION_INTENTS
+                if intent in PRICING_CORRECT_ACTIONS or intent in self.generator.PRICE_RELATED_INTENTS:
+                    action = "answer_with_pricing"
+                elif intent in QUESTION_INTENTS:
+                    action = "answer_with_facts"
+                else:
+                    action = "continue_current_goal"
+                logger.warning(
+                    "Runtime template miss — context-aware fallback applied",
+                    original_action=original_action,
+                    fallback_action=action,
+                    intent=intent,
+                    flow=self._flow.name,
+                )
             # 3. Generate response (normal path)
             response_start = time.time()
             response = self.generator.generate(action, context)

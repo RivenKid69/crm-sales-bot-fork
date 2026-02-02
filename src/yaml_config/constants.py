@@ -389,6 +389,7 @@ PROTECTED_STATES: Set[str] = set(_policy.get("protected_states", []))
 AGGRESSIVE_ACTIONS: Set[str] = set(_policy.get("aggressive_actions", []))
 REPAIR_ACTIONS: Dict[str, str] = _policy.get("repair_actions", {})
 REPAIR_PROTECTED_ACTIONS: Set[str] = set(_policy.get("repair_protected_actions", []))
+PRICING_CORRECT_ACTIONS: Set[str] = set(_policy.get("pricing_correct_actions", []))
 REPEATABLE_INTENT_GROUPS: Dict[str, Set[str]] = {
     k: set(v) for k, v in _policy.get("repeatable_intent_groups", {}).items()
 }
@@ -1005,6 +1006,7 @@ __all__ = [
     "AGGRESSIVE_ACTIONS",
     "REPAIR_ACTIONS",
     "REPAIR_PROTECTED_ACTIONS",
+    "PRICING_CORRECT_ACTIONS",
     "REPEATABLE_INTENT_GROUPS",
     "OBJECTION_ESCALATION_ACTIONS",
     # Lead scoring

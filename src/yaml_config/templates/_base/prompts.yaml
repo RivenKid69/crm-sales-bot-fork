@@ -1005,3 +1005,468 @@ templates:
       Пример: "Давайте лучше разберёмся с вашим вопросом прямо сейчас. Что именно вас беспокоит?"
 
       Ответ на русском (2 предложения):
+
+  # =================================================================
+  # OBJECTION HANDLING (Step 3A — addresses_question: true)
+  # =================================================================
+
+  reframe_value:
+    description: "Переформулировать ценность при повторных возражениях"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data, facts, pain_point]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент повторно возражает. Нужно переформулировать ценность с нового угла.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+      Боль клиента: {pain_point}
+
+      Твоя задача:
+      1. Покажи, что слышишь клиента
+      2. Переформулируй ценность с НОВОГО угла (не повторяй предыдущие аргументы)
+      3. Свяжи ценность с конкретной болью клиента
+
+      Ответ на русском (2-3 предложения):
+
+  handle_repeated_objection:
+    description: "Обработать многократное возражение — предложить пробный период/демо/референс"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data, facts, pain_point]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент возражает 3+ раза. Стандартные аргументы не работают.
+      Нужно предложить конкретный следующий шаг.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+      Боль клиента: {pain_point}
+
+      Твоя задача:
+      1. Признать позицию клиента без спора
+      2. Предложить один конкретный шаг: пробный период, демо, или кейс похожего клиента
+      3. Дать клиенту выбор без давления
+
+      Ответ на русском (2-3 предложения):
+
+  empathize_and_redirect:
+    description: "Эмпатия при эмоциональном возражении + перенаправление"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data, facts, pain_point]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент эмоционально фрустрирован. Нужно проявить эмпатию и мягко вернуть к ранее проявленному интересу.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+      Боль клиента: {pain_point}
+
+      Твоя задача:
+      1. Проявить искреннюю эмпатию (НЕ шаблонные фразы)
+      2. Мягко напомнить о ранее высказанном интересе
+      3. Предложить минимальный следующий шаг
+
+      Ответ на русском (2-3 предложения):
+
+  # =================================================================
+  # SCHEDULING / PURCHASE (Step 3B — addresses_question: true)
+  # =================================================================
+
+  schedule_demo:
+    description: "Подтвердить запрос на демо и собрать контакт"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+      optional: [do_not_ask, retrieved_facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент запросил демонстрацию. Нужно подтвердить и собрать контактные данные.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      {do_not_ask}
+
+      Твоя задача:
+      1. Подтверди готовность показать демо
+      2. Спроси удобное время и контакт для связи (если ещё не знаем)
+
+      Ответ на русском (2 предложения):
+
+  schedule_callback:
+    description: "Подтвердить запрос на колбек и собрать время/контакт"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+      optional: [do_not_ask, retrieved_facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент хочет, чтобы ему перезвонили. Нужно уточнить время и контакт.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      {do_not_ask}
+
+      Твоя задача:
+      1. Подтверди, что перезвоним
+      2. Уточни удобное время и контактный телефон (если ещё не знаем)
+
+      Ответ на русском (2 предложения):
+
+  provide_references:
+    description: "Предоставить кейсы/рекомендации и предложить отправить на email"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+      optional: [do_not_ask, retrieved_facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент хочет увидеть кейсы или рекомендации от других клиентов.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      {do_not_ask}
+
+      Твоя задача:
+      1. Подтверди наличие успешных кейсов
+      2. Предложи отправить подборку на email (если контакт ещё не знаем — попроси)
+
+      Ответ на русском (2 предложения):
+
+  schedule_consultation:
+    description: "Подтвердить запрос на консультацию и собрать контакт"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+      optional: [do_not_ask, retrieved_facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент хочет консультацию. Нужно подтвердить и собрать контакт.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      {do_not_ask}
+
+      Твоя задача:
+      1. Подтверди готовность провести консультацию
+      2. Уточни удобное время и контакт (если ещё не знаем)
+
+      Ответ на русском (2 предложения):
+
+  # =================================================================
+  # COMPETITOR COMPARISON (Step 3C — addresses_question: true)
+  # =================================================================
+
+  compare_with_competitor:
+    description: "Сравнить продукт с конкурентом"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает о сравнении с конкурентом или упоминает конкурента.
+
+      База знаний:
+      {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Факты о продукте: {facts}
+
+      Твоя задача:
+      1. Корректно и уважительно отметь разницу
+      2. Подчеркни уникальные преимущества нашего решения
+      3. НЕ критикуй конкурента напрямую
+
+      Ответ на русском (2-3 предложения):
+
+  # =================================================================
+  # PRICING / ROI (Step 3D — addresses_question: true)
+  # =================================================================
+
+  answer_with_roi:
+    description: "Ответить на вопрос с ROI-фреймингом"
+    addresses_question: true
+    parameters:
+      required: [system, facts, retrieved_facts, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает про ROI, окупаемость или экономический эффект.
+
+      Факты о продукте: {facts}
+      База знаний: {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Ответить о ROI/окупаемости с конкретными цифрами если возможно
+      2. Связать с данными клиента (размер, боль)
+      3. Предложить расчёт под их вводные
+
+      Ответ на русском (2-3 предложения):
+
+  # =================================================================
+  # FACT QUESTION INTENT-SPECIFIC (Step 3E — addresses_question: true)
+  # =================================================================
+
+  answer_technical_question:
+    description: "Ответить на технический вопрос"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент задаёт технический вопрос (API, интеграции, архитектура).
+
+      База знаний:
+      {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+
+      Твоя задача:
+      1. Дать точный технический ответ на основе базы знаний
+      2. Если деталей нет — предложить связаться с техкомандой
+
+      Ответ на русском (2-3 предложения):
+
+  answer_security_question:
+    description: "Ответить на вопрос о безопасности"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает о безопасности, защите данных, compliance.
+
+      База знаний:
+      {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+
+      Твоя задача:
+      1. Ответить о мерах безопасности и compliance на основе базы знаний
+      2. Упомянуть ключевые сертификации/стандарты если есть
+
+      Ответ на русском (2-3 предложения):
+
+  explain_support_options:
+    description: "Рассказать о вариантах поддержки"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает о поддержке, SLA, сервисных пакетах.
+
+      База знаний:
+      {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+
+      Твоя задача:
+      1. Рассказать о доступных вариантах поддержки из базы знаний
+      2. Упомянуть SLA и время реакции если известно
+
+      Ответ на русском (2-3 предложения):
+
+  explain_training_options:
+    description: "Рассказать об обучении и онбординге"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает про обучение, онбординг, тренинги для команды.
+
+      База знаний:
+      {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+
+      Твоя задача:
+      1. Описать процесс обучения и онбординга из базы знаний
+      2. Упомянуть доступные материалы и формат
+
+      Ответ на русском (2-3 предложения):
+
+  explain_implementation_process:
+    description: "Рассказать о процессе внедрения"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает про процесс внедрения, сроки, этапы.
+
+      База знаний:
+      {retrieved_facts}
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+      Факты о продукте: {facts}
+
+      Твоя задача:
+      1. Описать этапы внедрения из базы знаний
+      2. Дать ориентир по срокам
+
+      Ответ на русском (2-3 предложения):
+
+  # =================================================================
+  # CROSS-FLOW TEMPLATES (Step 5 — moved from flow-specific to _base)
+  # =================================================================
+
+  calculate_roi_response:
+    description: "Ответ с прикидкой ROI (универсальный)"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент спрашивает про эффект/ROI.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко объяснить, что ROI зависит от вводных
+      2. Попросить один ключевой вводный показатель
+
+      Пример: "ROI зависит от объёма и текущих затрат. Сколько времени в среднем тратит менеджер на обработку одной заявки?"
+
+      Ответ на русском (2 предложения):
+
+  share_value:
+    description: "Поделиться ценностью (универсальный)"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент интересуется функционалом. Нужно показать ценность.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Коротко обозначить ценность
+      2. Задать вопрос о релевантности
+
+      Пример: "Это помогает снизить потери и ускорить обработку. Вам это актуально?"
+
+      Ответ на русском (2 предложения):
+
+  answer_briefly:
+    description: "Краткий ответ на вопрос (универсальный)"
+    addresses_question: true
+    parameters:
+      required: [system, history, user_message, collected_data]
+    template: |
+      {system}
+
+      СИТУАЦИЯ: Клиент задаёт вопрос. Ответ нужен краткий.
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Уже знаем: {collected_data}
+
+      Твоя задача:
+      1. Дать краткий ответ по сути
+      2. При необходимости задать один уточняющий вопрос
+
+      Ответ на русском (1-2 предложения):

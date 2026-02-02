@@ -42,6 +42,7 @@ from src.conditions.trace import EvaluationTrace, Resolution
 from src.yaml_config.constants import (
     REPAIR_ACTIONS as _YAML_REPAIR_ACTIONS,
     REPAIR_PROTECTED_ACTIONS,
+    PRICING_CORRECT_ACTIONS,
 )
 
 
@@ -173,25 +174,32 @@ class DialoguePolicy:
         except Exception:
             return set()
 
-    def __init__(self, shadow_mode: bool = False, trace_enabled: bool = False):
+    def __init__(self, shadow_mode: bool = False, trace_enabled: bool = False, flow=None):
         """
         Args:
             shadow_mode: Если True, только логируем решения без применения
             trace_enabled: Если True, включить трассировку условий
+            flow: Optional FlowConfig for YAML template validation
         """
         self.shadow_mode = shadow_mode
         self.trace_enabled = trace_enabled
+        self._flow = flow
         self._decision_history: List[PolicyOverride] = []
         # Merge explicit YAML list + auto-derived from template tags
         self._repair_protected: Set[str] = REPAIR_PROTECTED_ACTIONS | self._load_addressing_templates()
         self._validate_action_templates()
 
     def _validate_action_templates(self):
-        """Cross-check all policy action mappings against available templates."""
+        """Cross-check all policy action mappings against available templates (YAML + Python)."""
         from src.config import PROMPT_TEMPLATES
 
         all_actions = set(self.REPAIR_ACTIONS.values()) | set(self.OBJECTION_ACTIONS.values())
-        missing = [a for a in all_actions if a not in PROMPT_TEMPLATES]
+        missing = []
+        for a in all_actions:
+            in_yaml = self._flow and self._flow.get_template(a)
+            in_python = a in PROMPT_TEMPLATES
+            if not in_yaml and not in_python:
+                missing.append(a)
 
         if missing:
             from src.logger import logger
@@ -540,7 +548,7 @@ class DialoguePolicy:
         current_action = ctx.current_action
 
         # Если action уже правильный — проверяем нет ли pending guard fallback
-        if current_action in ("answer_with_pricing", "answer_with_facts", "answer_pricing_details"):
+        if current_action in PRICING_CORRECT_ACTIONS:
             if not ctx.guard_intervention:
                 # No guard fallback pending — action is correct.
                 # Return PRICE_ALREADY_CORRECT with STOP (default) to protect
