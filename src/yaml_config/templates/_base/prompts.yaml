@@ -141,13 +141,19 @@ templates:
     addresses_question: true
     parameters:
       required: [system, retrieved_facts, history, user_message]
-      optional: [do_not_ask, collected_fields_list]
+      optional: [do_not_ask, collected_fields_list, do_not_repeat_responses]
     template: |
       === ТАРИФЫ WIPON (ИСПОЛЬЗУЙ ЭТИ ДАННЫЕ В ОТВЕТЕ!) ===
       {retrieved_facts}
       =====================================================
 
       {system}
+
+      {% if do_not_repeat_responses %}
+      ⚠️ ВНИМАНИЕ: Ты уже упоминал цены ранее:
+      {do_not_repeat_responses}
+      НЕ ПОВТОРЯЙ дословно — переформулируй по-другому.
+      {% endif %}
 
       ⚠️ КРИТИЧЕСКИ ВАЖНО: Клиент спросил о цене.
       ПЕРВЫМ ДЕЛОМ назови конкретные тарифы из блока выше.
@@ -218,6 +224,41 @@ templates:
       - "При оплате за несколько лет предоставляем скидку."
 
       Ответ на русском (1-2 предложения, ТОЛЬКО цена в тенге):
+
+  answer_with_pricing_brief:
+    description: "Краткое напоминание о ценах при повторном вопросе"
+    addresses_question: true
+    parameters:
+      required: [system, retrieved_facts, history, user_message, do_not_repeat_responses]
+    template: |
+      {system}
+
+      КОНТЕКСТ: Клиент ПОВТОРНО спрашивает о цене.
+      Ты уже отвечал на этот вопрос ранее:
+      {do_not_repeat_responses}
+
+      ⚠️ ВАЖНО: НЕ ПОВТОРЯЙ дословно предыдущие ответы!
+
+      Вместо этого:
+      - Кратко напомни ключевые тарифы (1 предложение)
+      - Предложи уточнить конкретные потребности
+      - ИЛИ направь к документации/менеджеру
+
+      === ТАРИФЫ (справочно) ===
+      {retrieved_facts}
+      ============================
+
+      Диалог:
+      {history}
+
+      Клиент: "{user_message}"
+
+      Примеры ПРАВИЛЬНЫХ ответов:
+      - "Как я упоминал: Mini 5k₸/мес, Standard 220k₸/год. Какой размер команды?"
+      - "Цены выше. Что важнее — функционал или бюджет?"
+      - "Все тарифы есть на сайте. Давайте обсудим вашу задачу?"
+
+      Ответ на русском (1-2 предложения):
 
   answer_pricing_details:
     description: "Ответить на вопрос о деталях тарифов"

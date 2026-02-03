@@ -121,7 +121,7 @@ class IntentCoverageValidator:
         issues.extend(self.validate_fact_question_pattern_coverage())
         issues.extend(self.validate_pattern_keyword_completeness())
 
-        # NEW: Template existence validation (Bug #1 fix)
+        # NEW: Template existence validation
         issues.extend(self.validate_template_existence())
 
         logger.info(

@@ -859,6 +859,19 @@ class ContextWindow:
         turns = self.turns[-limit:] if limit else self.turns
         return [t.action for t in turns]
 
+    def get_bot_response_history(self, limit: Optional[int] = None) -> List[str]:
+        """
+        Получить историю ответов бота.
+
+        Args:
+            limit: Ограничение количества (None = все в окне)
+
+        Returns:
+            Список ответов бота от старых к новым
+        """
+        turns = self.turns[-limit:] if limit else self.turns
+        return [t.bot_response for t in turns if t.bot_response]
+
     def get_state_history(self, limit: Optional[int] = None) -> List[str]:
         """
         Получить историю состояний.

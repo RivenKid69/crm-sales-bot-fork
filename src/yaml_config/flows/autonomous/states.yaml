@@ -1,0 +1,149 @@
+# =============================================================================
+# AUTONOMOUS STATES
+# =============================================================================
+# Each state has NO rules, NO transitions — LLM decides via AutonomousDecisionSource.
+# kb_categories: which KB categories to load directly (bypassing CascadeRetriever).
+# max_turns_in_state / phase_exhaust_threshold: safety nets only.
+#
+# NOTE: required_data + data_complete transitions exist for infrastructure test
+# compatibility. The on_enter flags ensure data_complete fires as a no-op;
+# actual transitions are controlled by AutonomousDecisionSource (LLM).
+# =============================================================================
+
+states:
+  autonomous_discovery:
+    extends: _base_phase
+    goal: "Understand the client's business, current situation, and pain points"
+    phase: discovery
+    kb_categories:
+      - products
+      - features
+      - faq
+    max_turns_in_state: 6
+    phase_exhaust_threshold: 5
+    required_data:
+      - business_type
+    parameters:
+      next_phase_state: autonomous_qualification
+      prev_phase_state: greeting
+      default_price_action: answer_with_pricing
+      default_unclear_action: autonomous_respond
+    # No rules — LLM decides actions
+    rules: {}
+    # data_complete for infrastructure compatibility; LLM decides real transitions
+    transitions:
+      data_complete: autonomous_qualification
+
+  autonomous_qualification:
+    extends: _base_phase
+    goal: "Qualify the client: budget, authority, timeline, need"
+    phase: qualification
+    kb_categories:
+      - pricing
+      - promotions
+      - products
+    max_turns_in_state: 6
+    phase_exhaust_threshold: 5
+    required_data:
+      - company_size
+    parameters:
+      next_phase_state: autonomous_presentation
+      prev_phase_state: autonomous_discovery
+      default_price_action: answer_with_pricing
+      default_unclear_action: autonomous_respond
+    rules: {}
+    transitions:
+      data_complete: autonomous_presentation
+
+  autonomous_presentation:
+    extends: _base_phase
+    goal: "Present product value tailored to client needs"
+    phase: presentation
+    kb_categories:
+      - features
+      - products
+      - analytics
+    max_turns_in_state: 6
+    phase_exhaust_threshold: 5
+    required_data:
+      - pain_point
+    parameters:
+      next_phase_state: autonomous_objection_handling
+      prev_phase_state: autonomous_qualification
+      default_price_action: answer_with_pricing
+      default_unclear_action: autonomous_respond
+    rules: {}
+    transitions:
+      data_complete: autonomous_objection_handling
+
+  autonomous_objection_handling:
+    extends: _base_phase
+    goal: "Handle objections, reframe value, address concerns"
+    phase: objection_handling
+    kb_categories:
+      - pricing
+      - competitors
+      - stability
+    max_turns_in_state: 6
+    phase_exhaust_threshold: 5
+    on_enter:
+      set_flags:
+        objection_phase_entered: true
+    required_data:
+      - objection_phase_entered
+    parameters:
+      next_phase_state: autonomous_negotiation
+      prev_phase_state: autonomous_presentation
+      default_price_action: answer_with_pricing
+      default_unclear_action: autonomous_respond
+    rules: {}
+    transitions:
+      data_complete: autonomous_negotiation
+
+  autonomous_negotiation:
+    extends: _base_phase
+    goal: "Negotiate terms, discuss pricing options, find mutually beneficial deal"
+    phase: negotiation
+    kb_categories:
+      - pricing
+      - promotions
+      - integrations
+    max_turns_in_state: 6
+    phase_exhaust_threshold: 5
+    on_enter:
+      set_flags:
+        negotiation_phase_entered: true
+    required_data:
+      - negotiation_phase_entered
+    parameters:
+      next_phase_state: autonomous_closing
+      prev_phase_state: autonomous_objection_handling
+      default_price_action: answer_with_pricing
+      default_unclear_action: autonomous_respond
+    rules: {}
+    transitions:
+      data_complete: autonomous_closing
+
+  autonomous_closing:
+    extends: _base_phase
+    goal: "Close the deal: schedule demo, request callback, sign contract"
+    phase: closing
+    kb_categories:
+      - pricing
+      - support
+      - promotions
+    max_turns_in_state: 6
+    phase_exhaust_threshold: 5
+    on_enter:
+      set_flags:
+        closing_phase_entered: true
+    required_data:
+      - closing_phase_entered
+    parameters:
+      next_phase_state: close
+      prev_phase_state: autonomous_negotiation
+      default_price_action: answer_with_pricing
+      default_unclear_action: autonomous_respond
+    rules: {}
+    transitions:
+      data_complete: close

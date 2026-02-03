@@ -263,7 +263,7 @@ class RegexToneAnalyzer:
         elif urgency == "medium":
             guidance["max_words"] = 35
             if analysis.tone == Tone.SKEPTICAL:
-                # BUG #22: Skepticism is not frustration. Facts, not apology.
+                # Skepticism is not frustration. Facts, not apology.
                 guidance["tone_instruction"] = (
                     "Будь кратким и деловым. "
                     "Приведи конкретные факты и цифры. "
@@ -330,7 +330,7 @@ class RegexToneAnalyzer:
         elif analysis.frustration_level >= FRUSTRATION_THRESHOLDS["warning"]:
             guidance["max_words"] = 40
             if analysis.tone == Tone.SKEPTICAL:
-                # BUG #22: Skepticism is not frustration. Facts, not apology.
+                # Skepticism is not frustration. Facts, not apology.
                 guidance["tone_instruction"] = (
                     "Будь кратким и деловым. "
                     "Приведи конкретные факты и цифры. "

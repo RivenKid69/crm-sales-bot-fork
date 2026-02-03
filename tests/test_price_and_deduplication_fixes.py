@@ -48,7 +48,7 @@ class TestYamlIntentCategories:
         """Категория question_requires_facts должна существовать (as composed category)."""
         from src.yaml_config.constants import INTENT_CATEGORIES
 
-        # BUG #4 FIX: question_requires_facts is now a composed category (includes all_questions)
+        # question_requires_facts is now a composed category (includes all_questions)
         assert 'question_requires_facts' in INTENT_CATEGORIES
 
         requires_facts = INTENT_CATEGORIES['question_requires_facts']
@@ -287,6 +287,9 @@ class TestDialoguePolicyPriceOverlay:
 
         ctx = Mock(spec=PolicyContext)
         ctx.last_intent = "price_question"
+        ctx.current_intent = "price_question"
+        ctx.secondary_intents = None
+        ctx.repeated_question = None
 
         result = is_price_question(ctx)
 
@@ -298,6 +301,9 @@ class TestDialoguePolicyPriceOverlay:
 
         ctx = Mock(spec=PolicyContext)
         ctx.last_intent = "pricing_details"
+        ctx.current_intent = "pricing_details"
+        ctx.secondary_intents = None
+        ctx.repeated_question = None
 
         result = is_price_question(ctx)
 
@@ -309,6 +315,9 @@ class TestDialoguePolicyPriceOverlay:
 
         ctx = Mock(spec=PolicyContext)
         ctx.last_intent = "greeting"
+        ctx.current_intent = "greeting"
+        ctx.secondary_intents = None
+        ctx.repeated_question = None
 
         result = is_price_question(ctx)
 

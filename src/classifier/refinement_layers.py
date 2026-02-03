@@ -1214,7 +1214,7 @@ def verify_layers_registered() -> List[str]:
         "greeting_context",  # Dialog Failure Fix
         "objection",
         "option_selection",  # Disambiguation Assist Fix
-        "comparison",  # Bug #31a: Comparison → objection_competitor refinement
+        "comparison",  # Comparison → objection_competitor refinement
     ]
     registered = registry.get_all_names()
 
@@ -1251,7 +1251,7 @@ try:
 except ImportError as e:
     logger.warning(f"Could not import data_aware_refinement: {e}")
 
-# Import comparison_refinement to register the layer (Bug #31a)
+# Import comparison_refinement to register the layer
 try:
     from src.classifier import comparison_refinement  # noqa: F401
 except ImportError as e:

@@ -142,7 +142,7 @@ INFORMATIVE_INTENTS: List[str] = _categories.get("informative", [])
 # НОВЫЕ КАТЕГОРИИ (150+ интентов) - загружаются из YAML
 # =============================================================================
 PRICE_RELATED_INTENTS: List[str] = _categories.get("price_related", [])
-# REMOVED: objection_return_questions base category (BUG #4 fix)
+# REMOVED: objection_return_questions base category
 # All question intents are now covered by composed all_questions category
 QUESTION_REQUIRES_FACTS_INTENTS: List[str] = _categories.get("question_requires_facts", [])
 
@@ -450,7 +450,7 @@ FRUSTRATION_THRESHOLDS: Dict[str, int] = _frustration.get("thresholds", {})
 # Used by FrustrationIntensityCalculator for signal-aware frustration calculation
 _frustration_intensity = _frustration.get("intensity", {})
 
-# Tone-aware apology configuration (BUG #22)
+# Tone-aware apology configuration
 _apology_config = _frustration.get("apology", {})
 APOLOGY_TONE_OVERRIDES: Dict[str, int] = _apology_config.get("tone_overrides", {})
 
@@ -970,7 +970,7 @@ __all__ = [
     "EXIT_INTENTS",
     "INFORMATIVE_INTENTS",
     "PRICE_RELATED_INTENTS",
-    # REMOVED: "OBJECTION_RETURN_QUESTIONS" (BUG #4 fix — replaced by all_questions)
+    # REMOVED: "OBJECTION_RETURN_QUESTIONS" (replaced by all_questions)
     "OBJECTION_RETURN_TRIGGERS",
     "GREETING_REDIRECT_INTENTS",
     "QUESTION_REQUIRES_FACTS_INTENTS",

@@ -1,5 +1,5 @@
 """
-Тесты для исправлений BUG-001: Массовые Guard/Fallback интервенции.
+Тесты для исправлений массовых Guard/Fallback интервенций.
 
 Основные исправления:
 1. bot.py - сброс fallback_response после skip action

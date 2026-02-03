@@ -201,7 +201,7 @@ class DataExtractor:
 
         # === Размер компании ===
         size_patterns = [
-            # BUG #2 FIX: Range patterns FIRST ("10-15 человек", "10–15 сотрудников")
+            # Range patterns FIRST ("10-15 человек", "10–15 сотрудников")
             # Must come before simple keyword pattern to capture lower bound (10, not 15)
             r'(\d+)\s*[-–]\s*\d+\s*(?:человек|чел\.?|менеджер|сотрудник|продаж|продавц|работник)',
             r'(\d+)\s*(?:человек|чел\.?|менеджер|сотрудник|продаж|продавц|официант|повар|работник|кассир)',
@@ -229,7 +229,7 @@ class DataExtractor:
                 if 1 <= size <= 10000:
                     extracted["company_size"] = size
 
-        # BUG #2 FIX: Leading number in composite message.
+        # Leading number in composite message.
         # When bot asked about company_size and user starts with number + punctuation,
         # e.g. "500. Скока стоит?", "15, а скока стоит?"
         if "company_size" not in extracted:

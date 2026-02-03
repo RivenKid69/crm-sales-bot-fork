@@ -468,7 +468,7 @@ class ResponseDirectivesBuilder:
                 directives.repair_trigger = "oscillation"
             elif envelope.repeated_question:
                 directives.repair_trigger = "repeated_question"
-                # Bug #10: Don't set ask_clarifying when repeated question is a
+                # Don't set ask_clarifying when repeated question is a
                 # known answerable type (price, technical, features, etc.)
                 # For these, the policy overlay + generator will select the correct
                 # answer template. Adding "ask clarifying" conflicts with answer-first.
@@ -646,7 +646,7 @@ class ResponseDirectivesBuilder:
         frustration_level = self.envelope.frustration_level
         pre_intervention = getattr(self.envelope, 'pre_intervention_triggered', False)
 
-        # BUG #22: Pass tone for tone-aware apology thresholds (SSOT)
+        # Pass tone for tone-aware apology thresholds (SSOT)
         tone = getattr(self.envelope, 'tone', None)
         directives.should_apologize = should_apologize(frustration_level, tone=tone)
         # Pass pre_intervention_triggered to ensure exit is offered at WARNING level too

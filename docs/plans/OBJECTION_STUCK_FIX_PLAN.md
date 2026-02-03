@@ -1367,4 +1367,3 @@ systemctl restart sales-bot
 ---
 
 *Документ создан: 25 Января 2026*
-*Автор: Claude Code*

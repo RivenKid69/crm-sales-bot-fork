@@ -105,7 +105,7 @@ class StallGuardSource(KnowledgeSource):
         Propose forced transition (and optionally action) to escape stalled state.
 
         Two-tier: hard (HIGH) at max_turns, soft (NORMAL) below.
-        Bug #19: With stall_guard_dual_proposal flag, also proposes action
+        With stall_guard_dual_proposal flag, also proposes action
         to prevent blocking by other sources, ConversationGuard preemption,
         DialoguePolicy override, and self-loop fallback.
         """
@@ -134,7 +134,7 @@ class StallGuardSource(KnowledgeSource):
             f"(consecutive={consecutive}, max={max_turns})"
         )
 
-        # Bug #19: Dual propose — action + transition (gated by feature flag)
+        # Dual propose — action + transition (gated by feature flag)
         # Pattern follows ObjectionGuardSource: combinable=True allows own transition through.
         # Priority matches transition priority for consistent resolution.
         if flags.is_enabled("stall_guard_dual_proposal"):

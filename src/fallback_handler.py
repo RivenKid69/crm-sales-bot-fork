@@ -91,7 +91,7 @@ class FallbackHandler:
     # Tier 2: Предложить варианты (кнопки) — загружается из YAML конфига
     OPTIONS_TEMPLATES: Dict[str, Dict[str, Any]] = FALLBACK_OPTIONS_TEMPLATES or {}
 
-    # Динамические подсказки по контексту — loaded from YAML + KB at runtime (Bug #9 SSOT fix)
+    # Динамические подсказки по контексту — loaded from YAML + KB at runtime
     # Questions and generic actions come from fallback_options.yaml.
     # Product feature options are sourced from KB via product_overviews.
     DYNAMIC_CTA_OPTIONS: Dict[str, Dict[str, Any]] = {}  # Populated at __init__
@@ -166,7 +166,7 @@ class FallbackHandler:
         self._enable_tracing = enable_tracing
         self._product_overviews = product_overviews or []
 
-        # Bug #9: Build DYNAMIC_CTA_OPTIONS from YAML + KB overviews
+        # Build DYNAMIC_CTA_OPTIONS from YAML + KB overviews
         self.DYNAMIC_CTA_OPTIONS = self._build_dynamic_cta_options()
 
         # FIX 3: Configurable tier_2 escalation threshold

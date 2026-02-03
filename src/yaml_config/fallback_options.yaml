@@ -1,4 +1,4 @@
-# Fallback dynamic CTA options — pain→question mapping (Bug #9 SSOT fix)
+# Fallback dynamic CTA options — pain→question mapping
 # Product feature options are now sourced from KB at runtime.
 # Only questions and generic CTA actions are defined here.
 

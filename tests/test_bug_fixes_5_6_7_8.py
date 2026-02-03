@@ -1,10 +1,10 @@
 """
-Targeted tests for Bug #5, #6, #7, #8 fixes.
+Targeted tests for turn counting, template leak, and frustration threshold fixes.
 
 Tests cover:
-- Bugs #5, #6: Off-by-one in turn counting (client_agent.py, runner.py)
-- Bug #7: Tier-1 template used as full response (bot.py, response_directives.py)
-- Bug #8: Frustration thresholds too low + suppress_decay too aggressive
+- Off-by-one in turn counting (client_agent.py, runner.py)
+- Tier-1 template used as full response (bot.py, response_directives.py)
+- Frustration thresholds too low + suppress_decay too aggressive
 
 NOTE: Tests that require LLM or semantic search are intentionally skipped.
 """
@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 # =============================================================================
-# BUG #5, #6: Off-by-one in turn counting
+# Off-by-one in turn counting
 # =============================================================================
 
 class TestOffByOne:
@@ -108,7 +108,7 @@ class TestOffByOne:
 
 
 # =============================================================================
-# BUG #7: Template leak — tier-1 rephrase used as full response
+# Template leak — tier-1 rephrase used as full response
 # =============================================================================
 
 class TestTemplateLeak:
@@ -181,7 +181,7 @@ class TestTemplateLeak:
 
 
 # =============================================================================
-# BUG #8: Frustration thresholds too low + suppress_decay too aggressive
+# Frustration thresholds too low + suppress_decay too aggressive
 # =============================================================================
 
 class TestFrustrationThresholds:
@@ -306,7 +306,7 @@ class TestFrustrationThresholds:
 
 
 # =============================================================================
-# BUG #5B: Fast-track for turn-limited conversations
+# Fast-track for turn-limited conversations
 # =============================================================================
 
 class TestFastTrackContact:

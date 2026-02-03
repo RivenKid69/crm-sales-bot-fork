@@ -3344,7 +3344,7 @@ SALES_STATES = {
 # DEPRECATED: KNOWLEDGE["pricing"] and ["discount_annual"] removed — SSOT is pricing.yaml
 # Migration: All pricing data now sourced from knowledge retriever (src/yaml_config/knowledge/pricing.yaml)
 # Context: Fix currency desynchronization (₽ → ₸), eliminate hardcoded prices, enforce SSOT principle
-# "features" already removed in Bug #9 fix
+# "features" already removed (SSOT is knowledge retriever)
 KNOWLEDGE = {}
 
 # =============================================================================

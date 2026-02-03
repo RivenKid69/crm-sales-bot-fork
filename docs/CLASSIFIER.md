@@ -27,9 +27,7 @@ classifier/
 ├── hybrid.py                # HybridClassifier — regex-based fallback
 ├── cascade.py               # CascadeClassifier — semantic fallback
 ├── disambiguation.py        # IntentDisambiguator
-├── refinement_pipeline.py   # RefinementPipeline — универсальный pipeline уточнения ⭐
-├── refinement_layers.py     # Адаптеры слоёв (Short, Composite, Objection) ⭐
-├── refinement.py            # ClassificationRefinementLayer (legacy)
+├── refinement_pipeline.py   # RefinementPipeline — универсальный pipeline уточнения├── refinement_layers.py     # Адаптеры слоёв (Short, Composite, Objection)├── refinement.py            # ClassificationRefinementLayer (legacy)
 ├── composite_refinement.py  # CompositeMessageRefinementLayer (legacy)
 ├── objection_refinement.py  # ObjectionRefinementLayer (legacy)
 ├── llm/                     # LLM классификатор (основной)
@@ -309,7 +307,7 @@ PRIORITY_PATTERNS = [
 ]
 ```
 
-## RefinementPipeline ⭐ NEW
+## RefinementPipeline NEW
 
 Универсальная архитектура для уточнения результатов классификации. Решает проблемы контекстной классификации через расширяемый pipeline слоёв.
 
@@ -441,7 +439,7 @@ stats = pipeline.get_stats()
 
 ### Встроенные слои
 
-#### ConfidenceCalibrationLayer ⭐ NEW
+#### ConfidenceCalibrationLayer NEW
 
 Научная калибровка LLM confidence для решения проблемы overconfident LLM. LLM часто возвращает высокий confidence (0.85-0.95) даже при неверной классификации.
 
@@ -569,8 +567,7 @@ confidence_calibration:
 flags.is_enabled("refinement_pipeline")  # True по умолчанию
 
 # Отдельные слои
-flags.confidence_calibration     # confidence_calibration layer (CRITICAL) ⭐
-flags.classification_refinement  # short_answer layer
+flags.confidence_calibration     # confidence_calibration layer (CRITICAL)flags.classification_refinement  # short_answer layer
 flags.composite_refinement       # composite_message layer
 flags.objection_refinement       # objection layer
 ```
@@ -641,10 +638,10 @@ refinement_pipeline:
 |-----------|------|
 | Pipeline Core | `src/classifier/refinement_pipeline.py` |
 | Layer Adapters | `src/classifier/refinement_layers.py` |
-| Confidence Calibration | `src/classifier/confidence_calibration.py` ⭐ |
+| Confidence Calibration | `src/classifier/confidence_calibration.py` |
 | Configuration | `src/yaml_config/constants.yaml` (секции `refinement_pipeline`, `confidence_calibration`) |
 | Feature Flags | `src/feature_flags.py` |
-| Tests | `tests/test_refinement_pipeline.py`, `tests/test_confidence_calibration.py` ⭐ |
+| Tests | `tests/test_refinement_pipeline.py`, `tests/test_confidence_calibration.py` |
 
 ### Legacy Mode
 
@@ -750,7 +747,7 @@ stats = classifier.get_stats()
 
 # RefinementPipeline flags
 "refinement_pipeline": True          # Универсальный RefinementPipeline (рекомендуется)
-"confidence_calibration": True       # Научная калибровка LLM confidence ⭐ NEW
+"confidence_calibration": True       # Научная калибровка LLM confidence NEW
 "classification_refinement": True    # Уточнение коротких ответов (ShortAnswerRefinementLayer)
 "composite_refinement": True         # Приоритет данных в составных сообщениях (CompositeMessageLayer)
 "objection_refinement": True         # Контекстная валидация objection (ObjectionRefinementLayerAdapter)

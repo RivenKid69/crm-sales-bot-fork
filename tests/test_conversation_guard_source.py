@@ -1,7 +1,7 @@
 # tests/test_conversation_guard_source.py
 
 """
-Tests for ConversationGuardSource (Bug #3 Fix).
+Tests for ConversationGuardSource.
 
 Test categories:
 1. Unit tests: Guard returns each tier → correct proposals

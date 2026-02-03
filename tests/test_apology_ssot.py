@@ -338,7 +338,7 @@ class TestGeneratorApology:
 
 
 class TestBug22ToneAwareApology:
-    """BUG #22: Tone-aware apology — skeptical users should not get apology at warning level."""
+    """Tone-aware apology — skeptical users should not get apology at warning level."""
 
     def test_skeptical_at_warning_no_apology(self):
         """should_apologize(4, 'skeptical') == False — skeptics need facts, not apology."""
@@ -393,7 +393,7 @@ class TestBug22ToneAwareApology:
 
 
 class TestBug22RegexAnalyzer:
-    """BUG #22: regex_analyzer urgency branches — Path A tests."""
+    """Regex_analyzer urgency branches — Path A tests."""
 
     def test_medium_urgency_skeptical_no_apology(self):
         """urgency='medium' + SKEPTICAL → should_apologize=False."""
@@ -452,7 +452,7 @@ class TestBug22RegexAnalyzer:
 
 
 class TestBug22ResponseVariations:
-    """BUG #22: No anglicisms in APOLOGIES list."""
+    """No anglicisms in APOLOGIES list."""
 
     def test_no_anglicisms_in_apologies(self):
         """No 'сорри' in APOLOGIES list."""

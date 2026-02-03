@@ -253,7 +253,7 @@ class CTAGenerator:
     FRUSTRATION_THRESHOLD = 5    # Не добавлять при высоком frustration
     MIN_TURNS_FOR_CTA = 3        # Минимум ходов до добавления CTA
 
-    # Bug #11: Backing-off phrases — CTA contradicts these sentiments
+    # Backing-off phrases — CTA contradicts these sentiments
     BACK_OFF_PATTERNS: List[str] = [
         "не будем настаивать",
         "не будем торопить",
@@ -424,7 +424,7 @@ class CTAGenerator:
         if frustration >= self.FRUSTRATION_THRESHOLD:
             return False, f"high_frustration_{frustration}"
 
-        # 3.5 BUG #23: Skip contact CTA when contact already collected
+        # 3.5 Skip contact CTA when contact already collected
         collected_data = context.get("collected_data", {})
         if collected_data and cta_phase == "close":
             try:
@@ -443,11 +443,11 @@ class CTAGenerator:
         if last_action == "answer_question":
             return False, "just_answered_question"
 
-        # 6. Bug #11: Backoff language gate — CTA contradicts backing-off sentiment
+        # 6. Backoff language gate — CTA contradicts backing-off sentiment
         if self._has_backoff_language(response):
             return False, "response_contains_backoff"
 
-        # 7. Bug #11: Action gate — soft_close/objection_limit_reached skip CTA
+        # 7. Action gate — soft_close/objection_limit_reached skip CTA
         action = context.get("action", "")
         if action in self.SOFT_CLOSE_ACTIONS:
             return False, "action_is_soft_close"

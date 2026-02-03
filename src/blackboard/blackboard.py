@@ -215,7 +215,7 @@ class DialogueBlackboard:
         Check if objection recording should be skipped.
 
         ======================================================================
-        NOT A BUG: This is part of infinite loop prevention (see Bug #5)
+        NOT A BUG: This is part of infinite loop prevention
         ======================================================================
 
         REPORTED CONCERN:

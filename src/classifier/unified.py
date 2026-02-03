@@ -166,6 +166,21 @@ class UnifiedClassifier:
         """
         context = context or {}
 
+        # Step 0: Priority patterns (greeting, goodbye, etc.) — always checked first,
+        # regardless of classifier mode.  These are high-confidence regex hits that
+        # should never be overridden by the LLM's phase-biased reasoning.
+        from src.classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
+        message_lower = message.lower().strip()
+        for pattern, intent, confidence in COMPILED_PRIORITY_PATTERNS:
+            if pattern.search(message_lower):
+                extracted = self.hybrid.data_extractor.extract(message, context)
+                return {
+                    "intent": intent,
+                    "confidence": confidence,
+                    "extracted_data": extracted,
+                    "method": "priority_pattern",
+                }
+
         # Step 1: Primary classification
         if flags.llm_classifier:
             result = self.llm.classify(message, context)

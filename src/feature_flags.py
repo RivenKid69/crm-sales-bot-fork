@@ -104,7 +104,7 @@ class FeatureFlags:
         "response_deduplication": True,           # Проверка на дублирующиеся ответы
         "price_question_override": True,          # Intent-aware override для вопросов о цене
 
-        # === BUG-001 FIX: Guard/Fallback Intervention Fixes ===
+        # === Guard/Fallback Intervention Fixes ===
         "guard_informative_intent_check": True,   # Проверка информативных интентов перед TIER_3
         "guard_skip_resets_fallback": True,       # Сброс fallback_response после skip action
 
@@ -158,7 +158,7 @@ class FeatureFlags:
 
         # === Universal Stall Guard (Defense-in-Depth: Max Turns in State) ===
         "universal_stall_guard": True,             # Universal max-turns-in-state forced ejection
-        "stall_guard_dual_proposal": True,         # Bug #19: StallGuard proposes action + transition
+        "stall_guard_dual_proposal": True,         # StallGuard proposes action + transition
 
         # === Data-Aware Refinement (Stall Prevention) ===
         "data_aware_refinement": True,             # Promote unclear→info_provided when data extracted
@@ -166,18 +166,21 @@ class FeatureFlags:
         # === Phase Exhausted Source (Guard-Blackboard Race Fix) ===
         "phase_exhausted_source": True,            # PhaseExhaustedSource: options menu when phase stuck
 
-        # === Phase Completion Gating (Bug #3 Fix) ===
+        # === Phase Completion Gating ===
         "phase_completion_gating": True,           # has_completed_minimum_phases condition
 
-        # === ConversationGuard in Pipeline (Bug #3 Fix) ===
+        # === ConversationGuard in Pipeline ===
         "conversation_guard_in_pipeline": False,   # Gradual rollout: guard inside Blackboard pipeline
 
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
 
-        # === Bug #31-33 fixes ===
+        # === Classification fixes ===
         "intent_pattern_guard": False,             # Configurable intent pattern detection (Change 7)
         "comparison_refinement": False,            # Comparison refinement layer (Change 8)
+
+        # === Autonomous Flow ===
+        "autonomous_flow": False,                  # LLM-driven sales flow (no YAML rules)
     }
 
     # Группы флагов для удобного управления
@@ -212,7 +215,7 @@ class FeatureFlags:
             "personalization", "personalization_v2", "personalization_adaptive_style",
             "personalization_semantic_industry", "personalization_session_memory"
         ],
-        # BUG-001 FIX: Guard/Fallback groups
+        # Guard/Fallback groups
         "guard_fixes": [
             "guard_informative_intent_check", "guard_skip_resets_fallback"
         ],
@@ -261,6 +264,10 @@ class FeatureFlags:
         # Refinement pipeline: include first_contact_refinement
         "refinement_pipeline_first_contact": [
             "first_contact_refinement"
+        ],
+        # Autonomous flow
+        "autonomous": [
+            "autonomous_flow"
         ],
     }
 
@@ -558,7 +565,7 @@ class FeatureFlags:
         return self.is_enabled("personalization_session_memory")
 
     # =========================================================================
-    # BUG-001 FIX: Guard/Fallback flags
+    # Guard/Fallback flags
     # =========================================================================
 
     @property
@@ -655,11 +662,11 @@ class FeatureFlags:
 
     @property
     def stall_guard_dual_proposal(self) -> bool:
-        """Bug #19: StallGuard proposes action + transition simultaneously"""
+        """StallGuard proposes action + transition simultaneously"""
         return self.is_enabled("stall_guard_dual_proposal")
 
     # =========================================================================
-    # ConversationGuard in Pipeline flags (Bug #3 Fix)
+    # ConversationGuard in Pipeline flags
     # =========================================================================
 
     @property
@@ -677,7 +684,7 @@ class FeatureFlags:
         return self.is_enabled("simulation_diagnostic_mode")
 
     # =========================================================================
-    # Bug #31-33 fixes flags
+    # Classification fixes flags
     # =========================================================================
 
     @property
@@ -689,6 +696,15 @@ class FeatureFlags:
     def comparison_refinement(self) -> bool:
         """Включён ли comparison refinement layer"""
         return self.is_enabled("comparison_refinement")
+
+    # =========================================================================
+    # Autonomous Flow flags
+    # =========================================================================
+
+    @property
+    def autonomous_flow(self) -> bool:
+        """Включён ли автономный LLM-driven sales flow"""
+        return self.is_enabled("autonomous_flow")
 
 
 # Singleton экземпляр

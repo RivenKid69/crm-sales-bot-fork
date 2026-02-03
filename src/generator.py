@@ -396,7 +396,8 @@ class ResponseGenerator:
     }
 
     # Порог схожести для детекции дубликатов
-    SIMILARITY_THRESHOLD = 0.80
+    # Lowered from 0.80 to 0.70 after adding punctuation normalization
+    SIMILARITY_THRESHOLD = 0.70
 
     def __init__(self, llm, flow: "FlowConfig" = None):
         """
@@ -441,7 +442,7 @@ class ResponseGenerator:
             self.personalization_engine = PersonalizationEngineV2(retriever)
             logger.info("PersonalizationEngineV2 initialized")
 
-        # Bug #9: Auto-discovered product overview from knowledge base (SSOT)
+        # Auto-discovered product overview from knowledge base (SSOT)
         self._product_overview: List[str] = []
         self._init_product_overview()
 
@@ -512,7 +513,7 @@ class ResponseGenerator:
         if intent in self.PRICE_RELATED_INTENTS:
             return ""
 
-        # Default: dynamic product overview from KB (Bug #9 fix — SSOT)
+        # Default: dynamic product overview from KB (SSOT)
         return self._get_product_overview()
 
     def _format_urls_for_response(self, urls: List[Dict[str, str]]) -> str:
@@ -544,18 +545,24 @@ class ResponseGenerator:
             return "\n".join(lines)
         return ""
 
-    def format_history(self, history: List[Dict]) -> str:
-        """Форматируем историю"""
+    def format_history(self, history: List[Dict], use_full: bool = False) -> str:
+        """Форматируем историю.
+
+        Args:
+            history: Список словарей с ключами 'user' и 'bot'
+            use_full: Если True — передаём ВСЮ историю (до 30 ходов),
+                      иначе обрезаем по self.history_length (settings).
+        """
         if not history:
             return "(начало разговора)"
 
+        limit = min(len(history), 30) if use_full else self.history_length
         lines = []
-        # Используем параметр из settings
-        for turn in history[-self.history_length:]:
+        for turn in history[-limit:]:
             lines.append(f"Клиент: {turn.get('user', '')}")
             if turn.get("bot"):
                 lines.append(f"Вы: {turn['bot']}")
-        
+
         return "\n".join(lines)
     
     def _has_chinese(self, text: str) -> bool:
@@ -620,29 +627,43 @@ class ResponseGenerator:
             max_retries = self.max_retries
 
         # Получаем релевантные факты из базы знаний
-        retriever = get_retriever()
         intent = context.get("intent", "")
         state = context.get("state", "")
         user_message = context.get("user_message", "")
 
-        # Определяем категории через LLM (если CategoryRouter включён)
-        categories = None
-        if self.category_router and user_message:
-            categories = self.category_router.route(user_message)
-            logger.debug(
-                "CategoryRouter selected categories",
-                categories=categories,
-                query=user_message[:50]
+        # === AUTONOMOUS FLOW: Direct KB access (bypass CategoryRouter + CascadeRetriever) ===
+        _is_autonomous = self._flow and self._flow.name == "autonomous" and state.startswith("autonomous_")
+        if _is_autonomous:
+            from src.knowledge.autonomous_kb import load_facts_for_state
+            from src.knowledge.loader import load_knowledge_base
+            _kb = load_knowledge_base()
+            retrieved_facts, retrieved_urls = load_facts_for_state(
+                state=state,
+                flow_config=self._flow,
+                kb=_kb,
             )
+            _company_info = f"{_kb.company_name}: {_kb.company_description}"
+        else:
+            retriever = get_retriever()
+            _company_info = retriever.get_company_info()
+            # Определяем категории через LLM (если CategoryRouter включён)
+            categories = None
+            if self.category_router and user_message:
+                categories = self.category_router.route(user_message)
+                logger.debug(
+                    "CategoryRouter selected categories",
+                    categories=categories,
+                    query=user_message[:50]
+                )
 
-        # Вызываем retriever с категориями и URLs
-        retrieved_facts, retrieved_urls = retriever.retrieve_with_urls(
-            message=user_message,
-            intent=intent,
-            state=state,
-            categories=categories,
-            top_k=self.retriever_top_k
-        )
+            # Вызываем retriever с категориями и URLs
+            retrieved_facts, retrieved_urls = retriever.retrieve_with_urls(
+                message=user_message,
+                intent=intent,
+                state=state,
+                categories=categories,
+                top_k=self.retriever_top_k
+            )
 
         # Форматируем URLs для включения в ответ
         formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
@@ -683,7 +704,7 @@ class ResponseGenerator:
         else:
             template_key = action
 
-        # Bug #10: Universal answer-template forcing for repeated questions.
+        # Universal answer-template forcing for repeated questions.
         # When user repeatedly asked a known question but classifier missed it
         # on this turn, force an answering template instead of SPIN/generic.
         # Analogous to existing price template forcing at L664.
@@ -771,7 +792,7 @@ class ResponseGenerator:
         variables.update({
             "system": system_prompt,
             "user_message": user_message,
-            "history": self.format_history(context.get("history", [])),
+            "history": self.format_history(context.get("history", []), use_full=_is_autonomous),
             "goal": context.get("goal", ""),
             "collected_data": str(collected),
             "missing_data": ", ".join(context.get("missing_data", [])) or "всё собрано",
@@ -781,7 +802,7 @@ class ResponseGenerator:
             # База знаний
             "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
             "retrieved_urls": formatted_urls,  # NEW: Structured URLs for documentation links
-            "company_info": retriever.get_company_info(),
+            "company_info": _company_info,
             # SPIN-специфичные данные
             "current_tools": current_tools,
             "business_type": business_type,
@@ -832,14 +853,14 @@ class ResponseGenerator:
             except Exception as e:
                 logger.warning(f"Question deduplication failed: {e}")
 
-        # BUG #2 FIX: Prevent template from asking about already-known data
+        # Prevent template from asking about already-known data
         if collected.get("company_size") and not variables.get("do_not_ask"):
             variables["do_not_ask"] = (
                 "⚠️ НЕ СПРАШИВАЙ о размере команды/количестве сотрудников — "
                 f"уже известно: {collected['company_size']} человек."
             )
 
-        # BUG #23: Prevent template from asking about contact when already known
+        # Prevent template from asking about contact when already known
         try:
             from src.conditions.state_machine.contact_validator import has_valid_contact
             if has_valid_contact(collected):
@@ -1218,6 +1239,9 @@ class ResponseGenerator:
         """
         Вычислить схожесть двух текстов (Jaccard similarity по словам).
 
+        CRITICAL FIX: Remove punctuation BEFORE splitting to avoid mismatches.
+        Russian text: "год," vs "год" vs "год." all become "год".
+
         Args:
             text_a: Первый текст
             text_b: Второй текст
@@ -1225,9 +1249,12 @@ class ResponseGenerator:
         Returns:
             Схожесть от 0.0 до 1.0
         """
-        # Нормализация
-        a_norm = text_a.lower().strip()
-        b_norm = text_b.lower().strip()
+        import re
+
+        # CRITICAL FIX: Remove punctuation BEFORE splitting
+        # Russian text: "год," vs "год" vs "год." all become "год"
+        a_norm = re.sub(r'[^\w\s]', '', text_a.lower().strip())
+        b_norm = re.sub(r'[^\w\s]', '', text_b.lower().strip())
 
         # Точное совпадение
         if a_norm == b_norm:
@@ -1245,9 +1272,48 @@ class ResponseGenerator:
 
         return intersection / union if union > 0 else 0.0
 
+    def _compute_semantic_similarity(self, text_a: str, text_b: str) -> float:
+        """
+        Вычислить семантическую схожесть текстов через эмбеддинги.
+
+        Использует существующий retriever для генерации эмбеддингов
+        и вычисляет cosine similarity.
+
+        Args:
+            text_a: Первый текст
+            text_b: Второй текст
+
+        Returns:
+            Семантическая схожесть от 0.0 до 1.0
+        """
+        try:
+            from src.knowledge_retrieval import get_retriever
+            import numpy as np
+
+            retriever = get_retriever()
+            emb_a = retriever.embed_query(text_a)
+            emb_b = retriever.embed_query(text_b)
+
+            # Cosine similarity
+            dot_product = np.dot(emb_a, emb_b)
+            norm_a = np.linalg.norm(emb_a)
+            norm_b = np.linalg.norm(emb_b)
+
+            if norm_a == 0 or norm_b == 0:
+                return 0.0
+
+            return float(dot_product / (norm_a * norm_b))
+        except Exception as e:
+            logger.warning(f"Semantic similarity calculation failed: {e}")
+            return 0.0  # Graceful degradation
+
     def _is_duplicate(self, response: str, history: List[Dict]) -> bool:
         """
         Проверить является ли ответ дубликатом предыдущих.
+
+        Использует гибридную 2-стадийную детекцию:
+        1. Быстрый Jaccard (1ms) - ловит точные/почти-точные совпадения
+        2. Семантический fallback (50ms) - ловит перефразировки (только для пограничных случаев)
 
         Args:
             response: Новый ответ для проверки
@@ -1261,27 +1327,51 @@ class ResponseGenerator:
 
         # 1. Проверяем внутренний кэш ответов
         for prev in self._response_history[-3:]:
-            similarity = self._compute_similarity(response, prev)
-            if similarity > self.SIMILARITY_THRESHOLD:
+            # Stage 1: Fast Jaccard similarity
+            jaccard_sim = self._compute_similarity(response, prev)
+            if jaccard_sim > self.SIMILARITY_THRESHOLD:  # 0.70
                 logger.debug(
-                    "Duplicate detected in response history",
-                    similarity=f"{similarity:.2f}",
+                    "Duplicate detected (Jaccard) in response history",
+                    similarity=f"{jaccard_sim:.2f}",
                     threshold=self.SIMILARITY_THRESHOLD
                 )
                 return True
+
+            # Stage 2: Semantic fallback (only if Jaccard borderline)
+            if 0.50 <= jaccard_sim <= 0.70:
+                semantic_sim = self._compute_semantic_similarity(response, prev)
+                if semantic_sim > 0.85:  # High semantic threshold
+                    logger.debug(
+                        "Duplicate detected (Semantic) in response history",
+                        jaccard=f"{jaccard_sim:.2f}",
+                        semantic=f"{semantic_sim:.2f}"
+                    )
+                    return True
 
         # 2. Проверяем историю диалога
         for turn in history[-3:]:
             bot_response = turn.get("bot", "")
             if bot_response:
-                similarity = self._compute_similarity(response, bot_response)
-                if similarity > self.SIMILARITY_THRESHOLD:
+                # Stage 1: Fast Jaccard similarity
+                jaccard_sim = self._compute_similarity(response, bot_response)
+                if jaccard_sim > self.SIMILARITY_THRESHOLD:
                     logger.debug(
-                        "Duplicate detected in dialogue history",
-                        similarity=f"{similarity:.2f}",
+                        "Duplicate detected (Jaccard) in dialogue history",
+                        similarity=f"{jaccard_sim:.2f}",
                         threshold=self.SIMILARITY_THRESHOLD
                     )
                     return True
+
+                # Stage 2: Semantic fallback (only if Jaccard borderline)
+                if 0.50 <= jaccard_sim <= 0.70:
+                    semantic_sim = self._compute_semantic_similarity(response, bot_response)
+                    if semantic_sim > 0.85:
+                        logger.debug(
+                            "Duplicate detected (Semantic) in dialogue history",
+                            jaccard=f"{jaccard_sim:.2f}",
+                            semantic=f"{semantic_sim:.2f}"
+                        )
+                        return True
 
         return False
 
@@ -1397,7 +1487,7 @@ class ResponseGenerator:
         Select template for price-related questions.
         Priority: action from policy overlay > intent-based default.
         """
-        # BUG #2 FIX: If policy overlay (price_handling mixin) selected a
+        # If policy overlay (price_handling mixin) selected a
         # specific pricing template via conditions (should_answer_directly,
         # price_repeated_2x), honor it. Previously this method always returned
         # answer_with_pricing, making answer_with_pricing_direct dead code.

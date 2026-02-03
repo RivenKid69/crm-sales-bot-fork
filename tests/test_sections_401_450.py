@@ -306,7 +306,7 @@ def run_tests():
                     "error": "NO_RESULTS",
                     "got": None
                 })
-                print(f"  ❌ '{query}' -> НЕТ РЕЗУЛЬТАТОВ")
+                print(f"  FAIL: '{query}' -> НЕТ РЕЗУЛЬТАТОВ")
                 continue
 
             # Проверяем что ожидаемый topic в топ-3
@@ -317,7 +317,7 @@ def run_tests():
                 score = results[found_topics.index(expected_topic)].score
                 stage = results[found_topics.index(expected_topic)].stage.value
                 passed_tests += 1
-                print(f"  ✅ '{query}' -> #{position} (score={score:.2f}, stage={stage})")
+                print(f"  OK: '{query}' -> #{position} (score={score:.2f}, stage={stage})")
             else:
                 # Проверим не является ли первый результат подходящим по категории
                 top_result = results[0]
@@ -330,7 +330,7 @@ def run_tests():
                 if top_category == expected_category:
                     # Категория правильная, но другой topic
                     passed_tests += 1
-                    print(f"  ⚠️  '{query}' -> {top_topic} (категория OK, score={top_result.score:.2f})")
+                    print(f"  WARN: '{query}' -> {top_topic} (категория OK, score={top_result.score:.2f})")
                 else:
                     failed_tests.append({
                         "expected": expected_topic,
@@ -338,7 +338,7 @@ def run_tests():
                         "error": "WRONG_TOPIC",
                         "got": found_topics[:3]
                     })
-                    print(f"  ❌ '{query}' -> {found_topics[0]} (ожидали {expected_topic})")
+                    print(f"  FAIL: '{query}' -> {found_topics[0]} (ожидали {expected_topic})")
 
     # Итоги
     print("\n" + "=" * 70)

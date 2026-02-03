@@ -89,6 +89,7 @@ class DialogueOrchestrator:
         tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
         guard: Optional[Any] = None,
         fallback_handler: Optional[Any] = None,
+        llm: Optional[Any] = None,
     ):
         """
         Initialize the orchestrator.
@@ -101,6 +102,7 @@ class DialogueOrchestrator:
             strict_validation: Whether to treat warnings as errors
             persona_limits: Custom persona limits for ObjectionGuardSource
             tenant_config: Tenant-specific configuration (uses DEFAULT_TENANT if not provided)
+            llm: LLM instance for AutonomousDecisionSource (None for non-autonomous flows)
         """
         self._state_machine = state_machine
         self._flow_config = flow_config
@@ -141,6 +143,7 @@ class DialogueOrchestrator:
                 "guard": self._guard,
                 "fallback_handler": self._fallback_handler,
             },
+            "AutonomousDecisionSource": {"llm": llm},
         }
 
         self._sources: List[KnowledgeSource] = SourceRegistry.create_sources(
@@ -861,6 +864,7 @@ def create_orchestrator(
     tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
     guard: Optional[Any] = None,
     fallback_handler: Optional[Any] = None,
+    llm: Optional[Any] = None,
 ) -> DialogueOrchestrator:
     """
     Factory function to create a fully configured DialogueOrchestrator.
@@ -955,6 +959,7 @@ def create_orchestrator(
         tenant_config=tenant_config,
         guard=guard,
         fallback_handler=fallback_handler,
+        llm=llm,
     )
 
     return orchestrator

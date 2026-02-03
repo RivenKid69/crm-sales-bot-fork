@@ -56,10 +56,10 @@ src/
 ### Миграция импортов
 
 ```python
-# ❌ v1.x (deprecated)
+# v1.x (deprecated)
 from state_machine import SPIN_PHASES, SPIN_STATES, SPIN_PROGRESS_INTENTS
 
-# ✅ v2.0
+# v2.0
 from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES, SPIN_PROGRESS_INTENTS
 
 # StateMachine теперь автоматически загружает config и flow
@@ -274,7 +274,7 @@ classifier/
     └── data_extractor.py    # Извлечение данных + pain_category
 ```
 
-### RefinementPipeline ⭐ NEW
+### RefinementPipeline NEW
 
 Универсальная архитектура уточнения классификации через расширяемый pipeline:
 
@@ -291,13 +291,13 @@ classifier/
 │        │Calibration│   │Refinement   │   │Message      │   │Refinement│ │    │
 │        │(CRITICAL) │   │(HIGH)       │   │(HIGH)       │   │(NORMAL)  │ │    │
 │        └───────────┘   └─────────────┘   └─────────────┘   └──────────┘ │    │
-│              ⭐ NEW                                                       │    │
+│              NEW                                                       │    │
 │   Architecture:                                                                │
 │   • Protocol Pattern (IRefinementLayer) — единый интерфейс для слоёв          │
 │   • Registry Pattern — динамическая регистрация слоёв                         │
 │   • Pipeline Pattern — последовательная обработка по приоритетам              │
 │   • Fail-Safe — ошибки слоя не ломают весь pipeline                           │
-│   • Scientific Calibration — entropy, gap, heuristic strategies ⭐            │
+│   • Scientific Calibration — entropy, gap, heuristic strategies               │
 │                                                                                │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -313,7 +313,7 @@ classifier/
 
 | Слой | Приоритет | Описание |
 |------|-----------|----------|
-| `confidence_calibration` | CRITICAL ⭐ | Научная калибровка LLM confidence (entropy, gap, heuristics) |
+| `confidence_calibration` | CRITICAL | Научная калибровка LLM confidence (entropy, gap, heuristics) |
 | `short_answer` | HIGH | Уточнение коротких ответов ("да", "1") по контексту SPIN фазы |
 | `composite_message` | HIGH | Приоритет извлечения данных в составных сообщениях |
 | `objection` | NORMAL | Контекстная валидация objection-классификаций |
@@ -325,8 +325,7 @@ refinement_pipeline:
   layers:
     - name: confidence_calibration
       enabled: true
-      priority: CRITICAL  # 100 - runs first ⭐
-      feature_flag: confidence_calibration
+      priority: CRITICAL  # 100 - runs first      feature_flag: confidence_calibration
     - name: short_answer
       enabled: true
       priority: HIGH
@@ -340,7 +339,7 @@ refinement_pipeline:
       priority: NORMAL
       feature_flag: objection_refinement
 
-# ⭐ NEW: Scientific confidence calibration
+# NEW: Scientific confidence calibration
 confidence_calibration:
   enabled: true
   entropy_enabled: true       # Shannon entropy
@@ -351,8 +350,7 @@ confidence_calibration:
 **SSoT:**
 - Pipeline: `src/classifier/refinement_pipeline.py`
 - Layers: `src/classifier/refinement_layers.py`
-- Confidence Calibration: `src/classifier/confidence_calibration.py` ⭐
-- Config: `src/yaml_config/constants.yaml` (секции `refinement_pipeline`, `confidence_calibration`)
+- Confidence Calibration: `src/classifier/confidence_calibration.py`- Config: `src/yaml_config/constants.yaml` (секции `refinement_pipeline`, `confidence_calibration`)
 
 ## Поток данных
 
@@ -444,7 +442,7 @@ close ────────────────── Запрос кон
     └──► soft_close (отказ)
 ```
 
-## DAG State Machine ⭐ NEW
+## DAG State Machine NEW
 
 Расширение линейной state machine для поддержки параллельных потоков и условных ветвлений.
 
@@ -661,7 +659,7 @@ rules:
   price_question: "{{default_action}}"  # → deflect_and_continue
 ```
 
-## Intent Taxonomy System ⭐ NEW
+## Intent Taxonomy System NEW
 
 **"Zero Unmapped Intents by Design"** — архитектура для устранения 81% failure rate через intelligent fallback.
 
@@ -709,7 +707,7 @@ Intent Resolution Pipeline:
 3. Super-Category     ─── user_input → acknowledge_and_continue
        │
        ▼ (not found)
-4. Domain Fallback    ─── pricing → answer_with_pricing ✅
+4. Domain Fallback    ─── pricing → answer_with_pricing  [MATCH]
        │
        ▼ (not found)
 5. DEFAULT_ACTION     ─── continue_current_goal
@@ -722,7 +720,7 @@ Intent Resolution Pipeline:
 # 1. Exact match — NOT FOUND
 # 2. Category (question) — answer_and_continue (available)
 # 3. Super-category (user_input) — acknowledge_and_continue (available)
-# 4. Domain (pricing) — answer_with_pricing ✅ USED (strongest semantic signal)
+# 4. Domain (pricing) — answer_with_pricing USED (strongest semantic signal)
 # Result: answer_with_pricing (CORRECT!)
 ```
 
@@ -752,7 +750,7 @@ _universal_base:
 ```yaml
 _base_phase:
   mixins:
-    - _universal_base     # ✅ FIRST for guaranteed coverage
+    - _universal_base     # FIRST for guaranteed coverage
     - phase_progress
     - price_handling      # Can override with conditional logic
 ```
@@ -901,8 +899,8 @@ if flags.llm_classifier:
 | `guard_informative_intent_check` | Проверка информативных интентов |
 | `guard_skip_resets_fallback` | Сброс fallback_response после skip |
 | `confidence_router` | Gap-based решения и graceful degradation |
-| `refinement_pipeline` | Универсальный RefinementPipeline вместо отдельных слоёв ⭐ |
-| `confidence_calibration` | Научная калибровка LLM confidence (entropy, gap, heuristics) ⭐ NEW |
+| `refinement_pipeline` | Универсальный RefinementPipeline вместо отдельных слоёв |
+| `confidence_calibration` | Научная калибровка LLM confidence (entropy, gap, heuristics) NEW |
 | `classification_refinement` | Уточнение классификации коротких ответов |
 | `composite_refinement` | Приоритет данных в составных сообщениях |
 | `objection_refinement` | Контекстная валидация objection-классификаций |
@@ -976,9 +974,9 @@ FALLBACK_RESPONSES = {
 | `classifier/unified.py` | Адаптер для переключения классификаторов |
 | `classifier/llm/` | LLM классификатор (150+ интентов) |
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
-| `classifier/refinement_pipeline.py` | **RefinementPipeline** (Protocol, Registry, Pipeline) ⭐ |
-| `classifier/refinement_layers.py` | **Адаптеры слоёв уточнения** (Short, Composite, Objection) ⭐ |
-| `classifier/confidence_calibration.py` | **ConfidenceCalibrationLayer** (научная калибровка LLM confidence) ⭐ NEW |
+| `classifier/refinement_pipeline.py` | **RefinementPipeline** (Protocol, Registry, Pipeline) |
+| `classifier/refinement_layers.py` | **Адаптеры слоёв уточнения** (Short, Composite, Objection) |
+| `classifier/confidence_calibration.py` | **ConfidenceCalibrationLayer** (научная калибровка LLM confidence) NEW |
 | `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
 | `knowledge/category_router.py` | LLM-классификация категорий |
 | `knowledge/reranker.py` | Cross-encoder переоценка |
@@ -986,11 +984,11 @@ FALLBACK_RESPONSES = {
 | `settings.py` | Конфигурация из YAML |
 | `config.py` | Интенты, состояния, промпты |
 | `config_loader.py` | ConfigLoader, FlowConfig для YAML flow |
-| `rules/resolver.py` | **RuleResolver с taxonomy-based fallback** ⭐ NEW |
-| `rules/intent_taxonomy.py` | **IntentTaxonomyRegistry (5-level fallback chain)** ⭐ NEW |
-| `validation/intent_coverage.py` | **IntentCoverageValidator (zero unmapped intents)** ⭐ NEW |
+| `rules/resolver.py` | **RuleResolver с taxonomy-based fallback** NEW |
+| `rules/intent_taxonomy.py` | **IntentTaxonomyRegistry (5-level fallback chain)** NEW |
+| `validation/intent_coverage.py` | **IntentCoverageValidator (zero unmapped intents)** NEW |
 | `yaml_config/` | YAML конфигурация (states, flows, templates) |
-| `dag/` | **DAG State Machine** (CHOICE, FORK/JOIN, History) ⭐ |
+| `dag/` | **DAG State Machine** (CHOICE, FORK/JOIN, History) |
 | `context_window.py` | Расширенный контекст диалога |
 | `dialogue_policy.py` | Context-aware policy overlays |
 | `context_envelope.py` | Построение контекста для подсистем |

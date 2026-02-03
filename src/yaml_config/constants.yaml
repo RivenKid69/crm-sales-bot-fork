@@ -449,7 +449,7 @@ intents:
       - question_automation
       - question_scalability
 
-    # MOVED: question_requires_facts → composed_categories (BUG #4 fix)
+    # MOVED: question_requires_facts → composed_categories
     # Now includes all_questions instead of hardcoded 4 intents
 
     spin_progress:
@@ -458,7 +458,7 @@ intents:
       - implication_acknowledged
       - need_expressed
 
-    # BUG-001 FIX: Информативные интенты (клиент предоставляет данные, не застрял)
+    # Информативные интенты (клиент предоставляет данные, не застрял)
     # Используется ConversationGuard для проверки перед срабатыванием TIER_3
     informative:
       # SPIN situation
@@ -767,7 +767,7 @@ intents:
       - case_study_request
       - roi_question
 
-    # REMOVED: objection_return_questions (BUG #4 fix)
+    # REMOVED: objection_return_questions
     # All question intents now covered by composed all_questions category
     # via auto_include.intent_prefix: "question_"
 
@@ -825,7 +825,7 @@ intents:
       description: "Интенты блокирующие прогресс диалога"
 
     # all_questions = все типы вопросов (для fallback/routing)
-    # BUG #4 FIX: all_questions uses auto-discovery for question_* categories
+    # all_questions uses auto-discovery for question_* categories
     # auto_include scans base_categories for any with question_* intents (7+ categories auto-discovered)
     # explicit includes cover edge cases where intents don't have question_* prefix
     all_questions:
@@ -860,7 +860,7 @@ intents:
 
     # objection_return_triggers = все интенты вызывающие возврат из handle_objection
     # ВАЖНО: Единственный источник истины для ObjectionReturnSource.DEFAULT_RETURN_INTENTS
-    # BUG #4 FIX: ALL questions = engagement signal (was: only 2 ghost intents)
+    # ALL questions = engagement signal (was: only 2 ghost intents)
     objection_return_triggers:
       includes:
         - positive         # 23 positive signals
@@ -868,7 +868,7 @@ intents:
         - all_questions    # FIX RC-1: ALL questions = engagement signal
       description: "SSOT: Интенты вызывающие возврат из handle_objection в сохранённое состояние"
 
-    # BUG #4 FIX: question_requires_facts as composed category (was: 4 hardcoded intents)
+    # question_requires_facts as composed category (was: 4 hardcoded intents)
     question_requires_facts:
       includes:
         - all_questions
@@ -880,6 +880,10 @@ intents:
   # поэтому НЕ указываем их здесь как безусловный override
   # =================================================================
   intent_action_overrides:
+    # Pricing intents (defense-in-depth with policy overlay)
+    price_question: answer_with_pricing
+    pricing_details: answer_with_pricing
+    # Facts-based questions
     question_features: answer_with_facts
     question_integrations: answer_with_facts
     # Технические вопросы
@@ -3237,7 +3241,7 @@ lead_scoring:
     hot: [50, 69]
     very_hot: [70, 100]
 
-  # ⚠️ КРИТИЧНО: Какие SPIN фазы пропускать по температуре
+  # КРИТИЧНО: Какие SPIN фазы пропускать по температуре
   # Это напрямую влияет на flow диалога!
   skip_phases:
     cold: []  # Полный SPIN
@@ -3276,7 +3280,7 @@ guard:
   progress_check_interval: 5            # Каждые 5 turns проверяем прогресс
   min_unique_states_for_progress: 2     # Минимум уникальных состояний за интервал
 
-  # ⚠️ КРИТИЧНО: Должен быть равен frustration.thresholds.high
+  # КРИТИЧНО: Должен быть равен frustration.thresholds.high
   high_frustration_threshold: 7
 
   # Предустановленные профили
@@ -3304,7 +3308,7 @@ frustration:
   weights:
     frustrated: 3      # Сильно увеличивает
     skeptical: 1       # Немного увеличивает
-    rushed: 2          # ⚠️ UPDATED from 1 to 2: RUSHED users need faster response
+    rushed: 2          # UPDATED from 1 to 2: RUSHED users need faster response
     confused: 1        # Долгое непонимание = frustration
 
   # Веса для снижения frustration (decay)
@@ -3313,7 +3317,7 @@ frustration:
     positive: 2        # Хорошо снижает
     interested: 2      # Хорошо снижает
 
-  # ⚠️ Пороги frustration (Single Source of Truth)
+  # Пороги frustration (Single Source of Truth)
   # Все компоненты ДОЛЖНЫ использовать эти пороги через src.frustration_thresholds!
   #
   # Шкала (0-10):
@@ -3334,7 +3338,7 @@ frustration:
     high: 7            # Предложить помощь/выход (= guard.high_frustration_threshold)
     critical: 9        # Мягкое завершение
 
-  # Tone-aware apology thresholds (BUG #22)
+  # Tone-aware apology thresholds
   # Tones listed here use elevated threshold instead of default WARNING(4)
   # Rationale: skepticism is a business question, not frustration
   apology:
@@ -3343,7 +3347,7 @@ frustration:
       skeptical: 7                  # Don't apologize to skeptics below HIGH
 
   # =============================================================================
-  # INTENSITY-BASED FRUSTRATION CALCULATION ⭐ NEW
+  # INTENSITY-BASED FRUSTRATION CALCULATION
   # =============================================================================
   # Calculates frustration delta based on signal count (intensity).
   # Multiple signals of same tone = higher weight.
@@ -3363,7 +3367,7 @@ frustration:
     # Base weights (override defaults from frustration.weights)
     base_weights:
       frustrated: 3    # Matches weights.frustrated
-      rushed: 2        # ⚠️ Higher than original (1) - RUSHED users need faster response
+      rushed: 2        # Higher than original (1) - RUSHED users need faster response
       skeptical: 1     # Matches weights.skeptical
       confused: 1      # Matches weights.confused
 
@@ -4370,6 +4374,27 @@ extraction:
     engage:
       - company_size
 
+    # Autonomous flow phases
+    discovery:
+      - business_type
+      - company_size
+      - current_tools
+    qualification:
+      - company_size
+      - budget_range
+      - decision_maker
+    presentation:
+      - pain_point
+      - desired_outcome
+    objection_handling:
+      - pain_point
+      - pain_category
+    negotiation:
+      - budget_range
+      - decision_timeline
+    closing:
+      - contact_info
+
   # =========================================================================
   # VALIDATION RULES
   # =========================================================================
@@ -4789,7 +4814,7 @@ composite_refinement:
     clarify_one_question: any
     continue_current_goal: any
 
-    # BUG #2 FIX: answer_with_pricing template asks "Сколько сотрудников?",
+    # answer_with_pricing template asks "Сколько сотрудников?",
     # so next user message in this context may contain company_size
     answer_with_pricing: company_size
 
@@ -4825,7 +4850,7 @@ composite_refinement:
     clarify_one_question: info_provided
     continue_current_goal: info_provided
 
-    # BUG #2 FIX: CRITICAL — map to price_question, NOT info_provided.
+    # CRITICAL — map to price_question, NOT info_provided.
     # This PRESERVES the intent so price template selection still fires.
     # Without this, CompositeMessageLayer would change price_question → info_provided,
     # breaking the entire price response chain.

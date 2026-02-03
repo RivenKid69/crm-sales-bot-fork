@@ -422,7 +422,7 @@ class FlowConfig:
         Reads max_simulation_visits and max_simulation_consecutive from state configs.
         These are runner-only parameters that control simulation stagnation detection.
 
-        BUG #4 FIX (RC-3): Auto-derives max_simulation_consecutive from max_turns_in_state + 1
+        Auto-derives max_simulation_consecutive from max_turns_in_state + 1
         when not explicitly set. This ensures simulator limit > TTL so bot's escape mechanisms
         (StallGuard) fire first. Guard: skip states with max_turns_in_state=0 (terminal states).
 

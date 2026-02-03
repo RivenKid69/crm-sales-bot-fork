@@ -310,7 +310,7 @@ def run_strict_tests():
                     "error": "NO_RESULTS",
                     "got": None
                 })
-                print(f"  ❌ '{query}' -> НЕТ РЕЗУЛЬТАТОВ")
+                print(f"  FAIL: '{query}' -> НЕТ РЕЗУЛЬТАТОВ")
                 continue
 
             found_topics = [r.section.topic for r in results]
@@ -322,9 +322,9 @@ def run_strict_tests():
                 stage = results[found_topics.index(expected_topic)].stage.value
                 passed_exact += 1
                 if position == 1:
-                    print(f"  ✅ '{query}' -> #1 (score={score:.2f})")
+                    print(f"  OK: '{query}' -> #1 (score={score:.2f})")
                 else:
-                    print(f"  ✅ '{query}' -> #{position} (score={score:.2f})")
+                    print(f"  OK: '{query}' -> #{position} (score={score:.2f})")
             else:
                 # Строгий режим - если не в топ-3, это провал
                 top_topic = top_result.section.topic
@@ -333,7 +333,7 @@ def run_strict_tests():
 
                 if top_category == expected_category:
                     passed_category += 1
-                    print(f"  ⚠️  '{query}' -> {top_topic} (та же категория)")
+                    print(f"  WARN: '{query}' -> {top_topic} (та же категория)")
                 else:
                     failed_tests.append({
                         "expected": expected_topic,
@@ -341,7 +341,7 @@ def run_strict_tests():
                         "error": "WRONG_SECTION",
                         "got": found_topics[0]
                     })
-                    print(f"  ❌ '{query}' -> {found_topics[0]}")
+                    print(f"  FAIL: '{query}' -> {found_topics[0]}")
 
     # Итоги
     print("\n" + "=" * 70)
@@ -353,10 +353,10 @@ def run_strict_tests():
     print(f"Провалено: {len(failed_tests)} ({len(failed_tests)/total_tests*100:.1f}%)")
 
     accuracy = passed_exact / total_tests * 100
-    print(f"\n🎯 ТОЧНОСТЬ: {accuracy:.1f}%")
+    print(f"\nТОЧНОСТЬ: {accuracy:.1f}%")
 
     if passed_category > 0:
-        print(f"\n⚠️  ЗАПРОСЫ В ТОЙ ЖЕ КАТЕГОРИИ (требуют доработки):")
+        print(f"\nЗАПРОСЫ В ТОЙ ЖЕ КАТЕГОРИИ (требуют доработки):")
         # Показать только уникальные секции с проблемами
         problem_sections = set()
         for expected_topic, queries in TEST_QUERIES.items():
@@ -373,7 +373,7 @@ def run_strict_tests():
             print(f"  - {section}")
 
     if failed_tests:
-        print(f"\n❌ ПРОВАЛИВШИЕСЯ ТЕСТЫ:")
+        print(f"\nПРОВАЛИВШИЕСЯ ТЕСТЫ:")
         for fail in failed_tests:
             print(f"  • {fail['expected']}: '{fail['query']}' -> {fail['got']}")
 

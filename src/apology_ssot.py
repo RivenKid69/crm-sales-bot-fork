@@ -74,7 +74,7 @@ def should_apologize(frustration_level: int, tone: Optional[str] = None) -> bool
     Uses FRUSTRATION_WARNING threshold from frustration_thresholds SSoT.
     Tone-specific overrides are sourced from constants.yaml (SSOT).
 
-    BUG #22: Skepticism is a business question, not frustration.
+    Skepticism is a business question, not frustration.
     Skeptical users get a higher threshold (from YAML) before apology fires.
 
     Backward-compatible: tone=None preserves existing behavior.
@@ -241,7 +241,7 @@ def validate_thresholds() -> bool:
             f"EXIT_OFFER_THRESHOLD ({EXIT_OFFER_THRESHOLD})"
         )
 
-    # Validate tone overrides are within valid range (BUG #22)
+    # Validate tone overrides are within valid range
     for tone_name, threshold in APOLOGY_TONE_OVERRIDES.items():
         if not (APOLOGY_THRESHOLD <= threshold <= FRUSTRATION_MAX):
             raise ValueError(

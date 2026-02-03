@@ -595,6 +595,7 @@ class ContextEnvelopeBuilder:
         if not envelope.intent_history:
             envelope.intent_history = cw.get_intent_history()
         envelope.action_history = cw.get_action_history()
+        envelope.bot_responses = cw.get_bot_response_history(5)
         if envelope.objection_count == 0:
             envelope.objection_count = cw.get_objection_count()
         envelope.positive_count = cw.get_positive_count()

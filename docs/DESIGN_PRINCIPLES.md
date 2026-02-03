@@ -55,12 +55,12 @@
 
 | Цель | Метрика | Текущий статус |
 |------|---------|----------------|
-| **Zero-code flow creation** | Новый flow без Python | ✅ YAML flows |
-| **Domain independence** | Нет hardcode бизнес-логики | 🔄 Частично (composed_categories) |
-| **Blackboard decision-making** | Все решения через proposals | ✅ 10 Knowledge Sources |
-| **Plugin extensibility** | Добавление функций через плагины | 📋 Planned |
-| **Multi-tenant ready** | Изоляция данных между клиентами | 📋 Planned |
-| **LLM agnostic** | Поддержка любой LLM | 🔄 Частично |
+| **Zero-code flow creation** | Новый flow без Python | [Done] YAML flows |
+| **Domain independence** | Нет hardcode бизнес-логики | [Partial] (composed_categories) |
+| **Blackboard decision-making** | Все решения через proposals | [Done] 10 Knowledge Sources |
+| **Plugin extensibility** | Добавление функций через плагины | [Planned] |
+| **Multi-tenant ready** | Изоляция данных между клиентами | [Planned] |
+| **LLM agnostic** | Поддержка любой LLM | [Partial] |
 
 ### 1.3 Принцип "Convention over Configuration"
 
@@ -117,7 +117,7 @@ flow:
 Система открыта для расширения через плагины, закрыта для модификации core:
 
 ```python
-# ❌ ПЛОХО: Модификация core для нового classifier
+# ПЛОХО: Модификация core для нового classifier
 class UnifiedClassifier:
     def classify(self, text):
         if self.type == "llm":
@@ -127,7 +127,7 @@ class UnifiedClassifier:
         elif self.type == "new_type":  # Изменение core!
             return self._new_classify(text)
 
-# ✅ ХОРОШО: Расширение через registry
+# ХОРОШО: Расширение через registry
 class ClassifierRegistry:
     _classifiers: Dict[str, Type[BaseClassifier]] = {}
 
@@ -175,7 +175,7 @@ class RuleBasedClassifier(ClassifierProtocol): ...
 Маленькие, специализированные интерфейсы:
 
 ```python
-# ❌ ПЛОХО: Монолитный интерфейс
+# ПЛОХО: Монолитный интерфейс
 class IBotEngine:
     def classify(self, text): ...
     def generate(self, action): ...
@@ -183,7 +183,7 @@ class IBotEngine:
     def log_metrics(self, data): ...
     def send_notification(self, msg): ...
 
-# ✅ ХОРОШО: Сегрегированные интерфейсы
+# ХОРОШО: Сегрегированные интерфейсы
 class IClassifier(Protocol):
     def classify(self, text: str) -> ClassificationResult: ...
 
@@ -202,13 +202,13 @@ class IMetricsCollector(Protocol):
 Зависимость от абстракций, не от конкретных реализаций:
 
 ```python
-# ❌ ПЛОХО: Прямая зависимость
+# ПЛОХО: Прямая зависимость
 class SalesBot:
     def __init__(self):
         self.classifier = LLMClassifier()  # Жесткая связь
         self.generator = VLLMGenerator()   # Жесткая связь
 
-# ✅ ХОРОШО: Dependency Injection
+# ХОРОШО: Dependency Injection
 class SalesBot:
     def __init__(
         self,
@@ -331,7 +331,7 @@ Python-код читает эти определения, но никогда н
 **Анти-паттерн — дублирование в Python:**
 
 ```python
-# ❌ ПЛОХО: Хардкод в Python (реальный баг из кодовой базы)
+# ПЛОХО: Хардкод в Python (реальный баг из кодовой базы)
 QUESTION_RETURN_INTENTS = {
     "question_pricing",       # ← опечатка! Правильно: price_question
     "question_competitors",   # ← отсутствовали 6 из 7 price-интентов
@@ -346,7 +346,7 @@ def handle_objection(self, intent):
 **Правильный подход — SSOT через YAML:**
 
 ```yaml
-# ✅ ХОРОШО: Единственный источник истины
+# ХОРОШО: Единственный источник истины
 composed_categories:
   objection_return_triggers:
     union:
@@ -379,7 +379,7 @@ Knowledge Source предлагает (propose), ConflictResolver разреша
 **Анти-паттерн — прямое управление состоянием:**
 
 ```python
-# ❌ ПЛОХО: Прямое изменение состояния, минуя Blackboard
+# ПЛОХО: Прямое изменение состояния, минуя Blackboard
 def _handle_special_case(self):
     sm_result = {}
     sm_result["next_state"] = "some_state"     # Прямая запись
@@ -393,7 +393,7 @@ def _handle_special_case(self):
 **Правильный подход — Knowledge Source:**
 
 ```python
-# ✅ ХОРОШО: StallGuardSource (реальный код из c3736dd)
+# ХОРОШО: StallGuardSource (реальный код из c3736dd)
 class StallGuardSource(KnowledgeSource):
     """Registered at priority_order=45 via SourceRegistry."""
 
@@ -429,7 +429,7 @@ class StallGuardSource(KnowledgeSource):
 **Анти-паттерн — inline модификация:**
 
 ```python
-# ❌ ПЛОХО: Добавление логики внутрь существующего метода
+# ПЛОХО: Добавление логики внутрь существующего метода
 def process_classification(self, result):
     # ... существующая логика ...
 
@@ -443,7 +443,7 @@ def process_classification(self, result):
 **Правильный подход — Registry + Decorator:**
 
 ```python
-# ✅ ХОРОШО: OptionSelectionRefinementLayer (реальный код из 84bbde0)
+# ХОРОШО: OptionSelectionRefinementLayer (реальный код из 84bbde0)
 @register_refinement_layer("option_selection")
 class OptionSelectionRefinementLayer(BaseRefinementLayer):
     """Добавлена через декоратор — ноль изменений в существующих layers."""
@@ -490,7 +490,7 @@ SourceRegistry.register(
 **Анти-паттерн — единственная точка защиты:**
 
 ```python
-# ❌ ПЛОХО: Одна проверка на всё
+# ПЛОХО: Одна проверка на всё
 def process(self, intent):
     if intent == "greeting" and self.state != "greeting":
         return "ignore"  # Единственная защита. Если сломается — катастрофа.
@@ -532,7 +532,7 @@ Phase 5: Policy Condition
 **Анти-паттерн — параллельные конвейеры:**
 
 ```python
-# ❌ ПЛОХО: Два конвейера с разной полнотой обработки
+# ПЛОХО: Два конвейера с разной полнотой обработки
 class Bot:
     def process(self, message):
         # КОНВЕЙЕР 1: Полный — 14 полей, transition_to(), все context updates
@@ -554,7 +554,7 @@ class Bot:
 **Правильный подход — единый pipeline:**
 
 ```python
-# ✅ ХОРОШО: Все пути сходятся к одному Orchestrator pipeline
+# ХОРОШО: Все пути сходятся к одному Orchestrator pipeline
 class Bot:
     def process(self, message):
         # Единственный путь обработки — всегда полный
@@ -585,7 +585,7 @@ fallback-разрешения. Группировка интентов опре�
 **Анти-паттерн — плоские списки:**
 
 ```python
-# ❌ ПЛОХО: Плоские списки с дублированием
+# ПЛОХО: Плоские списки с дублированием
 POSITIVE_INTENTS = {"greeting", "agreement", "thanks"}
 PRICE_INTENTS = {"price_question", "price_comparison", "budget_question"}
 RETURN_INTENTS = {"greeting", "agreement", "thanks",   # ← дублирование
@@ -595,7 +595,7 @@ RETURN_INTENTS = {"greeting", "agreement", "thanks",   # ← дублирова�
 **Правильный подход — таксономия + composed categories:**
 
 ```yaml
-# ✅ ХОРОШО: Иерархическая таксономия
+# ХОРОШО: Иерархическая таксономия
 intent_taxonomy:
   price_question:
     category: price_related         # Уровень 1
@@ -1690,7 +1690,7 @@ class LLMClassifier:
 class HybridClassifier:
     ...
 
-# ⭐ Real Implementation: RefinementLayerRegistry (src/classifier/refinement_pipeline.py)
+# Real Implementation: RefinementLayerRegistry (src/classifier/refinement_pipeline.py)
 # See: RefinementLayerRegistry.register("short_answer", ShortAnswerRefinementLayer)
 # See: @register_refinement_layer("composite_message") decorator
 ```
@@ -2094,11 +2094,11 @@ class FlowModifier:
 # 1. ВСЕГДА используй типизацию
 # =============================================================================
 
-# ❌ Плохо
+# ПЛОХО
 def process(message, context):
     return {"response": "ok"}
 
-# ✅ Хорошо
+# ХОРОШО
 def process(message: Message, context: IContext) -> BotResponse:
     return BotResponse(message="ok", ...)
 
@@ -2107,12 +2107,12 @@ def process(message: Message, context: IContext) -> BotResponse:
 # 2. Dependency Injection через конструктор
 # =============================================================================
 
-# ❌ Плохо
+# ПЛОХО
 class Bot:
     def __init__(self):
         self.classifier = LLMClassifier()  # Hardcoded
 
-# ✅ Хорошо
+# ХОРОШО
 class Bot:
     def __init__(self, classifier: IClassifier):
         self.classifier = classifier
@@ -2122,12 +2122,12 @@ class Bot:
 # 3. Конфигурация через YAML, не хардкод
 # =============================================================================
 
-# ❌ Плохо
+# ПЛОХО
 MAX_RETRIES = 3
 TIMEOUT = 60
 INTENTS = ["greeting", "farewell", ...]
 
-# ✅ Хорошо
+# ХОРОШО
 config = ConfigLoader().load()
 max_retries = config.get("llm.max_retries", 3)
 timeout = config.get("llm.timeout", 60)
@@ -2137,11 +2137,11 @@ timeout = config.get("llm.timeout", 60)
 # 4. Логирование с контекстом
 # =============================================================================
 
-# ❌ Плохо
+# ПЛОХО
 print(f"Error: {e}")
 logger.error("Something failed")
 
-# ✅ Хорошо
+# ХОРОШО
 logger.error(
     "Classification failed",
     extra={
@@ -2157,11 +2157,11 @@ logger.error(
 # 5. Graceful degradation
 # =============================================================================
 
-# ❌ Плохо
+# ПЛОХО
 def classify(self, text):
     return self.llm.classify(text)  # Fails if LLM down
 
-# ✅ Хорошо
+# ХОРОШО
 def classify(self, text):
     try:
         return self.llm.classify(text)
@@ -2177,7 +2177,7 @@ def classify(self, text):
 # 6. Immutable data objects
 # =============================================================================
 
-# ❌ Плохо
+# ПЛОХО
 class Config:
     def __init__(self):
         self.data = {}
@@ -2185,7 +2185,7 @@ class Config:
     def set(self, key, value):
         self.data[key] = value  # Mutable!
 
-# ✅ Хорошо
+# ХОРОШО
 @dataclass(frozen=True)
 class Config:
     llm_model: str
@@ -2203,12 +2203,12 @@ class Config:
 # 1. Test через публичные интерфейсы
 # =============================================================================
 
-# ❌ Плохо - тестируем internal
+# ПЛОХО - тестируем internal
 def test_internal_method():
     bot = SalesBot(...)
     result = bot._parse_intent_internal(text)  # Private method
 
-# ✅ Хорошо - тестируем публичный API
+# ХОРОШО - тестируем публичный API
 def test_classification():
     bot = SalesBot(...)
     result = bot.process(Message(text="Привет"))

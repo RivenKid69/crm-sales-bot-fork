@@ -286,6 +286,7 @@ def register_builtin_sources() -> None:
     from .sources.phase_exhausted import PhaseExhaustedSource
     from .sources.conversation_guard_ks import ConversationGuardSource
     from .sources.intent_pattern_guard import IntentPatternGuardSource
+    from .sources.autonomous_decision import AutonomousDecisionSource
 
     # Register in recommended order (lower priority_order = earlier execution)
 
@@ -424,6 +425,17 @@ def register_builtin_sources() -> None:
         priority_order=60,
         config_key="escalation",
         description="Detects escalation triggers for human handoff"
+    )
+
+    # AutonomousDecisionSource: LLM-driven state transitions for autonomous flow
+    # After IntentProcessorSource (40), before PhaseExhaustedSource (43)
+    # Flow-gated: only fires when flow_name=="autonomous"
+    SourceRegistry.register(
+        AutonomousDecisionSource,
+        name="AutonomousDecisionSource",
+        priority_order=42,
+        config_key="autonomous_decision",
+        description="LLM-driven state transitions for autonomous flow"
     )
 
     logger.info(f"Registered {len(SourceRegistry.list_registered())} built-in sources")

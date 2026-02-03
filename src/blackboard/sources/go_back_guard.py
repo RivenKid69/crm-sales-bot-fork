@@ -122,15 +122,15 @@ class GoBackGuardSource(KnowledgeSource):
            - Propose blocking action to prevent transition
            - Explain to user that they've used all go_back chances
 
-        BUGFIXES APPLIED:
-        - BUG #1 FIXED: Counter is now incremented via DEFERRED mechanism.
+        FIXES APPLIED:
+        - Counter is now incremented via DEFERRED mechanism.
           We add pending_goback_increment=True to metadata, and orchestrator
           increments the counter in _apply_side_effects() ONLY IF:
           1. The action "acknowledge_go_back" won the conflict resolution
           2. The state actually changed (transition happened)
           This prevents incorrect increment when higher-priority sources block go_back.
 
-        - BUG #2 FIXED: We now check YAML transition availability BEFORE allowing.
+        - We now check YAML transition availability BEFORE allowing.
           If there's no go_back transition defined in YAML for the current state,
           we don't propose the action at all (no counter waste).
 

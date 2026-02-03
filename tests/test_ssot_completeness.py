@@ -1,7 +1,7 @@
 # tests/test_ssot_completeness.py
 
 """
-SSOT Completeness Tests — CI guard for BUG #4 class bugs.
+SSOT Completeness Tests — CI guard for SSOT coverage gaps.
 
 Prevents:
     RC-1: objection_return_questions having insufficient coverage
@@ -24,7 +24,7 @@ import pytest
 class TestSSOTCompleteness:
     """Prevent RC-1..RC-SYS2 class bugs. Catches SSOT gaps at CI time."""
 
-    # Pre-existing ghost intents (not introduced by BUG #4 fix).
+    # Pre-existing ghost intents.
     # These should be cleaned up separately but must not block CI.
     KNOWN_GHOST_INTENTS = {"question_technical", "question_answered"}
 
@@ -119,5 +119,5 @@ class TestSSOTCompleteness:
         from src.yaml_config.constants import _base_categories
 
         assert "objection_return_questions" not in _base_categories, (
-            "objection_return_questions base category should be removed (BUG #4 fix)"
+            "objection_return_questions base category should be removed"
         )

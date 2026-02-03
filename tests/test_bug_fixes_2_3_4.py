@@ -1,11 +1,11 @@
 """
-Targeted tests for Bug #2, #3, #4 fixes.
+Targeted tests for data extraction, phase completion, and guard threshold fixes.
 
 Tests cover:
-- Bug #2: Data extraction for composite messages, price template selection,
+- Data extraction for composite messages, price template selection,
   CompositeMessageLayer refinable intents, do_not_ask fallback
-- Bug #3: has_completed_minimum_phases condition, conditional transitions
-- Bug #4: max_same_message raised to 3
+- has_completed_minimum_phases condition, conditional transitions
+- max_same_message raised to 3
 
 NOTE: Tests that require LLM or semantic search are intentionally skipped.
 """
@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 # =============================================================================
-# BUG #2: Phase 1 — DataExtractor Fixes (1a, 1b)
+# Phase 1 — DataExtractor Fixes (1a, 1b)
 # =============================================================================
 
 class TestDataExtractorBug2:
@@ -116,7 +116,7 @@ class TestDataExtractorBug2:
 
 
 # =============================================================================
-# BUG #2: Phase 1 — CompositeMessageLayer REFINABLE_INTENTS (1c)
+# Phase 1 — CompositeMessageLayer REFINABLE_INTENTS (1c)
 # =============================================================================
 
 class TestCompositeRefinableIntents:
@@ -147,7 +147,7 @@ class TestCompositeRefinableIntents:
 
 
 # =============================================================================
-# BUG #2: Phase 1 — Constants YAML mappings (1d)
+# Phase 1 — Constants YAML mappings (1d)
 # =============================================================================
 
 class TestConstantsYamlMappings:
@@ -179,7 +179,7 @@ class TestConstantsYamlMappings:
 
 
 # =============================================================================
-# BUG #2: Phase 2 — _get_price_template_key fix (2a)
+# Phase 2 — _get_price_template_key fix (2a)
 # =============================================================================
 
 class TestGetPriceTemplateKey:
@@ -241,7 +241,7 @@ class TestGetPriceTemplateKey:
 
 
 # =============================================================================
-# BUG #2: Phase 2 — do_not_ask fallback (2c)
+# Phase 2 — do_not_ask fallback (2c)
 # =============================================================================
 
 class TestDoNotAskFallback:
@@ -284,7 +284,7 @@ class TestDoNotAskFallback:
 
 
 # =============================================================================
-# BUG #3: Phase 3 — has_completed_minimum_phases condition (3a)
+# Phase 3 — has_completed_minimum_phases condition (3a)
 # =============================================================================
 
 class TestHasCompletedMinimumPhases:
@@ -403,7 +403,7 @@ class TestHasCompletedMinimumPhases:
 
 
 # =============================================================================
-# BUG #3: Phase 3 — Conditional transitions in mixins (3b, 3c)
+# Phase 3 — Conditional transitions in mixins (3b, 3c)
 # =============================================================================
 
 class TestMixinConditionalTransitions:
@@ -466,7 +466,7 @@ class TestMixinConditionalTransitions:
 
 
 # =============================================================================
-# BUG #4: Phase 4 — max_same_message threshold (4a)
+# Phase 4 — max_same_message threshold (4a)
 # =============================================================================
 
 class TestGuardThreshold:
@@ -511,7 +511,7 @@ class TestGuardThreshold:
 
 
 # =============================================================================
-# BUG #5: Phase 5 — Feature flag (5a)
+# Phase 5 — Feature flag (5a)
 # =============================================================================
 
 class TestFeatureFlagPhaseCompletionGating:
@@ -529,7 +529,7 @@ class TestFeatureFlagPhaseCompletionGating:
 
 
 # =============================================================================
-# BUG #2: Config Validation (5c)
+# Config Validation (5c)
 # =============================================================================
 
 class TestConfigValidation:

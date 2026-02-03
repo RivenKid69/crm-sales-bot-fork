@@ -1,0 +1,44 @@
+# =============================================================================
+# AUTONOMOUS FLOW
+# =============================================================================
+# LLM-driven sales flow: no rigid YAML rules, LLM decides state transitions.
+# LLM acts as experienced sales consultant with direct KB access.
+# =============================================================================
+
+flow:
+  name: autonomous
+  version: "1.0"
+  description: "Autonomous LLM-driven sales flow — LLM decides transitions"
+
+  variables:
+    entry_state: autonomous_discovery
+
+  phases:
+    order:
+      - discovery
+      - qualification
+      - presentation
+      - objection_handling
+      - negotiation
+      - closing
+
+    post_phases_state: close
+
+    mapping:
+      discovery: autonomous_discovery
+      qualification: autonomous_qualification
+      presentation: autonomous_presentation
+      objection_handling: autonomous_objection_handling
+      negotiation: autonomous_negotiation
+      closing: autonomous_closing
+
+    # No progress_intents — LLM decides phase transitions
+    progress_intents: {}
+
+    # No skip_conditions — LLM decides skipping
+    skip_conditions: {}
+
+  entry_points:
+    default: greeting
+    warm_lead: autonomous_qualification
+    hot_lead: autonomous_presentation

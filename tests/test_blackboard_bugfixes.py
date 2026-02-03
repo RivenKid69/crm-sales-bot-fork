@@ -2,10 +2,10 @@
 Stress tests for blackboard pipeline bugfixes.
 
 Tests cover:
-- BUG 1: Price rules from YAML (PriceQuestionSource respects mixins)
-- BUG 2: go_back in non-SPIN flows (prev_phase_state properly set)
-- BUG 3: default_action = continue_current_goal (not "continue")
-- BUG 4: CircularFlowManager integration (go_back limits enforced)
+- Price rules from YAML (PriceQuestionSource respects mixins)
+- go_back in non-SPIN flows (prev_phase_state properly set)
+- default_action = continue_current_goal (not "continue")
+- CircularFlowManager integration (go_back limits enforced)
 
 Run with: PYTHONPATH=src pytest tests/test_blackboard_bugfixes.py -v
 """
@@ -35,12 +35,12 @@ def config(loader):
 
 
 # =============================================================================
-# BUG 1: Price Rules from YAML
+# Price Rules from YAML
 # =============================================================================
 
 class TestBug1PriceRulesFromYAML:
     """
-    BUG 1: Price rules from YAML should be respected.
+    Price rules from YAML should be respected.
 
     PriceQuestionSource should check state_config.rules before using
     the default answer_with_pricing action.
@@ -118,12 +118,12 @@ class TestBug1PriceRulesFromYAML:
 
 
 # =============================================================================
-# BUG 2: go_back in non-SPIN flows
+# go_back in non-SPIN flows
 # =============================================================================
 
 class TestBug2GoBackInNonSpinFlows:
     """
-    BUG 2: go_back should return to previous phase, not greeting.
+    go_back should return to previous phase, not greeting.
 
     Each state should have prev_phase_state parameter set correctly.
     """
@@ -202,12 +202,12 @@ class TestBug2GoBackInNonSpinFlows:
 
 
 # =============================================================================
-# BUG 3: default_action = continue_current_goal
+# default_action = continue_current_goal
 # =============================================================================
 
 class TestBug3DefaultAction:
     """
-    BUG 3: default_action should be continue_current_goal, not "continue".
+    default_action should be continue_current_goal, not "continue".
 
     When no source proposes an action, the resolver should use continue_current_goal.
     """
@@ -239,12 +239,12 @@ class TestBug3DefaultAction:
 
 
 # =============================================================================
-# BUG 4: CircularFlowManager integration
+# CircularFlowManager integration
 # =============================================================================
 
 class TestBug4CircularFlowManager:
     """
-    BUG 4: CircularFlowManager should be integrated with blackboard pipeline.
+    CircularFlowManager should be integrated with blackboard pipeline.
 
     go_back count should be tracked and limits enforced.
     """
@@ -368,7 +368,7 @@ class TestStressAllFlows:
         result = orchestrator.process_turn('price_question', extracted_data={}, context_envelope=None)
 
         assert result.action is not None
-        assert result.action != 'continue'  # Bug 3 fixed
+        assert result.action != 'continue'  # Should be continue_current_goal
 
     @pytest.mark.parametrize("flow_name", ALL_FLOWS)
     def test_go_back_handled_in_all_flows(self, loader, config, flow_name):
@@ -441,12 +441,12 @@ class TestRegressionPrevBehavior:
 
 
 # =============================================================================
-# BUG 5: DEFERRED GOBACK INCREMENT (NEW FIX)
+# DEFERRED GOBACK INCREMENT
 # =============================================================================
 
 class TestBug5DeferredGobackIncrement:
     """
-    BUG 5: goback_count should only increment AFTER conflict resolution.
+    goback_count should only increment AFTER conflict resolution.
 
     Previously, GoBackGuardSource incremented goback_count in contribute(),
     BEFORE ConflictResolver decided the final outcome. If a higher-priority
@@ -542,7 +542,7 @@ class TestBug5DeferredGobackIncrement:
 
 class TestBug6GobackConflictResolution:
     """
-    BUG 6: go_back blocked by higher priority source.
+    go_back blocked by higher priority source.
 
     Test that when ObjectionGuardSource (CRITICAL priority) blocks go_back,
     the goback_count is NOT incremented.

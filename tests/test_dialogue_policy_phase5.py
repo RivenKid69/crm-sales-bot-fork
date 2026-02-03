@@ -896,7 +896,7 @@ class TestEdgeCases:
 
 
 # =============================================================================
-# BUG #5 FIX: CASCADE DISPOSITION & PRIORITY INVERSION TESTS
+# CASCADE DISPOSITION & PRIORITY INVERSION TESTS
 # =============================================================================
 
 class TestCascadeDisposition:
@@ -935,7 +935,7 @@ class TestCascadeDisposition:
 
 
 class TestPriceOverlayProtection:
-    """Bug #1: Price overlay must protect correct action from lower overlays."""
+    """Price overlay must protect correct action from lower overlays."""
 
     @patch('dialogue_policy.flags')
     def test_price_overlay_protects_correct_action(self, mock_flags, policy):
@@ -962,7 +962,7 @@ class TestPriceOverlayProtection:
 
 
 class TestBreakthroughBlocksConservative:
-    """Bug #3: Breakthrough CTA must block conservative overlay."""
+    """Breakthrough CTA must block conservative overlay."""
 
     @patch('dialogue_policy.flags')
     def test_breakthrough_blocks_conservative(self, mock_flags, policy):
@@ -989,7 +989,7 @@ class TestBreakthroughBlocksConservative:
 
 
 class TestRepairYieldsToObjection:
-    """Bug #4: Repair must yield to objection handler in handle_objection state."""
+    """Repair must yield to objection handler in handle_objection state."""
 
     @patch('dialogue_policy.flags')
     def test_repair_yields_to_objection_in_handle_objection(self, mock_flags, policy):
@@ -1007,7 +1007,7 @@ class TestRepairYieldsToObjection:
 
         result = policy.maybe_override(sm_result, envelope)
 
-        # Repair yields in handle_objection state (Bug #4 fix),
+        # Repair yields in handle_objection state,
         # objection overlay fires instead
         assert result is not None
         assert result.decision == PolicyDecision.OBJECTION_REFRAME
@@ -1015,7 +1015,7 @@ class TestRepairYieldsToObjection:
 
 
 class TestRepairSkipsProtectedAction:
-    """Bug #5: Repair must skip when current action already answers the question."""
+    """Repair must skip when current action already answers the question."""
 
     @patch('dialogue_policy.flags')
     def test_repair_skips_protected_action(self, mock_flags, policy):
@@ -1037,7 +1037,7 @@ class TestRepairSkipsProtectedAction:
 
 
 class TestStallGuardCooldown:
-    """Bug #7: StallGuard cooldown suppresses repair on next turn."""
+    """StallGuard cooldown suppresses repair on next turn."""
 
     def test_stall_guard_cooldown_suppresses_repair(self):
         """last_action='stall_guard_eject' + is_stuck=True → needs_repair=False."""
@@ -1061,7 +1061,7 @@ class TestStallGuardCooldown:
 
 
 class TestNarrowedPriceCategory:
-    """Bug #6: Narrow category grouping for repeated question detection."""
+    """Narrow category grouping for repeated question detection."""
 
     def test_price_question_and_pricing_details_not_repeated(self):
         """price_question + pricing_details should NOT be treated as repeated

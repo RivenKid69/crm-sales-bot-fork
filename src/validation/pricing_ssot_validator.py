@@ -55,7 +55,7 @@ def validate_codebase(root_dir: Path = Path("src")) -> bool:
 
     # Выводим отчет
     if all_violations:
-        print("❌ SSOT Validation FAILED\n")
+        print("SSOT Validation FAILED\n")
         for file_path, violations in all_violations.items():
             print(f"File: {file_path}")
             for line_num, pattern, content in violations:
@@ -63,7 +63,7 @@ def validate_codebase(root_dir: Path = Path("src")) -> bool:
             print()
         return False
     else:
-        print("✅ SSOT Validation PASSED")
+        print("SSOT Validation PASSED")
         return True
 
 if __name__ == "__main__":

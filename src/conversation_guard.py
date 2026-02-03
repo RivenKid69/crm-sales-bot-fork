@@ -41,7 +41,7 @@ class GuardConfig:
     max_turns: int = 25                    # Средний sales диалог: 8-15 turns
     max_phase_attempts: int = 3            # LivePerson recommendation
     max_same_state: int = 4                # Loop detection
-    max_same_message: int = 3              # BUG #4 FIX: raised from 2 — two identical is too aggressive
+    max_same_message: int = 3              # Raised from 2 — two identical is too aggressive
     timeout_seconds: int = 1800            # 30 минут
 
     # Пороги прогресса
@@ -93,7 +93,7 @@ class GuardState:
     last_progress_turn: int = 0
     collected_data_count: int = 0
     frustration_level: int = 0
-    # BUG-001 FIX: Track intents to detect informative responses
+    # Track intents to detect informative responses
     intent_history: List[str] = field(default_factory=list)
     last_intent: str = ""
     # Pre-intervention flag (WARNING level 5-6 with certain conditions)
@@ -163,7 +163,7 @@ class ConversationGuard:
         message: str,
         collected_data: Dict,
         frustration_level: Optional[int] = None,
-        last_intent: str = "",  # BUG-001 FIX: Accept intent for informative check
+        last_intent: str = "",  # Accept intent for informative check
         pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
     ) -> Tuple[bool, Optional[str]]:
         """
@@ -197,7 +197,7 @@ class ConversationGuard:
         if frustration_level is not None:
             self._state.frustration_level = frustration_level
 
-        # BUG-001 FIX: Record intent history for informative response detection
+        # Record intent history for informative response detection
         if last_intent:
             self._state.intent_history.append(last_intent)
             self._state.last_intent = last_intent
@@ -262,7 +262,7 @@ class ConversationGuard:
         # 5. Проверка застревания в состоянии (с учётом информативности)
         same_state_count = self._count_recent_same_state(state)
         if same_state_count >= self.config.max_same_state:
-            # BUG-001 FIX: Проверяем был ли последний intent информативным
+            # Проверяем был ли последний intent информативным
             if self._is_engagement_intent():
                 logger.debug(
                     "State loop threshold reached but client is providing info - not triggering",

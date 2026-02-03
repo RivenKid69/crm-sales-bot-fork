@@ -1,5 +1,5 @@
 """
-Tests for BUG #23: Bot always re-asks contact.
+Tests for bot always re-asks contact fix.
 
 Tests three defense layers:
 1. cta_generator.py — gate: skip contact CTA when contact in collected_data
@@ -131,7 +131,7 @@ class TestGeneratorDoNotAskContact:
         variables = dict(PERSONALIZATION_DEFAULTS)
         variables["do_not_ask"] = ""
 
-        # Replicate the BUG #23 fix logic from generator.py
+        # Replicate the fix logic from generator.py
         try:
             from src.conditions.state_machine.contact_validator import has_valid_contact
             if has_valid_contact(collected):

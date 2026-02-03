@@ -161,7 +161,7 @@ class PriceQuestionSource(KnowledgeSource):
         if secondary and (set(secondary) & self._price_intents):
             return True
 
-        # Bug #10 Check 3: repeated_question fallback (catches classifier misses)
+        # Check 3: repeated_question fallback (catches classifier misses)
         envelope = getattr(ctx, 'context_envelope', None)
         if envelope:
             rq = getattr(envelope, 'repeated_question', None)
@@ -206,7 +206,7 @@ class PriceQuestionSource(KnowledgeSource):
         intent = ctx.current_intent
         detection_source = "primary"
 
-        # Bug #10: Resolve intent from multiple sources (like FactQuestionSource pattern)
+        # Resolve intent from multiple sources (like FactQuestionSource pattern)
         if intent not in self._price_intents:
             # Priority 2: Secondary intents
             secondary = self._get_secondary_intents(ctx)

@@ -497,7 +497,7 @@ class IntentTracker:
         """Get consecutive count of conversational intents."""
         return self.category_streak("conversational")
 
-    # --- Информативные интенты (BUG-001 FIX) ---
+    # --- Информативные интенты ---
     def is_informative(self, intent: str) -> bool:
         """Check if intent is informative (client providing data, not stuck)."""
         return self.is_in_category(intent, "informative")

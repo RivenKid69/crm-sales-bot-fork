@@ -1,16 +1,16 @@
 # tests/test_bugfix_9_11_19_deep.py
 
 """
-Deep tests for Bug #9, #11, #19 cascade chain fix.
+Deep tests for cascade chain fix.
 
 Principle: Mock ONLY external AI layers (LLM generate, classifier, tone analyzer).
 All internal pipeline components run REAL code: knowledge base, blackboard,
 conflict resolver, state machine, CTA generator, dialogue policy, fallback handler,
 stall guard.
 
-Bug #9: Narrow Fallback Knowledge → KB-sourced product overview
-Bug #11: CTA Ignores Response Semantics → backoff detection + action gates
-Bug #19: StallGuard Only 28.6% Effective → dual propose (action + transition)
+Narrow Fallback Knowledge: KB-sourced product overview
+CTA Ignores Response Semantics: backoff detection + action gates
+StallGuard Only 28.6% Effective: dual propose (action + transition)
 """
 
 import pytest
@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 
 # =============================================================================
-# T1: Bug #9 — Knowledge Source Unit Tests
+# T1: Knowledge Source Unit Tests
 # =============================================================================
 
 
@@ -114,7 +114,7 @@ class TestBug9KnowledgeSource:
         """T1.6: KNOWLEDGE['pricing'] and ['discount_annual'] removed (SSOT migration)."""
         from src.config import KNOWLEDGE
 
-        assert "features" not in KNOWLEDGE, "features already removed (Bug #9)"
+        assert "features" not in KNOWLEDGE, "features already removed"
         assert "pricing" not in KNOWLEDGE, "pricing removed — SSOT is pricing.yaml"
         assert "discount_annual" not in KNOWLEDGE, "discount removed — data in pricing.yaml"
 
@@ -178,7 +178,7 @@ class TestBug9KnowledgeSource:
 
 
 # =============================================================================
-# T2: Bug #9 — FallbackHandler KB Integration
+# T2: FallbackHandler KB Integration
 # =============================================================================
 
 
@@ -269,7 +269,7 @@ class TestBug9FallbackHandler:
 
 
 # =============================================================================
-# T4: Bug #11 — CTA Backoff Detection Unit Tests
+# T4: CTA Backoff Detection Unit Tests
 # =============================================================================
 
 
@@ -375,7 +375,7 @@ class TestBug11BackoffDetection:
 
 
 # =============================================================================
-# T6: Bug #19 — StallGuard Dual Proposal Unit Tests
+# T6: StallGuard Dual Proposal Unit Tests
 # =============================================================================
 
 
@@ -602,7 +602,7 @@ class TestBug19StallGuardDualProposal:
 
 
 # =============================================================================
-# T7: Bug #19 — DialoguePolicy Protection
+# T7: DialoguePolicy Protection
 # =============================================================================
 
 
@@ -696,7 +696,7 @@ class TestBug19DialoguePolicyProtection:
 
 
 # =============================================================================
-# T10: Bug #19 — Feature Flag
+# T10: Feature Flag
 # =============================================================================
 
 

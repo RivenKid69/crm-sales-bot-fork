@@ -6,7 +6,7 @@
 
 ---
 
-## ⚠️ ВАЖНО: Архитектура v2.0
+## ВАЖНО: Архитектура v2.0
 
 **С января 2026** StateMachine использует исключительно YAML-конфигурацию и стал **domain-independent**.
 - Все константы в `constants.yaml` (single source of truth)
@@ -41,10 +41,10 @@ flow:
 ### Миграция импортов
 
 ```python
-# ❌ Старый способ (не работает в v2.0)
+# Старый способ (не работает в v2.0)
 from state_machine import SPIN_PHASES, SPIN_STATES
 
-# ✅ Новый способ
+# Новый способ
 from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
 ```
 
@@ -64,7 +64,7 @@ from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
 10. [Диаграммы и Схемы](#10-диаграммы-и-схемы)
 11. [Тестирование](#11-тестирование)
 12. [FAQ и Troubleshooting](#12-faq-и-troubleshooting)
-13. [DAG State Machine](#13-dag-state-machine) ⭐ NEW
+13. [DAG State Machine](#13-dag-state-machine) NEW
 
 ---
 

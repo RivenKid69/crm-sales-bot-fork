@@ -1532,7 +1532,7 @@ def lead_temperature_cold(ctx: EvaluatorContext) -> bool:
 )
 def has_completed_minimum_phases(ctx: EvaluatorContext) -> bool:
     """
-    BUG #3 FIX: Prevents cooperative users from skipping all phases.
+    Prevents cooperative users from skipping all phases.
     Returns True when conversation has enough progress for close shortcuts.
 
     Criteria (any one sufficient):

@@ -1,5 +1,5 @@
 """
-Tests for Bug #31-33 fixes (Changes 1-9).
+Tests for Changes 1-9 fixes.
 
 Covers:
 - Change 1: continue_current_goal contact_info example

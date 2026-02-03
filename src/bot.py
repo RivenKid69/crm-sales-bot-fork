@@ -179,7 +179,7 @@ class SalesBot:
         # FIX: Pass flow to FallbackHandler so it uses flow-specific skip_map
         # instead of DEFAULT_SKIP_MAP with hardcoded spin_situation
         # FIX 3: Pass guard_config for configurable tier_2 escalation threshold
-        # Bug #9: Pass product_overviews from generator for KB-sourced CTA options
+        # Pass product_overviews from generator for KB-sourced CTA options
         self.fallback = FallbackHandler(
             flow=self._flow, config=self._config, guard_config=self.guard.config,
             product_overviews=self.generator._product_overview,
@@ -199,6 +199,7 @@ class SalesBot:
             enable_debug_logging=enable_tracing,
             guard=self.guard,
             fallback_handler=self.fallback,
+            llm=llm,
         )
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
@@ -428,7 +429,7 @@ class SalesBot:
         message: str,
         collected_data: Dict,
         frustration_level: int,
-        last_intent: str = ""  # BUG-001 FIX: Pass intent for informative check
+        last_intent: str = ""  # Pass intent for informative check
     ) -> GuardResult:
         """
         Проверить ConversationGuard (Phase 1).
@@ -445,7 +446,7 @@ class SalesBot:
                 message=message,
                 collected_data=collected_data,
                 frustration_level=frustration_level,
-                last_intent=last_intent  # BUG-001 FIX: Pass intent for informative check
+                last_intent=last_intent  # Pass intent for informative check
             )
 
             if not can_continue:
@@ -923,7 +924,7 @@ class SalesBot:
                         # FIX: Record the skipped-to state for phase coverage tracking
                         if skip_next_state not in visited_states:
                             visited_states.append(skip_next_state)
-                        # FIX BUG-001: Reset fallback_response to generate normal response
+                        # Reset fallback_response to generate normal response
                         fallback_response = None
 
         # Track competitor mention for dynamic CTA
@@ -996,7 +997,7 @@ class SalesBot:
                 tone_info["frustration_level"] = new_level
                 context_envelope.frustration_level = new_level
 
-        # Bug #10: Defer ResponseDirectives until AFTER policy override
+        # Defer ResponseDirectives until AFTER policy override
         response_directives = None
 
         # =========================================================================
@@ -1063,7 +1064,7 @@ class SalesBot:
         if trace_builder:
             trace_builder.record_policy_override(policy_override)
 
-        # Bug #10: Build ResponseDirectives AFTER policy override.
+        # Build ResponseDirectives AFTER policy override.
         # Ensures directives reflect the final action, not pre-override state.
         if flags.context_response_directives and context_envelope:
             response_directives = build_response_directives(context_envelope)
@@ -1100,7 +1101,7 @@ class SalesBot:
                 fallback_response = None
                 fallback_used = False
 
-            # === Bug #19: StallGuard takes precedence over guard fallback ===
+            # === StallGuard takes precedence over guard fallback ===
             if (fallback_response
                     and sm_result.get("action") in ("stall_guard_eject", "stall_guard_nudge")):
                 logger.info(
@@ -1163,7 +1164,7 @@ class SalesBot:
             if response_directives:
                 response_directives.rephrase_mode = True
 
-        # Bug #19: Remap stall_guard actions to valid template actions
+        # Remap stall_guard actions to valid template actions
         if action == "stall_guard_eject":
             action = f"transition_to_{next_state}"
             # Fallback to continue_current_goal if specific transition template doesn't exist
@@ -1422,7 +1423,7 @@ class SalesBot:
             response_elapsed = (time.time() - response_start) * 1000
 
             # Phase 3: Apply CTA BEFORE recording response (critical fix!)
-            # Bug #11: Pass action + objection_info for semantic CTA gating
+            # Pass action + objection_info for semantic CTA gating
             cta_result = self._apply_cta(
                 response=response,
                 state=next_state,
@@ -1431,7 +1432,7 @@ class SalesBot:
                     "last_action": self.last_action,
                     "action": action,
                     "objection_info": objection_info,
-                    # BUG #23: Pass collected_data for contact gate
+                    # Pass collected_data for contact gate
                     "collected_data": self.state_machine.collected_data,
                     # Flow context for dynamic CTA phase resolution
                     "flow_context": {
@@ -1744,7 +1745,13 @@ def run_interactive(bot: SalesBot):
 
 
 if __name__ == "__main__":
-    from llm import OllamaLLM
+    import argparse
+    from src.llm import OllamaLLM
+
+    parser = argparse.ArgumentParser(description="CRM Sales Bot interactive mode")
+    parser.add_argument("--flow", type=str, default=None,
+                        help="Sales flow to use (e.g. aida, bant, spin_selling, challenger)")
+    args = parser.parse_args()
 
     # Enable all flags for testing
     flags.enable_group("phase_0")
@@ -1752,7 +1759,14 @@ if __name__ == "__main__":
     flags.enable_group("phase_2")
     flags.enable_group("phase_3")
 
+    # Auto-enable autonomous_flow flag when --flow autonomous
+    # Disable GPU-heavy models (FRIDA embeddings, semantic tone) to avoid CUDA OOM
+    if args.flow == "autonomous":
+        flags.set_override("autonomous_flow", True)
+        flags.set_override("tone_semantic_tier2", False)
+        settings["retriever"]["use_embeddings"] = False
+
     llm = OllamaLLM()
-    bot = SalesBot(llm)
+    bot = SalesBot(llm, flow_name=args.flow)
 
     run_interactive(bot)

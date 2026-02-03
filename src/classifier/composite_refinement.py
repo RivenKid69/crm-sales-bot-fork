@@ -167,7 +167,7 @@ class CompositeMessageRefinementLayer:
         "request_brevity",
         "greeting",
         "gratitude",
-        # BUG #2 FIX: Price intents — composite messages like "500. Скока стоит?"
+        # Price intents — composite messages like "500. Скока стоит?"
         # contain extractable data that was blocked by this gate.
         # Combined with action_data_intent mapping (Fix 1d), the intent is PRESERVED
         # as price_question (not changed to info_provided).
@@ -204,11 +204,11 @@ class CompositeMessageRefinementLayer:
         # Confidence threshold for refinement
         self._min_confidence = self._config.get("min_confidence_for_refinement", 0.75)
 
-        # BUG #2 FIX: Validate required mappings at startup
+        # Validate required mappings at startup
         if "answer_with_pricing" not in self._action_expects_data:
-            logger.warning("Missing action_expects_data['answer_with_pricing'] — Bug #2 fix incomplete")
+            logger.warning("Missing action_expects_data['answer_with_pricing'] — fix incomplete")
         if "answer_with_pricing" not in self._action_data_intent:
-            logger.warning("Missing action_data_intent['answer_with_pricing'] — Bug #2 fix incomplete")
+            logger.warning("Missing action_data_intent['answer_with_pricing'] — fix incomplete")
 
         # Compile patterns for efficiency
         self._compiled_patterns: Dict[str, Pattern] = {}

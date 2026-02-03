@@ -132,7 +132,7 @@ class TestIntentCategories:
         assert "clarification_request" in dialogue
 
     def test_informative_category(self):
-        """Test informative category (BUG-001 fix)."""
+        """Test informative category."""
         informative = INTENT_CATEGORIES.get("informative", [])
         assert len(informative) > 0
         assert "situation_provided" in informative
@@ -653,7 +653,7 @@ class TestNewCategoryHelperMethods:
         assert tracker.conversational_total() == 2
 
     def test_informative_helpers(self, tracker):
-        """Test informative intents helper methods (BUG-001 fix)."""
+        """Test informative intents helper methods."""
         tracker.record("situation_provided", "spin_situation")
         tracker.record("info_provided", "spin_situation")
 

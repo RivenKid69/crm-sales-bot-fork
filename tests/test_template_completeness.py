@@ -1,5 +1,5 @@
 """
-CI test guard for template completeness (Bug #1 fix).
+CI test guard for template completeness.
 
 Ensures every action referenced by policy overlays, REPAIR_ACTIONS,
 OBJECTION_ACTIONS, INTENT_SPECIFIC_ACTIONS, and flow-specific states.yaml

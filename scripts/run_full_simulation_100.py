@@ -426,6 +426,7 @@ def main():
         from simulator.e2e_scenarios import ALL_SCENARIOS, expand_scenarios_with_personas
         from simulator.report import generate_e2e_report
         from simulator.personas import PERSONAS
+        from simulator.kb_questions import load_kb_question_pool
 
         print_success("Модули симулятора импортированы")
         logger.info("Модули симулятора загружены")
@@ -507,6 +508,21 @@ def main():
     logger.info(f"Флоу: {len(flows_used)}, Персон: {len(personas_used)}")
 
     # ==========================================================================
+    # ЗАГРУЗКА KB QUESTION POOL (3000+ ВОПРОСОВ)
+    # ==========================================================================
+    print_section("ЗАГРУЗКА KB QUESTION POOL")
+
+    kb_pool = load_kb_question_pool()
+    if kb_pool:
+        print_success(f"KB question pool загружен: {kb_pool.total_questions} вопросов")
+        print_info(f"Категории: {', '.join(kb_pool.categories[:10])}...")
+        logger.info(f"KB pool: {kb_pool.total_questions} вопросов, {len(kb_pool.categories)} категорий")
+    else:
+        print_error("KB question pool не загружен! Файл kb_questions.json отсутствует")
+        logger.error("KB question pool не загружен")
+        print_info("Симуляция продолжится без KB вопросов")
+
+    # ==========================================================================
     # ИНИЦИАЛИЗАЦИЯ LLM И RUNNER
     # ==========================================================================
     print_section("ИНИЦИАЛИЗАЦИЯ LLM")
@@ -521,11 +537,12 @@ def main():
     runner = SimulationRunner(
         bot_llm=llm,
         client_llm=llm,
-        verbose=True
+        verbose=True,
+        kb_question_pool=kb_pool
     )
 
-    print_success("SimulationRunner инициализирован")
-    logger.info("SimulationRunner готов")
+    print_success("SimulationRunner инициализирован с KB question pool")
+    logger.info("SimulationRunner готов с KB вопросами")
 
     # ==========================================================================
     # ЗАПУСК СИМУЛЯЦИИ

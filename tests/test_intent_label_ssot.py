@@ -1,5 +1,5 @@
 """
-Anti-regression tests for BUG #2: Intent Label Leakage.
+Anti-regression tests for Intent Label Leakage.
 
 Ensures that:
 - Only the SSoT (src/constants/intent_labels.py) defines INTENT_LABELS

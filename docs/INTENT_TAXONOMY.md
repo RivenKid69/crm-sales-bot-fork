@@ -1,7 +1,7 @@
 # Intent Taxonomy System: Zero Unmapped Intents by Design
 
 **Version:** 1.0
-**Status:** ✅ Production
+**Status:** Production
 **Last Updated:** 2026-01-28
 
 ## Executive Summary
@@ -315,7 +315,7 @@ def resolve_action(intent, state_rules, global_rules, ctx):
   {"level": "exact", "intent": "price_question"},           # Try state/global rules
   {"level": "category", "action": "answer_and_continue"},   # question category
   {"level": "super_category", "action": "acknowledge_and_continue"},  # user_input
-  {"level": "domain", "action": "answer_with_pricing"},     # pricing domain ✅
+  {"level": "domain", "action": "answer_with_pricing"},     # pricing domain [MATCH]
   {"level": "default", "action": "continue_current_goal"}
 ]
 
@@ -323,7 +323,7 @@ def resolve_action(intent, state_rules, global_rules, ctx):
 # 1. Exact match — NOT FOUND
 # 2. Category fallback — answer_and_continue (available)
 # 3. Super-category fallback — acknowledge_and_continue (available)
-# 4. Domain fallback — answer_with_pricing ✅ USED (strongest semantic signal)
+# 4. Domain fallback — answer_with_pricing USED (strongest semantic signal)
 # Result: answer_with_pricing (CORRECT!)
 ```
 
@@ -339,7 +339,7 @@ _universal_base:
     contact_provided: success
 
 # Resolution:
-# 1. Exact match — FOUND in _universal_base → transition to success ✅
+# 1. Exact match — FOUND in _universal_base → transition to success
 # Result: transition to success (CORRECT!)
 ```
 
@@ -416,7 +416,7 @@ _universal_base:
 _base_phase:
   abstract: true
   mixins:
-    - _universal_base     # ✅ FIRST for guaranteed coverage
+    - _universal_base     # FIRST for guaranteed coverage
     - phase_progress
     - price_handling      # Can override with conditional logic
     - product_questions
@@ -630,14 +630,14 @@ pytest tests/test_intent_coverage.py -v
 ```yaml
 price_handling:
   rules:
-    price_question: answer_with_facts  # ❌ WRONG
+    price_question: answer_with_facts  # WRONG
 ```
 
 **After (correct):**
 ```yaml
 price_handling:
   rules:
-    price_question: answer_with_pricing  # ✅ CORRECT
+    price_question: answer_with_pricing  # CORRECT
 ```
 
 **Validation will catch this:**
@@ -709,8 +709,8 @@ metrics.record_fallback(
 summary = metrics.get_summary()
 # {
 #   "total_fallbacks": 100,
-#   "default_fallback_rate": 0.5,  # <1% target ✅
-#   "intelligent_fallback_rate": 58.0,  # 40-60% target ✅
+#   "default_fallback_rate": 0.5,  # <1% target [OK]
+#   "intelligent_fallback_rate": 58.0,  # 40-60% target [OK]
 #   "fallback_by_level": {
 #     "category": 25,
 #     "domain": 33,
@@ -734,10 +734,10 @@ health = metrics.check_health()
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| DEFAULT_ACTION fallback rate | <1% | 0.5% ✅ |
-| Intelligent fallback rate (category/domain) | 40-60% | 58% ✅ |
-| Critical intent unmapped count | 0 | 0 ✅ |
-| Taxonomy coverage | 100% | 100% ✅ |
+| DEFAULT_ACTION fallback rate | <1% | 0.5% [OK] |
+| Intelligent fallback rate (category/domain) | 40-60% | 58% [OK] |
+| Critical intent unmapped count | 0 | 0 [OK] |
+| Taxonomy coverage | 100% | 100% [OK] |
 
 ### Alerts
 
@@ -766,7 +766,7 @@ if metrics.get_intelligent_fallback_rate() < 40.0:
 
 ### 1. Always Use Taxonomy
 
-✅ **DO:**
+**DO:**
 ```yaml
 intent_taxonomy:
   my_intent:
@@ -777,7 +777,7 @@ intent_taxonomy:
     priority: medium
 ```
 
-❌ **DON'T:**
+**DON'T:**
 ```yaml
 # Missing taxonomy entry
 # Intent will fallback to DEFAULT_ACTION (bad!)
@@ -785,14 +785,14 @@ intent_taxonomy:
 
 ### 2. Add Critical Intents to _universal_base
 
-✅ **DO:**
+**DO:**
 ```yaml
 _universal_base:
   rules:
     critical_intent: appropriate_action
 ```
 
-❌ **DON'T:**
+**DON'T:**
 ```yaml
 # Critical intent not in _universal_base
 # Relies only on taxonomy fallback (risky!)
@@ -800,19 +800,19 @@ _universal_base:
 
 ### 3. Use Correct Actions for Price Intents
 
-✅ **DO:**
+**DO:**
 ```yaml
 price_question: answer_with_pricing
 ```
 
-❌ **DON'T:**
+**DON'T:**
 ```yaml
 price_question: answer_with_facts  # Wrong action!
 ```
 
 ### 4. Put _universal_base First
 
-✅ **DO:**
+**DO:**
 ```yaml
 _base_phase:
   mixins:
@@ -820,7 +820,7 @@ _base_phase:
     - other_mixins
 ```
 
-❌ **DON'T:**
+**DON'T:**
 ```yaml
 _base_phase:
   mixins:
@@ -830,12 +830,12 @@ _base_phase:
 
 ### 5. Run Validation in CI
 
-✅ **DO:**
+**DO:**
 ```bash
 pytest tests/test_intent_coverage.py -v
 ```
 
-❌ **DON'T:**
+**DON'T:**
 ```bash
 # Skip validation tests
 # Unmapped intents go to production!
@@ -843,7 +843,7 @@ pytest tests/test_intent_coverage.py -v
 
 ### 6. Monitor Fallback Rates
 
-✅ **DO:**
+**DO:**
 ```python
 metrics = FallbackMetrics()
 # ... record fallbacks ...
@@ -852,7 +852,7 @@ if not health["is_healthy"]:
     alert_ops_team(health["issues"])
 ```
 
-❌ **DON'T:**
+**DON'T:**
 ```python
 # No monitoring
 # DEFAULT_ACTION rate increases unnoticed
@@ -1037,14 +1037,14 @@ transitions:
 ## Changelog
 
 ### v1.0 (2026-01-28)
-- ✅ Initial implementation
-- ✅ 150+ intents with taxonomy entries
-- ✅ 5-level fallback chain
-- ✅ _universal_base mixin with guaranteed coverage
-- ✅ IntentCoverageValidator for static validation
-- ✅ FallbackMetrics for runtime monitoring
-- ✅ 25/27 integration tests passing (92.6%)
-- ✅ Documentation complete
+- Initial implementation
+- 150+ intents with taxonomy entries
+- 5-level fallback chain
+- _universal_base mixin with guaranteed coverage
+- IntentCoverageValidator for static validation
+- FallbackMetrics for runtime monitoring
+- 25/27 integration tests passing (92.6%)
+- Documentation complete
 
 ---
 

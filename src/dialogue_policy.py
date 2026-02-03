@@ -373,7 +373,7 @@ class DialoguePolicy:
         - summarize_and_clarify: суммировать + уточнить
         - answer_with_summary: ответить + краткое резюме
         """
-        # Bug #4: In handle_objection, yield to objection overlay (p3) when
+        # In handle_objection, yield to objection overlay (p3) when
         # trigger is only repeated_question (not stuck/oscillation which are more severe)
         if (ctx.state == "handle_objection"
                 and ctx.repeated_question is not None
@@ -400,7 +400,7 @@ class DialoguePolicy:
             decision = PolicyDecision.REPAIR_SUMMARIZE
 
         elif policy_registry.evaluate("has_repeated_question", ctx, trace):
-            # Bug #5: If current action already answers the question, protect it
+            # If current action already answers the question, protect it
             if ctx.current_action in self._repair_protected:
                 if trace:
                     trace.set_result(None, Resolution.NONE,
@@ -413,7 +413,7 @@ class DialoguePolicy:
                     expected_effect="Action already addresses question, skip repair",
                     # cascade_disposition=STOP (default) — protect from all lower overlays
                 )
-            # Bug #10: if repeated question is answerable, skip repair
+            # If repeated question is answerable, skip repair
             elif policy_registry.evaluate("is_answerable_question", ctx, trace):
                 if trace:
                     trace.set_result(None, Resolution.NONE,
@@ -587,14 +587,32 @@ class DialoguePolicy:
                 expected_effect="Explicit override to clear guard fallback for price question",
             )
 
+        # NEW: Detect if pricing already mentioned 2+ times
+        bot_responses = ctx.context_envelope.bot_responses[-5:] if hasattr(ctx.context_envelope, 'bot_responses') else []
+        pricing_keywords = ["тариф", "стоимость", "рубл", "₸", "₽", "цена"]
+
+        pricing_count = sum(
+            1 for resp in bot_responses
+            if any(kw in resp.lower() for kw in pricing_keywords)
+        )
+
+        # Select template based on repetition
+        if pricing_count >= 2:
+            action = "answer_with_pricing_brief"
+            reason = "pricing_repeated_2x"
+        else:
+            action = "answer_with_pricing"
+            reason = "price_question_priority"
+
         signals = {
             "intent": ctx.last_intent,
             "original_action": current_action,
+            "pricing_mention_count": pricing_count,
         }
 
         if trace:
             trace.set_result(
-                "answer_with_pricing",
+                action,
                 Resolution.CONDITION_MATCHED,
                 matched_condition="is_price_question"
             )
@@ -603,12 +621,14 @@ class DialoguePolicy:
         logger.info(
             "Policy: Price question override applied",
             original_action=current_action,
-            new_action="answer_with_pricing",
-            intent=ctx.last_intent
+            new_action=action,
+            intent=ctx.last_intent,
+            pricing_mentions=pricing_count,
+            reason=reason
         )
 
         return PolicyOverride(
-            action="answer_with_pricing",
+            action=action,
             next_state=None,  # Сохраняем текущий state
             reason_codes=[ReasonCode.POLICY_PRICE_OVERRIDE.value],
             decision=PolicyDecision.PRICE_QUESTION,

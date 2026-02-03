@@ -629,7 +629,7 @@ def should_avoid_least_effective(ctx: PolicyContext) -> bool:
 )
 def is_price_question(ctx: PolicyContext) -> bool:
     """
-    Checks THREE sources (Bug #10):
+    Checks THREE sources:
     1. Primary intent (current turn)
     2. Secondary intents (compound message detection)
     3. Repeated question (historical — catches classifier misses)
@@ -643,14 +643,14 @@ def is_price_question(ctx: PolicyContext) -> bool:
     if ctx.secondary_intents:
         if price_intents & set(ctx.secondary_intents):
             return True
-    # Bug #10: repeated_question fallback
+    # repeated_question fallback
     if ctx.repeated_question and ctx.repeated_question in price_intents:
         return True
     return False
 
 
 # =============================================================================
-# ANSWERABLE QUESTION CONDITION (Bug #10) - Any known question type
+# ANSWERABLE QUESTION CONDITION - Any known question type
 # =============================================================================
 
 @policy_condition(
@@ -763,6 +763,6 @@ __all__ = [
     "should_avoid_least_effective",
     # Price question condition (НОВОЕ)
     "is_price_question",
-    # Answerable question condition (Bug #10)
+    # Answerable question condition
     "is_answerable_question",
 ]

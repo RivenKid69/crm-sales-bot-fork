@@ -366,11 +366,11 @@ def _generate_default_instructions() -> str:
         # Add examples
         if cfg.examples_valid:
             valid_ex = cfg.examples_valid[0]
-            lines.append(f"  - ✅ \"{valid_ex.get('source', '')}\" → {name}: {valid_ex.get('value')}")
+            lines.append(f"  - [OK] \"{valid_ex.get('source', '')}\" → {name}: {valid_ex.get('value')}")
 
         if cfg.examples_invalid:
             invalid_ex = cfg.examples_invalid[0]
-            lines.append(f"  - ❌ {invalid_ex.get('value')} — {invalid_ex.get('reason', 'invalid')}")
+            lines.append(f"  - [FAIL] {invalid_ex.get('value')} — {invalid_ex.get('reason', 'invalid')}")
 
         lines.append("")
 

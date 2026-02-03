@@ -2,7 +2,7 @@
 ComparisonRefinementLayer - Refines comparison-like intents to objection_competitor
 when the message contains competitive objection signals.
 
-Bug #31a fix: "конкурент дешевле" classified as comparison → should be objection_competitor.
+"конкурент дешевле" classified as comparison → should be objection_competitor.
 
 Architecture:
 - Registered via @register_refinement_layer decorator (Principle 3.3)
