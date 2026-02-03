@@ -484,7 +484,7 @@ class ResponseDirectivesBuilder:
                 if envelope.repeated_question in _price:
                     directives.repair_context = (
                         "Клиент ПОВТОРНО спрашивает о цене! "
-                        "ОБЯЗАТЕЛЬНО назови цену: от 590 до 990₽/чел./мес."
+                        "ОБЯЗАТЕЛЬНО назови конкретные цены тарифов из базы знаний."
                     )
                 else:
                     directives.repair_context = (

@@ -489,41 +489,28 @@ class ResponseGenerator:
         return ", ".join(random.sample(self._product_overview, sample_size))
 
     def get_facts(self, company_size: int = None, intent: str = "") -> str:
-        """Получить факты о продукте, учитывая контекст интента."""
-        # Явная проверка на None, чтобы 0 не считался False
-        if company_size is not None and company_size > 0:
-            # Подбираем тариф
-            if company_size <= 5:
-                tariff = KNOWLEDGE["pricing"]["basic"]
-            elif company_size <= 25:
-                tariff = KNOWLEDGE["pricing"]["team"]
-            else:
-                tariff = KNOWLEDGE["pricing"]["business"]
+        """
+        Получить факты о продукте.
 
-            total = tariff["price"] * company_size
-            discount = KNOWLEDGE["discount_annual"]
-            annual = total * (1 - discount / 100)
+        ВАЖНО: Для price-related интентов НЕ генерируем данные здесь!
+        Pricing данные уже извлекаются через retriever (строка 652 в generate())
+        и попадают в {retrieved_facts}.
 
-            return f"""Тариф: {tariff['name']}
-Цена: {tariff['price']}₽/мес за человека
-На {company_size} чел: {total}₽/мес
-При оплате за год: {annual:.0f}₽/мес (скидка {discount}%)"""
+        Context-aware:
+        - Для price-related интентов → возвращаем пустую строку (данные в retrieved_facts)
+        - Для других → product overview из KB
 
-        # Intent-aware fallback when company_size unknown
-        # Price intents → return price range (not features)
+        Args:
+            company_size: Размер компании (НЕ используется, сохранено для обратной совместимости)
+            intent: Текущий интент диалога
+
+        Returns:
+            Пустая строка для price интентов, product overview для остальных
+        """
+        # Price-related интенты → НЕ генерируем факты
+        # Данные уже в {retrieved_facts} из основного retriever вызова (generate:652)
         if intent in self.PRICE_RELATED_INTENTS:
-            pricing = KNOWLEDGE.get("pricing", {})
-            basic = pricing.get("basic", {})
-            business = pricing.get("business", {})
-            team = pricing.get("team", {})
-            discount = KNOWLEDGE.get("discount_annual", 20)
-            return (
-                f"Тарифы Wipon:\n"
-                f"  {basic.get('name', 'Базовый')} (до 5 чел.): {basic.get('price', 990)}₽/чел./мес\n"
-                f"  {team.get('name', 'Команда')} (6-25 чел.): {team.get('price', 790)}₽/чел./мес\n"
-                f"  {business.get('name', 'Бизнес')} (26+ чел.): {business.get('price', 590)}₽/чел./мес\n"
-                f"При оплате за год скидка {discount}%"
-            )
+            return ""
 
         # Default: dynamic product overview from KB (Bug #9 fix — SSOT)
         return self._get_product_overview()

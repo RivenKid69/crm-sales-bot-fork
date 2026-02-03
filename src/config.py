@@ -3341,15 +3341,11 @@ SALES_STATES = {
 # БАЗА ЗНАНИЙ
 # =============================================================================
 
-KNOWLEDGE = {
-    "pricing": {
-        "basic": {"name": "Базовый", "price": 990, "users": "1-5"},
-        "team": {"name": "Команда", "price": 790, "users": "6-25"},
-        "business": {"name": "Бизнес", "price": 590, "users": "26+"}
-    },
-    # "features" removed — now sourced from knowledge retriever (SSOT: features.yaml)
-    "discount_annual": 20
-}
+# DEPRECATED: KNOWLEDGE["pricing"] and ["discount_annual"] removed — SSOT is pricing.yaml
+# Migration: All pricing data now sourced from knowledge retriever (src/yaml_config/knowledge/pricing.yaml)
+# Context: Fix currency desynchronization (₽ → ₸), eliminate hardcoded prices, enforce SSOT principle
+# "features" already removed in Bug #9 fix
+KNOWLEDGE = {}
 
 # =============================================================================
 # CATEGORY ROUTER PROMPT
@@ -4242,9 +4238,9 @@ PROMPT_TEMPLATES = {
     # Ответ на вопрос о цене с диапазоном (заменяет deflect_and_continue в ранних фазах)
     "answer_with_range_and_qualify": """{system}
 
-Клиент спросил о цене. Сначала дай диапазон, потом уточни.
+Клиент спросил о цене. Сначала назови тарифы, потом уточни.
 
-Факты о ценах: {facts}
+Тарифы: {retrieved_facts}
 
 Диалог:
 {history}
@@ -4252,11 +4248,11 @@ PROMPT_TEMPLATES = {
 Клиент: "{user_message}"
 
 Ответь по структуре:
-1. Диапазон цен (от X до Y за человека)
-2. Упомяни что зависит от размера команды
-3. Спроси сколько человек будет работать
+1. Назови основные тарифы
+2. Упомяни что зависит от задач бизнеса
+3. Спроси о бизнесе клиента
 
-Пример: "От 590 до 990₽ за человека в месяц — зависит от размера команды. Подскажите, сколько человек будет пользоваться?"
+Пример: "Основные тарифы от 5 000₸/мес (Mini) до 500 000₸/год (Pro) — зависит от ваших задач. Расскажите о вашем бизнесе?"
 
 Ответ на русском (2 предложения, до 40 слов):""",
 

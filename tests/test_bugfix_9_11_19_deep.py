@@ -92,31 +92,48 @@ class TestBug9KnowledgeSource:
                 f"Same result appears {count}/20 times (>50% fixation)"
             )
 
-    def test_t1_4_get_facts_branch_a_unchanged(self):
-        """T1.4: company_size pricing branch unchanged."""
+    def test_t1_4_get_facts_returns_empty_for_price_intents(self):
+        """T1.4: get_facts() returns empty string for price_question intent (SSOT migration)."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=10, intent="greeting")
-        assert "Тариф:" in result
-        assert "₽/мес" in result
-        assert "Команда" in result  # team tier for 10 users
+        result = gen.get_facts(company_size=10, intent="price_question")
 
-    def test_t1_5_get_facts_branch_b_unchanged(self):
-        """T1.5: price intent branch unchanged."""
+        # Pricing данные НЕ генерируются в get_facts()
+        # Они извлекаются через retriever и попадают в {retrieved_facts}
+        assert result == "", "get_facts() should return empty string for price intents"
+
+    def test_t1_5_get_facts_fallback_for_non_price_intents(self):
+        """T1.5: get_facts() returns product overview for non-price intents."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=None, intent="price_question")
-        assert "Тарифы Wipon:" in result
-        assert "Базовый" in result
-        assert "Команда" in result
-        assert "Бизнес" in result
+        result = gen.get_facts(company_size=None, intent="greeting")
 
-    def test_t1_6_knowledge_features_removed_from_config(self):
-        """T1.6: KNOWLEDGE['features'] removed, pricing/discount_annual remain."""
+        # Для non-price интентов возвращается product overview
+        assert isinstance(result, str)
+        assert len(result) > 0, "Product overview should be non-empty"
+
+    def test_t1_6_knowledge_pricing_removed_from_config(self):
+        """T1.6: KNOWLEDGE['pricing'] and ['discount_annual'] removed (SSOT migration)."""
         from src.config import KNOWLEDGE
-        assert "features" not in KNOWLEDGE
-        assert "pricing" in KNOWLEDGE
-        assert "discount_annual" in KNOWLEDGE
 
-    def test_t1_7_product_overview_only_priority_lte_8(self):
+        assert "features" not in KNOWLEDGE, "features already removed (Bug #9)"
+        assert "pricing" not in KNOWLEDGE, "pricing removed — SSOT is pricing.yaml"
+        assert "discount_annual" not in KNOWLEDGE, "discount removed — data in pricing.yaml"
+
+    def test_t1_7_no_hardcoded_ruble_prices_in_get_facts(self):
+        """T1.7: get_facts() returns empty string for price intents (no ruble data)."""
+        gen = self._make_generator()
+
+        # Проверяем price-related интенты из PRICE_RELATED_INTENTS
+        for intent in ["price_question", "pricing_details"]:
+            result = gen.get_facts(intent=intent)
+
+            # Для price интентов должна быть пустая строка
+            assert result == "", f"get_facts() should return empty for {intent}"
+
+            # Проверяем что НЕТ рублей (на случай если кто-то вернет данные)
+            assert "₽" not in result, f"Found ruble symbol in {intent} response"
+            assert "рубл" not in result.lower(), f"Found 'рубл' word in {intent} response"
+
+    def test_t1_8_product_overview_only_priority_lte_8(self):
         """T1.7: _product_overview only contains priority <= 8 sections."""
         from src.knowledge.retriever import get_retriever
         gen = self._make_generator()
