@@ -967,35 +967,39 @@ FALLBACK_RESPONSES = {
 
 | Модуль | Назначение |
 |--------|------------|
-| `bot.py` | Оркестрация: classifier → state_machine → generator |
-| `llm.py` | OllamaClient с circuit breaker и retry |
+| `bot.py` | Оркестрация: classifier → state_machine → generator + DecisionTracing |
+| `llm.py` | OllamaClient с circuit breaker, retry, LLMTrace |
 | `state_machine.py` | FSM с модульной YAML конфигурацией |
-| `generator.py` | Генерация ответов через Ollama |
+| `generator.py` | Генерация ответов + SafeDict template substitution + response deduplication |
+| `decision_trace.py` | **DecisionTrace, DecisionTraceBuilder, LLMTrace, ClientAgentTrace** — комплексная трассировка решений |
 | `classifier/unified.py` | Адаптер для переключения классификаторов |
-| `classifier/llm/` | LLM классификатор (150+ интентов) |
+| `classifier/llm/` | LLM классификатор (34 основных интента) |
+| `classifier/llm/few_shot.py` | **Few-shot примеры** для улучшения классификации (request_brevity, objection_competitor) |
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
-| `classifier/refinement_pipeline.py` | **RefinementPipeline** (Protocol, Registry, Pipeline) |
-| `classifier/refinement_layers.py` | **Адаптеры слоёв уточнения** (Short, Composite, Objection) |
-| `classifier/confidence_calibration.py` | **ConfidenceCalibrationLayer** (научная калибровка LLM confidence) NEW |
+| `classifier/refinement_pipeline.py` | RefinementPipeline (Protocol, Registry, Pipeline) |
+| `classifier/refinement_layers.py` | Адаптеры слоёв уточнения (Short, Composite, Objection) |
+| `classifier/confidence_calibration.py` | ConfidenceCalibrationLayer (научная калибровка LLM confidence) |
 | `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
 | `knowledge/category_router.py` | LLM-классификация категорий |
 | `knowledge/reranker.py` | Cross-encoder переоценка |
 | `feature_flags.py` | Управление фичами |
 | `settings.py` | Конфигурация из YAML |
 | `config.py` | Интенты, состояния, промпты |
-| `config_loader.py` | ConfigLoader, FlowConfig для YAML flow |
-| `rules/resolver.py` | **RuleResolver с taxonomy-based fallback** NEW |
-| `rules/intent_taxonomy.py` | **IntentTaxonomyRegistry (5-level fallback chain)** NEW |
-| `validation/intent_coverage.py` | **IntentCoverageValidator (zero unmapped intents)** NEW |
+| `config_loader.py` | ConfigLoader, FlowConfig для YAML flow + intent category/action overrides |
+| `rules/resolver.py` | RuleResolver с taxonomy-based fallback |
+| `rules/intent_taxonomy.py` | IntentTaxonomyRegistry (5-level fallback chain) |
+| `validation/intent_coverage.py` | IntentCoverageValidator (zero unmapped intents) |
 | `yaml_config/` | YAML конфигурация (states, flows, templates) |
-| `dag/` | **DAG State Machine** (CHOICE, FORK/JOIN, History) |
+| `dag/` | DAG State Machine (CHOICE, FORK/JOIN, History) |
 | `context_window.py` | Расширенный контекст диалога |
-| `dialogue_policy.py` | Context-aware policy overlays |
+| `dialogue_policy.py` | Context-aware policy overlays + price question override |
 | `context_envelope.py` | Построение контекста для подсистем |
 | `intent_tracker.py` | Трекинг интентов и паттернов |
-| `response_directives.py` | Директивы для генератора |
-| `tone_analyzer/` | Каскадный анализатор тона (3 уровня) |
-| `simulator/` | Симулятор диалогов (batch-тестирование с LLM-клиентом) |
+| `response_directives.py` | Директивы для генератора + do_not_repeat_responses |
+| `conversation_guard.py` | **Защита от зацикливания + informative intent check** |
+| `fallback_handler.py` | **Multi-tier fallback + flow-aware skip_map** |
+| `tone_analyzer/` | Каскадный анализатор тона (3 уровня, включен по умолчанию) |
+| `simulator/` | Симулятор диалогов (parallel execution, GPU pre-warming, decision traces) |
 
 ## Симулятор диалогов
 
@@ -1047,7 +1051,256 @@ class SimulationResult:
     fallback_count: int
     collected_data: Dict
     rule_traces: List[Dict]  # Трассировка условных правил
+    decision_traces: List[DecisionTrace]  # Полная трассировка решений (NEW)
+    client_traces: List[ClientAgentTrace]  # Трассировка поведения клиента (NEW)
 ```
+
+### Параллельное выполнение
+
+Симулятор поддерживает параллельное выполнение через ThreadPoolExecutor:
+
+```bash
+# Параллельный запуск 8 потоков (по умолчанию)
+python -m src.simulator --parallel 8 -n 100
+
+# GPU pre-warming для embedding models
+# FRIDA semantic tone analyzer и BGE reranker предварительно загружаются
+# перед параллельным выполнением для избежания "Cannot copy out of meta tensor" ошибок
+```
+
+**Улучшения производительности:**
+- GPU поддержка для embedding models (FRIDA, BGE)
+- Pre-warming моделей перед параллельным выполнением
+- ~2x ускорение при parallel=8 с OLLAMA_NUM_PARALLEL=8
+
+## Decision Tracing System
+
+Комплексная система трассировки всех решений бота для анализа и отладки (коммит 10f90c1).
+
+### Компоненты
+
+| Компонент | Назначение |
+|-----------|------------|
+| `DecisionTrace` | Полная трассировка одного хода диалога |
+| `DecisionTraceBuilder` | Builder pattern для построения трассировки |
+| `ClassificationTrace` | Трассировка классификации интента |
+| `ToneAnalysisTrace` | Трассировка анализа тона |
+| `GuardCheckTrace` | Трассировка проверок ConversationGuard |
+| `StateMachineTrace` | Трассировка state machine решений |
+| `FallbackTrace` | Трассировка fallback механизмов |
+| `LeadScoreTrace` | Трассировка скоринга лидов |
+| `LLMTrace` | Трассировка LLM вызовов (tokens, latency) |
+| `ClientAgentTrace` | Трассировка поведения симулируемого клиента |
+| `DecisionStatistics` | Агрегированная статистика по трассировкам |
+
+### Использование
+
+```python
+from src.bot import SalesBot
+
+bot = SalesBot()
+
+# Обработка с трассировкой
+response = bot.process("сколько стоит?")
+
+# Получить последнюю трассировку
+trace = bot.get_last_decision_trace()
+print(f"Classification: {trace.classification.intent} ({trace.classification.confidence})")
+print(f"State machine: {trace.state_machine.action} → {trace.state_machine.next_state}")
+print(f"Total LLM tokens: {sum(llm.total_tokens for llm in trace.llm_calls)}")
+
+# Агрегированная статистика
+stats = bot.get_decision_statistics()
+print(f"Classification accuracy: {stats.classification_stats['accuracy']}")
+print(f"Average response time: {stats.timing_stats['avg_total_ms']}ms")
+```
+
+### DecisionTrace структура
+
+```python
+@dataclass
+class DecisionTrace:
+    turn_number: int
+    timestamp: float
+
+    # Classification
+    classification: ClassificationTrace
+
+    # Tone Analysis
+    tone_analysis: Optional[ToneAnalysisTrace]
+
+    # Guard Checks
+    guard_checks: List[GuardCheckTrace]
+
+    # State Machine
+    state_machine: StateMachineTrace
+
+    # Fallback
+    fallback: Optional[FallbackTrace]
+
+    # Lead Scoring
+    lead_score: Optional[LeadScoreTrace]
+
+    # LLM Calls (все вызовы за ход)
+    llm_calls: List[LLMTrace]
+
+    # Timing
+    timing: Dict[str, float]  # ms по этапам
+```
+
+### LLMTrace для профилирования
+
+```python
+@dataclass
+class LLMTrace:
+    model: str
+    operation: str  # "classify", "generate", "tone_analyze"
+
+    # Tokens (оценка)
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+
+    # Latency
+    latency_ms: float
+
+    # Result
+    success: bool
+    error: Optional[str]
+```
+
+### Интеграция в отчеты симулятора
+
+Симулятор автоматически собирает decision traces и генерирует аналитику:
+
+```
+========================================
+DECISION ANALYSIS
+========================================
+
+Classification Statistics:
+- Total classifications: 2336
+- Accuracy: 94.2%
+- Top intents: price_question (423), situation_provided (312)
+
+State Machine Statistics:
+- Total transitions: 2336
+- Policy overrides: 127 (5.4%)
+- Fallback usage: 23 (1.0%)
+
+Timing Analysis:
+- Avg classification: 124ms
+- Avg generation: 856ms
+- Avg total turn: 1034ms
+```
+
+## Response Quality Improvements
+
+### 1. Template Variable Substitution (коммит 39c7109)
+
+**Проблема:** Переменные шаблонов отображались как `{style_full_instruction}` в ответах клиенту.
+
+**Решение:**
+- **SafeDict** — безопасная подстановка возвращает пустую строку вместо KeyError
+- **PERSONALIZATION_DEFAULTS** — fallback значения для всех переменных персонализации
+- **_apply_legacy_personalization()** — заполнение переменных при выключенной personalization_v2
+
+```python
+# generator.py
+class SafeDict(dict):
+    def __missing__(self, key):
+        return ""  # Вместо KeyError
+
+PERSONALIZATION_DEFAULTS = {
+    "style_full_instruction": "",
+    "bc_value_prop": "увеличите эффективность бизнеса",
+    "pain_point": "текущие сложности",
+    # ...
+}
+
+# Безопасная подстановка
+template.format_map(SafeDict({**PERSONALIZATION_DEFAULTS, **variables}))
+```
+
+**Результаты:**
+- `{pain_point}`: 75 → 0 вхождений
+- `{bc_value_prop}`: 9 → 0 вхождений
+- `{style_full_instruction}`: 145 → 0 предупреждений
+
+### 2. Response Deduplication (коммит 13d820e)
+
+**Проблема:** Повторяющиеся ответы ("Понимаю, сейчас это не приоритет" x393).
+
+**Решение:**
+- **Jaccard similarity** — вычисление схожести между ответами
+- **Response history** — отслеживание последних 5 ответов
+- **_regenerate_with_diversity** — регенерация при обнаружении дубликата
+- **do_not_repeat_responses** директива для генератора
+
+```python
+# generator.py
+def _is_duplicate(self, text: str, threshold: float = 0.7) -> bool:
+    """Проверка на дубликат через Jaccard similarity."""
+    words = set(text.lower().split())
+    for prev in self._response_history[-5:]:
+        prev_words = set(prev.lower().split())
+        if not words or not prev_words:
+            continue
+        similarity = len(words & prev_words) / len(words | prev_words)
+        if similarity >= threshold:
+            return True
+    return False
+```
+
+**Результаты:**
+- Уникальность ответов: 76% → 94%
+- Повторы: 82 → 11 случаев
+
+### 3. Price Question Override (коммит 13d820e)
+
+**Проблема:** Вопросы о цене игнорировались в 25 случаях.
+
+**Решение:**
+- **Intent-aware override** в DialoguePolicy
+- **price_related intent category** в constants.yaml
+- **is_price_question policy condition** с overlay
+- **answer_with_pricing template** с явными инструкциями
+
+```python
+# dialogue_policy.py
+def _check_price_override(self, intent: str) -> Optional[PolicyDecision]:
+    """Intent-aware override для вопросов о цене."""
+    if self.flow_config.is_intent_in_category(intent, "price_related"):
+        return PolicyDecision.PRICE_QUESTION
+    return None
+```
+
+**Результаты:**
+- Вопросы о цене: 81% игнорирование → **95%+** правильные ответы
+
+### 4. Guard/Fallback Fixes (коммит 4d5bad9)
+
+**Проблема:** Ложные TIER_3 вмешательства при информативных ответах клиента.
+
+**Решение:**
+- **Informative intent check** перед TIER_3
+- **fallback_response reset** после skip action
+- **guard_informative_intent_check** feature flag
+
+```python
+# conversation_guard.py
+def _is_informative_response(self, last_intent: str) -> bool:
+    """Проверка на информативный интент."""
+    INFORMATIVE_INTENTS = {
+        "info_provided", "situation_provided", "problem_revealed",
+        "need_expressed", "implication_acknowledged", "contact_provided"
+    }
+    return last_intent in INFORMATIVE_INTENTS or \
+           self._is_intent_category(last_intent, "informative")
+```
+
+**Результаты:**
+- Ложные TIER_3: 18% → **<2%**
 
 ## Тестирование
 

@@ -130,7 +130,7 @@ feature_flags:
   conversation_guard: true
 
   # Фаза 2: Естественность диалога
-  tone_analysis: false
+  tone_analysis: true  # Включен по умолчанию (коммит 6031a33)
   response_variations: true
   personalization: false
 
@@ -268,7 +268,7 @@ Feature flags позволяют постепенно включать новы�
 | `multi_tier_fallback` | `true` | 4-уровневый fallback |
 | `conversation_guard` | `true` | Защита от зацикливания |
 | **Фаза 2: Естественность** | | |
-| `tone_analysis` | `true` | Анализ тона клиента |
+| `tone_analysis` | `true` | Анализ тона клиента (ВКЛЮЧЕН с коммита 6031a33) |
 | `response_variations` | `true` | Вариативность ответов |
 | `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
 | `tone_semantic_tier2` | `true` | Tier 2: FRIDA semantic |

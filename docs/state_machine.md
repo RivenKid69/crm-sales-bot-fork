@@ -907,6 +907,83 @@ states:
       default_price_action: deflect_and_continue
 ```
 
+#### Ключевые Mixins (коммиты 2838e8f, 5c2aad7)
+
+**unified_progress** — универсальная архитектура для intent-to-transition mapping:
+```yaml
+# mixins.yaml
+unified_progress:
+  description: "Универсальное отображение progress интентов на переходы"
+  transitions:
+    situation_provided: "{{next_phase_state}}"
+    problem_revealed: "{{next_phase_state}}"
+    implication_acknowledged: "{{next_phase_state}}"
+    need_expressed: "{{next_phase_state}}"
+  parameters:
+    next_phase_state: null  # Переопределяется в каждом состоянии
+```
+
+**phase_progress** — предотвращение зацикливания на progress интентах:
+```yaml
+# mixins.yaml
+phase_progress:
+  description: "Обработка progress интентов для всех flow"
+  transitions:
+    situation_provided: "{{next_phase_state}}"
+    problem_revealed: "{{next_phase_state}}"
+    implication_acknowledged: "{{next_phase_state}}"
+    need_expressed: "{{next_phase_state}}"
+  parameters:
+    next_phase_state: null  # REQUIRED: следующее состояние фазы
+```
+
+**Проблема без phase_progress:**
+Когда классификатор возвращает progress интенты в non-SPIN flow, отсутствие transitions приводило к зацикливанию до срабатывания ConversationGuard (76% диалогов).
+
+**Результаты:**
+- soft_close rate: 76% → 63%
+- success rate: 24% → 37%
+- Все 60 e2e тестов проходят (20 techniques × 3 personas)
+
+**Новые objection handlers** (коммит 2838e8f):
+```yaml
+# mixins.yaml
+objection_handling:
+  rules:
+    objection_complexity: handle_objection_complexity
+    objection_timing: handle_objection_timing
+    objection_trust: handle_objection_trust
+    objection_no_need: handle_objection_no_need
+    # ... существующие objection handlers
+```
+
+**Улучшенная обработка возражений** (коммит 735751b):
+
+Все возражения теперь маршрутизируются в `handle_objection` через условные переходы:
+```yaml
+# mixins.yaml (до)
+objection_handling:
+  transitions:
+    objection_no_time: soft_close  # Немедленный soft_close (плохо!)
+    objection_think: soft_close    # Немедленный soft_close (плохо!)
+
+# mixins.yaml (после)
+objection_handling:
+  transitions:
+    objection_no_time:
+      - when: objection_limit_reached
+        then: soft_close
+      - handle_objection  # Default: обработать возражение
+    objection_think:
+      - when: objection_limit_reached
+        then: soft_close
+      - handle_objection  # Default: обработать возражение
+```
+
+**Результаты:**
+- soft_close при первом возражении: 92% → **0%**
+- soft_close только при достижении лимита (3 подряд ИЛИ 5 всего)
+
 ### 7.5 Модульные Flow
 
 ```yaml

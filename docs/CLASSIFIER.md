@@ -129,10 +129,11 @@ result = classifier.classify(
 
 ### Возможности
 
-- **150+ интентов** в 26 категориях (из `constants.yaml`)
+- **34 основных интента** + 150+ специализированных в 26 категориях (из `constants.yaml`)
 - **Structured output** — 100% валидный JSON через Ollama native format
 - **Извлечение данных** — company_size, pain_point, contact_info и др.
 - **Контекстная классификация** — учёт SPIN фазы и last_action
+- **Few-shot примеры** — интегрированы в классификационный промпт для улучшения точности (classifier/llm/few_shot.py)
 - **Fallback** на HybridClassifier при ошибке Ollama
 
 ### 26 категорий интентов (150+)
@@ -159,6 +160,7 @@ result = classifier.classify(
 | analytics_questions | 8 | Аналитика |
 | wipon_products | 6 | Продукты Wipon |
 | employee_questions | 6+ | Вопросы о сотрудниках |
+| meta | 5 | Мета-интенты (request_brevity, unclear, etc.) |
 
 **Основные интенты для SPIN:**
 
@@ -170,6 +172,12 @@ result = classifier.classify(
 - `no_problem` — отрицание проблемы
 - `no_need` — отрицание потребности
 - `info_provided` — предоставление информации
+
+**Мета-интенты (управление диалогом):**
+- `request_brevity` — просьба говорить кратко ("не грузите, скажите суть")
+- `unclear` — неясное сообщение
+- `off_topic` — не по теме
+- `meta_request` — мета-запрос о диалоге
 
 **Возражения (18 типов):**
 - `objection_price` — дорого
@@ -222,8 +230,26 @@ class ClassificationResult(BaseModel):
 LLMClassifier использует детальный system prompt с:
 - Описанием категорий интентов (из constants.yaml)
 - Критическими правилами (price_question vs objection_price)
-- Примерами неоднозначных случаев
+- **Few-shot примерами** для сложных случаев (few_shot.py):
+  - `request_brevity` — распознавание просьб говорить кратко
+  - `objection_competitor` — правильное извлечение {retrieved_facts} о конкурентах
+  - `price_question` vs `objection_price` — различение вопроса и возражения
 - Инструкциями по использованию контекста
+
+**Few-shot интеграция** (коммит 6bc6285):
+```python
+# classifier/llm/few_shot.py
+FEW_SHOT_EXAMPLES = {
+    "request_brevity": [
+        ("не грузите меня, скажите суть", "request_brevity"),
+        ("коротко, пожалуйста", "request_brevity"),
+    ],
+    "objection_competitor": [
+        ("у нас Poster", "objection_competitor", {"competitor": "Poster"}),
+        ("мы уже с Штрих-М работаем", "objection_competitor", {"competitor": "Штрих-М"}),
+    ]
+}
+```
 
 ## HybridClassifier (fallback)
 
