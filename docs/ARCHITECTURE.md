@@ -12,9 +12,142 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 
 ---
 
-## 📦 Версия 2.0: Модульная YAML конфигурация
+## Session Persistence & Snapshot Pipeline
+
+Цель: гарантированно продолжать диалог после паузы (день/неделя), без смешивания данных между клиентами и сессиями.
+
+**Ключевые принципы:**
+- Snapshot загружается **только при cache-miss**, не на каждое сообщение.
+- Компакция истории выполняется **только при TTL** (1 час тишины).
+- Последние 4 сообщения **не сохраняются в snapshot** — берутся из внешней истории.
+- Снапшоты копятся локально и выгружаются пачкой **после первого запроса после 23:00**.
+- В мультипроцессе используется общий буфер и lock.
+- Каждый snapshot содержит `client_id` и проверяется на match при восстановлении.
+
+```
+Incoming message
+  └── SessionManager.get_or_create(session_id, client_id, flow, config)
+       ├── cache hit → use in-memory bot
+       ├── local snapshot → restore + history_tail (last 4 msgs)
+       └── external snapshot → restore + history_tail
+
+TTL cleanup (cron/worker каждые 5–10 мин)
+  └── bot.to_snapshot(compact_history=True) → LocalSnapshotBuffer
+
+Первый запрос после 23:00
+  └── batch flush → внешняя БД → LocalSnapshotBuffer.clear()
+```
+
+**Компоненты:**
+- `SessionManager` — кеш сессий + TTL cleanup + восстановление + batch flush
+- `HistoryCompactor` — LLM‑компакция истории при сохранении снапшота
+- `LocalSnapshotBuffer` — SQLite буфер снапшотов (multi-process)
+- `SessionLockManager` — межпроцессный lock по `session_id`
+
+**Multi‑Config/Flow:**
+- В snapshot сохраняются `flow_name`, `config_name`, `client_id`.
+- При восстановлении выбирается правильный flow/config.
+- При active session возможен “горячий” switch flow/config (пересборка бота через snapshot).
+
+---
+
+## Версия 3.0: Dialogue Blackboard Architecture
 
 **Дата миграции**: Январь 2026
+**Статус**: Production-ready
+
+### Что изменилось
+
+| Компонент | v2.0 (Legacy) | v3.0 (Current) |
+|-----------|---------------|----------------|
+| **Decision Engine** | `state_machine.apply_rules()` | Dialogue Blackboard System |
+| **Architecture** | Procedural rule processing | Blackboard Pattern (knowledge sources) |
+| **Knowledge Sources** | Hardcoded в state_machine | 15 независимых KS модулей |
+| **Интенты** | 150+ интентов в 26 категориях | 300 интентов в 34 категориях |
+| **Flows** | 21 flows | 21 flows + universal phase resolution |
+| **State Transitions** | Distributed mutation | Atomic transition_to() |
+| **Objection Tracking** | Manual tracking | Automatic _state_before_objection |
+| **Go Back Logic** | Scattered | CircularFlowManager as SSOT |
+| **Extensibility** | Править state_machine.py | Plugin System (@register_source) |
+| **Observability** | Базовые логи | EventBus + MetricsCollector |
+| **Protocols** | Прямые зависимости | Hexagonal Architecture (IStateMachine, IIntentTracker) |
+
+### Ключевые компоненты v3.0
+
+```
+src/blackboard/
+├── orchestrator.py         # DialogueOrchestrator — main coordinator
+├── blackboard.py           # DialogueBlackboard — shared workspace
+├── knowledge_source.py     # KnowledgeSource ABC
+├── source_registry.py      # @register_source decorator
+├── protocols.py            # Hexagonal Architecture protocols
+├── models.py               # Proposal, ResolvedDecision, ContextSnapshot
+├── conflict_resolver.py    # ConflictResolver
+├── proposal_validator.py   # ProposalValidator
+├── event_bus.py            # DialogueEventBus (observability)
+└── sources/                # 15 Knowledge Sources
+    ├── autonomous_decision.py    # Priority 100
+    ├── price_question.py         # Priority 70
+    ├── fact_question.py          # Priority 65
+    ├── objection_guard.py        # Priority 90 (CRITICAL)
+    ├── stall_guard.py            # Priority 88 (two-tier: soft NORMAL + hard HIGH)
+    ├── conversation_guard_ks.py  # Priority 85
+    ├── go_back_guard.py          # Priority 82 (deferred counter increment)
+    ├── intent_pattern_guard.py   # Priority 80 (comparison fatigue detection)
+    ├── objection_return.py       # Priority 75 (all_questions auto-discovery)
+    ├── escalation.py             # Priority 70
+    ├── phase_exhausted.py        # Priority 60 (migrated from ConversationGuard)
+    ├── disambiguation.py         # Priority 55 (blocking, combinable=False)
+    ├── data_collector.py         # Priority 50 (persistent extracted_data)
+    ├── intent_processor.py       # Priority 40
+    └── transition_resolver.py    # Priority 30
+```
+
+**Важно:** `StateMachine` остаётся источником состояния, collected_data и snapshot API. Blackboard заменяет только decision engine (`apply_rules()`), а не хранение state.
+
+### Plugin System
+
+Любой Knowledge Source можно зарегистрировать через декоратор:
+
+```python
+from src.blackboard import register_source, KnowledgeSource, Proposal
+
+@register_source(name="my_source", priority=50, enabled=True)
+class MySource(KnowledgeSource):
+    def contribute(self, snapshot: ContextSnapshot) -> List[Proposal]:
+        # Analyze context
+        if snapshot.intent == "custom_intent":
+            return [Proposal(
+                source=self.name,
+                priority=Priority.HIGH,
+                proposal_type=ProposalType.ACTION,
+                action="custom_action"
+            )]
+        return []
+```
+
+### Hexagonal Architecture
+
+v3.0 использует протоколы для развязки зависимостей:
+
+```python
+# protocols.py
+class IStateMachine(Protocol):
+    def get_current_state(self) -> str: ...
+    def set_state(self, state: str): ...
+
+class IIntentTracker(Protocol):
+    def add_intent(self, intent: str): ...
+    def get_intent_count(self, intent: str) -> int: ...
+```
+
+Knowledge Sources зависят только от протоколов, не от конкретных реализаций.
+
+---
+
+## Версия 2.0: Модульная YAML конфигурация
+
+**Дата миграции**: Январь 2026 (актуальный слой конфигурации для StateMachine/Blackboard)
 
 ### Что изменилось
 
@@ -35,9 +168,12 @@ CRM Sales Bot — чат-бот для продажи CRM-системы Wipon. 
 src/
 ├── settings.yaml             # Настройки бота (LLM, retriever, flow.active)
 ├── config_loader.py          # ConfigLoader, FlowConfig, LoadedConfig
+│                             # NEW: state_to_phase, get_phase_for_state
 ├── yaml_config/
 │   ├── constants.yaml        # Единый источник констант (SPIN, limits, intents)
+│   │                         # NEW: composed_categories, configurable limits
 │   ├── constants.py          # Python-обёртка для constants.yaml
+│   │                         # NEW: _resolve_composed_categories()
 │   ├── states/
 │   │   └── sales_flow.yaml   # Определение состояний
 │   ├── flows/
@@ -48,6 +184,12 @@ src/
 │   │   └── spin_selling/     # SPIN Selling flow
 │   │       ├── flow.yaml     # Главная конфигурация
 │   │       └── states.yaml   # SPIN-специфичные состояния
+│   │                         # NEW: prev_phase_state for all flows
+│   ├── templates/            # Шаблоны промптов (NEW)
+│   │   ├── _base/prompts.yaml        # Базовые шаблоны
+│   │   ├── spin_selling/prompts.yaml # SPIN шаблоны
+│   │   ├── aida/prompts.yaml         # AIDA шаблоны
+│   │   └── ... (21 flows)            # Flow-специфичные промпты
 │   └── conditions/
 │       └── custom.yaml       # Кастомные условия
 └── dag/                      # DAG State Machine (параллельные потоки)
@@ -90,18 +232,18 @@ v2.0 добавляет поддержку DAG (Directed Acyclic Graph) для:
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              SalesBot                                        │
 │                             (bot.py)                                         │
-│      Оркестрация: classifier → state_machine → generator                     │
+│      Оркестрация: classifier → blackboard_orchestrator → generator           │
 │      + Feature Flags + Metrics + Logger + DialoguePolicy                     │
 └─────────────────┬───────────────────────────────┬───────────────────────────┘
                   │                               │
     ┌─────────────▼─────────────┐   ┌─────────────▼─────────────┐
-    │    UnifiedClassifier      │   │     StateMachine          │
-    │    (classifier/)          │   │   (state_machine.py)      │
+    │    UnifiedClassifier      │   │   Blackboard System       │
+    │    (classifier/)          │   │ (blackboard/)             │
     │                           │   │                           │
-    │ • LLMClassifier (Ollama)  │   │ • SPIN flow логика        │
-    │ • Structured output       │   │ • Priority-driven rules   │
-    │ • HybridClassifier fallback│  │ • FlowConfig (YAML)       │
-    │ • 150+ интентов           │   │ • on_enter actions        │
+    │ • LLMClassifier (Ollama)  │   │ • DialogueOrchestrator    │
+    │ • Structured output       │   │ • 15 Knowledge Sources    │
+    │ • HybridClassifier fallback│  │ • ConflictResolver        │
+    │ • 300 интентов / 34 кат.  │   │ • EventBus (observability)│
     └───────────────────────────┘   └─────────────┬─────────────┘
                                                   │
                   ┌───────────────────────────────▼───────────────┐
@@ -163,7 +305,7 @@ ollama serve
 Единый клиент для всех LLM операций:
 
 ```python
-from llm import OllamaClient
+from src.llm import OllamaClient
 
 llm = OllamaClient()
 
@@ -228,19 +370,48 @@ classifier/llm/
 ```
 
 **Возможности:**
-- 150+ интентов в 26 категориях (из constants.yaml)
+- 300 интентов в 34 категориях (из constants.yaml)
 - Structured output через Ollama native format
 - Извлечение данных (company_size, pain_point, etc.)
 - Контекстная классификация (учёт SPIN фазы)
 - Fallback на HybridClassifier при ошибке Ollama
 
-**Категории интентов:**
-- objection (18), positive (24), question (18)
+**34 категории интентов (300 интентов):**
+- objection (18), positive (23), question (18)
 - equipment_questions (12), tariff_questions (8), tis_questions (10)
 - tax_questions (8), accounting_questions (8), integration_specific (8)
 - operations_questions (10), delivery_service (6), business_scenarios (18)
 - technical_problems (6), conversational (10), fiscal_questions (8)
-- analytics_questions (8), wipon_products (6), employee_questions (6+)
+- analytics_questions (8), wipon_products (6), employee_questions (6)
+- price_related (7), purchase_stages (8), company_info (4)
+- dialogue_control (8), technical_question (13), promo_loyalty (6)
+- region_questions (6), stability_questions (6), informative (16)
+- spin_progress (4), exit (2), escalation (8)
+- frustration (6), sensitive (7), additional_integrations (6)
+- greeting_additional_redirects (2)
+
+**Composed Categories**
+
+Система композитных категорий для автоматической синхронизации:
+
+```yaml
+# constants.yaml
+composed_categories:
+  negative:
+    includes: [objection, exit]
+  blocking:
+    includes: [objection, exit, technical_problems]
+  all_questions:
+    auto_include:
+      intent_prefix: "question_"
+      exclude_categories: [positive, informative]
+    includes: [price_related, company_info]
+```
+
+**Результат:**
+- rejection относится к `exit` и не влияет на objection limits
+- all_questions собирается автоматически по intent_prefix
+- Single Source of Truth для категорий
 
 **Пример результата:**
 ```json
@@ -256,6 +427,34 @@ classifier/llm/
 }
 ```
 
+### ClassificationRefinementLayer NEW
+
+Уточнение классификации для коротких ответов на основе контекста SPIN фазы.
+
+**Проблема:** LLM классификатор неверно классифицирует короткие сообщения ("1", "да", "первое") как greeting вместо контекстно-правильных интентов (situation_provided, problem_revealed). Это вызывало зацикливание в greeting state (52 случая в e2e симуляции).
+
+**Решение:**
+- ClassificationRefinementLayer анализирует короткие сообщения и уточняет классификацию на основе текущей SPIN фазы
+- Feature flag classification_refinement для безопасного роллаута
+- Fallback transition в greeting state (turn_number_gte_3 → entry_state)
+- Улучшенный LLM prompt с явными инструкциями для коротких ответов
+
+**Результаты:**
+- 32/32 unit тестов проходят
+- e2e симуляция: 100% успешность (было примерно 48% с 52 State Loop случаями)
+- State Loop ошибки: 0 (было 52)
+
+**Компоненты:**
+- `src/classifier/refinement.py` - ClassificationRefinementLayer
+- `src/yaml_config/constants.yaml` - short_answer_classification config
+- `src/feature_flags.py` - classification_refinement flag
+
+```python
+# Пример: фаза "situation", сообщение "1"
+# LLM: greeting (0.8)
+# После refinement: situation_provided (0.9) с company_size=1
+```
+
 ### HybridClassifier (fallback)
 
 Быстрый regex-based классификатор:
@@ -267,7 +466,7 @@ classifier/
 ├── cascade.py          # CascadeClassifier (semantic fallback)
 ├── disambiguation.py   # IntentDisambiguator
 ├── intents/
-│   ├── patterns.py     # PRIORITY_PATTERNS (426 паттернов)
+│   ├── patterns.py     # PRIORITY_PATTERNS (491 паттерн)
 │   ├── root_classifier.py   # Классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy
 └── extractors/
@@ -562,9 +761,13 @@ yaml_config/
 │   ├── value/                  # Value Selling
 │   └── examples/               # Примеры конфигураций
 │
-├── templates/                  # Шаблоны промптов
+├── templates/                  # Шаблоны промптов (NEW: flow-specific)
 │   ├── _base/prompts.yaml      # Базовые шаблоны
-│   └── spin_selling/prompts.yaml # SPIN шаблоны
+│   ├── spin_selling/prompts.yaml # SPIN шаблоны
+│   ├── aida/prompts.yaml       # AIDA flow prompts
+│   ├── bant/prompts.yaml       # BANT flow prompts
+│   ├── challenger/prompts.yaml # Challenger Sale prompts
+│   └── ... (21 flows total)    # Flow-специфичные промпты с goal-aware continuation
 │
 └── constants.yaml              # ЕДИНЫЙ ИСТОЧНИК ИСТИНЫ (38K)
 ```
@@ -791,6 +994,424 @@ metrics = FallbackMetrics()
 
 **Документация:** [docs/INTENT_TAXONOMY.md](INTENT_TAXONOMY.md)
 
+## Ключевые улучшения системы (январь 2026)
+
+### ObjectionReturnSource NEW
+
+Knowledge Source для автоматического возврата к фазам после разрешения возражений.
+
+**Проблема:** До внедрения _state_before_objection сохранялся, но никогда не использовался. Бот застревал в handle_objection loop, не возвращаясь к sales flow phases (coverage: 0.0, phases_reached: []).
+
+**Решение:**
+- Автоматическое сохранение состояния при входе в handle_objection
+- Детекция успешного разрешения через POSITIVE_INTENTS + QUESTION_RETURN_INTENTS
+- HIGH priority предложение перехода обратно к saved_state
+- Objection loop escape mechanism (total-based + consecutive)
+
+**Особенности:**
+- Priority 75 (HIGH) — побеждает YAML transitions (NORMAL priority)
+- Phase restoration — возврат к bant_budget, spin_problem, etc.
+- Total-based escape — автоматический выход при total >= max_total - 1
+- Question return support — uncertainty patterns → question intents → return to phase
+
+**Результаты:**
+- Objection return rate: **81% stuck → 95%+ успешных возвратов**
+- Phase coverage: **0% → 25%+** для skeptic/tire_kicker personas
+- Застреваний в handle_objection: **0** (было множество cases)
+
+**SSoT:** [src/blackboard/sources/objection_return.py](../src/blackboard/sources/objection_return.py)
+
+### FactQuestionSource NEW
+
+Universal Knowledge Source для обработки фактических вопросов из всех 17 категорий KB.
+
+**Проблема:** Составные сообщения типа "100 человек. Сколько стоит?" теряли secondary question intent (price_question), так как LLM выбирает ОДИН primary intent (info_provided).
+
+**Решение:**
+- SecondaryIntentDetectionLayer — pattern-based detection без изменения primary intent
+- FactQuestionSource — проверяет primary + secondary_intents
+- Count-based conditions (price_total_count_3x, etc.) — не сбрасываются
+
+**Поддерживаемые категории (17):**
+- price_question (50+ patterns)
+- demo_request (25+ patterns)
+- callback_request (25+ patterns)
+- question_features (30+ patterns)
+- question_integrations (40+ patterns, Kaspi, 1C, API)
+- question_support (20+ patterns)
+- question_equipment (25+ patterns)
+- question_analytics, question_competitors, question_employees
+- question_fiscal, question_inventory, question_mobile
+- question_products, question_promotions, question_regions
+- question_stability, question_tis
+
+**Результаты:**
+- Lost questions: **25 игнорирований → <2%**
+- Secondary intent detection: **365 patterns** covering KB question intents
+- Composite message handling: **95%+ success rate**
+
+**SSoT:** [src/blackboard/sources/fact_question.py](../src/blackboard/sources/fact_question.py), [src/classifier/secondary_intent_detection.py](../src/classifier/secondary_intent_detection.py)
+
+### FrustrationIntensityCalculator NEW
+
+Intensity-based frustration calculation для точной детекции и pre-intervention.
+
+**Проблема:** До внедрения только ОДНА сигнал per tone per message считалась. "быстрее, не тяни, некогда" (3 RUSHED signals) = +1/turn → после 4 turns frustration = 4 < threshold 7 → no intervention.
+
+**Решение:**
+- Count ALL signals per message
+- Intensity multipliers: 1 signal = base weight, 2 signals = base * 1.5, 3+ signals = base * 2.0
+- Pre-intervention detection: RUSHED with high signal count triggers WARNING level early
+- Updated RUSHED weight: 1 → 2 для адекватного влияния
+
+**Примеры:**
+```python
+# Пример 1: "быстрее, не тяни, некогда" (3 RUSHED signals)
+# Было: +1 (одна сигнал)
+# Стало: base(2) * intensity(2.0) = +4 per turn
+# Результат: After 2 turns → intervention triggered
+
+# Пример 2: Pre-intervention mechanism
+# WARNING level (5-6) with RUSHED/FRUSTRATED tone → pre_intervention_triggered = True
+# Propagates through: ContextEnvelope → PolicyContext → GuardContext → protective measures
+```
+
+**Результаты:**
+- False negatives (missed frustration): **20%+ → <5%**
+- Pre-intervention activation: **+35%** раньше обнаружение
+- Ложные TIER_3 вмешательства: **18% → <2%** (благодаря structural_frustration)
+
+**SSoT:** [src/tone_analyzer/frustration_intensity.py](../src/tone_analyzer/frustration_intensity.py), [src/tone_analyzer/structural_frustration.py](../src/tone_analyzer/structural_frustration.py)
+
+### KB-Grounded Questions System NEW
+
+Система фактических вопросов из базы знаний для реалистичных E2E симуляций.
+
+**Компоненты:**
+- **KBQuestionPool** - пул из 5344 вопросов, сгенерированных из 1969 секций KB
+- **Persona affinity** - каждая персона имеет kb_question_probability 0.2-0.8
+- **Стартеры** - до 40% диалогов начинаются с KB вопроса вместо generic starter
+- **Mid-conversation injection** - max 4 KB вопроса per dialogue когда бот не спрашивает
+- **17 категорий** - вопросы по всем категориям KB (pricing, features, integrations, etc.)
+
+**Генерация:**
+```bash
+python scripts/generate_kb_questions.py
+# Генерирует 5904 вопросов, дедупликация до 5344
+# Checkpoint/resume поддержка для больших KB
+```
+
+**Интеграция в симулятор:**
+```python
+# ClientAgent использует KB вопросы автоматически
+result = runner.run_simulation(persona="happy_path")
+# kb_question_used, kb_question_source в ClientAgentTrace
+```
+
+**Результаты:**
+- Реалистичные вопросы вместо generic persona starters
+- KB coverage отчет в e2e summary
+- 61 тестов покрывают всю функциональность
+
+**SSoT:** [src/simulator/kb_questions.py](../src/simulator/kb_questions.py), [scripts/generate_kb_questions.py](../scripts/generate_kb_questions.py)
+
+### Refinement Layers NEW
+
+Семь слоев уточнения классификации для решения контекстных проблем.
+
+**FirstContactRefinementLayer** (Priority: HIGH)
+
+Уточнение классификации на первом контакте (turn <= 2).
+
+**Проблема:** LLM классифицирует cautious interest как objection на turn=1.
+- Example: "слушайте мне тут посоветовали... но я не уверен"
+- LLM: objection_trust → handle_objection
+- Expected: consultation_request → greeting + dialog start
+
+**Решение:**
+- Детекция referral patterns ("посоветовали", "рекомендовали")
+- Детекция cautious interest patterns ("не уверен", "хочу понять")
+- Рефайнмент objection → consultation_request на turn <= 2
+
+**OptionSelectionRefinementLayer** (Priority: HIGH)
+
+Обработка выбора из предложенных опций.
+
+**Проблема:** Ответы "1", "2", "первое" на inline questions классифицировались как request_brevity.
+
+**Решение:**
+- Детекция option patterns в last_bot_message ("или", numbered lists)
+- Refinement к info_provided при numeric answer
+- Fixed ClientAgent disambiguation detection (removed broad r"или\s+.+\?$" pattern)
+
+**ComparisonRefinementLayer NEW**
+
+Refinement comparison интентов в objection_competitor.
+
+**Проблема:** Сравнительные вопросы классифицировались как question_features вместо objection_competitor.
+
+**Решение:**
+- Детекция comparison patterns ("чем лучше", "отличие от", "vs")
+- Refinement к objection_competitor когда упомянут конкурент
+- Интеграция с composed categories через direct_intents
+
+**Примеры:**
+```python
+# "чем Wipon лучше Poster"
+# LLM: question_features
+# After refinement: objection_competitor (competitor="Poster")
+```
+
+**Приоритет:** HIGH
+**Feature flag:** comparison_refinement (off by default)
+**SSoT:** [src/classifier/comparison_refinement.py](../src/classifier/comparison_refinement.py)
+
+**DataAwareRefinementLayer NEW**
+
+Promotion unclear → info_provided когда DataExtractor находит business data.
+
+**Проблема:** "не знаю точно но около 15 человек" классифицировался как unclear вместо info_provided.
+
+**Решение:**
+- Проверка extracted_data от DataExtractor
+- Refinement unclear → info_provided если есть company_size, pain_point, business_type
+- 7 новых info_provided patterns как defense-in-depth backup
+
+**Результаты:**
+- Stall rate: **54% → <10%** (false stall detection eliminated)
+- Data collection: **улучшено извлечение при uncertain language**
+
+**Приоритет:** HIGH
+**Feature flag:** data_aware_refinement
+**SSoT:** [src/classifier/data_aware_refinement.py](../src/classifier/data_aware_refinement.py)
+
+**Composite Message Handling**
+
+Приоритизация извлечения данных в составных сообщениях.
+
+**ShortAnswer + Objection Refinement**
+
+Контекстная валидация на основе SPIN фазы и последнего действия бота.
+
+**Результаты:**
+- First contact misclassification: **37 dialogs → 0**
+- Option selection errors: **fixed 100%**
+- Lost data in composite messages: **25% → <2%**
+- Stall rate: **54% → <10%** (DataAwareRefinement fix)
+- Comparison handling: **95%+** accuracy
+
+**SSoT:** [src/classifier/refinement_layers.py](../src/classifier/refinement_layers.py), [src/classifier/comparison_refinement.py](../src/classifier/comparison_refinement.py), [src/classifier/data_aware_refinement.py](../src/classifier/data_aware_refinement.py)
+
+### All-Flows Data Infrastructure
+
+Поддержка extraction, dedup, required_data для всех 19 non-SPIN flows.
+
+**Проблема:** Все non-SPIN flows работали в degraded mode без data infrastructure:
+- No extraction fields (decision_maker, budget_range, etc.)
+- No question dedup (повторяющиеся вопросы)
+- No required_data transitions (data_complete не срабатывал)
+- No prompt templates с {do_not_ask}, {available_questions}
+
+**Решение:**
+- Added 7 extraction fields в constants.yaml
+- Extended phase_fields, phase_classification для MEDDIC, BANT, 17 shared phases
+- Added generic_dedup fallback для flows без phase-specific config
+- Updated 19 flow states.yaml с required_data, optional_data, on_enter flags
+- Updated 19 flow prompts.yaml с {do_not_ask}, {available_questions} variables
+
+**Новые extraction fields:**
+- decision_maker, budget_range, decision_timeline
+- decision_criteria, success_metrics
+- champion_info, decision_process
+
+**Результаты:**
+- BANT flow data collection: **0% → 95%+**
+- MEDDIC flow data collection: **0% → 95%+**
+- Question dedup для всех flows: **enabled**
+- Data-driven transitions: **работают для всех flows**
+
+**SSoT:** [src/extraction_ssot.py](../src/extraction_ssot.py), [src/question_dedup.py](../src/question_dedup.py), [src/yaml_config/question_dedup.yaml](../src/yaml_config/question_dedup.yaml)
+
+### Composed Categories with Auto-Discovery NEW
+
+Автоматическое обнаружение категорий интентов через intent_prefix механизм.
+
+**Проблема:** objection_return_questions содержал только 2 интента, но должен был включать все ~154 question_* интента. Вручную поддерживать такие списки невозможно.
+
+**Решение:**
+```yaml
+# constants.yaml
+composed_categories:
+  all_questions:
+    auto_include:
+      intent_prefix: "question_"      # Auto-discover all question_* intents
+      exclude_categories:             # Исключаем не-вопросные категории с question_* интентами
+        - positive
+        - informative
+    includes: [price_related, company_info]
+
+  objection_return_triggers:
+    includes: [positive, price_related, all_questions]
+```
+
+**Механизм:**
+- Сканирует базовые категории `intents.categories` в `constants.yaml` по префиксу `question_`
+- Auto-discovers 19+ base categories: question_features, question_integrations, question_equipment, etc.
+- Warnings для ghost intents (question_* not in INTENT_ROOTS)
+- 7 SSOT completeness CI guard tests (test_ssot_completeness.py)
+
+**Результаты:**
+- Objection return triggers: **2 intents → ~154 intents** (all question_* + edge cases)
+- question_requires_facts: converted to composed category
+- OBJECTION_RETURN_QUESTIONS constant removed (DRY)
+
+**SSoT:** [src/yaml_config/constants.py](../src/yaml_config/constants.py) (_resolve_composed_categories), [tests/test_ssot_completeness.py](../tests/test_ssot_completeness.py)
+
+### Category Streak Tracking
+
+Intent category streak tracking для паттерн-детекции (price, escalation, technical).
+
+**Проблема:** Price Deflect Loop — infinite deflection cycle.
+```
+Turn 1: "а какая цена?" → price_question → streak=1
+Turn 2: "и скидка есть?" → discount_request → streak=0 (RESET!)
+Turn 3: "скажи цену" → price_question → streak=1 (RESTART!)
+... infinite loop - streak never reaches 3 ...
+```
+
+**Root Cause:** intent_streak учитывает только КОНКРЕТНЫЙ intent, а не category.
+
+**Решение:**
+- Added category_streak tracking в IntentTracker
+- Updated conditions: price_repeated_3x uses get_category_streak("price_related") >= 3
+- Extended categories в constants.yaml:
+  - price_related (7 intents)
+  - escalation (8 intents)
+  - frustration (6 intents)
+  - sensitive (7 intents)
+  - technical_question (13 intents)
+- EscalationSource, PriceQuestionSource используют category_streak
+
+**Результаты:**
+- Price Deflect Loop: **141 случаев → 0**
+- Price pattern detection: **55% → 95%+**
+- Escalation pattern detection: **+40%** точности
+
+**SSoT:** [src/intent_tracker.py](../src/intent_tracker.py), [src/yaml_config/constants.yaml](../src/yaml_config/constants.yaml)
+
+### PhaseExhaustedSource NEW
+
+Knowledge Source для обработки исчерпанных фаз, мигрированный из ConversationGuard.
+
+**Проблема:** ConversationGuard check 6 (phase_exhausted → TIER_2) создавал race condition с DisambiguationSource. Guard fallback перезаписывал ask_clarification generic menu.
+
+**Решение:**
+- PhaseExhaustedSource (priority 60, NORMAL, combinable=True)
+- Exclusive window: [phase_exhaust_threshold, stall_soft)
+- ConversationGuard check 6 removed
+- offer_options handler в bot.py с transition-aware logic
+- generate_options_menu() в FallbackHandler
+
+**Конфигурация:**
+```yaml
+# _base/states.yaml
+_base_phase:
+  phase_exhaust_threshold: 4  # NEW field
+  max_turns_in_state: 5       # Was 6, now 5
+```
+
+**Defense-in-depth:**
+- Disambiguation clears guard fallback
+- Empty options guard в DisambiguationSource, bot.py, disambiguation_ui
+
+**Результаты:**
+- Race condition: **eliminated**
+- Generic menu overwrite: **fixed**
+- disambiguation_ui gaps fixed (подробн, систем, позже)
+
+**Feature flag:** phase_exhausted_source
+**SSoT:** [src/blackboard/sources/phase_exhausted.py](../src/blackboard/sources/phase_exhausted.py)
+
+### StallGuard Two-Tier System NEW
+
+Двухуровневая система детекции застревания для устранения 4-turn dead zone.
+
+**Проблема:** 54% stall rate (3+ turns в одном state). 4-turn dead zone между nudge и eject.
+
+**4 Root Fixes:**
+
+**Fix 1:** Off-by-one в consecutive_same_state - компенсация timing gap где build_context_envelope() runs before add_turn_from_dict()
+
+**Fix 1b:** has_extracted_data guard - предотвращает false stall когда user provides data но context_window has timing lag
+
+**Fix 2:** Two-tier StallGuardSource:
+- Soft tier (NORMAL priority, max_turns - 1) - предупреждение
+- Hard tier (HIGH priority, max_turns) - eject
+- Closes 4-turn dead zone
+
+**Fix 3:** max_turns_in_state: **6 → 5** в _base_phase
+
+**Fix 4:** DataAwareRefinementLayer - promotes unclear → info_provided когда DataExtractor finds business data
+
+**Результаты:**
+- Stall rate: **54% → <10%**
+- 31 new targeted tests (76 total pass)
+
+**SSoT:** [src/blackboard/sources/stall_guard.py](../src/blackboard/sources/stall_guard.py), [src/classifier/data_aware_refinement.py](../src/classifier/data_aware_refinement.py)
+
+### Disambiguation via Blackboard NEW
+
+Устранение ~540 lines дублированного кода через unified Blackboard pipeline.
+
+**Проблема:** bot.py содержал параллельный disambiguation pipeline (check disambiguation, wait for response, resolve response) дублирующий Blackboard logic.
+
+**Решение:**
+- **DisambiguationSource** (KnowledgeSource) - proposes blocking ask_clarification action
+- **DisambiguationResolutionLayer** (CRITICAL priority RefinementLayer) - resolves via 3 paths:
+  1. Critical intent override (rejection, escalation, etc.)
+  2. Option selection (1, 2, первый, второй)
+  3. Custom input pass-through
+- All disambiguation flows through single process() path
+
+**Компоненты:**
+- DisambiguationSource (priority 55, combinable=False blocking)
+- DisambiguationResolutionLayer (CRITICAL priority layer)
+- disambiguation_options, disambiguation_question в ContextEnvelope
+
+**Результаты:**
+- Code reduction: **~540 lines removed from bot.py**
+- Unified pipeline: **all disambiguation через Blackboard**
+- Gap cascade fixed: **GapCalibrationStrategy uses ctx.confidence**
+- compound_bypass_intents: **Bypass 5 для social messages**
+
+**SSoT:** [src/blackboard/sources/disambiguation.py](../src/blackboard/sources/disambiguation.py), [src/classifier/disambiguation_resolution_layer.py](../src/classifier/disambiguation_resolution_layer.py)
+
+### Guard/Fallback/FSM Fixes
+
+Комплекс из 7 interconnected fixes для guard, fallback, и FSM систем.
+
+**Fix 1:** Classification before guard — guard использует current intent вместо stale last_intent
+
+**Fix 2:** Valid skip target chain walker — _find_valid_skip_target() validates required_data before tier_3 skip
+
+**Fix 3:** Tier_2 self-loop breaker — consecutive counter escalates to tier_3 after threshold (default=3)
+
+**Fix 4:** Soft_close regression fix — removed price transitions from soft_close that regressed to presentation
+
+**Fix 5:** Disambiguation visited_states — all 4 return dicts include visited_states/initial_state
+
+**Fix 6:** Skip action handling — _continue_with_classification() handles skip + records progress
+
+**Fix 7:** Guard-aware price overlay — explicit override when guard fallback pending
+
+**Результаты:**
+- E2E failures: **26 случаев → 0**
+- Tier_2 self-loops: **fixed 100%**
+- Soft_close regression: **fixed**
+- Valid skip transitions: **95%+ корректных**
+
+**SSoT:** [src/bot.py](../src/bot.py), [src/conversation_guard.py](../src/conversation_guard.py), [src/fallback_handler.py](../src/fallback_handler.py), [src/dialogue_policy.py](../src/dialogue_policy.py)
+
 ## База знаний
 
 ### CascadeRetriever — 3-этапный поиск
@@ -870,7 +1491,7 @@ categories = router.route("Сколько стоит Wipon Desktop?")
 Система управления фичами для постепенного включения:
 
 ```python
-from feature_flags import flags
+from src.feature_flags import flags
 
 if flags.llm_classifier:
     # Использовать LLM классификатор
@@ -905,6 +1526,20 @@ if flags.llm_classifier:
 | `composite_refinement` | Приоритет данных в составных сообщениях |
 | `objection_refinement` | Контекстная валидация objection-классификаций |
 
+**NEW Feature Flags (январь-февраль 2026):**
+
+| Флаг | Описание | Статус |
+|------|----------|--------|
+| `phase_exhausted_source` | PhaseExhaustedSource в Blackboard | Production |
+| `data_aware_refinement` | DataAwareRefinementLayer | Production |
+| `comparison_refinement` | ComparisonRefinementLayer | Off (risky) |
+| `intent_pattern_guard` | IntentPatternGuardSource | Off (risky) |
+| `conversation_guard_in_pipeline` | ConversationGuard as KnowledgeSource | Off (gradual rollout) |
+| `kb_sourced_cta_options` | KB-sourced CTA fallback options | Production |
+| `cta_backoff_gating` | Gate CTA при backing-off language | Production |
+| `stall_guard_dual_proposal` | StallGuard dual proposal (action + transition) | Production |
+| `phase_completion_gating` | has_completed_minimum_phases condition | Production |
+
 **Флаги в тестировании (выключены):**
 
 | Флаг | Описание |
@@ -913,6 +1548,8 @@ if flags.llm_classifier:
 | `objection_handler` | Продвинутая обработка возражений |
 | `cta_generator` | Генерация Call-to-Action |
 | `personalization_v2` | V2 engine с behavioral adaptation |
+| `comparison_refinement` | ComparisonRefinementLayer (off by default) |
+| `intent_pattern_guard` | IntentPatternGuardSource (off by default) |
 
 **Override через env:**
 ```bash
@@ -963,43 +1600,133 @@ FALLBACK_RESPONSES = {
 }
 ```
 
+## Ключевые изменения v3.0 (Январь 2026)
+
+### Configurable Objection Limits
+
+Лимиты возражений теперь читаются из `constants.yaml` вместо хардкода:
+
+```yaml
+# constants.yaml
+limits:
+  max_consecutive_objections: 3
+  max_total_objections: 5
+```
+
+**Было:** Хардкод в 12+ местах кода
+**Стало:** SSOT в YAML, автоматическая загрузка через EvaluatorContext и PolicyContext
+
+### Atomic State Transitions
+
+Новый метод `transition_to()` для атомарных изменений состояний:
+
+```python
+# Было (distributed mutation)
+state_machine.state = "spin_problem"  # только state
+state_machine.current_phase = "problem"  # отдельно phase
+
+# Стало (atomic)
+state_machine.transition_to("spin_problem")  # state + phase + last_action atomically
+```
+
+**Проблема:** Orchestrator и bot.py изменяли state независимо, приводя к несогласованности state/phase/last_action.
+**Решение:** transition_to() обеспечивает атомарные изменения, sync_phase_from_state() как safety net.
+
+### State Before Objection Tracking
+
+Автоматическое отслеживание состояния до возражения:
+
+```python
+# Orchestrator._apply_side_effects()
+def _update_state_before_objection(prev_state, next_state, intent):
+    if next_state == "handle_objection":
+        self._state_before_objection = prev_state  # Save
+    elif intent in POSITIVE_INTENTS:
+        self._state_before_objection = None  # Clear on positive intent
+```
+
+**Проблема:** _state_before_objection никогда не устанавливался, get_return_state() всегда возвращал None.
+**Решение:** Автоматическое сохранение при входе в handle_objection, очистка при разрешении.
+
+### Universal Phase Resolution
+
+Все 21 flows теперь работают с phase detection:
+
+```python
+# FlowConfig.state_to_phase property (reverse mapping)
+# FlowConfig.get_phase_for_state() - canonical method
+
+# Было: только SPIN flow поддерживал фазы
+# Стало: все flows (BANT, MEDDIC, etc.) с автоопределением current_phase
+```
+
+### CircularFlowManager as Single Source of Truth
+
+Весь go_back logic в одном месте:
+
+```python
+# NEW methods:
+CircularFlowManager.is_limit_reached() - explicit limit check
+CircularFlowManager.can_go_back(yaml_transitions) - check availability
+CircularFlowManager.get_go_back_target() - get target from YAML or allowed_gobacks
+CircularFlowManager.record_go_back() - deferred counter increment
+```
+
+**Deferred Increment:** GoBackGuardSource больше не инкрементирует счетчик до conflict resolution. Инкремент происходит только если go_back действительно произошел.
+
 ## Модули системы
 
 | Модуль | Назначение |
 |--------|------------|
-| `bot.py` | Оркестрация: classifier → state_machine → generator + DecisionTracing |
+| `bot.py` | Оркестрация: classifier → state_machine → generator + DecisionTracing + visited_states |
 | `llm.py` | OllamaClient с circuit breaker, retry, LLMTrace |
-| `state_machine.py` | FSM с модульной YAML конфигурацией |
+| `state_machine.py` | FSM с модульной YAML конфигурацией + atomic transitions |
 | `generator.py` | Генерация ответов + SafeDict template substitution + response deduplication |
 | `decision_trace.py` | **DecisionTrace, DecisionTraceBuilder, LLMTrace, ClientAgentTrace** — комплексная трассировка решений |
 | `classifier/unified.py` | Адаптер для переключения классификаторов |
-| `classifier/llm/` | LLM классификатор (34 основных интента) |
+| `classifier/llm/` | LLM классификатор (300 интентов в 34 категориях) |
 | `classifier/llm/few_shot.py` | **Few-shot примеры** для улучшения классификации (request_brevity, objection_competitor) |
 | `classifier/hybrid.py` | Regex-based классификатор (fallback) |
 | `classifier/refinement_pipeline.py` | RefinementPipeline (Protocol, Registry, Pipeline) |
-| `classifier/refinement_layers.py` | Адаптеры слоёв уточнения (Short, Composite, Objection) |
-| `classifier/confidence_calibration.py` | ConfidenceCalibrationLayer (научная калибровка LLM confidence) |
+| `classifier/refinement_layers.py` | **5 refinement layers** (FirstContact, OptionSelection, ShortAnswer, Composite, Objection) |
+| `classifier/confidence_calibration.py` | **ConfidenceCalibrationLayer** (научная калибровка: entropy, gap, heuristics) |
+| `classifier/secondary_intent_detection.py` | **SecondaryIntentDetectionLayer** (обработка составных сообщений, 365 patterns) |
 | `knowledge/retriever.py` | CascadeRetriever (3-этапный поиск) |
 | `knowledge/category_router.py` | LLM-классификация категорий |
 | `knowledge/reranker.py` | Cross-encoder переоценка |
-| `feature_flags.py` | Управление фичами |
+| `feature_flags.py` | **Управление фичами** (42+ флагов, +7 новых) |
 | `settings.py` | Конфигурация из YAML |
 | `config.py` | Интенты, состояния, промпты |
 | `config_loader.py` | ConfigLoader, FlowConfig для YAML flow + intent category/action overrides |
 | `rules/resolver.py` | RuleResolver с taxonomy-based fallback |
 | `rules/intent_taxonomy.py` | IntentTaxonomyRegistry (5-level fallback chain) |
 | `validation/intent_coverage.py` | IntentCoverageValidator (zero unmapped intents) |
-| `yaml_config/` | YAML конфигурация (states, flows, templates) |
+| `yaml_config/` | **YAML конфигурация** (97+ files: states, flows, templates, +27 новых) |
+| `yaml_config/constants.yaml` | **SSOT** (~6600+ строк taxonomy + secondary_intent + category definitions) |
 | `dag/` | DAG State Machine (CHOICE, FORK/JOIN, History) |
-| `context_window.py` | Расширенный контекст диалога |
+| `context_window.py` | **Расширенный контекст диалога** (secondary_intents, repeated_question lag fix) |
 | `dialogue_policy.py` | Context-aware policy overlays + price question override |
-| `context_envelope.py` | Построение контекста для подсистем |
-| `intent_tracker.py` | Трекинг интентов и паттернов |
-| `response_directives.py` | Директивы для генератора + do_not_repeat_responses |
-| `conversation_guard.py` | **Защита от зацикливания + informative intent check** |
-| `fallback_handler.py` | **Multi-tier fallback + flow-aware skip_map** |
-| `tone_analyzer/` | Каскадный анализатор тона (3 уровня, включен по умолчанию) |
-| `simulator/` | Симулятор диалогов (parallel execution, GPU pre-warming, decision traces) |
+| `context_envelope.py` | **Построение контекста** (pre_intervention_triggered propagation) |
+| `intent_tracker.py` | **Трекинг интентов** (category_streak для price_related, escalation, technical_question) |
+| `response_directives.py` | Директивы для генератора + repair_mode context enrichment |
+| `conversation_guard.py` | **Защита от зацикливания** (tier_2 self-loop breaker, informative intent check) |
+| `fallback_handler.py` | **Multi-tier fallback** (flow-aware skip_map, valid skip target chain walker) |
+| `tone_analyzer/frustration_tracker.py` | **Трекинг фрустрации** (FrustrationIntensityCalculator integration) |
+| `tone_analyzer/frustration_intensity.py` | **FrustrationIntensityCalculator** (intensity-based scoring, pre-intervention) |
+| `tone_analyzer/structural_frustration.py` | **Структурная детекция** (unanswered repeats, deflection loops, tonal decay) |
+| `question_dedup.py` | **Question deduplication** (all-flows support, generic fallback, 20 phase_questions) |
+| `extraction_ssot.py` | **Data extraction** (7 новых полей для MEDDIC/BANT, flow-agnostic) |
+| `cta_generator.py` | **CTA generation** (STATE_TO_CTA_PHASE mapping для 21 flows, phase-based templates) |
+| `blackboard/sources/objection_return.py` | **ObjectionReturnSource** (HIGH priority, total-based escape, phase restoration) |
+| `blackboard/sources/fact_question.py` | **FactQuestionSource** (17 KB categories, secondary_intents, count-based conditions) |
+| `blackboard/sources/price_question.py` | **PriceQuestionSource** (category_streak для 7 price_related intents) |
+| `blackboard/sources/escalation.py` | **EscalationSource** (category_streak для 8 escalation intents) |
+| `blackboard/sources/objection_guard.py` | **ObjectionGuardSource** (persona-based limits: tire_kicker 6/12, skeptic 4/7) |
+| `simulator/` | **Симулятор диалогов** (100 dialogs, 8 threads, 90% pass rate, 0.750 avg score) |
+| `simulator/client_agent.py` | **ClientAgent** (persona insistence, disambiguation fix, contact collection) |
+| `simulator/metrics.py` | Сбор метрик с visited_states для точного phase coverage |
+| `simulator/runner.py` | SimulationRunner с visited_states tracking + persona passing |
+| `simulator/personas.py` | **8 personas** (с calibrated objection limits и insistence probability) |
 
 ## Симулятор диалогов
 
@@ -1046,14 +1773,27 @@ class SimulationResult:
     turns: int
     duration_seconds: float
     phases_reached: List[str]
-    spin_coverage: float   # 0.0 - 1.0
+    spin_coverage: float   # 0.0 - 1.0 (NEW: based on visited_states)
     objections_count: int
     fallback_count: int
     collected_data: Dict
     rule_traces: List[Dict]  # Трассировка условных правил
-    decision_traces: List[DecisionTrace]  # Полная трассировка решений (NEW)
-    client_traces: List[ClientAgentTrace]  # Трассировка поведения клиента (NEW)
+    decision_traces: List[DecisionTrace]  # Полная трассировка решений
+    client_traces: List[ClientAgentTrace]  # Трассировка поведения клиента
+    visited_states: List[str]  # NEW: все посещенные состояния за ход
+    initial_state: str        # NEW: начальное состояние хода
 ```
+
+### Phase Coverage Fix
+
+**Проблема:** Fallback skip вызывал переходы через промежуточные состояния (greeting → spin_situation → spin_problem), но записывалось только финальное состояние. Phase coverage показывал 0.0-0.25 вместо 0.6+.
+
+**Решение:**
+- bot.py: добавлен visited_states list для отслеживания всех состояний за ход
+- runner.py: записывает visited_states и initial_state в turn_data
+- metrics.py: использует visited_states для извлечения фаз (с fallback на decision_trace)
+
+**Результат:** Корректный phase coverage даже при множественных fallback skips.
 
 ### Параллельное выполнение
 

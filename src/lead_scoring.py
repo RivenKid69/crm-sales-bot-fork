@@ -494,6 +494,53 @@ class LeadScorer:
             "skip_phases": list(score.skip_phases),
         }
 
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict:
+        """Serialize LeadScorer state."""
+        full_history = []
+        for signal in self.signals_history:
+            points = self.POSITIVE_WEIGHTS.get(signal, self.NEGATIVE_WEIGHTS.get(signal, 0))
+            full_history.append({
+                "signal": signal,
+                "points": points,
+            })
+
+        return {
+            "current_score": self.current_score,
+            "raw_score": self._raw_score,
+            "signals_history": list(self.signals_history),
+            "_signals_history_full": full_history,
+            "turn_count": self._turn_count,
+            "decay_applied_this_turn": self._decay_applied_this_turn,
+            "turns_without_end_turn": self._turns_without_end_turn,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "LeadScorer":
+        """Restore LeadScorer from serialized snapshot."""
+        scorer = cls()
+        if not data:
+            return scorer
+
+        scorer.current_score = int(data.get("current_score", 0))
+        scorer._raw_score = float(
+            data.get("raw_score", data.get("_raw_score", scorer.current_score))
+        )
+
+        full_history = data.get("_signals_history_full") or []
+        if full_history:
+            scorer.signals_history = [item.get("signal") for item in full_history if item.get("signal")]
+        else:
+            scorer.signals_history = list(data.get("signals_history", []))
+
+        scorer._turn_count = int(data.get("turn_count", 0))
+        scorer._decay_applied_this_turn = bool(data.get("decay_applied_this_turn", False))
+        scorer._turns_without_end_turn = int(data.get("turns_without_end_turn", 0))
+        return scorer
+
 
 # =============================================================================
 # Интеграция с интентами

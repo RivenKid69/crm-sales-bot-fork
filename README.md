@@ -75,15 +75,41 @@ llm:
 ## Возможности
 
 - **SPIN Selling** — структурированный подход к продажам (Situation → Problem → Implication → Need-Payoff)
-- **Гибридная классификация** — 426 приоритетных паттернов + поиск по корням + лемматизация
+- **Интенсивная классификация** — 300 интентов в 34 категориях с LLM-классификатором (Qwen3 14B)
+- **Refinement Pipeline** — 7 активных слоёв в pipeline (ConfidenceCalibration, SecondaryIntentDetection, ShortAnswer, Composite, OptionSelection, Objection, DataAware) + дополнительные опциональные слои (FirstContact, GreetingContext, Comparison, DisambiguationResolution)
+- **Blackboard Architecture** — современная архитектура с 15 Knowledge Sources для принятия решений
+- **KB-Grounded Questions** — 5344 вопроса из базы знаний для реалистичных E2E симуляций
+- **Auto-Discovery Categories** — автоматическое обнаружение 19+ question categories через intent_prefix
+- **Objection Return System** — автоматический возврат к фазам после разрешения возражений
+- **Secondary Intent Detection** — обработка составных сообщений с вторичными интентами
+- **Frustration Intensity** — intensity-based детекция фрустрации с pre-intervention механизмом
+- **Atomic State Transitions** — transition_to() для консистентности state/phase/last_action
+- **Configurable Objection Limits** — persona-based лимиты из YAML (tire_kicker: 6/12, skeptic: 4/7)
+- **Universal Phase Resolution** — все 21 flow с автоматическим phase detection
+- **CircularFlowManager SSOT** — единый источник истины для go_back logic с deferred increment
+- **Composed Categories** — автоматическая синхронизация категорий интентов (rejection → exit)
+- **Intent Taxonomy System** — 5-level fallback chain для unmapped intents с интеллектуальным fallback
+- **Category Streak Tracking** — price_related, escalation, technical_question category streaks для паттернов
+- **Objection Loop Escape** — автоматический выход из циклов возражений (total-based + consecutive)
 - **Каскадный поиск** — 3-этапный retriever (exact → lemma → semantic)
 - **LLM-маршрутизация** — CategoryRouter для интеллектуальной классификации категорий
 - **Голосовой интерфейс** — Voice Bot с STT (Whisper) и TTS (F5-TTS)
-- **Модульные фазы** — постепенное включение новых возможностей через feature flags
-- **Modular Flow System** — YAML-конфигурация диалоговых flow с extends/mixins
-- **Priority-driven Rules** — приоритизация обработки правил через YAML
+- **Модульные фазы** — постепенное включение новых возможностей через feature flags (42+ флагов)
+- **Modular Flow System** — 21 готовый сценарий продаж с YAML-конфигурацией (extends/mixins)
+- **Flow-Specific Prompts** — goal-aware промпты для каждого из 21 flow
+- **Two-Tier StallGuard** — soft (NORMAL) + hard (HIGH) thresholds для детекции застреваний
+- **PhaseExhaustedSource** — migrated from ConversationGuard в Blackboard pipeline
+- **Disambiguation via Blackboard** — unified pipeline (~540 lines removed from bot.py)
+- **All-Flows Data Infrastructure** — extraction, dedup, required_data для всех 20 non-SPIN flows
+- **Plugin System** — динамическая регистрация Knowledge Sources через декораторы
+- **Phase Coverage** — точное отслеживание visited_states для метрик
 - **Dynamic CTA** — контекстно-зависимые подсказки при fallback на основе собранных данных
 - **Категоризация болей** — автоматическое определение типа боли (losing_clients, no_control, manual_work)
+- **Snapshot Persistence** — восстановление диалогов после паузы (TTL + локальный буфер + вечерний batch flush)
+- **History Compaction** — LLM-сжатие истории при сохранении снапшота (без последних 4 сообщений)
+- **Multi-Session безопасно** — параллельные диалоги с межпроцессными lock'ами
+- **Multi-Config/Flow** — разные клиенты могут работать на разных flow/config без смешивания
+- **Client Binding** — `client_id` сохраняется в снапшоте и проверяется при восстановлении
 
 ## Архитектура
 
@@ -98,8 +124,8 @@ llm:
          │
          ▼
 ┌─────────────────┐
-│  State Machine  │  ← SPIN-логика: S → P → I → N → Presentation
-│                 │    Решает какое действие выполнить
+│   Blackboard    │  ← 15 Knowledge Sources принимают решения
+│  Orchestrator   │    (Autonomous, Guards, Data Collectors, etc.)
 └────────┬────────┘
          │
          ▼
@@ -117,6 +143,26 @@ llm:
     Ответ бота
 ```
 
+## Сессии и снапшоты
+
+Диалог сохраняется только после периода тишины (TTL), а не на каждое сообщение.
+Снапшот попадает в локальный буфер и выгружается в внешнюю БД пачкой после 23:00.
+При восстановлении подгружается последние 4 сообщения из внешней истории, а основная история хранится в компактном виде.
+
+```
+Входящее сообщение
+  └── SessionManager.get_or_create(session_id, client_id, flow, config)
+       ├── cache hit → вернуть активный бот
+       ├── local snapshot → восстановить + history_tail
+       └── external snapshot → восстановить + history_tail
+
+TTL cleanup (каждые 5–10 минут)
+  └── bot.to_snapshot(compact_history=True) → LocalSnapshotBuffer
+
+Первый запрос после 23:00
+  └── batch flush → внешняя БД → LocalSnapshotBuffer.clear()
+```
+
 ## Структура проекта
 
 ```
@@ -124,9 +170,9 @@ src/
 ├── bot.py                  # Главный класс SalesBot, координирует компоненты
 ├── settings.yaml           # Конфигурация (LLM, retriever, classifier, feature_flags)
 ├── settings.py             # Загрузчик настроек с DotDict
-├── config.py               # Интенты, состояния, SPIN-промпты
+├── config.py               # Legacy-словарь интентов/паттернов для fallback классификатора
 ├── llm.py                  # OllamaClient — интеграция с Ollama
-├── state_machine.py        # Управление состояниями диалога (SPIN flow)
+├── state_machine.py        # Управление состояниями диалога (flow из YAML)
 ├── generator.py            # Генерация ответов через LLM
 │
 ├── # Фаза 0: Инфраструктура
@@ -141,10 +187,12 @@ src/
 ├── # Фаза 2: Естественность диалога
 ├── tone_analyzer/          # Каскадный анализатор тона
 │   ├── cascade_analyzer.py # 3-уровневый каскад (regex → semantic → LLM)
-│   ├── regex_analyzer.py   # Tier 1: Regex паттерны
+│   ├── regex_analyzer.py   # Tier 1: Regex паттерны с intensity-based frustration
 │   ├── semantic_analyzer.py # Tier 2: RoSBERTa semantic
 │   ├── llm_analyzer.py     # Tier 3: LLM fallback
-│   └── frustration_tracker.py # Трекинг фрустрации
+│   ├── frustration_tracker.py # Трекинг фрустрации с FrustrationIntensityCalculator
+│   ├── frustration_intensity.py # FrustrationIntensityCalculator (intensity-based scoring)
+│   └── structural_frustration.py # Структурная детекция фрустрации (unanswered repeats, deflection loops)
 ├── response_variations.py  # Вариативность ответов
 │
 ├── # Фаза 3: Оптимизация SPIN Flow
@@ -159,6 +207,10 @@ src/
 ├── dialogue_policy.py      # Context-aware policy overlays
 ├── intent_tracker.py       # Трекинг интентов и паттернов
 ├── response_directives.py  # Директивы для генератора
+├── history_compactor.py    # LLM-компакция истории при снапшоте
+├── snapshot_buffer.py      # Локальный буфер снапшотов (SQLite, multi-process)
+├── session_manager.py      # Кеш сессий + восстановление + TTL cleanup + batch flush
+├── session_lock.py         # Межпроцессные lock'и по session_id
 │
 ├── # Условные правила
 ├── conditions/             # Пакет условных правил
@@ -179,18 +231,29 @@ src/
 │   ├── spin/phases.yaml    # SPIN фазы
 │   ├── states/sales_flow.yaml  # Состояния диалога
 │   ├── conditions/custom.yaml  # Кастомные условия
-│   ├── flows/              # 22 модульных flow (extends/mixins)
+│   ├── flows/              # 21 модульный flow (extends/mixins)
 │   │   ├── _base/          # Базовые компоненты
 │   │   ├── spin_selling/   # SPIN Selling (по умолчанию)
+│   │   ├── autonomous/     # Autonomous Decision flow (новое)
 │   │   ├── aida/           # AIDA flow
 │   │   ├── bant/           # BANT framework
 │   │   ├── challenger/     # Challenger Sale
+│   │   ├── command/        # Command flow
 │   │   ├── consultative/   # Consultative Selling
+│   │   ├── customer_centric/ # Customer Centric
+│   │   ├── demo_first/     # Demo First approach
+│   │   ├── fab/            # FAB (Features-Advantages-Benefits)
+│   │   ├── gap/            # GAP Selling
+│   │   ├── inbound/        # Inbound flow
 │   │   ├── meddic/         # MEDDIC
+│   │   ├── neat/           # NEAT Selling
+│   │   ├── relationship/   # Relationship Selling
 │   │   ├── sandler/        # Sandler
 │   │   ├── snap/           # SNAP Selling
-│   │   ├── value/          # Value Selling
-│   │   └── ...             # И ещё 13 flow
+│   │   ├── social/         # Social Selling
+│   │   ├── solution/       # Solution Selling
+│   │   ├── transactional/  # Transactional flow
+│   │   └── value/          # Value Selling
 │   └── templates/          # Шаблоны промптов
 │       ├── _base/prompts.yaml  # Базовые шаблоны
 │       └── spin_selling/prompts.yaml  # SPIN шаблоны
@@ -202,16 +265,50 @@ src/
 │   ├── hybrid.py           # HybridClassifier — regex fallback
 │   ├── cascade.py          # CascadeClassifier — semantic fallback
 │   ├── disambiguation.py   # IntentDisambiguator
+│   ├── refinement_pipeline.py   # RefinementPipeline (Protocol, Registry, Pipeline)
+│   ├── refinement_layers.py     # Refinement layers (adapters)
+│   ├── confidence_calibration.py # ConfidenceCalibrationLayer (entropy, gap, heuristics)
+│   ├── secondary_intent_detection.py # SecondaryIntentDetectionLayer (composite messages)
 │   ├── llm/                # LLM классификатор (основной)
 │   │   ├── classifier.py   # LLMClassifier (Ollama + Structured Output)
 │   │   ├── prompts.py      # System prompt + few-shot
 │   │   └── schemas.py      # Pydantic схемы для structured output
 │   ├── intents/            # Подпакет классификации интентов (для fallback)
-│   │   ├── patterns.py     # Приоритетные паттерны (426 шт)
+│   │   ├── patterns.py     # Приоритетные паттерны (523 шт, +97 новых)
 │   │   ├── root_classifier.py   # Быстрая классификация по корням
 │   │   └── lemma_classifier.py  # Fallback через pymorphy
 │   └── extractors/         # Подпакет извлечения данных
 │       └── data_extractor.py    # Извлечение структурированных данных
+│
+├── blackboard/             # Dialogue Blackboard System (decision engine; StateMachine хранит state)
+│   ├── __init__.py         # Публичный API
+│   ├── blackboard.py       # DialogueBlackboard — центральное хранилище
+│   ├── orchestrator.py     # DialogueOrchestrator — координатор
+│   ├── knowledge_source.py # KnowledgeSource — базовый класс
+│   ├── source_registry.py  # SourceRegistry + @register_source
+│   ├── protocols.py        # Hexagonal Architecture (IStateMachine, IIntentTracker)
+│   ├── models.py           # Proposal, ResolvedDecision, ContextSnapshot
+│   ├── enums.py            # Priority, ProposalType
+│   ├── proposal_validator.py # ProposalValidator
+│   ├── conflict_resolver.py  # ConflictResolver
+│   ├── priority_assigner.py  # PriorityAssigner
+│   ├── event_bus.py        # DialogueEventBus (observability)
+│   └── sources/            # 15 Knowledge Sources
+│       ├── autonomous_decision.py  # Автономные решения
+│       ├── price_question.py       # Вопросы о цене (7 price_related intents, category_streak)
+│       ├── fact_question.py        # Фактические вопросы (17 KB categories + secondary_intents)
+│       ├── data_collector.py       # Сбор данных
+│       ├── objection_guard.py      # Защита от возражений (persona-based limits)
+│       ├── conversation_guard_ks.py # Защита от повторов
+│       ├── intent_pattern_guard.py  # Паттерн-анализ
+│       ├── stall_guard.py          # Детекция застреваний
+│       ├── go_back_guard.py        # Возврат назад
+│       ├── objection_return.py     # Возврат после возражений (HIGH priority, phase restoration)
+│       ├── phase_exhausted.py      # Исчерпанные фазы
+│       ├── escalation.py           # Эскалация (category_streak для escalation intents)
+│       ├── disambiguation.py       # Уточнение
+│       ├── intent_processor.py     # Базовые интенты
+│       └── transition_resolver.py  # Переходы
 │
 ├── simulator/              # Симулятор диалогов для тестирования
 │   ├── __init__.py         # Публичный API
@@ -258,7 +355,7 @@ voice_bot/                  # Голосовой интерфейс
 ├── models/                 # XTTS-RU-IPA модели
 └── test_*.py               # Тесты компонентов (STT, TTS, LLM)
 
-tests/                      # Тесты в 103+ файлах
+tests/                      # Тесты в 228 файлах
 ├── test_classifier.py      # Тесты классификатора
 ├── test_spin.py            # Тесты SPIN-методологии
 ├── test_knowledge.py       # Тесты базы знаний
@@ -422,7 +519,7 @@ greeting → spin_situation → spin_problem → spin_implication → spin_need_
 
 ## База знаний (knowledge/)
 
-База знаний содержит **1969 секций** в **17 YAML файлах**:
+База знаний содержит **1969 секций** в **17 категориях** (+ `_meta.yaml`):
 
 | Категория | Секций | Описание |
 |-----------|--------|----------|
@@ -485,7 +582,7 @@ classifier/
 │   ├── prompts.py       # System prompt + few-shot примеры
 │   └── schemas.py       # Pydantic схемы (ClassificationResult, ExtractedData)
 ├── intents/
-│   ├── patterns.py      # PRIORITY_PATTERNS (426 шт) для fallback
+│   ├── patterns.py      # PRIORITY_PATTERNS (491 шт) для fallback
 │   ├── root_classifier.py   # Быстрая классификация по корням
 │   └── lemma_classifier.py  # Fallback через pymorphy2/3
 └── extractors/
@@ -494,12 +591,12 @@ classifier/
 
 ### Публичный API:
 ```python
-from classifier import UnifiedClassifier, HybridClassifier, TextNormalizer, DataExtractor
-from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+from src.classifier import UnifiedClassifier, HybridClassifier, TextNormalizer, DataExtractor
+from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 ```
 
 ### Dual-mode классификация:
-- **LLM режим** (по умолчанию) — 150+ интентов в 26 категориях через Ollama, structured output
+- **LLM режим** (по умолчанию) — 300 интентов в 34 категориях через Ollama, structured output
 - **Hybrid режим** (fallback) — regex + pymorphy при ошибке LLM или `llm_classifier=false`
 
 ### Контекстная классификация:
@@ -511,27 +608,47 @@ from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 
 Подробнее: [docs/CLASSIFIER.md](docs/CLASSIFIER.md)
 
-## State Machine (state_machine.py)
+## Dialogue Blackboard System (blackboard/)
 
-### Приоритеты обработки:
-1. **Вопросы** (`price_question`, etc.) — всегда отвечаем
-2. **Rejection** — сразу переход в `soft_close`
-3. **Go Back** — возврат назад по фазам (CircularFlowManager)
-4. **Возражения** — обработка с защитой от зацикливания (ObjectionFlowManager)
-5. **SPIN-логика** — проверка прогресса и data_complete
-6. **Правила состояния** — специфичные для состояния действия
-7. **Переходы по интенту** — стандартные переходы
+**Архитектурный паттерн**: Blackboard Pattern — shared workspace для принятия решений
 
-### Умное пропускание фаз:
-При `high_interest = True` можно пропустить Implication и Need-Payoff фазы.
+### Компоненты:
+- **DialogueBlackboard** — центральное хранилище состояния диалога
+- **DialogueOrchestrator** — координатор Knowledge Sources
+- **15 Knowledge Sources** — независимые модули принятия решений:
+  - **AutonomousDecisionSource** — автономные решения на основе паттернов
+  - **PriceQuestionSource** — обработка вопросов о цене (7 price_related intents, category_streak tracking)
+  - **FactQuestionSource** — обработка фактических вопросов (17 KB categories, secondary_intents support)
+  - **DataCollectorSource** — сбор данных клиента
+  - **ObjectionGuardSource** — защита от зацикливания возражений (persona-based limits: tire_kicker 6/12, skeptic 4/7)
+  - **ConversationGuardSource** — защита от повторов
+  - **IntentPatternGuardSource** — паттерн-анализ интентов
+  - **StallGuardSource** — детекция застреваний
+  - **GoBackGuardSource** — возврат назад по фазам
+  - **ObjectionReturnSource** — возврат после возражений (HIGH priority, phase restoration, total-based escape)
+  - **PhaseExhaustedSource** — обработка исчерпанных фаз
+  - **EscalationSource** — эскалация к человеку (category_streak для 8 escalation intents)
+  - **DisambiguationSource** — уточнение неоднозначностей
+  - **IntentProcessorSource** — обработка базовых интентов
+  - **TransitionResolverSource** — разрешение переходов
 
-### CircularFlowManager — возврат назад:
-- Позволяет клиенту вернуться к предыдущей SPIN-фазе
-- Максимум 2 возврата за диалог (защита от зацикливания)
+### Plugin System:
+```python
+from src.blackboard import register_source, KnowledgeSource
 
-### ObjectionFlowManager — обработка возражений:
-- Управление последовательными возражениями
-- Максимум 3 подряд / 5 за диалог → soft_close
+@register_source(name="my_source", priority=50, enabled=True)
+class MySource(KnowledgeSource):
+    def contribute(self, snapshot: ContextSnapshot) -> List[Proposal]:
+        # Custom decision logic
+        pass
+```
+
+### Приоритеты Knowledge Sources:
+1. **Autonomous Decision** (priority 100) — высший приоритет
+2. **Guards** (priority 80-90) — защитные механизмы
+3. **Question Handlers** (priority 60-70) — обработка вопросов
+4. **Data Collectors** (priority 50) — сбор данных
+5. **Transition Resolvers** (priority 30-40) — переходы состояний
 
 ## Modular Flow System (yaml_config/flows/)
 
@@ -675,42 +792,27 @@ metrics = FallbackMetrics()
 
 Подробнее: [docs/INTENT_TAXONOMY.md](docs/INTENT_TAXONOMY.md)
 
-## Feature Flags (Фазы разработки)
+## Feature Flags
 
-Система использует feature flags для постепенного включения функциональности:
+Источник истины — `src/feature_flags.py` (62 флага). `src/settings.yaml` задаёт базовые значения для ключевых фич, остальные берутся из defaults и могут быть переопределены через `FF_*`.
 
-| Фаза | Компонент | Флаг | Статус |
-|------|-----------|------|--------|
-| LLM | LLM Classifier | `llm_classifier` | ✅ Production |
-| 0 | Логирование | `structured_logging` | ✅ Production |
-| 0 | Метрики | `metrics_tracking` | ✅ Production |
-| 1 | Fallback | `multi_tier_fallback` | ✅ Production |
-| 1 | Guard | `conversation_guard` | ✅ Production |
-| 2 | Анализ тона | `tone_analysis` | ✅ Production |
-| 2 | Cascade Tone | `cascade_tone_analyzer` | ✅ Production |
-| 2 | Tone Tier 2 | `tone_semantic_tier2` | ✅ Production |
-| 2 | Tone Tier 3 | `tone_llm_tier3` | ✅ Production |
-| 2 | Вариации | `response_variations` | ✅ Production |
-| 4 | Cascade Classifier | `cascade_classifier` | ✅ Production |
-| 4 | Semantic Objection | `semantic_objection_detection` | ✅ Production |
-| 5 | Context Envelope | `context_full_envelope` | ✅ Production |
-| 5 | Response Directives | `context_response_directives` | ✅ Production |
-| 5 | Policy Overlays | `context_policy_overlays` | ✅ Production |
-| — | Response Dedup | `response_deduplication` | ✅ Production |
-| — | Price Override | `price_question_override` | ✅ Production |
-| — | Guard Informative | `guard_informative_intent_check` | ✅ Production |
-| — | Guard Skip Reset | `guard_skip_resets_fallback` | ✅ Production |
-| — | Confidence Router | `confidence_router` | ✅ Production |
-| — | Router Logging | `confidence_router_logging` | ✅ Production |
-| 3 | Скоринг | `lead_scoring` | ⏸️ Testing |
-| 3 | Возражения | `objection_handler` | ⏸️ Testing |
-| 3 | CTA | `cta_generator` | ⏸️ Development |
-| 3 | Dynamic CTA | `dynamic_cta_fallback` | ⏸️ Testing |
-| 4 | Disambig | `intent_disambiguation` | ⏸️ Development |
-| 3 | Circular flow | `circular_flow` | ⏸️ Risky |
-| V2 | Personalization V2 | `personalization_v2` | ⏸️ Testing |
+**Базовые флаги (settings.yaml):**
 
-Подробнее: [docs/PHASES.md](docs/PHASES.md)
+| Фаза | Флаг | Значение | Комментарий |
+|------|------|----------|-------------|
+| 0 | `structured_logging` | `true` | JSON логи |
+| 0 | `metrics_tracking` | `true` | Метрики диалога |
+| 1 | `multi_tier_fallback` | `true` | 4-уровневый fallback |
+| 1 | `conversation_guard` | `true` | Защита от зацикливания |
+| 2 | `tone_analysis` | `true` | Анализ тона |
+| 2 | `response_variations` | `true` | Вариативность ответов |
+| 2 | `personalization` | `false` | Персонализация (v1) |
+| 3 | `lead_scoring` | `false` | Скоринг лидов |
+| 3 | `circular_flow` | `false` | Возврат назад по фазам |
+| 3 | `objection_handler` | `false` | Продвинутая обработка возражений |
+| 3 | `cta_generator` | `true` | Генерация CTA |
+
+**Дополнительно:** `llm_classifier`, `cascade_tone_analyzer`, `context_*`, `refinement_*`, `confidence_*`, `response_*` и др. — см. `src/feature_flags.py` и [docs/PHASES.md](docs/PHASES.md).
 
 ## Voice Bot (voice_bot/)
 
@@ -762,7 +864,7 @@ python -m src.simulator -n 100 --parallel 4
 ## Тестирование
 
 ```bash
-# Все тесты (3000+ тестов)
+# Все тесты (~8600 test functions, 228 файлов)
 pytest tests/ -v
 
 # Только тесты классификатора
@@ -783,7 +885,7 @@ pytest tests/test_category_router*.py -v
 # Тесты фаз 0-4
 pytest tests/test_phase*_integration.py -v
 
-# Тесты конфигурации (1590 тестов)
+# Тесты конфигурации (~1860 test functions)
 pytest tests/test_config*.py -v
 
 # Стресс-тест бота
@@ -795,16 +897,16 @@ python scripts/stress_test_knowledge.py
 
 ### Тесты конфигурации
 
-Система конфигурации покрыта **1590 тестами**:
+Система конфигурации покрыта **~1860 test functions**:
 
 | Категория | Файлы | Тестов |
 |-----------|-------|--------|
-| Unit тесты | `test_config_*_yaml.py` | ~450 |
-| Integration | `test_config_integration.py` | ~100 |
-| Behavior | `test_config_behavior_*.py` | ~280 |
-| E2E сценарии | `test_config_e2e_scenarios.py` | ~70 |
-| Edge cases | `test_config_edge_cases.py` | 72 |
-| Property-based | `test_config_property_based.py` | 38 |
+| Unit тесты | `test_config_*_yaml.py` | см. файлы |
+| Integration | `test_config_integration.py` | см. файлы |
+| Behavior | `test_config_behavior_*.py` | см. файлы |
+| E2E сценарии | `test_config_e2e_scenarios.py` | см. файлы |
+| Edge cases | `test_config_edge_cases.py` | см. файлы |
+| Property-based | `test_config_property_based.py` | см. файлы |
 
 ```bash
 # Edge cases (граничные значения, unicode, конкурентность)
@@ -829,6 +931,8 @@ pytest tests/test_config_property_based.py -v
 
 ## Зависимости
 
+> Источник истины для зависимостей — `pyproject.toml`. `requirements.txt` содержит минимальный набор для быстрого запуска.
+
 | Пакет | Назначение |
 |-------|------------|
 | `ollama` | Ollama для LLM (qwen3:14b) — устанавливается системно |
@@ -836,6 +940,7 @@ pytest tests/test_config_property_based.py -v
 | `pydantic` | Схемы для structured output |
 | `pymorphy3` | Морфология русского языка (fallback на pymorphy2) |
 | `sentence-transformers` | Эмбеддинги (ai-forever/FRIDA) |
+| `numpy` | Численные операции (embeddings/reranker/semantic) |
 | `pyyaml` | Парсинг YAML конфигурации и базы знаний |
 | `pytest` | Тестирование |
 
@@ -869,19 +974,27 @@ pip install -r requirements.txt
 ## Метрики проекта
 
 ```
-Модулей Python:           85+ файлов в src/
-Тестовых файлов:          103+ в tests/
-Секций в базе знаний:     1969 в 17 YAML файлах
-Интентов:                 150+ в 26 категориях (constants.yaml)
-Intent Taxonomy Entries:  150+ с 5-level fallback chain
+Дата среза:               2026-02-05
+Модулей Python (src):     171 файлов
+Тестовых файлов:          228 (≈8595 test functions)
+Секций в базе знаний:     1969 в 17 категориях (meta: 2026-01-07)
+KB Questions Pool:        5904 сгенерировано, 5344 после dedup (2026-02-01)
+Интентов:                 300 записей в 34 категориях (271 unique)
+Intent Taxonomy Entries:  271
+Secondary Intent Patterns: 365 regex-паттернов
+Composed Categories:      7 (negative, blocking, all_questions, question_requires_facts, greeting_redirect_intents, comparison_like, objection_return_triggers)
+Auto-Discovery Categories: 19 question_* категорий через intent_prefix
 Паттернов опечаток:       663 в TYPO_FIXES
 Паттернов разделения:     170 в SPLIT_PATTERNS
-Приоритетных паттернов:   426 в PRIORITY_PATTERNS
-Паттернов болей:          240+ в pain_patterns
-Состояний диалога:        10 основных
+Приоритетных паттернов:   491 в PRIORITY_PATTERNS
+Паттернов болей:          565 в pain_patterns
+Refinement Pipeline:      7 слоёв (confidence_calibration, secondary_intent_detection, short_answer, composite_message, option_selection, objection, data_aware)
+Knowledge Sources:        15
 Категорий знаний:         17
-Feature Flags:            35+ флагов
-YAML Config Files:        70+ в yaml_config/
-Modular Flows:            22 готовых сценария продаж
-Строк кода:               ~57,500 строк (+3,500 taxonomy system)
+Feature Flags:            62 флага (44 включены по умолчанию)
+YAML Config Files:        76 в yaml_config/
+Modular Flows:            21 готовый flow
+Flow-Specific Prompts:    21 template (+_base)
+Data Infrastructure:      поддержка всех 20 non-SPIN flows
+Строк Python кода (src):  ~81,000
 ```

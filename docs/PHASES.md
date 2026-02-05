@@ -2,7 +2,7 @@
 
 ## Обзор
 
-Система разбита на фазы для постепенного внедрения функциональности. Каждая фаза добавляет новые возможности, управляемые через feature flags.
+Система разбита на фазы для постепенного внедрения функциональности. Каждая фаза добавляет новые возможности, управляемые через feature flags. Все основные фазы находятся в production, за исключением Phase 3 (SPIN Optimization), которая находится в тестировании.
 
 **Принципы:**
 - **Постепенность** — новые фичи включаются по одной
@@ -10,17 +10,28 @@
 - **Изоляция** — фазы независимы друг от друга
 - **Тестируемость** — каждая фаза имеет свои тесты
 
+**Статус по фазам:**
+- Phase 0 (Infrastructure) — Production
+- Phase 1 (Reliability) — Production
+- Phase 2 (Naturalness) — Production
+- Phase 3 (SPIN Optimization) — Частично включено (CTA включён по умолчанию; остальное — эксперимент)
+- Phase 4 (Advanced Classification) — Production
+- Phase 5 (Context Policy) — Production
+- Phase 6 (Session Persistence) — Production
+
 ## Фаза 0: Инфраструктура
 
 **Цель:** Заложить основу для наблюдаемости и управляемости.
 
+**Статус:** Production
+
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `logger.py` | `structured_logging` | Структурированное логирование |
-| `metrics.py` | `metrics_tracking` | Трекинг метрик диалогов |
-| `feature_flags.py` | — | Управление feature flags |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `logger.py` | `structured_logging` | Структурированное логирование | Production |
+| `metrics.py` | `metrics_tracking` | Трекинг метрик диалогов | Production |
+| `feature_flags.py` | — | Управление feature flags | Production |
 
 ### logger.py — Структурированное логирование
 
@@ -69,7 +80,7 @@ summary = metrics.get_summary()
 ### feature_flags.py — Управление фичами
 
 ```python
-from feature_flags import flags
+from src.feature_flags import flags
 
 # Проверка флага (property)
 if flags.llm_classifier:
@@ -98,12 +109,14 @@ FF_TONE_ANALYSIS=true python bot.py
 
 **Цель:** Обеспечить стабильную работу при любых условиях.
 
+**Статус:** Production
+
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `fallback_handler.py` | `multi_tier_fallback` | 4-уровневый fallback |
-| `conversation_guard.py` | `conversation_guard` | Защита от зацикливания |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `fallback_handler.py` | `multi_tier_fallback` | 4-уровневый fallback | Production |
+| `conversation_guard.py` | `conversation_guard` | Защита от зацикливания | Production |
 
 ### fallback_handler.py — 4-уровневый Fallback
 
@@ -166,12 +179,14 @@ guard.record_progress()
 
 **Цель:** Сделать общение более человечным.
 
+**Статус:** Production
+
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `tone_analyzer/` | `cascade_tone_analyzer` | Каскадный анализатор тона (3 уровня) |
-| `response_variations.py` | `response_variations` | Вариативность ответов |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `tone_analyzer/` | `cascade_tone_analyzer` | Каскадный анализатор тона (3 уровня) | Production |
+| `response_variations.py` | `response_variations` | Вариативность ответов | Production |
 
 ### tone_analyzer/ — Каскадный анализатор тона
 
@@ -244,15 +259,17 @@ greeting = variations.get_variant("greeting", used=["Здравствуйте!"]
 
 ## Фаза 3: Оптимизация SPIN Flow
 
-**Цель:** Повысить эффективность продаж.
+**Цель:** Повысить эффективность продаж через лучшее понимание возражений и персонализированные CTA.
+
+**Статус:** Testing/Development
 
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `lead_scoring.py` | `lead_scoring` | Скоринг лидов |
-| `objection_handler.py` | `objection_handler` | Обработка возражений |
-| `cta_generator.py` | `cta_generator` | Call-to-Action |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `lead_scoring.py` | `lead_scoring` | Скоринг лидов | Calibration |
+| `objection_handler.py` | `objection_handler` | Обработка возражений | Testing |
+| `cta_generator.py` | `cta_generator` | Call-to-Action | Production (enabled) |
 
 ### lead_scoring.py — Скоринг лидов
 
@@ -308,7 +325,7 @@ result = handler.handle_objection(
 ### cta_generator.py — Call-to-Action
 
 ```python
-from cta_generator import CTAGenerator
+from src.cta_generator import CTAGenerator
 
 generator = CTAGenerator()
 
@@ -325,19 +342,43 @@ response = generator.append_cta(
 
 ---
 
-## Фаза 4: Intent Disambiguation & Cascade Classifier
+## Фаза 4: Продвинутая классификация
 
-**Цель:** Уточнять намерение пользователя при неоднозначных ответах.
+**Цель:** Повысить точность классификации интентов с помощью каскадного подхода и семантического анализа.
+
+**Статус:** Production
 
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `disambiguation_ui.py` | `intent_disambiguation` | UI для уточнения интента |
-| `classifier/cascade/` | `cascade_classifier` | Каскадный классификатор |
-| `classifier/cascade/` | `semantic_objection_detection` | Семантическая детекция возражений |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `classifier/cascade/` | `cascade_classifier` | Каскадный классификатор (regex, lemma, semantic) | Production |
+| `classifier/cascade/` | `semantic_objection_detection` | Семантическая детекция возражений | Production |
+| `disambiguation_ui.py` | `intent_disambiguation` | UI для уточнения интента | Development |
 
-### Disambiguation Flow
+### Cascade Classifier — 3-уровневый
+
+```
+Tier 1: Regex patterns (быстро, ~100 интентов)
+    │
+    ▼  низкая уверенность
+Tier 2: Lemma matching (точнее)
+    │
+    ▼  всё ещё не уверен
+Tier 3: Semantic similarity (FRIDA)
+```
+
+**Особенности каскада:**
+- Быстрое выполнение с regex на первом уровне
+- Fallback на лемматизацию при низкой уверенности
+- Семантический анализ для обработки сложных возражений
+- Структурированная экстракция данных из пользовательских сообщений
+
+**Флаги:**
+- `cascade_classifier` — master switch для каскада
+- `semantic_objection_detection` — semantic fallback для возражений
+
+### Intent Disambiguation (Development)
 
 ```
 Классификация → несколько интентов с близкими scores
@@ -352,67 +393,34 @@ response = generator.append_cta(
 Продолжение с выбранным интентом
 ```
 
-```python
-# В bot.py автоматически
-if intent == "disambiguation_needed":
-    # Бот задаёт уточняющий вопрос:
-    # "Уточните, пожалуйста:
-    #  1. Хотите узнать цену?
-    #  2. Интересует демо?
-    #  3. Другое (напишите свой вопрос)"
-```
-
-### Custom Input Option
-
-Пользователь может выбрать "свой вариант" вместо предложенных:
-
-```python
-class DisambiguationUI:
-    CUSTOM_INPUT_MARKER = "_custom_input"
-
-    # Пользователь вводит "4" или "другое"
-    # → Бот просит ввести вопрос своими словами
-    # → Ответ классифицируется заново
-```
-
 **Поддерживаемые форматы ответа:**
 - Числа: `1`, `2`, `3`, `4`
 - Слова: `первый`, `второй`, `третий`, `четвёртый`
 - Ключевые слова: `цена`, `функции`, `интеграции`
 - Свой вариант: `другое`, `4` → переход к вводу своего вопроса
 
-### Cascade Classifier — 3-уровневый
-
-```
-Tier 1: Regex patterns (быстро, ~100 интентов)
-    │
-    ▼  низкая уверенность
-Tier 2: Lemma matching (точнее)
-    │
-    ▼  всё ещё не уверен
-Tier 3: Semantic similarity (FRIDA)
-```
-
-**Флаги:**
-- `cascade_classifier` — master switch для каскада
-- `semantic_objection_detection` — semantic fallback для возражений
+**Статус:** В разработке, не включено в production
 
 ---
 
-## Фаза 5: Context Policy & Dynamic CTA
+## Фаза 5: Context Policy & Policy Overlays
 
-**Цель:** Context-aware решения и динамические подсказки.
+**Цель:** Context-aware решения с динамическими policy overlays для автоматического управления диалогом.
+
+**Статус:** Production
 
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `context_envelope.py` | `context_full_envelope` | Полный ContextEnvelope |
-| `dialogue_policy.py` | `context_policy_overlays` | DialoguePolicy overrides |
-| `context_window.py` | — | Расширенный контекст диалога |
-| `fallback_handler.py` | `dynamic_cta_fallback` | Динамические подсказки |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `context_envelope.py` | `context_full_envelope` | Полный ContextEnvelope | Production |
+| `dialogue_policy.py` | `context_policy_overlays` | DialoguePolicy overrides | Production |
+| `context_window.py` | — | Расширенный контекст диалога | Production |
+| `fallback_handler.py` | `dynamic_cta_fallback` | Динамические подсказки | Testing |
 
 ### ContextEnvelope — Единый контекст
+
+Полный контекст диалога, объединяющий информацию из state machine, истории, тона и guard'а:
 
 ```python
 from context_envelope import build_context_envelope
@@ -435,7 +443,15 @@ envelope = build_context_envelope(
 # - tone, frustration_level
 ```
 
-### DialoguePolicy — Action Overrides
+**Ключевые метрики:**
+- Oscillation detection: чередование интереса и возражений
+- Stuck pattern detection: застревание в одном состоянии
+- Confidence trend: тренд уверенности классификатора
+- Frustration tracking: отслеживание уровня фрустрации пользователя
+
+### DialoguePolicy — Policy Overlays
+
+Система перехвата и переопределения действий state machine на основе контекстных правил:
 
 ```python
 from dialogue_policy import DialoguePolicy
@@ -455,31 +471,11 @@ if override and override.has_override:
 - При 3+ unclear подряд → предложить конкретные варианты
 - При oscillation (интерес ↔ возражение) → мягко уточнить
 - При высоком frustration → предложить выход
+- При достаточной информации → предложить демо или встречу
 
-### Dynamic CTA Fallback
+### Context Window — История диалога (Atomic Transitions)
 
-```python
-DYNAMIC_CTA_OPTIONS = {
-    "competitor_mentioned": {
-        "options": ["Сравнить с {competitor}", "Узнать отличия"],
-        "priority": 10
-    },
-    "pain_losing_clients": {
-        "options": ["Как Wipon помогает удерживать клиентов"],
-        "priority": 8
-    },
-    "pain_no_control": {
-        "options": ["Какие отчёты есть в Wipon"],
-        "priority": 8
-    },
-    "pain_manual_work": {
-        "options": ["Что можно автоматизировать"],
-        "priority": 8
-    }
-}
-```
-
-### Context Window — История диалога
+История диалога с поддержкой atomic transitions и детекцией паттернов:
 
 ```python
 from context_window import ContextWindow
@@ -507,21 +503,53 @@ is_stuck = window.detect_stuck_pattern()       # True/False
 confidence_trend = window.get_confidence_trend()  # "rising"/"falling"/"stable"
 ```
 
+**Atomic Transitions:** Все переходы состояний гарантированно выполняются полностью или откатываются при ошибке.
+
+### Dynamic CTA Fallback (Testing)
+
+Динамическая генерация Call-to-Action на основе контекста диалога:
+
+```python
+DYNAMIC_CTA_OPTIONS = {
+    "competitor_mentioned": {
+        "options": ["Сравнить с {competitor}", "Узнать отличия"],
+        "priority": 10
+    },
+    "pain_losing_clients": {
+        "options": ["Как Wipon помогает удерживать клиентов"],
+        "priority": 8
+    },
+    "pain_no_control": {
+        "options": ["Какие отчёты есть в Wipon"],
+        "priority": 8
+    },
+    "pain_manual_work": {
+        "options": ["Что можно автоматизировать"],
+        "priority": 8
+    }
+}
+```
+
+**Статус:** В тестировании, включено параллельно с основной логикой
+
 ---
 
-## Phase Parameterization: YAML Configuration
+## Инфраструктура: YAML конфигурация и Refinement Pipeline
 
-**Цель:** Вынести конфигурацию в YAML для изменений без кода.
+**Цель:** Вынести конфигурацию в YAML для изменений без кода и реализовать уточнение классификации через Refinement Pipeline.
+
+**Статус:** Production
 
 ### Компоненты
 
-| Модуль | Описание |
-|--------|----------|
-| `config_loader.py` | ConfigLoader, FlowConfig, LoadedConfig |
-| `yaml_config/constants.yaml` | Константы (limits, intents, policy) |
-| `yaml_config/states/` | Состояния диалога |
-| `yaml_config/flows/` | Модульные flow с extends/mixins |
-| `yaml_config/templates/` | Шаблоны промптов |
+| Модуль | Описание | Статус |
+|--------|----------|--------|
+| `config_loader.py` | ConfigLoader, FlowConfig, LoadedConfig | Production |
+| `yaml_config/constants.yaml` | Константы (limits, intents, policy) | Production |
+| `yaml_config/states/` | Состояния диалога | Production |
+| `yaml_config/flows/` | Модульные flow с extends/mixins | Production |
+| `yaml_config/templates/` | Шаблоны промптов | Production |
+| `refinement_pipeline.py` | Уточнение классификации (Semantic, LLM) | Production |
 
 ### ConfigLoader — Загрузка конфигурации
 
@@ -622,6 +650,39 @@ flow = loader.load_flow("spin_selling")
 template = flow.get_template("spin_situation")
 ```
 
+### Refinement Pipeline
+
+Pipeline для уточнения результатов классификации через Semantic и LLM анализ:
+
+```python
+from refinement_pipeline import RefinementPipeline
+
+pipeline = RefinementPipeline()
+
+# Уточнить классификацию
+refined_result = pipeline.refine(
+    message="Это слишком дорого для нас",
+    initial_result=classification_result,
+    confidence_threshold=0.7
+)
+
+# Результат содержит улучшенные данные
+# - уточненный intent
+# - повышенный confidence
+# - дополнительные extracted_data
+```
+
+**Процесс уточнения:**
+1. Проверка confidence начального результата
+2. Семантический анализ (FRIDA) для низких confidence
+3. LLM анализ при неуверенности семантики
+4. Мергинг результатов с исходной классификацией
+
+**Преимущества:**
+- Две попытки улучшить классификацию
+- Атомарность операций (откат при ошибке)
+- Логирование всех шагов уточнения
+
 ### Создание нового Flow
 
 1. Создать `yaml_config/flows/my_flow/flow.yaml`
@@ -633,21 +694,23 @@ template = flow.get_template("spin_situation")
 
 ---
 
-## Phase LLM: LLM Classifier
+## LLM Classifier
 
-**Цель:** Использовать LLM для классификации интентов вместо regex.
+**Цель:** Использовать LLM для классификации интентов вместо regex при необходимости.
+
+**Статус:** Production (fallback mode)
 
 ### Компоненты
 
-| Модуль | Флаг | Описание |
-|--------|------|----------|
-| `classifier/unified.py` | `llm_classifier` | Переключатель LLM/Hybrid |
-| `classifier/llm/` | — | LLM классификатор |
+| Модуль | Флаг | Описание | Статус |
+|--------|------|----------|--------|
+| `classifier/unified.py` | `llm_classifier` | Переключатель LLM/Hybrid | Production |
+| `classifier/llm/` | — | LLM классификатор | Production |
 
 ### UnifiedClassifier — Адаптер
 
 ```python
-from classifier import UnifiedClassifier
+from src.classifier import UnifiedClassifier
 
 classifier = UnifiedClassifier()
 
@@ -659,7 +722,7 @@ result = classifier.classify(message, context)
 ### LLMClassifier — Ollama + Structured Output
 
 ```python
-from classifier.llm import LLMClassifier
+from src.classifier.llm import LLMClassifier
 
 classifier = LLMClassifier()
 
@@ -677,52 +740,49 @@ result = classifier.classify("нас 10 человек")
 
 ---
 
-## Статус фаз
+## Статус компонентов
 
-| Фаза | Компонент | Флаг | Статус |
-|------|-----------|------|--------|
-| Param | ConfigLoader | — | Production |
-| Param | FlowConfig | — | Production |
-| Param | Priority-driven Rules | — | Production |
-| Param | on_enter Actions | — | Production |
-| LLM | LLM Classifier | `llm_classifier` | Production |
-| 0 | Логирование | `structured_logging` | Production |
-| 0 | Метрики | `metrics_tracking` | Production |
-| 1 | Fallback | `multi_tier_fallback` | Production |
-| 1 | Guard | `conversation_guard` | Production |
-| 2 | Вариации | `response_variations` | Production |
-| 2 | Тон | `tone_analysis` | Production |
-| 2 | Cascade Tone | `cascade_tone_analyzer` | Production |
-| 2 | Tone Tier 2 | `tone_semantic_tier2` | Production |
-| 2 | Tone Tier 3 | `tone_llm_tier3` | Production |
-| 4 | Cascade Classifier | `cascade_classifier` | Production |
-| 4 | Semantic Objection | `semantic_objection_detection` | Production |
-| 5 | Context Envelope | `context_full_envelope` | Production |
-| 5 | Response Directives | `context_response_directives` | Production |
-| 5 | Policy Overlays | `context_policy_overlays` | Production |
-| — | Response Dedup | `response_deduplication` | Production |
-| — | Price Override | `price_question_override` | Production |
-| — | Guard Informative | `guard_informative_intent_check` | Production |
-| — | Guard Skip Reset | `guard_skip_resets_fallback` | Production |
-| — | Confidence Router | `confidence_router` | Production |
-| — | Router Logging | `confidence_router_logging` | Production |
-| 3 | Скоринг | `lead_scoring` | Calibration |
-| 3 | Возражения | `objection_handler` | Testing |
-| 3 | CTA | `cta_generator` | Development |
-| 3 | Circular flow | `circular_flow` | Risky |
-| 5 | Dynamic CTA | `dynamic_cta_fallback` | Testing |
-| 4 | Disambig | `intent_disambiguation` | Development |
-| V2 | Personalization | `personalization_v2` | Testing |
-| V2 | Adaptive Style | `personalization_adaptive_style` | Testing |
-| V2 | Semantic Industry | `personalization_semantic_industry` | Testing |
-| V2 | Session Memory | `personalization_session_memory` | Testing |
+| Фаза | Компонент | Флаг | Статус | Примечание |
+|------|-----------|------|--------|-----------|
+| **Phase 0** | Логирование | `structured_logging` | Production | JSON/readable режимы |
+| | Метрики | `metrics_tracking` | Production | Трекинг диалогов |
+| | Feature Flags | — | Production | Управление фичами |
+| **Phase 1** | Fallback (4-уровневый) | `multi_tier_fallback` | Production | KB → Facts → Generic → Apology |
+| | Guard | `conversation_guard` | Production | Защита от зацикливания |
+| | Guard Informative | `guard_informative_intent_check` | Production | Проверка информативности |
+| | Guard Skip Reset | `guard_skip_resets_fallback` | Production | Fallback при skip |
+| **Phase 2** | Response Variations | `response_variations` | Production | Вариативность ответов |
+| | Tone Analysis | `tone_analysis` | Production | Анализ тона |
+| | Cascade Tone | `cascade_tone_analyzer` | Production | 3-уровневый каскад |
+| | Tone Tier 2 (FRIDA) | `tone_semantic_tier2` | Production | Семантический анализ |
+| | Tone Tier 3 (LLM) | `tone_llm_tier3` | Production | LLM fallback |
+| **Phase 3** | Lead Scoring | `lead_scoring` | Calibration | Требует настройки |
+| | Objection Handler | `objection_handler` | Testing | 7 типов возражений |
+| | CTA Generator | `cta_generator` | Production (enabled) | Включён по умолчанию |
+| | Dynamic CTA Fallback | `dynamic_cta_fallback` | Testing | Контекстные CTA |
+| **Phase 4** | Cascade Classifier | `cascade_classifier` | Production | Regex → Lemma → Semantic |
+| | Semantic Objection | `semantic_objection_detection` | Production | FRIDA-based detection |
+| | Intent Disambiguation | `intent_disambiguation` | Development | UI уточнения интента |
+| **Phase 5** | Context Envelope | `context_full_envelope` | Production | Полный контекст |
+| | Context Policy Overlays | `context_policy_overlays` | Production | Policy rules |
+| | Response Directives | `context_response_directives` | Production | Директивы ответов |
+| | Context Window | — | Production | История + Atomic transitions |
+| **LLM** | LLM Classifier | `llm_classifier` | Production | Ollama fallback |
+| **Support** | Response Dedup | `response_deduplication` | Production | Избегание повторов |
+| | Price Override | `price_question_override` | Production | Специальная обработка |
+| | Confidence Router | `confidence_router` | Production | Маршрутизация по уверенности |
+| | Router Logging | `confidence_router_logging` | Production | Логирование маршрутизации |
+| **Config** | ConfigLoader | — | Production | YAML-based configuration |
+| | FlowConfig | — | Production | Модульные flows |
+| | Priority-driven Rules | — | Production | YAML priorities |
+| | on_enter Actions | — | Production | Автоматические действия |
 
-**Легенда:**
-- Production — включено в production
-- Testing — в тестировании
-- Development — в разработке
-- Calibration — требует калибровки
-- Risky — потенциально опасно
+**Легенда статусов:**
+- Production — включено в production, стабильно
+- Testing — в активном тестировании, может быть нестабильно
+- Development — в разработке, не готово
+- Calibration — требует калибровки параметров
+- Risky — потенциально опасно (deprecated)
 
 ## Группы флагов
 
@@ -798,7 +858,7 @@ python bot.py
 ### В коде (runtime)
 
 ```python
-from feature_flags import flags
+from src.feature_flags import flags
 
 # Включить группу
 flags.enable_group("phase_3")
@@ -833,18 +893,39 @@ pytest tests/test_simulator_integration.py -v
 
 ## Рекомендации по внедрению
 
-### Порядок включения
+### Текущее состояние production (все фазы активны)
 
-1. **Фаза 0** — включить сразу (безопасно)
-2. **Фаза 1** — включить сразу (критично для надёжности)
-3. **Фаза 2** — включить `response_variations`, затем `cascade_tone_analyzer`
-4. **Фаза 4** — включить `cascade_classifier` (улучшает классификацию)
-5. **Фаза 5** — включить `context_full_envelope` и `context_policy_overlays`
-6. **Фаза 3** — включать по одной фиче после калибровки
+Все основные фазы (0, 1, 2, 4, 5) полностью включены и стабильны в production.
+
+### Фаза 3 (Testing/Development)
+
+Компоненты phase 3 находятся в тестировании и разработке:
+
+1. **Lead Scoring** (Calibration) — в production, требует мониторинга метрик
+2. **Objection Handler** (Testing) — активно тестируется на real conversations
+3. **CTA Generator** (Development) — еще в разработке, отключено по умолчанию
+4. **Dynamic CTA Fallback** (Testing) — тестируется параллельно с основной логикой
+
+### Порядок включения new features
+
+1. **Фаза 0** — все включены (базовая инфраструктура)
+2. **Фаза 1** — все включены (критично для надёжности)
+3. **Фаза 2** — все включены (естественность диалога)
+4. **Фаза 4** — все включены (улучшенная классификация)
+5. **Фаза 5** — все включены (контекстные решения)
+6. **Фаза 3** — для новых фич: включать по одной после калибровки
+
+### Добавление новой фичи
+
+При разработке новой фичи следовать порядку:
+1. Development → Development flag отключен по умолчанию
+2. Testing → Testing flag включен на staging, выключен на production
+3. Calibration → Calibration flag включен везде, мониторятся метрики
+4. Production → Production flag включен везде, стабилен
 
 ### Откат
 
-При проблемах:
+При проблемах с любой фичей (даже production):
 
 ```yaml
 # Быстрый откат через settings.yaml
@@ -861,3 +942,84 @@ FF_PROBLEMATIC_FEATURE=false python bot.py
 ```python
 flags.set_override("problematic_feature", False)
 ```
+
+### Мониторинг и метрики
+
+Для каждой фазы следить за метриками:
+
+**Phase 0:**
+- Логирование ошибок
+- Время обработки диалогов
+
+**Phase 1:**
+- Количество fallback срабатываний
+- Эффективность guard'а (false positives)
+
+**Phase 2:**
+- Точность анализа тона
+- Вариативность ответов (не повторяются ли)
+
+**Phase 3:**
+- Lead score distribution
+- Conversion rate
+- Objection resolution rate
+
+**Phase 4:**
+- Accuracy классификации
+- Confidence scores
+- Semantic vs regex comparison
+
+**Phase 5:**
+- Policy override frequency
+- Oscillation detection effectiveness
+- Stuck pattern detection
+
+**Phase 6:**
+- Snapshot creation rate
+- Restore success rate
+- Batch flush success rate
+- Client_id mismatch events
+
+## Фаза 6: Session Persistence
+
+**Цель:** Персистентность диалога между сессиями и безопасная работа в мультипроцессе.
+
+**Статус:** Production
+
+### Компоненты
+
+| Модуль | Назначение | Статус |
+|--------|------------|--------|
+| `history_compactor.py` | LLM-компакция истории при snapshot | Production |
+| `snapshot_buffer.py` | Локальный буфер снапшотов (SQLite) | Production |
+| `session_manager.py` | Кеш сессий + TTL cleanup + restore | Production |
+| `session_lock.py` | Межпроцессный lock по session_id | Production |
+
+### Основной поток
+
+1. Active session → история в памяти.
+2. TTL cleanup (тишина ≥ 1 час) → snapshot с компакцией.
+3. Local buffer → накопление до вечерней выгрузки.
+4. Batch flush после 23:00 → внешняя БД.
+5. Restore → local buffer → external snapshot.
+
+### Гарантии
+
+- Snapshot загружается только при cache-miss.
+- Последние 4 сообщения берутся из внешней истории.
+- `client_id` сохраняется и проверяется при восстановлении.
+- Возможен “горячий” switch flow/config во время активной сессии.
+
+---
+
+## Завершение
+
+Система разработана и развернута в production с полной поддержкой:
+- Инфраструктура (логирование, метрики, feature flags)
+- Надежность (fallback, guards, atomic transitions)
+- Естественность (тон, вариации, персонализация)
+- Продвинутая классификация (каскадный подход, семантика)
+- Контекстные решения (policy overlays, context window)
+- Персистентность диалогов (snapshots, session manager, history compaction)
+
+Phase 3 (SPIN Optimization) остается в тестировании для дальнейшей калибровки и оптимизации.

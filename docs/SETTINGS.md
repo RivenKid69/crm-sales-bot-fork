@@ -14,22 +14,12 @@
 **Расположение:** `src/settings.yaml`
 
 ```yaml
-# =============================================================================
-# НАСТРОЙКИ CRM SALES BOT
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# LLM (Language Model) - Ollama Server
-# -----------------------------------------------------------------------------
 llm:
   model: "qwen3:14b"
   base_url: "http://localhost:11434"
   timeout: 120
   stream: false
 
-# -----------------------------------------------------------------------------
-# RETRIEVER (Поиск по базе знаний)
-# -----------------------------------------------------------------------------
 retriever:
   use_embeddings: true
   embedder_model: "ai-forever/FRIDA"
@@ -39,18 +29,12 @@ retriever:
     semantic: 0.5
   default_top_k: 2
 
-# -----------------------------------------------------------------------------
-# RERANKER (Переоценка результатов при низком score)
-# -----------------------------------------------------------------------------
 reranker:
   enabled: true
   model: "BAAI/bge-reranker-v2-m3"
   threshold: 0.5
   candidates_count: 10
 
-# -----------------------------------------------------------------------------
-# CATEGORY ROUTER (LLM-классификация категорий)
-# -----------------------------------------------------------------------------
 category_router:
   enabled: true
   top_k: 3
@@ -58,9 +42,6 @@ category_router:
     - "faq"
     - "features"
 
-# -----------------------------------------------------------------------------
-# GENERATOR (Генерация ответов)
-# -----------------------------------------------------------------------------
 generator:
   max_retries: 3
   history_length: 4
@@ -79,10 +60,65 @@ generator:
     - "hr"
     - "pos"
     - "erp"
+    - "rest"
+    - "oauth"
+    - "ssl"
+    - "tls"
+    - "jwt"
+    - "sla"
+    - "http"
+    - "https"
+    - "url"
+    - "usb"
+    - "wifi"
+    - "qr"
+    - "pdf"
+    - "sql"
+    - "csv"
+    - "ofd"
+    - "mini"
+    - "lite"
+    - "standard"
+    - "pro"
+    - "basic"
+    - "team"
+    - "business"
+    - "demo"
+    - "saas"
+    - "cloud"
+    - "online"
+    - "kaspi"
+    - "halyk"
+    - "iiko"
+    - "poster"
 
-# -----------------------------------------------------------------------------
-# CLASSIFIER (Классификация интентов)
-# -----------------------------------------------------------------------------
+tone_analyzer:
+  style_instructions:
+    informal: "Отвечай менее формально, дружелюбно. Можно использовать разговорные обороты."
+    formal: ""
+  thresholds:
+    tier1_high_confidence: 0.85
+    tier2_threshold: 0.70
+    tier3_threshold: 0.65
+    min_confidence: 0.30
+  semantic:
+    threshold: 0.70
+    ambiguity_delta: 0.15
+
+objection:
+  semantic_threshold: 0.75
+  ambiguity_delta: 0.10
+  max_attempts_per_type: 2
+  counters:
+    price: "Стоимость окупается за счёт экономии времени и роста продаж. Наши клиенты в среднем увеличивают выручку на 20%."
+    competitor: "Многие переходят к нам с других систем. Wipon проще во внедрении и дешевле в обслуживании."
+    no_time: "Внедрение занимает всего 1-2 дня. Мы помогаем на каждом этапе."
+    think: "Конечно, это важное решение. Могу прислать материалы для изучения или ответить на конкретные вопросы."
+    no_need: "Многие так думали, пока не попробовали. Давайте покажу на примере вашей ситуации."
+    trust: "Мы работаем с 2015 года, более 5000 клиентов. Могу дать контакты для отзывов."
+    timing: "Понимаю, сейчас не лучший момент. Когда будет удобно вернуться к разговору?"
+    complexity: "Система интуитивно понятна, обучение занимает пару часов. Есть бесплатная поддержка."
+
 classifier:
   weights:
     root_match: 1.0
@@ -95,61 +131,34 @@ classifier:
     high_confidence: 0.7
     min_confidence: 0.3
 
-# -----------------------------------------------------------------------------
-# LOGGING (Логирование)
-# -----------------------------------------------------------------------------
 logging:
   level: "INFO"
   log_llm_requests: false
   log_retriever_results: false
 
-# -----------------------------------------------------------------------------
-# CONDITIONAL RULES (Phase 8: Условные правила)
-# -----------------------------------------------------------------------------
 conditional_rules:
   enable_tracing: true
-  log_level: "INFO"
-  log_context: false
-  log_each_condition: false
-  validate_on_startup: true
-  coverage_threshold: 0.8
 
-# -----------------------------------------------------------------------------
-# FEATURE FLAGS (Управление фичами)
-# -----------------------------------------------------------------------------
 feature_flags:
-  # LLM классификатор
-  llm_classifier: true
-
-  # Фаза 0: Инфраструктура
   structured_logging: true
   metrics_tracking: true
-
-  # Фаза 1: Защита и надёжность
   multi_tier_fallback: true
   conversation_guard: true
-
-  # Фаза 2: Естественность диалога
-  tone_analysis: true  # Включен по умолчанию (коммит 6031a33)
+  tone_analysis: true
   response_variations: true
   personalization: false
-
-  # Фаза 3: Оптимизация SPIN Flow
   lead_scoring: false
   circular_flow: false
   objection_handler: false
-  cta_generator: false
+  cta_generator: true
 
-# -----------------------------------------------------------------------------
-# FLOW (Конфигурация диалогового flow)
-# -----------------------------------------------------------------------------
-flow:
-  # Активный flow (имя директории в yaml_config/flows/)
-  active: "spin_selling"
+phone_validation:
+  ru_mobile_range: [900, 999]
+  kz_mobile_ranges:
+    - [700, 709]
+  kz_mobile_explicit: [747, 771, 775, 776, 777, 778]
+  city_codes: [495, 499, 812, 343, 383, 861, 727, 717]
 
-# -----------------------------------------------------------------------------
-# DEVELOPMENT (Режим разработки)
-# -----------------------------------------------------------------------------
 development:
   debug: false
   skip_embeddings: false
@@ -222,6 +231,28 @@ ollama serve
 | `retriever_top_k` | int | `2` | Количество фактов из базы знаний |
 | `allowed_english_words` | list | см. выше | Разрешённые английские слова |
 
+### TONE ANALYZER (Анализ тона)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `style_instructions.informal` | string | см. файл | Инструкция для неформального стиля |
+| `style_instructions.formal` | string | `""` | Инструкция для формального стиля |
+| `thresholds.tier1_high_confidence` | float | `0.85` | Порог высокой уверенности для Tier 1 (regex) |
+| `thresholds.tier2_threshold` | float | `0.70` | Порог для Tier 2 (semantic) |
+| `thresholds.tier3_threshold` | float | `0.65` | Порог для Tier 3 (LLM) |
+| `thresholds.min_confidence` | float | `0.30` | Минимальная уверенность |
+| `semantic.threshold` | float | `0.70` | Порог уверенности semantic |
+| `semantic.ambiguity_delta` | float | `0.15` | Разница top‑1/top‑2 для неоднозначности |
+
+### OBJECTION (Обработка возражений)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `semantic_threshold` | float | `0.75` | Минимальная уверенность semantic детекции |
+| `ambiguity_delta` | float | `0.10` | Разница top‑1/top‑2 для неоднозначности |
+| `max_attempts_per_type` | int | `2` | Максимум попыток по одному типу возражений |
+| `counters` | map | см. файл | Контраргументы по типам возражений |
+
 ### CLASSIFIER (Классификация интентов)
 
 | Параметр | Тип | По умолчанию | Описание |
@@ -253,66 +284,460 @@ ollama serve
 | `validate_on_startup` | bool | `true` | Валидация при старте |
 | `coverage_threshold` | float | `0.8` | Минимальное покрытие условий в тестах |
 
+Примечание: в `settings.yaml` сейчас задан только `enable_tracing`. Остальные параметры берутся из defaults в `src/settings.py` и могут быть переопределены при добавлении в YAML.
+
 ### FEATURE FLAGS (Управление фичами)
 
-Feature flags позволяют постепенно включать новые возможности без изменения кода.
+Feature flags позволяют постепенно включать новые возможности без изменения кода. В системе реализовано **62 флага** (см. `src/feature_flags.py`), организованные по фазам разработки и категориям риска. `src/settings.yaml` задаёт базовые значения для ключевых флагов, остальные берутся из defaults.
 
-| Флаг | По умолчанию | Описание |
-|------|--------------|----------|
-| **LLM Classifier** | | |
-| `llm_classifier` | `true` | LLM классификатор вместо Hybrid |
-| **Фаза 0: Инфраструктура** | | |
-| `structured_logging` | `true` | JSON логи для production |
-| `metrics_tracking` | `true` | Трекинг метрик диалогов |
-| **Фаза 1: Защита** | | |
-| `multi_tier_fallback` | `true` | 4-уровневый fallback |
-| `conversation_guard` | `true` | Защита от зацикливания |
-| **Фаза 2: Естественность** | | |
-| `tone_analysis` | `true` | Анализ тона клиента (ВКЛЮЧЕН с коммита 6031a33) |
-| `response_variations` | `true` | Вариативность ответов |
-| `cascade_tone_analyzer` | `true` | Каскадный анализатор тона |
-| `tone_semantic_tier2` | `true` | Tier 2: FRIDA semantic |
-| `tone_llm_tier3` | `true` | Tier 3: LLM fallback |
-| **Фаза 3: SPIN Optimization** | | |
-| `personalization` | `false` | Персонализация |
-| `lead_scoring` | `false` | Скоринг лидов |
-| `circular_flow` | `false` | Возврат назад по фазам |
-| `objection_handler` | `false` | Обработка возражений |
-| `cta_generator` | `false` | Call-to-Action |
-| **Фаза 4: Classification** | | |
-| `cascade_classifier` | `true` | Каскадный классификатор |
-| `semantic_objection_detection` | `true` | Семантическая детекция возражений |
-| `intent_disambiguation` | `false` | Уточнение намерения при близких scores |
-| **Фаза 5: Context Policy** | | |
-| `context_full_envelope` | `true` | Полный ContextEnvelope |
-| `context_response_directives` | `true` | ResponseDirectives для генератора |
-| `context_policy_overlays` | `true` | DialoguePolicy overrides |
-| `context_shadow_mode` | `false` | Shadow mode для policy |
-| `context_engagement_v2` | `false` | Улучшенный расчёт engagement |
-| `context_cta_memory` | `false` | CTA с учётом episodic memory |
-| `dynamic_cta_fallback` | `false` | Динамические CTA в fallback |
-| **Response Quality** | | |
-| `response_deduplication` | `true` | Проверка на дублирующиеся ответы |
-| `price_question_override` | `true` | Intent-aware override для вопросов о цене |
-| **Guard/Fallback Fixes** | | |
-| `guard_informative_intent_check` | `true` | Проверка информативных интентов перед TIER_3 |
-| `guard_skip_resets_fallback` | `true` | Сброс fallback_response после skip action |
-| **Robust Classification** | | |
-| `confidence_router` | `true` | Gap-based решения и graceful degradation |
-| `confidence_router_logging` | `true` | Логирование слепых зон для self-learning |
-| **Personalization V2** | | |
-| `personalization_v2` | `false` | V2 engine с behavioral adaptation |
-| `personalization_adaptive_style` | `false` | AdaptiveStyleSelector |
-| `personalization_semantic_industry` | `false` | IndustryDetectorV2 semantic matching |
-| `personalization_session_memory` | `false` | EffectiveActionTracker |
+#### Статус флагов по категориям
 
-**Переопределение через env:**
+- **Production** (безопасные, включены в production)
+- **Safe** (испытанные, рекомендуется включать)
+- **Risky** (требуют калибровки, включать осторожно)
+- **Experimental** (новые, отключены по умолчанию)
+
+#### Фаза 0: Инфраструктура (Phase 0)
+
+Базовые компоненты и логирование. Статус: Production.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `structured_logging` | `true` | Production | JSON логи для production окружения |
+| `metrics_tracking` | `true` | Production | Трекинг метрик диалогов и KPI |
+
+**Зависимости:** Нет (базовый уровень)
+
+#### Фаза 1: Защита и надёжность (Phase 1)
+
+Критичные механизмы защиты от зацикливания и деградации. Статус: Production.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `multi_tier_fallback` | `true` | Production | 4-уровневый fallback: TIER_1 (intent)→ TIER_2 (retrieve)→ TIER_3 (LLM)→ TIER_4 (default) |
+| `conversation_guard` | `true` | Production | Защита от зацикливания: отслеживание repeated states, max_turns_in_state |
+| `conversation_guard_in_pipeline` | `false` | Experimental | ConversationGuard внутри Blackboard pipeline для более раннего срабатывания |
+
+**Зависимости:** Нет (базовый уровень)
+
+#### Фаза 2: Естественность диалога (Phase 2)
+
+Анализ тона, вариативность ответов, качество диалога. Статус: Production.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `tone_analysis` | `true` | Production | Базовый анализ тона клиента (regex Tier 1) для определения стиля ответа |
+| `cascade_tone_analyzer` | `true` | Production | Каскадный анализатор тона с тремя уровнями fallback |
+| `tone_semantic_tier2` | `true` | Safe | Tier 2: FRIDA semantic embeddings для анализа тона |
+| `tone_llm_tier3` | `true` | Safe | Tier 3: LLM fallback при низкой уверенности Tier 2 |
+| `response_variations` | `true` | Production | Вариативность ответов: избегание повторяющихся фраз и шаблонов |
+| `response_diversity` | `true` | Safe | Post-processing замена монотонных вступлений на разнообразные варианты |
+| `response_diversity_logging` | `true` | Safe | Логирование замен для мониторинга diversity engine |
+| `question_deduplication` | `true` | Safe | Фильтрация повторяющихся вопросов на основе collected_data |
+| `question_deduplication_logging` | `true` | Safe | Логирование фильтраций для мониторинга |
+| `apology_system` | `true` | Safe | Гарантированное добавление извинений при обнаружении frustration |
+| `response_deduplication` | `true` | Safe | Проверка на дублирующиеся ответы в пределах сессии |
+| `price_question_override` | `true` | Safe | Intent-aware override для вопросов о цене |
+| `personalization` | `false` | Experimental | Персонализация ответов на основе профиля клиента (v1, legacy) |
+
+**Зависимости:**
+- `tone_semantic_tier2` требует `cascade_tone_analyzer=true`
+- `tone_llm_tier3` требует `cascade_tone_analyzer=true`
+
+#### Фаза 3: Оптимизация SPIN Flow (Phase 3)
+
+Продвинутые механизмы управления диалогом и генерация действий. Статус: Experimental.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `lead_scoring` | `false` | Risky | Скоринг лидов для адаптивного SPIN (требует калибровки) |
+| `circular_flow` | `false` | Risky | Возврат назад по фазам SPIN (опасно, может привести к зацикливанию) |
+| `objection_handler` | `false` | Experimental | Продвинутая обработка возражений с контраргументами |
+| `cta_generator` | `true` | Safe | Генерация Call-to-Action в зависимости от фазы диалога |
+| `dynamic_cta_fallback` | `false` | Experimental | Динамические подсказки в fallback tier_2 на основе контекста |
+
+**Зависимости:** Нет (опциональные механизмы)
+
+#### Фаза 4: Классификация и дизамбигуация (Phase 4)
+
+Улучшенная классификация интентов и детекция возражений. Статус: Safe/Production.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `intent_disambiguation` | `false` | Legacy | Уточнение намерения при близких scores (HybridClassifier, deprecated) |
+| `unified_disambiguation` | `true` | Safe | Унифицированный disambiguation для LLM и HybridClassifier |
+| `cascade_classifier` | `true` | Production | Каскадный классификатор с эмбеддингами для семантического fallback |
+| `semantic_objection_detection` | `true` | Production | Semantic fallback для детекции возражений при низкой уверенности |
+| `confidence_router` | `true` | Safe | Gap-based решения и graceful degradation при неоднозначности |
+| `confidence_router_logging` | `true` | Safe | Логирование слепых зон для self-learning системы |
+| `confidence_calibration` | `true` | Safe | Калибровка confidence для решения проблемы overconfident LLM |
+| `classification_refinement` | `true` | Safe | Контекстное уточнение классификации коротких ответов |
+| `secondary_intent_detection` | `true` | Safe | Детекция secondary intents в composite сообщениях |
+| `objection_refinement` | `true` | Safe | Контекстная валидация objection классификаций |
+| `composite_refinement` | `true` | Safe | Приоритет извлечения данных над мета-интентами |
+| `option_selection_refinement` | `true` | Safe | Обработка выбора вариантов ("1", "2", "первое") |
+
+**Зависимости:**
+- `semantic_objection_detection` требует `cascade_classifier=true`
+- `confidence_router` работает как с LLM, так и с HybridClassifier
+
+#### Фаза 5: Контекстная политика диалога (Phase 5)
+
+Продвинутое управление контекстом и память диалога. Статус: Safe/Experimental.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `context_full_envelope` | `true` | Production | Полный ContextEnvelope для всех подсистем (source_signal, confidence, directives) |
+| `context_shadow_mode` | `false` | Experimental | Shadow mode: логируем решения policy без применения (для A/B тестирования) |
+| `context_response_directives` | `true` | Safe | ResponseDirectives для кастомизации ответов генератором |
+| `context_policy_overlays` | `true` | Safe | DialoguePolicy action/transition overrides на основе контекста |
+| `context_engagement_v2` | `false` | Experimental | Улучшенный расчёт engagement на основе interaction patterns |
+| `context_cta_memory` | `false` | Experimental | CTA с учётом episodic memory и истории CTA |
+
+**Зависимости:**
+- `context_response_directives` требует `context_full_envelope=true`
+- `context_policy_overlays` требует `context_full_envelope=true`
+- `context_engagement_v2` требует `context_full_envelope=true`
+- `context_cta_memory` требует `context_full_envelope=true`
+
+#### Фаза 5.5: Очистка и рефайнмент (Refinement Pipeline)
+
+Универсальный pipeline для улучшения классификации и обработки данных. Статус: Safe.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `refinement_pipeline` | `true` | Safe | Использовать универсальный RefinementPipeline вместо отдельных слоёв |
+| `data_aware_refinement` | `true` | Safe | Promote unclear→info_provided когда данные извлечены |
+| `first_contact_refinement` | `true` | Safe | First contact objection refinement layer (защита в первом контакте) |
+| `greeting_state_safety` | `true` | Safe | Category-based greeting transition overrides для безопасности |
+| `greeting_context_refinement` | `true` | Safe | Greeting context refinement layer для улучшения первого сообщения |
+| `structural_frustration_detection` | `true` | Safe | Behavioral frustration detection из диалоговых паттернов |
+
+**Зависимости:** Нет (все флаги независимы)
+
+#### Фаза 6: Guard и Fallback улучшения (Guard/Fallback Fixes)
+
+Специализированные фиксы для механизмов защиты. Статус: Production.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `guard_informative_intent_check` | `true` | Production | Проверка информативных интентов перед TIER_3 fallback |
+| `guard_skip_resets_fallback` | `true` | Production | Сброс fallback_response после skip action |
+| `universal_stall_guard` | `true` | Safe | Universal max-turns-in-state forced ejection |
+| `stall_guard_dual_proposal` | `true` | Safe | StallGuard proposes action + transition simultaneously |
+| `phase_exhausted_source` | `true` | Safe | PhaseExhaustedSource: options menu когда фаза застопорена |
+| `phase_completion_gating` | `true` | Safe | has_completed_minimum_phases condition для контроля прогресса |
+
+**Зависимости:** Нет (все механизмы независимы)
+
+#### Фаза 7: Персонализация v2 (Personalization V2)
+
+Адаптивная персонализация с поведенческой адаптацией. Статус: Experimental.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `personalization_v2` | `false` | Experimental | V2 engine с behavioral adaptation и machine learning |
+| `personalization_adaptive_style` | `false` | Experimental | AdaptiveStyleSelector для выбора стиля общения |
+| `personalization_semantic_industry` | `false` | Experimental | IndustryDetectorV2 semantic matching для определения отрасли |
+| `personalization_session_memory` | `false` | Experimental | EffectiveActionTracker для session memory и action history |
+
+**Зависимости:**
+- `personalization_adaptive_style` требует `personalization_v2=true`
+- `personalization_semantic_industry` требует `personalization_v2=true`
+- `personalization_session_memory` требует `personalization_v2=true`
+
+#### Классификатор (Classifier Selection)
+
+Выбор механизма классификации интентов. Статус: Production.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `llm_classifier` | `true` | Production | Использовать LLM классификатор вместо HybridClassifier |
+
+**Зависимости:** Нет (выбор один из двух подходов)
+
+#### Экспериментальные режимы (Experimental/Diagnostic)
+
+Режимы для диагностики и расширенного тестирования. Статус: Experimental.
+
+| Флаг | Default | Статус | Описание |
+|------|---------|--------|----------|
+| `simulation_diagnostic_mode` | `false` | Experimental | Диагностический режим с повышенными лимитами для обнаружения ошибок |
+| `intent_pattern_guard` | `false` | Experimental | Configurable intent pattern detection (Change 7) |
+| `comparison_refinement` | `false` | Experimental | Comparison refinement layer (Change 8) |
+| `autonomous_flow` | `false` | Experimental | LLM-driven sales flow без YAML правил (полная автономия) |
+
+**Зависимости:** Нет (все независимые режимы)
+
+#### Таблица всех флагов (сортировка по названию)
+
+| Флаг | Default | Фаза | Статус | Описание |
+|------|---------|------|--------|----------|
+| `apology_system` | `true` | 2 | Safe | Гарантированное добавление извинений при frustration |
+| `autonomous_flow` | `false` | 6 | Experimental | LLM-driven sales flow без YAML правил |
+| `cascade_classifier` | `true` | 4 | Production | Каскадный классификатор с семантическим fallback |
+| `cascade_tone_analyzer` | `true` | 2 | Production | Каскадный анализатор тона с тремя уровнями |
+| `circular_flow` | `false` | 3 | Risky | Возврат назад по фазам SPIN |
+| `classification_refinement` | `true` | 4 | Safe | Контекстное уточнение коротких ответов |
+| `comparison_refinement` | `false` | 6 | Experimental | Comparison refinement layer |
+| `composite_refinement` | `true` | 4 | Safe | Приоритет данных над мета-интентами |
+| `confidence_calibration` | `true` | 4 | Safe | Калибровка confidence для overconfident LLM |
+| `confidence_router` | `true` | 4 | Safe | Gap-based решения и graceful degradation |
+| `confidence_router_logging` | `true` | 4 | Safe | Логирование слепых зон |
+| `context_cta_memory` | `false` | 5 | Experimental | CTA с episodic memory |
+| `context_engagement_v2` | `false` | 5 | Experimental | Улучшенный расчёт engagement |
+| `context_full_envelope` | `true` | 5 | Production | Полный ContextEnvelope |
+| `context_policy_overlays` | `true` | 5 | Safe | DialoguePolicy overrides |
+| `context_response_directives` | `true` | 5 | Safe | ResponseDirectives для генератора |
+| `context_shadow_mode` | `false` | 5 | Experimental | Shadow mode для policy |
+| `conversation_guard` | `true` | 1 | Production | Защита от зацикливания |
+| `conversation_guard_in_pipeline` | `false` | 1 | Experimental | ConversationGuard в pipeline |
+| `cta_generator` | `true` | 3 | Safe | Генерация Call-to-Action |
+| `data_aware_refinement` | `true` | 5.5 | Safe | Promote info_provided при извлечении данных |
+| `dynamic_cta_fallback` | `false` | 3 | Experimental | Динамические CTA в fallback |
+| `first_contact_refinement` | `true` | 5.5 | Safe | First contact objection refinement |
+| `greeting_context_refinement` | `true` | 5.5 | Safe | Greeting context refinement |
+| `greeting_state_safety` | `true` | 5.5 | Safe | Category-based greeting overrides |
+| `guard_informative_intent_check` | `true` | 6 | Production | Проверка информативных интентов |
+| `guard_skip_resets_fallback` | `true` | 6 | Production | Сброс fallback после skip |
+| `intent_disambiguation` | `false` | 4 | Legacy | Уточнение намерения (deprecated) |
+| `intent_pattern_guard` | `false` | 6 | Experimental | Configurable intent pattern detection |
+| `lead_scoring` | `false` | 3 | Risky | Скоринг лидов |
+| `llm_classifier` | `true` | Classifier | Production | LLM вместо HybridClassifier |
+| `metrics_tracking` | `true` | 0 | Production | Трекинг метрик диалогов |
+| `multi_tier_fallback` | `true` | 1 | Production | 4-уровневый fallback |
+| `objection_handler` | `false` | 3 | Experimental | Продвинутая обработка возражений |
+| `objection_refinement` | `true` | 4 | Safe | Контекстная валидация возражений |
+| `option_selection_refinement` | `true` | 4 | Safe | Обработка выбора вариантов |
+| `personalization` | `false` | 2 | Experimental | Персонализация v1 (legacy) |
+| `personalization_adaptive_style` | `false` | 7 | Experimental | AdaptiveStyleSelector |
+| `personalization_semantic_industry` | `false` | 7 | Experimental | IndustryDetectorV2 |
+| `personalization_session_memory` | `false` | 7 | Experimental | EffectiveActionTracker |
+| `personalization_v2` | `false` | 7 | Experimental | Персонализация v2 |
+| `phase_completion_gating` | `true` | 6 | Safe | Phase completion control |
+| `phase_exhausted_source` | `true` | 6 | Safe | Options menu при застое фазы |
+| `price_question_override` | `true` | 2 | Safe | Intent-aware override для цены |
+| `question_deduplication` | `true` | 2 | Safe | Фильтрация повторяющихся вопросов |
+| `question_deduplication_logging` | `true` | 2 | Safe | Логирование фильтраций |
+| `refinement_pipeline` | `true` | 5.5 | Safe | Универсальный RefinementPipeline |
+| `response_deduplication` | `true` | 2 | Safe | Проверка дублирующихся ответов |
+| `response_diversity` | `true` | 2 | Safe | Anti-monotony engine |
+| `response_diversity_logging` | `true` | 2 | Safe | Логирование replacements |
+| `response_variations` | `true` | 2 | Production | Вариативность ответов |
+| `secondary_intent_detection` | `true` | 4 | Safe | Secondary intents в composite |
+| `semantic_objection_detection` | `true` | 4 | Production | Semantic fallback для возражений |
+| `simulation_diagnostic_mode` | `false` | 6 | Experimental | Диагностический режим |
+| `stall_guard_dual_proposal` | `true` | 6 | Safe | Dual action + transition |
+| `structural_frustration_detection` | `true` | 5.5 | Safe | Behavioral frustration detection |
+| `structured_logging` | `true` | 0 | Production | JSON логи для production |
+| `tone_analysis` | `true` | 2 | Production | Анализ тона (базовый Tier 1) |
+| `tone_llm_tier3` | `true` | 2 | Safe | Tier 3 (LLM) для тона |
+| `tone_semantic_tier2` | `true` | 2 | Safe | Tier 2 (FRIDA) для тона |
+| `unified_disambiguation` | `true` | 4 | Safe | Unified disambiguation |
+| `universal_stall_guard` | `true` | 6 | Safe | Max-turns-in-state ejection |
+
+#### Переопределение через environment variables
+
+Все флаги можно переопределить через переменные окружения:
+
 ```bash
-# Переключиться на HybridClassifier
+# Формат: FF_<FLAG_NAME>=true|false
 FF_LLM_CLASSIFIER=false python bot.py
-
-# Включить tone_analysis
 FF_TONE_ANALYSIS=true python bot.py
+FF_LEAD_SCORING=true python bot.py
+
+# Несколько флагов
+FF_LLM_CLASSIFIER=false FF_TONE_ANALYSIS=true FF_CIRCULAR_FLOW=true python bot.py
+```
+
+Приоритет загрузки (от высшего к низшему):
+1. Environment variables (`FF_*`)
+2. settings.yaml (`feature_flags` раздел)
+3. Defaults (в коде FeatureFlags.DEFAULTS)
+
+#### Группы флагов для управления
+
+Флаги организованы в группы для удобного управления:
+
+```python
+# Production-safe группа
+flags.enable_group("safe")  # все проверенные флаги
+
+# По фазам
+flags.enable_group("phase_0")    # инфраструктура
+flags.enable_group("phase_1")    # защита
+flags.enable_group("phase_2")    # естественность
+flags.enable_group("phase_3")    # SPIN optimization
+flags.enable_group("phase_4")    # классификация
+flags.enable_group("phase_5")    # контекст
+
+# Рискованные флаги
+flags.disable_group("risky")  # отключить circular_flow, lead_scoring
+
+# Контекстная политика
+flags.enable_group("context_all")   # все context флаги
+flags.enable_group("context_safe")  # только safe (context_full_envelope, directives)
+
+# Тон анализа
+flags.enable_group("tone_full")     # все уровни cascade analyzer
+flags.enable_group("tone_safe")     # только базовый Tier 1
+
+# Персонализация v2
+flags.enable_group("personalization_v2_full")  # все компоненты
+
+# Специализированные группы
+flags.enable_group("guard_fixes")           # guard/fallback улучшения
+flags.enable_group("robust_classification") # confidence router
+flags.enable_group("refinement_pipeline_all")  # все refinement слои
+flags.enable_group("stall_guard")           # anti-stall механизмы
+```
+
+#### Зависимости между флагами
+
+Некоторые флаги требуют, чтобы другие флаги были включены:
+
+**Cascade Analyzer (Phase 2):**
+- `tone_semantic_tier2` → требует `cascade_tone_analyzer=true`
+- `tone_llm_tier3` → требует `cascade_tone_analyzer=true`
+
+**Context Policy (Phase 5):**
+- `context_response_directives` → требует `context_full_envelope=true`
+- `context_policy_overlays` → требует `context_full_envelope=true`
+- `context_engagement_v2` → требует `context_full_envelope=true`
+- `context_cta_memory` → требует `context_full_envelope=true`
+- `context_shadow_mode` → требует `context_full_envelope=true`
+
+**Personalization V2 (Phase 7):**
+- `personalization_adaptive_style` → требует `personalization_v2=true`
+- `personalization_semantic_industry` → требует `personalization_v2=true`
+- `personalization_session_memory` → требует `personalization_v2=true`
+
+**Cascade Classifier (Phase 4):**
+- `semantic_objection_detection` → требует `cascade_classifier=true`
+
+**Classifier Selection:**
+- Система выбирает между LLM и HybridClassifier на основе `llm_classifier`
+- Все флаги Phase 4 работают с обоими классификаторами
+
+#### Профили флагов для разных окружений
+
+**Production Profile (максимальная надёжность)**
+
+```yaml
+feature_flags:
+  # Phase 0: Infrastructure (production-ready)
+  structured_logging: true
+  metrics_tracking: true
+
+  # Phase 1: Safety (critical, always on)
+  multi_tier_fallback: true
+  conversation_guard: true
+  conversation_guard_in_pipeline: false
+
+  # Phase 2: Dialog Quality (production-stable)
+  tone_analysis: true
+  cascade_tone_analyzer: true
+  tone_semantic_tier2: true
+  tone_llm_tier3: true
+  response_variations: true
+  response_diversity: true
+  question_deduplication: true
+  apology_system: true
+
+  # Phase 3: SPIN (safe only, risky disabled)
+  lead_scoring: false
+  circular_flow: false
+  objection_handler: false
+  cta_generator: true
+  dynamic_cta_fallback: false
+
+  # Phase 4: Classification (production)
+  cascade_classifier: true
+  semantic_objection_detection: true
+  confidence_router: true
+  unified_disambiguation: true
+  classification_refinement: true
+
+  # Phase 5: Context (safe components)
+  context_full_envelope: true
+  context_response_directives: true
+  context_policy_overlays: true
+  context_shadow_mode: false
+  context_engagement_v2: false
+  context_cta_memory: false
+
+  # Guard Fixes (all enabled)
+  guard_informative_intent_check: true
+  guard_skip_resets_fallback: true
+  universal_stall_guard: true
+
+  # Experimental (disabled)
+  personalization: false
+  personalization_v2: false
+  autonomous_flow: false
+```
+
+**Development Profile (максимум функционала)**
+
+```yaml
+feature_flags:
+  # Все Phase 0-4 включены
+  structured_logging: true
+  metrics_tracking: true
+  multi_tier_fallback: true
+  conversation_guard: true
+
+  # Phase 2: все варианты
+  tone_analysis: true
+  cascade_tone_analyzer: true
+  tone_semantic_tier2: true
+  tone_llm_tier3: true
+  response_variations: true
+  response_diversity: true
+
+  # Phase 3: включены experimental
+  lead_scoring: true
+  circular_flow: true  # ОСТОРОЖНО!
+  objection_handler: true
+  cta_generator: true
+  dynamic_cta_fallback: true
+
+  # Phase 5: все варианты
+  context_full_envelope: true
+  context_response_directives: true
+  context_policy_overlays: true
+  context_shadow_mode: true  # для A/B тестирования
+  context_engagement_v2: true
+  context_cta_memory: true
+
+  # Phase 7: Personalization v2
+  personalization_v2: true
+  personalization_adaptive_style: true
+  personalization_semantic_industry: true
+  personalization_session_memory: true
+
+  # Experimental
+  autonomous_flow: true
+  simulation_diagnostic_mode: true
+```
+
+**Testing Profile (минимум для быстрого тестирования)**
+
+```yaml
+feature_flags:
+  # Критичные только
+  multi_tier_fallback: true
+  conversation_guard: true
+
+  # Phase 2: базовое качество
+  tone_analysis: true
+  response_variations: true
+
+  # Остальное отключено для скорости
+  cascade_tone_analyzer: false
+  cascade_classifier: false
+  context_full_envelope: false
+  personalization_v2: false
 ```
 
 ### FLOW (Конфигурация диалогового flow)
@@ -321,8 +746,12 @@ FF_TONE_ANALYSIS=true python bot.py
 |----------|-----|--------------|----------|
 | `active` | string | `"spin_selling"` | Активный flow из `yaml_config/flows/` |
 
+Примечание: раздел `flow` может отсутствовать в `settings.yaml` — тогда используется default из `src/settings.py`.
+
 **Доступные flows:**
-- `spin_selling` — SPIN Selling methodology (Situation, Problem, Implication, Need-Payoff)
+- `spin_selling`, `aida`, `autonomous`, `bant`, `challenger`, `command`, `consultative`,
+  `customer_centric`, `demo_first`, `fab`, `gap`, `inbound`, `meddic`, `neat`,
+  `relationship`, `sandler`, `snap`, `social`, `solution`, `transactional`, `value`
 - Создайте собственный flow в `yaml_config/flows/<name>/`
 
 **Структура flow:**
@@ -331,6 +760,15 @@ yaml_config/flows/<name>/
 ├── flow.yaml       # Конфигурация flow (phases, skip_conditions)
 └── states.yaml     # Специфичные состояния для этого flow
 ```
+
+### PHONE VALIDATION (Валидация телефонных номеров)
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `ru_mobile_range` | list[int] | `[900, 999]` | Диапазон кодов мобильных РФ |
+| `kz_mobile_ranges` | list[list[int]] | `[[700, 709]]` | Диапазоны кодов мобильных КЗ |
+| `kz_mobile_explicit` | list[int] | см. файл | Явные коды мобильных КЗ |
+| `city_codes` | list[int] | см. файл | Коды городов РФ/КЗ |
 
 ### DEVELOPMENT (Режим разработки)
 
@@ -344,7 +782,7 @@ yaml_config/flows/<name>/
 ### Импорт настроек
 
 ```python
-from settings import settings
+from src.settings import settings
 
 # Доступ через точку
 model = settings.llm.model
@@ -355,7 +793,7 @@ allowed = settings.generator.allowed_english_words
 ### Получение по пути
 
 ```python
-from settings import settings
+from src.settings import settings
 
 value = settings.get_nested("retriever.thresholds.semantic")
 # -> 0.5
@@ -367,38 +805,128 @@ value = settings.get_nested("nonexistent.path", default="fallback")
 ### Перезагрузка настроек
 
 ```python
-from settings import reload_settings
+from src.settings import reload_settings
 
 # После изменения settings.yaml
 reload_settings()
 ```
 
-### Использование Feature Flags
+### Использование Feature Flags в коде
+
+#### Базовые проверки
 
 ```python
-from feature_flags import flags
+from src.feature_flags import flags
 
-# Проверка флага (property)
-if flags.llm_classifier:
-    # использовать LLM классификатор
-
-# Проверка флага (метод)
-if flags.is_enabled("tone_analysis"):
+# Способ 1: Через property (типизировано, IDE-friendly)
+if flags.tone_analysis:
     analyzer = ToneAnalyzer()
+
+if flags.llm_classifier:
+    classifier = LLMClassifier()
+else:
+    classifier = HybridClassifier()
+
+# Способ 2: Через метод is_enabled()
+if flags.is_enabled("custom_flag"):
+    # Для динамических флагов
+    pass
+```
+
+#### Работа с группами флагов
+
+```python
+from src.feature_flags import flags
+
+# Проверка включена ли группа (хотя бы один флаг)
+if flags.is_group_enabled("phase_3"):
+    # Какой-то из Phase 3 флагов включен
+    pass
+
+# Требовать ВСЕ флаги в группе
+if flags.is_group_enabled("safe", require_all=True):
+    # Все safe флаги включены
+    pass
 
 # Получить все флаги
 all_flags = flags.get_all_flags()
+for flag_name, is_enabled in all_flags.items():
+    print(f"{flag_name}: {is_enabled}")
 
-# Получить включённые флаги
+# Получить только включённые
 enabled = flags.get_enabled_flags()
+print(f"Enabled: {enabled}")
 
-# Override в runtime
-flags.set_override("tone_analysis", True)
+# Получить только отключённые
+disabled = flags.get_disabled_flags()
+print(f"Disabled: {disabled}")
+```
+
+#### Runtime управление флагами
+
+```python
+from src.feature_flags import flags
+
+# Override флага (для тестов и отладки)
+flags.set_override("tone_analysis", False)
+# Теперь flags.tone_analysis вернёт False
+
+# Убрать override
 flags.clear_override("tone_analysis")
 
-# Группы
-flags.enable_group("phase_3")
-flags.disable_group("risky")
+# Очистить все overrides
+flags.clear_all_overrides()
+
+# Управление группами
+flags.enable_group("phase_5")   # Включить все Phase 5 флаги
+flags.disable_group("risky")    # Отключить рискованные флаги
+```
+
+#### Пример: Выбор классификатора
+
+```python
+from src.feature_flags import flags
+
+def get_classifier():
+    """Получить классификатор на основе флага"""
+    if flags.llm_classifier:
+        return LLMClassifier()
+    else:
+        return HybridClassifier()
+
+classifier = get_classifier()
+intent, confidence = classifier.classify(message)
+```
+
+#### Пример: Каскадный анализ тона
+
+```python
+from src.feature_flags import flags
+
+def analyze_customer_tone(message: str) -> str:
+    """Анализ тона с каскадными fallback"""
+
+    if not flags.tone_analysis:
+        return "neutral"
+
+    # Tier 1: regex (всегда)
+    tone = regex_analyzer.detect(message)
+    if tone and confidence >= 0.85:
+        return tone
+
+    # Tier 2: Semantic (если включён)
+    if flags.tone_semantic_tier2:
+        tone = semantic_analyzer.detect(message)
+        if tone and confidence >= 0.70:
+            return tone
+
+    # Tier 3: LLM (если включён)
+    if flags.tone_llm_tier3:
+        tone = llm_analyzer.detect(message)
+        if tone:
+            return tone
+
+    return "neutral"
 ```
 
 ## Профили настроек
@@ -797,3 +1325,42 @@ config = get_config_validated()
 ```
 
 Подробнее: [src/yaml_config/flows/README.md](../src/yaml_config/flows/README.md)
+
+---
+
+## Session Persistence — Runtime Settings
+
+Часть параметров управления сессиями задаётся в коде интеграции (а не в `settings.yaml`).
+Они критичны для поведения снапшотов и восстановления.
+
+### Параметры SessionManager
+
+| Параметр | Где задаётся | Рекомендация |
+|---------|--------------|--------------|
+| `ttl_seconds` | `SessionManager(...)` | 3600 (1 час тишины) |
+| `flush_hour` | `SessionManager(...)` | 23 (локальное время сервера) |
+| `load_snapshot` | интеграция | функция загрузки снапшота из внешней БД |
+| `save_snapshot` | интеграция | функция сохранения снапшота в внешнюю БД |
+| `load_history_tail` | интеграция | получение последних 4 сообщений |
+
+### Environment Variables
+
+| Переменная | Назначение | По умолчанию |
+|-----------|------------|--------------|
+| `SNAPSHOT_BUFFER_PATH` | путь к SQLite буферу снапшотов | `snapshot_buffer.sqlite` |
+| `SESSION_LOCK_DIR` | директория для файловых lock'ов | `/tmp/crm_sales_bot_session_locks` |
+| `LOG_FORMAT` | формат логов (`json` или `readable`) | `readable` |
+
+### Multi‑Config
+
+Для загрузки tenant‑конфигов используется структура:
+
+```
+src/yaml_config/tenants/<config_name>/
+  constants.yaml
+  states/
+  flows/
+  templates/
+```
+
+Если tenant‑каталог не найден, будет использована конфигурация по умолчанию.

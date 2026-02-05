@@ -918,6 +918,61 @@ class FallbackHandler:
             "dynamic_cta_counts": self._stats.dynamic_cta_counts.copy(),
         }
 
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict:
+        """Serialize FallbackHandler state."""
+        return {
+            "total_count": self._stats.total_count,
+            "tier_counts": dict(self._stats.tier_counts),
+            "state_counts": dict(self._stats.state_counts),
+            "last_tier": self._stats.last_tier,
+            "last_state": self._stats.last_state,
+            "dynamic_cta_counts": dict(self._stats.dynamic_cta_counts),
+            "consecutive_tier_2_count": self._stats.consecutive_tier_2_count,
+            "consecutive_tier_2_state": self._stats.consecutive_tier_2_state,
+            "_used_templates": dict(self._used_templates),
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict,
+        flow: Optional["FlowConfig"] = None,
+        config: Optional["LoadedConfig"] = None,
+        guard_config: Optional[Any] = None,
+        product_overviews: Optional[List[str]] = None,
+    ) -> "FallbackHandler":
+        """Restore FallbackHandler from serialized snapshot."""
+        handler = cls(
+            flow=flow,
+            config=config,
+            guard_config=guard_config,
+            product_overviews=product_overviews,
+        )
+        if not data:
+            return handler
+
+        stats = FallbackStats()
+        stats.total_count = int(data.get("total_count", 0))
+        stats.tier_counts = dict(data.get("tier_counts", {}) or {})
+        stats.state_counts = dict(data.get("state_counts", {}) or {})
+        stats.last_tier = data.get("last_tier")
+        stats.last_state = data.get("last_state")
+        stats.dynamic_cta_counts = dict(data.get("dynamic_cta_counts", {}) or {})
+        stats.consecutive_tier_2_count = int(data.get("consecutive_tier_2_count", 0))
+        stats.consecutive_tier_2_state = data.get("consecutive_tier_2_state")
+
+        handler._stats = stats
+        used_templates = data.get("_used_templates", {}) or {}
+        if isinstance(used_templates, dict):
+            handler._used_templates = {k: list(v) for k, v in used_templates.items()}
+        else:
+            handler._used_templates = {}
+        return handler
+
     def escalate_tier(self, current_tier: str) -> str:
         """
         Получить следующий уровень fallback (эскалация).

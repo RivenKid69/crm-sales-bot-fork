@@ -319,6 +319,100 @@ class ConversationMetrics:
             "final_lead_score": self.get_final_lead_score(),
         }
 
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize metrics for snapshotting."""
+        return {
+            "conversation_id": self.conversation_id,
+            "turns": self.turns,
+            "phase_turns": dict(self.phase_turns),
+            "intents_sequence": list(self.intents_sequence),
+            "objections": list(self.objections),
+            "fallback_count": self.fallback_count,
+            "fallback_by_tier": dict(self.fallback_by_tier),
+            "tone_history": list(self.tone_history),
+            "lead_score_history": list(self.lead_score_history),
+            "turn_records": [
+                {
+                    "turn_number": r.turn_number,
+                    "state": r.state,
+                    "intent": r.intent,
+                    "timestamp": r.timestamp.timestamp(),
+                    "tone": r.tone,
+                    "response_time_ms": r.response_time_ms,
+                    "fallback_used": r.fallback_used,
+                    "fallback_tier": r.fallback_tier,
+                }
+                for r in self.turn_records
+            ],
+            "collected_data": dict(self.collected_data),
+            "outcome": self.outcome.value if self.outcome else None,
+            "start_time": self.created_at.timestamp(),
+            "end_time": self.end_time.timestamp() if self.end_time else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ConversationMetrics":
+        """Restore metrics from serialized snapshot."""
+        def _parse_dt(value: Any) -> Optional[datetime]:
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                return datetime.fromtimestamp(float(value), tz=timezone.utc)
+            if isinstance(value, str):
+                try:
+                    # Accept ISO-8601
+                    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+                except ValueError:
+                    return None
+            return None
+
+        metrics = cls(conversation_id=data.get("conversation_id"))
+        if not data:
+            return metrics
+
+        metrics.turns = int(data.get("turns", 0))
+        metrics.phase_turns = defaultdict(int, data.get("phase_turns", {}) or {})
+        metrics.intents_sequence = list(data.get("intents_sequence", []) or [])
+        metrics.objections = list(data.get("objections", []) or [])
+        metrics.fallback_count = int(data.get("fallback_count", 0))
+        metrics.fallback_by_tier = defaultdict(int, data.get("fallback_by_tier", {}) or {})
+        metrics.tone_history = list(data.get("tone_history", []) or [])
+        metrics.lead_score_history = list(data.get("lead_score_history", []) or [])
+        metrics.collected_data = dict(data.get("collected_data", {}) or {})
+
+        outcome = data.get("outcome")
+        if outcome:
+            try:
+                metrics.outcome = ConversationOutcome(outcome)
+            except ValueError:
+                metrics.outcome = None
+
+        created_at = _parse_dt(data.get("start_time"))
+        if created_at:
+            metrics.created_at = created_at
+        metrics.end_time = _parse_dt(data.get("end_time"))
+
+        records = data.get("turn_records", []) or []
+        metrics.turn_records = [
+            TurnRecord(
+                turn_number=int(r.get("turn_number", 0)),
+                state=r.get("state", ""),
+                intent=r.get("intent", ""),
+                timestamp=_parse_dt(r.get("timestamp")) or datetime.now(timezone.utc),
+                tone=r.get("tone"),
+                response_time_ms=r.get("response_time_ms"),
+                fallback_used=bool(r.get("fallback_used", False)),
+                fallback_tier=r.get("fallback_tier"),
+            )
+            for r in records
+        ]
+
+        return metrics
+
 
 # =============================================================================
 # Disambiguation Metrics

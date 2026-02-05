@@ -237,6 +237,29 @@ class CircularFlowManager:
             "history": self.goback_history,
         }
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize CircularFlowManager state."""
+        return {
+            "goback_count": self.goback_count,
+            "goback_history": list(self.goback_history),
+            "max_gobacks": self.max_gobacks,
+            "allowed_gobacks": dict(self.allowed_gobacks),
+            "remaining": self.get_remaining_gobacks(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CircularFlowManager":
+        """Deserialize CircularFlowManager state."""
+        if data is None:
+            return cls()
+        allowed_gobacks = data.get("allowed_gobacks")
+        max_gobacks = data.get("max_gobacks")
+        obj = cls(allowed_gobacks=allowed_gobacks, max_gobacks=max_gobacks)
+        obj.goback_count = int(data.get("goback_count", 0))
+        history = data.get("goback_history", data.get("history", [])) or []
+        obj.goback_history = [tuple(item) for item in history]
+        return obj
+
 
 class StateMachine:
     """
@@ -1330,6 +1353,55 @@ class StateMachine:
         """
         config = self.states_config.get(self.state, {})
         return EvaluatorContext.from_state_machine(self, intent, config)
+
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize StateMachine state for snapshotting."""
+        return {
+            "state": self.state,
+            "current_phase": self.current_phase,
+            "collected_data": self.collected_data,
+            "in_disambiguation": self.in_disambiguation,
+            "disambiguation_context": self.disambiguation_context,
+            "pre_disambiguation_state": self.pre_disambiguation_state,
+            "turns_since_last_disambiguation": self.turns_since_last_disambiguation,
+            "intent_tracker": self.intent_tracker.to_dict(),
+            "circular_flow": self.circular_flow.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+        config: Optional["LoadedConfig"] = None,
+        flow: Optional["FlowConfig"] = None,
+    ) -> "StateMachine":
+        """Restore StateMachine from serialized snapshot."""
+        sm = cls(config=config, flow=flow)
+        if not data:
+            return sm
+        sm.state = data.get("state", sm.state)
+        sm.current_phase = data.get("current_phase", sm.current_phase)
+        sm.collected_data = data.get("collected_data", {}) or {}
+
+        sm.in_disambiguation = bool(data.get("in_disambiguation", False))
+        sm.disambiguation_context = data.get("disambiguation_context")
+        sm.pre_disambiguation_state = data.get("pre_disambiguation_state")
+        sm.turns_since_last_disambiguation = int(
+            data.get("turns_since_last_disambiguation", sm.turns_since_last_disambiguation)
+        )
+
+        tracker_data = data.get("intent_tracker")
+        if tracker_data:
+            sm.intent_tracker = IntentTracker.from_dict(tracker_data)
+
+        circular_data = data.get("circular_flow")
+        if circular_data:
+            sm.circular_flow = CircularFlowManager.from_dict(circular_data)
+        return sm
 
 
 # =============================================================================

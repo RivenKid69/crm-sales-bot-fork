@@ -62,8 +62,8 @@ text = "".join([segment.text for segment in segments])
 Используется тот же SalesBot что и в текстовом режиме:
 
 ```python
-from bot import SalesBot
-from llm import OllamaClient
+from src.bot import SalesBot
+from src.llm import OllamaClient
 
 llm = OllamaClient()
 bot = SalesBot(llm)

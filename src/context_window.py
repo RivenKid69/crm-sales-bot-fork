@@ -171,6 +171,77 @@ class TurnContext:
         if self.turn_type is None:
             self.turn_type = self._compute_turn_type()
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize turn context."""
+        return {
+            "user_message": self.user_message,
+            "bot_response": self.bot_response,
+            "intent": self.intent,
+            "confidence": self.confidence,
+            "method": self.method,
+            "action": self.action,
+            "state": self.state,
+            "next_state": self.next_state,
+            "extracted_data": self.extracted_data,
+            "timestamp": self.timestamp,
+            "is_disambiguation": self.is_disambiguation,
+            "is_fallback": self.is_fallback,
+            "fallback_tier": self.fallback_tier,
+            "turn_type": self.turn_type.value if self.turn_type else None,
+            "funnel_delta": self.funnel_delta,
+            "message_length": self.message_length,
+            "word_count": self.word_count,
+            "has_data": self.has_data,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+        state_order: Optional[Dict[str, int]] = None,
+        progress_intents: Optional[set] = None,
+    ) -> "TurnContext":
+        """Deserialize turn context."""
+        if not data:
+            return cls(user_message="", bot_response=None)
+
+        turn_type = data.get("turn_type")
+        if turn_type:
+            try:
+                turn_type = TurnType(turn_type)
+            except ValueError:
+                turn_type = None
+
+        obj = cls(
+            user_message=data.get("user_message", ""),
+            bot_response=data.get("bot_response"),
+            intent=data.get("intent", "unknown"),
+            confidence=float(data.get("confidence", 0.0)),
+            method=data.get("method", "unknown"),
+            action=data.get("action", "unknown"),
+            state=data.get("state", "greeting"),
+            next_state=data.get("next_state", "greeting"),
+            extracted_data=data.get("extracted_data", {}) or {},
+            timestamp=float(data.get("timestamp", time.time())),
+            is_disambiguation=bool(data.get("is_disambiguation", False)),
+            is_fallback=bool(data.get("is_fallback", False)),
+            fallback_tier=data.get("fallback_tier"),
+            turn_type=turn_type,
+            state_order=state_order,
+            progress_intents=progress_intents,
+        )
+
+        # Preserve stored computed fields if provided
+        if "funnel_delta" in data:
+            obj.funnel_delta = int(data.get("funnel_delta", obj.funnel_delta))
+        if "message_length" in data:
+            obj.message_length = int(data.get("message_length", obj.message_length))
+        if "word_count" in data:
+            obj.word_count = int(data.get("word_count", obj.word_count))
+        if "has_data" in data:
+            obj.has_data = bool(data.get("has_data"))
+        return obj
+
     def _compute_turn_type(self) -> TurnType:
         """Вычислить тип хода на основе intent и funnel_delta.
 
@@ -257,6 +328,24 @@ class Episode:
             "data": self.data,
         }
 
+    @classmethod
+    def from_dict(cls, data: Dict) -> Optional["Episode"]:
+        """Deserialize episode from dict."""
+        if not data:
+            return None
+        try:
+            ep_type = EpisodeType(data.get("type"))
+        except ValueError:
+            return None
+        return cls(
+            episode_type=ep_type,
+            turn_number=int(data.get("turn", 0)),
+            intent=data.get("intent", "unknown"),
+            action_before=data.get("action_before"),
+            data=data.get("data", {}) or {},
+            timestamp=float(data.get("timestamp", time.time())),
+        )
+
 
 @dataclass
 class ClientProfile:
@@ -335,6 +424,23 @@ class ClientProfile:
             "interested_features": self.interested_features,
             "objection_types": self.objection_types,
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "ClientProfile":
+        """Deserialize client profile from dict."""
+        if not data:
+            return cls()
+        return cls(
+            company_name=data.get("company_name"),
+            company_size=data.get("company_size"),
+            industry=data.get("industry"),
+            contact_name=data.get("contact_name"),
+            contact_phone=data.get("contact_phone"),
+            contact_email=data.get("contact_email"),
+            pain_points=list(data.get("pain_points", []) or []),
+            interested_features=list(data.get("interested_features", []) or []),
+            objection_types=list(data.get("objection_types", []) or []),
+        )
 
 
 class EpisodicMemory:
@@ -664,6 +770,51 @@ class EpisodicMemory:
         """Количество записанных эпизодов."""
         return len(self.episodes)
 
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize episodic memory state."""
+        return {
+            "episodes": [ep.to_dict() for ep in self.episodes],
+            "client_profile": self.client_profile.to_dict(),
+            "total_turns": self.total_turns,
+            "all_objections": dict(self.all_objections),
+            "all_questions": dict(self.all_questions),
+            "successful_actions": dict(self.successful_actions),
+            "failed_actions": dict(self.failed_actions),
+            "_first_objection_recorded": self._first_objection_recorded,
+            "_breakthrough_recorded": self._breakthrough_recorded,
+            "_last_momentum_direction": self._last_momentum_direction,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EpisodicMemory":
+        """Deserialize episodic memory from dict."""
+        mem = cls()
+        if not data:
+            return mem
+
+        episodes_raw = data.get("episodes", []) or []
+        episodes: List[Episode] = []
+        for item in episodes_raw:
+            ep = Episode.from_dict(item)
+            if ep:
+                episodes.append(ep)
+        mem.episodes = episodes
+        mem.client_profile = ClientProfile.from_dict(data.get("client_profile", {}) or {})
+        mem.total_turns = int(data.get("total_turns", 0))
+        mem.all_objections = dict(data.get("all_objections", {}) or {})
+        mem.all_questions = dict(data.get("all_questions", {}) or {})
+        mem.successful_actions = dict(data.get("successful_actions", {}) or {})
+        mem.failed_actions = dict(data.get("failed_actions", {}) or {})
+
+        mem._first_objection_recorded = bool(data.get("_first_objection_recorded", False))
+        mem._breakthrough_recorded = bool(data.get("_breakthrough_recorded", False))
+        mem._last_momentum_direction = data.get("_last_momentum_direction")
+        return mem
+
 
 class ContextWindow:
     """
@@ -828,6 +979,88 @@ class ContextWindow:
         self.turns.clear()
         self.episodic_memory.reset()
         self._total_turn_count = 0
+
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize ContextWindow for snapshotting."""
+        # Integration spec expects a list of turns
+        turns_simple = [
+            {
+                "user_message": t.user_message,
+                "bot_response": t.bot_response,
+                "intent": t.intent,
+                "confidence": t.confidence,
+                "action": t.action,
+                "state": t.state,
+                "next_state": t.next_state,
+                "extracted_data": t.extracted_data,
+            }
+            for t in self.turns
+        ]
+
+        # Full internal structure for exact restore
+        full = {
+            "turns": [t.to_dict() for t in self.turns],
+            "episodic_memory": self.episodic_memory.to_dict(),
+            "max_size": self.max_size,
+            "total_turn_count": self._total_turn_count,
+        }
+
+        return {
+            "context_window": turns_simple,
+            "_context_window_full": full,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Any,
+        config: Optional["LoadedConfig"] = None
+    ) -> "ContextWindow":
+        """Restore ContextWindow from serialized snapshot."""
+        cw = cls(max_size=5, config=config)
+        if not data:
+            return cw
+
+        if isinstance(data, dict) and data.get("_context_window_full"):
+            full = data.get("_context_window_full") or {}
+            turns_full = full.get("turns", []) or []
+            cw.turns = [
+                TurnContext.from_dict(
+                    item,
+                    state_order=cw._state_order,
+                    progress_intents=cw._progress_intents,
+                )
+                for item in turns_full
+            ]
+            if "max_size" in full:
+                cw.max_size = int(full.get("max_size", cw.max_size))
+            if "total_turn_count" in full:
+                cw._total_turn_count = int(full.get("total_turn_count", len(cw.turns)))
+            else:
+                cw._total_turn_count = len(cw.turns)
+
+            episodic_data = full.get("episodic_memory")
+            if episodic_data is not None:
+                cw.episodic_memory = EpisodicMemory.from_dict(episodic_data)
+            return cw
+
+        # Fallback: accept list of turns or dict with context_window list
+        turns_list = data.get("context_window") if isinstance(data, dict) else data
+        turns_list = turns_list or []
+        cw.turns = [
+            TurnContext.from_dict(
+                item,
+                state_order=cw._state_order,
+                progress_intents=cw._progress_intents,
+            )
+            for item in turns_list
+        ]
+        cw._total_turn_count = len(cw.turns)
+        return cw
 
     # =========================================================================
     # Получение истории

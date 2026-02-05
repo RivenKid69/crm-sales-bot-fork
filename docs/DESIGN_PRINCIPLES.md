@@ -57,7 +57,7 @@
 |------|---------|----------------|
 | **Zero-code flow creation** | Новый flow без Python | [Done] YAML flows |
 | **Domain independence** | Нет hardcode бизнес-логики | [Partial] (composed_categories) |
-| **Blackboard decision-making** | Все решения через proposals | [Done] 10 Knowledge Sources |
+| **Blackboard decision-making** | Все решения через proposals | [Done] 15 Knowledge Sources |
 | **Plugin extensibility** | Добавление функций через плагины | [Planned] |
 | **Multi-tenant ready** | Изоляция данных между клиентами | [Planned] |
 | **LLM agnostic** | Поддержка любой LLM | [Partial] |
@@ -646,7 +646,7 @@ Intent → Exact Match
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │                    Knowledge Sources (10 registered)                   │  │
+│  │                    Knowledge Sources (15 registered)                   │  │
 │  │                                                                       │  │
 │  │  [5]  GoBackGuard    [10] PriceHandler    [15] IntentRules            │  │
 │  │  [20] DataCollector  [25] ObjectionGuard  [30] TransitionResolver     │  │
@@ -1763,6 +1763,21 @@ class TenantManager:
             tenant=tenant,
         )
 
+### 8.2 Session Isolation & Snapshots
+
+Для продакшена критично исключить смешивание данных между клиентами и сессиями:
+
+- Каждый snapshot содержит `client_id`, `flow_name`, `config_name`.
+- При восстановлении снапшот **проверяется на соответствие client_id**.
+- Снапшоты сохраняются локально и выгружаются пачкой после 23:00.
+- История компактизируется только по TTL (тишина ≥ 1 час).
+- Межпроцессные lock'и исключают параллельную обработку одной сессии.
+
+Эта логика реализована через:
+- `SessionManager` — кеш сессий + восстановление + TTL cleanup
+- `LocalSnapshotBuffer` — общий буфер снапшотов
+- `SessionLockManager` — cross‑process lock по session_id
+
         state_machine = StateMachineRegistry.get(
             config.get("state_machine.type", "dag"),
             flow_config=config.flow,
@@ -2323,7 +2338,7 @@ class TestHybridClassifier(ClassifierContractTest):
   - [x] DialogueBlackboard (proposal collection)
   - [x] ConflictResolver (priority-based resolution with combinable flag)
   - [x] Orchestrator (7-step pipeline)
-  - [x] 10 Knowledge Sources (SourceRegistry + priority_order)
+  - [x] 15 Knowledge Sources (SourceRegistry + priority_order)
   - [x] ResolvedDecision → sm_result compatibility layer
 - [x] **Операционные принципы** — кодифицированы из реального опыта
   - [x] SSOT через YAML (composed_categories, intent_taxonomy)
@@ -2381,7 +2396,7 @@ class TestHybridClassifier(ClassifierContractTest):
 - [x] Выделить интерфейсы из существующих классов (IRefinementLayer Protocol)
 - [x] Создать Registry для каждого типа компонента (RefinementLayerRegistry, SourceRegistry)
 - [x] Перенести конфигурацию из Python в YAML (refinement_pipeline, composed_categories, intent_taxonomy)
-- [x] Реализовать Blackboard Architecture (10 Knowledge Sources, ConflictResolver, Orchestrator)
+- [x] Реализовать Blackboard Architecture (15 Knowledge Sources, ConflictResolver, Orchestrator)
 - [x] Кодифицировать операционные принципы (SSOT, Pipeline Authority, OCP, Defense-in-Depth, Single Pipeline, Composed Categories)
 - [ ] Добавить DI через конструкторы
 - [ ] Создать Composition Root (factory)

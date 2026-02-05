@@ -44,6 +44,7 @@ from src.response_variations import variations
 
 # Context Window for enhanced classification
 from src.context_window import ContextWindow
+from src.history_compactor import HistoryCompactor
 
 # Robust Classification: ConfidenceRouter for graceful degradation
 from src.classifier.confidence_router import ConfidenceRouter
@@ -104,7 +105,8 @@ class SalesBot:
         conversation_id: Optional[str] = None,
         enable_tracing: bool = False,
         flow_name: Optional[str] = None,
-        persona: Optional[str] = None
+        persona: Optional[str] = None,
+        client_id: Optional[str] = None,
     ):
         """
         Инициализация бота со всеми компонентами.
@@ -119,6 +121,7 @@ class SalesBot:
         # Генерируем ID диалога для трейсинга
         self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
         logger.set_conversation(self.conversation_id)
+        self.client_id = client_id
 
         # Phase DAG: Load modular flow configuration (REQUIRED since v2.0)
         # Legacy Python-based config is deprecated and no longer used
@@ -159,6 +162,8 @@ class SalesBot:
         )
         self.generator = ResponseGenerator(llm, flow=self._flow)
         self.history: List[Dict] = []
+        self.history_compact: Optional[Dict[str, Any]] = None
+        self.history_compact_meta: Optional[Dict[str, Any]] = None
 
         # FIX: Store persona in collected_data for ObjectionGuard persona-specific limits
         # This fixes the bug where 99% of simulated dialogues ended in soft_close
@@ -1662,6 +1667,139 @@ class SalesBot:
     def get_last_decision_trace(self) -> Optional[DecisionTrace]:
         """Получить последний трейс решений."""
         return self._decision_traces[-1] if self._decision_traces else None
+
+    # =========================================================================
+    # Snapshot API
+    # =========================================================================
+
+    def to_snapshot(
+        self,
+        compact_history: bool = False,
+        history_tail_size: int = 4
+    ) -> Dict[str, Any]:
+        """Serialize full bot state into snapshot."""
+        history_compact = None
+        history_compact_meta = None
+
+        if compact_history:
+            history_compact, history_compact_meta = HistoryCompactor.compact(
+                history_full=self.history,
+                history_tail_size=history_tail_size,
+                previous_compact=getattr(self, "history_compact", None),
+                previous_meta=getattr(self, "history_compact_meta", None),
+                llm=getattr(self.generator, "llm", None),
+                fallback_context={
+                    "collected_data": self.state_machine.collected_data,
+                    "metrics": self.metrics.to_dict() if hasattr(self.metrics, "to_dict") else {},
+                    "context_window": self.context_window.to_dict() if hasattr(self.context_window, "to_dict") else {},
+                },
+            )
+            # Keep for incremental compaction
+            self.history_compact = history_compact
+            self.history_compact_meta = history_compact_meta
+
+        context_payload = (
+            self.context_window.to_dict()
+            if hasattr(self.context_window, "to_dict")
+            else {"context_window": [], "_context_window_full": {}}
+        )
+
+        return {
+            "version": "1.0",
+            "conversation_id": self.conversation_id,
+            "client_id": self.client_id,
+            "timestamp": time.time(),
+
+            "flow_name": self._flow.name if self._flow else None,
+            "config_name": getattr(self._config, "name", None),
+
+            "state_machine": self.state_machine.to_dict(),
+            "guard": self.guard.to_dict(),
+            "fallback": self.fallback.to_dict(),
+            "objection_handler": self.objection_handler.to_dict(),
+            "lead_scorer": self.lead_scorer.to_dict(),
+            "metrics": self.metrics.to_dict(),
+
+            "context_window": context_payload.get("context_window", []),
+            "_context_window_full": context_payload.get("_context_window_full"),
+
+            "history": [],
+            "history_compact": history_compact,
+            "history_compact_meta": history_compact_meta,
+            "last_action": self.last_action,
+            "last_intent": self.last_intent,
+            "last_bot_message": self.last_bot_message,
+        }
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        snapshot: Dict[str, Any],
+        llm=None,
+        history_tail: Optional[List[Dict[str, Any]]] = None
+    ) -> "SalesBot":
+        """Restore bot from snapshot."""
+        flow_name = snapshot.get("flow_name") or settings.flow.active
+        config_name = snapshot.get("config_name")
+
+        bot = cls(llm=llm, flow_name=flow_name)
+
+        # Restore config if loader supports named configs
+        if config_name and hasattr(bot._config_loader, "load_named"):
+            bot._config = bot._config_loader.load_named(config_name)
+
+        bot.conversation_id = snapshot.get("conversation_id", bot.conversation_id)
+        bot.client_id = snapshot.get("client_id")
+        logger.set_conversation(bot.conversation_id)
+
+        bot.state_machine = StateMachine.from_dict(
+            snapshot.get("state_machine", {}),
+            config=bot._config,
+            flow=bot._flow,
+        )
+        bot.guard = ConversationGuard.from_dict(
+            snapshot.get("guard", {}),
+            config=bot.guard.config,
+        )
+        bot.fallback = FallbackHandler.from_dict(
+            snapshot.get("fallback", {}),
+            flow=bot._flow,
+            config=bot._config,
+            guard_config=bot.guard.config,
+            product_overviews=getattr(bot.generator, "_product_overview", None),
+        )
+        bot.objection_handler = ObjectionHandler.from_dict(snapshot.get("objection_handler", {}))
+        bot.lead_scorer = LeadScorer.from_dict(snapshot.get("lead_scorer", {}))
+        bot.metrics = ConversationMetrics.from_dict(snapshot.get("metrics", {}))
+        bot.metrics.conversation_id = bot.conversation_id
+        bot.context_window = ContextWindow.from_dict(
+            {
+                "context_window": snapshot.get("context_window", []),
+                "_context_window_full": snapshot.get("_context_window_full"),
+            },
+            config=bot._config,
+        )
+
+        bot.history = history_tail or []
+        bot.history_compact = snapshot.get("history_compact")
+        bot.history_compact_meta = snapshot.get("history_compact_meta")
+        bot.last_action = snapshot.get("last_action")
+        bot.last_intent = snapshot.get("last_intent")
+        bot.last_bot_message = snapshot.get("last_bot_message")
+
+        # Rebuild orchestrator to use restored components
+        bot._orchestrator = create_orchestrator(
+            state_machine=bot.state_machine,
+            flow_config=bot._flow,
+            persona_limits=bot._load_persona_limits(),
+            enable_metrics=flags.metrics_tracking,
+            enable_debug_logging=False,
+            guard=bot.guard,
+            fallback_handler=bot.fallback,
+            llm=llm,
+        )
+
+        return bot
 
     @property
     def turn(self) -> int:

@@ -48,6 +48,7 @@ class LoadedConfig:
 
     Contains all loaded and validated configuration data from YAML files.
     """
+    name: str = "default"
     # States configuration
     states: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     states_meta: Dict[str, Any] = field(default_factory=dict)
@@ -795,6 +796,7 @@ class ConfigLoader:
 
         # Create result
         config = LoadedConfig(
+            name="default",
             states=states,
             states_meta=states_meta,
             default_action=default_action,
@@ -809,6 +811,30 @@ class ConfigLoader:
         if validate:
             self._validate(config)
 
+        return config
+
+    def load_named(self, name: str, validate: bool = True) -> LoadedConfig:
+        """
+        Load a named configuration.
+
+        If a tenant directory exists at config_dir/tenants/{name}, it is used.
+        Otherwise falls back to default config.
+        """
+        if not name or name == "default":
+            config = self.load(validate=validate)
+            config.name = "default"
+            return config
+
+        tenant_dir = self.config_dir / "tenants" / name
+        if tenant_dir.exists():
+            loader = ConfigLoader(config_dir=tenant_dir)
+            config = loader.load(validate=validate)
+            config.name = name
+            return config
+
+        # Fallback to default if named config not found
+        config = self.load(validate=validate)
+        config.name = name
         return config
 
     def _load_yaml(

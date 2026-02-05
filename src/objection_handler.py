@@ -531,6 +531,37 @@ class ObjectionHandler:
         attempts = self.objection_attempts.get(objection_type, 0)
         return attempts < strategy.max_attempts
 
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict[str, int]:
+        """Serialize objection attempts."""
+        return {
+            "objection_attempts": {
+                obj_type.value: count
+                for obj_type, count in self.objection_attempts.items()
+            }
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "ObjectionHandler":
+        """Restore ObjectionHandler from serialized snapshot."""
+        handler = cls()
+        if not data:
+            return handler
+
+        attempts = data.get("objection_attempts", {}) or {}
+        restored: Dict[ObjectionType, int] = {}
+        for key, count in attempts.items():
+            try:
+                obj_type = key if isinstance(key, ObjectionType) else ObjectionType(key)
+            except ValueError:
+                continue
+            restored[obj_type] = int(count)
+        handler.objection_attempts = restored
+        return handler
+
 
 # =============================================================================
 # CLI для тестирования

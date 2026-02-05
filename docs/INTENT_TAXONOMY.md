@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Status:** Production
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-02-05
 
 ## Executive Summary
 
@@ -147,7 +147,7 @@ request_brevity → continue_current_goal → SPURIOUS PHASE TRANSITION
 | `_universal_base` mixin | `src/yaml_config/flows/_base/mixins.yaml` | Guaranteed coverage for critical intents |
 | `IntentCoverageValidator` | `src/validation/intent_coverage.py` | Static validation (CI) |
 | `FallbackMetrics` | `src/metrics.py` | Runtime monitoring |
-| `intent_taxonomy` | `src/yaml_config/constants.yaml` | Taxonomy configuration (150+ intents) |
+| `intent_taxonomy` | `src/yaml_config/constants.yaml` | Taxonomy configuration (271 intents) |
 
 ---
 
@@ -975,7 +975,7 @@ class FallbackMetrics:
 ## Implementation Timeline
 
 ### Week 1: Foundation
-- [x] Add `intent_taxonomy` to constants.yaml (150+ intents)
+- [x] Add `intent_taxonomy` to constants.yaml (271 intents)
 - [x] Create `IntentTaxonomyRegistry`
 - [x] Update `RuleResolver` with taxonomy fallback
 
@@ -1038,7 +1038,7 @@ transitions:
 
 ### v1.0 (2026-01-28)
 - Initial implementation
-- 150+ intents with taxonomy entries
+- 271 intents with taxonomy entries
 - 5-level fallback chain
 - _universal_base mixin with guaranteed coverage
 - IntentCoverageValidator for static validation

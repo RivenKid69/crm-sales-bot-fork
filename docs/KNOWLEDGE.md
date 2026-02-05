@@ -7,6 +7,7 @@
 **Статистика:**
 - **1969 секций** в **18 YAML файлах** (17 категорий + _meta.yaml)
 - **17 категорий** знаний
+- **Последнее обновление**: 2026-01-07 (`_meta.yaml`)
 - Компания: Wipon (Казахстанская IT-компания с 2014 года, 50,000+ клиентов)
 
 ## Структура модуля
@@ -234,7 +235,7 @@ reranker:
 ### Использование WIPON_KNOWLEDGE
 
 ```python
-from knowledge import WIPON_KNOWLEDGE
+from src.knowledge import WIPON_KNOWLEDGE
 
 # Информация о компании
 print(WIPON_KNOWLEDGE.company_name)  # "Wipon"
@@ -255,7 +256,7 @@ print(tariffs.facts)
 ### Использование CascadeRetriever
 
 ```python
-from knowledge import get_retriever
+from src.knowledge import get_retriever
 
 retriever = get_retriever()
 
@@ -278,10 +279,10 @@ print(f"Время: {stats['total_time_ms']:.2f}ms")
 ### Использование CategoryRouter
 
 ```python
-from knowledge.category_router import CategoryRouter
-from llm import VLLMClient
+from src.knowledge.category_router import CategoryRouter
+from src.llm import OllamaClient
 
-router = CategoryRouter(VLLMClient(), top_k=3)
+router = CategoryRouter(OllamaClient(), top_k=3)
 
 # Классификация запроса (structured output через Outlines)
 categories = router.route("как подключить 1С?")
@@ -291,7 +292,7 @@ print(categories)  # ['integrations', 'features', 'support']
 ### Использование Reranker
 
 ```python
-from knowledge.reranker import Reranker
+from src.knowledge.reranker import Reranker
 
 reranker = Reranker()
 

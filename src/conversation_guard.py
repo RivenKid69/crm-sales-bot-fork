@@ -407,6 +407,70 @@ class ConversationGuard:
             "collected_data_count": self._state.collected_data_count,
         }
 
+    # =========================================================================
+    # Snapshot Serialization
+    # =========================================================================
+
+    def to_dict(self) -> Dict:
+        """Serialize ConversationGuard state."""
+        elapsed_seconds = None
+        if self._state.start_time is not None:
+            elapsed_seconds = max(0.0, time.time() - self._state.start_time)
+
+        return {
+            "turn_count": self._state.turn_count,
+            "state_history": list(self._state.state_history),
+            "message_history": list(self._state.message_history),
+            "phase_attempts": dict(self._state.phase_attempts),
+            "start_time": self._state.start_time,
+            "elapsed_seconds": elapsed_seconds,
+            "last_progress_turn": self._state.last_progress_turn,
+            "collected_data_count": self._state.collected_data_count,
+            "frustration_level": self._state.frustration_level,
+            "intent_history": list(self._state.intent_history),
+            "last_intent": self._state.last_intent,
+            "pre_intervention_triggered": self._state.pre_intervention_triggered,
+            "consecutive_tier_2_count": self._state.consecutive_tier_2_count,
+            "consecutive_tier_2_state": self._state.consecutive_tier_2_state,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict,
+        config: Optional[GuardConfig] = None
+    ) -> "ConversationGuard":
+        """Restore ConversationGuard from serialized snapshot."""
+        guard = cls(config=config or GuardConfig.default())
+        if not data:
+            return guard
+
+        state = GuardState()
+        state.turn_count = int(data.get("turn_count", 0))
+        state.state_history = list(data.get("state_history", []))
+        state.message_history = list(data.get("message_history", []))
+
+        phase_attempts = data.get("phase_attempts", {}) or {}
+        state.phase_attempts = Counter(phase_attempts)
+
+        elapsed_seconds = data.get("elapsed_seconds")
+        if elapsed_seconds is not None:
+            state.start_time = time.time() - float(elapsed_seconds)
+        else:
+            state.start_time = data.get("start_time")
+
+        state.last_progress_turn = int(data.get("last_progress_turn", 0))
+        state.collected_data_count = int(data.get("collected_data_count", 0))
+        state.frustration_level = int(data.get("frustration_level", 0))
+        state.intent_history = list(data.get("intent_history", []))
+        state.last_intent = data.get("last_intent", "") or ""
+        state.pre_intervention_triggered = bool(data.get("pre_intervention_triggered", False))
+        state.consecutive_tier_2_count = int(data.get("consecutive_tier_2_count", 0))
+        state.consecutive_tier_2_state = data.get("consecutive_tier_2_state")
+
+        guard._state = state
+        return guard
+
 
 # =============================================================================
 # CLI для демонстрации
