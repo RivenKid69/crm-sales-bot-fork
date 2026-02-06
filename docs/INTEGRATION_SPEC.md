@@ -87,6 +87,8 @@
 - `load_history_tail(session_id, n) -> List[Dict]` (последние `n` сообщений)
 
 **Важно:** `save_snapshot` вызывается не сразу, а при вечерней выгрузке пачки.
+Для избежания коллизий между tenant-ами `SessionManager` использует tenant-aware
+ключ хранения: `"{client_id}::{session_id}"` (если `client_id` задан).
 
 ### 2.4 Маршрутизация и конкуррентность
 
@@ -212,6 +214,7 @@ result = bot.process(user_message="текст сообщения")
    - snapshot кладётся в локальный буфер (`LocalSnapshotBuffer`)
 3. После 23:00 **первый запрос** запускает batch‑flush:
    - все локальные snapshot выгружаются через `save_snapshot`
+     с tenant-aware ключом `"{client_id}::{session_id}"` (для tenant-сессий)
    - локальный буфер очищается
 
 **Правило истории:** последние 4 сообщения не кладутся в snapshot  

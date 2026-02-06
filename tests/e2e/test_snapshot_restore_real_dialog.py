@@ -60,7 +60,7 @@ def test_snapshot_restore_real_dialog(tmp_path):
         load_history_tail=load_history_tail,
         snapshot_buffer=buffer,
     )
-    restored = manager2.get_or_create(session_id, llm=llm)
+    restored = manager2.get_or_create(session_id, llm=llm, client_id=client_id)
 
     # Snapshot should have been consumed
     assert buffer.count() == 0

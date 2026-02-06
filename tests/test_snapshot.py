@@ -123,18 +123,18 @@ class TestSessionManager:
     def test_cache_hit(self, mock_llm, tmp_path):
         buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
         manager = SessionManager(snapshot_buffer=buffer)
-        bot1 = manager.get_or_create("sess-1", llm=mock_llm)
-        bot2 = manager.get_or_create("sess-1", llm=mock_llm)
+        bot1 = manager.get_or_create("sess-1", llm=mock_llm, client_id="client-1")
+        bot2 = manager.get_or_create("sess-1", llm=mock_llm, client_id="client-1")
 
         assert bot1 is bot2
 
     def test_restore_from_snapshot_with_tail(self, mock_llm, tmp_path):
-        bot = SalesBot(llm=mock_llm)
+        bot = SalesBot(llm=mock_llm, client_id="client-2")
         bot.conversation_id = "sess-2"
         bot.state_machine.state = "presentation"
         snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
 
-        storage = {"sess-2": snapshot}
+        storage = {"client-2::sess-2": snapshot}
         tail = [{"user": "uX", "bot": "bX"}]
 
         buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
@@ -144,7 +144,7 @@ class TestSessionManager:
             snapshot_buffer=buffer,
         )
 
-        restored = manager.get_or_create("sess-2", llm=mock_llm)
+        restored = manager.get_or_create("sess-2", llm=mock_llm, client_id="client-2")
         assert restored.state_machine.state == "presentation"
         assert restored.history == tail
 
@@ -174,15 +174,30 @@ class TestSessionManager:
     def test_restore_from_local_buffer_consumes_snapshot(self, mock_llm, tmp_path):
         buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
 
-        bot = SalesBot(llm=mock_llm)
+        bot = SalesBot(llm=mock_llm, client_id="client-3")
         bot.conversation_id = "s1"
         snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
-        buffer.enqueue("s1", snapshot)
+        buffer.enqueue("s1", snapshot, client_id="client-3")
 
         manager = SessionManager(
             snapshot_buffer=buffer,
             load_history_tail=lambda sid, n: [],
         )
 
-        _ = manager.get_or_create("s1", llm=mock_llm)
-        assert buffer.get("s1") is None
+        _ = manager.get_or_create("s1", llm=mock_llm, client_id="client-3")
+        assert buffer.get("s1", client_id="client-3") is None
+
+    def test_named_config_applies_on_new_session_creation(self, mock_llm, tmp_path):
+        buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
+        manager = SessionManager(snapshot_buffer=buffer)
+
+        bot = manager.get_or_create(
+            "sess-config",
+            llm=mock_llm,
+            client_id="client-4",
+            flow_name="spin_selling",
+            config_name="tenant_alpha",
+        )
+
+        assert bot._config.name == "tenant_alpha"
+        assert bot.state_machine._config.name == "tenant_alpha"

@@ -8,6 +8,7 @@ from src.snapshot_buffer import LocalSnapshotBuffer
 
 def test_restore_after_week_with_history_tail(mock_e2e_llm, tmp_path):
     session_id = "sess-week-later"
+    client_id = "client-week-later"
     external_snapshots = {}
     external_history = {session_id: []}
 
@@ -34,7 +35,7 @@ def test_restore_after_week_with_history_tail(mock_e2e_llm, tmp_path):
         time_provider=lambda: day1_time,
     )
 
-    bot = manager_day1.get_or_create(session_id, llm=mock_e2e_llm)
+    bot = manager_day1.get_or_create(session_id, llm=mock_e2e_llm, client_id=client_id)
     for msg in [
         "Привет",
         "У нас небольшой магазин",
@@ -63,8 +64,8 @@ def test_restore_after_week_with_history_tail(mock_e2e_llm, tmp_path):
         time_provider=lambda: week_later_time,
     )
 
-    restored = manager_week.get_or_create(session_id, llm=mock_e2e_llm)
-    assert session_id in external_snapshots
+    restored = manager_week.get_or_create(session_id, llm=mock_e2e_llm, client_id=client_id)
+    assert f"{client_id}::{session_id}" in external_snapshots
     assert buffer.count() == 0
     assert restored.history == external_history[session_id][-4:]
 
