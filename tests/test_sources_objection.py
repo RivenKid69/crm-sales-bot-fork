@@ -336,14 +336,14 @@ class TestObjectionGuardSourcePersonaLimits:
         """Aggressive persona has higher limits (consecutive=5, total=8)."""
         bb = create_blackboard(
             intent="objection_price",
-            objection_consecutive=4,  # Would exceed default (3) but not aggressive (5)
-            objection_total=7,        # Would exceed default (5) but not aggressive (8)
+            objection_consecutive=3,  # After recording becomes 4, still < 5 (aggressive)
+            objection_total=6,        # After recording becomes 7, still < 8 (aggressive)
             collected_data={"persona": "aggressive"}
         )
 
         source.contribute(bb)
 
-        # Should NOT propose - within aggressive limits
+        # Should NOT propose - within aggressive limits (4 < 5, 7 < 8)
         assert len(bb.get_action_proposals()) == 0
         assert len(bb.get_transition_proposals()) == 0
 

@@ -914,8 +914,8 @@ class TestEdgeCasesAndRegression:
 
         sm = E2EStateMachine(state="spin_problem")
         sm._collected_data["persona"] = "aggressive"
-        sm._intent_tracker._objection_consecutive = 4
-        sm._intent_tracker._objection_total = 4
+        sm._intent_tracker._objection_consecutive = 3
+        sm._intent_tracker._objection_total = 3
         fc = E2EFlowConfig()
 
         orchestrator = DialogueOrchestrator(
@@ -931,7 +931,8 @@ class TestEdgeCasesAndRegression:
             extracted_data={},
         )
 
-        # Aggressive persona should NOT hit limit yet at 4
+        # Aggressive persona should NOT hit limit yet at 4 (after recording the 4th)
+        # Global limit would have triggered at 3, but aggressive allows up to 5
         assert not (decision.action == "objection_limit_reached" and decision.next_state == "soft_close")
 
     def test_source_error_isolation(self):

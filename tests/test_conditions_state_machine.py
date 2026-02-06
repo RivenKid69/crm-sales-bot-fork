@@ -1811,11 +1811,8 @@ class TestConfigurableObjectionLimits:
         assert ctx.max_total_objections == 8
 
     def test_limits_fallback_when_not_in_state_machine(self):
-        """Test fallback to YAML defaults when state_machine has no limits."""
-        from src.yaml_config.constants import (
-            MAX_CONSECUTIVE_OBJECTIONS,
-            MAX_TOTAL_OBJECTIONS,
-        )
+        """Test fallback to persona defaults when state_machine has no limits."""
+        from src.yaml_config.constants import get_persona_objection_limits
 
         class MockStateMachine:
             state = "greeting"
@@ -1829,9 +1826,10 @@ class TestConfigurableObjectionLimits:
         sm = MockStateMachine()
         ctx = EvaluatorContext.from_state_machine(sm, "test", None)
 
-        # Should fall back to YAML defaults
-        assert ctx.max_consecutive_objections == MAX_CONSECUTIVE_OBJECTIONS
-        assert ctx.max_total_objections == MAX_TOTAL_OBJECTIONS
+        # Should auto-resolve to "default" persona limits (4/6)
+        default_limits = get_persona_objection_limits("default")
+        assert ctx.max_consecutive_objections == default_limits["consecutive"]
+        assert ctx.max_total_objections == default_limits["total"]
 
     def test_edge_case_zero_limits(self):
         """Test edge case with zero limits (immediate trigger)."""

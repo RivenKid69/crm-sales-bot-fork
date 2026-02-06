@@ -971,12 +971,13 @@ class RuleResolver:
                 )
 
 
-def create_resolver(registry: ConditionRegistry = None) -> RuleResolver:
+def create_resolver(registry: ConditionRegistry = None, taxonomy_registry=None) -> RuleResolver:
     """
     Factory function to create RuleResolver.
 
     Args:
         registry: Optional registry (defaults to sm_registry)
+        taxonomy_registry: Optional IntentTaxonomyRegistry (auto-created if None)
 
     Returns:
         Configured RuleResolver
@@ -985,7 +986,15 @@ def create_resolver(registry: ConditionRegistry = None) -> RuleResolver:
         from src.conditions.state_machine.registry import sm_registry
         registry = sm_registry
 
-    return RuleResolver(registry)
+    if taxonomy_registry is None:
+        try:
+            from src.yaml_config.constants import _constants
+            from src.rules.intent_taxonomy import IntentTaxonomyRegistry
+            taxonomy_registry = IntentTaxonomyRegistry(_constants)
+        except Exception:
+            taxonomy_registry = None
+
+    return RuleResolver(registry, taxonomy_registry=taxonomy_registry)
 
 
 # Export all public components

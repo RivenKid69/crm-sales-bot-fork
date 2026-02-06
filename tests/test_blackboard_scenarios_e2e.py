@@ -611,18 +611,18 @@ class TestPersonaScenarios:
         )
 
         sm = orchestrator._state_machine
-        sm._intent_tracker._objection_consecutive = 3
-        sm._intent_tracker._objection_total = 3
+        sm._intent_tracker._objection_consecutive = 2
+        sm._intent_tracker._objection_total = 2
 
-        # 4th objection - should still be OK for skeptic (limit is 4)
+        # 3rd objection - should still be OK for skeptic (limit is 4, count becomes 3)
         decision = orchestrator.process_turn(intent="objection_price", extracted_data={})
 
-        # Should NOT trigger limit yet (skeptic has consecutive=4)
+        # Should NOT trigger limit yet (skeptic has consecutive=4, current=3)
         assert not (decision.action == "objection_limit_reached" and decision.next_state == "soft_close")
 
-        # 5th will trigger (skeptic limit is 4 consecutive)
-        sm._intent_tracker._objection_consecutive = 4
-        sm._intent_tracker._objection_total = 4
+        # 4th objection will trigger (skeptic limit is 4 consecutive, count becomes 4 >= 4)
+        sm._intent_tracker._objection_consecutive = 3
+        sm._intent_tracker._objection_total = 3
 
         decision = orchestrator.process_turn(intent="objection_price", extracted_data={})
 
