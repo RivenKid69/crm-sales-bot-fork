@@ -60,6 +60,8 @@
 **Внешняя система (аналог Wazzup):**
 - принимает входящие сообщения
 - определяет `client_id`, `session_id` (chat/conversation), `flow_name`, `config_name`
+- подгружает tenant-конфиг из внешней БД по `client_id` и маппит его в `config_name`
+- валидирует, что `config_name` реально существует (иначе ядро загрузит default-конфиг)
 - хранит историю сообщений и snapshots
 - обеспечивает дедупликацию входящих webhook/message событий (по `external_message_id`)
 - обеспечивает последовательную обработку событий внутри одной `session_id` (без reorder)
@@ -77,6 +79,10 @@
 - `client_id` — идентификатор клиента/тенанта (обязателен для изоляции)
 - `session_id` — идентификатор диалога (conversation/chat)
 
+Рекомендуется делать `session_id` глобально уникальным между tenant-ами
+(например, `"{client_id}::{external_chat_id}"`), чтобы исключить коллизии
+при загрузке хвоста истории.
+
 `client_id` **всегда пишется внутрь snapshot**.  
 При восстановлении, если `snapshot.client_id != expected client_id`, snapshot игнорируется.
 
@@ -91,6 +97,8 @@
 Требования к данным callback-ов:
 - `load_history_tail` должен возвращать список ходов в формате `{"user": "...", "bot": "..."}` (хронологически, от старых к новым)
 - `load_snapshot` должен принимать tenant-aware ключ (`"{client_id}::{session_id}"`), при этом `SessionManager` также может пробовать legacy ключ `session_id` для обратной совместимости
+- `load_history_tail` получает только `session_id`, поэтому lookup обязан быть tenant-safe:
+  либо через глобально уникальный `session_id`, либо через внешний tenant-aware маппинг
 
 **Важно:** `save_snapshot` вызывается не сразу, а при вечерней выгрузке пачки.
 Для избежания коллизий между tenant-ами `SessionManager` использует tenant-aware
@@ -103,6 +111,8 @@
 
 В ядре есть `SessionLockManager` на файловых lock‑ах (single‑host).  
 Для multi‑host следует заменить его на Redis/PG advisory lock.
+Lock должен покрывать весь turn (`get_or_create()` + `process()` + запись результата
+во внешнее хранилище), а не только получение экземпляра бота.
 
 ### 2.5 Хостинг и инфраструктура (ориентир)
 
@@ -149,6 +159,21 @@ bot = manager.get_or_create(
 result = bot.process(user_message="текст сообщения")
 ```
 
+Рекомендуемый атомарный паттерн обработки:
+
+```python
+with distributed_lock(f"{client_id}::{session_id}"):
+    bot = manager.get_or_create(
+        session_id=session_id,
+        client_id=client_id,
+        flow_name=flow_name,
+        config_name=config_name,
+        llm=ollama_llm,
+    )
+    result = bot.process(user_message=text)
+    persist_turn(session_id=session_id, client_id=client_id, result=result)
+```
+
 **Важно:** внешний воркер/cron должен вызывать `manager.cleanup_expired()` каждые 5–10 минут,
 чтобы сработал TTL‑снапшот и компакция истории.  
 При этом batch‑flush (вызов `save_snapshot`) запускается внутри `get_or_create()` после `flush_hour`,
@@ -171,6 +196,10 @@ result = bot.process(user_message="текст сообщения")
 
 Восстановление диалога выполняет `SessionManager` через callbacks:
 `load_snapshot()` и `load_history_tail()` — вручную собирать состояние не нужно.
+
+Важно для `config_name`: если named-конфиг не найден, `ConfigLoader.load_named()`
+молча использует default-конфиг. Проверку существования нужного конфига нужно
+делать во внешней интеграции до вызова `get_or_create()`.
 
 ### 3.3 Выходные данные (что бот возвращает)
 
@@ -232,6 +261,12 @@ result = bot.process(user_message="текст сообщения")
 
 **Операционный нюанс:** batch‑flush запускается на входе `get_or_create()`.  
 Если после 23:00 нет новых запросов, выгрузка отложится до первого следующего запроса.
+`flush_hour` сравнивается с локальным временем хоста (`time.localtime`), поэтому
+таймзону нужно явно зафиксировать на всех инстансах.
+
+Если по ТЗ требуется выгрузка snapshot **только по внешней команде**, это надо
+делать в интеграционной обёртке (служебный endpoint/cron-команда), потому что
+в текущем ядре нет отдельного публичного `flush()`-метода.
 
 **Правило истории:** последние 4 сообщения не кладутся в snapshot  
 и при восстановлении берутся через `load_history_tail(session_id, 4)`.
@@ -763,6 +798,9 @@ contact_provided → collect_contact
 
 `decision_trace` возвращается из `SalesBot.process()` только при `enable_tracing=True`.  
 Ядро не пишет этот trace в файл автоматически: сохранение в БД/файл делает внешняя интеграция.
+При работе через `SessionManager` tracing сейчас по умолчанию выключен
+(`get_or_create()` не принимает `enable_tracing`), поэтому для production-сбора
+decision traces нужна небольшая доработка интеграционного слоя/SessionManager.
 
 ### 7.2 Структура decision trace (на каждый ход)
 
