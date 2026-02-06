@@ -61,6 +61,8 @@
 - принимает входящие сообщения
 - определяет `client_id`, `session_id` (chat/conversation), `flow_name`, `config_name`
 - хранит историю сообщений и snapshots
+- обеспечивает дедупликацию входящих webhook/message событий (по `external_message_id`)
+- обеспечивает последовательную обработку событий внутри одной `session_id` (без reorder)
 - вызывает бота и принимает ответ
 
 **CRM Sales Bot (ядро):**
@@ -85,6 +87,10 @@
 - `load_snapshot(session_id) -> Optional[Dict]`
 - `save_snapshot(session_id, snapshot) -> None`
 - `load_history_tail(session_id, n) -> List[Dict]` (последние `n` сообщений)
+
+Требования к данным callback-ов:
+- `load_history_tail` должен возвращать список ходов в формате `{"user": "...", "bot": "..."}` (хронологически, от старых к новым)
+- `load_snapshot` должен принимать tenant-aware ключ (`"{client_id}::{session_id}"`), при этом `SessionManager` также может пробовать legacy ключ `session_id` для обратной совместимости
 
 **Важно:** `save_snapshot` вызывается не сразу, а при вечерней выгрузке пачки.
 Для избежания коллизий между tenant-ами `SessionManager` использует tenant-aware
@@ -144,7 +150,9 @@ result = bot.process(user_message="текст сообщения")
 ```
 
 **Важно:** внешний воркер/cron должен вызывать `manager.cleanup_expired()` каждые 5–10 минут,
-чтобы сработал TTL‑снапшот и компакция истории.
+чтобы сработал TTL‑снапшот и компакция истории.  
+При этом batch‑flush (вызов `save_snapshot`) запускается внутри `get_or_create()` после `flush_hour`,
+а не внутри `cleanup_expired()`.
 
 ### 3.2 Входные данные (что бот ожидает)
 
@@ -158,12 +166,17 @@ result = bot.process(user_message="текст сообщения")
 | `flow_name` | `str` | Имя sales flow |
 | `config_name` | `str` | Имя конфигурации клиента |
 
+Медиа-вложения (voice/image/file) ядром напрямую не обрабатываются — они должны быть
+преобразованы во внешний текст до вызова `process()`.
+
 Восстановление диалога выполняет `SessionManager` через callbacks:
 `load_snapshot()` и `load_history_tail()` — вручную собирать состояние не нужно.
 
 ### 3.3 Выходные данные (что бот возвращает)
 
-Метод `process()` возвращает `Dict` со следующей структурой:
+`process()` всегда возвращает базовые поля: `response`, `intent`, `action`, `state`, `is_final`.  
+Остальные поля из примера ниже считаются расширенными и могут отсутствовать в отдельных ветках
+(например, в раннем `soft_close`):
 
 ```python
 {
@@ -216,6 +229,9 @@ result = bot.process(user_message="текст сообщения")
    - все локальные snapshot выгружаются через `save_snapshot`
      с tenant-aware ключом `"{client_id}::{session_id}"` (для tenant-сессий)
    - локальный буфер очищается
+
+**Операционный нюанс:** batch‑flush запускается на входе `get_or_create()`.  
+Если после 23:00 нет новых запросов, выгрузка отложится до первого следующего запроса.
 
 **Правило истории:** последние 4 сообщения не кладутся в snapshot  
 и при восстановлении берутся через `load_history_tail(session_id, 4)`.
@@ -491,8 +507,9 @@ result = bot.process(user_message="текст сообщения")
 | Повторные непонимания | `unclear` >= `misunderstanding_threshold` (default=4) | `EscalationSource` |
 | High‑value + complex | `company_size >= 100` и intent ∈ {`custom_integration`, `enterprise_features`, `sla_question`} | `EscalationSource` |
 
-Эскалация в коде проявляется как `action = "escalate_to_human"` и переход в
-`state = "escalated"` (либо `entry_points.escalation` в конкретном flow).
+Эскалация в коде проявляется как `action = "escalate_to_human"` и переход в состояние,
+вычисленное `EscalationSource`. В текущих flow, как правило, это `soft_close`
+(так как `entry_points.escalation` обычно не задан).
 
 ### 5.3 Возврат диалога от оператора к боту
 
@@ -744,8 +761,8 @@ contact_provided → collect_contact
 
 ### 7.1 Структура логов
 
-Логи формируются из `decision_trace` (возвращается `SalesBot.process()` при `enable_tracing`).
-Выходной формат — **JSON-файл** с полной трассировкой каждого хода, аналогичный e2e-симуляциям.
+`decision_trace` возвращается из `SalesBot.process()` только при `enable_tracing=True`.  
+Ядро не пишет этот trace в файл автоматически: сохранение в БД/файл делает внешняя интеграция.
 
 ### 7.2 Структура decision trace (на каждый ход)
 
@@ -863,9 +880,10 @@ contact_provided → collect_contact
 }
 ```
 
-### 7.3 Файл отчёта по диалогу
+### 7.3 Отчёт по диалогу (опционально)
 
-Помимо JSON с decision traces, генерируется текстовый отчёт:
+Текстовый отчёт ниже — пример формата для внешней отчётности/симуляций.
+В production-интеграции его нужно формировать отдельным сервисом/скриптом:
 
 ```
 ================================================================================
@@ -960,7 +978,8 @@ FALLBACK: 0
 
 | Компонент | Где | Примечание |
 |---|---|---|
-| `SalesBot` | `src/bot.py` | Единственная точка входа: `process()` |
+| `SessionManager` | `src/session_manager.py` | Рекомендуемая точка интеграции (кеш/TTL/snapshot lifecycle) |
+| `SalesBot` | `src/bot.py` | Обработка хода через `process()` |
 | LLM клиент | `src/llm.py` (`OllamaLLM`) | Можно заменить на другой клиент |
 | Knowledge retriever | `src/knowledge/retriever.py` (`CascadeRetriever`) | FRIDA + BGE reranker |
 | Logger | `src/logger.py` | stdout JSON/Readable (через `LOG_FORMAT`) |
