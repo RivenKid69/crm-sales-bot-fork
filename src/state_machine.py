@@ -306,12 +306,16 @@ class StateMachine:
             if config is None:
                 config = loader.load()
             if flow is None:
-                # Load flow from settings (configurable, not hardcoded)
-                flow = loader.load_flow(settings.flow.active)
+                # Derive flow from config.flow_name (not blindly from settings)
+                target_flow = getattr(config, 'flow_name', None) or settings.flow.active
+                flow = loader.load_flow(target_flow)
 
         # Store config for parameterization (always set since v2.0)
         self._config = config
         self._flow = flow
+
+        # Validate config/flow compatibility
+        self._validate_config_flow(config, flow)
 
         # Initialize circular flow with config if available
         if config:
@@ -370,6 +374,17 @@ class StateMachine:
         self._dag_enabled = True  # DAG mode enabled by default (backward compat)
         self._dag_context: Optional["DAGExecutionContext"] = None
         self._dag_executor = None  # Lazy initialized
+
+    @staticmethod
+    def _validate_config_flow(config: 'LoadedConfig', flow: 'FlowConfig') -> None:
+        """Validate config and flow are compatible. Logs warnings on mismatch."""
+        config_flow = getattr(config, 'flow_name', None)
+        flow_name = getattr(flow, 'name', None)
+        if config_flow and flow_name and config_flow != flow_name:
+            logger.warning(
+                f"Config/flow mismatch: config.flow_name='{config_flow}', "
+                f"flow.name='{flow_name}'. States may be inconsistent."
+            )
 
     # =========================================================================
     # Configuration Properties (from YAML - legacy Python constants deprecated)

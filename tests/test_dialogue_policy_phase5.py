@@ -118,6 +118,10 @@ def create_mock_envelope(
     # which makes has_guard_intervention spuriously return True.
     envelope.pre_intervention_triggered = False
     envelope.secondary_intents = []
+    envelope.last_user_message = ""
+    envelope.last_bot_message = ""
+    envelope.has_extracted_data = False
+    envelope.consecutive_same_state = 0
 
     # Mock has_reason method
     envelope.has_reason = Mock(return_value=False)

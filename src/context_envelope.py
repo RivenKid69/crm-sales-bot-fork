@@ -198,6 +198,10 @@ class ContextEnvelope:
     is_regressing: bool = False
     has_extracted_data: bool = False  # Whether DataExtractor found data in current message
 
+    # === Message text (for mirroring detection) ===
+    last_user_message: str = ""     # Current user message text
+    last_bot_message: str = ""      # Previous bot response text
+
     # === Level 3: Episodic Memory ===
     first_objection_type: Optional[str] = None
     first_objection_turn: Optional[int] = None
@@ -930,6 +934,8 @@ def build_context_envelope(
     use_v2_engagement: bool = False,
     current_intent: Optional[str] = None,
     classification_result: Optional[Dict] = None,
+    user_message: str = "",
+    last_bot_message: str = "",
 ) -> ContextEnvelope:
     """
     Удобная функция для создания ContextEnvelope.
@@ -944,11 +950,13 @@ def build_context_envelope(
         use_v2_engagement: Использовать улучшенный расчёт engagement
         current_intent: Current turn intent (fixes 1-turn lag in repeated_question)
         classification_result: Classification result dict (for secondary_signals)
+        user_message: Current user message text (for mirroring detection)
+        last_bot_message: Previous bot response text (for mirroring detection)
 
     Returns:
         ContextEnvelope
     """
-    return ContextEnvelopeBuilder(
+    envelope = ContextEnvelopeBuilder(
         state_machine=state_machine,
         context_window=context_window,
         tone_info=tone_info,
@@ -959,3 +967,6 @@ def build_context_envelope(
         current_intent=current_intent,
         classification_result=classification_result,
     ).build()
+    envelope.last_user_message = user_message
+    envelope.last_bot_message = last_bot_message
+    return envelope

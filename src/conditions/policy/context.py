@@ -102,6 +102,10 @@ class PolicyContext:
     is_regressing: bool = False
     has_extracted_data: bool = False
 
+    # Message text (for mirroring detection)
+    last_user_message: str = ""
+    last_bot_message: str = ""
+
     # Level 3 signals (Episodic memory)
     total_objections: int = 0
     repeated_objection_types: List[str] = field(default_factory=list)
@@ -185,6 +189,10 @@ class PolicyContext:
             is_regressing=envelope.is_regressing,
             has_extracted_data=getattr(envelope, 'has_extracted_data', False),
 
+            # Message text (for mirroring detection)
+            last_user_message=getattr(envelope, 'last_user_message', ''),
+            last_bot_message=getattr(envelope, 'last_bot_message', ''),
+
             # Level 3 signals
             total_objections=envelope.total_objections,
             repeated_objection_types=list(envelope.repeated_objection_types) if envelope.repeated_objection_types else [],
@@ -238,6 +246,8 @@ class PolicyContext:
         is_progressing: bool = False,
         is_regressing: bool = False,
         has_extracted_data: bool = False,
+        last_user_message: str = "",
+        last_bot_message: str = "",
         total_objections: int = 0,
         repeated_objection_types: List[str] = None,
         has_breakthrough: bool = False,
@@ -283,6 +293,8 @@ class PolicyContext:
             is_progressing=is_progressing,
             is_regressing=is_regressing,
             has_extracted_data=has_extracted_data,
+            last_user_message=last_user_message,
+            last_bot_message=last_bot_message,
             total_objections=total_objections,
             repeated_objection_types=repeated_objection_types or [],
             has_breakthrough=has_breakthrough,

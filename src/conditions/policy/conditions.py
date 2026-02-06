@@ -98,6 +98,22 @@ def needs_repair(ctx: PolicyContext) -> bool:
 
 
 @policy_condition(
+    "can_apply_repair",
+    description="Gate: repair overlay is allowed to run (not suppressed by cooldown)",
+    category="repair"
+)
+def can_apply_repair(ctx: PolicyContext) -> bool:
+    """
+    Thin gate for the repair cascade overlay.
+
+    Only checks suppression (cooldown). Does NOT enumerate individual
+    repair signals — that's the overlay's job. This prevents gate/overlay
+    signal desync when new repair conditions are added.
+    """
+    return not ctx.stall_guard_cooldown
+
+
+@policy_condition(
     "confidence_decreasing",
     description="Check if confidence trend is decreasing",
     category="repair"
@@ -715,8 +731,10 @@ __all__ = [
     "has_oscillation",
     "has_repeated_question",
     "needs_repair",
+    "can_apply_repair",
     "confidence_decreasing",
     "high_unclear_count",
+    "is_stalled",
     # Objection conditions
     "has_repeated_objections",
     "total_objections_3_plus",

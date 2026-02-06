@@ -137,7 +137,12 @@ class DialogueOrchestrator:
         # Initialize Knowledge Sources via Registry (Plugin System)
         # Sources are created in priority_order from SourceRegistry
         # Configuration can enable/disable individual sources
+        _sm_resolver = getattr(state_machine, '_resolver', None)
+        _expr_parser = getattr(_sm_resolver, 'expression_parser', None) if _sm_resolver else None
+
         source_configs = {
+            "IntentProcessorSource": {"rule_resolver": _sm_resolver} if _sm_resolver else {},
+            "TransitionResolverSource": {"expression_parser": _expr_parser} if _expr_parser else {},
             "ObjectionGuardSource": {"persona_limits": persona_limits},
             "ConversationGuardSource": {
                 "guard": self._guard,

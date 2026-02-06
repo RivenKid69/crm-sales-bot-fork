@@ -61,6 +61,9 @@ class LoadedConfig:
     # Constants (single source of truth)
     constants: Dict[str, Any] = field(default_factory=dict)
 
+    # Flow this config was loaded for (set by ConfigLoader)
+    flow_name: Optional[str] = None
+
     # Custom conditions
     custom_conditions: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     condition_aliases: Dict[str, str] = field(default_factory=dict)
@@ -806,6 +809,10 @@ class ConfigLoader:
             custom_conditions=custom_conditions,
             condition_aliases=condition_aliases,
         )
+
+        # Record which flow this config was loaded for
+        from src.settings import settings
+        config.flow_name = settings.flow.active
 
         # Validate if requested
         if validate:

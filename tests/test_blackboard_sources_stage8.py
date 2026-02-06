@@ -213,7 +213,7 @@ class MockConditionRegistry:
     def __init__(self, conditions: Optional[Dict[str, bool]] = None):
         self._conditions = conditions or {}
 
-    def evaluate(self, condition_name: str, ctx: Any) -> bool:
+    def evaluate(self, condition_name: str, ctx: Any, trace=None) -> bool:
         if condition_name in self._conditions:
             return self._conditions[condition_name]
         # Default: return True for unknown conditions

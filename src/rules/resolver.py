@@ -511,35 +511,19 @@ class RuleResolver:
         condition = rule["when"]
         action = rule["then"]
 
-        # Evaluate condition based on type
-        if isinstance(condition, str):
-            # Simple condition: use registry directly
-            try:
-                result = self.registry.evaluate(condition, ctx, trace)
-            except ConditionNotFoundError:
-                raise UnknownConditionError(condition, rule_name)
-            condition_desc = condition
-        elif isinstance(condition, dict):
-            # Composite condition (AND/OR/NOT): use expression parser
-            if self.expression_parser is None:
-                raise InvalidRuleFormatError(
-                    rule_name,
-                    "composite conditions require expression_parser"
-                )
-            try:
-                parsed = self.expression_parser.parse(condition, rule_name)
-                result = parsed.evaluate(ctx, trace)
-                condition_desc = str(condition)
-            except Exception as e:
-                raise InvalidRuleFormatError(
-                    rule_name,
-                    f"failed to evaluate composite condition: {e}"
-                )
-        else:
-            raise InvalidRuleFormatError(
-                rule_name,
-                f"'when' must be string or dict, got {type(condition).__name__}"
+        # Evaluate condition using shared utility (handles str + dict)
+        from src.conditions.expression_parser import evaluate_condition_value
+        try:
+            result = evaluate_condition_value(
+                condition, ctx, self.registry, self.expression_parser, trace, rule_name
             )
+            condition_desc = str(condition) if isinstance(condition, dict) else condition
+        except ConditionNotFoundError:
+            raise UnknownConditionError(condition, rule_name)
+        except ValueError as e:
+            raise InvalidRuleFormatError(rule_name, str(e))
+        except TypeError as e:
+            raise InvalidRuleFormatError(rule_name, str(e))
 
         if result:
             if trace:
