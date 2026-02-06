@@ -562,6 +562,192 @@ with distributed_lock(f"{client_id}::{session_id}"):
 3. Изменить `status` на `operator_active`
 4. Все последующие сообщения идут оператору, а не боту
 
+### 5.5 Утверждённые сценарии операторского управления (кнопки)
+
+Функционал утверждён: оператор управляет диалогом через **2 кнопки** в UI.
+Третий сценарий (бот ведёт сам) — поведение по умолчанию, кнопка не требуется.
+
+#### 5.5.1 Три сценария
+
+| # | Сценарий | UI-элемент | Описание |
+|---|----------|------------|----------|
+| 1 | **Бот ведёт от начала до конца** | Нет (default) | `status = bot_active`. Все входящие сообщения роутятся в `bot.process()`. Бот самостоятельно проходит весь flow до `success` / `soft_close` / `escalated`. |
+| 2 | **Оператор перехватывает диалог** | Кнопка «Перехватить» | Оператор в любой момент забирает активный диалог у бота. Бот замораживается (snapshot), сообщения идут оператору. |
+| 3 | **Оператор возвращает диалог боту** | Кнопка «Продолжить» | Оператор передаёт диалог обратно боту. Бот восстанавливается из snapshot и продолжает с того места, где остановился. |
+
+#### 5.5.2 Готовность ядра бота
+
+Ядро бота **не требует доработок** для реализации этих сценариев.
+Вся логика маршрутизации «бот или оператор» — ответственность внешнего интеграционного слоя.
+
+Что **уже реализовано** в ядре:
+
+| Компонент | Расположение | Назначение |
+|-----------|-------------|------------|
+| `SalesBot.to_snapshot()` | `src/bot.py` | Полная сериализация состояния: FSM, guard, lead score, objections, context window, метрики |
+| `SalesBot.from_snapshot()` | `src/bot.py` | Восстановление бота из snapshot с подгрузкой хвоста истории |
+| `SessionManager` | `src/session_manager.py` | Кеш сессий, TTL, snapshot lifecycle через callbacks |
+| `EscalationSource` | `src/blackboard/sources/escalation.py` | Автоэскалация бот → оператор (15+ триггеров, `action = "escalate_to_human"`) |
+| Состояние `escalated` | `src/yaml_config/flows/_base/states.yaml` | Терминальное состояние (`is_final: true`), переход через mixins |
+| Таблица `operator_handoffs` | Раздел 4.1 (референс) | DB-схема с `direction`: `bot_to_operator`, `operator_to_bot`, `operator_intercept` |
+
+#### 5.5.3 Требования к внешней интеграции
+
+Для реализации 3 сценариев внешняя система должна обеспечить следующие компоненты:
+
+**1. Operator Router (маршрутизатор сообщений)**
+
+Центральный компонент, определяющий, кому направить входящее сообщение.
+
+```python
+async def handle_incoming_message(session_id, client_id, text):
+    conversation = await db.get_conversation(session_id)
+
+    if conversation.status == "operator_active":
+        # Сообщение идёт оператору — бот НЕ вызывается
+        await forward_to_operator(conversation.operator_id, text)
+        await db.save_message(session_id, role="user", content=text)
+        return
+
+    # status == "bot_active" → роутим в бота
+    with distributed_lock(f"{client_id}::{session_id}"):
+        bot = manager.get_or_create(
+            session_id=session_id,
+            client_id=client_id,
+            flow_name=conversation.flow_name,
+            config_name=conversation.config_name,
+            llm=ollama_llm,
+        )
+        result = bot.process(text)
+        await db.save_turn(session_id, client_id, result)
+
+        # Проверка автоэскалации (бот сам решил передать оператору)
+        if result["action"] == "escalate_to_human" or result["state"] == "escalated":
+            snapshot = bot.to_snapshot()
+            await db.save_handoff(
+                conversation_id=session_id,
+                direction="bot_to_operator",
+                reason=result.get("decision_trace", {}).get("escalation_reason", "auto"),
+                bot_state_snapshot=snapshot,
+                turn_number=result.get("turn_number"),
+            )
+            await db.update_status(session_id, "escalated")
+            await notify_operator_pool(session_id)
+
+        await send_to_user(result["response"])
+```
+
+**2. Обработчик кнопки «Перехватить»**
+
+```python
+async def handle_intercept(session_id, client_id, operator_id):
+    """Оператор перехватывает активный диалог у бота."""
+    with distributed_lock(f"{client_id}::{session_id}"):
+        bot = manager.get_or_create(
+            session_id=session_id,
+            client_id=client_id,
+            flow_name=...,
+            config_name=...,
+            llm=ollama_llm,
+        )
+        snapshot = bot.to_snapshot()
+
+        await db.save_handoff(
+            conversation_id=session_id,
+            direction="operator_intercept",
+            reason="manual_intercept",
+            operator_id=operator_id,
+            bot_state_snapshot=snapshot,
+            turn_number=bot.turn,
+        )
+        await db.update_status(session_id, "operator_active")
+        await db.set_operator(session_id, operator_id)
+
+        # Опционально: удалить сессию из кеша SessionManager
+        manager.remove(session_id, client_id)
+```
+
+**3. Обработчик кнопки «Продолжить»**
+
+```python
+async def handle_return_to_bot(session_id, client_id, operator_id):
+    """Оператор возвращает диалог боту."""
+    with distributed_lock(f"{client_id}::{session_id}"):
+        # Загрузить snapshot, сохранённый при перехвате
+        handoff = await db.get_latest_handoff(session_id)
+        snapshot = handoff.bot_state_snapshot
+
+        # Загрузить хвост истории (включая сообщения оператора)
+        raw_tail = await db.load_history_tail(session_id, n=4)
+        history_tail = normalize_history_tail(raw_tail)  # см. 5.5.4
+
+        bot = SalesBot.from_snapshot(snapshot, llm=ollama_llm, history_tail=history_tail)
+
+        await db.save_handoff(
+            conversation_id=session_id,
+            direction="operator_to_bot",
+            reason="manual_return",
+            operator_id=operator_id,
+            bot_state_snapshot=snapshot,
+            turn_number=handoff.turn_number,
+        )
+        await db.update_status(session_id, "bot_active")
+
+        # Поместить восстановленного бота в кеш SessionManager
+        manager.put(session_id, client_id, bot)
+```
+
+**4. Условия доступности кнопок**
+
+| Кнопка | Видна когда | Скрыта когда |
+|--------|------------|-------------|
+| «Перехватить» | `status = bot_active` | `status ∈ {operator_active, completed}` |
+| «Продолжить» | `status = operator_active` и есть `bot_state_snapshot` | `status ∈ {bot_active, completed}` |
+
+#### 5.5.4 Маппинг `history_tail` при возврате от оператора
+
+`SalesBot.from_snapshot()` принимает `history_tail` в формате `[{"user": "...", "bot": "..."}]`.
+Когда оператор вёл диалог, в БД сообщения хранятся с `role: operator`.
+При возврате боту интеграция **должна** замаппить `operator → bot`:
+
+```python
+def normalize_history_tail(raw_messages: list[dict]) -> list[dict]:
+    """
+    Преобразует хвост истории из формата БД в формат ядра бота.
+
+    БД: [{"role": "user"|"bot"|"operator", "content": "..."}]
+    Ядро: [{"user": "...", "bot": "..."}]
+
+    Сообщения оператора маппятся как bot, чтобы бот видел контекст
+    того, что обсуждалось во время перехвата.
+    """
+    result = []
+    i = 0
+    while i < len(raw_messages):
+        msg = raw_messages[i]
+        if msg["role"] == "user":
+            user_text = msg["content"]
+            bot_text = ""
+            # Ищем следующее сообщение от бота или оператора
+            if i + 1 < len(raw_messages) and msg["role"] in ("bot", "operator"):
+                bot_text = raw_messages[i + 1]["content"]
+                i += 1
+            result.append({"user": user_text, "bot": bot_text})
+        i += 1
+    return result
+```
+
+**Важно:** бот не знает, что часть истории — от оператора. Он воспринимает все
+ответы как свои собственные и продолжает диалог с учётом контекста.
+
+#### 5.5.5 Известные ограничения
+
+| # | Ограничение | Влияние | Рекомендация |
+|---|-------------|---------|-------------|
+| 1 | В ядре нет шаблона ответа для `escalate_to_human` | При автоэскалации (бот сам решает передать оператору) текст ответа генерируется через fallback-шаблон `continue_current_goal`, а не через специализированное «Подключаю оператора» | Интеграционный слой может подменить `response` в результате `process()`, если `action == "escalate_to_human"`, на собственное сообщение (напр. «Сейчас подключу специалиста, подождите»). Либо: добавить шаблон `escalate_to_human` в flow templates (доработка ядра, ~5 строк) |
+| 2 | `from_snapshot()` не знает о длительности паузы | Если оператор вёл диалог несколько часов, бот после восстановления не знает, сколько прошло времени | Интеграционный слой может скорректировать `guard.timeout` или сбросить таймер через snapshot перед восстановлением |
+| 3 | Snapshot фиксирует состояние на момент перехвата | Если за время оператора клиент сообщил новые данные (размер компании, бюджет и т.д.), бот их не увидит в `collected_data` | Интеграционный слой может обогатить snapshot дополнительными `collected_data` перед вызовом `from_snapshot()`, либо оператор передаёт ключевые факты через внутреннюю заметку |
+
 ---
 
 ## 6. Scope админ-панели
