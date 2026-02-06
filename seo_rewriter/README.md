@@ -1,86 +1,68 @@
 # SEO Rewriter
 
-AI-powered text rewriting with plagiarism detection.
+Инструмент для рерайта текста с проверкой уникальности.
 
-## Features
+## Что есть в коде
 
-- Text rewriting using local LLM (Qwen3 via Ollama)
-- Plagiarism detection based on scientific algorithms:
-  - N-gram overlap analysis
-  - Jaccard similarity
-  - SimHash (Charikar, 2002)
-  - Winnowing (Schleimer et al., 2003)
-- Multiple rewriting styles (standard, creative, conservative, news)
-- Automatic retry if uniqueness threshold not met
-- CLI and REST API interfaces
+- CLI: `seo-rewriter` (`seo_rewriter/src/seo_rewriter/cli.py`)
+- REST API: FastAPI (`seo_rewriter/src/seo_rewriter/api.py`)
+- Проверка уникальности: n-gram, Jaccard, SimHash, Winnowing
+- LLM backend: Ollama (`qwen3:14b` по умолчанию)
 
-## Installation
+## Установка
 
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install
+cd seo_rewriter
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
 
-## Prerequisites
+## CLI
 
-Install and run Ollama with Qwen3:
+### Рерайт
+
 ```bash
-ollama pull qwen3:14b
-ollama serve
+seo-rewriter rewrite "Ваш текст..."
+seo-rewriter rewrite --file input.txt --output output.txt
+seo-rewriter rewrite "Текст" --style news --keywords "crm,продажи"
 ```
 
-## Usage
-
-### CLI
+### Проверка двух текстов
 
 ```bash
-# Rewrite text
-seo-rewriter rewrite "Your text here"
+seo-rewriter check "оригинал" "рерайт"
+```
 
-# Rewrite from file
-seo-rewriter rewrite --file article.txt --output result.txt
+### Сервисные команды
 
-# Use specific style
-seo-rewriter rewrite "text" --style news
-
-# Add SEO keywords
-seo-rewriter rewrite "text" --keywords "seo,marketing"
-
-# Check plagiarism between two texts
-seo-rewriter check "original text" "rewritten text"
-
-# List available models
+```bash
 seo-rewriter models
-
-# Show configuration
 seo-rewriter config
 ```
 
-### REST API
+## REST API
+
+Запуск:
 
 ```bash
-# Start API server
-seo-rewriter serve --port 8000
-
-# API endpoints:
-# POST /rewrite - Rewrite text
-# POST /check - Check plagiarism
-# GET /health - Health check
-# GET /styles - List styles
-# GET /docs - OpenAPI documentation
+python3 -m seo_rewriter.api
 ```
 
-## Configuration
+Эндпоинты:
+- `GET /health`
+- `POST /rewrite`
+- `POST /check`
+- `GET /styles`
 
-Environment variables (prefix `SEO_`):
+Документация OpenAPI доступна по `/docs`.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| SEO_OLLAMA_BASE_URL | http://localhost:11434 | Ollama API URL |
-| SEO_OLLAMA_MODEL | qwen3:14b | Model name |
-| SEO_TARGET_UNIQUENESS | 95.0 | Target uniqueness % |
-| SEO_MAX_REWRITE_ATTEMPTS | 3 | Max retry attempts |
+## Конфиг
+
+Параметры в `seo_rewriter/src/seo_rewriter/config.py`.
+
+Environment prefix: `SEO_`.
+Примеры:
+- `SEO_OLLAMA_BASE_URL`
+- `SEO_OLLAMA_MODEL`
+- `SEO_TARGET_UNIQUENESS`
