@@ -203,49 +203,19 @@ with distributed_lock(f"{client_id}::{session_id}"):
 
 ### 3.3 Выходные данные (что бот возвращает)
 
-`process()` всегда возвращает базовые поля: `response`, `intent`, `action`, `state`, `is_final`.  
-Остальные поля из примера ниже считаются расширенными и могут отсутствовать в отдельных ветках
-(например, в раннем `soft_close`):
+`process()` возвращает dict. Для интеграции нужны **только 2 поля**:
 
 ```python
 {
-    # === Ответ ===
-    "response": str,                    # Текст ответа бота
-
-    # === Классификация ===
-    "intent": str,                      # Определённый интент (demo_request, objection_price, ...)
-    "action": str,                      # Действие (continue_conversation, soft_close, ...)
-
-    # === Состояние ===
-    "state": str,                       # Текущее состояние FSM
-    "initial_state": str,               # Состояние до обработки
-    "spin_phase": str | None,           # Текущая фаза flow (SPIN/другая)
-    "visited_states": List[str],        # Состояния, посещённые на этом ходе
-    "is_final": bool,                   # Диалог завершён
-
-    # === Тон и эмоции ===
-    "tone": str | None,                 # Тон (neutral, frustrated, interested, ...)
-    "frustration_level": int,           # Уровень фрустрации (0–10)
-
-    # === Fallback ===
-    "fallback_used": bool,              # Был ли использован fallback
-    "fallback_tier": str | None,        # Tier fallback-а (fallback_tier_1/2/3, soft_close)
-
-    # === Lead scoring ===
-    "lead_score": int | None,           # Оценка лида (0–100)
-
-    # === Возражения ===
-    "objection_detected": bool,         # Обнаружено ли возражение
-
-    # === CTA ===
-    "cta_added": bool,                  # Добавлен ли Call-to-Action
-    "cta_text": str | None,             # Текст CTA
-
-    # === Дополнительно ===
-    "options": List[str] | None,        # Варианты для disambiguation / fallback
-    "decision_trace": Dict | None       # Полная трассировка решений (если tracing включён)
+    "response": str,   # Текст ответа — отправить клиенту
+    "is_final": bool,  # True = диалог завершён, больше не роутить в бота
 }
 ```
+
+Внутри dict присутствуют и другие поля (`intent`, `action`, `state`, `tone`,
+`lead_score`, `decision_trace` и т.д.) — они используются внутренними компонентами
+(тесты, симулятор, аналитика). Интеграционный слой **может их игнорировать**.
+При необходимости подключить мониторинг/аналитику эти поля можно задействовать позже.
 
 ### 3.4 Snapshot lifecycle (как это работает)
 
@@ -619,22 +589,11 @@ async def handle_incoming_message(session_id, client_id, text):
             llm=ollama_llm,
         )
         result = bot.process(text)
-        await db.save_turn(session_id, client_id, result)
-
-        # Проверка автоэскалации (бот сам решил передать оператору)
-        if result["action"] == "escalate_to_human" or result["state"] == "escalated":
-            snapshot = bot.to_snapshot()
-            await db.save_handoff(
-                conversation_id=session_id,
-                direction="bot_to_operator",
-                reason=result.get("decision_trace", {}).get("escalation_reason", "auto"),
-                bot_state_snapshot=snapshot,
-                turn_number=result.get("turn_number"),
-            )
-            await db.update_status(session_id, "escalated")
-            await notify_operator_pool(session_id)
 
         await send_to_user(result["response"])
+
+        if result["is_final"]:
+            await db.update_status(session_id, "completed")
 ```
 
 **2. Обработчик кнопки «Перехватить»**
@@ -744,9 +703,8 @@ def normalize_history_tail(raw_messages: list[dict]) -> list[dict]:
 
 | # | Ограничение | Влияние | Рекомендация |
 |---|-------------|---------|-------------|
-| 1 | В ядре нет шаблона ответа для `escalate_to_human` | При автоэскалации (бот сам решает передать оператору) текст ответа генерируется через fallback-шаблон `continue_current_goal`, а не через специализированное «Подключаю оператора» | Интеграционный слой может подменить `response` в результате `process()`, если `action == "escalate_to_human"`, на собственное сообщение (напр. «Сейчас подключу специалиста, подождите»). Либо: добавить шаблон `escalate_to_human` в flow templates (доработка ядра, ~5 строк) |
-| 2 | `from_snapshot()` не знает о длительности паузы | Если оператор вёл диалог несколько часов, бот после восстановления не знает, сколько прошло времени | Интеграционный слой может скорректировать `guard.timeout` или сбросить таймер через snapshot перед восстановлением |
-| 3 | Snapshot фиксирует состояние на момент перехвата | Если за время оператора клиент сообщил новые данные (размер компании, бюджет и т.д.), бот их не увидит в `collected_data` | Интеграционный слой может обогатить snapshot дополнительными `collected_data` перед вызовом `from_snapshot()`, либо оператор передаёт ключевые факты через внутреннюю заметку |
+| 1 | `from_snapshot()` не знает о длительности паузы | Если оператор вёл диалог несколько часов, бот после восстановления не знает, сколько прошло времени | Интеграционный слой может скорректировать `guard.timeout` или сбросить таймер через snapshot перед восстановлением |
+| 2 | Snapshot фиксирует состояние на момент перехвата | Если за время оператора клиент сообщил новые данные (размер компании, бюджет и т.д.), бот их не увидит в `collected_data` | Интеграционный слой может обогатить snapshot дополнительными `collected_data` перед вызовом `from_snapshot()`, либо оператор передаёт ключевые факты через внутреннюю заметку |
 
 ---
 
