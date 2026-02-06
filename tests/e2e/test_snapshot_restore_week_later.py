@@ -26,7 +26,6 @@ def test_restore_after_week_with_history_tail(mock_e2e_llm, tmp_path):
     # Day 1: before 23:00, user active
     day1_time = time.struct_time((2026, 2, 5, 20, 0, 0, 0, 0, -1))
     manager_day1 = SessionManager(
-        ttl_seconds=0,  # expire immediately on cleanup
         save_snapshot=save_snapshot,
         load_snapshot=load_snapshot,
         load_history_tail=load_history_tail,
@@ -46,16 +45,15 @@ def test_restore_after_week_with_history_tail(mock_e2e_llm, tmp_path):
         bot.process(msg)
         external_history[session_id].append(bot.history[-1])
 
-    # Force TTL cleanup -> snapshot enqueued locally (no external flush yet)
-    removed = manager_day1.cleanup_expired()
-    assert removed == 1
+    # Server signals dialog end -> snapshot enqueued locally (no external flush yet)
+    closed = manager_day1.close_session(session_id, client_id=client_id)
+    assert closed is True
     assert buffer.count() == 1
     assert session_id not in external_snapshots
 
     # Week later: first request after 23:00 triggers flush then restore
     week_later_time = time.struct_time((2026, 2, 12, 23, 5, 0, 0, 0, -1))
     manager_week = SessionManager(
-        ttl_seconds=3600,
         save_snapshot=save_snapshot,
         load_snapshot=load_snapshot,
         load_history_tail=load_history_tail,

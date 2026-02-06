@@ -26,7 +26,7 @@ def test_switch_flow_config_mid_session(tmp_path):
     client_id = "client-switch-1"
 
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "snapshot_buffer.sqlite"))
-    manager = SessionManager(ttl_seconds=3600, snapshot_buffer=buffer)
+    manager = SessionManager(snapshot_buffer=buffer)
 
     # Initial profile
     flow_a = "spin_selling"

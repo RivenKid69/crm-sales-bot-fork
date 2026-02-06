@@ -46,7 +46,6 @@ def test_multi_session_flow_config_restore(tmp_path):
 
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "snapshot_buffer.sqlite"))
     manager = SessionManager(
-        ttl_seconds=0,  # immediate expiry for snapshot creation
         save_snapshot=save_snapshot,
         load_snapshot=load_snapshot,
         load_history_tail=load_history_tail,
@@ -71,8 +70,10 @@ def test_multi_session_flow_config_restore(tmp_path):
             bot.process(msg)
             external_history[sid].append(bot.history[-1])
 
-    removed = manager.cleanup_expired()
-    assert removed == len(external_profiles)
+    # Server signals each dialog has ended
+    for sid, profile in external_profiles.items():
+        closed = manager.close_session(sid, client_id=profile["client_id"])
+        assert closed is True
     assert buffer.count() == len(external_profiles)
 
     # Validate snapshots in buffer are not mixed
@@ -84,7 +85,6 @@ def test_multi_session_flow_config_restore(tmp_path):
 
     # Restore from buffer (new manager simulating new process)
     manager2 = SessionManager(
-        ttl_seconds=3600,
         save_snapshot=save_snapshot,
         load_snapshot=load_snapshot,
         load_history_tail=load_history_tail,

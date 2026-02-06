@@ -2,7 +2,7 @@
 Session Manager - caches active sessions and loads snapshots only on cache miss.
 
 Snapshot loading happens only when session is not in memory.
-Expired sessions are compacted and enqueued locally.
+Sessions are closed explicitly via close_session() call from the server.
 """
 
 from __future__ import annotations
@@ -29,7 +29,6 @@ class SessionManager:
 
     def __init__(
         self,
-        ttl_seconds: int = 3600,
         load_snapshot: Optional[Callable[[str], Optional[Dict]]] = None,
         save_snapshot: Optional[Callable[[str, Dict], None]] = None,
         load_history_tail: Optional[Callable[[str, int], List[Dict]]] = None,
@@ -40,7 +39,6 @@ class SessionManager:
         require_client_id: bool = True,
     ):
         self._sessions: Dict[Tuple[str, str], SessionEntry] = {}
-        self._ttl = ttl_seconds
         self._load_snapshot = load_snapshot
         self._save_snapshot = save_snapshot
         self._load_history_tail = load_history_tail
@@ -187,10 +185,9 @@ class SessionManager:
         Flow:
         1. First request after flush_hour triggers batch flush.
         2. Cache hit -> return.
-        3. Expired -> snapshot + compaction -> local buffer.
-        4. Local buffer -> restore (and delete on success).
-        5. External snapshot -> restore.
-        6. Otherwise -> new bot.
+        3. Local buffer -> restore (and delete on success).
+        4. External snapshot -> restore.
+        5. Otherwise -> new bot.
         """
         self._ensure_client_id(client_id, session_id)
         normalized_client_id = self._normalize_client_id(client_id) or None
@@ -204,40 +201,37 @@ class SessionManager:
             # 1. Cache
             if cache_key in self._sessions:
                 entry = self._sessions[cache_key]
-                if now - entry.last_activity < self._ttl:
-                    # Optional live switch of flow/config for active session
-                    if flow_name or config_name:
-                        current_flow = getattr(entry.bot, "_flow", None)
-                        current_flow_name = current_flow.name if current_flow else None
-                        current_config_name = getattr(getattr(entry.bot, "_config", None), "name", None)
-                        if (flow_name and flow_name != current_flow_name) or (
-                            config_name and config_name != current_config_name
-                        ):
-                            logger.info(
-                                "Flow/config switch requested for active session",
-                                session_id=session_id,
-                                from_flow=current_flow_name,
-                                to_flow=flow_name,
-                                from_config=current_config_name,
-                                to_config=config_name,
-                            )
-                            history_tail = entry.bot.history[-4:] if entry.bot.history else []
-                            snapshot = entry.bot.to_snapshot(compact_history=False, history_tail_size=4)
-                            snapshot = self._override_snapshot_flow_config(
-                                snapshot, flow_name=flow_name, config_name=config_name
-                            )
-                            entry.bot = SalesBot.from_snapshot(
-                                snapshot, llm=llm, history_tail=history_tail
-                            )
-                    entry.last_activity = now
-                    logger.debug(
-                        "Session from cache",
-                        session_id=session_id,
-                        client_id=normalized_client_id,
-                    )
-                    return entry.bot
-                self.save(session_id, client_id=normalized_client_id)
-                del self._sessions[cache_key]
+                # Optional live switch of flow/config for active session
+                if flow_name or config_name:
+                    current_flow = getattr(entry.bot, "_flow", None)
+                    current_flow_name = current_flow.name if current_flow else None
+                    current_config_name = getattr(getattr(entry.bot, "_config", None), "name", None)
+                    if (flow_name and flow_name != current_flow_name) or (
+                        config_name and config_name != current_config_name
+                    ):
+                        logger.info(
+                            "Flow/config switch requested for active session",
+                            session_id=session_id,
+                            from_flow=current_flow_name,
+                            to_flow=flow_name,
+                            from_config=current_config_name,
+                            to_config=config_name,
+                        )
+                        history_tail = entry.bot.history[-4:] if entry.bot.history else []
+                        snapshot = entry.bot.to_snapshot(compact_history=False, history_tail_size=4)
+                        snapshot = self._override_snapshot_flow_config(
+                            snapshot, flow_name=flow_name, config_name=config_name
+                        )
+                        entry.bot = SalesBot.from_snapshot(
+                            snapshot, llm=llm, history_tail=history_tail
+                        )
+                entry.last_activity = now
+                logger.debug(
+                    "Session from cache",
+                    session_id=session_id,
+                    client_id=normalized_client_id,
+                )
+                return entry.bot
 
             # 2. Local buffer
             bot = None
@@ -349,17 +343,34 @@ class SessionManager:
                 client_id=cached_client_id or None,
             )
 
-    def cleanup_expired(self) -> int:
-        """Remove expired sessions from cache."""
-        now = time.time()
-        expired = [
-            key for key, entry in self._sessions.items()
-            if now - entry.last_activity >= self._ttl
-        ]
-        for client_key, sid in expired:
-            self.save(sid, client_id=client_key or None)
-            del self._sessions[(client_key, sid)]
+    def close_session(
+        self, session_id: str, client_id: Optional[str] = None
+    ) -> bool:
+        """
+        Close session explicitly: create snapshot with compaction and remove from cache.
 
-        if expired:
-            logger.info("Cleaned up expired sessions", count=len(expired))
-        return len(expired)
+        Called by external server when dialog ends.
+        Returns True if session was found and closed, False otherwise.
+        """
+        self._ensure_client_id(client_id, session_id)
+        normalized_client_id = self._normalize_client_id(client_id) or None
+        cache_key = self._cache_key(session_id, normalized_client_id)
+        lock_key = self._storage_session_id(session_id, normalized_client_id)
+
+        with self._lock.lock(lock_key):
+            if cache_key not in self._sessions:
+                logger.warning(
+                    "close_session: session not found in cache",
+                    session_id=session_id,
+                    client_id=normalized_client_id,
+                )
+                return False
+
+            self.save(session_id, client_id=normalized_client_id)
+            del self._sessions[cache_key]
+            logger.info(
+                "Session closed and snapshot created",
+                session_id=session_id,
+                client_id=normalized_client_id,
+            )
+            return True

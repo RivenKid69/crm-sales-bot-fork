@@ -252,13 +252,13 @@ def test_session_lock_manager_exclusive(tmp_path):
         assert locked is False
 
 
-def test_session_manager_cleanup_expired_enqueues_snapshot(mock_llm, tmp_path):
+def test_session_manager_close_session_enqueues_snapshot(mock_llm, tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
-    manager = SessionManager(ttl_seconds=0, snapshot_buffer=buffer)
-    _ = manager.get_or_create("sess-expired", llm=mock_llm, client_id="client-expired")
+    manager = SessionManager(snapshot_buffer=buffer)
+    _ = manager.get_or_create("sess-close", llm=mock_llm, client_id="client-close")
 
-    removed = manager.cleanup_expired()
-    assert removed == 1
+    closed = manager.close_session("sess-close", client_id="client-close")
+    assert closed is True
     assert buffer.count() == 1
 
 

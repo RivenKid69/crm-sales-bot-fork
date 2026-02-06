@@ -33,7 +33,6 @@ def test_snapshot_restore_real_dialog(tmp_path):
 
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "snapshot_buffer.sqlite"))
     manager = SessionManager(
-        ttl_seconds=0,  # force immediate expiry for snapshot creation
         load_history_tail=load_history_tail,
         snapshot_buffer=buffer,
     )
@@ -49,14 +48,13 @@ def test_snapshot_restore_real_dialog(tmp_path):
         bot.process(msg)
         external_history[session_id].append(bot.history[-1])
 
-    # Simulate dialog stop -> snapshot via TTL cleanup
-    removed = manager.cleanup_expired()
-    assert removed == 1
+    # Simulate dialog end -> snapshot via explicit close
+    closed = manager.close_session(session_id, client_id=client_id)
+    assert closed is True
     assert buffer.count() == 1
 
     # Restore from local snapshot buffer
     manager2 = SessionManager(
-        ttl_seconds=3600,
         load_history_tail=load_history_tail,
         snapshot_buffer=buffer,
     )
