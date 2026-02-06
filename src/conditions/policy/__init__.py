@@ -45,8 +45,10 @@ from src.conditions.policy.conditions import (
     has_oscillation,
     has_repeated_question,
     needs_repair,
+    can_apply_repair,
     confidence_decreasing,
     high_unclear_count,
+    is_stalled,
     # Objection conditions
     has_repeated_objections,
     total_objections_3_plus,
@@ -114,8 +116,10 @@ __all__ = [
     "has_oscillation",
     "has_repeated_question",
     "needs_repair",
+    "can_apply_repair",
     "confidence_decreasing",
     "high_unclear_count",
+    "is_stalled",
     # Objection conditions
     "has_repeated_objections",
     "total_objections_3_plus",

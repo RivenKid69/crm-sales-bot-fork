@@ -203,6 +203,19 @@ class IntentProcessorSource(KnowledgeSource):
             reason=f"Rule matched for intent: {intent}"
         )
 
+    def _evaluate_condition_value(self, condition, eval_ctx):
+        """Evaluate condition using shared utility (supports composite dict)."""
+        from src.conditions.expression_parser import evaluate_condition_value
+        ep = getattr(self._rule_resolver, 'expression_parser', None)
+        try:
+            return evaluate_condition_value(
+                condition, eval_ctx, self._condition_registry, ep,
+                source_name="IntentProcessorSource"
+            )
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Condition evaluation failed: {e}")
+            return False
+
     def _resolve_rule(
         self,
         rule: Union[str, Dict, List],
@@ -231,7 +244,7 @@ class IntentProcessorSource(KnowledgeSource):
                 # Build evaluation context for condition registry
                 eval_ctx = self._build_eval_context(ctx)
 
-                if self._condition_registry.evaluate(condition, eval_ctx):
+                if self._evaluate_condition_value(condition, eval_ctx):
                     return action
 
             return None
@@ -250,7 +263,7 @@ class IntentProcessorSource(KnowledgeSource):
                     if condition and action:
                         eval_ctx = self._build_eval_context(ctx)
 
-                        if self._condition_registry.evaluate(condition, eval_ctx):
+                        if self._evaluate_condition_value(condition, eval_ctx):
                             return action
 
             return None

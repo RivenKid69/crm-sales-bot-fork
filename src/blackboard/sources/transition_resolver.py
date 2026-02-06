@@ -49,6 +49,7 @@ class TransitionResolverSource(KnowledgeSource):
     def __init__(
         self,
         condition_registry=None,
+        expression_parser=None,
         name: str = "TransitionResolverSource"
     ):
         """
@@ -57,10 +58,12 @@ class TransitionResolverSource(KnowledgeSource):
         Args:
             condition_registry: ConditionRegistry for conditional transitions.
                                Uses state_machine registry if not provided.
+            expression_parser: ConditionExpressionParser for composite conditions.
             name: Source name for logging
         """
         super().__init__(name)
         self._condition_registry = condition_registry or get_sm_registry()
+        self._expression_parser = expression_parser
 
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """
@@ -194,24 +197,26 @@ class TransitionResolverSource(KnowledgeSource):
         logger.warning(f"Unknown transition type: {type(transition_def)}")
         return None
 
-    def _evaluate_condition(self, condition: str, eval_ctx: EvaluatorContext) -> bool:
+    def _evaluate_condition(self, condition, eval_ctx: EvaluatorContext) -> bool:
         """
-        Evaluate a condition using the registry.
+        Evaluate a condition using the shared utility (supports composite dict).
 
         Args:
-            condition: Condition name to evaluate
+            condition: Condition name (str) or composite dict to evaluate
             eval_ctx: Evaluation context
 
         Returns:
             True if condition is met, False otherwise
         """
+        from src.conditions.expression_parser import evaluate_condition_value
         try:
-            if self._condition_registry.has(condition):
-                return self._condition_registry.evaluate(condition, eval_ctx)
-            else:
-                # Log warning for undefined condition but don't fail
-                logger.warning(f"Condition '{condition}' not found in registry")
-                return False
+            return evaluate_condition_value(
+                condition, eval_ctx, self._condition_registry,
+                self._expression_parser, source_name="TransitionResolverSource"
+            )
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Condition evaluation failed: {e}")
+            return False
         except Exception as e:
             logger.error(f"Error evaluating condition '{condition}': {e}")
             return False

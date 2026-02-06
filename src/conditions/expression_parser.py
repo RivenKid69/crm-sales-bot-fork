@@ -477,6 +477,35 @@ class ConditionExpressionParser(Generic[TContext]):
         )
 
 
+def evaluate_condition_value(
+    condition: Union[str, Dict],
+    ctx: Any,
+    registry: 'ConditionRegistry',
+    expression_parser: Optional['ConditionExpressionParser'] = None,
+    trace: Optional['EvaluationTrace'] = None,
+    source_name: str = ""
+) -> bool:
+    """
+    Single entry point for evaluating conditions (string or composite dict).
+
+    Used by: RuleResolver, IntentProcessorSource, TransitionResolverSource.
+    Adding a new condition format = change ONE function.
+    """
+    if isinstance(condition, str):
+        return registry.evaluate(condition, ctx, trace)
+    elif isinstance(condition, dict):
+        if expression_parser is None:
+            raise ValueError(
+                f"Composite condition in '{source_name}' requires expression_parser. "
+                f"Condition: {condition}"
+            )
+        parsed = expression_parser.parse(condition, source_name)
+        return parsed.evaluate(ctx, trace)
+    raise TypeError(
+        f"Condition must be str or dict, got {type(condition).__name__}"
+    )
+
+
 # Export all public components
 __all__ = [
     "ConditionExpressionParser",
@@ -485,4 +514,5 @@ __all__ = [
     "ExpressionParseError",
     "UnknownConditionError",
     "UnknownCustomConditionError",
+    "evaluate_condition_value",
 ]

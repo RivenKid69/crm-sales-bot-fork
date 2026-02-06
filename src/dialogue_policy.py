@@ -274,7 +274,7 @@ class DialoguePolicy:
         # 1.5 – 5: Standard cascade — one line per overlay
         override = self._eval_cascade_overlay(override, "is_price_question",
             self._apply_price_question_overlay, ctx, sm_result, trace)
-        override = self._eval_cascade_overlay(override, "needs_repair",
+        override = self._eval_cascade_overlay(override, "can_apply_repair",
             self._apply_repair_overlay, ctx, sm_result, trace)
         override = self._eval_cascade_overlay(override, "has_repeated_objections",
             self._apply_objection_overlay, ctx, sm_result, trace)

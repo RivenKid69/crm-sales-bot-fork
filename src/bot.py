@@ -993,6 +993,8 @@ class SalesBot:
                 last_intent=self.last_intent,
                 current_intent=intent,
                 classification_result=classification,
+                user_message=user_message,
+                last_bot_message=self.last_bot_message or "",
             )
 
         # === Structural Frustration Detection (P3) ===
