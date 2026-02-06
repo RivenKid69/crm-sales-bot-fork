@@ -107,6 +107,7 @@ class SalesBot:
         flow_name: Optional[str] = None,
         persona: Optional[str] = None,
         client_id: Optional[str] = None,
+        config_name: Optional[str] = None,
     ):
         """
         Инициализация бота со всеми компонентами.
@@ -117,6 +118,7 @@ class SalesBot:
             enable_tracing: Включить трассировку условных правил (для симуляций)
             flow_name: Имя flow для загрузки (по умолчанию из settings.flow.active)
             persona: Имя персоны клиента для ObjectionGuard лимитов (из симулятора)
+            config_name: Имя tenant-конфига (если нужно загрузить не default)
         """
         # Генерируем ID диалога для трейсинга
         self.conversation_id = conversation_id or str(uuid.uuid4())[:8]
@@ -126,7 +128,10 @@ class SalesBot:
         # Phase DAG: Load modular flow configuration (REQUIRED since v2.0)
         # Legacy Python-based config is deprecated and no longer used
         self._config_loader = ConfigLoader()
-        self._config: LoadedConfig = self._config_loader.load()
+        if config_name:
+            self._config: LoadedConfig = self._config_loader.load_named(config_name)
+        else:
+            self._config = self._config_loader.load()
 
         # Load flow from parameter, settings, or default
         # IMPORTANT: flow_name must be non-empty string to override settings
@@ -256,6 +261,7 @@ class SalesBot:
             enabled_flags=list(flags.get_enabled_flags()),
             flow_name=self._flow.name,
             flow_version=self._flow.version,
+            config_name=getattr(self._config, "name", None),
             config_system="modular_yaml",
         )
 
@@ -1742,14 +1748,15 @@ class SalesBot:
         flow_name = snapshot.get("flow_name") or settings.flow.active
         config_name = snapshot.get("config_name")
 
-        bot = cls(llm=llm, flow_name=flow_name)
-
-        # Restore config if loader supports named configs
-        if config_name and hasattr(bot._config_loader, "load_named"):
-            bot._config = bot._config_loader.load_named(config_name)
+        bot = cls(
+            llm=llm,
+            flow_name=flow_name,
+            conversation_id=snapshot.get("conversation_id"),
+            client_id=snapshot.get("client_id"),
+            config_name=config_name,
+        )
 
         bot.conversation_id = snapshot.get("conversation_id", bot.conversation_id)
-        bot.client_id = snapshot.get("client_id")
         logger.set_conversation(bot.conversation_id)
 
         bot.state_machine = StateMachine.from_dict(

@@ -25,7 +25,7 @@ def _get_real_llm():
     return llm
 
 
-def _run_dialog(session_id, persona_key, manager, llm, turns, token):
+def _run_dialog(session_id, client_id, persona_key, manager, llm, turns, token):
     persona = PERSONAS[persona_key]
     client = ClientAgent(llm, persona, persona_key=persona_key)
 
@@ -33,7 +33,7 @@ def _run_dialog(session_id, persona_key, manager, llm, turns, token):
     client_message = f"{token} {client_message}"
 
     for _ in range(turns):
-        bot = manager.get_or_create(session_id, llm=llm)
+        bot = manager.get_or_create(session_id, llm=llm, client_id=client_id)
         result = bot.process(client_message)
         if result.get("is_final"):
             break
@@ -42,10 +42,11 @@ def _run_dialog(session_id, persona_key, manager, llm, turns, token):
         client_message = f"{token} {client_message}"
 
     # Save snapshot to exercise buffer path
-    manager.save(session_id)
-    bot = manager.get_or_create(session_id, llm=llm)
+    manager.save(session_id, client_id=client_id)
+    bot = manager.get_or_create(session_id, llm=llm, client_id=client_id)
     return {
         "session_id": session_id,
+        "client_id": client_id,
         "token": token,
         "history": list(bot.history),
         "collected_data": dict(bot.state_machine.collected_data),
@@ -72,12 +73,14 @@ def test_concurrent_sessions_no_leakage(tmp_path):
         futures = []
         for i in range(sessions):
             sid = f"stress-{i}-{uuid.uuid4().hex[:6]}"
+            client_id = f"client-{i}-{uuid.uuid4().hex[:6]}"
             token = f"[SID{i}]"
             persona_key = persona_keys[i % len(persona_keys)]
             futures.append(
                 executor.submit(
                     _run_dialog,
                     sid,
+                    client_id,
                     persona_key,
                     manager,
                     llm,

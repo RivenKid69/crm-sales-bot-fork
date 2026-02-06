@@ -255,7 +255,7 @@ def test_session_lock_manager_exclusive(tmp_path):
 def test_session_manager_cleanup_expired_enqueues_snapshot(mock_llm, tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
     manager = SessionManager(ttl_seconds=0, snapshot_buffer=buffer)
-    _ = manager.get_or_create("sess-expired", llm=mock_llm)
+    _ = manager.get_or_create("sess-expired", llm=mock_llm, client_id="client-expired")
 
     removed = manager.cleanup_expired()
     assert removed == 1
@@ -308,13 +308,60 @@ def test_snapshot_buffer_no_mix_between_sessions(tmp_path):
     assert s1["conversation_id"] != s2["conversation_id"]
 
 
+def test_snapshot_buffer_allows_same_session_for_different_clients(tmp_path):
+    buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
+    buffer.enqueue("same", {"conversation_id": "same", "client_id": "c1", "v": 1})
+    buffer.enqueue("same", {"conversation_id": "same", "client_id": "c2", "v": 2})
+
+    assert buffer.count() == 2
+    assert buffer.get("same", client_id="c1")["v"] == 1
+    assert buffer.get("same", client_id="c2")["v"] == 2
+    assert buffer.get("same") is None  # Ambiguous without client_id
+
+
+def test_session_manager_cache_isolated_by_client_id(mock_llm, tmp_path):
+    buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
+    manager = SessionManager(snapshot_buffer=buffer)
+
+    bot_c1 = manager.get_or_create("shared-sid", llm=mock_llm, client_id="c1")
+    bot_c2 = manager.get_or_create("shared-sid", llm=mock_llm, client_id="c2")
+
+    assert bot_c1 is not bot_c2
+    assert bot_c1.client_id == "c1"
+    assert bot_c2.client_id == "c2"
+
+
+def test_session_manager_flush_uses_tenant_aware_storage_key(tmp_path):
+    buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
+    saved = {}
+
+    def save_snapshot(sid, snapshot):
+        saved[sid] = snapshot
+
+    fake_time = time.struct_time((2026, 2, 5, 23, 1, 0, 0, 0, -1))
+    manager = SessionManager(
+        save_snapshot=save_snapshot,
+        snapshot_buffer=buffer,
+        flush_hour=23,
+        time_provider=lambda: fake_time,
+    )
+
+    buffer.enqueue("same", {"conversation_id": "same", "client_id": "c1"})
+    buffer.enqueue("same", {"conversation_id": "same", "client_id": "c2"})
+
+    manager._maybe_flush_batch()
+    assert "c1::same" in saved
+    assert "c2::same" in saved
+    assert buffer.count() == 0
+
+
 def test_session_manager_client_id_mismatch_skips_restore(tmp_path, mock_llm):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
     snapshot = {"conversation_id": "s1", "client_id": "c1", "history": []}
-    buffer.enqueue("s1", snapshot)
+    buffer.enqueue("s1", snapshot, client_id="c1")
 
     manager = SessionManager(snapshot_buffer=buffer)
     bot = manager.get_or_create("s1", llm=mock_llm, client_id="c2")
 
     assert bot.client_id == "c2"
-    assert buffer.get("s1") is not None
+    assert buffer.get("s1", client_id="c1") is not None
