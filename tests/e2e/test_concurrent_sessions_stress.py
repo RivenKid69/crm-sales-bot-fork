@@ -62,7 +62,6 @@ def test_concurrent_sessions_no_leakage(tmp_path):
 
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "snapshot_buffer.sqlite"))
     manager = SessionManager(
-        ttl_seconds=3600,
         snapshot_buffer=buffer,
     )
 
