@@ -803,11 +803,15 @@ class StateMachine:
         if intent not in OBJECTION_INTENTS:
             return False
 
-        # Check if limit already reached
+        # Check if limit already reached (persona-aware)
+        from src.yaml_config.constants import get_persona_objection_limits
+        persona = self.collected_data.get("persona", "default")
+        limits = get_persona_objection_limits(persona)
+
         consecutive = self.intent_tracker.objection_consecutive()
         total = self.intent_tracker.objection_total()
 
-        if consecutive >= self.max_consecutive_objections or total >= self.max_total_objections:
+        if consecutive >= limits["consecutive"] or total >= limits["total"]:
             logger.debug(
                 "Skipping objection recording - limit already reached",
                 intent=intent,

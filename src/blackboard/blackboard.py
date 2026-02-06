@@ -263,18 +263,16 @@ class DialogueBlackboard:
         Returns:
             True if recording should be skipped (limit already reached)
         """
-        from src.yaml_config.constants import OBJECTION_INTENTS
+        from src.yaml_config.constants import OBJECTION_INTENTS, get_persona_objection_limits
 
         if intent not in OBJECTION_INTENTS:
             return False
 
-        # Get limits from flow config or use YAML constants as defaults
-        max_consecutive = self._flow_config.states.get("_limits", {}).get(
-            "max_consecutive_objections", MAX_CONSECUTIVE_OBJECTIONS
-        )
-        max_total = self._flow_config.states.get("_limits", {}).get(
-            "max_total_objections", MAX_TOTAL_OBJECTIONS
-        )
+        # Get persona-aware limits
+        persona = self._state_machine.collected_data.get("persona", "default")
+        limits = get_persona_objection_limits(persona)
+        max_consecutive = limits["consecutive"]
+        max_total = limits["total"]
 
         # Check if limit already reached
         if self._intent_tracker:

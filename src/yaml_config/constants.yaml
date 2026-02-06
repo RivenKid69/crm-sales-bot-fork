@@ -217,6 +217,21 @@ limits:
   # Phase-origin objection escape threshold (lower than standard 3)
   phase_origin_objection_escape: 2
 
+  # Persona-specific objection limits (single source of truth)
+  # Names must match personas.py exactly
+  persona_objection_limits:
+    happy_path:      { consecutive: 3, total: 5 }
+    skeptic:         { consecutive: 4, total: 7 }
+    busy:            { consecutive: 3, total: 5 }
+    price_sensitive: { consecutive: 5, total: 9 }
+    competitor_user: { consecutive: 4, total: 7 }
+    aggressive:      { consecutive: 5, total: 8 }
+    technical:       { consecutive: 4, total: 6 }
+    tire_kicker:     { consecutive: 6, total: 12 }
+    analytical:      { consecutive: 4, total: 6 }
+    friendly:        { consecutive: 4, total: 7 }
+    default:         { consecutive: 4, total: 6 }
+
 # =============================================================================
 # DISAMBIGUATION (Unified Disambiguation Decision Engine)
 # =============================================================================

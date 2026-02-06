@@ -6,7 +6,7 @@ import logging
 from ..knowledge_source import KnowledgeSource
 from ..blackboard import DialogueBlackboard
 from ..enums import Priority
-from src.yaml_config.constants import OBJECTION_INTENTS
+from src.yaml_config.constants import OBJECTION_INTENTS, PERSONA_OBJECTION_LIMITS
 
 logger = logging.getLogger(__name__)
 
@@ -33,25 +33,20 @@ class ObjectionGuardSource(KnowledgeSource):
     redirect to soft close.
     """
 
-    # Default persona limits (loaded from constants.yaml in production)
-    # FIX: Names must match personas.py exactly (e.g., "skeptic" not "skeptical")
-    # Limits are calibrated based on objection_probability from personas.py:
-    # - Higher objection_probability → higher limits to avoid premature soft_close
-    DEFAULT_PERSONA_LIMITS: Dict[str, Dict[str, int]] = {
-        # From personas.py with matching names:
-        "happy_path": {"consecutive": 3, "total": 5},      # objection_prob=0.1, rarely objects
-        "skeptic": {"consecutive": 4, "total": 7},         # objection_prob=0.6
-        "busy": {"consecutive": 3, "total": 5},            # objection_prob=0.4
-        "price_sensitive": {"consecutive": 5, "total": 9}, # objection_prob=0.8, needs more room
-        "competitor_user": {"consecutive": 4, "total": 7}, # objection_prob=0.5
-        "aggressive": {"consecutive": 5, "total": 8},      # objection_prob=0.7
-        "technical": {"consecutive": 4, "total": 6},       # objection_prob=0.3
-        "tire_kicker": {"consecutive": 6, "total": 12},    # objection_prob=0.9, NEEDS HIGH LIMITS!
-        # Legacy names (for backwards compatibility):
+    # Default persona limits — loaded from constants.yaml (single source of truth).
+    # Hardcoded dict is kept only as a safety net fallback if YAML fails to load.
+    DEFAULT_PERSONA_LIMITS: Dict[str, Dict[str, int]] = PERSONA_OBJECTION_LIMITS if PERSONA_OBJECTION_LIMITS else {
+        "happy_path": {"consecutive": 3, "total": 5},
+        "skeptic": {"consecutive": 4, "total": 7},
+        "busy": {"consecutive": 3, "total": 5},
+        "price_sensitive": {"consecutive": 5, "total": 9},
+        "competitor_user": {"consecutive": 4, "total": 7},
+        "aggressive": {"consecutive": 5, "total": 8},
+        "technical": {"consecutive": 4, "total": 6},
+        "tire_kicker": {"consecutive": 6, "total": 12},
         "analytical": {"consecutive": 4, "total": 6},
         "friendly": {"consecutive": 4, "total": 7},
-        # Fallback:
-        "default": {"consecutive": 4, "total": 6},         # Increased from 3/5 to 4/6
+        "default": {"consecutive": 4, "total": 6},
     }
 
     # Intents considered as objections (single source of truth)

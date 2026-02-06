@@ -71,6 +71,18 @@ MAX_CONSECUTIVE_OBJECTIONS: int = _limits.get("max_consecutive_objections", 3)
 MAX_TOTAL_OBJECTIONS: int = _limits.get("max_total_objections", 5)
 MAX_GOBACKS: int = _limits.get("max_gobacks", 2)
 
+PERSONA_OBJECTION_LIMITS: Dict[str, Dict[str, int]] = _limits.get("persona_objection_limits", {})
+
+
+def get_persona_objection_limits(persona: str) -> Dict[str, int]:
+    """Resolve persona-specific objection limits.
+    Falls back: persona -> 'default' persona -> global MAX_* constants."""
+    if persona in PERSONA_OBJECTION_LIMITS:
+        return PERSONA_OBJECTION_LIMITS[persona]
+    if "default" in PERSONA_OBJECTION_LIMITS:
+        return PERSONA_OBJECTION_LIMITS["default"]
+    return {"consecutive": MAX_CONSECUTIVE_OBJECTIONS, "total": MAX_TOTAL_OBJECTIONS}
+
 
 # =============================================================================
 # DISAMBIGUATION (Unified Disambiguation Decision Engine)
@@ -960,6 +972,8 @@ __all__ = [
     "MAX_CONSECUTIVE_OBJECTIONS",
     "MAX_TOTAL_OBJECTIONS",
     "MAX_GOBACKS",
+    "PERSONA_OBJECTION_LIMITS",
+    "get_persona_objection_limits",
     # Intent categories - базовые
     "GO_BACK_INTENTS",
     "OBJECTION_INTENTS",

@@ -255,4 +255,5 @@ class TransitionResolverSource(KnowledgeSource):
             guard_intervention=getattr(envelope, "guard_intervention", None),
             tone=getattr(envelope, "tone", None),
             unclear_count=getattr(envelope, "unclear_count", 0),
+            persona=getattr(ctx, 'persona', 'default'),
         )

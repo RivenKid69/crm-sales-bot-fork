@@ -135,11 +135,34 @@ class IntentProcessorSource(KnowledgeSource):
         # Get rules from state config
         rules = ctx.state_config.get("rules", {})
 
-        # Check if intent has a rule
+        # Check if intent has a rule — if not, delegate to RuleResolver for taxonomy fallback
         if intent not in rules:
-            self._log_contribution(
-                reason=f"No rule defined for intent: {intent}"
+            eval_ctx = self._build_eval_context(ctx)
+            result = self._rule_resolver.resolve_action(
+                intent=intent,
+                state_rules=rules,
+                global_rules=ctx.flow_config.get("global_rules", {}) if ctx.flow_config else {},
+                ctx=eval_ctx,
+                state=ctx.state,
             )
+            if result.action and result.action != self._rule_resolver.default_action:
+                blackboard.propose_action(
+                    action=result.action, priority=Priority.LOW,
+                    combinable=True, reason_code=f"taxonomy_fallback_{intent}",
+                    source_name=self.name,
+                    metadata={"intent": intent, "is_fallback": result.is_fallback,
+                              "fallback_level": result.fallback_level},
+                )
+                if result.next_state:
+                    blackboard.propose_transition(
+                        next_state=result.next_state, priority=Priority.LOW,
+                        reason_code=f"taxonomy_transition_{intent}",
+                        source_name=self.name,
+                    )
+                self._log_contribution(action=result.action,
+                    reason=f"Taxonomy fallback: {intent} (level={result.fallback_level})")
+            else:
+                self._log_contribution(reason=f"No rule or taxonomy for intent: {intent}")
             return
 
         rule = rules[intent]
@@ -266,4 +289,5 @@ class IntentProcessorSource(KnowledgeSource):
             guard_intervention=getattr(envelope, "guard_intervention", None),
             tone=getattr(envelope, "tone", None),
             unclear_count=getattr(envelope, "unclear_count", 0),
+            persona=getattr(ctx, 'persona', 'default'),
         )

@@ -212,6 +212,9 @@ class EvaluatorContext:
     # Secondary intents (from RefinementPipeline via ContextEnvelope)
     secondary_intents: List[str] = field(default_factory=list)
 
+    # === Persona-aware objection limits ===
+    persona: str = ""
+
     # === DAG-specific fields ===
     is_dag_mode: bool = False
     active_branches: List[str] = field(default_factory=list)
@@ -244,6 +247,16 @@ class EvaluatorContext:
         # Compute is_phase_state from current_phase
         if not self.is_phase_state and self.current_phase is not None:
             self.is_phase_state = True
+
+        # Auto-resolve persona-specific objection limits
+        from src.yaml_config.constants import PERSONA_OBJECTION_LIMITS
+        if (self.persona
+            and self.persona in PERSONA_OBJECTION_LIMITS
+            and self.max_consecutive_objections == MAX_CONSECUTIVE_OBJECTIONS
+            and self.max_total_objections == MAX_TOTAL_OBJECTIONS):
+            limits = PERSONA_OBJECTION_LIMITS[self.persona]
+            self.max_consecutive_objections = limits["consecutive"]
+            self.max_total_objections = limits["total"]
 
     # Legacy aliases for backward compatibility
     @property
@@ -354,8 +367,7 @@ class EvaluatorContext:
             in_fork = dag_depth > 0
             fork_id = dag_ctx.current_fork
 
-        # Extract objection limits from state_machine (which reads from YAML config)
-        # This ensures limits are configurable via constants.yaml
+        # Extract objection limits from state_machine if explicitly set
         max_consecutive = getattr(
             state_machine, 'max_consecutive_objections', MAX_CONSECUTIVE_OBJECTIONS
         )
@@ -391,6 +403,8 @@ class EvaluatorContext:
             tone=tone,
             # Secondary intents
             secondary_intents=list(secondary_intents),
+            # Persona (enables auto-resolution of objection limits in __post_init__)
+            persona=collected_data.get("persona", "default"),
             # DAG fields
             is_dag_mode=is_dag_mode,
             active_branches=active_branches,
@@ -398,7 +412,7 @@ class EvaluatorContext:
             dag_depth=dag_depth,
             in_fork=in_fork,
             fork_id=fork_id,
-            # Objection limits from config
+            # Objection limits from state_machine (explicit overrides prevent auto-resolution)
             max_consecutive_objections=max_consecutive,
             max_total_objections=max_total,
         )
