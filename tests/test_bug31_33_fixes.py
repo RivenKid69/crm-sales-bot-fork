@@ -342,6 +342,9 @@ class MockIntentTracker:
     def category_total(self, category):
         return self._category_totals.get(category, 0)
 
+    def advance_turn(self) -> None:
+        pass
+
 
 class MockContextSnapshot:
     """Mock ContextSnapshot for testing."""

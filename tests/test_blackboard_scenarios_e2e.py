@@ -204,7 +204,6 @@ class ScenarioStateMachine:
                 if self._intents:
                     self._prev_intent = self._intents[-1].intent
                 self._intents.append(IntentRecord(intent=intent, state=state))
-                self._turn_number += 1
                 if "objection" in intent:
                     self._objection_consecutive += 1
                     self._objection_total += 1
@@ -226,7 +225,7 @@ class ScenarioStateMachine:
             def get_intents_by_category(self, category):
                 return [r for r in self._intents if category in r.intent]
 
-            def increment_turn(self):
+            def advance_turn(self):
                 self._turn_number += 1
 
         return IntentTracker()

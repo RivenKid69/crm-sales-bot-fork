@@ -37,8 +37,11 @@ def populated_tracker():
     """Create tracker with some recorded intents."""
     tracker = IntentTracker()
     tracker.record("greeting", "greeting")
+    tracker.advance_turn()
     tracker.record("price_question", "spin_situation")
+    tracker.advance_turn()
     tracker.record("price_question", "spin_situation")
+    tracker.advance_turn()
     return tracker
 
 
@@ -245,6 +248,7 @@ class TestIntentTrackerBasic:
     def test_record_single_intent(self, tracker):
         """Test recording a single intent."""
         tracker.record("greeting", "greeting")
+        tracker.advance_turn()
 
         assert tracker.last_intent == "greeting"
         assert tracker.prev_intent is None
@@ -255,8 +259,11 @@ class TestIntentTrackerBasic:
     def test_record_multiple_intents(self, tracker):
         """Test recording multiple intents."""
         tracker.record("greeting", "greeting")
+        tracker.advance_turn()
         tracker.record("price_question", "spin_situation")
+        tracker.advance_turn()
         tracker.record("agreement", "close")
+        tracker.advance_turn()
 
         assert tracker.last_intent == "agreement"
         assert tracker.prev_intent == "price_question"
@@ -843,3 +850,66 @@ class TestIntegration:
         assert tracker.technical_problems_total() == 2
         assert tracker.conversational_total() == 1
         assert tracker.is_conversational("frustration_expression") is True
+
+
+# =============================================================================
+# ADVANCE_TURN DECOUPLING TESTS
+# =============================================================================
+
+class TestAdvanceTurn:
+    """Tests for advance_turn() — decoupled from record()."""
+
+    def test_advance_turn_increments_independently(self, tracker):
+        """advance_turn() increments turn counter without recording."""
+        assert tracker.turn_number == 0
+        tracker.advance_turn()
+        assert tracker.turn_number == 1
+        tracker.advance_turn()
+        assert tracker.turn_number == 2
+        # No records were made
+        assert tracker.history_length == 0
+        assert tracker.last_intent is None
+
+    def test_turn_counter_not_frozen_when_record_skipped(self, tracker):
+        """Turn counter advances even if record() is not called (skip scenario)."""
+        tracker.record("greeting", "greeting")
+        tracker.advance_turn()
+        assert tracker.turn_number == 1
+
+        # Simulate skipping record (e.g. objection limit reached)
+        # but still advancing turn
+        tracker.advance_turn()
+        assert tracker.turn_number == 2
+        # History didn't grow — only 1 record
+        assert tracker.history_length == 1
+
+        # Another normal turn
+        tracker.record("agreement", "close")
+        tracker.advance_turn()
+        assert tracker.turn_number == 3
+        assert tracker.history_length == 2
+
+    def test_history_length_vs_turn_number_diverge(self, tracker):
+        """History length and turn_number can diverge when records are skipped."""
+        # 5 turns, but only 3 records
+        tracker.record("greeting", "greeting")
+        tracker.advance_turn()
+
+        tracker.advance_turn()  # skipped record
+
+        tracker.record("price_question", "spin_situation")
+        tracker.advance_turn()
+
+        tracker.advance_turn()  # skipped record
+
+        tracker.record("agreement", "close")
+        tracker.advance_turn()
+
+        assert tracker.turn_number == 5
+        assert tracker.history_length == 3
+
+    def test_record_does_not_increment_turn(self, tracker):
+        """record() alone does NOT increment turn_number."""
+        tracker.record("greeting", "greeting")
+        assert tracker.turn_number == 0  # Not incremented by record()
+        assert tracker.history_length == 1

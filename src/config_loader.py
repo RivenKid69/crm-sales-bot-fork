@@ -125,6 +125,11 @@ class LoadedConfig:
         return self.constants.get("response_directives", {})
 
     @property
+    def blackboard(self) -> Dict[str, Any]:
+        """Get blackboard configuration (source enablement, etc.)."""
+        return self.constants.get("blackboard", {})
+
+    @property
     def taxonomy_bypass_intents(self) -> List[str]:
         """Compute bypass intents from taxonomy (SSoT).
 
@@ -284,6 +289,30 @@ class FlowConfig:
     def __post_init__(self):
         """Parse DAG nodes from states after initialization."""
         self._parse_dag_nodes()
+
+    def __getattr__(self, name: str):
+        """Guard against accessing LoadedConfig attributes on FlowConfig.
+
+        FlowConfig (per-flow: states, phases) and LoadedConfig (global: constants,
+        guard, frustration) are separate by design.
+
+        CRITICAL: Raises TypeError (NOT AttributeError) for LoadedConfig-only
+        attributes. This is intentional — hasattr() catches AttributeError and
+        silently returns False, which is exactly the bug pattern we're preventing.
+        TypeError propagates through hasattr(), crashing loudly.
+        """
+        _LOADED_CONFIG_ONLY = frozenset({
+            'constants', 'guard', 'frustration', 'lead_scoring',
+            'policy', 'limits', 'intents', 'circular_flow',
+            'fallback', 'cta', 'response_directives', 'blackboard',
+        })
+        if name in _LOADED_CONFIG_ONLY:
+            raise TypeError(
+                f"FlowConfig has no '{name}' — it belongs to LoadedConfig. "
+                f"Use self._config (LoadedConfig) for global constants, "
+                f"not self._flow (FlowConfig)."
+            )
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
 
     def _parse_dag_nodes(self):
         """Extract DAG nodes from states configuration."""

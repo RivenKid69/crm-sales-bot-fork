@@ -1009,20 +1009,7 @@ class StateMachine:
             if category:
                 return set(category)
 
-        # Fallback 1: Try self._constants.intents.{category_name}
-        if hasattr(self, '_constants') and self._constants:
-            intents_config = self._constants.get("intents", {})
-            # Check directly under intents (e.g., intents.price_related)
-            if category_name in intents_config:
-                category = intents_config[category_name]
-                if isinstance(category, list):
-                    return set(category)
-            # Legacy path: intents.categories.{category_name}
-            categories = intents_config.get("categories", {})
-            if category_name in categories:
-                return set(categories[category_name])
-
-        # Fallback 2: Try global config
+        # Fallback: Try global config
         try:
             from src.config_loader import get_config
             config = get_config()
@@ -1226,6 +1213,8 @@ class StateMachine:
         # Record intent for tracking (still needed for compatibility)
         if not self._should_skip_objection_recording(intent):
             self.intent_tracker.record(intent, self.state)
+        # Always advance turn counter
+        self.intent_tracker.advance_turn()
 
         # FIX: Track state_before_objection for compatibility with tests
         # This logic mirrors orchestrator._update_state_before_objection()

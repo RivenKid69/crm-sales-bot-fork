@@ -100,6 +100,8 @@ class MockIntentTracker:
         if self._intents:
             self._prev_intent = self._intents[-1][0]
         self._intents.append((intent, state))
+
+    def advance_turn(self) -> None:
         self._turn_number += 1
 
     def objection_consecutive(self) -> int:
@@ -810,7 +812,7 @@ class TestSourceRegistration:
         reg = SourceRegistry.get_registration("ConversationGuardSource")
         assert reg is not None
         assert reg.priority_order == 7
-        assert reg.enabled_by_default is False
+        assert reg.enabled_by_default is True
 
     def test_source_order_between_goback_and_disambiguation(self):
         from src.blackboard.source_registry import SourceRegistry

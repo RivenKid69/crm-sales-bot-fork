@@ -90,13 +90,15 @@ class MockIntentTracker:
         if self._intents:
             self._prev_intent = self._intents[-1][0]
         self._intents.append((intent, state))
-        self._turn_number += 1
 
         if "objection" in intent:
             self._objection_consecutive += 1
             self._objection_total += 1
         else:
             self._objection_consecutive = 0
+
+    def advance_turn(self) -> None:
+        self._turn_number += 1
 
     def objection_consecutive(self) -> int:
         return self._objection_consecutive
@@ -524,10 +526,12 @@ class TestObjectionGuardSourcePersonaLimits:
         """Test that aggressive persona has higher limits."""
         from src.blackboard.sources import ObjectionGuardSource
 
+        # begin_turn() calls record() which increments counters by 1,
+        # so set initial values 1 less than desired check values.
         bb = create_blackboard(
             intent="objection_price",
-            objection_consecutive=4,  # would exceed default (3) but not aggressive (5)
-            objection_total=7,  # would exceed default (5) but not aggressive (8)
+            objection_consecutive=3,  # becomes 4 after record(); aggressive limit=5
+            objection_total=6,  # becomes 7 after record(); aggressive limit=8
             collected_data={"persona": "aggressive"}
         )
         source = ObjectionGuardSource()

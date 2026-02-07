@@ -6409,6 +6409,16 @@ greeting_state_safety:
   redirect_to: "{{entry_state}}"
 
 # =============================================================================
+# BLACKBOARD CONFIGURATION
+# =============================================================================
+# Source enablement for Dialogue Orchestrator pipeline.
+# All sources are enabled by default (see SourceRegistry).
+# Use this section to DISABLE specific sources or pass source-specific config.
+# SSoT: src/blackboard/source_registry.py (registration with defaults)
+blackboard:
+  sources: {}
+
+# =============================================================================
 # СОГЛАСОВАННОСТЬ ПОРОГОВ (ВАЖНО!)
 # =============================================================================
 # guard.high_frustration_threshold ДОЛЖЕН быть равен frustration.thresholds.high

@@ -90,6 +90,7 @@ class DialogueOrchestrator:
         guard: Optional[Any] = None,
         fallback_handler: Optional[Any] = None,
         llm: Optional[Any] = None,
+        blackboard_config: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize the orchestrator.
@@ -103,12 +104,14 @@ class DialogueOrchestrator:
             persona_limits: Custom persona limits for ObjectionGuardSource
             tenant_config: Tenant-specific configuration (uses DEFAULT_TENANT if not provided)
             llm: LLM instance for AutonomousDecisionSource (None for non-autonomous flows)
+            blackboard_config: Blackboard config from constants.yaml (source enablement, etc.)
         """
         self._state_machine = state_machine
         self._flow_config = flow_config
         self._tenant_config = tenant_config or DEFAULT_TENANT
         self._guard = guard
         self._fallback_handler = fallback_handler
+        self._blackboard_config = blackboard_config or {}
 
         # Initialize blackboard with tenant config
         self._blackboard = DialogueBlackboard(
@@ -162,16 +165,14 @@ class DialogueOrchestrator:
         )
 
     def _get_sources_config(self) -> Dict[str, Any]:
-        """
-        Get sources configuration from flow_config or constants.
+        """Get sources configuration from explicit blackboard_config.
 
-        Returns:
-            Dict with 'sources' key containing per-source enabled flags
+        Returns config from constants.yaml blackboard section, passed via
+        create_orchestrator(). No programmatic fallback — source enabling
+        is handled by enabled_by_default in SourceRegistry + feature flags
+        in should_contribute().
         """
-        # Try to get from flow_config
-        if hasattr(self._flow_config, 'constants'):
-            return self._flow_config.constants.get('blackboard', {})
-        return {}
+        return self._blackboard_config
 
     @property
     def blackboard(self) -> DialogueBlackboard:
@@ -870,6 +871,7 @@ def create_orchestrator(
     guard: Optional[Any] = None,
     fallback_handler: Optional[Any] = None,
     llm: Optional[Any] = None,
+    blackboard_config: Optional[Dict[str, Any]] = None,
 ) -> DialogueOrchestrator:
     """
     Factory function to create a fully configured DialogueOrchestrator.
@@ -965,6 +967,7 @@ def create_orchestrator(
         guard=guard,
         fallback_handler=fallback_handler,
         llm=llm,
+        blackboard_config=blackboard_config,
     )
 
     return orchestrator

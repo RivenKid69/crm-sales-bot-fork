@@ -122,6 +122,9 @@ class TestMockImplementations:
             def record(self, intent: str, state: str) -> None:
                 pass
 
+            def advance_turn(self) -> None:
+                pass
+
             def objection_consecutive(self) -> int:
                 return 0
 
@@ -252,6 +255,8 @@ class TestMockImplementations:
             def record(self, intent: str, state: str) -> None:
                 self._prev_intent = self._intents[-1] if self._intents else None
                 self._intents.append(intent)
+
+            def advance_turn(self) -> None:
                 self._turn += 1
 
             def objection_consecutive(self) -> int:
@@ -271,10 +276,12 @@ class TestMockImplementations:
 
         # Test recording
         mock_tracker.record("greeting", "greeting")
+        mock_tracker.advance_turn()
         assert mock_tracker.turn_number == 1
         assert mock_tracker.total_count("greeting") == 1
 
         mock_tracker.record("price_question", "spin_situation")
+        mock_tracker.advance_turn()
         assert mock_tracker.turn_number == 2
         assert mock_tracker.prev_intent == "greeting"
 
@@ -390,14 +397,16 @@ class TestProtocolAttributes:
         assert callable(getattr(tracker, 'category_total', None))
 
     def test_intent_tracker_record_updates_turn(self):
-        """Verify IntentTracker.record() increments turn number."""
+        """Verify advance_turn() increments turn number (decoupled from record)."""
         from src.intent_tracker import IntentTracker
 
         tracker = IntentTracker()
         assert tracker.turn_number == 0
 
         tracker.record("greeting", "greeting")
+        tracker.advance_turn()
         assert tracker.turn_number == 1
 
         tracker.record("info_provided", "spin_situation")
+        tracker.advance_turn()
         assert tracker.turn_number == 2

@@ -155,7 +155,13 @@ class IntentTracker:
         # Update category tracking
         self._update_categories(intent)
 
-        # Increment turn number
+    def advance_turn(self) -> None:
+        """Advance turn counter unconditionally.
+
+        Called once per turn by blackboard.begin_turn(), independent of record().
+        Decoupled from record() so that skip logic (e.g. objection limit)
+        cannot freeze the conversation-global turn counter.
+        """
         self._turn_number += 1
 
     def _update_categories(self, intent: str) -> None:
