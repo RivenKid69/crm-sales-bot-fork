@@ -671,13 +671,7 @@ class TestEscalationSourceInit:
 
         expected = {
             "request_human",
-            "speak_to_manager",
-            "talk_to_person",
             "need_help",
-            "not_a_bot",
-            "real_person",
-            "human_please",
-            "escalate",
         }
         assert EscalationSource.EXPLICIT_ESCALATION_INTENTS == expected
 
@@ -686,12 +680,8 @@ class TestEscalationSourceInit:
         from src.blackboard.sources import EscalationSource
 
         expected = {
-            "frustrated",
-            "angry",
-            "complaint",
-            "this_is_useless",
-            "not_helpful",
-            "waste_of_time",
+            "frustration_expression",
+            "impatience_expression",
         }
         assert EscalationSource.FRUSTRATION_INTENTS == expected
 
@@ -703,7 +693,7 @@ class TestEscalationSourceInit:
             "legal_question",
             "compliance_question",
             "formal_complaint",
-            "refund_request",
+            "request_refund",
             "contract_dispute",
             "data_deletion",
             "gdpr_request",
@@ -736,7 +726,7 @@ class TestEscalationSourceShouldContribute:
         """Test should_contribute returns True for frustration intents."""
         from src.blackboard.sources import EscalationSource
 
-        bb = create_blackboard(intent="angry")
+        bb = create_blackboard(intent="frustration_expression")
         source = EscalationSource()
 
         assert source.should_contribute(bb) is True
@@ -807,12 +797,12 @@ class TestEscalationSourceContributeExplicit:
         assert transition_proposals[0].value == "human_handoff"
         assert transition_proposals[0].priority == Priority.CRITICAL
 
-    def test_contribute_speak_to_manager(self):
-        """Test speak_to_manager intent triggers escalation."""
+    def test_contribute_request_human(self):
+        """Test request_human intent triggers escalation."""
         from src.blackboard.sources import EscalationSource
         from src.blackboard.enums import Priority
 
-        bb = create_blackboard(intent="speak_to_manager")
+        bb = create_blackboard(intent="request_human")
         source = EscalationSource()
 
         source.contribute(bb)
@@ -864,7 +854,7 @@ class TestEscalationSourceContributeFrustration:
         from src.blackboard.sources import EscalationSource
 
         bb = create_blackboard(
-            intent="frustrated",
+            intent="frustration_expression",
             category_totals={"frustration": 2}  # Below threshold of 3
         )
         source = EscalationSource()
@@ -879,7 +869,7 @@ class TestEscalationSourceContributeFrustration:
         from src.blackboard.sources import EscalationSource
 
         bb = create_blackboard(
-            intent="frustrated",
+            intent="frustration_expression",
             category_totals={"frustration": 3}  # At threshold
         )
         source = EscalationSource()
@@ -1403,7 +1393,7 @@ class TestEscalationSourceFlowAware:
         }
 
         bb = create_blackboard(
-            intent="speak_to_manager",
+            intent="request_human",
             states=states,
             entry_points=entry_points,
         )

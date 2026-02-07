@@ -30,12 +30,7 @@ mixins:
       request_brevity: respond_briefly
     transitions:
       request_human: escalated
-      speak_to_manager: escalated
-      talk_to_person: escalated
-      not_a_bot: escalated
-      real_person: escalated
-      human_please: escalated
-      escalate: escalated
+      need_help: escalated
       problem_technical: escalated
       problem_connection: escalated
       problem_sync: escalated
@@ -117,12 +112,7 @@ mixins:
 
       # Escalation transitions
       request_human: escalated
-      speak_to_manager: escalated
-      talk_to_person: escalated
-      not_a_bot: escalated
-      real_person: escalated
-      human_please: escalated
-      escalate: escalated
+      need_help: escalated
 
       # Technical problems
       problem_technical: escalated

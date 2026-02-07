@@ -93,22 +93,20 @@ class TestNewCategories:
     """Tests for newly added categories in constants.yaml."""
 
     def test_escalation_category_exists(self):
-        """Verify escalation category exists with 8 intents."""
+        """Verify escalation category exists with 2 classifiable intents."""
         escalation = INTENT_CATEGORIES.get("escalation", [])
-        assert len(escalation) == 8
+        assert len(escalation) == 2
         expected = {
-            "request_human", "speak_to_manager", "talk_to_person", "need_help",
-            "not_a_bot", "real_person", "human_please", "escalate",
+            "request_human", "need_help",
         }
         assert set(escalation) == expected
 
     def test_frustration_category_exists(self):
-        """Verify frustration category exists with 6 intents."""
+        """Verify frustration category exists with 2 classifiable intents."""
         frustration = INTENT_CATEGORIES.get("frustration", [])
-        assert len(frustration) == 6
+        assert len(frustration) == 2
         expected = {
-            "frustrated", "angry", "complaint",
-            "this_is_useless", "not_helpful", "waste_of_time",
+            "frustration_expression", "impatience_expression",
         }
         assert set(frustration) == expected
 
@@ -118,7 +116,7 @@ class TestNewCategories:
         assert len(sensitive) == 7
         expected = {
             "legal_question", "compliance_question", "formal_complaint",
-            "refund_request", "contract_dispute", "data_deletion", "gdpr_request",
+            "request_refund", "contract_dispute", "data_deletion", "gdpr_request",
         }
         assert set(sensitive) == expected
 
@@ -201,13 +199,13 @@ class TestCategoryStreakFix:
 
     def test_frustration_streak_accumulates(self, tracker):
         """Verify frustration category streak works correctly."""
-        tracker.record("frustrated", "spin_situation")
+        tracker.record("frustration_expression", "spin_situation")
         assert tracker.category_streak("frustration") == 1
 
-        tracker.record("angry", "spin_situation")
+        tracker.record("impatience_expression", "spin_situation")
         assert tracker.category_streak("frustration") == 2
 
-        tracker.record("complaint", "spin_situation")
+        tracker.record("frustration_expression", "spin_situation")
         assert tracker.category_streak("frustration") == 3
 
 

@@ -353,21 +353,30 @@ if logger.isEnabledFor(logging.DEBUG):
         f"{_total_count} total categories"
     )
 
-# Step 6: Validate no ghost question intents in categories
+# Step 6: Validate no ghost intents in categories (all intents, both sources)
 def _validate_no_ghost_intents(categories: Dict[str, List[str]]) -> None:
-    """Warn about question_* intents not in classifier taxonomy (INTENT_ROOTS)."""
+    """Warn about intents in categories that no classifier can generate."""
+    known: Set[str] = set()
     try:
         from src.config import INTENT_ROOTS
-        known = set(INTENT_ROOTS.keys())
-        for cat_name, intents in categories.items():
-            for intent in intents:
-                if intent.startswith("question_") and intent not in known:
-                    logger.warning(
-                        f"Ghost intent '{intent}' in category '{cat_name}': "
-                        f"not in INTENT_ROOTS (classifier cannot generate it)"
-                    )
+        known.update(INTENT_ROOTS.keys())
     except ImportError:
-        pass  # Graceful degradation if config not available
+        pass
+    try:
+        import typing
+        from src.classifier.llm.schemas import IntentType
+        known.update(typing.get_args(IntentType))
+    except ImportError:
+        pass
+    if not known:
+        return
+    for cat_name, intents in categories.items():
+        for intent in intents:
+            if intent not in known:
+                logger.warning(
+                    f"Ghost intent '{intent}' in category '{cat_name}': "
+                    f"not in INTENT_ROOTS or IntentType"
+                )
 
 _validate_no_ghost_intents(INTENT_CATEGORIES)
 

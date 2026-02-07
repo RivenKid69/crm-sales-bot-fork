@@ -344,13 +344,7 @@ intents:
     # =================================================================
     escalation:
       - request_human
-      - speak_to_manager
-      - talk_to_person
       - need_help
-      - not_a_bot
-      - real_person
-      - human_please
-      - escalate
 
     # =================================================================
     # ФРУСТРАЦИЯ - интенты выражающие недовольство
@@ -358,12 +352,8 @@ intents:
     # Используется для category_streak в frustration tracking
     # =================================================================
     frustration:
-      - frustrated
-      - angry
-      - complaint
-      - this_is_useless
-      - not_helpful
-      - waste_of_time
+      - frustration_expression
+      - impatience_expression
 
     # =================================================================
     # ЧУВСТВИТЕЛЬНЫЕ ТЕМЫ - требуют человека
@@ -373,7 +363,7 @@ intents:
       - legal_question
       - compliance_question
       - formal_complaint
-      - refund_request
+      - request_refund
       - contract_dispute
       - data_deletion
       - gdpr_request
@@ -481,23 +471,13 @@ intents:
       - info_provided
       # SPIN problem
       - problem_revealed
-      - problem_mentioned
-      - pain_mentioned
       # SPIN implication
       - implication_acknowledged
-      - consequence_mentioned
       # SPIN need-payoff
       - need_expressed
-      - benefit_acknowledged
-      # General informative
-      - question_answered
-      - data_provided
-      - clarification_provided
-      - details_shared
-      # Budget/timeline related
-      - budget_mentioned
-      - timeline_mentioned
-      - decision_process_shared
+      - positive_feedback
+      # Corrections
+      - correct_info
 
     # =================================================================
     # COMPOSED CATEGORY: negative
@@ -848,7 +828,6 @@ intents:
         intent_prefix: "question_"    # Auto-include ALL base categories with question_* intents
         exclude_categories:           # Categories with question_* intents that are NOT question categories
           - positive                  # Has question_features, question_integrations but is a positive category
-          - informative               # Has question_answered but is an informative category
       includes:
         - price_related               # Has price_question (not question_* prefix)
         - company_info                # Has company_info_question, experience_question (not question_* prefix)
@@ -1404,22 +1383,6 @@ intent_taxonomy:
     fallback_transition: escalated
     priority: critical
 
-  speak_to_manager:
-    category: escalation
-    super_category: user_action
-    semantic_domain: escalation
-    fallback_action: escalate_to_human
-    fallback_transition: escalated
-    priority: critical
-
-  talk_to_person:
-    category: escalation
-    super_category: user_action
-    semantic_domain: escalation
-    fallback_action: escalate_to_human
-    fallback_transition: escalated
-    priority: critical
-
   need_help:
     category: escalation
     super_category: user_action
@@ -1427,38 +1390,6 @@ intent_taxonomy:
     fallback_action: offer_help
     fallback_transition: null
     priority: high
-
-  not_a_bot:
-    category: escalation
-    super_category: user_action
-    semantic_domain: escalation
-    fallback_action: escalate_to_human
-    fallback_transition: escalated
-    priority: critical
-
-  real_person:
-    category: escalation
-    super_category: user_action
-    semantic_domain: escalation
-    fallback_action: escalate_to_human
-    fallback_transition: escalated
-    priority: critical
-
-  human_please:
-    category: escalation
-    super_category: user_action
-    semantic_domain: escalation
-    fallback_action: escalate_to_human
-    fallback_transition: escalated
-    priority: critical
-
-  escalate:
-    category: escalation
-    super_category: user_action
-    semantic_domain: escalation
-    fallback_action: escalate_to_human
-    fallback_transition: escalated
-    priority: critical
 
   # =================================================================
   # POSITIVE SIGNALS (extended set)
@@ -2851,57 +2782,6 @@ intent_taxonomy:
     priority: low
 
   # =================================================================
-  # FRUSTRATION INTENTS (6 intents)
-  # =================================================================
-  frustrated:
-    category: frustration
-    super_category: user_concern
-    semantic_domain: emotion
-    fallback_action: empathize_and_help
-    fallback_transition: null
-    priority: high
-
-  angry:
-    category: frustration
-    super_category: user_concern
-    semantic_domain: emotion
-    fallback_action: empathize_and_help
-    fallback_transition: null
-    priority: critical
-
-  complaint:
-    category: frustration
-    super_category: user_concern
-    semantic_domain: emotion
-    fallback_action: empathize_and_help
-    fallback_transition: null
-    priority: high
-
-  this_is_useless:
-    category: frustration
-    super_category: user_concern
-    semantic_domain: emotion
-    fallback_action: empathize_and_help
-    fallback_transition: null
-    priority: high
-
-  not_helpful:
-    category: frustration
-    super_category: user_concern
-    semantic_domain: emotion
-    fallback_action: empathize_and_help
-    fallback_transition: null
-    priority: high
-
-  waste_of_time:
-    category: frustration
-    super_category: user_concern
-    semantic_domain: emotion
-    fallback_action: empathize_and_help
-    fallback_transition: null
-    priority: high
-
-  # =================================================================
   # SENSITIVE INTENTS (7 intents)
   # =================================================================
   legal_question:
@@ -2928,7 +2808,7 @@ intent_taxonomy:
     fallback_transition: escalated
     priority: critical
 
-  refund_request:
+  request_refund:
     category: sensitive
     super_category: user_action
     semantic_domain: support
@@ -2959,97 +2839,6 @@ intent_taxonomy:
     fallback_action: escalate_to_human
     fallback_transition: escalated
     priority: critical
-
-  # =================================================================
-  # ADDITIONAL INFORMATIVE INTENTS
-  # =================================================================
-  problem_mentioned:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  pain_mentioned:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  consequence_mentioned:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  benefit_acknowledged:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  question_answered:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: low
-
-  data_provided:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  clarification_provided:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  details_shared:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: medium
-
-  budget_mentioned:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: high
-
-  timeline_mentioned:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: high
-
-  decision_process_shared:
-    category: positive
-    super_category: user_action
-    semantic_domain: information
-    fallback_action: acknowledge_and_continue
-    fallback_transition: null
-    priority: high
 
 # Category-level fallback actions
 taxonomy_category_defaults:
