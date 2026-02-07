@@ -93,7 +93,6 @@ class MockIntentTracker:
         if self._intents:
             self._prev_intent = self._intents[-1][0]
         self._intents.append((intent, state))
-        self._turn_number += 1
 
         # Track objections
         if "objection" in intent:
@@ -101,6 +100,9 @@ class MockIntentTracker:
             self._objection_total += 1
         else:
             self._objection_consecutive = 0
+
+    def advance_turn(self) -> None:
+        self._turn_number += 1
 
     def objection_consecutive(self) -> int:
         return self._objection_consecutive
@@ -788,9 +790,9 @@ class TestObjectionSkipLogic:
         """Test skipping objection recording when consecutive limit reached."""
         bb = blackboard_with_objections
 
-        # Simulate reaching the consecutive limit
-        bb._intent_tracker._objection_consecutive = 3
-        bb._intent_tracker._objection_total = 3
+        # Simulate reaching the consecutive limit (default persona: consecutive=4)
+        bb._intent_tracker._objection_consecutive = 4
+        bb._intent_tracker._objection_total = 4
 
         # Should skip recording
         with patch('src.yaml_config.constants.OBJECTION_INTENTS', ['objection_price']):
@@ -802,9 +804,9 @@ class TestObjectionSkipLogic:
         """Test skipping objection recording when total limit reached."""
         bb = blackboard_with_objections
 
-        # Simulate reaching the total limit
+        # Simulate reaching the total limit (default persona: total=6)
         bb._intent_tracker._objection_consecutive = 1
-        bb._intent_tracker._objection_total = 5
+        bb._intent_tracker._objection_total = 6
 
         # Should skip recording
         with patch('src.yaml_config.constants.OBJECTION_INTENTS', ['objection_price']):

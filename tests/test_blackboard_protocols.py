@@ -368,6 +368,8 @@ class TestMockImplementations:
             def record(self, intent: str, state: str) -> None:
                 self._prev_intent = intent
                 self._intents.append((intent, state))
+
+            def advance_turn(self) -> None:
                 self._turn_number += 1
 
             def objection_consecutive(self) -> int:
@@ -390,6 +392,7 @@ class TestMockImplementations:
         assert mock_tracker.prev_intent is None
 
         mock_tracker.record("greeting", "greeting_state")
+        mock_tracker.advance_turn()
         assert mock_tracker.turn_number == 2
         assert mock_tracker.prev_intent == "greeting"
         assert mock_tracker.total_count("greeting") == 1

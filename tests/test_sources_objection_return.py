@@ -86,13 +86,15 @@ class MockIntentTracker:
         if self._intents:
             self._prev_intent = self._intents[-1][0]
         self._intents.append((intent, state))
-        self._turn_number += 1
 
         if "objection" in intent:
             self._objection_consecutive += 1
             self._objection_total += 1
         else:
             self._objection_consecutive = 0
+
+    def advance_turn(self) -> None:
+        self._turn_number += 1
 
     def objection_consecutive(self) -> int:
         return self._objection_consecutive

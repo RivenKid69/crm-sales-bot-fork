@@ -308,7 +308,7 @@ def register_builtin_sources() -> None:
         name="ConversationGuardSource",
         priority_order=7,
         config_key="conversation_guard",
-        enabled_by_default=False,
+        enabled_by_default=True,
         description="Conversation safety: loops, timeouts, frustration detection"
     )
 

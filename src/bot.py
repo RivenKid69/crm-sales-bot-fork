@@ -210,6 +210,7 @@ class SalesBot:
             guard=self.guard,
             fallback_handler=self.fallback,
             llm=llm,
+            blackboard_config=self._config.blackboard,
         )
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
@@ -1638,11 +1639,10 @@ class SalesBot:
             "default": {"consecutive": 4, "total": 6},         # Increased from 3/5
         }
 
-        # Try to get from flow config constants
-        if hasattr(self._flow, 'constants') and self._flow.constants:
-            limits = self._flow.constants.get("persona_limits", {})
-            if limits:
-                return limits
+        # Try to get from global config constants (LoadedConfig, not FlowConfig)
+        persona_limits = self._config.constants.get("persona_limits", {})
+        if persona_limits:
+            return persona_limits
 
         return default_limits
 
@@ -1806,6 +1806,7 @@ class SalesBot:
             guard=bot.guard,
             fallback_handler=bot.fallback,
             llm=llm,
+            blackboard_config=bot._config.blackboard,
         )
 
         return bot

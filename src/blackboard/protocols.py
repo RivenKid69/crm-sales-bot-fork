@@ -154,6 +154,10 @@ class IIntentTracker(Protocol):
         """Record an intent."""
         ...
 
+    def advance_turn(self) -> None:
+        """Advance turn counter unconditionally."""
+        ...
+
     def objection_consecutive(self) -> int:
         """Get consecutive objection count."""
         ...

@@ -360,6 +360,11 @@ class ContextSnapshot:
 
         Multi-tenancy: Tenant config can override global persona limits.
 
+        TODO: Dead method — never called from src/. flow_config.get("persona_limits")
+        would always return {} because FlowConfig dict doesn't contain persona_limits.
+        Persona limits are loaded via bot._load_persona_limits() from LoadedConfig.constants.
+        Remove after confirming no external callers depend on this.
+
         Args:
             persona: Persona name (e.g., "aggressive", "busy")
             limit_type: Limit type ("consecutive" or "total")

@@ -155,6 +155,10 @@ class DialogueBlackboard:
         if self._intent_tracker and not self._should_skip_objection_recording(intent):
             self._intent_tracker.record(intent, self._state_machine.state)
 
+        # ALWAYS advance turn counter (independent of record skip logic)
+        if self._intent_tracker:
+            self._intent_tracker.advance_turn()
+
         # Update collected_data with newly extracted data
         current_collected = dict(self._state_machine.collected_data)
         for key, value in extracted_data.items():

@@ -78,7 +78,6 @@ class E2EIntentTracker:
         if self._intents:
             self._prev_intent = self._intents[-1].intent
         self._intents.append(IntentRecord(intent=intent, state=state))
-        self._turn_number += 1
 
         if "objection" in intent:
             self._objection_consecutive += 1
@@ -101,7 +100,7 @@ class E2EIntentTracker:
     def get_intents_by_category(self, category: str) -> List[IntentRecord]:
         return [r for r in self._intents if category in r.intent]
 
-    def increment_turn(self) -> None:
+    def advance_turn(self) -> None:
         self._turn_number += 1
 
 
@@ -191,8 +190,8 @@ class E2EStateMachine:
     def is_final(self) -> bool:
         return self._state in ("soft_close", "closed", "rejected", "success")
 
-    def increment_turn(self) -> None:
-        self._intent_tracker.increment_turn()
+    def advance_turn(self) -> None:
+        self._intent_tracker.advance_turn()
 
 
 class E2EFlowConfig:
