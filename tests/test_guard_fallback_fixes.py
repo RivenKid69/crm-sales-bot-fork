@@ -264,8 +264,8 @@ class TestYamlInformativeCategory:
         informative = constants['intents']['categories']['informative']
 
         assert 'info_provided' in informative
-        assert 'question_answered' in informative
-        assert 'data_provided' in informative
+        assert 'positive_feedback' in informative
+        assert 'correct_info' in informative
 
 
 # =============================================================================

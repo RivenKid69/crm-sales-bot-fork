@@ -116,6 +116,7 @@ class IntentCoverageValidator:
         issues.extend(self.validate_price_intent_actions())
         issues.extend(self.validate_category_defaults())
         issues.extend(self.validate_universal_base_mixin())
+        issues.extend(self.validate_mixin_intent_classifiability())
 
         # NEW: Secondary intent pattern coverage validation
         issues.extend(self.validate_fact_question_pattern_coverage())
@@ -363,6 +364,33 @@ class IntentCoverageValidator:
         if self.flow and hasattr(self.flow, "mixins"):
             return self.flow.mixins.get("price_handling")
         return None
+
+    def validate_mixin_intent_classifiability(self) -> List[CoverageIssue]:
+        """Validate every intent in mixin transitions/rules exists in IntentType.
+
+        Returns:
+            List of CoverageIssue for dead intents in mixins
+        """
+        issues = []
+        if not self.flow or not hasattr(self.flow, "mixins"):
+            return issues
+        import typing
+        from src.classifier.llm.schemas import IntentType
+        classifiable = set(typing.get_args(IntentType))
+        for mixin_name, mixin_config in self.flow.mixins.items():
+            if not isinstance(mixin_config, dict):
+                continue
+            for section in ("rules", "transitions"):
+                for intent in mixin_config.get(section, {}):
+                    if intent not in classifiable:
+                        issues.append(CoverageIssue(
+                            severity="critical",
+                            intent=intent,
+                            issue_type="dead_intent_in_mixin",
+                            message=f"'{intent}' in {mixin_name}.{section} not in IntentType",
+                            location=f"mixins.yaml:{mixin_name}",
+                        ))
+        return issues
 
     def validate_template_existence(self) -> List[CoverageIssue]:
         """Validate that all referenced actions have corresponding templates.

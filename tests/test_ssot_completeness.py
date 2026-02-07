@@ -24,22 +24,19 @@ import pytest
 class TestSSOTCompleteness:
     """Prevent RC-1..RC-SYS2 class bugs. Catches SSOT gaps at CI time."""
 
-    # Pre-existing ghost intents.
-    # These should be cleaned up separately but must not block CI.
-    KNOWN_GHOST_INTENTS = {"question_technical", "question_answered"}
-
     def test_no_ghost_question_intents(self):
-        """Every question_* intent in any category must exist in INTENT_ROOTS (excluding known pre-existing ghosts)."""
+        """Every question_* intent in any category must exist in INTENT_ROOTS or IntentType."""
+        import typing
         from src.config import INTENT_ROOTS
+        from src.classifier.llm.schemas import IntentType
         from src.yaml_config.constants import INTENT_CATEGORIES
 
-        known = set(INTENT_ROOTS.keys())
+        known = set(INTENT_ROOTS.keys()) | set(typing.get_args(IntentType))
         ghosts = [
             f"{cat}.{intent}"
             for cat, intents in INTENT_CATEGORIES.items()
             for intent in intents
             if intent.startswith("question_") and intent not in known
-            and intent not in self.KNOWN_GHOST_INTENTS
         ]
         assert not ghosts, f"Ghost intents: {ghosts}"
 
@@ -55,7 +52,7 @@ class TestSSOTCompleteness:
 
     # Categories intentionally excluded from all_questions auto-discovery
     # (they contain question_* intents but are not question categories)
-    EXCLUDED_FROM_AUTO_DISCOVERY = {"positive", "informative"}
+    EXCLUDED_FROM_AUTO_DISCOVERY = {"positive"}
 
     def test_all_question_base_categories_auto_discovered(self):
         """Every base category with question_* intents is covered by all_questions (excluding intentionally excluded categories)."""
@@ -121,3 +118,55 @@ class TestSSOTCompleteness:
         assert "objection_return_questions" not in _base_categories, (
             "objection_return_questions base category should be removed"
         )
+
+    # =================================================================
+    # SYSTEMIC CI GUARDS — prevent dead intent recurrence
+    # =================================================================
+
+    def test_intent_type_matches_intent_roots(self):
+        """IntentType and INTENT_ROOTS must be in sync."""
+        import typing
+        from src.classifier.llm.schemas import IntentType
+        from src.config import INTENT_ROOTS
+
+        schema = set(typing.get_args(IntentType))
+        roots = set(INTENT_ROOTS.keys())
+        assert not (schema - roots), f"In IntentType but not INTENT_ROOTS: {sorted(schema - roots)}"
+        assert not (roots - schema), f"In INTENT_ROOTS but not IntentType: {sorted(roots - schema)}"
+
+    def test_mixin_transitions_are_classifiable(self):
+        """Every intent in mixins.yaml must exist in IntentType."""
+        import typing
+        import yaml
+        from pathlib import Path
+        from src.classifier.llm.schemas import IntentType
+
+        classifiable = set(typing.get_args(IntentType))
+        mixins_path = Path(__file__).parent.parent / "src" / "yaml_config" / "flows" / "_base" / "mixins.yaml"
+        with open(mixins_path) as f:
+            data = yaml.safe_load(f)
+        dead = []
+        for name, cfg in data.get("mixins", {}).items():
+            if not isinstance(cfg, dict):
+                continue
+            for section in ("rules", "transitions"):
+                for intent in cfg.get(section, {}):
+                    if intent not in classifiable:
+                        dead.append(f"{name}.{section}.{intent}")
+        assert not dead, f"Dead intents in mixins: {dead}"
+
+    def test_all_category_intents_are_classifiable(self):
+        """Every intent in INTENT_CATEGORIES must exist in IntentType or INTENT_ROOTS."""
+        import typing
+        from src.classifier.llm.schemas import IntentType
+        from src.config import INTENT_ROOTS
+        from src.yaml_config.constants import INTENT_CATEGORIES
+
+        known = set(typing.get_args(IntentType)) | set(INTENT_ROOTS.keys())
+        ghosts = [
+            f"{cat}.{intent}"
+            for cat, intents in INTENT_CATEGORIES.items()
+            for intent in intents
+            if intent not in known
+        ]
+        assert not ghosts, f"Unclassifiable intents in categories: {ghosts}"

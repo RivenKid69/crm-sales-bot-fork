@@ -144,8 +144,7 @@ class TestDefect5Escalation:
         transitions = safety.get("transitions", {})
 
         expected_intents = [
-            "request_human", "speak_to_manager", "talk_to_person",
-            "not_a_bot", "real_person", "human_please", "escalate",
+            "request_human", "need_help",
             "problem_technical", "problem_connection", "problem_sync",
             "problem_fiscal", "request_technical_support",
             "legal_question", "formal_complaint", "contract_dispute",

@@ -65,17 +65,11 @@ class EscalationSource(KnowledgeSource):
     SENSITIVE_INTENTS: Set[str] = _get_category_intents("sensitive")
 
     # Fallback values if categories are missing from YAML (for backwards compatibility)
-    _FALLBACK_ESCALATION = {
-        "request_human", "speak_to_manager", "talk_to_person", "need_help",
-        "not_a_bot", "real_person", "human_please", "escalate",
-    }
-    _FALLBACK_FRUSTRATION = {
-        "frustrated", "angry", "complaint", "this_is_useless",
-        "not_helpful", "waste_of_time",
-    }
+    _FALLBACK_ESCALATION = {"request_human", "need_help"}
+    _FALLBACK_FRUSTRATION = {"frustration_expression", "impatience_expression"}
     _FALLBACK_SENSITIVE = {
         "legal_question", "compliance_question", "formal_complaint",
-        "refund_request", "contract_dispute", "data_deletion", "gdpr_request",
+        "request_refund", "contract_dispute", "data_deletion", "gdpr_request",
     }
 
     @classmethod

@@ -275,6 +275,9 @@ class FlowConfig:
     # Prompt templates
     templates: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
+    # Mixins registry (from _base/mixins.yaml, retained for validators)
+    mixins: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
     # DAG nodes (parsed from states with type != simple)
     _dag_nodes: Dict[str, "DAGNodeConfig"] = field(default_factory=dict)
 
@@ -1190,7 +1193,8 @@ class ConfigLoader:
             priorities=priorities,
             variables=variables,
             entry_points=flow_config.get("entry_points", {"default": "greeting"}),
-            templates=self._load_flow_templates(flow_name)
+            templates=self._load_flow_templates(flow_name),
+            mixins=mixins_registry,
         )
 
         if validate:
