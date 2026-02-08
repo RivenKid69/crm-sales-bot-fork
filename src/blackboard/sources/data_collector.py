@@ -97,7 +97,7 @@ class DataCollectorSource(KnowledgeSource):
         This source reads from ctx.collected_data which is a FROZEN SNAPSHOT
         created at the beginning of the turn (blackboard.begin_turn()).
 
-        If another source proposes DATA_UPDATE in the same turn, those updates
+        If another source calls propose_data_update() in the same turn, those updates
         are NOT visible here. This is INTENTIONAL, not a bug:
 
         1. SNAPSHOT ISOLATION:
@@ -106,8 +106,8 @@ class DataCollectorSource(KnowledgeSource):
            - Source A cannot affect Source B's decisions mid-turn
 
         2. ATOMIC UPDATES:
-           - DATA_UPDATE proposals are collected during the turn
-           - Applied atomically in commit_decision() (blackboard.py:456-461)
+           - Data updates are collected during the turn
+           - Applied atomically by Orchestrator._apply_side_effects()
            - Either all updates apply or none (transactional semantics)
 
         3. NEXT TURN VISIBILITY:

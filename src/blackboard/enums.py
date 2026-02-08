@@ -54,10 +54,10 @@ class ProposalType(Enum):
 
     ACTION - propose to execute an action (generate response, handle objection)
     TRANSITION - propose to transition to another state
-    DATA_UPDATE - propose to update collected_data
-    FLAG_SET - propose to set a flag (for on_enter actions)
+
+    Note: Data updates and flags use direct last-write-wins via
+    propose_data_update() / propose_flag_set() on the Blackboard.
+    They do NOT go through Proposal/conflict resolution.
     """
     ACTION = auto()
     TRANSITION = auto()
-    DATA_UPDATE = auto()
-    FLAG_SET = auto()

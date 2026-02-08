@@ -92,27 +92,6 @@ class TestProposal:
         assert transition.type == ProposalType.TRANSITION
         assert transition.validate() == []
 
-        # DATA_UPDATE type
-        data_update = Proposal(
-            type=ProposalType.DATA_UPDATE,
-            value={"company_size": "medium"},
-            priority=Priority.LOW,
-            source_name="TestSource",
-            reason_code="TEST",
-        )
-        assert data_update.type == ProposalType.DATA_UPDATE
-        assert data_update.validate() == []
-
-        # FLAG_SET type
-        flag_set = Proposal(
-            type=ProposalType.FLAG_SET,
-            value={"_objection_handled": True},
-            priority=Priority.NORMAL,
-            source_name="TestSource",
-            reason_code="TEST",
-        )
-        assert flag_set.type == ProposalType.FLAG_SET
-        assert flag_set.validate() == []
 
     def test_proposal_validate_success(self):
         """Test that valid proposal passes validation."""
@@ -237,38 +216,6 @@ class TestProposal:
 
         errors = proposal.validate()
         assert "TRANSITION proposals cannot have combinable=False" in errors
-
-    def test_proposal_validate_data_update_value_type(self):
-        """Test validation catches non-dict DATA_UPDATE value."""
-        from src.blackboard.models import Proposal
-        from src.blackboard.enums import Priority, ProposalType
-
-        proposal = Proposal(
-            type=ProposalType.DATA_UPDATE,
-            value="not_a_dict",  # Should be dict
-            priority=Priority.NORMAL,
-            source_name="TestSource",
-            reason_code="TEST",
-        )
-
-        errors = proposal.validate()
-        assert any("DATA_UPDATE value must be dict" in e for e in errors)
-
-    def test_proposal_validate_flag_set_value_type(self):
-        """Test validation catches non-dict FLAG_SET value."""
-        from src.blackboard.models import Proposal
-        from src.blackboard.enums import Priority, ProposalType
-
-        proposal = Proposal(
-            type=ProposalType.FLAG_SET,
-            value=["flag1", "flag2"],  # Should be dict
-            priority=Priority.NORMAL,
-            source_name="TestSource",
-            reason_code="TEST",
-        )
-
-        errors = proposal.validate()
-        assert any("FLAG_SET value must be dict" in e for e in errors)
 
     def test_proposal_validate_multiple_errors(self):
         """Test validation can return multiple errors."""

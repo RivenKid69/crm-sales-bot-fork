@@ -650,8 +650,8 @@ class TestDecisionLayer:
         assert stored.action == "answer_question"
         assert stored.next_state == "spin_problem"
 
-    def test_commit_decision_applies_data_updates(self, blackboard):
-        """Test that commit_decision applies data_updates to state machine."""
+    def test_commit_decision_stores_decision_only(self, blackboard):
+        """Test that commit_decision stores decision but does NOT apply data_updates."""
         from src.blackboard.models import ResolvedDecision
 
         decision = ResolvedDecision(
@@ -662,10 +662,13 @@ class TestDecisionLayer:
 
         blackboard.commit_decision(decision)
 
-        assert blackboard._state_machine.collected_data["collected_field"] == "collected_value"
+        # Decision must be stored
+        assert blackboard.get_decision() is decision
+        # Data must NOT be applied to state machine (Orchestrator's responsibility)
+        assert "collected_field" not in blackboard._state_machine.collected_data
 
-    def test_commit_decision_applies_proposal_data_updates(self, blackboard):
-        """Test that commit_decision applies proposed data updates."""
+    def test_commit_decision_does_not_apply_proposal_data_updates(self, blackboard):
+        """Test that commit_decision does NOT apply proposed data updates."""
         from src.blackboard.models import ResolvedDecision
 
         blackboard.propose_data_update("proposed_field", "proposed_value", "TestSource")
@@ -677,10 +680,12 @@ class TestDecisionLayer:
 
         blackboard.commit_decision(decision)
 
-        assert blackboard._state_machine.collected_data["proposed_field"] == "proposed_value"
+        # Data updates must be accessible via get_data_updates() but NOT in collected_data
+        assert blackboard.get_data_updates()["proposed_field"] == "proposed_value"
+        assert "proposed_field" not in blackboard._state_machine.collected_data
 
-    def test_commit_decision_applies_flags(self, blackboard):
-        """Test that commit_decision applies flags_to_set."""
+    def test_commit_decision_does_not_merge_flags(self, blackboard):
+        """Test that commit_decision does NOT merge flags into blackboard._flags_to_set."""
         from src.blackboard.models import ResolvedDecision
 
         decision = ResolvedDecision(
@@ -691,11 +696,37 @@ class TestDecisionLayer:
 
         blackboard.commit_decision(decision)
 
-        assert blackboard.get_flags_to_set()["_objection_handled"] is True
+        # Flags are on the decision, NOT merged into blackboard's _flags_to_set
+        assert decision.flags_to_set["_objection_handled"] is True
+        assert "_objection_handled" not in blackboard.get_flags_to_set()
 
     def test_get_decision_returns_none_before_commit(self, blackboard):
         """Test that get_decision returns None before commit."""
         assert blackboard.get_decision() is None
+
+    def test_commit_decision_does_not_mutate_state_machine(self, blackboard):
+        """CI guard: commit_decision() must NOT mutate state_machine.
+
+        Orchestrator._apply_side_effects() is the single owner of state mutation.
+        If this test fails, you are breaking the mutation ownership contract.
+        """
+        from src.blackboard.models import ResolvedDecision
+
+        original_data = dict(blackboard._state_machine.collected_data)
+
+        decision = ResolvedDecision(
+            action="test_action",
+            next_state="new_state",
+            data_updates={"new_field": "new_value"},
+            flags_to_set={"new_flag": True},
+        )
+
+        blackboard.commit_decision(decision)
+
+        # State machine must be UNTOUCHED
+        assert blackboard._state_machine.collected_data == original_data
+        # Decision must be stored
+        assert blackboard.get_decision() is decision
 
 
 # =============================================================================

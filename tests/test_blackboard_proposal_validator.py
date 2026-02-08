@@ -194,13 +194,6 @@ class TestProposalValidatorValidate:
                 source_name="Source2",
                 reason_code="CODE_002",
             ),
-            Proposal(
-                type=ProposalType.DATA_UPDATE,
-                value={"key": "value"},
-                priority=Priority.NORMAL,
-                source_name="Source3",
-                reason_code="CODE_003",
-            ),
         ]
 
         errors = validator.validate(proposals)
