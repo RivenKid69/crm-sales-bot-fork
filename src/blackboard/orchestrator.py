@@ -1,6 +1,6 @@
 # src/blackboard/orchestrator.py
 
-from typing import List, Dict, Any, Optional, Tuple, Type
+from typing import List, Dict, Any, Optional, Tuple, Type, Set
 from datetime import datetime
 import logging
 import time
@@ -91,6 +91,7 @@ class DialogueOrchestrator:
         fallback_handler: Optional[Any] = None,
         llm: Optional[Any] = None,
         blackboard_config: Optional[Dict[str, Any]] = None,
+        valid_actions: Optional[Set[str]] = None,
     ):
         """
         Initialize the orchestrator.
@@ -127,7 +128,10 @@ class DialogueOrchestrator:
         self._enable_validation = enable_validation
         self._validator = ProposalValidator(
             valid_states=set(flow_config.states.keys()) if hasattr(flow_config, 'states') else None,
+            valid_actions=valid_actions,
             strict_mode=strict_validation,
+            # valid_reason_codes intentionally omitted: reason codes are dynamic
+            # (f"rule_{intent}", f"taxonomy_fallback_{intent}"), static validation infeasible.
         )
 
         # Initialize conflict resolver
@@ -872,6 +876,7 @@ def create_orchestrator(
     fallback_handler: Optional[Any] = None,
     llm: Optional[Any] = None,
     blackboard_config: Optional[Dict[str, Any]] = None,
+    valid_actions: Optional[Set[str]] = None,
 ) -> DialogueOrchestrator:
     """
     Factory function to create a fully configured DialogueOrchestrator.
@@ -968,6 +973,7 @@ def create_orchestrator(
         fallback_handler=fallback_handler,
         llm=llm,
         blackboard_config=blackboard_config,
+        valid_actions=valid_actions,
     )
 
     return orchestrator

@@ -8,7 +8,7 @@
 """
 
 import random
-from typing import Dict, List, Optional, TYPE_CHECKING, Any
+from typing import Dict, List, Optional, TYPE_CHECKING, Any, Set
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from src.knowledge.retriever import get_retriever
 from src.settings import settings
@@ -618,6 +618,20 @@ class ResponseGenerator:
             flow_name=self._flow.name if self._flow else None,
         )
         return PROMPT_TEMPLATES.get("continue_current_goal", "")
+
+    def get_valid_actions(self) -> Set[str]:
+        """
+        Return the set of all action names resolvable to a template.
+
+        This is the SSOT for action validity — used by ProposalValidator
+        to catch invalid actions at proposal time instead of at generation time.
+        Mirrors the resolution logic of _get_template(): FlowConfig first,
+        then PROMPT_TEMPLATES fallback.
+        """
+        actions = set(PROMPT_TEMPLATES.keys())
+        if self._flow and hasattr(self._flow, 'templates'):
+            actions.update(self._flow.templates.keys())
+        return actions
 
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""

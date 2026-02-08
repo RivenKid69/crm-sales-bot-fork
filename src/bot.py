@@ -211,6 +211,7 @@ class SalesBot:
             fallback_handler=self.fallback,
             llm=llm,
             blackboard_config=self._config.blackboard,
+            valid_actions=self.generator.get_valid_actions(),
         )
 
         # Phase 2: Natural Dialogue (controlled by feature flags)
@@ -1796,6 +1797,11 @@ class SalesBot:
         bot.last_intent = snapshot.get("last_intent")
         bot.last_bot_message = snapshot.get("last_bot_message")
 
+        # Sync: bot.last_action is authoritative — it reflects the actual template
+        # used after potential fallback remapping (bot.py lines 1416-1426).
+        if bot.last_action is not None:
+            bot.state_machine.last_action = bot.last_action
+
         # Rebuild orchestrator to use restored components
         bot._orchestrator = create_orchestrator(
             state_machine=bot.state_machine,
@@ -1807,6 +1813,7 @@ class SalesBot:
             fallback_handler=bot.fallback,
             llm=llm,
             blackboard_config=bot._config.blackboard,
+            valid_actions=bot.generator.get_valid_actions(),
         )
 
         return bot

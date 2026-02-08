@@ -119,6 +119,146 @@ class TestSalesBotSnapshot:
         assert snapshot["history"] == []
 
 
+class TestSerializationContract:
+    """
+    CI guard: ensures StateMachine serialization contract is complete.
+    If you add a new field to __init__ and this test fails, you MUST
+    add the field to _SNAPSHOT_FIELDS, _SNAPSHOT_NESTED, or _TRANSIENT_FIELDS.
+    """
+
+    def test_all_init_fields_declared(self):
+        """Every instance var must be in exactly one field registry."""
+        sm = StateMachine()
+        all_instance_vars = set(vars(sm).keys())
+        declared = (
+            StateMachine._SNAPSHOT_FIELDS
+            | StateMachine._SNAPSHOT_NESTED
+            | StateMachine._TRANSIENT_FIELDS
+        )
+        undeclared = all_instance_vars - declared
+        assert not undeclared, (
+            f"Undeclared fields in StateMachine.__init__: {undeclared}. "
+            f"Add to _SNAPSHOT_FIELDS (stateful), _SNAPSHOT_NESTED (has own to_dict), "
+            f"or _TRANSIENT_FIELDS (reconstructed/transient)."
+        )
+
+    def test_to_dict_covers_all_snapshot_fields(self):
+        """to_dict() output must include every declared snapshot field."""
+        sm = StateMachine()
+        serialized_keys = set(sm.to_dict().keys())
+        expected = StateMachine._SNAPSHOT_FIELDS | StateMachine._SNAPSHOT_NESTED
+        missing = expected - serialized_keys
+        assert not missing, (
+            f"to_dict() missing declared snapshot fields: {missing}. "
+            f"Add these to the return dict in to_dict()."
+        )
+
+    def test_no_field_in_multiple_registries(self):
+        """Each field must be in exactly one registry, not multiple."""
+        overlap_sn = StateMachine._SNAPSHOT_FIELDS & StateMachine._SNAPSHOT_NESTED
+        overlap_st = StateMachine._SNAPSHOT_FIELDS & StateMachine._TRANSIENT_FIELDS
+        overlap_nt = StateMachine._SNAPSHOT_NESTED & StateMachine._TRANSIENT_FIELDS
+        assert not (overlap_sn | overlap_st | overlap_nt), (
+            f"Fields in multiple registries: {overlap_sn | overlap_st | overlap_nt}"
+        )
+
+    def test_from_dict_restores_all_snapshot_fields(self):
+        """
+        from_dict() must restore every _SNAPSHOT_FIELDS value to match to_dict().
+        Catches the case where a field is in _SNAPSHOT_FIELDS and to_dict()
+        but missing from from_dict() restoration logic.
+        """
+        sm = StateMachine()
+        # Set every snapshot field to a non-default value
+        sm.state = "presentation"
+        sm.current_phase = "closing"
+        sm.collected_data = {"key": "val"}
+        sm.last_action = "test_action"
+        sm._state_before_objection = "spin_problem"
+        sm.in_disambiguation = True
+        sm.disambiguation_context = {"opts": [1]}
+        sm.pre_disambiguation_state = "greeting"
+        sm.turns_since_last_disambiguation = 5
+
+        data = sm.to_dict()
+        restored = StateMachine.from_dict(data)
+
+        for field in StateMachine._SNAPSHOT_FIELDS:
+            assert getattr(restored, field) == getattr(sm, field), (
+                f"from_dict() did not restore field '{field}': "
+                f"expected {getattr(sm, field)!r}, got {getattr(restored, field)!r}"
+            )
+
+
+class TestStateMachineSnapshotRoundtrip:
+    """Additional roundtrip tests for newly serialized fields."""
+
+    def test_roundtrip_last_action(self):
+        """last_action survives roundtrip."""
+        sm = StateMachine()
+        sm.last_action = "handle_objection_price"
+
+        data = sm.to_dict()
+        restored = StateMachine.from_dict(data)
+
+        assert restored.last_action == "handle_objection_price"
+
+    def test_roundtrip_state_before_objection(self):
+        """_state_before_objection survives roundtrip."""
+        sm = StateMachine()
+        sm._state_before_objection = "spin_problem"
+
+        data = sm.to_dict()
+        restored = StateMachine.from_dict(data)
+
+        assert restored._state_before_objection == "spin_problem"
+
+    def test_backward_compat_old_snapshot(self):
+        """Old snapshot (missing new keys) loads, fields default to None."""
+        old_data = {
+            "state": "greeting",
+            "current_phase": None,
+            "collected_data": {},
+            "in_disambiguation": False,
+            "disambiguation_context": None,
+            "pre_disambiguation_state": None,
+            "turns_since_last_disambiguation": 999,
+        }
+        restored = StateMachine.from_dict(old_data)
+
+        assert restored.last_action is None
+        assert restored._state_before_objection is None
+        assert restored.state == "greeting"
+
+
+class TestSalesBotSnapshotSync:
+    """Tests for bot.last_action sync with state_machine.last_action."""
+
+    def test_last_action_synced_after_restore(self, mock_llm):
+        """bot.last_action == bot.state_machine.last_action after restore."""
+        bot = SalesBot(llm=mock_llm, flow_name="bant")
+        bot.last_action = "answer_with_pricing"
+        bot.state_machine.last_action = "answer_with_pricing"
+
+        snapshot = bot.to_snapshot()
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm, history_tail=[])
+
+        assert restored.last_action == "answer_with_pricing"
+        assert restored.state_machine.last_action == "answer_with_pricing"
+
+    def test_state_before_objection_full_roundtrip(self, mock_llm):
+        """Objection state survives full bot snapshot cycle."""
+        bot = SalesBot(llm=mock_llm, flow_name="bant")
+        bot.state_machine._state_before_objection = "spin_problem"
+        bot.state_machine.state = "handle_objection"
+
+        snapshot = bot.to_snapshot()
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm, history_tail=[])
+
+        assert restored.state_machine._state_before_objection == "spin_problem"
+        assert restored.state_machine.state == "handle_objection"
+
+
 class TestSessionManager:
     def test_cache_hit(self, mock_llm, tmp_path):
         buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
