@@ -31,7 +31,7 @@ class Proposal:
     A proposal made by a Knowledge Source.
 
     Attributes:
-        type: Type of proposal (ACTION, TRANSITION, DATA_UPDATE, FLAG_SET)
+        type: Type of proposal (ACTION, TRANSITION)
         value: The proposed value (action name, state name, data dict, flag dict)
         priority: Priority level for conflict resolution
         source_name: Name of the Knowledge Source that made this proposal
@@ -93,14 +93,6 @@ class Proposal:
             # combinable is not applicable for transitions
             if not self.combinable:
                 errors.append("TRANSITION proposals cannot have combinable=False")
-
-        elif self.type == ProposalType.DATA_UPDATE:
-            if not isinstance(self.value, dict):
-                errors.append(f"DATA_UPDATE value must be dict, got {type(self.value)}")
-
-        elif self.type == ProposalType.FLAG_SET:
-            if not isinstance(self.value, dict):
-                errors.append(f"FLAG_SET value must be dict, got {type(self.value)}")
 
         return errors
 

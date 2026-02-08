@@ -414,7 +414,14 @@ class DialogueBlackboard:
         reason_code: str = ""
     ) -> None:
         """
-        Propose a data field update.
+        Record a data field update (direct last-write-wins, NOT a Proposal).
+
+        This does NOT create a Proposal and does NOT go through conflict
+        resolution. Multiple sources writing the same field will silently
+        overwrite — the last writer wins.
+
+        Applied by Orchestrator._apply_side_effects(), which is the single
+        owner of state mutation.
 
         Args:
             field: Field name to update
@@ -422,6 +429,11 @@ class DialogueBlackboard:
             source_name: Name of the Knowledge Source making this proposal
             reason_code: Documented reason for this proposal
         """
+        if field in self._data_updates:
+            logger.warning(
+                f"Data update collision: field='{field}' overwritten by {source_name} "
+                f"(reason: {reason_code}), previous value will be lost"
+            )
         self._data_updates[field] = value
 
         logger.debug(
@@ -436,7 +448,11 @@ class DialogueBlackboard:
         reason_code: str = ""
     ) -> None:
         """
-        Propose setting a flag.
+        Record a flag to set (direct last-write-wins, NOT a Proposal).
+
+        This does NOT create a Proposal and does NOT go through conflict
+        resolution. Applied by Orchestrator._apply_side_effects(), which is
+        the single owner of state mutation.
 
         Args:
             flag: Flag name to set
@@ -483,30 +499,11 @@ class DialogueBlackboard:
         """
         Commit the resolved decision.
 
-        This method:
-        1. Stores the decision in the decision layer
-        2. Applies data updates to state machine
-        3. Applies flags to state machine
-
-        Note: State transition is NOT applied here - it's done by the caller
-        (SalesBot) to maintain compatibility with existing code.
-
-        Args:
-            decision: The resolved decision from ConflictResolver
+        Stores the decision in the decision layer. Does NOT apply data updates
+        or flags — that is the Orchestrator's responsibility in
+        _apply_side_effects(), which is the single owner of state mutation.
         """
         self._decision = decision
-
-        # Apply data updates
-        for field, value in decision.data_updates.items():
-            self._state_machine.collected_data[field] = value
-
-        # Apply any additional data updates from proposals
-        for field, value in self._data_updates.items():
-            self._state_machine.collected_data[field] = value
-
-        # Store flags (applied on state entry)
-        for flag, value in decision.flags_to_set.items():
-            self._flags_to_set[flag] = value
 
         logger.info(
             f"Decision committed: action={decision.action}, "

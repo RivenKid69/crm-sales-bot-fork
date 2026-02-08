@@ -87,8 +87,6 @@ class TestProposalTypeEnum:
 
         assert hasattr(ProposalType, "ACTION")
         assert hasattr(ProposalType, "TRANSITION")
-        assert hasattr(ProposalType, "DATA_UPDATE")
-        assert hasattr(ProposalType, "FLAG_SET")
 
     def test_proposal_type_uniqueness(self):
         """Verify all ProposalType values are unique."""
@@ -102,11 +100,9 @@ class TestProposalTypeEnum:
         from src.blackboard.enums import ProposalType
 
         types = list(ProposalType)
-        assert len(types) == 4
+        assert len(types) == 2
         assert ProposalType.ACTION in types
         assert ProposalType.TRANSITION in types
-        assert ProposalType.DATA_UPDATE in types
-        assert ProposalType.FLAG_SET in types
 
 
 class TestTenantConfig:

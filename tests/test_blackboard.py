@@ -302,8 +302,8 @@ class TestDialogueBlackboard:
         assert stored.next_state == "spin_problem"
         assert "price_question" in stored.reason_codes
 
-    def test_commit_decision_applies_data_updates(self, blackboard, mock_state_machine):
-        """commit_decision should apply data updates to state machine."""
+    def test_commit_decision_does_not_apply_data_updates(self, blackboard, mock_state_machine):
+        """commit_decision should NOT apply data updates to state machine (Orchestrator's job)."""
         blackboard.begin_turn("test", {}, None)
 
         decision = ResolvedDecision(
@@ -314,10 +314,13 @@ class TestDialogueBlackboard:
 
         blackboard.commit_decision(decision)
 
-        assert mock_state_machine.collected_data["new_field"] == "new_value"
+        # Data must NOT be in state machine — Orchestrator._apply_side_effects() does this
+        assert "new_field" not in mock_state_machine.collected_data
+        # But decision must be stored
+        assert blackboard.get_decision().data_updates["new_field"] == "new_value"
 
-    def test_commit_decision_applies_flags(self, blackboard, mock_state_machine):
-        """commit_decision should store flags to set."""
+    def test_commit_decision_does_not_merge_flags(self, blackboard, mock_state_machine):
+        """commit_decision should NOT merge flags into blackboard._flags_to_set."""
         blackboard.begin_turn("test", {}, None)
 
         decision = ResolvedDecision(
@@ -328,9 +331,9 @@ class TestDialogueBlackboard:
 
         blackboard.commit_decision(decision)
 
-        flags = blackboard.get_flags_to_set()
-        assert flags["flag1"] == True
-        assert flags["flag2"] == "value"
+        # Flags stay on the decision, not merged into blackboard
+        assert decision.flags_to_set["flag1"] is True
+        assert "flag1" not in blackboard.get_flags_to_set()
 
     # === data_updates and flags tests ===
 

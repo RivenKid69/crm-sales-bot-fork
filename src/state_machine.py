@@ -883,7 +883,7 @@ class StateMachine:
     def update_data(self, data: Dict):
         """Сохраняем извлечённые данные"""
         for key, value in data.items():
-            if value:
+            if value is not None:
                 self.collected_data[key] = value
 
     def is_final(self) -> bool:
