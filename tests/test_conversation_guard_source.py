@@ -67,6 +67,14 @@ class MockStateMachine:
     def last_action(self, value: Optional[str]) -> None:
         self._last_action = value
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        self._state_before_objection = value
+
     def update_data(self, data: Dict[str, Any]) -> None:
         self._collected_data.update(data)
 
@@ -76,6 +84,9 @@ class MockStateMachine:
     def transition_to(self, **kwargs):
         next_state = kwargs.get("next_state", self._state)
         self._state = next_state
+
+    def sync_phase_from_state(self) -> None:
+        pass
 
 
 class MockIntentTracker:

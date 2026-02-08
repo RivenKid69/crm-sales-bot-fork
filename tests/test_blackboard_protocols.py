@@ -276,6 +276,7 @@ class TestMockImplementations:
                 self._collected_data = {}
                 self._current_phase = None
                 self._last_action = None
+                self._state_before_objection = None
 
             @property
             def state(self) -> str:
@@ -304,6 +305,14 @@ class TestMockImplementations:
             @last_action.setter
             def last_action(self, value: Optional[str]) -> None:
                 self._last_action = value
+
+            @property
+            def state_before_objection(self) -> Optional[str]:
+                return self._state_before_objection
+
+            @state_before_objection.setter
+            def state_before_objection(self, value: Optional[str]) -> None:
+                self._state_before_objection = value
 
             def update_data(self, data: Dict[str, Any]) -> None:
                 self._collected_data.update(data)
@@ -361,6 +370,18 @@ class TestMockImplementations:
             def prev_intent(self) -> Optional[str]:
                 return self._prev_intent
 
+            @property
+            def last_intent(self) -> Optional[str]:
+                return self._intents[-1][0] if self._intents else None
+
+            @property
+            def last_state(self) -> Optional[str]:
+                return self._intents[-1][1] if self._intents else None
+
+            @property
+            def history_length(self) -> int:
+                return len(self._intents)
+
             def record(self, intent: str, state: str) -> None:
                 self._prev_intent = intent
                 self._intents.append((intent, state))
@@ -379,6 +400,18 @@ class TestMockImplementations:
 
             def category_total(self, category: str) -> int:
                 return 0
+
+            def streak_count(self, intent: str) -> int:
+                return 0
+
+            def category_streak(self, category: str) -> int:
+                return 0
+
+            def get_intents_by_category(self, category: str) -> list:
+                return []
+
+            def get_recent_intents(self, limit: int = 5) -> list:
+                return [i for i, _ in self._intents[-limit:]]
 
         mock_tracker = MockIntentTracker()
         assert isinstance(mock_tracker, IIntentTracker)

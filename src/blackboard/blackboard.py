@@ -5,7 +5,10 @@ from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from datetime import datetime
 import logging
 
-from src.blackboard.models import Proposal, ResolvedDecision, ContextSnapshot
+from src.blackboard.models import (
+    Proposal, ResolvedDecision, ContextSnapshot,
+    deep_freeze_dict, GoBackInfo, IntentTrackerReadOnly,
+)
 from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.protocols import (
     IStateMachine,
@@ -14,13 +17,18 @@ from src.blackboard.protocols import (
     TenantConfig,
     DEFAULT_TENANT,
 )
-from src.intent_tracker import IntentTracker
+from src.intent_tracker import IntentTracker, should_skip_objection_recording as _shared_skip_objection
 from src.context_envelope import ContextEnvelope
 from src.config_loader import FlowConfig
 # Import objection limits from YAML (single source of truth)
 from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS, MAX_TOTAL_OBJECTIONS
 
 logger = logging.getLogger(__name__)
+
+
+class DataUpdateCollisionError(Exception):
+    """Raised when two sources write to the same data/flag field in strict mode."""
+    pass
 
 
 class DialogueBlackboard:
@@ -65,7 +73,8 @@ class DialogueBlackboard:
         state_machine: 'IStateMachine',  # Protocol type for Hexagonal Architecture
         flow_config: 'IFlowConfig',
         intent_tracker: Optional['IIntentTracker'] = None,
-        tenant_config: Optional['TenantConfig'] = None  # Multi-tenancy support
+        tenant_config: Optional['TenantConfig'] = None,  # Multi-tenancy support
+        strict_data_updates: bool = False,
     ):
         """
         Initialize the blackboard.
@@ -98,6 +107,26 @@ class DialogueBlackboard:
         # === Metadata ===
         self._turn_start_time: Optional[datetime] = None
         self._current_intent: Optional[str] = None
+
+        # === Strict collision detection (#7) ===
+        self._strict_data_updates = strict_data_updates
+        self._data_update_sources: Dict[str, str] = {}   # field → source_name
+        self._flag_set_sources: Dict[str, str] = {}       # flag → source_name
+
+    @property
+    def intent_tracker(self) -> Optional['IIntentTracker']:
+        """Read-only access to intent tracker (for Orchestrator coordination)."""
+        return self._intent_tracker
+
+    @property
+    def is_turn_active(self) -> bool:
+        """Check if begin_turn() has been called (safe None-guard)."""
+        return self._current_intent is not None
+
+    @property
+    def data_update_audit(self) -> Dict[str, str]:
+        """Audit trail: which source wrote which data field."""
+        return dict(self._data_update_sources)
 
     @property
     def tenant_id(self) -> str:
@@ -181,17 +210,38 @@ class DialogueBlackboard:
         if hasattr(self._flow_config, 'state_to_phase'):
             state_to_phase = self._flow_config.state_to_phase
 
+        # Pre-compute GoBackInfo for go_back_guard (read-only snapshot)
+        go_back_info = None
+        circular_flow = getattr(self._state_machine, 'circular_flow', None)
+        if circular_flow:
+            transitions = state_config.get("transitions", {})
+            go_back_info = GoBackInfo(
+                target_state=circular_flow.get_go_back_target(
+                    self._state_machine.state, transitions
+                ),
+                limit_reached=circular_flow.is_limit_reached(),
+                remaining=circular_flow.get_remaining_gobacks(),
+                goback_count=circular_flow.goback_count,
+                max_gobacks=circular_flow.max_gobacks,
+                history=tuple(circular_flow.get_history()),
+            )
+
         self._context = ContextSnapshot(
             state=self._state_machine.state,
-            collected_data=current_collected,
+            collected_data=deep_freeze_dict(dict(current_collected)),
             current_intent=intent,
-            intent_tracker=self._intent_tracker,
+            intent_tracker=IntentTrackerReadOnly(self._intent_tracker) if self._intent_tracker else self._intent_tracker,
             context_envelope=context_envelope,
             turn_number=self._intent_tracker.turn_number if self._intent_tracker else 0,
             persona=persona,
-            state_config=state_config,
-            flow_config=self._flow_config.to_dict() if hasattr(self._flow_config, 'to_dict') else {},
-            state_to_phase=state_to_phase,
+            state_config=deep_freeze_dict(dict(state_config)),
+            flow_config=deep_freeze_dict(
+                self._flow_config.to_dict() if hasattr(self._flow_config, 'to_dict') else {}
+            ),
+            state_to_phase=deep_freeze_dict(dict(state_to_phase)),
+            state_before_objection=self._state_machine.state_before_objection if hasattr(self._state_machine, 'state_before_objection') else getattr(self._state_machine, '_state_before_objection', None),
+            valid_states=frozenset(self._flow_config.states.keys()) if hasattr(self._flow_config, 'states') else frozenset(),
+            go_back_info=go_back_info,
             # Multi-tenancy support
             tenant_id=self._tenant_config.tenant_id,
             tenant_config=self._tenant_config,
@@ -206,6 +256,10 @@ class DialogueBlackboard:
         self._data_updates.clear()
         self._flags_to_set.clear()
 
+        # Clear collision audit trail
+        self._data_update_sources.clear()
+        self._flag_set_sources.clear()
+
         # Clear decision layer
         self._decision = None
 
@@ -215,81 +269,17 @@ class DialogueBlackboard:
         )
 
     def _should_skip_objection_recording(self, intent: str) -> bool:
-        """
-        Check if objection recording should be skipped.
-
-        ======================================================================
-        NOT A BUG: This is part of infinite loop prevention
-        ======================================================================
-
-        REPORTED CONCERN:
-          "ObjectionGuard keeps triggering because consecutive >= max"
-
-        WHY THIS PREVENTS THE LOOP:
-
-        1. WHEN LIMIT IS REACHED:
-           - ObjectionGuard proposes soft_close + _objection_limit_final flag
-           - Transition to soft_close happens
-           - is_final() returns True (due to flag override)
-
-        2. IF CONVERSATION SOMEHOW CONTINUES (edge case):
-           - User sends another objection intent
-           - THIS METHOD catches it BEFORE recording
-           - consecutive stays at max (e.g., 3), doesn't grow to 4, 5, 6...
-           - ObjectionGuard sees same values, proposes soft_close again
-           - But _objection_limit_final is ALREADY set
-           - is_final() returns True → conversation ends
-
-        3. WHY SKIP RECORDING:
-           - Without this, counter would grow: 3 → 4 → 5 → ...
-           - This wastes memory and confuses analytics
-           - With this, counter stays at limit (3)
-
-        TIMELINE:
-          Turn N:   3rd objection → limit reached → soft_close → flag set
-          Turn N+1: (if any) objection → skip recording → count=3 (not 4)
-                    → is_final=True → ends
-
-        This is defense in depth, working with:
-        - _objection_limit_final flag (objection_guard.py)
-        - is_final() override (state_machine.py)
-        ======================================================================
-
-        Prevents counter from growing beyond limit when soft_close
-        continues the dialog (e.g., when is_final=false).
-
-        This mirrors StateMachine._should_skip_objection_recording() for
-        compatibility with existing objection handling logic.
-
-        Args:
-            intent: The intent to check
-
-        Returns:
-            True if recording should be skipped (limit already reached)
-        """
-        from src.yaml_config.constants import OBJECTION_INTENTS, get_persona_objection_limits
-
-        if intent not in OBJECTION_INTENTS:
+        """Delegate to shared function (SSOT in intent_tracker.py)."""
+        if not self._intent_tracker:
             return False
-
-        # Get persona-aware limits
-        persona = self._state_machine.collected_data.get("persona", "default")
-        limits = get_persona_objection_limits(persona)
-        max_consecutive = limits["consecutive"]
-        max_total = limits["total"]
-
-        # Check if limit already reached
-        if self._intent_tracker:
-            consecutive = self._intent_tracker.objection_consecutive()
-            total = self._intent_tracker.objection_total()
-
-            if consecutive >= max_consecutive or total >= max_total:
-                logger.debug(
-                    f"Skipping objection recording - limit already reached: "
-                    f"consecutive={consecutive}, total={total}"
-                )
-                return True
-        return False
+        result = _shared_skip_objection(
+            intent, self._intent_tracker, self._state_machine.collected_data
+        )
+        if result:
+            logger.debug(
+                f"Skipping objection recording - limit already reached"
+            )
+        return result
 
     def get_context(self) -> ContextSnapshot:
         """
@@ -430,11 +420,16 @@ class DialogueBlackboard:
             reason_code: Documented reason for this proposal
         """
         if field in self._data_updates:
-            logger.warning(
-                f"Data update collision: field='{field}' overwritten by {source_name} "
-                f"(reason: {reason_code}), previous value will be lost"
+            prev_source = self._data_update_sources.get(field, "unknown")
+            msg = (
+                f"Data update collision: field='{field}' overwritten by "
+                f"{source_name} (was: {prev_source}, reason: {reason_code})"
             )
+            if self._strict_data_updates:
+                raise DataUpdateCollisionError(msg)
+            logger.warning(msg)
         self._data_updates[field] = value
+        self._data_update_sources[field] = source_name
 
         logger.debug(
             f"Data update proposed: {field}={value} (source={source_name})"
@@ -460,7 +455,17 @@ class DialogueBlackboard:
             source_name: Name of the Knowledge Source making this proposal
             reason_code: Documented reason for this proposal
         """
+        if flag in self._flags_to_set:
+            prev_source = self._flag_set_sources.get(flag, "unknown")
+            msg = (
+                f"Flag set collision: flag='{flag}' overwritten by "
+                f"{source_name} (was: {prev_source}, reason: {reason_code})"
+            )
+            if self._strict_data_updates:
+                raise DataUpdateCollisionError(msg)
+            logger.warning(msg)
         self._flags_to_set[flag] = value
+        self._flag_set_sources[flag] = source_name
 
         logger.debug(
             f"Flag set proposed: {flag}={value} (source={source_name})"

@@ -27,7 +27,7 @@ from src.logger import logger
 from src.settings import settings
 
 # Phase 4: Conditional Rules imports
-from src.intent_tracker import IntentTracker
+from src.intent_tracker import IntentTracker, should_skip_objection_recording as _shared_skip_objection
 from src.conditions.state_machine.context import EvaluatorContext
 from src.conditions.state_machine.registry import sm_registry
 from src.rules.resolver import RuleResolver
@@ -767,6 +767,16 @@ class StateMachine:
 
         return True
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        """State saved before entering objection handling series."""
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        """Set/clear the state before objection."""
+        self._state_before_objection = value
+
     def sync_phase_from_state(self) -> None:
         """
         Synchronize current_phase with the current state.
@@ -837,38 +847,8 @@ class StateMachine:
         return False
 
     def _should_skip_objection_recording(self, intent: str) -> bool:
-        """
-        Check if objection recording should be skipped.
-
-        Prevents counter from growing beyond limit when soft_close
-        continues the dialog (e.g., when is_final=false).
-
-        Args:
-            intent: The intent to check
-
-        Returns:
-            True if recording should be skipped (limit already reached)
-        """
-        if intent not in OBJECTION_INTENTS:
-            return False
-
-        # Check if limit already reached (persona-aware)
-        from src.yaml_config.constants import get_persona_objection_limits
-        persona = self.collected_data.get("persona", "default")
-        limits = get_persona_objection_limits(persona)
-
-        consecutive = self.intent_tracker.objection_consecutive()
-        total = self.intent_tracker.objection_total()
-
-        if consecutive >= limits["consecutive"] or total >= limits["total"]:
-            logger.debug(
-                "Skipping objection recording - limit already reached",
-                intent=intent,
-                consecutive=consecutive,
-                total=total
-            )
-            return True
-        return False
+        """Delegate to shared function (SSOT in intent_tracker.py)."""
+        return _shared_skip_objection(intent, self.intent_tracker, self.collected_data)
 
     # Backward compatibility property for objection_flow
     @property
@@ -1498,12 +1478,12 @@ class ObjectionFlowAdapter:
     @property
     def last_state_before_objection(self) -> Optional[str]:
         """State before first objection in current series."""
-        return self._sm._state_before_objection
+        return self._sm.state_before_objection
 
     def reset(self) -> None:
         """Reset objection tracking (for new conversation)."""
         self._sm.intent_tracker.reset()
-        self._sm._state_before_objection = None
+        self._sm.state_before_objection = None
 
     def record_objection(self, objection_type: str, state: str) -> None:
         """
@@ -1513,8 +1493,8 @@ class ObjectionFlowAdapter:
         via intent_tracker.record(). This method exists for backward compat.
         """
         # Save state before objection if not already saved
-        if self._sm._state_before_objection is None:
-            self._sm._state_before_objection = state
+        if self._sm.state_before_objection is None:
+            self._sm.state_before_objection = state
         # The actual recording is done in apply_rules via intent_tracker.record()
 
     def reset_consecutive(self) -> None:
@@ -1525,7 +1505,7 @@ class ObjectionFlowAdapter:
         is recorded. This method exists for backward compat.
         """
         # Reset the state_before_objection to signal series end
-        self._sm._state_before_objection = None
+        self._sm.state_before_objection = None
 
     def should_soft_close(self) -> bool:
         """Check if objection limit reached."""
@@ -1533,7 +1513,7 @@ class ObjectionFlowAdapter:
 
     def get_return_state(self) -> Optional[str]:
         """Get state to return to after handling objection."""
-        return self._sm._state_before_objection
+        return self._sm.state_before_objection
 
     def get_stats(self) -> Dict:
         """Get objection statistics."""

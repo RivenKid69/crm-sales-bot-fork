@@ -89,8 +89,24 @@ class MockIntentTracker:
 class MockCircularFlow:
     """Mock CircularFlowManager."""
 
+    def __init__(self):
+        self.goback_count = 0
+        self.max_gobacks = 3
+
     def get_stats(self) -> Dict[str, Any]:
         return {"loops": 0, "max_loops": 3}
+
+    def get_go_back_target(self, state, transitions):
+        return transitions.get("go_back")
+
+    def is_limit_reached(self) -> bool:
+        return self.goback_count >= self.max_gobacks
+
+    def get_remaining_gobacks(self) -> int:
+        return max(0, self.max_gobacks - self.goback_count)
+
+    def get_history(self):
+        return []
 
 
 class RegressionStateMachine:
@@ -142,6 +158,14 @@ class RegressionStateMachine:
     def last_action(self, value: Optional[str]) -> None:
         self._last_action = value
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        self._state_before_objection = value
+
     def update_data(self, data: Dict[str, Any]) -> None:
         self._collected_data.update(data)
 
@@ -162,6 +186,9 @@ class RegressionStateMachine:
 
     def is_final(self) -> bool:
         return self._state in ("soft_close", "closed", "rejected")
+
+    def sync_phase_from_state(self) -> None:
+        pass
 
 
 class RegressionFlowConfig:

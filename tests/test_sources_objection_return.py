@@ -58,6 +58,17 @@ class MockStateMachine:
     def collected_data(self) -> Dict[str, Any]:
         return self._collected_data
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        self._state_before_objection = value
+
+    def sync_phase_from_state(self) -> None:
+        pass
+
 
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""

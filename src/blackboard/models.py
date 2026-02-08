@@ -16,9 +16,146 @@ from datetime import datetime
 from .enums import Priority, ProposalType
 
 if TYPE_CHECKING:
-    from .protocols import TenantConfig
-    from src.intent_tracker import IntentTracker
+    from .protocols import TenantConfig, IIntentTrackerReader, IIntentTracker
     from src.context_envelope import ContextEnvelope
+
+
+# =============================================================================
+# FrozenDict — immutable dict subclass (Issue #4)
+# =============================================================================
+
+class FrozenDict(dict):
+    """Immutable dict subclass that raises TypeError on any mutation.
+
+    Unlike MappingProxyType, passes isinstance(x, dict) checks — zero breaking
+    changes to existing code that uses isinstance for type dispatch on YAML configs.
+
+    Read operations work normally: .get(), [], in, len, .items(), .keys(), .values()
+    Mutation operations blocked: []= , del, .update(), .pop(), .clear(), .setdefault()
+    dict(frozen) creates a mutable copy (standard Python dict constructor behavior).
+    """
+    _FROZEN_MSG = "FrozenDict does not support mutation"
+
+    def __setitem__(self, key, value):
+        raise TypeError(self._FROZEN_MSG)
+
+    def __delitem__(self, key):
+        raise TypeError(self._FROZEN_MSG)
+
+    def update(self, *args, **kwargs):
+        raise TypeError(self._FROZEN_MSG)
+
+    def pop(self, *args):
+        raise TypeError(self._FROZEN_MSG)
+
+    def popitem(self):
+        raise TypeError(self._FROZEN_MSG)
+
+    def clear(self):
+        raise TypeError(self._FROZEN_MSG)
+
+    def setdefault(self, key, default=None):
+        if key not in self:
+            raise TypeError(self._FROZEN_MSG)
+        return self[key]
+
+    def __ior__(self, other):  # |= operator
+        raise TypeError(self._FROZEN_MSG)
+
+    def __repr__(self):
+        return f"FrozenDict({dict.__repr__(self)})"
+
+
+def deep_freeze_dict(d: dict) -> FrozenDict:
+    """Recursively create immutable FrozenDict from dict.
+
+    All nested dicts become FrozenDict. Lists are NOT frozen (accepted limitation).
+    O(n) on creation, O(1) per access — negligible for config-sized dicts.
+    Passes isinstance(x, dict) for all nested levels.
+    """
+    return FrozenDict({
+        k: deep_freeze_dict(v) if isinstance(v, dict) and not isinstance(v, FrozenDict) else v
+        for k, v in d.items()
+    })
+
+
+# =============================================================================
+# GoBackInfo — frozen snapshot of CircularFlowManager state
+# =============================================================================
+
+@dataclass(frozen=True)
+class GoBackInfo:
+    """Read-only snapshot of CircularFlowManager state for GoBackGuardSource."""
+    target_state: Optional[str]   # Pre-computed go_back target for current state
+    limit_reached: bool
+    remaining: int
+    goback_count: int
+    max_gobacks: int
+    history: tuple = ()           # Frozen go_back history (tuple of tuples)
+
+
+# =============================================================================
+# IntentTrackerReadOnly — read-only proxy for ContextSnapshot
+# =============================================================================
+
+class IntentTrackerReadOnly:
+    """Read-only proxy for IntentTracker in ContextSnapshot.
+
+    Delegates all read methods to the live tracker.
+    Does NOT expose record() or advance_turn().
+    Any mutation attempt raises AttributeError.
+    """
+    __slots__ = ('_tracker',)
+
+    def __init__(self, tracker: 'IIntentTracker'):
+        object.__setattr__(self, '_tracker', tracker)
+
+    def __setattr__(self, name, value):
+        raise AttributeError("IntentTrackerReadOnly is immutable")
+
+    @property
+    def turn_number(self) -> int:
+        return self._tracker.turn_number
+
+    @property
+    def prev_intent(self) -> Optional[str]:
+        return self._tracker.prev_intent
+
+    @property
+    def last_intent(self) -> Optional[str]:
+        return self._tracker.last_intent
+
+    @property
+    def last_state(self) -> Optional[str]:
+        return self._tracker.last_state
+
+    @property
+    def history_length(self) -> int:
+        return self._tracker.history_length
+
+    def objection_consecutive(self) -> int:
+        return self._tracker.objection_consecutive()
+
+    def objection_total(self) -> int:
+        return self._tracker.objection_total()
+
+    def total_count(self, intent: str) -> int:
+        return self._tracker.total_count(intent)
+
+    def category_total(self, category: str) -> int:
+        return self._tracker.category_total(category)
+
+    def streak_count(self, intent: str) -> int:
+        return self._tracker.streak_count(intent)
+
+    def category_streak(self, category: str) -> int:
+        return self._tracker.category_streak(category)
+
+    def get_intents_by_category(self, category: str) -> list:
+        return self._tracker.get_intents_by_category(category)
+
+    def get_recent_intents(self, limit: int = 5) -> List[str]:
+        return self._tracker.get_recent_intents(limit)
 
 
 # =============================================================================
@@ -257,7 +394,7 @@ class ContextSnapshot:
     state: str
     collected_data: Dict[str, Any]
     current_intent: str
-    intent_tracker: 'IntentTracker'
+    intent_tracker: 'IIntentTrackerReader'
     context_envelope: Optional['ContextEnvelope']
     turn_number: int
     persona: str
@@ -266,6 +403,10 @@ class ContextSnapshot:
     # FUNDAMENTAL FIX: state_to_phase mapping for custom flows (BANT, MEDDIC, etc.)
     # Built from FlowConfig.state_to_phase property
     state_to_phase: Dict[str, str] = field(default_factory=dict)
+    # New fields for encapsulation (#5)
+    state_before_objection: Optional[str] = None
+    valid_states: frozenset = field(default_factory=frozenset)
+    go_back_info: Optional['GoBackInfo'] = None
     # Multi-tenancy support (DESIGN_PRINCIPLES.md Section 6)
     tenant_id: str = "default"
     tenant_config: Optional['TenantConfig'] = None
