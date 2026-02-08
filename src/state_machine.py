@@ -19,7 +19,7 @@ Configuration:
 - ConditionExpressionParser: AND/OR/NOT условия в rules
 """
 
-from typing import Tuple, Dict, Optional, List, Any, Iterator, TYPE_CHECKING
+from typing import Tuple, Dict, Optional, List, Any, Iterator, TYPE_CHECKING, ClassVar
 from dataclasses import dataclass
 
 from src.feature_flags import flags
@@ -277,6 +277,40 @@ class StateMachine:
     - EvaluatorContext: typed context for condition evaluation
     - DAGExecutor: parallel branches and conditional routing (when DAG nodes defined)
     """
+
+    # =========================================================================
+    # Serialization Contract
+    # =========================================================================
+    # Every instance variable in __init__ MUST be listed in exactly one set.
+    # CI test test_serialization_contract_complete() enforces this.
+    # Adding a new field without declaring it here WILL fail the build.
+
+    # Fields persisted in to_dict() / from_dict() — stateful, session-scoped
+    _SNAPSHOT_FIELDS: ClassVar[frozenset] = frozenset({
+        'state', 'current_phase', 'collected_data',
+        'in_disambiguation', 'disambiguation_context',
+        'pre_disambiguation_state', 'turns_since_last_disambiguation',
+        'last_action', '_state_before_objection',
+    })
+
+    # Fields persisted via nested .to_dict() — have their own serialization
+    _SNAPSHOT_NESTED: ClassVar[frozenset] = frozenset({
+        'intent_tracker',    # IntentTracker.to_dict() / from_dict()
+        'circular_flow',     # CircularFlowManager.to_dict() / from_dict()
+    })
+
+    # Fields NOT persisted — reconstructed from config or inherently transient
+    _TRANSIENT_FIELDS: ClassVar[frozenset] = frozenset({
+        '_config',            # Passed to from_dict() as parameter
+        '_flow',              # Passed to from_dict() as parameter
+        '_resolver',          # Reconstructed from _config in __init__
+        '_enable_tracing',    # Debug flag, defaults to False
+        '_trace_collector',   # Transient debug state
+        '_last_trace',        # Transient debug state
+        '_dag_enabled',       # Always True (default)
+        '_dag_context',       # Lazy-initialized from config
+        '_dag_executor',      # Lazy-initialized
+    })
 
     def __init__(
         self,
@@ -1378,6 +1412,8 @@ class StateMachine:
             "turns_since_last_disambiguation": self.turns_since_last_disambiguation,
             "intent_tracker": self.intent_tracker.to_dict(),
             "circular_flow": self.circular_flow.to_dict(),
+            "last_action": self.last_action,
+            "_state_before_objection": self._state_before_objection,
         }
 
     @classmethod
@@ -1409,6 +1445,9 @@ class StateMachine:
         circular_data = data.get("circular_flow")
         if circular_data:
             sm.circular_flow = CircularFlowManager.from_dict(circular_data)
+
+        sm.last_action = data.get("last_action")
+        sm._state_before_objection = data.get("_state_before_objection")
         return sm
 
 

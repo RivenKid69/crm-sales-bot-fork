@@ -919,3 +919,82 @@ class TestStage4ValidatorCriteriaVerification:
         assert validator.has_blocking_errors([error]) is True
         assert validator.has_blocking_errors([warning]) is False
         assert validator.has_blocking_errors([]) is False
+
+
+# =============================================================================
+# Test Valid Actions SSOT (Single Source of Truth via generator.get_valid_actions)
+# =============================================================================
+
+class TestValidActionsSSOT:
+    """
+    Tests that generator.get_valid_actions() is the SSOT for action validity
+    and that ProposalValidator correctly uses it to catch invalid actions.
+    """
+
+    def test_generator_get_valid_actions_returns_nonempty_set(self):
+        """generator.get_valid_actions() returns non-empty set."""
+        from unittest.mock import MagicMock
+        from src.generator import ResponseGenerator
+
+        mock_llm = MagicMock()
+        gen = ResponseGenerator(mock_llm)
+        actions = gen.get_valid_actions()
+
+        assert isinstance(actions, set)
+        assert len(actions) > 0
+
+    def test_generator_valid_actions_covers_prompt_templates(self):
+        """PROMPT_TEMPLATES keys are in the set."""
+        from unittest.mock import MagicMock
+        from src.generator import ResponseGenerator
+        from src.config import PROMPT_TEMPLATES
+
+        mock_llm = MagicMock()
+        gen = ResponseGenerator(mock_llm)
+        actions = gen.get_valid_actions()
+
+        for key in PROMPT_TEMPLATES:
+            assert key in actions, f"PROMPT_TEMPLATES key '{key}' missing from get_valid_actions()"
+
+    def test_generator_valid_actions_covers_flow_templates(self):
+        """FlowConfig template keys are in the set when flow is loaded."""
+        from unittest.mock import MagicMock
+        from src.generator import ResponseGenerator
+        from src.config_loader import ConfigLoader
+
+        mock_llm = MagicMock()
+        loader = ConfigLoader()
+        flow = loader.load_flow("spin_selling")
+        gen = ResponseGenerator(mock_llm, flow=flow)
+        actions = gen.get_valid_actions()
+
+        if hasattr(flow, 'templates') and flow.templates:
+            for key in flow.templates:
+                assert key in actions, f"FlowConfig template key '{key}' missing from get_valid_actions()"
+
+    def test_validator_with_valid_actions_catches_typo(self):
+        """ProposalValidator(valid_actions=...) catches 'continu_current_goal' typo."""
+        from unittest.mock import MagicMock
+        from src.generator import ResponseGenerator
+
+        mock_llm = MagicMock()
+        gen = ResponseGenerator(mock_llm)
+        valid_actions = gen.get_valid_actions()
+
+        validator = ProposalValidator(
+            valid_actions=valid_actions,
+            strict_mode=True,
+        )
+
+        typo_proposal = Proposal(
+            type=ProposalType.ACTION,
+            value="continu_current_goal",  # Typo: missing 'e'
+            priority=Priority.NORMAL,
+            source_name="TestSource",
+            reason_code="TEST",
+        )
+
+        errors = validator.validate([typo_proposal])
+        invalid_action_errors = [e for e in errors if e.error_code == "INVALID_ACTION"]
+        assert len(invalid_action_errors) == 1
+        assert invalid_action_errors[0].severity == "error"
