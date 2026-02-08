@@ -218,8 +218,8 @@ class ObjectionReturnSource(KnowledgeSource):
             return False
 
         # Check if we have a saved state to return to
-        state_machine = blackboard._state_machine
-        saved_state = getattr(state_machine, '_state_before_objection', None)
+        ctx = blackboard.get_context()
+        saved_state = ctx.state_before_objection
         if not saved_state:
             return False
 
@@ -231,14 +231,11 @@ class ObjectionReturnSource(KnowledgeSource):
         # This fixes the zero phase coverage bug for tire_kicker/aggressive personas
         # who express only objection intents and never reach any phase.
         if blackboard.current_intent in OBJECTION_INTENTS:
-            tracker = blackboard._intent_tracker
+            tracker = ctx.intent_tracker
             if tracker:
                 # Check if saved state has no phase (came from greeting)
                 # If we came from a phase state, we should wait for positive intent
-                flow_config = blackboard._flow_config
-                phase = None
-                if hasattr(flow_config, 'get_phase_for_state'):
-                    phase = flow_config.get_phase_for_state(saved_state)
+                phase = ctx.state_to_phase.get(saved_state)
 
                 # Only trigger escape if came from non-phase state
                 if phase is None:
@@ -303,12 +300,10 @@ class ObjectionReturnSource(KnowledgeSource):
         if blackboard.current_state != self.OBJECTION_STATE:
             return
 
-        state_machine = blackboard._state_machine
         ctx = blackboard.get_context()
-        flow_config = blackboard._flow_config
 
-        # Get the saved state
-        saved_state = getattr(state_machine, '_state_before_objection', None)
+        # Get the saved state from context snapshot
+        saved_state = ctx.state_before_objection
 
         if not saved_state:
             self._log_contribution(
@@ -317,7 +312,7 @@ class ObjectionReturnSource(KnowledgeSource):
             return
 
         # Validate target state exists in flow config
-        if hasattr(flow_config, 'states') and saved_state not in flow_config.states:
+        if ctx.valid_states and saved_state not in ctx.valid_states:
             logger.warning(
                 f"ObjectionReturnSource: saved state '{saved_state}' "
                 f"not found in flow config"
@@ -328,9 +323,7 @@ class ObjectionReturnSource(KnowledgeSource):
             return
 
         # Get phase info for metadata
-        phase = None
-        if hasattr(flow_config, 'get_phase_for_state'):
-            phase = flow_config.get_phase_for_state(saved_state)
+        phase = ctx.state_to_phase.get(saved_state)
 
         # ====================================================================
         # CHECK FOR OBJECTION ESCAPE CONDITIONS
@@ -364,7 +357,7 @@ class ObjectionReturnSource(KnowledgeSource):
 
         if blackboard.current_intent in OBJECTION_INTENTS and phase is not None:
             # CASE C: Phase-origin early return → back to saved phase state (HIGH priority)
-            tracker = blackboard._intent_tracker
+            tracker = ctx.intent_tracker
             if tracker:
                 consecutive_objections = tracker.objection_consecutive()
                 if consecutive_objections >= PHASE_ORIGIN_ESCAPE_THRESHOLD:
@@ -382,7 +375,7 @@ class ObjectionReturnSource(KnowledgeSource):
                     )
 
         if blackboard.current_intent in OBJECTION_INTENTS and phase is None:
-            tracker = blackboard._intent_tracker
+            tracker = ctx.intent_tracker
             if tracker:
                 consecutive_objections = tracker.objection_consecutive()
                 total_objections = tracker.objection_total()
@@ -480,12 +473,13 @@ class ObjectionReturnSource(KnowledgeSource):
         if phase is None:
             # Get entry_state from flow config as fallback destination
             entry_state = None
-            if hasattr(flow_config, 'variables'):
-                entry_state = flow_config.variables.get("entry_state")
-            elif hasattr(flow_config, 'get_variable'):
-                entry_state = flow_config.get_variable("entry_state")
+            flow_dict = ctx.flow_config
+            if isinstance(flow_dict, dict):
+                variables = flow_dict.get("variables", {})
+                if isinstance(variables, dict):
+                    entry_state = variables.get("entry_state")
 
-            if entry_state and entry_state in flow_config.states:
+            if entry_state and entry_state in ctx.valid_states:
                 # Determine reason for transition
                 if is_objection_loop_escape and escape_trigger == "total":
                     reason_code = "objection_total_escape_to_entry_state"

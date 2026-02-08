@@ -144,6 +144,7 @@ class TestMockImplementations:
                 self._intent_tracker = MockIntentTracker()
                 self._current_phase = None
                 self._last_action = None
+                self._state_before_objection = None
 
             @property
             def state(self) -> str:
@@ -172,6 +173,14 @@ class TestMockImplementations:
             @last_action.setter
             def last_action(self, value: Optional[str]) -> None:
                 self._last_action = value
+
+            @property
+            def state_before_objection(self) -> Optional[str]:
+                return self._state_before_objection
+
+            @state_before_objection.setter
+            def state_before_objection(self, value: Optional[str]) -> None:
+                self._state_before_objection = value
 
             def update_data(self, data: Dict[str, Any]) -> None:
                 for key, value in data.items():
@@ -243,6 +252,7 @@ class TestMockImplementations:
                 self._turn = 0
                 self._prev_intent = None
                 self._intents = []
+                self._states = []
 
             @property
             def turn_number(self) -> int:
@@ -252,9 +262,22 @@ class TestMockImplementations:
             def prev_intent(self) -> Optional[str]:
                 return self._prev_intent
 
+            @property
+            def last_intent(self) -> Optional[str]:
+                return self._intents[-1] if self._intents else None
+
+            @property
+            def last_state(self) -> Optional[str]:
+                return self._states[-1] if self._states else None
+
+            @property
+            def history_length(self) -> int:
+                return len(self._intents)
+
             def record(self, intent: str, state: str) -> None:
                 self._prev_intent = self._intents[-1] if self._intents else None
                 self._intents.append(intent)
+                self._states.append(state)
 
             def advance_turn(self) -> None:
                 self._turn += 1
@@ -270,6 +293,18 @@ class TestMockImplementations:
 
             def category_total(self, category: str) -> int:
                 return 0
+
+            def streak_count(self, intent: str) -> int:
+                return 0
+
+            def category_streak(self, category: str) -> int:
+                return 0
+
+            def get_intents_by_category(self, category: str) -> list:
+                return []
+
+            def get_recent_intents(self, limit: int = 5) -> list:
+                return self._intents[-limit:]
 
         mock_tracker = MockIntentTracker()
         assert isinstance(mock_tracker, IIntentTracker)

@@ -34,6 +34,7 @@ class MockStateMachine:
         self._current_phase = None
         self._last_action = None
         self._intent_tracker = None
+        self._state_before_objection = None
 
     @property
     def state(self) -> str:
@@ -63,11 +64,22 @@ class MockStateMachine:
     def last_action(self, value: Optional[str]) -> None:
         self._last_action = value
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        self._state_before_objection = value
+
     def update_data(self, data: Dict[str, Any]) -> None:
         self._collected_data.update(data)
 
     def is_final(self) -> bool:
         return self._state in ("closed", "rejected")
+
+    def sync_phase_from_state(self) -> None:
+        pass
 
 
 class MockIntentTracker:

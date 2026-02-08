@@ -11,7 +11,7 @@ These protocols enable:
 - Clear boundaries between components
 """
 
-from typing import Protocol, Dict, Any, Optional, runtime_checkable
+from typing import Protocol, Dict, Any, Optional, List, runtime_checkable
 from dataclasses import dataclass, field
 
 
@@ -133,22 +133,60 @@ class IStateMachine(Protocol):
         """
         ...
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        """State saved before entering objection handling series."""
+        ...
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        """Set/clear the state before objection."""
+        ...
+
 
 @runtime_checkable
-class IIntentTracker(Protocol):
-    """
-    Input Port: Contract for intent tracking.
+class IIntentTrackerReader(Protocol):
+    """Read-only view of IntentTracker — for ContextSnapshot.
+
+    Sources can query history but cannot mutate tracker state.
+    Mutation methods (record, advance_turn) are NOT in this protocol.
     """
 
     @property
-    def turn_number(self) -> int:
-        """Get current turn number."""
-        ...
+    def turn_number(self) -> int: ...
 
     @property
-    def prev_intent(self) -> Optional[str]:
-        """Get previous intent."""
-        ...
+    def prev_intent(self) -> Optional[str]: ...
+
+    @property
+    def last_intent(self) -> Optional[str]: ...
+
+    @property
+    def last_state(self) -> Optional[str]: ...
+
+    @property
+    def history_length(self) -> int: ...
+
+    def objection_consecutive(self) -> int: ...
+
+    def objection_total(self) -> int: ...
+
+    def total_count(self, intent: str) -> int: ...
+
+    def category_total(self, category: str) -> int: ...
+
+    def streak_count(self, intent: str) -> int: ...
+
+    def category_streak(self, category: str) -> int: ...
+
+    def get_intents_by_category(self, category: str) -> list: ...
+
+    def get_recent_intents(self, limit: int = 5) -> list: ...
+
+
+@runtime_checkable
+class IIntentTracker(IIntentTrackerReader, Protocol):
+    """Full IntentTracker with mutation methods — for Blackboard/Orchestrator."""
 
     def record(self, intent: str, state: str) -> None:
         """Record an intent."""
@@ -156,22 +194,6 @@ class IIntentTracker(Protocol):
 
     def advance_turn(self) -> None:
         """Advance turn counter unconditionally."""
-        ...
-
-    def objection_consecutive(self) -> int:
-        """Get consecutive objection count."""
-        ...
-
-    def objection_total(self) -> int:
-        """Get total objection count."""
-        ...
-
-    def total_count(self, intent: str) -> int:
-        """Get total count for specific intent."""
-        ...
-
-    def category_total(self, category: str) -> int:
-        """Get total count for intent category."""
         ...
 
 
@@ -269,7 +291,7 @@ class ITenantConfig(Protocol):
         ...
 
 
-@dataclass
+@dataclass(frozen=True)
 class TenantConfig:
     """
     Default implementation of ITenantConfig.

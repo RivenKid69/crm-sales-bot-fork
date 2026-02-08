@@ -56,6 +56,14 @@ class MockStateMachine:
         self.circular_flow = MockCircularFlow()
 
     @property
+    def state_before_objection(self) -> Optional[str]:
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        self._state_before_objection = value
+
+    @property
     def state(self) -> str:
         return self._state
 
@@ -86,8 +94,9 @@ class MockStateMachine:
     def update_data(self, data: Dict[str, Any]) -> None:
         self._collected_data.update(data)
 
-    def is_final(self) -> bool:
-        return self._state in ("closed", "rejected")
+    def is_final(self, state: str = None) -> bool:
+        check_state = state if state is not None else self._state
+        return check_state in ("closed", "rejected", "soft_close")
 
     def transition_to(
         self,
@@ -117,8 +126,24 @@ class MockStateMachine:
 class MockCircularFlow:
     """Mock CircularFlowManager."""
 
+    def __init__(self):
+        self.goback_count = 0
+        self.max_gobacks = 3
+
     def get_stats(self) -> Dict[str, Any]:
         return {"loops": 0, "max_loops": 3}
+
+    def get_go_back_target(self, state, transitions):
+        return transitions.get("go_back")
+
+    def is_limit_reached(self) -> bool:
+        return self.goback_count >= self.max_gobacks
+
+    def get_remaining_gobacks(self) -> int:
+        return max(0, self.max_gobacks - self.goback_count)
+
+    def get_history(self):
+        return []
 
 
 @dataclass
@@ -841,11 +866,15 @@ class TestFillCompatibilityFields:
         )
 
         # Test non-final state
+        # is_final() delegates to SM which checks its current state,
+        # so set SM state to match decision.next_state (as _apply_side_effects would)
+        mock_state_machine.state = "spin_situation"
         decision = ResolvedDecision(action="test", next_state="spin_situation")
         orch._fill_compatibility_fields(decision, "greeting")
         assert decision.is_final is False
 
         # Test final state
+        mock_state_machine.state = "soft_close"
         decision = ResolvedDecision(action="test", next_state="soft_close")
         orch._fill_compatibility_fields(decision, "greeting")
         assert decision.is_final is True

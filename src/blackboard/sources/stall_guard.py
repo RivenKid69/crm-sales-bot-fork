@@ -191,7 +191,7 @@ class StallGuardSource(KnowledgeSource):
         3. Default: "close"
         """
         # Priority 1: saved return state for detour states (RC2 fix)
-        saved_return = self._get_saved_return_state(ctx, blackboard)
+        saved_return = self._get_saved_return_state(ctx)
         if saved_return:
             return saved_return
 
@@ -199,7 +199,7 @@ class StallGuardSource(KnowledgeSource):
         return ctx.state_config.get("max_turns_fallback", "close")
 
     def _get_saved_return_state(
-        self, ctx: 'ContextSnapshot', blackboard: 'DialogueBlackboard'
+        self, ctx: 'ContextSnapshot'
     ) -> Optional[str]:
         """
         Check if current state is a detour with a saved origin state.
@@ -209,17 +209,13 @@ class StallGuardSource(KnowledgeSource):
         the saved origin state instead of generic entry_state — preserving
         the conversation context that would otherwise be lost.
 
-        Access pattern: blackboard._state_machine (private) — same pattern
-        used by ObjectionReturnSource (objection_return.py lines 215, 283).
+        Access pattern: uses ctx.state_before_objection from ContextSnapshot
+        (encapsulation-safe — no private-attr access).
         """
         if ctx.state != self.OBJECTION_STATE:
             return None
 
-        state_machine = getattr(blackboard, '_state_machine', None)
-        if not state_machine:
-            return None
-
-        saved = getattr(state_machine, '_state_before_objection', None)
+        saved = ctx.state_before_objection
         if saved:
             logger.debug(
                 f"StallGuardSource: found saved return state '{saved}' "

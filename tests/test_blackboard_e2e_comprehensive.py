@@ -111,6 +111,8 @@ class E2ECircularFlow:
         self._loops = 0
         self._max_loops = 3
         self._goback_count = 0
+        self.goback_count = 0
+        self.max_gobacks = 3
 
     def get_stats(self) -> Dict[str, Any]:
         return {
@@ -118,6 +120,18 @@ class E2ECircularFlow:
             "max_loops": self._max_loops,
             "goback_count": self._goback_count,
         }
+
+    def get_go_back_target(self, state, transitions):
+        return transitions.get("go_back")
+
+    def is_limit_reached(self) -> bool:
+        return self.goback_count >= self.max_gobacks
+
+    def get_remaining_gobacks(self) -> int:
+        return max(0, self.max_gobacks - self.goback_count)
+
+    def get_history(self):
+        return []
 
 
 class E2EStateMachine:
@@ -169,6 +183,14 @@ class E2EStateMachine:
     def last_action(self, value: Optional[str]) -> None:
         self._last_action = value
 
+    @property
+    def state_before_objection(self) -> Optional[str]:
+        return self._state_before_objection
+
+    @state_before_objection.setter
+    def state_before_objection(self, value: Optional[str]) -> None:
+        self._state_before_objection = value
+
     def update_data(self, data: Dict[str, Any]) -> None:
         self._collected_data.update(data)
 
@@ -192,6 +214,9 @@ class E2EStateMachine:
 
     def advance_turn(self) -> None:
         self._intent_tracker.advance_turn()
+
+    def sync_phase_from_state(self) -> None:
+        pass
 
 
 class E2EFlowConfig:

@@ -637,9 +637,37 @@ class IntentTracker:
         )
 
 
+def should_skip_objection_recording(
+    intent: str,
+    tracker: 'IntentTracker',
+    collected_data: dict,
+) -> bool:
+    """
+    Check if objection recording should be skipped (limit already reached).
+
+    SINGLE SOURCE OF TRUTH — shared between Blackboard.begin_turn() and
+    StateMachine.apply_rules() (deprecated legacy path).
+    """
+    from src.yaml_config.constants import OBJECTION_INTENTS, get_persona_objection_limits
+
+    if intent not in OBJECTION_INTENTS:
+        return False
+
+    persona = collected_data.get("persona", "default")
+    limits = get_persona_objection_limits(persona)
+
+    consecutive = tracker.objection_consecutive()
+    total = tracker.objection_total()
+
+    if consecutive >= limits["consecutive"] or total >= limits["total"]:
+        return True
+    return False
+
+
 # Export all public components
 __all__ = [
     "IntentTracker",
     "IntentRecord",
     "INTENT_CATEGORIES",
+    "should_skip_objection_recording",
 ]

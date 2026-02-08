@@ -21,6 +21,7 @@ from ..enums import Priority
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
+    from ..models import GoBackInfo
 
 logger = logging.getLogger(__name__)
 
@@ -147,30 +148,18 @@ class GoBackGuardSource(KnowledgeSource):
             self._log_contribution(reason="Intent not go_back related")
             return
 
-        # Get CircularFlowManager from state_machine
-        state_machine = blackboard._state_machine
-        circular_flow = getattr(state_machine, 'circular_flow', None)
+        # Use GoBackInfo snapshot from ContextSnapshot (no private-attr access)
+        go_back_info = ctx.go_back_info
 
-        if circular_flow is None:
-            logger.warning("CircularFlowManager not available on state_machine")
-            self._log_contribution(reason="CircularFlowManager not available")
+        if go_back_info is None:
+            logger.warning("GoBackInfo not available in ContextSnapshot")
+            self._log_contribution(reason="GoBackInfo not available")
             return
 
         current_state = ctx.state
-        transitions = ctx.state_config.get("transitions", {})
 
-        # =====================================================================
-        # FUNDAMENTAL FIX: Use CircularFlowManager's unified methods
-        # =====================================================================
-        # CircularFlowManager is now the SINGLE SOURCE OF TRUTH for go_back logic.
-        # It handles both YAML transitions and allowed_gobacks map internally.
-        #
-        # This eliminates code duplication and ensures consistency between
-        # CircularFlowManager.can_go_back() and GoBackGuardSource logic.
-        # =====================================================================
-
-        # Get target state using CircularFlowManager's unified method
-        prev_state = circular_flow.get_go_back_target(current_state, transitions)
+        # Target state pre-computed by Blackboard.begin_turn() via CircularFlowManager
+        prev_state = go_back_info.target_state
 
         if not prev_state:
             logger.debug(
@@ -181,15 +170,13 @@ class GoBackGuardSource(KnowledgeSource):
             )
             return
 
-        # Check if go_back is allowed (limit + target existence)
-        # Note: We already know target exists, so this checks limit only
-        limit_reached = circular_flow.is_limit_reached()
-        remaining = circular_flow.get_remaining_gobacks()
+        limit_reached = go_back_info.limit_reached
+        remaining = go_back_info.remaining
 
         logger.debug(
             f"GoBackGuard check: state={current_state}, "
             f"limit_reached={limit_reached}, remaining={remaining}, "
-            f"count={circular_flow.goback_count}, max={circular_flow.max_gobacks}, "
+            f"count={go_back_info.goback_count}, max={go_back_info.max_gobacks}, "
             f"prev_state={prev_state}"
         )
 
@@ -226,7 +213,7 @@ class GoBackGuardSource(KnowledgeSource):
                     # goback_count ONLY if this action wins AND transition happens
                     "pending_goback_increment": True,
                     "remaining_gobacks": remaining,
-                    "goback_count_before": circular_flow.goback_count,
+                    "goback_count_before": go_back_info.goback_count,
                 }
             )
 
@@ -236,13 +223,13 @@ class GoBackGuardSource(KnowledgeSource):
             )
         else:
             # LIMIT REACHED: Block transition and explain
-            self._propose_limit_reached_action(blackboard, current_state, circular_flow)
+            self._propose_limit_reached_action(blackboard, current_state, go_back_info)
 
     def _propose_limit_reached_action(
         self,
         blackboard: 'DialogueBlackboard',
         current_state: str,
-        circular_flow
+        go_back_info: 'GoBackInfo'
     ) -> None:
         """
         Propose blocking action when go_back limit is reached.
@@ -254,11 +241,11 @@ class GoBackGuardSource(KnowledgeSource):
         Args:
             blackboard: The blackboard to propose to
             current_state: Current state
-            circular_flow: CircularFlowManager instance
+            go_back_info: GoBackInfo snapshot from ContextSnapshot
         """
         logger.info(
             f"GoBack BLOCKED: limit reached for state={current_state}, "
-            f"count={circular_flow.goback_count}, max={circular_flow.max_gobacks}"
+            f"count={go_back_info.goback_count}, max={go_back_info.max_gobacks}"
         )
 
         # Propose blocking action with HIGH priority
@@ -271,13 +258,13 @@ class GoBackGuardSource(KnowledgeSource):
             source_name=self.name,
             metadata={
                 "current_state": current_state,
-                "goback_count": circular_flow.goback_count,
-                "max_gobacks": circular_flow.max_gobacks,
-                "history": circular_flow.get_history(),
+                "goback_count": go_back_info.goback_count,
+                "max_gobacks": go_back_info.max_gobacks,
+                "history": list(go_back_info.history),
             }
         )
 
         self._log_contribution(
             action="go_back_limit_reached",
-            reason=f"GoBack blocked: limit {circular_flow.max_gobacks} reached"
+            reason=f"GoBack blocked: limit {go_back_info.max_gobacks} reached"
         )

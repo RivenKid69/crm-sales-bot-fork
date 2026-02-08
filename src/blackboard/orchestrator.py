@@ -92,6 +92,7 @@ class DialogueOrchestrator:
         llm: Optional[Any] = None,
         blackboard_config: Optional[Dict[str, Any]] = None,
         valid_actions: Optional[Set[str]] = None,
+        strict_data_updates: bool = False,
     ):
         """
         Initialize the orchestrator.
@@ -106,6 +107,7 @@ class DialogueOrchestrator:
             tenant_config: Tenant-specific configuration (uses DEFAULT_TENANT if not provided)
             llm: LLM instance for AutonomousDecisionSource (None for non-autonomous flows)
             blackboard_config: Blackboard config from constants.yaml (source enablement, etc.)
+            strict_data_updates: If True, raise DataUpdateCollisionError on data/flag collisions
         """
         self._state_machine = state_machine
         self._flow_config = flow_config
@@ -119,6 +121,7 @@ class DialogueOrchestrator:
             state_machine=state_machine,
             flow_config=flow_config,
             tenant_config=self._tenant_config,
+            strict_data_updates=strict_data_updates,
         )
 
         # Initialize event bus
@@ -257,7 +260,7 @@ class DialogueOrchestrator:
             ResolvedDecision with action, next_state, and metadata
         """
         turn_start_time = time.time()
-        turn_number = self._blackboard._intent_tracker.turn_number + 1
+        turn_number = self._blackboard.intent_tracker.turn_number + 1
         current_state = self._state_machine.state
 
         try:
@@ -680,24 +683,23 @@ class DialogueOrchestrator:
             state_changed: Whether state transition occurred
         """
         # Guard: Skip if blackboard not initialized (can happen in tests)
-        # Check _current_intent directly to avoid RuntimeError from current_intent property
-        if self._blackboard._current_intent is None:
+        if not self._blackboard.is_turn_active:
             return
 
-        current_intent = self._blackboard._current_intent
+        current_intent = self._blackboard.current_intent
         next_state = decision.next_state
 
         # Get the intent tracker for streak information
-        tracker = self._blackboard._intent_tracker
+        tracker = self._blackboard.intent_tracker
 
         # CASE 1: Entering handle_objection from a non-objection handling state
         # Save the state we came from (only once per objection series)
         if (state_changed and
             next_state == "handle_objection" and
             prev_state != "handle_objection" and
-            self._state_machine._state_before_objection is None):
+            self._state_machine.state_before_objection is None):
 
-            self._state_machine._state_before_objection = prev_state
+            self._state_machine.state_before_objection = prev_state
             logger.debug(
                 f"Saved state_before_objection: {prev_state} "
                 f"(entering handle_objection)"
@@ -744,7 +746,7 @@ class DialogueOrchestrator:
         #
         # If different semantics are needed, this is a FEATURE REQUEST, not a bug.
         # ==========================================================================
-        if (self._state_machine._state_before_objection is not None and
+        if (self._state_machine.state_before_objection is not None and
             current_intent in POSITIVE_INTENTS):
 
             # Check if objection streak was actually broken
@@ -755,7 +757,7 @@ class DialogueOrchestrator:
                     f"Clearing state_before_objection: positive intent '{current_intent}' "
                     f"broke objection streak"
                 )
-                self._state_machine._state_before_objection = None
+                self._state_machine.state_before_objection = None
                 return
 
         # CASE 3: Leaving handle_objection to a non-objection state
@@ -763,7 +765,7 @@ class DialogueOrchestrator:
         if (state_changed and
             prev_state == "handle_objection" and
             next_state != "handle_objection" and
-            self._state_machine._state_before_objection is not None):
+            self._state_machine.state_before_objection is not None):
 
             # Only clear if the next state is NOT an objection-related transition
             # (allows returning to saved state)
@@ -772,7 +774,7 @@ class DialogueOrchestrator:
                     f"Clearing state_before_objection: left handle_objection "
                     f"to {next_state}"
                 )
-                self._state_machine._state_before_objection = None
+                self._state_machine.state_before_objection = None
 
     def _fill_compatibility_fields(
         self,
@@ -815,12 +817,8 @@ class DialogueOrchestrator:
             if not self._state_machine.collected_data.get(f)
         ]
 
-        # Determine is_final (with objection limit override)
-        decision.is_final = next_config.get("is_final", False)
-        # Override: soft_close triggered by objection limit is always final
-        if (decision.next_state == "soft_close" and
-            self._state_machine.collected_data.get("_objection_limit_final")):
-            decision.is_final = True
+        # Delegate is_final to canonical method (eliminates duplication)
+        decision.is_final = self._state_machine.is_final()
 
         # Fill phase info
         # FUNDAMENTAL FIX: Use FlowConfig.get_phase_for_state() for all flows
@@ -846,7 +844,7 @@ class DialogueOrchestrator:
 
         Mirrors state_machine._get_objection_stats() for compatibility.
         """
-        tracker = self._blackboard._intent_tracker
+        tracker = self._blackboard.intent_tracker
         return {
             "consecutive_objections": tracker.objection_consecutive(),
             "total_objections": tracker.objection_total(),
@@ -854,7 +852,7 @@ class DialogueOrchestrator:
                 (r.intent, r.state)
                 for r in tracker.get_intents_by_category("objection")
             ],
-            "return_state": self._state_machine._state_before_objection,
+            "return_state": self._state_machine.state_before_objection,
         }
 
     def get_turn_summary(self) -> Dict[str, Any]:
