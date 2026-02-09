@@ -1,7 +1,38 @@
-# Документация по проекту CRM Sales Bot для интеграции
+# Документация по интеграции CRM Sales Bot (AI‑сервис)
 
-> Документ предназначен для аналитика, составляющего ТЗ на интеграцию чат-бота
+> Документ предназначен для аналитика, составляющего ТЗ на интеграцию AI‑сервиса
 > в мессенджер-платформу (аналог Wazzup).
+>
+> **Принцип:** AI‑сервис — **stateless**. Никаких локальных сессий, файлов, кешей.
+> Всё состояние передаётся в аргументах запроса и возвращается в ответе.
+
+---
+
+## 0. Глоссарий терминов
+
+| Термин | Определение |
+|---|---|
+| **Snapshot** | Полный сериализованный слепок состояния бота на конкретный момент времени. Содержит состояние конечного автомата (FSM), собранные данные клиента, историю интентов, lead score, уровень фрустрации, контекстное окно и метрики. Используется для возобновления диалога с того места, где он был прерван. Хранится внешней системой в MongoDB. |
+| **Config** | Конфигурация поведения бота: настройки sales flow, пороги, feature flags, промпт‑шаблоны, таксономия интентов, лимиты диалога, параметры lead scoring и т.д. Хранится в YAML‑файлах на стороне AI‑сервиса. В запросе указывается `config_name` — имя конфигурации для загрузки. |
+| **Flow** | Методология продаж (например, SPIN Selling, BANT, MEDDIC). Определяет последовательность фаз, состояний, правил перехода и шаблонов промптов. Всего 21 flow. |
+| **Phase** | Этап внутри flow. Например, в SPIN Selling фазы: Situation → Problem → Implication → Need-Payoff → Presentation → Close. Каждой фазе соответствует одно или несколько состояний FSM. |
+| **State (состояние FSM)** | Конкретный узел в конечном автомате бота. Определяет, какое действие бот выполняет и куда может перейти далее. Примеры: `greeting`, `spin_situation`, `spin_problem`, `close`. |
+| **Intent (намерение)** | Классифицированное намерение пользователя. Бот определяет intent на каждом ходе (247 интентов в 34 категориях). Примеры: `greeting`, `price_question`, `demo_request`, `objection_price`. |
+| **Turn (ход)** | Одна пара «сообщение пользователя → ответ бота». Каждый turn нумеруется и порождает decision trace. |
+| **Decision Trace** | Полная трассировка решений бота на каждом turn: какой intent определён, с какой уверенностью, какое действие выбрано, как изменился lead score, сработал ли guard и т.д. Возвращается при `enable_tracing=True` (обязателен для API-обёртки). |
+| **Lead Score** | Оценка «прогретости» лида от 0 до 100. Рассчитывается динамически по сигналам (контакт дан, демо запрошено, возражение и т.д.). Определяет temperature: cold (0–25), warm (26–50), hot (51–75), very_hot (76–100). |
+| **Guard** | Защитный механизм диалога. Отслеживает зацикливание, фрустрацию, стагнацию и решает, когда нужно предложить варианты (tier 2), пропустить фазу (tier 3) или завершить мягко (soft close). |
+| **Fallback** | Стратегия на случай, когда бот не может корректно обработать сообщение. 4 уровня: tier 1 (перефразировать), tier 2 (предложить варианты), tier 3 (перейти к следующей фазе), soft close (мягкое завершение). |
+| **Objection (возражение)** | Возражение клиента. 8 типов: PRICE, COMPETITOR, NO_TIME, THINK, NO_NEED, TRUST, TIMING, COMPLEXITY. Обрабатывается фреймворками 4P's (рациональный) и 3F's (эмоциональный). |
+| **CTA (Call-to-Action)** | Призыв к целевому действию (демо, контакт, обратный звонок), который бот добавляет к ответу при высокой готовности клиента. |
+| **Disambiguation** | Уточнение намерения пользователя. Если классификатор не уверен, бот предлагает варианты (например: «Вы спрашиваете о цене или о функциях?»). |
+| **Escalation** | Передача диалога оператору. Может быть инициирована ботом (фрустрация, sensitive topics, явный запрос) или оператором (перехват). |
+| **Collected Data** | Структурированные данные, извлечённые из диалога: размер компании, текущие инструменты, болевые точки, бюджет, контакты и т.д. |
+| **Context Window** | Скользящее окно последних turn-ов. Используется для обнаружения паттернов (зацикливание, осцилляция) и формирования контекста для LLM. |
+| **History Compact** | Сжатое резюме диалога, созданное LLM при закрытии сессии. Содержит: summary, key facts, возражения, решения, открытые вопросы, следующие шаги. |
+| **Tenant** | Клиент‑арендатор платформы. Идентифицируется по `client_id`. Каждый tenant может иметь свой config, flow и набор диалогов. |
+| **Reranker** | Модель для пере‑ранжирования результатов поиска по базе знаний. Используется BAAI/bge-reranker-v2-m3 для повышения точности ответов. |
+| **Cascade Classifier** | Многоуровневый классификатор интентов: rule-based → embedding → LLM. Каждый уровень подключается, если предыдущий не дал уверенного результата. |
 
 ---
 
@@ -18,38 +49,66 @@
 |---|---|
 | SPIN Selling | Поэтапный диалог: Ситуация → Проблема → Следствия → Выгода → Презентация → Закрытие |
 | 21 sales flow | Переключаемые методологии продаж (SPIN, BANT, MEDDIC, AIDA, NEAT и др.) |
-| 271 интент | Классификация намерений пользователя в 34 категориях |
+| 247 интентов | Классификация намерений пользователя в 34 категориях |
 | База знаний | 1 969 секций в 17 категориях (цены, продукты, оборудование, интеграции и т.д.) |
 | Обработка возражений | 8 типов возражений, 120+ паттернов, фреймворки 4P's и 3F's |
 | Lead scoring | Динамическая оценка лида (0–100) с температурой (cold/warm/hot/very_hot) |
 | Анализ тона | 3-уровневый каскад: regex → FRIDA (semantic) → LLM; фрустрация 0–10 |
 | Защитные механизмы | Конверсационный guard, stall detection, phase exhaustion, fallback 4 уровней |
-| Decision tracing | Полная трассировка всех решений на каждом ходе |
+| Decision tracing | Полная трассировка всех решений на каждом ходе (обязательная) |
 
 ### 1.2 Технологический стек
 
-| Компонент | Технология |
-|---|---|
-| Язык | Python 3.10+ |
-| LLM | Qwen3 14B через Ollama (localhost:11434) |
-| Embeddings | ai-forever/FRIDA (Sentence Transformers) |
-| Reranker | BAAI/bge-reranker-v2-m3 |
-| Конфигурация | YAML (settings, flows, knowledge base, constants) |
-| Тесты | ~235 файлов, 8 000+ тестов |
-| Размер кодовой базы | ~80 000 строк кода, 160+ модулей (src/) |
+| Компонент | Технология | Версия |
+|---|---|---|
+| Язык | Python | 3.10+ |
+| LLM | Qwen3 14B через Ollama | localhost:11434 |
+| Embeddings | ai-forever/FRIDA | Sentence Transformers ≥2.2.0 |
+| Reranker | BAAI/bge-reranker-v2-m3 | — |
+| Морфология | pymorphy3 | ≥2.0.0 |
+| HTTP-клиент | requests | ≥2.28.0 |
+| Сериализация конфигов | PyYAML | ≥6.0 |
+| Numpy | numpy | ≥1.24.0 |
+| Async HTTP | aiohttp | ≥3.8.0 |
+| Тесты | pytest | ≥7.0.0 |
+| Линтер | ruff | ≥0.1.0 |
+| Типизация | mypy | ≥1.0.0 |
+| **Для API-обёртки** | FastAPI ≥0.110.0, Uvicorn ≥0.29.0, Pydantic ≥2.0.0 | *Не в зависимостях ядра — нужно добавить при создании REST API* |
+| Размер кодовой базы | ~80 000 строк кода | 160+ модулей (src/) |
+| Тесты | ~235 файлов | 8 000+ тестов |
 
-### 1.3 Текущее состояние
+### 1.3 Архитектура AI‑сервиса
 
-Ядро бота поставляется как Python‑библиотека и CLI‑демо. В коде уже есть:
-- **SessionManager** (кеш активных сессий, явное закрытие через `close_session()`, загрузка snapshot только на cache miss)
-- **Snapshot API** (`SalesBot.to_snapshot/from_snapshot`) + локальный буфер snapshot
-- **Компакция истории** (HistoryCompactor) при закрытии сессии и правило «последние 4 сообщения берутся из внешней истории»
-- **Multi‑config / multi‑flow** поддержка и защита от смешивания сессий через `client_id`
+AI‑сервис работает **исключительно в режиме «запрос — ответ»**:
 
-Чего нет (и это делает внешняя интеграция):
-- HTTP API / REST эндпоинтов
-- Прямого подключения к БД и мессенджерам (всё через callbacks)
-- Глобального распределённого lock на несколько хостов (для single‑host есть локальный lock)
+1. Внешняя система присылает HTTP‑запрос с сообщением пользователя, snapshot (если есть), `config_name` и историей
+2. Сервис обрабатывает сообщение, формирует ответ и обновлённый snapshot
+3. Сервис возвращает JSON‑ответ со строгой схемой
+4. Сервис **не хранит** никакого состояния между запросами
+
+```
+Внешняя система                    AI‑сервис (stateless)
+     │                                    │
+     │  POST /api/v1/process              │
+     │  { message, snapshot, config_name, │
+     │    history_tail, client_id, ... }   │
+     │ ──────────────────────────────────▶ │
+     │                                    │  → Восстановить бота из snapshot
+     │                                    │  → Обработать сообщение
+     │                                    │  → Сформировать ответ
+     │  { response, snapshot, trace, ... } │
+     │ ◀────────────────────────────────── │
+     │                                    │
+     │  Сохранить snapshot в MongoDB       │
+     │  Отправить response клиенту         │
+```
+
+Чего **нет** в AI‑сервисе (делает внешняя система):
+- Кеша сессий и SessionManager — **убран**
+- Локальных файловых lock-ов — **убраны**
+- Прямого подключения к БД
+- Локального хранения snapshot-ов и истории
+- Подключения к мессенджерам
 
 ---
 
@@ -57,21 +116,23 @@
 
 ### 2.1 Разделение ответственности
 
-**Внешняя система (аналог Wazzup):**
-- принимает входящие сообщения
-- определяет `client_id`, `session_id` (chat/conversation), `flow_name`, `config_name`
-- подгружает tenant-конфиг из внешней БД по `client_id` и маппит его в `config_name`
-- валидирует, что `config_name` реально существует (иначе ядро загрузит default-конфиг)
-- хранит историю сообщений и snapshots
-- обеспечивает дедупликацию входящих webhook/message событий (по `external_message_id`)
-- обеспечивает последовательную обработку событий внутри одной `session_id` (без reorder)
-- вызывает бота и принимает ответ
+**Внешняя система (мессенджер-платформа):**
+- принимает входящие сообщения из каналов (WhatsApp, Telegram и др.)
+- определяет `client_id`, `session_id`
+- хранит snapshot-ы и историю сообщений в **MongoDB**
+- управляет сессиями и их жизненным циклом
+- обеспечивает последовательную обработку сообщений внутри одной сессии
+- обеспечивает дедупликацию входящих webhook/message событий
+- при каждом запросе к AI‑сервису передаёт snapshot, `config_name` и хвост истории
+- принимает ответ и сохраняет обновлённый snapshot
+- роутит сообщения между ботом и оператором
 
-**CRM Sales Bot (ядро):**
-- обрабатывает текст и держит состояние через `SessionManager`
-- формирует snapshot и складывает его в локальный буфер при вызове `close_session()`
-- выполняет компакцию истории при закрытии сессии
-- выгружает пачку snapshot во внешнюю БД по правилу «после 23:00 — первый запрос»
+**AI‑сервис (ядро бота):**
+- принимает HTTP-запрос
+- восстанавливает состояние бота из переданного snapshot
+- обрабатывает сообщение и формирует ответ
+- возвращает JSON с ответом, обновлённым snapshot и decision trace
+- **не хранит** никакого состояния между запросами
 
 ### 2.2 Идентификация и изоляция
 
@@ -80,287 +141,278 @@
 - `session_id` — идентификатор диалога (conversation/chat)
 
 Рекомендуется делать `session_id` глобально уникальным между tenant-ами
-(например, `"{client_id}::{external_chat_id}"`), чтобы исключить коллизии
-при загрузке хвоста истории.
+(например, `"{client_id}::{external_chat_id}"`), чтобы исключить коллизии.
 
-`client_id` **всегда пишется внутрь snapshot**.  
+`client_id` **всегда пишется внутрь snapshot**.
 При восстановлении, если `snapshot.client_id != expected client_id`, snapshot игнорируется.
 
-### 2.3 Контракт хранения (внешняя БД/хранилище)
+### 2.3 Конкуррентность
 
-Ядро бота не подключается напрямую к БД. Интегратор предоставляет callbacks:
+Даже в stateless‑архитектуре возможны гонки, если два сообщения из одного чата
+придут одновременно. Внешняя система должна обеспечить **последовательную обработку
+сообщений внутри одной `session_id`** (очередь или distributed lock на уровне
+внешней системы, например через Redis или MongoDB advisory lock).
 
-- `load_snapshot(session_id) -> Optional[Dict]`
-- `save_snapshot(session_id, snapshot) -> None`
-- `load_history_tail(session_id, n) -> List[Dict]` (последние `n` сообщений)
-
-Требования к данным callback-ов:
-- `load_history_tail` должен возвращать список ходов в формате `{"user": "...", "bot": "..."}` (хронологически, от старых к новым)
-- `load_snapshot` должен принимать tenant-aware ключ (`"{client_id}::{session_id}"`), при этом `SessionManager` также может пробовать legacy ключ `session_id` для обратной совместимости
-- `load_history_tail` получает только `session_id`, поэтому lookup обязан быть tenant-safe:
-  либо через глобально уникальный `session_id`, либо через внешний tenant-aware маппинг
-
-**Важно:** `save_snapshot` вызывается не сразу, а при вечерней выгрузке пачки.
-Для избежания коллизий между tenant-ами `SessionManager` использует tenant-aware
-ключ хранения: `"{client_id}::{session_id}"` (если `client_id` задан).
-
-### 2.4 Маршрутизация и конкуррентность
-
-Рекомендуется sticky‑routing по `session_id` (consistent hashing или sticky‑cookie).
-Даже при sticky‑routing возможны гонки — нужен lock на время обработки сообщения.
-
-В ядре есть `SessionLockManager` на файловых lock‑ах (single‑host).  
-Для multi‑host следует заменить его на Redis/PG advisory lock.
-Lock должен покрывать весь turn (`get_or_create()` + `process()` + запись результата
-во внешнее хранилище), а не только получение экземпляра бота.
-
-### 2.5 Хостинг и инфраструктура (ориентир)
+### 2.4 Хостинг и инфраструктура (ориентир)
 
 | Параметр | Значение |
 |---|---|
 | LLM | Qwen3 14B через Ollama (требуется GPU‑сервер, ~9.3 GB VRAM) |
-| Embedding‑модели | Локальные, загружаются при старте (~500 MB) |
+| Embedding‑модели | Локальные, загружаются при старте AI‑сервиса (~500 MB) |
+| AI‑сервис | Stateless, горизонтально масштабируется |
 
-### 2.6 Логирование
+### 2.5 Логирование
 
 Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`).
-При интеграции можно забирать логи напрямую или сделать отдельный Log Exporter.
+При интеграции можно забирать логи через stdout collector.
 
-### 2.7 Админ‑панель и оператор
+### 2.6 Админ‑панель и оператор
 
-Админ‑панель и операторские сценарии описаны ниже (разделы 5–6).  
+Админ‑панель и операторские сценарии описаны ниже (разделы 6–7).
 Они не обязательны для запуска базовой интеграции.
 
 ---
 
-## 3. API-контракт бота
+## 3. API‑контракт (REST)
 
-### 3.1 Точка входа (SessionManager)
+### 3.1 Предполагаемые эндпоинты
 
-Рекомендуемый вход — `SessionManager`, который отвечает за кеш и снапшоты.
+#### `POST /api/v1/process` — обработка сообщения
 
-```python
-from src.session_manager import SessionManager
+Основной эндпоинт. Принимает сообщение пользователя, возвращает ответ бота.
 
-manager = SessionManager(
-    load_snapshot=load_snapshot,         # из вашей БД
-    save_snapshot=save_snapshot,         # в вашу БД
-    load_history_tail=load_history_tail  # последние 4 сообщения
-)
+**Request:**
 
-bot = manager.get_or_create(
-    session_id="chat-123",
-    client_id="client-42",
-    flow_name="spin_selling",
-    config_name="tenant_alpha",
-    llm=ollama_llm
-)
+```json
+{
+  "client_id": "tenant-42",
+  "session_id": "chat-123",
+  "flow_name": "spin_selling",
+  "config_name": "tenant_alpha",
+  "user_message": "А сколько стоит ваша система?",
 
-result = bot.process(user_message="текст сообщения")
+  "snapshot": { ... },
+
+  "history_tail": [
+    {"user": "Привет", "bot": "Добрый день! Расскажите о вашей компании."},
+    {"user": "У нас магазин, 50 сотрудников", "bot": "Какую систему учёта используете?"}
+  ]
+}
 ```
 
-Рекомендуемый атомарный паттерн обработки:
+| Поле | Тип | Обязательное | Описание |
+|---|---|---|---|
+| `client_id` | `string` | Да | Идентификатор тенанта |
+| `session_id` | `string` | Да | Идентификатор диалога |
+| `flow_name` | `string` | Да | Имя sales flow (`spin_selling`, `bant`, ...) |
+| `config_name` | `string` | Нет | Имя конфигурации (YAML). Если не указан — используется `default` |
+| `user_message` | `string` | Да | Текст сообщения пользователя |
+| `snapshot` | `object \| null` | Нет | Предыдущий snapshot. `null` для нового диалога |
+| `history_tail` | `array` | Нет | Последние N сообщений в формате `[{"user": "...", "bot": "..."}]`. По умолчанию — последние 4 хода |
 
-```python
-with distributed_lock(f"{client_id}::{session_id}"):
-    bot = manager.get_or_create(
-        session_id=session_id,
-        client_id=client_id,
-        flow_name=flow_name,
-        config_name=config_name,
-        llm=ollama_llm,
-    )
-    result = bot.process(user_message=text)
-    persist_turn(session_id=session_id, client_id=client_id, result=result)
+> **Про config:** конфигурация (методология продаж, тональность, лимиты, feature flags)
+> хранится в YAML‑файлах на стороне AI‑сервиса. Внешняя система указывает
+> `config_name` — имя named-конфига. Если named-конфиг не найден, сервис
+> загрузит default-конфиг. Проверку существования нужного конфига рекомендуется
+> делать заранее через `GET /api/v1/configs`.
+
+**Response — прямой вывод `process()` (`src/bot.py`):**
+
+```json
+{
+  "response": "Стоимость зависит от тарифа. Для компании в 50 сотрудников...",
+  "is_final": false,
+
+  "intent": "price_question",
+  "action": "answer_with_pricing",
+  "state": "spin_situation",
+  "spin_phase": "situation",
+  "visited_states": ["greeting", "spin_situation"],
+  "initial_state": "greeting",
+
+  "fallback_used": false,
+  "fallback_tier": null,
+  "tone": "neutral",
+  "frustration_level": 1,
+  "lead_score": 20,
+  "objection_detected": false,
+  "options": null,
+  "cta_added": false,
+  "cta_text": null,
+  "decision_trace": { ... }
+}
 ```
 
-**Важно:** когда сервер определяет, что диалог завершён, он должен вызвать
-`manager.close_session(session_id, client_id)`.
-Это создаст snapshot с компакцией истории и положит его в локальный буфер.
-Batch‑flush (вызов `save_snapshot`) запускается внутри `get_or_create()` после `flush_hour`.
+| Поле | Тип | Описание |
+|---|---|---|
+| `response` | `string` | Текст ответа — отправить клиенту |
+| `is_final` | `boolean` | `true` = диалог завершён, больше не роутить в бота |
+| `intent` | `string` | Определённый интент пользователя |
+| `action` | `string` | Выбранное действие бота |
+| `state` | `string` | Состояние FSM **после** обработки (next_state) |
+| `spin_phase` | `string \| null` | Текущая фаза flow (напр. `"situation"`, `"problem"`) |
+| `visited_states` | `array` | Все состояния, посещённые на этом ходе (для покрытия фаз при skip) |
+| `initial_state` | `string` | Состояние FSM **до** обработки |
+| `fallback_used` | `boolean` | Был ли использован fallback |
+| `fallback_tier` | `integer \| null` | Уровень fallback (1–3) или `null` |
+| `tone` | `string` | Определённый тон пользователя |
+| `frustration_level` | `integer` | Уровень фрустрации (0–10) |
+| `lead_score` | `integer \| null` | Текущий lead score (0–100). `null` если feature flag `lead_scoring` отключен |
+| `objection_detected` | `boolean` | Было ли обнаружено возражение |
+| `options` | `array \| null` | Варианты для пользователя (при guard/fallback) или `null` |
+| `cta_added` | `boolean` | Добавлен ли CTA к ответу |
+| `cta_text` | `string \| null` | Текст CTA или `null` |
+| `decision_trace` | `object \| null` | Трассировка решений (см. раздел 5). **`null` если `enable_tracing=False`** (см. примечание ниже) |
+
+> **Поля, которых НЕТ в `process()` — добавляются API-обёрткой:**
+>
+> | Поле | Источник | Описание |
+> |---|---|---|
+> | `snapshot` | `bot.to_snapshot()` | Обновлённый snapshot (вызвать **после** `process()`, сохранить в MongoDB) |
+> | `confidence` | `decision_trace.classification.confidence` | Уверенность классификации (0.0–1.0). Извлечь из `decision_trace` |
+> | `lead_temperature` | Вычислить из `lead_score` | `cold` (0–25), `warm` (26–50), `hot` (51–75), `very_hot` (76–100) |
+> | `collected_data` | `snapshot.state_machine.collected_data` | Данные клиента. Извлечь из snapshot |
+>
+> API-обёртка **обязана** создавать `SalesBot` с `enable_tracing=True`, чтобы `decision_trace`
+> возвращался в каждом ответе. По умолчанию в конструкторе `SalesBot` `enable_tracing=False`,
+> и тогда `decision_trace` будет `None`.
+
+---
+
+#### `POST /api/v1/restore` — восстановление бота из snapshot (опционально)
+
+Позволяет валидировать snapshot и получить текущее состояние бота без обработки нового сообщения. Полезно при возврате от оператора.
+
+**Request:**
+
+```json
+{
+  "client_id": "tenant-42",
+  "session_id": "chat-123",
+  "flow_name": "spin_selling",
+  "config_name": "tenant_alpha",
+  "snapshot": { ... },
+  "history_tail": [...]
+}
+```
+
+**Response:**
+
+```json
+{
+  "valid": true,
+  "state": "spin_problem",
+  "spin_phase": "problem",
+  "lead_score": 35,
+  "lead_temperature": "warm",
+  "turn_count": 5,
+  "collected_data": {"company_size": "50", "current_tools": "Excel"}
+}
+```
+
+> **Примечание:** `lead_temperature` и `collected_data` в ответе `/restore` вычисляются
+> API-обёрткой из snapshot (аналогично `/process`). Endpoint `/restore` — полностью
+> на стороне обёртки, его схему определяет разработчик интеграции.
+
+---
+
+#### `GET /api/v1/flows` — список доступных flow
+
+**Response:**
+
+```json
+{
+  "flows": [
+    {"name": "spin_selling", "description": "SPIN Selling methodology", "phases": ["situation", "problem", "implication", "need_payoff", "presentation", "close"]},
+    {"name": "bant", "description": "Budget, Authority, Need, Timeline", "phases": ["budget", "authority", "need", "timeline"]},
+    ...
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/configs` — список доступных конфигураций
+
+Возвращает список named-конфигов, загруженных из YAML-файлов AI‑сервиса.
+
+**Response:**
+
+```json
+{
+  "configs": [
+    {"name": "default", "description": "Default configuration"},
+    {"name": "tenant_alpha", "description": "Tenant Alpha custom config"},
+    ...
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/health` — проверка здоровья
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "llm_available": true,
+  "embeddings_loaded": true,
+  "reranker_loaded": true,
+  "version": "1.0.0"
+}
+```
+
+---
 
 ### 3.2 Входные данные (что бот ожидает)
 
-На каждый ход бот получает **одну текстовую строку** — сообщение пользователя,
-а внешняя система передаёт метаданные:
+На каждый ход бот получает **одну текстовую строку** — сообщение пользователя.
+Всё состояние передаётся в аргументах запроса:
 
 | Поле | Тип | Описание |
 |---|---|---|
 | `client_id` | `str` | Идентификатор клиента/тенанта |
 | `session_id` | `str` | Идентификатор диалога |
 | `flow_name` | `str` | Имя sales flow |
-| `config_name` | `str` | Имя конфигурации клиента |
+| `config_name` | `str` | Имя конфигурации (YAML на AI‑сервисе) |
+| `user_message` | `str` | Текст сообщения |
+| `snapshot` | `dict \| null` | Предыдущее состояние (null для нового диалога) |
+| `history_tail` | `list` | Последние 4 хода `[{"user": "...", "bot": "..."}]` |
 
 Медиа-вложения (voice/image/file) ядром напрямую не обрабатываются — они должны быть
-преобразованы во внешний текст до вызова `process()`.
+преобразованы в текст до вызова API.
 
-Восстановление диалога выполняет `SessionManager` через callbacks:
-`load_snapshot()` и `load_history_tail()` — вручную собирать состояние не нужно.
+### 3.3 Выходные данные (Structured JSON)
 
-Важно для `config_name`: если named-конфиг не найден, `ConfigLoader.load_named()`
-молча использует default-конфиг. Проверку существования нужного конфига нужно
-делать во внешней интеграции до вызова `get_or_create()`.
+Ответ `process()` — **строгий JSON** с фиксированной схемой (18 полей, см. таблицу в 3.1).
 
-### 3.3 Выходные данные (что бот возвращает)
+Минимальное подмножество для отправки клиенту:
+- `response` — текст ответа
+- `is_final` — завершён ли диалог
 
-`process()` возвращает dict. Для интеграции нужны **только 2 поля**:
+Для сохранения и аналитики (добавляются API-обёрткой):
+- `snapshot` — получить через `bot.to_snapshot()` **после** `process()`, сохранить в MongoDB
+- `decision_trace` — сохранить для аналитиков (требует `enable_tracing=True` в конструкторе `SalesBot`)
 
-```python
-{
-    "response": str,   # Текст ответа — отправить клиенту
-    "is_final": bool,  # True = диалог завершён, больше не роутить в бота
-}
-```
-
-Внутри dict присутствуют и другие поля (`intent`, `action`, `state`, `tone`,
-`lead_score`, `decision_trace` и т.д.) — они используются внутренними компонентами
-(тесты, симулятор, аналитика). Интеграционный слой **может их игнорировать**.
-При необходимости подключить мониторинг/аналитику эти поля можно задействовать позже.
-
-### 3.4 Snapshot lifecycle (как это работает)
-
-1. **Активная сессия** живёт в кеше `SessionManager`. Snapshot не читается на каждое сообщение.
-2. Когда сервер определяет, что диалог завершён, он вызывает `manager.close_session(session_id, client_id)`:
-   - создаётся snapshot
-   - запускается компакция истории
-   - snapshot кладётся в локальный буфер (`LocalSnapshotBuffer`)
-   - сессия удаляется из кеша
-3. После 23:00 **первый запрос** запускает batch‑flush:
-   - все локальные snapshot выгружаются через `save_snapshot`
-     с tenant-aware ключом `"{client_id}::{session_id}"` (для tenant-сессий)
-   - локальный буфер очищается
-
-**Операционный нюанс:** batch‑flush запускается на входе `get_or_create()`.
-Если после 23:00 нет новых запросов, выгрузка отложится до первого следующего запроса.
-`flush_hour` сравнивается с локальным временем хоста (`time.localtime`), поэтому
-таймзону нужно явно зафиксировать на всех инстансах.
-
-Если по ТЗ требуется выгрузка snapshot **только по внешней команде**, это надо
-делать в интеграционной обёртке (служебный endpoint/cron-команда), потому что
-в текущем ядре нет отдельного публичного `flush()`-метода.
-
-**Правило истории:** последние 4 сообщения не кладутся в snapshot  
-и при восстановлении берутся через `load_history_tail(session_id, 4)`.
-
-### 3.5 Переключение flow/config “на лету”
-
-Если внешняя система присылает новый `flow_name` или `config_name` для активной
-сессии, `SessionManager` пересоздаёт бота из snapshot текущего состояния и
-поднимает новую конфигурацию/flow без потери состояния.
+Остальные поля (`intent`, `lead_score`, `tone`, `spin_phase`, ...) — для мониторинга и дашбордов.
 
 ---
 
-## 4. Модель данных для PostgreSQL (справочно)
+## 4. Схемы данных для MongoDB
 
-Этот раздел — **референс**, а не обязательная схема.  
-Внешняя система может хранить данные иначе, главное обеспечить callbacks:
-`load_snapshot`, `save_snapshot`, `load_history_tail`.
+### 4.1 Структура Snapshot
 
-### 4.1 Сущности для хранения
-
-#### Таблица `conversations` — диалоги
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `id` | `UUID` PK | ID диалога |
-| `user_external_id` | `VARCHAR` | ID пользователя из мессенджер-платформы |
-| `status` | `ENUM` | `bot_active`, `operator_active`, `escalated`, `completed`, `paused` |
-| `flow_name` | `VARCHAR` | Активная методология (spin_selling, bant, ...) |
-| `current_state` | `VARCHAR` | Текущее состояние FSM |
-| `current_phase` | `VARCHAR` | Текущая фаза flow (SPIN/другая) |
-| `lead_score` | `INTEGER` | Текущий lead score (0–100) |
-| `lead_temperature` | `VARCHAR` | cold / warm / hot / very_hot |
-| `outcome` | `VARCHAR` | Итог: success, demo_scheduled, soft_close, rejected, abandoned, timeout, error |
-| `collected_data` | `JSONB` | Собранные данные о клиенте |
-| `bot_state_snapshot` | `JSONB` | Полный snapshot состояния бота (для возобновления) |
-| `total_turns` | `INTEGER` | Количество ходов |
-| `created_at` | `TIMESTAMP` | Время создания |
-| `updated_at` | `TIMESTAMP` | Последнее обновление |
-| `completed_at` | `TIMESTAMP` | Время завершения |
-
-#### Таблица `messages` — сообщения
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `id` | `UUID` PK | ID сообщения |
-| `conversation_id` | `UUID` FK | Ссылка на диалог |
-| `turn_number` | `INTEGER` | Номер хода |
-| `role` | `ENUM` | `user`, `bot`, `operator` |
-| `content` | `TEXT` | Текст сообщения |
-| `intent` | `VARCHAR` | Определённый интент (только для user) |
-| `confidence` | `FLOAT` | Уверенность классификации |
-| `extracted_data` | `JSONB` | Извлечённые данные (структурные поля) |
-| `action` | `VARCHAR` | Действие бота |
-| `state_before` | `VARCHAR` | Состояние FSM до обработки |
-| `state_after` | `VARCHAR` | Состояние FSM после обработки |
-| `tone` | `VARCHAR` | Определённый тон |
-| `frustration_level` | `INTEGER` | Уровень фрустрации (0–10) |
-| `fallback_used` | `BOOLEAN` | Был ли fallback |
-| `fallback_tier` | `VARCHAR` | Tier fallback-а (`fallback_tier_1/2/3`, `soft_close`) |
-| `objection_detected` | `BOOLEAN` | Обнаружено ли возражение |
-| `lead_score_after` | `INTEGER` | Lead score после этого хода |
-| `cta_added` | `BOOLEAN` | Добавлен ли CTA |
-| `options` | `JSONB` | Варианты (disambiguation) |
-| `created_at` | `TIMESTAMP` | Время сообщения |
-| `response_time_ms` | `FLOAT` | Время генерации ответа |
-
-#### Таблица `decision_traces` — трассировка решений
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `id` | `UUID` PK | ID записи |
-| `conversation_id` | `UUID` FK | Ссылка на диалог |
-| `message_id` | `UUID` FK | Ссылка на сообщение |
-| `turn_number` | `INTEGER` | Номер хода |
-| `trace_data` | `JSONB` | Полный decision trace (см. раздел 7.2) |
-| `created_at` | `TIMESTAMP` | Время |
-
-#### Таблица `operator_handoffs` — передачи бот ↔ оператор
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `id` | `UUID` PK | ID записи |
-| `conversation_id` | `UUID` FK | Ссылка на диалог |
-| `direction` | `ENUM` | `bot_to_operator`, `operator_to_bot`, `operator_intercept` |
-| `reason` | `VARCHAR` | Причина передачи |
-| `operator_id` | `VARCHAR` | ID оператора |
-| `turn_number` | `INTEGER` | На каком ходе произошла передача |
-| `bot_state_snapshot` | `JSONB` | Snapshot состояния бота на момент передачи |
-| `created_at` | `TIMESTAMP` | Время |
-
-#### Таблица `conversation_metrics` — метрики диалогов
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `id` | `UUID` PK | ID записи |
-| `conversation_id` | `UUID` FK | Ссылка на диалог |
-| `total_turns` | `INTEGER` | Общее количество ходов |
-| `duration_seconds` | `FLOAT` | Длительность диалога |
-| `outcome` | `VARCHAR` | Итог диалога |
-| `final_lead_score` | `INTEGER` | Финальный lead score |
-| `phase_distribution` | `JSONB` | Ходы по фазам `{situation: 3, problem: 2, ...}` |
-| `intents_sequence` | `JSONB` | Последовательность интентов `[greeting, company_info, ...]` |
-| `objection_count` | `INTEGER` | Количество возражений |
-| `objections_resolved` | `INTEGER` | Разрешённых возражений |
-| `fallback_count` | `INTEGER` | Количество fallback-ов |
-| `fallback_by_tier` | `JSONB` | Fallback-и по tier `{tier_1: 2, tier_2: 1}` |
-| `dominant_tone` | `VARCHAR` | Преобладающий тон |
-| `tone_history` | `JSONB` | История тона `[{turn, tone, state}, ...]` |
-| `lead_score_history` | `JSONB` | История lead score `[{turn, score, signal}, ...]` |
-| `collected_data` | `JSONB` | Все собранные данные |
-| `created_at` | `TIMESTAMP` | Время создания |
-
-### 4.2 Snapshot состояния бота (bot_state_snapshot)
-
-Для возобновления диалога после паузы или передачи от оператора сохраняется
-полный snapshot. Формат соответствует текущей реализации `SalesBot.to_snapshot()`:
+Snapshot — полный слепок состояния бота. Передаётся в запросе, возвращается в ответе.
+Хранится внешней системой в MongoDB (коллекция `snapshots` или поле внутри документа диалога).
 
 ```json
 {
   "version": "1.0",
   "conversation_id": "abc123",
-  "client_id": "client-42",
-  "timestamp": 1699999999.123,
+  "client_id": "tenant-42",
+  "timestamp": 1706000000.123,
 
   "flow_name": "spin_selling",
   "config_name": "tenant_alpha",
@@ -368,15 +420,31 @@ Batch‑flush (вызов `save_snapshot`) запускается внутри `
   "state_machine": {
     "state": "spin_problem",
     "current_phase": "problem",
+
     "collected_data": {
       "company_size": "50-100",
       "current_tools": "Excel",
-      "business_type": "retail"
+      "business_type": "retail",
+      "pain_point": null,
+      "pain_impact": null,
+      "desired_outcome": null,
+      "value_acknowledged": false,
+      "decision_maker": null,
+      "decision_timeline": null,
+      "budget_range": null,
+      "contact_info": null,
+      "persona": null,
+      "competitor_mentioned": false,
+      "competitor_name": null,
+      "implication_probed": false,
+      "need_payoff_probed": false
     },
+
     "in_disambiguation": false,
     "disambiguation_context": null,
     "pre_disambiguation_state": null,
     "turns_since_last_disambiguation": 5,
+
     "intent_tracker": {
       "last_intent": "explicit_problem",
       "prev_intent": "company_info",
@@ -389,6 +457,7 @@ Batch‑flush (вызов `save_snapshot`) запускается внутри `
       "category_streaks": {"objection": 0, "question": 0},
       "recent_intents": ["greeting", "company_info", "explicit_problem"]
     },
+
     "circular_flow": {
       "goback_count": 0,
       "remaining": 2,
@@ -417,8 +486,9 @@ Batch‑flush (вызов `save_snapshot`) запускается внутри `
     "decay_applied_this_turn": false
   },
 
-  "fallback": { "total_count": 0, "tier_counts": {}, "state_counts": {} },
-  "objection_handler": { "objection_attempts": {"PRICE": 1} },
+  "fallback": {"total_count": 0, "tier_counts": {}, "state_counts": {}},
+
+  "objection_handler": {"objection_attempts": {"PRICE": 1}},
 
   "context_window": [
     {
@@ -432,9 +502,10 @@ Batch‑flush (вызов `save_snapshot`) запускается внутри `
       "extracted_data": {}
     }
   ],
+
   "_context_window_full": {
-    "turns": [ ... ],
-    "episodic_memory": { "episodes": [], "max_episodes": 50 }
+    "turns": ["..."],
+    "episodic_memory": {"episodes": [], "max_episodes": 50}
   },
 
   "history": [],
@@ -449,7 +520,7 @@ Batch‑flush (вызов `save_snapshot`) запускается внутри `
   "history_compact_meta": {
     "compacted_turns": 12,
     "tail_size": 4,
-    "compacted_at": 1699999999.123,
+    "compacted_at": 1706000000.123,
     "compaction_version": "1.0",
     "llm_model": "qwen3:14b"
   },
@@ -458,497 +529,396 @@ Batch‑flush (вызов `save_snapshot`) запускается внутри `
   "last_intent": "explicit_problem",
   "last_bot_message": "Какую систему используете сейчас?",
 
-  "metrics": { ... }
+  "metrics": {
+    "turns": 5,
+    "intents_sequence": ["greeting", "company_info", "explicit_problem"],
+    "fallback_count": 0,
+    "guard_interventions": 0,
+    "objections_count": 0,
+    "lead_score_final": null,
+    "conversation_outcome": null,
+    "duration_seconds": null
+  }
 }
 ```
 
-**Примечания:**
-- `history` всегда пустой массив — последние 4 сообщения берутся из внешней истории.
-- `client_id` обязателен для защиты от восстановления чужого снапшота.
-- `guard` и `fallback` заменяют старые поля `guard_state` и `fallback_handler`.
-- `_context_window_full` и `_signals_history_full` используются для точного восстановления.
+#### Описание ключевых блоков Snapshot
+
+| Блок | Описание |
+|---|---|
+| `version` | Версия схемы snapshot (`"1.0"`) |
+| `conversation_id` | Уникальный ID диалога |
+| `client_id` | ID тенанта. Обязателен для защиты от восстановления чужого snapshot |
+| `timestamp` | Unix timestamp создания snapshot |
+| `flow_name` | Активная методология продаж |
+| `state_machine` | Ядро состояния: текущий state, phase, собранные данные, трекер интентов, история goback |
+| `state_machine.collected_data` | Все извлечённые из диалога данные клиента. 16+ стандартных полей + динамические |
+| `state_machine.intent_tracker` | Статистика по интентам: последний, предыдущий, streak, суммы по категориям |
+| `state_machine.circular_flow` | Контроль «возвратов назад» (goback) — сколько раз клиент просил вернуться |
+| `guard` | Состояние защитного механизма: уровень фрустрации, история состояний и интентов, счётчики tier-ов |
+| `lead_scorer` | Текущий lead score, история сигналов, raw score |
+| `fallback` | Счётчики использования fallback-ов по tier-ам |
+| `objection_handler` | Счётчики попыток обработки возражений по типам |
+| `context_window` | Последние turn-ы для паттернового анализа |
+| `_context_window_full` | Расширенный контекст + эпизодическая память (для точного восстановления) |
+| `history` | Всегда пустой массив — последние сообщения берутся из `history_tail` |
+| `history_compact` | Сжатое резюме диалога (если была компакция) |
+| `history_compact_meta` | Метаданные компакции: сколько turn-ов сжато, когда, какой LLM |
+| `last_action` / `last_intent` / `last_bot_message` | Последние значения для контекста |
+| `metrics` | Агрегированные метрики диалога |
+
+#### Поля `collected_data` (стандартные)
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `company_size` | `string \| null` | Размер компании (small/medium/large или число) |
+| `current_tools` | `string \| null` | Текущая CRM/POS система |
+| `business_type` | `string \| null` | Тип бизнеса |
+| `pain_point` | `string \| null` | Основная боль/проблема |
+| `pain_impact` | `string \| null` | Финансовое/операционное влияние проблемы |
+| `desired_outcome` | `string \| null` | Желаемый результат |
+| `value_acknowledged` | `boolean` | Клиент подтвердил ценность |
+| `decision_maker` | `string \| null` | Кто принимает решение |
+| `decision_timeline` | `string \| null` | Когда будет решение |
+| `budget_range` | `string \| null` | Бюджет |
+| `contact_info` | `object \| null` | `{phone, email, name, valid}` |
+| `persona` | `string \| null` | Тип персоны (если задана) |
+| `competitor_mentioned` | `boolean` | Был ли упомянут конкурент |
+| `competitor_name` | `string \| null` | Имя конкурента |
+| `implication_probed` | `boolean` | Фаза implication пройдена |
+| `need_payoff_probed` | `boolean` | Фаза need-payoff пройдена |
+
+> **Примечание:** `collected_data` может содержать дополнительные динамические поля,
+> извлечённые классификатором. MongoDB-документ не требует жёсткой схемы.
 
 ---
 
-## 5. Протокол передачи диалога (бот ↔ оператор)
+### 4.2 Структура Config (справочно)
 
-### 5.1 Состояния диалога
+Config — конфигурация поведения бота. Хранится в YAML‑файлах на стороне AI‑сервиса.
+Внешняя система указывает `config_name` в запросе, сервис загружает соответствующий YAML.
 
-```
-                  ┌──────────────┐
-                  │  BOT_ACTIVE  │ ← Бот ведёт диалог
-                  └──────┬───────┘
-                         │
-          ┌──────────────┼──────────────┐
-          │              │              │
-          ▼              ▼              ▼
-    ┌───────────┐  ┌───────────┐  ┌───────────┐
-    │ ESCALATED │  │ INTERCEPT │  │ COMPLETED │
-    │(бот решил)│  │(оператор) │  │ (финал)   │
-    └─────┬─────┘  └─────┬─────┘  └───────────┘
-          │              │
-          ▼              ▼
-    ┌─────────────────────┐
-    │  OPERATOR_ACTIVE    │ ← Оператор ведёт диалог
-    └──────────┬──────────┘
-               │
-          ┌────┼────┐
-          │         │
-          ▼         ▼
-    ┌───────────┐  ┌───────────┐
-    │ BOT_ACTIVE│  │ COMPLETED │
-    │(возврат)  │  │ (финал)   │
-    └───────────┘  └───────────┘
-```
+Этот раздел — **справочная документация** по структуре конфига, чтобы аналитики
+понимали, какие параметры можно настраивать через админ-панель (раздел 7).
 
-### 5.2 Триггеры эскалации (бот → оператор)
+Config состоит из двух частей:
+1. **Constants** — глобальные константы (лимиты, интенты, пороги, lead scoring)
+2. **Flow Config** — конфигурация конкретного flow (состояния, переходы, шаблоны)
 
-Бот инициирует передачу оператору при:
+#### 4.2.1 Constants (основные секции)
 
-| Триггер | Описание | Источник в коде |
-|---|---|---|
-| Явный запрос человека | Интенты из категории `escalation` (request_human, speak_to_manager, ...) | `EscalationSource` |
-| Sensitive topics | Интенты из категории `sensitive` (legal/compliance/complaints) | `EscalationSource` |
-| Фрустрация | Повторные интенты категории `frustration` (порог `frustration_threshold`, default=3) | `EscalationSource` |
-| Повторные непонимания | `unclear` >= `misunderstanding_threshold` (default=4) | `EscalationSource` |
-| High‑value + complex | `company_size >= 100` и intent ∈ {`custom_integration`, `enterprise_features`, `sla_question`} | `EscalationSource` |
+```json
+{
+  "limits": {
+    "max_consecutive_objections": 3,
+    "max_total_objections": 5,
+    "max_gobacks": 2,
+    "phase_origin_objection_escape": 2,
+    "persona_objection_limits": {
+      "aggressive": {"consecutive": 2, "total": 4},
+      "passive": {"consecutive": 4, "total": 6}
+    }
+  },
 
-Эскалация в коде проявляется как `action = "escalate_to_human"` и переход в состояние,
-вычисленное `EscalationSource`. В текущих flow, как правило, это `soft_close`
-(так как `entry_points.escalation` обычно не задан).
+  "intents": {
+    "go_back": ["go_back", "correct_info"],
+    "categories": {
+      "objection": ["objection_price", "objection_competitor", "objection_no_time", "..."],
+      "exit": ["rejection", "farewell"],
+      "escalation": ["request_human", "need_help", "speak_to_manager"],
+      "frustration": ["frustration", "impatience"],
+      "sensitive": ["legal_question", "compliance", "gdpr_question", "refund_request"],
+      "positive": ["demo_request", "contact_provided", "callback_request", "..."],
+      "question": ["price_question", "feature_question", "integration_question", "..."],
+      "price_related": ["price_question", "pricing_details", "discount_question", "..."]
+    },
+    "intent_action_overrides": {
+      "price_question": "answer_with_pricing",
+      "demo_request": "schedule_demo",
+      "contact_provided": "collect_contact"
+    },
+    "intent_taxonomy": {
+      "demo_request": {
+        "category": "positive",
+        "super_category": "user_action",
+        "semantic_domain": "purchase",
+        "fallback_action": "schedule_demo",
+        "fallback_transition": "close",
+        "priority": "critical",
+        "bypass_disambiguation": true
+      }
+    }
+  },
 
-### 5.3 Возврат диалога от оператора к боту
+  "disambiguation": {
+    "thresholds": {
+      "high_confidence": 0.85,
+      "medium_confidence": 0.65,
+      "low_confidence": 0.45,
+      "min_confidence": 0.30
+    },
+    "gap_threshold": 0.20,
+    "options": {"max_options": 3, "min_option_confidence": 0.25},
+    "cooldown_turns": 3
+  },
 
-При возврате необходимо:
-1. Загрузить `bot_state_snapshot` из таблицы `operator_handoffs`
-2. Восстановить состояние `SalesBot` из snapshot
-3. Изменить `status` в таблице `conversations` на `bot_active`
-4. Продолжить обработку с восстановленного состояния
+  "lead_scoring": {
+    "signals": {
+      "contact_provided": {"points": 35},
+      "demo_request": {"points": 30},
+      "price_with_size": {"points": 25},
+      "explicit_problem": {"points": 15},
+      "objection_no_need": {"points": -25},
+      "frustration": {"points": -15}
+    },
+    "skip_phases": {
+      "hot": ["situation"],
+      "very_hot": ["situation", "problem"]
+    }
+  },
 
-### 5.4 Перехват оператором
+  "guard": {
+    "high_frustration_threshold": 7,
+    "tier_2_escalation_threshold": 3
+  },
 
-При перехвате:
-1. Сохранить текущий `bot_state_snapshot`
-2. Записать `operator_handoff` с `direction = operator_intercept`
-3. Изменить `status` на `operator_active`
-4. Все последующие сообщения идут оператору, а не боту
+  "cta": {
+    "enabled": true,
+    "min_confidence": 0.7,
+    "max_per_conversation": 3,
+    "skip_actions": ["escalate_to_human", "soft_close"],
+    "skip_states": ["greeting", "escalated"]
+  },
 
-### 5.5 Утверждённые сценарии операторского управления (кнопки)
-
-Функционал утверждён: оператор управляет диалогом через **2 кнопки** в UI.
-Третий сценарий (бот ведёт сам) — поведение по умолчанию, кнопка не требуется.
-
-#### 5.5.1 Три сценария
-
-| # | Сценарий | UI-элемент | Описание |
-|---|----------|------------|----------|
-| 1 | **Бот ведёт от начала до конца** | Нет (default) | `status = bot_active`. Все входящие сообщения роутятся в `bot.process()`. Бот самостоятельно проходит весь flow до `success` / `soft_close` / `escalated`. |
-| 2 | **Оператор перехватывает диалог** | Кнопка «Перехватить» | Оператор в любой момент забирает активный диалог у бота. Бот замораживается (snapshot), сообщения идут оператору. |
-| 3 | **Оператор возвращает диалог боту** | Кнопка «Продолжить» | Оператор передаёт диалог обратно боту. Бот восстанавливается из snapshot и продолжает с того места, где остановился. |
-
-#### 5.5.2 Готовность ядра бота
-
-Ядро бота **не требует доработок** для реализации этих сценариев.
-Вся логика маршрутизации «бот или оператор» — ответственность внешнего интеграционного слоя.
-
-Что **уже реализовано** в ядре:
-
-| Компонент | Расположение | Назначение |
-|-----------|-------------|------------|
-| `SalesBot.to_snapshot()` | `src/bot.py` | Полная сериализация состояния: FSM, guard, lead score, objections, context window, метрики |
-| `SalesBot.from_snapshot()` | `src/bot.py` | Восстановление бота из snapshot с подгрузкой хвоста истории |
-| `SessionManager` | `src/session_manager.py` | Кеш сессий, `close_session()`, snapshot lifecycle через callbacks |
-| `EscalationSource` | `src/blackboard/sources/escalation.py` | Автоэскалация бот → оператор (15+ триггеров, `action = "escalate_to_human"`) |
-| Состояние `escalated` | `src/yaml_config/flows/_base/states.yaml` | Терминальное состояние (`is_final: true`), переход через mixins |
-| Таблица `operator_handoffs` | Раздел 4.1 (референс) | DB-схема с `direction`: `bot_to_operator`, `operator_to_bot`, `operator_intercept` |
-
-#### 5.5.3 Требования к внешней интеграции
-
-Для реализации 3 сценариев внешняя система должна обеспечить следующие компоненты:
-
-**1. Operator Router (маршрутизатор сообщений)**
-
-Центральный компонент, определяющий, кому направить входящее сообщение.
-
-```python
-async def handle_incoming_message(session_id, client_id, text):
-    conversation = await db.get_conversation(session_id)
-
-    if conversation.status == "operator_active":
-        # Сообщение идёт оператору — бот НЕ вызывается
-        await forward_to_operator(conversation.operator_id, text)
-        await db.save_message(session_id, role="user", content=text)
-        return
-
-    # status == "bot_active" → роутим в бота
-    with distributed_lock(f"{client_id}::{session_id}"):
-        bot = manager.get_or_create(
-            session_id=session_id,
-            client_id=client_id,
-            flow_name=conversation.flow_name,
-            config_name=conversation.config_name,
-            llm=ollama_llm,
-        )
-        result = bot.process(text)
-
-        await send_to_user(result["response"])
-
-        if result["is_final"]:
-            manager.close_session(session_id, client_id=client_id)
-            await db.update_status(session_id, "completed")
+  "circular_flow": {
+    "allowed_gobacks": {
+      "spin_problem": "spin_situation",
+      "spin_implication": "spin_problem"
+    }
+  }
+}
 ```
 
-**2. Обработчик кнопки «Перехватить»**
+#### 4.2.2 Flow Config (основные секции)
 
-```python
-async def handle_intercept(session_id, client_id, operator_id):
-    """Оператор перехватывает активный диалог у бота."""
-    with distributed_lock(f"{client_id}::{session_id}"):
-        bot = manager.get_or_create(
-            session_id=session_id,
-            client_id=client_id,
-            flow_name=...,
-            config_name=...,
-            llm=ollama_llm,
-        )
-        snapshot = bot.to_snapshot()
+```json
+{
+  "name": "spin_selling",
+  "version": "1.0",
+  "description": "SPIN Selling methodology",
 
-        await db.save_handoff(
-            conversation_id=session_id,
-            direction="operator_intercept",
-            reason="manual_intercept",
-            operator_id=operator_id,
-            bot_state_snapshot=snapshot,
-            turn_number=bot.turn,
-        )
-        await db.update_status(session_id, "operator_active")
-        await db.set_operator(session_id, operator_id)
+  "states": {
+    "greeting": {
+      "phase": null,
+      "is_final": false,
+      "required_data": [],
+      "goal": "Поприветствовать клиента",
+      "transitions": {
+        "greeting": "spin_situation",
+        "company_info": "spin_situation",
+        "default": "spin_situation"
+      },
+      "rules": {
+        "greeting": "greet_and_ask",
+        "default": "greet_and_ask"
+      }
+    },
+    "spin_situation": {
+      "phase": "situation",
+      "is_final": false,
+      "required_data": ["company_size", "current_tools"],
+      "goal": "Выяснить ситуацию клиента",
+      "transitions": {
+        "company_info": "spin_situation",
+        "explicit_problem": "spin_problem",
+        "default": "spin_situation"
+      },
+      "rules": {
+        "company_info": "probe_situation",
+        "price_question": "answer_with_pricing",
+        "default": "probe_situation"
+      },
+      "max_turns_in_state": 5
+    },
+    "...": "..."
+  },
 
-        # Опционально: удалить сессию из кеша SessionManager
-        manager.remove(session_id, client_id)
+  "phases": {
+    "order": ["situation", "problem", "implication", "need_payoff", "presentation", "close"],
+    "mapping": {
+      "situation": "spin_situation",
+      "problem": "spin_problem",
+      "implication": "spin_implication",
+      "need_payoff": "spin_need_payoff",
+      "presentation": "presentation",
+      "close": "close"
+    }
+  },
+
+  "entry_points": {
+    "default": "greeting",
+    "escalation": "escalated"
+  },
+
+  "templates": {
+    "probe_situation": {
+      "template": "Задай вопрос о текущей ситуации клиента...",
+      "parameters": ["collected_data", "history"]
+    },
+    "answer_with_pricing": {
+      "template": "Ответь на вопрос о цене, используя базу знаний...",
+      "parameters": ["knowledge_results", "collected_data"]
+    }
+  }
+}
 ```
 
-**3. Обработчик кнопки «Продолжить»**
+#### 4.2.3 Feature Flags (передаются в config)
 
-```python
-async def handle_return_to_bot(session_id, client_id, operator_id):
-    """Оператор возвращает диалог боту."""
-    with distributed_lock(f"{client_id}::{session_id}"):
-        # Загрузить snapshot, сохранённый при перехвате
-        handoff = await db.get_latest_handoff(session_id)
-        snapshot = handoff.bot_state_snapshot
-
-        # Загрузить хвост истории (включая сообщения оператора)
-        raw_tail = await db.load_history_tail(session_id, n=4)
-        history_tail = normalize_history_tail(raw_tail)  # см. 5.5.4
-
-        bot = SalesBot.from_snapshot(snapshot, llm=ollama_llm, history_tail=history_tail)
-
-        await db.save_handoff(
-            conversation_id=session_id,
-            direction="operator_to_bot",
-            reason="manual_return",
-            operator_id=operator_id,
-            bot_state_snapshot=snapshot,
-            turn_number=handoff.turn_number,
-        )
-        await db.update_status(session_id, "bot_active")
-
-        # Поместить восстановленного бота в кеш SessionManager
-        manager.put(session_id, client_id, bot)
+```json
+{
+  "features": {
+    "structured_logging": true,
+    "metrics_tracking": true,
+    "multi_tier_fallback": true,
+    "conversation_guard": true,
+    "tone_analysis": true,
+    "response_variations": true,
+    "question_deduplication": true,
+    "lead_scoring": true,
+    "objection_handler": true,
+    "cta_generator": true,
+    "intent_disambiguation": true,
+    "cascade_classifier": true,
+    "llm_classifier": true,
+    "cascade_tone_analyzer": true,
+    "context_policy_overlays": true,
+    "context_response_directives": true
+  }
+}
 ```
-
-**4. Условия доступности кнопок**
-
-| Кнопка | Видна когда | Скрыта когда |
-|--------|------------|-------------|
-| «Перехватить» | `status = bot_active` | `status ∈ {operator_active, completed}` |
-| «Продолжить» | `status = operator_active` и есть `bot_state_snapshot` | `status ∈ {bot_active, completed}` |
-
-#### 5.5.4 Маппинг `history_tail` при возврате от оператора
-
-`SalesBot.from_snapshot()` принимает `history_tail` в формате `[{"user": "...", "bot": "..."}]`.
-Когда оператор вёл диалог, в БД сообщения хранятся с `role: operator`.
-При возврате боту интеграция **должна** замаппить `operator → bot`:
-
-```python
-def normalize_history_tail(raw_messages: list[dict]) -> list[dict]:
-    """
-    Преобразует хвост истории из формата БД в формат ядра бота.
-
-    БД: [{"role": "user"|"bot"|"operator", "content": "..."}]
-    Ядро: [{"user": "...", "bot": "..."}]
-
-    Сообщения оператора маппятся как bot, чтобы бот видел контекст
-    того, что обсуждалось во время перехвата.
-    """
-    result = []
-    i = 0
-    while i < len(raw_messages):
-        msg = raw_messages[i]
-        if msg["role"] == "user":
-            user_text = msg["content"]
-            bot_text = ""
-            # Ищем следующее сообщение от бота или оператора
-            if i + 1 < len(raw_messages) and msg["role"] in ("bot", "operator"):
-                bot_text = raw_messages[i + 1]["content"]
-                i += 1
-            result.append({"user": user_text, "bot": bot_text})
-        i += 1
-    return result
-```
-
-**Важно:** бот не знает, что часть истории — от оператора. Он воспринимает все
-ответы как свои собственные и продолжает диалог с учётом контекста.
-
-#### 5.5.5 Известные ограничения
-
-| # | Ограничение | Влияние | Рекомендация |
-|---|-------------|---------|-------------|
-| 1 | `from_snapshot()` не знает о длительности паузы | Если оператор вёл диалог несколько часов, бот после восстановления не знает, сколько прошло времени | Интеграционный слой может скорректировать `guard.timeout` или сбросить таймер через snapshot перед восстановлением |
-| 2 | Snapshot фиксирует состояние на момент перехвата | Если за время оператора клиент сообщил новые данные (размер компании, бюджет и т.д.), бот их не увидит в `collected_data` | Интеграционный слой может обогатить snapshot дополнительными `collected_data` перед вызовом `from_snapshot()`, либо оператор передаёт ключевые факты через внутреннюю заметку |
 
 ---
 
-## 6. Scope админ-панели
+### 4.3 MongoDB: рекомендуемые коллекции
 
-Админ-панель управляет **всеми конфигурациями** бота. Ниже — полный перечень
-конфигурационных областей.
+#### Коллекция `conversations` — диалоги
 
-### 6.1 Tier 1: Базовая конфигурация (для менеджеров/продажников)
-
-#### 6.1.1 Выбор sales flow
-
-Переключение активной методологии продаж:
-
-| Flow | Описание |
-|---|---|
-| `spin_selling` | SPIN Selling (по умолчанию) |
-| `bant` | Budget, Authority, Need, Timeline |
-| `meddic` | Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion |
-| `aida` | Attention, Interest, Desire, Action |
-| `neat` | Need, Economic impact, Access to authority, Timeline |
-| `snap` | Simple, iNvaluable, Aligned, Priority |
-| `fab` | Features, Advantages, Benefits |
-| `relationship` | Relationship selling |
-| `inbound` | Inbound methodology |
-| `autonomous` | Автономный LLM-driven flow |
-| `challenger` | Challenger selling |
-| `command` | Command/Directive selling |
-| `consultative` | Consultative selling |
-| `customer_centric` | Customer‑centric selling |
-| `demo_first` | Demo‑first flow |
-| `gap` | Gap selling |
-| `sandler` | Sandler selling |
-| `social` | Social selling |
-| `solution` | Solution selling |
-| `transactional` | Transactional selling |
-| `value` | Value selling |
-
-Текущий flow задаётся в `settings.yaml → flow.active`.
-
-#### 6.1.2 Feature Flags (60+ тогглов)
-
-Тогглы сгруппированы по фазам:
-
-| Группа | Примеры флагов | Назначение |
-|---|---|---|
-| Phase 0 | `structured_logging`, `metrics_tracking` | Инфраструктура |
-| Phase 1 | `multi_tier_fallback`, `conversation_guard` | Безопасность и надёжность |
-| Phase 2 | `tone_analysis`, `response_variations`, `question_deduplication` | Естественность |
-| Phase 3 | `lead_scoring`, `objection_handler`, `cta_generator` | Оптимизация продаж |
-| Phase 4 | `intent_disambiguation`, `cascade_classifier` | Классификация |
-| Phase 5 | `secondary_intent_detection`, `structural_frustration_detection` | Продвинутые функции |
-| LLM | `llm_classifier`, `confidence_router` | Режим классификатора |
-| Tone | `cascade_tone_analyzer`, `tone_semantic_tier2`, `tone_llm_tier3` | Анализ тона |
-| Context | `context_policy_overlays`, `context_response_directives` | Контекстные политики |
-
-Есть пресеты для группового включения: `safe`, `risky`, `phase_1`..`phase_5`.
-
-#### 6.1.3 База знаний (Knowledge Base)
-
-17 категорий, 1 969 секций. Каждая секция:
-
-```yaml
-sections:
-  - topic: "Тарифы для малого бизнеса"
-    priority: 8                         # 1-10, влияет на порядок выдачи
-    keywords: ["тариф", "малый бизнес", "цена"]
-    facts: |
-      Тариф «Старт» — 990 руб/мес за 1 кассу.
-      Включает: товароучёт, аналитику, 1 пользователя.
-      Подключение бесплатно.
+```json
+{
+  "_id": "ObjectId",
+  "session_id": "chat-123",
+  "client_id": "tenant-42",
+  "user_external_id": "whatsapp:79001234567",
+  "status": "bot_active",
+  "flow_name": "spin_selling",
+  "current_state": "spin_problem",
+  "current_phase": "problem",
+  "lead_score": 35,
+  "lead_temperature": "warm",
+  "outcome": null,
+  "total_turns": 5,
+  "snapshot": { "..." : "полный snapshot (раздел 4.1)" },
+  "config_name": "tenant_alpha",
+  "collected_data": {"company_size": "50", "current_tools": "Excel"},
+  "created_at": "ISODate",
+  "updated_at": "ISODate",
+  "completed_at": null
+}
 ```
 
-| Категория | Секций | Описание |
-|---|---|---|
-| `pricing` | 286 | Цены, тарифы, условия оплаты |
-| `products` | 273 | Продукты и возможности |
-| `equipment` | 316 | Оборудование, модели, спецификации |
-| `support` | 201 | Поддержка, SLA, контакты |
-| `tis` | 191 | Терминалы, кассы |
-| `features` | 90 | Функциональность |
-| `integrations` | 86 | Интеграции |
-| `regions` | 130 | Регионы и филиалы |
-| `inventory` | 93 | Складской учёт |
-| `analytics` | 63 | Аналитика и отчёты |
-| `fiscal` | 68 | Фискальные требования |
-| `employees` | 55 | Управление сотрудниками |
-| `mobile` | 35 | Мобильное приложение |
-| `stability` | 45 | Надёжность и uptime |
-| `competitors` | 7 | Конкурентное позиционирование |
-| `promotions` | 26 | Акции и промо |
-| `faq` | 4 | Частые вопросы |
+Статусы: `bot_active`, `operator_active`, `escalated`, `completed`, `paused`
 
-#### 6.1.4 Управление возражениями
+Outcome: `success`, `demo_scheduled`, `soft_close`, `rejected`, `abandoned`, `timeout`, `error`
 
-8 типов возражений с настраиваемыми параметрами:
+#### Коллекция `messages` — сообщения
 
-| Тип возражения | Паттернов | Стратегия | Настраиваемое |
-|---|---|---|---|
-| `PRICE` | 17 | 4P's (рациональная) | Шаблоны ответов, follow-up вопросы |
-| `COMPETITOR` | 18 | 4P's | Шаблоны, сравнения |
-| `NO_TIME` | 13 | 3F's (эмоциональная) | Шаблоны, предложения |
-| `THINK` | 9 | 3F's | Шаблоны |
-| `NO_NEED` | 11 | 4P's | Шаблоны |
-| `TRUST` | 11 | 3F's | Кейсы, отзывы |
-| `TIMING` | 9 | 3F's | Шаблоны |
-| `COMPLEXITY` | 8 | 4P's | Шаблоны |
-
-Лимиты: `max_consecutive_objections`, `max_total_objections` (по персонам).
-
-### 6.2 Tier 2: Продвинутая настройка (для тимлидов/продуктологов)
-
-#### 6.2.1 Лимиты диалога
-
-| Параметр | По умолчанию | Описание |
-|---|---|---|
-| `max_turns` | 25 | Максимум ходов в диалоге |
-| `max_phase_attempts` | 3 | Максимум попыток в одной фазе |
-| `max_same_state` | 4 | Максимум ходов в одном состоянии |
-| `max_gobacks` | 2 | Максимум возвратов назад |
-| `timeout_seconds` | 1800 | Таймаут диалога (30 мин) |
-| `high_frustration_threshold` | 7 | Порог фрустрации для эскалации |
-
-#### 6.2.2 Разнообразие ответов (diversity)
-
-- **Запрещённые начала**: фразы, которые бот не должен использовать (монотонность)
-- **Альтернативные начала**: по контексту (эмпатия, подтверждение, позитив)
-- **Переходные фразы**: связки между блоками ответа
-- **LRU-ротация**: не повторять одинаковые начала подряд
-
-#### 6.2.3 Дедупликация вопросов
-
-19 полей данных для трекинга (company_size, current_tools, pain_point и т.д.).
-Бот не задаёт вопрос повторно, если данные уже собраны.
-
-#### 6.2.4 Диалоговые политики (policy overlays)
-
-5 политик, работающих поверх state machine:
-
-| Политика | Триггер | Действие |
-|---|---|---|
-| `repair_mode` | Диалог застрял / зацикливание | Уточнить / предложить варианты |
-| `objection_overlay` | Повторные возражения | Усилить аргументацию / эскалировать |
-| `price_question_overlay` | Вопрос о цене | Гарантированно ответить с ценой |
-| `breakthrough_overlay` | Позитивный сдвиг | Мягкий CTA |
-| `conservative_overlay` | Низкая уверенность | Осторожный режим |
-
-#### 6.2.5 Настройки LLM и поиска
-
-| Параметр | Описание |
-|---|---|
-| `llm.model` | Модель LLM (qwen3:14b) |
-| `llm.base_url` | URL Ollama API |
-| `llm.timeout` | Таймаут запросов (120 сек) |
-| `retriever.use_embeddings` | Включить семантический поиск |
-| `retriever.thresholds.exact` | Порог точного совпадения (1.0) |
-| `retriever.thresholds.lemma` | Порог леммного поиска (0.15) |
-| `retriever.thresholds.semantic` | Порог семантического поиска (0.5) |
-| `reranker.enabled` | Включить reranker |
-| `reranker.threshold` | Порог reranker-а |
-
-### 6.3 Tier 3: Экспертная конфигурация (для разработчиков)
-
-#### 6.3.1 Таксономия интентов
-
-271 интент, каждый с атрибутами:
-
-```yaml
-demo_request:
-  category: positive
-  super_category: user_action
-  semantic_domain: purchase
-  fallback_action: schedule_demo
-  fallback_transition: close
-  priority: critical
-  bypass_disambiguation: true
+```json
+{
+  "_id": "ObjectId",
+  "conversation_id": "ObjectId ref",
+  "turn_number": 3,
+  "role": "user",
+  "content": "А сколько стоит?",
+  "intent": "price_question",
+  "confidence": 0.92,
+  "action": "answer_with_pricing",
+  "state_before": "spin_situation",
+  "state_after": "spin_situation",
+  "tone": "neutral",
+  "frustration_level": 1,
+  "lead_score_after": 20,
+  "fallback_used": false,
+  "objection_detected": false,
+  "cta_added": false,
+  "decision_trace": { "..." : "полный trace (раздел 5)" },
+  "response_time_ms": 1250.5,
+  "created_at": "ISODate"
+}
 ```
 
-#### 6.3.2 Маппинг интент → действие
+#### Коллекция `tenant_settings` — настройки тенантов
 
-Переопределение действий для конкретных интентов:
+Маппинг тенант → config_name (какой YAML-конфиг AI‑сервиса использовать).
 
-```yaml
-price_question → answer_with_pricing
-demo_request → schedule_demo
-contact_provided → collect_contact
+```json
+{
+  "_id": "ObjectId",
+  "client_id": "tenant-42",
+  "config_name": "tenant_alpha",
+  "flow_name": "spin_selling",
+  "created_at": "ISODate",
+  "updated_at": "ISODate"
+}
 ```
 
-#### 6.3.3 Порог disambiguator
+#### Коллекция `operator_handoffs` — передачи бот ↔ оператор
 
-| Параметр | Значение |
-|---|---|
-| `high_confidence` | 0.85 |
-| `medium_confidence` | 0.65 |
-| `low_confidence` | 0.45 |
-| `min_confidence` | 0.30 |
-| `gap_threshold` | 0.20 |
-| `max_options` | 3 |
-| `cooldown_turns` | 3 |
+```json
+{
+  "_id": "ObjectId",
+  "conversation_id": "ObjectId ref",
+  "direction": "bot_to_operator",
+  "reason": "frustration_threshold",
+  "operator_id": "op-789",
+  "turn_number": 8,
+  "snapshot_at_handoff": { "..." : "snapshot на момент передачи" },
+  "created_at": "ISODate"
+}
+```
 
-#### 6.3.4 Lead scoring сигналы
+#### Индексы
 
-Положительные и отрицательные сигналы с весами:
+```javascript
+// conversations
+db.conversations.createIndex({ "client_id": 1, "session_id": 1 }, { unique: true })
+db.conversations.createIndex({ "client_id": 1, "status": 1 })
+db.conversations.createIndex({ "updated_at": 1 })
 
-| Сигнал | Вес | Описание |
-|---|---|---|
-| `contact_provided` | +35 | Клиент дал контакт |
-| `demo_request` | +30 | Запрос демо |
-| `price_with_size` | +25 | Цена + размер компании |
-| `callback_request` | +25 | Запрос обратного звонка |
-| `consultation_request` | +20 | Запрос консультации |
-| `explicit_problem` | +15 | Озвучил проблему |
-| `competitor_comparison` | +12 | Сравнение с конкурентом |
-| `budget_mentioned` | +10 | Упоминание бюджета |
-| `timeline_mentioned` | +10 | Упоминание сроков |
-| `multiple_questions` | +8 | Несколько вопросов подряд |
-| `features_question` | +5 | Вопрос о функциях |
-| `integrations_question` | +5 | Вопрос об интеграциях |
-| `price_question` | +5 | Вопрос о цене |
-| `general_interest` | +3 | Общий интерес |
-| `objection_no_need` | -25 | «Не нужно» |
-| `rejection_soft` | -25 | Мягкий отказ |
-| `objection_no_time` | -20 | «Нет времени» |
-| `objection_price` | -15 | Возражение по цене |
-| `objection_competitor` | -10 | Возражение «конкурент» |
-| `objection_think` | -10 | Возражение «подумать» |
-| `unclear_repeated` | -5 | Повторное «неясно» |
-| `frustration` | -15 | Фрустрация |
+// messages
+db.messages.createIndex({ "conversation_id": 1, "turn_number": 1 })
+db.messages.createIndex({ "conversation_id": 1, "created_at": 1 })
+
+// tenant_settings
+db.tenant_settings.createIndex({ "client_id": 1 }, { unique: true })
+
+// operator_handoffs
+db.operator_handoffs.createIndex({ "conversation_id": 1, "created_at": -1 })
+```
 
 ---
 
-## 7. Формат логирования
+## 5. Decision Trace (обязательный)
 
-### 7.1 Структура логов
+**Decision trace возвращается в каждом ответе** при условии, что `SalesBot` создан
+с `enable_tracing=True`. Это основной инструмент прозрачности для аналитиков.
+Сохраняется в коллекции `messages` рядом с сообщением.
 
-`decision_trace` возвращается из `SalesBot.process()` только при `enable_tracing=True`.  
-Ядро не пишет этот trace в файл автоматически: сохранение в БД/файл делает внешняя интеграция.
-При работе через `SessionManager` tracing сейчас по умолчанию выключен
-(`get_or_create()` не принимает `enable_tracing`), поэтому для production-сбора
-decision traces нужна небольшая доработка интеграционного слоя/SessionManager.
+> **Важно:** По умолчанию `enable_tracing=False` в конструкторе `SalesBot` (`src/bot.py:106`),
+> и `decision_trace` будет `None`. API-обёртка **обязана** передавать `enable_tracing=True`
+> при создании экземпляра `SalesBot`.
 
-### 7.2 Структура decision trace (на каждый ход)
+### 5.1 Структура decision trace
 
 ```json
 {
@@ -1011,6 +981,7 @@ decision traces нужна небольшая доработка интегра�
 
   "objection": {
     "detected": false,
+    "type": null,
     "attempt_number": 0,
     "consecutive_count": 0,
     "total_count": 0
@@ -1064,111 +1035,387 @@ decision traces нужна небольшая доработка интегра�
 }
 ```
 
-### 7.3 Отчёт по диалогу (опционально)
+### 5.2 Что видят аналитики в decision trace
 
-Текстовый отчёт ниже — пример формата для внешней отчётности/симуляций.
-В production-интеграции его нужно формировать отдельным сервисом/скриптом:
+| Блок | Что показывает |
+|---|---|
+| `classification` | Как бот понял клиента: какой intent, с какой уверенностью, каким методом |
+| `tone_analysis` | Настроение клиента: тон, фрустрация, нужно ли извиниться |
+| `guard_check` | Сработала ли защита от зацикливания |
+| `state_machine` | Логика перехода: из какого состояния в какое, какое действие выбрано, сколько данных собрано |
+| `lead_score` | Динамика скоринга: сколько было → сколько стало, какие сигналы повлияли |
+| `objection` | Возражения: тип, номер попытки, общее количество |
+| `policy_override` | Были ли переопределения: какое действие было → какое стало, почему |
+| `response` | Параметры генерации ответа |
+| `llm_traces` | Все вызовы LLM: purpose, токены, латентность |
+| `timing` | Тайминги всех этапов обработки, bottleneck |
+
+---
+
+## 6. Протокол передачи диалога (бот ↔ оператор)
+
+### 6.1 Состояния диалога
 
 ```
-================================================================================
-ОТЧЁТ ПО ДИАЛОГУ
-ID: conv_abc123
-Дата: 2026-02-04 12:30:45
-================================================================================
-
-ОБЩАЯ СТАТИСТИКА
-  Ходов: 12
-  Длительность: 45 сек
-  Итог: success
-  Lead Score: 75 (hot)
-  Flow: spin_selling
-
-ФАЗЫ ДИАЛОГА
-  situation  ████████░░ 3 хода
-  problem    ██████░░░░ 2 хода
-  implication ████░░░░░░ 2 хода
-  need_payoff ██████░░░░ 2 хода
-  presentation ████░░░░░░ 2 хода
-  close       ██░░░░░░░░ 1 ход
-
-ВОЗРАЖЕНИЯ: 2 / 2 разрешены
-  objection_price → reframe_value → resolved (ход 5)
-  objection_think → feel_felt_found → resolved (ход 8)
-
-FALLBACK: 0
-
-ПОЛНЫЙ ДИАЛОГ
-  [1] USER: Привет
-      BOT: Добрый день! Расскажите...
-      intent=greeting conf=0.98 state=greeting→spin_situation
-  [2] USER: У нас магазин, 50 сотрудников
-      BOT: Какую систему учёта используете сейчас?
-      intent=company_info conf=0.91 state=spin_situation
-  ...
-================================================================================
+                  ┌──────────────┐
+                  │  BOT_ACTIVE  │ ← Бот ведёт диалог
+                  └──────┬───────┘
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+          ▼              ▼              ▼
+    ┌───────────┐  ┌───────────┐  ┌───────────┐
+    │ ESCALATED │  │ INTERCEPT │  │ COMPLETED │
+    │(бот решил)│  │(оператор) │  │ (финал)   │
+    └─────┬─────┘  └─────┬─────┘  └───────────┘
+          │              │
+          ▼              ▼
+    ┌─────────────────────┐
+    │  OPERATOR_ACTIVE    │ ← Оператор ведёт диалог
+    └──────────┬──────────┘
+               │
+          ┌────┼────┐
+          │         │
+          ▼         ▼
+    ┌───────────┐  ┌───────────┐
+    │ BOT_ACTIVE│  │ COMPLETED │
+    │(возврат)  │  │ (финал)   │
+    └───────────┘  └───────────┘
 ```
+
+### 6.2 Триггеры эскалации (бот → оператор)
+
+Бот инициирует передачу оператору при:
+
+| Триггер | Описание |
+|---|---|
+| Явный запрос человека | Интенты из категории `escalation` (request_human, speak_to_manager, ...) |
+| Sensitive topics | Интенты из категории `sensitive` (legal/compliance/complaints) |
+| Фрустрация | Повторные интенты категории `frustration` (порог `frustration_threshold`, default=3) |
+| Повторные непонимания | `unclear` >= `misunderstanding_threshold` (default=4) |
+| High‑value + complex | `company_size >= 100` и intent ∈ {`custom_integration`, `enterprise_features`, `sla_question`} |
+
+В ответе бота эскалация проявляется как `action = "escalate_to_human"` и `is_final = true`.
+
+### 6.3 Три сценария операторского управления
+
+| # | Сценарий | UI-элемент | Описание |
+|---|----------|------------|----------|
+| 1 | **Бот ведёт от начала до конца** | Нет (default) | `status = bot_active`. Все входящие сообщения роутятся в AI‑сервис. |
+| 2 | **Оператор перехватывает диалог** | Кнопка «Перехватить» | Оператор забирает активный диалог. Snapshot сохраняется, сообщения идут оператору. |
+| 3 | **Оператор возвращает диалог боту** | Кнопка «Продолжить» | Оператор передаёт обратно. Бот восстанавливается из snapshot. |
+
+### 6.4 Реализация сценариев (ответственность внешней системы)
+
+**Сценарий 1: бот ведёт**
+
+```
+Входящее сообщение
+  → Проверить status в MongoDB
+  → Если bot_active: POST /api/v1/process { snapshot, config, message, ... }
+  → Получить ответ
+  → Сохранить snapshot, message, trace в MongoDB
+  → Отправить response клиенту
+  → Если is_final: status = completed
+```
+
+**Сценарий 2: перехват**
+
+```
+Оператор нажимает «Перехватить»
+  → Загрузить текущий snapshot из MongoDB
+  → Сохранить operator_handoff с snapshot
+  → status = operator_active
+  → Все последующие сообщения идут оператору
+```
+
+**Сценарий 3: возврат боту**
+
+```
+Оператор нажимает «Продолжить»
+  → Загрузить snapshot из operator_handoff
+  → Загрузить хвост истории (включая сообщения оператора)
+  → Замаппить operator → bot в history_tail
+  → status = bot_active
+  → Следующее сообщение пойдёт в POST /api/v1/process с восстановленным snapshot
+```
+
+**Маппинг history_tail при возврате от оператора:**
+
+Бот ожидает `history_tail` в формате `[{"user": "...", "bot": "..."}]`.
+Сообщения оператора маппятся как `bot`:
+
+```python
+def normalize_history_tail(raw_messages: list[dict]) -> list[dict]:
+    """
+    БД: [{"role": "user"|"bot"|"operator", "content": "..."}]
+    Ядро: [{"user": "...", "bot": "..."}]
+    """
+    result = []
+    i = 0
+    while i < len(raw_messages):
+        msg = raw_messages[i]
+        if msg["role"] == "user":
+            user_text = msg["content"]
+            bot_text = ""
+            if i + 1 < len(raw_messages) and raw_messages[i + 1]["role"] in ("bot", "operator"):
+                bot_text = raw_messages[i + 1]["content"]
+                i += 1
+            result.append({"user": user_text, "bot": bot_text})
+        i += 1
+    return result
+```
+
+**Условия доступности кнопок:**
+
+| Кнопка | Видна когда | Скрыта когда |
+|--------|------------|-------------|
+| «Перехватить» | `status = bot_active` | `status ∈ {operator_active, completed}` |
+| «Продолжить» | `status = operator_active` и есть snapshot | `status ∈ {bot_active, completed}` |
+
+### 6.5 Известные ограничения
+
+| # | Ограничение | Рекомендация |
+|---|-------------|-------------|
+| 1 | Snapshot фиксирует состояние на момент перехвата. Новые данные, собранные оператором, бот не увидит | Обогатить `snapshot.state_machine.collected_data` перед возвратом, либо оператор передаёт заметку |
+| 2 | Бот не знает длительность паузы оператора | Скорректировать `guard` в snapshot перед восстановлением |
+
+---
+
+## 7. Scope админ-панели
+
+Админ-панель управляет **конфигурациями** бота, которые хранятся в YAML‑файлах
+на стороне AI‑сервиса.
+
+### 7.1 Tier 1: Базовая конфигурация (для менеджеров/продажников)
+
+#### 7.1.1 Выбор sales flow
+
+Переключение активной методологии продаж:
+
+| Flow | Описание |
+|---|---|
+| `spin_selling` | SPIN Selling (по умолчанию) |
+| `bant` | Budget, Authority, Need, Timeline |
+| `meddic` | Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion |
+| `aida` | Attention, Interest, Desire, Action |
+| `neat` | Need, Economic impact, Access to authority, Timeline |
+| `snap` | Simple, iNvaluable, Aligned, Priority |
+| `fab` | Features, Advantages, Benefits |
+| `relationship` | Relationship selling |
+| `inbound` | Inbound methodology |
+| `autonomous` | Автономный LLM-driven flow |
+| `challenger` | Challenger selling |
+| `command` | Command/Directive selling |
+| `consultative` | Consultative selling |
+| `customer_centric` | Customer‑centric selling |
+| `demo_first` | Demo‑first flow |
+| `gap` | Gap selling |
+| `sandler` | Sandler selling |
+| `social` | Social selling |
+| `solution` | Solution selling |
+| `transactional` | Transactional selling |
+| `value` | Value selling |
+
+#### 7.1.2 Feature Flags (60+ тогглов)
+
+| Группа | Примеры флагов | Назначение |
+|---|---|---|
+| Phase 0 | `structured_logging`, `metrics_tracking` | Инфраструктура |
+| Phase 1 | `multi_tier_fallback`, `conversation_guard` | Безопасность и надёжность |
+| Phase 2 | `tone_analysis`, `response_variations`, `question_deduplication` | Естественность |
+| Phase 3 | `lead_scoring`, `objection_handler`, `cta_generator` | Оптимизация продаж |
+| Phase 4 | `intent_disambiguation`, `cascade_classifier` | Классификация |
+| Phase 5 | `secondary_intent_detection`, `structural_frustration_detection` | Продвинутые функции |
+| LLM | `llm_classifier`, `confidence_router` | Режим классификатора |
+| Tone | `cascade_tone_analyzer`, `tone_semantic_tier2`, `tone_llm_tier3` | Анализ тона |
+| Context | `context_policy_overlays`, `context_response_directives` | Контекстные политики |
+
+Есть пресеты для группового включения: `safe`, `risky`, `phase_1`..`phase_5`.
+
+#### 7.1.3 База знаний (Knowledge Base)
+
+17 категорий, 1 969 секций. Каждая секция:
+
+```yaml
+sections:
+  - topic: "Тарифы для малого бизнеса"
+    priority: 8
+    keywords: ["тариф", "малый бизнес", "цена"]
+    facts: |
+      Тариф «Старт» — 990 руб/мес за 1 кассу.
+      Включает: товароучёт, аналитику, 1 пользователя.
+      Подключение бесплатно.
+```
+
+| Категория | Секций | Описание |
+|---|---|---|
+| `pricing` | 286 | Цены, тарифы, условия оплаты |
+| `products` | 273 | Продукты и возможности |
+| `equipment` | 316 | Оборудование, модели, спецификации |
+| `support` | 201 | Поддержка, SLA, контакты |
+| `tis` | 191 | Терминалы, кассы |
+| `features` | 90 | Функциональность |
+| `integrations` | 86 | Интеграции |
+| `regions` | 130 | Регионы и филиалы |
+| `inventory` | 93 | Складской учёт |
+| `analytics` | 63 | Аналитика и отчёты |
+| `fiscal` | 68 | Фискальные требования |
+| `employees` | 55 | Управление сотрудниками |
+| `mobile` | 35 | Мобильное приложение |
+| `stability` | 45 | Надёжность и uptime |
+| `competitors` | 7 | Конкурентное позиционирование |
+| `promotions` | 26 | Акции и промо |
+| `faq` | 4 | Частые вопросы |
+
+> **Примечание:** база знаний загружается при старте AI‑сервиса и живёт в памяти.
+> Она **не передаётся** в каждом API‑запросе. Обновление KB — отдельная задача
+> (перезагрузка сервиса или hot-reload эндпоинт).
+
+#### 7.1.4 Управление возражениями
+
+8 типов возражений с настраиваемыми параметрами:
+
+| Тип возражения | Паттернов | Стратегия | Настраиваемое |
+|---|---|---|---|
+| `PRICE` | 17 | 4P's (рациональная) | Шаблоны ответов, follow-up вопросы |
+| `COMPETITOR` | 18 | 4P's | Шаблоны, сравнения |
+| `NO_TIME` | 13 | 3F's (эмоциональная) | Шаблоны, предложения |
+| `THINK` | 9 | 3F's | Шаблоны |
+| `NO_NEED` | 11 | 4P's | Шаблоны |
+| `TRUST` | 11 | 3F's | Кейсы, отзывы |
+| `TIMING` | 9 | 3F's | Шаблоны |
+| `COMPLEXITY` | 8 | 4P's | Шаблоны |
+
+### 7.2 Tier 2: Продвинутая настройка (для тимлидов/продуктологов)
+
+#### 7.2.1 Лимиты диалога
+
+| Параметр | По умолчанию | Описание |
+|---|---|---|
+| `max_turns` | 25 | Максимум ходов в диалоге |
+| `max_phase_attempts` | 3 | Максимум попыток в одной фазе |
+| `max_same_state` | 4 | Максимум ходов в одном состоянии |
+| `max_gobacks` | 2 | Максимум возвратов назад |
+| `timeout_seconds` | 1800 | Таймаут диалога (30 мин) |
+| `high_frustration_threshold` | 7 | Порог фрустрации для эскалации |
+
+#### 7.2.2 Диалоговые политики (policy overlays)
+
+| Политика | Триггер | Действие |
+|---|---|---|
+| `repair_mode` | Диалог застрял / зацикливание | Уточнить / предложить варианты |
+| `objection_overlay` | Повторные возражения | Усилить аргументацию / эскалировать |
+| `price_question_overlay` | Вопрос о цене | Гарантированно ответить с ценой |
+| `breakthrough_overlay` | Позитивный сдвиг | Мягкий CTA |
+| `conservative_overlay` | Низкая уверенность | Осторожный режим |
+
+#### 7.2.3 Настройки LLM и поиска
+
+| Параметр | Описание |
+|---|---|
+| `llm.model` | Модель LLM (qwen3:14b) |
+| `llm.base_url` | URL Ollama API |
+| `llm.timeout` | Таймаут запросов (120 сек) |
+| `retriever.use_embeddings` | Включить семантический поиск |
+| `retriever.thresholds.exact` | Порог точного совпадения (1.0) |
+| `retriever.thresholds.lemma` | Порог леммного поиска (0.15) |
+| `retriever.thresholds.semantic` | Порог семантического поиска (0.5) |
+| `reranker.enabled` | Включить reranker |
+| `reranker.threshold` | Порог reranker-а |
+
+### 7.3 Tier 3: Экспертная конфигурация (для разработчиков)
+
+#### 7.3.1 Таксономия интентов
+
+247 интентов, каждый с атрибутами:
+
+```yaml
+demo_request:
+  category: positive
+  super_category: user_action
+  semantic_domain: purchase
+  fallback_action: schedule_demo
+  fallback_transition: close
+  priority: critical
+  bypass_disambiguation: true
+```
+
+#### 7.3.2 Lead scoring сигналы
+
+| Сигнал | Вес | Описание |
+|---|---|---|
+| `contact_provided` | +35 | Клиент дал контакт |
+| `demo_request` | +30 | Запрос демо |
+| `price_with_size` | +25 | Цена + размер компании |
+| `callback_request` | +25 | Запрос обратного звонка |
+| `consultation_request` | +20 | Запрос консультации |
+| `explicit_problem` | +15 | Озвучил проблему |
+| `competitor_comparison` | +12 | Сравнение с конкурентом |
+| `budget_mentioned` | +10 | Упоминание бюджета |
+| `timeline_mentioned` | +10 | Упоминание сроков |
+| `multiple_questions` | +8 | Несколько вопросов подряд |
+| `features_question` | +5 | Вопрос о функциях |
+| `integrations_question` | +5 | Вопрос об интеграциях |
+| `price_question` | +5 | Вопрос о цене |
+| `general_interest` | +3 | Общий интерес |
+| `objection_no_need` | -25 | «Не нужно» |
+| `rejection_soft` | -25 | Мягкий отказ |
+| `objection_no_time` | -20 | «Нет времени» |
+| `objection_price` | -15 | Возражение по цене |
+| `objection_competitor` | -10 | Возражение «конкурент» |
+| `objection_think` | -10 | Возражение «подумать» |
+| `unclear_repeated` | -5 | Повторное «неясно» |
+| `frustration` | -15 | Фрустрация |
 
 ---
 
 ## 8. Архитектура интеграции (высокоуровневая)
 
 ```
-┌─────────────────────┐     ┌────────────────────┐     ┌──────────────┐
-│  Мессенджер-платформа│     │    API-Gateway      │     │  CRM Sales   │
-│  (аналог Wazzup)    │────▶│  (REST / Webhook)   │────▶│     Bot      │
-│                     │◀────│                    │◀────│              │
-│  WhatsApp/Telegram  │     │  - auth             │     │  - SalesBot  │
-│  и др.              │     │  - routing           │     │  - Ollama    │
-└─────────────────────┘     │  - bot/operator      │     │  - KB        │
-                            │    switch            │     └──────┬───────┘
-┌─────────────────────┐     └────────┬───────────┘            │
-│   Админ-панель       │             │                        │
-│   (кастомная)        │             │                        │
-│                     │             ▼                        ▼
-│  - Конфигурации     │     ┌────────────────────┐  ┌──────────────┐
-│  - Feature Flags    │────▶│    PostgreSQL       │  │    Ollama     │
-│  - База знаний      │     │                    │  │  (Qwen3 14B) │
-│  - Мониторинг       │     │  - conversations    │  │              │
-└─────────────────────┘     │  - messages          │  │  GPU Server  │
-                            │  - decision_traces   │  │  Yandex      │
-┌─────────────────────┐     │  - operator_handoffs │  └──────────────┘
-│   Оператор (UI)      │     │  - metrics          │
-│                     │────▶│  - configs           │
-│  - Перехват диалога │     └────────────────────┘
-│  - Возврат боту     │
-│  - Просмотр истории │
-└─────────────────────┘
+┌─────────────────────┐     ┌──────────────────────────┐     ┌──────────────────┐
+│  Мессенджер-платформа│     │     API-Gateway          │     │   AI‑сервис      │
+│  (WhatsApp/Telegram) │────▶│  (внешняя система)       │────▶│   (stateless)    │
+│                     │◀────│                          │◀────│                  │
+└─────────────────────┘     │  - auth & routing         │     │  - SalesBot      │
+                            │  - session management     │     │  - Ollama LLM    │
+┌─────────────────────┐     │  - bot/operator switch    │     │  - KB (in-memory)│
+│   Оператор (UI)      │────▶│  - snapshot persistence   │     │  - Embeddings    │
+│  - Перехватить       │     │  - config selection       │     │  - Reranker      │
+│  - Продолжить       │     │  - deduplication          │     └──────────────────┘
+│  - Просмотр истории │     │  - concurrency control    │
+└─────────────────────┘     └────────────┬─────────────┘
+                                         │
+┌─────────────────────┐     ┌────────────▼─────────────┐     ┌──────────────────┐
+│   Админ-панель       │     │       MongoDB             │     │     Ollama       │
+│  - Конфигурации     │────▶│                          │     │  (Qwen3 14B)     │
+│  - Feature Flags    │     │  - conversations          │     │                  │
+│  - База знаний      │     │  - messages               │     │  GPU Server      │
+│  - Мониторинг       │     │  - tenant_settings        │     └──────────────────┘
+└─────────────────────┘     │  - operator_handoffs      │
+                            └──────────────────────────┘
 ```
 
 ### 8.1 Компоненты для разработки
 
 | Компонент | Что нужно создать | Приоритет |
 |---|---|---|
-| **API-слой** | REST API поверх SalesBot (FastAPI) | Критический |
-| **PostgreSQL-адаптер** | Персистентное хранилище + сериализация snapshot (бот, метрики, трассы) | Критический |
-| **Webhook-обработчик** | Приём сообщений от мессенджер-платформы | Критический |
-| **Operator Router** | Маршрутизация бот/оператор + перехват | Критический |
-| **State Restoration** | Восстановление состояния бота из snapshot | Критический |
-| **Админ-панель** | UI для всех конфигураций (раздел 6) | Высокий |
-| **Config DB** | Хранение конфигураций в PostgreSQL | Высокий |
-| **Log Exporter** | Выгрузка decision traces в файлы | Средний |
+| **API‑обёртка AI‑сервиса** | REST API поверх SalesBot (FastAPI), stateless | Критический |
+| **MongoDB‑адаптер** | Хранилище: snapshots, messages, traces, tenant settings | Критический |
+| **Webhook‑обработчик** | Приём сообщений от мессенджер-платформы | Критический |
+| **Operator Router** | Маршрутизация бот/оператор + перехват/возврат | Критический |
+| **Concurrency Control** | Очередь/lock для последовательной обработки сообщений в сессии | Критический |
+| **Админ-панель** | UI для конфигураций (раздел 7) | Высокий |
 | **Health Check** | Endpoint /health для мониторинга | Средний |
 
-### 8.2 Реальные точки интеграции в коде
+### 8.2 Точки интеграции в коде
 
-Формальных портов `IContextStorage`/`IChannel` в коде нет (они упоминаются только в
-`DESIGN_PRINCIPLES.md`). Интеграция делается через обёртку над `SalesBot` и
-ручную сериализацию состояния.
-
-| Компонент | Где | Примечание |
+| Компонент | Где | Назначение |
 |---|---|---|
-| `SessionManager` | `src/session_manager.py` | Рекомендуемая точка интеграции (кеш/close_session/snapshot lifecycle) |
-| `SalesBot` | `src/bot.py` | Обработка хода через `process()` |
+| `SalesBot` | `src/bot.py` | `process()` — обработка хода, `to_snapshot()` / `from_snapshot()` — сериализация |
+| `ConfigLoader` | `src/yaml_config/config_loader.py` | Загрузка конфигурации из YAML по `config_name` |
 | LLM клиент | `src/llm.py` (`OllamaLLM`) | Можно заменить на другой клиент |
 | Knowledge retriever | `src/knowledge/retriever.py` (`CascadeRetriever`) | FRIDA + BGE reranker |
-| Logger | `src/logger.py` | stdout JSON/Readable (через `LOG_FORMAT`) |
-| Decision trace | `src/decision_trace.py` | Возвращается в `process()` при `enable_tracing` |
+| Decision trace | `src/decision_trace.py` | Формирование trace (теперь обязательный) |
 
 ---
-
-
