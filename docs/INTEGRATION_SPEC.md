@@ -231,10 +231,10 @@ Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`)
 > или CI/CD деплой. Проверку существования нужного конфига рекомендуется делать
 > заранее через `GET /api/v1/configs`.
 >
-> **Если потребуется динамическая конфигурация** (например, менять feature flags
-> или лимиты без редеплоя) — можно реализовать `POST /api/v1/configs/{name}/override`
-> для горячего обновления отдельных параметров в рантайме. Это проще, чем полный
-> config injection.
+> **Динамическая конфигурация (реализовано):** для изменения лимитов, порогов
+> и поведения без редеплоя реализован `POST /api/v1/configs/{name}/override` —
+> горячее обновление отдельных параметров `constants` в рантайме (см. описание
+> эндпоинта ниже). Структурные ключи (intents, states, policy) требуют редеплоя.
 
 **Response — прямой вывод `process()` (`src/bot.py`):**
 
@@ -598,7 +598,17 @@ Snapshot — полный слепок состояния бота. Переда
     "decay_applied_this_turn": false
   },
 
-  "fallback": {"total_count": 0, "tier_counts": {}, "state_counts": {}},
+  "fallback": {
+    "total_count": 0,
+    "tier_counts": {},
+    "state_counts": {},
+    "last_tier": null,
+    "last_state": null,
+    "dynamic_cta_counts": {},
+    "consecutive_tier_2_count": 0,
+    "consecutive_tier_2_state": null,
+    "_used_templates": {}
+  },
 
   "objection_handler": {"objection_attempts": {"PRICE": 1}},
 
@@ -642,14 +652,31 @@ Snapshot — полный слепок состояния бота. Переда
   "last_bot_message": "Какую систему используете сейчас?",
 
   "metrics": {
+    "conversation_id": "conv_abc123",
     "turns": 5,
+    "phase_turns": {"spin_situation": 2, "spin_problem": 3},
     "intents_sequence": ["greeting", "company_info", "explicit_problem"],
+    "objections": [],
     "fallback_count": 0,
-    "guard_interventions": 0,
-    "objections_count": 0,
-    "lead_score_final": null,
-    "conversation_outcome": null,
-    "duration_seconds": null
+    "fallback_by_tier": {},
+    "tone_history": ["neutral", "neutral", "interested"],
+    "lead_score_history": [0, 10, 25],
+    "turn_records": [
+      {
+        "turn_number": 1,
+        "state": "greeting",
+        "intent": "greeting",
+        "timestamp": 1700000000.0,
+        "tone": "neutral",
+        "response_time_ms": 120,
+        "fallback_used": false,
+        "fallback_tier": null
+      }
+    ],
+    "collected_data": {"company_name": "Рога и Копыта", "current_tools": "Excel"},
+    "outcome": null,
+    "start_time": 1700000000.0,
+    "end_time": null
   }
 }
 ```
@@ -1436,6 +1463,10 @@ sections:
 
 ### 7.2 Tier 2: Продвинутая настройка (для тимлидов/продуктологов)
 
+> Параметры Tier 2 можно менять без редеплоя через `POST /api/v1/configs/{name}/override`
+> (см. раздел 3.1). Ключи: `guard`, `limits`, `lead_scoring`, `cta`, `fallback`,
+> `frustration`, `disambiguation`, `response_directives`, `circular_flow`.
+
 #### 7.2.1 Лимиты диалога
 
 | Параметр | По умолчанию | Описание |
@@ -1560,7 +1591,7 @@ demo_request:
 | Компонент | Где | Назначение |
 |---|---|---|
 | `SalesBot` | `src/bot.py` | `process()` — обработка хода, `to_snapshot()` / `from_snapshot()` — сериализация |
-| `ConfigLoader` | `src/config_loader.py` | Загрузка конфигурации из YAML по `config_name` |
+| `ConfigLoader` | `src/config_loader.py` | Загрузка конфигурации из YAML по `config_name` + runtime override (`set_config_override()`) |
 | LLM клиент | `src/llm.py` (`OllamaLLM`) | Можно заменить на другой клиент |
 | Knowledge retriever | `src/knowledge/retriever.py` (`CascadeRetriever`) | FRIDA + BGE reranker |
 | Decision trace | `src/decision_trace.py` | Формирование trace (теперь обязательный) |
