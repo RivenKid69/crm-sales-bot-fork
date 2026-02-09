@@ -30,7 +30,7 @@ from src.feature_flags import flags
 from src.metrics import ConversationMetrics, ConversationOutcome, DisambiguationMetrics
 
 # Phase 1: Protection and Reliability
-from src.conversation_guard import ConversationGuard
+from src.conversation_guard import ConversationGuard, GuardConfig
 from src.fallback_handler import FallbackHandler
 
 # Phase 2: Natural Dialogue
@@ -128,10 +128,7 @@ class SalesBot:
         # Phase DAG: Load modular flow configuration (REQUIRED since v2.0)
         # Legacy Python-based config is deprecated and no longer used
         self._config_loader = ConfigLoader()
-        if config_name:
-            self._config: LoadedConfig = self._config_loader.load_named(config_name)
-        else:
-            self._config = self._config_loader.load()
+        self._config: LoadedConfig = self._config_loader.load_named(config_name or "default")
 
         # Load flow from parameter, settings, or default
         # IMPORTANT: flow_name must be non-empty string to override settings
@@ -185,7 +182,15 @@ class SalesBot:
         self.metrics = ConversationMetrics(self.conversation_id)
 
         # Phase 1: Protection (controlled by feature flags)
-        self.guard = ConversationGuard()
+        guard_overrides = self._config.guard
+        if guard_overrides:
+            guard_cfg = GuardConfig(
+                **{k: v for k, v in guard_overrides.items()
+                   if k in GuardConfig.__dataclass_fields__}
+            )
+        else:
+            guard_cfg = GuardConfig.default()
+        self.guard = ConversationGuard(config=guard_cfg)
         # FIX: Pass flow to FallbackHandler so it uses flow-specific skip_map
         # instead of DEFAULT_SKIP_MAP with hardcoded spin_situation
         # FIX 3: Pass guard_config for configurable tier_2 escalation threshold
@@ -218,22 +223,23 @@ class SalesBot:
         self.tone_analyzer = ToneAnalyzer()
 
         # Phase 3: SPIN Flow Optimization (controlled by feature flags)
-        self.lead_scorer = LeadScorer()
+        self.lead_scorer = LeadScorer(config=self._config)
         self.objection_handler = ObjectionHandler()
-        self.cta_generator = CTAGenerator()
+        self.cta_generator = CTAGenerator(config=self._config)
 
         # Phase 4: Intent Disambiguation (controlled by feature flag)
         self._disambiguation_ui = None
         self.disambiguation_metrics = DisambiguationMetrics()
 
         # Robust Classification: ConfidenceRouter for graceful degradation
+        disambiguation_cfg = self._config.disambiguation
         self.confidence_router = ConfidenceRouter(
-            high_confidence=0.85,
-            medium_confidence=0.65,
-            low_confidence=0.45,
-            min_confidence=0.30,
-            gap_threshold=0.20,
-            log_uncertain=True
+            high_confidence=disambiguation_cfg.get("high_confidence", 0.85),
+            medium_confidence=disambiguation_cfg.get("medium_confidence", 0.65),
+            low_confidence=disambiguation_cfg.get("low_confidence", 0.45),
+            min_confidence=disambiguation_cfg.get("min_confidence", 0.30),
+            gap_threshold=disambiguation_cfg.get("gap_threshold", 0.20),
+            log_uncertain=disambiguation_cfg.get("log_uncertain", True),
         )
 
         # Phase 5: Context-aware policy overlays (controlled by feature flag)
@@ -1082,7 +1088,9 @@ class SalesBot:
         # Build ResponseDirectives AFTER policy override.
         # Ensures directives reflect the final action, not pre-override state.
         if flags.context_response_directives and context_envelope:
-            response_directives = build_response_directives(context_envelope)
+            response_directives = build_response_directives(
+                context_envelope, config=self._config.response_directives
+            )
 
         # Propagate rephrase_mode to directives (moved from pre-override location)
         if rephrase_mode and response_directives:

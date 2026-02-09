@@ -10,6 +10,8 @@ Part of Phase 1: State Machine Parameterization
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Set, Union, TYPE_CHECKING
 from dataclasses import dataclass, field
+import copy
+import threading
 import yaml
 import logging
 import re
@@ -128,6 +130,11 @@ class LoadedConfig:
     def blackboard(self) -> Dict[str, Any]:
         """Get blackboard configuration (source enablement, etc.)."""
         return self.constants.get("blackboard", {})
+
+    @property
+    def disambiguation(self) -> Dict[str, Any]:
+        """Get disambiguation configuration (confidence thresholds, etc.)."""
+        return self.constants.get("disambiguation", {})
 
     @property
     def taxonomy_bypass_intents(self) -> List[str]:
@@ -854,26 +861,35 @@ class ConfigLoader:
 
     def load_named(self, name: str, validate: bool = True) -> LoadedConfig:
         """
-        Load a named configuration.
+        Load a named configuration with runtime overrides applied.
 
         If a tenant directory exists at config_dir/tenants/{name}, it is used.
-        Otherwise falls back to default config.
+        Otherwise falls back to default config. Runtime overrides (from
+        set_config_override) are applied after loading, keyed by config name.
         """
         if not name or name == "default":
             config = self.load(validate=validate)
             config.name = "default"
-            return config
-
-        tenant_dir = self.config_dir / "tenants" / name
-        if tenant_dir.exists():
+        elif (tenant_dir := self.config_dir / "tenants" / name).exists():
             loader = ConfigLoader(config_dir=tenant_dir)
             config = loader.load(validate=validate)
             config.name = name
-            return config
+        else:
+            config = self.load(validate=validate)
+            config.name = name
 
-        # Fallback to default if named config not found
-        config = self.load(validate=validate)
-        config.name = name
+        # Apply runtime overrides (thread-safe read)
+        with _overrides_lock:
+            overrides = _config_overrides.get(config.name)
+            if overrides:
+                _deep_merge(config.constants, copy.deepcopy(overrides))
+                # Re-validate invariants after merge
+                errors = self._validate_thresholds(config)
+                if errors:
+                    import warnings
+                    for err in errors:
+                        warnings.warn(f"Config override warning: {err}")
+
         return config
 
     def _load_yaml(
@@ -1694,6 +1710,82 @@ def init_config(config_dir: Optional[Path] = None) -> LoadedConfig:
     return _config_instance
 
 
+# === Runtime Config Overrides ===
+
+SAFE_OVERRIDE_KEYS = frozenset({
+    "limits",              # max_gobacks, max_consecutive_objections, etc.
+    "lead_scoring",        # skip_phases, signals, temperature thresholds
+    "guard",               # high_frustration_threshold, tier_2_escalation_threshold
+    "frustration",         # frustration thresholds (separate key from guard)
+    "fallback",            # rephrase_templates, options_templates, defaults
+    "cta",                 # CTA generation parameters
+    "circular_flow",       # allowed_gobacks
+    "response_directives", # response generation guidance
+    "disambiguation",      # confidence thresholds, gap_threshold
+})
+
+_config_overrides: Dict[str, Dict[str, Any]] = {}
+_overrides_lock = threading.Lock()
+
+
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Deep merge override into base dict (mutates base). Returns base."""
+    for key, value in override.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def set_config_override(config_name: str, overrides: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply runtime overrides for a named config.
+
+    Only keys in SAFE_OVERRIDE_KEYS are accepted. Structural keys
+    (intents, states, policy, etc.) are rejected — they require redeploy.
+
+    Args:
+        config_name: Config name (e.g., "default", tenant name)
+        overrides: Dict of key -> value to override
+
+    Returns:
+        Dict with "applied" (list of accepted keys) and "rejected" (dict of key -> reason)
+    """
+    applied = {}
+    rejected = {}
+    for key, value in overrides.items():
+        if key in SAFE_OVERRIDE_KEYS:
+            applied[key] = value
+        else:
+            rejected[key] = "structural key, requires redeploy"
+    if applied:
+        with _overrides_lock:
+            if config_name not in _config_overrides:
+                _config_overrides[config_name] = {}
+            _deep_merge(_config_overrides[config_name], applied)
+    return {"applied": list(applied.keys()), "rejected": rejected}
+
+
+def get_config_overrides(config_name: str) -> Dict[str, Any]:
+    """Get current overrides for a named config (deep copy)."""
+    with _overrides_lock:
+        return copy.deepcopy(_config_overrides.get(config_name, {}))
+
+
+def clear_config_overrides(config_name: str) -> bool:
+    """Clear overrides for a named config. Returns True if overrides existed."""
+    with _overrides_lock:
+        return _config_overrides.pop(config_name, None) is not None
+
+
+def clear_all_config_overrides() -> int:
+    """Clear all overrides. Returns count of cleared configs."""
+    with _overrides_lock:
+        count = len(_config_overrides)
+        _config_overrides.clear()
+        return count
+
+
 def validate_config_conditions(
     config: LoadedConfig,
     registry: "ConditionRegistry",
@@ -1848,4 +1940,9 @@ __all__ = [
     "get_config_validated",
     "init_config",
     "validate_config_conditions",
+    "SAFE_OVERRIDE_KEYS",
+    "set_config_override",
+    "get_config_overrides",
+    "clear_config_overrides",
+    "clear_all_config_overrides",
 ]
