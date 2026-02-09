@@ -20,7 +20,7 @@
 | **Intent (намерение)** | Классифицированное намерение пользователя. Бот определяет intent на каждом ходе (247 интентов в 34 категориях). Примеры: `greeting`, `price_question`, `demo_request`, `objection_price`. |
 | **Turn (ход)** | Одна пара «сообщение пользователя → ответ бота». Каждый turn нумеруется и порождает decision trace. |
 | **Decision Trace** | Полная трассировка решений бота на каждом turn: какой intent определён, с какой уверенностью, какое действие выбрано, как изменился lead score, сработал ли guard и т.д. Возвращается при `enable_tracing=True` (обязателен для API-обёртки). |
-| **Lead Score** | Оценка «прогретости» лида от 0 до 100. Рассчитывается динамически по сигналам (контакт дан, демо запрошено, возражение и т.д.). Определяет temperature: cold (0–25), warm (26–50), hot (51–75), very_hot (76–100). |
+| **Lead Score** | Оценка «прогретости» лида от 0 до 100. Рассчитывается динамически по сигналам (контакт дан, демо запрошено, возражение и т.д.). Определяет temperature: cold (0–29), warm (30–49), hot (50–69), very_hot (70–100). |
 | **Guard** | Защитный механизм диалога. Отслеживает зацикливание, фрустрацию, стагнацию и решает, когда нужно предложить варианты (tier 2), пропустить фазу (tier 3) или завершить мягко (soft close). |
 | **Fallback** | Стратегия на случай, когда бот не может корректно обработать сообщение. 4 уровня: tier 1 (перефразировать), tier 2 (предложить варианты), tier 3 (перейти к следующей фазе), soft close (мягкое завершение). |
 | **Objection (возражение)** | Возражение клиента. 8 типов: PRICE, COMPETITOR, NO_TIME, THINK, NO_NEED, TRUST, TIMING, COMPLEXITY. Обрабатывается фреймворками 4P's (рациональный) и 3F's (эмоциональный). |
@@ -75,7 +75,7 @@
 | Типизация | mypy | ≥1.0.0 |
 | **Для API-обёртки** | FastAPI ≥0.110.0, Uvicorn ≥0.29.0, Pydantic ≥2.0.0 | *Не в зависимостях ядра — нужно добавить при создании REST API* |
 | Размер кодовой базы | ~80 000 строк кода | 160+ модулей (src/) |
-| Тесты | ~235 файлов | 8 000+ тестов |
+| Тесты | 234 файла | 9 099 тестов |
 
 ### 1.3 Архитектура AI‑сервиса
 
@@ -254,7 +254,7 @@ Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`)
 | `visited_states` | `array` | Все состояния, посещённые на этом ходе (для покрытия фаз при skip) |
 | `initial_state` | `string` | Состояние FSM **до** обработки |
 | `fallback_used` | `boolean` | Был ли использован fallback |
-| `fallback_tier` | `integer \| null` | Уровень fallback (1–3) или `null` |
+| `fallback_tier` | `string \| null` | Уровень fallback: `"fallback_tier_1"`, `"fallback_tier_2"`, `"fallback_tier_3"`, `"soft_close"` или `null` |
 | `tone` | `string` | Определённый тон пользователя |
 | `frustration_level` | `integer` | Уровень фрустрации (0–10) |
 | `lead_score` | `integer \| null` | Текущий lead score (0–100). `null` если feature flag `lead_scoring` отключен |
@@ -270,7 +270,7 @@ Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`)
 > |---|---|---|
 > | `snapshot` | `bot.to_snapshot()` | Обновлённый snapshot (вызвать **после** `process()`, сохранить в MongoDB) |
 > | `confidence` | `decision_trace.classification.confidence` | Уверенность классификации (0.0–1.0). Извлечь из `decision_trace` |
-> | `lead_temperature` | Вычислить из `lead_score` | `cold` (0–25), `warm` (26–50), `hot` (51–75), `very_hot` (76–100) |
+> | `lead_temperature` | Вычислить из `lead_score` | `cold` (0–29), `warm` (30–49), `hot` (50–69), `very_hot` (70–100) |
 > | `collected_data` | `snapshot.state_machine.collected_data` | Данные клиента. Извлечь из snapshot |
 >
 > API-обёртка **обязана** создавать `SalesBot` с `enable_tracing=True`, чтобы `decision_trace`
@@ -462,7 +462,10 @@ Snapshot — полный слепок состояния бота. Переда
       "goback_count": 0,
       "remaining": 2,
       "history": []
-    }
+    },
+
+    "last_action": "ask_current_tools",
+    "_state_before_objection": null
   },
 
   "guard": {
@@ -470,9 +473,14 @@ Snapshot — полный слепок состояния бота. Переда
     "state_history": ["greeting", "spin_situation", "spin_problem"],
     "message_history": ["привет", "у нас магазин, 50 сотрудников"],
     "phase_attempts": {"greeting": 1, "spin_situation": 2, "spin_problem": 2},
+    "start_time": 1706000000.0,
+    "elapsed_seconds": 45.2,
+    "last_progress_turn": 4,
+    "collected_data_count": 2,
     "frustration_level": 2,
     "intent_history": ["greeting", "company_info", "explicit_problem"],
     "last_intent": "explicit_problem",
+    "pre_intervention_triggered": false,
     "consecutive_tier_2_count": 0,
     "consecutive_tier_2_state": null
   },
@@ -672,8 +680,10 @@ Config состоит из двух частей:
       "frustration": {"points": -15}
     },
     "skip_phases": {
-      "hot": ["situation"],
-      "very_hot": ["situation", "problem"]
+      "cold": [],
+      "warm": ["spin_implication", "spin_need_payoff"],
+      "hot": ["spin_problem", "spin_implication", "spin_need_payoff"],
+      "very_hot": ["spin_situation", "spin_problem", "spin_implication", "spin_need_payoff"]
     }
   },
 
@@ -979,10 +989,21 @@ db.operator_handoffs.createIndex({ "conversation_id": 1, "created_at": -1 })
     "temperature": "cold"
   },
 
+  "fallback": {
+    "tier": null,
+    "reason": null,
+    "alternatives_considered": [],
+    "fallback_action": null,
+    "fallback_message": null,
+    "recovery_possible": true
+  },
+
   "objection": {
     "detected": false,
-    "type": null,
+    "detected_type": null,
     "attempt_number": 0,
+    "strategy_selected": null,
+    "should_soft_close": false,
     "consecutive_count": 0,
     "total_count": 0
   },
@@ -1021,6 +1042,24 @@ db.operator_handoffs.createIndex({ "conversation_id": 1, "created_at": -1 })
     }
   ],
 
+  "context_window": {
+    "sliding_window": [],
+    "episodic_events": [],
+    "momentum_breakdown": {},
+    "engagement_breakdown": {},
+    "client_profile_snapshot": {}
+  },
+
+  "personalization": {
+    "template_selected": "",
+    "selection_reason": "",
+    "substitutions": {},
+    "business_context": "",
+    "industry_context": ""
+  },
+
+  "client_agent": null,
+
   "timing": {
     "tone_analysis_ms": 12.5,
     "guard_check_ms": 0.8,
@@ -1042,12 +1081,16 @@ db.operator_handoffs.createIndex({ "conversation_id": 1, "created_at": -1 })
 | `classification` | Как бот понял клиента: какой intent, с какой уверенностью, каким методом |
 | `tone_analysis` | Настроение клиента: тон, фрустрация, нужно ли извиниться |
 | `guard_check` | Сработала ли защита от зацикливания |
+| `fallback` | Информация о fallback: tier, причина, выбранное действие, возможность восстановления |
 | `state_machine` | Логика перехода: из какого состояния в какое, какое действие выбрано, сколько данных собрано |
 | `lead_score` | Динамика скоринга: сколько было → сколько стало, какие сигналы повлияли |
-| `objection` | Возражения: тип, номер попытки, общее количество |
+| `objection` | Возражения: тип (`detected_type`), номер попытки, стратегия, общее количество |
 | `policy_override` | Были ли переопределения: какое действие было → какое стало, почему |
 | `response` | Параметры генерации ответа |
 | `llm_traces` | Все вызовы LLM: purpose, токены, латентность |
+| `context_window` | Состояние контекстного окна: sliding window, episodic events, momentum, engagement |
+| `personalization` | Персонализация ответа: шаблон, бизнес-контекст, индустрия |
+| `client_agent` | Трассировка клиентского агента (только для симулятора, `null` в продакшене) |
 | `timing` | Тайминги всех этапов обработки, bottleneck |
 
 ---
@@ -1413,7 +1456,7 @@ demo_request:
 | Компонент | Где | Назначение |
 |---|---|---|
 | `SalesBot` | `src/bot.py` | `process()` — обработка хода, `to_snapshot()` / `from_snapshot()` — сериализация |
-| `ConfigLoader` | `src/yaml_config/config_loader.py` | Загрузка конфигурации из YAML по `config_name` |
+| `ConfigLoader` | `src/config_loader.py` | Загрузка конфигурации из YAML по `config_name` |
 | LLM клиент | `src/llm.py` (`OllamaLLM`) | Можно заменить на другой клиент |
 | Knowledge retriever | `src/knowledge/retriever.py` (`CascadeRetriever`) | FRIDA + BGE reranker |
 | Decision trace | `src/decision_trace.py` | Формирование trace (теперь обязательный) |
