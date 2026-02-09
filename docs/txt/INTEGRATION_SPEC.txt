@@ -210,11 +210,31 @@ Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`)
 | `snapshot` | `object \| null` | Нет | Предыдущий snapshot. `null` для нового диалога |
 | `history_tail` | `array` | Нет | Последние N сообщений в формате `[{"user": "...", "bot": "..."}]`. По умолчанию — последние 4 хода |
 
-> **Про config:** конфигурация (методология продаж, тональность, лимиты, feature flags)
-> хранится в YAML‑файлах на стороне AI‑сервиса. Внешняя система указывает
-> `config_name` — имя named-конфига. Если named-конфиг не найден, сервис
-> загрузит default-конфиг. Проверку существования нужного конфига рекомендуется
-> делать заранее через `GET /api/v1/configs`.
+> **Про config (design decision):**
+>
+> Конфигурация (методология продаж, тональность, лимиты, feature flags, таксономия
+> интентов, шаблоны промптов, lead scoring сигналы) хранится в **YAML‑файлах на
+> стороне AI‑сервиса**. Внешняя система указывает `config_name` — имя named-конфига.
+> Если named-конфиг не найден, сервис загрузит default-конфиг.
+>
+> **Почему не config injection (JSON в запросе):**
+> Конфигурация бота — это не один файл, а **набор из 5+ связанных YAML-файлов**
+> (constants, flow, knowledge base, prompt templates, intent taxonomy), суммарно
+> десятки тысяч строк. Все компоненты ядра (StateMachine, Classifier, Guard,
+> LeadScorer, FallbackHandler, ResponseGenerator) получают `LoadedConfig` при
+> инициализации и используют его на всех этапах обработки. Передача всей конфигурации
+> JSON-объектом в каждом запросе нецелесообразна по объёму и потребует глубокого
+> рефакторинга ядра.
+>
+> **Подход:** каждый tenant получает свою директорию конфигов на AI‑сервисе
+> (`config/tenants/{config_name}/`). Управление конфигами — через админ-панель
+> или CI/CD деплой. Проверку существования нужного конфига рекомендуется делать
+> заранее через `GET /api/v1/configs`.
+>
+> **Если потребуется динамическая конфигурация** (например, менять feature flags
+> или лимиты без редеплоя) — можно реализовать `POST /api/v1/configs/{name}/override`
+> для горячего обновления отдельных параметров в рантайме. Это проще, чем полный
+> config injection.
 
 **Response — прямой вывод `process()` (`src/bot.py`):**
 
@@ -363,6 +383,90 @@ Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`)
   "version": "1.0.0"
 }
 ```
+
+---
+
+#### `POST /api/v1/configs/{name}/override` — runtime config override (hot-reload)
+
+Применить точечные override параметров constants без редеплоя. Принимаются только безопасные ключи из `SAFE_OVERRIDE_KEYS`.
+
+**Request body:**
+
+```json
+{
+  "overrides": {
+    "guard": {"max_turns": 30, "high_frustration_threshold": 8},
+    "limits": {"max_gobacks": 5},
+    "disambiguation": {"high_confidence": 0.90}
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "applied": ["guard", "limits", "disambiguation"],
+  "rejected": {}
+}
+```
+
+Если ключ не входит в `SAFE_OVERRIDE_KEYS`, он попадёт в `rejected`:
+
+```json
+{
+  "applied": ["guard"],
+  "rejected": {"intents": "structural key, requires redeploy"}
+}
+```
+
+**Safe override keys:**
+
+| Ключ | Описание |
+|---|---|
+| `limits` | max_gobacks, max_consecutive_objections и т.д. |
+| `lead_scoring` | skip_phases, signals, temperature thresholds |
+| `guard` | high_frustration_threshold, max_turns и т.д. |
+| `frustration` | frustration thresholds |
+| `fallback` | rephrase_templates, options_templates |
+| `cta` | CTA generation parameters |
+| `circular_flow` | allowed_gobacks |
+| `response_directives` | response generation guidance |
+| `disambiguation` | confidence thresholds, gap_threshold |
+
+> **Caveat (SessionManager):** Если сервер использует `SessionManager` с кэшированием ботов, override влияет только на **новые сессии**. Кэшированные сессии продолжат работать со старыми настройками до пересоздания (close + re-open). В stateless-режиме (рекомендуемом) override вступает в силу со следующего запроса.
+
+---
+
+#### `GET /api/v1/configs/{name}/override` — получить текущие overrides
+
+**Response:**
+
+```json
+{
+  "config_name": "default",
+  "overrides": {
+    "guard": {"max_turns": 30}
+  }
+}
+```
+
+Если overrides не заданы, возвращается пустой объект `"overrides": {}`.
+
+---
+
+#### `DELETE /api/v1/configs/{name}/override` — очистить overrides
+
+**Response:**
+
+```json
+{
+  "config_name": "default",
+  "cleared": true
+}
+```
+
+`cleared: false` означает, что overrides для этого config_name и так отсутствовали.
 
 ---
 

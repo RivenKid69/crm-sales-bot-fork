@@ -705,17 +705,22 @@ class ResponseDirectivesBuilder:
         return "\n".join(lines) if lines else ""
 
 
-def build_response_directives(envelope: ContextEnvelope) -> ResponseDirectives:
+def build_response_directives(
+    envelope: ContextEnvelope,
+    config: Dict[str, Any] = None,
+) -> ResponseDirectives:
     """
     Удобная функция для создания ResponseDirectives.
 
     Args:
         envelope: ContextEnvelope
+        config: Optional response_directives config dict. If provided,
+                used directly instead of falling back to get_config().
 
     Returns:
         ResponseDirectives
     """
-    return ResponseDirectivesBuilder(envelope).build()
+    return ResponseDirectivesBuilder(envelope, config=config).build()
 
 
 def build_context_summary(envelope: ContextEnvelope) -> str:
