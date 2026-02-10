@@ -192,10 +192,10 @@ class FrustrationTracker:
         if calculator.should_pre_intervene(tone, signal_count, self._level):
             self._pre_intervention_triggered = True
             logger.info(
-                "Pre-intervention triggered",
-                tone=tone.value,
-                signal_count=signal_count,
-                frustration_level=self._level,
+                "Pre-intervention triggered: tone=%s signal_count=%s frustration_level=%s",
+                tone.value,
+                signal_count,
+                self._level,
             )
 
         # Record history

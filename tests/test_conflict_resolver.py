@@ -599,6 +599,29 @@ class TestConflictResolver:
         assert decision.next_state == "current"
         assert "fallback_any_transition" not in decision.reason_codes
 
+    def test_resolve_with_fallback_rejects_invalid_target_when_valid_states_provided(self, resolver):
+        """resolve_with_fallback should not apply invalid fallback target with valid_states."""
+        proposals = [
+            Proposal(
+                type=ProposalType.ACTION,
+                value="action",
+                priority=Priority.NORMAL,
+                source_name="Source",
+                reason_code="reason",
+            ),
+        ]
+
+        decision = resolver.resolve_with_fallback(
+            proposals=proposals,
+            current_state="current",
+            fallback_transition="ghost",
+            valid_states={"current", "next"},
+        )
+
+        assert decision.next_state == "current"
+        assert "fallback_any_transition" not in decision.reason_codes
+        assert "fallback_invalid_target" in decision.resolution_trace
+
     # === Data and flags passthrough ===
 
     def test_resolve_passes_data_updates(self, resolver):

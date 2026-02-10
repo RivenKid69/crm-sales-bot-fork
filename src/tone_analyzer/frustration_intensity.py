@@ -320,13 +320,14 @@ class FrustrationIntensityCalculator:
         delta = int(base_weight * intensity_mult * consecutive_mult)
 
         logger.debug(
-            "Frustration increase calculated",
-            tone=tone.value,
-            signal_count=signal_count,
-            base_weight=base_weight,
-            intensity_mult=intensity_mult,
-            consecutive_mult=consecutive_mult,
-            delta=delta,
+            "Frustration increase calculated: tone=%s signal_count=%s base_weight=%s "
+            "intensity_mult=%s consecutive_mult=%s delta=%s",
+            tone.value,
+            signal_count,
+            base_weight,
+            intensity_mult,
+            consecutive_mult,
+            delta,
         )
 
         return max(1, delta)  # Minimum delta of 1
@@ -368,18 +369,20 @@ class FrustrationIntensityCalculator:
         if tone == Tone.RUSHED:
             if signal_count >= self.config.rushed_pre_intervention_threshold:
                 logger.info(
-                    "Pre-intervention triggered: RUSHED tone with high intensity",
-                    signal_count=signal_count,
-                    threshold=self.config.rushed_pre_intervention_threshold,
+                    "Pre-intervention triggered: RUSHED high intensity "
+                    "(signal_count=%s threshold=%s)",
+                    signal_count,
+                    self.config.rushed_pre_intervention_threshold,
                 )
                 return True
 
         # WARNING level with any negative tone triggers pre-intervention
         if current_frustration >= FRUSTRATION_WARNING and tone in self.NEGATIVE_TONES:
             logger.info(
-                "Pre-intervention triggered: WARNING level with negative tone",
-                frustration=current_frustration,
-                tone=tone.value,
+                "Pre-intervention triggered: WARNING with negative tone "
+                "(frustration=%s tone=%s)",
+                current_frustration,
+                tone.value,
             )
             return True
 

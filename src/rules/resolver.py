@@ -345,12 +345,13 @@ class RuleResolver:
                 if action:
                     # Log fallback usage
                     logger.info(
-                        "Taxonomy fallback applied",
-                        intent=intent,
-                        state=state,
-                        fallback_level=level,
-                        fallback_action=action,
-                        fallback_transition=transition
+                        "Taxonomy fallback applied: intent=%s state=%s level=%s "
+                        "action=%s transition=%s",
+                        intent,
+                        state,
+                        level,
+                        action,
+                        transition,
                     )
 
                     if trace:
@@ -367,9 +368,9 @@ class RuleResolver:
 
             # Should never reach here (default always in chain)
             logger.error(
-                "Taxonomy fallback chain exhausted without default",
-                intent=intent,
-                state=state
+                "Taxonomy fallback chain exhausted without default: intent=%s state=%s",
+                intent,
+                state,
             )
 
         # Final fallback to default (no taxonomy or chain exhausted)
@@ -377,10 +378,10 @@ class RuleResolver:
             trace.set_result(self.default_action, Resolution.FALLBACK)
 
         logger.warning(
-            "Using DEFAULT_ACTION fallback (no taxonomy)",
-            intent=intent,
-            state=state,
-            default_action=self.default_action
+            "Using DEFAULT_ACTION fallback (no taxonomy): intent=%s state=%s default_action=%s",
+            intent,
+            state,
+            self.default_action,
         )
 
         return RuleResult(
@@ -976,6 +977,10 @@ def create_resolver(registry: ConditionRegistry = None, taxonomy_registry=None) 
             from src.rules.intent_taxonomy import IntentTaxonomyRegistry
             taxonomy_registry = IntentTaxonomyRegistry(_constants)
         except Exception:
+            logger.exception(
+                "Failed to initialize IntentTaxonomyRegistry in create_resolver; "
+                "continuing with taxonomy_registry=None"
+            )
             taxonomy_registry = None
 
     return RuleResolver(registry, taxonomy_registry=taxonomy_registry)

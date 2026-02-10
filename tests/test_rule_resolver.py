@@ -691,6 +691,19 @@ class TestFactoryFunction:
         resolver = create_resolver()
         assert resolver.registry is not None
 
+    def test_create_with_default_registry_default_fallback_no_type_error(self):
+        """Unknown intent fallback should work with default create_resolver()."""
+        resolver = create_resolver()
+
+        result = resolver.resolve_action(
+            intent="totally_unknown_intent_for_logging_contract",
+            state_rules={},
+            global_rules={},
+            ctx=SimpleContext(),
+        )
+
+        assert result.action == "continue_current_goal"
+
 # =============================================================================
 # ERROR EXCEPTION TESTS
 # =============================================================================

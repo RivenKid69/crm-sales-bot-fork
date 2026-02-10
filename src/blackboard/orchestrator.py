@@ -22,6 +22,11 @@ from src.blackboard.event_bus import (
 )
 from src.blackboard.models import ResolvedDecision
 from src.blackboard.enums import Priority
+from src.blackboard.decision_sanitizer import (
+    DecisionSanitizer,
+    SanitizedTransitionResult,
+    INVALID_NEXT_STATE_REASON,
+)
 
 # Hexagonal Architecture: Import protocols (ports)
 from src.blackboard.protocols import (
@@ -136,6 +141,7 @@ class DialogueOrchestrator:
         # Initialize conflict resolver
         # FIX: Use continue_current_goal as default action (has template in prompts.yaml)
         self._resolver = ConflictResolver(default_action="continue_current_goal")
+        self._decision_sanitizer = DecisionSanitizer()
 
         # Config-driven priority assignment (FlowConfig.priorities)
         self._priority_assigner = PriorityAssigner(self._flow_config)
@@ -256,10 +262,14 @@ class DialogueOrchestrator:
             ResolvedDecision with action, next_state, and metadata
         """
         turn_start_time = time.time()
-        turn_number = self._blackboard.intent_tracker.turn_number + 1
+        turn_number = 1
         current_state = self._state_machine.state
 
         try:
+            tracker = self._blackboard.intent_tracker
+            if tracker is not None:
+                turn_number = tracker.turn_number + 1
+
             # === STEP 1: Begin Turn ===
             self._blackboard.begin_turn(
                 intent=intent,
@@ -354,15 +364,55 @@ class DialogueOrchestrator:
             resolve_start_time = time.time()
 
             # Get fallback transition (from "any" trigger)
-            fallback_transition = self._get_fallback_transition()
+            fallback_transition, fallback_sanitization = self._get_fallback_transition(
+                current_state=current_state
+            )
+
+            if fallback_sanitization and fallback_sanitization.sanitized:
+                logger.warning(
+                    "Invalid 'any' fallback transition sanitized: "
+                    f"requested={fallback_sanitization.requested_state}, "
+                    f"effective={fallback_sanitization.effective_state}"
+                )
+                self._event_bus.emit(ErrorOccurredEvent(
+                    turn_number=turn_number,
+                    error_type="InvalidNextState",
+                    error_message=(
+                        "Invalid fallback transition sanitized: "
+                        f"{fallback_sanitization.requested_state} -> "
+                        f"{fallback_sanitization.effective_state}"
+                    ),
+                    component="DecisionSanitizer",
+                    diagnostic=fallback_sanitization.diagnostic,
+                ))
 
             decision = self._resolver.resolve_with_fallback(
                 proposals=proposals,
                 current_state=current_state,
                 fallback_transition=fallback_transition,
+                valid_states=self._get_valid_states(),
                 data_updates=self._blackboard.get_data_updates(),
                 flags_to_set=self._blackboard.get_flags_to_set(),
             )
+
+            sanitizer_result = self._decision_sanitizer.sanitize_decision(
+                decision=decision,
+                current_state=current_state,
+                valid_states=self._get_valid_states(),
+                source="orchestrator.resolve",
+            )
+            self._apply_sanitized_transition(
+                decision=decision,
+                turn_number=turn_number,
+                result=sanitizer_result,
+            )
+            if fallback_sanitization:
+                decision.resolution_trace["fallback_transition_sanitization"] = (
+                    fallback_sanitization.diagnostic
+                )
+                if fallback_sanitization.sanitized:
+                    if INVALID_NEXT_STATE_REASON not in decision.reason_codes:
+                        decision.reason_codes.append(INVALID_NEXT_STATE_REASON)
 
             resolve_time_ms = (time.time() - resolve_start_time) * 1000
 
@@ -430,15 +480,67 @@ class DialogueOrchestrator:
                 turn_number=turn_number,
             )
 
-    def _get_fallback_transition(self) -> Optional[str]:
+    def _get_valid_states(self) -> Set[str]:
+        """Get the set of valid state names for runtime transition checks."""
+        if hasattr(self._flow_config, "states"):
+            return set(self._flow_config.states.keys())
+        return set()
+
+    def _get_fallback_transition(
+        self,
+        current_state: str,
+    ) -> Tuple[Optional[str], Optional[SanitizedTransitionResult]]:
         """
-        Get fallback transition from "any" trigger in current state.
+        Get sanitized fallback transition from "any" trigger in current state.
 
         Returns:
-            Target state for "any" transition, or None
+            (target state for "any" transition, sanitization result)
         """
         ctx = self._blackboard.get_context()
-        return ctx.get_transition("any")
+        requested_target = ctx.get_transition("any")
+        if requested_target is None:
+            return None, None
+
+        result = self._decision_sanitizer.sanitize_target(
+            requested_state=requested_target,
+            current_state=current_state,
+            valid_states=self._get_valid_states(),
+            source="orchestrator.any_fallback",
+        )
+        if result.sanitized:
+            return None, result
+        return result.effective_state, result
+
+    def _apply_sanitized_transition(
+        self,
+        decision: ResolvedDecision,
+        turn_number: int,
+        result: SanitizedTransitionResult,
+    ) -> None:
+        """Apply sanitized transition diagnostics to a resolved decision."""
+        decision.resolution_trace["transition_sanitization"] = result.diagnostic
+
+        if not result.sanitized:
+            return
+
+        logger.warning(
+            "DecisionSanitizer adjusted transition target: "
+            f"requested={result.requested_state}, effective={result.effective_state}"
+        )
+        decision.next_state = result.effective_state
+        if result.reason_code and result.reason_code not in decision.reason_codes:
+            decision.reason_codes.append(result.reason_code)
+
+        self._event_bus.emit(ErrorOccurredEvent(
+            turn_number=turn_number,
+            error_type="InvalidNextState",
+            error_message=(
+                f"Invalid transition target sanitized: {result.requested_state} "
+                f"-> {result.effective_state}"
+            ),
+            component="DecisionSanitizer",
+            diagnostic=result.diagnostic,
+        ))
 
     def _create_fallback_decision(
         self,
@@ -513,7 +615,7 @@ class DialogueOrchestrator:
         Args:
             decision: The resolved decision
             prev_state: State before this turn
-            state_changed: Whether state transition occurred
+            state_changed: Whether state transition was requested by decision
         """
         # Get state configuration for on_enter logic
         next_config = self._flow_config.states.get(decision.next_state, {})
@@ -535,13 +637,31 @@ class DialogueOrchestrator:
         # This ensures state, current_phase, and last_action are always consistent
         # FUNDAMENTAL FIX: Use FlowConfig.get_phase_for_state() for all flows
         phase = self._flow_config.get_phase_for_state(decision.next_state)
-        self._state_machine.transition_to(
+        transition_ok = self._state_machine.transition_to(
             next_state=decision.next_state,
             action=final_action,
             phase=phase,
             source="orchestrator",
-            validate=False,  # Already validated by ProposalValidator
+            validate=True,
         )
+        actual_next_state = self._state_machine.state
+        if not transition_ok or actual_next_state != decision.next_state:
+            logger.error(
+                "State transition mismatch after transition_to: "
+                f"requested={decision.next_state}, actual={actual_next_state}, "
+                f"transition_ok={transition_ok}"
+            )
+            decision.resolution_trace["transition_apply_mismatch"] = {
+                "requested_state": decision.next_state,
+                "actual_state": actual_next_state,
+                "transition_ok": transition_ok,
+                "source": "orchestrator._apply_side_effects",
+            }
+            decision.next_state = actual_next_state
+            if "transition_apply_mismatch" not in decision.reason_codes:
+                decision.reason_codes.append("transition_apply_mismatch")
+
+        state_changed = decision.next_state != prev_state
 
         # 2. Apply data_updates to collected_data
         if decision.data_updates:
@@ -562,9 +682,9 @@ class DialogueOrchestrator:
         # GoBackGuardSource no longer increments goback_count directly in contribute().
         # Instead, it adds pending_goback_increment=True to the proposal metadata.
         # We increment the counter here ONLY IF:
-        # 1. The action "acknowledge_go_back" won the conflict resolution
+        # 1. winning action metadata marks pending_goback_increment=True
         # 2. The state actually changed (transition happened)
-        # 3. The transition went to the expected prev_state
+        # 3. The transition went to the expected target state in metadata
         #
         # This prevents incorrect counter increment when another source
         # (e.g., ObjectionGuardSource with CRITICAL priority) blocks the go_back.
@@ -596,25 +716,22 @@ class DialogueOrchestrator:
         """
         Apply deferred goback_count increment after conflict resolution.
 
-        BUGFIX: GoBackGuardSource no longer increments goback_count directly.
-        Instead, it adds pending_goback_increment metadata to the proposal.
-        We increment the counter here ONLY IF:
-        1. The winning action is "acknowledge_go_back"
+        GoBackGuardSource no longer increments goback_count directly.
+        Instead, it adds pending_goback_increment metadata to winning action
+        metadata. We increment the counter here ONLY IF:
+        1. pending_goback_increment is present in winning action metadata
         2. The state actually changed (transition happened)
         3. The transition went to the expected target state
 
         This prevents incorrect counter increment when another source with higher
         priority (e.g., ObjectionGuardSource with CRITICAL) blocks the go_back.
+        It also remains correct if on_enter.action overrides decision.action.
 
         Args:
             decision: The resolved decision
             prev_state: State before this turn
             state_changed: Whether state transition occurred
         """
-        # Only process if the winning action is acknowledge_go_back
-        if decision.action != "acknowledge_go_back":
-            return
-
         # Only process if state actually changed (transition happened)
         if not state_changed:
             logger.debug(
@@ -841,13 +958,31 @@ class DialogueOrchestrator:
         Mirrors state_machine._get_objection_stats() for compatibility.
         """
         tracker = self._blackboard.intent_tracker
-        return {
-            "consecutive_objections": tracker.objection_consecutive(),
-            "total_objections": tracker.objection_total(),
-            "history": [
+        if tracker is None:
+            return {
+                "consecutive_objections": 0,
+                "total_objections": 0,
+                "history": [],
+                "return_state": self._state_machine.state_before_objection,
+            }
+
+        try:
+            consecutive = tracker.objection_consecutive()
+            total = tracker.objection_total()
+            history = [
                 (r.intent, r.state)
                 for r in tracker.get_intents_by_category("objection")
-            ],
+            ]
+        except Exception as exc:
+            logger.warning(f"Failed to read intent tracker objection stats: {exc}")
+            consecutive = 0
+            total = 0
+            history = []
+
+        return {
+            "consecutive_objections": consecutive,
+            "total_objections": total,
+            "history": history,
             "return_state": self._state_machine.state_before_objection,
         }
 

@@ -528,6 +528,24 @@ class TestBug5DeferredGobackIncrement:
                 assert len(sm.circular_flow.goback_history) == sm.circular_flow.goback_count, \
                     f"History length {len(sm.circular_flow.goback_history)} != count {sm.circular_flow.goback_count}"
 
+    def test_goback_increment_survives_on_enter_action_override(self, loader, config):
+        """Deferred goback increment must use metadata, not decision.action."""
+        flow = loader.load_flow('spin_selling')
+        flow.states["spin_problem"]["on_enter"] = {"action": "override_on_enter_action"}
+
+        sm = StateMachine(config=config, flow=flow)
+        sm.transition_to('spin_implication', source='test', validate=False)
+        orchestrator = create_orchestrator(sm, flow)
+
+        result = orchestrator.process_turn('go_back', extracted_data={}, context_envelope=None)
+
+        assert result.next_state == 'spin_problem'
+        assert result.action == 'override_on_enter_action'
+        assert sm.circular_flow.goback_count == 1, (
+            "goback_count must increment based on winning metadata + transition fact, "
+            "even when on_enter overrides decision.action"
+        )
+
 class TestBug6GobackConflictResolution:
     """
     go_back blocked by higher priority source.
@@ -585,6 +603,29 @@ class TestBug6GobackConflictResolution:
         else:
             # go_back failed, counter should be 0
             assert sm.circular_flow.goback_count == 0
+
+
+class TestBug7IntentTrackerResilience:
+    """Intent tracker should auto-heal and never crash process_turn pre-try."""
+
+    def test_process_turn_auto_heals_missing_tracker(self, loader, config):
+        flow = loader.load_flow('spin_selling')
+        sm = StateMachine(config=config, flow=flow)
+        orchestrator = create_orchestrator(sm, flow)
+
+        # Simulate runtime corruption: tracker disappeared from both owners.
+        sm.intent_tracker = None
+        orchestrator.blackboard._intent_tracker = None
+
+        result = orchestrator.process_turn(
+            'greeting',
+            extracted_data={},
+            context_envelope=None,
+        )
+
+        assert result.action is not None
+        assert orchestrator.blackboard.intent_tracker is not None
+        assert sm.intent_tracker is not None
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '--tb=short'])

@@ -113,10 +113,40 @@ class DialogueBlackboard:
         self._data_update_sources: Dict[str, str] = {}   # field → source_name
         self._flag_set_sources: Dict[str, str] = {}       # flag → source_name
 
+    def _bind_tracker_to_state_machine(self, tracker: IntentTracker) -> Optional[str]:
+        """Try to attach tracker to state_machine without raising."""
+        for attr_name in ("intent_tracker", "_intent_tracker"):
+            try:
+                setattr(self._state_machine, attr_name, tracker)
+                return attr_name
+            except Exception:
+                continue
+        return None
+
+    def _ensure_intent_tracker(self, source: str) -> 'IIntentTracker':
+        """Ensure runtime tracker exists (auto-heal missing tracker)."""
+        if self._intent_tracker is not None:
+            return self._intent_tracker
+
+        tracker = IntentTracker()
+        self._intent_tracker = tracker
+        bound_attr = self._bind_tracker_to_state_machine(tracker)
+        if bound_attr:
+            logger.warning(
+                f"IntentTracker auto-healed in DialogueBlackboard ({source}); "
+                f"bound to state_machine.{bound_attr}"
+            )
+        else:
+            logger.warning(
+                f"IntentTracker auto-healed in DialogueBlackboard ({source}); "
+                "state_machine binding skipped"
+            )
+        return tracker
+
     @property
     def intent_tracker(self) -> Optional['IIntentTracker']:
         """Read-only access to intent tracker (for Orchestrator coordination)."""
-        return self._intent_tracker
+        return self._ensure_intent_tracker(source="intent_tracker_property")
 
     @property
     def is_turn_active(self) -> bool:
@@ -166,6 +196,7 @@ class DialogueBlackboard:
         """
         self._turn_start_time = datetime.now()
         self._current_intent = intent
+        tracker = self._ensure_intent_tracker(source="begin_turn")
 
         # Record intent in tracker (MUST happen first, before condition evaluation)
         #
@@ -181,12 +212,12 @@ class DialogueBlackboard:
         #
         # ИСКЛЮЧЕНИЕ: Пропускаем запись возражений если лимит уже достигнут
         # чтобы предотвратить переполнение счётчика (3→6) при продолжении soft_close
-        if self._intent_tracker and not self._should_skip_objection_recording(intent):
-            self._intent_tracker.record(intent, self._state_machine.state)
+        if tracker and not self._should_skip_objection_recording(intent):
+            tracker.record(intent, self._state_machine.state)
 
         # ALWAYS advance turn counter (independent of record skip logic)
-        if self._intent_tracker:
-            self._intent_tracker.advance_turn()
+        if tracker:
+            tracker.advance_turn()
 
         # Update collected_data with newly extracted data
         current_collected = dict(self._state_machine.collected_data)
@@ -230,9 +261,9 @@ class DialogueBlackboard:
             state=self._state_machine.state,
             collected_data=deep_freeze_dict(dict(current_collected)),
             current_intent=intent,
-            intent_tracker=IntentTrackerReadOnly(self._intent_tracker) if self._intent_tracker else self._intent_tracker,
+            intent_tracker=IntentTrackerReadOnly(tracker) if tracker else tracker,
             context_envelope=context_envelope,
-            turn_number=self._intent_tracker.turn_number if self._intent_tracker else 0,
+            turn_number=tracker.turn_number if tracker else 0,
             persona=persona,
             state_config=deep_freeze_dict(dict(state_config)),
             flow_config=deep_freeze_dict(
@@ -265,7 +296,7 @@ class DialogueBlackboard:
 
         logger.debug(
             f"Blackboard turn started: intent={intent}, state={self._state_machine.state}, "
-            f"turn={self._intent_tracker.turn_number if self._intent_tracker else 0}"
+            f"turn={tracker.turn_number if tracker else 0}"
         )
 
     def _should_skip_objection_recording(self, intent: str) -> bool:
@@ -536,8 +567,9 @@ class DialogueBlackboard:
         Returns:
             Dictionary with turn summary
         """
+        tracker = self.intent_tracker
         return {
-            "turn_number": self._intent_tracker.turn_number if self._intent_tracker else 0,
+            "turn_number": tracker.turn_number if tracker else 0,
             "intent": self._current_intent,
             "state": self._state_machine.state,
             "action_proposals_count": len(self._action_proposals),
