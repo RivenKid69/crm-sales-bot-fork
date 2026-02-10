@@ -1,20 +1,20 @@
 # STT - Speech to Text
-faster-whisper>=1.0.0
+faster-whisper>=1.1.0
 
 # LLM
-ollama>=0.3.0
+ollama>=0.5.0
 
 # TTS - Text to Speech (F5-TTS Russian)
-f5-tts>=1.1.0
+f5-tts>=1.1.10
 
 # Audio processing
-sounddevice>=0.4.6
-soundfile>=0.12.1
-numpy>=1.24.0
-scipy>=1.11.0
+sounddevice>=0.5.0
+soundfile>=0.13.0
+numpy>=2.1.0
+scipy>=1.14.0
 
 # Real-time audio
 pyaudio>=0.2.14
 
 # Utilities
-rich>=13.0.0
+rich>=14.0.0
