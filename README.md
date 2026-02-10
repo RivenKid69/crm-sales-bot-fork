@@ -63,6 +63,16 @@ python3 -m src.bot --flow spin_selling
 - `src/knowledge/` — загрузка KB, category routing, retrieval, reranking.
 - `src/generator.py` — генерация ответа по action + контексту.
 
+### Runtime-инварианты (актуально)
+
+- Built-in sources Blackboard восстанавливаются в `create_orchestrator()` автоматически
+  (`SourceRegistry.ensure_builtin_sources()`), включая сценарий после `SourceRegistry.reset()`.
+- Запуск в strict-режиме падает сразу при конфликтах/отсутствии критичных built-ins.
+- `SalesBot` загружает config+flow атомарно через `ConfigLoader.load_bundle()` и fail-fast
+  при рассинхроне `config.flow_name` и `flow.name`.
+- Канонический namespace проекта: `src.*`. Legacy bare-imports поддерживаются только через
+  временный alias-слой (`src/import_aliases.py`) с deprecation warnings.
+
 ## Конфигурация
 
 ### `src/settings.yaml`
@@ -150,6 +160,21 @@ Runtime-path загрузка (атомарный binding config+flow): `ConfigL
 pytest
 ```
 
+Ключевые guard-тесты:
+- `tests/test_import_aliasing.py` — no duplicate module identity для legacy+canonical imports.
+- `tests/test_import_style_guard.py` — запрет новых bare-imports для модулей с `src.*`.
+
+## Последние изменения (по 15 последним коммитам)
+
+- Стабилизация Blackboard/Config runtime: self-heal SourceRegistry + fail-fast bootstrap.
+- Атомарный binding config/flow (`ConfigLoader.load_bundle`) и strict runtime-проверка в `SalesBot`.
+- Унификация namespace-импортов (`src.*`) + compatibility alias layer.
+- Runtime config override (hot-reload) через API-уровень интеграции.
+- Исправления ownership mutation (orchestrator как единый владелец state mutation).
+- Исправления snapshot contract и action validation (SSOT).
+- Обновление версий Python/dependencies до актуальных стабильных.
+- Последовательная актуализация `INTEGRATION_SPEC` по фактическому поведению кода.
+
 ## Документация
 
 - `docs/ARCHITECTURE.md` — текущая архитектура.
@@ -163,4 +188,4 @@ pytest
 - `docs/PHASES.md` — эволюция фаз.
 - `docs/DAG.md` — DAG-подсистема и текущий статус.
 - `docs/DESIGN_PRINCIPLES.md` — архитектурные принципы.
-- `docs/INTEGRATION_SPEC.md` — план интеграции (без изменений).
+- `docs/INTEGRATION_SPEC.md` — актуальный контракт интеграции (stateless API + snapshot orchestration).

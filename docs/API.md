@@ -21,6 +21,11 @@ bot = SalesBot(llm=llm, flow_name="spin_selling")
 - `flow_name: str | None = None`
 - `persona: str | None = None`
 - `client_id: str | None = None`
+- `config_name: str | None = None`
+
+Важный runtime-контракт:
+- `SalesBot` загружает config+flow атомарно через `ConfigLoader.load_bundle(...)`.
+- При mismatch `config.flow_name != flow.name` бросается `RuntimeError` (fail-fast).
 
 ### Основные методы
 
@@ -78,13 +83,37 @@ bot = SalesBot(llm=llm, flow_name="spin_selling")
 
 ## 3. `ConfigLoader` (`src/config_loader.py`)
 
-- `load() -> LoadedConfig`
+- `load(validate: bool = True, flow_name: Optional[str] = None) -> LoadedConfig`
 - `load_flow(flow_name: str) -> FlowConfig`
-- `load_named(config_name: str, flow_name: Optional[str] = None) -> LoadedConfig`
-- `load_bundle(config_name: str = "default", flow_name: Optional[str] = None) -> tuple[LoadedConfig, FlowConfig]`
+- `load_named(config_name: str, validate: bool = True, flow_name: Optional[str] = None) -> LoadedConfig`
+- `load_bundle(config_name: str = "default", flow_name: Optional[str] = None, validate: bool = True) -> tuple[LoadedConfig, FlowConfig]`
 - `reload() -> LoadedConfig`
 
-## 4. Retriever API (`src/knowledge/retriever.py`)
+Runtime override API:
+- `set_config_override(config_name: str, overrides: dict) -> dict`
+- `get_config_overrides(config_name: str) -> dict`
+- `clear_config_overrides(config_name: str) -> bool`
+- `clear_all_config_overrides() -> int`
+
+## 4. Blackboard Bootstrap (`src/blackboard`)
+
+- `SourceRegistry.ensure_builtin_sources() -> BuiltinEnsureResult`
+- `register_builtin_sources()` — идемпотентная регистрация built-ins
+- `create_orchestrator(..., bootstrap_builtin_sources: bool = True, strict_source_bootstrap: bool = True)`
+
+Критичный контракт:
+- built-in sources bootstrap происходит в composition root (`create_orchestrator`),
+  включая self-heal после `SourceRegistry.reset()`.
+- При конфликтах/пропаже критичных built-ins orchestrator в strict-режиме падает сразу.
+
+## 5. Namespace Policy (`src/import_aliases.py`)
+
+- Канонический стиль импортов: только `src.*`.
+- Legacy-импорты (`blackboard`, `config_loader`, `state_machine`, `settings`,
+  `feature_flags`, `context_envelope`, `conditions`) поддерживаются временно через alias-layer.
+- Alias-layer гарантирует одинаковую module identity и выдаёт `DeprecationWarning`.
+
+## 6. Retriever API (`src/knowledge/retriever.py`)
 
 Класс: `CascadeRetriever`
 
@@ -95,7 +124,7 @@ bot = SalesBot(llm=llm, flow_name="spin_selling")
 - `search_with_stats(...) -> tuple[list[SearchResult], dict]`
 - `get_company_info() -> dict`
 
-## 5. CLI точки входа
+## 7. CLI точки входа
 
 В текущем состоянии репозитория надёжный запуск:
 
