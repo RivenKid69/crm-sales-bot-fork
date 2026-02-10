@@ -26,7 +26,6 @@ from src.classifier.refinement_pipeline import (
     LayerPriority,
 )
 
-
 class TestOptionSelectionRefinementLayer:
     """Tests for OptionSelectionRefinementLayer."""
 
@@ -338,7 +337,6 @@ class TestOptionSelectionRefinementLayer:
         ]
         assert refined.intent == "request_brevity"
 
-
 class TestOptionSelectionWithClientAgent:
     """Integration tests for OptionSelectionRefinementLayer with ClientAgent behavior."""
 
@@ -438,7 +436,6 @@ class TestOptionSelectionWithClientAgent:
 
         # Should NOT refine - this is not an option question
         assert refined.intent == "request_brevity"
-
 
 class TestShortAnswerRefinementWithRequestBrevity:
     """

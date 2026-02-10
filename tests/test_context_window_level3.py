@@ -12,14 +12,12 @@
 import pytest
 import sys
 import time
-sys.path.insert(0, "src")
 
-from context_window import (
+from src.context_window import (
     ContextWindow, TurnContext, TurnType,
     EpisodicMemory, Episode, EpisodeType, ClientProfile
 )
-from classifier import HybridClassifier
-
+from src.classifier import HybridClassifier
 
 # =============================================================================
 # ТЕСТЫ ClientProfile
@@ -85,7 +83,6 @@ class TestClientProfile:
         assert data["company_name"] == "Test"
         assert data["company_size"] == 10
         assert "боль" in data["pain_points"]
-
 
 # =============================================================================
 # ТЕСТЫ EpisodicMemory
@@ -280,7 +277,6 @@ class TestEpisodicMemory:
         assert memory.get_first_objection() is None
         assert memory.get_total_objections() == 0
 
-
 # =============================================================================
 # ТЕСТЫ ContextWindow + EpisodicMemory интеграция
 # =============================================================================
@@ -387,7 +383,6 @@ class TestContextWindowLevel3:
         assert window.get_first_objection() is None
         assert window.get_total_turn_count() == 0
 
-
 # =============================================================================
 # ТЕСТЫ Classifier + Level 3 паттерны
 # =============================================================================
@@ -478,7 +473,6 @@ class TestClassifierLevel3Integration:
         assert result["intent"] == "agreement"
         assert result["confidence"] >= 0.85
 
-
 # =============================================================================
 # СРАВНЕНИЕ: Level 1+2 vs Level 1+2+3
 # =============================================================================
@@ -548,7 +542,6 @@ class TestLevel3Comparison:
 
         # С Level 3 уверенность должна быть выше (знаем историю)
         assert result_with["confidence"] >= result_without["confidence"]
-
 
 # =============================================================================
 # РЕАЛИСТИЧНЫЕ СЦЕНАРИИ
@@ -683,7 +676,6 @@ class TestRealisticScenariosLevel3:
         # С breakthrough должны интерпретировать как agreement
         assert result_yes["intent"] == "agreement"
 
-
 # =============================================================================
 # ТЕСТЫ ПРОИЗВОДИТЕЛЬНОСТИ Level 3
 # =============================================================================
@@ -747,7 +739,6 @@ class TestPerformanceLevel3:
         print(f"Context keys: {len(ctx)}")
 
         assert elapsed < 1.0  # 100 генераций < 1 секунды
-
 
 # =============================================================================
 # ЗАПУСК ТЕСТОВ

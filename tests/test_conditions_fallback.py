@@ -78,7 +78,6 @@ from src.conditions.fallback import (
 from src.conditions import ConditionRegistries
 from src.conditions.trace import EvaluationTrace
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -87,7 +86,6 @@ from src.conditions.trace import EvaluationTrace
 def empty_context():
     """Create an empty context for testing."""
     return FallbackContext.create_test_context()
-
 
 @pytest.fixture
 def tier_1_context():
@@ -99,7 +97,6 @@ def tier_1_context():
         consecutive_fallbacks=1
     )
 
-
 @pytest.fixture
 def tier_2_context():
     """Create a context in tier 2."""
@@ -109,7 +106,6 @@ def tier_2_context():
         total_fallbacks=3,
         consecutive_fallbacks=2
     )
-
 
 @pytest.fixture
 def high_frustration_context():
@@ -123,7 +119,6 @@ def high_frustration_context():
         momentum_direction="negative"
     )
 
-
 @pytest.fixture
 def competitor_context():
     """Create a context with competitor mentioned."""
@@ -134,7 +129,6 @@ def competitor_context():
         company_size=10
     )
 
-
 @pytest.fixture
 def pain_context():
     """Create a context with pain category."""
@@ -144,7 +138,6 @@ def pain_context():
         pain_category="losing_clients",
         company_size=15
     )
-
 
 # =============================================================================
 # CONTEXT TESTS
@@ -325,7 +318,6 @@ class TestFallbackContext:
         assert "fallback_tier_2" in repr_str
         assert "total_fallbacks=3" in repr_str
 
-
 class TestFallbackContextFromEnvelope:
     """Tests for creating FallbackContext from ContextEnvelope."""
 
@@ -415,7 +407,6 @@ class TestFallbackContextFromEnvelope:
 
         assert ctx.company_size is None
 
-
 class TestFallbackContextFromHandlerStats:
     """Tests for creating FallbackContext from handler stats."""
 
@@ -482,7 +473,6 @@ class TestFallbackContextFromHandlerStats:
 
         assert ctx.company_size is None
 
-
 class TestConstants:
     """Tests for module constants."""
 
@@ -511,7 +501,6 @@ class TestConstants:
         """Test company size thresholds."""
         assert SMALL_COMPANY_THRESHOLD == 5
         assert LARGE_COMPANY_THRESHOLD == 20
-
 
 # =============================================================================
 # REGISTRY TESTS
@@ -594,7 +583,6 @@ class TestFallbackRegistry:
         assert len(result.passed) == len(fallback_registry)
         assert len(result.failed) == 0
         assert len(result.errors) == 0
-
 
 # =============================================================================
 # TIER CONDITIONS TESTS
@@ -684,7 +672,6 @@ class TestTierConditions:
 
         ctx_not_first = FallbackContext.create_test_context(fallbacks_in_state=1)
         assert first_fallback_in_state(ctx_not_first) is False
-
 
 # =============================================================================
 # DYNAMIC CTA CONDITIONS TESTS
@@ -790,7 +777,6 @@ class TestDynamicCtaConditions:
         ctx_other = FallbackContext.create_test_context(last_intent="greeting")
         assert last_intent_feature_related(ctx_other) is False
 
-
 # =============================================================================
 # CONTEXT CONDITIONS TESTS
 # =============================================================================
@@ -859,7 +845,6 @@ class TestContextConditions:
         # 1 data point
         ctx_1 = FallbackContext.create_test_context(company_size=10)
         assert has_rich_context(ctx_1) is False
-
 
 # =============================================================================
 # FRUSTRATION CONDITIONS TESTS
@@ -958,7 +943,6 @@ class TestFrustrationConditions:
         )
         assert should_offer_graceful_exit(ctx) is False
 
-
 # =============================================================================
 # STATE CONDITIONS TESTS
 # =============================================================================
@@ -1012,7 +996,6 @@ class TestStateConditions:
         """Test is_greeting_state condition."""
         ctx = FallbackContext.create_test_context(state="greeting")
         assert is_greeting_state(ctx) is True
-
 
 # =============================================================================
 # COMBINED CONDITIONS TESTS
@@ -1176,7 +1159,6 @@ class TestCombinedConditions:
         ctx = FallbackContext.create_test_context(frustration_level=2)
         assert should_personalize_response(ctx) is False
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -1262,7 +1244,6 @@ class TestIntegration:
         assert should_personalize_response(ctx) is True
         assert needs_immediate_escalation(ctx) is False
 
-
 # =============================================================================
 # DOCUMENTATION TESTS
 # =============================================================================
@@ -1289,7 +1270,6 @@ class TestDocumentation:
         assert stats["total_categories"] >= 6
         assert "tier" in stats["conditions_by_category"]
         assert "dynamic_cta" in stats["conditions_by_category"]
-
 
 # =============================================================================
 # EDGE CASES TESTS

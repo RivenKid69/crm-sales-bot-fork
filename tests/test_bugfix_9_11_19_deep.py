@@ -18,11 +18,9 @@ import yaml
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-
 # =============================================================================
 # T1: Knowledge Source Unit Tests
 # =============================================================================
-
 
 class TestBug9KnowledgeSource:
     """T1: Product overview loads from real KB and provides diversity."""
@@ -176,11 +174,9 @@ class TestBug9KnowledgeSource:
         assert gen._product_overview == []
         assert gen.get_facts() == ""
 
-
 # =============================================================================
 # T2: FallbackHandler KB Integration
 # =============================================================================
-
 
 class TestBug9FallbackHandler:
     """T2: FallbackHandler receives and uses product_overviews."""
@@ -267,11 +263,9 @@ class TestBug9FallbackHandler:
             assert "question" in config[key], f"Missing 'question' in {key}"
             assert len(config[key]["question"]) > 0, f"Empty question in {key}"
 
-
 # =============================================================================
 # T4: CTA Backoff Detection Unit Tests
 # =============================================================================
-
 
 class TestBug11BackoffDetection:
     """T4: Backoff language detection and action gates."""
@@ -373,11 +367,9 @@ class TestBug11BackoffDetection:
         assert should_add
         assert reason is None
 
-
 # =============================================================================
 # T6: StallGuard Dual Proposal Unit Tests
 # =============================================================================
-
 
 class TestBug19StallGuardDualProposal:
     """T6: StallGuard contribute() calls both propose_action AND propose_transition."""
@@ -600,11 +592,9 @@ class TestBug19StallGuardDualProposal:
         decision = resolver.resolve(proposals, current_state="presentation")
         assert decision.next_state == "close"  # NOT "presentation" self-loop
 
-
 # =============================================================================
 # T7: DialoguePolicy Protection
 # =============================================================================
-
 
 class TestBug19DialoguePolicyProtection:
     """T7: maybe_override returns None for stall_guard actions."""
@@ -694,11 +684,9 @@ class TestBug19DialoguePolicyProtection:
                 result = policy.maybe_override(sm_result, envelope)
             assert result is None, f"StallGuard action '{sg_action}' should be protected"
 
-
 # =============================================================================
 # T10: Feature Flag
 # =============================================================================
-
 
 class TestBug19FeatureFlag:
     """T10: stall_guard_dual_proposal feature flag exists and works."""
@@ -716,11 +704,9 @@ class TestBug19FeatureFlag:
         assert isinstance(ff.stall_guard_dual_proposal, bool)
         assert ff.stall_guard_dual_proposal is True
 
-
 # =============================================================================
 # T12: Regression Guards
 # =============================================================================
-
 
 class TestRegressionGuards:
     """T12: Structural invariants and no hardcoded knowledge remains."""

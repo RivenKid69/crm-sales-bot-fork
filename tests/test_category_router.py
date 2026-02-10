@@ -14,10 +14,8 @@ import sys
 import os
 
 # Добавляем путь к src для импортов
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.category_router import CategoryRouter
-
+from src.knowledge.category_router import CategoryRouter
 
 # =============================================================================
 # Mock LLM для тестирования
@@ -36,13 +34,11 @@ class MockLLM:
         self.call_count += 1
         return self.response
 
-
 class ErrorLLM:
     """LLM который выбрасывает исключение."""
 
     def generate(self, prompt: str) -> str:
         raise RuntimeError("LLM connection error")
-
 
 # =============================================================================
 # Тесты парсинга JSON
@@ -107,7 +103,6 @@ class TestJsonParsing:
 
         assert result == ["faq", "features"]  # fallback
 
-
 # =============================================================================
 # Тесты валидации категорий
 # =============================================================================
@@ -155,7 +150,6 @@ class TestCategoryValidation:
         assert categories == router.CATEGORIES
         assert categories is not router.CATEGORIES  # Копия
 
-
 # =============================================================================
 # Тесты top_k
 # =============================================================================
@@ -187,7 +181,6 @@ class TestTopK:
 
         assert len(result) == 1
         assert result == ["pricing"]
-
 
 # =============================================================================
 # Тесты fallback
@@ -228,7 +221,6 @@ class TestFallback:
         with pytest.raises(ValueError, match="Invalid fallback category"):
             CategoryRouter(llm, fallback_categories=["invalid_category"])
 
-
 # =============================================================================
 # Тесты интеграции с LLM
 # =============================================================================
@@ -259,7 +251,6 @@ class TestLLMIntegration:
         router.route("Цена?")
 
         assert llm.call_count == 1
-
 
 # =============================================================================
 # Тесты edge cases
@@ -318,7 +309,6 @@ class TestEdgeCases:
 
         assert result == ["pricing", "products"]
 
-
 # =============================================================================
 # Тесты реальных сценариев
 # =============================================================================
@@ -355,7 +345,6 @@ class TestRealScenarios:
         assert "products" in result
         assert "features" in result
 
-
 # =============================================================================
 # Тесты Structured Output (vLLM)
 # =============================================================================
@@ -364,7 +353,7 @@ class MockStructuredLLM:
     """Mock LLM с поддержкой structured output."""
 
     def __init__(self, categories=None, return_none=False):
-        from classifier.llm import CategoryResult
+        from src.classifier.llm import CategoryResult
         self.categories = categories or ["pricing", "products"]
         self.return_none = return_none
         self.last_prompt = None
@@ -380,7 +369,7 @@ class MockStructuredLLM:
 
     def generate_structured(self, prompt: str, schema):
         """Structured output метод."""
-        from classifier.llm import CategoryResult
+        from src.classifier.llm import CategoryResult
         self.last_prompt = prompt
         self.last_schema = schema
         self.call_count += 1
@@ -389,7 +378,6 @@ class MockStructuredLLM:
             return None
 
         return CategoryResult(categories=self.categories)
-
 
 class TestStructuredOutput:
     """Тесты для structured output (vLLM + Outlines)."""
@@ -403,7 +391,7 @@ class TestStructuredOutput:
         assert result == ["pricing", "support"]
         assert llm.call_count == 1
         # Проверяем что вызван structured метод
-        from classifier.llm import CategoryResult
+        from src.classifier.llm import CategoryResult
         assert llm.last_schema == CategoryResult
 
     def test_structured_respects_top_k(self):
@@ -444,7 +432,7 @@ class TestStructuredOutput:
 
     def test_category_result_schema_valid(self):
         """CategoryResult schema валидирует категории."""
-        from classifier.llm import CategoryResult
+        from src.classifier.llm import CategoryResult
 
         # Валидные категории
         result = CategoryResult(categories=["pricing", "support"])
@@ -456,7 +444,7 @@ class TestStructuredOutput:
 
     def test_category_result_min_max_length(self):
         """CategoryResult требует 1-5 категорий."""
-        from classifier.llm import CategoryResult
+        from src.classifier.llm import CategoryResult
 
         # Пустой список - ошибка
         with pytest.raises(Exception):
@@ -465,7 +453,6 @@ class TestStructuredOutput:
         # 5 категорий - OK
         result = CategoryResult(categories=["pricing", "support", "faq", "products", "features"])
         assert len(result.categories) == 5
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

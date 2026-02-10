@@ -25,8 +25,6 @@ from typing import Dict, Any, List, Optional
 from unittest.mock import Mock, MagicMock, patch
 from dataclasses import dataclass, field
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from src.blackboard.orchestrator import DialogueOrchestrator
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.models import ResolvedDecision
@@ -39,7 +37,6 @@ from src.blackboard.sources.objection_guard import ObjectionGuardSource
 from src.blackboard.sources.intent_processor import IntentProcessorSource
 from src.blackboard.sources.transition_resolver import TransitionResolverSource
 from src.blackboard.sources.escalation import EscalationSource
-
 
 # =============================================================================
 # Scenario Infrastructure
@@ -56,7 +53,6 @@ class DialogueTurn:
     pre_collected_data: Optional[Dict[str, Any]] = None
     description: str = ""
 
-
 @dataclass
 class DialogueScenario:
     """Complete dialogue scenario for testing."""
@@ -68,7 +64,6 @@ class DialogueScenario:
     expected_final_state: str
     expected_final_is_final: bool = False
     persona: str = "default"
-
 
 class ScenarioTestRunner:
     """Runs dialogue scenarios and validates results."""
@@ -154,7 +149,6 @@ class ScenarioTestRunner:
             "final_data": dict(self.sm.collected_data),
         }
 
-
 # =============================================================================
 # Test Infrastructure
 # =============================================================================
@@ -164,7 +158,6 @@ class IntentRecord:
     """Record of an intent for tracking."""
     intent: str
     state: str
-
 
 class ScenarioStateMachine:
     """StateMachine implementation for scenario testing."""
@@ -324,7 +317,6 @@ class ScenarioStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class ScenarioFlowConfig:
     """FlowConfig implementation for scenario testing."""
@@ -491,7 +483,6 @@ class ScenarioFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
 @pytest.fixture
 def create_scenario_orchestrator():
     """Factory to create orchestrator for scenario testing."""
@@ -523,7 +514,6 @@ def create_scenario_orchestrator():
         return orchestrator
 
     return _create
-
 
 # =============================================================================
 # 1. PERSONA-BASED SCENARIOS
@@ -671,7 +661,6 @@ class TestPersonaScenarios:
         d2 = orchestrator.process_turn(intent="price_question", extracted_data={})
         assert d2.action == "answer_with_pricing"
 
-
 # =============================================================================
 # 2. FLOW-SPECIFIC SCENARIOS
 # =============================================================================
@@ -735,7 +724,6 @@ class TestFlowScenarios:
         sm._collected_data["pain_point"] = "test_pain"
         d2 = orchestrator.process_turn(intent="problem_stated", extracted_data={})
         assert sm.state == "spin_implication"
-
 
 # =============================================================================
 # 3. STRESS SCENARIOS
@@ -836,7 +824,6 @@ class TestStressScenarios:
         # Should not crash, should have some decision
         assert decision is not None
         assert decision.action is not None or decision.next_state is not None
-
 
 # =============================================================================
 # 4. REGRESSION SCENARIOS
@@ -944,7 +931,6 @@ class TestRegressionScenarios:
             "Busy persona should hit limit at 2 consecutive objections"
         assert decision.next_state == "soft_close"
 
-
 # =============================================================================
 # 5. DATA FLOW SCENARIOS
 # =============================================================================
@@ -1007,7 +993,6 @@ class TestDataFlowScenarios:
         assert sm.collected_data.get("initial_field") == "initial_value"
         assert sm.collected_data.get("company_size") == "50"
         assert sm.collected_data.get("pain_point") == "slow_growth"
-
 
 # =============================================================================
 # 6. COMBINED SCENARIOS
@@ -1103,7 +1088,6 @@ class TestCombinedScenarios:
         d3 = orchestrator.process_turn(intent="escalation_request", extracted_data={})
         # Should handle escalation (either through action or transition)
         assert d3.action is not None or d3.next_state == "human_handoff"
-
 
 # =============================================================================
 # Run Tests

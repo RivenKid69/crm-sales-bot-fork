@@ -16,7 +16,6 @@ import pytest
 from typing import Dict, Any, Optional, List
 from unittest.mock import Mock, MagicMock, patch
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -28,7 +27,6 @@ def mock_llm():
     llm.generate = Mock(return_value="Test response from LLM")
     llm.chat = Mock(return_value={"content": "Test response"})
     return llm
-
 
 @pytest.fixture
 def sales_bot(mock_llm):
@@ -54,7 +52,6 @@ def sales_bot(mock_llm):
 
     # Cleanup overrides after test
     flags.clear_all_overrides()
-
 
 # =============================================================================
 # Integration Tests - Orchestrator Initialization
@@ -92,7 +89,6 @@ class TestOrchestratorInitialization:
                 if name in source_names:
                     assert True  # At least one expected source is present
                     break
-
 
 # =============================================================================
 # Compatibility Tests - sm_result Format
@@ -247,7 +243,6 @@ class TestSmResultCompatibility:
         assert "reason_codes" in sm_result
         assert "price_question_detected" in sm_result["reason_codes"]
 
-
 # =============================================================================
 # Scenario Tests - Basic Dialogue Flow
 # =============================================================================
@@ -293,7 +288,6 @@ class TestBasicDialogueFlow:
         assert "action" in result
         assert result["action"] is not None
 
-
 # =============================================================================
 # Scenario Tests - Price Question (Bug Fix Verification)
 # =============================================================================
@@ -328,7 +322,6 @@ class TestPriceQuestionHandling:
 
         assert "response" in result
 
-
 # =============================================================================
 # Scenario Tests - Objection Handling
 # =============================================================================
@@ -358,7 +351,6 @@ class TestObjectionHandling:
         # Should still get responses
         assert "response" in result
 
-
 # =============================================================================
 # Scenario Tests - Data Collection
 # =============================================================================
@@ -377,7 +369,6 @@ class TestDataCollection:
         collected = sales_bot.state_machine.collected_data
         # Note: actual extraction depends on classifier
         assert collected is not None
-
 
 # =============================================================================
 # State Machine Deprecation Tests
@@ -411,7 +402,6 @@ class TestStateMachineDeprecation:
             assert len(w) >= 1
             assert issubclass(w[0].category, DeprecationWarning)
 
-
 # =============================================================================
 # Reset and Session Tests
 # =============================================================================
@@ -444,7 +434,6 @@ class TestSessionManagement:
         new_id = sales_bot.conversation_id
 
         assert old_id != new_id
-
 
 # =============================================================================
 # Orchestrator Process Turn Tests

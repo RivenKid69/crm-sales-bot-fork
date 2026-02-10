@@ -15,17 +15,14 @@ from codebase_analyzer.analyzer.models import (
     ModuleSummary,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
-
 
 @pytest.fixture
 def runner():
     """Create a CLI test runner."""
     return CliRunner()
-
 
 @pytest.fixture
 def temp_index_dir(tmp_path):
@@ -63,7 +60,6 @@ def temp_index_dir(tmp_path):
     (index_dir / "graph.json").write_text(json.dumps(graph_data))
 
     return index_dir
-
 
 @pytest.fixture
 def temp_analysis_file(tmp_path):
@@ -105,7 +101,6 @@ def temp_analysis_file(tmp_path):
 
     return analysis_file
 
-
 @pytest.fixture
 def temp_output_dir(tmp_path):
     """Create a temporary output directory."""
@@ -113,11 +108,9 @@ def temp_output_dir(tmp_path):
     output_dir.mkdir()
     return output_dir
 
-
 # =============================================================================
 # Version and Help Tests
 # =============================================================================
-
 
 class TestVersionAndHelp:
     """Tests for version and help commands."""
@@ -146,11 +139,9 @@ class TestVersionAndHelp:
         assert result.exit_code == 0
         assert "analysis" in result.stdout.lower()
 
-
 # =============================================================================
 # Stats Command Tests
 # =============================================================================
-
 
 class TestStatsCommand:
     """Tests for the stats command."""
@@ -168,11 +159,9 @@ class TestStatsCommand:
         result = runner.invoke(app, ["stats", str(missing_dir)])
         assert result.exit_code == 1
 
-
 # =============================================================================
 # Index Command Tests
 # =============================================================================
-
 
 class TestIndexCommand:
     """Tests for the index command."""
@@ -215,11 +204,9 @@ class TestIndexCommand:
         # Should complete (though actual indexing is mocked)
         mock_create_indexer.assert_called_once()
 
-
 # =============================================================================
 # Generate Command Tests
 # =============================================================================
-
 
 class TestGenerateCommand:
     """Tests for the generate command."""
@@ -285,11 +272,9 @@ class TestGenerateCommand:
         # Typer should fail because file doesn't exist
         assert result.exit_code != 0
 
-
 # =============================================================================
 # Config Command Tests
 # =============================================================================
-
 
 class TestConfigCommand:
     """Tests for the config command."""
@@ -306,11 +291,9 @@ class TestConfigCommand:
         assert result.exit_code == 0
         assert config_file.exists()
 
-
 # =============================================================================
 # Analyze Command Tests
 # =============================================================================
-
 
 class TestAnalyzeCommand:
     """Tests for the analyze command."""
@@ -374,11 +357,9 @@ class TestAnalyzeCommand:
         assert result.exit_code == 1
         assert "Failed to load index" in result.stdout
 
-
 # =============================================================================
 # Integration Tests
 # =============================================================================
-
 
 class TestCLIIntegration:
     """Integration tests for CLI workflow."""
@@ -419,11 +400,9 @@ class TestCLIIntegration:
         )
         assert result.exit_code == 0
 
-
 # =============================================================================
 # Error Handling Tests
 # =============================================================================
-
 
 class TestErrorHandling:
     """Tests for error handling."""

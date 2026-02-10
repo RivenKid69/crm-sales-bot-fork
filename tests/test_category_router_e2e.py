@@ -14,11 +14,9 @@ import time
 import requests
 
 # Добавляем путь к src для импортов
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.category_router import CategoryRouter
-from knowledge.retriever import CascadeRetriever, reset_retriever
-
+from src.knowledge.category_router import CategoryRouter
+from src.knowledge.retriever import CascadeRetriever, reset_retriever
 
 # =============================================================================
 # Проверка доступности Ollama
@@ -32,7 +30,6 @@ def is_ollama_available():
     except:
         return False
 
-
 def get_available_models():
     """Получить список доступных моделей."""
     try:
@@ -43,7 +40,6 @@ def get_available_models():
     except:
         pass
     return []
-
 
 # =============================================================================
 # Реальный LLM клиент
@@ -77,7 +73,6 @@ class OllamaLLM:
             return response.json().get("response", "")
         else:
             raise RuntimeError(f"Ollama error: {response.status_code}")
-
 
 # =============================================================================
 # E2E тесты
@@ -284,7 +279,6 @@ class TestCategoryRouterE2E:
         # Среднее должно быть меньше 1 секунды
         assert avg_time < 1000, f"Average latency {avg_time:.0f}ms too high"
 
-
 @pytest.mark.skipif(
     not is_ollama_available(),
     reason="Ollama not available"
@@ -345,7 +339,6 @@ class TestCategoryRouterEdgeCasesE2E:
         for cat in categories:
             assert cat in router.CATEGORIES, \
                 f"Invalid category '{cat}' returned for typo query"
-
 
 if __name__ == "__main__":
     if is_ollama_available():

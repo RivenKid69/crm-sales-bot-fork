@@ -7,11 +7,9 @@ Tests AND/OR/NOT parsing and evaluation.
 import pytest
 from unittest.mock import MagicMock, patch
 
-
 class MockContext:
     """Mock context for testing."""
     pass
-
 
 class MockRegistry:
     """Mock registry for testing."""
@@ -28,7 +26,6 @@ class MockRegistry:
             from src.conditions.registry import ConditionNotFoundError
             raise ConditionNotFoundError(name, self.name)
         return self._conditions[name]
-
 
 class TestConditionExpressionParser:
     """Tests for ConditionExpressionParser."""
@@ -349,7 +346,6 @@ class TestConditionExpressionParser:
 
         assert "invalid" in errors
         assert "valid" not in errors
-
 
 class TestShortCircuitEvaluation:
     """Tests for short-circuit evaluation."""

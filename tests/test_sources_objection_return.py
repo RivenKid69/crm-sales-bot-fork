@@ -27,7 +27,6 @@ from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
 from src.yaml_config.constants import POSITIVE_INTENTS, PRICE_RELATED_INTENTS, OBJECTION_RETURN_TRIGGERS
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -68,7 +67,6 @@ class MockStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
@@ -118,7 +116,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return 0
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -189,7 +186,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
 def create_blackboard(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -220,7 +216,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for ObjectionReturnSource Initialization
@@ -273,7 +268,6 @@ class TestObjectionReturnSourceInit:
         # Verify typos are gone
         assert "question_pricing" not in source.return_intents
         assert "question_integration" not in source.return_intents
-
 
 # =============================================================================
 # Tests for ObjectionReturnSource should_contribute
@@ -349,7 +343,6 @@ class TestObjectionReturnSourceShouldContribute:
                 state_before_objection="bant_budget"
             )
             assert source.should_contribute(bb) is True, f"Failed for intent: {intent}"
-
 
 # =============================================================================
 # Tests for ObjectionReturnSource contribute
@@ -431,7 +424,6 @@ class TestObjectionReturnSourceContribute:
             proposals = bb.get_transition_proposals()
             assert len(proposals) == 1
             assert proposals[0].value == saved_state, f"Failed for saved_state: {saved_state}"
-
 
 # =============================================================================
 # Tests for ObjectionReturnSource Metadata
@@ -533,7 +525,6 @@ class TestObjectionReturnSourceMetadata:
         proposals = bb.get_transition_proposals()
         assert proposals[0].reason_code == "objection_return_to_phase"
 
-
 # =============================================================================
 # Tests for ObjectionReturnSource Enable/Disable
 # =============================================================================
@@ -580,7 +571,6 @@ class TestObjectionReturnSourceEnableDisable:
         source.contribute(bb)
 
         assert len(bb.get_transition_proposals()) == 0
-
 
 # =============================================================================
 # Tests for Phase Preservation Scenarios
@@ -660,7 +650,6 @@ class TestPhasePreservationScenarios:
         assert len(proposals) == 1
         assert proposals[0].value == "bant_budget"
 
-
 # =============================================================================
 # Tests for Priority-Based Conflict Resolution
 # =============================================================================
@@ -706,7 +695,6 @@ class TestPriorityBasedResolution:
         # HIGH = 1, NORMAL = 2, so HIGH wins
         assert proposals[0].priority == Priority.HIGH
         assert Priority.HIGH < Priority.NORMAL  # Lower value = higher priority
-
 
 # =============================================================================
 # Tests for Edge Cases
@@ -774,7 +762,6 @@ class TestEdgeCases:
         for p in proposals:
             assert p.value == "bant_budget"
 
-
 # =============================================================================
 # Tests for Source Name
 # =============================================================================
@@ -809,7 +796,6 @@ class TestSourceName:
 
         proposals = bb.get_transition_proposals()
         assert proposals[0].source_name == "CustomReturn"
-
 
 # =============================================================================
 # Tests for Non-Phase State Handling (37% Zero Coverage Fix)
@@ -1073,7 +1059,6 @@ class TestNonPhaseStateHandling:
         assert proposals[0].value == "bant_budget"
         assert proposals[0].priority == Priority.NORMAL  # FIX: NORMAL to win
 
-
 # =============================================================================
 # Tests for Phase Transition with Custom FlowConfig
 # =============================================================================
@@ -1163,7 +1148,6 @@ class TestPhaseTransitionWithCustomFlowConfig:
             assert len(proposals) == 1
             assert proposals[0].value == "qualification"  # Fallback to entry_state
             assert proposals[0].priority == Priority.NORMAL  # NORMAL priority (FIX: was LOW)
-
 
 # =============================================================================
 # Tests for Objection Loop Escape (Zero Phase Coverage Fix)
@@ -1391,7 +1375,6 @@ class TestObjectionLoopEscape:
 
         # Default is 3
         assert OBJECTION_LOOP_ESCAPE_THRESHOLD == 3
-
 
 # =============================================================================
 # Tests for Total-Based Objection Escape (Meta-Intent Streak Breaking Fix)
@@ -1656,7 +1639,6 @@ class TestTotalBasedObjectionEscape:
 
         proposals = bb.get_transition_proposals()
         assert len(proposals) == 0  # No fallback available
-
 
 # =============================================================================
 # Tests for Price Question Return (SSOT-based)

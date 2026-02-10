@@ -9,7 +9,6 @@ from src.bot import SalesBot
 from src.session_manager import SessionManager
 from src.snapshot_buffer import LocalSnapshotBuffer
 
-
 class TestCircularFlowManagerSnapshot:
     def test_roundtrip(self):
         cfm = CircularFlowManager()
@@ -21,7 +20,6 @@ class TestCircularFlowManagerSnapshot:
 
         assert restored.goback_count == cfm.goback_count
         assert restored.goback_history == cfm.goback_history
-
 
 class TestStateMachineSnapshot:
     def test_roundtrip(self):
@@ -37,7 +35,6 @@ class TestStateMachineSnapshot:
         assert restored.current_phase == "spin"
         assert restored.collected_data == {"company_size": 10}
 
-
 class TestConversationGuardSnapshot:
     def test_roundtrip_with_elapsed_time(self):
         guard = ConversationGuard()
@@ -52,7 +49,6 @@ class TestConversationGuardSnapshot:
         assert restored.turn_count == 2
         assert len(restored.state_history) == 2
 
-
 class TestLeadScorerSnapshot:
     def test_roundtrip_with_signals(self):
         scorer = LeadScorer()
@@ -64,7 +60,6 @@ class TestLeadScorerSnapshot:
 
         assert restored.current_score == scorer.current_score
         assert len(restored.signals_history) == len(scorer.signals_history)
-
 
 class TestSalesBotSnapshot:
     def test_full_roundtrip(self, mock_llm):
@@ -82,6 +77,7 @@ class TestSalesBotSnapshot:
         assert restored.conversation_id == "test-123"
         assert restored.client_id == "client-1"
         assert restored._flow.name == "bant"
+        assert restored._config.flow_name == "bant"
         assert restored.state_machine.state == "spin_problem"
         assert restored.state_machine.collected_data == {"company_size": 50}
         assert restored.guard.turn_count == bot.guard.turn_count
@@ -117,7 +113,6 @@ class TestSalesBotSnapshot:
         snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
         assert "history_compact" in snapshot
         assert snapshot["history"] == []
-
 
 class TestSerializationContract:
     """
@@ -189,7 +184,6 @@ class TestSerializationContract:
                 f"expected {getattr(sm, field)!r}, got {getattr(restored, field)!r}"
             )
 
-
 class TestStateMachineSnapshotRoundtrip:
     """Additional roundtrip tests for newly serialized fields."""
 
@@ -230,7 +224,6 @@ class TestStateMachineSnapshotRoundtrip:
         assert restored._state_before_objection is None
         assert restored.state == "greeting"
 
-
 class TestSalesBotSnapshotSync:
     """Tests for bot.last_action sync with state_machine.last_action."""
 
@@ -257,7 +250,6 @@ class TestSalesBotSnapshotSync:
 
         assert restored.state_machine._state_before_objection == "spin_problem"
         assert restored.state_machine.state == "handle_objection"
-
 
 class TestSessionManager:
     def test_cache_hit(self, mock_llm, tmp_path):

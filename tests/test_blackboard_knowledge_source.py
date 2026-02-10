@@ -13,7 +13,6 @@ These tests verify:
 import pytest
 from unittest.mock import Mock, MagicMock
 
-
 class TestKnowledgeSourceBase:
     """Test KnowledgeSource base class functionality."""
 
@@ -177,7 +176,6 @@ class TestKnowledgeSourceBase:
 
         # Should not raise - just logs
         source.contribute(mock_bb)
-
 
 class TestKnowledgeSourceIntegration:
     """Integration tests for KnowledgeSource with mocked Blackboard."""

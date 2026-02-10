@@ -102,7 +102,7 @@ def test_fallback_selects_best_among_all_histories():
 
 if __name__ == "__main__":
     try:
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("response_diversity", False)
         flags.set_override("response_deduplication", True)
     except ImportError:

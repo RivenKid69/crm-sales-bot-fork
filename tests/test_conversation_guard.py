@@ -18,11 +18,7 @@ from pathlib import Path
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from conversation_guard import ConversationGuard, GuardConfig, GuardState
-
+from src.conversation_guard import ConversationGuard, GuardConfig, GuardState
 
 class TestGuardConfig:
     """Tests for GuardConfig dataclass"""
@@ -60,7 +56,6 @@ class TestGuardConfig:
         assert config.max_turns == 10
         assert config.max_phase_attempts == 2
         assert config.timeout_seconds == 60
-
 
 class TestConversationGuardBasic:
     """Basic tests for ConversationGuard"""
@@ -125,7 +120,6 @@ class TestConversationGuardBasic:
         assert guard.phase_attempts["spin_situation"] == 3
         assert guard.phase_attempts["spin_problem"] == 1
 
-
 class TestMessageLoopDetection:
     """Tests for message loop detection"""
 
@@ -169,7 +163,6 @@ class TestMessageLoopDetection:
 
         assert intervention is None
 
-
 class TestStateLoopDetection:
     """Tests for state loop detection"""
 
@@ -199,7 +192,6 @@ class TestStateLoopDetection:
 
         assert intervention is None  # Count reset
 
-
 class TestTimeoutDetection:
     """Tests for timeout detection"""
 
@@ -226,7 +218,6 @@ class TestTimeoutDetection:
         assert can_continue is True
         assert intervention is None
 
-
 class TestMaxTurnsLimit:
     """Tests for max turns limit"""
 
@@ -251,7 +242,6 @@ class TestMaxTurnsLimit:
         for i in range(5):
             can_continue, intervention = guard.check(f"state{i}", f"msg{i}", {})
             assert can_continue is True
-
 
 class TestPhaseExhaustion:
     """Tests for phase exhaustion detection.
@@ -301,7 +291,6 @@ class TestPhaseExhaustion:
 
         # With check 6 removed, no phase exhaustion intervention from guard
         assert intervention is None or intervention != "fallback_tier_2"
-
 
 class TestFrustrationHandling:
     """Tests for frustration level handling"""
@@ -353,7 +342,6 @@ class TestFrustrationHandling:
         guard.set_frustration_level(15)
         assert guard._state.frustration_level == 10
 
-
 class TestProgressTracking:
     """Tests for progress tracking"""
 
@@ -403,7 +391,6 @@ class TestProgressTracking:
 
         assert intervention is None  # Progress detected
 
-
 class TestGetStats:
     """Tests for statistics retrieval"""
 
@@ -434,7 +421,6 @@ class TestGetStats:
         assert stats["collected_data_count"] == 1
         assert "elapsed_seconds" in stats
         assert "phase_attempts" in stats
-
 
 class TestInterventionPriority:
     """Tests for intervention priority order"""
@@ -480,7 +466,6 @@ class TestInterventionPriority:
         assert can_continue is False
         assert intervention == "soft_close"
 
-
 class TestEdgeCases:
     """Edge case tests"""
 
@@ -518,7 +503,6 @@ class TestEdgeCases:
         can_continue, intervention = guard.check("state", unicode_message, {})
         assert can_continue is True
 
-
 class TestMultipleGuardInstances:
     """Tests for multiple guard instances"""
 
@@ -539,7 +523,6 @@ class TestMultipleGuardInstances:
         guard2 = ConversationGuard(GuardConfig.relaxed())
 
         assert guard1.config.max_turns < guard2.config.max_turns
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

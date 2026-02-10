@@ -15,10 +15,8 @@ import pytest
 from src.constants.intent_labels import INTENT_LABELS
 from src.disambiguation_ui import DisambiguationUI
 
-
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
-
 
 # =============================================================================
 # TEST: No local INTENT_LABELS definitions
@@ -45,13 +43,11 @@ class TestNoLocalIntentLabels:
             f"(src/constants/intent_labels.py), but found in: {violations}"
         )
 
-
 # =============================================================================
 # TEST: Label quality
 # =============================================================================
 
 SNAKE_CASE_RE = re.compile(r"^[a-z][a-z0-9]*(_[a-z0-9]+)+$")
-
 
 class TestLabelQuality:
     """Ensure all SSoT labels are human-readable Russian."""
@@ -86,7 +82,6 @@ class TestLabelQuality:
         assert snake_case_labels == {}, (
             f"Labels must not be raw snake_case: {snake_case_labels}"
         )
-
 
 # =============================================================================
 # TEST: DisambiguationUI resolves labels via SSoT
@@ -143,7 +138,6 @@ class TestUIResolvesLabels:
 
         assert result == "Новая функция"
 
-
 # =============================================================================
 # TEST: Source file imports
 # =============================================================================
@@ -172,7 +166,6 @@ class TestSourceImports:
             "confidence_router.py must import INTENT_LABELS from "
             "src.constants.intent_labels"
         )
-
 
 # =============================================================================
 # TEST: Confirmed leak cases from bug report

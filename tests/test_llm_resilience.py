@@ -18,11 +18,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import requests
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from llm import OllamaLLM, CircuitBreakerState, CircuitBreakerStatus, LLMStats
-
+from src.llm import OllamaLLM, CircuitBreakerState, CircuitBreakerStatus, LLMStats
 
 class TestLLMStats:
     """Tests for LLMStats dataclass"""
@@ -58,7 +54,6 @@ class TestLLMStats:
         stats = LLMStats(successful_requests=5, total_response_time_ms=500.0)
         assert stats.average_response_time_ms == 100.0
 
-
 class TestCircuitBreakerState:
     """Tests for CircuitBreakerState dataclass"""
 
@@ -68,7 +63,6 @@ class TestCircuitBreakerState:
         assert state.failures == 0
         assert state.is_open is False
         assert state.open_until == 0.0
-
 
 class TestOllamaLLMBasic:
     """Basic tests for OllamaLLM"""
@@ -110,7 +104,6 @@ class TestOllamaLLMBasic:
 
         assert llm._stats.total_requests == 0
         assert llm._stats.failed_requests == 0
-
 
 class TestFallbackResponses:
     """Tests for fallback response handling"""
@@ -157,7 +150,6 @@ class TestFallbackResponses:
         for state, message in llm.FALLBACK_RESPONSES.items():
             has_russian = any(char in message.lower() for char in russian_indicators)
             assert has_russian, f"Message for {state} might not be Russian"
-
 
 class TestRetryMechanism:
     """Tests for retry with exponential backoff"""
@@ -232,7 +224,6 @@ class TestRetryMechanism:
 
             response = llm.generate("test", state="greeting")
             assert response  # Should return fallback
-
 
 class TestCircuitBreaker:
     """Tests for circuit breaker pattern"""
@@ -334,7 +325,6 @@ class TestCircuitBreaker:
 
         assert llm.is_circuit_open is False
 
-
 class TestStatistics:
     """Tests for statistics tracking"""
 
@@ -404,7 +394,6 @@ class TestStatistics:
         assert stats["average_response_time_ms"] == 125.0  # 1000/8
         assert "circuit_breaker_open" in stats
 
-
 class TestGenerateOptions:
     """Tests for generate method options"""
 
@@ -441,7 +430,6 @@ class TestGenerateOptions:
         assert r1 != r2
         assert r1 == llm.FALLBACK_RESPONSES["greeting"]
         assert r2 == llm.FALLBACK_RESPONSES["presentation"]
-
 
 class TestHealthCheck:
     """Tests for health check functionality"""
@@ -497,7 +485,6 @@ class TestHealthCheck:
 
         assert llm.health_check() is False
 
-
 class TestExponentialBackoff:
     """Tests for exponential backoff timing"""
 
@@ -546,7 +533,6 @@ class TestExponentialBackoff:
             delay = call[0][0]
             assert delay <= llm.MAX_DELAY
 
-
 class TestMultipleInstances:
     """Tests for multiple LLM client instances"""
 
@@ -571,7 +557,6 @@ class TestMultipleInstances:
 
         assert llm2._circuit_breaker.is_open is False
         assert llm2._circuit_breaker.failures == 0
-
 
 class TestEdgeCases:
     """Edge case tests"""
@@ -614,7 +599,6 @@ class TestEdgeCases:
         assert "quotes" in response
         assert "\n" in response
 
-
 class TestGenerateStructured:
     """Тесты метода generate_structured()."""
 
@@ -627,7 +611,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_success(self):
         """Успешная генерация structured output."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=False)
 
@@ -648,7 +632,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_circuit_breaker_open(self):
         """Circuit breaker блокирует запрос."""
-        from llm import OllamaClient, CircuitBreakerStatus
+        from src.llm import OllamaClient, CircuitBreakerStatus
 
         client = OllamaClient()
         # Имитируем открытый circuit breaker
@@ -662,7 +646,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_retry_on_timeout(self):
         """Retry при timeout."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=True)
         client.MAX_RETRIES = 2
@@ -690,7 +674,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_all_retries_failed(self):
         """Все retry провалились — возвращает None."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=True, enable_circuit_breaker=True)
         client.MAX_RETRIES = 2
@@ -705,7 +689,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_circuit_breaker_trips(self):
         """Circuit breaker открывается после threshold ошибок."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=False)
         client.CIRCUIT_BREAKER_THRESHOLD = 2
@@ -719,7 +703,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_stats_tracking(self):
         """Проверка корректного трекинга статистики."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=False)
 
@@ -740,7 +724,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_pydantic_validation_error(self):
         """Ошибка валидации Pydantic."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=False, enable_circuit_breaker=False)
 
@@ -758,7 +742,7 @@ class TestGenerateStructured:
 
     def test_generate_structured_empty_message(self):
         """Обработка пустого message."""
-        from llm import OllamaClient
+        from src.llm import OllamaClient
 
         client = OllamaClient(enable_retry=False, enable_circuit_breaker=False)
 
@@ -771,25 +755,24 @@ class TestGenerateStructured:
 
         assert result is None
 
-
 class TestOllamaClientAliases:
     """Тесты алиасов для обратной совместимости."""
 
     def test_vllm_client_is_ollama_client(self):
         """VLLMClient является алиасом OllamaClient."""
-        from llm import OllamaClient, VLLMClient
+        from src.llm import OllamaClient, VLLMClient
 
         assert VLLMClient is OllamaClient
 
     def test_ollama_llm_is_ollama_client(self):
         """OllamaLLM является алиасом OllamaClient."""
-        from llm import OllamaClient, OllamaLLM
+        from src.llm import OllamaClient, OllamaLLM
 
         assert OllamaLLM is OllamaClient
 
     def test_backwards_compatibility_vllm(self):
         """Старый код с VLLMClient продолжает работать."""
-        from llm import VLLMClient
+        from src.llm import VLLMClient
 
         llm = VLLMClient()
         assert hasattr(llm, 'generate')
@@ -800,7 +783,7 @@ class TestOllamaClientAliases:
 
     def test_backwards_compatibility_ollama_llm(self):
         """Старый код с OllamaLLM продолжает работать."""
-        from llm import OllamaLLM
+        from src.llm import OllamaLLM
 
         llm = OllamaLLM()
         assert hasattr(llm, 'generate')
@@ -808,7 +791,6 @@ class TestOllamaClientAliases:
         assert hasattr(llm, '_call_llm')
         assert hasattr(llm, 'health_check')
         assert hasattr(llm, 'get_stats_dict')
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

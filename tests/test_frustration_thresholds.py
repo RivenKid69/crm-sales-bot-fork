@@ -13,7 +13,6 @@ Root cause: threshold mismatch (guard used 7, conditions used 5)
 
 import pytest
 
-
 class TestFrustrationThresholdsConsistency:
     """Test that all frustration thresholds are consistent."""
 
@@ -105,7 +104,6 @@ class TestFrustrationThresholdsConsistency:
         # Must be same object (imported from same source)
         assert FRUSTRATION_THRESHOLDS == CENTRAL_THRESHOLDS
         assert MAX_FRUSTRATION == FRUSTRATION_MAX
-
 
 class TestFrustrationHelperFunctions:
     """Test helper functions for frustration level checks."""
@@ -232,7 +230,6 @@ class TestFrustrationHelperFunctions:
         assert get_frustration_severity(FRUSTRATION_HIGH) == "high"
         assert get_frustration_severity(FRUSTRATION_CRITICAL) == "critical"
 
-
 class TestGuardInterventionTrigger:
     """Test that ConversationGuard triggers intervention correctly."""
 
@@ -280,7 +277,6 @@ class TestGuardInterventionTrigger:
             # (other checks might trigger, but not frustration)
             # We just verify that at level 5/6 the frustration check passes
             assert can_continue is True or intervention != guard.TIER_3
-
 
 class TestFallbackConditionsUseCentralizedThresholds:
     """Test that fallback conditions use centralized thresholds."""
@@ -342,7 +338,6 @@ class TestFallbackConditionsUseCentralizedThresholds:
         )
         assert not can_recover(ctx_warning)
 
-
 class TestValidateThresholds:
     """Test the validation function."""
 
@@ -353,7 +348,6 @@ class TestValidateThresholds:
         # Should not raise
         result = validate_thresholds()
         assert result is True
-
 
 class TestIntegration:
     """Integration tests for the complete frustration handling flow."""

@@ -11,14 +11,11 @@ from pathlib import Path
 import yaml
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 
 # Paths to config files
 YAML_CONFIG_DIR = Path(__file__).parent.parent / "src" / "yaml_config"
 SPIN_PHASES_FILE = YAML_CONFIG_DIR / "spin" / "phases.yaml"
 SALES_FLOW_FILE = YAML_CONFIG_DIR / "states" / "sales_flow.yaml"
-
 
 @pytest.fixture(scope="module")
 def spin_phases():
@@ -26,13 +23,11 @@ def spin_phases():
     with open(SPIN_PHASES_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture(scope="module")
 def sales_flow():
     """Load states/sales_flow.yaml fixture."""
     with open(SALES_FLOW_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 # =============================================================================
 # SPIN PHASES.YAML TESTS
@@ -57,7 +52,6 @@ class TestSpinPhasesOrder:
     def test_phase_order_is_list(self, spin_phases):
         """Test phase_order is a list."""
         assert isinstance(spin_phases["phase_order"], list)
-
 
 class TestSpinPhasesSituation:
     """Tests for situation phase configuration."""
@@ -87,7 +81,6 @@ class TestSpinPhasesSituation:
         phase = spin_phases["phases"]["situation"]
         assert phase["skip_conditions"] == []
 
-
 class TestSpinPhasesProblem:
     """Tests for problem phase configuration."""
 
@@ -115,7 +108,6 @@ class TestSpinPhasesProblem:
         """Test problem.skip_conditions is empty."""
         phase = spin_phases["phases"]["problem"]
         assert phase["skip_conditions"] == []
-
 
 class TestSpinPhasesImplication:
     """Tests for implication phase configuration."""
@@ -147,7 +139,6 @@ class TestSpinPhasesImplication:
         assert "has_high_interest" in skip
         assert "lead_is_hot" in skip
 
-
 class TestSpinPhasesNeedPayoff:
     """Tests for need_payoff phase configuration."""
 
@@ -178,7 +169,6 @@ class TestSpinPhasesNeedPayoff:
         assert "has_desired_outcome" in skip
         assert "lead_is_hot" in skip
 
-
 class TestSpinPhasesProbeActions:
     """Tests for probe_actions configuration."""
 
@@ -206,7 +196,6 @@ class TestSpinPhasesProbeActions:
         actions = spin_phases["probe_actions"]
         assert actions["need_payoff"] == "probe_need_payoff"
 
-
 class TestSpinPhasesEntryFlags:
     """Tests for entry_flags configuration."""
 
@@ -223,7 +212,6 @@ class TestSpinPhasesEntryFlags:
         """Test entry_flags.need_payoff."""
         flags = spin_phases["entry_flags"]
         assert flags["need_payoff"] == "need_payoff_probed"
-
 
 # =============================================================================
 # SALES FLOW.YAML TESTS
@@ -245,7 +233,6 @@ class TestSalesFlowMeta:
         assert "description" in sales_flow["meta"]
         assert "SPIN" in sales_flow["meta"]["description"]
 
-
 class TestSalesFlowDefaults:
     """Tests for sales_flow defaults section."""
 
@@ -256,7 +243,6 @@ class TestSalesFlowDefaults:
     def test_default_action(self, sales_flow):
         """Test defaults.default_action."""
         assert sales_flow["defaults"]["default_action"] == "continue_current_goal"
-
 
 class TestSalesFlowStatesExist:
     """Tests for state existence."""
@@ -305,7 +291,6 @@ class TestSalesFlowStatesExist:
         """Test soft_close state exists."""
         assert "soft_close" in sales_flow["states"]
 
-
 class TestSalesFlowGreeting:
     """Tests for greeting state configuration."""
 
@@ -349,7 +334,6 @@ class TestSalesFlowGreeting:
         """Test greeting rules for unclear intent."""
         rules = sales_flow["states"]["greeting"]["rules"]
         assert rules["unclear"] == "ask_how_to_help"
-
 
 class TestSalesFlowSpinSituation:
     """Tests for spin_situation state configuration."""
@@ -395,7 +379,6 @@ class TestSalesFlowSpinSituation:
         # Should be conditional
         assert isinstance(rules["price_question"], list)
 
-
 class TestSalesFlowSpinProblem:
     """Tests for spin_problem state configuration."""
 
@@ -429,7 +412,6 @@ class TestSalesFlowSpinProblem:
         """Test spin_problem transitions for no_problem."""
         transitions = sales_flow["states"]["spin_problem"]["transitions"]
         assert transitions["no_problem"] == "spin_implication"
-
 
 class TestSalesFlowSpinImplication:
     """Tests for spin_implication state configuration."""
@@ -465,7 +447,6 @@ class TestSalesFlowSpinImplication:
         """Test spin_implication transitions for implication_acknowledged."""
         transitions = sales_flow["states"]["spin_implication"]["transitions"]
         assert transitions["implication_acknowledged"] == "spin_need_payoff"
-
 
 class TestSalesFlowSpinNeedPayoff:
     """Tests for spin_need_payoff state configuration."""
@@ -507,7 +488,6 @@ class TestSalesFlowSpinNeedPayoff:
         transitions = sales_flow["states"]["spin_need_payoff"]["transitions"]
         assert transitions["no_need"] == "soft_close"
 
-
 class TestSalesFlowPresentation:
     """Tests for presentation state configuration."""
 
@@ -540,7 +520,6 @@ class TestSalesFlowPresentation:
         """Test presentation rules for price_question."""
         rules = sales_flow["states"]["presentation"]["rules"]
         assert rules["price_question"] == "answer_with_facts"
-
 
 class TestSalesFlowHandleObjection:
     """Tests for handle_objection state configuration."""
@@ -583,7 +562,6 @@ class TestSalesFlowHandleObjection:
         )
         assert has_roi_condition
 
-
 class TestSalesFlowClose:
     """Tests for close state configuration."""
 
@@ -618,7 +596,6 @@ class TestSalesFlowClose:
         assert agreement[0]["when"] == "ready_for_close"
         assert agreement[0]["then"] == "success"
 
-
 class TestSalesFlowSuccess:
     """Tests for success state configuration."""
 
@@ -631,7 +608,6 @@ class TestSalesFlowSuccess:
         """Test success.is_final = true."""
         state = sales_flow["states"]["success"]
         assert state["is_final"] is True
-
 
 class TestSalesFlowSoftClose:
     """Tests for soft_close state configuration."""
@@ -665,7 +641,6 @@ class TestSalesFlowSoftClose:
         """Test soft_close transitions for price_question."""
         transitions = sales_flow["states"]["soft_close"]["transitions"]
         assert transitions["price_question"] == "presentation"
-
 
 class TestSalesFlowConsistency:
     """Tests for internal consistency of sales_flow."""
@@ -716,7 +691,6 @@ class TestSalesFlowConsistency:
 
         assert len(situation) >= 1  # At least company_size
         assert len(close) >= 1  # At least contact_info
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

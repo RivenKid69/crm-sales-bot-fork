@@ -7,10 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from feature_flags import FeatureFlags, feature_flag
-
+from src.feature_flags import FeatureFlags, feature_flag
 
 class TestFeatureFlagsBasic:
     """Базовые тесты FeatureFlags"""
@@ -38,7 +35,6 @@ class TestFeatureFlagsBasic:
         ff = FeatureFlags()
         result = ff.is_enabled("nonexistent_flag_xyz")
         assert result is False
-
 
 class TestFeatureFlagsProperties:
     """Тесты для типизированных property"""
@@ -98,7 +94,6 @@ class TestFeatureFlagsProperties:
         ff = FeatureFlags()
         assert isinstance(ff.cta_generator, bool)
 
-
 class TestFeatureFlagsOverrides:
     """Тесты для runtime overrides"""
 
@@ -149,7 +144,6 @@ class TestFeatureFlagsOverrides:
 
         ff.set_override("custom_flag_123", False)
         assert ff.is_enabled("custom_flag_123") is False
-
 
 class TestFeatureFlagsGroups:
     """Тесты для групп флагов"""
@@ -209,7 +203,6 @@ class TestFeatureFlagsGroups:
         assert ff.is_enabled("structured_logging") is False
         assert ff.is_enabled("metrics_tracking") is False
 
-
 class TestFeatureFlagsGetters:
     """Тесты для методов получения флагов"""
 
@@ -250,7 +243,6 @@ class TestFeatureFlagsGetters:
         disabled = ff.get_disabled_flags()
         assert "test_disabled" in disabled
         assert "test_enabled" not in disabled
-
 
 class TestFeatureFlagsEnvironment:
     """Тесты для переопределения через environment"""
@@ -305,7 +297,6 @@ class TestFeatureFlagsEnvironment:
         finally:
             del os.environ["FF_PERSONALIZATION"]
 
-
 class TestFeatureFlagsReload:
     """Тесты для reload"""
 
@@ -319,13 +310,12 @@ class TestFeatureFlagsReload:
         ff.reload()
         assert ff.is_enabled("test_flag") is False  # Возвращается к дефолту
 
-
 class TestFeatureFlagDecorator:
     """Тесты для декоратора feature_flag"""
 
     def test_decorator_enabled(self):
         """Декоратор выполняет функцию если флаг включён"""
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         flags.set_override("test_decorator_flag", True)
 
@@ -340,7 +330,7 @@ class TestFeatureFlagDecorator:
 
     def test_decorator_disabled(self):
         """Декоратор возвращает default если флаг выключен"""
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         flags.set_override("test_decorator_flag_disabled", False)
 
@@ -355,7 +345,7 @@ class TestFeatureFlagDecorator:
 
     def test_decorator_default_none(self):
         """Декоратор возвращает None по умолчанию"""
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         flags.set_override("test_decorator_none", False)
 
@@ -376,26 +366,24 @@ class TestFeatureFlagDecorator:
 
         assert my_function.__name__ == "my_function"
 
-
 class TestSingletonFlags:
     """Тесты для singleton экземпляра"""
 
     def test_global_flags_exists(self):
         """Глобальный flags существует"""
-        from feature_flags import flags
+        from src.feature_flags import flags
         assert flags is not None
         assert isinstance(flags, FeatureFlags)
 
     def test_global_flags_has_properties(self):
         """Глобальный flags имеет все property"""
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         assert hasattr(flags, "tone_analysis")
         assert hasattr(flags, "lead_scoring")
         assert hasattr(flags, "response_variations")
         assert hasattr(flags, "multi_tier_fallback")
         assert hasattr(flags, "circular_flow")
-
 
 class TestFeatureFlagsFromSettings:
     """Тесты загрузки из settings.yaml"""
@@ -415,7 +403,6 @@ class TestFeatureFlagsFromSettings:
         assert ff.is_enabled("tone_analysis") is False
         assert ff.is_enabled("lead_scoring") is False
         assert ff.is_enabled("circular_flow") is False
-
 
 class TestFeatureFlagsThreadSafety:
     """Тесты потокобезопасности"""
@@ -461,7 +448,6 @@ class TestFeatureFlagsThreadSafety:
         # Результаты должны быть boolean
         for r in results:
             assert isinstance(r, bool)
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

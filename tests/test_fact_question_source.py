@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from src.blackboard.sources.fact_question import FactQuestionSource
 from src.blackboard.enums import Priority
 
-
 # =============================================================================
 # MOCK CLASSES
 # =============================================================================
@@ -33,7 +32,6 @@ class MockContextEnvelope:
     tone: Optional[str] = None
     secondary_intents: List[str] = field(default_factory=list)
 
-
 @dataclass
 class MockContextSnapshot:
     """Mock context snapshot for blackboard."""
@@ -48,7 +46,6 @@ class MockContextSnapshot:
 
     def get_missing_required_data(self) -> List[str]:
         return []
-
 
 class MockBlackboard:
     """Mock blackboard for testing."""
@@ -100,7 +97,6 @@ class MockBlackboard:
             "metadata": metadata or {},
         })
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -109,7 +105,6 @@ class MockBlackboard:
 def source():
     """Create a FactQuestionSource instance."""
     return FactQuestionSource()
-
 
 @pytest.fixture
 def make_blackboard():
@@ -130,7 +125,6 @@ def make_blackboard():
             state_config=state_config,
         )
     return _make
-
 
 # =============================================================================
 # BASIC FUNCTIONALITY TESTS
@@ -166,7 +160,6 @@ class TestFactQuestionSourceBasics:
         ]
         for intent in price_intents:
             assert intent not in source._fact_intents, f"Price intent should be excluded: {intent}"
-
 
 # =============================================================================
 # SHOULD_CONTRIBUTE TESTS
@@ -214,7 +207,6 @@ class TestShouldContribute:
 
         source._enabled = True  # Re-enable for other tests
 
-
 # =============================================================================
 # CONTRIBUTE TESTS - PRIMARY INTENT
 # =============================================================================
@@ -256,7 +248,6 @@ class TestContributePrimaryIntent:
         assert len(blackboard._proposals) == 1
         proposal = blackboard._proposals[0]
         assert proposal["action"] == "compare_with_competitor"
-
 
 # =============================================================================
 # CONTRIBUTE TESTS - SECONDARY INTENT
@@ -311,7 +302,6 @@ class TestContributeSecondaryIntent:
         assert proposal["metadata"]["fact_intent"] == "question_technical"
         assert proposal["metadata"]["detection_source"] == "primary"
 
-
 # =============================================================================
 # YAML RULES TESTS
 # =============================================================================
@@ -349,7 +339,6 @@ class TestYamlRules:
         assert proposal["action"] == "answer_with_facts"
         assert proposal["metadata"]["rule_source"] == "fallback"
 
-
 # =============================================================================
 # COMBINABLE TESTS
 # =============================================================================
@@ -376,7 +365,6 @@ class TestCombinableActions:
         assert len(blackboard._proposals) == 1
         proposal = blackboard._proposals[0]
         assert proposal["priority"] == Priority.HIGH
-
 
 # =============================================================================
 # STATISTICS TESTS
@@ -422,7 +410,6 @@ class TestStatistics:
         assert "primary_detections" in stats
         assert "secondary_detections" in stats
         assert "total_detections" in stats
-
 
 # =============================================================================
 # EDGE CASES TESTS
@@ -475,7 +462,6 @@ class TestEdgeCases:
         assert proposal["metadata"]["fact_intent"] in [
             "question_features", "question_integrations"
         ]
-
 
 # =============================================================================
 # REAL-WORLD SCENARIO TESTS
@@ -557,7 +543,6 @@ class TestRealWorldScenarios:
         assert len(blackboard._proposals) == 1
         proposal = blackboard._proposals[0]
         assert proposal["combinable"] is True  # Allows BANT to continue
-
 
 # =============================================================================
 # LOST QUESTION BUG FIX TESTS - NEW INTENTS

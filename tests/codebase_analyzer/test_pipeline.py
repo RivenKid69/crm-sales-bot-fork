@@ -18,7 +18,6 @@ from codebase_analyzer.indexer.models.entities import (
 )
 from codebase_analyzer.indexer.models.relations import Relation, RelationType
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -32,7 +31,6 @@ def sample_location_module1():
         end_line=20,
     )
 
-
 @pytest.fixture
 def sample_location_module2():
     """Location in module2."""
@@ -41,7 +39,6 @@ def sample_location_module2():
         start_line=1,
         end_line=15,
     )
-
 
 @pytest.fixture
 def multi_module_graph(sample_location_module1, sample_location_module2):
@@ -89,7 +86,6 @@ def multi_module_graph(sample_location_module1, sample_location_module2):
 
     return graph
 
-
 @pytest.fixture
 def mock_entity_response():
     """Mock response for entity summarization."""
@@ -104,7 +100,6 @@ def mock_entity_response():
         "input_tokens": 100,
         "output_tokens": 50,
     }
-
 
 @pytest.fixture
 def mock_module_response():
@@ -123,7 +118,6 @@ def mock_module_response():
         "usage": {"prompt_tokens": 150, "completion_tokens": 80},
     }
 
-
 @pytest.fixture
 def mock_architecture_response():
     """Mock response for architecture synthesis."""
@@ -141,7 +135,6 @@ def mock_architecture_response():
         }],
         "usage": {"prompt_tokens": 200, "completion_tokens": 100},
     }
-
 
 # ============================================================================
 # Tests: Pipeline initialization
@@ -169,7 +162,6 @@ class TestPipelineInit:
         assert pipeline.api_base == "http://custom:8000/v1"
         assert pipeline.model == "custom-model"
 
-
 # ============================================================================
 # Tests: Entity summarization integration
 # ============================================================================
@@ -189,7 +181,6 @@ class TestEntitySummarization:
 
         # Should have summaries for all 3 entities
         assert len(result.entity_summaries) == 3
-
 
 # ============================================================================
 # Tests: Module aggregation
@@ -241,7 +232,6 @@ class TestModuleAggregation:
             if "module1" in path:
                 assert len(module.entities) == 2
 
-
 # ============================================================================
 # Tests: Architecture synthesis
 # ============================================================================
@@ -283,7 +273,6 @@ class TestArchitectureSynthesis:
         # Should have architecture
         assert result.architecture is not None
         assert len(result.architecture.overview) > 0 or len(result.architecture.modules) > 0
-
 
 # ============================================================================
 # Tests: Full pipeline
@@ -351,7 +340,6 @@ class TestFullPipeline:
 
         assert len(result.processing_levels) > 0
 
-
 # ============================================================================
 # Tests: JSON parsing
 # ============================================================================
@@ -379,7 +367,6 @@ class TestJsonParsing:
 
         result = pipeline._parse_json_response('not valid json')
         assert result == {}
-
 
 # ============================================================================
 # Tests: Convenience function

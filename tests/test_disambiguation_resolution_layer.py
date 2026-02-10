@@ -22,7 +22,6 @@ from src.classifier.refinement_pipeline import (
 )
 from src.classifier.disambiguation_resolution_layer import DisambiguationResolutionLayer
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -31,7 +30,6 @@ from src.classifier.disambiguation_resolution_layer import DisambiguationResolut
 def layer():
     return DisambiguationResolutionLayer()
 
-
 @pytest.fixture
 def sample_options():
     return [
@@ -39,7 +37,6 @@ def sample_options():
         {"intent": "demo_request", "label": "Записаться на демо"},
         {"intent": "feature_question", "label": "Узнать о функциях"},
     ]
-
 
 def make_ctx(
     in_disambiguation: bool = False,
@@ -57,14 +54,12 @@ def make_ctx(
         metadata={},
     )
 
-
 def make_result(intent: str = "unclear", confidence: float = 0.5) -> Dict[str, Any]:
     return {
         "intent": intent,
         "confidence": confidence,
         "extracted_data": {},
     }
-
 
 # =============================================================================
 # Test: Layer metadata
@@ -81,7 +76,6 @@ class TestLayerMetadata:
     def test_feature_flag(self, layer):
         assert layer.FEATURE_FLAG == "unified_disambiguation"
 
-
 # =============================================================================
 # Test: _should_apply
 # =============================================================================
@@ -95,7 +89,6 @@ class TestShouldApply:
     def test_skips_when_not_in_disambiguation(self, layer):
         ctx = make_ctx(in_disambiguation=False)
         assert layer._should_apply(ctx) is False
-
 
 # =============================================================================
 # Test: Path A — Critical intent override
@@ -134,7 +127,6 @@ class TestPathACriticalIntents:
         refinement = layer._do_refine("вот мой номер 89001234567", result, ctx)
 
         assert refinement.decision != RefinementDecision.REFINED
-
 
 # =============================================================================
 # Test: Path B — Option selection
@@ -217,7 +209,6 @@ class TestPathBOptionSelection:
         assert refinement.original_intent == "unclear"
         assert refinement.refinement_reason == "disambiguation_resolved"
 
-
 # =============================================================================
 # Test: Path C — Custom input / unrecognized
 # =============================================================================
@@ -269,7 +260,6 @@ class TestPathCCustomInput:
         # With no options, goes to Path C (custom input)
         assert refinement.decision == RefinementDecision.PASS_THROUGH
         assert ctx.metadata["exit_disambiguation"] is True
-
 
 # =============================================================================
 # Test: Edge cases

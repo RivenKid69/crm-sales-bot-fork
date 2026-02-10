@@ -20,15 +20,12 @@ import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from classifier.composite_refinement import (
+from src.classifier.composite_refinement import (
     CompositeMessageRefinementLayer,
     CompositeMessageContext,
     CompositeRefinementResult,
     create_composite_message_context,
 )
-
 
 # =============================================================================
 # Test Fixtures
@@ -38,7 +35,6 @@ from classifier.composite_refinement import (
 def layer():
     """Create CompositeMessageRefinementLayer instance."""
     return CompositeMessageRefinementLayer()
-
 
 @pytest.fixture
 def mock_config():
@@ -93,7 +89,6 @@ def mock_config():
         },
     }
 
-
 # =============================================================================
 # Basic Initialization Tests
 # =============================================================================
@@ -121,7 +116,6 @@ class TestCompositeRefinementLayerInit:
         stats = layer.get_stats()
         assert stats["refinements_total"] == 0
         assert stats["enabled"] is True
-
 
 # =============================================================================
 # Context Creation Tests
@@ -191,7 +185,6 @@ class TestCompositeMessageContext:
         assert ctx.current_phase == "situation"  # Extracted from spin_phase
         assert ctx.state == "spin_situation"
         assert ctx.last_action == "ask_about_company"
-
 
 # =============================================================================
 # Should Refine Tests
@@ -270,7 +263,6 @@ class TestShouldRefine:
             expects_data_type="company_size",
         )
         assert layer.should_refine(ctx) is True
-
 
 # =============================================================================
 # Core Refinement Tests - Main Use Cases
@@ -387,7 +379,6 @@ class TestCompositeRefinementCore:
         assert result["extracted_data"]["existing_field"] == "value"
         assert result["extracted_data"]["company_size"] == 5
 
-
 # =============================================================================
 # Ambiguity Resolution Tests
 # =============================================================================
@@ -437,7 +428,6 @@ class TestAmbiguityResolution:
 
         assert result["refined"] is True
         assert result["extracted_data"].get("company_size") == 10
-
 
 # =============================================================================
 # Flow-Agnostic Tests
@@ -500,7 +490,6 @@ class TestFlowAgnostic:
         result = layer.refine("5 человек", llm_result, ctx)
         assert result["refined"] is True
 
-
 # =============================================================================
 # Fail-Safe Tests
 # =============================================================================
@@ -553,7 +542,6 @@ class TestFailSafe:
             layer = CompositeMessageRefinementLayer()
             assert layer is not None
 
-
 # =============================================================================
 # Statistics Tests
 # =============================================================================
@@ -593,7 +581,6 @@ class TestStatistics:
 
         stats = layer.get_stats()
         assert "objection_think" in stats["refinements_by_type"]
-
 
 # =============================================================================
 # Data Extraction Tests
@@ -662,7 +649,6 @@ class TestDataExtraction:
         # Should not extract invalid value
         assert result.get("extracted_data", {}).get("company_size") is None or result.get("refined") is False
 
-
 # =============================================================================
 # Integration with UnifiedClassifier
 # =============================================================================
@@ -672,8 +658,8 @@ class TestUnifiedClassifierIntegration:
 
     def test_unified_classifier_has_composite_refinement_layer(self):
         """UnifiedClassifier имеет composite_refinement_layer."""
-        from classifier.unified import UnifiedClassifier
-        from feature_flags import flags
+        from src.classifier.unified import UnifiedClassifier
+        from src.feature_flags import flags
 
         classifier = UnifiedClassifier()
 
@@ -691,7 +677,7 @@ class TestUnifiedClassifierIntegration:
 
     def test_pipeline_position(self):
         """Composite refinement в правильной позиции pipeline."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
 
         classifier = UnifiedClassifier()
 
@@ -707,7 +693,6 @@ class TestUnifiedClassifierIntegration:
         has_legacy_composite = "composite_refinement" in source
         has_pipeline = "refinement_pipeline" in source
         assert has_legacy_composite or has_pipeline
-
 
 # =============================================================================
 # Edge Cases
@@ -792,7 +777,6 @@ class TestEdgeCases:
         assert result["refined"] is True
         # Should take 5 (first match with "человек")
         assert result["extracted_data"]["company_size"] == 5
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -15,23 +15,19 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 from typing import Dict, Any, Optional
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from config_loader import ConfigLoader, LoadedConfig, FlowConfig
-from conditions.expression_parser import (
+from src.config_loader import ConfigLoader, LoadedConfig, FlowConfig
+from src.conditions.expression_parser import (
     ConditionExpressionParser,
     evaluate_condition_value,
 )
-from conditions.base import SimpleContext
-from conditions.policy.context import PolicyContext
-from context_envelope import ContextEnvelope
-from feature_flags import flags
-
+from src.conditions.base import SimpleContext
+from src.conditions.policy.context import PolicyContext
+from src.context_envelope import ContextEnvelope
+from src.feature_flags import flags
 
 # =============================================================================
 # BUG #1: StateMachine config/flow desynchronization
 # =============================================================================
-
 
 class TestBug1ConfigFlowSync:
     """
@@ -59,12 +55,28 @@ class TestBug1ConfigFlowSync:
         config = loader.load_named("default")
         assert config.flow_name is not None
 
+    def test_config_loader_load_bundle_binds_config_and_flow_atomically(self):
+        """load_bundle() must return config/flow with the same resolved flow name."""
+        loader = ConfigLoader()
+        config, flow = loader.load_bundle(flow_name="bant")
+        assert config.flow_name == "bant"
+        assert flow.name == "bant"
+
+    def test_config_loader_load_bundle_fails_on_binding_mismatch(self):
+        """load_bundle() should fail fast when loaded flow name mismatches binding."""
+        loader = ConfigLoader()
+        bad_flow = FlowConfig(name="spin_selling", states={})
+
+        with patch.object(loader, "load_flow", return_value=bad_flow):
+            with pytest.raises(ValueError, match="binding mismatch"):
+                loader.load_bundle(flow_name="bant")
+
     def test_state_machine_auto_loads_flow_from_config_flow_name(self):
         """
         When StateMachine gets config but no flow, it should derive
         flow from config.flow_name rather than blindly from settings.
         """
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
 
         loader = ConfigLoader()
         config = loader.load()
@@ -80,7 +92,7 @@ class TestBug1ConfigFlowSync:
         """
         When config.flow_name != flow.name, a warning should be logged.
         """
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
 
         config = Mock()
         config.flow_name = "bant"
@@ -96,7 +108,7 @@ class TestBug1ConfigFlowSync:
         """
         When config.flow_name == flow.name, no warning logged.
         """
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
 
         config = Mock()
         config.flow_name = "spin_selling"
@@ -109,7 +121,7 @@ class TestBug1ConfigFlowSync:
 
     def test_validate_config_flow_none_flow_name_no_warning(self):
         """No warning when config.flow_name is None (not set)."""
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
 
         config = Mock()
         config.flow_name = None
@@ -126,11 +138,20 @@ class TestBug1ConfigFlowSync:
         config = loader.load()
         assert config.flow_name is not None, "flow_name must be set after load()"
 
+    def test_salesbot_runtime_path_fails_fast_on_flow_binding_mismatch(self, mock_llm):
+        """SalesBot runtime-path should fail fast on config/flow desync."""
+        from src.bot import SalesBot
+
+        bad_config = LoadedConfig(flow_name="bant")
+        bad_flow = FlowConfig(name="spin_selling", states={})
+
+        with patch("src.bot.ConfigLoader.load_bundle", return_value=(bad_config, bad_flow)):
+            with pytest.raises(RuntimeError, match="Runtime flow binding mismatch"):
+                SalesBot(llm=mock_llm, flow_name="bant")
 
 # =============================================================================
 # BUG #2: Composite conditions break blackboard sources
 # =============================================================================
-
 
 class TestBug2EvaluateConditionValueUtility:
     """
@@ -141,7 +162,7 @@ class TestBug2EvaluateConditionValueUtility:
     @pytest.fixture
     def registry(self):
         """Create a condition registry with test conditions."""
-        from conditions.registry import ConditionRegistry
+        from src.conditions.registry import ConditionRegistry
         reg = ConditionRegistry("test_ecv", SimpleContext)
 
         @reg.condition("is_true", category="test")
@@ -227,9 +248,8 @@ class TestBug2EvaluateConditionValueUtility:
 
     def test_evaluate_condition_value_is_only_dispatch_point(self):
         """Architectural invariant: evaluate_condition_value is importable."""
-        from conditions.expression_parser import evaluate_condition_value as ecv
+        from src.conditions.expression_parser import evaluate_condition_value as ecv
         assert callable(ecv)
-
 
 class TestBug2IntentProcessorCompositeConditions:
     """
@@ -239,7 +259,7 @@ class TestBug2IntentProcessorCompositeConditions:
 
     def test_resolve_rule_with_composite_and_condition(self):
         """IntentProcessorSource should handle {"when": {"and": [...]}, "then": "action"}."""
-        from blackboard.sources.intent_processor import IntentProcessorSource
+        from src.blackboard.sources.intent_processor import IntentProcessorSource
 
         source = IntentProcessorSource()
 
@@ -272,7 +292,7 @@ class TestBug2IntentProcessorCompositeConditions:
 
     def test_resolve_rule_with_not_condition(self):
         """IntentProcessorSource should handle {"when": {"not": "cond"}, "then": "action"}."""
-        from blackboard.sources.intent_processor import IntentProcessorSource
+        from src.blackboard.sources.intent_processor import IntentProcessorSource
 
         source = IntentProcessorSource()
 
@@ -297,7 +317,6 @@ class TestBug2IntentProcessorCompositeConditions:
         result = source._resolve_rule(rule, ctx)
         assert result is None or isinstance(result, str)
 
-
 class TestBug2TransitionResolverCompositeConditions:
     """
     Tests that TransitionResolverSource._evaluate_condition() handles
@@ -306,8 +325,8 @@ class TestBug2TransitionResolverCompositeConditions:
 
     def test_evaluate_condition_with_dict_not_condition(self):
         """TransitionResolverSource should handle dict conditions."""
-        from blackboard.sources.transition_resolver import TransitionResolverSource
-        from conditions.state_machine.context import EvaluatorContext
+        from src.blackboard.sources.transition_resolver import TransitionResolverSource
+        from src.conditions.state_machine.context import EvaluatorContext
 
         source = TransitionResolverSource()
 
@@ -324,8 +343,8 @@ class TestBug2TransitionResolverCompositeConditions:
 
     def test_evaluate_condition_with_string_still_works(self):
         """String conditions still work after the refactor."""
-        from blackboard.sources.transition_resolver import TransitionResolverSource
-        from conditions.state_machine.context import EvaluatorContext
+        from src.blackboard.sources.transition_resolver import TransitionResolverSource
+        from src.conditions.state_machine.context import EvaluatorContext
 
         source = TransitionResolverSource()
 
@@ -341,12 +360,11 @@ class TestBug2TransitionResolverCompositeConditions:
 
     def test_expression_parser_passed_through(self):
         """TransitionResolverSource accepts expression_parser in __init__."""
-        from blackboard.sources.transition_resolver import TransitionResolverSource
+        from src.blackboard.sources.transition_resolver import TransitionResolverSource
 
         mock_parser = Mock()
         source = TransitionResolverSource(expression_parser=mock_parser)
         assert source._expression_parser is mock_parser
-
 
 class TestBug2RuleResolverRefactored:
     """Tests that RuleResolver still works after refactoring to use evaluate_condition_value."""
@@ -354,7 +372,7 @@ class TestBug2RuleResolverRefactored:
     @pytest.fixture
     def registry(self):
         """Create a test registry with conditions."""
-        from conditions.registry import ConditionRegistry
+        from src.conditions.registry import ConditionRegistry
         reg = ConditionRegistry("test_resolver_ecv", SimpleContext)
 
         @reg.condition("always_true", category="test")
@@ -373,7 +391,7 @@ class TestBug2RuleResolverRefactored:
 
     def test_conditional_rule_with_string_condition(self, registry):
         """RuleResolver handles string conditions via shared utility."""
-        from rules.resolver import RuleResolver
+        from src.rules.resolver import RuleResolver
 
         resolver = RuleResolver(registry)
         ctx = SimpleContext(collected_data={}, state="test_state", turn_number=1)
@@ -389,7 +407,7 @@ class TestBug2RuleResolverRefactored:
 
     def test_conditional_rule_with_composite_dict_condition(self, registry):
         """RuleResolver handles composite dict conditions via shared utility."""
-        from rules.resolver import RuleResolver
+        from src.rules.resolver import RuleResolver
 
         parser = ConditionExpressionParser(registry)
         resolver = RuleResolver(registry, expression_parser=parser)
@@ -404,25 +422,23 @@ class TestBug2RuleResolverRefactored:
         )
         assert result.action == "do_action"
 
-
 # =============================================================================
 # BUG #3: is_mirroring_bot and is_stalled unreachable
 # =============================================================================
-
 
 class TestBug3CanApplyRepairCondition:
     """Tests for the new can_apply_repair condition gate."""
 
     def test_can_apply_repair_true_when_no_cooldown(self):
         """can_apply_repair returns True when stall_guard_cooldown=False."""
-        from conditions.policy import can_apply_repair
+        from src.conditions.policy import can_apply_repair
 
         ctx = PolicyContext.create_test_context(stall_guard_cooldown=False)
         assert can_apply_repair(ctx) is True
 
     def test_can_apply_repair_false_when_cooldown(self):
         """can_apply_repair returns False when stall_guard_cooldown=True."""
-        from conditions.policy import can_apply_repair
+        from src.conditions.policy import can_apply_repair
 
         ctx = PolicyContext.create_test_context(stall_guard_cooldown=True)
         assert can_apply_repair(ctx) is False
@@ -432,7 +448,7 @@ class TestBug3CanApplyRepairCondition:
         Architectural invariant: can_apply_repair does NOT check individual
         repair signals (is_stuck, etc.) — only cooldown.
         """
-        from conditions.policy import can_apply_repair
+        from src.conditions.policy import can_apply_repair
 
         ctx = PolicyContext.create_test_context(
             is_stuck=False,
@@ -446,34 +462,33 @@ class TestBug3CanApplyRepairCondition:
 
     def test_can_apply_repair_registered_in_policy_registry(self):
         """can_apply_repair is registered and evaluable via policy_registry."""
-        from conditions.policy import policy_registry
+        from src.conditions.policy import policy_registry
 
         ctx = PolicyContext.create_test_context(stall_guard_cooldown=False)
         result = policy_registry.evaluate("can_apply_repair", ctx)
         assert result is True
-
 
 class TestBug3IsStalledExported:
     """Tests that is_stalled is properly exported and accessible."""
 
     def test_is_stalled_importable_from_init(self):
         """is_stalled can be imported from conditions.policy."""
-        from conditions.policy import is_stalled
+        from src.conditions.policy import is_stalled
         assert callable(is_stalled)
 
     def test_is_stalled_in_all(self):
         """is_stalled is in __all__ of conditions.policy."""
-        import conditions.policy as policy_mod
+        import src.conditions.policy as policy_mod
         assert "is_stalled" in policy_mod.__all__
 
     def test_can_apply_repair_in_all(self):
         """can_apply_repair is in __all__ of conditions.policy."""
-        import conditions.policy as policy_mod
+        import src.conditions.policy as policy_mod
         assert "can_apply_repair" in policy_mod.__all__
 
     def test_is_stalled_registered_in_registry(self):
         """is_stalled is evaluable via policy_registry."""
-        from conditions.policy import policy_registry
+        from src.conditions.policy import policy_registry
 
         ctx = PolicyContext.create_test_context(
             consecutive_same_state=5,
@@ -484,13 +499,12 @@ class TestBug3IsStalledExported:
         result = policy_registry.evaluate("is_stalled", ctx)
         assert isinstance(result, bool)
 
-
 class TestBug3IsMirroringBot:
     """Tests for is_mirroring_bot with last_user_message / last_bot_message."""
 
     def test_mirroring_detected_when_messages_similar(self):
         """is_mirroring_bot fires when last_user_message ≈ last_bot_message."""
-        from conditions.policy import is_mirroring_bot
+        from src.conditions.policy import is_mirroring_bot
 
         ctx = PolicyContext.create_test_context(
             last_user_message="Сколько сотрудников?",
@@ -500,7 +514,7 @@ class TestBug3IsMirroringBot:
 
     def test_mirroring_not_detected_when_messages_different(self):
         """is_mirroring_bot returns False for different messages."""
-        from conditions.policy import is_mirroring_bot
+        from src.conditions.policy import is_mirroring_bot
 
         ctx = PolicyContext.create_test_context(
             last_user_message="Мне не интересно",
@@ -510,7 +524,7 @@ class TestBug3IsMirroringBot:
 
     def test_mirroring_not_detected_when_empty(self):
         """is_mirroring_bot returns False when messages are empty."""
-        from conditions.policy import is_mirroring_bot
+        from src.conditions.policy import is_mirroring_bot
 
         ctx = PolicyContext.create_test_context(
             last_user_message="",
@@ -533,7 +547,6 @@ class TestBug3IsMirroringBot:
         assert ctx.last_user_message == "hello"
         assert ctx.last_bot_message == "world"
 
-
 class TestBug3ContextEnvelopeMessageFields:
     """Tests that ContextEnvelope carries message text."""
 
@@ -545,7 +558,7 @@ class TestBug3ContextEnvelopeMessageFields:
 
     def test_build_context_envelope_accepts_messages(self):
         """build_context_envelope accepts user_message and last_bot_message params."""
-        from context_envelope import build_context_envelope
+        from src.context_envelope import build_context_envelope
 
         envelope = build_context_envelope(
             user_message="test user msg",
@@ -564,7 +577,6 @@ class TestBug3ContextEnvelopeMessageFields:
         assert ctx.last_user_message == "user says"
         assert ctx.last_bot_message == "bot says"
 
-
 class TestBug3RepairCascadeIntegration:
     """
     Integration tests for the repair cascade with can_apply_repair gate.
@@ -582,7 +594,7 @@ class TestBug3RepairCascadeIntegration:
         When is_stalled is True (consecutive_same_state >= threshold),
         the repair overlay should produce a stall repair action.
         """
-        from dialogue_policy import DialoguePolicy, PolicyDecision
+        from src.dialogue_policy import DialoguePolicy, PolicyDecision
 
         policy = DialoguePolicy()
 
@@ -614,7 +626,7 @@ class TestBug3RepairCascadeIntegration:
         When is_mirroring_bot is True, the repair overlay should produce
         a mirroring repair action.
         """
-        from dialogue_policy import DialoguePolicy, PolicyDecision
+        from src.dialogue_policy import DialoguePolicy, PolicyDecision
 
         policy = DialoguePolicy()
 
@@ -639,7 +651,7 @@ class TestBug3RepairCascadeIntegration:
         """
         needs_repair condition still works for diagnostic use.
         """
-        from conditions.policy import needs_repair
+        from src.conditions.policy import needs_repair
 
         ctx = PolicyContext.create_test_context(
             is_stuck=True,
@@ -653,7 +665,7 @@ class TestBug3RepairCascadeIntegration:
         This means the gate opens even when only is_mirroring_bot or is_stalled
         signals are active (which needs_repair would miss).
         """
-        from dialogue_policy import DialoguePolicy
+        from src.dialogue_policy import DialoguePolicy
 
         policy = DialoguePolicy()
 
@@ -678,19 +690,18 @@ class TestBug3RepairCascadeIntegration:
         if result is not None and result.has_override:
             assert "is_mirroring" in result.signals_used
 
-
 class TestBug3OrchestratorPassesDependencies:
     """Tests that orchestrator passes expression_parser to sources."""
 
     def test_orchestrator_source_configs_include_expression_parser(self):
         """Orchestrator passes expression_parser to TransitionResolverSource."""
-        from blackboard.orchestrator import DialogueOrchestrator
+        from src.blackboard.orchestrator import DialogueOrchestrator
 
         loader = ConfigLoader()
         config = loader.load()
         flow = loader.load_flow("spin_selling")
 
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
         sm = StateMachine(config=config, flow=flow)
 
         orchestrator = DialogueOrchestrator(
@@ -706,13 +717,13 @@ class TestBug3OrchestratorPassesDependencies:
 
     def test_orchestrator_source_configs_include_rule_resolver(self):
         """Orchestrator passes rule_resolver to IntentProcessorSource."""
-        from blackboard.orchestrator import DialogueOrchestrator
+        from src.blackboard.orchestrator import DialogueOrchestrator
 
         loader = ConfigLoader()
         config = loader.load()
         flow = loader.load_flow("spin_selling")
 
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
         sm = StateMachine(config=config, flow=flow)
 
         orchestrator = DialogueOrchestrator(

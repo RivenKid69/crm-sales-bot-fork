@@ -22,9 +22,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, Mock
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # LLM CONFIGURATION TESTS
 # =============================================================================
@@ -50,7 +47,6 @@ class TestLLMTimeout:
         settings = get_settings()
         assert settings.llm.timeout == 60
 
-
 class TestLLMModel:
     """Tests for llm.model parameter."""
 
@@ -71,7 +67,6 @@ class TestLLMModel:
         settings = get_settings()
         assert "Qwen" in settings.llm.model or "qwen" in settings.llm.model.lower()
 
-
 class TestLLMBaseUrl:
     """Tests for llm.base_url parameter."""
 
@@ -91,7 +86,6 @@ class TestLLMBaseUrl:
         settings = get_settings()
         assert "localhost" in settings.llm.base_url or "127.0.0.1" in settings.llm.base_url
 
-
 class TestLLMStream:
     """Tests for llm.stream parameter."""
 
@@ -109,7 +103,6 @@ class TestLLMStream:
         settings = get_settings()
         assert settings.llm.stream is False
 
-
 class TestLLMThink:
     """Tests for llm.think parameter."""
 
@@ -126,7 +119,6 @@ class TestLLMThink:
 
         settings = get_settings()
         assert settings.llm.think is False
-
 
 # =============================================================================
 # RETRIEVER CONFIGURATION TESTS
@@ -148,7 +140,6 @@ class TestRetrieverUseEmbeddings:
 
         settings = get_settings()
         assert settings.retriever.use_embeddings is True
-
 
 class TestRetrieverThresholds:
     """Tests for retriever.thresholds parameters."""
@@ -184,7 +175,6 @@ class TestRetrieverThresholds:
         # Exact should be highest (strictest)
         assert thresholds.exact >= thresholds.semantic
 
-
 class TestRetrieverDefaultTopK:
     """Tests for retriever.default_top_k parameter."""
 
@@ -202,7 +192,6 @@ class TestRetrieverDefaultTopK:
         settings = get_settings()
         assert settings.retriever.default_top_k > 0
 
-
 class TestRetrieverEmbedderModel:
     """Tests for retriever.embedder_model parameter."""
 
@@ -219,7 +208,6 @@ class TestRetrieverEmbedderModel:
 
         settings = get_settings()
         assert "FRIDA" in settings.retriever.embedder_model
-
 
 # =============================================================================
 # RERANKER CONFIGURATION TESTS
@@ -242,7 +230,6 @@ class TestRerankerEnabled:
         settings = get_settings()
         assert settings.reranker.enabled is True
 
-
 class TestRerankerThreshold:
     """Tests for reranker.threshold parameter."""
 
@@ -259,7 +246,6 @@ class TestRerankerThreshold:
 
         settings = get_settings()
         assert 0 <= settings.reranker.threshold <= 1
-
 
 class TestRerankerCandidatesCount:
     """Tests for reranker.candidates_count parameter."""
@@ -278,7 +264,6 @@ class TestRerankerCandidatesCount:
         settings = get_settings()
         assert settings.reranker.candidates_count > 0
 
-
 class TestRerankerModel:
     """Tests for reranker.model parameter."""
 
@@ -296,7 +281,6 @@ class TestRerankerModel:
         settings = get_settings()
         assert "bge-reranker" in settings.reranker.model.lower()
 
-
 # =============================================================================
 # CATEGORY ROUTER CONFIGURATION TESTS
 # =============================================================================
@@ -311,7 +295,6 @@ class TestCategoryRouterEnabled:
         settings = get_settings()
         assert isinstance(settings.category_router.enabled, bool)
 
-
 class TestCategoryRouterTopK:
     """Tests for category_router.top_k parameter."""
 
@@ -321,7 +304,6 @@ class TestCategoryRouterTopK:
 
         settings = get_settings()
         assert settings.category_router.top_k == 3
-
 
 class TestCategoryRouterFallbackCategories:
     """Tests for category_router.fallback_categories parameter."""
@@ -347,7 +329,6 @@ class TestCategoryRouterFallbackCategories:
         settings = get_settings()
         assert "features" in settings.category_router.fallback_categories
 
-
 # =============================================================================
 # GENERATOR CONFIGURATION TESTS
 # =============================================================================
@@ -369,7 +350,6 @@ class TestGeneratorMaxRetries:
         settings = get_settings()
         assert settings.generator.max_retries > 0
 
-
 class TestGeneratorHistoryLength:
     """Tests for generator.history_length parameter."""
 
@@ -387,7 +367,6 @@ class TestGeneratorHistoryLength:
         settings = get_settings()
         assert settings.generator.history_length > 0
 
-
 class TestGeneratorRetrieverTopK:
     """Tests for generator.retriever_top_k parameter."""
 
@@ -397,7 +376,6 @@ class TestGeneratorRetrieverTopK:
 
         settings = get_settings()
         assert settings.generator.retriever_top_k == 2
-
 
 class TestGeneratorAllowedEnglishWords:
     """Tests for generator.allowed_english_words parameter."""
@@ -429,7 +407,6 @@ class TestGeneratorAllowedEnglishWords:
 
         settings = get_settings()
         assert "email" in settings.generator.allowed_english_words
-
 
 # =============================================================================
 # CLASSIFIER CONFIGURATION TESTS
@@ -469,7 +446,6 @@ class TestClassifierWeights:
         assert weights.phrase_match >= weights.root_match
         assert weights.phrase_match >= weights.lemma_match
 
-
 class TestClassifierMergeWeights:
     """Tests for classifier.merge_weights parameters."""
 
@@ -497,7 +473,6 @@ class TestClassifierMergeWeights:
         total = weights.root_classifier + weights.lemma_classifier
         assert abs(total - 1.0) < 0.01  # Allow small float error
 
-
 class TestClassifierThresholds:
     """Tests for classifier.thresholds parameters."""
 
@@ -523,7 +498,6 @@ class TestClassifierThresholds:
         thresholds = settings.classifier.thresholds
 
         assert thresholds.high_confidence > thresholds.min_confidence
-
 
 # =============================================================================
 # LOGGING CONFIGURATION TESTS
@@ -554,7 +528,6 @@ class TestLoggingLevel:
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         assert settings.logging.level.upper() in valid_levels
 
-
 class TestLoggingLogLLMRequests:
     """Tests for logging.log_llm_requests parameter."""
 
@@ -571,7 +544,6 @@ class TestLoggingLogLLMRequests:
 
         settings = get_settings()
         assert settings.logging.log_llm_requests is False
-
 
 class TestLoggingLogRetrieverResults:
     """Tests for logging.log_retriever_results parameter."""
@@ -590,7 +562,6 @@ class TestLoggingLogRetrieverResults:
         settings = get_settings()
         assert settings.logging.log_retriever_results is False
 
-
 # =============================================================================
 # CONDITIONAL RULES CONFIGURATION TESTS
 # =============================================================================
@@ -605,7 +576,6 @@ class TestConditionalRulesEnableTracing:
         settings = get_settings()
         assert isinstance(settings.conditional_rules.enable_tracing, bool)
 
-
 class TestConditionalRulesValidateOnStartup:
     """Tests for conditional_rules.validate_on_startup parameter."""
 
@@ -615,7 +585,6 @@ class TestConditionalRulesValidateOnStartup:
 
         settings = get_settings()
         assert isinstance(settings.conditional_rules.validate_on_startup, bool)
-
 
 class TestConditionalRulesCoverageThreshold:
     """Tests for conditional_rules.coverage_threshold parameter."""
@@ -628,7 +597,6 @@ class TestConditionalRulesCoverageThreshold:
         threshold = settings.conditional_rules.coverage_threshold
 
         assert 0 <= threshold <= 1
-
 
 # =============================================================================
 # FLOW CONFIGURATION TESTS
@@ -651,7 +619,6 @@ class TestFlowActive:
         settings = get_settings()
         assert settings.flow.active == "spin_selling"
 
-
 # =============================================================================
 # DEVELOPMENT CONFIGURATION TESTS
 # =============================================================================
@@ -673,7 +640,6 @@ class TestDevelopmentDebug:
         settings = get_settings()
         assert settings.development.debug is False
 
-
 class TestDevelopmentSkipEmbeddings:
     """Tests for development.skip_embeddings parameter."""
 
@@ -683,7 +649,6 @@ class TestDevelopmentSkipEmbeddings:
 
         settings = get_settings()
         assert isinstance(settings.development.skip_embeddings, bool)
-
 
 # =============================================================================
 # FEATURE FLAGS CONFIGURATION TESTS (from settings.yaml)
@@ -699,7 +664,6 @@ class TestFeatureFlagsStructuredLogging:
         settings = get_settings()
         assert isinstance(settings.feature_flags.structured_logging, bool)
 
-
 class TestFeatureFlagsMetricsTracking:
     """Tests for feature_flags.metrics_tracking parameter."""
 
@@ -709,7 +673,6 @@ class TestFeatureFlagsMetricsTracking:
 
         settings = get_settings()
         assert isinstance(settings.feature_flags.metrics_tracking, bool)
-
 
 class TestFeatureFlagsMultiTierFallback:
     """Tests for feature_flags.multi_tier_fallback parameter."""
@@ -721,7 +684,6 @@ class TestFeatureFlagsMultiTierFallback:
         settings = get_settings()
         assert isinstance(settings.feature_flags.multi_tier_fallback, bool)
 
-
 class TestFeatureFlagsConversationGuard:
     """Tests for feature_flags.conversation_guard parameter."""
 
@@ -731,7 +693,6 @@ class TestFeatureFlagsConversationGuard:
 
         settings = get_settings()
         assert isinstance(settings.feature_flags.conversation_guard, bool)
-
 
 class TestFeatureFlagsToneAnalysis:
     """Tests for feature_flags.tone_analysis parameter."""
@@ -743,7 +704,6 @@ class TestFeatureFlagsToneAnalysis:
         settings = get_settings()
         assert isinstance(settings.feature_flags.tone_analysis, bool)
 
-
 class TestFeatureFlagsResponseVariations:
     """Tests for feature_flags.response_variations parameter."""
 
@@ -753,7 +713,6 @@ class TestFeatureFlagsResponseVariations:
 
         settings = get_settings()
         assert isinstance(settings.feature_flags.response_variations, bool)
-
 
 class TestFeatureFlagsPersonalization:
     """Tests for feature_flags.personalization parameter."""
@@ -765,7 +724,6 @@ class TestFeatureFlagsPersonalization:
         settings = get_settings()
         assert isinstance(settings.feature_flags.personalization, bool)
 
-
 class TestFeatureFlagsLeadScoring:
     """Tests for feature_flags.lead_scoring parameter."""
 
@@ -775,7 +733,6 @@ class TestFeatureFlagsLeadScoring:
 
         settings = get_settings()
         assert isinstance(settings.feature_flags.lead_scoring, bool)
-
 
 class TestFeatureFlagsCircularFlow:
     """Tests for feature_flags.circular_flow parameter."""
@@ -787,7 +744,6 @@ class TestFeatureFlagsCircularFlow:
         settings = get_settings()
         assert isinstance(settings.feature_flags.circular_flow, bool)
 
-
 class TestFeatureFlagsObjectionHandler:
     """Tests for feature_flags.objection_handler parameter."""
 
@@ -797,7 +753,6 @@ class TestFeatureFlagsObjectionHandler:
 
         settings = get_settings()
         assert isinstance(settings.feature_flags.objection_handler, bool)
-
 
 class TestFeatureFlagsCTAGenerator:
     """Tests for feature_flags.cta_generator parameter."""

@@ -16,15 +16,12 @@ import sys
 import yaml
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "src" / "yaml_config"
 FLOWS_DIR = CONFIG_DIR / "flows"
 CONSTANTS_FILE = CONFIG_DIR / "constants.yaml"
 SETTINGS_FILE = BASE_DIR / "src" / "settings.yaml"
 TEMPLATES_DIR = CONFIG_DIR / "templates"
-
 
 # =============================================================================
 # FIXTURES
@@ -36,13 +33,11 @@ def constants():
     with open(CONSTANTS_FILE, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture
 def settings():
     """Load settings.yaml."""
     with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
-
 
 @pytest.fixture
 def base_templates():
@@ -51,7 +46,6 @@ def base_templates():
     with open(templates_file, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data.get("templates", {})
-
 
 # =============================================================================
 # TEST 1: current_intent reaches PolicyContext (Phase 1)
@@ -62,8 +56,8 @@ class TestCurrentIntentReachesPolicyContext:
 
     def test_current_intent_reaches_policy_context(self):
         """ContextEnvelope.current_intent is bridged to PolicyContext."""
-        from context_envelope import ContextEnvelope
-        from conditions.policy.context import PolicyContext
+        from src.context_envelope import ContextEnvelope
+        from src.conditions.policy.context import PolicyContext
 
         # ContextEnvelope should have current_intent field
         envelope = ContextEnvelope()
@@ -81,7 +75,6 @@ class TestCurrentIntentReachesPolicyContext:
         assert ctx.last_intent == "greeting", \
             f"PolicyContext.last_intent should be 'greeting', got {ctx.last_intent}"
 
-
 # =============================================================================
 # TEST 2-3: is_price_question uses current_intent (Phase 1)
 # =============================================================================
@@ -92,7 +85,7 @@ class TestIsPriceQuestionUsesCurrentIntent:
     def test_is_price_question_uses_current_not_last(self):
         """current_intent='price_question', last_intent='greeting' → True.
         current_intent='greeting', last_intent='price_question' → False."""
-        from conditions.policy.context import PolicyContext
+        from src.conditions.policy.context import PolicyContext
 
         # Inline the is_price_question logic to avoid registry double-registration
         # during isolated test import. The actual function checks INTENT_CATEGORIES.
@@ -125,7 +118,7 @@ class TestIsPriceQuestionUsesCurrentIntent:
 
     def test_is_price_question_secondary_intents(self):
         """Secondary intents path still works."""
-        from conditions.policy.context import PolicyContext
+        from src.conditions.policy.context import PolicyContext
 
         price_intents = {"price_question", "pricing_details", "cost_inquiry",
                          "discount_request", "payment_terms", "pricing_comparison",
@@ -145,7 +138,6 @@ class TestIsPriceQuestionUsesCurrentIntent:
         assert _is_price_question(ctx) is True, \
             "is_price_question should detect price in secondary_intents"
 
-
 # =============================================================================
 # TEST 4: Taxonomy bypass includes price intents (Phase 2)
 # =============================================================================
@@ -155,7 +147,7 @@ class TestTaxonomyBypassIncludesPriceIntents:
 
     def test_taxonomy_bypass_includes_price_intents(self, constants):
         """get_bypass_intents() returns price intents with bypass_disambiguation: true."""
-        from rules.intent_taxonomy import IntentTaxonomyRegistry
+        from src.rules.intent_taxonomy import IntentTaxonomyRegistry
 
         taxonomy_config = {
             "intent_taxonomy": constants.get("intent_taxonomy", {}),
@@ -179,7 +171,6 @@ class TestTaxonomyBypassIncludesPriceIntents:
         # Purchase intents
         assert "callback_request" in bypass, "callback_request must bypass disambiguation"
         assert "ready_to_buy" in bypass, "ready_to_buy must bypass disambiguation"
-
 
 # =============================================================================
 # TEST 5: Disambiguation engine uses taxonomy bypass (Phase 2)
@@ -221,7 +212,6 @@ class TestDisambiguationEngineUsesTaxonomyBypass:
             f"price_question should bypass disambiguation, got {result.decision}"
         assert not result.needs_disambiguation, \
             "price_question should not need disambiguation"
-
 
 # =============================================================================
 # TEST 6: All flows use answer_with_pricing default (Phase 3)
@@ -277,7 +267,6 @@ class TestAllFlowsPriceDefaultIsAnswerWithPricing:
                 assert price_action != "deflect_and_continue", \
                     f"Mixin '{name}' still uses deflect_and_continue"
 
-
 # =============================================================================
 # TEST 7-8: KZ phone validates (Phase 4)
 # =============================================================================
@@ -287,7 +276,7 @@ class TestKZPhoneValidation:
 
     def test_kz_phone_validates(self):
         """+7700, +7747, +7778 all valid."""
-        from conditions.state_machine.contact_validator import ContactValidator
+        from src.conditions.state_machine.contact_validator import ContactValidator
 
         validator = ContactValidator()
 
@@ -311,7 +300,7 @@ class TestKZPhoneValidation:
         phone_config = settings.get("phone_validation")
         assert phone_config is not None, "settings.yaml missing phone_validation section"
 
-        from conditions.state_machine.contact_validator import ContactValidator
+        from src.conditions.state_machine.contact_validator import ContactValidator
 
         validator = ContactValidator(phone_config=phone_config)
         # Should still work with config-driven init
@@ -320,12 +309,11 @@ class TestKZPhoneValidation:
 
     def test_invalid_prefix_still_rejected(self):
         """Invalid prefixes should still be rejected."""
-        from conditions.state_machine.contact_validator import ContactValidator
+        from src.conditions.state_machine.contact_validator import ContactValidator
 
         validator = ContactValidator()
         result = validator.validate_phone("+71231234567")
         assert not result.is_valid, "Invalid prefix +7123 should be rejected"
-
 
 # =============================================================================
 # TEST 9: Phase extraction order deterministic (Phase 6)
@@ -336,7 +324,7 @@ class TestPhaseExtractionOrderDeterministic:
 
     def test_phase_extraction_order_deterministic(self):
         """50 runs should produce the same order."""
-        from simulator.metrics import extract_phases_from_dialogue as extract_phases
+        from src.simulator.metrics import extract_phases_from_dialogue as extract_phases
 
         dialogue = [
             {"visited_states": ["spin_situation"]},
@@ -360,7 +348,6 @@ class TestPhaseExtractionOrderDeterministic:
             result = extract_phases(dialogue, phase_mapping=phase_mapping)
             assert result == expected_order, \
                 f"Run {i}: expected {expected_order}, got {result}"
-
 
 # =============================================================================
 # TEST 10: handle_objection uses entry_state (Phase 7)
@@ -390,7 +377,6 @@ class TestHandleObjectionUsesEntryState:
         sc_info_provided = sc_transitions.get("info_provided")
         assert sc_info_provided == "{{entry_state}}", \
             f"soft_close.transitions.info_provided should be '{{{{entry_state}}}}', got '{sc_info_provided}'"
-
 
 # =============================================================================
 # TEST 11: Template dedup coverage (Phase 5)

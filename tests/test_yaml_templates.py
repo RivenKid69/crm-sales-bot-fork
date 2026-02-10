@@ -9,7 +9,6 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 class TestTemplateLoading:
     """Tests for template loading in FlowConfig."""
 
@@ -153,7 +152,6 @@ class TestTemplateLoading:
         assert "template" in config
         assert config.get("phase") == "situation"
 
-
 class TestTemplateInGenerator:
     """Tests for template usage in ResponseGenerator.
 
@@ -206,7 +204,7 @@ class TestTemplateInGenerator:
     def test_generator_uses_flow_template(self, generator_flow_dir):
         """Test that _get_template uses FlowConfig templates."""
         from src.config_loader import ConfigLoader
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         loader = ConfigLoader(generator_flow_dir)
         flow = loader.load_flow("generator_test")
@@ -226,7 +224,7 @@ class TestTemplateInGenerator:
     def test_generator_fallback_to_prompt_templates(self, generator_flow_dir):
         """Test that generator falls back to PROMPT_TEMPLATES."""
         from src.config_loader import ConfigLoader
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         loader = ConfigLoader(generator_flow_dir)
         flow = loader.load_flow("generator_test")
@@ -250,7 +248,7 @@ class TestTemplateInGenerator:
 
     def test_generator_without_flow_uses_prompt_templates(self):
         """Test that generator without flow uses PROMPT_TEMPLATES."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         flow = None
 
@@ -270,7 +268,6 @@ class TestTemplateInGenerator:
             "deflect_and_continue",
             PROMPT_TEMPLATES.get("continue_current_goal", "")
         )
-
 
 class TestSpinSellingTemplates:
     """Tests for SPIN Selling specific templates."""
@@ -322,7 +319,6 @@ class TestSpinSellingTemplates:
                 assert template is not None, f"Missing base template: {template_name}"
         except Exception as e:
             pytest.skip(f"Flow not available: {e}")
-
 
 class TestTemplateStructure:
     """Tests for template structure validation."""
@@ -411,7 +407,6 @@ Response:"""
         assert "History:" in template
         assert "User:" in template
         assert "Response:" in template
-
 
 class TestNoTemplatesFlow:
     """Tests for flows without templates."""

@@ -14,38 +14,34 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 class TestRequestBrevityIntent:
     """Тесты для интента request_brevity."""
 
     def test_request_brevity_in_intent_type(self):
         """request_brevity включён в IntentType."""
         import typing
-        from classifier.llm.schemas import IntentType
+        from src.classifier.llm.schemas import IntentType
 
         intents = typing.get_args(IntentType)
         assert "request_brevity" in intents
 
     def test_request_brevity_in_system_prompt(self):
         """request_brevity описан в SYSTEM_PROMPT."""
-        from classifier.llm.prompts import SYSTEM_PROMPT
+        from src.classifier.llm.prompts import SYSTEM_PROMPT
 
         assert "request_brevity" in SYSTEM_PROMPT
         assert "короче" in SYSTEM_PROMPT or "по сути" in SYSTEM_PROMPT
 
     def test_request_brevity_critical_rule_exists(self):
         """Критическое правило для различения request_brevity и objection_think."""
-        from classifier.llm.prompts import SYSTEM_PROMPT
+        from src.classifier.llm.prompts import SYSTEM_PROMPT
 
         # Проверяем что есть правило различения
         assert "request_brevity vs objection_think" in SYSTEM_PROMPT
 
     def test_request_brevity_few_shot_examples(self):
         """Есть few-shot примеры для request_brevity."""
-        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+        from src.classifier.llm.few_shot import FEW_SHOT_EXAMPLES
 
         brevity_examples = [
             ex for ex in FEW_SHOT_EXAMPLES
@@ -55,7 +51,7 @@ class TestRequestBrevityIntent:
 
     def test_request_brevity_in_intent_to_category(self):
         """request_brevity в маппинге INTENT_TO_CATEGORY."""
-        from knowledge.retriever import INTENT_TO_CATEGORY
+        from src.knowledge.retriever import INTENT_TO_CATEGORY
 
         assert "request_brevity" in INTENT_TO_CATEGORY
         # request_brevity - мета-интент, не требует фактов
@@ -63,7 +59,7 @@ class TestRequestBrevityIntent:
 
     def test_request_brevity_classification_result_valid(self):
         """ClassificationResult с request_brevity валиден."""
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
 
         result = ClassificationResult(
             intent="request_brevity",
@@ -72,13 +68,12 @@ class TestRequestBrevityIntent:
         )
         assert result.intent == "request_brevity"
 
-
 class TestObjectionTemplateSelection:
     """Тесты для intent-aware выбора шаблонов objection."""
 
     def test_objection_related_intents_defined(self):
         """OBJECTION_RELATED_INTENTS определён в ResponseGenerator."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         assert hasattr(ResponseGenerator, "OBJECTION_RELATED_INTENTS")
         assert "objection_competitor" in ResponseGenerator.OBJECTION_RELATED_INTENTS
@@ -87,7 +82,7 @@ class TestObjectionTemplateSelection:
 
     def test_get_objection_template_key_method_exists(self):
         """Метод _get_objection_template_key существует."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         mock_llm = MagicMock()
         generator = ResponseGenerator(llm=mock_llm)
@@ -95,7 +90,7 @@ class TestObjectionTemplateSelection:
 
     def test_objection_competitor_returns_specific_template(self):
         """objection_competitor возвращает handle_objection_competitor."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         mock_llm = MagicMock()
         generator = ResponseGenerator(llm=mock_llm)
@@ -105,7 +100,7 @@ class TestObjectionTemplateSelection:
 
     def test_objection_price_returns_specific_template(self):
         """objection_price возвращает handle_objection_price."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         mock_llm = MagicMock()
         generator = ResponseGenerator(llm=mock_llm)
@@ -115,8 +110,8 @@ class TestObjectionTemplateSelection:
 
     def test_all_objection_intents_have_templates(self):
         """Все objection интенты имеют соответствующие шаблоны."""
-        from generator import ResponseGenerator
-        from config import PROMPT_TEMPLATES
+        from src.generator import ResponseGenerator
+        from src.config import PROMPT_TEMPLATES
 
         mock_llm = MagicMock()
         generator = ResponseGenerator(llm=mock_llm)
@@ -126,67 +121,64 @@ class TestObjectionTemplateSelection:
             # Либо есть специфичный шаблон, либо fallback на generic
             assert template_key.startswith("handle_objection")
 
-
 class TestHandleObjectionCompetitorTemplate:
     """Тесты шаблона handle_objection_competitor."""
 
     def test_template_has_retrieved_facts(self):
         """handle_objection_competitor использует {retrieved_facts}."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("handle_objection_competitor", "")
         assert "{retrieved_facts}" in template, "Шаблон должен использовать retrieved_facts"
 
     def test_template_has_competitor_info_header(self):
         """handle_objection_competitor имеет секцию с информацией о конкурентах."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("handle_objection_competitor", "")
         assert "ИНФОРМАЦИЯ О КОНКУРЕНТАХ" in template or "КОНКУРЕНТ" in template.upper()
 
     def test_template_instructs_to_use_facts(self):
         """Шаблон инструктирует использовать факты для сравнения."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("handle_objection_competitor", "")
         assert "факты" in template.lower() or "сравнение" in template.lower()
-
 
 class TestRespondBrieflyTemplate:
     """Тесты шаблона respond_briefly."""
 
     def test_template_exists(self):
         """Шаблон respond_briefly существует."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         assert "respond_briefly" in PROMPT_TEMPLATES
 
     def test_template_instructs_brevity(self):
         """Шаблон инструктирует быть кратким."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("respond_briefly", "")
         assert "коротк" in template.lower() or "крат" in template.lower()
 
     def test_template_not_objection(self):
         """Шаблон указывает что это НЕ возражение."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("respond_briefly", "")
         assert "НЕ возражение" in template
-
 
 class TestFewShotIntegration:
     """Тесты интеграции few-shot примеров."""
 
     def test_few_shot_import_in_prompts(self):
         """get_few_shot_prompt импортируется в prompts.py."""
-        from classifier.llm.prompts import get_few_shot_prompt
+        from src.classifier.llm.prompts import get_few_shot_prompt
         assert callable(get_few_shot_prompt)
 
     def test_build_classification_prompt_includes_few_shot(self):
         """build_classification_prompt включает few-shot примеры."""
-        from classifier.llm.prompts import build_classification_prompt
+        from src.classifier.llm.prompts import build_classification_prompt
 
         prompt = build_classification_prompt("тест", n_few_shot=3)
         # Проверяем что few-shot примеры включены
@@ -194,7 +186,7 @@ class TestFewShotIntegration:
 
     def test_build_classification_prompt_without_few_shot(self):
         """build_classification_prompt без few-shot при n_few_shot=0."""
-        from classifier.llm.prompts import build_classification_prompt
+        from src.classifier.llm.prompts import build_classification_prompt
 
         prompt = build_classification_prompt("тест", n_few_shot=0)
         # Проверяем что это валидный промпт
@@ -202,14 +194,13 @@ class TestFewShotIntegration:
 
     def test_few_shot_examples_have_competitor(self):
         """Есть few-shot примеры для objection_competitor."""
-        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+        from src.classifier.llm.few_shot import FEW_SHOT_EXAMPLES
 
         competitor_examples = [
             ex for ex in FEW_SHOT_EXAMPLES
             if ex.get("result", {}).get("intent") == "objection_competitor"
         ]
         assert len(competitor_examples) >= 1, "Должны быть примеры для objection_competitor"
-
 
 class TestMixinMetaIntents:
     """Тесты для mixin meta_intents."""
@@ -246,13 +237,12 @@ class TestMixinMetaIntents:
         assert "includes" in spin_common
         assert "meta_intents" in spin_common["includes"]
 
-
 class TestGeneratorRequestBrevityHandling:
     """Тесты обработки request_brevity в генераторе."""
 
     def test_request_brevity_uses_respond_briefly_template(self):
         """request_brevity использует шаблон respond_briefly."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         mock_llm = MagicMock()
         generator = ResponseGenerator(llm=mock_llm)
@@ -261,24 +251,22 @@ class TestGeneratorRequestBrevityHandling:
         # При intent == "request_brevity" должен выбираться respond_briefly
         # Это проверяется косвенно через наличие условия в коде
 
-
 class TestIntentCounts:
     """Тесты корректности количества интентов."""
 
     def test_intent_count_is_34(self):
         """Всего 34 интента (33 + request_brevity)."""
         import typing
-        from classifier.llm.schemas import IntentType
+        from src.classifier.llm.schemas import IntentType
 
         intents = typing.get_args(IntentType)
         assert len(intents) == 34
 
     def test_prompt_mentions_34_intents(self):
         """SYSTEM_PROMPT упоминает 34 интента."""
-        from classifier.llm.prompts import SYSTEM_PROMPT
+        from src.classifier.llm.prompts import SYSTEM_PROMPT
 
         assert "34" in SYSTEM_PROMPT
-
 
 class TestEndToEndScenarios:
     """E2E сценарии для проверки исправлений."""
@@ -288,7 +276,7 @@ class TestEndToEndScenarios:
         Сценарий: "не грузите меня, скажите суть"
         Ожидание: intent = request_brevity (НЕ objection_think)
         """
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
 
         # Проверяем что можно создать результат с request_brevity
         result = ClassificationResult(
@@ -304,8 +292,8 @@ class TestEndToEndScenarios:
         Сценарий: "у нас Poster, зачем нам вы?"
         Ожидание: template = handle_objection_competitor с retrieved_facts
         """
-        from generator import ResponseGenerator
-        from config import PROMPT_TEMPLATES
+        from src.generator import ResponseGenerator
+        from src.config import PROMPT_TEMPLATES
 
         mock_llm = MagicMock()
         generator = ResponseGenerator(llm=mock_llm)

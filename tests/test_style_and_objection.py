@@ -13,12 +13,10 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from tone_analyzer import ToneAnalyzer, Tone, Style, ToneAnalysis
-from tone_analyzer.regex_analyzer import RegexToneAnalyzer
-from settings import settings
-
+from src.tone_analyzer import ToneAnalyzer, Tone, Style, ToneAnalysis
+from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+from src.settings import settings
 
 class TestStyleInstruction:
     """Тесты для style_instruction"""
@@ -85,7 +83,6 @@ class TestStyleInstruction:
             result = self.analyzer.analyze(msg)
             assert result.style == Style.INFORMAL, f"Ожидался INFORMAL для: {msg}"
 
-
 class TestObjectionCounterConfig:
     """Тесты для objection counter из конфига"""
 
@@ -121,13 +118,12 @@ class TestObjectionCounterConfig:
             counter = settings.get_nested(f"objection.counters.{obj_type}", "")
             assert counter != "", f"Контраргумент для {obj_type} должен быть в конфиге"
 
-
 class TestGeneratorObjectionContext:
     """Тесты для objection context в generator"""
 
     def test_get_objection_counter_from_config(self):
         """Получение контраргумента из конфига"""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         # Создаём mock LLM
         class MockLLM:
@@ -143,7 +139,7 @@ class TestGeneratorObjectionContext:
 
     def test_get_objection_counter_fallback(self):
         """Fallback на PersonalizationEngine при отсутствии в конфиге"""
-        from generator import ResponseGenerator, PersonalizationEngine
+        from src.generator import ResponseGenerator, PersonalizationEngine
 
         class MockLLM:
             def generate(self, prompt):
@@ -158,7 +154,7 @@ class TestGeneratorObjectionContext:
 
     def test_get_objection_counter_empty_for_no_type(self):
         """Пустой контраргумент если нет типа возражения"""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         class MockLLM:
             def generate(self, prompt):
@@ -172,13 +168,12 @@ class TestGeneratorObjectionContext:
         counter = gen._get_objection_counter(None, {})
         assert counter == ""
 
-
 class TestPromptTemplatesWithObjection:
     """Тесты для шаблонов промптов с возражениями"""
 
     def test_handle_objection_template_has_objection_counter(self):
         """Шаблон handle_objection содержит {objection_counter}"""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("handle_objection", "")
         assert "{objection_counter}" in template, \
@@ -186,7 +181,7 @@ class TestPromptTemplatesWithObjection:
 
     def test_handle_objection_template_has_objection_type(self):
         """Шаблон handle_objection содержит {objection_type}"""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         template = PROMPT_TEMPLATES.get("handle_objection", "")
         assert "{objection_type}" in template, \
@@ -194,7 +189,7 @@ class TestPromptTemplatesWithObjection:
 
     def test_specific_objection_templates_exist(self):
         """Специфичные шаблоны для типов возражений существуют"""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         expected_templates = [
             "handle_objection_price",
@@ -213,7 +208,7 @@ class TestPromptTemplatesWithObjection:
 
     def test_specific_templates_have_objection_counter(self):
         """Специфичные шаблоны содержат {objection_counter}"""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
 
         templates_with_counter = [
             "handle_objection_price",
@@ -231,27 +226,26 @@ class TestPromptTemplatesWithObjection:
             assert "{objection_counter}" in template, \
                 f"Шаблон {template_name} должен содержать {{objection_counter}}"
 
-
 class TestSystemPromptWithStyle:
     """Тесты для SYSTEM_PROMPT с style_instruction"""
 
     def test_system_prompt_has_style_instruction_placeholder(self):
         """SYSTEM_PROMPT содержит {style_instruction}"""
-        from config import SYSTEM_PROMPT
+        from src.config import SYSTEM_PROMPT
 
         assert "{style_instruction}" in SYSTEM_PROMPT, \
             "SYSTEM_PROMPT должен содержать {style_instruction}"
 
     def test_system_prompt_has_tone_instruction_placeholder(self):
         """SYSTEM_PROMPT содержит {tone_instruction}"""
-        from config import SYSTEM_PROMPT
+        from src.config import SYSTEM_PROMPT
 
         assert "{tone_instruction}" in SYSTEM_PROMPT, \
             "SYSTEM_PROMPT должен содержать {tone_instruction}"
 
     def test_system_prompt_can_be_formatted(self):
         """SYSTEM_PROMPT можно форматировать с обоими инструкциями"""
-        from config import SYSTEM_PROMPT
+        from src.config import SYSTEM_PROMPT
 
         formatted = SYSTEM_PROMPT.format(
             tone_instruction="Будь кратким.",
@@ -263,7 +257,7 @@ class TestSystemPromptWithStyle:
 
     def test_system_prompt_with_empty_instructions(self):
         """SYSTEM_PROMPT форматируется корректно с пустыми инструкциями"""
-        from config import SYSTEM_PROMPT
+        from src.config import SYSTEM_PROMPT
 
         formatted = SYSTEM_PROMPT.format(
             tone_instruction="",
@@ -273,7 +267,6 @@ class TestSystemPromptWithStyle:
         # Должен содержать базовый текст
         assert "менеджер по продажам" in formatted.lower()
         assert "русском языке" in formatted.lower()
-
 
 class TestToneAnalyzerConfigIntegration:
     """Тесты интеграции ToneAnalyzer с конфигом"""
@@ -296,20 +289,19 @@ class TestToneAnalyzerConfigIntegration:
         assert threshold is not None, "semantic.threshold должен быть в конфиге"
         assert ambiguity is not None, "semantic.ambiguity_delta должен быть в конфиге"
 
-
 class TestBotIntegration:
     """Тесты интеграции с bot.py"""
 
     def test_analyze_tone_returns_style_instruction(self):
         """_analyze_tone возвращает style_instruction"""
         # Импортируем после setup path
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         # Включаем tone_analysis для теста
         flags.set_override("tone_analysis", True)
 
         try:
-            from bot import SalesBot
+            from src.bot import SalesBot
 
             # Создаём mock компоненты
             class MockLLM:
@@ -319,7 +311,7 @@ class TestBotIntegration:
                     return {"intent": "greeting", "confidence": 0.9}
 
             # Используем реальный ToneAnalyzer
-            from tone_analyzer import ToneAnalyzer
+            from src.tone_analyzer import ToneAnalyzer
             analyzer = ToneAnalyzer()
 
             # Анализируем неформальное сообщение
@@ -330,7 +322,6 @@ class TestBotIntegration:
             assert result.style == Style.INFORMAL
         finally:
             flags.clear_override("tone_analysis")
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

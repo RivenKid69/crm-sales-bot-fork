@@ -24,12 +24,8 @@ from dataclasses import dataclass
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from conversation_guard import ConversationGuard, GuardConfig, GuardState
-from fallback_handler import FallbackHandler, FallbackResponse, FallbackStats
-
+from src.conversation_guard import ConversationGuard, GuardConfig, GuardState
+from src.fallback_handler import FallbackHandler, FallbackResponse, FallbackStats
 
 # =============================================================================
 # Helpers
@@ -43,7 +39,6 @@ def _make_mock_flow(states: Optional[Dict[str, Dict]] = None, skip_map: Optional
     flow.name = "test_flow"
     flow.version = "1.0"
     return flow
-
 
 # =============================================================================
 # Fix 1: Classification Before Guard Check
@@ -86,7 +81,6 @@ class TestFix1ClassificationBeforeGuard:
             "some_state", "msg_3", {}, frustration_level=0, last_intent="unclear"
         )
         assert intervention == "fallback_tier_3"
-
 
 # =============================================================================
 # Fix 2: Validate required_data Before Tier 3 Skip
@@ -212,7 +206,6 @@ class TestFix2FindValidSkipTarget:
         # Should skip teach_state and go to close_state
         assert target == "close_state"
 
-
 class TestFix2Tier3SkipValidation:
     """Fix 2: _tier_3_skip uses _find_valid_skip_target instead of blind default."""
 
@@ -247,7 +240,6 @@ class TestFix2Tier3SkipValidation:
         )
         # Should NOT be skip since no valid target
         assert response.action == "continue"  # tier_2 options return "continue"
-
 
 # =============================================================================
 # Fix 3: Tier 2 Self-Loop Breaker
@@ -354,7 +346,6 @@ class TestFix3Tier2SelfLoopBreaker:
         assert hasattr(config, 'max_consecutive_tier_2')
         assert config.max_consecutive_tier_2 == 3
 
-
 # =============================================================================
 # Fix 4: soft_close No Longer Transitions to presentation
 # =============================================================================
@@ -420,7 +411,6 @@ class TestFix4SoftCloseNoPresentation:
         assert "question_integrations" in transitions
         assert "consultation_request" in transitions
 
-
 # =============================================================================
 # Fix 5: Disambiguation Data (visited_states / initial_state)
 # =============================================================================
@@ -435,7 +425,7 @@ class TestFix5DisambiguationData:
         # We test the structure by checking that bot.py has the right return fields
         # This is a structural test — verifying the code has the fix
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._initiate_disambiguation)
         assert '"visited_states"' in source or "'visited_states'" in source
@@ -444,7 +434,7 @@ class TestFix5DisambiguationData:
     def test_repeat_disambiguation_returns_visited_states(self):
         """_repeat_disambiguation_question returns visited_states and initial_state."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._repeat_disambiguation_question)
         assert '"visited_states"' in source or "'visited_states'" in source
@@ -453,7 +443,7 @@ class TestFix5DisambiguationData:
     def test_continue_with_classification_returns_visited_states(self):
         """_continue_with_classification main return includes visited_states."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._continue_with_classification)
         assert '"visited_states"' in source or "'visited_states'" in source
@@ -464,12 +454,11 @@ class TestFix5DisambiguationData:
     def test_continue_with_classification_close_return_has_data(self):
         """Close return path in _continue_with_classification includes tracking data."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._continue_with_classification)
         # The close return block should have visited_states
         assert source.count("visited_states") >= 2  # At least in close return and main return
-
 
 # =============================================================================
 # Fix 6: Skip Handling in _continue_with_classification
@@ -481,7 +470,7 @@ class TestFix6DisambiguationSkipHandling:
     def test_continue_with_classification_has_skip_handling(self):
         """_continue_with_classification has skip action handling code."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._continue_with_classification)
         # Should contain skip handling
@@ -492,7 +481,7 @@ class TestFix6DisambiguationSkipHandling:
     def test_continue_with_classification_uses_current_intent_for_guard(self):
         """Guard in _continue_with_classification uses current intent (Fix 1+6)."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._continue_with_classification)
         # Should pass intent (not self.last_intent) to guard
@@ -501,7 +490,7 @@ class TestFix6DisambiguationSkipHandling:
     def test_continue_with_classification_merges_extracted(self):
         """Fallback context in _continue_with_classification merges extracted data."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._continue_with_classification)
         # Should merge extracted with collected_data
@@ -510,11 +499,10 @@ class TestFix6DisambiguationSkipHandling:
     def test_continue_with_classification_records_progress(self):
         """_continue_with_classification calls guard.record_progress()."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot._continue_with_classification)
         assert "record_progress" in source
-
 
 # =============================================================================
 # Integration Tests
@@ -554,7 +542,6 @@ class TestIntegrationFix1Fix2:
         assert response.action == "skip"
         # Should skip stateB (unsatisfied) and go to stateC
         assert response.next_state == "stateC"
-
 
 class TestIntegrationFix2Fix3:
     """Integration: Fix 2 (validated skip) + Fix 3 (tier_2 escalation)."""
@@ -597,7 +584,6 @@ class TestIntegrationFix2Fix3:
         # tier_3 has no valid target → falls to tier_2 options
         assert r3.action == "continue"
 
-
 class TestIntegrationGuardConfigPassing:
     """Integration: GuardConfig flows from Guard to FallbackHandler."""
 
@@ -613,7 +599,6 @@ class TestIntegrationGuardConfigPassing:
         """Without guard_config, default threshold is 3."""
         handler = FallbackHandler()
         assert handler._max_consecutive_tier_2 == 3
-
 
 # =============================================================================
 # Regression Tests
@@ -706,7 +691,6 @@ class TestRegressionExistingBehavior:
         )
         assert intervention == "fallback_tier_3"
 
-
 # =============================================================================
 # Bot Pipeline Tests (structural verification)
 # =============================================================================
@@ -717,7 +701,7 @@ class TestBotPipelineOrder:
     def test_classification_before_guard_in_process(self):
         """In process(), classification comes before guard check."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot.process)
         lines = source.split('\n')
@@ -739,7 +723,7 @@ class TestBotPipelineOrder:
     def test_guard_uses_current_intent_in_process(self):
         """In process(), guard call uses `intent` not `self.last_intent`."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot.process)
         # Find the guard call section and check it uses current intent
@@ -749,7 +733,7 @@ class TestBotPipelineOrder:
     def test_fallback_context_merges_extracted_in_process(self):
         """In process(), fallback context merges extracted data with collected_data."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot.process)
         assert "**extracted" in source
@@ -757,11 +741,10 @@ class TestBotPipelineOrder:
     def test_bot_passes_guard_config_to_fallback(self):
         """SalesBot passes guard.config to FallbackHandler."""
         import inspect
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         source = inspect.getsource(SalesBot.__init__)
         assert "guard_config" in source
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

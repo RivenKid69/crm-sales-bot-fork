@@ -28,7 +28,6 @@ from src.dag.branch_router import BranchRouter, BranchRouteResult, IntentBranchM
 from src.dag.sync_points import SyncPointManager, SyncStrategy, SyncResult
 from src.dag.history import HistoryManager, HistoryEntry, ConversationFlowTracker
 
-
 # =============================================================================
 # DAG Models Tests
 # =============================================================================
@@ -105,7 +104,6 @@ class TestDAGBranch:
         assert restored.start_state == branch.start_state
         assert restored.status == branch.status
         assert restored.collected_data == branch.collected_data
-
 
 class TestDAGExecutionContext:
     """Tests for DAGExecutionContext."""
@@ -196,7 +194,6 @@ class TestDAGExecutionContext:
         assert restored.primary_state == ctx.primary_state
         assert "b" in restored.active_branches
 
-
 class TestDAGNodeConfig:
     """Tests for DAGNodeConfig."""
 
@@ -267,7 +264,6 @@ class TestDAGNodeConfig:
         assert node.node_type == NodeType.JOIN
         assert node.expects_branches == ["budget", "timeline"]
         assert node.on_join_action == "aggregate_results"
-
 
 # =============================================================================
 # DAG Executor Tests
@@ -445,7 +441,6 @@ class TestDAGExecutor:
         assert "budget" in result.aggregated_data
         assert "timeline" in result.aggregated_data
 
-
 # =============================================================================
 # Branch Router Tests
 # =============================================================================
@@ -500,7 +495,6 @@ class TestBranchRouter:
         assert result.branch_id is None
         assert result.all_waiting
 
-
 class TestIntentBranchMapping:
     """Tests for IntentBranchMapping."""
 
@@ -514,7 +508,6 @@ class TestIntentBranchMapping:
         assert "budget_branch" in mapping.get_branches_for_intent("budget_question")
         assert "timeline_branch" in mapping.get_branches_for_intent("timeline_question")
         assert mapping.get_branches_for_intent("unknown") == []
-
 
 # =============================================================================
 # Sync Points Tests
@@ -593,7 +586,6 @@ class TestSyncPointManager:
         assert len(callback_called) == 1
         assert "a" in callback_called[0]
 
-
 # =============================================================================
 # History Manager Tests
 # =============================================================================
@@ -665,7 +657,6 @@ class TestHistoryManager:
 
         assert not manager.has_history("flow")
 
-
 class TestConversationFlowTracker:
     """Tests for ConversationFlowTracker."""
 
@@ -687,7 +678,6 @@ class TestConversationFlowTracker:
         assert flow_id == "booking"
         assert state == "collect_date"
         assert data["step"] == 1
-
 
 # =============================================================================
 # Integration Tests
@@ -733,7 +723,6 @@ class TestDAGIntegration:
         aggregated = dag_ctx.get_aggregated_data()
         assert "budget" in aggregated
         assert aggregated["budget"]["budget"] == 50000
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

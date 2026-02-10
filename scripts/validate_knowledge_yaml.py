@@ -10,13 +10,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from knowledge.loader import load_knowledge_base
-from knowledge.base import KnowledgeSection
+from src.knowledge.loader import load_knowledge_base
+from src.knowledge.base import KnowledgeSection
 
 # Импорт ОРИГИНАЛЬНЫХ данных для сравнения
 # ВАЖНО: Этот импорт работает только пока data.py не удалён!
 try:
-    from knowledge.data import WIPON_KNOWLEDGE as ORIGINAL_KB
+    from src.knowledge.data import WIPON_KNOWLEDGE as ORIGINAL_KB
     HAS_ORIGINAL = True
 except ImportError:
     HAS_ORIGINAL = False
@@ -195,7 +195,7 @@ def validate_import_compatibility():
     print("\n6. Проверка импорта...")
 
     try:
-        from knowledge import WIPON_KNOWLEDGE
+        from src.knowledge import WIPON_KNOWLEDGE
 
         # Проверить что это работает
         _ = WIPON_KNOWLEDGE.company_name

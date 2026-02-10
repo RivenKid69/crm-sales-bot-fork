@@ -28,7 +28,6 @@ from src.rules.resolver import (
     create_resolver
 )
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -64,12 +63,10 @@ def test_registry():
 
     return registry
 
-
 @pytest.fixture
 def resolver(test_registry):
     """Create resolver with test registry."""
     return RuleResolver(test_registry)
-
 
 @pytest.fixture
 def context_with_data():
@@ -80,7 +77,6 @@ def context_with_data():
         turn_number=5
     )
 
-
 @pytest.fixture
 def context_without_data():
     """Context without company_size."""
@@ -90,7 +86,6 @@ def context_without_data():
         turn_number=5
     )
 
-
 @pytest.fixture
 def context_with_contact():
     """Context with contact info."""
@@ -99,7 +94,6 @@ def context_with_contact():
         state="close",
         turn_number=10
     )
-
 
 # =============================================================================
 # RULE RESULT TESTS
@@ -143,7 +137,6 @@ class TestRuleResult:
         data = result.to_dict()
         assert "trace" in data
 
-
 # =============================================================================
 # VALIDATION ERROR AND RESULT TESTS
 # =============================================================================
@@ -172,7 +165,6 @@ class TestValidationError:
         data = error.to_dict()
         assert data["type"] == "test"
         assert data["message"] == "test message"
-
 
 class TestValidationResult:
     """Tests for ValidationResult dataclass."""
@@ -203,7 +195,6 @@ class TestValidationResult:
         data = result.to_dict()
         assert data["is_valid"] is False
         assert data["checked_rules"] == 10
-
 
 # =============================================================================
 # SIMPLE RULE TESTS
@@ -263,7 +254,6 @@ class TestSimpleRules:
             ctx=SimpleContext()
         )
         assert action == "custom_default"
-
 
 # =============================================================================
 # CONDITIONAL DICT RULE TESTS
@@ -334,7 +324,6 @@ class TestConditionalDictRules:
                 global_rules={},
                 ctx=context_with_data
             )
-
 
 # =============================================================================
 # RULE CHAIN TESTS
@@ -424,7 +413,6 @@ class TestRuleChains:
                 ctx=context_with_data
             )
 
-
 # =============================================================================
 # TRANSITION TESTS
 # =============================================================================
@@ -484,7 +472,6 @@ class TestTransitions:
             ctx=context_with_data
         )
         assert result is None
-
 
 # =============================================================================
 # TRACING TESTS
@@ -567,7 +554,6 @@ class TestTracing:
         )
         # Should have checked both conditions
         assert trace.conditions_checked == 2
-
 
 # =============================================================================
 # CONFIG VALIDATION TESTS
@@ -687,7 +673,6 @@ class TestConfigValidation:
         assert result.is_valid is False
         assert any(e.error_type == "missing_key" for e in result.errors)
 
-
 # =============================================================================
 # FACTORY FUNCTION TESTS
 # =============================================================================
@@ -705,7 +690,6 @@ class TestFactoryFunction:
         # This uses the sm_registry from conditions module
         resolver = create_resolver()
         assert resolver.registry is not None
-
 
 # =============================================================================
 # ERROR EXCEPTION TESTS
@@ -732,7 +716,6 @@ class TestExceptions:
         error = InvalidRuleFormatError("rule", "reason", "state")
         assert "rule" in str(error)
         assert "reason" in str(error)
-
 
 # =============================================================================
 # INTEGRATION TESTS
@@ -1088,7 +1071,6 @@ class TestAdditionalCoverage:
         }
         result = resolver.validate_config(states_config)
         assert result.is_valid is True
-
 
 class TestIntegration:
     """Integration tests for realistic scenarios."""

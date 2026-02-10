@@ -17,14 +17,12 @@ from pathlib import Path
 from typing import Dict, Any
 
 # Add src to PYTHONPATH for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from cta_generator import CTAGenerator, CTAResult
-from conditions.personalization import (
+from src.cta_generator import CTAGenerator, CTAResult
+from src.conditions.personalization import (
     PersonalizationContext,
     personalization_registry,
 )
-
 
 # =============================================================================
 # TEST FIXTURES
@@ -38,14 +36,12 @@ def generator():
     gen.turn_count = 5
     return gen
 
-
 @pytest.fixture
 def early_generator():
     """Create a CTAGenerator in early conversation stage."""
     gen = CTAGenerator()
     gen.turn_count = 2
     return gen
-
 
 @pytest.fixture
 def presentation_context():
@@ -62,7 +58,6 @@ def presentation_context():
         "total_objections": 0
     }
 
-
 @pytest.fixture
 def breakthrough_context():
     """Context with breakthrough."""
@@ -77,7 +72,6 @@ def breakthrough_context():
         "has_breakthrough": True,
         "total_objections": 0
     }
-
 
 @pytest.fixture
 def frustrated_context():
@@ -96,7 +90,6 @@ def frustrated_context():
         "total_objections": 2
     }
 
-
 @pytest.fixture
 def moderate_frustration_context():
     """Context with moderate frustration."""
@@ -108,7 +101,6 @@ def moderate_frustration_context():
         "has_breakthrough": False,
         "total_objections": 1
     }
-
 
 # =============================================================================
 # CREATE PERSONALIZATION CONTEXT TESTS
@@ -168,7 +160,6 @@ class TestCreatePersonalizationContext:
         ctx = generator.create_personalization_context("presentation", {})
 
         assert ctx.turn_number == 10
-
 
 # =============================================================================
 # SHOULD ADD CTA WITH CONDITIONS TESTS
@@ -232,7 +223,6 @@ class TestShouldAddCtaWithConditions:
         assert should_add is False
         assert "frustration" in reason
 
-
 # =============================================================================
 # GET OPTIMAL CTA TYPE TESTS
 # =============================================================================
@@ -287,7 +277,6 @@ class TestGetOptimalCtaType:
         cta_type = generator.get_optimal_cta_type("presentation", context)
 
         assert cta_type == "trial"
-
 
 # =============================================================================
 # APPEND CTA WITH CONDITIONS TESTS
@@ -365,7 +354,6 @@ class TestAppendCtaWithConditions:
         # Just verify CTA was added
         assert len(result) > len(response)
 
-
 # =============================================================================
 # GENERATE CTA RESULT WITH CONDITIONS TESTS
 # =============================================================================
@@ -429,7 +417,6 @@ class TestGenerateCtaResultWithConditions:
 
         assert result.cta_added is False
         assert result.skip_reason == "no_cta_for_state"
-
 
 # =============================================================================
 # INTEGRATION TESTS
@@ -525,7 +512,6 @@ class TestConditionsIntegration:
         # Check history
         stats = generator.get_usage_stats()
         assert stats["total_ctas_used"] > 0
-
 
 # =============================================================================
 # COMPARISON WITH LEGACY TESTS
@@ -626,7 +612,6 @@ class TestComparisonWithLegacy:
         assert not legacy_should  # 7 >= 5
         assert not cond_should    # 7 >= 7
         assert legacy_should == cond_should
-
 
 # =============================================================================
 # EDGE CASES

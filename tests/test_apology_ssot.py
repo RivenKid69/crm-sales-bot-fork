@@ -30,7 +30,6 @@ from src.frustration_thresholds import (
     FRUSTRATION_HIGH,
 )
 
-
 class TestApologySSoTConsistency:
     """SSoT consistency tests - thresholds match frustration_thresholds."""
 
@@ -54,7 +53,6 @@ class TestApologySSoTConsistency:
         """APOLOGY_MARKERS list is not empty."""
         assert len(APOLOGY_MARKERS) > 0
         assert all(isinstance(m, str) for m in APOLOGY_MARKERS)
-
 
 class TestApologyHelperFunctions:
     """Unit tests for helper functions."""
@@ -103,7 +101,6 @@ class TestApologyHelperFunctions:
         # Should mention exit in Russian
         assert "заверш" in instruction.lower() or "неудобно" in instruction.lower()
 
-
 class TestApologyDetection:
     """Tests for has_apology() function."""
 
@@ -136,7 +133,6 @@ class TestApologyDetection:
         assert has_apology("ИЗВИНИТЕ за неудобства") is True
         assert has_apology("извините за неудобства") is True
 
-
 class TestPhraseBuilders:
     """Tests for phrase builder functions."""
 
@@ -159,7 +155,6 @@ class TestPhraseBuilders:
 
         assert result == "Если неудобно — можем позже."
         mock_variations.get_exit_offer.assert_called_once()
-
 
 class TestResponseDirectivesApology:
     """Integration with ResponseDirectives."""
@@ -222,7 +217,6 @@ class TestResponseDirectivesApology:
         assert data["apology"]["should_apologize"] is True
         assert data["apology"]["should_offer_exit"] is True
 
-
 class TestResponseDirectivesBuilder:
     """Integration with ResponseDirectivesBuilder."""
 
@@ -269,7 +263,6 @@ class TestResponseDirectivesBuilder:
         directives = builder.build()
 
         assert directives.should_offer_exit is False
-
 
 class TestGeneratorApology:
     """Integration with Generator - uses method inspection to avoid loading embeddings."""
@@ -336,7 +329,6 @@ class TestGeneratorApology:
         instruction = directives.get_instruction()
         assert instruction  # Not empty
 
-
 class TestBug22ToneAwareApology:
     """Tone-aware apology — skeptical users should not get apology at warning level."""
 
@@ -390,7 +382,6 @@ class TestBug22ToneAwareApology:
         """Tone matching is case-insensitive."""
         assert should_apologize(APOLOGY_THRESHOLD, tone="SKEPTICAL") is False
         assert should_apologize(APOLOGY_THRESHOLD, tone="Skeptical") is False
-
 
 class TestBug22RegexAnalyzer:
     """Regex_analyzer urgency branches — Path A tests."""
@@ -450,7 +441,6 @@ class TestBug22RegexAnalyzer:
         guidance = analyzer.get_response_guidance(analysis)
         assert guidance["should_apologize"] is True
 
-
 class TestBug22ResponseVariations:
     """No anglicisms in APOLOGIES list."""
 
@@ -459,7 +449,6 @@ class TestBug22ResponseVariations:
         from src.response_variations import ResponseVariations
         for phrase in ResponseVariations.APOLOGIES:
             assert "сорри" not in phrase.lower(), f"Anglicism found: {phrase}"
-
 
 class TestFeatureFlag:
     """Tests for apology_system feature flag."""
@@ -487,7 +476,6 @@ class TestFeatureFlag:
         from src.feature_flags import FeatureFlags
 
         assert "apology_system" in FeatureFlags.GROUPS["safe"]
-
 
 class TestApologyPhraseRotation:
     """Tests for apology phrase rotation (LRU)."""
@@ -523,7 +511,6 @@ class TestApologyPhraseRotation:
         # Should have used different phrases (at least 2 unique)
         unique_phrases = set(phrases)
         assert len(unique_phrases) >= 2
-
 
 class TestIntegrationEndToEnd:
     """End-to-end integration tests."""

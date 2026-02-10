@@ -11,17 +11,14 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from response_directives import (
+from src.response_directives import (
     ResponseDirectives,
     ResponseDirectivesBuilder,
     ResponseTone,
     build_response_directives,
 )
-from context_envelope import ContextEnvelope, ReasonCode
+from src.context_envelope import ContextEnvelope, ReasonCode
 from src.config_loader import get_config
-
 
 class TestResponseDirectivesConfigLoading:
     """Тесты загрузки конфигурации."""
@@ -65,7 +62,6 @@ class TestResponseDirectivesConfigLoading:
         assert "low_engagement" in max_words
         assert "repair_mode" in max_words
         assert "default" in max_words
-
 
 class TestBuilderUsesConfig:
     """Тесты использования конфига в Builder."""
@@ -160,7 +156,6 @@ class TestBuilderUsesConfig:
         expected_size_name = field_names.get("company_size", "размер компании")
         assert expected_size_name in directives.do_not_repeat
 
-
 class TestBuilderConfigFallback:
     """Тесты fallback значений при отсутствии конфига."""
 
@@ -208,7 +203,6 @@ class TestBuilderConfigFallback:
 
         # Должен использоваться default перевод
         assert "цена" in directives.objection_summary
-
 
 class TestBuilderConfigOverride:
     """Тесты переопределения параметров через конфиг."""

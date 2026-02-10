@@ -13,14 +13,9 @@
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-import sys
 import os
 
-# Add src to path
 src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
-
 
 # =============================================================================
 # Test 1: YAML Configuration - intent categories
@@ -72,7 +67,6 @@ class TestYamlIntentCategories:
         assert overrides.get('price_question') == 'answer_with_pricing'
         assert overrides.get('pricing_details') == 'answer_with_pricing'
 
-
 # =============================================================================
 # Test 2: Generator - Deduplication
 # =============================================================================
@@ -81,7 +75,7 @@ class TestGeneratorDeduplication:
 
     def test_compute_similarity_exact_match(self):
         """Точное совпадение должно давать similarity = 1.0."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -92,7 +86,7 @@ class TestGeneratorDeduplication:
 
     def test_compute_similarity_partial_match(self):
         """Частичное совпадение должно давать высокую similarity."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -107,7 +101,7 @@ class TestGeneratorDeduplication:
 
     def test_compute_similarity_different_texts(self):
         """Разные тексты должны давать низкую similarity."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -121,7 +115,7 @@ class TestGeneratorDeduplication:
 
     def test_is_duplicate_detects_history_duplicate(self):
         """_is_duplicate должен обнаруживать дубликаты в истории."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -136,7 +130,7 @@ class TestGeneratorDeduplication:
 
     def test_is_duplicate_allows_unique_response(self):
         """_is_duplicate должен пропускать уникальные ответы."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -151,7 +145,7 @@ class TestGeneratorDeduplication:
 
     def test_add_to_response_history(self):
         """_add_to_response_history должен добавлять ответы в историю."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -164,7 +158,7 @@ class TestGeneratorDeduplication:
 
     def test_response_history_limit(self):
         """История ответов должна ограничиваться max_response_history."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
         gen._max_response_history = 3
@@ -178,7 +172,7 @@ class TestGeneratorDeduplication:
 
     def test_reset_clears_history(self):
         """reset() должен очищать историю ответов."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
@@ -191,7 +185,7 @@ class TestGeneratorDeduplication:
 
     def test_price_related_intents_constant(self):
         """PRICE_RELATED_INTENTS должен содержать price интенты."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         assert hasattr(ResponseGenerator, 'PRICE_RELATED_INTENTS')
         assert 'price_question' in ResponseGenerator.PRICE_RELATED_INTENTS
@@ -199,14 +193,13 @@ class TestGeneratorDeduplication:
 
     def test_get_price_template_key(self):
         """_get_price_template_key должен возвращать правильные шаблоны."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator(llm=Mock())
 
         assert gen._get_price_template_key("price_question", "any") == "answer_with_pricing"
         assert gen._get_price_template_key("pricing_details", "any") == "answer_pricing_details"
         assert gen._get_price_template_key("other", "any") == "answer_with_facts"
-
 
 # =============================================================================
 # Test 3: State Machine - Price Priority
@@ -217,13 +210,13 @@ class TestStateMachinePricePriority:
     @pytest.fixture
     def state_machine(self):
         """Создать StateMachine для тестов."""
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
         return StateMachine()
 
     def test_price_question_returns_answer_with_pricing(self, state_machine):
         """price_question должен возвращать action=answer_with_pricing."""
         # Убедимся что feature flag включён
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         if not flags.is_enabled("price_question_override"):
             pytest.skip("price_question_override flag is disabled")
@@ -237,7 +230,7 @@ class TestStateMachinePricePriority:
 
     def test_pricing_details_returns_answer_with_pricing(self, state_machine):
         """pricing_details должен возвращать action=answer_with_pricing."""
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         if not flags.is_enabled("price_question_override"):
             pytest.skip("price_question_override flag is disabled")
@@ -260,7 +253,6 @@ class TestStateMachinePricePriority:
         assert "price_question" in category
         assert "pricing_details" in category
 
-
 # =============================================================================
 # Test 4: DialoguePolicy - Price Question Overlay
 # =============================================================================
@@ -269,7 +261,7 @@ class TestDialoguePolicyPriceOverlay:
 
     def test_policy_decision_has_price_question(self):
         """PolicyDecision должен иметь PRICE_QUESTION."""
-        from dialogue_policy import PolicyDecision
+        from src.dialogue_policy import PolicyDecision
 
         assert hasattr(PolicyDecision, 'PRICE_QUESTION')
         assert PolicyDecision.PRICE_QUESTION.value == "price_question"
@@ -325,11 +317,10 @@ class TestDialoguePolicyPriceOverlay:
 
     def test_reason_code_policy_price_override_exists(self):
         """ReasonCode должен иметь POLICY_PRICE_OVERRIDE."""
-        from context_envelope import ReasonCode
+        from src.context_envelope import ReasonCode
 
         assert hasattr(ReasonCode, 'POLICY_PRICE_OVERRIDE')
         assert ReasonCode.POLICY_PRICE_OVERRIDE.value == "policy.price_override"
-
 
 # =============================================================================
 # Test 5: ResponseDirectives - do_not_repeat_responses
@@ -339,7 +330,7 @@ class TestResponseDirectivesDoNotRepeat:
 
     def test_response_directives_has_do_not_repeat_responses(self):
         """ResponseDirectives должен иметь поле do_not_repeat_responses."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         directives = ResponseDirectives()
 
@@ -348,7 +339,7 @@ class TestResponseDirectivesDoNotRepeat:
 
     def test_response_directives_to_dict_includes_do_not_repeat_responses(self):
         """to_dict должен включать do_not_repeat_responses."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         directives = ResponseDirectives()
         directives.do_not_repeat_responses = ["Ответ 1", "Ответ 2"]
@@ -361,7 +352,7 @@ class TestResponseDirectivesDoNotRepeat:
 
     def test_get_instruction_includes_do_not_repeat_responses(self):
         """get_instruction должен включать инструкцию о не-повторе ответов."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         directives = ResponseDirectives()
         directives.do_not_repeat_responses = ["Старый ответ 1", "Старый ответ 2"]
@@ -369,7 +360,6 @@ class TestResponseDirectivesDoNotRepeat:
         instruction = directives.get_instruction()
 
         assert "НЕ ПОВТОРЯЙ" in instruction
-
 
 # =============================================================================
 # Test 6: Feature Flags
@@ -379,23 +369,22 @@ class TestFeatureFlags:
 
     def test_response_deduplication_flag_exists(self):
         """Флаг response_deduplication должен существовать."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
 
         assert 'response_deduplication' in FeatureFlags.DEFAULTS
 
     def test_price_question_override_flag_exists(self):
         """Флаг price_question_override должен существовать."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
 
         assert 'price_question_override' in FeatureFlags.DEFAULTS
 
     def test_flags_enabled_by_default(self):
         """Новые флаги должны быть включены по умолчанию."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
 
         assert FeatureFlags.DEFAULTS['response_deduplication'] == True
         assert FeatureFlags.DEFAULTS['price_question_override'] == True
-
 
 # =============================================================================
 # Test 7: YAML Templates
@@ -432,7 +421,6 @@ class TestYamlTemplates:
 
         assert 'answer_pricing_details' in prompts['templates']
 
-
 # =============================================================================
 # Test 8: Integration Tests
 # =============================================================================
@@ -441,8 +429,8 @@ class TestIntegration:
 
     def test_price_question_flow_end_to_end(self):
         """E2E: price_question должен приводить к ответу о цене."""
-        from state_machine import StateMachine
-        from feature_flags import flags
+        from src.state_machine import StateMachine
+        from src.feature_flags import flags
 
         if not flags.is_enabled("price_question_override"):
             pytest.skip("price_question_override flag is disabled")
@@ -463,8 +451,8 @@ class TestIntegration:
 
     def test_deduplication_integration(self):
         """E2E: deduplication должен предотвращать повторы."""
-        from generator import ResponseGenerator
-        from feature_flags import flags
+        from src.generator import ResponseGenerator
+        from src.feature_flags import flags
 
         if not flags.is_enabled("response_deduplication"):
             pytest.skip("response_deduplication flag is disabled")
@@ -481,7 +469,6 @@ class TestIntegration:
         is_dup = gen._is_duplicate(duplicate, history)
 
         assert is_dup == True, "Дубликат должен быть обнаружен"
-
 
 # =============================================================================
 # Run tests

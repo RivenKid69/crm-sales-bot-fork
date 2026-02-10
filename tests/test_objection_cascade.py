@@ -13,17 +13,15 @@ import sys
 from pathlib import Path
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from objection_handler import ObjectionType
-from objection.cascade_detector import (
+from src.objection_handler import ObjectionType
+from src.objection.cascade_detector import (
     CascadeObjectionDetector,
     ObjectionDetectionResult,
     INTENT_TO_OBJECTION,
     reset_cascade_objection_detector,
 )
-from feature_flags import flags
-
+from src.feature_flags import flags
 
 class TestTier1RegexDetection:
     """Тесты Tier 1: Regex detection (должен работать как ObjectionHandler)"""
@@ -148,7 +146,6 @@ class TestTier1RegexDetection:
         result = detector.detect("Это слишком дорого")
         assert result.latency_ms < 10, f"Regex too slow: {result.latency_ms}ms"
 
-
 class TestTier2SemanticDetection:
     """Тесты Tier 2: Semantic fallback"""
 
@@ -209,7 +206,6 @@ class TestTier2SemanticDetection:
         assert result.tier_used == "regex"
         assert result.primary_type == ObjectionType.PRICE
 
-
 class TestHardNegatives:
     """Тесты hard negatives — НЕ должны быть возражениями"""
 
@@ -237,14 +233,13 @@ class TestHardNegatives:
             # или это regex false positive (что тоже проблема)
             pass  # Можно добавить assert на confidence
 
-
 class TestFeatureFlag:
     """Тесты управления через feature flag"""
 
     def test_semantic_flag_default(self):
         """Флаг semantic_objection_detection включён по умолчанию"""
         # Проверяем в DEFAULTS
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert FeatureFlags.DEFAULTS.get("semantic_objection_detection") is True
 
     def test_semantic_flag_property(self):
@@ -261,14 +256,13 @@ class TestFeatureFlag:
 
     def test_semantic_in_safe_group(self):
         """Флаг в группе 'safe'"""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert "semantic_objection_detection" in FeatureFlags.GROUPS["safe"]
 
     def test_semantic_in_phase4_group(self):
         """Флаг в группе 'phase_4'"""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert "semantic_objection_detection" in FeatureFlags.GROUPS["phase_4"]
-
 
 class TestObjectionDetectionResult:
     """Тесты структуры результата"""
@@ -296,7 +290,6 @@ class TestObjectionDetectionResult:
         assert result_positive.is_objection is True
         assert result_negative.is_objection is False
 
-
 class TestIntentToObjectionMapping:
     """Тесты маппинга intent → ObjectionType"""
 
@@ -321,7 +314,6 @@ class TestIntentToObjectionMapping:
         for key in INTENT_TO_OBJECTION.keys():
             assert key.startswith("objection_")
 
-
 class TestReset:
     """Тесты сброса состояния"""
 
@@ -341,7 +333,6 @@ class TestReset:
 
         # Попытки снова доступны
         assert detector.regex_handler.can_handle_more(ObjectionType.PRICE)
-
 
 class TestRegressionFromLegacy:
     """Regression тесты — все кейсы из test_objection_handler должны работать"""
@@ -387,13 +378,12 @@ class TestRegressionFromLegacy:
             result = detector.detect(msg)
             assert result.primary_type is None, f"False positive for: {msg}"
 
-
 class TestSingleton:
     """Тесты singleton паттерна"""
 
     def test_reset_creates_new_instance(self):
         """reset_cascade_objection_detector сбрасывает singleton"""
-        from objection.cascade_detector import (
+        from src.objection.cascade_detector import (
             get_cascade_objection_detector,
             reset_cascade_objection_detector,
         )
@@ -406,7 +396,7 @@ class TestSingleton:
 
     def test_get_returns_same_instance(self):
         """get_cascade_objection_detector возвращает тот же экземпляр"""
-        from objection.cascade_detector import (
+        from src.objection.cascade_detector import (
             get_cascade_objection_detector,
             reset_cascade_objection_detector,
         )
@@ -416,7 +406,6 @@ class TestSingleton:
         detector2 = get_cascade_objection_detector()
 
         assert detector1 is detector2
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

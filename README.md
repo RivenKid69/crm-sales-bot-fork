@@ -96,6 +96,7 @@ python3 -m src.bot --flow spin_selling
 ## Flows
 
 Flow-загрузчик: `ConfigLoader.load_flow()`.
+Runtime-path загрузка (атомарный binding config+flow): `ConfigLoader.load_bundle()`.
 
 Текущие flow в `src/yaml_config/flows/`:
 - `spin_selling`

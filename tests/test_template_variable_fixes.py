@@ -19,15 +19,13 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from generator import (
+from src.generator import (
     SafeDict,
     PERSONALIZATION_DEFAULTS,
     PersonalizationEngine,
     ResponseGenerator,
 )
-
 
 class TestSafeDict:
     """Тесты для SafeDict - безопасная подстановка переменных."""
@@ -82,7 +80,6 @@ class TestSafeDict:
         d["c"] = 3
         assert d["c"] == 3
 
-
 class TestPersonalizationDefaults:
     """Тесты для PERSONALIZATION_DEFAULTS."""
 
@@ -130,7 +127,6 @@ class TestPersonalizationDefaults:
     def test_size_category_has_default(self):
         """size_category имеет значение по умолчанию."""
         assert PERSONALIZATION_DEFAULTS["size_category"] == "small"
-
 
 class TestPainPointHandling:
     """Тесты для обработки pain_point."""
@@ -184,7 +180,6 @@ class TestPainPointHandling:
         else:
             result = "текущие сложности"
         assert result == "теряем клиентов"
-
 
 class TestLegacyPersonalizationFallback:
     """Тесты для legacy персонализации как fallback."""
@@ -246,7 +241,6 @@ class TestLegacyPersonalizationFallback:
         assert context.get("industry") == "horeca"
         assert context.get("industry_context") is not None
 
-
 class TestTemplateFormatSafety:
     """Тесты безопасности форматирования шаблонов."""
 
@@ -284,7 +278,6 @@ class TestTemplateFormatSafety:
 
         # Все {переменные} должны быть заменены на пустые строки
         assert "{" not in result
-
 
 class TestRealTemplateScenarios:
     """Тесты с реальными шаблонами из config.py."""
@@ -343,7 +336,6 @@ class TestRealTemplateScenarios:
         assert "{style_full_instruction}" not in result
         assert "{bc_value_prop}" not in result
 
-
 class TestIntegrationWithPersonalizationEngine:
     """Интеграционные тесты с PersonalizationEngine."""
 
@@ -392,7 +384,6 @@ class TestIntegrationWithPersonalizationEngine:
         assert variables["bc_value_prop"] in result
         # style_full_instruction должен быть пустым, но не {style_full_instruction}
         assert "{style_full_instruction}" not in result
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

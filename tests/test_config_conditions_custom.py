@@ -8,14 +8,12 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 @pytest.fixture(scope="module")
 def custom_conditions_config():
     """Load custom conditions configuration."""
     config_path = Path(__file__).parent.parent / "src" / "yaml_config" / "conditions" / "custom.yaml"
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 class TestCustomConditionsStructure:
     """Tests for custom conditions structure."""
@@ -35,7 +33,6 @@ class TestCustomConditionsStructure:
     def test_aliases_not_empty(self, custom_conditions_config):
         """Aliases section should not be empty."""
         assert len(custom_conditions_config["aliases"]) > 0
-
 
 class TestReadyForDemoCondition:
     """Tests for ready_for_demo condition."""
@@ -75,7 +72,6 @@ class TestReadyForDemoCondition:
         )
         assert has_not_frustrated
 
-
 class TestCanAccelerateFlowCondition:
     """Tests for can_accelerate_flow condition."""
 
@@ -99,7 +95,6 @@ class TestCanAccelerateFlowCondition:
         cond = custom_conditions_config["conditions"]["can_accelerate_flow"]
         assert "engagement_high" in cond["expression"]["and"]
 
-
 class TestStuckAndFrustratedCondition:
     """Tests for stuck_and_frustrated condition."""
 
@@ -120,7 +115,6 @@ class TestStuckAndFrustratedCondition:
             for c in cond["expression"]["and"]
         )
         assert has_or
-
 
 class TestSoftCtaCondition:
     """Tests for soft_cta_appropriate condition."""
@@ -144,7 +138,6 @@ class TestSoftCtaCondition:
         )
         assert has_not_protected
 
-
 class TestRoiOpportunityCondition:
     """Tests for roi_opportunity condition."""
 
@@ -165,7 +158,6 @@ class TestRoiOpportunityCondition:
             for c in cond["expression"]["and"]
         )
         assert has_or
-
 
 class TestRepairConditions:
     """Tests for repair conditions."""
@@ -192,7 +184,6 @@ class TestRepairConditions:
         """needs_severe_repair should reference needs_repair."""
         cond = custom_conditions_config["conditions"]["needs_severe_repair"]
         assert "needs_repair" in cond["expression"]["and"]
-
 
 class TestObjectionConditions:
     """Tests for objection conditions."""
@@ -224,7 +215,6 @@ class TestObjectionConditions:
         )
         assert has_custom_ref
 
-
 class TestEngagementConditions:
     """Tests for engagement conditions."""
 
@@ -245,7 +235,6 @@ class TestEngagementConditions:
         """low_engagement should use OR logic."""
         cond = custom_conditions_config["conditions"]["low_engagement"]
         assert "or" in cond["expression"]
-
 
 class TestLeadTemperatureConditions:
     """Tests for lead temperature conditions."""
@@ -273,7 +262,6 @@ class TestLeadTemperatureConditions:
         """lead_is_cold should use AND logic."""
         cond = custom_conditions_config["conditions"]["lead_is_cold"]
         assert "and" in cond["expression"]
-
 
 class TestConditionAliases:
     """Tests for condition aliases."""
@@ -318,7 +306,6 @@ class TestConditionAliases:
         """ready alias should reference custom:ready_for_demo."""
         assert custom_conditions_config["aliases"]["ready"] == "custom:ready_for_demo"
 
-
 class TestConditionExpressionValidity:
     """Tests for condition expression validity."""
 
@@ -353,7 +340,6 @@ class TestConditionExpressionValidity:
         for name in custom_conditions_config["aliases"].keys():
             assert re.match(r'^[a-z][a-z0-9_]*$', name), f"Invalid alias name: {name}"
 
-
 class TestConditionCompleteness:
     """Tests for condition completeness."""
 
@@ -384,7 +370,6 @@ class TestConditionCompleteness:
         ]
         for cond_name in expected:
             assert cond_name in custom_conditions_config["conditions"], f"Missing: {cond_name}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

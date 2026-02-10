@@ -20,7 +20,6 @@ These tests catch SSOT gaps at CI time, ensuring:
 
 import pytest
 
-
 class TestSSOTCompleteness:
     """Prevent RC-1..RC-SYS2 class bugs. Catches SSOT gaps at CI time."""
 

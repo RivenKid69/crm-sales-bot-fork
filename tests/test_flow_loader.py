@@ -8,7 +8,6 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 class TestFlowConfig:
     """Tests for FlowConfig dataclass."""
 
@@ -92,7 +91,6 @@ class TestFlowConfig:
         assert flow.get_variable("company") == "TestCo"
         assert flow.get_variable("unknown") is None
         assert flow.get_variable("unknown", "default") == "default"
-
 
 class TestFlowLoading:
     """Tests for load_flow functionality."""
@@ -341,7 +339,6 @@ class TestFlowLoading:
 
         assert "not found" in str(exc_info.value)
 
-
 class TestParameterSubstitution:
     """Tests for parameter substitution in flows."""
 
@@ -417,7 +414,6 @@ class TestParameterSubstitution:
         greeting = flow.states["greeting"]
         assert greeting["rules"]["unclear"] == "custom_continue"
 
-
 class TestPriorityOverrides:
     """Tests for priority override mechanism."""
 
@@ -487,7 +483,6 @@ class TestPriorityOverrides:
         first = next(p for p in flow.priorities if p["name"] == "first")
         assert first["action"] == "new_first_action"  # Changed
 
-
 class TestDeepMerge:
     """Tests for deep merge functionality."""
 
@@ -529,7 +524,6 @@ class TestDeepMerge:
         result = loader._deep_merge(base, override)
 
         assert result == {"a": [4, 5]}
-
 
 class TestMixinIncludes:
     """Tests for mixin includes (nested mixins)."""
@@ -600,7 +594,6 @@ class TestMixinIncludes:
         assert "intent_a" in rules  # From mixin_a
         assert "intent_b" in rules  # From mixin_b
         assert "intent_c" in rules  # From combined_mixin itself
-
 
 class TestStateMachineWithFlowConfig:
     """Tests for StateMachine integration with FlowConfig."""
@@ -732,7 +725,6 @@ class TestStateMachineWithFlowConfig:
         assert sm._get_next_phase_state("alpha") == "state_beta"
         assert sm._get_next_phase_state("beta") == "state_gamma"
         assert sm._get_next_phase_state("gamma") == "closing"  # post_phases_state
-
 
 class TestFlowValidation:
     """Tests for flow validation."""

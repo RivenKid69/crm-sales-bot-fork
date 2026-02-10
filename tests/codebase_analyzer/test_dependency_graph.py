@@ -21,17 +21,14 @@ from codebase_analyzer.indexer.models.entities import (
 )
 from codebase_analyzer.indexer.models.relations import Relation, RelationType
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def empty_graph():
     """Create an empty dependency graph."""
     return DependencyGraph()
-
 
 @pytest.fixture
 def sample_location():
@@ -41,7 +38,6 @@ def sample_location():
         start_line=1,
         end_line=10,
     )
-
 
 @pytest.fixture
 def sample_function(sample_location):
@@ -53,7 +49,6 @@ def sample_function(sample_location):
         language=Language.GO,
         location=sample_location,
     )
-
 
 @pytest.fixture
 def sample_class(sample_location):
@@ -70,7 +65,6 @@ def sample_class(sample_location):
         ),
     )
 
-
 @pytest.fixture
 def sample_interface(sample_location):
     """Create a sample interface entity."""
@@ -86,7 +80,6 @@ def sample_interface(sample_location):
         ),
         is_interface=True,
     )
-
 
 @pytest.fixture
 def populated_graph():
@@ -168,11 +161,9 @@ def populated_graph():
 
     return graph
 
-
 # ============================================================================
 # DependencyGraph Basic Tests
 # ============================================================================
-
 
 class TestDependencyGraphBasics:
     """Tests for DependencyGraph basic operations."""
@@ -247,11 +238,9 @@ class TestDependencyGraphBasics:
         assert len(chains) == 1
         assert func2.id in chains[0]
 
-
 # ============================================================================
 # Entity Lookup Tests
 # ============================================================================
-
 
 class TestEntityLookup:
     """Tests for entity lookup operations."""
@@ -285,11 +274,9 @@ class TestEntityLookup:
         components = populated_graph.get_entities_by_type(EntityType.COMPONENT)
         assert components == []
 
-
 # ============================================================================
 # Dependency Tests
 # ============================================================================
-
 
 class TestDependencies:
     """Tests for dependency retrieval."""
@@ -322,11 +309,9 @@ class TestDependencies:
         deps = populated_graph.get_dependents("nonexistent:id")
         assert deps == []
 
-
 # ============================================================================
 # Call Chain Tests
 # ============================================================================
-
 
 class TestCallChain:
     """Tests for call chain analysis."""
@@ -382,11 +367,9 @@ class TestCallChain:
         # Function has no outgoing calls
         assert chains == []
 
-
 # ============================================================================
 # Class Hierarchy Tests
 # ============================================================================
-
 
 class TestClassHierarchy:
     """Tests for class hierarchy analysis."""
@@ -473,11 +456,9 @@ class TestClassHierarchy:
         assert "Child" in descendant_names
         assert "Parent" in descendant_names
 
-
 # ============================================================================
 # Related Entities Tests
 # ============================================================================
-
 
 class TestRelatedEntities:
     """Tests for finding related entities."""
@@ -519,11 +500,9 @@ class TestRelatedEntities:
         # No relations, no related entities
         assert related == []
 
-
 # ============================================================================
 # Module Cluster Detection Tests
 # ============================================================================
-
 
 class TestModuleClusters:
     """Tests for module cluster detection."""
@@ -620,11 +599,9 @@ class TestModuleClusters:
             assert isinstance(cluster.cohesion_score, float)
             assert isinstance(cluster.coupling_score, float)
 
-
 # ============================================================================
 # File Dependencies Tests
 # ============================================================================
-
 
 class TestFileDependencies:
     """Tests for file-level dependency analysis."""
@@ -646,11 +623,9 @@ class TestFileDependencies:
         deps = populated_graph.get_file_dependencies(Path("/nonexistent.go"))
         assert deps == []
 
-
 # ============================================================================
 # Serialization Tests
 # ============================================================================
-
 
 class TestSerialization:
     """Tests for graph serialization."""
@@ -698,11 +673,9 @@ class TestSerialization:
         assert stats["total_entities"] > 0
         assert stats["total_relations"] > 0
 
-
 # ============================================================================
 # build_dependency_graph Tests
 # ============================================================================
-
 
 class TestBuildDependencyGraph:
     """Tests for build_dependency_graph function."""
@@ -921,11 +894,9 @@ class TestBuildDependencyGraph:
 
         assert RelationType.USES_TRAIT in dep_types
 
-
 # ============================================================================
 # Edge Cases and Performance Tests
 # ============================================================================
-
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""

@@ -32,7 +32,6 @@ from src.conditions.state_machine.conditions import (
     ready_for_close,
 )
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -42,17 +41,14 @@ def validator():
     """Create a ContactValidator instance."""
     return ContactValidator()
 
-
 @pytest.fixture
 def empty_context():
     """Create an empty context for testing."""
     return EvaluatorContext.create_test_context()
 
-
 def make_context(collected_data: Dict[str, Any]) -> EvaluatorContext:
     """Helper to create context with collected_data."""
     return EvaluatorContext.create_test_context(collected_data=collected_data)
-
 
 # =============================================================================
 # EMAIL VALIDATION TESTS
@@ -110,7 +106,6 @@ class TestEmailValidation:
         """Test that None email is rejected."""
         result = validator.validate_email(None)
         assert not result.is_valid
-
 
 # =============================================================================
 # PHONE VALIDATION TESTS
@@ -189,7 +184,6 @@ class TestPhoneValidation:
         result = validator.validate_phone(None)
         assert not result.is_valid
 
-
 # =============================================================================
 # CONTACT TYPE DETECTION TESTS
 # =============================================================================
@@ -227,7 +221,6 @@ class TestContactTypeDetection:
         result = validator.validate_any("not-a-contact")
         assert not result.is_valid
         assert result.contact_type == ContactType.UNKNOWN
-
 
 # =============================================================================
 # CONTACT INFO VALIDATION TESTS
@@ -311,7 +304,6 @@ class TestContactInfoValidation:
         is_valid, normalized, error = validator.validate_contact_info({})
         assert not is_valid
 
-
 # =============================================================================
 # COLLECTED_DATA EXTRACTION TESTS
 # =============================================================================
@@ -364,7 +356,6 @@ class TestCollectedDataExtraction:
         })
         assert not is_valid
 
-
 # =============================================================================
 # MODULE-LEVEL FUNCTION TESTS
 # =============================================================================
@@ -410,7 +401,6 @@ class TestModuleFunctions:
         result = validate_contact_string("+79991234567")
         assert result.is_valid
         assert result.contact_type == ContactType.PHONE
-
 
 # =============================================================================
 # CONDITION FUNCTION TESTS
@@ -476,7 +466,6 @@ class TestConditionFunctions:
         ctx = make_context({"contact_info": "+79991234567"})
         assert has_valid_phone(ctx)
 
-
 # =============================================================================
 # READY_FOR_CLOSE CONDITION TESTS
 # =============================================================================
@@ -540,7 +529,6 @@ class TestReadyForClose:
             }
         })
         assert ready_for_close(ctx)
-
 
 # =============================================================================
 # EDGE CASES AND REGRESSION TESTS
@@ -615,7 +603,6 @@ class TestEdgeCases:
             result = validator.validate_phone(value)
             assert not result.is_valid, f"{value} should be rejected"
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -657,7 +644,6 @@ class TestIntegration:
 
         # Should NOT extract as contact_info (invalid phone)
         assert "contact_info" not in result or result.get("contact_info") != "1234567890"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

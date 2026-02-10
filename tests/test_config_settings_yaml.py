@@ -21,13 +21,11 @@ from pathlib import Path
 import yaml
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from settings import (
+from src.settings import (
     load_settings, validate_settings, DotDict, DEFAULTS,
     _deep_merge, get_settings, reload_settings, SETTINGS_FILE
 )
-
 
 class TestLLMConfiguration:
     """Tests for LLM configuration section."""
@@ -136,7 +134,6 @@ llm:
             f.flush()
             settings = load_settings(Path(f.name))
             assert settings.llm.think is True
-
 
 class TestRetrieverConfiguration:
     """Tests for retriever configuration section."""
@@ -260,7 +257,6 @@ retriever:
             settings = load_settings(Path(f.name))
             assert settings.retriever.default_top_k == 5
 
-
 class TestRerankerConfiguration:
     """Tests for reranker configuration section."""
 
@@ -324,7 +320,6 @@ reranker:
             settings = load_settings(Path(f.name))
             assert settings.reranker.candidates_count == 15
 
-
 class TestCategoryRouterConfiguration:
     """Tests for category_router configuration section."""
 
@@ -378,7 +373,6 @@ category_router:
             f.flush()
             settings = load_settings(Path(f.name))
             assert settings.category_router.fallback_categories == ["pricing", "support", "features"]
-
 
 class TestGeneratorConfiguration:
     """Tests for generator configuration section."""
@@ -451,7 +445,6 @@ generator:
             settings = load_settings(Path(f.name))
             assert "crm" in settings.generator.allowed_english_words
             assert "custom_word" in settings.generator.allowed_english_words
-
 
 class TestClassifierConfiguration:
     """Tests for classifier configuration section."""
@@ -556,7 +549,6 @@ classifier:
         errors = validate_settings(settings)
         assert any("high_confidence" in e.lower() for e in errors)
 
-
 class TestLoggingConfiguration:
     """Tests for logging configuration section."""
 
@@ -655,7 +647,6 @@ logging:
             f.flush()
             settings = load_settings(Path(f.name))
             assert settings.logging.log_retriever_results is False
-
 
 class TestConditionalRulesConfiguration:
     """Tests for conditional_rules configuration section."""
@@ -792,7 +783,6 @@ conditional_rules:
             settings = load_settings(Path(f.name))
             assert settings.conditional_rules.coverage_threshold == 0.9
 
-
 class TestFlowConfiguration:
     """Tests for flow configuration section."""
 
@@ -819,7 +809,6 @@ flow:
             f.flush()
             settings = load_settings(Path(f.name))
             assert settings.flow.active == "custom_flow"
-
 
 class TestFeatureFlagsConfiguration:
     """Tests for feature_flags configuration section."""
@@ -1040,7 +1029,6 @@ feature_flags:
             settings = load_settings(Path(f.name))
             assert settings.feature_flags.cta_generator is False
 
-
 class TestDevelopmentConfiguration:
     """Tests for development configuration section."""
 
@@ -1092,7 +1080,6 @@ development:
             settings = load_settings(Path(f.name))
             assert settings.development.skip_embeddings is False
 
-
 class TestCompleteSettingsYaml:
     """Tests for complete settings.yaml file loading."""
 
@@ -1120,7 +1107,6 @@ class TestCompleteSettingsYaml:
             settings = load_settings(SETTINGS_FILE)
             errors = validate_settings(settings)
             assert errors == [], f"Validation errors: {errors}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

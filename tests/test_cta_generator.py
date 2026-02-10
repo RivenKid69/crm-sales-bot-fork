@@ -14,13 +14,11 @@ import sys
 from pathlib import Path
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from cta_generator import (
+from src.cta_generator import (
     CTAGenerator,
     CTAResult,
 )
-
 
 class TestCTAGeneratorBasics:
     """Тесты базовой функциональности"""
@@ -53,7 +51,6 @@ class TestCTAGeneratorBasics:
 
         generator.increment_turn()
         assert generator.turn_count == 2
-
 
 class TestShouldAddCTA:
     """Тесты условий добавления CTA"""
@@ -170,7 +167,6 @@ class TestShouldAddCTA:
         assert should_add
         assert reason is None
 
-
 class TestGetCTA:
     """Тесты получения CTA"""
 
@@ -230,7 +226,6 @@ class TestGetCTA:
         # Мягкие CTA обычно менее прямолинейные
         assert "?" not in soft_cta or "интересно" in soft_cta.lower()
 
-
 class TestAppendCTA:
     """Тесты добавления CTA к ответу"""
 
@@ -268,7 +263,6 @@ class TestAppendCTA:
         )
 
         assert result == response
-
 
 class TestGenerateCTAResult:
     """Тесты генерации полного результата"""
@@ -323,7 +317,6 @@ class TestGenerateCTAResult:
         assert result.skip_reason is not None
         assert result.final_response == result.original_response
 
-
 class TestAvoidRepetition:
     """Тесты избежания повторений"""
 
@@ -358,7 +351,6 @@ class TestAvoidRepetition:
         generator.reset()
 
         assert len(generator.used_ctas) == 0
-
 
 class TestDirectCTA:
     """Тесты прямого получения CTA"""
@@ -398,7 +390,6 @@ class TestDirectCTA:
         assert cta is not None
         assert len(cta) > 0
 
-
 class TestUsageStats:
     """Тесты статистики использования"""
 
@@ -425,7 +416,6 @@ class TestUsageStats:
 
         assert stats["turn_count"] == 2
         assert stats["total_ctas_used"] == 3
-
 
 class TestFrustrationAwareness:
     """Тесты учёта frustration"""
@@ -459,7 +449,6 @@ class TestFrustrationAwareness:
 
         assert not result.cta_added
 
-
 class TestCTAContent:
     """Тесты содержимого CTA"""
 
@@ -488,7 +477,6 @@ class TestCTAContent:
         if cta:
             # Должны содержать успокаивающие слова
             assert any(word in cta.lower() for word in ["бесплатно", "ни к чему не обязывает", "просто"])
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -534,7 +522,6 @@ class TestEdgeCases:
 
         assert not should_add
         assert reason == "early_phase_no_cta"
-
 
 class TestIntegrationScenarios:
     """Интеграционные сценарии"""
@@ -607,7 +594,6 @@ class TestIntegrationScenarios:
         for response in responses:
             result = generator.generate_cta_result(response, "spin_implication", {})
             assert not result.cta_added, f"CTA added to mid-phase question: {response}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

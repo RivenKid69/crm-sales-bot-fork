@@ -32,7 +32,6 @@ from src.classifier.refinement_pipeline import (
     LayerPriority,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -69,7 +68,6 @@ def default_config() -> Dict[str, Any]:
         "objection_no_alternatives_threshold": 0.75,
     }
 
-
 @pytest.fixture
 def simple_context() -> RefinementContext:
     """Simple context for testing."""
@@ -78,7 +76,6 @@ def simple_context() -> RefinementContext:
         intent="info_provided",
         confidence=0.85,
     )
-
 
 @pytest.fixture
 def short_message_context() -> RefinementContext:
@@ -89,7 +86,6 @@ def short_message_context() -> RefinementContext:
         confidence=0.9,
     )
 
-
 @pytest.fixture
 def alternatives_close() -> List[Dict[str, Any]]:
     """Alternatives with close confidences (ambiguous)."""
@@ -98,7 +94,6 @@ def alternatives_close() -> List[Dict[str, Any]]:
         {"intent": "info_provided", "confidence": 0.72},
     ]
 
-
 @pytest.fixture
 def alternatives_far() -> List[Dict[str, Any]]:
     """Alternatives with distant confidences (clear winner)."""
@@ -106,7 +101,6 @@ def alternatives_far() -> List[Dict[str, Any]]:
         {"intent": "farewell", "confidence": 0.4},
         {"intent": "small_talk", "confidence": 0.3},
     ]
-
 
 # =============================================================================
 # UTILITY FUNCTION TESTS
@@ -160,7 +154,6 @@ class TestUtilityFunctions:
         alternatives = []
         gap = calculate_gap(primary, alternatives)
         assert gap == 1.0
-
 
 # =============================================================================
 # ENTROPY STRATEGY TESTS
@@ -232,7 +225,6 @@ class TestEntropyCalibrationStrategy:
 
         assert calibrated == 0.85
         assert reason is None
-
 
 # =============================================================================
 # GAP STRATEGY TESTS
@@ -315,7 +307,6 @@ class TestGapCalibrationStrategy:
         # Gap = 0.03, which is very small
         # Should have both gap penalty and high_confidence_small_gap_penalty
         assert calibrated < 0.75  # Significant reduction
-
 
 # =============================================================================
 # HEURISTIC STRATEGY TESTS
@@ -483,7 +474,6 @@ class TestHeuristicCalibrationStrategy:
         # No penalties should apply
         assert calibrated == 0.85 or "short_message_penalty" not in penalties
 
-
 # =============================================================================
 # CONFIDENCE CALIBRATOR TESTS
 # =============================================================================
@@ -569,7 +559,6 @@ class TestConfidenceCalibrator:
         assert stats["calibrations_applied"] >= 1
         assert "calibration_rate" in stats
         assert "avg_confidence_delta" in stats
-
 
 # =============================================================================
 # CONFIDENCE CALIBRATION LAYER TESTS
@@ -709,7 +698,6 @@ class TestConfidenceCalibrationLayer:
         assert stats["calls_total"] == 3
         assert "calibrator_stats" in stats
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -740,7 +728,6 @@ class TestCalibrationIntegration:
 
         if calibration_layer and short_answer_layer:
             assert calibration_layer.priority.value > short_answer_layer.priority.value
-
 
 # =============================================================================
 # EDGE CASE TESTS
@@ -848,7 +835,6 @@ class TestEdgeCases:
         # Should handle gracefully
         assert result.calibrated_confidence >= 0.1
 
-
 # =============================================================================
 # CALIBRATION RESULT TESTS
 # =============================================================================
@@ -899,7 +885,6 @@ class TestCalibrationResult:
 
         assert result.confidence_delta == 0.0
         assert len(result.reasons) == 0
-
 
 # =============================================================================
 # REGRESSION TEST: Bug Report Scenario
@@ -1050,7 +1035,6 @@ class TestBugReportScenario:
         assert "objection_no_alternatives_penalty" not in result.penalty_factors, \
             "Rule 5 should NOT apply when alternatives exist"
 
-
 # =============================================================================
 # GAP CASCADE FIX TESTS
 # =============================================================================
@@ -1142,7 +1126,6 @@ class TestGapCascadeFix:
         # Gap = 0.50 - 0.47 = 0.03, well below threshold → penalty applied
         assert reason == CalibrationReason.GAP_SMALL
         assert calibrated < 0.50
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -212,10 +212,10 @@ def main():
 
     try:
         # Импорт модулей
-        from llm import OllamaClient
-        from simulator.runner import SimulationRunner
-        from simulator.e2e_scenarios import ALL_SCENARIOS, expand_scenarios_with_personas
-        from simulator.report import generate_e2e_report
+        from src.llm import OllamaClient
+        from src.simulator.runner import SimulationRunner
+        from src.simulator.e2e_scenarios import ALL_SCENARIOS, expand_scenarios_with_personas
+        from src.simulator.report import generate_e2e_report
 
         # Инициализация LLM
         print_info("Инициализация Ollama client...")
@@ -247,7 +247,7 @@ def main():
         # Прогрев embedding моделей
         print_info("Прогрев embedding моделей...")
         try:
-            from tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
+            from src.tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
             analyzer = get_semantic_tone_analyzer()
             if analyzer.is_available:
                 print_success("Semantic tone analyzer: готов")
@@ -257,7 +257,7 @@ def main():
             print_info(f"Semantic tone analyzer: ошибка - {e}")
 
         try:
-            from knowledge.reranker import get_reranker
+            from src.knowledge.reranker import get_reranker
             reranker = get_reranker()
             if reranker.is_available():
                 print_success("Reranker: готов")

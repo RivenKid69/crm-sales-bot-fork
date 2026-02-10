@@ -16,11 +16,9 @@ from codebase_analyzer.indexer.parsers.go_parser import GoParser
 from codebase_analyzer.indexer.parsers.php_parser import PHPParser
 from codebase_analyzer.indexer.parsers.typescript_parser import TypeScriptParser
 
-
 # ============================================================================
 # Realistic Project Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def realistic_php_project(temp_dir: Path) -> Path:
@@ -209,7 +207,6 @@ class UserController
 ''')
 
     return temp_dir
-
 
 @pytest.fixture
 def realistic_go_project(temp_dir: Path) -> Path:
@@ -415,7 +412,6 @@ func (h *UserHandler) Start() {
 
     return temp_dir
 
-
 @pytest.fixture
 def realistic_typescript_project(temp_dir: Path) -> Path:
     """Create a realistic TypeScript/React project structure."""
@@ -619,11 +615,9 @@ export const UserList: React.FC = () => {
 
     return temp_dir
 
-
 # ============================================================================
 # End-to-End Indexing Tests
 # ============================================================================
-
 
 class TestEndToEndPHPIndexing:
     """End-to-end tests for PHP project indexing."""
@@ -697,7 +691,6 @@ class TestEndToEndPHPIndexing:
             # Should have found SELECT query
             assert any("SELECT" in q.upper() for q in all_queries) or len(all_queries) >= 0
 
-
 class TestEndToEndGoIndexing:
     """End-to-end tests for Go project indexing."""
 
@@ -760,7 +753,6 @@ class TestEndToEndGoIndexing:
 
         # Should have found functions
         assert len(functions) + len(methods) > 0
-
 
 class TestEndToEndTypeScriptIndexing:
     """End-to-end tests for TypeScript/React project indexing."""
@@ -826,11 +818,9 @@ class TestEndToEndTypeScriptIndexing:
         # At least some components should be detected
         assert len(all_components) >= 0  # May vary based on parser implementation
 
-
 # ============================================================================
 # Cross-Language Integration Tests
 # ============================================================================
-
 
 class TestCrossLanguageIntegration:
     """Tests for multi-language project indexing."""
@@ -901,11 +891,9 @@ class TestCrossLanguageIntegration:
         # Should have language breakdown
         assert len(stats.files_by_language) >= 1
 
-
 # ============================================================================
 # Dependency Graph Quality Tests
 # ============================================================================
-
 
 class TestDependencyGraphQuality:
     """Tests for dependency graph quality and accuracy."""
@@ -970,11 +958,9 @@ class TestDependencyGraphQuality:
             # Service should have dependencies
             assert isinstance(deps, list)
 
-
 # ============================================================================
 # Performance Tests
 # ============================================================================
-
 
 class TestPerformance:
     """Performance-related tests."""
@@ -1031,11 +1017,9 @@ func Function{i}() int {{
         assert stats.total_files == 50
         assert stats.total_functions >= 50
 
-
 # ============================================================================
 # Error Recovery Tests
 # ============================================================================
-
 
 class TestErrorRecovery:
     """Tests for error handling and recovery."""

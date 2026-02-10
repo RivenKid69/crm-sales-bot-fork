@@ -7,15 +7,14 @@ import tempfile
 import json
 from pathlib import Path
 
-from classifier.confidence_router import (
+from src.classifier.confidence_router import (
     ConfidenceRouter,
     RouterDecision,
     RouterResult,
     DisambiguationOption,
     get_confidence_router,
 )
-from constants.intent_labels import INTENT_LABELS
-
+from src.constants.intent_labels import INTENT_LABELS
 
 class TestRouterDecisions:
     """Тесты решений роутера."""
@@ -124,7 +123,6 @@ class TestRouterDecisions:
         assert result.decision == RouterDecision.EXECUTE
         assert result.gap == 1.0
 
-
 class TestDisambiguationOptions:
     """Тесты формирования опций для disambiguation."""
 
@@ -204,7 +202,6 @@ class TestDisambiguationOptions:
             assert option.label is not None
             assert len(option.label) > 0
 
-
 class TestConfirmQuestion:
     """Тесты формирования уточняющих вопросов."""
 
@@ -238,7 +235,6 @@ class TestConfirmQuestion:
         assert result.decision == RouterDecision.CONFIRM
         assert "стоимость" in result.confirm_question.lower() or "цен" in result.confirm_question.lower()
 
-
 class TestIntentLabels:
     """Тесты маппинга интентов на labels."""
 
@@ -264,7 +260,6 @@ class TestIntentLabels:
                 continue
             assert any(ord(c) >= 0x0400 and ord(c) <= 0x04FF for c in label), \
                 f"Label for {intent} should be in Russian"
-
 
 class TestCustomThresholds:
     """Тесты кастомных порогов."""
@@ -309,7 +304,6 @@ class TestCustomThresholds:
 
         assert result.decision == RouterDecision.FALLBACK
 
-
 class TestRouterStatistics:
     """Тесты статистики роутера."""
 
@@ -336,7 +330,6 @@ class TestRouterStatistics:
         assert stats["total_routes"] == 2
         assert stats["decisions"]["execute"] == 1
         assert stats["decisions"]["disambiguate"] == 1
-
 
 class TestLogging:
     """Тесты логирования слепых зон."""
@@ -402,7 +395,6 @@ class TestLogging:
             log_files = list(Path(tmpdir).glob("uncertain_*.jsonl"))
             assert len(log_files) == 0
 
-
 class TestSingleton:
     """Тесты singleton паттерна."""
 
@@ -412,7 +404,6 @@ class TestSingleton:
         router2 = get_confidence_router()
 
         assert router1 is router2
-
 
 class TestEdgeCases:
     """Тесты граничных случаев."""
@@ -464,7 +455,6 @@ class TestEdgeCases:
 
         assert result.decision == RouterDecision.FALLBACK
 
-
 class TestIntegrationWithClassification:
     """Интеграционные тесты с форматом ClassificationResult."""
 
@@ -507,7 +497,6 @@ class TestIntegrationWithClassification:
 
         assert result.decision == RouterDecision.DISAMBIGUATE
         assert len(result.options) >= 3  # top + alternatives + "Другое"
-
 
 class TestRealWorldScenarios:
     """Тесты на реальных сценариях из исходной проблемы."""

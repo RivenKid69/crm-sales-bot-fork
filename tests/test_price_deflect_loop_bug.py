@@ -16,11 +16,9 @@ state_machine.py — когда intent="price_question" в SPIN-фазах,
 
 import pytest
 import sys
-sys.path.insert(0, 'src')
 
-from state_machine import StateMachine
-from config import SALES_STATES
-
+from src.state_machine import StateMachine
+from src.config import SALES_STATES
 
 class TestPriceDeflectLoopFix:
     """
@@ -211,7 +209,6 @@ class TestPriceDeflectLoopFix:
 
         assert action == "answer_with_facts"
 
-
 class TestConfigRulesAnalysis:
     """
     Анализ конфигурации — проверяем условные правила (Phase 8 Conditional Rules).
@@ -268,7 +265,6 @@ class TestConfigRulesAnalysis:
         """Config: close.rules имеет price_question: answer_with_facts"""
         rules = SALES_STATES["close"]["rules"]
         assert rules.get("price_question") == "answer_with_facts"
-
 
 class TestDeflectLoopScenarioFixed:
     """
@@ -331,7 +327,6 @@ class TestDeflectLoopScenarioFixed:
 
         assert action == "answer_with_facts", \
             "С users_count=15 должен быть answer_with_facts"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

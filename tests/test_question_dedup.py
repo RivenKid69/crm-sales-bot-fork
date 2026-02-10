@@ -16,9 +16,8 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from question_dedup import (
+from src.question_dedup import (
     QuestionDeduplicationEngine,
     QuestionDedupConfig,
     QuestionDedupMetrics,
@@ -29,17 +28,14 @@ from question_dedup import (
     get_do_not_ask_instruction,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
-
 
 @pytest.fixture
 def engine():
     """Fresh engine instance for each test."""
     return QuestionDeduplicationEngine()
-
 
 @pytest.fixture
 def collected_data_full():
@@ -50,7 +46,6 @@ def collected_data_full():
         "business_type": "розница",
     }
 
-
 @pytest.fixture
 def collected_data_partial():
     """Collected data with only some fields."""
@@ -58,17 +53,14 @@ def collected_data_partial():
         "company_size": 10,
     }
 
-
 @pytest.fixture
 def collected_data_empty():
     """Empty collected data."""
     return {}
 
-
 # =============================================================================
 # CONFIGURATION LOADING TESTS
 # =============================================================================
-
 
 class TestConfigLoading:
     """Tests for configuration loading."""
@@ -109,11 +101,9 @@ class TestConfigLoading:
         result = engine.get_available_questions("situation", {})
         assert result.available_questions
 
-
 # =============================================================================
 # QUESTION FILTERING TESTS
 # =============================================================================
-
 
 class TestQuestionFiltering:
     """Tests for question filtering by collected_data."""
@@ -172,11 +162,9 @@ class TestQuestionFiltering:
         for q in result.available_questions:
             assert "чем пользуетесь" not in q.lower() and "excel" not in q.lower()
 
-
 # =============================================================================
 # INSTRUCTION GENERATION TESTS
 # =============================================================================
-
 
 class TestInstructionGeneration:
     """Tests for instruction generation."""
@@ -217,11 +205,9 @@ class TestInstructionGeneration:
         instruction = result.available_questions_instruction
         assert "собран" in instruction.lower() or "следующ" in instruction.lower()
 
-
 # =============================================================================
 # PHASE-SPECIFIC TESTS
 # =============================================================================
-
 
 class TestPhaseSpecificQuestions:
     """Tests for phase-specific question generation."""
@@ -284,11 +270,9 @@ class TestPhaseSpecificQuestions:
             "упрост" in questions_text,
         ])
 
-
 # =============================================================================
 # EDGE CASES AND ERROR HANDLING
 # =============================================================================
-
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
@@ -331,11 +315,9 @@ class TestEdgeCases:
         for q in result.available_questions:
             assert "{current_tools}" not in q
 
-
 # =============================================================================
 # METRICS TESTS
 # =============================================================================
-
 
 class TestMetrics:
     """Tests for metrics tracking."""
@@ -372,11 +354,9 @@ class TestMetrics:
         assert "questions_filtered" in metrics_dict
         assert "filtering_rate" in metrics_dict
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
-
 
 class TestIntegration:
     """Integration tests with convenience functions."""
@@ -421,11 +401,9 @@ class TestIntegration:
         assert "missing_data_questions" in variables
         assert "collected_fields_list" in variables
 
-
 # =============================================================================
 # REGRESSION TESTS - THE ORIGINAL PROBLEM
 # =============================================================================
-
 
 class TestRegressionOriginalProblem:
     """
@@ -532,11 +510,9 @@ class TestRegressionOriginalProblem:
             # Should not ask situation questions
             assert "сколько человек" not in q_lower or "теряете" in q_lower  # "сколько теряете" is ok
 
-
 # =============================================================================
 # PERFORMANCE TESTS
 # =============================================================================
-
 
 class TestPerformance:
     """Performance tests."""
@@ -555,7 +531,6 @@ class TestPerformance:
 
         # Should complete 100 calls in under 1 second
         assert elapsed < 1.0, f"100 calls took {elapsed:.2f}s, expected <1s"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

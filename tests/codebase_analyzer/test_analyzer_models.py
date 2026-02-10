@@ -12,7 +12,6 @@ from codebase_analyzer.analyzer.models import (
     AnalysisResult,
 )
 
-
 # ============================================================================
 # Tests: EntitySummary
 # ============================================================================
@@ -96,7 +95,6 @@ class TestEntitySummary:
         assert restored.input_tokens == original.input_tokens
         assert restored.code_hash == original.code_hash
 
-
 # ============================================================================
 # Tests: ModuleSummary
 # ============================================================================
@@ -144,7 +142,6 @@ class TestModuleSummary:
         assert restored.responsibilities == original.responsibilities
         assert restored.entity_count == original.entity_count
 
-
 # ============================================================================
 # Tests: ArchitectureSummary
 # ============================================================================
@@ -186,7 +183,6 @@ class TestArchitectureSummary:
         assert restored.overview == original.overview
         assert restored.data_flow == original.data_flow
         assert restored.diagram_mermaid == original.diagram_mermaid
-
 
 # ============================================================================
 # Tests: AnalysisResult

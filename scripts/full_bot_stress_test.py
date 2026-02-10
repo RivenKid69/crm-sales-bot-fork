@@ -43,10 +43,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 # Импорты компонентов бота
 try:
-    from knowledge.retriever import KnowledgeRetriever, get_retriever
-    from knowledge.data import WIPON_KNOWLEDGE
-    from classifier import HybridClassifier, DataExtractor
-    from state_machine import StateMachine
+    from src.knowledge.retriever import KnowledgeRetriever, get_retriever
+    from src.knowledge.data import WIPON_KNOWLEDGE
+    from src.classifier import HybridClassifier, DataExtractor
+    from src.state_machine import StateMachine
     HAS_BOT_COMPONENTS = True
 except ImportError as e:
     print(f"⚠️  Не все компоненты доступны: {e}")

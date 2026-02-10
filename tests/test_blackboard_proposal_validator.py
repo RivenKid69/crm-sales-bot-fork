@@ -18,7 +18,6 @@ from src.blackboard.models import Proposal
 from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.proposal_validator import ValidationError, ProposalValidator
 
-
 # =============================================================================
 # Test ValidationError Dataclass
 # =============================================================================
@@ -87,7 +86,6 @@ class TestValidationError:
         assert "TEST_ERROR" in repr_str
         assert "Test message" in repr_str
 
-
 # =============================================================================
 # Test ProposalValidator Initialization
 # =============================================================================
@@ -145,7 +143,6 @@ class TestProposalValidatorInit:
         assert validator._valid_reason_codes == {"c1", "c2"}
         assert validator._strict_mode is True
 
-
 # =============================================================================
 # Test ProposalValidator.validate() - Basic Validation
 # =============================================================================
@@ -198,7 +195,6 @@ class TestProposalValidatorValidate:
 
         errors = validator.validate(proposals)
         assert errors == []
-
 
 # =============================================================================
 # Test ProposalValidator - Structure Validation
@@ -287,7 +283,6 @@ class TestProposalValidatorStructure:
         errors = validator.validate([proposal])
         assert any(e.error_code == "INVALID_STRUCTURE" for e in errors)
         assert any("TRANSITION value must be string" in e.message for e in errors)
-
 
 # =============================================================================
 # Test ProposalValidator - Action Name Validation
@@ -385,7 +380,6 @@ class TestProposalValidatorActions:
         errors = validator.validate([transition])
         assert not any(e.error_code == "INVALID_ACTION" for e in errors)
 
-
 # =============================================================================
 # Test ProposalValidator - State Name Validation
 # =============================================================================
@@ -462,7 +456,6 @@ class TestProposalValidatorStates:
         errors = validator.validate([action])
         assert not any(e.error_code == "INVALID_STATE" for e in errors)
 
-
 # =============================================================================
 # Test ProposalValidator - Reason Code Validation
 # =============================================================================
@@ -521,7 +514,6 @@ class TestProposalValidatorReasonCodes:
         errors = validator.validate([proposal])
         assert not any(e.error_code == "UNDOCUMENTED_REASON_CODE" for e in errors)
 
-
 # =============================================================================
 # Test ProposalValidator - Combinable Flag Validation
 # =============================================================================
@@ -563,7 +555,6 @@ class TestProposalValidatorCombinable:
 
         errors = validator.validate([proposal])
         assert not any(e.error_code == "INVALID_COMBINABLE" for e in errors)
-
 
 # =============================================================================
 # Test ProposalValidator - Priority Validation for Blocking Actions
@@ -621,7 +612,6 @@ class TestProposalValidatorPriority:
 
         errors = validator.validate([proposal])
         assert not any(e.error_code == "BLOCKING_LOW_PRIORITY" for e in errors)
-
 
 # =============================================================================
 # Test ProposalValidator - Helper Methods
@@ -695,7 +685,6 @@ class TestProposalValidatorHelpers:
         """Test has_blocking_errors returns False for empty list."""
         validator = ProposalValidator()
         assert validator.has_blocking_errors([]) is False
-
 
 # =============================================================================
 # Test ProposalValidator - Complex Scenarios
@@ -783,7 +772,6 @@ class TestProposalValidatorComplexScenarios:
         # Should have warning for undocumented reason code
         assert any(e.error_code == "UNDOCUMENTED_REASON_CODE" for e in errors)
 
-
 # =============================================================================
 # Test Package Imports
 # =============================================================================
@@ -809,7 +797,6 @@ class TestProposalValidatorImports:
 
         assert "ValidationError" in bb.__all__
         assert "ProposalValidator" in bb.__all__
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan Stage 4)
@@ -912,7 +899,6 @@ class TestStage4ValidatorCriteriaVerification:
         assert validator.has_blocking_errors([error]) is True
         assert validator.has_blocking_errors([warning]) is False
         assert validator.has_blocking_errors([]) is False
-
 
 # =============================================================================
 # Test Valid Actions SSOT (Single Source of Truth via generator.get_valid_actions)

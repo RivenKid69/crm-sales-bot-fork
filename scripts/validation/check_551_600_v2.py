@@ -2,7 +2,7 @@
 """Тест retrieval для секций 551-600 с новыми запросами"""
 import sys
 sys.path.insert(0, 'src')
-from knowledge.retriever import CascadeRetriever
+from src.knowledge.retriever import CascadeRetriever
 
 retriever = CascadeRetriever(use_embeddings=False)
 

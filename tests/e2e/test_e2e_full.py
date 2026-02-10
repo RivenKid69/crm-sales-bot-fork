@@ -20,9 +20,6 @@ from dataclasses import dataclass
 from typing import List
 import sys
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
 from src.simulator.e2e_scenarios import (
     E2EScenario,
     ALL_SCENARIOS,
@@ -32,7 +29,6 @@ from src.simulator.e2e_scenarios import (
     get_scenarios_by_outcome,
 )
 from src.simulator.e2e_evaluator import E2EEvaluator, E2EResult
-
 
 # =============================================================================
 # TEST: E2E Scenarios Definition
@@ -121,7 +117,6 @@ class TestE2EScenarios:
         assert len(success_scenarios) > len(soft_close_scenarios)
         for s in success_scenarios:
             assert s.expected_outcome == "success"
-
 
 # =============================================================================
 # TEST: E2E Evaluator
@@ -294,7 +289,6 @@ class TestE2EEvaluator:
         assert isinstance(evaluation.errors, list)
         assert isinstance(evaluation.details, dict)
 
-
 # =============================================================================
 # TEST: Flow Configuration Loading
 # =============================================================================
@@ -373,7 +367,6 @@ class TestFlowConfigurations:
             assert len(flow_config.phases) >= 1
         except ImportError:
             pytest.skip("ConfigLoader not available")
-
 
 # =============================================================================
 # TEST: Report Generation
@@ -487,7 +480,6 @@ class TestReportGeneration:
         # Average score: (0.95 + 0.88 + 0.45) / 3 = 0.76
         assert summary["avg_score"] == pytest.approx(0.76, rel=0.05)
 
-
 # =============================================================================
 # TEST: Batch Evaluation
 # =============================================================================
@@ -543,7 +535,6 @@ class TestBatchEvaluation:
         assert e2e_results[0].flow_name == "spin_selling"
         assert e2e_results[1].flow_name == "challenger"
 
-
 # =============================================================================
 # TEST: Integration with SimulationRunner (Mock)
 # =============================================================================
@@ -569,7 +560,6 @@ class TestSimulationRunnerIntegration:
         runner = SimulationRunner(bot_llm=mock_e2e_llm)
         assert hasattr(runner, "run_e2e_batch")
         assert callable(runner.run_e2e_batch)
-
 
 # =============================================================================
 # TEST: CLI Arguments
@@ -610,7 +600,6 @@ class TestCLIArguments:
 
         assert hasattr(args, "flow")
         assert args.flow == "bant"
-
 
 # =============================================================================
 # TEST: Integration Tests (require real LLM)
@@ -681,7 +670,6 @@ class TestRealLLMIntegration:
         # Expect reasonable performance
         assert evaluation.score >= 0.3, \
             f"Score too low for {flow_name}: {evaluation.score}"
-
 
 # =============================================================================
 # Parametrized Tests for All 20 Flows

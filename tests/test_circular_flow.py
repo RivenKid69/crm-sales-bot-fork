@@ -13,12 +13,10 @@ import sys
 from pathlib import Path
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from state_machine import StateMachine, CircularFlowManager
+from src.state_machine import StateMachine, CircularFlowManager
 from src.yaml_config.constants import GO_BACK_INTENTS, SPIN_PHASES, ALLOWED_GOBACKS
-from feature_flags import flags
-
+from src.feature_flags import flags
 
 @pytest.fixture(autouse=False)
 def enable_circular_flow():
@@ -26,7 +24,6 @@ def enable_circular_flow():
     flags.set_override("circular_flow", True)
     yield
     flags.clear_override("circular_flow")
-
 
 class TestCircularFlowManagerBasics:
     """Тесты базовой функциональности CircularFlowManager"""
@@ -55,7 +52,6 @@ class TestCircularFlowManagerBasics:
         """MAX_GOBACKS определена"""
         manager = CircularFlowManager()
         assert manager.MAX_GOBACKS == 2
-
 
 class TestCanGoBack:
     """Тесты проверки возможности возврата"""
@@ -95,7 +91,6 @@ class TestCanGoBack:
 
         # Третий возврат должен быть заблокирован
         assert not manager.can_go_back("presentation")
-
 
 class TestGoBack:
     """Тесты выполнения возврата"""
@@ -173,7 +168,6 @@ class TestGoBack:
         result = manager.go_back("unknown_state")
         assert result is None
 
-
 class TestGetRemainingGobacks:
     """Тесты получения оставшихся возвратов"""
 
@@ -205,7 +199,6 @@ class TestGetRemainingGobacks:
 
         assert manager.get_remaining_gobacks() >= 0
 
-
 class TestGetHistory:
     """Тесты получения истории"""
 
@@ -236,7 +229,6 @@ class TestGetHistory:
 
         assert history1 is not history2
 
-
 class TestGetStats:
     """Тесты получения статистики"""
 
@@ -260,7 +252,6 @@ class TestGetStats:
         assert stats["goback_count"] == 1
         assert stats["remaining"] == 1
         assert len(stats["history"]) == 1
-
 
 class TestStateMachineIntegration:
     """Тесты интеграции с StateMachine"""
@@ -291,7 +282,6 @@ class TestStateMachineIntegration:
 
         assert "circular_flow" in result
         assert "goback_count" in result["circular_flow"]
-
 
 class TestGoBackIntentHandling:
     """Тесты обработки go_back интента"""
@@ -373,7 +363,6 @@ class TestGoBackIntentHandling:
         # go_back НЕ должен сработать, так как флаг выключен
         assert result["action"] != "go_back"
 
-
 class TestAllowedGobacks:
     """Тесты разрешённых переходов"""
 
@@ -404,7 +393,6 @@ class TestAllowedGobacks:
         ]
 
         assert chain == expected
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -449,7 +437,6 @@ class TestEdgeCases:
 
         prev_state = manager.go_back("handle_objection")
         assert prev_state == "presentation"
-
 
 class TestIntegrationScenarios:
     """Интеграционные сценарии"""
@@ -522,7 +509,6 @@ class TestIntegrationScenarios:
 
         # Проверяем статистику
         assert sm.circular_flow.goback_count == 2
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -18,7 +18,6 @@ from src.blackboard.sources.price_question import PriceQuestionSource
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -55,7 +54,6 @@ class MockStateMachine:
     def sync_phase_from_state(self) -> None:
         pass
 
-
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
 
@@ -91,7 +89,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return 0
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -151,8 +148,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
-
 def create_blackboard(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -172,7 +167,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for PriceQuestionSource (Section 17.3)
@@ -361,7 +355,6 @@ class TestPriceQuestionSource:
         source.contribute(bb2)
         assert bb2.get_action_proposals()[0].metadata["has_pricing_data"] is True
 
-
 class TestPriceQuestionSourceIntentManagement:
     """Test PriceQuestionSource intent management."""
 
@@ -386,7 +379,6 @@ class TestPriceQuestionSourceIntentManagement:
 
         assert source.price_intents == custom_intents
         assert "price_question" not in source.price_intents
-
 
 class TestPriceQuestionSourceEnableDisable:
     """Test PriceQuestionSource enable/disable functionality."""
@@ -415,7 +407,6 @@ class TestPriceQuestionSourceEnableDisable:
         source.contribute(bb)
 
         assert len(bb.get_action_proposals()) == 0
-
 
 class TestPriceQuestionSourceInit:
     """Test PriceQuestionSource initialization."""

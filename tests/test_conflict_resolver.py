@@ -17,7 +17,6 @@ from src.blackboard.conflict_resolver import ConflictResolver
 from src.blackboard.models import Proposal
 from src.blackboard.enums import Priority, ProposalType
 
-
 class TestConflictResolver:
     """Test suite for ConflictResolver class."""
 
@@ -627,7 +626,6 @@ class TestConflictResolver:
         )
 
         assert decision.flags_to_set == flags
-
 
 class TestConflictResolverEdgeCases:
     """Edge case tests for ConflictResolver."""

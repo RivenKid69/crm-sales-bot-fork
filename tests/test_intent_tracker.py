@@ -21,7 +21,6 @@ from src.intent_tracker import (
     INTENT_CATEGORIES
 )
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -30,7 +29,6 @@ from src.intent_tracker import (
 def tracker():
     """Create a fresh IntentTracker for each test."""
     return IntentTracker()
-
 
 @pytest.fixture
 def populated_tracker():
@@ -43,7 +41,6 @@ def populated_tracker():
     tracker.record("price_question", "spin_situation")
     tracker.advance_turn()
     return tracker
-
 
 # =============================================================================
 # INTENT_CATEGORIES TESTS
@@ -185,7 +182,6 @@ class TestIntentCategories:
             all_intents.update(category_intents)
         assert len(all_intents) >= 150, f"Expected >= 150 unique intents, got {len(all_intents)}"
 
-
 # =============================================================================
 # INTENT RECORD TESTS
 # =============================================================================
@@ -228,7 +224,6 @@ class TestIntentRecord:
             timestamp=ts
         )
         assert record.timestamp == ts
-
 
 # =============================================================================
 # INTENT TRACKER BASIC TESTS
@@ -280,7 +275,6 @@ class TestIntentTrackerBasic:
         assert populated_tracker.history_length == 0
         assert populated_tracker.turn_number == 0
 
-
 # =============================================================================
 # STREAK COUNTING TESTS
 # =============================================================================
@@ -325,7 +319,6 @@ class TestStreakCounting:
 
         assert tracker.streak_count("price_question") == 2
 
-
 # =============================================================================
 # TOTAL COUNTING TESTS
 # =============================================================================
@@ -349,7 +342,6 @@ class TestTotalCounting:
     def test_total_for_nonexistent_intent(self, tracker):
         """Test total returns 0 for unrecorded intent."""
         assert tracker.total_count("never_recorded") == 0
-
 
 # =============================================================================
 # CATEGORY TRACKING TESTS
@@ -395,7 +387,6 @@ class TestCategoryTracking:
         tracker.record("greeting", "greeting")
         assert tracker.category_total("nonexistent") == 0
         assert tracker.category_streak("nonexistent") == 0
-
 
 # =============================================================================
 # OBJECTION FLOW MANAGER REPLACEMENT TESTS
@@ -443,7 +434,6 @@ class TestObjectionFlowManagerReplacement:
         assert tracker.is_spin_progress("problem_revealed") is True
         assert tracker.is_spin_progress("greeting") is False
 
-
 # =============================================================================
 # HISTORY TESTS
 # =============================================================================
@@ -480,7 +470,6 @@ class TestHistory:
         """Test getting state history."""
         states = populated_tracker.get_state_history()
         assert states == ["greeting", "spin_situation", "spin_situation"]
-
 
 # =============================================================================
 # SERIALIZATION TESTS
@@ -533,7 +522,6 @@ class TestSerialization:
         assert tracker.last_intent is None
         assert tracker.turn_number == 0
 
-
 # =============================================================================
 # REPR AND STR TESTS
 # =============================================================================
@@ -553,7 +541,6 @@ class TestRepr:
         assert "IntentTracker" in repr_str
         assert "price_question" in repr_str
         assert "streak=2" in repr_str
-
 
 # =============================================================================
 # EDGE CASES
@@ -591,7 +578,6 @@ class TestEdgeCases:
 
         assert tracker.category_total("objection") == 0
         assert tracker.category_streak("objection") == 0
-
 
 # =============================================================================
 # NEW CATEGORY HELPER METHODS TESTS
@@ -699,7 +685,6 @@ class TestNewCategoryHelperMethods:
         assert tracker.is_negative("rejection") is True
         assert tracker.negative_total() == 2
 
-
 class TestPatternDetection:
     """Tests for pattern detection across new categories."""
 
@@ -775,7 +760,6 @@ class TestPatternDetection:
         assert tracker.equipment_questions_total() == 3
         assert tracker.has_pattern("equipment_questions", min_total=3) is True
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -850,7 +834,6 @@ class TestIntegration:
         assert tracker.technical_problems_total() == 2
         assert tracker.conversational_total() == 1
         assert tracker.is_conversational("frustration_expression") is True
-
 
 # =============================================================================
 # ADVANCE_TURN DECOUPLING TESTS

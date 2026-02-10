@@ -17,9 +17,6 @@ import copy
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # CONFIG MIGRATION FRAMEWORK
 # =============================================================================
@@ -32,7 +29,6 @@ class MigrationStep:
     description: str
     migrate: Callable[[Dict[str, Any]], Dict[str, Any]]
     validate: Optional[Callable[[Dict[str, Any]], List[str]]] = None
-
 
 class ConfigMigrator:
     """
@@ -220,7 +216,6 @@ class ConfigMigrator:
         check_recursive(config)
         return warnings
 
-
 # =============================================================================
 # MIGRATION FUNCTIONS
 # =============================================================================
@@ -252,7 +247,6 @@ def migrate_v1_to_v1_5(config: Dict[str, Any]) -> Dict[str, Any]:
         result['guard'] = guard_config
 
     return result
-
 
 def migrate_v1_5_to_v2(config: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -287,7 +281,6 @@ def migrate_v1_5_to_v2(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return result
 
-
 def migrate_v2_to_v2_1(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Migrate from v2.0 to v2.1.
@@ -320,7 +313,6 @@ def migrate_v2_to_v2_1(config: Dict[str, Any]) -> Dict[str, Any]:
             result['guard']['high_frustration_threshold'] = result['frustration']['thresholds']['high']
 
     return result
-
 
 # =============================================================================
 # MIGRATION TESTS
@@ -365,7 +357,6 @@ class TestVersionDetection:
         }
         assert migrator.detect_version(config) == "2.0"
 
-
 class TestMigrationPath:
     """Tests for migration path calculation."""
 
@@ -405,7 +396,6 @@ class TestMigrationPath:
         """Invalid path raises error."""
         with pytest.raises(ValueError):
             migrator.get_migration_path("2.1", "1.0")  # Can't go backwards
-
 
 class TestV1ToV15Migration:
     """Tests for v1.0 to v1.5 migration."""
@@ -448,7 +438,6 @@ class TestV1ToV15Migration:
         assert "guard" in result
         assert "conversation_guard" not in result
         assert result["guard"]["max_turns"] == 25
-
 
 class TestV15ToV2Migration:
     """Tests for v1.5 to v2.0 migration."""
@@ -505,7 +494,6 @@ class TestV15ToV2Migration:
         assert "paths" in result["lead_scoring"]
         assert result["lead_scoring"]["paths"]["cold"] == "full_spin"
 
-
 class TestV2ToV21Migration:
     """Tests for v2.0 to v2.1 migration."""
 
@@ -545,7 +533,6 @@ class TestV2ToV21Migration:
 
         # Should sync from guard to frustration
         assert result["frustration"]["thresholds"]["high"] == 5
-
 
 class TestFullMigration:
     """Tests for full migration from v1 to latest."""
@@ -594,7 +581,6 @@ class TestFullMigration:
 
         assert len(warnings) >= 3  # At least one per migration step
 
-
 class TestDeprecations:
     """Tests for deprecation warnings."""
 
@@ -627,7 +613,6 @@ class TestDeprecations:
         assert len(deprecation_warnings) >= 2
         assert any("conversation_guard" in w for w in deprecation_warnings)
         assert any("spin_phases" in w for w in deprecation_warnings)
-
 
 class TestBackwardsCompatibility:
     """Tests for backwards compatibility."""
@@ -687,7 +672,6 @@ class TestBackwardsCompatibility:
 
         assert result["custom_key"] == "custom_value"
         assert result["another_custom"]["nested"] == "data"
-
 
 class TestMigrationValidation:
     """Tests for migration validation."""

@@ -12,7 +12,6 @@ import pytest
 from unittest.mock import MagicMock, patch
 from typing import Dict, Any
 
-
 # =============================================================================
 # PHASE 1: Greeting State Safety Tests
 # =============================================================================
@@ -123,7 +122,6 @@ class TestGreetingSafety:
         finally:
             flags.clear_override("greeting_state_safety")
 
-
 # =============================================================================
 # PHASE 2: Semantic Examples Coverage Tests
 # =============================================================================
@@ -166,7 +164,6 @@ class TestSemanticExamplesCoverage:
         assert len(INTENT_EXAMPLES[intent]) >= 5, (
             f"Intent '{intent}' has only {len(INTENT_EXAMPLES[intent])} examples (need >= 5)"
         )
-
 
 # =============================================================================
 # PHASE 3: Greeting Context Refinement Layer Tests
@@ -237,7 +234,6 @@ class TestGreetingContextRefinement:
         # Should pass through unchanged
         assert refined.intent == "problem_sync"
 
-
 # =============================================================================
 # PHASE 4: Objection Phase-Origin Escape Tests
 # =============================================================================
@@ -260,7 +256,6 @@ class TestObjectionPhaseOriginEscape:
         limits = _constants.get("limits", {})
         assert "phase_origin_objection_escape" in limits
         assert limits["phase_origin_objection_escape"] == 2
-
 
 # =============================================================================
 # PHASE 5: Stall Detection Tests

@@ -23,9 +23,6 @@ import tempfile
 import os
 import time
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # BOUNDARY VALUE TESTS - Numeric Parameters
 # =============================================================================
@@ -117,7 +114,6 @@ class TestBoundaryValuesGuard:
 
         assert config['guard']['max_same_message'] == 0
 
-
 class TestBoundaryValuesLimits:
     """Tests for limits parameter boundary values."""
 
@@ -172,7 +168,6 @@ class TestBoundaryValuesLimits:
 
         # Config loads but this is logically invalid
         assert config['limits']['max_consecutive_objections'] > config['limits']['max_total_objections']
-
 
 class TestBoundaryValuesFrustration:
     """Tests for frustration parameter boundary values."""
@@ -252,7 +247,6 @@ class TestBoundaryValuesFrustration:
 
         weights = config['frustration']['weights']
         assert all(w < 0 for w in weights.values())
-
 
 class TestBoundaryValuesLeadScoring:
     """Tests for lead_scoring parameter boundary values."""
@@ -337,7 +331,6 @@ class TestBoundaryValuesLeadScoring:
             config = yaml.safe_load(f)
 
         assert len(config['lead_scoring']['skip_phases']['cold']) == 4
-
 
 # =============================================================================
 # EMPTY AND NULL VALUE TESTS
@@ -427,7 +420,6 @@ class TestEmptyValues:
 
         assert config['fallback']['default_rephrase'] is None
 
-
 # =============================================================================
 # TYPE COERCION AND VALIDATION TESTS
 # =============================================================================
@@ -482,7 +474,6 @@ class TestTypeCoercion:
         assert 1 in go_back
         assert "two" in go_back
         assert 3.0 in go_back
-
 
 # =============================================================================
 # UNICODE AND ENCODING TESTS
@@ -549,7 +540,6 @@ class TestUnicodeEncoding:
             config = yaml.safe_load(f)
 
         assert len(config['fallback']['default_rephrase']) > 1000
-
 
 # =============================================================================
 # FILE SYSTEM ERROR TESTS
@@ -637,7 +627,6 @@ class TestFileSystemErrors:
 
         assert result['key'] == 'value'
 
-
 # =============================================================================
 # CONCURRENT ACCESS TESTS
 # =============================================================================
@@ -707,7 +696,6 @@ class TestConcurrentAccess:
 
         assert len(results) == 20
         assert all(r[1] == results[0][1] for r in results)
-
 
 # =============================================================================
 # COMPLEX NESTED CONDITIONS TESTS
@@ -816,7 +804,6 @@ class TestComplexNestedConditions:
         # Config loads but alias is invalid
         assert loaded['aliases']['self_ref'] == 'self_ref'
 
-
 # =============================================================================
 # LARGE VALUES AND PERFORMANCE TESTS
 # =============================================================================
@@ -882,7 +869,6 @@ class TestLargeValuesPerformance:
 
         # 100 loads should take less than 5 seconds
         assert elapsed < 5.0
-
 
 # =============================================================================
 # SETTINGS VALIDATION TESTS
@@ -961,7 +947,6 @@ class TestSettingsValidation:
         errors = validate_settings(settings)
         assert any("max_retries" in e for e in errors)
 
-
 # =============================================================================
 # RELOAD SETTINGS TESTS
 # =============================================================================
@@ -989,7 +974,6 @@ class TestReloadSettings:
 
         # Same instance (singleton)
         assert settings1 is settings2
-
 
 # =============================================================================
 # DOTDICT TESTS
@@ -1035,7 +1019,6 @@ class TestDotDict:
 
         assert d.new_key == "value"
         assert d["new_key"] == "value"
-
 
 # =============================================================================
 # CONSISTENCY TESTS

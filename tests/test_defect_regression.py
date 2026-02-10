@@ -14,15 +14,11 @@ These tests prevent the "incomplete propagation" pattern from recurring:
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 import pytest
 
 from src.config_loader import ConfigLoader, FlowConfig
 from src.decision_trace import DecisionTraceBuilder
 from src.simulator.metrics import calculate_spin_coverage
-
 
 # =============================================================================
 # Fixtures
@@ -33,24 +29,20 @@ def loader():
     """Real config loader pointing to src/yaml_config."""
     return ConfigLoader()
 
-
 @pytest.fixture(scope="module")
 def flow_config(loader):
     """Load the default spin_selling flow (used by most tests)."""
     return loader.load_flow("spin_selling")
-
 
 @pytest.fixture(scope="module")
 def base_states_raw(loader):
     """Load raw base states YAML (before flow resolution) for mixin checks."""
     return loader._load_yaml("flows/_base/states.yaml", required=True)
 
-
 @pytest.fixture(scope="module")
 def base_mixins_raw(loader):
     """Load raw base mixins YAML."""
     return loader._load_yaml("flows/_base/mixins.yaml", required=True)
-
 
 # =============================================================================
 # Test 1 (Defect 5): All state bases handle request_brevity
@@ -109,7 +101,6 @@ class TestDefect5DialogueControl:
         assert "dialogue_control" in mixins, \
             "_base_terminal is missing dialogue_control mixin"
 
-
 # =============================================================================
 # Test 2 (Defect 5): All state bases handle escalation
 # =============================================================================
@@ -153,7 +144,6 @@ class TestDefect5Escalation:
         for intent in expected_intents:
             assert transitions.get(intent) == "escalated", \
                 f"_escalation_safety missing {intent} → escalated"
-
 
 # =============================================================================
 # Test 3 (Defect 6): High-traffic states use answer_with_pricing
@@ -205,7 +195,6 @@ class TestDefect6PriceAction:
                 assert rules[intent] != "answer_with_facts", \
                     f"presentation has {intent}: answer_with_facts override (Defect 6)"
 
-
 # =============================================================================
 # Test 4 (Defect 1): record_guard preserves can_continue
 # =============================================================================
@@ -255,7 +244,6 @@ class TestDefect1GuardTrace:
         # Old heuristic: intervention is not None → can_continue=False
         assert trace.guard_check.can_continue is False
 
-
 # =============================================================================
 # Test 5 (Defect 3): record_fallback includes action and message
 # =============================================================================
@@ -286,7 +274,6 @@ class TestDefect3FallbackTrace:
         trace = builder.build()
         assert trace.fallback.fallback_action is None
         assert trace.fallback.fallback_message is None
-
 
 # =============================================================================
 # Test 6 (Defect 4): Phase coverage uses flow config, not hardcoded injection
@@ -323,7 +310,6 @@ class TestDefect4PhaseCoverage:
         from src.yaml_config.constants import SPIN_PHASES
         expected_coverage = 2 / len(SPIN_PHASES)
         assert coverage == pytest.approx(expected_coverage)
-
 
 # =============================================================================
 # Test 7 (Defect 7): Simulation terminates on config-driven limits
@@ -368,7 +354,6 @@ class TestDefect7SimulationLimits:
             "state_c": {"max_visits": 2, "max_consecutive": 4},
         }
         assert "state_d" not in limits
-
 
 # =============================================================================
 # Cross-defect: GuardResult dataclass (Defect 1)

@@ -8,7 +8,6 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 @pytest.fixture(scope="module")
 def base_prompts_config():
     """Load base prompts configuration."""
@@ -16,14 +15,12 @@ def base_prompts_config():
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture(scope="module")
 def spin_prompts_config():
     """Load SPIN selling prompts configuration."""
     config_path = Path(__file__).parent.parent / "src" / "yaml_config" / "templates" / "spin_selling" / "prompts.yaml"
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 class TestBasePromptsStructure:
     """Tests for base prompts structure."""
@@ -39,7 +36,6 @@ class TestBasePromptsStructure:
     def test_minimum_templates_count(self, base_prompts_config):
         """Should have at least 20 base templates."""
         assert len(base_prompts_config["templates"]) >= 20
-
 
 class TestGreetingTemplates:
     """Tests for greeting templates."""
@@ -73,7 +69,6 @@ class TestGreetingTemplates:
         """greeting template should exist."""
         assert "greeting" in base_prompts_config["templates"]
 
-
 class TestPriceTemplates:
     """Tests for price-related templates."""
 
@@ -99,7 +94,6 @@ class TestPriceTemplates:
         """answer_with_range_and_qualify template should exist."""
         assert "answer_with_range_and_qualify" in base_prompts_config["templates"]
 
-
 class TestContinueTemplates:
     """Tests for conversation continuation templates."""
 
@@ -116,7 +110,6 @@ class TestContinueTemplates:
         """continue_current_goal should require missing_data."""
         template = base_prompts_config["templates"]["continue_current_goal"]
         assert "missing_data" in template["parameters"]["required"]
-
 
 class TestQuestionAnswerTemplates:
     """Tests for Q&A templates."""
@@ -138,7 +131,6 @@ class TestQuestionAnswerTemplates:
         template = base_prompts_config["templates"]["answer_question"]
         assert "retrieved_facts" in template["parameters"]["required"]
 
-
 class TestFinalStateTemplates:
     """Tests for final state templates."""
 
@@ -159,7 +151,6 @@ class TestFinalStateTemplates:
         template = base_prompts_config["templates"]["presentation"]
         assert "pain_point" in template["parameters"]["required"]
 
-
 class TestObjectionTemplates:
     """Tests for objection handling templates."""
 
@@ -175,7 +166,6 @@ class TestObjectionTemplates:
         """handle_objection_think template should exist."""
         assert "handle_objection_think" in base_prompts_config["templates"]
 
-
 class TestSocialTemplates:
     """Tests for social interaction templates."""
 
@@ -190,7 +180,6 @@ class TestSocialTemplates:
     def test_handle_farewell_exists(self, base_prompts_config):
         """handle_farewell template should exist."""
         assert "handle_farewell" in base_prompts_config["templates"]
-
 
 class TestUtilityTemplates:
     """Tests for utility templates."""
@@ -211,7 +200,6 @@ class TestUtilityTemplates:
         """confirm_and_collect_contact template should exist."""
         assert "confirm_and_collect_contact" in base_prompts_config["templates"]
 
-
 class TestToneTemplates:
     """Tests for tone-specific templates."""
 
@@ -231,7 +219,6 @@ class TestToneTemplates:
         """soft_exit_frustrated template should exist."""
         assert "soft_exit_frustrated" in base_prompts_config["templates"]
 
-
 class TestSpinPromptsStructure:
     """Tests for SPIN prompts structure."""
 
@@ -246,7 +233,6 @@ class TestSpinPromptsStructure:
     def test_minimum_spin_templates_count(self, spin_prompts_config):
         """Should have at least 10 SPIN templates."""
         assert len(spin_prompts_config["templates"]) >= 10
-
 
 class TestSpinSituationTemplates:
     """Tests for SPIN Situation templates."""
@@ -274,7 +260,6 @@ class TestSpinSituationTemplates:
         """transition_to_spin_problem template should exist."""
         assert "transition_to_spin_problem" in spin_prompts_config["templates"]
 
-
 class TestSpinProblemTemplates:
     """Tests for SPIN Problem templates."""
 
@@ -295,7 +280,6 @@ class TestSpinProblemTemplates:
     def test_transition_to_spin_implication_exists(self, spin_prompts_config):
         """transition_to_spin_implication template should exist."""
         assert "transition_to_spin_implication" in spin_prompts_config["templates"]
-
 
 class TestSpinImplicationTemplates:
     """Tests for SPIN Implication templates."""
@@ -318,7 +302,6 @@ class TestSpinImplicationTemplates:
         """transition_to_spin_need_payoff template should exist."""
         assert "transition_to_spin_need_payoff" in spin_prompts_config["templates"]
 
-
 class TestSpinNeedPayoffTemplates:
     """Tests for SPIN Need-Payoff templates."""
 
@@ -339,7 +322,6 @@ class TestSpinNeedPayoffTemplates:
     def test_transition_to_presentation_exists(self, spin_prompts_config):
         """transition_to_presentation template should exist."""
         assert "transition_to_presentation" in spin_prompts_config["templates"]
-
 
 class TestTemplateParameterValidity:
     """Tests for template parameter validity."""
@@ -371,7 +353,6 @@ class TestTemplateParameterValidity:
             assert "template" in template, f"{name} missing template"
             assert len(template["template"]) > 0, f"{name} has empty template"
 
-
 class TestTemplateVariables:
     """Tests for template variable usage."""
 
@@ -396,7 +377,6 @@ class TestTemplateVariables:
         assert "{system}" in all_templates_text
         assert "{user_message}" in all_templates_text
         assert "{history}" in all_templates_text
-
 
 class TestSpinPhaseCompleteness:
     """Tests for SPIN phase completeness."""
@@ -425,7 +405,6 @@ class TestSpinPhaseCompleteness:
         ]
         for transition in transitions:
             assert transition in spin_prompts_config["templates"], f"Missing {transition}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

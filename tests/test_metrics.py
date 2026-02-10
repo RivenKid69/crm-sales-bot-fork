@@ -7,10 +7,7 @@ import time
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from metrics import ConversationMetrics, ConversationOutcome, TurnRecord, AggregatedMetrics
-
+from src.metrics import ConversationMetrics, ConversationOutcome, TurnRecord, AggregatedMetrics
 
 class TestConversationMetricsBasic:
     """Базовые тесты ConversationMetrics"""
@@ -37,7 +34,6 @@ class TestConversationMetricsBasic:
         assert metrics.turns == 0
         assert len(metrics.intents_sequence) == 0
         assert len(metrics.turn_records) == 0
-
 
 class TestRecordTurn:
     """Тесты для record_turn"""
@@ -92,7 +88,6 @@ class TestRecordTurn:
         assert metrics.phase_turns["spin_situation"] == 3
         assert metrics.turns == 3
 
-
 class TestRecordTurnTiming:
     """Тесты для измерения времени"""
 
@@ -121,7 +116,6 @@ class TestRecordTurnTiming:
         avg_time = metrics.get_average_response_time_ms()
         assert avg_time is not None
         assert avg_time >= 20
-
 
 class TestRecordObjection:
     """Тесты для record_objection"""
@@ -153,7 +147,6 @@ class TestRecordObjection:
         metrics.record_objection("no_time")
 
         assert len(metrics.objections) == 3
-
 
 class TestRecordFallback:
     """Тесты для record_fallback"""
@@ -232,7 +225,6 @@ class TestRecordFallback:
         assert total_by_tier == metrics.fallback_count
         assert metrics.fallback_count == 3
 
-
 class TestRecordLeadScore:
     """Тесты для record_lead_score"""
 
@@ -255,7 +247,6 @@ class TestRecordLeadScore:
 
         assert metrics.get_final_lead_score() == 60
 
-
 class TestRecordCollectedData:
     """Тесты для record_collected_data"""
 
@@ -275,7 +266,6 @@ class TestRecordCollectedData:
         metrics.record_collected_data("company_size", 10)
 
         assert metrics.collected_data["company_size"] == 10
-
 
 class TestOutcome:
     """Тесты для outcome"""
@@ -316,7 +306,6 @@ class TestOutcome:
 
         assert metrics._determine_outcome() == "abandoned"
 
-
 class TestDuration:
     """Тесты для длительности"""
 
@@ -334,7 +323,6 @@ class TestDuration:
         duration = metrics.get_duration_seconds()
         assert duration is not None
         assert duration >= 0.05
-
 
 class TestPhaseDistribution:
     """Тесты для распределения по фазам"""
@@ -357,7 +345,6 @@ class TestPhaseDistribution:
         assert dist["greeting"] == 25.0
         assert dist["spin_situation"] == 50.0
         assert dist["spin_problem"] == 25.0
-
 
 class TestDominantTone:
     """Тесты для dominant tone"""
@@ -382,7 +369,6 @@ class TestDominantTone:
         metrics.record_turn("s4", "i4", tone="positive")
 
         assert metrics.get_dominant_tone() == "positive"
-
 
 class TestGetSummary:
     """Тесты для get_summary"""
@@ -421,7 +407,6 @@ class TestGetSummary:
         assert summary["objection_count"] == 1
         assert summary["fallback_count"] == 1
 
-
 class TestToLogDict:
     """Тесты для to_log_dict"""
 
@@ -440,7 +425,6 @@ class TestToLogDict:
         # Но содержать ключевые метрики
         assert log_dict["conversation_id"] == "log_test"
         assert log_dict["total_turns"] == 2
-
 
 class TestTurnRecord:
     """Тесты для TurnRecord dataclass"""
@@ -475,7 +459,6 @@ class TestTurnRecord:
         assert record.fallback_used is True
         assert record.fallback_tier == "tier_1"
 
-
 class TestConversationOutcome:
     """Тесты для ConversationOutcome enum"""
 
@@ -488,7 +471,6 @@ class TestConversationOutcome:
         assert ConversationOutcome.ABANDONED.value == "abandoned"
         assert ConversationOutcome.TIMEOUT.value == "timeout"
         assert ConversationOutcome.ERROR.value == "error"
-
 
 class TestAggregatedMetrics:
     """Тесты для AggregatedMetrics"""
@@ -613,7 +595,6 @@ class TestAggregatedMetrics:
 
         assert summary["total_conversations"] == 5
 
-
 class TestMetricsThreadSafety:
     """Тесты потокобезопасности"""
 
@@ -645,7 +626,6 @@ class TestMetricsThreadSafety:
 
         assert len(errors) == 0, f"Errors during concurrent recording: {errors}"
         assert metrics.turns == 100  # 5 threads * 20 turns
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

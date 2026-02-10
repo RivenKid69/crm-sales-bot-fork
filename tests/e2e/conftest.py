@@ -11,12 +11,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
 from typing import List, Optional
-import sys
 import os
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
 
 # =============================================================================
 # LLM Fixtures
@@ -53,7 +48,6 @@ def mock_e2e_llm():
 
     return llm
 
-
 @pytest.fixture
 def mock_client_llm():
     """
@@ -86,7 +80,6 @@ def mock_client_llm():
 
     return llm
 
-
 @pytest.fixture(scope="session")
 def real_llm():
     """
@@ -110,14 +103,12 @@ def real_llm():
     except Exception:
         return None
 
-
 @pytest.fixture
 def skip_without_llm(real_llm):
     """Skip test if real LLM is not available."""
     if real_llm is None:
         pytest.skip("Real LLM not available")
     return real_llm
-
 
 # =============================================================================
 # Scenario Fixtures
@@ -129,20 +120,17 @@ def all_scenarios():
     from src.simulator.e2e_scenarios import ALL_SCENARIOS
     return ALL_SCENARIOS
 
-
 @pytest.fixture
 def scenario_by_flow():
     """Get scenario by flow name."""
     from src.simulator.e2e_scenarios import get_scenario_by_flow
     return get_scenario_by_flow
 
-
 @pytest.fixture
 def scenarios_by_persona():
     """Get scenarios filtered by persona."""
     from src.simulator.e2e_scenarios import get_scenarios_by_persona
     return get_scenarios_by_persona
-
 
 # =============================================================================
 # Runner Fixtures
@@ -159,13 +147,11 @@ def simulation_runner(mock_e2e_llm, mock_client_llm):
         verbose=False
     )
 
-
 @pytest.fixture
 def e2e_evaluator():
     """Create E2EEvaluator instance."""
     from src.simulator.e2e_evaluator import E2EEvaluator
     return E2EEvaluator()
-
 
 # =============================================================================
 # Flow Configuration Fixtures
@@ -175,7 +161,6 @@ def e2e_evaluator():
 def flow_configs_path():
     """Path to flow configurations."""
     return Path(__file__).parent.parent.parent / "src" / "yaml_config" / "flows"
-
 
 @pytest.fixture
 def available_flows(flow_configs_path):
@@ -187,7 +172,6 @@ def available_flows(flow_configs_path):
             if flow_yaml.exists():
                 flows.append(item.name)
     return sorted(flows)
-
 
 # =============================================================================
 # Results Directory Fixture

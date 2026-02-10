@@ -11,10 +11,7 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from context_window import ContextWindow, TurnType, EngagementLevel
-
+from src.context_window import ContextWindow, TurnType, EngagementLevel
 
 class TestEngagementV2Score:
     """Тесты для get_engagement_score_v2."""
@@ -218,7 +215,6 @@ class TestEngagementV2Score:
         # Score снижен из-за возражений
         assert score < 0.5
 
-
 class TestEngagementV2Level:
     """Тесты для get_engagement_level_v2."""
 
@@ -333,7 +329,6 @@ class TestEngagementV2Level:
         # Rejections приводят к low или disengaged уровню
         assert level in [EngagementLevel.LOW, EngagementLevel.DISENGAGED]
 
-
 class TestEngagementV2Trend:
     """Тесты для get_engagement_trend_v2."""
 
@@ -440,7 +435,6 @@ class TestEngagementV2Trend:
         trend = cw.get_engagement_trend_v2()
 
         assert trend == "stable"
-
 
 class TestEngagementV2VsV1:
     """Сравнительные тесты v1 vs v2."""

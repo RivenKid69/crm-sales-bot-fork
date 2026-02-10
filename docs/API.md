@@ -80,7 +80,8 @@ bot = SalesBot(llm=llm, flow_name="spin_selling")
 
 - `load() -> LoadedConfig`
 - `load_flow(flow_name: str) -> FlowConfig`
-- `load_named(config_name: str) -> LoadedConfig`
+- `load_named(config_name: str, flow_name: Optional[str] = None) -> LoadedConfig`
+- `load_bundle(config_name: str = "default", flow_name: Optional[str] = None) -> tuple[LoadedConfig, FlowConfig]`
 - `reload() -> LoadedConfig`
 
 ## 4. Retriever API (`src/knowledge/retriever.py`)

@@ -21,16 +21,14 @@
 
 import pytest
 import sys
-sys.path.insert(0, 'src')
 
 from unittest.mock import MagicMock
 
-from classifier import HybridClassifier
-from state_machine import StateMachine
-from bot import SalesBot
-from config import SALES_STATES
-from feature_flags import flags
-
+from src.classifier import HybridClassifier
+from src.state_machine import StateMachine
+from src.bot import SalesBot
+from src.config import SALES_STATES
+from src.feature_flags import flags
 
 # =============================================================================
 # FIXTURES
@@ -42,7 +40,6 @@ def mock_llm():
     llm = MagicMock()
     llm.generate.return_value = "Здравствуйте! Чем могу помочь?"
     return llm
-
 
 @pytest.fixture
 def bot(mock_llm):
@@ -56,7 +53,6 @@ def bot(mock_llm):
     yield bot
 
     flags.clear_all_overrides()
-
 
 class TestDemoRequestOverride:
     """
@@ -193,7 +189,6 @@ class TestDemoRequestOverride:
             assert result["intent"] != "demo_request", \
                 f"'{message}' НЕ должен быть demo_request, получили {result['intent']}"
 
-
 class TestCloseStateTransitions:
     """
     Тесты для Варианта B: transitions в close state (config.py)
@@ -315,7 +310,6 @@ class TestCloseStateTransitions:
             assert next_state in ("close", self.sm.state), \
                 f"{intent} в close не должен менять state на {next_state}"
 
-
 class TestSuccessMetricsFinalization:
     """
     Тесты для Варианта C: логика is_final в bot.py
@@ -371,7 +365,6 @@ class TestSuccessMetricsFinalization:
         # contact_provided должен вести в success
         assert result["state"] == "success", \
             f"contact_provided должен вести в success, получили {result['state']}"
-
 
 class TestIntegrationHappyPath:
     """
@@ -450,7 +443,6 @@ class TestIntegrationHappyPath:
         assert result2["state"] in ("close", "success"), \
             f"Повторный demo_request должен вести в close/success"
 
-
 class TestEdgeCases:
     """
     Краевые случаи и регрессии
@@ -505,7 +497,6 @@ class TestEdgeCases:
 
         assert result["state"] in ("close", "success"), \
             f"Demo request из soft_close должен вести в close/success"
-
 
 class TestSimulationScenarios:
     """
@@ -573,7 +564,6 @@ class TestSimulationScenarios:
         assert result["state"] in ("close", "success"), \
             "После демо-запроса должны быть в close/success"
 
-
 class TestMetricsCorrectness:
     """
     Тесты корректности метрик
@@ -607,7 +597,6 @@ class TestMetricsCorrectness:
 
         assert "demo_request" in str(metrics.get("intents_sequence", [])), \
             "demo_request должен быть в intents_sequence"
-
 
 # =============================================================================
 # ПАРАМЕТРИЗОВАННЫЕ ТЕСТЫ
@@ -648,7 +637,6 @@ def test_demo_request_classification(message, expected_intent):
     assert result["intent"] == expected_intent, \
         f"'{message}' должен быть {expected_intent}, получили {result['intent']}"
 
-
 @pytest.mark.parametrize("state,intent,expected_next_state,needs_contact", [
     # close state transitions (Phase 8: conditional rules require contact_info)
     ("close", "demo_request", "success", True),
@@ -687,7 +675,6 @@ def test_state_transitions(state, intent, expected_next_state, needs_contact):
 
     assert next_state == expected_next_state, \
         f"В state={state} intent={intent} (contact={needs_contact}) должен вести в {expected_next_state}, получили {next_state}"
-
 
 # =============================================================================
 # ЗАПУСК ТЕСТОВ

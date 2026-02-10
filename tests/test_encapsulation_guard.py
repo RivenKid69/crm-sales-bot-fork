@@ -19,7 +19,6 @@ import re
 import pytest
 from pathlib import Path
 
-
 SRC_ROOT = Path(__file__).parent.parent / "src"
 
 # Files that must be encapsulation-clean
@@ -47,7 +46,6 @@ SKIP_LINE_PATTERNS = [
     re.compile(r"^\s*'.*'"),      # string-only lines
 ]
 
-
 def _collect_python_files():
     """Collect all Python files from guarded paths."""
     files = []
@@ -58,7 +56,6 @@ def _collect_python_files():
             files.append(path)
     return sorted(files)
 
-
 def _is_skip_line(line: str) -> bool:
     """Check if line is a comment or docstring (not real code)."""
     stripped = line.strip()
@@ -68,7 +65,6 @@ def _is_skip_line(line: str) -> bool:
         if pat.match(stripped):
             return True
     return False
-
 
 def _scan_file(filepath: Path):
     """Scan a single file for encapsulation violations."""
@@ -107,7 +103,6 @@ def _scan_file(filepath: Path):
                     )
 
     return violations
-
 
 class TestEncapsulationGuard:
     """CI guard: no private-attr access across ownership boundaries."""

@@ -13,14 +13,9 @@
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-import sys
 import os
 
-# Add src to path
 src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
-
 
 # =============================================================================
 # Test 1: CRITICAL - objection_competitor mapping
@@ -30,7 +25,7 @@ class TestObjectionCompetitorMapping:
 
     def test_objection_competitor_has_negative_weight(self):
         """objection_competitor должен маппиться на негативный сигнал"""
-        from lead_scoring import INTENT_TO_SIGNAL, LeadSignal, LeadScorer
+        from src.lead_scoring import INTENT_TO_SIGNAL, LeadSignal, LeadScorer
 
         # Проверяем что objection_competitor маппится на OBJECTION_COMPETITOR
         assert "objection_competitor" in INTENT_TO_SIGNAL
@@ -38,7 +33,7 @@ class TestObjectionCompetitorMapping:
 
     def test_objection_competitor_decreases_score(self):
         """objection_competitor должен УМЕНЬШАТЬ lead score"""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
 
@@ -59,12 +54,11 @@ class TestObjectionCompetitorMapping:
 
     def test_comparison_has_positive_weight(self):
         """comparison (не возражение) должен иметь положительный вес"""
-        from lead_scoring import INTENT_TO_SIGNAL, LeadSignal
+        from src.lead_scoring import INTENT_TO_SIGNAL, LeadSignal
 
         # comparison - это сравнение без возражения (интерес)
         assert "comparison" in INTENT_TO_SIGNAL
         assert INTENT_TO_SIGNAL["comparison"] == LeadSignal.COMPETITOR_COMPARISON.value
-
 
 # =============================================================================
 # Test 2: CRITICAL - positive intents list
@@ -74,7 +68,7 @@ class TestPositiveIntentsList:
 
     def test_positive_intents_reset_objection_counter(self):
         """Положительные интенты должны сбрасывать счётчик возражений"""
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
 
         sm = StateMachine()
 
@@ -104,7 +98,6 @@ class TestPositiveIntentsList:
                 f"Intent '{intent}' должен сбрасывать objection_count! "
                 f"Got: {sm.objection_flow.objection_count}"
             )
-
 
 # =============================================================================
 # Test 3: IMPORTANT - soft_close state consistency
@@ -149,7 +142,6 @@ class TestSoftCloseStateConsistency:
         assert is_final == True
         assert response == "Хорошо, свяжитесь когда будет удобно."
 
-
 # =============================================================================
 # Test 4: IMPORTANT - disambiguation history
 # =============================================================================
@@ -158,7 +150,7 @@ class TestDisambiguationHistory:
 
     def test_continue_with_classification_signature(self):
         """_continue_with_classification должен принимать user_message"""
-        from bot import SalesBot
+        from src.bot import SalesBot
         import inspect
 
         # Проверяем сигнатуру метода
@@ -170,7 +162,6 @@ class TestDisambiguationHistory:
             f"Параметры: {params}"
         )
 
-
 # =============================================================================
 # Test 5: IMPORTANT - configurable disambiguation weights
 # =============================================================================
@@ -179,7 +170,7 @@ class TestDisambiguationWeights:
 
     def test_weights_from_config(self):
         """Веса должны браться из конфигурации"""
-        from config import CLASSIFIER_CONFIG
+        from src.config import CLASSIFIER_CONFIG
 
         # Проверяем что веса определены в конфигурации
         assert "root_classifier_weight" in CLASSIFIER_CONFIG
@@ -196,8 +187,8 @@ class TestDisambiguationWeights:
 
     def test_disambiguation_uses_config_weights(self):
         """DisambiguationAnalyzer должен использовать веса из конфигурации"""
-        from classifier.disambiguation import DisambiguationAnalyzer
-        from config import CLASSIFIER_CONFIG
+        from src.classifier.disambiguation import DisambiguationAnalyzer
+        from src.config import CLASSIFIER_CONFIG
 
         analyzer = DisambiguationAnalyzer(config=CLASSIFIER_CONFIG)
 
@@ -211,7 +202,6 @@ class TestDisambiguationWeights:
         assert "intent_a" in merged
         assert "intent_b" in merged
 
-
 # =============================================================================
 # Test 6: MEDIUM - company_size check
 # =============================================================================
@@ -220,7 +210,7 @@ class TestCompanySizeCheck:
 
     def test_company_size_none_returns_features(self):
         """При company_size=None должны возвращаться общие features"""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator.__new__(ResponseGenerator)
         gen.history_length = 4
@@ -230,7 +220,7 @@ class TestCompanySizeCheck:
 
     def test_company_size_zero_returns_features(self):
         """При company_size=0 должны возвращаться общие features (не тариф)"""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator.__new__(ResponseGenerator)
         gen.history_length = 4
@@ -244,7 +234,7 @@ class TestCompanySizeCheck:
 
     def test_company_size_positive_returns_tariff(self):
         """При company_size>0 должен рассчитываться тариф"""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
 
         gen = ResponseGenerator.__new__(ResponseGenerator)
         gen.history_length = 4
@@ -254,7 +244,6 @@ class TestCompanySizeCheck:
             "При company_size=10 должен рассчитываться тариф"
         )
 
-
 # =============================================================================
 # Test 7: MEDIUM - INTENT_TO_CATEGORY completeness
 # =============================================================================
@@ -263,7 +252,7 @@ class TestIntentToCategoryCompleteness:
 
     def test_system_intents_in_mapping(self):
         """Системные интенты должны быть в маппинге"""
-        from knowledge.retriever import INTENT_TO_CATEGORY
+        from src.knowledge.retriever import INTENT_TO_CATEGORY
 
         system_intents = [
             "disambiguation_needed",
@@ -281,7 +270,7 @@ class TestIntentToCategoryCompleteness:
 
     def test_all_common_intents_in_mapping(self):
         """Все основные интенты должны быть в маппинге"""
-        from knowledge.retriever import INTENT_TO_CATEGORY
+        from src.knowledge.retriever import INTENT_TO_CATEGORY
 
         common_intents = [
             "greeting", "rejection", "farewell", "gratitude",
@@ -298,7 +287,6 @@ class TestIntentToCategoryCompleteness:
                 f"Интент '{intent}' отсутствует в INTENT_TO_CATEGORY"
             )
 
-
 # =============================================================================
 # Test 8: Edge cases and integration
 # =============================================================================
@@ -307,7 +295,7 @@ class TestEdgeCases:
 
     def test_multiple_objections_then_positive_intent(self):
         """После серии возражений положительный интент сбрасывает счётчик"""
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
 
         sm = StateMachine()
 
@@ -324,7 +312,7 @@ class TestEdgeCases:
 
     def test_lead_score_scenario_with_fixed_mapping(self):
         """Реалистичный сценарий: интерес → возражение о конкуренте → интерес"""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
 
@@ -347,7 +335,6 @@ class TestEdgeCases:
             f"before={score_after_interest}, after={score_after_objection}"
         )
 
-
 # =============================================================================
 # Test 9: Conversation Guard
 # =============================================================================
@@ -356,7 +343,7 @@ class TestConversationGuard:
 
     def test_phase_attempts_triggers_correctly(self):
         """Проверяем логику phase_attempts с разными состояниями"""
-        from conversation_guard import ConversationGuard, GuardConfig
+        from src.conversation_guard import ConversationGuard, GuardConfig
 
         config = GuardConfig(
             max_phase_attempts=3,
@@ -384,7 +371,6 @@ class TestConversationGuard:
             f"На 4й попытке должна быть интервенция"
         )
 
-
 # =============================================================================
 # Test 10: Integration - Lead Scoring with correct weights
 # =============================================================================
@@ -393,7 +379,7 @@ class TestLeadScoringIntegration:
 
     def test_negative_signals_reduce_score(self):
         """Негативные сигналы должны уменьшать score"""
-        from lead_scoring import LeadScorer, INTENT_TO_SIGNAL
+        from src.lead_scoring import LeadScorer, INTENT_TO_SIGNAL
 
         scorer = LeadScorer()
 
@@ -422,7 +408,6 @@ class TestLeadScoringIntegration:
                     f"Intent '{intent}' (signal={signal}) должен уменьшать score! "
                     f"before={before}, after={after}"
                 )
-
 
 # =============================================================================
 # Run tests

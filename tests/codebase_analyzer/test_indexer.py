@@ -10,11 +10,9 @@ from codebase_analyzer.indexer.indexer import CodebaseIndexer, IndexResult, crea
 from codebase_analyzer.indexer.models.entities import EntityType
 from codebase_analyzer.indexer.models.relations import CodebaseStats
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def default_config(temp_dir: Path):
@@ -29,7 +27,6 @@ def default_config(temp_dir: Path):
             parallel_workers=1,
         ),
     )
-
 
 @pytest.fixture
 def simple_project(temp_dir: Path):
@@ -64,7 +61,6 @@ class User {
 
     return temp_dir
 
-
 @pytest.fixture
 def indexer_with_project(simple_project: Path, default_config: AppConfig):
     """Create indexer with simple project."""
@@ -80,11 +76,9 @@ def indexer_with_project(simple_project: Path, default_config: AppConfig):
     )
     return CodebaseIndexer(default_config)
 
-
 # ============================================================================
 # CodebaseIndexer Creation Tests
 # ============================================================================
-
 
 class TestCodebaseIndexerCreation:
     """Tests for CodebaseIndexer instantiation."""
@@ -118,11 +112,9 @@ class TestCodebaseIndexerCreation:
         assert indexer.dependency_graph is None
         assert indexer.stats is None
 
-
 # ============================================================================
 # File Discovery Tests
 # ============================================================================
-
 
 class TestFileDiscovery:
     """Tests for file discovery functionality."""
@@ -224,11 +216,9 @@ class TestFileDiscovery:
         assert "User.php" in file_names
         assert "UserService.php" in file_names
 
-
 # ============================================================================
 # File Parsing Tests
 # ============================================================================
-
 
 class TestFileParsing:
     """Tests for file parsing functionality."""
@@ -322,11 +312,9 @@ func good() {
         # Broken file may or may not parse depending on parser behavior
         assert len(entities) >= 0
 
-
 # ============================================================================
 # Dependency Graph Tests
 # ============================================================================
-
 
 class TestDependencyGraph:
     """Tests for dependency graph building."""
@@ -367,11 +355,9 @@ class TestDependencyGraph:
         # Graph should have entities
         assert graph.stats["total_entities"] > 0
 
-
 # ============================================================================
 # Statistics Tests
 # ============================================================================
-
 
 class TestStatistics:
     """Tests for statistics computation."""
@@ -405,11 +391,9 @@ class TestStatistics:
         # At least one language should have files
         assert sum(stats.files_by_language.values()) > 0
 
-
 # ============================================================================
 # Full Indexing Pipeline Tests
 # ============================================================================
-
 
 class TestFullIndexingPipeline:
     """Tests for the complete indexing pipeline."""
@@ -451,11 +435,9 @@ class TestFullIndexingPipeline:
         assert result.graph is not None
         assert result.stats.total_files >= 1
 
-
 # ============================================================================
 # Save/Load Index Tests
 # ============================================================================
-
 
 class TestIndexPersistence:
     """Tests for saving and loading index."""
@@ -493,11 +475,9 @@ class TestIndexPersistence:
 
         assert success is True
 
-
 # ============================================================================
 # Edge Cases and Error Handling Tests
 # ============================================================================
-
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
@@ -625,11 +605,9 @@ class TestEdgeCases:
         files = indexer.discover_files()
         assert len(files) == 1
 
-
 # ============================================================================
 # Properties Tests
 # ============================================================================
-
 
 class TestProperties:
     """Tests for indexer properties."""
@@ -664,11 +642,9 @@ class TestProperties:
 
         assert isinstance(stats, CodebaseStats)
 
-
 # ============================================================================
 # Integration Tests
 # ============================================================================
-
 
 class TestIntegration:
     """Integration tests for full indexing workflow."""
@@ -722,11 +698,9 @@ class TestIntegration:
         # Results should be consistent
         assert result1.stats.total_files == result2.stats.total_files
 
-
 # ============================================================================
 # IndexResult Tests
 # ============================================================================
-
 
 class TestIndexResult:
     """Tests for IndexResult dataclass."""
@@ -771,11 +745,9 @@ class TestIndexResult:
 
         assert len(result.broken_cycles) == 2
 
-
 # ============================================================================
 # Processing Order Tests
 # ============================================================================
-
 
 class TestProcessingOrder:
     """Tests for topological order and processing levels computation."""
@@ -819,11 +791,9 @@ class TestProcessingOrder:
 
         assert entities_in_levels == set(result.topological_order)
 
-
 # ============================================================================
 # Get Entities for Analysis Tests
 # ============================================================================
-
 
 class TestGetEntitiesForAnalysis:
     """Tests for get_entities_for_analysis method."""

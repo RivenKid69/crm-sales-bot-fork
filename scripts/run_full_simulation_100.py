@@ -421,12 +421,12 @@ def main():
     print_section("ИНИЦИАЛИЗАЦИЯ СИМУЛЯТОРА")
 
     try:
-        from llm import OllamaClient
-        from simulator.runner import SimulationRunner
-        from simulator.e2e_scenarios import ALL_SCENARIOS, expand_scenarios_with_personas
-        from simulator.report import generate_e2e_report
-        from simulator.personas import PERSONAS
-        from simulator.kb_questions import load_kb_question_pool
+        from src.llm import OllamaClient
+        from src.simulator.runner import SimulationRunner
+        from src.simulator.e2e_scenarios import ALL_SCENARIOS, expand_scenarios_with_personas
+        from src.simulator.report import generate_e2e_report
+        from src.simulator.personas import PERSONAS
+        from src.simulator.kb_questions import load_kb_question_pool
 
         print_success("Модули симулятора импортированы")
         logger.info("Модули симулятора загружены")
@@ -443,7 +443,7 @@ def main():
 
     # Semantic tone analyzer
     try:
-        from tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
+        from src.tone_analyzer.semantic_analyzer import get_semantic_tone_analyzer
         analyzer = get_semantic_tone_analyzer()
         if analyzer.is_available:
             print_success("Semantic Tone Analyzer: готов")
@@ -457,7 +457,7 @@ def main():
 
     # Reranker
     try:
-        from knowledge.reranker import get_reranker
+        from src.knowledge.reranker import get_reranker
         reranker = get_reranker()
         if reranker.is_available():
             print_success("Reranker: готов")

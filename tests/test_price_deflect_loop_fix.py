@@ -28,7 +28,6 @@ from unittest.mock import MagicMock, patch
 from src.intent_tracker import IntentTracker, INTENT_CATEGORIES
 from src.yaml_config.constants import PRICE_RELATED_INTENTS
 
-
 # =============================================================================
 # CATEGORY SYNCHRONIZATION TESTS
 # =============================================================================
@@ -84,7 +83,6 @@ class TestPriceRelatedCategorySync:
         if sensitive_intents:
             assert EscalationSource.SENSITIVE_INTENTS == sensitive_intents
 
-
 # =============================================================================
 # NEW CATEGORY TESTS
 # =============================================================================
@@ -128,7 +126,6 @@ class TestNewCategories:
         assert "question_security" in tech
         assert "question_support" in tech
         assert "question_implementation" in tech
-
 
 # =============================================================================
 # INTENT TRACKER CATEGORY STREAK TESTS
@@ -208,7 +205,6 @@ class TestCategoryStreakFix:
         tracker.record("frustration_expression", "spin_situation")
         assert tracker.category_streak("frustration") == 3
 
-
 # =============================================================================
 # CONDITIONS.PY TESTS
 # =============================================================================
@@ -277,7 +273,6 @@ class TestConditionsFix:
         # Streak was broken, should be False
         assert price_repeated_3x(mock_context) is False
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -330,7 +325,6 @@ class TestIntegration:
         if yaml_sensitive:
             assert EscalationSource.SENSITIVE_INTENTS == yaml_sensitive
 
-
 # =============================================================================
 # REGRESSION TESTS
 # =============================================================================
@@ -376,7 +370,6 @@ class TestRegression:
         # All exit intents should be in negative
         for intent in exit_intents:
             assert intent in negative, f"{intent} should be in negative category"
-
 
 # =============================================================================
 # TOTAL COUNT CONDITIONS TESTS (get_intent_count → get_intent_total fix)

@@ -18,9 +18,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # HELPER FIXTURES
 # =============================================================================
@@ -33,7 +30,6 @@ def mock_llm():
     llm.health_check.return_value = True
     return llm
 
-
 @pytest.fixture
 def state_machine_with_real_config():
     """StateMachine with real config."""
@@ -43,7 +39,6 @@ def state_machine_with_real_config():
     loader = ConfigLoader()
     config = loader.load()
     return StateMachine(config=config)
-
 
 # =============================================================================
 # SPIN FLOW SCENARIOS
@@ -73,7 +68,6 @@ class TestE2EColdLeadFullSPINFlow:
         result = sm.process("agreement")
         # Result depends on state machine implementation
 
-
 class TestE2EWarmLeadShortSPINFlow:
     """E2E tests for WARM lead with shortened SPIN."""
 
@@ -88,7 +82,6 @@ class TestE2EWarmLeadShortSPINFlow:
         assert score.temperature == LeadTemperature.WARM
         assert "spin_implication" in score.skip_phases or len(score.skip_phases) > 0
         assert score.recommended_path == "short_spin"
-
 
 class TestE2EHotLeadDirectPresentation:
     """E2E tests for HOT lead going directly to presentation."""
@@ -105,7 +98,6 @@ class TestE2EHotLeadDirectPresentation:
         assert len(score.skip_phases) >= 2
         assert score.recommended_path == "direct_present"
 
-
 class TestE2EVeryHotLeadDirectClose:
     """E2E tests for VERY_HOT lead going directly to close."""
 
@@ -120,7 +112,6 @@ class TestE2EVeryHotLeadDirectClose:
         assert score.temperature == LeadTemperature.VERY_HOT
         assert len(score.skip_phases) >= 3
         assert score.recommended_path == "direct_close"
-
 
 # =============================================================================
 # GUARD TRIGGER SCENARIOS
@@ -147,7 +138,6 @@ class TestE2EMaxTurnsSoftClose:
         can_continue, intervention = guard.check("state_x", "msg_x", {})
         assert not can_continue or intervention == "soft_close"
 
-
 class TestE2ETimeoutSoftClose:
     """E2E tests for timeout triggering soft_close."""
 
@@ -166,7 +156,6 @@ class TestE2ETimeoutSoftClose:
         can_continue, intervention = guard.check("state_b", "msg_2", {})
         assert not can_continue or intervention == "soft_close"
 
-
 class TestE2EHighFrustrationTrigger:
     """E2E tests for high frustration triggering intervention."""
 
@@ -182,7 +171,6 @@ class TestE2EHighFrustrationTrigger:
         can_continue, intervention = guard.check("state_a", "msg", {})
         # Should trigger tier_3 or soft_close
         assert intervention in ["fallback_tier_3", "soft_close", None] or not can_continue
-
 
 class TestE2EStateLoopDetection:
     """E2E tests for state loop detection."""
@@ -201,7 +189,6 @@ class TestE2EStateLoopDetection:
         can_continue, intervention = guard.check("stuck_state", "msg_4", {})
         assert intervention is not None
 
-
 class TestE2EMessageLoopDetection:
     """E2E tests for message loop detection."""
 
@@ -218,7 +205,6 @@ class TestE2EMessageLoopDetection:
         # Third time should trigger
         can_continue, intervention = guard.check("state_c", "repeated message", {})
         assert intervention is not None or guard._state.message_history.count("repeated message") >= 2
-
 
 # =============================================================================
 # FALLBACK ESCALATION SCENARIOS
@@ -259,7 +245,6 @@ class TestE2EFallbackEscalation:
         # Eventually should stop
         assert not can_continue or intervention == "soft_close"
 
-
 # =============================================================================
 # OBJECTION HANDLING SCENARIOS
 # =============================================================================
@@ -288,7 +273,6 @@ class TestE2EObjectionConsecutiveLimit:
         result = sm.process("objection_think")
         # Should trigger soft_close or handle_objection
 
-
 class TestE2EObjectionTotalLimit:
     """E2E tests for total objection limit."""
 
@@ -308,7 +292,6 @@ class TestE2EObjectionTotalLimit:
 
         # After 5 total, should trigger limit
 
-
 class TestE2EObjectionResetOnPositive:
     """E2E tests for objection counter reset on positive intent."""
 
@@ -324,7 +307,6 @@ class TestE2EObjectionResetOnPositive:
         sm.process("agreement")
 
         # Counter should reset (implementation dependent)
-
 
 # =============================================================================
 # LEAD SCORING SCENARIOS
@@ -363,7 +345,6 @@ class TestE2ELeadScoringAccumulation:
         # Should drop below HOT threshold
         assert scorer.current_score < 60
 
-
 class TestE2ELeadScoringAffectsNavigation:
     """E2E tests for lead scoring affecting navigation."""
 
@@ -401,7 +382,6 @@ class TestE2ELeadScoringAffectsNavigation:
         assert scorer.current_score >= 70
         assert scorer.get_score().temperature == LeadTemperature.VERY_HOT
 
-
 # =============================================================================
 # CIRCULAR FLOW SCENARIOS
 # =============================================================================
@@ -435,7 +415,6 @@ class TestE2ECircularFlowGoback:
 
         # Third blocked
         assert manager.can_go_back("spin_problem") is False
-
 
 # =============================================================================
 # FULL DIALOGUE SCENARIOS
@@ -471,7 +450,6 @@ class TestE2EFullDialogueScenario:
         # Agreement from soft_close should reactivate
         result = sm.process("agreement")
         # Should transition back to conversation
-
 
 # =============================================================================
 # GUARD + FRUSTRATION COMBINED SCENARIOS

@@ -12,11 +12,9 @@ import sys
 from pathlib import Path
 
 # Добавляем src в путь
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from knowledge.retriever import INTENT_TO_CATEGORY, CascadeRetriever
-from knowledge.loader import load_knowledge_base
-
+from src.knowledge.retriever import INTENT_TO_CATEGORY, CascadeRetriever
+from src.knowledge.loader import load_knowledge_base
 
 class TestIntentToCategoryMapping:
     """Тесты маппинга интентов на категории."""
@@ -131,7 +129,6 @@ class TestIntentToCategoryMapping:
                 f"но имеет: {categories}"
             )
 
-
 class TestRetrieverWithCategories:
     """Тесты что retriever реально находит результаты."""
 
@@ -184,7 +181,6 @@ class TestRetrieverWithCategories:
             assert all(r.section.category == "equipment" for r in results_equipment), (
                 "Результаты должны быть только из категории 'equipment'"
             )
-
 
 class TestCategoryConsistency:
     """Тесты консистентности категорий."""

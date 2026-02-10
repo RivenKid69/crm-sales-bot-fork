@@ -15,9 +15,6 @@ import yaml
 import sys
 import re
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # TEMPLATE INTERPOLATION ENGINE
 # =============================================================================
@@ -170,7 +167,6 @@ class TemplateInterpolator:
         deps = build_dependency_graph()
         return find_cycles(deps)
 
-
 # =============================================================================
 # BASIC INTERPOLATION TESTS
 # =============================================================================
@@ -244,7 +240,6 @@ class TestBasicInterpolation:
         result = interpolator.interpolate("No variables here")
         assert result == "No variables here"
 
-
 class TestNestedVariables:
     """Tests for nested variable references."""
 
@@ -297,7 +292,6 @@ class TestNestedVariables:
 
         result = interpolator.interpolate("{{full_message}}")
         assert result == "Message: Hello World!"
-
 
 class TestCircularReferences:
     """Tests for circular reference detection."""
@@ -373,7 +367,6 @@ class TestCircularReferences:
         cycles = interpolator.find_circular_references()
         assert len(cycles) == 0
 
-
 class TestMissingVariables:
     """Tests for handling missing variable references."""
 
@@ -408,7 +401,6 @@ class TestMissingVariables:
 
         errors = interpolator.validate_references()
         assert len(errors) == 0
-
 
 class TestTypePreservation:
     """Tests for type preservation during interpolation."""
@@ -465,7 +457,6 @@ class TestTypePreservation:
         result = interpolator.interpolate("Count is {{count}}")
         assert result == "Count is 42"
         assert isinstance(result, str)
-
 
 class TestFlowConfigInterpolation:
     """Tests for interpolation in actual flow configuration."""
@@ -532,7 +523,6 @@ class TestFlowConfigInterpolation:
         assert result['spin_situation']['parameters']['company'] == "Acme Corp"
         assert result['spin_situation']['parameters']['max_questions'] == 3
         assert result['spin_situation']['transitions']['data_complete'] == "spin_problem"
-
 
 class TestEdgeCases:
     """Tests for edge cases in interpolation."""

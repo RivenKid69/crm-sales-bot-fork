@@ -13,7 +13,6 @@ These tests verify:
 import pytest
 from typing import Dict, Any, Optional
 
-
 class TestPriorityEnum:
     """Test Priority enum functionality."""
 
@@ -77,7 +76,6 @@ class TestPriorityEnum:
             Priority.LOW,
         ]
 
-
 class TestProposalTypeEnum:
     """Test ProposalType enum functionality."""
 
@@ -103,7 +101,6 @@ class TestProposalTypeEnum:
         assert len(types) == 2
         assert ProposalType.ACTION in types
         assert ProposalType.TRANSITION in types
-
 
 class TestTenantConfig:
     """Test TenantConfig implementation."""
@@ -169,7 +166,6 @@ class TestTenantConfig:
 
         tenant = TenantConfig(tenant_id="test")
         assert isinstance(tenant, ITenantConfig)
-
 
 class TestProtocolCompliance:
     """Test that concrete classes implement protocols correctly."""
@@ -257,7 +253,6 @@ class TestProtocolCompliance:
         config_dict = config.to_dict()
         assert "states" in config_dict
         assert "greeting" in config_dict["states"]
-
 
 class TestMockImplementations:
     """Test that mock implementations work with protocols."""
@@ -482,7 +477,6 @@ class TestMockImplementations:
         assert mock_config.states["greeting"]["goal"] == "Greet user"
         assert mock_config.to_dict() == {"states": {"greeting": {"goal": "Greet user"}}}
 
-
 class TestBlackboardPackageImports:
     """Test that blackboard package exports work correctly."""
 
@@ -536,7 +530,6 @@ class TestBlackboardPackageImports:
 
         for name in expected:
             assert name in bb.__all__, f"{name} should be in __all__"
-
 
 class TestCriteriaVerification:
     """

@@ -17,11 +17,9 @@ from codebase_analyzer.generator import (
     slugify,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
-
 
 @pytest.fixture
 def sample_entity_summaries():
@@ -60,7 +58,6 @@ def sample_entity_summaries():
             dependencies_used=[],
         ),
     }
-
 
 @pytest.fixture
 def sample_module_summaries():
@@ -104,7 +101,6 @@ def sample_module_summaries():
         ),
     }
 
-
 @pytest.fixture
 def sample_architecture():
     """Create sample architecture summary."""
@@ -119,7 +115,6 @@ def sample_architecture():
     A[API] --> B[Auth]
     B --> C[Database]""",
     )
-
 
 @pytest.fixture
 def sample_analysis_result(sample_entity_summaries, sample_module_summaries, sample_architecture):
@@ -142,7 +137,6 @@ def sample_analysis_result(sample_entity_summaries, sample_module_summaries, sam
         ],
     )
 
-
 @pytest.fixture
 def temp_output_dir(tmp_path):
     """Create a temporary output directory."""
@@ -150,12 +144,10 @@ def temp_output_dir(tmp_path):
     output_dir.mkdir()
     return output_dir
 
-
 @pytest.fixture
 def generator():
     """Create a markdown generator instance."""
     return MarkdownGenerator()
-
 
 @pytest.fixture
 def generator_with_config():
@@ -168,11 +160,9 @@ def generator_with_config():
     )
     return MarkdownGenerator(config=config)
 
-
 # =============================================================================
 # Slugify Tests
 # =============================================================================
-
 
 class TestSlugify:
     """Tests for the slugify function."""
@@ -206,11 +196,9 @@ class TestSlugify:
         result = slugify("hello-мир")
         assert result  # Should produce something
 
-
 # =============================================================================
 # GeneratorConfig Tests
 # =============================================================================
-
 
 class TestGeneratorConfig:
     """Tests for GeneratorConfig."""
@@ -234,11 +222,9 @@ class TestGeneratorConfig:
         assert config.create_api_docs is False
         assert config.max_entities_per_module == 10
 
-
 # =============================================================================
 # MarkdownGenerator Initialization Tests
 # =============================================================================
-
 
 class TestMarkdownGeneratorInit:
     """Tests for MarkdownGenerator initialization."""
@@ -267,11 +253,9 @@ class TestMarkdownGeneratorInit:
         rendered = template.render(title="Test")
         assert "Custom Test" in rendered
 
-
 # =============================================================================
 # README Generation Tests
 # =============================================================================
-
 
 class TestReadmeGeneration:
     """Tests for README.md generation."""
@@ -333,11 +317,9 @@ class TestReadmeGeneration:
 
         assert "No architecture overview available" in content
 
-
 # =============================================================================
 # Module Documentation Tests
 # =============================================================================
-
 
 class TestModuleDocGeneration:
     """Tests for module documentation generation."""
@@ -385,11 +367,9 @@ class TestModuleDocGeneration:
         assert "Dependencies" in content
         assert "db" in content
 
-
 # =============================================================================
 # API Documentation Tests
 # =============================================================================
-
 
 class TestApiDocGeneration:
     """Tests for API documentation generation."""
@@ -429,11 +409,9 @@ class TestApiDocGeneration:
 
         assert "No API endpoints" in content
 
-
 # =============================================================================
 # Structure Documentation Tests
 # =============================================================================
-
 
 class TestStructureDocGeneration:
     """Tests for structure documentation generation."""
@@ -479,11 +457,9 @@ class TestStructureDocGeneration:
         assert "Dependency Levels" in content
         assert "Level 0" in content
 
-
 # =============================================================================
 # Full Generation Tests
 # =============================================================================
-
 
 class TestFullGeneration:
     """Tests for full documentation generation."""
@@ -528,11 +504,9 @@ class TestFullGeneration:
         assert len(files) > 0
         assert (temp_output_dir / "README.md").exists()
 
-
 # =============================================================================
 # Content Generation Tests (Without Writing Files)
 # =============================================================================
-
 
 class TestContentGeneration:
     """Tests for generating content without file writes."""
@@ -552,11 +526,9 @@ class TestContentGeneration:
         assert "# auth" in content
         assert "Authentication" in content
 
-
 # =============================================================================
 # Edge Cases Tests
 # =============================================================================
-
 
 class TestEdgeCases:
     """Tests for edge cases."""

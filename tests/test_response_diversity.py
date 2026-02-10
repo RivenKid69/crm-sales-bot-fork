@@ -18,9 +18,8 @@ from pathlib import Path
 
 # Import the module under test
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from response_diversity import (
+from src.response_diversity import (
     ResponseDiversityEngine,
     DiversityConfig,
     DiversityMetrics,
@@ -30,17 +29,14 @@ from response_diversity import (
     get_opening,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
-
 
 @pytest.fixture
 def engine():
     """Create a fresh engine instance for each test."""
     return ResponseDiversityEngine()
-
 
 @pytest.fixture
 def engine_with_mocked_config():
@@ -90,11 +86,9 @@ def engine_with_mocked_config():
     engine._compile_banned_patterns()
     return engine
 
-
 # =============================================================================
 # BASIC FUNCTIONALITY TESTS
 # =============================================================================
-
 
 class TestBasicFunctionality:
     """Test basic banned opening replacement."""
@@ -140,11 +134,9 @@ class TestBasicFunctionality:
         assert result.processed == ""
         assert result.was_modified is False
 
-
 # =============================================================================
 # LRU ROTATION TESTS
 # =============================================================================
-
 
 class TestLRURotation:
     """Test LRU rotation for variety in openings."""
@@ -186,11 +178,9 @@ class TestLRURotation:
         max_history = engine_with_mocked_config._get_max_lru_history()
         assert len(history) <= max_history
 
-
 # =============================================================================
 # CONTEXT-AWARE SELECTION TESTS
 # =============================================================================
-
 
 class TestContextAwareSelection:
     """Test context-aware opening selection."""
@@ -231,11 +221,9 @@ class TestContextAwareSelection:
         # intent should win
         assert category == "empathy"
 
-
 # =============================================================================
 # METRICS TESTS
 # =============================================================================
-
 
 class TestMetrics:
     """Test metrics tracking."""
@@ -274,11 +262,9 @@ class TestMetrics:
         assert "openings_generated" in metrics_dict
         assert "replacement_rate" in metrics_dict
 
-
 # =============================================================================
 # GRACEFUL DEGRADATION TESTS
 # =============================================================================
-
 
 class TestGracefulDegradation:
     """Test graceful degradation on errors."""
@@ -302,11 +288,9 @@ class TestGracefulDegradation:
         opening = engine_with_mocked_config.get_opening("nonexistent_category")
         assert opening == ""
 
-
 # =============================================================================
 # FEATURE FLAG INTEGRATION TESTS
 # =============================================================================
-
 
 class TestFeatureFlagIntegration:
     """Test integration with feature flags."""
@@ -335,11 +319,9 @@ class TestFeatureFlagIntegration:
 
         assert result.was_modified or result.processed == response
 
-
 # =============================================================================
 # CONFIGURATION TESTS
 # =============================================================================
-
 
 class TestConfiguration:
     """Test configuration loading and handling."""
@@ -374,11 +356,9 @@ class TestConfiguration:
         instruction = engine_with_mocked_config.get_example_instruction()
         assert "Чередуй" in instruction
 
-
 # =============================================================================
 # EDGE CASES
 # =============================================================================
-
 
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""
@@ -423,11 +403,9 @@ class TestEdgeCases:
         # Should not be modified - "понимаю" is in middle
         assert result.was_modified is False
 
-
 # =============================================================================
 # TRANSITION PHRASES TESTS
 # =============================================================================
-
 
 class TestTransitionPhrases:
     """Test transition phrase generation."""
@@ -440,11 +418,9 @@ class TestTransitionPhrases:
             # Just check it doesn't crash
             assert isinstance(transition, str)
 
-
 # =============================================================================
 # MONOTONY DETECTION TESTS
 # =============================================================================
-
 
 class TestMonotonyDetection:
     """Test monotony detection functionality."""
@@ -473,11 +449,9 @@ class TestMonotonyDetection:
         warning = engine_with_mocked_config.check_monotony(threshold=3)
         assert warning is None
 
-
 # =============================================================================
 # CONVENIENCE FUNCTIONS TESTS
 # =============================================================================
-
 
 class TestConvenienceFunctions:
     """Test module-level convenience functions."""
@@ -492,11 +466,9 @@ class TestConvenienceFunctions:
         result = get_opening("empathy")
         assert isinstance(result, str)
 
-
 # =============================================================================
 # SINGLETON TESTS
 # =============================================================================
-
 
 class TestSingleton:
     """Test singleton instance."""
@@ -506,11 +478,9 @@ class TestSingleton:
         assert diversity_engine is not None
         assert isinstance(diversity_engine, ResponseDiversityEngine)
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
-
 
 class TestIntegration:
     """Integration tests with real config."""
@@ -533,7 +503,6 @@ class TestIntegration:
 
         if result.was_modified:
             assert "проблема" in result.processed.lower() or "разберёмся" in result.processed.lower()
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

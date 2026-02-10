@@ -6,11 +6,9 @@ Tests the integration of ConditionExpressionParser with RuleResolver.
 
 import pytest
 
-
 class MockContext:
     """Mock context for testing."""
     pass
-
 
 class MockRegistry:
     """Mock registry for testing."""
@@ -30,7 +28,6 @@ class MockRegistry:
 
     def list_all(self):
         return list(self._conditions.keys())
-
 
 class TestRuleResolverComposite:
     """Tests for RuleResolver with composite conditions."""
@@ -236,7 +233,6 @@ class TestRuleResolverComposite:
             ctx=ctx
         )
         assert result == "deflect"
-
 
 class TestRuleResolverValidation:
     """Tests for validation of composite conditions."""

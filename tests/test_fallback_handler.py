@@ -16,11 +16,7 @@ from pathlib import Path
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from fallback_handler import FallbackHandler, FallbackResponse, FallbackStats
-
+from src.fallback_handler import FallbackHandler, FallbackResponse, FallbackStats
 
 class TestFallbackResponse:
     """Tests for FallbackResponse dataclass"""
@@ -52,7 +48,6 @@ class TestFallbackResponse:
         assert response.action == "skip"
         assert response.next_state == "presentation"
 
-
 class TestFallbackStats:
     """Tests for FallbackStats dataclass"""
 
@@ -64,7 +59,6 @@ class TestFallbackStats:
         assert stats.state_counts == {}
         assert stats.last_tier is None
         assert stats.last_state is None
-
 
 class TestFallbackHandlerBasic:
     """Basic tests for FallbackHandler"""
@@ -84,7 +78,6 @@ class TestFallbackHandlerBasic:
 
         assert handler.stats.total_count == 0
         assert handler.stats.tier_counts == {}
-
 
 class TestTier1Rephrase:
     """Tests for Tier 1 (rephrase)"""
@@ -134,7 +127,6 @@ class TestTier1Rephrase:
         # (with enough templates, should see multiple unique messages)
         assert len(messages) >= 1  # At minimum one
 
-
 class TestTier2Options:
     """Tests for Tier 2 (options)"""
 
@@ -174,7 +166,6 @@ class TestTier2Options:
         assert response.options
         # Should have team size options
         assert any("человек" in opt for opt in response.options)
-
 
 class TestTier3Skip:
     """Tests for Tier 3 (skip)"""
@@ -222,7 +213,6 @@ class TestTier3Skip:
         assert response.action == "continue"  # tier_2 returns "continue"
         assert response.next_state is None
 
-
 class TestTier4Exit:
     """Tests for Tier 4 (graceful exit)"""
 
@@ -259,7 +249,6 @@ class TestTier4Exit:
                 break
 
         assert found_contact_offer, "Tier 4 messages should offer contact options"
-
 
 class TestStatistics:
     """Tests for statistics tracking"""
@@ -313,7 +302,6 @@ class TestStatistics:
         assert "last_tier" in stats
         assert "last_state" in stats
         assert stats["total_count"] == 1
-
 
 class TestTierEscalation:
     """Tests for tier escalation"""
@@ -369,7 +357,6 @@ class TestTierEscalation:
         ]
         assert sequence == expected
 
-
 class TestTemplateVariation:
     """Tests for template variation to avoid repetition"""
 
@@ -406,7 +393,6 @@ class TestTemplateVariation:
 
         # Should have multiple unique messages
         assert len(messages) >= min(2, len(handler.EXIT_TEMPLATES))
-
 
 class TestEdgeCases:
     """Edge case tests"""
@@ -457,7 +443,6 @@ class TestEdgeCases:
             response = handler.get_fallback("fallback_tier_3", state)
             assert response.next_state is not None, f"No skip destination for {state}"
 
-
 class TestMultipleHandlerInstances:
     """Tests for multiple handler instances"""
 
@@ -484,7 +469,6 @@ class TestMultipleHandlerInstances:
         # Handler2 should start fresh
         response = handler2.get_fallback("fallback_tier_1", "spin_situation")
         assert response.message  # Should work without issues
-
 
 class TestSpecificStates:
     """Tests for specific state handling"""
@@ -529,17 +513,16 @@ class TestSpecificStates:
             for word in ["понимаю", "сомнения", "вопрос", "момент", "беспокоит"]
         )
 
-
 class TestDynamicCTAOptions:
     """Tests for Dynamic CTA text suggestions in Tier 2"""
 
     def setup_method(self):
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", True)
         self.handler = FallbackHandler()
 
     def teardown_method(self):
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.clear_override("dynamic_cta_fallback")
 
     def test_competitor_mentioned_shows_comparison_options(self):
@@ -668,7 +651,7 @@ class TestDynamicCTAOptions:
 
     def test_fallback_to_static_when_flag_disabled(self):
         """Flag выключен → статичные подсказки"""
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", False)
 
         context = {
@@ -715,7 +698,6 @@ class TestDynamicCTAOptions:
 
         assert any(word in response.message.lower() for word in ["автоматиз", "аналитик", "интеграци", "демо"])
 
-
 class TestDynamicCTAStats:
     """Tests for Dynamic CTA statistics in FallbackStats"""
 
@@ -727,7 +709,7 @@ class TestDynamicCTAStats:
 
     def test_get_stats_dict_includes_dynamic_cta_counts(self):
         """get_stats_dict includes dynamic_cta_counts"""
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", True)
 
         handler = FallbackHandler()
@@ -739,18 +721,16 @@ class TestDynamicCTAStats:
 
         flags.clear_override("dynamic_cta_fallback")
 
-
 class TestCompetitorExtraction:
     """Tests for competitor name extraction in SalesBot"""
 
     def setup_method(self):
         # Import here to avoid circular imports
         import sys
-        sys.path.insert(0, 'src')
 
     def test_extract_bitrix(self):
         """Извлечение Битрикс"""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         class MockLLM:
             def generate(self, *args, **kwargs):
@@ -764,7 +744,7 @@ class TestCompetitorExtraction:
 
     def test_extract_amocrm(self):
         """Извлечение AmoCRM"""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         class MockLLM:
             def generate(self, *args, **kwargs):
@@ -778,7 +758,7 @@ class TestCompetitorExtraction:
 
     def test_extract_iiko(self):
         """Извлечение iiko"""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         class MockLLM:
             def generate(self, *args, **kwargs):
@@ -791,7 +771,7 @@ class TestCompetitorExtraction:
 
     def test_extract_1c(self):
         """Извлечение 1С"""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         class MockLLM:
             def generate(self, *args, **kwargs):
@@ -804,7 +784,7 @@ class TestCompetitorExtraction:
 
     def test_extract_megaplan(self):
         """Извлечение Мегаплан"""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         class MockLLM:
             def generate(self, *args, **kwargs):
@@ -817,7 +797,7 @@ class TestCompetitorExtraction:
 
     def test_no_competitor(self):
         """Нет конкурента в сообщении"""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         class MockLLM:
             def generate(self, *args, **kwargs):
@@ -828,13 +808,12 @@ class TestCompetitorExtraction:
         assert bot._extract_competitor_name("нам нужна CRM") is None
         assert bot._extract_competitor_name("хотим автоматизировать") is None
 
-
 class TestFormattedOptions:
     """Tests for formatted options output"""
 
     def test_options_have_numbered_list(self):
         """Options are formatted as numbered list"""
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", True)
 
         handler = FallbackHandler()
@@ -851,7 +830,7 @@ class TestFormattedOptions:
 
     def test_options_have_footer_hint(self):
         """Options include footer hint"""
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", True)
 
         handler = FallbackHandler()
@@ -861,7 +840,6 @@ class TestFormattedOptions:
         assert "Напишите номер" in response.message or "своими словами" in response.message
 
         flags.clear_override("dynamic_cta_fallback")
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

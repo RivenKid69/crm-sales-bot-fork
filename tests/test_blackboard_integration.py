@@ -33,7 +33,6 @@ from src.blackboard.sources.intent_processor import IntentProcessorSource
 from src.blackboard.sources.transition_resolver import TransitionResolverSource
 from src.blackboard.sources.escalation import EscalationSource
 
-
 # =============================================================================
 # Mock Implementations for Integration Testing
 # =============================================================================
@@ -43,7 +42,6 @@ class IntentRecord:
     """Record of an intent."""
     intent: str
     state: str
-
 
 class MockIntentTracker:
     """Mock IntentTracker for testing."""
@@ -93,7 +91,6 @@ class MockIntentTracker:
     def get_intents_by_category(self, category: str) -> List[IntentRecord]:
         return [r for r in self._intents if category in r.intent]
 
-
 class MockCircularFlow:
     """Mock CircularFlowManager."""
 
@@ -117,7 +114,6 @@ class MockCircularFlow:
 
     def get_history(self):
         return []
-
 
 class IntegrationStateMachine:
     """
@@ -208,7 +204,6 @@ class IntegrationStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class IntegrationFlowConfig:
     """
@@ -377,7 +372,6 @@ class IntegrationFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
     def get_state_on_enter_flags(self, state_name: str) -> Dict[str, Any]:
         """Get on_enter flags for a state."""
         state_config = self._states.get(state_name, {})
@@ -385,7 +379,6 @@ class IntegrationFlowConfig:
         if isinstance(on_enter, dict):
             return on_enter.get("set_flags", {})
         return {}
-
 
 # =============================================================================
 # Test Fixtures
@@ -396,12 +389,10 @@ def integration_state_machine():
     """Create a state machine for integration testing."""
     return IntegrationStateMachine(state="spin_situation")
 
-
 @pytest.fixture
 def integration_flow_config():
     """Create a flow config for integration testing."""
     return IntegrationFlowConfig()
-
 
 @pytest.fixture
 def full_orchestrator(integration_state_machine, integration_flow_config):
@@ -413,7 +404,6 @@ def full_orchestrator(integration_state_machine, integration_flow_config):
         flow_config=integration_flow_config,
         enable_validation=True,
     )
-
 
 # =============================================================================
 # Scenario Tests
@@ -652,7 +642,6 @@ class TestBlackboardIntegration:
         assert "combinable_test" in decision.reason_codes
         assert "data_complete" in decision.reason_codes
 
-
 # =============================================================================
 # Bug Fix Verification Tests
 # =============================================================================
@@ -787,7 +776,6 @@ class TestBugFixes:
         assert decision.action == "objection_limit_reached"
         assert decision.next_state == "soft_close"
 
-
 # =============================================================================
 # Multi-Source Integration Tests
 # =============================================================================
@@ -901,7 +889,6 @@ class TestMultiSourceIntegration:
         assert decision.next_state == "soft_close"
         assert "high_transition" in decision.reason_codes
 
-
 # =============================================================================
 # Data Update Integration Tests
 # =============================================================================
@@ -983,7 +970,6 @@ class TestDataUpdateIntegration:
         # Flag should be set
         assert sm.collected_data.get("_custom_flag") is True
 
-
 # =============================================================================
 # Event Emission Integration Tests
 # =============================================================================
@@ -1025,7 +1011,6 @@ class TestEventIntegration:
         assert EventType.SOURCE_CONTRIBUTED in events_received
         assert EventType.CONFLICT_RESOLVED in events_received
         assert EventType.DECISION_COMMITTED in events_received
-
 
 # =============================================================================
 # Performance Benchmarks (Optional)

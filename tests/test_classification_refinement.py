@@ -12,7 +12,6 @@ from src.classifier.refinement import (
     create_refinement_context
 )
 
-
 class TestClassificationRefinementLayer:
     """Tests for ClassificationRefinementLayer."""
 
@@ -313,7 +312,6 @@ class TestClassificationRefinementLayer:
 
         assert ctx.message == "test"
         assert ctx.spin_phase is None
-
 
 class TestStateLoopScenarios:
     """

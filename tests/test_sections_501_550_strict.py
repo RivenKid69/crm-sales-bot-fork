@@ -10,10 +10,7 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from knowledge.retriever import CascadeRetriever, MatchStage
-
+from src.knowledge.retriever import CascadeRetriever, MatchStage
 
 # =============================================================================
 # ТЕСТОВЫЕ ДАННЫЕ: 50 секций x 3 запроса = 150 тестов
@@ -495,14 +492,13 @@ TEST_CASES = [
     },
 ]
 
-
 class TestNewSections501_550:
     """Тесты точности поиска для новых секций."""
 
     @pytest.fixture(scope="class")
     def retriever(self):
         """Создаём retriever один раз для всех тестов."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -590,13 +586,12 @@ class TestNewSections501_550:
         # Требуем 86%+ точность (с учётом существующих общих секций с короткими keywords)
         assert accuracy >= 86.0, f"Top-1 accuracy {accuracy:.1f}% < 86%"
 
-
 class TestKeywordUniqueness:
     """Проверка уникальности ключевых слов."""
 
     @pytest.fixture(scope="class")
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -646,7 +641,6 @@ class TestKeywordUniqueness:
 
             print(msg)
             # Не фейлим тест, просто предупреждаем
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

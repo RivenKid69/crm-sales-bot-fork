@@ -6,10 +6,7 @@ import pytest
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from knowledge import WIPON_KNOWLEDGE, load_knowledge_base, KnowledgeSection
-
+from src.knowledge import WIPON_KNOWLEDGE, load_knowledge_base, KnowledgeSection
 
 class TestKnowledgeLoading:
     """Тесты загрузки базы знаний"""
@@ -37,7 +34,6 @@ class TestKnowledgeLoading:
         kb = load_knowledge_base()
         assert kb.company_name == "Wipon"
         assert "Казахстан" in kb.company_description
-
 
 class TestKnowledgeContent:
     """Тесты содержимого"""
@@ -82,7 +78,6 @@ class TestKnowledgeContent:
         assert section is not None, f"Секция {topic} не найдена"
         assert section.category == expected_category
 
-
 class TestKnowledgeAPI:
     """Тесты API"""
 
@@ -115,13 +110,12 @@ class TestKnowledgeAPI:
         result = kb.get_by_topic("nonexistent_topic_12345")
         assert result is None
 
-
 class TestBackwardsCompatibility:
     """Тесты обратной совместимости"""
 
     def test_global_import(self):
         """Проверка глобального импорта"""
-        from knowledge import WIPON_KNOWLEDGE
+        from src.knowledge import WIPON_KNOWLEDGE
         assert WIPON_KNOWLEDGE is not None
 
     def test_global_sections(self):
@@ -135,7 +129,6 @@ class TestBackwardsCompatibility:
 
         kassa = WIPON_KNOWLEDGE.get_by_topic("wipon_kassa")
         assert kassa is not None
-
 
 class TestYAMLFiles:
     """Тесты YAML файлов"""

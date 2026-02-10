@@ -12,7 +12,6 @@ from src.simulator.client_agent import ClientAgent
 from src.session_manager import SessionManager
 from src.snapshot_buffer import LocalSnapshotBuffer
 
-
 def _get_real_llm():
     model = os.getenv("E2E_LLM_MODEL", "qwen3:14b")
     base_url = os.getenv("OLLAMA_BASE_URL")
@@ -23,7 +22,6 @@ def _get_real_llm():
             "Start ollama and pull the model to run this test."
         )
     return llm
-
 
 def _run_dialog(session_id, client_id, persona_key, manager, llm, turns, token):
     persona = PERSONAS[persona_key]
@@ -51,7 +49,6 @@ def _run_dialog(session_id, client_id, persona_key, manager, llm, turns, token):
         "history": list(bot.history),
         "collected_data": dict(bot.state_machine.collected_data),
     }
-
 
 def test_concurrent_sessions_no_leakage(tmp_path):
     llm = _get_real_llm()

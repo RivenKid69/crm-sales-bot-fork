@@ -14,11 +14,9 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch, PropertyMock
 from dataclasses import dataclass
 
-
 # =============================================================================
 # UNIT TESTS: StallGuardSource
 # =============================================================================
-
 
 class TestStallGuardSourceDisabled:
     """Tests for StallGuardSource when disabled by various means."""
@@ -83,7 +81,6 @@ class TestStallGuardSourceDisabled:
         with patch("src.blackboard.sources.stall_guard.flags") as mock_flags:
             mock_flags.is_enabled.return_value = True
             assert source.should_contribute(bb) is False
-
 
 class TestStallGuardSourceFires:
     """Tests for StallGuardSource when it should fire."""
@@ -259,11 +256,9 @@ class TestStallGuardSourceFires:
         call_kwargs = bb.propose_transition.call_args.kwargs
         assert call_kwargs["next_state"] == "spin_situation"
 
-
 # =============================================================================
 # UNIT TESTS: Feature Flag Auto-Verification (Mechanism B)
 # =============================================================================
-
 
 class TestFeatureFlagAutoVerification:
     """Tests for Mechanism B: auto-verification of feature flags."""
@@ -332,11 +327,9 @@ class TestFeatureFlagAutoVerification:
         assert "simulation_diagnostic_mode" in FeatureFlags.DEFAULTS
         assert FeatureFlags.DEFAULTS["simulation_diagnostic_mode"] is False
 
-
 # =============================================================================
 # UNIT TESTS: Feature Flag Properties
 # =============================================================================
-
 
 class TestFeatureFlagProperties:
     """Tests for new typed properties on FeatureFlags."""
@@ -357,11 +350,9 @@ class TestFeatureFlagProperties:
         assert isinstance(ff.simulation_diagnostic_mode, bool)
         assert ff.simulation_diagnostic_mode is False  # Default is False
 
-
 # =============================================================================
 # INTEGRATION TESTS: Stall Detection (RC3)
 # =============================================================================
-
 
 class TestStallDetectionPresentationFix:
     """Tests for RC3 fix: presentation removed from exempt_states."""
@@ -409,11 +400,9 @@ class TestStallDetectionPresentationFix:
         )
         assert is_stalled(ctx) is False
 
-
 # =============================================================================
 # INTEGRATION TESTS: Greeting Meta-Intent Transitions (RC1)
 # =============================================================================
-
 
 class TestGreetingMetaIntentTransitions:
     """Tests for RC1 fix: meta-intent escape transitions in greeting."""
@@ -465,11 +454,9 @@ class TestGreetingMetaIntentTransitions:
             if isinstance(item, dict)
         )
 
-
 # =============================================================================
 # INTEGRATION TESTS: max_turns_in_state YAML Config (A1)
 # =============================================================================
-
 
 class TestMaxTurnsInStateConfig:
     """Tests for YAML configuration of max_turns_in_state."""
@@ -547,11 +534,9 @@ class TestMaxTurnsInStateConfig:
         close = states.get("close", {})
         assert close.get("max_turns_fallback") == "soft_close"
 
-
 # =============================================================================
 # INTEGRATION TESTS: Source Registry
 # =============================================================================
-
 
 class TestStallGuardRegistration:
     """Tests for StallGuardSource registration in SourceRegistry."""
@@ -601,11 +586,9 @@ class TestStallGuardRegistration:
 
         assert objection.priority_order < stall.priority_order < transition.priority_order
 
-
 # =============================================================================
 # INTEGRATION TESTS: Simulation Diagnostic Config
 # =============================================================================
-
 
 class TestSimulationDiagnosticConfig:
     """Tests for simulation diagnostic mode configuration."""
@@ -626,11 +609,9 @@ class TestSimulationDiagnosticConfig:
         assert diag["handle_objection_max_consecutive"] == 10
         assert diag["soft_close_max_visits"] == 5
 
-
 # =============================================================================
 # UNIT TESTS: Two-Tier StallGuard (FIX 2)
 # =============================================================================
-
 
 class TestStallGuardTwoTier:
     """Tests for two-tier StallGuard: soft (NORMAL) and hard (HIGH)."""
@@ -785,11 +766,9 @@ class TestStallGuardTwoTier:
             )
             assert source.should_contribute(bb4) is True
 
-
 # =============================================================================
 # UNIT TESTS: is_stalled with has_extracted_data guard (FIX 1b)
 # =============================================================================
-
 
 class TestIsStalledWithExtractedData:
     """Tests for is_stalled condition with has_extracted_data guard."""
@@ -842,11 +821,9 @@ class TestIsStalledWithExtractedData:
         )
         assert is_stalled(ctx) is False
 
-
 # =============================================================================
 # UNIT TESTS: ContextEnvelope consecutive_same_state off-by-one fix (FIX 1)
 # =============================================================================
-
 
 class TestConsecutiveSameStateOffByOne:
     """Tests for the off-by-one fix in build_context_envelope."""
@@ -979,11 +956,9 @@ class TestConsecutiveSameStateOffByOne:
         builder._fill_from_context_window(envelope)
         assert envelope.consecutive_same_state == 1
 
-
 # =============================================================================
 # UNIT TESTS: has_extracted_data in ContextEnvelope (FIX 1b)
 # =============================================================================
-
 
 class TestHasExtractedDataEnvelope:
     """Tests for has_extracted_data field population in ContextEnvelope."""
@@ -1062,11 +1037,9 @@ class TestHasExtractedDataEnvelope:
         envelope = builder.build()
         assert envelope.has_extracted_data is False
 
-
 # =============================================================================
 # UNIT TESTS: DataAwareRefinementLayer (FIX 4)
 # =============================================================================
-
 
 class TestDataAwareRefinementLayer:
     """Tests for DataAwareRefinementLayer."""
@@ -1136,11 +1109,9 @@ class TestDataAwareRefinementLayer:
         )
         assert layer._should_apply(ctx) is True
 
-
 # =============================================================================
 # UNIT TESTS: Feature Flag for data_aware_refinement (FIX 4 wiring)
 # =============================================================================
-
 
 class TestDataAwareRefinementFeatureFlag:
     """Tests for data_aware_refinement feature flag."""
@@ -1157,11 +1128,9 @@ class TestDataAwareRefinementFeatureFlag:
         group = FeatureFlags.GROUPS.get("refinement_pipeline_all", [])
         assert "data_aware_refinement" in group
 
-
 # =============================================================================
 # UNIT TESTS: PolicyContext has_extracted_data transport (FIX 1b)
 # =============================================================================
-
 
 class TestPolicyContextHasExtractedData:
     """Tests for has_extracted_data in PolicyContext."""

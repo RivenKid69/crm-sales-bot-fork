@@ -11,9 +11,6 @@ import pytest
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # CONDITIONAL RULES CONFIGURATION - 100% COVERAGE
 # =============================================================================
@@ -43,7 +40,6 @@ class TestConditionalRulesLogLevel:
         settings = get_settings()
         assert settings.conditional_rules.log_level.upper() == "INFO"
 
-
 class TestConditionalRulesLogContext:
     """Tests for conditional_rules.log_context parameter."""
 
@@ -61,7 +57,6 @@ class TestConditionalRulesLogContext:
         settings = get_settings()
         assert settings.conditional_rules.log_context is False
 
-
 class TestConditionalRulesLogEachCondition:
     """Tests for conditional_rules.log_each_condition parameter."""
 
@@ -78,7 +73,6 @@ class TestConditionalRulesLogEachCondition:
 
         settings = get_settings()
         assert settings.conditional_rules.log_each_condition is False
-
 
 # =============================================================================
 # LOGGING CONFIGURATION - DETAILED TESTS
@@ -114,7 +108,6 @@ class TestLoggingParametersComplete:
             logging.ERROR,
             logging.CRITICAL
         ]
-
 
 # =============================================================================
 # GENERATOR ALLOWED_ENGLISH_WORDS - DETAILED TESTS
@@ -167,7 +160,6 @@ class TestAllowedEnglishWordsComplete:
         for word in words:
             assert word == word.lower(), f"{word} should be lowercase"
 
-
 # =============================================================================
 # RERANKER CONFIGURATION - DETAILED TESTS
 # =============================================================================
@@ -206,7 +198,6 @@ class TestRerankerModelComplete:
         assert "m3" in model or "multilingual" in model or "bge" in model, \
             "Model should be multilingual for Russian support"
 
-
 # =============================================================================
 # DEVELOPMENT CONFIGURATION - DETAILED TESTS
 # =============================================================================
@@ -235,7 +226,6 @@ class TestDevelopmentConfigComplete:
         skip = settings.development.skip_embeddings
 
         assert isinstance(skip, bool)
-
 
 # =============================================================================
 # SPIN PHASE CLASSIFICATION CONFIG - 100% COVERAGE
@@ -267,7 +257,6 @@ class TestSpinPhaseClassification:
             assert 'confidence' in phase_config, f"{phase_name} missing confidence"
             assert 0 < phase_config['confidence'] <= 1.0
 
-
 class TestSpinShortAnswerClassification:
     """Tests for spin.short_answer_classification parameters."""
 
@@ -292,7 +281,6 @@ class TestSpinShortAnswerClassification:
 
         assert 'negative_intent' in config
         assert config['negative_intent'] == 'no_need'
-
 
 # =============================================================================
 # GUARD PROFILES - 100% COVERAGE
@@ -341,7 +329,6 @@ class TestGuardProfiles:
         assert relaxed['max_turns'] > guard['max_turns']
         assert relaxed['timeout_seconds'] > guard['timeout_seconds']
 
-
 # =============================================================================
 # CTA BY_ACTION - 100% COVERAGE
 # =============================================================================
@@ -378,7 +365,6 @@ class TestCTAByAction:
             for template in templates:
                 assert isinstance(template, str), f"{action} has non-string template"
 
-
 # =============================================================================
 # LLM FALLBACK RESPONSES - 100% COVERAGE
 # =============================================================================
@@ -413,7 +399,6 @@ class TestLLMFallbackResponses:
         assert 'default_fallback' in real_constants['llm']
         assert len(real_constants['llm']['default_fallback']) > 0
 
-
 # =============================================================================
 # POLICY REPAIR_ACTIONS - 100% COVERAGE
 # =============================================================================
@@ -441,7 +426,6 @@ class TestPolicyRepairActions:
 
         assert 'repeated_question' in repair
 
-
 class TestPolicyObjectionActions:
     """Tests for policy.objection_actions parameters."""
 
@@ -463,7 +447,6 @@ class TestPolicyObjectionActions:
         actions = real_constants['policy']['objection_actions']
 
         assert 'empathize' in actions
-
 
 # =============================================================================
 # FALLBACK OPTIONS TEMPLATES - 100% COVERAGE
@@ -503,7 +486,6 @@ class TestFallbackOptionsTemplatesComplete:
             has_cyrillic = any('\u0400' <= c <= '\u04FF' for c in question)
             assert has_cyrillic, f"Options for {state} should be in Russian"
 
-
 # =============================================================================
 # FALLBACK REPHRASE TEMPLATES - 100% COVERAGE
 # =============================================================================
@@ -539,7 +521,6 @@ class TestFallbackRephraseTemplatesComplete:
             unique = set(rephrases)
             assert len(unique) == len(rephrases), \
                 f"Duplicate rephrases in {state}"
-
 
 # =============================================================================
 # CTA TEMPLATES BY STATE - 100% COVERAGE
@@ -588,7 +569,6 @@ class TestCTATemplatesByState:
         close_ctas = ' '.join(templates['close']).lower()
         assert 'контакт' in close_ctas or 'email' in close_ctas or 'созвон' in close_ctas
 
-
 # =============================================================================
 # INTENT CATEGORIES - 100% COVERAGE
 # =============================================================================
@@ -619,7 +599,6 @@ class TestIntentCategoriesComplete:
 
         assert len(objections) >= 4
 
-
 # =============================================================================
 # LEAD SCORING ALL POSITIVE WEIGHTS - 100% COVERAGE
 # =============================================================================
@@ -648,7 +627,6 @@ class TestLeadScoringAllPositiveWeights:
 
         for signal, weight in weights.items():
             assert weight > 0, f"{signal} weight should be positive"
-
 
 class TestLeadScoringAllNegativeWeights:
     """Tests for all lead_scoring.negative_weights."""

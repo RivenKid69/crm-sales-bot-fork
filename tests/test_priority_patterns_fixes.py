@@ -27,7 +27,6 @@ _spec.loader.exec_module(_patterns_module)
 COMPILED_PRIORITY_PATTERNS = _patterns_module.COMPILED_PRIORITY_PATTERNS
 PRIORITY_PATTERNS = _patterns_module.PRIORITY_PATTERNS
 
-
 def match_pattern(text: str) -> tuple[str, float] | None:
     """Проверяет текст на совпадение с приоритетными паттернами."""
     text_lower = text.lower()
@@ -35,7 +34,6 @@ def match_pattern(text: str) -> tuple[str, float] | None:
         if pattern.search(text_lower):
             return (intent, confidence)
     return None
-
 
 class TestRejectionWordBoundaries:
     """Тесты для rejection паттернов с word boundaries."""
@@ -114,7 +112,6 @@ class TestRejectionWordBoundaries:
         if result is not None:
             assert result[0] != "rejection", f"'{text}' should NOT be rejection, got {result[0]}"
 
-
 class TestOtkazPattern:
     """Тесты для паттерна отказ/отказываюсь."""
 
@@ -154,7 +151,6 @@ class TestOtkazPattern:
         result = match_pattern(text)
         if result is not None:
             assert result[0] != "rejection", f"'{text}' should NOT be rejection, got {result[0]}"
-
 
 class TestZakrytPattern:
     """Тесты для паттерна закрыт/банкрот."""
@@ -201,7 +197,6 @@ class TestZakrytPattern:
         if result is not None:
             assert result[0] != "rejection", f"'{text}' should NOT be rejection, got {result[0]}"
 
-
 class TestNePotyanPattern:
     """Тесты для паттерна 'не потянем'."""
 
@@ -237,7 +232,6 @@ class TestNePotyanPattern:
         result = match_pattern(text)
         if result is not None:
             assert result[0] != "objection_price", f"'{text}' should NOT be objection_price, got {result[0]}"
-
 
 class TestZanyatZagruzhenPattern:
     """Тесты для паттерна занят/загружен."""
@@ -292,7 +286,6 @@ class TestZanyatZagruzhenPattern:
         if result is not None:
             assert result[0] != "objection_no_time", f"'{text}' should NOT be objection_no_time, got {result[0]}"
 
-
 class TestPokaFarewellPattern:
     """Тесты для паттерна 'пока' в farewell."""
 
@@ -344,7 +337,6 @@ class TestPokaFarewellPattern:
         if result is not None:
             assert result[0] != "farewell", f"'{text}' should NOT be farewell, got {result[0]}"
 
-
 class TestCriticalSimulationPhrases:
     """
     Критические тесты для фраз из симуляции, которые вызывали false positives.
@@ -374,7 +366,6 @@ class TestCriticalSimulationPhrases:
         if result is not None:
             assert result[0] != expected_not_intent, \
                 f"'{text}' should NOT be {expected_not_intent}, got {result[0]}"
-
 
 class TestPatternCompilation:
     """Тесты для проверки корректной компиляции паттернов."""
@@ -422,7 +413,6 @@ class TestPatternCompilation:
             assert 0.0 <= confidence <= 1.0, \
                 f"Pattern '{pattern_str}' has invalid confidence: {confidence}"
 
-
 class TestEdgeCases:
     """Тесты для edge cases."""
 
@@ -450,7 +440,6 @@ class TestEdgeCases:
             assert result is not None, f"'{text}' should match some pattern"
         # Для should_match=False мы не проверяем - может матчить другие паттерны
 
-
 class TestIntegrationWithNormalization:
     """
     Тесты для проверки работы паттернов с нормализованным текстом.
@@ -468,7 +457,6 @@ class TestIntegrationWithNormalization:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
-
 
 # =============================================================================
 # LOST QUESTION BUG FIX TESTS
@@ -544,7 +532,6 @@ class TestQuestionDataMigrationPatterns:
             assert result[0] != "question_data_migration", \
                 f"'{text}' is an objection, should NOT be question_data_migration, got {result[0]}"
 
-
 class TestQuestionImplementationPatterns:
     """Tests for question_implementation patterns."""
 
@@ -574,7 +561,6 @@ class TestQuestionImplementationPatterns:
         assert result[0] == expected_intent, \
             f"'{text}' should be {expected_intent}, got {result[0] if result else 'None'}"
 
-
 class TestQuestionOfflinePatterns:
     """Tests for question_offline patterns."""
 
@@ -591,7 +577,6 @@ class TestQuestionOfflinePatterns:
         assert result is not None, f"'{text}' should match question_offline pattern"
         assert result[0] == expected_intent, \
             f"'{text}' should be {expected_intent}, got {result[0] if result else 'None'}"
-
 
 class TestQuestionVsObjectionDistinction:
     """
@@ -626,7 +611,6 @@ class TestQuestionVsObjectionDistinction:
             if result is not None:
                 assert "question_data_migration" != result[0], \
                     f"'{text}' is an objection, should NOT be question_data_migration"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

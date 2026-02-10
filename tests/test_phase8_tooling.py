@@ -17,10 +17,8 @@ from typing import Dict, Any, List
 from dataclasses import dataclass, field
 from unittest.mock import Mock, patch, MagicMock
 
-# Add src to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 # =============================================================================
 # TEST: VALIDATE CONDITIONS SCRIPT
@@ -131,7 +129,6 @@ class TestValidateConditionsScript:
         assert "Total registries" in docs
         assert "Total conditions" in docs
 
-
 # =============================================================================
 # TEST: RUNNER RULE TRACES
 # =============================================================================
@@ -179,7 +176,6 @@ class TestRunnerRuleTraces:
         assert len(result.rule_traces) == 2
         assert result.rule_traces[0]["turn"] == 1
         assert result.rule_traces[1]["trace"]["resolution"] == "condition_matched"
-
 
 # =============================================================================
 # TEST: REPORT RULE TRACES SECTION
@@ -392,7 +388,6 @@ class TestReportRuleTraces:
         rule_lines = [l for l in lines if "[RULE]" in l]
         assert len(rule_lines) == 0
 
-
 # =============================================================================
 # TEST: SETTINGS CONDITIONAL RULES
 # =============================================================================
@@ -443,7 +438,6 @@ class TestSettingsConditionalRules:
         assert cr["validate_on_startup"] is True
         assert cr["coverage_threshold"] == 0.8
 
-
 # =============================================================================
 # TEST: BOT ENABLE_TRACING PARAMETER
 # =============================================================================
@@ -477,7 +471,6 @@ class TestBotEnableTracing:
         sm_without_tracing = StateMachine(enable_tracing=False)
         assert sm_without_tracing._enable_tracing is False
         assert sm_without_tracing._trace_collector is None
-
 
 # =============================================================================
 # TEST: CONDITION REGISTRIES AGGREGATOR
@@ -528,7 +521,6 @@ class TestConditionRegistriesAggregator:
         # Should have positive counts
         assert stats["total_registries"] >= 5  # At least 5 domains
         assert stats["total_conditions"] > 0
-
 
 # =============================================================================
 # TEST: TRACE COMPACT STRING FORMAT
@@ -601,7 +593,6 @@ class TestTraceCompactString:
         compact_fail = entry_fail.to_compact_string()
         assert "has_contact_info" in compact_fail
         assert "FAIL" in compact_fail
-
 
 # =============================================================================
 # TEST: RULE RESOLVER VALIDATE CONFIG
@@ -693,7 +684,6 @@ class TestRuleResolverValidateConfig:
         # Should be valid
         assert result.is_valid
         assert result.checked_rules > 0
-
 
 # =============================================================================
 # TEST: INTEGRATION - FULL VALIDATION FLOW

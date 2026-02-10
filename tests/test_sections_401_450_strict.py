@@ -5,9 +5,8 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.retriever import CascadeRetriever, MatchStage
+from src.knowledge.retriever import CascadeRetriever, MatchStage
 
 # Тестовые данные: topic -> [разнообразные клиентские запросы]
 # Каждый запрос должен ТОЧНО попадать в указанную секцию
@@ -277,7 +276,6 @@ TEST_QUERIES = {
     ],
 }
 
-
 def run_strict_tests():
     """Запустить строгие тесты - требуется ТОЧНОЕ попадание."""
     print("=" * 70)
@@ -287,7 +285,7 @@ def run_strict_tests():
     print()
 
     # Инициализация retriever
-    import knowledge.retriever as r
+    import src.knowledge.retriever as r
     r._retriever = None
     retriever = CascadeRetriever(use_embeddings=False)
 
@@ -378,7 +376,6 @@ def run_strict_tests():
             print(f"  • {fail['expected']}: '{fail['query']}' -> {fail['got']}")
 
     return passed_exact, total_tests, failed_tests
-
 
 if __name__ == "__main__":
     passed, total, failed = run_strict_tests()

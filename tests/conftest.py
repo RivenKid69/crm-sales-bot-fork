@@ -14,11 +14,6 @@ from contextlib import contextmanager
 from unittest.mock import MagicMock, Mock, patch
 from typing import Any, Dict, Optional, Callable
 import yaml
-import sys
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 
 # =============================================================================
 # Mock LLM Fixtures
@@ -32,7 +27,6 @@ def mock_llm():
     llm.health_check.return_value = True
     llm.model = "mock-model"
     return llm
-
 
 @pytest.fixture
 def mock_llm_with_responses():
@@ -53,7 +47,6 @@ def mock_llm_with_responses():
         return llm
     return _create
 
-
 @pytest.fixture
 def mock_ollama_client():
     """Mock Ollama client for classifier tests."""
@@ -61,13 +54,11 @@ def mock_ollama_client():
     client.health_check.return_value = True
     return client
 
-
 # Alias for backward compatibility
 @pytest.fixture
 def mock_vllm_client(mock_ollama_client):
     """Alias for mock_ollama_client (backward compatibility)."""
     return mock_ollama_client
-
 
 # =============================================================================
 # Config Directory Fixtures
@@ -405,12 +396,10 @@ def _create_minimal_config(tmp_path: Path, overrides: Dict[str, Any] = None) -> 
 
     return tmp_path
 
-
 @pytest.fixture
 def config_dir(tmp_path):
     """Create a minimal config directory."""
     return _create_minimal_config(tmp_path)
-
 
 @pytest.fixture
 def config_factory(tmp_path):
@@ -426,7 +415,6 @@ def config_factory(tmp_path):
 
     return _create
 
-
 @pytest.fixture
 def config_with_custom_limits(tmp_path):
     """Config with custom limits for testing."""
@@ -437,7 +425,6 @@ def config_with_custom_limits(tmp_path):
             "max_gobacks": 1,
         },
     })
-
 
 @pytest.fixture
 def config_with_strict_guard(tmp_path):
@@ -460,7 +447,6 @@ def config_with_strict_guard(tmp_path):
         },
     })
 
-
 @pytest.fixture
 def config_with_hot_lead_settings(tmp_path):
     """Config for hot lead phase skipping tests."""
@@ -480,7 +466,6 @@ def config_with_hot_lead_settings(tmp_path):
             },
         },
     })
-
 
 # =============================================================================
 # Feature Flags Fixtures
@@ -508,14 +493,12 @@ def feature_flags_override():
 
     return _override
 
-
 @pytest.fixture(autouse=False)
 def clean_feature_flags():
     """Cleanup feature flags after test."""
     from src.feature_flags import flags
     yield
     flags.clear_all_overrides()
-
 
 # =============================================================================
 # Mock Context Fixtures
@@ -536,14 +519,12 @@ class MockContext:
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-
 @pytest.fixture
 def mock_context():
     """Factory for mock context objects."""
     def _create(**kwargs):
         return MockContext(**kwargs)
     return _create
-
 
 class MockRegistry:
     """Mock registry that returns predefined values."""
@@ -565,14 +546,12 @@ class MockRegistry:
     def list_all(self):
         return list(self._conditions.keys())
 
-
 @pytest.fixture
 def mock_registry():
     """Factory for mock registry objects."""
     def _create(conditions: dict = None):
         return MockRegistry(conditions)
     return _create
-
 
 # =============================================================================
 # Bot Factory Fixtures
@@ -612,7 +591,6 @@ def bot_factory(mock_llm, config_factory, feature_flags_override):
 
     return _create
 
-
 # =============================================================================
 # Component Fixtures
 # =============================================================================
@@ -642,7 +620,6 @@ def conversation_guard_factory():
 
     return _create
 
-
 @pytest.fixture
 def lead_scorer_factory():
     """Factory to create LeadScorer with custom config."""
@@ -667,7 +644,6 @@ def lead_scorer_factory():
         return LeadScorer(config=config if config else None)
 
     return _create
-
 
 @pytest.fixture
 def frustration_tracker_factory():
@@ -696,7 +672,6 @@ def frustration_tracker_factory():
 
     return _create
 
-
 # =============================================================================
 # Real Config Fixtures (for integration tests)
 # =============================================================================
@@ -708,14 +683,12 @@ def real_config():
     loader = ConfigLoader()
     return loader.load()
 
-
 @pytest.fixture
 def real_constants():
     """Load the actual constants.yaml."""
     constants_path = Path(__file__).parent.parent / "src" / "yaml_config" / "constants.yaml"
     with open(constants_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 @pytest.fixture
 def real_settings():

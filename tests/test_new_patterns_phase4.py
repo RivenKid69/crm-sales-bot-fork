@@ -19,8 +19,7 @@
 """
 
 import pytest
-from classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
-
+from src.classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
 
 def match_pattern(text: str) -> tuple[str, float] | None:
     """Проверяет совпадение текста с паттернами."""
@@ -29,7 +28,6 @@ def match_pattern(text: str) -> tuple[str, float] | None:
         if pattern.search(text_lower):
             return (intent, confidence)
     return None
-
 
 class TestContactProvided:
     """Тесты для contact_provided."""
@@ -58,7 +56,6 @@ class TestContactProvided:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestCorrectInfo:
     """Тесты для correct_info."""
 
@@ -80,7 +77,6 @@ class TestCorrectInfo:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestGoBack:
     """Тесты для go_back."""
 
@@ -97,7 +93,6 @@ class TestGoBack:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
-
 
 class TestSituationProvided:
     """Тесты для situation_provided."""
@@ -121,7 +116,6 @@ class TestSituationProvided:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestProblemRevealed:
     """Тесты для problem_revealed."""
 
@@ -144,7 +138,6 @@ class TestProblemRevealed:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestImplicationAcknowledged:
     """Тесты для implication_acknowledged."""
 
@@ -164,7 +157,6 @@ class TestImplicationAcknowledged:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
-
 
 class TestNeedExpressed:
     """Тесты для need_expressed."""
@@ -186,7 +178,6 @@ class TestNeedExpressed:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestNoProblem:
     """Тесты для no_problem."""
 
@@ -205,7 +196,6 @@ class TestNoProblem:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestNoNeed:
     """Тесты для no_need."""
 
@@ -221,7 +211,6 @@ class TestNoNeed:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
-
 
 class TestObjectionComplexity:
     """Тесты для objection_complexity."""
@@ -246,7 +235,6 @@ class TestObjectionComplexity:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestObjectionNoNeed:
     """Тесты для objection_no_need."""
 
@@ -268,7 +256,6 @@ class TestObjectionNoNeed:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
-
 
 class TestObjectionTiming:
     """Тесты для objection_timing."""
@@ -293,7 +280,6 @@ class TestObjectionTiming:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestObjectionTrust:
     """Тесты для objection_trust."""
 
@@ -317,7 +303,6 @@ class TestObjectionTrust:
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
 
-
 class TestInfoProvided:
     """Тесты для info_provided."""
 
@@ -333,7 +318,6 @@ class TestInfoProvided:
         result = match_pattern(text)
         assert result is not None, f"'{text}' should match a pattern"
         assert result[0] == expected_intent, f"'{text}' should be {expected_intent}, got {result[0]}"
-
 
 class TestNoFalsePositives:
     """Тесты на отсутствие false positives для новых паттернов."""
@@ -353,7 +337,6 @@ class TestNoFalsePositives:
         if result is not None:
             assert result[0] != should_not_match, \
                 f"'{text}' should NOT match {should_not_match}, got {result[0]}"
-
 
 class TestNewPatternsCompilation:
     """Тесты компиляции новых паттернов."""

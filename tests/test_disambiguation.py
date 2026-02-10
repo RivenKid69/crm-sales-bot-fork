@@ -15,16 +15,13 @@ import pytest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from classifier.disambiguation import DisambiguationAnalyzer, DisambiguationResult
-from disambiguation_ui import DisambiguationUI
-from metrics import DisambiguationMetrics
-from state_machine import StateMachine
-from constants.intent_labels import INTENT_LABELS, get_label
-from feature_flags import FeatureFlags
-from config import DISAMBIGUATION_CONFIG, CLASSIFIER_CONFIG
-
+from src.classifier.disambiguation import DisambiguationAnalyzer, DisambiguationResult
+from src.disambiguation_ui import DisambiguationUI
+from src.metrics import DisambiguationMetrics
+from src.state_machine import StateMachine
+from src.constants.intent_labels import INTENT_LABELS, get_label
+from src.feature_flags import FeatureFlags
+from src.config import DISAMBIGUATION_CONFIG, CLASSIFIER_CONFIG
 
 # =============================================================================
 # DisambiguationAnalyzer Tests
@@ -79,7 +76,6 @@ class TestDisambiguationAnalyzerBasic:
         assert not result.needs_disambiguation
         assert result.fallback_intent == "unclear"
 
-
 class TestDisambiguationAnalyzerLogic:
     """Тесты логики disambiguation"""
 
@@ -129,7 +125,6 @@ class TestDisambiguationAnalyzerLogic:
         )
         assert not result.needs_disambiguation
 
-
 class TestDisambiguationAnalyzerCooldown:
     """Тесты cooldown механизма"""
 
@@ -164,7 +159,6 @@ class TestDisambiguationAnalyzerCooldown:
             context=None
         )
         assert isinstance(result.needs_disambiguation, bool)
-
 
 class TestDisambiguationAnalyzerMergeScores:
     """Тесты слияния scores"""
@@ -201,7 +195,6 @@ class TestDisambiguationAnalyzerMergeScores:
         )
         assert "greeting" in result
         assert "agreement" in result
-
 
 class TestDisambiguationAnalyzerBuildOptions:
     """Тесты построения опций"""
@@ -262,7 +255,6 @@ class TestDisambiguationAnalyzerBuildOptions:
             assert "label" in opt
             assert opt["label"] is not None
 
-
 # =============================================================================
 # DisambiguationUI Tests
 # =============================================================================
@@ -287,7 +279,6 @@ class TestDisambiguationUIBasic:
         result = ui.format_question("", options, {})
         assert isinstance(result, str)
         assert len(result) > 0
-
 
 class TestDisambiguationUIParseNumeric:
     """Тесты парсинга числовых ответов"""
@@ -321,7 +312,6 @@ class TestDisambiguationUIParseNumeric:
         ]
         assert ui.parse_answer("3", options) == "agreement"
 
-
 class TestDisambiguationUIParseWord:
     """Тесты парсинга словесных номеров"""
 
@@ -352,7 +342,6 @@ class TestDisambiguationUIParseWord:
             {"intent": "question_features", "label": "Функции"}
         ]
         assert ui.parse_answer("перв", options) == "price_question"
-
 
 class TestDisambiguationUIParseKeyword:
     """Тесты парсинга ключевых слов"""
@@ -419,7 +408,6 @@ class TestDisambiguationUIParseKeyword:
         ]
         assert ui.parse_answer("позже", options) == "callback_request"
 
-
 class TestDisambiguationUIParseEmpty:
     """Тесты парсинга пустых ответов"""
 
@@ -443,7 +431,6 @@ class TestDisambiguationUIParseEmpty:
         # Это может вызвать ошибку, нужна проверка
         result = ui.parse_answer(None, options)  # type: ignore
         assert result is None
-
 
 class TestDisambiguationUIFormat:
     """Тесты форматирования вопросов"""
@@ -484,7 +471,6 @@ class TestDisambiguationUIFormat:
         # Должен использовать intent как label
         assert "unknown_intent" in result or "another_unknown" in result
 
-
 class TestDisambiguationUIGetOptionLabel:
     """Тесты _get_option_label"""
 
@@ -520,7 +506,6 @@ class TestDisambiguationUIGetOptionLabel:
             result = ui._get_option_label(opt)
             assert result is not None
 
-
 class TestDisambiguationUIRepeatQuestion:
     """Тесты format_repeat_question"""
 
@@ -546,7 +531,6 @@ class TestDisambiguationUIRepeatQuestion:
         ]
         result = ui.format_repeat_question(options)
         assert "своими словами" in result.lower()
-
 
 # =============================================================================
 # DisambiguationUI Custom Input Tests (4-й вариант)
@@ -658,7 +642,6 @@ class TestDisambiguationUICustomInput:
         assert ui.parse_answer("первый", options) == "price_question"
         assert ui.parse_answer("второй", options) == "question_features"
 
-
 class TestDisambiguationUICustomInputIntegration:
     """Интеграционные тесты для 'Свой вариант'"""
 
@@ -671,8 +654,8 @@ class TestDisambiguationUICustomInputIntegration:
 
     @pytest.fixture
     def bot(self, mock_llm):
-        from bot import SalesBot
-        from feature_flags import flags
+        from src.bot import SalesBot
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         flags.set_override("metrics_tracking", True)
@@ -754,7 +737,6 @@ class TestDisambiguationUICustomInputIntegration:
         # Метрики должны быть записаны
         assert bot.disambiguation_metrics.total_disambiguations == 1
 
-
 # =============================================================================
 # DisambiguationMetrics Tests
 # =============================================================================
@@ -778,7 +760,6 @@ class TestDisambiguationMetricsBasic:
         metrics.reset()
         assert metrics.total_disambiguations == 0
         assert metrics.resolved_on_first_try == 0
-
 
 class TestDisambiguationMetricsRecording:
     """Тесты записи метрик"""
@@ -824,7 +805,6 @@ class TestDisambiguationMetricsRecording:
         metrics.record_disambiguation(["a", "b"], {})
         metrics.record_resolution("unclear", attempt=3, success=False)
         assert metrics.fallback_to_unclear == 1
-
 
 class TestDisambiguationMetricsCalculations:
     """Тесты вычисления метрик"""
@@ -872,7 +852,6 @@ class TestDisambiguationMetricsCalculations:
         assert m.get_fallback_rate() == 0.0
         assert m.get_average_score_gap() == 0.0
 
-
 class TestDisambiguationMetricsOutput:
     """Тесты вывода метрик"""
 
@@ -897,7 +876,6 @@ class TestDisambiguationMetricsOutput:
         assert "total_disambiguations" in result
         assert "resolved_on_first_try" in result
         assert "disambiguation_by_intent" in result
-
 
 # =============================================================================
 # StateMachine Disambiguation Tests
@@ -926,7 +904,6 @@ class TestStateMachineDisambiguationInit:
         assert sm.in_disambiguation is False
         assert sm.disambiguation_context is None
         assert sm.turns_since_last_disambiguation == 999
-
 
 class TestStateMachineDisambiguationMethods:
     """Тесты методов disambiguation в StateMachine"""
@@ -977,7 +954,6 @@ class TestStateMachineDisambiguationMethods:
         assert sm.disambiguation_context is None
         assert sm.turns_since_last_disambiguation == 0
 
-
 class TestStateMachineGetContext:
     """Тесты get_context в StateMachine"""
 
@@ -1001,7 +977,6 @@ class TestStateMachineGetContext:
         """get_context без in_disambiguation когда не активен"""
         context = sm.get_context()
         assert "in_disambiguation" not in context
-
 
 # =============================================================================
 # Intent Labels Tests
@@ -1036,7 +1011,6 @@ class TestIntentLabels:
         label = get_label("unknown_xyz_123")
         assert label == "unknown_xyz_123"
 
-
 # =============================================================================
 # Feature Flags Tests
 # =============================================================================
@@ -1068,7 +1042,6 @@ class TestIntentDisambiguationFlag:
         ff.set_override("intent_disambiguation", True)
         assert ff.intent_disambiguation is True
         ff.clear_override("intent_disambiguation")
-
 
 # =============================================================================
 # Config Tests
@@ -1114,7 +1087,6 @@ class TestDisambiguationConfig:
         assert "cooldown_turns" in DISAMBIGUATION_CONFIG
         assert isinstance(DISAMBIGUATION_CONFIG["cooldown_turns"], int)
 
-
 # =============================================================================
 # Edge Cases Tests
 # =============================================================================
@@ -1152,7 +1124,6 @@ class TestEdgeCases:
         context = sm.get_context()
         assert "in_disambiguation" not in context
 
-
 # =============================================================================
 # Integration Tests for Disambiguation (Stage 3-4)
 # =============================================================================
@@ -1172,8 +1143,8 @@ class TestDisambiguationIntegrationBasic:
     def bot(self, mock_llm):
         """SalesBot с включённым disambiguation"""
         from unittest.mock import patch
-        from bot import SalesBot
-        from feature_flags import flags
+        from src.bot import SalesBot
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         flags.set_override("metrics_tracking", True)
@@ -1212,7 +1183,6 @@ class TestDisambiguationIntegrationBasic:
         after = bot.state_machine.turns_since_last_disambiguation
         assert after == initial + 1 or initial == 999
 
-
 class TestDisambiguationIntegrationFlow:
     """Тесты полного flow disambiguation"""
 
@@ -1225,8 +1195,8 @@ class TestDisambiguationIntegrationFlow:
 
     @pytest.fixture
     def bot(self, mock_llm):
-        from bot import SalesBot
-        from feature_flags import flags
+        from src.bot import SalesBot
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         flags.set_override("metrics_tracking", True)
@@ -1297,7 +1267,6 @@ class TestDisambiguationIntegrationFlow:
         ctx = bot.state_machine.disambiguation_context
         assert ctx["extracted_data"] == extracted_data
 
-
 class TestDisambiguationIntegrationCooldown:
     """Тесты cooldown disambiguation"""
 
@@ -1310,8 +1279,8 @@ class TestDisambiguationIntegrationCooldown:
 
     @pytest.fixture
     def bot(self, mock_llm):
-        from bot import SalesBot
-        from feature_flags import flags
+        from src.bot import SalesBot
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         flags.set_override("metrics_tracking", True)
@@ -1348,7 +1317,6 @@ class TestDisambiguationIntegrationCooldown:
         bot.process("Как дела")
         assert bot.state_machine.turns_since_last_disambiguation == 2
 
-
 class TestDisambiguationIntegrationMetrics:
     """Тесты метрик disambiguation"""
 
@@ -1361,8 +1329,8 @@ class TestDisambiguationIntegrationMetrics:
 
     @pytest.fixture
     def bot(self, mock_llm):
-        from bot import SalesBot
-        from feature_flags import flags
+        from src.bot import SalesBot
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         flags.set_override("metrics_tracking", True)
@@ -1399,13 +1367,12 @@ class TestDisambiguationIntegrationMetrics:
 
         assert bot.disambiguation_metrics.total_disambiguations == 1
 
-
 class TestHybridClassifierDisambiguation:
     """Тесты интеграции disambiguation в HybridClassifier"""
 
     @pytest.fixture
     def classifier(self):
-        from classifier import HybridClassifier
+        from src.classifier import HybridClassifier
         return HybridClassifier()
 
     def test_classifier_has_disambiguation_analyzer(self, classifier):
@@ -1417,8 +1384,8 @@ class TestHybridClassifierDisambiguation:
 
     def test_classifier_respects_flag(self):
         """Classifier уважает feature flag"""
-        from classifier import HybridClassifier
-        from feature_flags import flags
+        from src.classifier import HybridClassifier
+        from src.feature_flags import flags
 
         # Выключаем флаг
         flags.set_override("intent_disambiguation", False)
@@ -1433,8 +1400,8 @@ class TestHybridClassifierDisambiguation:
 
     def test_classifier_returns_disambiguation_fields(self):
         """При disambiguation возвращаются нужные поля"""
-        from classifier import HybridClassifier
-        from feature_flags import flags
+        from src.classifier import HybridClassifier
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         classifier = HybridClassifier()
@@ -1450,7 +1417,6 @@ class TestHybridClassifierDisambiguation:
 
         flags.clear_override("intent_disambiguation")
 
-
 class TestDisambiguationEndToEnd:
     """End-to-end тесты disambiguation"""
 
@@ -1463,8 +1429,8 @@ class TestDisambiguationEndToEnd:
 
     @pytest.fixture
     def bot(self, mock_llm):
-        from bot import SalesBot
-        from feature_flags import flags
+        from src.bot import SalesBot
+        from src.feature_flags import flags
 
         flags.set_override("intent_disambiguation", True)
         flags.set_override("metrics_tracking", True)
@@ -1518,7 +1484,6 @@ class TestDisambiguationEndToEnd:
         summary = bot.get_disambiguation_metrics()
         assert summary["total_disambiguations"] == 1
         assert summary["resolved_on_first_try"] == 1
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

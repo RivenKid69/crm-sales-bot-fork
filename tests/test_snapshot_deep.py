@@ -16,7 +16,6 @@ from src.session_lock import SessionLockManager
 from src.session_manager import SessionManager
 from src.bot import SalesBot
 
-
 class DummyLLM:
     def __init__(self):
         self.model = "dummy-llm"
@@ -34,10 +33,8 @@ class DummyLLM:
             "next_steps": ["next"],
         }
 
-
 def _mk_history(n):
     return [{"user": f"u{i}", "bot": f"b{i}"} for i in range(n)]
-
 
 def test_state_machine_serialization_includes_disambiguation():
     sm = StateMachine()
@@ -63,7 +60,6 @@ def test_state_machine_serialization_includes_disambiguation():
     assert restored.turns_since_last_disambiguation == 3
     assert restored.intent_tracker.turn_number == sm.intent_tracker.turn_number
 
-
 def test_conversation_guard_elapsed_time_restore():
     guard = ConversationGuard(GuardConfig(timeout_seconds=10))
     guard.check("greeting", "hi", {})
@@ -73,7 +69,6 @@ def test_conversation_guard_elapsed_time_restore():
     restored = ConversationGuard.from_dict(data)
     assert restored.turn_count == guard.turn_count
     assert restored._state.start_time is not None
-
 
 def test_lead_scorer_internal_fields_restore():
     scorer = LeadScorer()
@@ -89,7 +84,6 @@ def test_lead_scorer_internal_fields_restore():
     assert restored._decay_applied_this_turn == scorer._decay_applied_this_turn
     assert restored._turns_without_end_turn == scorer._turns_without_end_turn
     assert restored.signals_history == scorer.signals_history
-
 
 def test_fallback_handler_stats_and_used_templates_restore():
     handler = FallbackHandler()
@@ -110,14 +104,12 @@ def test_fallback_handler_stats_and_used_templates_restore():
     assert restored._stats.consecutive_tier_2_state == "spin_problem"
     assert restored._used_templates["tier_1"] == ["a", "b"]
 
-
 def test_objection_handler_restore_attempts():
     handler = ObjectionHandler()
     handler.objection_attempts = {ObjectionType.PRICE: 2}
     data = handler.to_dict()
     restored = ObjectionHandler.from_dict(data)
     assert restored.objection_attempts.get(ObjectionType.PRICE) == 2
-
 
 def test_context_window_full_restore():
     cw = ContextWindow(max_size=3)
@@ -141,7 +133,6 @@ def test_context_window_full_restore():
     assert len(restored.episodic_memory.episodes) == 1
     assert restored.episodic_memory.episodes[0].episode_type == EpisodeType.SUCCESSFUL_CLOSE
 
-
 def test_context_window_accepts_list_format():
     cw = ContextWindow(max_size=2)
     cw.add_turn_from_dict(
@@ -159,7 +150,6 @@ def test_context_window_accepts_list_format():
     assert len(restored.turns) == 1
     assert restored.turns[0].bot_response == "b"
 
-
 def test_metrics_roundtrip_with_timestamps():
     metrics = ConversationMetrics("conv-1")
     metrics.record_turn("spin_situation", "greeting")
@@ -172,7 +162,6 @@ def test_metrics_roundtrip_with_timestamps():
     assert restored.turns == metrics.turns
     assert restored.outcome == ConversationOutcome.SOFT_CLOSE
     assert restored.lead_score_history[0]["score"] == 10
-
 
 def test_history_compactor_incremental_llm():
     history = _mk_history(6)
@@ -191,7 +180,6 @@ def test_history_compactor_incremental_llm():
     assert meta["compacted_turns"] == 2  # 6 total, tail 4 => 2 compacted
     assert "Previous compact" in llm.last_prompt
 
-
 def test_history_compactor_fallback():
     history = _mk_history(5)
     compact, meta = HistoryCompactor.compact(
@@ -204,7 +192,6 @@ def test_history_compactor_fallback():
     assert "company: acme" in compact["key_facts"]
     assert meta["compacted_turns"] == 1
 
-
 def test_local_snapshot_buffer_persistence(tmp_path):
     path = tmp_path / "buffer.sqlite"
     buffer1 = LocalSnapshotBuffer(db_path=str(path))
@@ -216,13 +203,11 @@ def test_local_snapshot_buffer_persistence(tmp_path):
     assert buffer1.get("s1") == {"a": 2}
     assert buffer2.count() == 1
 
-
 def test_local_snapshot_buffer_last_flush_date(tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
     assert buffer.last_flush_date is None
     buffer.last_flush_date = (2026, 2, 5)
     assert buffer.last_flush_date == (2026, 2, 5)
-
 
 def test_local_snapshot_buffer_flush_lock(tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
@@ -230,7 +215,6 @@ def test_local_snapshot_buffer_flush_lock(tmp_path):
     assert buffer.try_flush_lock() is False
     buffer.release_flush_lock()
     assert buffer.try_flush_lock() is True
-
 
 def test_session_lock_manager_exclusive(tmp_path):
     lock_dir = tmp_path / "locks"
@@ -251,7 +235,6 @@ def test_session_lock_manager_exclusive(tmp_path):
             handle.close()
         assert locked is False
 
-
 def test_session_manager_close_session_enqueues_snapshot(mock_llm, tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
     manager = SessionManager(snapshot_buffer=buffer)
@@ -260,7 +243,6 @@ def test_session_manager_close_session_enqueues_snapshot(mock_llm, tmp_path):
     closed = manager.close_session("sess-close", client_id="client-close")
     assert closed is True
     assert buffer.count() == 1
-
 
 def test_session_manager_flush_not_before_hour(mock_llm, tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
@@ -282,7 +264,6 @@ def test_session_manager_flush_not_before_hour(mock_llm, tmp_path):
     assert saved == {}
     assert buffer.count() == 1
 
-
 def test_salesbot_snapshot_restores_compact_and_tail(mock_llm, tmp_path):
     bot = SalesBot(llm=mock_llm, client_id="client-xyz")
     bot.history = _mk_history(6)
@@ -295,7 +276,6 @@ def test_salesbot_snapshot_restores_compact_and_tail(mock_llm, tmp_path):
     assert restored.history_compact_meta is not None
     assert restored.client_id == "client-xyz"
 
-
 def test_snapshot_buffer_no_mix_between_sessions(tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
     buffer.enqueue("s1", {"conversation_id": "s1", "client_id": "c1"})
@@ -307,7 +287,6 @@ def test_snapshot_buffer_no_mix_between_sessions(tmp_path):
     assert s2["client_id"] == "c2"
     assert s1["conversation_id"] != s2["conversation_id"]
 
-
 def test_snapshot_buffer_allows_same_session_for_different_clients(tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
     buffer.enqueue("same", {"conversation_id": "same", "client_id": "c1", "v": 1})
@@ -317,7 +296,6 @@ def test_snapshot_buffer_allows_same_session_for_different_clients(tmp_path):
     assert buffer.get("same", client_id="c1")["v"] == 1
     assert buffer.get("same", client_id="c2")["v"] == 2
     assert buffer.get("same") is None  # Ambiguous without client_id
-
 
 def test_session_manager_cache_isolated_by_client_id(mock_llm, tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
@@ -329,7 +307,6 @@ def test_session_manager_cache_isolated_by_client_id(mock_llm, tmp_path):
     assert bot_c1 is not bot_c2
     assert bot_c1.client_id == "c1"
     assert bot_c2.client_id == "c2"
-
 
 def test_session_manager_flush_uses_tenant_aware_storage_key(tmp_path):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))
@@ -353,7 +330,6 @@ def test_session_manager_flush_uses_tenant_aware_storage_key(tmp_path):
     assert "c1::same" in saved
     assert "c2::same" in saved
     assert buffer.count() == 0
-
 
 def test_session_manager_client_id_mismatch_skips_restore(tmp_path, mock_llm):
     buffer = LocalSnapshotBuffer(db_path=str(tmp_path / "buffer.sqlite"))

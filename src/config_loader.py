@@ -800,12 +800,29 @@ class ConfigLoader:
             config_dir = Path(__file__).parent / "yaml_config"
         self.config_dir = Path(config_dir)
 
-    def load(self, validate: bool = True) -> LoadedConfig:
+    def _resolve_flow_name(self, flow_name: Optional[str]) -> str:
+        """Resolve runtime flow name once (explicit arg has priority over settings)."""
+        from src.settings import settings
+
+        return flow_name if flow_name else settings.flow.active
+
+    def _validate_bundle_binding(self, config: LoadedConfig, flow: FlowConfig) -> None:
+        """Fail-fast validation for runtime config/flow binding."""
+        config_flow = getattr(config, "flow_name", None)
+        flow_name = getattr(flow, "name", None)
+        if config_flow and flow_name and config_flow != flow_name:
+            raise ValueError(
+                f"Config/flow binding mismatch: config.flow_name='{config_flow}', "
+                f"flow.name='{flow_name}'"
+            )
+
+    def load(self, validate: bool = True, flow_name: Optional[str] = None) -> LoadedConfig:
         """
         Load all configuration files.
 
         Args:
             validate: Whether to validate configuration (default True)
+            flow_name: Explicit flow binding for runtime sync (optional)
 
         Returns:
             LoadedConfig with all data
@@ -849,9 +866,8 @@ class ConfigLoader:
             condition_aliases=condition_aliases,
         )
 
-        # Record which flow this config was loaded for
-        from src.settings import settings
-        config.flow_name = settings.flow.active
+        # Record flow binding for runtime-path sync
+        config.flow_name = self._resolve_flow_name(flow_name)
 
         # Validate if requested
         if validate:
@@ -859,7 +875,12 @@ class ConfigLoader:
 
         return config
 
-    def load_named(self, name: str, validate: bool = True) -> LoadedConfig:
+    def load_named(
+        self,
+        name: str,
+        validate: bool = True,
+        flow_name: Optional[str] = None,
+    ) -> LoadedConfig:
         """
         Load a named configuration with runtime overrides applied.
 
@@ -868,14 +889,14 @@ class ConfigLoader:
         set_config_override) are applied after loading, keyed by config name.
         """
         if not name or name == "default":
-            config = self.load(validate=validate)
+            config = self.load(validate=validate, flow_name=flow_name)
             config.name = "default"
         elif (tenant_dir := self.config_dir / "tenants" / name).exists():
             loader = ConfigLoader(config_dir=tenant_dir)
-            config = loader.load(validate=validate)
+            config = loader.load(validate=validate, flow_name=flow_name)
             config.name = name
         else:
-            config = self.load(validate=validate)
+            config = self.load(validate=validate, flow_name=flow_name)
             config.name = name
 
         # Apply runtime overrides (thread-safe read)
@@ -891,6 +912,32 @@ class ConfigLoader:
                         warnings.warn(f"Config override warning: {err}")
 
         return config
+
+    def load_bundle(
+        self,
+        config_name: str = "default",
+        flow_name: Optional[str] = None,
+        validate: bool = True,
+    ) -> tuple[LoadedConfig, FlowConfig]:
+        """
+        Atomically load runtime config + flow with strict binding validation.
+
+        Returns:
+            tuple[LoadedConfig, FlowConfig]
+        """
+        resolved_flow = self._resolve_flow_name(flow_name)
+        config = self.load_named(
+            config_name or "default",
+            validate=validate,
+            flow_name=resolved_flow,
+        )
+        flow = self.load_flow(resolved_flow, validate=validate)
+
+        # Hard-sync and validate binding once for runtime-path consumers.
+        config.flow_name = resolved_flow
+        self._validate_bundle_binding(config, flow)
+
+        return config, flow
 
     def _load_yaml(
         self,
@@ -1140,7 +1187,7 @@ class ConfigLoader:
             ConfigValidationError: If validation fails
 
         Example:
-            from settings import settings
+            from src.settings import settings
 
             loader = ConfigLoader()
             # Load flow from settings (configurable in settings.yaml)

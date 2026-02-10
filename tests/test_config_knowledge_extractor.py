@@ -34,7 +34,6 @@ from knowledge_extractor.config import (
     KEYBOARD_NEIGHBORS_RU,
 )
 
-
 # =============================================================================
 # LLM CONFIG TESTS
 # =============================================================================
@@ -102,7 +101,6 @@ class TestLLMConfig:
         config = LLMConfig(max_tokens=2048)
         assert config.max_tokens == 2048
 
-
 # =============================================================================
 # CHUNKING CONFIG TESTS
 # =============================================================================
@@ -160,7 +158,6 @@ class TestChunkingConfig:
         config = ChunkingConfig(message_gap_minutes=120)
         assert config.message_gap_minutes == 120
 
-
 # =============================================================================
 # EXTRACTION CONFIG TESTS
 # =============================================================================
@@ -208,7 +205,6 @@ class TestExtractionConfig:
         config = ExtractionConfig(default_priority=5)
         assert config.default_priority == 5
 
-
 # =============================================================================
 # DEDUPLICATION CONFIG TESTS
 # =============================================================================
@@ -236,7 +232,6 @@ class TestDeduplicationConfig:
         config = DeduplicationConfig(embedder_model="custom/model")
         assert config.embedder_model == "custom/model"
 
-
 # =============================================================================
 # OUTPUT CONFIG TESTS
 # =============================================================================
@@ -263,7 +258,6 @@ class TestOutputConfig:
         """Test custom company_description."""
         config = OutputConfig(company_description="CRM система")
         assert config.company_description == "CRM система"
-
 
 # =============================================================================
 # MAIN CONFIG TESTS
@@ -347,7 +341,6 @@ class TestMainConfig:
         config = Config(parallel_workers=4)
         assert config.parallel_workers == 4
 
-
 # =============================================================================
 # CATEGORIES TESTS
 # =============================================================================
@@ -398,7 +391,6 @@ class TestCategories:
         for cat in CATEGORIES:
             assert cat == cat.lower()
 
-
 class TestCategoryFiles:
     """Tests for CATEGORY_FILES mapping."""
 
@@ -415,7 +407,6 @@ class TestCategoryFiles:
         """Test CATEGORY_FILES values have .yaml extension."""
         for cat, filename in CATEGORY_FILES.items():
             assert filename == f"{cat}.yaml"
-
 
 # =============================================================================
 # CATEGORY KEYWORDS TESTS
@@ -449,7 +440,6 @@ class TestCategoryKeywords:
         for cat, keywords in CATEGORY_KEYWORDS.items():
             assert len(keywords) > 0, f"Category {cat} has empty keywords"
 
-
 class TestCategoryKeywordsPricing:
     """Tests for pricing category keywords."""
 
@@ -463,7 +453,6 @@ class TestCategoryKeywordsPricing:
         keywords = CATEGORY_KEYWORDS["pricing"]
         assert any("оплата" in kw or "подписка" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsFeatures:
     """Tests for features category keywords."""
 
@@ -471,7 +460,6 @@ class TestCategoryKeywordsFeatures:
         """Test features has function-related words."""
         keywords = CATEGORY_KEYWORDS["features"]
         assert any("функция" in kw or "возможность" in kw for kw in keywords)
-
 
 class TestCategoryKeywordsIntegrations:
     """Tests for integrations category keywords."""
@@ -486,7 +474,6 @@ class TestCategoryKeywordsIntegrations:
         keywords = CATEGORY_KEYWORDS["integrations"]
         assert any("1с" in kw.lower() or "kaspi" in kw.lower() for kw in keywords)
 
-
 class TestCategoryKeywordsSupport:
     """Tests for support category keywords."""
 
@@ -494,7 +481,6 @@ class TestCategoryKeywordsSupport:
         """Test support has support-related words."""
         keywords = CATEGORY_KEYWORDS["support"]
         assert any("поддержка" in kw or "помощь" in kw for kw in keywords)
-
 
 class TestCategoryKeywordsEquipment:
     """Tests for equipment category keywords."""
@@ -504,7 +490,6 @@ class TestCategoryKeywordsEquipment:
         keywords = CATEGORY_KEYWORDS["equipment"]
         assert any("оборудование" in kw or "касса" in kw or "терминал" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsMobile:
     """Tests for mobile category keywords."""
 
@@ -512,7 +497,6 @@ class TestCategoryKeywordsMobile:
         """Test mobile has mobile-related words."""
         keywords = CATEGORY_KEYWORDS["mobile"]
         assert any("мобильн" in kw or "приложение" in kw for kw in keywords)
-
 
 class TestCategoryKeywordsAnalytics:
     """Tests for analytics category keywords."""
@@ -522,7 +506,6 @@ class TestCategoryKeywordsAnalytics:
         keywords = CATEGORY_KEYWORDS["analytics"]
         assert any("аналитика" in kw or "отчёт" in kw or "статистика" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsInventory:
     """Tests for inventory category keywords."""
 
@@ -530,7 +513,6 @@ class TestCategoryKeywordsInventory:
         """Test inventory has stock-related words."""
         keywords = CATEGORY_KEYWORDS["inventory"]
         assert any("склад" in kw or "товар" in kw or "остаток" in kw for kw in keywords)
-
 
 class TestCategoryKeywordsEmployees:
     """Tests for employees category keywords."""
@@ -540,7 +522,6 @@ class TestCategoryKeywordsEmployees:
         keywords = CATEGORY_KEYWORDS["employees"]
         assert any("сотрудник" in kw or "персонал" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsFaq:
     """Tests for faq category keywords."""
 
@@ -548,7 +529,6 @@ class TestCategoryKeywordsFaq:
         """Test faq has question-related words."""
         keywords = CATEGORY_KEYWORDS["faq"]
         assert any("вопрос" in kw or "faq" in kw.lower() for kw in keywords)
-
 
 class TestCategoryKeywordsStability:
     """Tests for stability category keywords."""
@@ -558,7 +538,6 @@ class TestCategoryKeywordsStability:
         keywords = CATEGORY_KEYWORDS["stability"]
         assert any("безопасность" in kw or "защита" in kw or "бэкап" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsCompetitors:
     """Tests for competitors category keywords."""
 
@@ -566,7 +545,6 @@ class TestCategoryKeywordsCompetitors:
         """Test competitors has comparison-related words."""
         keywords = CATEGORY_KEYWORDS["competitors"]
         assert any("конкурент" in kw or "сравнение" in kw for kw in keywords)
-
 
 class TestCategoryKeywordsFiscal:
     """Tests for fiscal category keywords."""
@@ -576,7 +554,6 @@ class TestCategoryKeywordsFiscal:
         keywords = CATEGORY_KEYWORDS["fiscal"]
         assert any("фискальный" in kw or "чек" in kw or "налог" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsRegions:
     """Tests for regions category keywords."""
 
@@ -584,7 +561,6 @@ class TestCategoryKeywordsRegions:
         """Test regions has location-related words."""
         keywords = CATEGORY_KEYWORDS["regions"]
         assert any("регион" in kw or "город" in kw for kw in keywords)
-
 
 class TestCategoryKeywordsPromotions:
     """Tests for promotions category keywords."""
@@ -594,7 +570,6 @@ class TestCategoryKeywordsPromotions:
         keywords = CATEGORY_KEYWORDS["promotions"]
         assert any("акция" in kw or "скидка" in kw or "бонус" in kw for kw in keywords)
 
-
 class TestCategoryKeywordsTis:
     """Tests for tis category keywords."""
 
@@ -602,7 +577,6 @@ class TestCategoryKeywordsTis:
         """Test tis has tax integration words."""
         keywords = CATEGORY_KEYWORDS["tis"]
         assert any("тис" in kw.lower() or "910" in kw or "913" in kw for kw in keywords)
-
 
 # =============================================================================
 # COMMON TYPOS TESTS
@@ -648,7 +622,6 @@ class TestCommonTypos:
             for typo in typos:
                 assert typo != word, f"Typo {typo} equals correct word {word}"
 
-
 # =============================================================================
 # KEYBOARD NEIGHBORS TESTS
 # =============================================================================
@@ -689,7 +662,6 @@ class TestKeyboardNeighborsRu:
                 if char != '|':  # | is separator
                     assert char in russian_lower, \
                         f"Neighbor {char} for {key} is not Russian"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

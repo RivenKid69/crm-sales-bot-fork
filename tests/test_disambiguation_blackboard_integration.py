@@ -23,7 +23,6 @@ from src.blackboard.sources.disambiguation import DisambiguationSource
 from src.blackboard.enums import Priority
 from src.blackboard.models import ResolvedDecision
 
-
 # =============================================================================
 # Test: RefinementContext carries disambiguation fields
 # =============================================================================
@@ -55,7 +54,6 @@ class TestRefinementContextDisambiguation:
         new_ctx = ctx.update_from_result({"intent": "new_intent", "confidence": 0.9})
         assert new_ctx.in_disambiguation is True
         assert new_ctx.disambiguation_options == options
-
 
 # =============================================================================
 # Test: Resolution layer + Source integration
@@ -134,7 +132,6 @@ class TestLayerSourceIntegration:
         assert refinement.intent == "feature_question"
         assert ctx.metadata["exit_disambiguation"] is True
 
-
 # =============================================================================
 # Test: DisambiguationSource proposes correctly
 # =============================================================================
@@ -170,7 +167,6 @@ class TestSourceProposal:
         bb.current_intent = "price_question"
 
         assert source.should_contribute(bb) is False
-
 
 # =============================================================================
 # Test: ResolvedDecision metadata flow
@@ -246,7 +242,6 @@ class TestResolvedDecisionMetadata:
         assert "disambiguation_options" in sm_result
         assert "disambiguation_question" in sm_result
 
-
 # =============================================================================
 # Test: ConflictResolver priority semantics
 # =============================================================================
@@ -275,7 +270,6 @@ class TestConflictResolverSemantics:
     def test_critical_beats_high(self):
         """CRITICAL (escalation) should win over HIGH (disambiguation)."""
         assert Priority.CRITICAL < Priority.HIGH  # Lower value = higher priority
-
 
 # =============================================================================
 # Test: Typed fields E2E (ContextEnvelope → DisambiguationSource)
@@ -333,7 +327,6 @@ class TestTypedFieldsE2E:
         source.contribute(bb)
 
         bb.propose_action.assert_not_called()
-
 
 # =============================================================================
 # Test: PhaseExhaustedSource priority interactions
@@ -401,7 +394,6 @@ class TestPhaseExhaustedPriorityInteractions:
         assert phase_exhausted.combinable is True
         assert transition.combinable is True
         assert phase_exhausted.priority == transition.priority
-
 
 class TestDefenseInDepthDisambiguation:
     """Test defense-in-depth: disambiguation clears guard fallback."""

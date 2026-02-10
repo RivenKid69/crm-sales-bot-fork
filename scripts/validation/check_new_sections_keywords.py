@@ -12,7 +12,7 @@ from typing import List, Tuple
 from dataclasses import dataclass
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-from knowledge.loader import load_knowledge_base
+from src.knowledge.loader import load_knowledge_base
 
 # =============================================================================
 # Тестовые запросы для новых секций

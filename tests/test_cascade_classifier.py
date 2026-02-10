@@ -14,28 +14,27 @@ from unittest.mock import Mock, patch, MagicMock
 import numpy as np
 
 # Импорты тестируемых модулей
-from classifier.intents.examples import (
+from src.classifier.intents.examples import (
     INTENT_EXAMPLES,
     get_all_intents,
     get_examples_for_intent,
     get_total_examples_count,
 )
-from classifier.intents.semantic import (
+from src.classifier.intents.semantic import (
     SemanticClassifier,
     SemanticResult,
     SemanticMatchType,
     get_semantic_classifier,
     reset_semantic_classifier,
 )
-from classifier.cascade import (
+from src.classifier.cascade import (
     CascadeIntentClassifier,
     CascadeResult,
     ClassificationStage,
     get_cascade_classifier,
     reset_cascade_classifier,
 )
-from feature_flags import flags
-
+from src.feature_flags import flags
 
 # =============================================================================
 # Fixtures
@@ -49,7 +48,6 @@ def reset_singletons():
     yield
     reset_semantic_classifier()
     reset_cascade_classifier()
-
 
 @pytest.fixture
 def mock_embedder():
@@ -73,7 +71,6 @@ def mock_embedder():
         mock.return_value = embedder
         yield mock
 
-
 @pytest.fixture
 def semantic_classifier(mock_embedder):
     """Create SemanticClassifier with mocked embedder."""
@@ -81,7 +78,6 @@ def semantic_classifier(mock_embedder):
     # Force initialization
     classifier._init_embeddings()
     return classifier
-
 
 # =============================================================================
 # INTENT_EXAMPLES Tests
@@ -149,7 +145,6 @@ class TestIntentExamples:
         count = get_total_examples_count()
         expected = sum(len(v) for v in INTENT_EXAMPLES.values())
         assert count == expected
-
 
 # =============================================================================
 # SemanticClassifier Tests
@@ -228,7 +223,6 @@ class TestSemanticClassifier:
         classifier2 = get_semantic_classifier()
         assert classifier1 is classifier2
 
-
 # =============================================================================
 # CascadeIntentClassifier Tests
 # =============================================================================
@@ -297,7 +291,6 @@ class TestCascadeIntentClassifier:
         assert ClassificationStage.SEMANTIC.value == "semantic"
         assert ClassificationStage.FALLBACK.value == "fallback"
 
-
 # =============================================================================
 # HybridClassifier Integration Tests
 # =============================================================================
@@ -318,14 +311,14 @@ class TestHybridClassifierCascadeIntegration:
 
     def test_hybrid_classifier_has_semantic_property(self):
         """HybridClassifier должен иметь semantic_classifier property."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
         classifier = HybridClassifier()
         # С включённым флагом должен возвращать classifier
         assert hasattr(classifier, 'semantic_classifier')
 
     def test_hybrid_classifier_semantic_fallback_method(self):
         """HybridClassifier должен иметь _semantic_fallback метод."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
         classifier = HybridClassifier()
         assert hasattr(classifier, '_semantic_fallback')
 
@@ -334,12 +327,12 @@ class TestHybridClassifierCascadeIntegration:
         # Сбрасываем overrides чтобы проверить дефолт
         flags.clear_override("cascade_classifier")
         # Проверяем через DEFAULTS
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert FeatureFlags.DEFAULTS.get("cascade_classifier") is True
 
     def test_classify_with_cascade_enabled(self):
         """Классификация с включённым cascade."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         result = classifier.classify("привет")
@@ -350,7 +343,7 @@ class TestHybridClassifierCascadeIntegration:
 
     def test_classify_returns_semantic_method_when_appropriate(self, mock_embedder):
         """При низкой уверенности keyword должен использоваться semantic."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
 
@@ -361,7 +354,6 @@ class TestHybridClassifierCascadeIntegration:
         # Может быть semantic, fallback или unclear
         assert result["method"] in ("semantic", "fallback", "root", "lemma", "priority_pattern")
 
-
 # =============================================================================
 # Regression Tests
 # =============================================================================
@@ -371,7 +363,7 @@ class TestRegressionTests:
 
     def test_greeting_classification(self):
         """Приветствия должны классифицироваться правильно."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         greetings = ["привет", "здравствуйте", "добрый день"]
@@ -382,7 +374,7 @@ class TestRegressionTests:
 
     def test_objection_price_classification(self):
         """Ценовые возражения должны классифицироваться правильно."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         objections = ["дорого", "слишком дорого", "нет бюджета"]
@@ -393,7 +385,7 @@ class TestRegressionTests:
 
     def test_agreement_classification(self):
         """Согласие должно классифицироваться правильно."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         agreements = ["да, давайте", "интересно", "согласен"]
@@ -404,7 +396,7 @@ class TestRegressionTests:
 
     def test_rejection_classification(self):
         """Отказ должен классифицироваться правильно."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         rejections = ["не интересно", "отстаньте", "не нужно"]
@@ -415,7 +407,7 @@ class TestRegressionTests:
 
     def test_demo_request_classification(self):
         """Запросы демо должны классифицироваться правильно."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         demo_requests = ["хочу демо", "покажите как работает", "можно попробовать"]
@@ -426,7 +418,7 @@ class TestRegressionTests:
 
     def test_price_question_classification(self):
         """Вопросы о цене должны классифицироваться правильно."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         price_questions = ["сколько стоит", "какая цена", "какие тарифы"]
@@ -434,7 +426,6 @@ class TestRegressionTests:
         for msg in price_questions:
             result = classifier.classify(msg)
             assert result["intent"] == "price_question", f"Failed for: {msg}"
-
 
 # =============================================================================
 # Edge Cases
@@ -445,7 +436,7 @@ class TestEdgeCases:
 
     def test_empty_message(self):
         """Пустое сообщение."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         result = classifier.classify("")
@@ -453,7 +444,7 @@ class TestEdgeCases:
 
     def test_whitespace_only_message(self):
         """Сообщение только из пробелов."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         result = classifier.classify("   ")
@@ -461,7 +452,7 @@ class TestEdgeCases:
 
     def test_very_long_message(self):
         """Очень длинное сообщение."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         long_msg = "слово " * 500
@@ -471,7 +462,7 @@ class TestEdgeCases:
 
     def test_special_characters(self):
         """Специальные символы."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         result = classifier.classify("???!!!")
@@ -479,7 +470,7 @@ class TestEdgeCases:
 
     def test_mixed_language(self):
         """Смешанный язык."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         result = classifier.classify("привет hello как дела")
@@ -488,13 +479,12 @@ class TestEdgeCases:
 
     def test_numbers_only(self):
         """Только числа."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         classifier = HybridClassifier()
         result = classifier.classify("12345")
         # Может быть contact_provided или unclear
         assert "intent" in result
-
 
 # =============================================================================
 # Performance Tests
@@ -506,7 +496,7 @@ class TestPerformance:
     def test_classification_time(self):
         """Классификация должна быть быстрой."""
         import time
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         flags.set_override("cascade_classifier", False)  # Без semantic для скорости
         classifier = HybridClassifier()
@@ -532,7 +522,6 @@ class TestPerformance:
         assert result.total_time_ms > 0
         assert len(result.stage_times_ms) > 0
 
-
 # =============================================================================
 # Feature Flag Tests
 # =============================================================================
@@ -542,17 +531,17 @@ class TestFeatureFlagIntegration:
 
     def test_cascade_classifier_flag_exists(self):
         """Флаг cascade_classifier должен существовать."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert "cascade_classifier" in FeatureFlags.DEFAULTS
 
     def test_cascade_classifier_in_safe_group(self):
         """cascade_classifier должен быть в группе safe."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert "cascade_classifier" in FeatureFlags.GROUPS.get("safe", [])
 
     def test_cascade_classifier_in_phase_4(self):
         """cascade_classifier должен быть в группе phase_4."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert "cascade_classifier" in FeatureFlags.GROUPS.get("phase_4", [])
 
     def test_cascade_flag_property(self):
@@ -563,7 +552,7 @@ class TestFeatureFlagIntegration:
 
     def test_disable_cascade_disables_semantic(self):
         """При выключенном cascade semantic не должен использоваться."""
-        from classifier.hybrid import HybridClassifier
+        from src.classifier.hybrid import HybridClassifier
 
         # Очищаем все overrides и сбрасываем singleton
         flags.clear_all_overrides()
@@ -588,7 +577,6 @@ class TestFeatureFlagIntegration:
             assert result["method"] != "semantic"
         finally:
             flags.clear_all_overrides()
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

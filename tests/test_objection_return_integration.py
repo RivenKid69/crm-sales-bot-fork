@@ -30,7 +30,6 @@ from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.conflict_resolver import ConflictResolver
 from src.blackboard.enums import Priority
 
-
 # =============================================================================
 # Mock Implementations for Integration Testing
 # =============================================================================
@@ -71,7 +70,6 @@ class MockStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
@@ -121,7 +119,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return 0
-
 
 class MockFlowConfig:
     """Mock FlowConfig with handle_objection transitions."""
@@ -192,7 +189,6 @@ class MockFlowConfig:
         """Get phase name for a state."""
         return self.state_to_phase.get(state_name)
 
-
 def create_test_setup(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -229,7 +225,6 @@ def create_test_setup(
         "transition_resolver_source": transition_resolver_source,
         "conflict_resolver": conflict_resolver,
     }
-
 
 # =============================================================================
 # Integration Tests: Phase Preservation
@@ -359,7 +354,6 @@ class TestPhasePreservationIntegration:
         # Should stay in handle_objection
         assert decision.next_state == "handle_objection"
 
-
 # =============================================================================
 # Integration Tests: Multiple Sources
 # =============================================================================
@@ -410,7 +404,6 @@ class TestMultipleSourcesInteraction:
 
         assert len(objection_return_proposals) == 1
         assert objection_return_proposals[0].priority == Priority.HIGH
-
 
 # =============================================================================
 # Integration Tests: Real Scenarios
@@ -508,7 +501,6 @@ class TestRealScenarios:
 
         assert decision.next_state == "bant_authority"
 
-
 # =============================================================================
 # Integration Tests: Edge Cases
 # =============================================================================
@@ -566,7 +558,6 @@ class TestIntegrationEdgeCases:
 
         # Should stay in current state
         assert decision.next_state == "handle_objection"
-
 
 # =============================================================================
 # Integration Tests: Non-Phase State Handling (37% Zero Coverage Fix)
@@ -849,7 +840,6 @@ class TestNonPhaseStateIntegration:
             assert decision.next_state == phase_state, \
                 f"Failed for phase_state: {phase_state}"
 
-
 # =============================================================================
 # Integration Tests: Total-Based Objection Escape (Meta-Intent Streak Breaking Fix)
 # =============================================================================
@@ -996,7 +986,6 @@ class TestTotalBasedEscapeIntegration:
             "BUG: Going to soft_close (0% coverage!)"
         assert decision.next_state == "bant_budget", \
             "Total escape should route to entry_state (bant_budget)"
-
 
 # =============================================================================
 # Integration Tests: Price Question Return (SSOT-based)

@@ -15,14 +15,11 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from context_window import (
+from src.context_window import (
     ContextWindow, TurnContext, TurnType, EngagementLevel,
     STATE_ORDER, SPIN_PHASE_ORDER
 )
-from classifier import HybridClassifier
-
+from src.classifier import HybridClassifier
 
 # =============================================================================
 # ТЕСТЫ TurnType (Классификация типов ходов)
@@ -108,7 +105,6 @@ class TestTurnType:
         )
         assert turn3.funnel_delta == -6
 
-
 class TestTurnTypeHistory:
     """Тесты истории типов ходов."""
 
@@ -156,7 +152,6 @@ class TestTurnTypeHistory:
         assert counts["lateral"] >= 1
         assert counts["regress"] >= 1
         assert counts["neutral"] >= 1
-
 
 # =============================================================================
 # ТЕСТЫ Engagement (Вовлечённость)
@@ -329,7 +324,6 @@ class TestEngagement:
         print(f"\nEngagement trend: {trend}")
         assert trend == "declining"
 
-
 # =============================================================================
 # ТЕСТЫ Funnel Progress (Прогресс по воронке)
 # =============================================================================
@@ -477,7 +471,6 @@ class TestFunnelProgress:
         assert cw.is_progressing() is False
         assert cw.is_regressing() is False
 
-
 # =============================================================================
 # ТЕСТЫ Momentum (Инерция)
 # =============================================================================
@@ -578,7 +571,6 @@ class TestMomentum:
 
         # Должен быть положительный из-за recency weight
         assert momentum > 0
-
 
 # =============================================================================
 # ТЕСТЫ Trigger Analysis (Анализ триггеров)
@@ -706,7 +698,6 @@ class TestTriggerAnalysis:
         print(f"\nIneffective actions: {ineffective}")
         assert "deflect_and_continue" in ineffective
 
-
 # =============================================================================
 # ТЕСТЫ Level 2 Context (Структурированный контекст)
 # =============================================================================
@@ -771,7 +762,6 @@ class TestLevel2Context:
         assert "momentum" in ctx
         assert "engagement_score" in ctx
         assert "funnel_progress" in ctx
-
 
 # =============================================================================
 # ТЕСТЫ ИНТЕГРАЦИИ С КЛАССИФИКАТОРОМ (Level 2)
@@ -851,7 +841,6 @@ class TestClassifierLevel2Integration:
               f"pattern={result.get('pattern_type')}")
 
         assert result["intent"] == "objection_price"
-
 
 # =============================================================================
 # СРАВНЕНИЕ: УРОВЕНЬ 2 ОТДЕЛЬНО vs УРОВЕНЬ 1+2 ВМЕСТЕ
@@ -958,7 +947,6 @@ class TestLevel2VsLevel1Plus2:
         # L1+L2 должен дать agreement с высокой уверенностью
         assert result_l1_l2["intent"] == "agreement"
         assert result_l1_l2["confidence"] >= result_basic["confidence"]
-
 
 # =============================================================================
 # РЕАЛИСТИЧНЫЕ СЦЕНАРИИ (Level 2)
@@ -1088,7 +1076,6 @@ class TestRealisticScenariosLevel2:
         assert ctx["engagement_level"] in ("high", "medium")
         assert ctx["momentum_direction"] == "positive"
 
-
 # =============================================================================
 # ТЕСТЫ ПРОИЗВОДИТЕЛЬНОСТИ Level 2
 # =============================================================================
@@ -1126,7 +1113,6 @@ class TestPerformanceLevel2:
 
         # Должно быть < 100ms на 1000 вызовов
         assert elapsed < 0.5
-
 
 # =============================================================================
 # ЗАПУСК ТЕСТОВ

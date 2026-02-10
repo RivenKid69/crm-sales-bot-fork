@@ -13,17 +13,14 @@ import sys
 import os
 from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from response_directives import (
+from src.response_directives import (
     ResponseDirectives,
     ResponseDirectivesBuilder,
     ResponseTone,
     build_response_directives,
 )
-from context_envelope import ContextEnvelope, ReasonCode
-from feature_flags import flags
-
+from src.context_envelope import ContextEnvelope, ReasonCode
+from src.feature_flags import flags
 
 class TestResponseDirectivesFeatureFlag:
     """Тесты feature flag для ResponseDirectives."""
@@ -52,7 +49,6 @@ class TestResponseDirectivesFeatureFlag:
         flags.set_override("context_response_directives", False)
         assert flags.context_response_directives is False
         flags.clear_override("context_response_directives")
-
 
 class TestDirectiveInstruction:
     """Тесты генерации instruction из directives."""
@@ -94,7 +90,6 @@ class TestDirectiveInstruction:
         # Для нейтрального тона не должно быть тональных инструкций
         assert "эмпатичный" not in instruction.lower()
         assert "уверенный" not in instruction.lower()
-
 
 class TestDirectivesMemory:
     """Тесты memory полей в directives."""
@@ -147,7 +142,6 @@ class TestDirectivesMemory:
 
         assert directives.reference_pain == "потеря клиентов"
 
-
 class TestDirectivesToDict:
     """Тесты сериализации directives в dict."""
 
@@ -188,7 +182,6 @@ class TestDirectivesToDict:
         memory = d.get("memory", {})
         assert memory.get("client_card") or True  # Может быть пустым
         assert isinstance(memory.get("do_not_repeat", []), list)
-
 
 class TestFullFlowIntegration:
     """Полные интеграционные тесты."""
@@ -278,7 +271,6 @@ class TestFullFlowIntegration:
         # Проверяем instruction
         instruction = directives.get_instruction()
         assert "уверенный" in instruction.lower()
-
 
 class TestContextSummary:
     """Тесты context summary."""

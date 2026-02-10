@@ -20,11 +20,9 @@ from codebase_analyzer.config import (
     load_config,
 )
 
-
 # ============================================================================
 # LLMConfig Tests
 # ============================================================================
-
 
 class TestLLMConfig:
     """Tests for LLM configuration."""
@@ -123,11 +121,9 @@ class TestLLMConfig:
             assert config.model_name == "env-model"
             assert config.temperature == 0.5
 
-
 # ============================================================================
 # EmbeddingConfig Tests
 # ============================================================================
-
 
 class TestEmbeddingConfig:
     """Tests for embedding configuration."""
@@ -157,11 +153,9 @@ class TestEmbeddingConfig:
             assert config.model_name == "custom-embed"
             assert config.batch_size == 64
 
-
 # ============================================================================
 # RAGConfig Tests
 # ============================================================================
-
 
 class TestRAGConfig:
     """Tests for RAG configuration."""
@@ -206,11 +200,9 @@ class TestRAGConfig:
         with pytest.raises(ValueError):
             RAGConfig(dense_weight=1.1)
 
-
 # ============================================================================
 # ChunkingConfig Tests
 # ============================================================================
-
 
 class TestChunkingConfig:
     """Tests for chunking configuration."""
@@ -247,11 +239,9 @@ class TestChunkingConfig:
         with pytest.raises(ValueError):
             ChunkingConfig(chunk_overlap_percent=0.6)
 
-
 # ============================================================================
 # IndexerConfig Tests
 # ============================================================================
-
 
 class TestIndexerConfig:
     """Tests for indexer configuration."""
@@ -281,11 +271,9 @@ class TestIndexerConfig:
         assert config.include_patterns == ["**/*.py"]
         assert config.exclude_patterns == ["**/venv/**"]
 
-
 # ============================================================================
 # GeneratorConfig Tests
 # ============================================================================
-
 
 class TestGeneratorConfig:
     """Tests for generator configuration."""
@@ -314,11 +302,9 @@ class TestGeneratorConfig:
             config = GeneratorConfig(language=lang)
             assert config.language == lang
 
-
 # ============================================================================
 # AppConfig Tests
 # ============================================================================
-
 
 class TestAppConfig:
     """Tests for main application configuration."""
@@ -488,11 +474,9 @@ another_unknown:
         config = AppConfig.from_yaml(yaml_path)
         assert config.llm.model_name == "test"
 
-
 # ============================================================================
 # Global Config Functions Tests
 # ============================================================================
-
 
 class TestGlobalConfigFunctions:
     """Tests for get_config and load_config functions."""
@@ -571,11 +555,9 @@ class TestGlobalConfigFunctions:
         assert config3.llm.model_name == "test-model"
         assert config3 is config2
 
-
 # ============================================================================
 # Edge Cases and Error Handling Tests
 # ============================================================================
-
 
 class TestConfigEdgeCases:
     """Tests for configuration edge cases."""
@@ -697,11 +679,9 @@ rag:
         # log_file is None by default
         assert data.get("log_file") is None or "log_file" not in data
 
-
 # ============================================================================
 # Validation Tests
 # ============================================================================
-
 
 class TestConfigValidation:
     """Tests for configuration validation."""

@@ -16,8 +16,8 @@ from typing import List, Tuple
 from dataclasses import dataclass
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-from knowledge.category_router import CategoryRouter
-from knowledge.retriever import KnowledgeRetriever
+from src.knowledge.category_router import CategoryRouter
+from src.knowledge.retriever import KnowledgeRetriever
 
 # =============================================================================
 # Тестовые запросы для новых секций 1100-1200

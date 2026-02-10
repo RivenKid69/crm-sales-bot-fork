@@ -17,7 +17,6 @@ from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.sources.conversation_guard_ks import ConversationGuardSource, TIER_MAP
 
-
 # =============================================================================
 # Mock Implementations
 # =============================================================================
@@ -88,7 +87,6 @@ class MockStateMachine:
     def sync_phase_from_state(self) -> None:
         pass
 
-
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
 
@@ -129,7 +127,6 @@ class MockIntentTracker:
 
     def get_intents_by_category(self, category: str) -> list:
         return []
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -208,7 +205,6 @@ class MockFlowConfig:
     def constants(self) -> Dict[str, Any]:
         return {}
 
-
 def create_blackboard(
     state: str = "spin_situation",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -236,13 +232,11 @@ def create_blackboard(
     )
     return bb
 
-
 def create_mock_guard(tier_return=None, can_continue=True):
     """Create a mock ConversationGuard that returns specified tier."""
     guard = Mock()
     guard.check = Mock(return_value=(can_continue, tier_return))
     return guard
-
 
 def create_mock_fallback_handler(skip_target="spin_problem"):
     """Create a mock FallbackHandler with a skip target."""
@@ -256,7 +250,6 @@ def create_mock_fallback_handler(skip_target="spin_problem"):
         message="Options menu",
     ))
     return handler
-
 
 # =============================================================================
 # Unit Tests: ConversationGuardSource
@@ -284,7 +277,6 @@ class TestConversationGuardSourceInit:
     def test_init_disabled(self):
         source = ConversationGuardSource(enabled=False)
         assert source._enabled is False
-
 
 class TestConversationGuardSourceShouldContribute:
     """Test should_contribute() gating logic."""
@@ -317,7 +309,6 @@ class TestConversationGuardSourceShouldContribute:
         source = ConversationGuardSource(guard=guard)
         bb = create_blackboard()
         assert source.should_contribute(bb) is True
-
 
 class TestConversationGuardSourceContribute:
     """Test contribute() — tier → proposal mapping."""
@@ -461,7 +452,6 @@ class TestConversationGuardSourceContribute:
         assert actions[0].metadata["tier"] == "fallback_tier_2"
         assert actions[0].metadata["can_continue"] is True
 
-
 class TestConversationGuardSourceGetSkipTarget:
     """Test _get_skip_target() method."""
 
@@ -486,7 +476,6 @@ class TestConversationGuardSourceGetSkipTarget:
         actions = bb.get_action_proposals()
         assert actions[0].value == "guard_skip_phase"
         assert actions[0].metadata["to_state"] == "spin_implication"
-
 
 # =============================================================================
 # Conflict Resolution Tests
@@ -630,7 +619,6 @@ class TestConversationGuardSourceConflictResolution:
         # Guard proposal comes first (lower priority_order)
         assert decision.action == "guard_skip_phase"
 
-
 # =============================================================================
 # Feature Flag & Integration Tests
 # =============================================================================
@@ -660,7 +648,6 @@ class TestConversationGuardSourceFeatureFlag:
         source.contribute(bb)
         assert len(bb.get_action_proposals()) == 1
 
-
 class TestConversationGuardSourceContextSnapshot:
     """Test that ContextSnapshot properly carries user_message and frustration_level."""
 
@@ -686,7 +673,6 @@ class TestConversationGuardSourceContextSnapshot:
         ctx = bb.get_context()
         assert ctx.user_message == ""
         assert ctx.frustration_level == 0
-
 
 class TestConversationGuardTier2Escalation:
     """Test TIER_2 self-loop escalation moved into ConversationGuard."""
@@ -738,7 +724,6 @@ class TestConversationGuardTier2Escalation:
         assert guard._state.consecutive_tier_2_count == 0
         assert guard._state.consecutive_tier_2_state is None
 
-
 class TestDialoguePolicyGuardBypass:
     """Test that DialoguePolicy bypasses guard actions."""
 
@@ -759,7 +744,6 @@ class TestDialoguePolicyGuardBypass:
             envelope = Mock()
             result = policy.maybe_override(sm_result, envelope)
             assert result is None, f"Policy should bypass {action}"
-
 
 class TestTierMapCompleteness:
     """Test that TIER_MAP covers all tiers."""
@@ -797,7 +781,6 @@ class TestTierMapCompleteness:
         assert TIER_MAP["fallback_tier_3"]["combinable"] is True
         assert TIER_MAP["soft_close"]["combinable"] is True
 
-
 class TestFeatureFlagRegistration:
     """Test that the feature flag is properly registered."""
 
@@ -813,7 +796,6 @@ class TestFeatureFlagRegistration:
         from src.feature_flags import flags
         # Should not raise
         _ = flags.conversation_guard_in_pipeline
-
 
 class TestSourceRegistration:
     """Test that ConversationGuardSource is registered in SourceRegistry."""

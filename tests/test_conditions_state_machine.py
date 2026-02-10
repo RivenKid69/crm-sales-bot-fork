@@ -79,7 +79,6 @@ from src.conditions.state_machine import (
 from src.conditions import ConditionRegistries
 from src.conditions.trace import EvaluationTrace, Resolution
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -89,7 +88,6 @@ def empty_context():
     """Create an empty context for testing."""
     return create_test_context()
 
-
 @pytest.fixture
 def pricing_context():
     """Create a context with pricing data."""
@@ -97,7 +95,6 @@ def pricing_context():
         collected_data={"company_size": 10},
         state="spin_situation"
     )
-
 
 @pytest.fixture
 def full_context():
@@ -119,7 +116,6 @@ def full_context():
         turn_number=8
     )
 
-
 @pytest.fixture
 def spin_context():
     """Create a context in SPIN state."""
@@ -128,7 +124,6 @@ def spin_context():
         turn_number=5,
         current_intent="problem_revealed"
     )
-
 
 # =============================================================================
 # CONTEXT TESTS
@@ -299,7 +294,6 @@ class TestEvaluatorContext:
         assert "price_question" in repr_str
         assert "turn=3" in repr_str
 
-
 class TestSimpleIntentTracker:
     """Tests for SimpleIntentTracker class."""
 
@@ -370,7 +364,6 @@ class TestSimpleIntentTracker:
         assert tracker.category_streak("cat") == 3
         assert tracker.category_total("cat") == 7
 
-
 class TestConstants:
     """Tests for module constants."""
 
@@ -405,7 +398,6 @@ class TestConstants:
         assert "objection_price" in INTENT_CATEGORIES["objection"]
         assert "agreement" in INTENT_CATEGORIES["positive"]
         assert "price_question" in INTENT_CATEGORIES["question"]
-
 
 # =============================================================================
 # REGISTRY TESTS
@@ -484,7 +476,6 @@ class TestSMRegistry:
         assert len(result.passed) == len(sm_registry)
         assert len(result.failed) == 0
         assert len(result.errors) == 0
-
 
 # =============================================================================
 # DATA CONDITIONS TESTS
@@ -621,7 +612,6 @@ class TestDataConditions:
         ctx_empty = create_test_context()
         assert has_desired_outcome(ctx_empty) is False
 
-
 # =============================================================================
 # INTENT CONDITIONS TESTS
 # =============================================================================
@@ -751,7 +741,6 @@ class TestIntentConditions:
         ctx3 = create_test_context(current_intent="agreement")
         assert is_spin_progress_intent(ctx3) is False
 
-
 # =============================================================================
 # STATE CONDITIONS TESTS
 # =============================================================================
@@ -879,7 +868,6 @@ class TestStateConditions:
             ctx = create_test_context(state=state_name)
             assert post_spin_phase(ctx) is False, f"Should be False for {state_name}"
 
-
 # =============================================================================
 # TURN CONDITIONS TESTS
 # =============================================================================
@@ -919,7 +907,6 @@ class TestTurnConditions:
 
         ctx_not_extended = create_test_context(turn_number=19)
         assert is_extended_conversation(ctx_not_extended) is False
-
 
 # =============================================================================
 # COMBINED CONDITIONS TESTS
@@ -1010,7 +997,6 @@ class TestCombinedConditions:
 
         ctx_missing = create_test_context(collected_data={"company_size": 10})
         assert can_handle_with_roi(ctx_missing) is False
-
 
 # =============================================================================
 # INTEGRATION TESTS
@@ -1179,7 +1165,6 @@ class TestIntegration:
         assert is_late_conversation(ctx_extended) is True
         assert is_extended_conversation(ctx_extended) is True
 
-
 # =============================================================================
 # DOCUMENTATION TESTS
 # =============================================================================
@@ -1207,7 +1192,6 @@ class TestDocumentation:
         assert stats["total_categories"] >= 5
         assert "data" in stats["conditions_by_category"]
         assert "intent" in stats["conditions_by_category"]
-
 
 # =============================================================================
 # EDGE CASES TESTS
@@ -1314,7 +1298,6 @@ class TestEdgeCases:
         # Context should have original value
         assert ctx.collected_data["key"] == "value"
 
-
 # =============================================================================
 # CONTEXT-AWARE CONDITIONS TESTS (Phase 5)
 # =============================================================================
@@ -1343,7 +1326,6 @@ from src.conditions.state_machine import (
     can_accelerate,
     should_answer_directly,
 )
-
 
 class TestContextAwareConditions:
     """Tests for context-aware conditions based on ContextEnvelope signals."""
@@ -1667,7 +1649,6 @@ class TestContextAwareConditions:
         )
         assert should_answer_directly(ctx_ok) is False
 
-
 # =============================================================================
 # CONFIGURABLE OBJECTION LIMITS TESTS
 # =============================================================================
@@ -1864,7 +1845,6 @@ class TestConfigurableObjectionLimits:
         assert objection_limit_reached(ctx) is False
         assert objection_consecutive_3x(ctx) is False
         assert objection_total_5x(ctx) is False
-
 
 # =============================================================================
 # OBJECTION LOOP ESCAPE CONDITION TESTS

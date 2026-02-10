@@ -25,7 +25,6 @@ from src.classifier.disambiguation_engine import (
 )
 from src.constants.intent_labels import INTENT_LABELS
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -35,12 +34,10 @@ def default_config():
     """Default configuration for testing."""
     return DisambiguationConfig()
 
-
 @pytest.fixture
 def engine(default_config):
     """Engine instance with default config."""
     return DisambiguationDecisionEngine(default_config)
-
 
 @pytest.fixture
 def custom_config():
@@ -58,12 +55,10 @@ def custom_config():
         cooldown_turns=2,
     )
 
-
 @pytest.fixture
 def engine_custom(custom_config):
     """Engine instance with custom config."""
     return DisambiguationDecisionEngine(custom_config)
-
 
 @pytest.fixture(autouse=True)
 def reset_singleton():
@@ -71,7 +66,6 @@ def reset_singleton():
     reset_disambiguation_engine()
     yield
     reset_disambiguation_engine()
-
 
 # =============================================================================
 # TEST: DisambiguationConfig
@@ -122,7 +116,6 @@ class TestDisambiguationConfig:
         config = DisambiguationConfig.from_config(config_dict)
 
         assert config.gap_threshold == 0.25
-
 
 # =============================================================================
 # TEST: Decision Matrix
@@ -257,7 +250,6 @@ class TestDecisionMatrix:
         assert result.decision == DisambiguationDecision.FALLBACK
         assert result.needs_disambiguation is False
 
-
 # =============================================================================
 # TEST: Bypass Conditions
 # =============================================================================
@@ -339,7 +331,6 @@ class TestBypassConditions:
         assert result.decision == DisambiguationDecision.EXECUTE
         assert "Very high confidence" in result.reasoning
 
-
 # =============================================================================
 # TEST: Gap Calculation
 # =============================================================================
@@ -388,7 +379,6 @@ class TestGapCalculation:
 
         # Gap = min(0.40, 0.5) = 0.40
         assert result.gap == 0.40
-
 
 # =============================================================================
 # TEST: Options Building
@@ -509,7 +499,6 @@ class TestOptionsBuilding:
             assert option.label != ""
             assert option.label != option.intent or option.intent == "other"
 
-
 # =============================================================================
 # TEST: Confirm Question
 # =============================================================================
@@ -549,7 +538,6 @@ class TestConfirmQuestion:
 
         assert result.decision == DisambiguationDecision.CONFIRM
         assert "Правильно ли я понял" in result.confirm_question
-
 
 # =============================================================================
 # TEST: DisambiguationResult
@@ -627,7 +615,6 @@ class TestDisambiguationResult:
 
         assert classification == {}
 
-
 # =============================================================================
 # TEST: Statistics
 # =============================================================================
@@ -648,7 +635,6 @@ class TestStatistics:
         assert stats["decisions"]["execute"] >= 1
         assert stats["decisions"]["disambiguate"] >= 1
         assert stats["decisions"]["fallback"] >= 1
-
 
 # =============================================================================
 # TEST: Error Handling
@@ -705,7 +691,6 @@ class TestErrorHandling:
 
         assert result is not None
 
-
 # =============================================================================
 # TEST: Singleton Factory
 # =============================================================================
@@ -739,7 +724,6 @@ class TestSingletonFactory:
 
         assert engine.config.high_confidence == 0.99
         assert engine.config.gap_threshold == 0.50
-
 
 # =============================================================================
 # TEST: Integration with Classification
@@ -798,7 +782,6 @@ class TestIntegration:
         assert result is not None
         assert result.decision in DisambiguationDecision
 
-
 # =============================================================================
 # TEST: YAML Config Loading
 # =============================================================================
@@ -820,7 +803,6 @@ class TestYAMLConfigLoading:
         assert engine.config is not None
         assert engine.config.high_confidence > 0
         assert engine.config.gap_threshold > 0
-
 
 # =============================================================================
 # TEST: Compound Bypass (Bypass 5)

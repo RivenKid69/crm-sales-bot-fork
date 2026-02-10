@@ -15,9 +15,6 @@ from unittest.mock import MagicMock, patch, Mock
 from contextlib import contextmanager
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # HELPER FIXTURES
 # =============================================================================
@@ -29,7 +26,6 @@ def clean_flags():
     yield flags
     flags.clear_all_overrides()
 
-
 @contextmanager
 def flag_override(flag_name: str, value: bool):
     """Context manager for temporary flag override."""
@@ -39,7 +35,6 @@ def flag_override(flag_name: str, value: bool):
         yield
     finally:
         flags.clear_override(flag_name)
-
 
 # =============================================================================
 # LEAD SCORING FLAG TESTS
@@ -72,7 +67,6 @@ class TestFlagLeadScoring:
         # Verify flag is respected
         assert not flags.is_enabled("lead_scoring")
 
-
 # =============================================================================
 # CIRCULAR FLOW FLAG TESTS
 # =============================================================================
@@ -93,7 +87,6 @@ class TestFlagCircularFlow:
 
         flags.set_override("circular_flow", False)
         assert flags.is_enabled("circular_flow") is False
-
 
 # =============================================================================
 # CONVERSATION GUARD FLAG TESTS
@@ -116,7 +109,6 @@ class TestFlagConversationGuard:
         flags.set_override("conversation_guard", False)
         assert flags.is_enabled("conversation_guard") is False
 
-
 # =============================================================================
 # MULTI-TIER FALLBACK FLAG TESTS
 # =============================================================================
@@ -137,7 +129,6 @@ class TestFlagMultiTierFallback:
 
         flags.set_override("multi_tier_fallback", False)
         assert flags.is_enabled("multi_tier_fallback") is False
-
 
 # =============================================================================
 # TONE ANALYSIS FLAG TESTS
@@ -160,7 +151,6 @@ class TestFlagToneAnalysis:
         flags.set_override("tone_analysis", False)
         assert flags.is_enabled("tone_analysis") is False
 
-
 # =============================================================================
 # RESPONSE VARIATIONS FLAG TESTS
 # =============================================================================
@@ -181,7 +171,6 @@ class TestFlagResponseVariations:
 
         flags.set_override("response_variations", False)
         assert flags.is_enabled("response_variations") is False
-
 
 # =============================================================================
 # PERSONALIZATION FLAG TESTS
@@ -204,7 +193,6 @@ class TestFlagPersonalization:
         flags.set_override("personalization", False)
         assert flags.is_enabled("personalization") is False
 
-
 # =============================================================================
 # OBJECTION HANDLER FLAG TESTS
 # =============================================================================
@@ -225,7 +213,6 @@ class TestFlagObjectionHandler:
 
         flags.set_override("objection_handler", False)
         assert flags.is_enabled("objection_handler") is False
-
 
 # =============================================================================
 # CTA GENERATOR FLAG TESTS
@@ -248,7 +235,6 @@ class TestFlagCTAGenerator:
         flags.set_override("cta_generator", False)
         assert flags.is_enabled("cta_generator") is False
 
-
 # =============================================================================
 # STRUCTURED LOGGING FLAG TESTS
 # =============================================================================
@@ -269,7 +255,6 @@ class TestFlagStructuredLogging:
 
         flags.set_override("structured_logging", False)
         assert flags.is_enabled("structured_logging") is False
-
 
 # =============================================================================
 # METRICS TRACKING FLAG TESTS
@@ -292,7 +277,6 @@ class TestFlagMetricsTracking:
         flags.set_override("metrics_tracking", False)
         assert flags.is_enabled("metrics_tracking") is False
 
-
 # =============================================================================
 # LLM CLASSIFIER FLAG TESTS
 # =============================================================================
@@ -313,7 +297,6 @@ class TestFlagLLMClassifier:
 
         flags.set_override("llm_classifier", False)
         assert flags.is_enabled("llm_classifier") is False
-
 
 # =============================================================================
 # CASCADE CLASSIFIER FLAG TESTS
@@ -336,7 +319,6 @@ class TestFlagCascadeClassifier:
         flags.set_override("cascade_classifier", False)
         assert flags.is_enabled("cascade_classifier") is False
 
-
 # =============================================================================
 # CONTEXT POLICY OVERLAYS FLAG TESTS
 # =============================================================================
@@ -358,7 +340,6 @@ class TestFlagContextPolicyOverlays:
         flags.set_override("context_policy_overlays", False)
         assert flags.is_enabled("context_policy_overlays") is False
 
-
 # =============================================================================
 # DYNAMIC CTA FALLBACK FLAG TESTS
 # =============================================================================
@@ -379,7 +360,6 @@ class TestFlagDynamicCTAFallback:
 
         flags.set_override("dynamic_cta_fallback", False)
         assert flags.is_enabled("dynamic_cta_fallback") is False
-
 
 # =============================================================================
 # FLAG GROUPS TESTS
@@ -423,7 +403,6 @@ class TestFlagGroups:
 
         # After clear, flags should return to defaults
         # (actual values depend on defaults)
-
 
 # =============================================================================
 # FLAG INTERACTION TESTS

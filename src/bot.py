@@ -128,18 +128,20 @@ class SalesBot:
         # Phase DAG: Load modular flow configuration (REQUIRED since v2.0)
         # Legacy Python-based config is deprecated and no longer used
         self._config_loader = ConfigLoader()
-        self._config: LoadedConfig = self._config_loader.load_named(config_name or "default")
-
-        # Load flow from parameter, settings, or default
-        # IMPORTANT: flow_name must be non-empty string to override settings
-        active_flow = flow_name if flow_name else settings.flow.active
-        self._flow: FlowConfig = self._config_loader.load_flow(active_flow)
+        self._config: LoadedConfig
+        self._flow: FlowConfig
+        self._config, self._flow = self._config_loader.load_bundle(
+            config_name=config_name or "default",
+            flow_name=flow_name,
+            validate=True,
+        )
+        resolved_flow = self._config.flow_name or settings.flow.active
 
         # Log flow resolution for debugging multi-flow scenarios
         logger.info(
             "SalesBot flow resolved",
             requested_flow=flow_name,
-            resolved_flow=active_flow,
+            resolved_flow=resolved_flow,
             flow_name=self._flow.name,
             flow_version=self._flow.version,
             states_count=len(self._flow.states),
@@ -147,13 +149,11 @@ class SalesBot:
             entry_state=self._flow.get_entry_point("default"),
         )
 
-        # Validate flow was loaded correctly
-        if self._flow.name != active_flow:
-            logger.warning(
-                "Flow name mismatch",
-                requested=active_flow,
-                loaded=self._flow.name,
-            )
+        # Runtime strictness: fail fast on any config/flow drift.
+        self._assert_runtime_flow_binding(
+            requested_flow=flow_name,
+            resolved_flow=resolved_flow,
+        )
 
         # Core components (always active)
         self.classifier = UnifiedClassifier()
@@ -272,6 +272,27 @@ class SalesBot:
             config_name=getattr(self._config, "name", None),
             config_system="modular_yaml",
         )
+
+    def _assert_runtime_flow_binding(
+        self,
+        requested_flow: Optional[str],
+        resolved_flow: Optional[str],
+    ) -> None:
+        """Fail-fast check for runtime config/flow binding consistency."""
+        config_flow = getattr(self._config, "flow_name", None)
+        loaded_flow = getattr(self._flow, "name", None)
+
+        if config_flow != loaded_flow:
+            raise RuntimeError(
+                f"Runtime flow binding mismatch: config.flow_name='{config_flow}', "
+                f"flow.name='{loaded_flow}', requested='{requested_flow}', resolved='{resolved_flow}'"
+            )
+
+        if resolved_flow and config_flow != resolved_flow:
+            raise RuntimeError(
+                f"Runtime flow resolution mismatch: resolved='{resolved_flow}', "
+                f"config.flow_name='{config_flow}', flow.name='{loaded_flow}'"
+            )
 
     def reset(self):
         """Сброс для нового диалога."""

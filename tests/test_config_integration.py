@@ -9,7 +9,6 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 class MockContext:
     """Mock context for condition evaluation."""
     def __init__(self, **kwargs):
@@ -18,7 +17,6 @@ class MockContext:
         self.collected_data = kwargs.get('collected_data', {})
         self.state = kwargs.get('state', 'greeting')
         self.turn_number = kwargs.get('turn_number', 0)
-
 
 class MockRegistry:
     """Mock registry that returns predefined values."""
@@ -40,7 +38,6 @@ class MockRegistry:
 
     def list_all(self):
         return list(self._conditions.keys())
-
 
 class TestFullConfigIntegration:
     """Tests for full configuration integration."""
@@ -338,7 +335,6 @@ class TestFullConfigIntegration:
         assert gobacks["spin_problem"] == "spin_situation"
         assert gobacks["spin_implication"] == "spin_problem"
 
-
 class TestConfigConstants:
     """Tests for centralized constants module."""
 
@@ -406,7 +402,6 @@ class TestConfigConstants:
         assert "greeting" in PROTECTED_STATES
 
         assert isinstance(AGGRESSIVE_ACTIONS, set)
-
 
 class TestConfigValidationIntegration:
     """Tests for config validation in integration scenarios."""
@@ -483,7 +478,6 @@ class TestConfigValidationIntegration:
             ConfigLoader(tmp_path).load()
 
         assert "Threshold mismatch" in str(exc_info.value)
-
 
 class TestRealConfigFiles:
     """Tests that verify the actual config files in src/config/."""

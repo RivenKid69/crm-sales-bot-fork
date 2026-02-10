@@ -14,16 +14,14 @@ import sys
 from pathlib import Path
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from objection_handler import (
+from src.objection_handler import (
     ObjectionHandler,
     ObjectionType,
     ObjectionFramework,
     ObjectionStrategy,
     ObjectionResult,
 )
-
 
 class TestObjectionDetection:
     """Тесты определения типа возражения"""
@@ -169,7 +167,6 @@ class TestObjectionDetection:
             objection = handler.detect_objection(msg)
             assert objection is None, f"False positive for: {msg}"
 
-
 class TestObjectionStrategies:
     """Тесты стратегий обработки возражений"""
 
@@ -223,7 +220,6 @@ class TestObjectionStrategies:
             if strategy:
                 assert len(strategy.response_template) > 0
                 assert len(strategy.follow_up_question) > 0
-
 
 class TestAttemptLimiting:
     """Тесты ограничения попыток"""
@@ -291,7 +287,6 @@ class TestAttemptLimiting:
         # Попытки снова доступны
         assert handler.get_strategy(ObjectionType.PRICE) is not None
 
-
 class TestHandleObjection:
     """Тесты полной обработки возражения"""
 
@@ -336,7 +331,6 @@ class TestHandleObjection:
         assert "follow_up" in result.response_parts
         assert "framework" in result.response_parts
 
-
 class TestPersonalization:
     """Тесты персонализации ответов"""
 
@@ -370,7 +364,6 @@ class TestPersonalization:
         follow_up = result.response_parts.get("follow_up", "")
         assert len(follow_up) > 0
 
-
 class TestCanHandleMore:
     """Тесты проверки возможности обработки"""
 
@@ -391,7 +384,6 @@ class TestCanHandleMore:
         handler.get_strategy(ObjectionType.PRICE)
         handler.get_strategy(ObjectionType.PRICE)
         assert not handler.can_handle_more(ObjectionType.PRICE)
-
 
 class TestGetAttempts:
     """Тесты получения статистики попыток"""
@@ -421,7 +413,6 @@ class TestGetAttempts:
         assert attempts["price"] == 1
         assert attempts["competitor"] == 2
 
-
 class TestSoftCloseTemplates:
     """Тесты шаблонов soft close"""
 
@@ -442,7 +433,6 @@ class TestSoftCloseTemplates:
         assert result.should_soft_close
         assert "message" in result.response_parts
         assert len(result.response_parts["message"]) > 0
-
 
 class TestObjectionPriority:
     """Тесты приоритета возражений"""
@@ -468,7 +458,6 @@ class TestObjectionPriority:
 
         # THINK проверяется раньше и "подума" матчится
         assert objection == ObjectionType.THINK
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -500,7 +489,6 @@ class TestEdgeCases:
         assert handler.detect_objection("ДОРОГО") == ObjectionType.PRICE
         assert handler.detect_objection("Дорого") == ObjectionType.PRICE
         assert handler.detect_objection("дорого") == ObjectionType.PRICE
-
 
 class TestIntegrationScenarios:
     """Интеграционные сценарии"""
@@ -561,7 +549,6 @@ class TestIntegrationScenarios:
 
         # Персонализированный follow_up
         assert "потеря 20% клиентов" in result.response_parts["follow_up"]
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

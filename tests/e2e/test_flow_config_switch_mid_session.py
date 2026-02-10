@@ -7,7 +7,6 @@ from src.llm import OllamaClient
 from src.session_manager import SessionManager
 from src.snapshot_buffer import LocalSnapshotBuffer
 
-
 def _get_real_llm():
     model = os.getenv("E2E_LLM_MODEL", "qwen3:14b")
     base_url = os.getenv("OLLAMA_BASE_URL")
@@ -18,7 +17,6 @@ def _get_real_llm():
             "Start ollama and pull the model to run this test."
         )
     return llm
-
 
 def test_switch_flow_config_mid_session(tmp_path):
     llm = _get_real_llm()

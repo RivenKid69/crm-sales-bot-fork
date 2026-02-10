@@ -5,7 +5,6 @@ import time
 from src.session_manager import SessionManager
 from src.snapshot_buffer import LocalSnapshotBuffer
 
-
 def test_restore_after_week_with_history_tail(mock_e2e_llm, tmp_path):
     session_id = "sess-week-later"
     client_id = "client-week-later"

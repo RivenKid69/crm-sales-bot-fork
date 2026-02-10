@@ -15,10 +15,8 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from response_variations import ResponseVariations, variations, VariationStats
-
+from src.response_variations import ResponseVariations, variations, VariationStats
 
 class TestOpenings:
     """Тесты получения вступлений"""
@@ -72,7 +70,6 @@ class TestOpenings:
         opening = self.variations.get_opening("unknown_category", skip_probability=0.0)
         assert opening == ""
 
-
 class TestTransitions:
     """Тесты получения переходных фраз"""
 
@@ -98,7 +95,6 @@ class TestTransitions:
         """Неизвестная категория возвращает пустую строку"""
         transition = self.variations.get_transition("unknown_category")
         assert transition == ""
-
 
 class TestQuestionVariants:
     """Тесты получения вариантов вопросов"""
@@ -131,7 +127,6 @@ class TestQuestionVariants:
         question = self.variations.get_question_variant("unknown_type")
         assert question == ""
 
-
 class TestClosings:
     """Тесты получения завершающих фраз"""
 
@@ -153,7 +148,6 @@ class TestClosings:
         closing = self.variations.get_closing("cta_contact")
         assert closing in ResponseVariations.CLOSINGS["cta_contact"]
 
-
 class TestApologyAndExit:
     """Тесты извинений и предложений выхода"""
 
@@ -169,7 +163,6 @@ class TestApologyAndExit:
         """Получение предложения выхода"""
         exit_offer = self.variations.get_exit_offer()
         assert exit_offer in ResponseVariations.EXIT_OFFERS
-
 
 class TestBuildNaturalResponse:
     """Тесты сборки естественного ответа"""
@@ -219,7 +212,6 @@ class TestBuildNaturalResponse:
         # Должен содержать core_message
         assert "какой размер команды?" in response
 
-
 class TestBuildEmpathticResponse:
     """Тесты сборки эмпатичного ответа"""
 
@@ -245,7 +237,6 @@ class TestBuildEmpathticResponse:
         )
         # Должен содержать question
         assert "теряете" in response
-
 
 class TestBuildApologeticResponse:
     """Тесты сборки извиняющегося ответа"""
@@ -273,7 +264,6 @@ class TestBuildApologeticResponse:
         # Должен содержать предложение выхода
         has_exit = any(exit_offer in response for exit_offer in ResponseVariations.EXIT_OFFERS)
         assert has_exit
-
 
 class TestLRULogic:
     """Тесты LRU-подобной логики (избежание повторов)"""
@@ -325,7 +315,6 @@ class TestLRULogic:
         history = self.variations.get_used_history()
         assert len(history) == 0
 
-
 class TestStatistics:
     """Тесты статистики использования"""
 
@@ -368,20 +357,18 @@ class TestStatistics:
         stats = self.variations.get_stats()
         assert stats.skipped_openings >= 5
 
-
 class TestSingleton:
     """Тесты singleton экземпляра"""
 
     def test_singleton_exists(self):
         """Singleton variations существует"""
-        from response_variations import variations
+        from src.response_variations import variations
         assert variations is not None
 
     def test_singleton_is_response_variations(self):
         """Singleton является ResponseVariations"""
-        from response_variations import variations
+        from src.response_variations import variations
         assert isinstance(variations, ResponseVariations)
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -414,7 +401,6 @@ class TestEdgeCases:
         assert result1 == "единственный"
         assert result2 == "единственный"
 
-
 class TestAllCategories:
     """Проверка всех категорий на валидность"""
 
@@ -446,7 +432,6 @@ class TestAllCategories:
         for category in ResponseVariations.CLOSINGS.keys():
             closing = self.variations.get_closing(category)
             assert isinstance(closing, str)
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
