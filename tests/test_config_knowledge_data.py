@@ -8,12 +8,10 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 @pytest.fixture(scope="module")
 def knowledge_data_dir():
     """Get knowledge data directory."""
     return Path(__file__).parent.parent / "src" / "knowledge" / "data"
-
 
 @pytest.fixture(scope="module")
 def meta_config(knowledge_data_dir):
@@ -21,18 +19,15 @@ def meta_config(knowledge_data_dir):
     with open(knowledge_data_dir / "_meta.yaml", 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture(scope="module")
 def all_knowledge_files(knowledge_data_dir):
     """Get all knowledge YAML files (excluding _meta.yaml)."""
     return [f for f in knowledge_data_dir.glob("*.yaml") if f.name != "_meta.yaml"]
 
-
 def load_yaml_file(file_path):
     """Helper to load YAML file."""
     with open(file_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 class TestMetaConfigStructure:
     """Tests for _meta.yaml structure."""
@@ -69,7 +64,6 @@ class TestMetaConfigStructure:
         assert "categories" in meta_config["stats"]
         assert len(meta_config["stats"]["categories"]) > 0
 
-
 class TestMetaCategories:
     """Tests for meta categories."""
 
@@ -95,7 +89,6 @@ class TestMetaCategories:
         ]
         for cat in expected:
             assert cat in category_names, f"Missing category: {cat}"
-
 
 class TestKnowledgeFilesExist:
     """Tests for knowledge file existence."""
@@ -168,7 +161,6 @@ class TestKnowledgeFilesExist:
         """faq.yaml should exist."""
         assert (knowledge_data_dir / "faq.yaml").exists()
 
-
 class TestKnowledgeFileStructure:
     """Tests for knowledge file structure."""
 
@@ -189,7 +181,6 @@ class TestKnowledgeFileStructure:
         for file_path in all_knowledge_files:
             config = load_yaml_file(file_path)
             assert len(config["sections"]) > 0, f"{file_path.name} has empty sections"
-
 
 class TestKnowledgeSectionStructure:
     """Tests for knowledge section structure."""
@@ -221,7 +212,6 @@ class TestKnowledgeSectionStructure:
             config = load_yaml_file(file_path)
             for i, section in enumerate(config["sections"]):
                 assert "facts" in section, f"{file_path.name} section {i} missing facts"
-
 
 class TestKnowledgeSectionValidity:
     """Tests for knowledge section validity."""
@@ -258,7 +248,6 @@ class TestKnowledgeSectionValidity:
                 assert len(section["facts"]) > 0, \
                     f"{file_path.name} section {section['topic']} has empty facts"
 
-
 class TestFeaturesFileContent:
     """Tests for features.yaml content."""
 
@@ -292,7 +281,6 @@ class TestFeaturesFileContent:
         """Features should have at least 50 sections."""
         assert len(features_config["sections"]) >= 50
 
-
 class TestMetaCategoriesMatchFiles:
     """Tests for meta categories matching actual files."""
 
@@ -311,7 +299,6 @@ class TestMetaCategoriesMatchFiles:
                 actual_count = len(config["sections"])
                 # Allow some variance due to updates
                 assert actual_count > 0, f"{cat['name']} has no sections"
-
 
 class TestKnowledgeKeywordQuality:
     """Tests for keyword quality in knowledge files."""
@@ -337,7 +324,6 @@ class TestKnowledgeKeywordQuality:
                         assert keyword.isdigit() or keyword in ["1с", "qr"], \
                             f"{file_path.name} has very short keyword: {keyword}"
 
-
 class TestTotalKnowledgeStats:
     """Tests for total knowledge statistics."""
 
@@ -353,7 +339,6 @@ class TestTotalKnowledgeStats:
         """Should have at least 1000 total sections."""
         total = sum(len(load_yaml_file(f)["sections"]) for f in all_knowledge_files)
         assert total >= 1000, f"Only {total} total sections, expected at least 1000"
-
 
 class TestKnowledgeFilesParseCorrectly:
     """Tests that all knowledge files parse correctly."""
@@ -380,7 +365,6 @@ class TestKnowledgeFilesParseCorrectly:
                         yaml.safe_load(content)
                     except yaml.YAMLError:
                         pytest.fail(f"{file_path.name} has tabs and fails to parse")
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

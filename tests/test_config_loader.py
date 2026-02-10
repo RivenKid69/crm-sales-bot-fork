@@ -9,7 +9,6 @@ from pathlib import Path
 import tempfile
 import yaml
 
-
 class TestConfigLoader:
     """Tests for ConfigLoader."""
 
@@ -254,7 +253,6 @@ class TestConfigLoader:
         with pytest.raises(ConfigLoadError):
             ConfigLoader(tmp_path).load()
 
-
 class TestConfigValidation:
     """Tests for configuration validation."""
 
@@ -369,7 +367,6 @@ class TestConfigValidation:
         # Should not raise when validation is skipped
         config = ConfigLoader(base_config_dir).load(validate=False)
         assert config is not None
-
 
 class TestGlobalConfig:
     """Tests for global config functions."""

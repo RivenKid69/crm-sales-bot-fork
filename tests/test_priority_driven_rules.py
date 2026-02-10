@@ -9,7 +9,6 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 class TestPriorityDrivenRules:
     """Tests for priority-driven rule application."""
 
@@ -190,7 +189,6 @@ class TestPriorityDrivenRules:
         assert action == "continue_current_goal"
         assert next_state == "greeting"
 
-
 class TestPriorityOrdering:
     """Tests for priority ordering behavior."""
 
@@ -276,7 +274,6 @@ class TestPriorityOrdering:
         assert action == "rule_action"
         assert next_state == "test_state"
 
-
 class TestBackwardCompatibility:
     """Tests for backward compatibility with legacy (no FlowConfig) mode."""
 
@@ -314,7 +311,6 @@ class TestBackwardCompatibility:
         # Without FlowConfig, should return default priorities
         priorities = sm.priorities
         assert isinstance(priorities, list)
-
 
 class TestPhaseProgressHandler:
     """Tests for phase_progress_handler priority."""
@@ -415,7 +411,6 @@ class TestPhaseProgressHandler:
         # Should transition based on progress_intents
         assert next_state == "phase_b"
 
-
 class TestObjectionLimitPriority:
     """Tests for objection limit handling via priorities."""
 
@@ -504,7 +499,6 @@ class TestObjectionLimitPriority:
 
         # Should transition to handle_objection (not soft_close yet)
         assert next_state == "handle_objection"
-
 
 class TestConditionalRulesViaPriority:
     """Tests for conditional rules via priority system."""

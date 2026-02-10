@@ -16,10 +16,6 @@ from unittest.mock import patch, MagicMock, PropertyMock
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # 1. Trace Propagation in Fallback Tests
 # =============================================================================
@@ -29,8 +25,8 @@ class TestTracePropagationInFallback:
 
     def test_get_static_tier_2_options_passes_trace_to_tier_1(self):
         """_get_static_tier_2_options передаёт trace в _tier_1_rephrase."""
-        from fallback_handler import FallbackHandler
-        from conditions.trace import EvaluationTrace
+        from src.fallback_handler import FallbackHandler
+        from src.conditions.trace import EvaluationTrace
 
         handler = FallbackHandler()
         trace = EvaluationTrace(rule_name="test_rule")
@@ -55,8 +51,8 @@ class TestTracePropagationInFallback:
 
     def test_trace_not_lost_in_fallback_chain(self):
         """Trace сохраняется через всю цепочку fallback."""
-        from fallback_handler import FallbackHandler, FallbackResponse
-        from conditions.trace import EvaluationTrace
+        from src.fallback_handler import FallbackHandler, FallbackResponse
+        from src.conditions.trace import EvaluationTrace
 
         handler = FallbackHandler()
         trace = EvaluationTrace(rule_name="test_rule")
@@ -73,7 +69,6 @@ class TestTracePropagationInFallback:
         assert isinstance(response, FallbackResponse)
         assert response.trace is trace
 
-
 # =============================================================================
 # 2. ContextEnvelope Data Priority Tests
 # =============================================================================
@@ -83,7 +78,7 @@ class TestContextEnvelopeDataPriority:
 
     def test_intent_history_from_state_machine_not_overwritten(self):
         """intent_history от IntentTracker не перезаписывается context_window."""
-        from context_envelope import ContextEnvelopeBuilder, ContextEnvelope
+        from src.context_envelope import ContextEnvelopeBuilder, ContextEnvelope
         from unittest.mock import MagicMock
 
         # Создаём mock state_machine с intent_tracker
@@ -133,7 +128,7 @@ class TestContextEnvelopeDataPriority:
 
     def test_context_window_used_when_no_state_machine(self):
         """context_window используется когда state_machine отсутствует."""
-        from context_envelope import ContextEnvelopeBuilder
+        from src.context_envelope import ContextEnvelopeBuilder
         from unittest.mock import MagicMock
 
         cw = MagicMock()
@@ -172,7 +167,6 @@ class TestContextEnvelopeDataPriority:
         assert envelope.objection_count == 5
         assert envelope.total_objections == 10
 
-
 # =============================================================================
 # 3. Singleton Parameter Warning Tests
 # =============================================================================
@@ -182,24 +176,24 @@ class TestSingletonParameterWarning:
 
     def setup_method(self):
         """Reset singleton before each test."""
-        from classifier.cascade import reset_cascade_classifier
+        from src.classifier.cascade import reset_cascade_classifier
         reset_cascade_classifier()
 
     def teardown_method(self):
         """Reset singleton after each test."""
-        from classifier.cascade import reset_cascade_classifier
+        from src.classifier.cascade import reset_cascade_classifier
         reset_cascade_classifier()
 
     def test_first_call_creates_with_parameters(self):
         """Первый вызов создаёт экземпляр с переданными параметрами."""
-        from classifier.cascade import get_cascade_classifier, reset_cascade_classifier
+        from src.classifier.cascade import get_cascade_classifier, reset_cascade_classifier
 
         classifier = get_cascade_classifier(enable_semantic=False)
         assert classifier.enable_semantic is False
 
     def test_second_call_with_different_params_logs_warning(self):
         """Второй вызов с другими параметрами логирует warning."""
-        from classifier.cascade import get_cascade_classifier, reset_cascade_classifier
+        from src.classifier.cascade import get_cascade_classifier, reset_cascade_classifier
 
         # Первый вызов
         classifier1 = get_cascade_classifier(enable_semantic=False)
@@ -221,7 +215,7 @@ class TestSingletonParameterWarning:
 
     def test_same_params_no_warning(self):
         """Повторный вызов с теми же параметрами не логирует warning."""
-        from classifier.cascade import get_cascade_classifier, reset_cascade_classifier
+        from src.classifier.cascade import get_cascade_classifier, reset_cascade_classifier
 
         classifier1 = get_cascade_classifier(enable_semantic=True)
 
@@ -235,7 +229,7 @@ class TestSingletonParameterWarning:
 
     def test_reset_allows_new_params(self):
         """После reset можно создать с новыми параметрами."""
-        from classifier.cascade import get_cascade_classifier, reset_cascade_classifier
+        from src.classifier.cascade import get_cascade_classifier, reset_cascade_classifier
 
         classifier1 = get_cascade_classifier(enable_semantic=False)
         assert classifier1.enable_semantic is False
@@ -246,7 +240,6 @@ class TestSingletonParameterWarning:
         assert classifier2.enable_semantic is True
         assert classifier1 is not classifier2
 
-
 # =============================================================================
 # 4. Lead Scoring Decay Contract Tests
 # =============================================================================
@@ -256,7 +249,7 @@ class TestLeadScoringDecayContract:
 
     def test_decay_applied_once_per_turn(self):
         """Decay применяется только один раз за ход."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         scorer._raw_score = 100.0
@@ -274,7 +267,7 @@ class TestLeadScoringDecayContract:
 
     def test_end_turn_enables_next_decay(self):
         """end_turn() позволяет применить decay в следующем ходу."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         scorer._raw_score = 100.0
@@ -295,7 +288,7 @@ class TestLeadScoringDecayContract:
 
     def test_warning_logged_without_end_turn(self):
         """Warning логируется при множественных вызовах без end_turn."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         scorer._raw_score = 50.0
@@ -314,7 +307,7 @@ class TestLeadScoringDecayContract:
 
     def test_end_turn_resets_warning_counter(self):
         """end_turn() сбрасывает счётчик предупреждений."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         scorer._turns_without_end_turn = 5
@@ -322,7 +315,6 @@ class TestLeadScoringDecayContract:
         scorer.end_turn()
 
         assert scorer._turns_without_end_turn == 0
-
 
 # =============================================================================
 # 5. DAG Majority Edge Case Tests
@@ -333,7 +325,7 @@ class TestDAGMajorityEdgeCase:
 
     def test_majority_with_2_branches_warns(self):
         """MAJORITY с 2 ветками логирует warning."""
-        from dag.sync_points import SyncPointManager, SyncStrategy
+        from src.dag.sync_points import SyncPointManager, SyncStrategy
 
         manager = SyncPointManager()
 
@@ -351,7 +343,7 @@ class TestDAGMajorityEdgeCase:
 
     def test_majority_with_3_branches_no_warning(self):
         """MAJORITY с 3+ ветками не логирует warning."""
-        from dag.sync_points import SyncPointManager, SyncStrategy
+        from src.dag.sync_points import SyncPointManager, SyncStrategy
 
         manager = SyncPointManager()
 
@@ -369,8 +361,8 @@ class TestDAGMajorityEdgeCase:
 
     def test_majority_requires_more_than_half(self):
         """MAJORITY требует строго больше половины."""
-        from dag.sync_points import SyncPointManager, SyncStrategy
-        from dag.models import DAGExecutionContext
+        from src.dag.sync_points import SyncPointManager, SyncStrategy
+        from src.dag.models import DAGExecutionContext
 
         manager = SyncPointManager()
         ctx = DAGExecutionContext(primary_state="test")
@@ -390,7 +382,6 @@ class TestDAGMajorityEdgeCase:
         result = manager.arrive("test_sync", "c", ctx)
         assert result.is_synced is True
 
-
 # =============================================================================
 # 6. Frustration History Cleanup Tests
 # =============================================================================
@@ -400,8 +391,8 @@ class TestFrustrationHistoryCleanup:
 
     def test_neutral_tone_at_zero_level_no_history_entry(self):
         """Нейтральный тон при нулевом уровне не создаёт запись в истории."""
-        from tone_analyzer.frustration_tracker import FrustrationTracker
-        from tone_analyzer.models import Tone
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.models import Tone
 
         tracker = FrustrationTracker()
         assert tracker.level == 0
@@ -416,8 +407,8 @@ class TestFrustrationHistoryCleanup:
 
     def test_frustration_tone_creates_history_entry(self):
         """Тон влияющий на frustration создаёт запись."""
-        from tone_analyzer.frustration_tracker import FrustrationTracker
-        from tone_analyzer.models import Tone
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.models import Tone
 
         tracker = FrustrationTracker()
 
@@ -430,8 +421,8 @@ class TestFrustrationHistoryCleanup:
 
     def test_decay_tone_creates_history_entry(self):
         """Тон вызывающий decay создаёт запись если level меняется."""
-        from tone_analyzer.frustration_tracker import FrustrationTracker
-        from tone_analyzer.models import Tone
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.models import Tone
 
         tracker = FrustrationTracker()
 
@@ -448,8 +439,8 @@ class TestFrustrationHistoryCleanup:
 
     def test_decay_at_zero_no_history_entry(self):
         """Decay при нулевом уровне не создаёт запись."""
-        from tone_analyzer.frustration_tracker import FrustrationTracker
-        from tone_analyzer.models import Tone
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.models import Tone
 
         tracker = FrustrationTracker()
         assert tracker.level == 0
@@ -462,8 +453,8 @@ class TestFrustrationHistoryCleanup:
 
     def test_history_only_contains_meaningful_changes(self):
         """История содержит только значимые изменения (delta != 0)."""
-        from tone_analyzer.frustration_tracker import FrustrationTracker
-        from tone_analyzer.models import Tone
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.models import Tone
 
         tracker = FrustrationTracker()
 

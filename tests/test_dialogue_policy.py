@@ -11,18 +11,15 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from dialogue_policy import (
+from src.dialogue_policy import (
     CascadeDisposition,
     DialoguePolicy,
     PolicyDecision,
     PolicyOverride,
     ContextPolicyMetrics,
 )
-from context_envelope import ContextEnvelope, ReasonCode
-from feature_flags import flags
-
+from src.context_envelope import ContextEnvelope, ReasonCode
+from src.feature_flags import flags
 
 class TestPolicyDecision:
     """Тесты для PolicyDecision enum."""
@@ -40,7 +37,6 @@ class TestPolicyDecision:
         assert PolicyDecision.PRICE_QUESTION.value == "price_question"
         assert PolicyDecision.PRICE_ALREADY_CORRECT.value == "price_already_correct"
         assert PolicyDecision.REPAIR_SKIPPED.value == "repair_skipped"
-
 
 class TestPolicyOverride:
     """Тесты для PolicyOverride dataclass."""
@@ -83,7 +79,6 @@ class TestPolicyOverride:
         assert d["reason_codes"] == ["objection.repeat"]
         assert d["signals_used"] == {"total_objections": 2}
         assert d["cascade_disposition"] == "stop"  # Default is STOP
-
 
 class TestDialoguePolicy:
     """Тесты для DialoguePolicy."""
@@ -408,7 +403,6 @@ class TestDialoguePolicy:
         assert result.decision == PolicyDecision.NO_OVERRIDE
         assert ReasonCode.GUARD_INTERVENTION.value in result.reason_codes
 
-
 class TestContextPolicyMetrics:
     """Тесты для ContextPolicyMetrics."""
 
@@ -513,7 +507,6 @@ class TestContextPolicyMetrics:
 
         assert metrics.total_decisions == 0
         assert metrics.override_count == 0
-
 
 class TestDialoguePolicyIntegration:
     """Интеграционные тесты для DialoguePolicy."""

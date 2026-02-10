@@ -21,7 +21,6 @@ from src.conditions.personalization.conditions import needs_soft_approach, shoul
 from src.conversation_guard import ConversationGuard, GuardConfig
 from src.apology_ssot import should_offer_exit
 
-
 class TestContextEnvelopePropagation:
     """Test pre_intervention propagation through ContextEnvelope."""
 
@@ -59,7 +58,6 @@ class TestContextEnvelopePropagation:
         result = envelope.to_dict()
         assert "pre_intervention_triggered" in result
         assert result["pre_intervention_triggered"] is True
-
 
 class TestPolicyContextPropagation:
     """Test pre_intervention propagation through PolicyContext."""
@@ -102,7 +100,6 @@ class TestPolicyContextPropagation:
         ctx = PolicyContext.create_test_context(pre_intervention_triggered=False)
         assert has_pre_intervention(ctx) is False
 
-
 class TestFallbackContextPropagation:
     """Test pre_intervention propagation through FallbackContext."""
 
@@ -135,7 +132,6 @@ class TestFallbackContextPropagation:
             pre_intervention_triggered=True,
         )
         assert should_offer_graceful_exit(ctx) is True
-
 
 class TestPersonalizationContextPropagation:
     """Test pre_intervention propagation through PersonalizationContext."""
@@ -182,7 +178,6 @@ class TestPersonalizationContextPropagation:
         )
         assert should_be_conservative(ctx) is True
 
-
 class TestConversationGuardPropagation:
     """Test pre_intervention handling in ConversationGuard."""
 
@@ -212,7 +207,6 @@ class TestConversationGuardPropagation:
         # Normal check - no intervention
         assert intervention is None
 
-
 class TestApologySSoTPropagation:
     """Test pre_intervention handling in apology_ssot."""
 
@@ -239,7 +233,6 @@ class TestApologySSoTPropagation:
             pre_intervention_triggered=False,
         )
         assert result is True
-
 
 class TestEndToEndScenario:
     """Test complete end-to-end scenarios."""

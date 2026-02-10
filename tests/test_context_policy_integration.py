@@ -13,31 +13,28 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from context_envelope import (
+from src.context_envelope import (
     ContextEnvelope,
     ContextEnvelopeBuilder,
     ReasonCode,
     PIIRedactor,
     build_context_envelope,
 )
-from response_directives import (
+from src.response_directives import (
     ResponseDirectives,
     ResponseDirectivesBuilder,
     ResponseTone,
     build_response_directives,
     build_context_summary,
 )
-from dialogue_policy import (
+from src.dialogue_policy import (
     DialoguePolicy,
     PolicyDecision,
     PolicyOverride,
     ContextPolicyMetrics,
 )
-from context_window import ContextWindow, TurnType
-from feature_flags import flags
-
+from src.context_window import ContextWindow, TurnType
+from src.feature_flags import flags
 
 class TestPhase0Integration:
     """Тесты для Phase 0: Инфраструктура."""
@@ -132,7 +129,6 @@ class TestPhase0Integration:
         for cat in expected_categories:
             assert cat in categories, f"Missing category: {cat}"
 
-
 class TestPhase1Integration:
     """Тесты для Phase 1: Защита и надёжность."""
 
@@ -184,7 +180,6 @@ class TestPhase1Integration:
         # Проверяем что PII замаскирован
         if "phone" in safe_dict.get("collected_data", {}):
             assert "**" in safe_dict["collected_data"]["phone"]
-
 
 class TestPhase2Integration:
     """Тесты для Phase 2: Естественность диалога."""
@@ -287,7 +282,6 @@ class TestPhase2Integration:
         assert "застрял" in summary.lower()
         assert "прорыв" in summary.lower()
 
-
 class TestPhase3Integration:
     """Тесты для Phase 3: DialoguePolicy + engagement v2."""
 
@@ -386,7 +380,6 @@ class TestPhase3Integration:
 
         # Score должен быть выше нейтрального
         assert score > 0.5
-
 
 class TestFullFlowIntegration:
     """Полные интеграционные тесты всего flow."""
@@ -618,7 +611,6 @@ class TestFullFlowIntegration:
         # При наших тестовых данных какой-то процент должен быть
         assert 0 <= override_rate <= 1
 
-
 class TestFeatureFlagsIntegration:
     """Тесты интеграции с feature flags."""
 
@@ -697,7 +689,6 @@ class TestFeatureFlagsIntegration:
         flags.clear_override("context_policy_overlays")
 
         flags.clear_all_overrides()
-
 
 class TestPolicyOverrideLoggingRegression:
     """Regression tests for PolicyOverride usage in bot.py logging.

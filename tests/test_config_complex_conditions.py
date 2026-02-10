@@ -15,9 +15,6 @@ from unittest.mock import MagicMock, patch
 import yaml
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # MOCK CONTEXT AND REGISTRY FOR TESTING
 # =============================================================================
@@ -29,7 +26,6 @@ class MockEvaluationContext:
         self.collected_data = data.pop('collected_data', {})
         for k, v in data.items():
             setattr(self, k, v)
-
 
 class MockConditionRegistry:
     """Mock registry that returns predefined values."""
@@ -55,7 +51,6 @@ class MockConditionRegistry:
 
     def reset_order(self):
         self._evaluation_order = []
-
 
 # =============================================================================
 # SIMPLE CONDITION EXPRESSION EVALUATOR
@@ -89,7 +84,6 @@ class ConditionEvaluator:
                 return not self.evaluate(expression['not'], ctx)
 
         return False
-
 
 # =============================================================================
 # DEEPLY NESTED CONDITION TESTS
@@ -217,7 +211,6 @@ class TestDeeplyNestedConditions:
         result = evaluator.evaluate(expression, ctx)
         assert result is True
 
-
 class TestNotConditions:
     """Tests for NOT condition expressions."""
 
@@ -271,7 +264,6 @@ class TestNotConditions:
         result = evaluator.evaluate(expression, ctx)
         assert result is True  # NOT(NOT(T)) = NOT(F) = T
 
-
 class TestShortCircuitEvaluation:
     """Tests for short-circuit evaluation behavior."""
 
@@ -308,7 +300,6 @@ class TestShortCircuitEvaluation:
         assert result is True
         # Note: Python's any() does short-circuit, so cond_b and cond_c
         # won't be evaluated if cond_a is True
-
 
 class TestConditionEvaluationOrder:
     """Tests for condition evaluation order."""
@@ -391,7 +382,6 @@ class TestConditionEvaluationOrder:
         # so c and d may not be evaluated (depends on implementation)
         assert "a" in order
         assert "b" in order
-
 
 class TestMixedConditions:
     """Tests for mixed AND/OR/NOT combinations."""
@@ -484,7 +474,6 @@ class TestMixedConditions:
         result = evaluator.evaluate(expression, ctx)
         assert result is True
 
-
 class TestConditionExpressionParsing:
     """Tests for parsing condition expressions from YAML."""
 
@@ -562,7 +551,6 @@ class TestConditionExpressionParsing:
         assert 'and' in expr
         assert 'or' in expr['and'][0]
         assert 'not' in expr['and'][1]
-
 
 class TestConditionExpressionValidation:
     """Tests for validating condition expressions."""
@@ -683,7 +671,6 @@ class TestConditionExpressionValidation:
         depth = check_nesting_depth(expr)
         # Depth should be at least 10 (deep nesting detected)
         assert depth >= 10
-
 
 class TestConditionalRulesInYaml:
     """Tests for conditional rules in YAML configuration."""

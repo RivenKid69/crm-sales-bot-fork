@@ -13,11 +13,8 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from context_window import ContextWindow, TurnContext, TurnType
-from objection_handler import ObjectionHandler, ObjectionType, ObjectionResult
+from src.context_window import ContextWindow, TurnContext, TurnType
+from src.objection_handler import ObjectionHandler, ObjectionType, ObjectionResult
 from src.dag.executor import DAGExecutor
 from src.dag.models import (
     NodeType,
@@ -25,7 +22,6 @@ from src.dag.models import (
     DAGExecutionContext,
     DAGNodeConfig,
 )
-
 
 # =============================================================================
 # Test 1: ObjectionResult typing fix
@@ -70,7 +66,6 @@ class TestObjectionResultTyping:
         assert result.objection_type is None
         assert result.strategy is None
         assert result.should_soft_close is False
-
 
 # =============================================================================
 # Test 2: DAG MAJORITY join condition fix
@@ -179,7 +174,6 @@ class TestDAGMajorityCondition:
         # 1 >= 3/2 = 1 >= 1.5 = False (33% is not majority)
         assert result is False
 
-
 # =============================================================================
 # Test 3: TurnContext.turn_type - unreachable code removed
 # =============================================================================
@@ -258,7 +252,6 @@ class TestTurnContextTurnType:
 
         assert turn.turn_type == TurnType.PROGRESS
 
-
 # =============================================================================
 # Test 4: Context window sync after disambiguation (integration test)
 # =============================================================================
@@ -326,7 +319,6 @@ class TestContextWindowDisambiguationSync:
         )
         assert len(cw) == len(history) == 2
 
-
 # =============================================================================
 # Test 5: ALL_COMPLETE and ANY_COMPLETE still work correctly
 # =============================================================================
@@ -389,7 +381,6 @@ class TestDAGOtherJoinConditions:
         )
 
         assert result is True
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

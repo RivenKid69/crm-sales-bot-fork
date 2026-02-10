@@ -77,7 +77,6 @@ from src.conditions.policy import (
 from src.conditions import ConditionRegistries
 from src.conditions.trace import EvaluationTrace
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -87,7 +86,6 @@ def empty_context():
     """Create an empty context for testing."""
     return PolicyContext.create_test_context()
 
-
 @pytest.fixture
 def stuck_context():
     """Create a context with stuck pattern."""
@@ -96,7 +94,6 @@ def stuck_context():
         is_stuck=True,
         unclear_count=3
     )
-
 
 @pytest.fixture
 def breakthrough_context():
@@ -108,7 +105,6 @@ def breakthrough_context():
         momentum_direction="positive"
     )
 
-
 @pytest.fixture
 def objection_context():
     """Create a context with objections."""
@@ -118,7 +114,6 @@ def objection_context():
         repeated_objection_types=["price", "competitor"],
         frustration_level=2
     )
-
 
 @pytest.fixture
 def conservative_context():
@@ -130,7 +125,6 @@ def conservative_context():
         momentum_direction="negative",
         engagement_level="low"
     )
-
 
 # =============================================================================
 # CONTEXT TESTS
@@ -242,7 +236,6 @@ class TestPolicyContext:
         assert "turn=3" in repr_str
         assert "is_stuck=True" in repr_str
 
-
 class TestPolicyContextFromEnvelope:
     """Tests for creating PolicyContext from ContextEnvelope."""
 
@@ -287,7 +280,6 @@ class TestPolicyContextFromEnvelope:
         assert ctx.turns_since_breakthrough == 2
         assert ctx.current_action == "continue"
 
-
 class TestConstants:
     """Tests for module constants."""
 
@@ -314,7 +306,6 @@ class TestConstants:
         assert "ask_for_demo" in AGGRESSIVE_ACTIONS
         assert "ask_for_contact" in AGGRESSIVE_ACTIONS
         assert "continue_current_goal" not in AGGRESSIVE_ACTIONS
-
 
 # =============================================================================
 # REGISTRY TESTS
@@ -401,7 +392,6 @@ class TestPolicyRegistry:
         assert len(result.failed) == 0
         assert len(result.errors) == 0
 
-
 # =============================================================================
 # REPAIR CONDITIONS TESTS
 # =============================================================================
@@ -468,7 +458,6 @@ class TestRepairConditions:
 
         ctx_low = PolicyContext.create_test_context(unclear_count=2)
         assert high_unclear_count(ctx_low) is False
-
 
 # =============================================================================
 # OBJECTION CONDITIONS TESTS
@@ -547,7 +536,6 @@ class TestObjectionConditions:
             repeated_objection_types=["price"]
         )
         assert has_competitor_objection_repeat(ctx_no_comp) is False
-
 
 # =============================================================================
 # BREAKTHROUGH CONDITIONS TESTS
@@ -653,7 +641,6 @@ class TestBreakthroughConditions:
             turns_since_breakthrough=5
         )
         assert should_add_soft_cta(ctx_outside) is False
-
 
 # =============================================================================
 # MOMENTUM CONDITIONS TESTS
@@ -767,7 +754,6 @@ class TestMomentumConditions:
         )
         assert can_accelerate(ctx_no_momentum) is False
 
-
 # =============================================================================
 # GUARD CONDITIONS TESTS
 # =============================================================================
@@ -819,7 +805,6 @@ class TestGuardConditions:
             repeated_objection_types=[]
         )
         assert needs_empathy(ctx) is False
-
 
 # =============================================================================
 # STATE CONDITIONS TESTS
@@ -910,7 +895,6 @@ class TestStateConditions:
 
         ctx_no = PolicyContext.create_test_context(state="presentation")
         assert is_handle_objection_state(ctx_no) is False
-
 
 # =============================================================================
 # COMBINED CONDITIONS TESTS
@@ -1026,7 +1010,6 @@ class TestCombinedConditions:
         )
         assert should_avoid_least_effective(ctx_no_least) is False
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -1123,7 +1106,6 @@ class TestIntegration:
             assert should_apply_repair_overlay(ctx) is False
             assert should_apply_breakthrough_overlay(ctx) is False
 
-
 # =============================================================================
 # DOCUMENTATION TESTS
 # =============================================================================
@@ -1152,7 +1134,6 @@ class TestDocumentation:
         assert "repair" in stats["conditions_by_category"]
         assert "breakthrough" in stats["conditions_by_category"]
         assert "objection" in stats["conditions_by_category"]
-
 
 # =============================================================================
 # EDGE CASES TESTS

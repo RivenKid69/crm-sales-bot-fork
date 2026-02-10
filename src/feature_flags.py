@@ -5,7 +5,7 @@ Feature Flags для CRM Sales Bot.
 Позволяет откатить любое изменение без деплоя.
 
 Использование:
-    from feature_flags import flags
+    from src.feature_flags import flags
 
     if flags.tone_analysis:
         # Новая логика анализа тона

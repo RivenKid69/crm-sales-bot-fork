@@ -26,7 +26,6 @@ from src.yaml_config.constants import (
     get_fact_question_source_config,
 )
 
-
 # =============================================================================
 # CONFIGURATION TESTS
 # =============================================================================
@@ -68,7 +67,6 @@ class TestConfigurationIntegration:
         """Test that fact_question_source config loads."""
         config = get_fact_question_source_config()
         assert isinstance(config, dict)
-
 
 # =============================================================================
 # PIPELINE INTEGRATION TESTS
@@ -186,7 +184,6 @@ class TestPipelineIntegration:
         assert proposal["metadata"]["fact_intent"] == "question_features"
         assert proposal["metadata"]["detection_source"] == "secondary"
 
-
 # =============================================================================
 # COUNT-BASED CONDITIONS TESTS
 # =============================================================================
@@ -214,7 +211,6 @@ class TestCountBasedConditions:
         assert callable(has_secondary_price_question)
         assert callable(has_secondary_question_intent)
         assert callable(should_answer_question_now)
-
 
 # =============================================================================
 # REAL BUG SCENARIO TESTS
@@ -315,7 +311,6 @@ class TestRealBugScenarios:
         # Secondary intent detected
         assert "question_integrations" in refined.secondary_signals
 
-
 # =============================================================================
 # BANT FLOW INTEGRATION TESTS
 # =============================================================================
@@ -390,7 +385,6 @@ class TestBANTFlowIntegration:
         refined = detection_layer.refine(message, result, ctx)
 
         assert "question_integrations" in refined.secondary_signals
-
 
 # =============================================================================
 # REGRESSION TESTS
@@ -467,7 +461,6 @@ class TestRegressionPrevention:
         ]
         for state in spin_states:
             assert state in OVERLAY_ALLOWED_STATES
-
 
 # =============================================================================
 # PERFORMANCE TESTS

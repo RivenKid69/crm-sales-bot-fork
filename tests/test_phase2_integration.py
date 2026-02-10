@@ -13,13 +13,11 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from tone_analyzer import ToneAnalyzer, Tone, Style
-from response_variations import ResponseVariations, variations
-from generator import PersonalizationEngine
-from config import SYSTEM_PROMPT, PROMPT_TEMPLATES
-
+from src.tone_analyzer import ToneAnalyzer, Tone, Style
+from src.response_variations import ResponseVariations, variations
+from src.generator import PersonalizationEngine
+from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES
 
 class TestToneAnalyzerWithResponseVariations:
     """Интеграция ToneAnalyzer с ResponseVariations"""
@@ -98,7 +96,6 @@ class TestToneAnalyzerWithResponseVariations:
         assert "знакомая проблема" in response
         assert "клиентов теряете" in response
 
-
 class TestToneAnalyzerWithPersonalizationEngine:
     """Интеграция ToneAnalyzer с PersonalizationEngine"""
 
@@ -165,7 +162,6 @@ class TestToneAnalyzerWithPersonalizationEngine:
         # Контраргумент должен быть непустым
         assert counter
 
-
 class TestNewPromptsCompatibility:
     """Тесты совместимости новых промптов"""
 
@@ -222,7 +218,6 @@ class TestNewPromptsCompatibility:
             if template_name != "soft_exit_frustrated":
                 assert "{user_message}" in template or "{history}" in template, \
                     f"Missing user context in {template_name}"
-
 
 class TestFullWorkflow:
     """Тесты полного workflow"""
@@ -334,13 +329,12 @@ class TestFullWorkflow:
         analysis = self.tone_analyzer.analyze("Привет!")
         assert analysis.frustration_level == 0
 
-
 class TestFeatureFlagsCompatibility:
     """Тесты совместимости с feature flags"""
 
     def test_phase2_flags_defined(self):
         """Phase 2 флаги определены"""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
 
         phase2_flags = ["tone_analysis", "response_variations", "personalization"]
         defaults = FeatureFlags.DEFAULTS
@@ -350,7 +344,7 @@ class TestFeatureFlagsCompatibility:
 
     def test_phase2_group_defined(self):
         """Группа phase_2 определена"""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
 
         assert "phase_2" in FeatureFlags.GROUPS
         group_flags = FeatureFlags.GROUPS["phase_2"]
@@ -358,7 +352,6 @@ class TestFeatureFlagsCompatibility:
         assert "tone_analysis" in group_flags
         assert "response_variations" in group_flags
         assert "personalization" in group_flags
-
 
 class TestEdgeCasesIntegration:
     """Интеграционные тесты граничных случаев"""
@@ -413,7 +406,6 @@ class TestEdgeCasesIntegration:
         # Только боль
         context3 = PersonalizationEngine.get_context({"pain_point": "теряем клиентов"})
         assert context3["has_pain_point"] is True
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

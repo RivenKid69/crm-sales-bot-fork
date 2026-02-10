@@ -19,11 +19,9 @@
 
 import pytest
 import sys
-sys.path.insert(0, 'src')
 
-from config_loader import ConfigLoader
-from config import QUESTION_INTENTS
-
+from src.config_loader import ConfigLoader
+from src.config import QUESTION_INTENTS
 
 @pytest.fixture(scope="module")
 def spin_flow():
@@ -31,12 +29,10 @@ def spin_flow():
     loader = ConfigLoader()
     return loader.load_flow("spin_selling")
 
-
 @pytest.fixture(scope="module")
 def spin_states(spin_flow):
     """Get all resolved states from SPIN flow."""
     return spin_flow.states
-
 
 def _get_transition_target(transitions, intent):
     """Extract target state from transition (handles conditional rules)."""
@@ -50,11 +46,9 @@ def _get_transition_target(transitions, intent):
         return target[-1] if isinstance(target[-1], str) else target[-1].get("then")
     return None
 
-
 def _has_rule(rules, intent):
     """Check if intent has a rule mapping."""
     return intent in rules
-
 
 class TestGreetingTransitions:
     """Тесты переходов из состояния greeting"""
@@ -103,7 +97,6 @@ class TestGreetingTransitions:
         """pricing_details обрабатывается через rule answer_with_pricing"""
         r = spin_states["greeting"]["rules"]
         assert r.get("pricing_details") == "answer_with_pricing"
-
 
 class TestSpinSituationTransitions:
     """Тесты переходов из состояния spin_situation"""
@@ -154,7 +147,6 @@ class TestSpinSituationTransitions:
         r = spin_states["spin_situation"]["rules"]
         assert _has_rule(r, "consultation_request")
 
-
 class TestSpinProblemTransitions:
     """Тесты переходов из состояния spin_problem"""
 
@@ -178,7 +170,6 @@ class TestSpinProblemTransitions:
         t = spin_states["spin_problem"]["transitions"]
         assert _get_transition_target(t, "objection_think") == "handle_objection"
 
-
 class TestSpinImplicationTransitions:
     """Тесты переходов из состояния spin_implication"""
 
@@ -198,7 +189,6 @@ class TestSpinImplicationTransitions:
         t = spin_states["spin_implication"]["transitions"]
         assert _get_transition_target(t, "objection_no_time") == "handle_objection"
 
-
 class TestSpinNeedPayoffTransitions:
     """Тесты переходов из состояния spin_need_payoff"""
 
@@ -217,7 +207,6 @@ class TestSpinNeedPayoffTransitions:
     def test_objection_no_time_goes_to_handle_objection(self, spin_states):
         t = spin_states["spin_need_payoff"]["transitions"]
         assert _get_transition_target(t, "objection_no_time") == "handle_objection"
-
 
 class TestPresentationTransitions:
     """Тесты переходов из состояния presentation"""
@@ -261,7 +250,6 @@ class TestPresentationTransitions:
         else:
             assert rule == "answer_with_pricing"
 
-
 class TestHandleObjectionTransitions:
     """Тесты переходов из состояния handle_objection"""
 
@@ -299,7 +287,6 @@ class TestHandleObjectionTransitions:
         t = spin_states["handle_objection"]["transitions"]
         target = _get_transition_target(t, "objection_price")
         assert target == "handle_objection"
-
 
 class TestCloseTransitions:
     """Тесты переходов из состояния close"""
@@ -342,7 +329,6 @@ class TestCloseTransitions:
         target = t.get("callback_request")
         assert target is not None
 
-
 class TestQuestionIntentsConfig:
     """Тесты что QUESTION_INTENTS правильно настроены"""
 
@@ -360,7 +346,6 @@ class TestQuestionIntentsConfig:
 
     def test_price_question_in_question_intents(self):
         assert "price_question" in QUESTION_INTENTS
-
 
 class TestAllStatesHaveRequiredTransitions:
     """Тесты что все состояния имеют необходимые переходы"""
@@ -405,7 +390,6 @@ class TestAllStatesHaveRequiredTransitions:
         r = spin_states[state].get("rules", {})
         assert "comparison" in r
 
-
 class TestCriticalIntentsCoverage:
     """Тесты что критические интенты НЕ пропущены ни в rules, ни в transitions"""
 
@@ -443,7 +427,6 @@ class TestCriticalIntentsCoverage:
         has_rule = intent in state.get("rules", {})
         assert has_transition or has_rule, \
             f"Intent {intent} не обработан в presentation"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

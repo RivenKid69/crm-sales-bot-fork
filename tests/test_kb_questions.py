@@ -31,7 +31,6 @@ from scripts.generate_kb_questions import (
     parse_questions_from_response,
 )
 
-
 class TestValidateQuestion:
     """Test question validation logic."""
 
@@ -87,7 +86,6 @@ class TestValidateQuestion:
         assert ok is False
         assert "markdown" in reason
 
-
 class TestTruncateFacts:
     """Test facts truncation."""
 
@@ -110,7 +108,6 @@ class TestTruncateFacts:
         result = truncate_facts(text, 300)
         assert not result.endswith("...")
 
-
 class TestJaccardSimilarity:
     """Test Jaccard similarity calculation."""
 
@@ -129,7 +126,6 @@ class TestJaccardSimilarity:
         assert jaccard_similarity("", "hello") == 0.0
         assert jaccard_similarity("hello", "") == 0.0
         assert jaccard_similarity("", "") == 0.0
-
 
 class TestDedupQuestions:
     """Test question deduplication."""
@@ -181,7 +177,6 @@ class TestDedupQuestions:
     def test_empty_list(self):
         assert dedup_questions([]) == []
 
-
 class TestParseQuestionsFromResponse:
     """Test LLM response parsing."""
 
@@ -221,7 +216,6 @@ class TestParseQuestionsFromResponse:
         assert len(questions) == 0
         assert rejected == 0
 
-
 # ============================================================================
 # Test kb_questions.py (KBQuestionPool)
 # ============================================================================
@@ -233,7 +227,6 @@ from src.simulator.kb_questions import (
     load_kb_question_pool,
     reset_pool_cache,
 )
-
 
 @pytest.fixture
 def sample_kb_json(tmp_path):
@@ -261,7 +254,6 @@ def sample_kb_json(tmp_path):
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
     return str(json_path)
-
 
 class TestKBQuestionPool:
     """Test KBQuestionPool class."""
@@ -340,7 +332,6 @@ class TestKBQuestionPool:
         top_categories = [q.category for q in tech_pool[:3]]
         assert "integrations" in top_categories
 
-
 class TestLoadKBQuestionPool:
     """Test the convenience loader function."""
 
@@ -367,13 +358,11 @@ class TestLoadKBQuestionPool:
             mock_path.return_value.parent.__truediv__ = MagicMock(return_value=mock_instance)
         reset_pool_cache()
 
-
 # ============================================================================
 # Test persona kb_question_probability
 # ============================================================================
 
 from src.simulator.personas import PERSONAS, Persona
-
 
 class TestPersonaKBProbability:
     """Test that all personas have kb_question_probability."""
@@ -402,13 +391,11 @@ class TestPersonaKBProbability:
         p = Persona(name="test", description="test", max_turns=5, objection_probability=0.1)
         assert p.kb_question_probability == 0.5
 
-
 # ============================================================================
 # Test ClientAgent KB integration
 # ============================================================================
 
 from src.simulator.client_agent import ClientAgent
-
 
 class TestClientAgentKBStarter:
     """Test KB question as conversation starter."""
@@ -495,7 +482,6 @@ class TestClientAgentKBStarter:
             client2.start_conversation()
         assert client2._kb_questions_used == 0
 
-
 class TestClientAgentKBFollowup:
     """Test KB follow-up injection in respond()."""
 
@@ -576,7 +562,6 @@ class TestClientAgentKBFollowup:
         # Should not inject more KB questions (already at max)
         assert client._kb_questions_used == 4
 
-
 class TestClientAgentKBSummary:
     """Test KB data in get_summary()."""
 
@@ -620,13 +605,11 @@ class TestClientAgentKBSummary:
         assert summary["kb_topics_covered"] == []
         assert summary["kb_starter_topic"] is None
 
-
 # ============================================================================
 # Test ClientAgentTrace KB fields
 # ============================================================================
 
 from src.decision_trace import ClientAgentTrace
-
 
 class TestClientAgentTraceKBFields:
     """Test new KB fields in ClientAgentTrace."""
@@ -660,13 +643,11 @@ class TestClientAgentTraceKBFields:
         assert "kb_question_used" not in d
         assert "kb_question_source" not in d
 
-
 # ============================================================================
 # Test SimulationResult KB fields
 # ============================================================================
 
 from src.simulator.runner import SimulationResult
-
 
 class TestSimulationResultKBFields:
     """Test KB fields on SimulationResult dataclass."""
@@ -689,13 +670,11 @@ class TestSimulationResultKBFields:
         assert result.kb_questions_used == 3
         assert len(result.kb_topics_covered) == 3
 
-
 # ============================================================================
 # Test E2EResult KB fields
 # ============================================================================
 
 from src.simulator.e2e_evaluator import E2EResult
-
 
 class TestE2EResultKBFields:
     """Test KB fields on E2EResult dataclass."""
@@ -721,7 +700,6 @@ class TestE2EResultKBFields:
         )
         assert result.kb_questions_used == 2
         assert result.kb_topics_covered == ["tariffs", "api"]
-
 
 # ============================================================================
 # Test PERSONA_CATEGORY_AFFINITY completeness

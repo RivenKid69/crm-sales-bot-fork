@@ -32,7 +32,6 @@ from src.personalization.action_tracker import (
 )
 from src.personalization.engine import PersonalizationEngineV2
 
-
 # =============================================================================
 # AdaptiveStyleSelector Tests
 # =============================================================================
@@ -167,7 +166,6 @@ class TestAdaptiveStyleSelector:
         assert style.pitch_intensity == "assertive"
         assert style.cta_approach == "direct"
 
-
 # =============================================================================
 # IndustryDetectorV2 Tests
 # =============================================================================
@@ -277,7 +275,6 @@ class TestIndustryDetectorV2:
         # Confidence should be at least as high
         assert result2.confidence >= result1.confidence
 
-
 # =============================================================================
 # EffectiveActionTracker Tests
 # =============================================================================
@@ -373,7 +370,6 @@ class TestEffectiveActionTracker:
 
         # 2 successes out of 4 = 50%
         assert tracker.overall_success_rate == 0.5
-
 
 # =============================================================================
 # PersonalizationEngineV2 Tests
@@ -500,7 +496,6 @@ class TestPersonalizationEngineV2:
 
         assert engine._industry_cache["industry"] is None
         assert engine._industry_cache["confidence"] == 0.0
-
 
 # =============================================================================
 # Integration Tests

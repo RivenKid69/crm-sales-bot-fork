@@ -19,7 +19,6 @@ from src.blackboard.sources.objection_guard import ObjectionGuardSource
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -55,7 +54,6 @@ class MockStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
@@ -105,7 +103,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return 0
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -166,8 +163,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
-
 def create_blackboard(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -192,7 +187,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for ObjectionGuardSource (Section 17.3)
@@ -337,7 +331,6 @@ class TestObjectionGuardSource:
         assert "_objection_limit_final" in data_updates
         assert data_updates["_objection_limit_final"] is True
 
-
 class TestObjectionGuardSourcePersonaLimits:
     """Test ObjectionGuardSource persona-specific limits."""
 
@@ -388,7 +381,6 @@ class TestObjectionGuardSourcePersonaLimits:
 
         assert len(bb.get_action_proposals()) == 1
 
-
 class TestObjectionGuardSourceMetadata:
     """Test ObjectionGuardSource metadata in proposals."""
 
@@ -432,7 +424,6 @@ class TestObjectionGuardSourceMetadata:
         metadata = action_proposals[0].metadata
 
         assert "consecutive=3>=3" in metadata["exceeded"]
-
 
 class TestObjectionGuardSourceProposalProperties:
     """Test ObjectionGuardSource proposal properties."""
@@ -484,7 +475,6 @@ class TestObjectionGuardSourceProposalProperties:
         assert transition_proposals[0].value == "soft_close"
         assert transition_proposals[0].priority == Priority.HIGH
 
-
 class TestObjectionGuardSourceEnableDisable:
     """Test ObjectionGuardSource enable/disable functionality."""
 
@@ -517,7 +507,6 @@ class TestObjectionGuardSourceEnableDisable:
 
         assert len(bb.get_action_proposals()) == 0
         assert len(bb.get_transition_proposals()) == 0
-
 
 class TestObjectionGuardSourceInit:
     """Test ObjectionGuardSource initialization."""
@@ -592,7 +581,6 @@ class TestObjectionGuardSourceInit:
             "objection_generic",
         }
         assert source.objection_intents == expected_intents
-
 
 class TestIsFinalWhenObjectionLimitReached:
     """

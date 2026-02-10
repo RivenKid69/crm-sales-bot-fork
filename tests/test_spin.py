@@ -4,12 +4,10 @@
 
 import pytest
 import sys
-sys.path.insert(0, 'src')
 
-from classifier import HybridClassifier, DataExtractor
-from state_machine import StateMachine
+from src.classifier import HybridClassifier, DataExtractor
+from src.state_machine import StateMachine
 from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
-
 
 class TestSPINStateMachine:
     """Тесты для SPIN state machine"""
@@ -133,7 +131,6 @@ class TestSPINStateMachine:
         assert result["next_state"] == "soft_close"
         # soft_close не финальное — клиент может передумать и вернуться
 
-
 class TestSPINDataExtraction:
     """Тесты для извлечения SPIN-данных"""
 
@@ -189,7 +186,6 @@ class TestSPINDataExtraction:
         result = self.extractor.extract("Очень нужно, хотим срочно")
         assert result.get("high_interest") == True
 
-
 class TestSPINClassification:
     """Тесты для SPIN-классификации"""
 
@@ -236,7 +232,6 @@ class TestSPINClassification:
 
         assert result["intent"] == "price_question"
 
-
 class TestSPINPhases:
     """Тесты для констант SPIN"""
 
@@ -250,7 +245,6 @@ class TestSPINPhases:
         assert SPIN_STATES["problem"] == "spin_problem"
         assert SPIN_STATES["implication"] == "spin_implication"
         assert SPIN_STATES["need_payoff"] == "spin_need_payoff"
-
 
 class TestSPINEdgeCases:
     """Тесты для граничных случаев SPIN"""
@@ -303,7 +297,6 @@ class TestSPINEdgeCases:
         assert extracted.get("current_tools") == "Excel"
         assert extracted.get("business_type") == "розничная торговля"
 
-
 class TestNoProblemNoNeedIntents:
     """Тесты для интентов no_problem и no_need (проблема #1)"""
 
@@ -353,7 +346,6 @@ class TestNoProblemNoNeedIntents:
         result = self.classifier.classify("нет", context)
 
         assert result["intent"] == "no_need"
-
 
 class TestSpinPhaseNotSkipped:
     """Тесты что spin_implication и spin_need_payoff не пропускаются (проблема #2)"""
@@ -423,7 +415,6 @@ class TestSpinPhaseNotSkipped:
         assert result["next_state"] == "spin_need_payoff"
         assert result["action"] == "acknowledge_and_continue"
 
-
 class TestProbedFlagsSet:
     """Тесты что probed-флаги устанавливаются при входе в SPIN-фазы"""
 
@@ -480,7 +471,6 @@ class TestProbedFlagsSet:
         result = self.sm.process("agreement", {})
 
         assert result["next_state"] == "spin_need_payoff"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

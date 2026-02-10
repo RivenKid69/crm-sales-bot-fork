@@ -16,10 +16,7 @@ import sys
 import tempfile
 import yaml
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from config_loader import ConfigLoader, ConfigValidationError, FlowConfig
-
+from src.config_loader import ConfigLoader, ConfigValidationError, FlowConfig
 
 # =============================================================================
 # FIXTURES
@@ -29,7 +26,6 @@ from config_loader import ConfigLoader, ConfigValidationError, FlowConfig
 def config_loader():
     """Create a ConfigLoader instance."""
     return ConfigLoader()
-
 
 @pytest.fixture
 def temp_flow_dir(tmp_path):
@@ -129,7 +125,6 @@ def temp_flow_dir(tmp_path):
 
     return tmp_path
 
-
 def create_test_flow(flows_dir, flow_name, flow_config, states_config=None):
     """Helper to create a test flow."""
     flow_dir = flows_dir / "flows" / flow_name
@@ -141,7 +136,6 @@ def create_test_flow(flows_dir, flow_name, flow_config, states_config=None):
     if states_config:
         with open(flow_dir / "states.yaml", "w") as f:
             yaml.dump(states_config, f)
-
 
 # =============================================================================
 # UNIT TESTS: _find_unresolved_templates
@@ -263,7 +257,6 @@ class TestFindUnresolvedTemplates:
         # Only valid {{var}} should be detected
         assert len(result) == 1
         assert result[0]["variable"] == "var"
-
 
 # =============================================================================
 # UNIT TESTS: _validate_templates_resolved
@@ -402,7 +395,6 @@ class TestValidateTemplatesResolved:
         assert "'entry_state'" in error
         # Should suggest where to define it
         assert "flow.yaml" in error or "variables" in error
-
 
 # =============================================================================
 # INTEGRATION TESTS: load_flow with validation
@@ -548,7 +540,6 @@ class TestLoadFlowTemplateValidation:
 
         assert flow.name == "no_validate"
 
-
 # =============================================================================
 # TESTS FOR EXISTING FLOWS (REGRESSION)
 # =============================================================================
@@ -600,7 +591,6 @@ class TestExistingFlowsTemplateValidation:
 
         except FileNotFoundError:
             pytest.skip(f"Flow '{flow_name}' not found")
-
 
 # =============================================================================
 # EDGE CASES
@@ -664,7 +654,6 @@ class TestTemplateValidationEdgeCases:
         # Each should have a description
         for var, desc in required.items():
             assert len(desc) > 0, f"Variable '{var}' has no description"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

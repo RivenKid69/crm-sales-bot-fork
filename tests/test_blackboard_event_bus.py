@@ -33,7 +33,6 @@ from src.blackboard.event_bus import (
     DebugLogger,
 )
 
-
 class TestEventType:
     """Test suite for EventType enum."""
 
@@ -55,7 +54,6 @@ class TestEventType:
     def test_event_types_count(self):
         """Should have exactly 7 event types."""
         assert len(EventType) == 7
-
 
 class TestDialogueEvent:
     """Test suite for DialogueEvent base class."""
@@ -107,7 +105,6 @@ class TestDialogueEvent:
         # Should be valid ISO format
         datetime.fromisoformat(result["timestamp"])
 
-
 class TestTurnStartedEvent:
     """Test suite for TurnStartedEvent."""
 
@@ -136,7 +133,6 @@ class TestTurnStartedEvent:
 
         assert event.data["user_id"] == "user123"
         assert event.data["session_id"] == "sess456"
-
 
 class TestSourceContributedEvent:
     """Test suite for SourceContributedEvent."""
@@ -170,7 +166,6 @@ class TestSourceContributedEvent:
 
         assert event.data["priority"] == "HIGH"
 
-
 class TestProposalValidatedEvent:
     """Test suite for ProposalValidatedEvent."""
 
@@ -201,7 +196,6 @@ class TestProposalValidatedEvent:
         )
 
         assert event.data["errors"] == []
-
 
 class TestConflictResolvedEvent:
     """Test suite for ConflictResolvedEvent."""
@@ -237,7 +231,6 @@ class TestConflictResolvedEvent:
 
         assert event.data["winning_transition"] is None
 
-
 class TestDecisionCommittedEvent:
     """Test suite for DecisionCommittedEvent."""
 
@@ -254,7 +247,6 @@ class TestDecisionCommittedEvent:
         assert event.data["action"] == "ask_question"
         assert event.data["next_state"] == "qualification"
         assert event.data["reason_codes"] == ["intent_match", "state_valid"]
-
 
 class TestStateTransitionedEvent:
     """Test suite for StateTransitionedEvent."""
@@ -273,7 +265,6 @@ class TestStateTransitionedEvent:
         assert event.data["to_state"] == "qualification"
         assert event.data["trigger_reason"] == "intent_buy"
 
-
 class TestErrorOccurredEvent:
     """Test suite for ErrorOccurredEvent."""
 
@@ -290,7 +281,6 @@ class TestErrorOccurredEvent:
         assert event.data["error_type"] == "ValidationError"
         assert event.data["error_message"] == "Invalid proposal format"
         assert event.data["component"] == "ProposalValidator"
-
 
 class TestDialogueEventBus:
     """Test suite for DialogueEventBus."""
@@ -492,7 +482,6 @@ class TestDialogueEventBus:
         assert len(event_bus._history) == 0
         assert event_bus.get_history() == []
 
-
 class TestDialogueEventBusAsync:
     """Test suite for DialogueEventBus async mode."""
 
@@ -546,7 +535,6 @@ class TestDialogueEventBusAsync:
         # Thread should terminate (may need short wait)
         thread.join(timeout=3.0)
         assert not thread.is_alive()
-
 
 class TestMetricsCollector:
     """Test suite for MetricsCollector."""
@@ -699,7 +687,6 @@ class TestMetricsCollector:
         metrics2 = collector.get_metrics()
         assert metrics2["turn_count"] == 0
 
-
 class TestDebugLogger:
     """Test suite for DebugLogger."""
 
@@ -728,7 +715,6 @@ class TestDebugLogger:
             assert call_args[0][0] == logging.DEBUG
             assert "[Turn 5]" in call_args[0][1]
             assert "TURN_STARTED" in call_args[0][1]
-
 
 class TestEventBusIntegration:
     """Integration tests for event bus with multiple components."""

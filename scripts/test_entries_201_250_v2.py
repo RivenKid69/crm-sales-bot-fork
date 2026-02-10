@@ -9,8 +9,8 @@
 import sys
 sys.path.insert(0, 'src')
 
-from knowledge.retriever import KnowledgeRetriever
-from knowledge.data import WIPON_KNOWLEDGE
+from src.knowledge.retriever import KnowledgeRetriever
+from src.knowledge.data import WIPON_KNOWLEDGE
 
 
 # Альтернативные тестовые случаи для записей 201-250

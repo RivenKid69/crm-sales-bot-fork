@@ -12,7 +12,6 @@ import pytest
 from typing import Dict, Any, Optional, List
 from unittest.mock import Mock, MagicMock
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -73,7 +72,6 @@ class MockStateMachine:
     def sync_phase_from_state(self) -> None:
         pass
 
-
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
 
@@ -123,7 +121,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return self._category_totals.get(category, 0)
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -191,8 +188,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
-
 class MockConditionRegistry:
     """Mock ConditionRegistry for testing IntentProcessorSource."""
 
@@ -208,7 +203,6 @@ class MockConditionRegistry:
     def has(self, name: str) -> bool:
         return name in self._conditions
 
-
 class MockRuleResolver:
     """Mock RuleResolver for testing."""
 
@@ -221,7 +215,6 @@ class MockRuleResolver:
             if isinstance(rule, str):
                 return rule
         return self.default_action
-
 
 def create_blackboard(
     state: str = "greeting",
@@ -249,7 +242,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for ObjectionGuardSource
@@ -339,7 +331,6 @@ class TestObjectionGuardSourceInit:
         assert len(source.objection_intents) >= 10, \
             f"Expected at least 10 objection intents, got {len(source.objection_intents)}"
 
-
 class TestObjectionGuardSourceShouldContribute:
     """Test ObjectionGuardSource.should_contribute()."""
 
@@ -389,7 +380,6 @@ class TestObjectionGuardSourceShouldContribute:
 
         assert source.should_contribute(bb) is True
 
-
 class TestObjectionGuardSourceContributeWithinLimits:
     """Test ObjectionGuardSource.contribute() when within limits."""
 
@@ -428,7 +418,6 @@ class TestObjectionGuardSourceContributeWithinLimits:
 
         assert len(bb.get_action_proposals()) == 0
         assert len(bb.get_transition_proposals()) == 0
-
 
 class TestObjectionGuardSourceContributeExceeded:
     """Test ObjectionGuardSource.contribute() when limits exceeded."""
@@ -530,7 +519,6 @@ class TestObjectionGuardSourceContributeExceeded:
         assert metadata["max_total"] == 6  # Updated: default is now 6
         assert "consecutive=4>=4" in metadata["exceeded"]  # Updated for new limits
 
-
 class TestObjectionGuardSourcePersonaLimits:
     """Test ObjectionGuardSource persona-specific limits."""
 
@@ -608,7 +596,6 @@ class TestObjectionGuardSourcePersonaLimits:
         action_proposals = bb.get_action_proposals()
         assert len(action_proposals) == 1
 
-
 class TestObjectionGuardSourceEnableDisable:
     """Test ObjectionGuardSource enable/disable functionality."""
 
@@ -647,7 +634,6 @@ class TestObjectionGuardSourceEnableDisable:
 
         assert len(bb.get_action_proposals()) == 0
         assert len(bb.get_transition_proposals()) == 0
-
 
 # =============================================================================
 # Tests for IntentProcessorSource
@@ -693,7 +679,6 @@ class TestIntentProcessorSourceInit:
 
         assert source.condition_registry is custom_registry
 
-
 class TestIntentProcessorSourceDedicatedIntents:
     """Test IntentProcessorSource skips dedicated source intents."""
 
@@ -711,7 +696,6 @@ class TestIntentProcessorSourceDedicatedIntents:
             "budget_question",
         }
         assert IntentProcessorSource.DEDICATED_SOURCE_INTENTS == expected
-
 
 class TestIntentProcessorSourceShouldContribute:
     """Test IntentProcessorSource.should_contribute()."""
@@ -752,7 +736,6 @@ class TestIntentProcessorSourceShouldContribute:
         source.disable()
 
         assert source.should_contribute(bb) is False
-
 
 class TestIntentProcessorSourceContributeSimpleRules:
     """Test IntentProcessorSource.contribute() with simple string rules."""
@@ -800,7 +783,6 @@ class TestIntentProcessorSourceContributeSimpleRules:
         source.contribute(bb)
 
         assert len(bb.get_action_proposals()) == 0
-
 
 class TestIntentProcessorSourceContributeBlockingActions:
     """Test IntentProcessorSource blocking actions."""
@@ -866,7 +848,6 @@ class TestIntentProcessorSourceContributeBlockingActions:
         assert len(action_proposals) == 1
         assert action_proposals[0].combinable is False
 
-
 class TestIntentProcessorSourceContributeMetadata:
     """Test IntentProcessorSource metadata in proposals."""
 
@@ -908,7 +889,6 @@ class TestIntentProcessorSourceContributeMetadata:
         metadata = bb.get_action_proposals()[0].metadata
         assert metadata["rule_type"] == "str"
 
-
 class TestIntentProcessorSourceEnableDisable:
     """Test IntentProcessorSource enable/disable functionality."""
 
@@ -949,7 +929,6 @@ class TestIntentProcessorSourceEnableDisable:
         source.contribute(bb)
 
         assert len(bb.get_action_proposals()) == 0
-
 
 # =============================================================================
 # Integration Tests
@@ -1044,7 +1023,6 @@ class TestSourcesStage7Integration:
         assert len(transition_proposals) == 1
         assert transition_proposals[0].value == "spin_problem"
 
-
 # =============================================================================
 # Package Import Tests
 # =============================================================================
@@ -1070,7 +1048,6 @@ class TestStage7PackageImports:
 
         assert "ObjectionGuardSource" in sources.__all__
         assert "IntentProcessorSource" in sources.__all__
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan)

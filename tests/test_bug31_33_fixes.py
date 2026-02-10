@@ -25,12 +25,10 @@ from unittest.mock import Mock, MagicMock, patch
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 
-
 def _load_yaml(path: str) -> Dict[str, Any]:
     """Load a YAML file relative to project root."""
     with open(_PROJECT_ROOT / path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
-
 
 # =============================================================================
 # PHASE A: YAML Template & Config Tests
@@ -142,7 +140,6 @@ class TestTemplateChanges:
             assert has_goal_in_template or has_goal_in_required or has_goal_in_optional, \
                 f"Template '{tpl_name}' is not goal-aware"
 
-
 class TestStatesYamlChanges:
     """Test states.yaml modifications (Change 5-states)."""
 
@@ -176,7 +173,6 @@ class TestStatesYamlChanges:
         close_rules = states_config["states"]["close"]["rules"]
         assert close_rules["price_question"] == "answer_with_facts"
         assert close_rules["pricing_details"] == "answer_with_facts"
-
 
 class TestConstantsYamlChanges:
     """Test constants.yaml modifications (Changes 6, 7-config)."""
@@ -239,7 +235,6 @@ class TestConstantsYamlChanges:
         assert limits["default"]["streak"] == 3
         assert limits["default"]["total"] == 5
 
-
 # =============================================================================
 # PHASE B: Feature Flags Tests
 # =============================================================================
@@ -276,7 +271,6 @@ class TestFeatureFlags:
         ff.set_override("comparison_refinement", True)
         assert ff.comparison_refinement is True
         ff.clear_override("comparison_refinement")
-
 
 # =============================================================================
 # PHASE B: guard_rephrase state-aware resolution Tests
@@ -316,7 +310,6 @@ class TestGuardRephraseStateAware:
 
         mock_generator.generate.assert_called_with("continue_current_goal", {})
 
-
 # =============================================================================
 # PHASE C: IntentPatternGuardSource Tests
 # =============================================================================
@@ -345,7 +338,6 @@ class MockIntentTracker:
     def advance_turn(self) -> None:
         pass
 
-
 class MockContextSnapshot:
     """Mock ContextSnapshot for testing."""
 
@@ -355,7 +347,6 @@ class MockContextSnapshot:
         self.current_intent = intent
         self.persona = persona
         self.intent_tracker = intent_tracker or MockIntentTracker()
-
 
 class MockBlackboard:
     """Mock Blackboard for testing."""
@@ -373,7 +364,6 @@ class MockBlackboard:
 
     def propose_transition(self, **kwargs):
         self.proposed_transitions.append(kwargs)
-
 
 class TestIntentPatternGuardSource:
     """Test IntentPatternGuardSource (Change 7)."""
@@ -523,7 +513,6 @@ class TestIntentPatternGuardSource:
         assert source.should_contribute(bb_default) is True
         assert source.should_contribute(bb_tire_kicker) is False
 
-
 # =============================================================================
 # PHASE C: Source Registry Tests
 # =============================================================================
@@ -551,7 +540,6 @@ class TestSourceRegistryIntentPatternGuard:
         reg = SourceRegistry.get_registration("IntentPatternGuardSource")
         assert reg is not None
         assert reg.priority_order == 25
-
 
 # =============================================================================
 # PHASE D: ComparisonRefinementLayer Tests
@@ -643,7 +631,6 @@ class TestComparisonRefinementLayer:
         layer = ComparisonRefinementLayer()
         assert not layer.enabled
 
-
 class TestComparisonRefinementRegistration:
     """Test ComparisonRefinementLayer registration."""
 
@@ -652,7 +639,6 @@ class TestComparisonRefinementRegistration:
         from src.classifier.refinement_layers import verify_layers_registered
         registered = verify_layers_registered()
         assert "comparison" in registered
-
 
 # =============================================================================
 # PHASE A: Config Getter Tests
@@ -675,7 +661,6 @@ class TestConfigGetters:
         intents = config["patterns"]["comparison_like"]["intents"]
         assert "comparison" in intents
         assert len(intents) >= 3
-
 
 # =============================================================================
 # DEFENSE-IN-DEPTH: Coverage Matrix Tests

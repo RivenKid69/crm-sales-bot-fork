@@ -17,7 +17,6 @@ from src.blackboard.models import Proposal, ResolvedDecision
 from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.conflict_resolver import ResolutionTrace, ConflictResolver
 
-
 # =============================================================================
 # Test ResolutionTrace Dataclass
 # =============================================================================
@@ -112,7 +111,6 @@ class TestResolutionTrace:
         d = trace.to_dict()
         assert d["blocking_reason"] == "Action 'reject' blocks all transitions"
 
-
 # =============================================================================
 # Test ConflictResolver Initialization
 # =============================================================================
@@ -129,7 +127,6 @@ class TestConflictResolverInit:
         """Test initialization with custom default action."""
         resolver = ConflictResolver(default_action="wait")
         assert resolver._default_action == "wait"
-
 
 # =============================================================================
 # Test ConflictResolver.resolve() - Basic Resolution
@@ -198,7 +195,6 @@ class TestConflictResolverResolve:
         assert decision.reason_codes == ["DATA_COMPLETE"]
         assert decision.rejected_proposals == []
         assert decision.resolution_trace["merge_decision"] == "TRANSITION_ONLY"
-
 
 # =============================================================================
 # Test ConflictResolver - Combinable Actions (MERGED)
@@ -270,7 +266,6 @@ class TestConflictResolverCombinable:
         assert decision.action == "handle_objection"
         assert decision.next_state == "presentation"
         assert decision.resolution_trace["merge_decision"] == "MERGED"
-
 
 # =============================================================================
 # Test ConflictResolver - Blocking Actions
@@ -351,7 +346,6 @@ class TestConflictResolverBlocking:
         assert decision.next_state == "current"
         assert len(decision.rejected_proposals) == 2  # Both transitions rejected
         assert decision.resolution_trace["merge_decision"] == "BLOCKED"
-
 
 # =============================================================================
 # Test ConflictResolver - Priority Resolution
@@ -455,7 +449,6 @@ class TestConflictResolverPriority:
         assert decision.action == "reject"
         assert decision.reason_codes == ["CRITICAL_REASON"]
 
-
 # =============================================================================
 # Test ConflictResolver - Data Updates and Flags
 # =============================================================================
@@ -516,7 +509,6 @@ class TestConflictResolverDataAndFlags:
 
         assert decision.data_updates == {}
         assert decision.flags_to_set == {}
-
 
 # =============================================================================
 # Test ConflictResolver.resolve_with_fallback()
@@ -628,7 +620,6 @@ class TestConflictResolverFallback:
         assert decision.next_state == "next"
         assert decision.data_updates == {"key": "value"}
         assert decision.flags_to_set == {"flag": True}
-
 
 # =============================================================================
 # Test ConflictResolver - Complex Scenarios
@@ -768,7 +759,6 @@ class TestConflictResolverComplexScenarios:
         assert decision.action == "continue"
         assert decision.rejected_proposals == []
 
-
 # =============================================================================
 # Test Resolution Trace Details
 # =============================================================================
@@ -828,7 +818,6 @@ class TestResolutionTraceDetails:
         assert trace["action_proposals_count"] == 2
         assert trace["transition_proposals_count"] == 1
 
-
 # =============================================================================
 # Test Package Imports
 # =============================================================================
@@ -854,7 +843,6 @@ class TestConflictResolverImports:
 
         assert "ResolutionTrace" in bb.__all__
         assert "ConflictResolver" in bb.__all__
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan Stage 4)

@@ -14,17 +14,14 @@ import pytest
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from config_loader import ConfigLoader, FlowConfig
-from config import PROMPT_TEMPLATES
-from yaml_config.constants import (
+from src.config_loader import ConfigLoader, FlowConfig
+from src.config import PROMPT_TEMPLATES
+from src.yaml_config.constants import (
     REPAIR_ACTIONS,
     OBJECTION_ESCALATION_ACTIONS,
     REPAIR_PROTECTED_ACTIONS,
     PRICING_CORRECT_ACTIONS,
 )
-
 
 # =============================================================================
 # FIXTURES
@@ -35,12 +32,10 @@ def config_loader():
     """Create a ConfigLoader instance (module-scoped for performance)."""
     return ConfigLoader()
 
-
 @pytest.fixture(scope="module")
 def loaded_config(config_loader):
     """Load base config once."""
     return config_loader.load()
-
 
 @pytest.fixture(scope="module")
 def all_flow_names(config_loader, loaded_config):
@@ -51,7 +46,6 @@ def all_flow_names(config_loader, loaded_config):
         if d.is_dir() and not d.name.startswith("_"):
             flow_names.append(d.name)
     return sorted(flow_names)
-
 
 # Actions that are meta-actions handled specially (not templates)
 EXCLUDED_ACTIONS = {
@@ -64,7 +58,6 @@ EXCLUDED_ACTIONS = {
     "guard_skip_phase",
     "ask_clarification",
 }
-
 
 # =============================================================================
 # CORE ACTIONS — must have templates in ALL flows
@@ -82,7 +75,7 @@ def _get_core_actions():
 
     # INTENT_SPECIFIC_ACTIONS (fact_question.py)
     try:
-        from blackboard.sources.fact_question import FactQuestionSource
+        from src.blackboard.sources.fact_question import FactQuestionSource
         if hasattr(FactQuestionSource, 'INTENT_SPECIFIC_ACTIONS'):
             actions.update(FactQuestionSource.INTENT_SPECIFIC_ACTIONS.values())
     except ImportError:
@@ -96,9 +89,7 @@ def _get_core_actions():
 
     return sorted(actions)
 
-
 CORE_ACTIONS = _get_core_actions()
-
 
 @pytest.mark.parametrize("action", CORE_ACTIONS)
 def test_core_action_has_template_in_default_flow(action, config_loader, loaded_config):
@@ -109,7 +100,6 @@ def test_core_action_has_template_in_default_flow(action, config_loader, loaded_
     assert in_yaml or in_python, (
         f"Core action '{action}' has no template in spin_selling flow or PROMPT_TEMPLATES"
     )
-
 
 # =============================================================================
 # PER-FLOW VALIDATION
@@ -136,7 +126,6 @@ def test_repair_actions_have_templates_all_flows(config_loader, loaded_config, a
         + "\n".join(f"  {a}: missing in {flows}" for a, flows in missing.items())
     )
 
-
 def test_objection_actions_have_templates_all_flows(config_loader, loaded_config, all_flow_names):
     """OBJECTION_ESCALATION_ACTIONS must resolve in every flow."""
     missing = {}
@@ -158,7 +147,6 @@ def test_objection_actions_have_templates_all_flows(config_loader, loaded_config
         + "\n".join(f"  {a}: missing in {flows}" for a, flows in missing.items())
     )
 
-
 # =============================================================================
 # PRICING CORRECT ACTIONS
 # =============================================================================
@@ -176,7 +164,6 @@ def test_pricing_correct_actions_have_templates(config_loader, loaded_config):
             missing.append(action)
     assert not missing, f"PRICING_CORRECT_ACTIONS without templates: {missing}"
 
-
 # =============================================================================
 # SSOT CONSISTENCY
 # =============================================================================
@@ -187,13 +174,11 @@ def test_pricing_correct_actions_loaded_from_yaml():
         f"PRICING_CORRECT_ACTIONS has only {len(PRICING_CORRECT_ACTIONS)} entries, expected >= 4"
     )
 
-
 def test_repair_protected_actions_loaded_from_yaml():
     """REPAIR_PROTECTED_ACTIONS must be non-empty (loaded from constants.yaml)."""
     assert len(REPAIR_PROTECTED_ACTIONS) >= 10, (
         f"REPAIR_PROTECTED_ACTIONS has only {len(REPAIR_PROTECTED_ACTIONS)} entries, expected >= 10"
     )
-
 
 def test_flow_specific_templates_in_repair_protected():
     """Flow-specific question templates must be in repair_protected_actions."""
@@ -202,7 +187,6 @@ def test_flow_specific_templates_in_repair_protected():
     assert not missing, (
         f"Flow-specific question templates not in repair_protected_actions: {missing}"
     )
-
 
 # =============================================================================
 # YAML SYNTAX VALIDATION
@@ -218,7 +202,6 @@ def test_base_prompts_yaml_parses():
     assert "templates" in data
     assert len(data["templates"]) > 0
 
-
 def test_all_flow_prompts_yaml_parse(all_flow_names):
     """All flow-specific prompts.yaml files must parse without errors."""
     import yaml
@@ -229,7 +212,6 @@ def test_all_flow_prompts_yaml_parse(all_flow_names):
             with open(prompts_file) as f:
                 data = yaml.safe_load(f)
             assert data is not None, f"{flow_name}/prompts.yaml is empty"
-
 
 # =============================================================================
 # ADDRESSES_QUESTION TAG VALIDATION
@@ -268,7 +250,6 @@ def test_new_base_templates_have_addresses_question_tag():
         + "\n".join(f"  - {m}" for m in missing_tag)
     )
 
-
 # =============================================================================
 # FLOWCONFIG RECEIVES FLOW — ROOT CAUSE
 # =============================================================================
@@ -276,17 +257,16 @@ def test_new_base_templates_have_addresses_question_tag():
 def test_response_generator_accepts_flow_parameter():
     """ResponseGenerator.__init__ must accept flow parameter."""
     import inspect
-    from generator import ResponseGenerator
+    from src.generator import ResponseGenerator
     sig = inspect.signature(ResponseGenerator.__init__)
     assert "flow" in sig.parameters, (
         "ResponseGenerator.__init__ must accept 'flow' parameter"
     )
 
-
 def test_dialogue_policy_accepts_flow_parameter():
     """DialoguePolicy.__init__ must accept flow parameter."""
     import inspect
-    from dialogue_policy import DialoguePolicy
+    from src.dialogue_policy import DialoguePolicy
     sig = inspect.signature(DialoguePolicy.__init__)
     assert "flow" in sig.parameters, (
         "DialoguePolicy.__init__ must accept 'flow' parameter"

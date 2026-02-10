@@ -24,7 +24,6 @@ from codebase_analyzer.indexer.models.entities import (
     Parameter,
 )
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -37,7 +36,6 @@ def sample_location():
         start_line=1,
         end_line=20,
     )
-
 
 @pytest.fixture
 def sample_function(sample_location):
@@ -62,7 +60,6 @@ def calculate_total(items: list[Item], discount: float = 0.0) -> float:
         calls=["sum"],
     )
 
-
 @pytest.fixture
 def sample_class(sample_location):
     """Create a sample class entity."""
@@ -85,7 +82,6 @@ class OrderService:
         implements=["IOrderService"],
     )
 
-
 @pytest.fixture
 def mock_model():
     """Mock sentence transformer model."""
@@ -94,14 +90,12 @@ def mock_model():
     model.encode.return_value = np.random.randn(768).astype(np.float32)
     return model
 
-
 @pytest.fixture
 def mock_embedder(mock_model):
     """Create embedder with mocked model."""
     embedder = CodeEmbedder()
     embedder._model = mock_model
     return embedder
-
 
 # ============================================================================
 # Tests: EmbeddingConfig
@@ -131,7 +125,6 @@ class TestEmbeddingConfig:
         assert config.model_name == "custom-model"
         assert config.device == "cuda"
         assert config.batch_size == 64
-
 
 # ============================================================================
 # Tests: CodeEmbedding
@@ -173,7 +166,6 @@ class TestCodeEmbedding:
         assert restored.text_hash == original.text_hash
         assert restored.chunk_index == original.chunk_index
         assert np.allclose(restored.vector, original.vector)
-
 
 # ============================================================================
 # Tests: CodeEmbedder
@@ -320,7 +312,6 @@ class TestCodeEmbedder:
         assert stats["cached_embeddings"] == 1
         assert stats["cache_size_mb"] > 0
 
-
 # ============================================================================
 # Tests: StoreConfig
 # ============================================================================
@@ -341,7 +332,6 @@ class TestStoreConfig:
         """Should support memory mode."""
         config = StoreConfig(mode="memory")
         assert config.mode == "memory"
-
 
 # ============================================================================
 # Tests: EmbeddingStore (fallback mode)
@@ -459,7 +449,6 @@ class TestEmbeddingStoreFallback:
         loaded = new_store.get_by_entity_id("e1")[0]
         assert loaded.metadata["name"] == "func"
 
-
 # ============================================================================
 # Tests: HybridSearch
 # ============================================================================
@@ -555,7 +544,6 @@ class TestHybridSearch:
 
         assert len(results) == 1
         assert "calc.py" in results[0][0].metadata["file_path"]
-
 
 # ============================================================================
 # Tests: Integration

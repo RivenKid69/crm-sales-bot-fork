@@ -27,7 +27,6 @@ from dataclasses import dataclass, field
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.blackboard.orchestrator import DialogueOrchestrator, create_orchestrator
 from src.blackboard.blackboard import DialogueBlackboard
@@ -44,7 +43,6 @@ from src.blackboard.sources.transition_resolver import TransitionResolverSource
 from src.blackboard.sources.escalation import EscalationSource
 from src.blackboard.event_bus import EventType
 
-
 # =============================================================================
 # Test Infrastructure
 # =============================================================================
@@ -54,7 +52,6 @@ class IntentRecord:
     """Record of an intent for tracking."""
     intent: str
     state: str
-
 
 class E2EIntentTracker:
     """Full-featured IntentTracker for E2E testing."""
@@ -103,7 +100,6 @@ class E2EIntentTracker:
     def advance_turn(self) -> None:
         self._turn_number += 1
 
-
 class E2ECircularFlow:
     """CircularFlowManager mock for E2E testing."""
 
@@ -132,7 +128,6 @@ class E2ECircularFlow:
 
     def get_history(self):
         return []
-
 
 class E2EStateMachine:
     """
@@ -217,7 +212,6 @@ class E2EStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class E2EFlowConfig:
     """
@@ -415,7 +409,6 @@ class E2EFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
     def get_state_on_enter_flags(self, state_name: str) -> Dict[str, Any]:
         """Get on_enter flags for a state."""
         state_config = self._states.get(state_name, {})
@@ -423,7 +416,6 @@ class E2EFlowConfig:
         if isinstance(on_enter, dict):
             return on_enter.get("set_flags", {})
         return {}
-
 
 # =============================================================================
 # Fixtures
@@ -434,12 +426,10 @@ def e2e_state_machine():
     """Create a state machine for E2E testing."""
     return E2EStateMachine(state="greeting")
 
-
 @pytest.fixture
 def e2e_flow_config():
     """Create a flow config for E2E testing."""
     return E2EFlowConfig()
-
 
 @pytest.fixture
 def full_orchestrator(e2e_state_machine, e2e_flow_config):
@@ -453,7 +443,6 @@ def full_orchestrator(e2e_state_machine, e2e_flow_config):
     )
 
     return orchestrator
-
 
 @pytest.fixture
 def orchestrator_with_selected_sources(e2e_state_machine, e2e_flow_config):
@@ -475,7 +464,6 @@ def orchestrator_with_selected_sources(e2e_state_machine, e2e_flow_config):
         return orchestrator
 
     return _create
-
 
 # =============================================================================
 # 1. FULL DIALOGUE PIPELINE TESTS
@@ -618,7 +606,6 @@ class TestFullDialoguePipeline:
 
         # Should advance significantly
         assert decision.next_state in ["presentation", "closing", "spin_situation"]
-
 
 # =============================================================================
 # 2. KNOWLEDGE SOURCES INTEGRATION TESTS
@@ -814,7 +801,6 @@ class TestKnowledgeSourcesIntegration:
         decision = orchestrator.process_turn(intent="test", extracted_data={})
 
         assert decision.action == "high_priority_action"
-
 
 # =============================================================================
 # 3. EDGE CASES & REGRESSION TESTS
@@ -1027,7 +1013,6 @@ class TestEdgeCasesAndRegression:
         assert decision.action is not None
         assert decision.next_state is not None
 
-
 # =============================================================================
 # 4. MULTI-TURN SCENARIO TESTS
 # =============================================================================
@@ -1178,7 +1163,6 @@ class TestMultiTurnScenarios:
         assert "industry" in sm.collected_data
         assert "company_size" in sm.collected_data
         assert sm.state == "spin_problem"
-
 
 # =============================================================================
 # 5. STATE MACHINE INTEGRATION TESTS
@@ -1332,7 +1316,6 @@ class TestStateMachineIntegration:
         for field in required_fields:
             assert field in sm_result, f"Missing field: {field}"
 
-
 # =============================================================================
 # 6. EVENT BUS INTEGRATION TESTS
 # =============================================================================
@@ -1411,7 +1394,6 @@ class TestEventBusIntegration:
         event_types = [e.event_type for e in events]
         assert EventType.STATE_TRANSITIONED in event_types
 
-
 # =============================================================================
 # 7. PERFORMANCE TESTS
 # =============================================================================
@@ -1486,7 +1468,6 @@ class TestPerformance:
 
         # Even with 6 sources, should be under 100ms
         assert avg_latency_ms < 100, f"Latency {avg_latency_ms:.2f}ms exceeds 100ms threshold"
-
 
 # =============================================================================
 # 8. SALESBOT INTEGRATION TESTS (with mock LLM)
@@ -1568,7 +1549,6 @@ class TestSalesBotIntegration:
 
         assert sales_bot_with_mock.state_machine.state == "greeting"
         assert len(sales_bot_with_mock.history) == 0
-
 
 # =============================================================================
 # Run Tests

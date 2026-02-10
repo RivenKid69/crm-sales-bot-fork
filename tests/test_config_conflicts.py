@@ -15,9 +15,6 @@ from unittest.mock import MagicMock, patch
 import yaml
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # THRESHOLD SYNC CONFLICTS
 # =============================================================================
@@ -84,7 +81,6 @@ class TestThresholdConflicts:
 
         errors = validate_frustration_thresholds(th)
         assert len(errors) == 2
-
 
 class TestStateReferenceConflicts:
     """Tests for conflicting state references."""
@@ -178,7 +174,6 @@ class TestStateReferenceConflicts:
 
         assert "nonexistent_spin_state" in str(exc_info.value)
 
-
 class TestLimitConflicts:
     """Tests for conflicting limit values."""
 
@@ -232,7 +227,6 @@ class TestLimitConflicts:
         errors = validate_goback_consistency(config['limits'], config['circular_flow'])
         assert len(errors) == 1
 
-
 class TestIntentCategoryConflicts:
     """Tests for intent category conflicts."""
 
@@ -283,7 +277,6 @@ class TestIntentCategoryConflicts:
 
         conflicts = find_spin_in_objection(categories)
         assert "situation_provided" in conflicts
-
 
 class TestTransitionConflicts:
     """Tests for state transition conflicts."""
@@ -342,7 +335,6 @@ class TestTransitionConflicts:
         trans = loaded['states']['greeting']['transitions']['demo_request']
         assert isinstance(trans, list)
         assert len(trans) == 3
-
 
 class TestLeadScoringConflicts:
     """Tests for lead scoring configuration conflicts."""
@@ -423,7 +415,6 @@ class TestLeadScoringConflicts:
 
         gaps = find_threshold_gaps(thresholds)
         assert len(gaps) > 0  # Should find gaps
-
 
 class TestCircularDependencies:
     """Tests for circular dependency detection."""
@@ -545,7 +536,6 @@ class TestCircularDependencies:
         cycles = find_condition_cycles(custom_conditions['conditions'])
         assert len(cycles) > 0  # Should detect cycle: cond_a -> cond_b -> cond_a
 
-
 class TestIncompatibleCombinations:
     """Tests for incompatible parameter combinations."""
 
@@ -652,7 +642,6 @@ class TestIncompatibleCombinations:
 
         warnings = validate_cta_templates(config['cta'], ['close', 'presentation'])
         assert 'close' in str(warnings)
-
 
 class TestCrossFileConflicts:
     """Tests for conflicts between different config files."""

@@ -21,19 +21,15 @@ from pathlib import Path
 import yaml
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 
 # Path to constants.yaml
 CONSTANTS_FILE = Path(__file__).parent.parent / "src" / "yaml_config" / "constants.yaml"
-
 
 @pytest.fixture(scope="module")
 def constants():
     """Load constants.yaml fixture."""
     with open(CONSTANTS_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 class TestSpinConfiguration:
     """Tests for SPIN selling configuration section."""
@@ -132,7 +128,6 @@ class TestSpinConfiguration:
         assert sac["need_payoff"]["negative_intent"] == "no_need"
         assert sac["need_payoff"]["negative_confidence"] == 0.7
 
-
 class TestLimitsConfiguration:
     """Tests for limits configuration section."""
 
@@ -163,7 +158,6 @@ class TestLimitsConfiguration:
         limits = constants["limits"]
         for key, value in limits.items():
             assert value > 0, f"Limit {key} should be positive, got {value}"
-
 
 class TestIntentsConfiguration:
     """Tests for intents configuration section."""
@@ -263,7 +257,6 @@ class TestIntentsConfiguration:
         assert "objection_competitor" in negative, "negative should include objection_competitor"
         assert "objection_no_time" in negative, "negative should include objection_no_time"
         assert "objection_think" in negative, "negative should include objection_think"
-
 
 class TestComposedCategories:
     """Tests for composed categories feature - automatic category composition."""
@@ -366,7 +359,6 @@ class TestComposedCategories:
         assert exit_set.issubset(blocking_set), "exit should be subset of blocking"
         assert technical_set.issubset(blocking_set), "technical_problems should be subset of blocking"
 
-
 class TestDialoguePolicyConfiguration:
     """Tests for dialogue policy configuration section."""
 
@@ -413,7 +405,6 @@ class TestDialoguePolicyConfiguration:
         assert objection["reframe"] == "reframe_value"
         assert objection["escalate"] == "handle_repeated_objection"
         assert objection["empathize"] == "empathize_and_redirect"
-
 
 class TestLeadScoringConfiguration:
     """Tests for lead scoring configuration section."""
@@ -586,7 +577,6 @@ class TestLeadScoringConfiguration:
         assert paths["hot"] == "direct_present"
         assert paths["very_hot"] == "direct_close"
 
-
 class TestConversationGuardConfiguration:
     """Tests for conversation guard configuration section."""
 
@@ -641,7 +631,6 @@ class TestConversationGuardConfiguration:
         assert relaxed["max_phase_attempts"] == 5
         assert relaxed["max_same_state"] == 6
         assert relaxed["timeout_seconds"] == 3600  # 1 hour
-
 
 class TestFrustrationTrackerConfiguration:
     """Tests for frustration tracker configuration section."""
@@ -701,7 +690,6 @@ class TestFrustrationTrackerConfiguration:
         assert guard_threshold == frustration_high, \
             f"Threshold mismatch: guard={guard_threshold}, frustration={frustration_high}"
 
-
 class TestCircularFlowConfiguration:
     """Tests for circular flow configuration section."""
 
@@ -720,7 +708,6 @@ class TestCircularFlowConfiguration:
         assert gobacks["close"] == "presentation"
         assert gobacks["handle_objection"] == "presentation"
         assert gobacks["soft_close"] == "greeting"
-
 
 class TestContextWindowConfiguration:
     """Tests for context window configuration section."""
@@ -756,7 +743,6 @@ class TestContextWindowConfiguration:
         assert order["presentation"] == 5
         assert order["close"] == 6
         assert order["success"] == 7
-
 
 class TestFallbackConfiguration:
     """Tests for fallback configuration section."""
@@ -853,7 +839,6 @@ class TestFallbackConfiguration:
         assert "options" in default
         assert len(default["options"]) >= 3
 
-
 class TestLLMFallbackConfiguration:
     """Tests for LLM fallback configuration section."""
 
@@ -919,7 +904,6 @@ class TestLLMFallbackConfiguration:
         """Test llm.default_fallback."""
         assert "default_fallback" in constants["llm"]
         assert len(constants["llm"]["default_fallback"]) > 0
-
 
 class TestCTAConfiguration:
     """Tests for CTA (Call-to-Action) configuration section."""
@@ -993,7 +977,6 @@ class TestCTAConfiguration:
         assert "trial" in by_action
         assert len(by_action["trial"]) >= 1
 
-
 class TestConstantsConsistency:
     """Tests for internal consistency of constants."""
 
@@ -1037,7 +1020,6 @@ class TestConstantsConsistency:
 
         for source, target in gobacks.items():
             assert target in state_order, f"Invalid target state {target} from {source}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

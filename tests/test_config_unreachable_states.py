@@ -15,9 +15,6 @@ import yaml
 import sys
 from collections import deque, defaultdict
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # FLOW GRAPH ANALYSIS UTILITIES
 # =============================================================================
@@ -157,7 +154,6 @@ class FlowGraph:
 
         return cycles
 
-
 # =============================================================================
 # UNREACHABLE STATE TESTS
 # =============================================================================
@@ -231,7 +227,6 @@ class TestUnreachableStates:
         assert "isolated_2" in unreachable
         assert "isolated_3" in unreachable
 
-
 class TestDeadEndStates:
     """Tests for detecting dead-end states."""
 
@@ -293,7 +288,6 @@ class TestDeadEndStates:
         # Has outgoing transition (even if to self), so not dead end
         assert "self_loop" not in dead_ends
 
-
 class TestOrphanStates:
     """Tests for detecting orphan states (no incoming transitions)."""
 
@@ -330,7 +324,6 @@ class TestOrphanStates:
         orphans = graph.get_orphan_states()
 
         assert "greeting" not in orphans
-
 
 class TestCannotReachFinal:
     """Tests for states that cannot reach any final state."""
@@ -376,7 +369,6 @@ class TestCannotReachFinal:
         # Through the normal flow path
         assert "greeting" not in cannot_reach
         assert "close" not in cannot_reach
-
 
 class TestCycleDetection:
     """Tests for detecting cycles in flow."""
@@ -449,7 +441,6 @@ class TestCycleDetection:
         # Cycles from goback are expected and OK
         # Just verify we can detect them
         assert isinstance(cycles, list)
-
 
 class TestFlowValidation:
     """Integration tests for complete flow validation."""
@@ -527,7 +518,6 @@ class TestFlowValidation:
         assert "unreachable" in orphans
         assert "loop_a" in cannot_reach or "dead_end" in cannot_reach
         assert len(cycles) > 0  # Should find the loop_a/loop_b cycle
-
 
 class TestConditionalTransitionReachability:
     """Tests for reachability through conditional transitions."""

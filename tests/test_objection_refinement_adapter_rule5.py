@@ -35,7 +35,6 @@ from src.classifier.refinement_pipeline import (
     reset_refinement_pipeline,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -47,14 +46,12 @@ def reset_registry():
     yield
     reset_refinement_pipeline()
 
-
 @pytest.fixture
 def adapter():
     """Create fresh ObjectionRefinementLayerAdapter instance."""
     # Import directly without reload to avoid registry conflicts
     from src.classifier.refinement_layers import ObjectionRefinementLayerAdapter
     return ObjectionRefinementLayerAdapter()
-
 
 @pytest.fixture
 def skeptic_uncertainty_messages():
@@ -106,7 +103,6 @@ def skeptic_uncertainty_messages():
         "есть ли смысл вообще",
     ]
 
-
 @pytest.fixture
 def non_uncertainty_objection_messages():
     """Messages that should NOT trigger Rule 5 but other rules or stay as objection."""
@@ -119,7 +115,6 @@ def non_uncertainty_objection_messages():
         "нужно подумать над предложением",
         "дайте время обдумать",
     ]
-
 
 # =============================================================================
 # TEST: Rule 5 Triggers Correctly
@@ -269,7 +264,6 @@ class TestRule5UncertaintyPatterns:
                         for p in failed_patterns)
         )
 
-
 # =============================================================================
 # TEST: Rule 5 Does NOT Trigger When It Shouldn't
 # =============================================================================
@@ -343,7 +337,6 @@ class TestRule5NotTriggered:
             assert result.refinement_reason == "interest_pattern", (
                 f"Expected interest_pattern (Rule 4), got {result.refinement_reason}"
             )
-
 
 # =============================================================================
 # TEST: Integration with ObjectionReturnSource
@@ -447,7 +440,6 @@ class TestRule5ObjectionReturnSourceIntegration:
             f"return_intents contains: {source.return_intents}"
         )
 
-
 # =============================================================================
 # TEST: Adapter Has Required Components
 # =============================================================================
@@ -499,7 +491,6 @@ class TestAdapterComponents:
         assert alternative == "question_features", (
             f"Expected question_features, got {alternative}"
         )
-
 
 # =============================================================================
 # TEST: Rule Priority and Ordering
@@ -568,7 +559,6 @@ class TestRulePriority:
                 assert result.refinement_reason == "interest_pattern", (
                     f"Expected interest_pattern (Rule 4), got {result.refinement_reason}"
                 )
-
 
 # =============================================================================
 # TEST: Regression - Original ObjectionRefinementLayer Parity
@@ -651,7 +641,6 @@ class TestParityWithOriginalLayer:
                     f"Adapter intent={adapter_result.intent} but original intent={original_intent} "
                     f"for message: '{message}'"
                 )
-
 
 # =============================================================================
 # TEST: Edge Cases
@@ -736,7 +725,6 @@ class TestEdgeCases:
         assert result.refined is True
         assert result.refinement_reason == "uncertainty_pattern"
 
-
 # =============================================================================
 # TEST: Stats Tracking
 # =============================================================================
@@ -775,7 +763,6 @@ class TestStatsTracking:
             f"{stats['refinements_by_reason'].get('uncertainty_pattern', 0)}. "
             f"All reasons: {stats['refinements_by_reason']}"
         )
-
 
 # =============================================================================
 # TEST: Original Bug Scenario is Fixed
@@ -938,7 +925,6 @@ class TestOriginalBugScenarioFixed:
                 for m in failed_messages
             )
         )
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

@@ -15,11 +15,9 @@ import os
 import time
 
 # Добавляем путь к src для импортов
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.category_router import CategoryRouter
-from knowledge.retriever import CascadeRetriever, get_retriever, reset_retriever
-
+from src.knowledge.category_router import CategoryRouter
+from src.knowledge.retriever import CascadeRetriever, get_retriever, reset_retriever
 
 # =============================================================================
 # Mock LLM для тестирования
@@ -93,7 +91,6 @@ class MockLLM:
                 return response
 
         return '["other", "faq"]'
-
 
 # =============================================================================
 # Тесты интеграции CategoryRouter + Retriever
@@ -205,7 +202,6 @@ class TestCategoryRouterRetrieverIntegration:
         # Должен найти по всем категориям (fallback)
         assert len(results) > 0
 
-
 # =============================================================================
 # Тесты полного пайплайна
 # =============================================================================
@@ -275,7 +271,6 @@ class TestFullPipeline:
 
         pipeline("Второй запрос")
         assert initial_calls + 1 == 2  # +1 за второй запрос
-
 
 # =============================================================================
 # Тесты производительности
@@ -359,7 +354,6 @@ class TestPerformance:
         assert avg_with < avg_without * 2, \
             f"With categories ({avg_with:.2f}ms) much slower than without ({avg_without:.2f}ms)"
 
-
 # =============================================================================
 # Тесты обратной совместимости
 # =============================================================================
@@ -415,7 +409,6 @@ class TestBackwardCompatibility:
 
         assert isinstance(facts, str)
 
-
 # =============================================================================
 # Тесты edge cases
 # =============================================================================
@@ -466,7 +459,6 @@ class TestEdgeCases:
 
         # Пустая строка или пустой результат - оба валидны
         assert isinstance(facts, str)
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

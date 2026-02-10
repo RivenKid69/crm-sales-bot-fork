@@ -16,10 +16,6 @@ import os
 from pathlib import Path
 from unittest.mock import patch, MagicMock, Mock
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # ТЕСТЫ ДЛЯ ПРОБЛЕМЫ #1: SALES_STATES -> YAML flow config
 # =============================================================================
@@ -35,7 +31,7 @@ class TestYAMLFlowConfigUsage:
         bot._get_classification_context() должен использовать self._flow.states
         вместо импорта SALES_STATES из config.py.
         """
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         mock_llm = MagicMock()
         mock_llm.generate.return_value = "Тестовый ответ"
@@ -62,8 +58,8 @@ class TestYAMLFlowConfigUsage:
         ContextEnvelopeBuilder._fill_from_state_machine() должен использовать
         sm.states вместо импорта SALES_STATES.
         """
-        from context_envelope import ContextEnvelopeBuilder
-        from state_machine import StateMachine
+        from src.context_envelope import ContextEnvelopeBuilder
+        from src.state_machine import StateMachine
         from src.config_loader import ConfigLoader
 
         # Загружаем config и flow
@@ -86,7 +82,6 @@ class TestYAMLFlowConfigUsage:
         # Проверяем что envelope заполнился без ошибок
         assert envelope.state is not None
 
-
 # =============================================================================
 # ТЕСТЫ ДЛЯ ПРОБЛЕМЫ #2: ContextWindow получает config
 # =============================================================================
@@ -100,7 +95,7 @@ class TestContextWindowWithConfig:
         """
         SalesBot должен передавать config в ContextWindow при инициализации.
         """
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         mock_llm = MagicMock()
         mock_llm.generate.return_value = "Тест"
@@ -117,7 +112,7 @@ class TestContextWindowWithConfig:
         """
         ContextWindow._load_state_order должен использовать config если передан.
         """
-        from context_window import ContextWindow
+        from src.context_window import ContextWindow
         from src.config_loader import ConfigLoader
 
         loader = ConfigLoader()
@@ -133,7 +128,6 @@ class TestContextWindowWithConfig:
         assert cw_with_config._state_order is not None
         assert cw_without_config._state_order is not None
 
-
 # =============================================================================
 # ТЕСТЫ ДЛЯ ПРОБЛЕМЫ #3/#6: Objection categories синхронизация
 # =============================================================================
@@ -148,7 +142,7 @@ class TestObjectionCategoriesSync:
         """
         IntentTracker.INTENT_CATEGORIES["objection"] должен содержать все 8 интентов.
         """
-        from intent_tracker import INTENT_CATEGORIES
+        from src.intent_tracker import INTENT_CATEGORIES
 
         expected_objections = {
             "objection_price",
@@ -171,8 +165,8 @@ class TestObjectionCategoriesSync:
         """
         ContextWindow.OBJECTION_INTENTS должен совпадать с IntentTracker.
         """
-        from intent_tracker import INTENT_CATEGORIES
-        from context_window import ContextWindow
+        from src.intent_tracker import INTENT_CATEGORIES
+        from src.context_window import ContextWindow
 
         tracker_objections = set(INTENT_CATEGORIES["objection"])
         cw_objections = ContextWindow.OBJECTION_INTENTS
@@ -186,7 +180,7 @@ class TestObjectionCategoriesSync:
         """
         INTENT_CATEGORIES["negative"] должен включать все objection intents.
         """
-        from intent_tracker import INTENT_CATEGORIES
+        from src.intent_tracker import INTENT_CATEGORIES
 
         objections = set(INTENT_CATEGORIES["objection"])
         negatives = set(INTENT_CATEGORIES["negative"])
@@ -194,7 +188,6 @@ class TestObjectionCategoriesSync:
         # Все objections должны быть в negative (кроме базовых negative типа rejection)
         missing = objections - negatives
         assert not missing, f"Objections missing from negative: {missing}"
-
 
 # =============================================================================
 # ТЕСТЫ ДЛЯ ПРОБЛЕМЫ #4: Policy override валидация
@@ -211,7 +204,7 @@ class TestPolicyOverrideValidation:
         Если policy_override имеет next_state без action, должен быть warning лог
         и next_state не должен применяться.
         """
-        from dialogue_policy import PolicyOverride, PolicyDecision
+        from src.dialogue_policy import PolicyOverride, PolicyDecision
 
         # Создаём override с next_state но без action
         override = PolicyOverride(
@@ -230,7 +223,7 @@ class TestPolicyOverrideValidation:
         """
         PolicyOverride.has_override должен возвращать True только если action задан.
         """
-        from dialogue_policy import PolicyOverride, PolicyDecision
+        from src.dialogue_policy import PolicyOverride, PolicyDecision
 
         # С action
         with_action = PolicyOverride(action="clarify_one_question")
@@ -242,7 +235,6 @@ class TestPolicyOverrideValidation:
 
         # Примечание: пустая строка "" технически является truthy в has_override,
         # но в реальности никогда не используется как action
-
 
 # =============================================================================
 # ТЕСТЫ ДЛЯ ПРОБЛЕМЫ #7: NO_OVERRIDE не загрязняет decision_history
@@ -257,7 +249,7 @@ class TestDecisionHistoryPurity:
         """
         PolicyOverride с decision=NO_OVERRIDE не должен попадать в decision_history.
         """
-        from dialogue_policy import DialoguePolicy, PolicyOverride, PolicyDecision
+        from src.dialogue_policy import DialoguePolicy, PolicyOverride, PolicyDecision
 
         policy = DialoguePolicy(shadow_mode=False)
 
@@ -281,7 +273,7 @@ class TestDecisionHistoryPurity:
         """
         Реальный PolicyOverride с action должен попадать в decision_history.
         """
-        from dialogue_policy import PolicyOverride, PolicyDecision
+        from src.dialogue_policy import PolicyOverride, PolicyDecision
 
         # Реальный override
         real_override = PolicyOverride(
@@ -296,7 +288,7 @@ class TestDecisionHistoryPurity:
         """
         get_override_rate() должен корректно считать только реальные override.
         """
-        from dialogue_policy import DialoguePolicy
+        from src.dialogue_policy import DialoguePolicy
 
         policy = DialoguePolicy()
         policy.reset()
@@ -304,7 +296,6 @@ class TestDecisionHistoryPurity:
         # Изначально история пуста, rate = 0
         rate = policy.get_override_rate()
         assert rate == 0.0
-
 
 # =============================================================================
 # ТЕСТЫ ДЛЯ ПРОБЛЕМЫ #9: state_order для неизвестных states
@@ -319,7 +310,7 @@ class TestUnknownStateOrder:
         """
         Если state или next_state неизвестны, funnel_delta должен быть 0.
         """
-        from context_window import TurnContext, DEFAULT_STATE_ORDER
+        from src.context_window import TurnContext, DEFAULT_STATE_ORDER
 
         # Неизвестный state
         turn = TurnContext(
@@ -336,7 +327,7 @@ class TestUnknownStateOrder:
         """
         Если next_state неизвестен, funnel_delta должен быть 0.
         """
-        from context_window import TurnContext
+        from src.context_window import TurnContext
 
         turn = TurnContext(
             user_message="тест",
@@ -351,7 +342,7 @@ class TestUnknownStateOrder:
         """
         Если оба states неизвестны, funnel_delta должен быть 0.
         """
-        from context_window import TurnContext
+        from src.context_window import TurnContext
 
         turn = TurnContext(
             user_message="тест",
@@ -366,7 +357,7 @@ class TestUnknownStateOrder:
         """
         Если оба states известны, funnel_delta должен вычисляться корректно.
         """
-        from context_window import TurnContext, DEFAULT_STATE_ORDER
+        from src.context_window import TurnContext, DEFAULT_STATE_ORDER
 
         # greeting -> spin_situation (0 -> 1 = +1)
         turn = TurnContext(
@@ -384,7 +375,7 @@ class TestUnknownStateOrder:
         """
         Переход назад (regression) должен иметь отрицательный delta.
         """
-        from context_window import TurnContext
+        from src.context_window import TurnContext
 
         # spin_problem -> spin_situation (2 -> 1 = -1)
         turn = TurnContext(
@@ -395,7 +386,6 @@ class TestUnknownStateOrder:
         )
 
         assert turn.funnel_delta == -1
-
 
 # =============================================================================
 # ИНТЕГРАЦИОННЫЙ ТЕСТ: ВСЕ ИСПРАВЛЕНИЯ РАБОТАЮТ ВМЕСТЕ
@@ -410,7 +400,7 @@ class TestAllFixesIntegration:
         """
         SalesBot должен инициализироваться корректно со всеми исправлениями.
         """
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         mock_llm = MagicMock()
         mock_llm.generate.return_value = "Тестовый ответ"
@@ -432,7 +422,7 @@ class TestAllFixesIntegration:
         """
         _get_classification_context должен работать корректно после всех исправлений.
         """
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         mock_llm = MagicMock()
         mock_llm.generate.return_value = "Здравствуйте!"
@@ -452,9 +442,9 @@ class TestAllFixesIntegration:
         """
         ContextEnvelopeBuilder.build() должен работать корректно после исправлений.
         """
-        from context_envelope import ContextEnvelopeBuilder, ContextEnvelope
-        from state_machine import StateMachine
-        from context_window import ContextWindow
+        from src.context_envelope import ContextEnvelopeBuilder, ContextEnvelope
+        from src.state_machine import StateMachine
+        from src.context_window import ContextWindow
         from src.config_loader import ConfigLoader
 
         loader = ConfigLoader()

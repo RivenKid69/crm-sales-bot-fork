@@ -13,10 +13,9 @@ import sys
 from pathlib import Path
 
 # Добавляем src в путь
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import pytest
-from state_machine import (
+from src.state_machine import (
     StateMachine,
     ObjectionFlowAdapter,  # Phase 4: replaced ObjectionFlowManager
     CircularFlowManager,
@@ -25,9 +24,8 @@ from state_machine import (
     MAX_TOTAL_OBJECTIONS,
 )
 from src.yaml_config.constants import ALLOWED_GOBACKS
-from config import SALES_STATES
-from feature_flags import flags
-
+from src.config import SALES_STATES
+from src.feature_flags import flags
 
 @pytest.fixture
 def enable_circular_flow():
@@ -35,7 +33,6 @@ def enable_circular_flow():
     flags.set_override("circular_flow", True)
     yield
     flags.clear_override("circular_flow")
-
 
 # =============================================================================
 # 1. objection_price в SPIN-фазах
@@ -79,7 +76,6 @@ class TestObjectionPriceInSpinPhases:
         assert result["next_state"] == "handle_objection", \
             f"objection_price from {spin_state} should go to handle_objection"
 
-
 # =============================================================================
 # 2. Симметричная обработка возражений в greeting
 # =============================================================================
@@ -119,7 +115,6 @@ class TestSymmetricObjectionHandlingInGreeting:
         for obj in unworkable_objections:
             assert transitions.get(obj) == "soft_close", \
                 f"{obj} should go to soft_close"
-
 
 # =============================================================================
 # 3. ObjectionFlowAdapter (защита от зацикливания)
@@ -197,7 +192,6 @@ class TestObjectionFlowAdapter:
         assert stats["total_objections"] == 1
         assert stats["return_state"] == "spin_situation"
 
-
 class TestObjectionFlowInStateMachine:
     """Тесты: ObjectionFlowAdapter интегрирован в StateMachine."""
 
@@ -238,7 +232,6 @@ class TestObjectionFlowInStateMachine:
 
         assert "objection_flow" in result
 
-
 # =============================================================================
 # 4. Унификация info_provided/situation_provided
 # =============================================================================
@@ -278,7 +271,6 @@ class TestInfoProvidedUnification:
         result2 = sm.process("info_provided", {"company_size": 10})
 
         assert result1["next_state"] == result2["next_state"] == "spin_problem"
-
 
 # =============================================================================
 # 5. go_back из soft_close
@@ -333,7 +325,6 @@ class TestGoBackFromSoftClose:
 
         assert result["next_state"] == "spin_situation"
 
-
 # =============================================================================
 # 6. question_features/question_integrations в rules SPIN-фаз
 # =============================================================================
@@ -373,7 +364,6 @@ class TestQuestionIntentsInSpinRules:
         assert rules["question_integrations"] == "answer_and_continue", \
             f"question_integrations should return answer_and_continue in {spin_state}"
 
-
 # =============================================================================
 # 7. objection_competitor во всех SPIN-фазах
 # =============================================================================
@@ -397,7 +387,6 @@ class TestObjectionCompetitorInSpinPhases:
         assert transitions["objection_competitor"] == "handle_objection", \
             f"objection_competitor should lead to handle_objection from {spin_state}"
 
-
 # =============================================================================
 # 8. soft_close rules
 # =============================================================================
@@ -420,7 +409,6 @@ class TestSoftCloseRules:
         assert "price_question" in rules
         # Updated to match current YAML config value
         assert rules["price_question"] == "answer_with_facts"
-
 
 # =============================================================================
 # Запуск тестов

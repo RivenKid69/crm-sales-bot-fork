@@ -26,12 +26,10 @@ from src.classifier.extractors.extraction_validator import (
     is_valid_tool,
 )
 
-
 @pytest.fixture
 def validator():
     """Create a fresh validator instance."""
     return ExtractionValidator()
-
 
 class TestContactInfoValidation:
     """Tests for contact_info field validation - the most problematic field."""
@@ -148,7 +146,6 @@ class TestContactInfoValidation:
         result = validator.validate_field("contact_info", "да, интересно")
         assert not result.is_valid
 
-
 class TestCurrentToolsValidation:
     """Tests for current_tools field validation."""
 
@@ -228,7 +225,6 @@ class TestCurrentToolsValidation:
         assert not result.is_valid
         assert result.suggested_field == "pain_point"
 
-
 class TestCompanySizeValidation:
     """Tests for company_size field validation."""
 
@@ -270,7 +266,6 @@ class TestCompanySizeValidation:
         result = validator.validate_field("company_size", "много")
         assert not result.is_valid
 
-
 class TestPainPointValidation:
     """Tests for pain_point field validation."""
 
@@ -304,7 +299,6 @@ class TestPainPointValidation:
         result = validator.validate_field("pain_point", "да")
         assert not result.is_valid
 
-
 class TestPainCategoryValidation:
     """Tests for pain_category field validation."""
 
@@ -327,7 +321,6 @@ class TestPainCategoryValidation:
         """Invalid category should be rejected."""
         result = validator.validate_field("pain_category", "unknown_category")
         assert not result.is_valid
-
 
 class TestDesiredOutcomeValidation:
     """Tests for desired_outcome field validation."""
@@ -352,7 +345,6 @@ class TestDesiredOutcomeValidation:
         """Too short outcome should be rejected."""
         result = validator.validate_field("desired_outcome", "да")
         assert not result.is_valid
-
 
 class TestValueAcknowledgedValidation:
     """Tests for value_acknowledged field validation."""
@@ -385,7 +377,6 @@ class TestValueAcknowledgedValidation:
         """Invalid string should be rejected."""
         result = validator.validate_field("value_acknowledged", "может быть")
         assert not result.is_valid
-
 
 class TestFullExtractedDataValidation:
     """Tests for validating complete extracted_data dictionaries."""
@@ -444,7 +435,6 @@ class TestFullExtractedDataValidation:
         assert result.validated_data["contact_info"] == "+79991234567"
         assert result.validated_data["current_tools"] == "Excel"
 
-
 class TestHelperFunctions:
     """Tests for module-level helper functions."""
 
@@ -473,7 +463,6 @@ class TestHelperFunctions:
     def test_is_valid_tool_invalid(self):
         """Test is_valid_tool with people count."""
         assert not is_valid_tool("два-три человека")
-
 
 class TestRealWorldBugScenarios:
     """
@@ -550,7 +539,6 @@ class TestRealWorldBugScenarios:
         # Corrections should be suggested
         assert result.corrected_fields["contact_info"] == "pain_point"
         assert result.corrected_fields["current_tools"] == "company_size"
-
 
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""

@@ -15,13 +15,11 @@ from src.validation.intent_coverage import (
     CoverageIssue
 )
 
-
 @pytest.fixture
 def config():
     """Load configuration for testing."""
     loader = ConfigLoader()
     return loader.load()
-
 
 @pytest.fixture
 def flow():
@@ -29,7 +27,6 @@ def flow():
     loader = ConfigLoader()
     from src.settings import settings
     return loader.load_flow(settings.flow.active)
-
 
 def test_no_critical_intent_unmapped(config, flow):
     """All critical intents must have explicit mappings in _universal_base.
@@ -53,7 +50,6 @@ def test_no_critical_intent_unmapped(config, flow):
 
     assert len(critical_issues) == 0, f"Found {len(critical_issues)} critical unmapped intents"
 
-
 def test_taxonomy_completeness(config):
     """All intents in categories must have taxonomy entries.
 
@@ -70,7 +66,6 @@ def test_taxonomy_completeness(config):
 
     # Allow a small number of intentional exclusions, but flag if too many
     assert len(missing_intents) <= 5, f"Too many intents missing from taxonomy: {len(missing_intents)}"
-
 
 def test_price_intents_use_answer_with_pricing(config, flow):
     """Price intents must use answer_with_pricing, not answer_with_facts.
@@ -90,7 +85,6 @@ def test_price_intents_use_answer_with_pricing(config, flow):
 
     assert len(wrong_action_issues) == 0, "Price intents must use answer_with_pricing"
 
-
 def test_universal_base_exists_and_is_first(config, flow):
     """_universal_base mixin must exist and be first in _base_phase.
 
@@ -108,7 +102,6 @@ def test_universal_base_exists_and_is_first(config, flow):
             print(f"  - {issue.message}")
 
     assert len(critical_issues) == 0, "_universal_base must exist and be first in _base_phase"
-
 
 def test_full_validation_passes(config, flow):
     """Full validation should pass with no critical issues.
@@ -135,7 +128,6 @@ def test_full_validation_passes(config, flow):
     assert result['is_valid'], "Intent coverage validation must pass with no critical issues"
     assert result['summary']['critical'] == 0, "No critical issues allowed"
 
-
 def test_critical_intents_list_is_comprehensive():
     """Verify that CRITICAL_INTENTS list includes the known problem intents.
 
@@ -157,7 +149,6 @@ def test_critical_intents_list_is_comprehensive():
     assert "payment_terms" in critical
     assert "pricing_comparison" in critical
     assert "budget_question" in critical
-
 
 def test_taxonomy_has_fallback_actions():
     """Verify taxonomy config has all required fallback levels.
@@ -190,7 +181,6 @@ def test_taxonomy_has_fallback_actions():
     assert "pricing" in domain_defaults, "pricing domain must have fallback"
     assert domain_defaults["pricing"]["fallback_action"] == "answer_with_pricing"
 
-
 def test_price_intents_in_taxonomy():
     """Verify all 7 price intents have taxonomy entries with correct domain.
 
@@ -212,7 +202,6 @@ def test_price_intents_in_taxonomy():
         tax = intent_taxonomy[intent]
         assert tax["semantic_domain"] == "pricing", f"{intent} must have pricing domain"
         assert tax["fallback_action"] == "answer_with_pricing", f"{intent} must fallback to answer_with_pricing"
-
 
 if __name__ == "__main__":
     # Run tests with pytest

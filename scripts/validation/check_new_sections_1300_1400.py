@@ -15,7 +15,7 @@ from typing import List, Tuple, Dict
 from dataclasses import dataclass
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-from knowledge.retriever import CascadeRetriever, reset_retriever
+from src.knowledge.retriever import CascadeRetriever, reset_retriever
 
 # =============================================================================
 # Тестовые запросы для новых секций 1300-1400

@@ -14,16 +14,12 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typing import Dict, List
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from src.config_loader import ConfigLoader, FlowConfig
 from src.simulator.metrics import (
     extract_phases_from_dialogue,
     calculate_spin_coverage,
     build_phase_mapping_from_flow,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -34,24 +30,20 @@ def config_loader():
     """Create ConfigLoader instance."""
     return ConfigLoader()
 
-
 @pytest.fixture
 def spin_flow(config_loader):
     """Load SPIN Selling flow."""
     return config_loader.load_flow("spin_selling")
-
 
 @pytest.fixture
 def bant_flow(config_loader):
     """Load BANT flow."""
     return config_loader.load_flow("bant")
 
-
 @pytest.fixture
 def challenger_flow(config_loader):
     """Load Challenger flow."""
     return config_loader.load_flow("challenger")
-
 
 @pytest.fixture
 def all_flows(config_loader):
@@ -64,7 +56,6 @@ def all_flows(config_loader):
         if d.is_dir() and d.name not in excluded and not d.name.startswith("_")
     ]
     return {name: config_loader.load_flow(name) for name in flow_names}
-
 
 # =============================================================================
 # Tests: FlowConfig Loading
@@ -142,7 +133,6 @@ class TestFlowConfigLoading:
             if isinstance(target, str):
                 assert "{{" not in target, \
                     f"Unsubstituted variable in transition: {intent} -> {target}"
-
 
 # =============================================================================
 # Tests: Phase Extraction
@@ -247,7 +237,6 @@ class TestPhaseExtraction:
         assert "phase_a" in phases
         assert "phase_b" in phases
 
-
 # =============================================================================
 # Tests: Phase Coverage Calculation
 # =============================================================================
@@ -309,7 +298,6 @@ class TestPhaseCoverage:
         # Only presentation might match if added
         assert coverage < 0.2
 
-
 # =============================================================================
 # Tests: Build Phase Mapping
 # =============================================================================
@@ -345,7 +333,6 @@ class TestBuildPhaseMapping:
         assert mapping["challenger_tailor"] == "tailor"
         assert mapping["challenger_close"] == "take_control"
         assert mapping["presentation"] == "presentation"
-
 
 # =============================================================================
 # Tests: StateMachine Flow Integration
@@ -401,7 +388,6 @@ class TestStateMachineFlowIntegration:
         # Should transition to bant_budget, not spin_situation
         assert transitions.get("agreement") == "bant_budget"
         assert transitions.get("price_question") == "bant_budget"
-
 
 # =============================================================================
 # Tests: End-to-End Flow Validation
@@ -459,7 +445,6 @@ class TestEndToEndFlowValidation:
         # Check SPIN didn't leak into BANT
         assert "spin_situation" not in bant.states
         assert "bant_budget" not in spin.states
-
 
 # =============================================================================
 # Run tests

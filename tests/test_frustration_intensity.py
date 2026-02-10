@@ -19,7 +19,6 @@ Solution: Intensity-based calculation, RUSHED weight increased to 2
 import pytest
 from unittest.mock import MagicMock, patch
 
-
 class TestFrustrationIntensityCalculator:
     """Test FrustrationIntensityCalculator core functionality."""
 
@@ -219,7 +218,6 @@ class TestFrustrationIntensityCalculator:
         # Low frustration = none
         assert calculator.get_intervention_urgency(Tone.NEUTRAL, 1, 0) == "none"
 
-
 class TestFrustrationTrackerIntensity:
     """Test FrustrationTracker with intensity-based updates."""
 
@@ -313,7 +311,6 @@ class TestFrustrationTrackerIntensity:
         assert tracker.consecutive_negative_turns == 0
         assert len(tracker.history) == 0
 
-
 class TestRegexToneAnalyzerIntensity:
     """Test RegexToneAnalyzer with intensity-based updates."""
 
@@ -376,7 +373,6 @@ class TestRegexToneAnalyzerIntensity:
         # RUSHED should get shorter max_words
         assert guidance["max_words"] <= 35
 
-
 class TestYAMLConfiguration:
     """Test YAML configuration loading."""
 
@@ -405,7 +401,6 @@ class TestYAMLConfiguration:
         assert 1 in multipliers or "1" in multipliers
         assert 2 in multipliers or "2" in multipliers
         assert 3 in multipliers or "3" in multipliers
-
 
 class TestIntegrationScenarios:
     """Integration tests for complete frustration handling flow."""
@@ -501,7 +496,6 @@ class TestIntegrationScenarios:
         # Or pre-intervention should have been triggered earlier
         assert result.pre_intervention_triggered or result.should_offer_exit
 
-
 class TestToneAnalysisModel:
     """Test ToneAnalysis model with new fields."""
 
@@ -540,7 +534,6 @@ class TestToneAnalysisModel:
         assert analysis.should_offer_exit is False
         assert analysis.consecutive_negative_turns == 0
 
-
 class TestRegistry:
     """Test FrustrationIntensityRegistry."""
 
@@ -570,7 +563,6 @@ class TestRegistry:
 
         FrustrationIntensityRegistry.register("custom", CustomCalculator)
         assert "custom" in FrustrationIntensityRegistry.list_registered()
-
 
 class TestConvenienceFunctions:
     """Test convenience functions."""

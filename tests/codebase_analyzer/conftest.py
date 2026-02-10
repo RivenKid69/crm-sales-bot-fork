@@ -6,18 +6,15 @@ from typing import Generator
 
 import pytest
 
-
 # ============================================================================
 # Path Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
     """Create a temporary directory for test files."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
-
 
 @pytest.fixture
 def temp_project(temp_dir: Path) -> Path:
@@ -31,11 +28,9 @@ def temp_project(temp_dir: Path) -> Path:
     (temp_dir / "node_modules").mkdir()
     return temp_dir
 
-
 # ============================================================================
 # Sample Code Fixtures - Go
 # ============================================================================
-
 
 @pytest.fixture
 def sample_go_code() -> str:
@@ -129,7 +124,6 @@ const (
 var ErrInvalidUser = errors.New("invalid user data")
 '''
 
-
 @pytest.fixture
 def sample_go_file(temp_dir: Path, sample_go_code: str) -> Path:
     """Create a sample Go file."""
@@ -137,11 +131,9 @@ def sample_go_file(temp_dir: Path, sample_go_code: str) -> Path:
     file_path.write_text(sample_go_code)
     return file_path
 
-
 # ============================================================================
 # Sample Code Fixtures - PHP
 # ============================================================================
-
 
 @pytest.fixture
 def sample_php_code() -> str:
@@ -289,7 +281,6 @@ trait HasTimestamps
 }
 '''
 
-
 @pytest.fixture
 def sample_php_file(temp_dir: Path, sample_php_code: str) -> Path:
     """Create a sample PHP file."""
@@ -297,11 +288,9 @@ def sample_php_file(temp_dir: Path, sample_php_code: str) -> Path:
     file_path.write_text(sample_php_code)
     return file_path
 
-
 # ============================================================================
 # Sample Code Fixtures - TypeScript
 # ============================================================================
-
 
 @pytest.fixture
 def sample_typescript_code() -> str:
@@ -410,7 +399,6 @@ export async function hashPassword(password: string): Promise<string> {
 }
 '''
 
-
 @pytest.fixture
 def sample_typescript_file(temp_dir: Path, sample_typescript_code: str) -> Path:
     """Create a sample TypeScript file."""
@@ -418,11 +406,9 @@ def sample_typescript_file(temp_dir: Path, sample_typescript_code: str) -> Path:
     file_path.write_text(sample_typescript_code)
     return file_path
 
-
 # ============================================================================
 # Sample Code Fixtures - TSX/React
 # ============================================================================
-
 
 @pytest.fixture
 def sample_tsx_code() -> str:
@@ -548,7 +534,6 @@ async function deleteUser(id: number): Promise<void> {
 }
 '''
 
-
 @pytest.fixture
 def sample_tsx_file(temp_dir: Path, sample_tsx_code: str) -> Path:
     """Create a sample TSX file."""
@@ -556,11 +541,9 @@ def sample_tsx_file(temp_dir: Path, sample_tsx_code: str) -> Path:
     file_path.write_text(sample_tsx_code)
     return file_path
 
-
 # ============================================================================
 # Sample Code Fixtures - JavaScript
 # ============================================================================
-
 
 @pytest.fixture
 def sample_javascript_code() -> str:
@@ -642,7 +625,6 @@ const MAX_LIMIT = 100;
 module.exports = { UserController, createUserRoutes, DEFAULT_LIMIT, MAX_LIMIT };
 '''
 
-
 @pytest.fixture
 def sample_javascript_file(temp_dir: Path, sample_javascript_code: str) -> Path:
     """Create a sample JavaScript file."""
@@ -650,11 +632,9 @@ def sample_javascript_file(temp_dir: Path, sample_javascript_code: str) -> Path:
     file_path.write_text(sample_javascript_code)
     return file_path
 
-
 # ============================================================================
 # Configuration Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def sample_config_yaml(temp_dir: Path) -> Path:
@@ -697,7 +677,6 @@ batch_size: 5
     config_path.write_text(config_content)
     return config_path
 
-
 @pytest.fixture
 def invalid_config_yaml(temp_dir: Path) -> Path:
     """Create an invalid configuration YAML file."""
@@ -710,11 +689,9 @@ llm:
     config_path.write_text(config_content)
     return config_path
 
-
 # ============================================================================
 # Multi-File Project Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def multi_file_project(temp_project: Path) -> Path:
@@ -803,11 +780,9 @@ userService.createUser({ name: 'test', email: 'test@example.com' });
 
     return temp_project
 
-
 # ============================================================================
 # Entity Fixtures
 # ============================================================================
-
 
 @pytest.fixture
 def sample_source_location():
@@ -821,7 +796,6 @@ def sample_source_location():
         start_column=0,
         end_column=1,
     )
-
 
 @pytest.fixture
 def sample_function_entity(sample_source_location):
@@ -850,7 +824,6 @@ def sample_function_entity(sample_source_location):
         visibility=Visibility.PUBLIC,
         calls=["db.Query", "json.Marshal"],
     )
-
 
 @pytest.fixture
 def sample_class_entity(sample_source_location, sample_function_entity):

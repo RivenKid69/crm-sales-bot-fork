@@ -15,7 +15,6 @@ from codebase_analyzer.indexer.models.entities import (
 )
 from codebase_analyzer.indexer.models.relations import Relation, RelationType
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -25,7 +24,6 @@ def empty_graph():
     """Create an empty dependency graph."""
     return DependencyGraph()
 
-
 @pytest.fixture
 def sample_location():
     """Create a sample source location."""
@@ -34,7 +32,6 @@ def sample_location():
         start_line=1,
         end_line=10,
     )
-
 
 def create_entity(name: str, entity_type: EntityType, location: SourceLocation) -> CodeEntity:
     """Helper to create a code entity."""
@@ -62,7 +59,6 @@ def create_entity(name: str, entity_type: EntityType, location: SourceLocation) 
             language=Language.TYPESCRIPT,
             location=location,
         )
-
 
 # ============================================================================
 # Tests: get_leaf_entities
@@ -115,7 +111,6 @@ class TestLeafEntities:
         assert len(leaves) == 2
         assert "test::B" in leaves
         assert "test::C" in leaves
-
 
 # ============================================================================
 # Tests: find_cycles and find_strongly_connected_components
@@ -175,7 +170,6 @@ class TestCycleDetection:
         assert len(sccs) == 1
         assert len(sccs[0]) == 3
 
-
 # ============================================================================
 # Tests: break_cycles
 # ============================================================================
@@ -224,7 +218,6 @@ class TestBreakCycles:
         assert len(removed) == 1
         assert removed[0][0] == "test::B"
         assert removed[0][1] == "test::A"
-
 
 # ============================================================================
 # Tests: get_topological_order
@@ -287,7 +280,6 @@ class TestTopologicalOrder:
         assert order.index("test::D") < order.index("test::C")
         assert order.index("test::B") < order.index("test::A")
         assert order.index("test::C") < order.index("test::A")
-
 
 # ============================================================================
 # Tests: get_processing_levels
@@ -392,7 +384,6 @@ class TestProcessingLevels:
         all_entities = [e for level in levels for e in level]
         assert "test::A" in all_entities
         assert "test::B" in all_entities
-
 
 # ============================================================================
 # Tests: get_dependency_ids and get_dependent_ids

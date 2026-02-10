@@ -17,9 +17,6 @@ import sys
 import copy
 from typing import Dict, Any, Optional
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # MULTI-TENANT CONFIG MANAGER
 # =============================================================================
@@ -115,7 +112,6 @@ class TenantConfigManager:
         """Get only the override values for a tenant."""
         return self._tenant_overrides.get(tenant_id, {})
 
-
 # =============================================================================
 # BASIC MULTI-TENANT TESTS
 # =============================================================================
@@ -199,7 +195,6 @@ class TestBasicMultiTenant:
         tenants = manager.list_tenants()
         assert set(tenants) == {"tenant_a", "tenant_b", "tenant_c"}
 
-
 class TestTenantConfigInheritance:
     """Tests for config inheritance patterns."""
 
@@ -272,7 +267,6 @@ class TestTenantConfigInheritance:
         assert "custom_feature" in config
         assert config["custom_feature"]["enabled"] is True
 
-
 class TestTenantConfigIsolation:
     """Tests for tenant config isolation."""
 
@@ -320,7 +314,6 @@ class TestTenantConfigIsolation:
 
         # Base config unchanged
         assert base_config["data"]["shared"] == original_value
-
 
 class TestTenantConfigUpdates:
     """Tests for updating tenant configurations."""
@@ -374,7 +367,6 @@ class TestTenantConfigUpdates:
 
         retrieved = manager.get_tenant_overrides("tenant_a")
         assert retrieved == overrides
-
 
 class TestTenantSpecificFeatures:
     """Tests for tenant-specific feature configurations."""
@@ -434,7 +426,6 @@ class TestTenantSpecificFeatures:
         assert config_a["branding"]["primary_color"] == "#ff0000"
         assert config_b["branding"]["primary_color"] == "#00ff00"
 
-
 class TestTenantConfigValidation:
     """Tests for validating tenant configurations."""
 
@@ -487,7 +478,6 @@ class TestTenantConfigValidation:
 
         assert not validate_threshold_sync(config)  # Should detect mismatch
 
-
 class TestDynamicTenantLoading:
     """Tests for dynamically loading tenant configurations."""
 
@@ -532,7 +522,6 @@ class TestDynamicTenantLoading:
         assert manager.get_config("tenant_a")["name"] == "A"
         assert manager.get_config("tenant_b")["name"] == "B"
         assert manager.get_config("tenant_c")["name"] == "C"
-
 
 class TestTenantConfigCaching:
     """Tests for tenant config caching behavior."""

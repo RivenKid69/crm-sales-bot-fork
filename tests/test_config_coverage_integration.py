@@ -16,9 +16,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, Mock
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # FALLBACK HANDLER + CONFIG INTEGRATION
 # =============================================================================
@@ -72,7 +69,6 @@ class TestFallbackHandlerConfigIntegration:
         # Tier 3: LLM fallback responses
         assert 'fallback_responses' in real_constants['llm']
 
-
 class TestFallbackTemplateStateConsistency:
     """Tests fallback templates are consistent with states."""
 
@@ -93,7 +89,6 @@ class TestFallbackTemplateStateConsistency:
 
         for state in spin_states:
             assert state in templates, f"{state} missing options templates"
-
 
 # =============================================================================
 # CTA GENERATOR + CONFIG INTEGRATION
@@ -130,7 +125,6 @@ class TestCTAGeneratorConfigIntegration:
         assert 'contact' in by_action
         assert 'trial' in by_action
 
-
 class TestCTAStateProgression:
     """Tests CTAs align with state progression."""
 
@@ -164,7 +158,6 @@ class TestCTAStateProgression:
         contact_words = ['контакт', 'email', 'номер', 'телефон', 'созвон']
         has_contact = any(word in close_ctas for word in contact_words)
         assert has_contact, "Close CTAs should ask for contact info"
-
 
 # =============================================================================
 # CIRCULAR FLOW + STATE MACHINE INTEGRATION
@@ -219,7 +212,6 @@ class TestCircularFlowStateMachineIntegration:
             assert target in valid_states, \
                 f"Goback target {target} is not a valid state"
 
-
 # =============================================================================
 # GUARD + FRUSTRATION THRESHOLD SYNC
 # =============================================================================
@@ -257,7 +249,6 @@ class TestGuardFrustrationSync:
         if 'strict' in guard_profiles:
             # Strict should be more sensitive
             pass
-
 
 # =============================================================================
 # LEAD SCORER + STATE MACHINE PHASE SKIPPING
@@ -320,7 +311,6 @@ class TestLeadScorerStateMachineIntegration:
         assert paths['very_hot'] == 'direct_close'
         assert len(skip_phases['very_hot']) >= 4
 
-
 # =============================================================================
 # POLICY + STATE MACHINE INTEGRATION
 # =============================================================================
@@ -363,7 +353,6 @@ class TestPolicyStateMachineIntegration:
         assert 'escalate' in actions
         assert 'empathize' in actions
 
-
 # =============================================================================
 # SPIN CONFIG + STATE CONFIG INTEGRATION
 # =============================================================================
@@ -401,7 +390,6 @@ class TestSpinStateConfigIntegration:
             assert state in order, \
                 f"SPIN state {state} missing from state_order"
 
-
 # =============================================================================
 # INTENT CATEGORIES + CLASSIFIER INTEGRATION
 # =============================================================================
@@ -432,7 +420,6 @@ class TestIntentCategoriesIntegration:
 
         assert 'go_back' in goback_intents
         assert 'correct_info' in goback_intents
-
 
 # =============================================================================
 # FULL CONFIG CONSISTENCY TESTS

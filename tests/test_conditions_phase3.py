@@ -35,7 +35,6 @@ from src.conditions.state_machine.conditions import (
 from src.conditions.trace import EvaluationTrace, Resolution, TraceCollector
 from src.rules.resolver import RuleResolver, RuleResult, create_resolver
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -45,18 +44,15 @@ def intent_tracker():
     """Create a fresh IntentTracker."""
     return IntentTracker()
 
-
 @pytest.fixture
 def resolver():
     """Create RuleResolver with StateMachine registry."""
     return create_resolver(sm_registry)
 
-
 @pytest.fixture
 def trace_collector():
     """Create a TraceCollector for test tracing."""
     return TraceCollector()
-
 
 # =============================================================================
 # INTENT TRACKER + CONTEXT INTEGRATION
@@ -137,7 +133,6 @@ class TestIntentTrackerContextIntegration:
 
         assert ctx.get_intent_streak("price_question") == 3
 
-
 # =============================================================================
 # RESOLVER + REGISTRY INTEGRATION
 # =============================================================================
@@ -162,7 +157,6 @@ class TestResolverRegistryIntegration:
             global_rules={},
             ctx=ctx
         )
-
 
         action = result.action
 
@@ -205,13 +199,11 @@ class TestResolverRegistryIntegration:
             trace=trace
         )
 
-
         action = result.action
 
         assert trace.resolution == Resolution.CONDITION_MATCHED
         assert trace.matched_condition == "has_pricing_data"
         assert trace.conditions_checked >= 1
-
 
 # =============================================================================
 # PRICE QUESTION SCENARIOS (Plan Section 5.1-5.2)
@@ -237,7 +229,6 @@ class TestPriceQuestionScenarios:
 
         result = resolver.resolve_action("price_question", rules, {}, ctx)
 
-
         action = result.action
         assert action == "answer_with_facts"
 
@@ -257,7 +248,6 @@ class TestPriceQuestionScenarios:
         }
 
         result = resolver.resolve_action("price_question", rules, {}, ctx)
-
 
         action = result.action
         assert action == "deflect_and_continue"
@@ -283,7 +273,6 @@ class TestPriceQuestionScenarios:
 
         result = resolver.resolve_action("price_question", rules, {}, ctx)
 
-
         action = result.action
         assert action == "answer_with_price_range"
 
@@ -308,11 +297,9 @@ class TestPriceQuestionScenarios:
 
         result = resolver.resolve_action("price_question", rules, {}, ctx)
 
-
         action = result.action
         # First condition wins due to order
         assert action == "answer_with_facts"
-
 
 # =============================================================================
 # OBJECTION LIMIT SCENARIOS (Plan Section 5.3)
@@ -392,7 +379,6 @@ class TestObjectionLimitScenarios:
         )
         assert result is None  # Stay in handle_objection
 
-
 # =============================================================================
 # DEMO REQUEST TRANSITION (Plan Section 5.5)
 # =============================================================================
@@ -438,7 +424,6 @@ class TestDemoRequestTransition:
         )
         assert result is None
 
-
 # =============================================================================
 # TECHNICAL QUESTION ESCALATION (Plan Section 5.4)
 # =============================================================================
@@ -466,7 +451,6 @@ class TestTechnicalQuestionEscalation:
 
         result = resolver.resolve_action("question_technical", rules, {}, ctx)
 
-
         action = result.action
         assert action == "offer_documentation_link"
 
@@ -490,10 +474,8 @@ class TestTechnicalQuestionEscalation:
 
         result = resolver.resolve_action("question_technical", rules, {}, ctx)
 
-
         action = result.action
         assert action == "answer_technical"
-
 
 # =============================================================================
 # PRICE OBJECTION WITH ROI (Plan Section 5.3)
@@ -522,7 +504,6 @@ class TestPriceObjectionWithROI:
 
         result = resolver.resolve_action("objection_price", rules, {}, ctx)
 
-
         action = result.action
         assert action == "handle_price_with_roi"
 
@@ -542,7 +523,6 @@ class TestPriceObjectionWithROI:
         }
 
         result = resolver.resolve_action("objection_price", rules, {}, ctx)
-
 
         action = result.action
         assert action == "handle_price_with_comparison"
@@ -564,10 +544,8 @@ class TestPriceObjectionWithROI:
 
         result = resolver.resolve_action("objection_price", rules, {}, ctx)
 
-
         action = result.action
         assert action == "handle_price_objection_generic"
-
 
 # =============================================================================
 # FULL CONVERSATION FLOW TEST
@@ -661,7 +639,6 @@ class TestFullConversationFlow:
         # Now at limit (3 consecutive)
         assert objection_limit_reached(ctx2)
 
-
 # =============================================================================
 # TRACE COLLECTION TEST
 # =============================================================================
@@ -708,7 +685,6 @@ class TestTraceCollection:
         assert Resolution.SIMPLE.value in summary.by_resolution
         assert Resolution.CONDITION_MATCHED.value in summary.by_resolution or \
                Resolution.DEFAULT.value in summary.by_resolution
-
 
 # =============================================================================
 # BACKWARD COMPATIBILITY TESTS
@@ -766,7 +742,6 @@ class TestBackwardCompatibility:
             {},
             ctx
         )
-
 
         action = result.action
         next_state = resolver.resolve_transition(

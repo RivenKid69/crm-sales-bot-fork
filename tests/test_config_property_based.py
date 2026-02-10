@@ -23,9 +23,6 @@ hypothesis = pytest.importorskip(
 from hypothesis import given, strategies as st, settings, assume, example, HealthCheck
 from hypothesis.stateful import RuleBasedStateMachine, rule, initialize, invariant
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # STRATEGIES - Custom data generators
 # =============================================================================
@@ -76,7 +73,6 @@ russian_text = st.text(
 
 # Simple condition names
 condition_names = st.from_regex(r'[a-z][a-z0-9_]{0,29}', fullmatch=True)
-
 
 # =============================================================================
 # GUARD CONFIG PROPERTY TESTS
@@ -152,7 +148,6 @@ class TestGuardConfigProperties:
         # This is a reasonable constraint
         assert loaded['guard']['max_turns'] >= loaded['guard']['max_same_state']
 
-
 # =============================================================================
 # LIMITS CONFIG PROPERTY TESTS
 # =============================================================================
@@ -205,7 +200,6 @@ class TestLimitsConfigProperties:
         loaded = yaml.safe_load(yaml_str)
 
         assert loaded['limits']['max_consecutive_objections'] <= loaded['limits']['max_total_objections']
-
 
 # =============================================================================
 # FRUSTRATION CONFIG PROPERTY TESTS
@@ -289,7 +283,6 @@ class TestFrustrationConfigProperties:
         loaded = yaml.safe_load(yaml.dump(config))
         assert loaded['frustration']['weights']['frustrated'] == frustrated
 
-
 # =============================================================================
 # LEAD SCORING CONFIG PROPERTY TESTS
 # =============================================================================
@@ -360,7 +353,6 @@ class TestLeadScoringConfigProperties:
         loaded = yaml.safe_load(yaml.dump(config))
         assert loaded['lead_scoring']['skip_phases']['warm'] == states
 
-
 # =============================================================================
 # INTENT CATEGORIES PROPERTY TESTS
 # =============================================================================
@@ -401,7 +393,6 @@ class TestIntentCategoriesProperties:
 
         loaded = yaml.safe_load(yaml.dump(config))
         assert loaded['intents']['categories']['category1'] == cat1
-
 
 # =============================================================================
 # FALLBACK TEMPLATES PROPERTY TESTS
@@ -446,7 +437,6 @@ class TestFallbackTemplatesProperties:
         loaded = yaml.safe_load(yaml.dump(config, allow_unicode=True))
         assert loaded['fallback']['options_templates']['test_state']['question'] == question
 
-
 # =============================================================================
 # CIRCULAR FLOW PROPERTY TESTS
 # =============================================================================
@@ -484,7 +474,6 @@ class TestCircularFlowProperties:
 
         loaded = yaml.safe_load(yaml.dump(config))
         assert loaded['circular_flow']['allowed_gobacks'] == mappings
-
 
 # =============================================================================
 # CONTEXT STATE ORDER PROPERTY TESTS
@@ -524,7 +513,6 @@ class TestContextStateOrderProperties:
         loaded = yaml.safe_load(yaml.dump(config))
         assert loaded['context']['state_order'][state] == order
 
-
 # =============================================================================
 # SPIN CONFIG PROPERTY TESTS
 # =============================================================================
@@ -560,7 +548,6 @@ class TestSpinConfigProperties:
 
         loaded = yaml.safe_load(yaml.dump(config))
         assert loaded['spin']['states'][phase] == state
-
 
 # =============================================================================
 # CONDITIONS PROPERTY TESTS
@@ -643,7 +630,6 @@ class TestConditionsProperties:
         loaded = yaml.safe_load(yaml.dump(config))
         assert outer_op in loaded['conditions']['nested']['expression']
 
-
 # =============================================================================
 # YAML SERIALIZATION PROPERTY TESTS
 # =============================================================================
@@ -700,7 +686,6 @@ class TestYamlSerializationProperties:
         loaded = yaml.safe_load(yaml_str)
 
         assert loaded['data'] == data
-
 
 # =============================================================================
 # SETTINGS VALIDATION PROPERTY TESTS
@@ -777,7 +762,6 @@ class TestSettingsValidationProperties:
         else:
             assert not any("threshold" in e.lower() for e in errors)
 
-
 # =============================================================================
 # DOTDICT PROPERTY TESTS
 # =============================================================================
@@ -815,7 +799,6 @@ class TestDotDictProperties:
 
         assert d[key] == value
         assert getattr(d, key) == value
-
 
 # =============================================================================
 # COMBINED CONFIG PROPERTY TESTS

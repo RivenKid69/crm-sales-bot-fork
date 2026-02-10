@@ -14,10 +14,8 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from tone_analyzer import ToneAnalyzer, Tone, Style, ToneAnalysis
-
+from src.tone_analyzer import ToneAnalyzer, Tone, Style, ToneAnalysis
 
 class TestToneDetection:
     """Тесты определения тона сообщений"""
@@ -146,7 +144,6 @@ class TestToneDetection:
         result = self.analyzer.analyze("Короче, не понял, но давайте быстро")
         assert result.tone == Tone.RUSHED
 
-
 class TestStyleDetection:
     """Тесты определения стиля общения"""
 
@@ -179,7 +176,6 @@ class TestStyleDetection:
             "Здравствуйте, хотелось бы узнать подробнее о возможностях вашей системы"
         )
         assert result.style == Style.FORMAL
-
 
 class TestFrustrationTracking:
     """Тесты накопительного frustration tracking"""
@@ -264,7 +260,6 @@ class TestFrustrationTracking:
         assert history[0]["tone"] == "frustrated"
         assert history[1]["tone"] == "positive"
 
-
 class TestResponseGuidance:
     """Тесты рекомендаций по генерации ответа"""
 
@@ -345,7 +340,6 @@ class TestResponseGuidance:
 
         assert guidance["formality"] == "casual"
 
-
 class TestReset:
     """Тесты сброса состояния"""
 
@@ -371,7 +365,6 @@ class TestReset:
         self.analyzer.reset()
         assert len(self.analyzer.get_frustration_history()) == 0
 
-
 class TestConfidence:
     """Тесты уверенности в определении"""
 
@@ -396,7 +389,6 @@ class TestConfidence:
         result = self.analyzer.analyze("Любопытно")
         # Cascade: base 0.80 + signal boost 0.05 = 0.85
         assert result.confidence >= 0.65
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -437,7 +429,6 @@ class TestEdgeCases:
         # Должен обработать без ошибок
         assert result.tone is not None
 
-
 class TestSignals:
     """Тесты сигналов"""
 
@@ -459,7 +450,6 @@ class TestSignals:
         """Нет сигналов для чисто нейтрального"""
         result = self.analyzer.analyze("У нас 5 человек")
         assert len(result.signals) == 0
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

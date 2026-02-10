@@ -19,7 +19,6 @@ from src.blackboard.protocols import (
     DEFAULT_TENANT,
 )
 
-
 class TestProtocolCompliance:
     """Test that concrete classes implement protocols correctly."""
 
@@ -51,7 +50,6 @@ class TestProtocolCompliance:
         assert isinstance(flow, IFlowConfig), (
             "FlowConfig must implement IFlowConfig protocol"
         )
-
 
 class TestTenantConfig:
     """Test TenantConfig implementation."""
@@ -99,7 +97,6 @@ class TestTenantConfig:
         assert tenant.tone == "professional"  # default
         assert tenant.features == {}  # default
         assert tenant.persona_limits_override is None  # default
-
 
 class TestMockImplementations:
     """Test that mock implementations work with protocols."""
@@ -383,7 +380,6 @@ class TestMockImplementations:
         assert isinstance(mock_config, IFlowConfig)
         assert "greeting" in mock_config.states
         assert mock_config.states["spin_situation"]["phase"] == "situation"
-
 
 class TestProtocolAttributes:
     """Test that protocol implementations have required attributes."""

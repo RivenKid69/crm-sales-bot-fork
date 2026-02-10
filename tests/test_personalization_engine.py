@@ -14,10 +14,8 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from generator import PersonalizationEngine
-
+from src.generator import PersonalizationEngine
 
 class TestSizeCategory:
     """Тесты определения категории размера компании"""
@@ -76,7 +74,6 @@ class TestSizeCategory:
         """Отрицательное число возвращает small (default)"""
         category = PersonalizationEngine.get_size_category(-5)
         assert category == "small"
-
 
 class TestIndustryDetection:
     """Тесты определения отрасли"""
@@ -143,7 +140,6 @@ class TestIndustryDetection:
         collected_data = {}
         industry = PersonalizationEngine.detect_industry(collected_data)
         assert industry is None
-
 
 class TestGetContext:
     """Тесты получения контекста персонализации"""
@@ -223,7 +219,6 @@ class TestGetContext:
         assert context["industry"] is None
         assert context["has_pain_point"] is False
 
-
 class TestBusinessContexts:
     """Тесты бизнес-контекстов по размеру"""
 
@@ -258,7 +253,6 @@ class TestBusinessContexts:
 
         assert bc["size_label"] == "крупная компания"
         assert "интеграция" in bc["pain_focus"].lower() or "кастомизация" in bc["pain_focus"].lower()
-
 
 class TestObjectionCounter:
     """Тесты контраргументов для возражений"""
@@ -296,7 +290,6 @@ class TestObjectionCounter:
         )
         # Должен вернуть value_prop
         assert counter  # Не пустой
-
 
 class TestFormatPromptWithPersonalization:
     """Тесты форматирования промпта с персонализацией"""
@@ -367,7 +360,6 @@ class TestFormatPromptWithPersonalization:
 
         assert result == template
 
-
 class TestAllBusinessContextsComplete:
     """Проверка полноты бизнес-контекстов"""
 
@@ -392,7 +384,6 @@ class TestAllBusinessContextsComplete:
                 assert field in context, f"Missing {field} in {category}"
                 assert context[field], f"Empty {field} in {category}"
 
-
 class TestAllIndustryContextsComplete:
     """Проверка полноты отраслевых контекстов"""
 
@@ -412,7 +403,6 @@ class TestAllIndustryContextsComplete:
                 assert field in context, f"Missing {field} in {industry}"
                 assert context[field], f"Empty {field} in {industry}"
                 assert isinstance(context[field], list), f"{field} should be list in {industry}"
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -451,7 +441,6 @@ class TestEdgeCases:
         industry = PersonalizationEngine.detect_industry(collected_data)
 
         assert industry == "retail"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

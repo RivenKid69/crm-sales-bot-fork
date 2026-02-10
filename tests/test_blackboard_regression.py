@@ -27,7 +27,6 @@ from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.source_registry import SourceRegistry
 from src.blackboard.knowledge_source import KnowledgeSource
 
-
 # =============================================================================
 # Mock Implementations
 # =============================================================================
@@ -37,7 +36,6 @@ class IntentRecord:
     """Record of an intent."""
     intent: str
     state: str
-
 
 class MockIntentTracker:
     """Mock IntentTracker for regression testing."""
@@ -85,7 +83,6 @@ class MockIntentTracker:
     def get_intents_by_category(self, category: str) -> List[IntentRecord]:
         return [r for r in self._intents if category in r.intent]
 
-
 class MockCircularFlow:
     """Mock CircularFlowManager."""
 
@@ -107,7 +104,6 @@ class MockCircularFlow:
 
     def get_history(self):
         return []
-
 
 class RegressionStateMachine:
     """State Machine for regression testing."""
@@ -189,7 +185,6 @@ class RegressionStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class RegressionFlowConfig:
     """Flow configuration for regression testing."""
@@ -287,7 +282,6 @@ class RegressionFlowConfig:
     def is_phase_state(self, state_name: str) -> bool:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
-
 
 # =============================================================================
 # Regression Test Scenarios
@@ -441,7 +435,6 @@ class TestBlackboardRegression:
             for code in scenario["expected_reason_codes_not"]:
                 assert code not in decision.reason_codes, \
                     f"Scenario '{scenario_name}': unexpected reason code {code} found in {decision.reason_codes}"
-
 
 # =============================================================================
 # Edge Case Regression Tests
@@ -614,7 +607,6 @@ class TestEdgeCaseRegression:
         assert decision.next_state == "soft_close"
         assert sm_result["is_final"] is True
 
-
 # =============================================================================
 # Boundary Condition Tests
 # =============================================================================
@@ -757,7 +749,6 @@ class TestBoundaryConditions:
 
         assert decision is not None
 
-
 # =============================================================================
 # Determinism Tests
 # =============================================================================
@@ -859,7 +850,6 @@ class TestDeterminism:
 
         # Regardless of source order, high priority should win
         assert all(r == "high_action" for r in results)
-
 
 # =============================================================================
 # to_sm_result() Regression Tests
@@ -975,7 +965,6 @@ class TestSmResultRegression:
         assert sm_result["action"] == "modified_action"
         assert sm_result["next_state"] == "modified_state"
         assert sm_result["custom_field"] == "custom_value"
-
 
 # =============================================================================
 # Phase Consistency Tests

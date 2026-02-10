@@ -13,11 +13,9 @@ import sys
 import os
 
 # Добавляем путь к src
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from context_window import ContextWindow, TurnContext
-from classifier import HybridClassifier
-
+from src.context_window import ContextWindow, TurnContext
+from src.classifier import HybridClassifier
 
 # =============================================================================
 # ТЕСТЫ БАЗОВОЙ ФУНКЦИОНАЛЬНОСТИ ContextWindow
@@ -103,7 +101,6 @@ class TestContextWindowBasic:
         cw.reset()
         assert len(cw) == 0
 
-
 # =============================================================================
 # ТЕСТЫ ПОЛУЧЕНИЯ ИСТОРИИ
 # =============================================================================
@@ -163,7 +160,6 @@ class TestContextWindowHistory:
         assert len(last_2) == 2
         assert last_2[0].intent == "info_provided"
         assert last_2[1].intent == "price_question"
-
 
 # =============================================================================
 # ТЕСТЫ ДЕТЕКЦИИ ПАТТЕРНОВ
@@ -321,7 +317,6 @@ class TestPatternDetection:
 
         assert cw.detect_oscillation() is False
 
-
 # =============================================================================
 # ТЕСТЫ СЧЁТЧИКОВ И МЕТРИК
 # =============================================================================
@@ -437,7 +432,6 @@ class TestCountersAndMetrics:
 
         assert cw.get_confidence_trend() == "decreasing"
 
-
 # =============================================================================
 # ТЕСТЫ ИНТЕГРАЦИИ С КЛАССИФИКАТОРОМ
 # =============================================================================
@@ -522,7 +516,6 @@ class TestClassifierIntegration:
         assert result["intent"] == "needs_clarification"
         assert result.get("method") == "history_pattern"
         assert result.get("pattern_type") == "stuck_unclear"
-
 
 # =============================================================================
 # СРАВНИТЕЛЬНЫЕ ТЕСТЫ: С ИСТОРИЕЙ vs БЕЗ ИСТОРИИ
@@ -640,7 +633,6 @@ class TestWithVsWithoutHistory:
         # С историей должны распознать застревание
         assert result_with["intent"] == "needs_clarification"
         assert result_with.get("pattern_type") == "stuck_unclear"
-
 
 # =============================================================================
 # РЕАЛИСТИЧНЫЕ СЦЕНАРИИ ДИАЛОГОВ
@@ -800,7 +792,6 @@ class TestRealisticScenarios:
         assert result4["intent"] == "needs_clarification"
         assert result4.get("pattern_type") == "stuck_unclear"
 
-
 # =============================================================================
 # ТЕСТЫ ПРОИЗВОДИТЕЛЬНОСТИ
 # =============================================================================
@@ -841,7 +832,6 @@ class TestPerformance:
         # Должно быть быстро
         assert add_time < 1.0  # < 1 секунды на 1000 добавлений
         assert get_time < 0.5  # < 500ms на 100 получений
-
 
 # =============================================================================
 # ЗАПУСК ТЕСТОВ

@@ -14,7 +14,6 @@ Covers:
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 
-
 class TestPhaseExhaustedShouldContribute:
     """Tests for PhaseExhaustedSource.should_contribute()."""
 
@@ -185,7 +184,6 @@ class TestPhaseExhaustedShouldContribute:
         with patch("src.blackboard.sources.phase_exhausted.flags") as mock_flags:
             mock_flags.is_enabled.return_value = True
             assert source.should_contribute(bb) is False
-
 
 class TestPhaseExhaustedContribute:
     """Tests for PhaseExhaustedSource.contribute()."""

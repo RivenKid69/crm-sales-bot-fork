@@ -15,17 +15,15 @@ import pytest
 import sys
 import re
 import yaml
-sys.path.insert(0, 'src')
 
-from config import (
+from src.config import (
     INTENT_ROOTS,
     INTENT_PHRASES,
     SALES_STATES,
     CATEGORY_ROUTER_PROMPT,
 )
-from classifier import HybridClassifier
-from classifier.intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
-
+from src.classifier import HybridClassifier
+from src.classifier.intents import RootClassifier, LemmaClassifier, COMPILED_PRIORITY_PATTERNS
 
 class TestNoProblemNoNeedInIntentRoots:
     """Тесты для наличия no_problem и no_need в INTENT_ROOTS"""
@@ -70,7 +68,6 @@ class TestNoProblemNoNeedInIntentRoots:
         assert found >= 2, \
             f"no_need должен содержать минимум 2 из {expected_patterns}"
 
-
 class TestNoProblemNoNeedInIntentPhrases:
     """Тесты для наличия no_problem и no_need в INTENT_PHRASES"""
 
@@ -95,7 +92,6 @@ class TestNoProblemNoNeedInIntentPhrases:
         phrases = INTENT_PHRASES.get("no_need", [])
         assert len(phrases) > 0, \
             "no_need должен иметь фразы для LemmaClassifier"
-
 
 class TestNoProblemNoNeedClassification:
     """Тесты для классификации no_problem и no_need"""
@@ -173,7 +169,6 @@ class TestNoProblemNoNeedClassification:
         assert detected >= 1, \
             "LemmaClassifier должен обнаруживать no_need"
 
-
 class TestNoProblemNoNeedInSalesStates:
     """Тесты для использования no_problem и no_need в SALES_STATES"""
 
@@ -197,7 +192,6 @@ class TestNoProblemNoNeedInSalesStates:
         transitions = spin_need_payoff_config.get("transitions", {})
         assert "no_need" in transitions, \
             "no_need должен быть в переходах состояния spin_need_payoff"
-
 
 class TestHybridClassifierShortAnswerContext:
     """Тесты для контекстной классификации коротких ответов с no_problem/no_need"""
@@ -233,7 +227,6 @@ class TestHybridClassifierShortAnswerContext:
         # Может быть no_need или rejection
         assert result["intent"] in ["no_need", "rejection"], \
             f"Ожидался no_need/rejection, получили {result['intent']}"
-
 
 class TestObjectionCompetitorPatternsDuplication:
     """Тесты на отсутствие дублирования паттернов objection_competitor"""
@@ -286,7 +279,6 @@ class TestObjectionCompetitorPatternsDuplication:
                     break
             assert matched, \
                 f"Паттерны objection_competitor должны матчить: '{phrase}'"
-
 
 class TestCategoryRouterPromptSync:
     """Тесты синхронизации размеров категорий между _meta.yaml и CATEGORY_ROUTER_PROMPT"""
@@ -346,7 +338,6 @@ class TestCategoryRouterPromptSync:
         missing = meta_categories - prompt_categories
         assert len(missing) == 0, \
             f"Категории отсутствуют в CATEGORY_ROUTER_PROMPT: {missing}"
-
 
 class TestIntentConsistency:
     """Тесты на консистентность интентов между разными местами использования"""

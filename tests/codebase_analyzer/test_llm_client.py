@@ -16,11 +16,9 @@ from codebase_analyzer.analyzer.llm.client import (
 )
 from codebase_analyzer.config import LLMConfig
 
-
 # ============================================================================
 # LLMResponse Tests
 # ============================================================================
-
 
 class TestLLMResponse:
     """Tests for LLMResponse dataclass."""
@@ -52,11 +50,9 @@ class TestLLMResponse:
         assert response.finish_reason == "length"
         assert response.model == "Qwen/Qwen3-30B"
 
-
 # ============================================================================
 # Message Tests
 # ============================================================================
-
 
 class TestMessage:
     """Tests for Message dataclass."""
@@ -80,11 +76,9 @@ class TestMessage:
 
         assert msg.role == "system"
 
-
 # ============================================================================
 # VLLMClient Tests
 # ============================================================================
-
 
 class TestVLLMClient:
     """Tests for VLLMClient."""
@@ -280,11 +274,9 @@ class TestVLLMClient:
         # Should not raise
         await client.close()
 
-
 # ============================================================================
 # BatchProcessor Tests
 # ============================================================================
-
 
 class TestBatchProcessor:
     """Tests for BatchProcessor."""
@@ -390,11 +382,9 @@ class TestBatchProcessor:
 
         assert len(results) == 2
 
-
 # ============================================================================
 # Error Handling Tests
 # ============================================================================
-
 
 class TestErrorHandling:
     """Tests for error handling in LLM client."""
@@ -435,11 +425,9 @@ class TestErrorHandling:
             with pytest.raises(Exception):
                 await client.generate("Test")
 
-
 # ============================================================================
 # Configuration Tests
 # ============================================================================
-
 
 class TestConfiguration:
     """Tests for client configuration."""
@@ -470,11 +458,9 @@ class TestConfiguration:
         assert client.config.max_tokens == 4096
         assert "localhost:8000" in client.config.api_base
 
-
 # ============================================================================
 # Integration-like Tests (with mocks)
 # ============================================================================
-
 
 class TestIntegration:
     """Integration-like tests with comprehensive mocking."""

@@ -18,9 +18,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, Mock
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # LOGGING CONFIG E2E TESTS
 # =============================================================================
@@ -56,7 +53,6 @@ class TestE2ELoggingConfig:
 
         settings = get_settings()
         assert settings.logging.log_retriever_results is False
-
 
 # =============================================================================
 # FALLBACK TEMPLATE E2E TESTS
@@ -109,7 +105,6 @@ class TestE2EFallbackTemplates:
         assert 'question' in default_options
         assert 'options' in default_options
 
-
 class TestE2EFallbackEscalation:
     """E2E tests for fallback tier escalation."""
 
@@ -133,7 +128,6 @@ class TestE2EFallbackEscalation:
 
         for state in required_states:
             assert state in fallbacks, f"Missing LLM fallback for {state}"
-
 
 # =============================================================================
 # CTA E2E TESTS
@@ -185,7 +179,6 @@ class TestE2ECTAGeneration:
         contact_ctas = by_action['contact']
         assert len(contact_ctas) >= 2
 
-
 # =============================================================================
 # LLM FALLBACK E2E TESTS
 # =============================================================================
@@ -233,7 +226,6 @@ class TestE2ELLMFallback:
         has_error = any(word in response for word in error_words)
 
         assert has_error
-
 
 # =============================================================================
 # CIRCULAR FLOW E2E TESTS
@@ -284,7 +276,6 @@ class TestE2ECircularFlow:
 
         manager.goback_count = 2
         assert manager.can_go_back('spin_problem') is False
-
 
 # =============================================================================
 # LEAD SCORING E2E TESTS
@@ -362,7 +353,6 @@ class TestE2ELeadScoring:
             LeadTemperature.VERY_HOT
         ]
 
-
 # =============================================================================
 # CONVERSATION GUARD E2E TESTS
 # =============================================================================
@@ -424,7 +414,6 @@ class TestE2EConversationGuard:
         can_continue, intervention = guard.check('state', 'msg', {})
         assert intervention in ['fallback_tier_3', 'soft_close', None] or not can_continue
 
-
 # =============================================================================
 # OBJECTION HANDLING E2E TESTS
 # =============================================================================
@@ -463,7 +452,6 @@ class TestE2EObjectionHandling:
 
         # Count should be reset
         # (implementation dependent)
-
 
 # =============================================================================
 # FRUSTRATION TRACKING E2E TESTS
@@ -521,7 +509,6 @@ class TestE2EFrustrationTracking:
         # Should not exceed max (10)
         assert tracker.level <= 10
 
-
 # =============================================================================
 # FULL DIALOGUE SCENARIO E2E TESTS
 # =============================================================================
@@ -566,7 +553,6 @@ class TestE2EFullDialogueScenarios:
         # soft_close can go back to greeting
         assert manager.can_go_back('soft_close') is True
         assert manager.allowed_gobacks.get('soft_close') == 'greeting'
-
 
 # =============================================================================
 # CONFIG CONSISTENCY E2E TESTS

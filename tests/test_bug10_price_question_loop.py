@@ -45,7 +45,6 @@ from src.response_directives import (
     build_response_directives,
 )
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -57,13 +56,11 @@ ALL_ANSWERABLE = PRICE_INTENTS | QUESTION_INTENTS
 BASE_DIR = Path(__file__).parent.parent
 TEMPLATES_DIR = BASE_DIR / "src" / "yaml_config" / "templates"
 
-
 def _get_fact_intent():
     """Get a valid fact intent from FactQuestionSource._fact_intents."""
     source = FactQuestionSource()
     intents = source.fact_intents
     return next(iter(intents), None)
-
 
 def _get_non_price_fact_intent():
     """Get a fact intent in BOTH FactQuestionSource AND QUESTION_INTENTS (for generator tests)."""
@@ -71,7 +68,6 @@ def _get_non_price_fact_intent():
     # Must be in both _fact_intents and QUESTION_INTENTS for generator logic
     valid = (source.fact_intents & QUESTION_INTENTS) - PRICE_INTENTS
     return next(iter(valid), None)
-
 
 def _make_mock_blackboard(
     current_intent: str = "greeting",
@@ -95,7 +91,6 @@ def _make_mock_blackboard(
 
     bb.get_context.return_value = ctx
     return bb
-
 
 def _make_contribute_blackboard(
     current_intent: str = "greeting",
@@ -144,7 +139,6 @@ def _make_contribute_blackboard(
 
     return bb
 
-
 def _make_envelope_mock(
     repeated_question=None,
     is_stuck=False,
@@ -186,7 +180,6 @@ def _make_envelope_mock(
 
     return envelope
 
-
 # =============================================================================
 # Change 0: Fix broken import
 # =============================================================================
@@ -203,7 +196,6 @@ class TestChange0ImportFix:
         """Price overlay block uses 'from src.logger import logger' — must not crash."""
         from src.logger import logger
         assert logger is not None
-
 
 # =============================================================================
 # Change 4: is_price_question with repeated_question fallback
@@ -245,7 +237,6 @@ class TestChange4IsPriceQuestionRepeatedQuestion:
             repeated_question=price_intent,
         )
         assert is_price_question(ctx) is True
-
 
 # =============================================================================
 # Change 5A: is_answerable_question (universal)
@@ -292,7 +283,6 @@ class TestChange5AIsAnswerableQuestion:
     def test_registered_in_policy_registry(self):
         """is_answerable_question should be registered in the policy registry."""
         assert "is_answerable_question" in policy_registry
-
 
 # =============================================================================
 # Change 5B: Repair overlay escape for answerable questions
@@ -375,7 +365,6 @@ class TestChange5BRepairOverlayEscape:
         assert override.decision == PolicyDecision.REPAIR_SKIPPED
         assert override.cascade_disposition == CascadeDisposition.STOP
 
-
 # =============================================================================
 # Change 2: Suppress ask_clarifying for answerable question types
 # =============================================================================
@@ -419,7 +408,6 @@ class TestChange2SuppressAskClarifying:
         directives = build_response_directives(envelope)
         assert fact_intent in directives.repair_context
 
-
 # =============================================================================
 # Change 3: answer_with_summary template conditional question
 # =============================================================================
@@ -445,7 +433,6 @@ class TestChange3TemplateSafety:
         tmpl = templates.get("answer_with_summary", {})
         text = tmpl.get("template", "")
         assert "НЕ задавай вопрос" in text
-
 
 # =============================================================================
 # Change 7: PriceQuestionSource secondary_intents + repeated_question
@@ -518,7 +505,6 @@ class TestChange7PriceQuestionSource:
         assert len(price_proposals) >= 1
         assert "detection_source" in price_proposals[0].metadata
 
-
 # =============================================================================
 # Change 8: FactQuestionSource repeated_question fallback
 # =============================================================================
@@ -575,7 +561,6 @@ class TestChange8FactQuestionSource:
         proposals = bb.get_action_proposals()
         fact_proposals = [p for p in proposals if p.reason_code == "fact_question_detected"]
         assert len(fact_proposals) >= 1
-
 
 # =============================================================================
 # Change 6: Generator answer-template forcing
@@ -634,7 +619,6 @@ class TestChange6GeneratorTemplateForcing:
 
         assert template_key == "answer_with_pricing"
 
-
 # =============================================================================
 # Change 1: Directive building deferred after policy override
 # =============================================================================
@@ -655,7 +639,6 @@ class TestChange1DeferredDirectives:
         policy_record = source.find("trace_builder.record_policy_override")
 
         assert policy_record != -1, "Policy override recording not found in bot module"
-
 
 # =============================================================================
 # Cross-layer: Full pipeline scenario tests
@@ -708,7 +691,6 @@ class TestCrossLayerPriceScenario:
         assert override.decision == PolicyDecision.REPAIR_SKIPPED
         assert override.cascade_disposition == CascadeDisposition.PASS
 
-
 class TestCrossLayerFactScenario:
     """
     Cross-layer test: Repeated fact question with classifier miss.
@@ -760,7 +742,6 @@ class TestCrossLayerFactScenario:
         assert override is not None
         assert override.decision == PolicyDecision.REPAIR_SKIPPED
 
-
 class TestRegressionRepairStillWorks:
     """Regression: repair still fires for non-answerable repeated questions."""
 
@@ -781,7 +762,6 @@ class TestRegressionRepairStillWorks:
         assert override is not None
         assert override.decision == PolicyDecision.REPAIR_CLARIFY
 
-
 class TestPreExistingBugFix:
     """Change 7B: PriceQuestionSource.contribute() secondary_intents bug fix."""
 
@@ -800,7 +780,6 @@ class TestPreExistingBugFix:
             "PriceQuestionSource silently discarded secondary price intent"
         )
         assert price_proposals[0].metadata.get("detection_source") == "secondary"
-
 
 # =============================================================================
 # INTENT_CATEGORIES sanity checks

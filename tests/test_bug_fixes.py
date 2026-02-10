@@ -12,8 +12,6 @@ import os
 from unittest.mock import patch, MagicMock
 
 # Добавляем путь к src для импортов
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
 
 # =============================================================================
 # ТЕСТЫ ДЛЯ RETRIEVER.PY - ИНИЦИАЛИЗАЦИЯ ЭМБЕДДИНГОВ
@@ -32,7 +30,7 @@ class TestRetrieverEmbeddingsInitialization:
     @pytest.fixture(autouse=True)
     def reset_singleton(self):
         """Сбрасываем singleton перед каждым тестом."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         yield
         r._retriever = None
@@ -46,7 +44,7 @@ class TestRetrieverEmbeddingsInitialization:
         вместо локального параметра use_embeddings), _init_embeddings вызывается
         корректно на основе значения из settings.
         """
-        from knowledge.retriever import CascadeRetriever
+        from src.knowledge.retriever import CascadeRetriever
 
         # Создаём retriever с явным True - должен вызвать _init_embeddings
         with patch.object(CascadeRetriever, '_init_embeddings') as mock_init:
@@ -60,14 +58,14 @@ class TestRetrieverEmbeddingsInitialization:
         # Проверяем что если use_embeddings=None, значение берётся из settings
         # и self.use_embeddings устанавливается корректно
         retriever_default = CascadeRetriever(use_embeddings=None)
-        from settings import settings
+        from src.settings import settings
         assert retriever_default.use_embeddings == settings.retriever.use_embeddings
 
     def test_embeddings_not_init_when_disabled_in_settings(self):
         """
         Эмбеддинги НЕ должны инициализироваться когда use_embeddings=False в settings.
         """
-        from knowledge.retriever import CascadeRetriever
+        from src.knowledge.retriever import CascadeRetriever
 
         # Создаём с явным use_embeddings=False
         with patch.object(CascadeRetriever, '_init_embeddings') as mock_init:
@@ -81,7 +79,7 @@ class TestRetrieverEmbeddingsInitialization:
         """
         Явный параметр use_embeddings=True должен переопределять settings.
         """
-        from knowledge.retriever import CascadeRetriever
+        from src.knowledge.retriever import CascadeRetriever
 
         with patch.object(CascadeRetriever, '_init_embeddings') as mock_init:
             retriever = CascadeRetriever(use_embeddings=True)
@@ -94,8 +92,8 @@ class TestRetrieverEmbeddingsInitialization:
         """
         Явный параметр use_embeddings=False должен переопределять settings.
         """
-        from knowledge.retriever import CascadeRetriever
-        from settings import settings
+        from src.knowledge.retriever import CascadeRetriever
+        from src.settings import settings
 
         # Даже если в settings use_embeddings=True
         original_value = settings.retriever.use_embeddings
@@ -112,8 +110,8 @@ class TestRetrieverEmbeddingsInitialization:
         self.use_embeddings должен корректно устанавливаться из settings
         когда параметр не передан (None).
         """
-        from knowledge.retriever import CascadeRetriever
-        from settings import settings
+        from src.knowledge.retriever import CascadeRetriever
+        from src.settings import settings
 
         expected = settings.retriever.use_embeddings
 
@@ -122,7 +120,6 @@ class TestRetrieverEmbeddingsInitialization:
 
         # self.use_embeddings должен равняться значению из settings
         assert retriever.use_embeddings == expected
-
 
 # =============================================================================
 # ТЕСТЫ ДЛЯ HYBRID.PY - КОНТЕКСТНАЯ КЛАССИФИКАЦИЯ
@@ -138,7 +135,7 @@ class TestHybridContextState:
 
     @pytest.fixture
     def classifier(self):
-        from classifier import HybridClassifier
+        from src.classifier import HybridClassifier
         return HybridClassifier()
 
     # -------------------------------------------------------------------------
@@ -250,7 +247,6 @@ class TestHybridContextState:
         assert result["intent"] == "agreement"
         assert result["method"] == "context"
 
-
 class TestHybridClassifyShortAnswer:
     """
     Тесты для метода _classify_short_answer.
@@ -259,7 +255,7 @@ class TestHybridClassifyShortAnswer:
 
     @pytest.fixture
     def classifier(self):
-        from classifier import HybridClassifier
+        from src.classifier import HybridClassifier
         return HybridClassifier()
 
     def test_all_context_keys_extracted(self, classifier):
@@ -313,7 +309,6 @@ class TestHybridClassifyShortAnswer:
         # None или fallback agreement (зависит от маркеров и отсутствия контекста)
         assert result is None or result.get("intent") == "agreement"
 
-
 # =============================================================================
 # ИНТЕГРАЦИОННЫЕ ТЕСТЫ
 # =============================================================================
@@ -326,7 +321,7 @@ class TestIntegrationBugFixes:
     @pytest.fixture(autouse=True)
     def reset_singleton(self):
         """Сбрасываем singleton retriever перед тестами."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         yield
         r._retriever = None
@@ -335,8 +330,8 @@ class TestIntegrationBugFixes:
         """
         get_retriever() должен использовать use_embeddings из settings.
         """
-        from knowledge.retriever import get_retriever
-        from settings import settings
+        from src.knowledge.retriever import get_retriever
+        from src.settings import settings
 
         retriever = get_retriever(use_embeddings=False)
 
@@ -347,7 +342,7 @@ class TestIntegrationBugFixes:
         """
         Классификатор должен корректно обрабатывать полный контекст.
         """
-        from classifier import HybridClassifier
+        from src.classifier import HybridClassifier
 
         classifier = HybridClassifier()
 
@@ -371,7 +366,7 @@ class TestIntegrationBugFixes:
         """
         Явная проверка что state работает, а current_state нет.
         """
-        from classifier import HybridClassifier
+        from src.classifier import HybridClassifier
 
         classifier = HybridClassifier()
 
@@ -387,7 +382,6 @@ class TestIntegrationBugFixes:
         # потому что state="close" запускает контекстную логику
         assert result_correct["confidence"] >= result_wrong["confidence"]
 
-
 # =============================================================================
 # ПАРАМЕТРИЗОВАННЫЕ ТЕСТЫ
 # =============================================================================
@@ -399,7 +393,7 @@ class TestParameterizedContextClassification:
 
     @pytest.fixture
     def classifier(self):
-        from classifier import HybridClassifier
+        from src.classifier import HybridClassifier
         return HybridClassifier()
 
     @pytest.mark.parametrize("state,message,expected_intent", [
@@ -463,7 +457,6 @@ class TestParameterizedContextClassification:
         assert result["intent"] == expected_intent, \
             f"last_action={last_action}, message='{message}' expected {expected_intent}, got {result['intent']}"
 
-
 # =============================================================================
 # ТЕСТЫ ДЛЯ RETRIEVER SINGLETON — ИЗМЕНЕНИЕ ПАРАМЕТРОВ
 # =============================================================================
@@ -480,7 +473,7 @@ class TestRetrieverSingletonParameterChange:
     @pytest.fixture(autouse=True)
     def reset_singleton(self):
         """Сбрасываем singleton перед и после каждого теста."""
-        from knowledge.retriever import reset_retriever
+        from src.knowledge.retriever import reset_retriever
         reset_retriever()
         yield
         reset_retriever()
@@ -489,7 +482,7 @@ class TestRetrieverSingletonParameterChange:
         """
         При изменении use_embeddings должен создаваться новый экземпляр.
         """
-        from knowledge.retriever import get_retriever
+        from src.knowledge.retriever import get_retriever
 
         # Первый вызов с use_embeddings=False
         retriever1 = get_retriever(use_embeddings=False)
@@ -506,7 +499,7 @@ class TestRetrieverSingletonParameterChange:
         """
         При одинаковых параметрах должен возвращаться тот же экземпляр (singleton).
         """
-        from knowledge.retriever import get_retriever
+        from src.knowledge.retriever import get_retriever
 
         retriever1 = get_retriever(use_embeddings=False)
         retriever2 = get_retriever(use_embeddings=False)
@@ -517,7 +510,7 @@ class TestRetrieverSingletonParameterChange:
         """
         reset_retriever() должен сбрасывать singleton.
         """
-        from knowledge.retriever import get_retriever, reset_retriever
+        from src.knowledge.retriever import get_retriever, reset_retriever
 
         retriever1 = get_retriever(use_embeddings=False)
         reset_retriever()
@@ -530,7 +523,7 @@ class TestRetrieverSingletonParameterChange:
         """
         Многократное переключение параметров работает корректно.
         """
-        from knowledge.retriever import get_retriever
+        from src.knowledge.retriever import get_retriever
 
         r1 = get_retriever(use_embeddings=False)
         r2 = get_retriever(use_embeddings=True)
@@ -552,7 +545,7 @@ class TestRetrieverSingletonParameterChange:
         Воспроизведение оригинальной ошибки:
         get_retriever(False) → get_retriever(True) должен вернуть retriever С эмбеддингами.
         """
-        from knowledge.retriever import get_retriever
+        from src.knowledge.retriever import get_retriever
 
         # Первый вызов без эмбеддингов
         first = get_retriever(use_embeddings=False)
@@ -562,7 +555,6 @@ class TestRetrieverSingletonParameterChange:
         second = get_retriever(use_embeddings=True)
         assert second.use_embeddings is True, \
             "REGRESSION: get_retriever(True) should return retriever with embeddings enabled"
-
 
 # =============================================================================
 # ТЕСТЫ ДЛЯ STATE MACHINE — ПРИОРИТЕТ RULES И DEFLECT_AND_CONTINUE
@@ -583,7 +575,7 @@ class TestStateMachineRulesPriority:
 
     @pytest.fixture
     def state_machine(self):
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
         return StateMachine()
 
     def test_deflect_and_continue_in_spin_situation(self, state_machine):
@@ -672,7 +664,7 @@ class TestStateMachineRulesPriority:
         # В presentation нет rule для price_question, поэтому
         # сработает общий обработчик QUESTION_INTENTS → answer_question
         # Но в presentation есть rule "answer_with_facts", проверим конфиг
-        from config import SALES_STATES
+        from src.config import SALES_STATES
         presentation_rules = SALES_STATES.get("presentation", {}).get("rules", {})
 
         if "price_question" in presentation_rules:
@@ -697,7 +689,6 @@ class TestStateMachineRulesPriority:
         assert result["action"] == "answer_and_continue", \
             f"В spin_situation для question_features ожидается answer_and_continue (из rules), получили {result['action']}"
 
-
 # =============================================================================
 # ТЕСТЫ ДЛЯ STATE MACHINE — _is_spin_phase_progression
 # =============================================================================
@@ -712,7 +703,7 @@ class TestSpinPhaseProgression:
 
     @pytest.fixture
     def state_machine(self):
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
         return StateMachine()
 
     def test_same_phase_is_progression(self, state_machine):
@@ -744,7 +735,6 @@ class TestSpinPhaseProgression:
         assert state_machine._is_spin_phase_progression(None, "situation") is False
         assert state_machine._is_spin_phase_progression("situation", None) is False
 
-
 # =============================================================================
 # ТЕСТЫ ДЛЯ STATE MACHINE — ПРИОРИТЕТ КОММЕНТАРИЕВ
 # =============================================================================
@@ -766,7 +756,7 @@ class TestStateMachinePriorityOrder:
 
     @pytest.fixture
     def state_machine(self):
-        from state_machine import StateMachine
+        from src.state_machine import StateMachine
         return StateMachine()
 
     def test_final_state_has_highest_priority(self, state_machine):
@@ -807,7 +797,7 @@ class TestStateMachinePriorityOrder:
         Rules проверяются ДО QUESTION_INTENTS.
         Это критично для deflect_and_continue в SPIN-состояниях.
         """
-        from config import QUESTION_INTENTS
+        from src.config import QUESTION_INTENTS
 
         # Переходим в spin_situation где есть rule для price_question
         state_machine.process("agreement", {})
@@ -818,7 +808,6 @@ class TestStateMachinePriorityOrder:
         # Но в spin_situation есть rule → должен сработать rule, а не answer_question
         result = state_machine.process("price_question", {})
         assert result["action"] == "deflect_and_continue"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

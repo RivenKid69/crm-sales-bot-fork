@@ -13,14 +13,12 @@ import sys
 from pathlib import Path
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from state_machine import StateMachine, CircularFlowManager
-from lead_scoring import LeadScorer, LeadTemperature, get_signal_from_intent
-from objection_handler import ObjectionHandler, ObjectionType
-from cta_generator import CTAGenerator
-from feature_flags import flags
-
+from src.state_machine import StateMachine, CircularFlowManager
+from src.lead_scoring import LeadScorer, LeadTemperature, get_signal_from_intent
+from src.objection_handler import ObjectionHandler, ObjectionType
+from src.cta_generator import CTAGenerator
+from src.feature_flags import flags
 
 @pytest.fixture
 def enable_circular_flow():
@@ -29,32 +27,30 @@ def enable_circular_flow():
     yield
     flags.clear_override("circular_flow")
 
-
 class TestPhase3ModulesExist:
     """Проверка что все модули Phase 3 существуют и импортируются"""
 
     def test_lead_scoring_imports(self):
         """Lead scoring модуль импортируется"""
-        from lead_scoring import LeadScorer, LeadTemperature, LeadSignal
+        from src.lead_scoring import LeadScorer, LeadTemperature, LeadSignal
         assert LeadScorer is not None
         assert LeadTemperature is not None
 
     def test_objection_handler_imports(self):
         """Objection handler модуль импортируется"""
-        from objection_handler import ObjectionHandler, ObjectionType
+        from src.objection_handler import ObjectionHandler, ObjectionType
         assert ObjectionHandler is not None
         assert ObjectionType is not None
 
     def test_cta_generator_imports(self):
         """CTA generator модуль импортируется"""
-        from cta_generator import CTAGenerator, CTAResult
+        from src.cta_generator import CTAGenerator, CTAResult
         assert CTAGenerator is not None
 
     def test_circular_flow_imports(self):
         """Circular flow импортируется из state_machine"""
-        from state_machine import CircularFlowManager
+        from src.state_machine import CircularFlowManager
         assert CircularFlowManager is not None
-
 
 class TestFeatureFlagsPhase3:
     """Тесты feature flags для Phase 3"""
@@ -77,7 +73,6 @@ class TestFeatureFlagsPhase3:
         risky = flags.GROUPS.get("risky", [])
         assert "circular_flow" in risky
         assert "lead_scoring" in risky
-
 
 class TestLeadScoringWithStateMachine:
     """Интеграция Lead Scoring с State Machine"""
@@ -133,7 +128,6 @@ class TestLeadScoringWithStateMachine:
         # Score должен уменьшиться
         assert scorer.current_score < hot_score
 
-
 class TestObjectionHandlerWithCTA:
     """Интеграция Objection Handler с CTA Generator"""
 
@@ -180,7 +174,6 @@ class TestObjectionHandlerWithCTA:
             )
             # Ответ не должен меняться (нет CTA для soft_close)
 
-
 class TestCircularFlowWithLeadScoring:
     """Интеграция Circular Flow с Lead Scoring"""
 
@@ -216,7 +209,6 @@ class TestCircularFlowWithLeadScoring:
         result = sm.process("go_back")
 
         assert result["action"] == "go_back"
-
 
 class TestFullDialogueScenarios:
     """Полные сценарии диалогов"""
@@ -306,7 +298,6 @@ class TestFullDialogueScenarios:
         # Данные сохранены
         assert result["collected_data"]["company_size"] == 5
 
-
 class TestCTAInDifferentStates:
     """CTA в разных состояниях"""
 
@@ -348,7 +339,6 @@ class TestCTAInDifferentStates:
         if result.cta_added:
             # Мягкий CTA менее агрессивный
             assert result.cta is not None
-
 
 class TestEdgeCasesIntegration:
     """Граничные случаи интеграции"""
@@ -407,7 +397,6 @@ class TestEdgeCasesIntegration:
         # Возражение должно обрабатываться независимо
         assert result.strategy is not None
 
-
 class TestComponentInteraction:
     """Тесты взаимодействия компонентов"""
 
@@ -458,7 +447,6 @@ class TestComponentInteraction:
 
         # CTA не затронут
         assert cta.turn_count == 0
-
 
 class TestRealWorldScenarios:
     """Реалистичные сценарии"""
@@ -537,7 +525,6 @@ class TestRealWorldScenarios:
 
         # Данные обновлены
         assert sm.collected_data["company_size"] == 25
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

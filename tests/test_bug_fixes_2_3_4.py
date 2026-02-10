@@ -16,10 +16,6 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # Phase 1 — DataExtractor Fixes (1a, 1b)
 # =============================================================================
@@ -29,7 +25,7 @@ class TestDataExtractorBug2:
 
     @pytest.fixture
     def extractor(self):
-        from classifier.extractors.data_extractor import DataExtractor
+        from src.classifier.extractors.data_extractor import DataExtractor
         return DataExtractor()
 
     # --- Fix 1a: Range pattern ---
@@ -114,7 +110,6 @@ class TestDataExtractorBug2:
         # and without context won't match just_number pattern
         # This is expected: no extraction for bare numbers without context
 
-
 # =============================================================================
 # Phase 1 — CompositeMessageLayer REFINABLE_INTENTS (1c)
 # =============================================================================
@@ -124,27 +119,26 @@ class TestCompositeRefinableIntents:
 
     def test_price_question_in_refinable_intents(self):
         """price_question is now in REFINABLE_INTENTS."""
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         assert "price_question" in CompositeMessageRefinementLayer.REFINABLE_INTENTS
 
     def test_pricing_details_in_refinable_intents(self):
         """pricing_details is now in REFINABLE_INTENTS."""
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         assert "pricing_details" in CompositeMessageRefinementLayer.REFINABLE_INTENTS
 
     def test_cost_inquiry_in_refinable_intents(self):
         """cost_inquiry is now in REFINABLE_INTENTS."""
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         assert "cost_inquiry" in CompositeMessageRefinementLayer.REFINABLE_INTENTS
 
     def test_original_intents_still_present(self):
         """Original refinable intents still present."""
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         for intent in ["objection_think", "objection_no_need", "rejection", "unclear",
                        "small_talk", "greeting", "gratitude"]:
             assert intent in CompositeMessageRefinementLayer.REFINABLE_INTENTS, \
                 f"Original intent '{intent}' missing from REFINABLE_INTENTS"
-
 
 # =============================================================================
 # Phase 1 — Constants YAML mappings (1d)
@@ -155,7 +149,7 @@ class TestConstantsYamlMappings:
 
     def test_action_expects_data_has_answer_with_pricing(self):
         """answer_with_pricing mapped in action_expects_data."""
-        from yaml_config.constants import get_composite_refinement_config
+        from src.yaml_config.constants import get_composite_refinement_config
         config = get_composite_refinement_config()
         action_expects = config.get("action_expects_data", {})
         assert "answer_with_pricing" in action_expects
@@ -163,7 +157,7 @@ class TestConstantsYamlMappings:
 
     def test_action_data_intent_has_answer_with_pricing(self):
         """answer_with_pricing mapped to price_question in action_data_intent."""
-        from yaml_config.constants import get_composite_refinement_config
+        from src.yaml_config.constants import get_composite_refinement_config
         config = get_composite_refinement_config()
         action_intent = config.get("action_data_intent", {})
         assert "answer_with_pricing" in action_intent
@@ -172,11 +166,10 @@ class TestConstantsYamlMappings:
 
     def test_action_data_intent_not_info_provided(self):
         """answer_with_pricing must NOT map to info_provided (would break price chain)."""
-        from yaml_config.constants import get_composite_refinement_config
+        from src.yaml_config.constants import get_composite_refinement_config
         config = get_composite_refinement_config()
         action_intent = config.get("action_data_intent", {})
         assert action_intent.get("answer_with_pricing") != "info_provided"
-
 
 # =============================================================================
 # Phase 2 — _get_price_template_key fix (2a)
@@ -188,7 +181,7 @@ class TestGetPriceTemplateKey:
     @pytest.fixture
     def generator(self):
         """Create a minimal generator instance for method testing."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
         gen = ResponseGenerator.__new__(ResponseGenerator)
         # Set minimal required attributes
         gen.PRICE_RELATED_INTENTS = {"price_question", "pricing_details", "cost_inquiry"}
@@ -239,7 +232,6 @@ class TestGetPriceTemplateKey:
         result = generator._get_price_template_key("price_question", "some_random_action")
         assert result == "answer_with_pricing"  # Falls through to intent-based
 
-
 # =============================================================================
 # Phase 2 — do_not_ask fallback (2c)
 # =============================================================================
@@ -282,7 +274,6 @@ class TestDoNotAskFallback:
 
         assert variables["do_not_ask"] == ""
 
-
 # =============================================================================
 # Phase 3 — has_completed_minimum_phases condition (3a)
 # =============================================================================
@@ -299,7 +290,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_early_no_data_returns_false(self, enable_feature_flag):
         """Turn 1, no data → False (prevent premature close)."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=1,
@@ -309,7 +300,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_turn_7_returns_true(self, enable_feature_flag):
         """Turn 7 (≥6) → True (sufficient engagement)."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=7,
@@ -319,7 +310,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_turn_6_returns_true(self, enable_feature_flag):
         """Turn 6 (exactly ≥6) → True."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=6,
@@ -329,7 +320,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_turn_5_no_data_returns_false(self, enable_feature_flag):
         """Turn 5 (<6), no data → False."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=5,
@@ -339,7 +330,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_has_size_and_pain_returns_true(self, enable_feature_flag):
         """Has company_size + pain_point → True (minimum qualification)."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=2,
@@ -349,7 +340,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_has_size_and_pain_category_returns_true(self, enable_feature_flag):
         """Has company_size + pain_category → True."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_problem",
             turn_number=2,
@@ -359,7 +350,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_has_only_size_returns_false(self, enable_feature_flag):
         """Has company_size only (no pain) → False."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=2,
@@ -369,7 +360,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_has_only_pain_returns_false(self, enable_feature_flag):
         """Has pain_point only (no size) → False."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         ctx = create_test_context(
             state="spin_situation",
             turn_number=2,
@@ -379,7 +370,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_terminal_state_always_true(self, enable_feature_flag):
         """Terminal states always return True."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         for state in ["presentation", "close", "soft_close", "handle_objection", "escalated"]:
             ctx = create_test_context(
                 state=state,
@@ -391,7 +382,7 @@ class TestHasCompletedMinimumPhases:
 
     def test_feature_flag_disabled_returns_true(self):
         """When phase_completion_gating is disabled, always returns True."""
-        from conditions.state_machine import create_test_context, has_completed_minimum_phases
+        from src.conditions.state_machine import create_test_context, has_completed_minimum_phases
         with patch("src.feature_flags.flags") as mock_flags:
             mock_flags.is_enabled.return_value = False
             ctx = create_test_context(
@@ -400,7 +391,6 @@ class TestHasCompletedMinimumPhases:
                 collected_data={},
             )
             assert has_completed_minimum_phases(ctx) is True
-
 
 # =============================================================================
 # Phase 3 — Conditional transitions in mixins (3b, 3c)
@@ -464,7 +454,6 @@ class TestMixinConditionalTransitions:
         assert isinstance(callback_t, list), "close_shortcuts callback_request should be conditional"
         assert callback_t[0].get("when") == "has_completed_minimum_phases"
 
-
 # =============================================================================
 # Phase 4 — max_same_message threshold (4a)
 # =============================================================================
@@ -474,13 +463,13 @@ class TestGuardThreshold:
 
     def test_default_max_same_message_is_3(self):
         """Default max_same_message is now 3 (was 2)."""
-        from conversation_guard import GuardConfig
+        from src.conversation_guard import GuardConfig
         config = GuardConfig()
         assert config.max_same_message == 3
 
     def test_guard_allows_2_identical_messages(self):
         """Guard should NOT trigger on 2 identical messages (was triggering before)."""
-        from conversation_guard import ConversationGuard
+        from src.conversation_guard import ConversationGuard
         guard = ConversationGuard()
 
         result1 = guard.check("state1", "same message", {})
@@ -495,7 +484,7 @@ class TestGuardThreshold:
 
     def test_guard_triggers_on_3_identical_messages(self):
         """Guard SHOULD trigger on 3 identical messages."""
-        from conversation_guard import ConversationGuard
+        from src.conversation_guard import ConversationGuard
         guard = ConversationGuard()
 
         guard.check("state1", "same message", {})
@@ -509,7 +498,6 @@ class TestGuardThreshold:
         assert "tier_2" in action.lower(), \
             f"3 identical messages should trigger tier_2, got: {action}"
 
-
 # =============================================================================
 # Phase 5 — Feature flag (5a)
 # =============================================================================
@@ -519,14 +507,13 @@ class TestFeatureFlagPhaseCompletionGating:
 
     def test_flag_exists_in_defaults(self):
         """phase_completion_gating flag exists in defaults."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert "phase_completion_gating" in FeatureFlags.DEFAULTS
 
     def test_flag_default_value_true(self):
         """phase_completion_gating is enabled by default."""
-        from feature_flags import FeatureFlags
+        from src.feature_flags import FeatureFlags
         assert FeatureFlags.DEFAULTS["phase_completion_gating"] is True
-
 
 # =============================================================================
 # Config Validation (5c)
@@ -537,17 +524,16 @@ class TestConfigValidation:
 
     def test_layer_validates_action_expects_data(self):
         """CompositeMessageRefinementLayer validates answer_with_pricing in config."""
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         layer = CompositeMessageRefinementLayer()
         assert "answer_with_pricing" in layer._action_expects_data
 
     def test_layer_validates_action_data_intent(self):
         """CompositeMessageRefinementLayer validates answer_with_pricing in action_data_intent."""
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         layer = CompositeMessageRefinementLayer()
         assert "answer_with_pricing" in layer._action_data_intent
         assert layer._action_data_intent["answer_with_pricing"] == "price_question"
-
 
 # =============================================================================
 # COMPOSITE: Integration-style tests — composite message intent preservation
@@ -561,12 +547,12 @@ class TestCompositeMessageIntentPreservation:
 
     @pytest.fixture
     def layer(self):
-        from classifier.composite_refinement import CompositeMessageRefinementLayer
+        from src.classifier.composite_refinement import CompositeMessageRefinementLayer
         return CompositeMessageRefinementLayer()
 
     def test_should_refine_price_question_with_data(self, layer):
         """price_question with numeric data should pass should_refine gate."""
-        from classifier.composite_refinement import CompositeMessageContext
+        from src.classifier.composite_refinement import CompositeMessageContext
 
         ctx = CompositeMessageContext(
             message="500. Скока стоит?",
@@ -588,7 +574,6 @@ class TestCompositeMessageIntentPreservation:
             f"Expected 'price_question', got '{target_intent}'. " \
             "info_provided would break price template selection."
 
-
 # =============================================================================
 # Pipeline ordering documentation (5b)
 # =============================================================================
@@ -598,11 +583,10 @@ class TestPipelineDocumentation:
 
     def test_composite_refinement_docstring_has_invariant(self):
         """Module docstring mentions DataAwareRefinement ordering invariant."""
-        import classifier.composite_refinement as mod
+        import src.classifier.composite_refinement as mod
         docstring = mod.__doc__ or ""
         assert "DataAwareRefinement" in docstring or "DataAwareRefinementLayer" in docstring, \
             "Module docstring should document INVARIANT about DataAwareRefinementLayer ordering"
-
 
 # =============================================================================
 # Regression: Existing patterns still work
@@ -613,7 +597,7 @@ class TestRegressionExistingPatterns:
 
     @pytest.fixture
     def extractor(self):
-        from classifier.extractors.data_extractor import DataExtractor
+        from src.classifier.extractors.data_extractor import DataExtractor
         return DataExtractor()
 
     def test_basic_keyword_extraction(self, extractor):

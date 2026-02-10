@@ -10,9 +10,8 @@
 import pytest
 from unittest.mock import MagicMock
 
-from simulator.client_agent import ClientAgent, PERSONA_OPTION_PREFERENCES
-from simulator.personas import Persona
-
+from src.simulator.client_agent import ClientAgent, PERSONA_OPTION_PREFERENCES
+from src.simulator.personas import Persona
 
 # =============================================================================
 # Test Fixtures
@@ -24,7 +23,6 @@ def mock_llm():
     llm = MagicMock()
     llm.generate.return_value = "ок, понял"
     return llm
-
 
 @pytest.fixture
 def happy_path_persona():
@@ -38,7 +36,6 @@ def happy_path_persona():
         conversation_starters=["Привет"]
     )
 
-
 @pytest.fixture
 def busy_persona():
     """Занятой клиент."""
@@ -50,7 +47,6 @@ def busy_persona():
         preferred_objections=["time"],
         conversation_starters=["быстро"]
     )
-
 
 @pytest.fixture
 def price_sensitive_persona():
@@ -64,7 +60,6 @@ def price_sensitive_persona():
         conversation_starters=["сколько стоит?"]
     )
 
-
 @pytest.fixture
 def aggressive_persona():
     """Агрессивный клиент."""
@@ -77,7 +72,6 @@ def aggressive_persona():
         conversation_starters=["давайте без воды"]
     )
 
-
 @pytest.fixture
 def skeptic_persona():
     """Скептик."""
@@ -89,7 +83,6 @@ def skeptic_persona():
         preferred_objections=["skepticism"],
         conversation_starters=["не уверен что нужно"]
     )
-
 
 # =============================================================================
 # Test Disambiguation Detection
@@ -158,7 +151,6 @@ class TestDisambiguationDetection:
         message = "Какой у вас размер команды?"
         assert agent._detect_disambiguation(message) is False
 
-
 # =============================================================================
 # Test Option Extraction
 # =============================================================================
@@ -216,7 +208,6 @@ class TestOptionExtraction:
         assert len(options) == 2
         assert "своими словами" not in str(options).lower()
 
-
 # =============================================================================
 # Test Option Choice by Persona
 # =============================================================================
@@ -264,7 +255,6 @@ class TestOptionChoice:
         # happy_path ищет "демо", "функци" - если не находит, берёт первый
         assert index == 0 or "keyword_match" in reason
 
-
 # =============================================================================
 # Test Response Generation
 # =============================================================================
@@ -302,7 +292,6 @@ class TestResponseGeneration:
             import re
             matches_any = any(re.search(p, response.lower()) for p in valid_patterns)
             assert matches_any or response.isdigit(), f"Unexpected response: {response}"
-
 
 # =============================================================================
 # Test Full Flow
@@ -368,7 +357,6 @@ class TestFullDisambiguationFlow:
         assert agent.history[0]["client"] == response
         assert agent.history[0]["bot"] == message
 
-
 # =============================================================================
 # Test Persona Preferences
 # =============================================================================
@@ -422,7 +410,6 @@ class TestPersonaPreferences:
 
         assert index == 1  # "Сравнить с Poster"
         assert "keyword_match" in reason
-
 
 # =============================================================================
 # Test Disambiguation Detection Fix (Option Selection Bug)

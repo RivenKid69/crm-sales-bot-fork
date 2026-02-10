@@ -32,8 +32,11 @@ from src.blackboard.event_bus import (
     DecisionCommittedEvent,
 )
 from src.blackboard.protocols import TenantConfig, DEFAULT_TENANT
-from src.blackboard.source_registry import SourceRegistry
-
+from src.blackboard.source_registry import (
+    BUILTIN_SOURCE_NAMES,
+    BuiltinEnsureResult,
+    SourceRegistry,
+)
 
 # =============================================================================
 # Mock Implementations for Testing
@@ -122,7 +125,6 @@ class MockStateMachine:
         """Synchronize current_phase with the current state."""
         pass  # Mock doesn't have flow config to sync from
 
-
 class MockCircularFlow:
     """Mock CircularFlowManager."""
 
@@ -145,13 +147,11 @@ class MockCircularFlow:
     def get_history(self):
         return []
 
-
 @dataclass
 class IntentRecord:
     """Record of an intent."""
     intent: str
     state: str
-
 
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
@@ -201,7 +201,6 @@ class MockIntentTracker:
 
     def get_intents_by_category(self, category: str) -> List[IntentRecord]:
         return [r for r in self._intents if category in r.intent]
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -297,7 +296,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
 class SimpleTestSource(KnowledgeSource):
     """Simple test source that proposes a specific action."""
 
@@ -315,7 +313,6 @@ class SimpleTestSource(KnowledgeSource):
             source_name=self.name,
             reason_code=f"test_{self._action}",
         )
-
 
 class TransitionSource(KnowledgeSource):
     """Test source that proposes a transition."""
@@ -335,7 +332,6 @@ class TransitionSource(KnowledgeSource):
             reason_code=f"transition_to_{self._next_state}",
         )
 
-
 class ErrorSource(KnowledgeSource):
     """Test source that raises an error."""
 
@@ -347,7 +343,6 @@ class ErrorSource(KnowledgeSource):
 
     def contribute(self, blackboard: DialogueBlackboard) -> None:
         raise RuntimeError("Test error from ErrorSource")
-
 
 class ConditionalSource(KnowledgeSource):
     """Test source that only contributes based on condition."""
@@ -367,7 +362,6 @@ class ConditionalSource(KnowledgeSource):
             reason_code="conditional_triggered",
         )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -377,18 +371,15 @@ def mock_state_machine():
     """Create a mock state machine."""
     return MockStateMachine(state="spin_situation")
 
-
 @pytest.fixture
 def mock_flow_config():
     """Create a mock flow config."""
     return MockFlowConfig()
 
-
 @pytest.fixture
 def event_bus():
     """Create an event bus for testing."""
     return DialogueEventBus()
-
 
 @pytest.fixture
 def orchestrator_no_sources(mock_state_machine, mock_flow_config, event_bus):
@@ -405,7 +396,6 @@ def orchestrator_no_sources(mock_state_machine, mock_flow_config, event_bus):
     # Remove all sources for isolated testing
     orch._sources.clear()
     return orch
-
 
 # =============================================================================
 # Test DialogueOrchestrator Initialization
@@ -471,7 +461,6 @@ class TestOrchestratorInit:
 
         assert orch._tenant_config.tenant_id == "default"
 
-
 # =============================================================================
 # Test Properties
 # =============================================================================
@@ -492,7 +481,6 @@ class TestOrchestratorProperties:
         assert isinstance(orchestrator_no_sources.sources, list)
         # Initially empty after clearing
         assert len(orchestrator_no_sources.sources) == 0
-
 
 # =============================================================================
 # Test Source Management
@@ -545,7 +533,6 @@ class TestSourceManagement:
         orchestrator_no_sources.add_source(source2)
 
         assert len(orchestrator_no_sources.sources) == 2
-
 
 # =============================================================================
 # Test process_turn()
@@ -689,7 +676,6 @@ class TestProcessTurn:
         assert decision.action == "active_action"
         assert "conditional_triggered" not in decision.reason_codes
 
-
 # =============================================================================
 # Test _apply_side_effects()
 # =============================================================================
@@ -788,7 +774,6 @@ class TestApplySideEffects:
         orch._apply_side_effects(decision, "spin_situation", False)
 
         assert mock_state_machine.collected_data.get("_custom_flag") is True
-
 
 # =============================================================================
 # Test _fill_compatibility_fields()
@@ -893,7 +878,6 @@ class TestFillCompatibilityFields:
 
         assert decision.spin_phase == "problem"
 
-
 # =============================================================================
 # Test Fallback Decision
 # =============================================================================
@@ -913,7 +897,6 @@ class TestFallbackDecision:
         assert fallback.next_state == "spin_situation"
         assert "fallback_test_error" in fallback.reason_codes
         assert fallback.resolution_trace.get("fallback") is True
-
 
 # =============================================================================
 # Test create_orchestrator() Factory
@@ -976,6 +959,50 @@ class TestCreateOrchestrator:
 
         assert orch._tenant_config.tenant_id == "acme"
 
+    def test_create_orchestrator_self_heals_builtins_after_reset(
+        self,
+        mock_state_machine,
+        mock_flow_config,
+    ):
+        """Factory bootstrap should restore built-ins after SourceRegistry.reset()."""
+        SourceRegistry.reset()
+        assert SourceRegistry.list_registered() == []
+
+        create_orchestrator(
+            state_machine=mock_state_machine,
+            flow_config=mock_flow_config,
+        )
+
+        registered = set(SourceRegistry.list_registered())
+        assert set(BUILTIN_SOURCE_NAMES).issubset(registered)
+
+    def test_create_orchestrator_fail_fast_on_bootstrap_conflicts(
+        self,
+        mock_state_machine,
+        mock_flow_config,
+        monkeypatch,
+    ):
+        """Factory should fail fast when bootstrap reports conflicts."""
+        SourceRegistry.reset()
+
+        monkeypatch.setattr(
+            SourceRegistry,
+            "ensure_builtin_sources",
+            classmethod(
+                lambda cls: BuiltinEnsureResult(
+                    added=[],
+                    existing=[],
+                    conflicts={"PriceQuestionSource": "conflict"},
+                )
+            ),
+        )
+
+        with pytest.raises(RuntimeError, match="bootstrap conflicts"):
+            create_orchestrator(
+                state_machine=mock_state_machine,
+                flow_config=mock_flow_config,
+                strict_source_bootstrap=True,
+            )
 
 # =============================================================================
 # Test to_sm_result() Compatibility
@@ -1020,7 +1047,6 @@ class TestSmResultCompatibility:
         assert "consecutive_objections" in objection_flow
         assert "total_objections" in objection_flow
         assert "history" in objection_flow
-
 
 # =============================================================================
 # Test Event Emission
@@ -1104,7 +1130,6 @@ class TestEventEmission:
         # No transition, so no event
         assert len(events) == 0
 
-
 # =============================================================================
 # Test Error Handling
 # =============================================================================
@@ -1132,7 +1157,6 @@ class TestErrorHandling:
         assert events[0].data["component"] == "ErrorSource"
         assert "RuntimeError" in events[0].data["error_type"]
 
-
 # =============================================================================
 # Test get_turn_summary()
 # =============================================================================
@@ -1155,7 +1179,6 @@ class TestGetTurnSummary:
         assert "intent" in summary
         assert "state" in summary
         assert summary["intent"] == "greeting"
-
 
 # =============================================================================
 # STAGE 13: Extended Tests (Section 17.4 from Plan)
@@ -1282,7 +1305,6 @@ class TestCoreProblem:
         assert decision.action == "answer_with_pricing"
         # No transition because data not complete - stays in current or fallback "any"
         # (Depends on configuration)
-
 
 # -----------------------------------------------------------------------------
 # COMPATIBILITY TESTS (for bot.py integration)
@@ -1454,7 +1476,6 @@ class TestBotCompatibility:
 
         # prev_phase should be present
         assert "prev_phase" in sm_result
-
 
 # -----------------------------------------------------------------------------
 # EXTERNAL STATE CHANGES TESTS (Critical for bot.py integration)
@@ -1694,7 +1715,6 @@ class TestExternalStateChanges:
             assert decision.goal == "Identify problems"
             assert decision.spin_phase == "problem"
 
-
 # -----------------------------------------------------------------------------
 # OBJECTION LIMIT TESTS
 # -----------------------------------------------------------------------------
@@ -1805,7 +1825,6 @@ class TestObjectionLimits:
         # Should NOT go to soft_close
         assert decision.next_state != "soft_close" or decision.action != "objection_limit_reached"
 
-
 # -----------------------------------------------------------------------------
 # FACTORY FUNCTION TESTS (Extended)
 # -----------------------------------------------------------------------------
@@ -1887,7 +1906,6 @@ class TestFactoryFunctionExtended:
         if objection_source:
             # Custom limits should be applied
             assert objection_source.persona_limits.get("aggressive", {}).get("consecutive") == 10
-
 
 # -----------------------------------------------------------------------------
 # SIDE EFFECTS TESTS (Extended)

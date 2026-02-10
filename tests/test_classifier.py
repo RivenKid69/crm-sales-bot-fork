@@ -10,9 +10,8 @@
 
 import pytest
 import sys
-sys.path.insert(0, 'src')
 
-from classifier import (
+from src.classifier import (
     TextNormalizer,
     HybridClassifier,
     DataExtractor,
@@ -20,7 +19,6 @@ from classifier import (
     SPLIT_PATTERNS,
     PRIORITY_PATTERNS,
 )
-
 
 class TestTextNormalizer:
     """Тесты для нормализатора текста"""
@@ -145,7 +143,6 @@ class TestTextNormalizer:
         normalized = self.normalizer.normalize("ненужно")
         # "не" + "нужно" или остаётся слитно как rejection
         assert "не" in normalized or "ненужно" in normalized
-
 
 class TestPriorityPatterns:
     """Тесты для приоритетных паттернов классификации"""
@@ -459,7 +456,6 @@ class TestPriorityPatterns:
         """Какие возможности"""
         result = self.classifier.classify("Какие функции есть?")
         assert result["intent"] == "question_features"
-
 
 class TestDataExtractor:
     """Тесты для извлечения данных"""
@@ -808,7 +804,6 @@ class TestDataExtractor:
         result = self.extractor.extract("Работаю экономистом в банке")
         assert result.get("role") == "finance"
 
-
 class TestShortAnswerClassification:
     """Тесты для контекстной классификации коротких ответов
 
@@ -1038,7 +1033,6 @@ class TestShortAnswerClassification:
         result = self.classifier.classify("нет", {})
         assert result["intent"] == "rejection"
 
-
 class TestClarificationPatterns:
     """Тесты для уточняющих паттернов (нет + позитивный контекст)"""
 
@@ -1059,7 +1053,6 @@ class TestClarificationPatterns:
         """Нет, расскажите..."""
         result = self.classifier.classify("Нет, расскажите подробнее")
         assert result["intent"] == "agreement"
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -1106,7 +1099,6 @@ class TestEdgeCases:
         extracted = result.get("extracted_data", {})
         assert extracted.get("company_size") == 5 or extracted.get("users_count") == 5
 
-
 class TestIntegration:
     """Интеграционные тесты для полного пайплайна"""
 
@@ -1146,7 +1138,6 @@ class TestIntegration:
         result_with_context = self.classifier.classify("да", {"last_action": "close"})
         assert result_with_context["intent"] == "agreement"
         assert result_with_context["confidence"] >= 0.9  # выше чем без контекста
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

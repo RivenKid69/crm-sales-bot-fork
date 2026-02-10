@@ -23,7 +23,6 @@ from src.classifier.refinement_pipeline import (
     RefinementDecision,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -32,7 +31,6 @@ from src.classifier.refinement_pipeline import (
 def layer():
     """Create a SecondaryIntentDetectionLayer instance."""
     return SecondaryIntentDetectionLayer()
-
 
 @pytest.fixture
 def make_context():
@@ -57,7 +55,6 @@ def make_context():
         )
     return _make
 
-
 @pytest.fixture
 def make_result():
     """Factory for creating classification result dicts."""
@@ -73,7 +70,6 @@ def make_result():
             **kwargs
         }
     return _make
-
 
 # =============================================================================
 # BASIC FUNCTIONALITY TESTS
@@ -111,7 +107,6 @@ class TestSecondaryIntentDetectionBasics:
 
         # Should pass through without detecting secondary intents
         assert refined.decision == RefinementDecision.PASS_THROUGH
-
 
 # =============================================================================
 # PRICE QUESTION DETECTION TESTS
@@ -180,7 +175,6 @@ class TestPriceQuestionDetection:
             # price_question should NOT be in secondary (it's primary)
             assert "price_question" not in refined.secondary_signals
 
-
 # =============================================================================
 # FEATURE/INTEGRATION QUESTION DETECTION TESTS
 # =============================================================================
@@ -207,7 +201,6 @@ class TestFeatureQuestionDetection:
         assert refined.decision == RefinementDecision.REFINED
         assert expected_intent in refined.secondary_signals
 
-
 # =============================================================================
 # DEMO/CALLBACK DETECTION TESTS
 # =============================================================================
@@ -233,7 +226,6 @@ class TestDemoCallbackDetection:
 
         assert refined.decision == RefinementDecision.REFINED
         assert expected_intent in refined.secondary_signals
-
 
 # =============================================================================
 # MULTIPLE SECONDARY INTENTS TESTS
@@ -269,7 +261,6 @@ class TestMultipleSecondaryIntents:
         if len(refined.secondary_signals) >= 2:
             assert refined.secondary_signals[0] == "price_question"
 
-
 # =============================================================================
 # URGENCY SIGNAL DETECTION TESTS
 # =============================================================================
@@ -292,7 +283,6 @@ class TestUrgencyDetection:
 
         assert refined.decision == RefinementDecision.REFINED
         assert "request_brevity" in refined.secondary_signals
-
 
 # =============================================================================
 # CONFIDENCE TESTS
@@ -335,7 +325,6 @@ class TestSecondaryIntentConfidence:
         conf1 = refined1.metadata["secondary_intent_confidences"]["price_question"]
         conf2 = refined2.metadata["secondary_intent_confidences"]["price_question"]
         assert conf1 > conf2
-
 
 # =============================================================================
 # EDGE CASES TESTS
@@ -395,7 +384,6 @@ class TestEdgeCases:
         # Re-enable for other tests
         layer._enabled = True
 
-
 # =============================================================================
 # STATISTICS TESTS
 # =============================================================================
@@ -435,7 +423,6 @@ class TestStatistics:
         assert "detections_by_intent" in stats
         assert "multi_intent_count" in stats
         assert "patterns_count" in stats
-
 
 # =============================================================================
 # REAL-WORLD SCENARIO TESTS
@@ -496,7 +483,6 @@ class TestRealWorldScenarios:
         assert refined.intent == "situation_provided"  # Primary preserved
         assert "question_integrations" in refined.secondary_signals
 
-
 # =============================================================================
 # LOST QUESTION BUG FIX TESTS - NEW PATTERNS
 # =============================================================================
@@ -547,7 +533,6 @@ class TestLostQuestionBugFixPatterns:
         """Test that question_scalability pattern is loaded from YAML."""
         assert "question_scalability" in layer._patterns, \
             "question_scalability pattern should be loaded from YAML"
-
 
 class TestDataMigrationSecondaryDetection:
     """
@@ -607,7 +592,6 @@ class TestDataMigrationSecondaryDetection:
         assert refined.decision == RefinementDecision.REFINED
         assert "question_data_migration" in refined.secondary_signals
 
-
 class TestImplementationSecondaryDetection:
     """Tests for detecting question_implementation as secondary intent."""
 
@@ -639,7 +623,6 @@ class TestImplementationSecondaryDetection:
 
         assert refined.decision == RefinementDecision.REFINED
         assert "question_implementation" in refined.secondary_signals
-
 
 class TestOfflineSecondaryDetection:
     """Tests for detecting question_offline as secondary intent."""

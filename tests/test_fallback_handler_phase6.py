@@ -23,7 +23,6 @@ from src.conditions.fallback import (
 )
 from src.conditions.trace import EvaluationTrace, Resolution
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -33,12 +32,10 @@ def handler():
     """Create a fresh FallbackHandler instance."""
     return FallbackHandler(enable_tracing=True)
 
-
 @pytest.fixture
 def handler_no_trace():
     """Create a FallbackHandler with tracing disabled."""
     return FallbackHandler(enable_tracing=False)
-
 
 @pytest.fixture
 def high_frustration_context():
@@ -50,7 +47,6 @@ def high_frustration_context():
         "momentum_direction": "negative",
         "turn_number": 5
     }
-
 
 @pytest.fixture
 def competitor_context():
@@ -64,7 +60,6 @@ def competitor_context():
         "turn_number": 3
     }
 
-
 @pytest.fixture
 def pain_context():
     """Context dict with pain category."""
@@ -75,7 +70,6 @@ def pain_context():
         },
         "turn_number": 4
     }
-
 
 # =============================================================================
 # HANDLER INITIALIZATION TESTS
@@ -103,7 +97,6 @@ class TestHandlerInitialization:
         """Handler has _create_trace method."""
         handler = FallbackHandler()
         assert hasattr(handler, '_create_trace')
-
 
 # =============================================================================
 # CONTEXT CREATION TESTS
@@ -159,7 +152,6 @@ class TestContextCreation:
         assert context.competitor_mentioned is True
         assert context.pain_category == "losing_clients"
 
-
 # =============================================================================
 # TRACE CREATION TESTS
 # =============================================================================
@@ -181,7 +173,6 @@ class TestTraceCreation:
         """Handler returns None trace when tracing is disabled."""
         trace = handler_no_trace._create_trace("fallback_tier_1", "spin_situation")
         assert trace is None
-
 
 # =============================================================================
 # RESPONSE WITH TRACE TESTS
@@ -223,7 +214,6 @@ class TestResponseWithTrace:
         response = handler_no_trace.get_fallback("fallback_tier_1", "spin_situation", {})
 
         assert response.trace is None
-
 
 # =============================================================================
 # IMMEDIATE ESCALATION TESTS
@@ -270,7 +260,6 @@ class TestImmediateEscalation:
 
         assert response.action == "continue"
 
-
 # =============================================================================
 # SMART ESCALATE TESTS
 # =============================================================================
@@ -316,7 +305,6 @@ class TestSmartEscalate:
 
         assert tier == "fallback_tier_1"
 
-
 # =============================================================================
 # GET RECOMMENDED TIER TESTS
 # =============================================================================
@@ -353,7 +341,6 @@ class TestGetRecommendedTier:
         tier = handler.get_recommended_tier("spin_situation", context)
         assert tier == "fallback_tier_2"
 
-
 # =============================================================================
 # CONDITION-BASED TIER 1 TESTS
 # =============================================================================
@@ -382,7 +369,6 @@ class TestConditionBasedTier1:
         assert response.action == "continue"
         assert response.options is None
 
-
 # =============================================================================
 # CONDITION-BASED TIER 2 TESTS
 # =============================================================================
@@ -392,7 +378,7 @@ class TestConditionBasedTier2:
 
     def test_tier_2_uses_dynamic_cta_conditions(self, handler, competitor_context):
         """Tier 2 uses conditions for dynamic CTA selection."""
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", True)
 
         try:
@@ -410,7 +396,7 @@ class TestConditionBasedTier2:
 
     def test_tier_2_falls_back_to_static_when_no_context(self, handler):
         """Tier 2 falls back to static when dynamic CTA conditions not met."""
-        from feature_flags import flags
+        from src.feature_flags import flags
         flags.set_override("dynamic_cta_fallback", True)
 
         try:
@@ -422,7 +408,6 @@ class TestConditionBasedTier2:
             assert response.message is not None
         finally:
             flags.clear_override("dynamic_cta_fallback")
-
 
 # =============================================================================
 # CONDITION-BASED TIER 3 TESTS
@@ -444,7 +429,6 @@ class TestConditionBasedTier3:
 
         assert response.action == "skip"
         assert response.next_state is not None
-
 
 # =============================================================================
 # LOGGING TESTS
@@ -502,7 +486,6 @@ class TestLogging:
                        if c[0][0] == "fallback_graceful_exit"]
         assert len(event_calls) >= 1
 
-
 # =============================================================================
 # TRACE CONTENT TESTS
 # =============================================================================
@@ -529,7 +512,6 @@ class TestTraceContent:
 
         # Should have checked at least immediate escalation condition
         assert response.trace.conditions_checked >= 1
-
 
 # =============================================================================
 # INTEGRATION WITH REGISTRY TESTS
@@ -560,7 +542,6 @@ class TestRegistryIntegration:
         for name in fallback_registry.list_all():
             result = fallback_registry.evaluate(name, context)
             assert isinstance(result, bool)
-
 
 # =============================================================================
 # EDGE CASES TESTS
@@ -598,7 +579,6 @@ class TestEdgeCases:
         response = handler.get_fallback("fallback_tier_2", "spin_situation", context)
         assert response.message is not None
 
-
 # =============================================================================
 # BACKWARD COMPATIBILITY TESTS
 # =============================================================================
@@ -635,7 +615,6 @@ class TestBackwardCompatibility:
         assert hasattr(response, 'action')
         assert hasattr(response, 'next_state')
         assert hasattr(response, 'trace')
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

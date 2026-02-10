@@ -8,7 +8,6 @@ from src.bot import SalesBot
 from src.session_manager import SessionManager
 from src.snapshot_buffer import LocalSnapshotBuffer
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -18,11 +17,9 @@ def _mk_manager(tmp_path, **kwargs):
     kwargs.setdefault("snapshot_buffer", buffer)
     return SessionManager(**kwargs), buffer
 
-
 # ---------------------------------------------------------------------------
 # Basic close_session behaviour
 # ---------------------------------------------------------------------------
-
 
 class TestCloseSessionBasic:
     def test_close_returns_true_when_session_exists(self, mock_llm, tmp_path):
@@ -78,11 +75,9 @@ class TestCloseSessionBasic:
         assert manager.close_session("s1") is True
         assert buf.count() == 1
 
-
 # ---------------------------------------------------------------------------
 # Snapshot content after close
 # ---------------------------------------------------------------------------
-
 
 class TestCloseSessionSnapshot:
     def test_snapshot_contains_compacted_history(self, mock_llm, tmp_path):
@@ -133,11 +128,9 @@ class TestCloseSessionSnapshot:
         snap = buf.get("s1", client_id="c1")
         assert snap["lead_scorer"]["current_score"] > 0
 
-
 # ---------------------------------------------------------------------------
 # Restore after close
 # ---------------------------------------------------------------------------
-
 
 class TestCloseAndRestore:
     def test_restore_from_local_buffer_after_close(self, mock_llm, tmp_path):
@@ -212,11 +205,9 @@ class TestCloseAndRestore:
         assert "c1::s1" in external_snapshots
         assert restored.state_machine.state == "presentation"
 
-
 # ---------------------------------------------------------------------------
 # Multi-tenant isolation
 # ---------------------------------------------------------------------------
-
 
 class TestCloseSessionTenantIsolation:
     def test_close_only_affects_target_client(self, mock_llm, tmp_path):
@@ -256,11 +247,9 @@ class TestCloseSessionTenantIsolation:
         manager.close_session("s1", client_id="c3")
         assert buf.count() == 3
 
-
 # ---------------------------------------------------------------------------
 # Session stays in cache without TTL (no auto-expiry)
 # ---------------------------------------------------------------------------
-
 
 class TestNoAutoExpiry:
     def test_session_persists_in_cache_indefinitely(self, mock_llm, tmp_path):
@@ -280,11 +269,9 @@ class TestNoAutoExpiry:
         """cleanup_expired() should no longer exist."""
         assert not hasattr(SessionManager, "cleanup_expired")
 
-
 # ---------------------------------------------------------------------------
 # Integration: close after process()
 # ---------------------------------------------------------------------------
-
 
 class TestCloseAfterProcess:
     def test_close_after_bot_process(self, mock_llm, tmp_path):
@@ -336,11 +323,9 @@ class TestCloseAfterProcess:
             assert snap is not None
             assert snap["client_id"] == cid
 
-
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
-
 
 class TestCloseSessionEdgeCases:
     def test_close_with_empty_history(self, mock_llm, tmp_path):

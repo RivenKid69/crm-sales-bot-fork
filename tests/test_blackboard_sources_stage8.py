@@ -12,7 +12,6 @@ import pytest
 from typing import Dict, Any, Optional, List
 from unittest.mock import Mock, MagicMock
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -72,7 +71,6 @@ class MockStateMachine:
 
     def sync_phase_from_state(self) -> None:
         pass
-
 
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
@@ -134,7 +132,6 @@ class MockIntentTracker:
     def set_category_total(self, category: str, count: int) -> None:
         """Set category total for testing."""
         self._category_totals[category] = count
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -219,8 +216,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
-
 class MockConditionRegistry:
     """Mock ConditionRegistry for testing TransitionResolverSource."""
 
@@ -235,7 +230,6 @@ class MockConditionRegistry:
 
     def has(self, name: str) -> bool:
         return name in self._conditions
-
 
 def create_blackboard(
     state: str = "greeting",
@@ -274,7 +268,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for TransitionResolverSource
@@ -315,7 +308,6 @@ class TestTransitionResolverSourceInit:
 
         expected = {"data_complete", "any"}
         assert TransitionResolverSource.EXCLUDED_TRIGGERS == expected
-
 
 class TestTransitionResolverSourceShouldContribute:
     """Test TransitionResolverSource.should_contribute()."""
@@ -363,7 +355,6 @@ class TestTransitionResolverSourceShouldContribute:
         source.disable()
 
         assert source.should_contribute(bb) is False
-
 
 class TestTransitionResolverSourceContributeSimple:
     """Test TransitionResolverSource.contribute() with simple transitions."""
@@ -457,7 +448,6 @@ class TestTransitionResolverSourceContributeSimple:
         source.contribute(bb)
 
         assert len(bb.get_transition_proposals()) == 0
-
 
 class TestTransitionResolverSourceContributeConditional:
     """Test TransitionResolverSource.contribute() with conditional transitions."""
@@ -559,7 +549,6 @@ class TestTransitionResolverSourceContributeConditional:
         assert len(proposals) == 1
         assert proposals[0].value == "default_proposal"
 
-
 class TestTransitionResolverSourceMetadata:
     """Test TransitionResolverSource metadata in proposals."""
 
@@ -596,7 +585,6 @@ class TestTransitionResolverSourceMetadata:
 
         proposals = bb.get_transition_proposals()
         assert proposals[0].metadata["transition_type"] == "str"
-
 
 class TestTransitionResolverSourceHighPriorityIntents:
     """Test TransitionResolverSource high priority intent handling."""
@@ -636,7 +624,6 @@ class TestTransitionResolverSourceHighPriorityIntents:
         source.contribute(bb)
 
         assert bb.get_transition_proposals()[0].priority == Priority.HIGH
-
 
 # =============================================================================
 # Tests for EscalationSource
@@ -714,7 +701,6 @@ class TestEscalationSourceInit:
         }
         assert EscalationSource.SENSITIVE_INTENTS == expected
 
-
 class TestEscalationSourceShouldContribute:
     """Test EscalationSource.should_contribute()."""
 
@@ -776,7 +762,6 @@ class TestEscalationSourceShouldContribute:
 
         assert source.should_contribute(bb) is False
 
-
 class TestEscalationSourceContributeExplicit:
     """Test EscalationSource.contribute() for explicit escalation requests."""
 
@@ -826,7 +811,6 @@ class TestEscalationSourceContributeExplicit:
         assert action_proposals[0].value == "escalate_to_human"
         assert action_proposals[0].priority == Priority.CRITICAL
 
-
 class TestEscalationSourceContributeSensitive:
     """Test EscalationSource.contribute() for sensitive topics."""
 
@@ -858,7 +842,6 @@ class TestEscalationSourceContributeSensitive:
         action_proposals = bb.get_action_proposals()
         assert len(action_proposals) == 1
         assert action_proposals[0].reason_code == "escalation_sensitive_topic"
-
 
 class TestEscalationSourceContributeFrustration:
     """Test EscalationSource.contribute() for frustration threshold."""
@@ -895,7 +878,6 @@ class TestEscalationSourceContributeFrustration:
         assert action_proposals[0].value == "escalate_to_human"
         assert action_proposals[0].reason_code == "escalation_frustration_threshold"
 
-
 class TestEscalationSourceContributeMisunderstanding:
     """Test EscalationSource.contribute() for misunderstanding threshold."""
 
@@ -914,7 +896,6 @@ class TestEscalationSourceContributeMisunderstanding:
         action_proposals = bb.get_action_proposals()
         assert len(action_proposals) == 1
         assert action_proposals[0].reason_code == "escalation_misunderstanding_threshold"
-
 
 class TestEscalationSourceContributeHighValue:
     """Test EscalationSource.contribute() for high-value leads."""
@@ -965,7 +946,6 @@ class TestEscalationSourceContributeHighValue:
         # No escalation for small company
         assert len(bb.get_action_proposals()) == 0
 
-
 class TestEscalationSourceMetadata:
     """Test EscalationSource metadata in proposals."""
 
@@ -1005,7 +985,6 @@ class TestEscalationSourceMetadata:
         action_proposals = bb.get_action_proposals()
         assert "turn_number" in action_proposals[0].metadata
 
-
 class TestEscalationSourceCombinableFalse:
     """Test EscalationSource combinable=False behavior."""
 
@@ -1021,7 +1000,6 @@ class TestEscalationSourceCombinableFalse:
         action_proposals = bb.get_action_proposals()
         assert len(action_proposals) == 1
         assert action_proposals[0].combinable is False
-
 
 # =============================================================================
 # Integration Tests
@@ -1090,7 +1068,6 @@ class TestSourcesStage8Integration:
         transition_proposals = bb.get_transition_proposals()
         assert len(transition_proposals) == 2  # escalation and regular transition
 
-
 # =============================================================================
 # Package Import Tests
 # =============================================================================
@@ -1116,7 +1093,6 @@ class TestStage8PackageImports:
 
         assert "TransitionResolverSource" in sources.__all__
         assert "EscalationSource" in sources.__all__
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan)
@@ -1235,7 +1211,6 @@ class TestStage8CriteriaVerification:
 
         action_proposals = bb.get_action_proposals()
         assert action_proposals[0].priority == Priority.CRITICAL
-
 
 # =============================================================================
 # Tests for EscalationSource Flow-Aware Behavior

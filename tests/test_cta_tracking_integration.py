@@ -22,14 +22,12 @@ from unittest.mock import Mock, MagicMock, patch
 from typing import Optional
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from cta_generator import CTAGenerator, CTAResult
-from decision_trace import (
+from src.cta_generator import CTAGenerator, CTAResult
+from src.decision_trace import (
     DecisionTraceBuilder,
     ResponseTrace,
 )
-
 
 # =============================================================================
 # UNIT TESTS: _apply_cta() method
@@ -42,7 +40,7 @@ class TestApplyCTAReturnType:
     def mock_bot(self):
         """Create a minimal mock bot for testing _apply_cta"""
         # We need to import the actual bot class
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         # Create a mock LLM
         mock_llm = Mock()
@@ -136,7 +134,6 @@ class TestApplyCTAReturnType:
         # final_response should contain original + CTA (if added)
         assert original in result.final_response
 
-
 # =============================================================================
 # UNIT TESTS: CTAResult dataclass
 # =============================================================================
@@ -196,7 +193,6 @@ class TestCTAResultDataclass:
             )
             assert result.skip_reason == reason
 
-
 # =============================================================================
 # INTEGRATION TESTS: DecisionTraceBuilder with CTA
 # =============================================================================
@@ -251,7 +247,6 @@ class TestDecisionTraceBuilderCTAIntegration:
         trace = builder.build()
         # Default should be False (existing behavior preserved)
         assert trace.response.cta_added is False
-
 
 # =============================================================================
 # INTEGRATION TESTS: Full CTA Flow
@@ -364,7 +359,6 @@ class TestCTAFullFlow:
         assert cta_result.cta_added is False
         assert cta_result.skip_reason == "response_ends_with_question"
 
-
 # =============================================================================
 # EDGE CASES
 # =============================================================================
@@ -446,7 +440,6 @@ class TestCTATrackingEdgeCases:
         assert isinstance(result, CTAResult)
         assert long_response in result.final_response
 
-
 # =============================================================================
 # PATH COVERAGE TESTS
 # =============================================================================
@@ -499,7 +492,6 @@ class TestCTATrackingPaths:
 
         assert cta_result.cta_added is False
         assert cta_result.skip_reason == "feature_flag_disabled"
-
 
 # =============================================================================
 # REGRESSION TESTS
@@ -607,7 +599,6 @@ class TestCTATrackingRegression:
             # Note: response_length in trace is based on final_response
             assert trace.response.response_length == len(cta_result.final_response)
 
-
 # =============================================================================
 # STATISTICAL TESTS
 # =============================================================================
@@ -657,7 +648,6 @@ class TestCTAStatistics:
         assert results["added"] > 0, "Some CTAs should be added"
         assert results["skipped_question"] > 0, "Questions should skip CTA"
         assert results["skipped_state"] > 0, "Early states should skip CTA"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

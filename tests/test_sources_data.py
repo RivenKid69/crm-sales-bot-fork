@@ -18,7 +18,6 @@ from src.blackboard.sources.data_collector import DataCollectorSource
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -55,7 +54,6 @@ class MockStateMachine:
     def sync_phase_from_state(self) -> None:
         pass
 
-
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
 
@@ -91,7 +89,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return 0
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -154,8 +151,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
-
 def create_blackboard(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -175,7 +170,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for DataCollectorSource (Section 17.3)
@@ -328,7 +322,6 @@ class TestDataCollectorSource:
 
         assert len(bb.get_transition_proposals()) == 0
 
-
 class TestDataCollectorSourceEmptyValues:
     """Test DataCollectorSource handling of empty values."""
 
@@ -413,7 +406,6 @@ class TestDataCollectorSourceEmptyValues:
 
         assert len(bb.get_transition_proposals()) == 0
 
-
 class TestDataCollectorSourceMetadata:
     """Test DataCollectorSource metadata in proposals."""
 
@@ -443,7 +435,6 @@ class TestDataCollectorSourceMetadata:
         assert proposals[0].metadata["required_fields"] == ["company_name", "industry"]
         assert "company_name" in proposals[0].metadata["collected_fields"]
         assert "industry" in proposals[0].metadata["collected_fields"]
-
 
 class TestDataCollectorSourceGetDataStatus:
     """Test DataCollectorSource.get_data_status() utility method."""
@@ -510,7 +501,6 @@ class TestDataCollectorSourceGetDataStatus:
         assert status["is_complete"] is True
         assert status["completion_percentage"] == 100.0
 
-
 class TestDataCollectorSourceEnableDisable:
     """Test DataCollectorSource enable/disable functionality."""
 
@@ -528,7 +518,6 @@ class TestDataCollectorSourceEnableDisable:
         source.disable()
 
         assert source.enabled is False
-
 
 class TestDataCollectorSourceInit:
     """Test DataCollectorSource initialization."""

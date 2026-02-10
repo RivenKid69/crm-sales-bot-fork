@@ -12,7 +12,6 @@ import pytest
 from typing import Dict, Any, Optional, List
 from unittest.mock import Mock, MagicMock
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -73,7 +72,6 @@ class MockStateMachine:
     def sync_phase_from_state(self) -> None:
         pass
 
-
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
 
@@ -118,7 +116,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return self._category_totals.get(category, 0)
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -181,8 +178,6 @@ class MockFlowConfig:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
 
-
-
 def create_blackboard(
     state: str = "greeting",
     collected_data: Optional[Dict[str, Any]] = None,
@@ -204,7 +199,6 @@ def create_blackboard(
     )
     bb.begin_turn(intent=intent, extracted_data=extracted_data or {})
     return bb
-
 
 # =============================================================================
 # Tests for PriceQuestionSource
@@ -259,7 +253,6 @@ class TestPriceQuestionSourceInit:
         }
         assert source.price_intents == expected_intents
 
-
 class TestPriceQuestionSourceIntentManagement:
     """Test PriceQuestionSource intent management."""
 
@@ -288,7 +281,6 @@ class TestPriceQuestionSourceIntentManagement:
         source = PriceQuestionSource()
         # Should not raise
         source.remove_price_intent("nonexistent")
-
 
 class TestPriceQuestionSourceShouldContribute:
     """Test PriceQuestionSource.should_contribute()."""
@@ -347,7 +339,6 @@ class TestPriceQuestionSourceShouldContribute:
         source = PriceQuestionSource(price_intents={"my_custom_price"})
 
         assert source.should_contribute(bb) is True
-
 
 class TestPriceQuestionSourceContribute:
     """Test PriceQuestionSource.contribute()."""
@@ -477,7 +468,6 @@ class TestPriceQuestionSourceContribute:
             if proposals:
                 assert proposals[0].combinable is True, f"Intent {intent} should be combinable"
 
-
 class TestPriceQuestionSourceEnableDisable:
     """Test PriceQuestionSource enable/disable functionality."""
 
@@ -512,7 +502,6 @@ class TestPriceQuestionSourceEnableDisable:
 
         assert len(bb.get_action_proposals()) == 0
 
-
 # =============================================================================
 # Tests for DataCollectorSource
 # =============================================================================
@@ -536,7 +525,6 @@ class TestDataCollectorSourceInit:
         source = DataCollectorSource(name="CustomDataCollector")
 
         assert source.name == "CustomDataCollector"
-
 
 class TestDataCollectorSourceShouldContribute:
     """Test DataCollectorSource.should_contribute()."""
@@ -611,7 +599,6 @@ class TestDataCollectorSourceShouldContribute:
         source = DataCollectorSource()
 
         assert source.should_contribute(bb) is False
-
 
 class TestDataCollectorSourceContribute:
     """Test DataCollectorSource.contribute()."""
@@ -802,7 +789,6 @@ class TestDataCollectorSourceContribute:
         assert "company_name" in proposals[0].metadata["collected_fields"]
         assert "industry" in proposals[0].metadata["collected_fields"]
 
-
 class TestDataCollectorSourceGetDataStatus:
     """Test DataCollectorSource.get_data_status() utility method."""
 
@@ -872,7 +858,6 @@ class TestDataCollectorSourceGetDataStatus:
         assert status["is_complete"] is True
         assert status["completion_percentage"] == 100.0
 
-
 class TestDataCollectorSourceEnableDisable:
     """Test DataCollectorSource enable/disable functionality."""
 
@@ -894,7 +879,6 @@ class TestDataCollectorSourceEnableDisable:
         source.disable()
 
         assert source.enabled is False
-
 
 # =============================================================================
 # Integration Tests
@@ -962,7 +946,6 @@ class TestSourcesIntegration:
         proposals = bb.get_action_proposals()
         assert len(proposals) == 2
 
-
 # =============================================================================
 # Package Import Tests
 # =============================================================================
@@ -983,7 +966,6 @@ class TestPackageImports:
 
         assert "PriceQuestionSource" in sources.__all__
         assert "DataCollectorSource" in sources.__all__
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan)

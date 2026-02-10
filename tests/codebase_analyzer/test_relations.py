@@ -15,11 +15,9 @@ from codebase_analyzer.indexer.models.relations import (
     SQLQuery,
 )
 
-
 # ============================================================================
 # RelationType Tests
 # ============================================================================
-
 
 class TestRelationType:
     """Tests for RelationType enum."""
@@ -80,11 +78,9 @@ class TestRelationType:
         assert isinstance(RelationType.CALLS, str)
         assert RelationType.CALLS == "calls"
 
-
 # ============================================================================
 # Relation Tests
 # ============================================================================
-
 
 class TestRelation:
     """Tests for Relation dataclass."""
@@ -177,11 +173,9 @@ class TestRelation:
         calls = Relation.create("caller", "callee", RelationType.CALLS)
         assert "calls" in calls.id
 
-
 # ============================================================================
 # DependencyInfo Tests
 # ============================================================================
-
 
 class TestDependencyInfo:
     """Tests for DependencyInfo dataclass."""
@@ -232,11 +226,9 @@ class TestDependencyInfo:
         assert dep.relation_type == RelationType.IMPORTS
         assert dep.package_name == "@nestjs/common"
 
-
 # ============================================================================
 # CallSite Tests
 # ============================================================================
-
 
 class TestCallSite:
     """Tests for CallSite dataclass."""
@@ -282,11 +274,9 @@ class TestCallSite:
 
         assert call.is_dynamic is True
 
-
 # ============================================================================
 # SQLQuery Tests
 # ============================================================================
-
 
 class TestSQLQuery:
     """Tests for SQLQuery dataclass."""
@@ -366,11 +356,9 @@ class TestSQLQuery:
         assert query.entity_id == ""
         assert query.line_number == 0
 
-
 # ============================================================================
 # APIEndpoint Tests
 # ============================================================================
-
 
 class TestAPIEndpoint:
     """Tests for APIEndpoint dataclass."""
@@ -426,11 +414,9 @@ class TestAPIEndpoint:
 
         assert len(endpoint.middleware) == 4
 
-
 # ============================================================================
 # ModuleCluster Tests
 # ============================================================================
-
 
 class TestModuleCluster:
     """Tests for ModuleCluster dataclass."""
@@ -492,11 +478,9 @@ class TestModuleCluster:
 
         assert "payment processing" in cluster.description
 
-
 # ============================================================================
 # CodebaseStats Tests
 # ============================================================================
-
 
 class TestCodebaseStats:
     """Tests for CodebaseStats dataclass."""
@@ -717,11 +701,9 @@ class TestCodebaseStats:
         assert stats.files_by_language["php"] == 10
         assert len(stats.tables_accessed) == 2
 
-
 # ============================================================================
 # Integration Tests
 # ============================================================================
-
 
 class TestRelationIntegration:
     """Integration tests for relation models."""

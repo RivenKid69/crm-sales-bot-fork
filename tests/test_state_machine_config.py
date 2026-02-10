@@ -10,7 +10,6 @@ from pathlib import Path
 import yaml
 import tempfile
 
-
 class TestStateMachineWithConfig:
     """Tests for StateMachine with LoadedConfig."""
 
@@ -276,7 +275,6 @@ class TestStateMachineWithConfig:
         # RuleResolver should use custom default action
         assert sm._resolver.default_action == "custom_default_action"
 
-
 class TestCircularFlowManager:
     """Tests for CircularFlowManager with custom config."""
 
@@ -354,7 +352,6 @@ class TestCircularFlowManager:
         assert cfm.goback_count == 0
         assert cfm.get_remaining_gobacks() == 2
 
-
 class TestStateMachineReset:
     """Tests for StateMachine reset with config."""
 
@@ -406,7 +403,6 @@ class TestStateMachineReset:
 
         with open(tmp_path / "conditions" / "custom.yaml", 'w') as f:
             yaml.dump({}, f)
-
 
 class TestStateMachineTracing:
     """Tests for StateMachine tracing with config."""
@@ -460,13 +456,12 @@ class TestStateMachineTracing:
         assert sm._enable_tracing is True
         assert sm._config is config
 
-
 class TestDynamicSpinConfiguration:
     """
     Tests for dynamic SPIN configuration from YAML.
 
     Verifies that StateMachine reads SPIN phases, states, and progress intents
-    from config instead of hardcoded values.
+    from src.config instead of hardcoded values.
     """
 
     @pytest.fixture
@@ -700,7 +695,6 @@ class TestDynamicSpinConfiguration:
         assert sm.spin_states == CONST_SPIN_STATES
         assert sm.spin_progress_intents == CONST_SPIN_PROGRESS_INTENTS
 
-
 class TestAlteredSpinFlow:
     """
     Integration tests for state machine with altered SPIN flow.
@@ -845,7 +839,6 @@ class TestAlteredSpinFlow:
         # Backward = not progression
         assert sm._is_spin_phase_progression("explore", "understand") is False
         assert sm._is_spin_phase_progression("explore", "propose") is False
-
 
 class TestOnEnterActions:
     """

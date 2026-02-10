@@ -32,11 +32,9 @@ from codebase_analyzer.utils.progress import (
     reset_metrics,
 )
 
-
 # ============================================================================
 # Logging Tests
 # ============================================================================
-
 
 class TestLogging:
     """Tests for logging utilities."""
@@ -85,7 +83,6 @@ class TestLogging:
 
         assert logger1 is logger2
 
-
 class TestLogContext:
     """Tests for LogContext context manager."""
 
@@ -114,11 +111,9 @@ class TestLogContext:
             with LogContext("Failing operation"):
                 raise ValueError("Test error")
 
-
 # ============================================================================
 # Metrics Tests - TimingStats
 # ============================================================================
-
 
 class TestTimingStats:
     """Tests for TimingStats dataclass."""
@@ -168,11 +163,9 @@ class TestTimingStats:
 
         assert stats.avg_time == 0.0
 
-
 # ============================================================================
 # Metrics Tests - TokenStats
 # ============================================================================
-
 
 class TestTokenStats:
     """Tests for TokenStats dataclass."""
@@ -203,11 +196,9 @@ class TestTokenStats:
         assert stats.output_tokens == 150
         assert stats.cached_tokens == 50
 
-
 # ============================================================================
 # Metrics Tests - OperationMetrics
 # ============================================================================
-
 
 class TestOperationMetrics:
     """Tests for OperationMetrics dataclass."""
@@ -292,11 +283,9 @@ class TestOperationMetrics:
         assert "errors" in summary
         assert "tokens" in summary
 
-
 # ============================================================================
 # Metrics Tests - Utility Functions
 # ============================================================================
-
 
 class TestMetricsUtilities:
     """Tests for metrics utility functions."""
@@ -364,11 +353,9 @@ class TestMetricsUtilities:
         assert "1" in result
         # May be "1.5K" or "1,500"
 
-
 # ============================================================================
 # Progress Tests - PhaseMetrics
 # ============================================================================
-
 
 class TestPhaseMetrics:
     """Tests for PhaseMetrics dataclass."""
@@ -434,11 +421,9 @@ class TestPhaseMetrics:
 
         assert phase.items_per_second == 10.0
 
-
 # ============================================================================
 # Progress Tests - PipelineMetrics
 # ============================================================================
-
 
 class TestPipelineMetrics:
     """Tests for PipelineMetrics dataclass."""
@@ -503,11 +488,9 @@ class TestPipelineMetrics:
         # Should not raise
         metrics.print_summary()
 
-
 # ============================================================================
 # Progress Tests - Utility Functions
 # ============================================================================
-
 
 class TestProgressUtilities:
     """Tests for progress utility functions."""
@@ -540,11 +523,9 @@ class TestProgressUtilities:
 
         assert new_metrics.phases == {}
 
-
 # ============================================================================
 # Integration Tests
 # ============================================================================
-
 
 class TestUtilsIntegration:
     """Integration tests for utilities working together."""

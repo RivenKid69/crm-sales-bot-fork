@@ -8,10 +8,8 @@ import pytest
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from config import INTENT_ROOTS
-
+from src.config import INTENT_ROOTS
 
 class TestIntentRootsStructure:
     """Tests for INTENT_ROOTS structure."""
@@ -39,7 +37,6 @@ class TestIntentRootsStructure:
         """Test no intent has empty roots list."""
         for intent, roots in INTENT_ROOTS.items():
             assert len(roots) > 0, f"Intent {intent} has empty roots list"
-
 
 class TestIntentRootsGreeting:
     """Tests for greeting intent roots."""
@@ -71,7 +68,6 @@ class TestIntentRootsGreeting:
         # Should have some typo variants
         assert any("здрас" in r for r in roots)
 
-
 class TestIntentRootsPriceQuestion:
     """Tests for price_question intent roots."""
 
@@ -96,7 +92,6 @@ class TestIntentRootsPriceQuestion:
         roots = INTENT_ROOTS["price_question"]
         assert any("почём" in r or "почом" in r for r in roots)
 
-
 class TestIntentRootsObjectionPrice:
     """Tests for objection_price intent roots."""
 
@@ -118,7 +113,6 @@ class TestIntentRootsObjectionPrice:
         """Test objection_price has budget-related words."""
         roots = INTENT_ROOTS["objection_price"]
         assert any("бюджет" in r for r in roots)
-
 
 class TestIntentRootsObjectionNoTime:
     """Tests for objection_no_time intent roots."""
@@ -142,7 +136,6 @@ class TestIntentRootsObjectionNoTime:
         roots = INTENT_ROOTS["objection_no_time"]
         assert any("позж" in r or "потом" in r for r in roots)
 
-
 class TestIntentRootsObjectionCompetitor:
     """Tests for objection_competitor intent roots."""
 
@@ -161,7 +154,6 @@ class TestIntentRootsObjectionCompetitor:
         """Test objection_competitor has 'already have' phrases."""
         roots = INTENT_ROOTS["objection_competitor"]
         assert any("уже есть" in r or "уже пользу" in r for r in roots)
-
 
 class TestIntentRootsQuestionFeatures:
     """Tests for question_features intent roots."""
@@ -185,7 +177,6 @@ class TestIntentRootsQuestionFeatures:
         """Test question_features has question-like words."""
         roots = INTENT_ROOTS["question_features"]
         assert any("как работает" in r for r in roots)
-
 
 class TestIntentRootsQuestionIntegrations:
     """Tests for question_integrations intent roots."""
@@ -212,7 +203,6 @@ class TestIntentRootsQuestionIntegrations:
         assert any("whatsapp" in r.lower() for r in roots)
         assert any("telegram" in r.lower() for r in roots)
 
-
 class TestIntentRootsAgreement:
     """Tests for agreement intent roots."""
 
@@ -237,7 +227,6 @@ class TestIntentRootsAgreement:
         roots = INTENT_ROOTS["agreement"]
         assert any("готов" in r for r in roots)
 
-
 class TestIntentRootsRejection:
     """Tests for rejection intent roots."""
 
@@ -255,7 +244,6 @@ class TestIntentRootsRejection:
         roots = INTENT_ROOTS["rejection"]
         assert any("отстань" in r or "хватит" in r or "стоп" in r for r in roots)
 
-
 class TestIntentRootsContactProvided:
     """Tests for contact_provided intent roots."""
 
@@ -272,7 +260,6 @@ class TestIntentRootsContactProvided:
         """Test contact_provided has phone-related words."""
         roots = INTENT_ROOTS["contact_provided"]
         assert any("телефон" in r or "номер" in r for r in roots)
-
 
 class TestIntentRootsSituationProvided:
     """Tests for situation_provided intent roots (SPIN S)."""
@@ -296,7 +283,6 @@ class TestIntentRootsSituationProvided:
         roots = INTENT_ROOTS["situation_provided"]
         assert any("excel" in r.lower() or "эксел" in r for r in roots)
 
-
 class TestIntentRootsProblemRevealed:
     """Tests for problem_revealed intent roots (SPIN P)."""
 
@@ -313,7 +299,6 @@ class TestIntentRootsProblemRevealed:
         """Test problem_revealed has loss words."""
         roots = INTENT_ROOTS["problem_revealed"]
         assert any("теря" in r or "упуск" in r for r in roots)
-
 
 class TestIntentRootsImplicationAcknowledged:
     """Tests for implication_acknowledged intent roots (SPIN I)."""
@@ -332,7 +317,6 @@ class TestIntentRootsImplicationAcknowledged:
         roots = INTENT_ROOTS["implication_acknowledged"]
         assert any("тысяч" in r or "процент" in r for r in roots)
 
-
 class TestIntentRootsNeedExpressed:
     """Tests for need_expressed intent roots (SPIN N)."""
 
@@ -349,7 +333,6 @@ class TestIntentRootsNeedExpressed:
         """Test need_expressed has solution words."""
         roots = INTENT_ROOTS["need_expressed"]
         assert any("автоматиз" in r or "контрол" in r for r in roots)
-
 
 class TestIntentRootsNoProblem:
     """Tests for no_problem intent roots."""
@@ -368,7 +351,6 @@ class TestIntentRootsNoProblem:
         roots = INTENT_ROOTS["no_problem"]
         assert any("всё хорошо" in r or "все хорошо" in r or "нас устраивает" in r for r in roots)
 
-
 class TestIntentRootsNoNeed:
     """Tests for no_need intent roots."""
 
@@ -380,7 +362,6 @@ class TestIntentRootsNoNeed:
         """Test no_need has denial phrases."""
         roots = INTENT_ROOTS["no_need"]
         assert any("не нужно" in r or "не надо" in r for r in roots)
-
 
 class TestIntentRootsCallbackRequest:
     """Tests for callback_request intent roots."""
@@ -398,7 +379,6 @@ class TestIntentRootsCallbackRequest:
         """Test callback_request has contact words."""
         roots = INTENT_ROOTS["callback_request"]
         assert any("свяжи" in r or "связаться" in r for r in roots)
-
 
 class TestIntentRootsDemoRequest:
     """Tests for demo_request intent roots."""
@@ -421,7 +401,6 @@ class TestIntentRootsDemoRequest:
         """Test demo_request has trial-related words."""
         roots = INTENT_ROOTS["demo_request"]
         assert any("триал" in r or "trial" in r.lower() or "тестов" in r for r in roots)
-
 
 class TestIntentRootsCompleteness:
     """Tests for completeness of intent coverage."""
@@ -459,7 +438,6 @@ class TestIntentRootsCompleteness:
             assert len(roots) >= MIN_ROOTS, \
                 f"Intent {intent} has only {len(roots)} roots, expected >= {MIN_ROOTS}"
 
-
 class TestIntentRootsQuality:
     """Tests for quality of intent roots."""
 
@@ -486,7 +464,6 @@ class TestIntentRootsQuality:
         for intent, roots in INTENT_ROOTS.items():
             for root in roots:
                 assert len(root.strip()) > 0, f"Empty root in intent {intent}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

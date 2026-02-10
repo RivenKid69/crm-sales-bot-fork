@@ -16,9 +16,8 @@ import os
 from unittest.mock import Mock, patch, MagicMock
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from tone_analyzer import (
+from src.tone_analyzer import (
     Tone,
     Style,
     ToneAnalysis,
@@ -35,8 +34,7 @@ from tone_analyzer import (
     FRUSTRATION_THRESHOLDS,
     TONE_EXAMPLES,
 )
-from feature_flags import flags
-
+from src.feature_flags import flags
 
 # =============================================================================
 # Fixtures
@@ -46,7 +44,6 @@ from feature_flags import flags
 def regex_analyzer():
     """Создать RegexToneAnalyzer для тестов."""
     return RegexToneAnalyzer()
-
 
 @pytest.fixture
 def cascade_analyzer():
@@ -60,7 +57,6 @@ def cascade_analyzer():
     flags.clear_all_overrides()
     reset_cascade_tone_analyzer()
 
-
 @pytest.fixture
 def cascade_analyzer_full():
     """Создать CascadeToneAnalyzer с включенными Tier 2 и 3."""
@@ -72,12 +68,10 @@ def cascade_analyzer_full():
     flags.clear_all_overrides()
     reset_cascade_tone_analyzer()
 
-
 @pytest.fixture
 def frustration_tracker():
     """Создать FrustrationTracker для тестов."""
     return FrustrationTracker()
-
 
 # =============================================================================
 # Test Models
@@ -130,7 +124,6 @@ class TestModels:
         assert analysis.tier_used == "regex"
         assert analysis.tier_scores == {}
         assert analysis.latency_ms == 0.0
-
 
 # =============================================================================
 # Test FrustrationTracker
@@ -228,7 +221,6 @@ class TestFrustrationTracker:
 
         frustration_tracker.set_level(-5)
         assert frustration_tracker.level == 0
-
 
 # =============================================================================
 # Test RegexToneAnalyzer (Tier 1)
@@ -441,7 +433,6 @@ class TestRegexToneAnalyzer:
         result = regex_analyzer.analyze("???")
         assert result.tone == Tone.CONFUSED
 
-
 # =============================================================================
 # Test CascadeToneAnalyzer
 # =============================================================================
@@ -505,7 +496,6 @@ class TestCascadeToneAnalyzer:
         """ToneAnalyzer это alias для CascadeToneAnalyzer."""
         assert ToneAnalyzer is CascadeToneAnalyzer
 
-
 # =============================================================================
 # Test CascadeToneAnalyzer with Tier 2
 # =============================================================================
@@ -547,7 +537,7 @@ class TestCascadeTier2:
         except ImportError:
             pytest.skip("sentence-transformers not installed")
 
-        from tone_analyzer import get_semantic_tone_analyzer
+        from src.tone_analyzer import get_semantic_tone_analyzer
 
         semantic = get_semantic_tone_analyzer()
         if not semantic.is_available:
@@ -556,7 +546,6 @@ class TestCascadeTier2:
         similar = semantic.get_similar_examples("Сколько можно уже!", top_k=3)
         assert len(similar) > 0
         assert all(len(item) == 3 for item in similar)
-
 
 # =============================================================================
 # Test CascadeToneAnalyzer with Tier 3
@@ -614,7 +603,6 @@ class TestCascadeTier3:
             assert result is not None
             assert result[0] == expected_tone
 
-
 # =============================================================================
 # Test Backward Compatibility (Regression)
 # =============================================================================
@@ -635,7 +623,7 @@ class TestBackwardCompatibility:
 
     def test_import_from_module(self):
         """Импорт из модуля работает."""
-        from tone_analyzer import ToneAnalyzer, Tone, Style, ToneAnalysis
+        from src.tone_analyzer import ToneAnalyzer, Tone, Style, ToneAnalysis
         assert ToneAnalyzer is not None
         assert Tone is not None
         assert Style is not None
@@ -685,7 +673,6 @@ class TestBackwardCompatibility:
         result = analyzer.analyze(message)
         assert result.tone == expected_tone
 
-
 # =============================================================================
 # Test Feature Flags
 # =============================================================================
@@ -717,7 +704,6 @@ class TestFeatureFlags:
         flags.clear_override("tone_semantic_tier2")
         assert flags.tone_semantic_tier2 is True
 
-
 # =============================================================================
 # Test Examples
 # =============================================================================
@@ -736,7 +722,6 @@ class TestExamples:
         """Достаточное количество примеров."""
         for tone, examples in TONE_EXAMPLES.items():
             assert len(examples) >= 5, f"Tone {tone} has less than 5 examples"
-
 
 # =============================================================================
 # Test Markers
@@ -762,7 +747,6 @@ class TestMarkers:
         """Пороги frustration."""
         assert FRUSTRATION_THRESHOLDS["warning"] < FRUSTRATION_THRESHOLDS["high"]
         assert FRUSTRATION_THRESHOLDS["high"] < FRUSTRATION_THRESHOLDS["critical"]
-
 
 # =============================================================================
 # Test Singleton
@@ -790,7 +774,6 @@ class TestSingleton:
 
         assert a1 is not a2
 
-
 # =============================================================================
 # Test SemanticToneAnalyzer
 # =============================================================================
@@ -809,7 +792,6 @@ class TestSemanticToneAnalyzer:
             analyzer = SemanticToneAnalyzer()
             # Проверяем что не падает
             assert analyzer is not None
-
 
 # =============================================================================
 # Run tests

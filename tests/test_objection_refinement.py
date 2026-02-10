@@ -13,7 +13,6 @@ from src.classifier.objection_refinement import (
     create_objection_refinement_context,
 )
 
-
 class TestObjectionRefinementContext:
     """Tests for ObjectionRefinementContext dataclass."""
 
@@ -53,7 +52,6 @@ class TestObjectionRefinementContext:
         assert ctx.last_action == "ask_about_budget"
         assert ctx.state == "presentation"
         assert ctx.turn_number == 5
-
 
 class TestObjectionRefinementLayer:
     """Tests for ObjectionRefinementLayer."""
@@ -598,7 +596,6 @@ class TestObjectionRefinementLayer:
         assert refined["intent"] == "objection_price"
         assert refined.get("refined") is None
 
-
 class TestQuestionMarkers:
     """Tests for question marker detection."""
 
@@ -621,7 +618,6 @@ class TestQuestionMarkers:
     def test_question_markers(self, layer, message, expected):
         """Question markers should be detected correctly."""
         assert layer._has_question_markers(message) == expected
-
 
 class TestTopicAlignment:
     """Tests for topic alignment detection."""
@@ -675,14 +671,13 @@ class TestTopicAlignment:
         )
         assert layer._is_topic_aligned(ctx) is False
 
-
 class TestIntegrationWithUnifiedClassifier:
     """Integration tests with UnifiedClassifier."""
 
     def test_objection_refinement_in_pipeline(self):
         """ObjectionRefinementLayer should be called in UnifiedClassifier pipeline."""
         from src.classifier.unified import UnifiedClassifier
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         # Enable objection_refinement
         flags.set_override("objection_refinement", True)
@@ -704,7 +699,7 @@ class TestIntegrationWithUnifiedClassifier:
     def test_stats_include_objection_refinement(self):
         """Classifier stats should include objection refinement stats."""
         from src.classifier.unified import UnifiedClassifier
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         flags.set_override("objection_refinement", True)
 

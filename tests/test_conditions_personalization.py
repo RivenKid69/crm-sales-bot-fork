@@ -112,7 +112,6 @@ from src.conditions.personalization import (
 from src.conditions import ConditionRegistries
 from src.conditions.trace import EvaluationTrace
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -121,7 +120,6 @@ from src.conditions.trace import EvaluationTrace
 def empty_context():
     """Create an empty context for testing."""
     return PersonalizationContext.create_test_context()
-
 
 @pytest.fixture
 def presentation_context():
@@ -133,7 +131,6 @@ def presentation_context():
         engagement_level="high"
     )
 
-
 @pytest.fixture
 def early_state_context():
     """Create a context in early state."""
@@ -142,7 +139,6 @@ def early_state_context():
         turn_number=2,
         engagement_level="medium"
     )
-
 
 @pytest.fixture
 def high_frustration_context():
@@ -154,7 +150,6 @@ def high_frustration_context():
         engagement_level="low",
         momentum_direction="negative"
     )
-
 
 @pytest.fixture
 def breakthrough_context():
@@ -169,7 +164,6 @@ def breakthrough_context():
         company_size=15
     )
 
-
 @pytest.fixture
 def objection_context():
     """Create a context with objection."""
@@ -180,7 +174,6 @@ def objection_context():
         total_objections=2,
         company_size=10
     )
-
 
 # =============================================================================
 # CONTEXT TESTS
@@ -436,7 +429,6 @@ class TestPersonalizationContext:
         assert "presentation" in repr_str
         assert "company_size=10" in repr_str
 
-
 class TestPersonalizationContextFromEnvelope:
     """Tests for creating PersonalizationContext from ContextEnvelope."""
 
@@ -511,7 +503,6 @@ class TestPersonalizationContextFromEnvelope:
         ctx = PersonalizationContext.from_envelope(MockEnvelope())
         assert ctx.company_size is None
 
-
 class TestPersonalizationContextFromContextDict:
     """Tests for creating PersonalizationContext from context dict."""
 
@@ -555,7 +546,6 @@ class TestPersonalizationContextFromContextDict:
         assert ctx.turn_number == 0
         assert ctx.company_size is None
         assert ctx.frustration_level == 0
-
 
 class TestConstants:
     """Tests for module constants."""
@@ -608,7 +598,6 @@ class TestConstants:
     def test_min_turns_for_cta(self):
         """Test MIN_TURNS_FOR_CTA constant."""
         assert MIN_TURNS_FOR_CTA == 3
-
 
 # =============================================================================
 # REGISTRY TESTS
@@ -694,7 +683,6 @@ class TestPersonalizationRegistry:
         assert len(result.passed) == len(personalization_registry)
         assert len(result.failed) == 0
         assert len(result.errors) == 0
-
 
 # =============================================================================
 # CTA CONDITIONS TESTS
@@ -900,7 +888,6 @@ class TestCtaConditions:
         )
         assert info_cta_appropriate(ctx_engaged) is False
 
-
 # =============================================================================
 # COMPANY CONDITIONS TESTS
 # =============================================================================
@@ -1000,7 +987,6 @@ class TestCompanyConditions:
         ctx_none = PersonalizationContext.create_test_context()
         assert has_company_context(ctx_none) is False
 
-
 # =============================================================================
 # PAIN CONDITIONS TESTS
 # =============================================================================
@@ -1079,7 +1065,6 @@ class TestPainConditions:
         ctx_no = PersonalizationContext.create_test_context(competitor_mentioned=False)
         assert competitor_mentioned(ctx_no) is False
 
-
 # =============================================================================
 # ENGAGEMENT CONDITIONS TESTS
 # =============================================================================
@@ -1139,7 +1124,6 @@ class TestEngagementConditions:
 
         ctx_no = PersonalizationContext.create_test_context(has_breakthrough=False)
         assert has_breakthrough(ctx_no) is False
-
 
 # =============================================================================
 # TONE CONDITIONS TESTS
@@ -1217,7 +1201,6 @@ class TestToneConditions:
         )
         assert needs_soft_approach(ctx_good) is False
 
-
 # =============================================================================
 # OBJECTION CONDITIONS TESTS
 # =============================================================================
@@ -1276,7 +1259,6 @@ class TestObjectionConditions:
 
         ctx_later = PersonalizationContext.create_test_context(objection_type="call_later")
         assert objection_is_time(ctx_later) is True
-
 
 # =============================================================================
 # STATE CONDITIONS TESTS
@@ -1338,7 +1320,6 @@ class TestStateConditions:
         """Test is_objection_state condition."""
         ctx = PersonalizationContext.create_test_context(state="handle_objection")
         assert is_objection_state(ctx) is True
-
 
 # =============================================================================
 # COMBINED CONDITIONS TESTS
@@ -1531,7 +1512,6 @@ class TestCombinedConditions:
         )
         assert needs_urgency_reduction(ctx_good) is False
 
-
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
@@ -1624,7 +1604,6 @@ class TestIntegration:
         assert can_use_case_study(ctx) is True
         assert is_decision_maker(ctx) is True
 
-
 # =============================================================================
 # DOCUMENTATION TESTS
 # =============================================================================
@@ -1651,7 +1630,6 @@ class TestDocumentation:
         assert stats["total_categories"] >= 7
         assert "cta" in stats["conditions_by_category"]
         assert "company" in stats["conditions_by_category"]
-
 
 # =============================================================================
 # EDGE CASES TESTS

@@ -23,11 +23,9 @@ from codebase_analyzer.indexer.parsers.typescript_parser import (
     TypeScriptParser,
 )
 
-
 # ============================================================================
 # Parser Registration Tests
 # ============================================================================
-
 
 class TestParserRegistration:
     """Tests for parser registration and discovery."""
@@ -104,11 +102,9 @@ class TestParserRegistration:
         js_parser = get_parser_for_language(Language.JAVASCRIPT)
         assert isinstance(js_parser, JavaScriptParser)
 
-
 # ============================================================================
 # GoParser Tests
 # ============================================================================
-
 
 class TestGoParser:
     """Tests for Go language parser."""
@@ -347,11 +343,9 @@ const SingleConst = 100
         assert repo_interface is not None
         assert repo_interface.is_interface is True
 
-
 # ============================================================================
 # PHPParser Tests
 # ============================================================================
-
 
 class TestPHPParser:
     """Tests for PHP language parser."""
@@ -622,11 +616,9 @@ class Status
         # Should have properties
         assert len(user_class.properties) > 0
 
-
 # ============================================================================
 # TypeScriptParser Tests
 # ============================================================================
-
 
 class TestTypeScriptParser:
     """Tests for TypeScript language parser."""
@@ -825,11 +817,9 @@ export const getUserById = async (id: number): Promise<User> => {
         assert cache_interface is not None
         assert cache_interface.is_interface is True
 
-
 # ============================================================================
 # TSXParser Tests (React)
 # ============================================================================
-
 
 class TestTSXParser:
     """Tests for TSX (React) parser."""
@@ -916,11 +906,9 @@ export const Counter: React.FC = () => {
         # Should recognize components or functions
         assert len(result.components) > 0 or len(result.functions) > 0
 
-
 # ============================================================================
 # JavaScriptParser Tests
 # ============================================================================
-
 
 class TestJavaScriptParser:
     """Tests for JavaScript parser."""
@@ -1007,11 +995,9 @@ module.exports = { createUserRoutes, validateUser };
         # Should have functions
         assert len(result.functions) >= 1
 
-
 # ============================================================================
 # Edge Cases and Error Handling Tests
 # ============================================================================
-
 
 class TestParserEdgeCases:
     """Tests for parser edge cases and error handling."""
@@ -1122,11 +1108,9 @@ func Hello() string {
         assert len(result.functions) == 1
         assert result.functions[0].name == "Hello"
 
-
 # ============================================================================
 # Parser Integration Tests
 # ============================================================================
-
 
 class TestParserIntegration:
     """Integration tests for parsers."""

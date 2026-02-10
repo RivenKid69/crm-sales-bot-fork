@@ -8,7 +8,6 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 @pytest.fixture(scope="module")
 def bant_flow_config():
     """Load BANT flow configuration."""
@@ -16,14 +15,12 @@ def bant_flow_config():
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture(scope="module")
 def support_flow_config():
     """Load Support flow configuration."""
     config_path = Path(__file__).parent.parent / "src" / "yaml_config" / "flows" / "examples" / "support_flow.yaml"
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 # =============================================================================
 # BANT FLOW TESTS
@@ -70,7 +67,6 @@ class TestBantFlowStructure:
         """Config should have templates section."""
         assert "templates" in bant_flow_config
 
-
 class TestBantPhases:
     """Tests for BANT phases configuration."""
 
@@ -99,7 +95,6 @@ class TestBantPhases:
         assert "post_phases_state" in bant_flow_config["phases"]
         assert bant_flow_config["phases"]["post_phases_state"] == "success"
 
-
 class TestBantEntryPoints:
     """Tests for BANT entry points."""
 
@@ -117,7 +112,6 @@ class TestBantEntryPoints:
         """Should have referral entry point."""
         assert "referral" in bant_flow_config["entry_points"]
 
-
 class TestBantGreetingState:
     """Tests for BANT greeting state."""
 
@@ -134,7 +128,6 @@ class TestBantGreetingState:
         """greeting should have goal."""
         state = bant_flow_config["states"]["greeting"]
         assert "goal" in state
-
 
 class TestBantLeadRouter:
     """Tests for BANT lead router (CHOICE state)."""
@@ -165,7 +158,6 @@ class TestBantLeadRouter:
         for choice in state["choices"]:
             assert "condition" in choice
             assert "next" in choice
-
 
 class TestBantStandardBant:
     """Tests for BANT standard_bant (FORK state)."""
@@ -220,7 +212,6 @@ class TestBantStandardBant:
         state = bant_flow_config["states"]["standard_bant"]
         assert "join_condition" in state
 
-
 class TestBantAggregation:
     """Tests for BANT aggregation (JOIN state)."""
 
@@ -245,7 +236,6 @@ class TestBantAggregation:
         assert "on_join" in state
         assert state["on_join"]["action"] == "calculate_lead_score"
 
-
 class TestBantVariables:
     """Tests for BANT variables."""
 
@@ -265,7 +255,6 @@ class TestBantVariables:
     def test_smb_threshold(self, bant_flow_config):
         """Should have smb_threshold variable."""
         assert "smb_threshold" in bant_flow_config["variables"]
-
 
 class TestBantFinalStates:
     """Tests for BANT final states."""
@@ -287,7 +276,6 @@ class TestBantFinalStates:
         """polite_exit should be final."""
         state = bant_flow_config["states"]["polite_exit"]
         assert state.get("is_final") is True
-
 
 # =============================================================================
 # SUPPORT FLOW TESTS
@@ -324,7 +312,6 @@ class TestSupportFlowStructure:
         """Config should have templates section."""
         assert "templates" in support_flow_config
 
-
 class TestSupportEntryPoints:
     """Tests for Support entry points."""
 
@@ -340,7 +327,6 @@ class TestSupportEntryPoints:
         """Should have escalation entry point."""
         assert "escalation" in support_flow_config["entry_points"]
         assert support_flow_config["entry_points"]["escalation"] == "human_handoff"
-
 
 class TestSupportIssueClassifier:
     """Tests for Support issue classifier (CHOICE state)."""
@@ -372,7 +358,6 @@ class TestSupportIssueClassifier:
         conditions = [c["condition"] for c in state["choices"]]
         assert "is_billing_issue" in conditions
 
-
 class TestSupportTechnicalFlow:
     """Tests for Support technical flow (FORK state)."""
 
@@ -403,7 +388,6 @@ class TestSupportTechnicalFlow:
         branch_ids = [b["id"] for b in state["branches"]]
         assert "user_diagnostics" in branch_ids
 
-
 class TestSupportTechnicalResolution:
     """Tests for Support technical resolution (JOIN state)."""
 
@@ -420,7 +404,6 @@ class TestSupportTechnicalResolution:
         """technical_resolution should have on_join."""
         state = support_flow_config["states"]["technical_resolution"]
         assert "on_join" in state
-
 
 class TestSupportBillingFlow:
     """Tests for Support billing flow."""
@@ -443,7 +426,6 @@ class TestSupportBillingFlow:
         """troubleshoot_payment state should exist."""
         assert "troubleshoot_payment" in support_flow_config["states"]
 
-
 class TestSupportAccountFlow:
     """Tests for Support account flow."""
 
@@ -463,7 +445,6 @@ class TestSupportAccountFlow:
         """unlock_account state should exist."""
         assert "unlock_account" in support_flow_config["states"]
 
-
 class TestSupportFeatureRequest:
     """Tests for Support feature request handling."""
 
@@ -479,7 +460,6 @@ class TestSupportFeatureRequest:
         """share_roadmap state should exist."""
         assert "share_roadmap" in support_flow_config["states"]
 
-
 class TestSupportVariables:
     """Tests for Support variables."""
 
@@ -494,7 +474,6 @@ class TestSupportVariables:
     def test_satisfaction_survey_enabled(self, support_flow_config):
         """Should have satisfaction_survey_enabled variable."""
         assert "satisfaction_survey_enabled" in support_flow_config["variables"]
-
 
 class TestSupportFinalStates:
     """Tests for Support final states."""
@@ -526,7 +505,6 @@ class TestSupportFinalStates:
         """final_goodbye state should exist."""
         assert "final_goodbye" in support_flow_config["states"]
 
-
 class TestSupportTemplates:
     """Tests for Support templates."""
 
@@ -541,7 +519,6 @@ class TestSupportTemplates:
     def test_notify_human_agent_template(self, support_flow_config):
         """Should have notify_human_agent template."""
         assert "notify_human_agent" in support_flow_config["templates"]
-
 
 # =============================================================================
 # CROSS-FLOW TESTS
@@ -577,7 +554,6 @@ class TestDagFlowFeatures:
         support_finals = [name for name, s in support_flow_config["states"].items() if s.get("is_final")]
         assert len(bant_finals) >= 2
         assert len(support_finals) >= 2
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

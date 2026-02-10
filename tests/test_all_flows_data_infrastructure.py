@@ -13,18 +13,14 @@ import sys
 import yaml
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from extraction_ssot import EXTRACTION_FIELDS, PHASE_FIELDS, ALL_FIELD_NAMES
-from question_dedup import QuestionDeduplicationEngine
-
+from src.extraction_ssot import EXTRACTION_FIELDS, PHASE_FIELDS, ALL_FIELD_NAMES
+from src.question_dedup import QuestionDeduplicationEngine
 
 BASE_DIR = Path(__file__).parent.parent
 CONFIG_DIR = BASE_DIR / "src" / "yaml_config"
 FLOWS_DIR = CONFIG_DIR / "flows"
 TEMPLATES_DIR = CONFIG_DIR / "templates"
 CONSTANTS_FILE = CONFIG_DIR / "constants.yaml"
-
 
 NEW_SHARED_FIELDS = {
     "decision_maker": "authority",
@@ -102,13 +98,11 @@ DEDUP_PHASES = [
     "recommend",
 ]
 
-
 @pytest.fixture(scope="module")
 def constants():
     """Load constants.yaml once for the module."""
     with open(CONSTANTS_FILE, "r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
-
 
 def _list_flow_names():
     return sorted(
@@ -116,16 +110,13 @@ def _list_flow_names():
         if p.is_dir() and p.name not in {"_base", "examples", "spin_selling"}
     )
 
-
 def _load_yaml(path: Path):
     with open(path, "r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
 
-
 # =============================================================================
 # EXTRACTION + CONSTANTS COVERAGE
 # =============================================================================
-
 
 @pytest.mark.parametrize("field, expected_phase", NEW_SHARED_FIELDS.items())
 def test_new_extraction_fields_registered(field, expected_phase):
@@ -134,7 +125,6 @@ def test_new_extraction_fields_registered(field, expected_phase):
     assert config is not None, f"Missing extraction field: {field}"
     assert config.spin_phase == expected_phase
 
-
 @pytest.mark.parametrize("phase, expected_fields", PHASE_FIELD_EXPECTATIONS.items())
 def test_phase_fields_include_new_shared_fields(phase, expected_fields):
     """PHASE_FIELDS must include new shared fields for non-SPIN phases."""
@@ -142,7 +132,6 @@ def test_phase_fields_include_new_shared_fields(phase, expected_fields):
     assert fields, f"Phase {phase} missing in PHASE_FIELDS"
     for field in expected_fields:
         assert field in fields
-
 
 @pytest.mark.parametrize("phase", PHASE_CLASSIFICATION_KEYS)
 def test_phase_classification_entries_exist(constants, phase):
@@ -154,17 +143,14 @@ def test_phase_classification_entries_exist(constants, phase):
     for field in data_fields:
         assert field in ALL_FIELD_NAMES, f"Unknown data field in phase {phase}: {field}"
 
-
 # =============================================================================
 # QUESTION DEDUP CONFIG + GENERIC FALLBACK
 # =============================================================================
-
 
 @pytest.fixture()
 def dedup_engine():
     """Fresh dedup engine instance."""
     return QuestionDeduplicationEngine()
-
 
 @pytest.mark.parametrize("field", NEW_SHARED_FIELDS.keys())
 def test_dedup_config_contains_shared_fields(dedup_engine, field):
@@ -173,14 +159,12 @@ def test_dedup_config_contains_shared_fields(dedup_engine, field):
     related = dedup_engine._config.data_fields[field].get("related_questions", [])
     assert related, f"No related questions for {field}"
 
-
 @pytest.mark.parametrize("phase", DEDUP_PHASES)
 def test_dedup_phase_questions_exist(dedup_engine, phase):
     """question_dedup.yaml must define phase_questions for new phases."""
     assert phase in dedup_engine._config.phase_questions
     question_templates = dedup_engine._config.phase_questions[phase].get("question_templates", {})
     assert question_templates, f"No question_templates for phase {phase}"
-
 
 def test_generic_dedup_uses_related_questions_for_unknown_phase(dedup_engine):
     """Generic dedup should use related_questions even when phase has no config."""
@@ -203,7 +187,6 @@ def test_generic_dedup_uses_related_questions_for_unknown_phase(dedup_engine):
 
     assert "business_type" in result.do_not_ask_fields
 
-
 def test_generic_dedup_fallback_for_unknown_phase_without_missing(dedup_engine):
     """Generic dedup should fall back to default questions when no missing_data."""
     result = dedup_engine.get_available_questions(
@@ -216,11 +199,9 @@ def test_generic_dedup_fallback_for_unknown_phase_without_missing(dedup_engine):
     assert result.available_questions == fallback[:2]
     assert result.all_data_collected
 
-
 # =============================================================================
 # FLOW STATE CONSISTENCY (REQUIRED DATA + DATA_COMPLETE)
 # =============================================================================
-
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_flow_phase_states_have_required_data_and_transitions(flow_name):
@@ -248,7 +229,6 @@ def test_flow_phase_states_have_required_data_and_transitions(flow_name):
             f"State {flow_name}.{state_name} missing data_complete transition"
         )
 
-
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_required_and_optional_fields_are_valid(flow_name):
     """required_data fields must be known or set by on_enter flags; optional_data must be known."""
@@ -272,7 +252,6 @@ def test_required_and_optional_fields_are_valid(flow_name):
             assert field in ALL_FIELD_NAMES, (
                 f"Unknown optional_data field {field} in {flow_name}.{state_name}"
             )
-
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_phase_fields_align_with_extraction_mapping(flow_name):
@@ -300,11 +279,9 @@ def test_phase_fields_align_with_extraction_mapping(flow_name):
                     f"Field {field} not allowed for phase {phase} in {flow_name}.{state_name}"
                 )
 
-
 # =============================================================================
 # PROMPT TEMPLATE DEDUP VARIABLES
 # =============================================================================
-
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_continue_current_goal_templates_include_dedup_vars(flow_name):

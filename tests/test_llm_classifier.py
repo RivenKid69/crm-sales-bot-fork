@@ -5,16 +5,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 class TestSchemas:
     """Тесты Pydantic схем."""
 
     def test_intent_type_valid(self):
         """Проверка валидных интентов."""
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
 
         result = ClassificationResult(
             intent="greeting",
@@ -26,7 +22,7 @@ class TestSchemas:
 
     def test_intent_type_invalid(self):
         """Проверка невалидных интентов."""
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
 
         with pytest.raises(ValidationError):
             ClassificationResult(
@@ -37,7 +33,7 @@ class TestSchemas:
 
     def test_confidence_bounds(self):
         """Проверка границ confidence."""
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
 
         # Валидные границы
         result = ClassificationResult(intent="greeting", confidence=0.0, reasoning="test")
@@ -55,7 +51,7 @@ class TestSchemas:
 
     def test_extracted_data_optional(self):
         """Проверка опциональности extracted_data."""
-        from classifier.llm.schemas import ClassificationResult, ExtractedData
+        from src.classifier.llm.schemas import ClassificationResult, ExtractedData
 
         # Без extracted_data
         result = ClassificationResult(
@@ -77,7 +73,7 @@ class TestSchemas:
 
     def test_json_serialization(self):
         """Проверка сериализации в JSON."""
-        from classifier.llm.schemas import ClassificationResult, ExtractedData
+        from src.classifier.llm.schemas import ClassificationResult, ExtractedData
 
         result = ClassificationResult(
             intent="price_question",
@@ -99,7 +95,7 @@ class TestSchemas:
     def test_all_34_intents_exist(self):
         """Проверка что все 34 интента определены (включая request_brevity)."""
         import typing
-        from classifier.llm.schemas import IntentType
+        from src.classifier.llm.schemas import IntentType
 
         intents = typing.get_args(IntentType)
         assert len(intents) == 34
@@ -108,7 +104,7 @@ class TestSchemas:
 
     def test_pain_category_valid(self):
         """Проверка валидных категорий боли."""
-        from classifier.llm.schemas import ExtractedData
+        from src.classifier.llm.schemas import ExtractedData
 
         data = ExtractedData(pain_category="losing_clients")
         assert data.pain_category == "losing_clients"
@@ -121,14 +117,14 @@ class TestSchemas:
 
     def test_pain_category_invalid(self):
         """Проверка невалидных категорий боли."""
-        from classifier.llm.schemas import ExtractedData
+        from src.classifier.llm.schemas import ExtractedData
 
         with pytest.raises(ValidationError):
             ExtractedData(pain_category="invalid_category")
 
     def test_extracted_data_all_fields(self):
         """Проверка всех полей ExtractedData."""
-        from classifier.llm.schemas import ExtractedData
+        from src.classifier.llm.schemas import ExtractedData
 
         data = ExtractedData(
             company_size=50,
@@ -156,7 +152,7 @@ class TestSchemas:
 
     def test_classification_result_required_fields(self):
         """Проверка обязательных полей ClassificationResult."""
-        from classifier.llm.schemas import ClassificationResult
+        from src.classifier.llm.schemas import ClassificationResult
 
         # Без intent - ошибка
         with pytest.raises(ValidationError):
@@ -172,26 +168,25 @@ class TestSchemas:
 
     def test_module_exports(self):
         """Проверка экспортов модуля."""
-        from classifier.llm import IntentType, ExtractedData, ClassificationResult, PainCategory
+        from src.classifier.llm import IntentType, ExtractedData, ClassificationResult, PainCategory
 
         assert IntentType is not None
         assert ExtractedData is not None
         assert ClassificationResult is not None
         assert PainCategory is not None
 
-
 class TestPrompts:
     """Тесты промптов."""
 
     def test_system_prompt_has_no_think(self):
         """Проверка /no_think в начале."""
-        from classifier.llm.prompts import SYSTEM_PROMPT
+        from src.classifier.llm.prompts import SYSTEM_PROMPT
         assert SYSTEM_PROMPT.startswith("/no_think")
 
     def test_system_prompt_has_all_intents(self):
         """Проверка что все интенты описаны."""
-        from classifier.llm.prompts import SYSTEM_PROMPT
-        from classifier.llm.schemas import IntentType
+        from src.classifier.llm.prompts import SYSTEM_PROMPT
+        from src.classifier.llm.schemas import IntentType
         import typing
 
         # Получаем все интенты из Literal
@@ -202,7 +197,7 @@ class TestPrompts:
 
     def test_build_classification_prompt(self):
         """Проверка построения промпта."""
-        from classifier.llm.prompts import build_classification_prompt
+        from src.classifier.llm.prompts import build_classification_prompt
 
         prompt = build_classification_prompt(
             message="Привет",
@@ -216,7 +211,7 @@ class TestPrompts:
 
     def test_build_classification_prompt_no_context(self):
         """Проверка промпта без контекста."""
-        from classifier.llm.prompts import build_classification_prompt
+        from src.classifier.llm.prompts import build_classification_prompt
 
         prompt = build_classification_prompt(message="Тест")
 
@@ -225,7 +220,7 @@ class TestPrompts:
 
     def test_build_classification_prompt_all_context_fields(self):
         """Проверка всех полей контекста."""
-        from classifier.llm.prompts import build_classification_prompt
+        from src.classifier.llm.prompts import build_classification_prompt
 
         prompt = build_classification_prompt(
             message="Сообщение",
@@ -242,14 +237,13 @@ class TestPrompts:
         assert "задал вопрос" in prompt
         assert "greeting" in prompt
 
-
 class TestFewShot:
     """Тесты few-shot примеров."""
 
     def test_few_shot_examples_valid(self):
         """Проверка валидности few-shot примеров."""
-        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
-        from classifier.llm.schemas import IntentType
+        from src.classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+        from src.classifier.llm.schemas import IntentType
         import typing
 
         valid_intents = set(typing.get_args(IntentType))
@@ -262,13 +256,13 @@ class TestFewShot:
 
     def test_few_shot_examples_count(self):
         """Проверка количества примеров."""
-        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+        from src.classifier.llm.few_shot import FEW_SHOT_EXAMPLES
 
         assert len(FEW_SHOT_EXAMPLES) >= 10
 
     def test_get_few_shot_prompt(self):
         """Проверка генерации few-shot промпта."""
-        from classifier.llm.few_shot import get_few_shot_prompt
+        from src.classifier.llm.few_shot import get_few_shot_prompt
 
         prompt = get_few_shot_prompt(n_examples=3)
 
@@ -279,7 +273,7 @@ class TestFewShot:
 
     def test_get_few_shot_prompt_limit(self):
         """Проверка лимита примеров."""
-        from classifier.llm.few_shot import get_few_shot_prompt
+        from src.classifier.llm.few_shot import get_few_shot_prompt
 
         prompt = get_few_shot_prompt(n_examples=2)
 
@@ -289,7 +283,7 @@ class TestFewShot:
 
     def test_few_shot_covers_main_categories(self):
         """Проверка покрытия основных категорий."""
-        from classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+        from src.classifier.llm.few_shot import FEW_SHOT_EXAMPLES
 
         intents = {ex["result"]["intent"] for ex in FEW_SHOT_EXAMPLES}
 
@@ -301,14 +295,13 @@ class TestFewShot:
         assert "problem_revealed" in intents
         assert "contact_provided" in intents
 
-
 class TestLLMClassifier:
     """Тесты LLMClassifier."""
 
     def test_classify_success(self):
         """Успешная классификация через LLM."""
         from unittest.mock import Mock, MagicMock
-        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+        from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 
         # Мок VLLMClient
         mock_vllm = Mock()
@@ -332,7 +325,7 @@ class TestLLMClassifier:
     def test_classify_fallback_on_none(self):
         """Fallback когда LLM возвращает None."""
         from unittest.mock import Mock
-        from classifier.llm import LLMClassifier
+        from src.classifier.llm import LLMClassifier
 
         # Мок VLLMClient возвращает None
         mock_vllm = Mock()
@@ -355,7 +348,7 @@ class TestLLMClassifier:
     def test_classify_fallback_on_exception(self):
         """Fallback при исключении LLM."""
         from unittest.mock import Mock
-        from classifier.llm import LLMClassifier
+        from src.classifier.llm import LLMClassifier
 
         # Мок VLLMClient выбрасывает исключение
         mock_vllm = Mock()
@@ -378,7 +371,7 @@ class TestLLMClassifier:
     def test_classify_no_fallback(self):
         """Без fallback возвращает unclear."""
         from unittest.mock import Mock
-        from classifier.llm import LLMClassifier
+        from src.classifier.llm import LLMClassifier
 
         # Мок VLLMClient возвращает None
         mock_vllm = Mock()
@@ -394,7 +387,7 @@ class TestLLMClassifier:
     def test_classify_fallback_also_fails(self):
         """Когда и LLM и fallback падают."""
         from unittest.mock import Mock
-        from classifier.llm import LLMClassifier
+        from src.classifier.llm import LLMClassifier
 
         # Мок VLLMClient возвращает None
         mock_vllm = Mock()
@@ -414,7 +407,7 @@ class TestLLMClassifier:
     def test_stats(self):
         """Проверка статистики."""
         from unittest.mock import Mock
-        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+        from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 
         mock_vllm = Mock()
         mock_vllm.get_stats_dict.return_value = {"total_requests": 5}
@@ -446,7 +439,7 @@ class TestLLMClassifier:
     def test_classify_with_context(self):
         """Классификация с контекстом."""
         from unittest.mock import Mock, call
-        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+        from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 
         mock_vllm = Mock()
         mock_result = ClassificationResult(
@@ -473,7 +466,7 @@ class TestLLMClassifier:
     def test_extracted_data_serialization(self):
         """Проверка сериализации extracted_data."""
         from unittest.mock import Mock
-        from classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+        from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 
         mock_vllm = Mock()
         mock_result = ClassificationResult(
@@ -497,17 +490,16 @@ class TestLLMClassifier:
 
     def test_module_exports_classifier(self):
         """Проверка экспорта LLMClassifier из модуля."""
-        from classifier.llm import LLMClassifier
+        from src.classifier.llm import LLMClassifier
 
         assert LLMClassifier is not None
-
 
 class TestUnifiedClassifier:
     """Тесты UnifiedClassifier."""
 
     def test_uses_llm_when_flag_true(self):
         """Использует LLM когда флаг включен."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
         with patch('classifier.unified.flags') as mock_flags:
@@ -527,7 +519,7 @@ class TestUnifiedClassifier:
 
     def test_uses_hybrid_when_flag_false(self):
         """Использует Hybrid когда флаг выключен."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
         with patch('classifier.unified.flags') as mock_flags:
@@ -546,7 +538,7 @@ class TestUnifiedClassifier:
 
     def test_lazy_loading_hybrid(self):
         """Проверка lazy loading HybridClassifier."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch
 
         with patch('classifier.unified.flags') as mock_flags:
@@ -566,7 +558,7 @@ class TestUnifiedClassifier:
 
     def test_lazy_loading_llm(self):
         """Проверка lazy loading LLMClassifier."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
         with patch('classifier.unified.flags') as mock_flags:
@@ -587,7 +579,7 @@ class TestUnifiedClassifier:
 
     def test_get_stats(self):
         """Проверка получения статистики."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
         with patch('classifier.unified.flags') as mock_flags:
@@ -610,7 +602,7 @@ class TestUnifiedClassifier:
 
     def test_get_stats_hybrid_mode(self):
         """Проверка статистики в режиме Hybrid."""
-        from classifier.unified import UnifiedClassifier
+        from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch
 
         with patch('classifier.unified.flags') as mock_flags:
@@ -623,10 +615,9 @@ class TestUnifiedClassifier:
 
     def test_module_exports_unified(self):
         """Проверка экспорта UnifiedClassifier из модуля."""
-        from classifier import UnifiedClassifier
+        from src.classifier import UnifiedClassifier
 
         assert UnifiedClassifier is not None
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

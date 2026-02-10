@@ -21,9 +21,6 @@ import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # LARGE CONFIGURATION TESTS
 # =============================================================================
@@ -167,7 +164,6 @@ class TestLargeConfigurations:
         assert len(loaded['items']) == 1000
         assert elapsed < 10.0  # Should load in under 10 seconds
 
-
 class TestConcurrentOperations:
     """Tests for concurrent configuration operations."""
 
@@ -273,7 +269,6 @@ class TestConcurrentOperations:
         # All should get same value
         assert len(set(results)) == 1
 
-
 class TestMemoryUsage:
     """Tests for memory usage under load."""
 
@@ -339,7 +334,6 @@ class TestMemoryUsage:
 
         assert len(configs) == 50
         assert all(c.guard['max_turns'] == 25 for c in configs)
-
 
 class TestLoadingPerformance:
     """Tests for configuration loading performance."""
@@ -415,7 +409,6 @@ class TestLoadingPerformance:
         # Both should be fast
         assert avg_with < 1.0
         assert avg_without < 0.5
-
 
 class TestConditionEvaluationPerformance:
     """Tests for condition evaluation performance."""
@@ -500,7 +493,6 @@ class TestConditionEvaluationPerformance:
 
             # Should complete in reasonable time even for deep nesting
             assert elapsed < 1.0, f"Depth {depth} took {elapsed}s"
-
 
 class TestStressScenarios:
     """Tests for stress scenarios."""

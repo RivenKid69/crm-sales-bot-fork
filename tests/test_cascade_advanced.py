@@ -14,18 +14,15 @@ import time
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from knowledge.retriever import CascadeRetriever, MatchStage, get_retriever
-from knowledge import WIPON_KNOWLEDGE
-
+from src.knowledge.retriever import CascadeRetriever, MatchStage, get_retriever
+from src.knowledge import WIPON_KNOWLEDGE
 
 class TestExactMatchAdvanced:
     """Продвинутые тесты exact match."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -94,13 +91,12 @@ class TestExactMatchAdvanced:
 
         assert len(set(topics)) == 1, "Different cases should return same result"
 
-
 class TestLemmaMatchAdvanced:
     """Продвинутые тесты lemma match."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -127,7 +123,7 @@ class TestLemmaMatchAdvanced:
             # Если base нашёл что-то, inflection тоже должен
             if base_results:
                 # Проверяем что леммы совпадают
-                from knowledge.lemmatizer import get_lemmatizer
+                from src.knowledge.lemmatizer import get_lemmatizer
                 lemmatizer = get_lemmatizer()
                 base_lemma = lemmatizer.lemmatize_word(base_word)
                 inflection_lemma = lemmatizer.lemmatize_word(inflection)
@@ -173,10 +169,9 @@ class TestLemmaMatchAdvanced:
             # Score должен быть значительным
             assert results[0].score >= 0.2, f"Expected score >= 0.2, got {results[0].score}"
 
-
 def _create_embeddings_retriever_safe():
     """Создаёт retriever с embeddings, или без если OOM."""
-    import knowledge.retriever as r
+    import src.knowledge.retriever as r
     r._retriever = None
     try:
         return CascadeRetriever(use_embeddings=True)
@@ -185,7 +180,6 @@ def _create_embeddings_retriever_safe():
             r._retriever = None
             return CascadeRetriever(use_embeddings=False)
         raise
-
 
 class TestSemanticMatchAdvanced:
     """Продвинутые тесты semantic match."""
@@ -250,13 +244,12 @@ class TestSemanticMatchAdvanced:
             assert r.score >= retriever.semantic_threshold, \
                 f"Score {r.score} below threshold {retriever.semantic_threshold}"
 
-
 class TestCascadeLogic:
     """Тесты каскадной логики переходов между этапами."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         try:
             return CascadeRetriever(use_embeddings=True)
@@ -317,13 +310,12 @@ class TestCascadeLogic:
         final_results, stats = retriever.search_with_stats(query)
         assert stats["stage_used"] == "exact"
 
-
 class TestRealWorldQueries:
     """Тесты на реальных пользовательских запросах."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         try:
             return CascadeRetriever(use_embeddings=True)
@@ -399,7 +391,6 @@ class TestRealWorldQueries:
             # Не должно быть ошибок, результат может быть пустым
             assert isinstance(results, list)
 
-
 class TestPerformanceAdvanced:
     """Продвинутые тесты производительности."""
 
@@ -465,13 +456,12 @@ class TestPerformanceAdvanced:
         assert stage_counts["exact"] / total >= 0.5, \
             f"Exact match only {stage_counts['exact']/total*100:.0f}%, expected >= 50%"
 
-
 class TestIntegration:
     """Интеграционные тесты."""
 
     def test_retrieve_api_compatibility(self):
         """API retrieve() совместим со старым кодом."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
 
         retriever = get_retriever(use_embeddings=False)
@@ -488,7 +478,7 @@ class TestIntegration:
 
     def test_singleton_pattern(self):
         """Singleton работает корректно."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
 
         r1 = get_retriever(use_embeddings=False)
@@ -498,7 +488,7 @@ class TestIntegration:
 
     def test_category_filtering(self):
         """Фильтрация по категориям работает."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         retriever = CascadeRetriever(use_embeddings=False)
 
@@ -513,7 +503,6 @@ class TestIntegration:
         for r in results:
             assert r.section.category in ["products", "pricing"], \
                 f"Expected category in ['products', 'pricing'], got '{r.section.category}'"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

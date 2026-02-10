@@ -12,9 +12,7 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from context_envelope import (
+from src.context_envelope import (
     ContextEnvelope,
     ContextEnvelopeBuilder,
     ReasonCode,
@@ -22,7 +20,6 @@ from context_envelope import (
     pii_redactor,
     build_context_envelope,
 )
-
 
 class TestReasonCode:
     """Тесты для ReasonCode enum."""
@@ -57,7 +54,6 @@ class TestReasonCode:
         ]
         for code in objection_codes:
             assert code.value.startswith("objection.")
-
 
 class TestContextEnvelope:
     """Тесты для ContextEnvelope dataclass."""
@@ -227,7 +223,6 @@ class TestContextEnvelope:
         assert d["disambiguation_options"] == options
         assert d["disambiguation_question"] == question
 
-
 class TestPIIRedactor:
     """Тесты для PIIRedactor."""
 
@@ -321,7 +316,6 @@ class TestPIIRedactor:
         """Проверить singleton instance."""
         assert pii_redactor is not None
         assert isinstance(pii_redactor, PIIRedactor)
-
 
 class TestContextEnvelopeBuilder:
     """Тесты для ContextEnvelopeBuilder."""
@@ -501,7 +495,6 @@ class TestContextEnvelopeBuilder:
         assert envelope.disambiguation_options == []
         assert envelope.disambiguation_question == ""
 
-
 class TestBuildContextEnvelope:
     """Тесты для функции build_context_envelope."""
 
@@ -525,7 +518,6 @@ class TestBuildContextEnvelope:
 
         # Envelope создаётся успешно с флагом v2
         assert envelope is not None
-
 
 class TestContextEnvelopeIntegration:
     """Интеграционные тесты для ContextEnvelope."""

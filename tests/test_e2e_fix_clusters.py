@@ -17,10 +17,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, PropertyMock
 from dataclasses import dataclass
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # CLUSTER 1: _clean() proportion-based English detection
 # =============================================================================
@@ -30,7 +26,7 @@ class TestCleanProportionBased:
 
     def _make_generator(self):
         """Create a ResponseGenerator with mock LLM."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
         llm = MagicMock()
         llm.generate.return_value = "test"
         gen = ResponseGenerator(llm)
@@ -105,7 +101,6 @@ class TestCleanProportionBased:
         assert "Basic" in result, f"Basic stripped: {result}"
         assert "Team" in result, f"Team stripped: {result}"
 
-
 # =============================================================================
 # CLUSTER 2: CTA phase-based coverage for all flows
 # =============================================================================
@@ -114,7 +109,7 @@ class TestCTAPhaseMapping:
     """Test CTA phase-based coverage for all 20 flows."""
 
     def _make_cta_generator(self):
-        from cta_generator import CTAGenerator
+        from src.cta_generator import CTAGenerator
         gen = CTAGenerator()
         # Set turn count above minimum
         gen.turn_count = 5
@@ -156,12 +151,12 @@ class TestCTAPhaseMapping:
 
     def test_bant_need_mid_phase(self):
         """BANT need state should be in mid phase."""
-        from cta_generator import STATE_TO_CTA_PHASE
+        from src.cta_generator import STATE_TO_CTA_PHASE
         assert STATE_TO_CTA_PHASE.get("bant_need") == "mid"
 
     def test_meddic_champion_late_phase(self):
         """MEDDIC champion state should be in late phase."""
-        from cta_generator import STATE_TO_CTA_PHASE
+        from src.cta_generator import STATE_TO_CTA_PHASE
         assert STATE_TO_CTA_PHASE.get("meddic_champion") == "late"
 
     def test_dynamic_phase_resolution(self):
@@ -250,7 +245,7 @@ class TestCTAPhaseMapping:
 
     def test_all_20_flow_states_mapped(self):
         """All known flow states should have a mapping in STATE_TO_CTA_PHASE."""
-        from cta_generator import STATE_TO_CTA_PHASE
+        from src.cta_generator import STATE_TO_CTA_PHASE
         # Check a sample from each flow
         expected_states = [
             "spin_situation", "spin_implication",  # SPIN
@@ -277,7 +272,6 @@ class TestCTAPhaseMapping:
         assert not should_add
         assert "high_frustration" in reason
 
-
 # =============================================================================
 # CLUSTER 3: Price question intent-aware get_facts()
 # =============================================================================
@@ -286,7 +280,7 @@ class TestPriceQuestionPipeline:
     """Test price question pipeline fixes."""
 
     def _make_generator(self):
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
         llm = MagicMock()
         llm.generate.return_value = "test"
         gen = ResponseGenerator(llm)
@@ -336,7 +330,6 @@ class TestPriceQuestionPipeline:
         assert "25" in result or "6" in result  # team tier
         assert "26" in result  # business tier
 
-
 # =============================================================================
 # CLUSTER 4: Repair mode enriched directives
 # =============================================================================
@@ -370,7 +363,7 @@ class TestRepairModeDirectives:
 
     def test_repair_trigger_and_context_fields_exist(self):
         """ResponseDirectives should have repair_trigger and repair_context fields."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
         d = ResponseDirectives()
         assert hasattr(d, "repair_trigger")
         assert hasattr(d, "repair_context")
@@ -379,8 +372,8 @@ class TestRepairModeDirectives:
 
     def test_repair_mode_stuck_trigger(self):
         """Stuck repair mode should set repair_trigger='stuck' and offer choices."""
-        from response_directives import ResponseDirectivesBuilder, ResponseDirectives
-        from context_envelope import ReasonCode
+        from src.response_directives import ResponseDirectivesBuilder, ResponseDirectives
+        from src.context_envelope import ReasonCode
 
         envelope = self._make_envelope(
             reason_codes=[ReasonCode.POLICY_REPAIR_MODE],
@@ -397,8 +390,8 @@ class TestRepairModeDirectives:
 
     def test_repair_mode_oscillation_trigger(self):
         """Oscillation repair mode should set repair_trigger='oscillation'."""
-        from response_directives import ResponseDirectivesBuilder
-        from context_envelope import ReasonCode
+        from src.response_directives import ResponseDirectivesBuilder
+        from src.context_envelope import ReasonCode
 
         envelope = self._make_envelope(
             reason_codes=[ReasonCode.POLICY_REPAIR_MODE],
@@ -414,8 +407,8 @@ class TestRepairModeDirectives:
 
     def test_repair_mode_repeated_question_trigger(self):
         """Repeated question should set repair_trigger and context."""
-        from response_directives import ResponseDirectivesBuilder
-        from context_envelope import ReasonCode
+        from src.response_directives import ResponseDirectivesBuilder
+        from src.context_envelope import ReasonCode
 
         envelope = self._make_envelope(
             reason_codes=[ReasonCode.POLICY_REPAIR_MODE],
@@ -433,8 +426,8 @@ class TestRepairModeDirectives:
 
     def test_repair_mode_generic_repeated_question(self):
         """Non-price repeated question should set generic context."""
-        from response_directives import ResponseDirectivesBuilder
-        from context_envelope import ReasonCode
+        from src.response_directives import ResponseDirectivesBuilder
+        from src.context_envelope import ReasonCode
 
         envelope = self._make_envelope(
             reason_codes=[ReasonCode.POLICY_REPAIR_MODE],
@@ -451,7 +444,7 @@ class TestRepairModeDirectives:
 
     def test_repair_instruction_stuck_contains_steps(self):
         """Stuck repair instruction should mention concrete next steps."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         d = ResponseDirectives()
         d.repair_mode = True
@@ -462,7 +455,7 @@ class TestRepairModeDirectives:
 
     def test_repair_instruction_oscillation_contains_summary(self):
         """Oscillation repair instruction should mention summarizing."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         d = ResponseDirectives()
         d.repair_mode = True
@@ -473,7 +466,7 @@ class TestRepairModeDirectives:
 
     def test_repair_instruction_repeated_contains_context(self):
         """Repeated question repair instruction should include context."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         d = ResponseDirectives()
         d.repair_mode = True
@@ -485,7 +478,7 @@ class TestRepairModeDirectives:
 
     def test_repair_to_dict_includes_new_fields(self):
         """to_dict() should include repair_trigger and repair_context."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
 
         d = ResponseDirectives()
         d.repair_mode = True
@@ -498,7 +491,6 @@ class TestRepairModeDirectives:
         assert "repair_context" in result["dialogue_moves"]
         assert result["dialogue_moves"]["repair_context"] == "test context"
 
-
 # =============================================================================
 # ADDITIONAL A1: Retriever question_features mapping
 # =============================================================================
@@ -508,21 +500,20 @@ class TestRetrieverMapping:
 
     def test_question_features_includes_support_integrations(self):
         """question_features should include support and integrations categories."""
-        from knowledge.retriever import INTENT_TO_CATEGORY
+        from src.knowledge.retriever import INTENT_TO_CATEGORY
         cats = INTENT_TO_CATEGORY.get("question_features", [])
         assert "support" in cats, f"support not in question_features: {cats}"
         assert "integrations" in cats, f"integrations not in question_features: {cats}"
 
     def test_question_features_preserves_existing(self):
         """Existing categories should still be present."""
-        from knowledge.retriever import INTENT_TO_CATEGORY
+        from src.knowledge.retriever import INTENT_TO_CATEGORY
         cats = INTENT_TO_CATEGORY.get("question_features", [])
         assert "features" in cats
         assert "products" in cats
         assert "tis" in cats
         assert "analytics" in cats
         assert "inventory" in cats
-
 
 # =============================================================================
 # SETTINGS: Expanded allowed_english_words
@@ -533,7 +524,7 @@ class TestExpandedAllowlist:
 
     def test_settings_has_technical_terms(self):
         """Settings should include technical terms in allowlist."""
-        from settings import settings
+        from src.settings import settings
         allowed = settings.generator.allowed_english_words
         technical_terms = ["rest", "oauth", "ssl", "jwt", "sla", "http", "https", "url", "sql"]
         for term in technical_terms:
@@ -541,7 +532,7 @@ class TestExpandedAllowlist:
 
     def test_settings_has_tariff_terms(self):
         """Settings should include tariff/product terms in allowlist."""
-        from settings import settings
+        from src.settings import settings
         allowed = settings.generator.allowed_english_words
         tariff_terms = ["mini", "lite", "standard", "pro", "basic", "team", "business", "demo"]
         for term in tariff_terms:
@@ -549,12 +540,11 @@ class TestExpandedAllowlist:
 
     def test_settings_has_brand_names(self):
         """Settings should include brand names in allowlist."""
-        from settings import settings
+        from src.settings import settings
         allowed = settings.generator.allowed_english_words
         brands = ["kaspi", "halyk", "iiko", "poster"]
         for brand in brands:
             assert brand in allowed, f"'{brand}' not in allowed_english_words"
-
 
 # =============================================================================
 # INTEGRATION: CTA phase in constants.yaml
@@ -565,7 +555,7 @@ class TestCTAPhaseConfig:
 
     def test_cta_by_phase_loaded(self):
         """CTA by_phase should be defined in cta_generator module."""
-        from cta_generator import CTA_BY_PHASE
+        from src.cta_generator import CTA_BY_PHASE
         assert "early" in CTA_BY_PHASE
         assert "mid" in CTA_BY_PHASE
         assert "late" in CTA_BY_PHASE
@@ -573,24 +563,23 @@ class TestCTAPhaseConfig:
 
     def test_early_phase_has_no_ctas(self):
         """Early phase should have empty CTA list."""
-        from cta_generator import CTA_BY_PHASE
+        from src.cta_generator import CTA_BY_PHASE
         assert CTA_BY_PHASE["early"] == []
 
     def test_mid_phase_has_soft_ctas(self):
         """Mid phase should have soft CTAs."""
-        from cta_generator import CTA_BY_PHASE
+        from src.cta_generator import CTA_BY_PHASE
         assert len(CTA_BY_PHASE["mid"]) > 0
 
     def test_late_phase_has_direct_ctas(self):
         """Late phase should have direct CTAs."""
-        from cta_generator import CTA_BY_PHASE
+        from src.cta_generator import CTA_BY_PHASE
         assert len(CTA_BY_PHASE["late"]) > 0
 
     def test_close_phase_has_contact_ctas(self):
         """Close phase should have contact CTAs."""
-        from cta_generator import CTA_BY_PHASE
+        from src.cta_generator import CTA_BY_PHASE
         assert len(CTA_BY_PHASE["close"]) > 0
-
 
 # =============================================================================
 # INTEGRATION: bot.py cta_added field
@@ -601,7 +590,7 @@ class TestBotCTATracking:
 
     def test_cta_result_type(self):
         """CTAResult dataclass should have expected fields."""
-        from cta_generator import CTAResult
+        from src.cta_generator import CTAResult
         result = CTAResult(
             original_response="test",
             cta="Try demo?",
@@ -610,7 +599,6 @@ class TestBotCTATracking:
         )
         assert result.cta_added is True
         assert result.cta == "Try demo?"
-
 
 # =============================================================================
 # UNIVERSALITY: Future flow compatibility
@@ -621,7 +609,7 @@ class TestUniversality:
 
     def test_proportion_detection_any_english_term(self):
         """Any English term should survive in Russian text (Cluster 1 universality)."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
         llm = MagicMock()
         llm.generate.return_value = "test"
         gen = ResponseGenerator(llm)
@@ -650,7 +638,7 @@ class TestUniversality:
 
     def test_dynamic_cta_any_flow(self):
         """Any new flow automatically gets CTA phases (Cluster 2 universality)."""
-        from cta_generator import CTAGenerator
+        from src.cta_generator import CTAGenerator
         gen = CTAGenerator()
         gen.turn_count = 5
 
@@ -681,7 +669,7 @@ class TestUniversality:
 
     def test_intent_aware_facts_extensible(self):
         """get_facts() intent parameter is extensible (Cluster 3 universality)."""
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
         llm = MagicMock()
         gen = ResponseGenerator(llm)
         # Non-price intent should still return features
@@ -690,7 +678,7 @@ class TestUniversality:
 
     def test_repair_trigger_extensible(self):
         """repair_trigger field supports open-ended extension (Cluster 4 universality)."""
-        from response_directives import ResponseDirectives
+        from src.response_directives import ResponseDirectives
         d = ResponseDirectives()
         d.repair_mode = True
         # Any new trigger type can be set

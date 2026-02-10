@@ -17,10 +17,6 @@ from typing import Dict, Any, List
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # Off-by-one in turn counting
 # =============================================================================
@@ -106,7 +102,6 @@ class TestOffByOne:
         agent.turn = 15
         assert agent.is_budget_exhausted() is True
 
-
 # =============================================================================
 # Template leak — tier-1 rephrase used as full response
 # =============================================================================
@@ -178,7 +173,6 @@ class TestTemplateLeak:
 
         assert rephrase_mode is False
         assert fallback_response == fb_result
-
 
 # =============================================================================
 # Frustration thresholds too low + suppress_decay too aggressive
@@ -303,7 +297,6 @@ class TestFrustrationThresholds:
         defaults = ResponseDirectivesBuilder._DEFAULT_TONE_THRESHOLDS
         assert defaults["empathetic_frustration"] == 5
         assert defaults["validate_frustration"] == 4
-
 
 # =============================================================================
 # Fast-track for turn-limited conversations

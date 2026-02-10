@@ -14,7 +14,6 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from unittest.mock import Mock, MagicMock
 
-
 # =============================================================================
 # Test Proposal Dataclass
 # =============================================================================
@@ -91,7 +90,6 @@ class TestProposal:
         )
         assert transition.type == ProposalType.TRANSITION
         assert transition.validate() == []
-
 
     def test_proposal_validate_success(self):
         """Test that valid proposal passes validation."""
@@ -288,7 +286,6 @@ class TestProposal:
         repr_str = repr(proposal)
         assert "Proposal(TRANSITION" in repr_str
         assert "combinable" not in repr_str
-
 
 # =============================================================================
 # Test ResolvedDecision Dataclass
@@ -502,7 +499,6 @@ class TestResolvedDecision:
         assert "next_state='final_state'" in repr_str
         assert "reasons=['R1', 'R2']" in repr_str
         assert "rejected=2" in repr_str
-
 
 # =============================================================================
 # Test ContextSnapshot Dataclass
@@ -992,7 +988,6 @@ class TestContextSnapshot:
 
         assert snapshot.context_envelope is None
 
-
 # =============================================================================
 # Test Package Imports
 # =============================================================================
@@ -1025,7 +1020,6 @@ class TestBlackboardModelsImports:
         assert "Proposal" in bb.__all__
         assert "ResolvedDecision" in bb.__all__
         assert "ContextSnapshot" in bb.__all__
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan)

@@ -13,12 +13,10 @@ import sys
 import os
 
 # Добавляем путь к src для импортов
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.reranker import Reranker, get_reranker, reset_reranker
-from knowledge.retriever import CascadeRetriever, MatchStage, SearchResult
-from knowledge.base import KnowledgeSection
-
+from src.knowledge.reranker import Reranker, get_reranker, reset_reranker
+from src.knowledge.retriever import CascadeRetriever, MatchStage, SearchResult
+from src.knowledge.base import KnowledgeSection
 
 class TestRerankerBasic:
     """Базовые тесты для Reranker."""
@@ -45,7 +43,6 @@ class TestRerankerBasic:
         r1 = get_reranker()
         r2 = get_reranker()
         assert r1 is r2
-
 
 class TestRerankerWithMockCandidates:
     """Тесты rerank с mock-кандидатами."""
@@ -129,14 +126,13 @@ class TestRerankerWithMockCandidates:
         results = reranker.rerank("query", mock_candidates, top_k=5)
         assert len(results) <= len(mock_candidates)
 
-
 class TestRerankerIntegration:
     """Интеграционные тесты reranker + CascadeRetriever."""
 
     @pytest.fixture
     def retriever_with_reranker(self):
         """Создать retriever с включённым reranker."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         reset_reranker()
         return CascadeRetriever(use_embeddings=False)
@@ -155,7 +151,6 @@ class TestRerankerIntegration:
         result = retriever_with_reranker.retrieve("некий сложный запрос без точных совпадений")
         # Должен вернуть строку (пустую или с фактами)
         assert isinstance(result, str)
-
 
 class TestRerankerAvailability:
     """Тесты доступности reranker."""

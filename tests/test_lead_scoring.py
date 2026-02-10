@@ -14,9 +14,8 @@ import sys
 from pathlib import Path
 
 # Добавляем src в PYTHONPATH
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from lead_scoring import (
+from src.lead_scoring import (
     LeadScorer,
     LeadTemperature,
     LeadSignal,
@@ -24,7 +23,6 @@ from lead_scoring import (
     get_signal_from_intent,
     INTENT_TO_SIGNAL,
 )
-
 
 class TestLeadScorerBasics:
     """Тесты базовой функциональности скоринга"""
@@ -91,7 +89,6 @@ class TestLeadScorerBasics:
         assert scorer.current_score == 0
         assert len(scorer.signals_history) == 0
 
-
 class TestLeadTemperature:
     """Тесты определения температуры лида"""
 
@@ -136,7 +133,6 @@ class TestLeadTemperature:
         assert score.temperature == LeadTemperature.VERY_HOT
         assert score.recommended_path == "direct_close"
 
-
 class TestSkipPhases:
     """Тесты рекомендаций по пропуску фаз"""
 
@@ -179,7 +175,6 @@ class TestSkipPhases:
 
         assert not scorer.should_skip_phase("spin_situation")
         assert scorer.should_skip_phase("spin_implication")
-
 
 class TestDecayMechanism:
     """Тесты механизма затухания сигналов"""
@@ -230,7 +225,6 @@ class TestDecayMechanism:
         # Score = 30 + 5 = 35 (decay применился только один раз в начале)
         assert scorer.current_score == 35
 
-
 class TestSignalsHistory:
     """Тесты истории сигналов"""
 
@@ -261,7 +255,6 @@ class TestSignalsHistory:
 
         score = scorer.get_score()
         assert len(score.signals) == 5
-
 
 class TestNextPhase:
     """Тесты получения следующей фазы"""
@@ -300,7 +293,6 @@ class TestNextPhase:
         next_phase = scorer.get_next_phase("unknown_state")
         assert next_phase is None
 
-
 class TestIsReadyForClose:
     """Тесты готовности к закрытию"""
 
@@ -322,7 +314,6 @@ class TestIsReadyForClose:
         scorer.add_signal("contact_provided")  # +35 = 65
         scorer.add_signal("features_question") # +5 = 70 (VERY_HOT threshold)
         assert scorer.is_ready_for_close()
-
 
 class TestIntentMapping:
     """Тесты маппинга интентов на сигналы"""
@@ -368,7 +359,6 @@ class TestIntentMapping:
         for intent, signal in INTENT_TO_SIGNAL.items():
             assert signal in all_weights, f"Signal {signal} for intent {intent} has no weight"
 
-
 class TestAddSignals:
     """Тесты добавления нескольких сигналов"""
 
@@ -381,7 +371,6 @@ class TestAddSignals:
 
         assert len(scorer.signals_history) == 3
         assert score.score > 0
-
 
 class TestGetSummary:
     """Тесты получения сводки"""
@@ -413,7 +402,6 @@ class TestGetSummary:
         assert summary["signals_count"] == 1
         assert "demo_request" in summary["recent_signals"]
 
-
 class TestLeadSignalEnum:
     """Тесты enum LeadSignal"""
 
@@ -428,7 +416,6 @@ class TestLeadSignalEnum:
         assert LeadSignal.OBJECTION_PRICE.value == "objection_price"
         assert LeadSignal.OBJECTION_COMPETITOR.value == "objection_competitor"
         assert LeadSignal.FRUSTRATION.value == "frustration"
-
 
 class TestEdgeCases:
     """Тесты граничных случаев"""
@@ -471,7 +458,6 @@ class TestEdgeCases:
 
         # С учётом decay
         assert score2 > score1
-
 
 class TestIntegrationScenarios:
     """Интеграционные сценарии"""
@@ -532,7 +518,6 @@ class TestIntegrationScenarios:
         score = scorer.get_score()
         assert score.temperature == LeadTemperature.VERY_HOT
         assert scorer.is_ready_for_close()
-
 
 class TestPhaseOrderLoading:
     """Тесты загрузки phase_order из конфигурации."""
@@ -684,7 +669,6 @@ class TestPhaseOrderLoading:
         # lead_scoring.phase_order используется as-is (без фильтрации)
         expected_order = ["custom_phase1", "custom_phase2", "close"]
         assert scorer._phase_order == expected_order
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

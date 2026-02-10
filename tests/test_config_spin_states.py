@@ -8,14 +8,12 @@ import pytest
 from pathlib import Path
 import yaml
 
-
 @pytest.fixture(scope="module")
 def spin_states_config():
     """Load SPIN selling states configuration."""
     config_path = Path(__file__).parent.parent / "src" / "yaml_config" / "flows" / "spin_selling" / "states.yaml"
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 class TestSpinStatesStructure:
     """Tests for SPIN states structure."""
@@ -31,7 +29,6 @@ class TestSpinStatesStructure:
     def test_has_abstract_base(self, spin_states_config):
         """Should have _spin_base abstract state."""
         assert "_spin_base" in spin_states_config["states"]
-
 
 class TestSpinBaseState:
     """Tests for _spin_base abstract state."""
@@ -90,7 +87,6 @@ class TestSpinBaseState:
         assert "objection_no_time" in base["transitions"]
         assert "objection_think" in base["transitions"]
 
-
 class TestSpinSituationState:
     """Tests for spin_situation state."""
 
@@ -142,7 +138,6 @@ class TestSpinSituationState:
         assert "rules" in state
         assert "unclear" in state["rules"]
 
-
 class TestSpinProblemState:
     """Tests for spin_problem state."""
 
@@ -181,7 +176,6 @@ class TestSpinProblemState:
         state = spin_states_config["states"]["spin_problem"]
         assert "agreement" in state["transitions"]
         assert state["transitions"]["agreement"] == "presentation"
-
 
 class TestSpinImplicationState:
     """Tests for spin_implication state."""
@@ -222,7 +216,6 @@ class TestSpinImplicationState:
         """spin_implication should transition to spin_need_payoff."""
         state = spin_states_config["states"]["spin_implication"]
         assert state["transitions"]["data_complete"] == "spin_need_payoff"
-
 
 class TestSpinNeedPayoffState:
     """Tests for spin_need_payoff state."""
@@ -269,7 +262,6 @@ class TestSpinNeedPayoffState:
         state = spin_states_config["states"]["spin_need_payoff"]
         assert "no_need" in state["transitions"]
         assert state["transitions"]["no_need"] == "soft_close"
-
 
 class TestSpinStateCompleteness:
     """Tests for SPIN state completeness."""
@@ -323,7 +315,6 @@ class TestSpinStateCompleteness:
             state = spin_states_config["states"][state_name]
             assert state["phase"] == expected_phase
 
-
 class TestSpinStateRules:
     """Tests for SPIN state rules."""
 
@@ -351,7 +342,6 @@ class TestSpinStateRules:
         )
         assert has_conditional
 
-
 class TestSpinStateTransitions:
     """Tests for SPIN state transitions."""
 
@@ -373,7 +363,6 @@ class TestSpinStateTransitions:
         assert spin_states_config["states"]["spin_problem"]["transitions"]["agreement"] == "presentation"
         assert spin_states_config["states"]["spin_implication"]["transitions"]["agreement"] == "spin_need_payoff"
         assert spin_states_config["states"]["spin_need_payoff"]["transitions"]["agreement"] == "presentation"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

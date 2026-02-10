@@ -65,7 +65,6 @@ from src.conditions import (
     ConditionRegistries
 )
 
-
 # =============================================================================
 # TEST FIXTURES
 # =============================================================================
@@ -79,7 +78,6 @@ def simple_context():
         turn_number=5
     )
 
-
 @pytest.fixture
 def empty_context():
     """Create an empty context for testing."""
@@ -89,12 +87,10 @@ def empty_context():
         turn_number=0
     )
 
-
 @pytest.fixture
 def test_registry():
     """Create a fresh registry for each test."""
     return ConditionRegistry("test_registry", SimpleContext)
-
 
 @pytest.fixture
 def populated_registry(test_registry):
@@ -117,7 +113,6 @@ def populated_registry(test_registry):
         return bool(ctx.collected_data.get("company_size"))
 
     return test_registry
-
 
 # =============================================================================
 # BASE CONTEXT TESTS
@@ -197,7 +192,6 @@ class TestBaseContext:
             turn_number=3
         )
         assert isinstance(custom, BaseContext)
-
 
 # =============================================================================
 # CONDITION REGISTRY TESTS
@@ -505,7 +499,6 @@ class TestConditionRegistry:
         assert "SimpleContext" in repr_str
         assert "3" in repr_str
 
-
 # =============================================================================
 # ERROR TESTS
 # =============================================================================
@@ -552,7 +545,6 @@ class TestErrors:
         assert error.reason == "must accept one param"
         assert "my_cond" in str(error)
         assert "must accept one param" in str(error)
-
 
 # =============================================================================
 # TRACE TESTS
@@ -661,7 +653,6 @@ class TestEvaluationTrace:
         assert "test" in repr_str
         assert "simple" in repr_str
 
-
 class TestConditionEntry:
     """Tests for ConditionEntry class."""
 
@@ -715,7 +706,6 @@ class TestConditionEntry:
         compact = entry.to_compact_string()
         assert "has_data: FAIL" in compact
 
-
 class TestResolution:
     """Tests for Resolution enum."""
 
@@ -726,7 +716,6 @@ class TestResolution:
         assert Resolution.DEFAULT.value == "default"
         assert Resolution.FALLBACK.value == "fallback"
         assert Resolution.NONE.value == "none"
-
 
 class TestTraceCollector:
     """Tests for TraceCollector class."""
@@ -852,7 +841,6 @@ class TestTraceCollector:
         repr_str = repr(collector)
         assert "1" in repr_str
 
-
 class TestTraceSummary:
     """Tests for TraceSummary class."""
 
@@ -878,7 +866,6 @@ class TestTraceSummary:
         summary = TraceSummary(total_traces=0)
         d = summary.to_dict()
         assert d["avg_conditions_per_trace"] == 0
-
 
 # =============================================================================
 # SHARED CONDITIONS TESTS
@@ -1127,7 +1114,6 @@ class TestSharedConditions:
         assert "state" in categories
         assert "turn" in categories
 
-
 # =============================================================================
 # CONDITION REGISTRIES AGGREGATOR TESTS
 # =============================================================================
@@ -1257,7 +1243,6 @@ class TestConditionRegistries:
         """Test find_condition for non-existent condition."""
         result = ConditionRegistries.find_condition("nonexistent")
         assert result is None
-
 
 # =============================================================================
 # INTEGRATION TESTS

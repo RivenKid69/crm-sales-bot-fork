@@ -20,7 +20,6 @@ from typing import Dict, Any, Optional
 from unittest.mock import Mock, MagicMock, patch
 from dataclasses import dataclass, field
 
-
 # =============================================================================
 # Mock Implementations for Testing
 # =============================================================================
@@ -81,7 +80,6 @@ class MockStateMachine:
     def sync_phase_from_state(self) -> None:
         pass
 
-
 class MockIntentTracker:
     """Mock IntentTracker implementing IIntentTracker protocol."""
 
@@ -127,7 +125,6 @@ class MockIntentTracker:
 
     def category_total(self, category: str) -> int:
         return self._category_totals.get(category, 0)
-
 
 class MockFlowConfig:
     """Mock FlowConfig implementing IFlowConfig protocol."""
@@ -185,7 +182,6 @@ class MockFlowConfig:
     def is_phase_state(self, state_name: str) -> bool:
         """Check if a state is a phase state."""
         return self.get_phase_for_state(state_name) is not None
-
 
 # =============================================================================
 # Test DialogueBlackboard Initialization
@@ -250,7 +246,6 @@ class TestDialogueBlackboardInit:
         assert bb.tenant_id == "acme_corp"
         assert bb.tenant_config.bot_name == "ACME Bot"
         assert bb.tenant_config.tone == "friendly"
-
 
 # =============================================================================
 # Test Context Layer
@@ -418,7 +413,6 @@ class TestContextLayer:
     def test_collected_data_before_begin_turn_returns_empty(self, blackboard):
         """Test collected_data returns empty dict before begin_turn."""
         assert blackboard.collected_data == {}
-
 
 # =============================================================================
 # Test Proposal Layer
@@ -620,7 +614,6 @@ class TestProposalLayer:
 
         assert proposals1 is not proposals2
 
-
 # =============================================================================
 # Test Decision Layer
 # =============================================================================
@@ -740,7 +733,6 @@ class TestDecisionLayer:
         # Decision must be stored
         assert blackboard.get_decision() is decision
 
-
 # =============================================================================
 # Test Utility Methods
 # =============================================================================
@@ -802,7 +794,6 @@ class TestUtilityMethods:
         assert summary["data_updates"] == {"field1": "value1"}
         assert summary["decision"] is not None
         assert summary["turn_duration_ms"] is not None
-
 
 # =============================================================================
 # Test Objection Skip Logic
@@ -885,7 +876,6 @@ class TestObjectionSkipLogic:
 
         assert result is False
 
-
 # =============================================================================
 # Test Multi-Tenancy Support
 # =============================================================================
@@ -955,7 +945,6 @@ class TestMultiTenancy:
         assert ctx.tenant_id == "tenant_abc"
         assert ctx.tenant_config is tenant
 
-
 # =============================================================================
 # Test Package Imports
 # =============================================================================
@@ -974,7 +963,6 @@ class TestPackageImports:
         import src.blackboard as bb
 
         assert "DialogueBlackboard" in bb.__all__
-
 
 # =============================================================================
 # Test Integration with Real Classes
@@ -1028,7 +1016,6 @@ class TestRealIntegration:
 
         ctx = bb.get_context()
         assert ctx.state_config == {"goal": "Greet user"}
-
 
 # =============================================================================
 # Criteria Verification (from Architectural Plan)

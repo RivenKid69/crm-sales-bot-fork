@@ -18,7 +18,6 @@ from codebase_analyzer.indexer.models.entities import (
 )
 from codebase_analyzer.indexer.models.relations import Relation, RelationType
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -31,7 +30,6 @@ def sample_location():
         start_line=1,
         end_line=20,
     )
-
 
 @pytest.fixture
 def sample_function(sample_location):
@@ -49,7 +47,6 @@ def calculate_total(items: list[Item], discount: float = 0.0) -> float:
     return subtotal * (1 - discount)
 """,
     )
-
 
 @pytest.fixture
 def sample_class(sample_location):
@@ -74,7 +71,6 @@ class OrderService:
 """,
     )
 
-
 @pytest.fixture
 def mock_llm_response():
     """Create a mock LLM response."""
@@ -89,7 +85,6 @@ def mock_llm_response():
         "input_tokens": 100,
         "output_tokens": 50,
     }
-
 
 # ============================================================================
 # Tests: Basic functionality
@@ -194,7 +189,6 @@ class TestEntitySummarizerBasic:
         # dep15 and beyond should not be included
         lines = context.split("\n")
         assert len(lines) <= 16  # "Dependencies:" + 15 deps
-
 
 # ============================================================================
 # Tests: LLM interaction (mocked)
@@ -303,7 +297,6 @@ class TestEntitySummarizerWithMock:
         assert sample_function.name in summary.summary
         assert summary.domain == "unknown"
 
-
 # ============================================================================
 # Tests: Level-based summarization
 # ============================================================================
@@ -406,7 +399,6 @@ class TestLevelSummarization:
         # Should only have B
         assert len(summaries) == 1
         assert summaries[0].entity_id == "test::B"
-
 
 # ============================================================================
 # Tests: Full summarization

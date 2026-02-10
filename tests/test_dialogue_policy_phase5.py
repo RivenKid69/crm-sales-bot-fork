@@ -13,23 +13,20 @@ import os
 from unittest.mock import Mock, patch, MagicMock
 from typing import Dict, Any
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from dialogue_policy import (
+from src.dialogue_policy import (
     CascadeDisposition,
     DialoguePolicy,
     PolicyDecision,
     PolicyOverride,
     ContextPolicyMetrics,
 )
-from context_envelope import ContextEnvelope, ReasonCode
+from src.context_envelope import ContextEnvelope, ReasonCode
 from src.conditions.policy import (
     PolicyContext,
     policy_registry,
     OVERLAY_ALLOWED_STATES,
     PROTECTED_STATES,
 )
-
 
 # =============================================================================
 # TEST FIXTURES
@@ -40,18 +37,15 @@ def policy():
     """Create a DialoguePolicy instance."""
     return DialoguePolicy()
 
-
 @pytest.fixture
 def policy_with_trace():
     """Create a DialoguePolicy with tracing enabled."""
     return DialoguePolicy(trace_enabled=True)
 
-
 @pytest.fixture
 def shadow_policy():
     """Create a DialoguePolicy in shadow mode."""
     return DialoguePolicy(shadow_mode=True)
-
 
 def create_mock_envelope(
     state: str = "spin_situation",
@@ -128,7 +122,6 @@ def create_mock_envelope(
 
     return envelope
 
-
 # =============================================================================
 # BASIC FUNCTIONALITY TESTS
 # =============================================================================
@@ -166,7 +159,6 @@ class TestDialoguePolicyBasic:
         assert result is None
         mock_flags.is_enabled.assert_called_once_with("context_policy_overlays")
 
-
 # =============================================================================
 # PROTECTED STATE TESTS
 # =============================================================================
@@ -198,7 +190,6 @@ class TestProtectedStates:
         result = policy.maybe_override(sm_result, envelope)
 
         assert result is None
-
 
 # =============================================================================
 # REPAIR OVERLAY TESTS
@@ -260,7 +251,6 @@ class TestRepairOverlay:
         assert result.action == "answer_with_summary"
         assert result.decision == PolicyDecision.REPAIR_CLARIFY
 
-
 # =============================================================================
 # OBJECTION OVERLAY TESTS
 # =============================================================================
@@ -306,7 +296,6 @@ class TestObjectionOverlay:
         assert result.decision == PolicyDecision.OBJECTION_ESCALATE
         assert ReasonCode.OBJECTION_ESCALATE.value in result.reason_codes
 
-
 # =============================================================================
 # BREAKTHROUGH OVERLAY TESTS
 # =============================================================================
@@ -349,7 +338,6 @@ class TestBreakthroughOverlay:
         result = policy.maybe_override(sm_result, envelope)
 
         assert result is None  # No overlay applied
-
 
 # =============================================================================
 # CONSERVATIVE OVERLAY TESTS
@@ -394,7 +382,6 @@ class TestConservativeOverlay:
         # Should not trigger conservative overlay for non-aggressive actions
         assert result is None
 
-
 # =============================================================================
 # GUARD INTERVENTION TESTS
 # =============================================================================
@@ -419,7 +406,6 @@ class TestGuardIntervention:
         assert result.action is None  # Guard handles it
         assert result.decision == PolicyDecision.NO_OVERRIDE
         assert ReasonCode.GUARD_INTERVENTION.value in result.reason_codes
-
 
 # =============================================================================
 # PRIORITY TESTS
@@ -490,7 +476,6 @@ class TestOverlayPriority:
         # Objection should win
         assert result.decision == PolicyDecision.OBJECTION_REFRAME
 
-
 # =============================================================================
 # TRACING TESTS
 # =============================================================================
@@ -532,7 +517,6 @@ class TestTracing:
         assert "trace" in result_dict
         assert result_dict["trace"] is not None
 
-
 # =============================================================================
 # SHADOW MODE TESTS
 # =============================================================================
@@ -559,7 +543,6 @@ class TestShadowMode:
         assert len(shadow_policy._decision_history) == 1
         # Logger should be called (from src.logger.logger.info)
         mock_logger.info.assert_called()
-
 
 # =============================================================================
 # METRICS AND HISTORY TESTS
@@ -651,7 +634,6 @@ class TestMetricsAndHistory:
         assert len(policy._decision_history) == 0
         assert policy.get_override_rate() == 0.0
 
-
 # =============================================================================
 # POLICY OVERRIDE TESTS
 # =============================================================================
@@ -739,7 +721,6 @@ class TestPolicyOverride:
         assert log_kwargs["reason_codes"] == ["policy.repair_mode", "repair.stuck"]
         assert log_kwargs["override_action"] == "clarify_one_question"
 
-
 # =============================================================================
 # CONTEXT POLICY METRICS TESTS
 # =============================================================================
@@ -809,7 +790,6 @@ class TestContextPolicyMetrics:
         assert metrics.total_decisions == 0
         assert metrics.override_count == 0
 
-
 # =============================================================================
 # INTEGRATION WITH REGISTRY TESTS
 # =============================================================================
@@ -838,7 +818,6 @@ class TestRegistryIntegration:
 
         result = policy_registry.evaluate("needs_repair", ctx)
         assert result is True
-
 
 # =============================================================================
 # EDGE CASES TESTS
@@ -898,7 +877,6 @@ class TestEdgeCases:
         assert result1.decision == PolicyDecision.REPAIR_CLARIFY
         assert result2.decision == PolicyDecision.BREAKTHROUGH_CTA
 
-
 # =============================================================================
 # CASCADE DISPOSITION & PRIORITY INVERSION TESTS
 # =============================================================================
@@ -937,7 +915,6 @@ class TestCascadeDisposition:
         d = o.to_dict()
         assert d["cascade_disposition"] == "pass"
 
-
 class TestPriceOverlayProtection:
     """Price overlay must protect correct action from lower overlays."""
 
@@ -963,7 +940,6 @@ class TestPriceOverlayProtection:
         assert result.action is None  # Does NOT change action
         assert not result.has_override  # bot.py will NOT apply
         assert result.should_stop_cascade  # Cascade stops — repair doesn't fire
-
 
 class TestBreakthroughBlocksConservative:
     """Breakthrough CTA must block conservative overlay."""
@@ -991,7 +967,6 @@ class TestBreakthroughBlocksConservative:
         # Conservative did NOT override
         assert result.action is None  # Breakthrough doesn't change action
 
-
 class TestRepairYieldsToObjection:
     """Repair must yield to objection handler in handle_objection state."""
 
@@ -1017,7 +992,6 @@ class TestRepairYieldsToObjection:
         assert result.decision == PolicyDecision.OBJECTION_REFRAME
         assert result.action == "reframe_value"
 
-
 class TestRepairSkipsProtectedAction:
     """Repair must skip when current action already answers the question."""
 
@@ -1038,7 +1012,6 @@ class TestRepairSkipsProtectedAction:
         assert result.decision == PolicyDecision.REPAIR_SKIPPED
         assert result.action is None  # Does NOT change action
         assert result.should_stop_cascade  # Cascade stops
-
 
 class TestStallGuardCooldown:
     """StallGuard cooldown suppresses repair on next turn."""
@@ -1063,14 +1036,13 @@ class TestStallGuardCooldown:
         result = policy_registry.evaluate("needs_repair", ctx)
         assert result is True
 
-
 class TestNarrowedPriceCategory:
     """Narrow category grouping for repeated question detection."""
 
     def test_price_question_and_pricing_details_not_repeated(self):
         """price_question + pricing_details should NOT be treated as repeated
         with narrow groups (pricing_details is NOT in price_core)."""
-        from context_window import ContextWindow, TurnContext
+        from src.context_window import ContextWindow, TurnContext
         cw = ContextWindow(max_size=5)
         # Add a turn with price_question intent
         cw.add_turn(TurnContext(user_message="how much?", intent="price_question"))
@@ -1083,7 +1055,7 @@ class TestNarrowedPriceCategory:
 
     def test_same_price_question_repeated(self):
         """price_question asked twice → repeated."""
-        from context_window import ContextWindow, TurnContext
+        from src.context_window import ContextWindow, TurnContext
         cw = ContextWindow(max_size=5)
         cw.add_turn(TurnContext(user_message="how much?", intent="price_question"))
 
@@ -1092,13 +1064,12 @@ class TestNarrowedPriceCategory:
         # Exact same intent → repeated
         assert result == "price_question"
 
-
 class TestTemplateAndYAMLSSoT:
     """Template and YAML SSOT verification tests."""
 
     def test_answer_with_summary_template_exists(self):
         """answer_with_summary must exist in PROMPT_TEMPLATES."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
         assert "answer_with_summary" in PROMPT_TEMPLATES
         assert len(PROMPT_TEMPLATES["answer_with_summary"]) > 0
 
@@ -1114,7 +1085,7 @@ class TestTemplateAndYAMLSSoT:
     def test_all_repair_actions_have_templates(self):
         """Every action in REPAIR_ACTIONS must have a template
         in either PROMPT_TEMPLATES (config.py) or prompts.yaml."""
-        from config import PROMPT_TEMPLATES
+        from src.config import PROMPT_TEMPLATES
         import yaml
         from pathlib import Path
         base = Path(__file__).parent / ".." / "src" / "yaml_config" / "templates" / "_base" / "prompts.yaml"

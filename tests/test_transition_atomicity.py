@@ -15,7 +15,6 @@ from unittest.mock import MagicMock, patch
 
 from src.state_machine import StateMachine
 
-
 class TestTransitionToAtomicity:
     """Tests for StateMachine.transition_to() atomicity."""
 
@@ -123,7 +122,6 @@ class TestTransitionToAtomicity:
         assert state_machine.state == "spin_problem"
         assert state_machine.current_phase == "problem"  # Corrected
 
-
 class TestDistributedStateMutationFix:
     """
     Tests that verify the Distributed State Mutation bug is fixed.
@@ -203,7 +201,6 @@ class TestDistributedStateMutationFix:
         assert state_machine.state == "presentation"
         # Phase may be None if not defined in config - that's OK
 
-
 class TestOrchestratorUsesTransitionTo:
     """Tests that verify Orchestrator._apply_side_effects uses transition_to()."""
 
@@ -254,7 +251,6 @@ class TestOrchestratorUsesTransitionTo:
             validate=False,
         )
 
-
 class TestProtocolCompliance:
     """Tests that verify StateMachine implements IStateMachine protocol."""
 
@@ -294,7 +290,6 @@ class TestProtocolCompliance:
 
         assert result is True
         mock_sm.transition_to.assert_called_once()
-
 
 class TestEdgeCases:
     """Tests for edge cases in transition_to()."""

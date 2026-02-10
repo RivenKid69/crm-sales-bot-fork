@@ -19,9 +19,6 @@ import time
 import copy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # DYNAMIC CONFIG MODIFICATION TESTS
 # =============================================================================
@@ -114,7 +111,6 @@ class TestDynamicConfigModification:
 
         # Verify change is reflected
         assert config.lead_scoring["skip_phases"]["warm"] == ["spin_implication", "spin_need_payoff"]
-
 
 class TestHotReload:
     """Tests for hot-reloading configuration files."""
@@ -209,7 +205,6 @@ class TestHotReload:
 
         gc.collect()
         # Should complete without memory issues
-
 
 class TestThreadSafeConfigUpdates:
     """Tests for thread-safe configuration updates."""
@@ -322,7 +317,6 @@ class TestThreadSafeConfigUpdates:
         # All values should be in valid range
         assert all(10 <= r < 20 for r in results)
 
-
 class TestComponentSynchronization:
     """Tests for component synchronization after config changes."""
 
@@ -364,7 +358,6 @@ class TestComponentSynchronization:
             for phase in phases:
                 assert phase in spin_states, \
                     f"skip_phases[{temp}] contains invalid state: {phase}"
-
 
 class TestConfigRollback:
     """Tests for rolling back invalid config changes."""
@@ -449,7 +442,6 @@ class TestConfigRollback:
         )
         assert result['guard']['max_turns'] == 25  # Unchanged
 
-
 class TestDynamicFeatureToggle:
     """Tests for dynamically toggling features via config."""
 
@@ -483,7 +475,6 @@ class TestDynamicFeatureToggle:
         settings["retriever"]["use_embeddings"] = False
 
         assert settings.retriever.use_embeddings is False
-
 
 class TestConfigChangeNotification:
     """Tests for notifying components of config changes."""
@@ -550,7 +541,6 @@ class TestConfigChangeNotification:
         config.set("threshold", 10)
 
         assert callback_results == [5, 10]
-
 
 class TestRuntimeConfigValidation:
     """Tests for validating config changes at runtime."""

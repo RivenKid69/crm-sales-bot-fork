@@ -7,10 +7,8 @@ import tempfile
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from settings import load_settings, validate_settings, DotDict, DEFAULTS
-
+from src.settings import load_settings, validate_settings, DotDict, DEFAULTS
 
 class TestDotDict:
     """Тесты для DotDict"""
@@ -39,7 +37,6 @@ class TestDotDict:
         d.foo = "bar"
         assert d["foo"] == "bar"
         assert d.foo == "bar"
-
 
 class TestLoadSettings:
     """Тесты загрузки настроек"""
@@ -100,7 +97,6 @@ retriever:
             settings = load_settings(Path(f.name))
             assert settings.llm.model == DEFAULTS["llm"]["model"]
 
-
 class TestValidateSettings:
     """Тесты валидации"""
 
@@ -112,7 +108,7 @@ class TestValidateSettings:
 
     def test_invalid_timeout(self):
         """Отрицательный timeout — ошибка"""
-        from settings import _deep_merge
+        from src.settings import _deep_merge
         settings_dict = _deep_merge({}, DEFAULTS)
         settings_dict["llm"]["timeout"] = -1
         settings = DotDict(settings_dict)
@@ -121,7 +117,7 @@ class TestValidateSettings:
 
     def test_invalid_threshold(self):
         """Threshold вне диапазона — ошибка"""
-        from settings import _deep_merge
+        from src.settings import _deep_merge
         settings_dict = _deep_merge({}, DEFAULTS)
         settings_dict["retriever"]["thresholds"]["lemma"] = 1.5
         settings = DotDict(settings_dict)
@@ -130,7 +126,7 @@ class TestValidateSettings:
 
     def test_invalid_confidence_order(self):
         """high_confidence <= min_confidence — ошибка"""
-        from settings import _deep_merge
+        from src.settings import _deep_merge
         settings_dict = _deep_merge({}, DEFAULTS)
         settings_dict["classifier"]["thresholds"]["high_confidence"] = 0.2
         settings_dict["classifier"]["thresholds"]["min_confidence"] = 0.5
@@ -138,14 +134,13 @@ class TestValidateSettings:
         errors = validate_settings(settings)
         assert any("high_confidence" in e for e in errors)
 
-
 class TestSettingsIntegration:
     """Интеграционные тесты"""
 
     def test_llm_uses_settings(self):
         """LLM использует настройки"""
-        from llm import OllamaLLM
-        from settings import settings
+        from src.llm import OllamaLLM
+        from src.settings import settings
 
         llm = OllamaLLM()
         assert llm.model == settings.llm.model
@@ -153,8 +148,8 @@ class TestSettingsIntegration:
 
     def test_retriever_uses_settings(self):
         """Retriever использует настройки"""
-        from knowledge.retriever import CascadeRetriever
-        from settings import settings
+        from src.knowledge.retriever import CascadeRetriever
+        from src.settings import settings
 
         retriever = CascadeRetriever(use_embeddings=False)
         assert retriever.exact_threshold == settings.retriever.thresholds.exact
@@ -162,7 +157,7 @@ class TestSettingsIntegration:
 
     def test_override_in_constructor(self):
         """Можно переопределить в конструкторе"""
-        from llm import OllamaLLM
+        from src.llm import OllamaLLM
 
         llm = OllamaLLM(model="custom-model", timeout=999)
         assert llm.model == "custom-model"
@@ -170,8 +165,8 @@ class TestSettingsIntegration:
 
     def test_generator_uses_settings(self):
         """Generator использует настройки"""
-        from generator import ResponseGenerator
-        from settings import settings
+        from src.generator import ResponseGenerator
+        from src.settings import settings
 
         class MockLLM:
             def generate(self, prompt):
@@ -182,25 +177,23 @@ class TestSettingsIntegration:
         assert gen.history_length == settings.generator.history_length
         assert gen.retriever_top_k == settings.generator.retriever_top_k
 
-
 class TestBackwardsCompatibility:
     """Тесты обратной совместимости"""
 
     def test_classifier_config_exists(self):
         """CLASSIFIER_CONFIG всё ещё работает"""
-        from config import CLASSIFIER_CONFIG
+        from src.config import CLASSIFIER_CONFIG
 
         assert "root_match_weight" in CLASSIFIER_CONFIG
         assert "high_confidence_threshold" in CLASSIFIER_CONFIG
 
     def test_classifier_config_uses_settings(self):
         """CLASSIFIER_CONFIG использует значения из settings"""
-        from config import CLASSIFIER_CONFIG
-        from settings import settings
+        from src.config import CLASSIFIER_CONFIG
+        from src.settings import settings
 
         assert CLASSIFIER_CONFIG["root_match_weight"] == settings.classifier.weights.root_match
         assert CLASSIFIER_CONFIG["phrase_match_weight"] == settings.classifier.weights.phrase_match
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

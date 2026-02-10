@@ -2,7 +2,7 @@
 Загрузчик настроек из settings.yaml
 
 Использование:
-    from settings import settings
+    from src.settings import settings
 
     model = settings.llm.model
     threshold = settings.retriever.thresholds.lemma

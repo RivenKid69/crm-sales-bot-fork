@@ -23,9 +23,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # LIMITS CONFIGURATION TESTS
 # =============================================================================
@@ -95,7 +92,6 @@ class TestLimitsMaxConsecutiveObjections:
         assert result.get("next_state") != "soft_close" or \
                sm._consecutive_objections <= 2
 
-
 class TestLimitsMaxTotalObjections:
     """Tests for limits.max_total_objections parameter."""
 
@@ -144,7 +140,6 @@ class TestLimitsMaxTotalObjections:
                 assert objection_count <= 3
                 return
 
-
 class TestLimitsMaxGobacks:
     """Tests for limits.max_gobacks parameter."""
 
@@ -184,7 +179,6 @@ class TestLimitsMaxGobacks:
 
         manager = CircularFlowManager(max_gobacks=0)
         assert manager.can_go_back("spin_problem") is False
-
 
 # =============================================================================
 # GUARD CONFIGURATION TESTS
@@ -239,7 +233,6 @@ class TestGuardMaxTurns:
         config = GuardConfig.relaxed()
         assert config.max_turns == 40
 
-
 class TestGuardMaxPhaseAttempts:
     """Tests for guard.max_phase_attempts parameter."""
 
@@ -269,7 +262,6 @@ class TestGuardMaxPhaseAttempts:
 
         can_continue, intervention = guard.check("spin_problem", "message_3", {})
         assert intervention is not None
-
 
 class TestGuardMaxSameState:
     """Tests for guard.max_same_state parameter (loop detection)."""
@@ -316,7 +308,6 @@ class TestGuardMaxSameState:
         can_continue, intervention = guard.check("state_a", "msg_6", {})
         # Depends on implementation - may or may not trigger
 
-
 class TestGuardMaxSameMessage:
     """Tests for guard.max_same_message parameter."""
 
@@ -332,7 +323,6 @@ class TestGuardMaxSameMessage:
         can_continue, intervention = guard.check("state_c", "same message", {})
         # Should detect repetition
         assert intervention is not None or guard._state.message_history.count("same message") >= 2
-
 
 class TestGuardTimeoutSeconds:
     """Tests for guard.timeout_seconds parameter."""
@@ -359,7 +349,6 @@ class TestGuardTimeoutSeconds:
 
         config = GuardConfig.strict()
         assert config.timeout_seconds == 900
-
 
 class TestGuardHighFrustrationThreshold:
     """Tests for guard.high_frustration_threshold parameter."""
@@ -388,7 +377,6 @@ class TestGuardHighFrustrationThreshold:
         can_continue, intervention = guard.check("state_a", "msg", {})
         # Should continue (frustration 5 < threshold 7)
         assert can_continue or intervention != "soft_close"
-
 
 # =============================================================================
 # FRUSTRATION CONFIGURATION TESTS
@@ -450,7 +438,6 @@ class TestFrustrationWeights:
         tracker = FrustrationTracker()
         tracker.update(tone=Tone.CONFUSED)
 
-
 class TestFrustrationDecay:
     """Tests for frustration.decay parameters."""
 
@@ -497,7 +484,6 @@ class TestFrustrationDecay:
         tracker.update(tone=Tone.INTERESTED)
         assert tracker.level <= 5
 
-
 class TestFrustrationThresholds:
     """Tests for frustration.thresholds parameters."""
 
@@ -529,7 +515,6 @@ class TestFrustrationThresholds:
         assert tracker.is_critical()
         assert tracker.level >= 9
 
-
 class TestFrustrationMaxLevel:
     """Tests for frustration.max_level parameter."""
 
@@ -548,7 +533,6 @@ class TestFrustrationMaxLevel:
             tracker.update(tone=Tone.FRUSTRATED)
 
         assert tracker.level <= 10
-
 
 # =============================================================================
 # LEAD SCORING CONFIGURATION TESTS
@@ -615,7 +599,6 @@ class TestLeadScoringPositiveWeights:
         scorer.add_signal("general_interest")
         assert scorer.current_score >= 3
 
-
 class TestLeadScoringNegativeWeights:
     """Tests for lead_scoring.negative_weights parameters."""
 
@@ -671,7 +654,6 @@ class TestLeadScoringNegativeWeights:
             scorer.add_signal("objection_price")
 
         assert scorer.current_score >= 0
-
 
 class TestLeadScoringThresholds:
     """Tests for lead_scoring.thresholds parameters."""
@@ -736,7 +718,6 @@ class TestLeadScoringThresholds:
         score = scorer.get_score()
         assert score.temperature == LeadTemperature.WARM
 
-
 class TestLeadScoringSkipPhases:
     """Tests for lead_scoring.skip_phases parameters."""
 
@@ -781,7 +762,6 @@ class TestLeadScoringSkipPhases:
         score = scorer.get_score()
         assert len(score.skip_phases) >= 3
 
-
 class TestLeadScoringPaths:
     """Tests for lead_scoring.paths parameters."""
 
@@ -824,7 +804,6 @@ class TestLeadScoringPaths:
 
         score = scorer.get_score()
         assert score.recommended_path == "direct_close"
-
 
 # =============================================================================
 # CIRCULAR FLOW CONFIGURATION TESTS
@@ -891,7 +870,6 @@ class TestCircularFlowAllowedGobacks:
         manager = CircularFlowManager()
         assert manager.can_go_back("success") is False
 
-
 # =============================================================================
 # POLICY CONFIGURATION TESTS
 # =============================================================================
@@ -917,7 +895,6 @@ class TestPolicyOverlayAllowedStates:
 
         assert "presentation" in OVERLAY_ALLOWED_STATES
 
-
 class TestPolicyProtectedStates:
     """Tests for policy.protected_states parameter."""
 
@@ -939,7 +916,6 @@ class TestPolicyProtectedStates:
 
         assert "close" in PROTECTED_STATES
 
-
 class TestPolicyAggressiveActions:
     """Tests for policy.aggressive_actions parameter."""
 
@@ -956,7 +932,6 @@ class TestPolicyAggressiveActions:
 
         assert "ask_for_contact" in AGGRESSIVE_ACTIONS or \
                "transition_to_close" in AGGRESSIVE_ACTIONS
-
 
 # =============================================================================
 # CONTEXT CONFIGURATION TESTS
@@ -997,7 +972,6 @@ class TestContextStateOrder:
         assert STATE_ORDER.get("spin_problem", 0) < STATE_ORDER.get("spin_implication", 0)
         assert STATE_ORDER.get("spin_implication", 0) < STATE_ORDER.get("spin_need_payoff", 0)
 
-
 class TestContextPhaseOrder:
     """Tests for context.phase_order parameter."""
 
@@ -1025,7 +999,6 @@ class TestContextPhaseOrder:
 
         assert PHASE_ORDER.get("need_payoff") == 4
 
-
 # =============================================================================
 # SPIN CONFIGURATION TESTS
 # =============================================================================
@@ -1044,7 +1017,6 @@ class TestSpinPhases:
         from src.yaml_config.constants import SPIN_PHASES
 
         assert len(SPIN_PHASES) == 4
-
 
 class TestSpinStates:
     """Tests for spin.states mapping."""
@@ -1073,7 +1045,6 @@ class TestSpinStates:
 
         assert SPIN_STATES.get("need_payoff") == "spin_need_payoff"
 
-
 class TestSpinProgressIntents:
     """Tests for spin.progress_intents mapping."""
 
@@ -1100,7 +1071,6 @@ class TestSpinProgressIntents:
         from src.yaml_config.constants import SPIN_PROGRESS_INTENTS
 
         assert SPIN_PROGRESS_INTENTS.get("need_expressed") == "need_payoff"
-
 
 # =============================================================================
 # INTENT CATEGORIES CONFIGURATION TESTS
@@ -1133,7 +1103,6 @@ class TestIntentCategoriesObjection:
 
         assert "objection_think" in OBJECTION_INTENTS
 
-
 class TestIntentCategoriesPositive:
     """Tests for intents.categories.positive."""
 
@@ -1161,7 +1130,6 @@ class TestIntentCategoriesPositive:
 
         assert "contact_provided" in POSITIVE_INTENTS
 
-
 class TestIntentCategoriesQuestion:
     """Tests for intents.categories.question."""
 
@@ -1177,7 +1145,6 @@ class TestIntentCategoriesQuestion:
 
         assert "question_features" in QUESTION_INTENTS
 
-
 class TestIntentCategoriesGoBack:
     """Tests for intents.go_back."""
 
@@ -1192,7 +1159,6 @@ class TestIntentCategoriesGoBack:
         from src.yaml_config.constants import GO_BACK_INTENTS
 
         assert "correct_info" in GO_BACK_INTENTS
-
 
 # =============================================================================
 # CTA CONFIGURATION TESTS
@@ -1226,7 +1192,6 @@ class TestCTAEarlyStates:
                 constants = yaml.safe_load(f)
             assert "spin_situation" in constants.get("cta", {}).get("early_states", [])
 
-
 # =============================================================================
 # FALLBACK CONFIGURATION TESTS
 # =============================================================================
@@ -1255,7 +1220,6 @@ class TestFallbackRephraseTemplates:
         templates = constants.get("fallback", {}).get("rephrase_templates", {})
         assert "spin_problem" in templates
 
-
 class TestFallbackOptionsTemplates:
     """Tests for fallback.options_templates parameter."""
 
@@ -1268,7 +1232,6 @@ class TestFallbackOptionsTemplates:
 
         templates = constants.get("fallback", {}).get("options_templates", {})
         assert "spin_situation" in templates
-
 
 class TestFallbackDefaults:
     """Tests for fallback default values."""

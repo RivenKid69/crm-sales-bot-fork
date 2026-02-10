@@ -20,7 +20,6 @@ import pytest
 from unittest.mock import Mock, MagicMock, PropertyMock
 from typing import Optional
 
-
 # =============================================================================
 # FrozenDict Tests
 # =============================================================================
@@ -113,7 +112,6 @@ class TestFrozenDict:
         fd = FrozenDict({"a": 1})
         assert "FrozenDict" in repr(fd)
 
-
 class TestDeepFreezeDict:
     """Test recursive dict freezing."""
 
@@ -150,7 +148,6 @@ class TestDeepFreezeDict:
         result = deep_freeze_dict({"a": inner})
         assert result["a"] is inner  # Same object, not re-wrapped
 
-
 # =============================================================================
 # GoBackInfo Tests
 # =============================================================================
@@ -182,7 +179,6 @@ class TestGoBackInfo:
         )
         with pytest.raises(AttributeError):
             info.target_state = "s2"
-
 
 # =============================================================================
 # IntentTrackerReadOnly Tests
@@ -252,7 +248,6 @@ class TestIntentTrackerReadOnly:
         ro = IntentTrackerReadOnly(tracker)
         assert not hasattr(ro, "advance_turn")
 
-
 # =============================================================================
 # TenantConfig Frozen Tests
 # =============================================================================
@@ -281,7 +276,6 @@ class TestTenantConfigFrozen:
         assert tc.features == {}
         assert tc.persona_limits_override is None
 
-
 # =============================================================================
 # Protocol Split Tests
 # =============================================================================
@@ -305,7 +299,6 @@ class TestProtocolSplit:
         from src.blackboard.protocols import IStateMachine
         # Check the protocol has the property defined
         assert hasattr(IStateMachine, 'state_before_objection')
-
 
 # =============================================================================
 # DataUpdateCollisionError Tests
@@ -359,7 +352,6 @@ class TestDataUpdateCollision:
         audit = bb.data_update_audit
         assert audit["name"] == "DataCollector"
 
-
 # =============================================================================
 # Blackboard Public Properties Tests
 # =============================================================================
@@ -404,7 +396,6 @@ class TestBlackboardPublicAPI:
     def test_data_update_audit_empty_initially(self):
         bb, _ = self._make_blackboard()
         assert bb.data_update_audit == {}
-
 
 # =============================================================================
 # ContextSnapshot New Fields Tests
@@ -461,7 +452,6 @@ class TestContextSnapshotNewFields:
         ctx = self._make_snapshot()
         with pytest.raises(AttributeError):
             ctx.state = "other"
-
 
 # =============================================================================
 # Shared should_skip_objection_recording Tests

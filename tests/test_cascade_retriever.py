@@ -16,11 +16,9 @@ import sys
 import os
 
 # Добавляем путь к src для импортов
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.retriever import CascadeRetriever, MatchStage, SearchResult, get_retriever
-from knowledge import WIPON_KNOWLEDGE
-
+from src.knowledge.retriever import CascadeRetriever, MatchStage, SearchResult, get_retriever
+from src.knowledge import WIPON_KNOWLEDGE
 
 class TestExactMatch:
     """Тесты первого этапа — exact substring match."""
@@ -28,7 +26,7 @@ class TestExactMatch:
     @pytest.fixture
     def retriever(self):
         # Сбрасываем singleton для чистых тестов
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -71,13 +69,12 @@ class TestExactMatch:
         if results and results[0].stage == MatchStage.EXACT:
             assert len(results[0].matched_keywords) > 0
 
-
 class TestLemmaMatch:
     """Тесты второго этапа — lemma match."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -112,13 +109,12 @@ class TestLemmaMatch:
         # Должен найти секции с "предприниматель" в keywords
         assert len(results) >= 0  # Может быть пустым если нет таких секций
 
-
 class TestSemanticMatch:
     """Тесты третьего этапа — semantic match."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=True)
 
@@ -152,13 +148,12 @@ class TestSemanticMatch:
             if results:
                 assert results[0].stage == MatchStage.SEMANTIC
 
-
 class TestCascade:
     """Тесты каскадной логики."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -194,13 +189,12 @@ class TestCascade:
         results = retriever.search("   ")
         assert results == []
 
-
 class TestPerformance:
     """Тесты производительности."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -236,13 +230,12 @@ class TestPerformance:
         avg = elapsed / len(queries)
         assert avg < 20, f"Average {avg:.2f}ms per query, expected < 20ms"
 
-
 class TestRealKnowledgeBase:
     """Тесты на реальной базе WIPON_KNOWLEDGE."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -302,13 +295,12 @@ class TestRealKnowledgeBase:
         result = retriever.retrieve("сколько стоит", intent="price_question")
         assert isinstance(result, str)
 
-
 class TestBackwardCompatibility:
     """Тесты обратной совместимости с текущим API."""
 
     def test_retrieve_returns_string(self):
         """retrieve() возвращает строку как раньше."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         retriever = get_retriever(use_embeddings=False)
         result = retriever.retrieve("розничный налог")
@@ -317,7 +309,7 @@ class TestBackwardCompatibility:
 
     def test_retrieve_with_intent(self):
         """retrieve() принимает intent."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         retriever = get_retriever(use_embeddings=False)
         result = retriever.retrieve("сколько стоит", intent="price_question")
@@ -326,7 +318,7 @@ class TestBackwardCompatibility:
 
     def test_get_company_info(self):
         """get_company_info() работает."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         retriever = get_retriever(use_embeddings=False)
         info = retriever.get_company_info()
@@ -335,7 +327,7 @@ class TestBackwardCompatibility:
 
     def test_singleton_works(self):
         """get_retriever() возвращает singleton."""
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
 
         r1 = get_retriever(use_embeddings=False)
@@ -345,16 +337,15 @@ class TestBackwardCompatibility:
 
     def test_knowledge_retriever_alias(self):
         """KnowledgeRetriever это alias для CascadeRetriever."""
-        from knowledge.retriever import KnowledgeRetriever
+        from src.knowledge.retriever import KnowledgeRetriever
         assert KnowledgeRetriever is CascadeRetriever
-
 
 class TestEdgeCases:
     """Тесты граничных случаев."""
 
     @pytest.fixture
     def retriever(self):
-        import knowledge.retriever as r
+        import src.knowledge.retriever as r
         r._retriever = None
         return CascadeRetriever(use_embeddings=False)
 
@@ -394,7 +385,6 @@ class TestEdgeCases:
 
         results = retriever.search("касса", top_k=5)
         assert len(results) <= 5
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

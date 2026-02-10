@@ -19,9 +19,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, Mock
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # LOGGING BEHAVIOR TESTS
 # =============================================================================
@@ -61,7 +58,6 @@ class TestLoggingLLMRequestsBehavior:
         # Level should be valid
         assert level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
-
 class TestLoggingRetrieverResultsBehavior:
     """Tests that log_retriever_results actually affects logging."""
 
@@ -79,7 +75,6 @@ class TestLoggingRetrieverResultsBehavior:
         settings = get_settings()
         # Default should be false for performance
         assert settings.logging.log_retriever_results is False
-
 
 # =============================================================================
 # RERANKER MODEL BEHAVIOR TESTS
@@ -130,7 +125,6 @@ class TestRerankerModelBehavior:
         count = settings.reranker.candidates_count
         assert count > 0
         assert count <= 100  # Reasonable upper limit
-
 
 # =============================================================================
 # GENERATOR ALLOWED ENGLISH WORDS BEHAVIOR TESTS
@@ -189,7 +183,6 @@ class TestAllowedEnglishWordsBehavior:
         matching = [w for w in tech_terms if w in words]
         assert len(matching) >= 3
 
-
 # =============================================================================
 # DEVELOPMENT DEBUG BEHAVIOR TESTS
 # =============================================================================
@@ -213,7 +206,6 @@ class TestDevelopmentDebugBehavior:
 
         # In production, should not skip
         assert skip is False
-
 
 # =============================================================================
 # FALLBACK HANDLER BEHAVIOR TESTS
@@ -263,7 +255,6 @@ class TestFallbackHandlerBehavior:
         assert 'options' in default
         assert len(default['options']) >= 2
 
-
 class TestFallbackTemplateContent:
     """Tests fallback template content quality."""
 
@@ -293,7 +284,6 @@ class TestFallbackTemplateContent:
             options = template['options']
             assert 3 <= len(options) <= 5, \
                 f"{state} should have 3-5 options, got {len(options)}"
-
 
 # =============================================================================
 # CTA GENERATOR BEHAVIOR TESTS
@@ -351,7 +341,6 @@ class TestCTAGeneratorBehavior:
         combined = ' '.join(trial_ctas).lower()
         assert 'попроб' in combined or 'бесплатно' in combined or 'тест' in combined
 
-
 class TestCTAContentQuality:
     """Tests CTA content quality."""
 
@@ -370,7 +359,6 @@ class TestCTAContentQuality:
         for state, ctas in templates.items():
             for cta in ctas:
                 assert len(cta) <= 100, f"CTA '{cta}' too long"
-
 
 # =============================================================================
 # LLM FALLBACK RESPONSES BEHAVIOR TESTS
@@ -418,7 +406,6 @@ class TestLLMFallbackResponsesBehavior:
         has_keyword = any(w in response_lower for w in keywords)
 
         assert has_keyword, "Default fallback should acknowledge error"
-
 
 # =============================================================================
 # CIRCULAR FLOW GOBACK BEHAVIOR TESTS
@@ -474,7 +461,6 @@ class TestCircularFlowBehavior:
         target = manager.allowed_gobacks.get("soft_close")
         assert target == "greeting"
 
-
 # =============================================================================
 # POLICY BEHAVIOR TESTS
 # =============================================================================
@@ -504,7 +490,6 @@ class TestPolicyBehavior:
 
         assert 'success' in protected
 
-
 # =============================================================================
 # FRUSTRATION WEIGHTS BEHAVIOR TESTS
 # =============================================================================
@@ -533,7 +518,6 @@ class TestFrustrationWeightsBehavior:
 
         assert thresholds['warning'] < thresholds['high']
         assert thresholds['high'] < thresholds['critical']
-
 
 # =============================================================================
 # LEAD SCORING BEHAVIOR TESTS
@@ -574,7 +558,6 @@ class TestLeadScoringBehavior:
         assert thresholds['warm'][1] + 1 == thresholds['hot'][0]
         # hot ends at 69, very_hot starts at 70
         assert thresholds['hot'][1] + 1 == thresholds['very_hot'][0]
-
 
 # =============================================================================
 # CONVERSATION GUARD BEHAVIOR TESTS
@@ -620,7 +603,6 @@ class TestConversationGuardBehavior:
 
         can_continue, intervention = guard.check("state", "msg", {})
         assert intervention in ["fallback_tier_3", "soft_close", None] or not can_continue
-
 
 # =============================================================================
 # CLASSIFIER WEIGHTS BEHAVIOR TESTS

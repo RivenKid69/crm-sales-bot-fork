@@ -13,8 +13,6 @@ from pathlib import Path
 import yaml
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 
 # Paths to config files
 YAML_CONFIG_DIR = Path(__file__).parent.parent / "src" / "yaml_config"
@@ -23,13 +21,11 @@ BASE_STATES_FILE = YAML_CONFIG_DIR / "flows" / "_base" / "states.yaml"
 PRIORITIES_FILE = YAML_CONFIG_DIR / "flows" / "_base" / "priorities.yaml"
 MIXINS_FILE = YAML_CONFIG_DIR / "flows" / "_base" / "mixins.yaml"
 
-
 @pytest.fixture(scope="module")
 def spin_flow():
     """Load spin_selling flow.yaml fixture."""
     with open(SPIN_FLOW_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 @pytest.fixture(scope="module")
 def base_states():
@@ -37,20 +33,17 @@ def base_states():
     with open(BASE_STATES_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture(scope="module")
 def priorities():
     """Load priorities.yaml fixture."""
     with open(PRIORITIES_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-
 @pytest.fixture(scope="module")
 def mixins():
     """Load mixins.yaml fixture."""
     with open(MIXINS_FILE, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
 
 # =============================================================================
 # SPIN SELLING FLOW.YAML TESTS
@@ -76,7 +69,6 @@ class TestSpinSellingFlowBasics:
         assert "description" in spin_flow["flow"]
         assert "SPIN" in spin_flow["flow"]["description"]
 
-
 class TestSpinSellingFlowVariables:
     """Tests for flow variables section."""
 
@@ -95,7 +87,6 @@ class TestSpinSellingFlowVariables:
     def test_product_name_variable(self, spin_flow):
         """Test flow.variables.product_name."""
         assert spin_flow["flow"]["variables"]["product_name"] == "CRM-система"
-
 
 class TestSpinSellingFlowPhases:
     """Tests for flow phases configuration."""
@@ -153,7 +144,6 @@ class TestSpinSellingFlowPhases:
         progress = spin_flow["flow"]["phases"]["progress_intents"]
         assert progress["need_expressed"] == "need_payoff"
 
-
 class TestSpinSellingFlowSkipConditions:
     """Tests for phase skip conditions."""
 
@@ -175,7 +165,6 @@ class TestSpinSellingFlowSkipConditions:
         assert "has_desired_outcome" in skip["need_payoff"]
         assert "lead_is_hot" in skip["need_payoff"]
 
-
 class TestSpinSellingFlowEntryPoints:
     """Tests for entry points configuration."""
 
@@ -194,7 +183,6 @@ class TestSpinSellingFlowEntryPoints:
     def test_entry_point_returning_customer(self, spin_flow):
         """Test entry_points.returning_customer."""
         assert spin_flow["flow"]["entry_points"]["returning_customer"] == "spin_situation"
-
 
 # =============================================================================
 # BASE STATES.YAML TESTS
@@ -261,7 +249,6 @@ class TestBaseStatesAbstract:
         params = state["parameters"]
         assert params["default_price_action"] == "answer_with_pricing"
         assert params["default_unclear_action"] == "continue_current_goal"
-
 
 class TestBaseStatesGreeting:
     """Tests for greeting state."""
@@ -341,7 +328,6 @@ class TestBaseStatesGreeting:
         assert transitions["objection_no_time"][0]["when"] == "objection_limit_reached"
         assert transitions["objection_no_time"][0]["then"] == "soft_close"
 
-
 class TestBaseStatesSuccess:
     """Tests for success state."""
 
@@ -359,7 +345,6 @@ class TestBaseStatesSuccess:
         """Test success.goal."""
         state = base_states["states"]["success"]
         assert "goal" in state
-
 
 class TestBaseStatesSoftClose:
     """Tests for soft_close state."""
@@ -388,7 +373,6 @@ class TestBaseStatesSoftClose:
         """Test soft_close transitions for go_back."""
         transitions = base_states["states"]["soft_close"]["transitions"]
         assert transitions["go_back"] == "greeting"
-
 
 class TestBaseStatesPresentation:
     """Tests for presentation state."""
@@ -423,7 +407,6 @@ class TestBaseStatesPresentation:
         assert isinstance(objection, list)
         assert objection[-1] == "handle_objection"
 
-
 class TestBaseStatesHandleObjection:
     """Tests for handle_objection state."""
 
@@ -449,7 +432,6 @@ class TestBaseStatesHandleObjection:
             for t in objection_price
         )
 
-
 class TestBaseStatesClose:
     """Tests for close state."""
 
@@ -473,7 +455,6 @@ class TestBaseStatesClose:
         transitions = base_states["states"]["close"]["transitions"]
         assert transitions["contact_provided"] == "success"
 
-
 class TestBaseStatesDefaults:
     """Tests for defaults section."""
 
@@ -484,7 +465,6 @@ class TestBaseStatesDefaults:
     def test_defaults_entry_state(self, base_states):
         """Test defaults.entry_state."""
         assert base_states["defaults"]["entry_state"] == "greeting"
-
 
 # =============================================================================
 # PRIORITIES.YAML TESTS
@@ -506,7 +486,6 @@ class TestDefaultPriorities:
                 f"Priority {p['name']} ({p['priority']}) is out of order"
             prev_priority = p["priority"]
 
-
 class TestPriorityFinalState:
     """Tests for final_state priority."""
 
@@ -525,7 +504,6 @@ class TestPriorityFinalState:
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "final_state")
         assert prio["action"] == "final"
 
-
 class TestPriorityRejection:
     """Tests for rejection priority."""
 
@@ -543,7 +521,6 @@ class TestPriorityRejection:
         """Test rejection uses transitions."""
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "rejection")
         assert prio["use_transitions"] is True
-
 
 class TestPriorityGoBack:
     """Tests for go_back priority."""
@@ -568,7 +545,6 @@ class TestPriorityGoBack:
         """Test go_back uses circular_flow_handler."""
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "go_back")
         assert prio["handler"] == "circular_flow_handler"
-
 
 class TestPriorityObjectionLimit:
     """Tests for objection_limit priority."""
@@ -598,7 +574,6 @@ class TestPriorityObjectionLimit:
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "objection_limit")
         assert prio["else"] == "use_transitions"
 
-
 class TestPriorityStateRules:
     """Tests for state_rules priority."""
 
@@ -617,7 +592,6 @@ class TestPriorityStateRules:
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "state_rules")
         assert prio["use_resolver"] is True
 
-
 class TestPriorityQuestionHandling:
     """Tests for question_handling priority."""
 
@@ -630,7 +604,6 @@ class TestPriorityQuestionHandling:
         """Test question_handling handles question category."""
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "question_handling")
         assert prio["intent_category"] == "question"
-
 
 class TestPriorityPhaseProgress:
     """Tests for phase_progress priority."""
@@ -645,7 +618,6 @@ class TestPriorityPhaseProgress:
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "phase_progress")
         assert prio["handler"] == "phase_progress_handler"
 
-
 class TestPriorityTransitions:
     """Tests for transitions priority."""
 
@@ -658,7 +630,6 @@ class TestPriorityTransitions:
         """Test transitions uses transitions."""
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "transitions")
         assert prio["use_transitions"] is True
-
 
 class TestPriorityDataComplete:
     """Tests for data_complete priority."""
@@ -678,7 +649,6 @@ class TestPriorityDataComplete:
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "data_complete")
         assert prio["condition"] == "has_all_required_data"
 
-
 class TestPriorityAnyTransition:
     """Tests for any_transition priority."""
 
@@ -692,7 +662,6 @@ class TestPriorityAnyTransition:
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "any_transition")
         assert prio["trigger"] == "any"
 
-
 class TestPriorityDefault:
     """Tests for default priority."""
 
@@ -705,7 +674,6 @@ class TestPriorityDefault:
         """Test default action."""
         prio = next(p for p in priorities["default_priorities"] if p["name"] == "default")
         assert prio["action"] == "continue_current_goal"
-
 
 class TestAlternativePriorities:
     """Tests for alternative priority profiles."""
@@ -735,7 +703,6 @@ class TestAlternativePriorities:
         assert urgent["priority"] == 50
         assert urgent["condition"] == "is_urgent"
         assert urgent["action"] == "escalate_to_human"
-
 
 # =============================================================================
 # MIXINS.YAML TESTS
@@ -769,7 +736,6 @@ class TestMixinsPriceHandling:
         rules = mixins["mixins"]["price_handling"]["rules"]
         assert "pricing_details" in rules
 
-
 class TestMixinsProductQuestions:
     """Tests for product_questions mixin."""
 
@@ -796,7 +762,6 @@ class TestMixinsProductQuestions:
         """Test product_questions rules for consultation_request."""
         rules = mixins["mixins"]["product_questions"]["rules"]
         assert rules["consultation_request"] == "acknowledge_and_continue"
-
 
 class TestMixinsObjectionHandling:
     """Tests for objection_handling mixin."""
@@ -844,7 +809,6 @@ class TestMixinsObjectionHandling:
         assert isinstance(transitions["objection_think"], list)
         assert transitions["objection_think"][-1] == "handle_objection"
 
-
 class TestMixinsDialogueRepair:
     """Tests for dialogue_repair mixin."""
 
@@ -858,7 +822,6 @@ class TestMixinsDialogueRepair:
         assert "unclear" in rules
         # Should have conditional rules
         assert isinstance(rules["unclear"], list)
-
 
 class TestMixinsExitIntents:
     """Tests for exit_intents mixin."""
@@ -877,7 +840,6 @@ class TestMixinsExitIntents:
         transitions = mixins["mixins"]["exit_intents"]["transitions"]
         assert transitions["farewell"] == "soft_close"
 
-
 class TestMixinsCloseShortcuts:
     """Tests for close_shortcuts mixin."""
 
@@ -895,7 +857,6 @@ class TestMixinsCloseShortcuts:
         transitions = mixins["mixins"]["close_shortcuts"]["transitions"]
         assert transitions["callback_request"] == "close"
 
-
 class TestMixinsSocialIntents:
     """Tests for social_intents mixin."""
 
@@ -912,7 +873,6 @@ class TestMixinsSocialIntents:
         """Test social_intents rules for small_talk."""
         rules = mixins["mixins"]["social_intents"]["rules"]
         assert rules["small_talk"] == "small_talk_and_continue"
-
 
 class TestMixinsSpinCommon:
     """Tests for spin_common mixin."""
@@ -932,7 +892,6 @@ class TestMixinsSpinCommon:
         assert "close_shortcuts" in includes
         assert "social_intents" in includes
 
-
 class TestMixinsDefaults:
     """Tests for mixins defaults section."""
 
@@ -947,7 +906,6 @@ class TestMixinsDefaults:
     def test_default_unclear_action(self, mixins):
         """Test defaults.default_unclear_action."""
         assert mixins["defaults"]["default_unclear_action"] == "continue_current_goal"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

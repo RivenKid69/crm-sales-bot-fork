@@ -20,7 +20,6 @@ from src.blackboard.source_registry import (
 )
 from src.blackboard.knowledge_source import KnowledgeSource
 
-
 class TestSourceRegistry:
     """Test suite for SourceRegistry (Plugin System)."""
 
@@ -331,7 +330,6 @@ class TestSourceRegistry:
         SourceRegistry.register(TestSource, name="TestSource")
         assert "TestSource" in SourceRegistry.list_registered()
 
-
 class TestSourceRegistration:
     """Test suite for SourceRegistration dataclass."""
 
@@ -385,7 +383,6 @@ class TestSourceRegistration:
         )
 
         assert reg.name == "TestSource"
-
 
 class TestRegisterSourceDecorator:
     """Test suite for @register_source decorator."""
@@ -462,7 +459,6 @@ class TestRegisterSourceDecorator:
         assert reg.enabled_by_default is True
         assert reg.config_key is None
         assert reg.description == ""
-
 
 class TestSourceRegistryIntegration:
     """Integration tests for SourceRegistry with real sources."""

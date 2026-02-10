@@ -17,11 +17,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, List, Set
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from config_loader import ConfigLoader, FlowConfig
-
+from src.config_loader import ConfigLoader, FlowConfig
 
 # =============================================================================
 # TEST FIXTURES
@@ -32,12 +28,10 @@ def config_loader():
     """Create ConfigLoader instance with real config."""
     return ConfigLoader()
 
-
 @pytest.fixture(scope="module")
 def config_dir():
     """Get config directory path."""
     return Path(__file__).parent.parent / "src" / "yaml_config"
-
 
 @pytest.fixture(scope="module")
 def raw_mixins(config_dir) -> Dict[str, Any]:
@@ -46,7 +40,6 @@ def raw_mixins(config_dir) -> Dict[str, Any]:
     with open(mixins_file) as f:
         data = yaml.safe_load(f)
     return data.get("mixins", {})
-
 
 @pytest.fixture(scope="module")
 def all_flows(config_loader) -> Dict[str, FlowConfig]:
@@ -65,18 +58,15 @@ def all_flows(config_loader) -> Dict[str, FlowConfig]:
             pytest.fail(f"Failed to load flow {name}: {e}")
     return flows
 
-
 @pytest.fixture(scope="module")
 def bant_flow(config_loader) -> FlowConfig:
     """Load BANT flow specifically."""
     return config_loader.load_flow("bant")
 
-
 @pytest.fixture(scope="module")
 def spin_flow(config_loader) -> FlowConfig:
     """Load SPIN Selling flow specifically."""
     return config_loader.load_flow("spin_selling")
-
 
 # =============================================================================
 # CLASSIFIER INTENTS (from prompts.py)
@@ -100,7 +90,6 @@ CLASSIFIER_INTENTS = {
     "rejection", "no_problem", "no_need", "go_back",
     "unclear",
 }
-
 
 # =============================================================================
 # TEST: UNIFIED_PROGRESS & PHASE_PROGRESS MIXINS
@@ -160,7 +149,6 @@ class TestProgressMixins:
 
         for intent in question_intents:
             assert intent in rules, f"unified_progress should have {intent} rule"
-
 
 # =============================================================================
 # TEST: NEW OBJECTION HANDLERS
@@ -263,7 +251,6 @@ class TestNewObjectionHandlers:
                 assert "objection_price" in transitions, \
                     f"{flow_name}/{state_name} should have objection_price handler"
                 break  # Only check first flow-specific state
-
 
 # =============================================================================
 # TEST: BANT SEMANTIC FIX
@@ -370,7 +357,6 @@ class TestBANTSemanticFix:
         assert rule_action == "ask_about_budget", \
             "Rule should keep us in budget phase asking about budget"
 
-
 # =============================================================================
 # TEST: PARAMETER RESOLUTION
 # =============================================================================
@@ -422,7 +408,6 @@ class TestParameterResolution:
         if isinstance(timeline_price, list):
             assert "answer_with_facts" in str(timeline_price), \
                 "bant_timeline should answer with facts about price"
-
 
 # =============================================================================
 # TEST: ALL 20 FLOWS CONFIGURATION
@@ -524,7 +509,6 @@ class TestAll20FlowsConfiguration:
         assert len(unresolved) == 0, \
             f"Found unresolved template variables:\n" + "\n".join(unresolved)
 
-
 # =============================================================================
 # TEST: INTENT COVERAGE
 # =============================================================================
@@ -568,7 +552,6 @@ class TestIntentCoverage:
         for intent in question_intents:
             assert intent in rules, \
                 f"Question intent {intent} should be in product_questions rules"
-
 
 # =============================================================================
 # TEST: STATE TRANSITIONS VALIDITY
@@ -623,7 +606,6 @@ class TestStateTransitionsValidity:
 
             assert reaches_end, \
                 f"{flow_name} should have at least one path to terminal state"
-
 
 # =============================================================================
 # TEST: REGRESSION TESTS
@@ -710,7 +692,6 @@ class TestRegressions:
 
         assert issues_count == 0, \
             f"Still have {issues_count} HIGH severity issues (should be 0)"
-
 
 # =============================================================================
 # RUN TESTS

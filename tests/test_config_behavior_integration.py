@@ -18,9 +18,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-
 # =============================================================================
 # STATE MACHINE + CONFIG INTEGRATION
 # =============================================================================
@@ -106,7 +103,6 @@ class TestStateMachineUsesConfig:
             # May have rules defined
             pass
 
-
 # =============================================================================
 # CONVERSATION GUARD + CONFIG INTEGRATION
 # =============================================================================
@@ -182,7 +178,6 @@ class TestConversationGuardUsesConfig:
 
         assert guard_threshold == frustration_high
 
-
 # =============================================================================
 # LEAD SCORER + CONFIG INTEGRATION
 # =============================================================================
@@ -248,7 +243,6 @@ class TestLeadScorerUsesConfig:
         score = scorer.get_score()
         assert len(score.skip_phases) == 0
 
-
 # =============================================================================
 # LEAD SCORER + STATE MACHINE INTEGRATION
 # =============================================================================
@@ -281,7 +275,6 @@ class TestLeadScorerStateMachineIntegration:
 
         # Should skip situation, problem, implication, need_payoff
         assert len(skip_phases) >= 3
-
 
 # =============================================================================
 # CIRCULAR FLOW MANAGER + CONFIG INTEGRATION
@@ -323,7 +316,6 @@ class TestCircularFlowManagerUsesConfig:
         assert manager.can_go_back("spin_problem") is True
         assert manager.can_go_back("greeting") is False
         assert manager.can_go_back("success") is False
-
 
 # =============================================================================
 # CONFIG LOADER VALIDATION INTEGRATION
@@ -414,7 +406,6 @@ class TestConfigLoaderValidation:
 
         assert "nonexistent_state" in str(exc_info.value)
 
-
 # =============================================================================
 # REAL CONFIG INTEGRATION
 # =============================================================================
@@ -476,7 +467,6 @@ class TestRealConfigIntegration:
 
         assert len(config.custom_conditions) > 0
         assert "ready_for_demo" in config.custom_conditions
-
 
 # =============================================================================
 # COMPONENT WIRING INTEGRATION

@@ -16,7 +16,6 @@ from codebase_analyzer.indexer.models.entities import (
     SourceLocation,
 )
 
-
 def create_function_entity(
     entity_id: str = "test::func",
     name: str = "func",
@@ -36,11 +35,9 @@ def create_function_entity(
         source_code=source_code,
     )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
-
 
 @pytest.fixture
 def temp_cache_dir(tmp_path):
@@ -49,24 +46,20 @@ def temp_cache_dir(tmp_path):
     cache_dir.mkdir()
     return cache_dir
 
-
 @pytest.fixture
 def cache(temp_cache_dir):
     """Create a cache instance."""
     return AnalysisCache(cache_dir=temp_cache_dir)
-
 
 @pytest.fixture
 def cache_with_model(temp_cache_dir):
     """Create a cache instance with model name."""
     return AnalysisCache(cache_dir=temp_cache_dir, model="test-model")
 
-
 @pytest.fixture
 def cache_with_ttl(temp_cache_dir):
     """Create a cache instance with TTL."""
     return AnalysisCache(cache_dir=temp_cache_dir, ttl_seconds=60.0)
-
 
 @pytest.fixture
 def sample_entity():
@@ -85,7 +78,6 @@ def sample_entity():
         source_code="func myFunction(x int) int {\n    return x * 2\n}",
     )
 
-
 @pytest.fixture
 def sample_summary():
     """Create a sample entity summary."""
@@ -102,7 +94,6 @@ def sample_summary():
         code_hash="abc123",
     )
 
-
 @pytest.fixture
 def another_summary():
     """Create another sample summary."""
@@ -115,11 +106,9 @@ def another_summary():
         dependencies_used=["my_function"],
     )
 
-
 # =============================================================================
 # CacheEntry Tests
 # =============================================================================
-
 
 class TestCacheEntry:
     """Tests for CacheEntry dataclass."""
@@ -156,11 +145,9 @@ class TestCacheEntry:
         assert restored.model == original.model
         assert restored.version == original.version
 
-
 # =============================================================================
 # AnalysisCache Initialization Tests
 # =============================================================================
-
 
 class TestAnalysisCacheInit:
     """Tests for cache initialization."""
@@ -225,11 +212,9 @@ class TestAnalysisCacheInit:
         cache = AnalysisCache(cache_dir=temp_cache_dir)
         assert len(cache._index) == 0  # Should be cleared
 
-
 # =============================================================================
 # Hash Computation Tests
 # =============================================================================
-
 
 class TestHashComputation:
     """Tests for code hash computation."""
@@ -277,11 +262,9 @@ class TestHashComputation:
         assert len(hash1) == 16
         assert hash1 != hash2  # Different because of entity_type and name
 
-
 # =============================================================================
 # Cache Operations Tests
 # =============================================================================
-
 
 class TestCacheOperations:
     """Tests for basic cache operations."""
@@ -340,11 +323,9 @@ class TestCacheOperations:
         info = cache.get_entry_info("missing::entity")
         assert info is None
 
-
 # =============================================================================
 # Invalidation Tests
 # =============================================================================
-
 
 class TestInvalidation:
     """Tests for cache invalidation."""
@@ -418,11 +399,9 @@ class TestInvalidation:
         assert summary_c.entity_id in invalidated
         assert len(cache._index) == 0
 
-
 # =============================================================================
 # TTL Tests
 # =============================================================================
-
 
 class TestTTL:
     """Tests for time-to-live functionality."""
@@ -456,11 +435,9 @@ class TestTTL:
         assert removed == 1
         assert len(cache._index) == 0
 
-
 # =============================================================================
 # Model Filtering Tests
 # =============================================================================
-
 
 class TestModelFiltering:
     """Tests for model-based cache filtering."""
@@ -488,11 +465,9 @@ class TestModelFiltering:
 
         assert retrieved is None
 
-
 # =============================================================================
 # Batch Operations Tests
 # =============================================================================
-
 
 class TestBatchOperations:
     """Tests for batch cache operations."""
@@ -529,11 +504,9 @@ class TestBatchOperations:
         for i in range(10):
             assert cache.has_cached(f"test::entity_{i}")
 
-
 # =============================================================================
 # Statistics and Cleanup Tests
 # =============================================================================
-
 
 class TestStatisticsAndCleanup:
     """Tests for cache statistics and cleanup."""
@@ -560,11 +533,9 @@ class TestStatisticsAndCleanup:
         assert len(cache._index) == 0
         assert not cache.has_cached(sample_summary.entity_id)
 
-
 # =============================================================================
 # Persistence Tests
 # =============================================================================
-
 
 class TestPersistence:
     """Tests for cache persistence across instances."""
@@ -606,11 +577,9 @@ class TestPersistence:
         assert "version" in data
         assert "entries" in data
 
-
 # =============================================================================
 # Edge Cases Tests
 # =============================================================================
-
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""

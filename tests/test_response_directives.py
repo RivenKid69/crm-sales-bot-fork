@@ -11,9 +11,7 @@ import pytest
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from response_directives import (
+from src.response_directives import (
     ResponseDirectives,
     ResponseDirectivesBuilder,
     ResponseTone,
@@ -21,8 +19,7 @@ from response_directives import (
     build_response_directives,
     build_context_summary,
 )
-from context_envelope import ContextEnvelope, ReasonCode
-
+from src.context_envelope import ContextEnvelope, ReasonCode
 
 class TestResponseTone:
     """Тесты для ResponseTone enum."""
@@ -33,7 +30,6 @@ class TestResponseTone:
         assert ResponseTone.NEUTRAL.value == "neutral"
         assert ResponseTone.CONFIDENT.value == "confident"
         assert ResponseTone.SUPPORTIVE.value == "supportive"
-
 
 class TestDialogueMove:
     """Тесты для DialogueMove enum."""
@@ -46,7 +42,6 @@ class TestDialogueMove:
         assert DialogueMove.OFFER_CHOICES.value == "choices"
         assert DialogueMove.CTA_SOFT.value == "cta_soft"
         assert DialogueMove.REPAIR.value == "repair"
-
 
 class TestResponseDirectives:
     """Тесты для ResponseDirectives dataclass."""
@@ -155,7 +150,6 @@ class TestResponseDirectives:
         # "Будь краток" содержит "краток"
         assert "краток" in instruction.lower()
         assert "30 слов" in instruction
-
 
 class TestResponseDirectivesBuilder:
     """Тесты для ResponseDirectivesBuilder."""
@@ -333,7 +327,6 @@ class TestResponseDirectivesBuilder:
 
         assert directives.reference_pain == "потеря клиентов"
 
-
 class TestBuildContextSummary:
     """Тесты для build_context_summary."""
 
@@ -432,7 +425,6 @@ class TestBuildContextSummary:
         lines = summary.strip().split("\n")
         assert len(lines) <= builder.max_summary_lines
 
-
 class TestBuildFunctions:
     """Тесты для функций build_response_directives и build_context_summary."""
 
@@ -460,7 +452,6 @@ class TestBuildFunctions:
 
         assert isinstance(summary, str)
         assert "5" in summary or "10" in summary
-
 
 class TestResponseDirectivesIntegration:
     """Интеграционные тесты для ResponseDirectives."""

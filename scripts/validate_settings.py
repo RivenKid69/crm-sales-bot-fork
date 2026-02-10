@@ -11,7 +11,7 @@ from pathlib import Path
 # Добавляем src в путь
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from settings import load_settings, validate_settings, DEFAULTS
+from src.settings import load_settings, validate_settings, DEFAULTS
 
 
 def compare_with_defaults(settings, defaults, path=""):
@@ -36,19 +36,19 @@ def test_imports():
     print("\n1. Проверка импортов...")
 
     try:
-        from settings import settings
+        from src.settings import settings
         print("   [+] from settings import settings")
 
-        from llm import OllamaLLM
+        from src.llm import OllamaLLM
         print("   [+] from llm import OllamaLLM")
 
-        from knowledge.retriever import CascadeRetriever
+        from src.knowledge.retriever import CascadeRetriever
         print("   [+] from knowledge.retriever import CascadeRetriever")
 
-        from generator import ResponseGenerator
+        from src.generator import ResponseGenerator
         print("   [+] from generator import ResponseGenerator")
 
-        from config import CLASSIFIER_CONFIG
+        from src.config import CLASSIFIER_CONFIG
         print("   [+] from config import CLASSIFIER_CONFIG")
 
         return True
@@ -61,7 +61,7 @@ def test_settings_access():
     """Проверить доступ к настройкам"""
     print("\n2. Проверка доступа к настройкам...")
 
-    from settings import settings
+    from src.settings import settings
 
     tests = [
         ("settings.llm.model", settings.llm.model),
@@ -88,8 +88,8 @@ def test_llm_initialization():
     """Проверить инициализацию LLM"""
     print("\n3. Проверка инициализации LLM...")
 
-    from llm import OllamaLLM
-    from settings import settings
+    from src.llm import OllamaLLM
+    from src.settings import settings
 
     llm = OllamaLLM()
 
@@ -119,8 +119,8 @@ def test_retriever_initialization():
     print("\n4. Проверка инициализации Retriever...")
 
     try:
-        from knowledge.retriever import CascadeRetriever
-        from settings import settings
+        from src.knowledge.retriever import CascadeRetriever
+        from src.settings import settings
 
         # Создаём retriever без эмбеддингов для быстроты
         retriever = CascadeRetriever(use_embeddings=False)
@@ -150,8 +150,8 @@ def test_generator_initialization():
     print("\n5. Проверка инициализации Generator...")
 
     try:
-        from generator import ResponseGenerator
-        from settings import settings
+        from src.generator import ResponseGenerator
+        from src.settings import settings
 
         # Создаём mock LLM
         class MockLLM:
@@ -193,8 +193,8 @@ def test_classifier_config():
     print("\n6. Проверка CLASSIFIER_CONFIG...")
 
     try:
-        from config import CLASSIFIER_CONFIG
-        from settings import settings
+        from src.config import CLASSIFIER_CONFIG
+        from src.settings import settings
 
         checks = [
             ("root_match_weight", CLASSIFIER_CONFIG["root_match_weight"], settings.classifier.weights.root_match),
@@ -223,7 +223,7 @@ def test_override_in_constructor():
     print("\n7. Проверка переопределения в конструкторе...")
 
     try:
-        from llm import OllamaLLM
+        from src.llm import OllamaLLM
 
         llm = OllamaLLM(model="custom-model", timeout=999)
 

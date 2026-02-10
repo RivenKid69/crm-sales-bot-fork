@@ -11,10 +11,7 @@ from pathlib import Path
 from io import StringIO
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from logger import StructuredLogger, create_test_logger
-
+from src.logger import StructuredLogger, create_test_logger
 
 class TestStructuredLoggerBasic:
     """Базовые тесты StructuredLogger"""
@@ -59,7 +56,6 @@ class TestStructuredLoggerBasic:
         assert result["conversation_id"] == "conv_999"
         assert result["key"] == "value"
         assert result["logger"] == "crm_sales_bot.format"
-
 
 class TestStructuredLoggerOutput:
     """Тесты вывода логов"""
@@ -167,7 +163,6 @@ class TestStructuredLoggerOutput:
             if env_backup:
                 os.environ["LOG_FORMAT"] = env_backup
 
-
 class TestStructuredLoggerMetrics:
     """Тесты для метрик"""
 
@@ -246,7 +241,6 @@ class TestStructuredLoggerMetrics:
         finally:
             del os.environ["LOG_FORMAT"]
 
-
 class TestStructuredLoggerException:
     """Тесты для логирования исключений"""
 
@@ -307,7 +301,6 @@ class TestStructuredLoggerException:
         finally:
             del os.environ["LOG_FORMAT"]
 
-
 class TestStructuredLoggerContext:
     """Тесты для контекста"""
 
@@ -364,19 +357,18 @@ class TestStructuredLoggerContext:
         finally:
             del os.environ["LOG_FORMAT"]
 
-
 class TestSingletonLogger:
     """Тесты для singleton экземпляра"""
 
     def test_global_logger_exists(self):
         """Глобальный логгер существует"""
-        from logger import logger
+        from src.logger import logger
         assert logger is not None
         assert logger.name == "crm_sales_bot"
 
     def test_global_logger_methods(self):
         """Глобальный логгер имеет все методы"""
-        from logger import logger
+        from src.logger import logger
 
         assert hasattr(logger, "info")
         assert hasattr(logger, "warning")
@@ -388,7 +380,6 @@ class TestSingletonLogger:
         assert hasattr(logger, "event")
         assert hasattr(logger, "set_conversation")
         assert hasattr(logger, "set_context")
-
 
 class TestLoggerThreadSafety:
     """Тесты потокобезопасности"""
@@ -422,7 +413,6 @@ class TestLoggerThreadSafety:
             t.join()
 
         assert len(errors) == 0, f"Errors during concurrent logging: {errors}"
-
 
 class TestLoggerContextIsolation:
     """
@@ -624,7 +614,6 @@ class TestLoggerContextIsolation:
             f"Expected user='user_1', got '{results['thread_1']}'. "
             "Race condition detected - clear_context affected other thread."
         )
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

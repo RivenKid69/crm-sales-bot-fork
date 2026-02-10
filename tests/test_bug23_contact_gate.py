@@ -13,7 +13,6 @@ from unittest.mock import patch, MagicMock
 
 from src.cta_generator import CTAGenerator, CTAResult
 
-
 class TestCTAContactGate:
     """Layer 1: cta_generator.py — contact gate."""
 
@@ -117,7 +116,6 @@ class TestCTAContactGate:
 
         # Contact gate should be skipped due to import error, CTA should pass
         assert reason != "contact_already_collected"
-
 
 class TestGeneratorDoNotAskContact:
     """Layer 2: generator.py — do_not_ask for contact_info."""

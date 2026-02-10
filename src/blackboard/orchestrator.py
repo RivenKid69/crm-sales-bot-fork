@@ -32,16 +32,12 @@ from src.blackboard.protocols import (
 )
 
 # Import SourceRegistry (Plugin System)
-from src.blackboard.source_registry import SourceRegistry, register_builtin_sources
+from src.blackboard.source_registry import BUILTIN_SOURCE_NAMES, SourceRegistry
 
 # Import intent categories for objection tracking
 from src.yaml_config.constants import OBJECTION_INTENTS, POSITIVE_INTENTS
 
 logger = logging.getLogger(__name__)
-
-# Register built-in sources on module import
-register_builtin_sources()
-
 
 class DialogueOrchestrator:
     """
@@ -875,6 +871,8 @@ def create_orchestrator(
     llm: Optional[Any] = None,
     blackboard_config: Optional[Dict[str, Any]] = None,
     valid_actions: Optional[Set[str]] = None,
+    bootstrap_builtin_sources: bool = True,
+    strict_source_bootstrap: bool = True,
 ) -> DialogueOrchestrator:
     """
     Factory function to create a fully configured DialogueOrchestrator.
@@ -898,6 +896,8 @@ def create_orchestrator(
         enable_debug_logging: Whether to enable debug event logging
         custom_sources: Optional list of custom KnowledgeSource classes to register
         tenant_config: Tenant-specific configuration (optional)
+        bootstrap_builtin_sources: Ensure built-in sources are present before wiring
+        strict_source_bootstrap: Raise if bootstrap has conflicts/missing critical sources
 
     Returns:
         Configured DialogueOrchestrator instance
@@ -934,6 +934,41 @@ def create_orchestrator(
 
     # Use default tenant if not provided
     tenant_config = tenant_config or DEFAULT_TENANT
+
+    # Bootstrap SourceRegistry in composition root (self-heal after reset()).
+    if bootstrap_builtin_sources:
+        before_names = SourceRegistry.list_registered()
+        bootstrap = SourceRegistry.ensure_builtin_sources()
+        after_names = SourceRegistry.list_registered()
+        missing_critical = sorted(set(BUILTIN_SOURCE_NAMES) - set(after_names))
+
+        if bootstrap.added:
+            logger.warning(
+                "SourceRegistry self-heal in create_orchestrator: before=%s after=%s restored=%s",
+                len(before_names),
+                len(after_names),
+                bootstrap.added,
+            )
+        else:
+            logger.debug(
+                "SourceRegistry bootstrap check: before=%s after=%s existing=%s",
+                len(before_names),
+                len(after_names),
+                len(bootstrap.existing),
+            )
+
+        if bootstrap.conflicts:
+            details = "; ".join(f"{k}: {v}" for k, v in sorted(bootstrap.conflicts.items()))
+            msg = f"SourceRegistry built-in bootstrap conflicts: {details}"
+            if strict_source_bootstrap:
+                raise RuntimeError(msg)
+            logger.error(msg)
+
+        if missing_critical:
+            msg = f"Missing critical built-in sources after bootstrap: {missing_critical}"
+            if strict_source_bootstrap:
+                raise RuntimeError(msg)
+            logger.error(msg)
 
     # Register custom sources if provided
     if custom_sources:

@@ -24,7 +24,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -124,7 +123,6 @@ def config_dir(tmp_path):
 
     return tmp_path
 
-
 @pytest.fixture(autouse=True)
 def clean_overrides():
     """Ensure override storage is clean before and after each test."""
@@ -132,7 +130,6 @@ def clean_overrides():
     clear_all_config_overrides()
     yield
     clear_all_config_overrides()
-
 
 # =============================================================================
 # 1. Override Storage CRUD
@@ -276,7 +273,6 @@ class TestOverrideStorage:
         assert get_config_overrides("tenant_a")["guard"]["max_turns"] == 10
         assert get_config_overrides("tenant_b")["guard"]["max_turns"] == 99
 
-
 # =============================================================================
 # 2. Deep Merge Semantics
 # =============================================================================
@@ -349,7 +345,6 @@ class TestDeepMerge:
 
         result = _deep_merge(base, override)
         assert result["items"] == [4, 5]
-
 
 # =============================================================================
 # 3. Override Application in load_named()
@@ -504,7 +499,6 @@ class TestOverrideInLoadNamed:
         assert config.guard["new_param"] == "hello"
         assert config.guard["max_turns"] == 25  # original preserved
 
-
 # =============================================================================
 # 4. Post-Merge Validation Warnings
 # =============================================================================
@@ -554,7 +548,6 @@ class TestPostMergeValidation:
                 x for x in w if "threshold" in str(x.message).lower()
             ]
             assert len(threshold_warnings) == 0
-
 
 # =============================================================================
 # 5. Thread Safety
@@ -673,7 +666,6 @@ class TestThreadSafety:
             t.join()
 
         assert errors == [], f"Thread safety errors: {errors}"
-
 
 # =============================================================================
 # 6. Bot Component Wiring
@@ -857,7 +849,6 @@ class TestBotComponentWiring:
         assert config.disambiguation["high_confidence"] == 0.85
         assert config.disambiguation["gap_threshold"] == 0.20
 
-
 # =============================================================================
 # 7. Edge Cases
 # =============================================================================
@@ -982,7 +973,6 @@ class TestEdgeCases:
 
         stored = get_config_overrides("default")
         assert stored["disambiguation"]["log_uncertain"] is False
-
 
 # =============================================================================
 # 8. E2E: Override -> load_named -> property access
@@ -1164,7 +1154,6 @@ class TestE2EOverrideFlow:
         config = loader.load_named("default")
 
         assert len(config.cta["early_states"]) == 3
-
 
 # =============================================================================
 # 9. build_response_directives with config parameter

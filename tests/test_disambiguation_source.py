@@ -16,7 +16,6 @@ from typing import Dict, Any, List
 from src.blackboard.sources.disambiguation import DisambiguationSource
 from src.blackboard.enums import Priority, ProposalType
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -45,7 +44,6 @@ class MockBlackboard:
     def propose_action(self, **kwargs):
         self._proposals.append(kwargs)
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -54,14 +52,12 @@ class MockBlackboard:
 def source():
     return DisambiguationSource()
 
-
 @pytest.fixture
 def sample_options():
     return [
         {"intent": "price_question", "label": "Узнать цены"},
         {"intent": "demo_request", "label": "Записаться на демо"},
     ]
-
 
 # =============================================================================
 # Test: should_contribute
@@ -82,7 +78,6 @@ class TestShouldContribute:
         source.disable()
         bb = MockBlackboard(intent="disambiguation_needed")
         assert source.should_contribute(bb) is False
-
 
 # =============================================================================
 # Test: contribute
@@ -172,7 +167,6 @@ class TestContribute:
 
         assert len(bb._proposals) == 0
 
-
 # =============================================================================
 # Test: Source name
 # =============================================================================
@@ -185,7 +179,6 @@ class TestSourceName:
     def test_custom_name(self):
         source = DisambiguationSource(name="CustomDisambig")
         assert source.name == "CustomDisambig"
-
 
 # =============================================================================
 # Test: Context envelope edge cases

@@ -16,15 +16,12 @@ import pytest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from simulator.metrics import (
+from src.simulator.metrics import (
     extract_phases_from_dialogue,
     calculate_spin_coverage,
     build_phase_mapping_from_flow
 )
-from config_loader import ConfigLoader
-
+from src.config_loader import ConfigLoader
 
 class TestPhaseCoverageFix:
     """Tests for the phase coverage fix."""
@@ -170,7 +167,6 @@ class TestPhaseCoverageFix:
         assert "implication" in phases
         assert "presentation" in phases  # from close
 
-
 class TestBuildPhaseMapping:
     """Tests for build_phase_mapping_from_flow."""
 
@@ -198,7 +194,6 @@ class TestBuildPhaseMapping:
 
         assert mapping.get("presentation") == "presentation"
         assert mapping.get("close") == "presentation"
-
 
 class TestMultiFlowPhaseCoverage:
     """
@@ -327,7 +322,6 @@ class TestMultiFlowPhaseCoverage:
         expected_coverage = 2 / (len(expected_phases) + 1)  # 2 phases matched / total phases
         assert abs(coverage - expected_coverage) < 0.01, \
             f"{flow_name}: expected {expected_coverage:.2f} coverage, got {coverage:.2f}"
-
 
 class TestCalculateSpinCoverage:
     """Tests for calculate_spin_coverage.

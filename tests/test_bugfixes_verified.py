@@ -16,11 +16,7 @@ from unittest.mock import patch, MagicMock, PropertyMock
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from llm import VLLMClient, CircuitBreakerState, CircuitBreakerStatus, LLMStats
-
+from src.llm import VLLMClient, CircuitBreakerState, CircuitBreakerStatus, LLMStats
 
 # =============================================================================
 # 1. Circuit Breaker Half-Open Tests
@@ -137,7 +133,6 @@ class TestCircuitBreakerHalfOpen:
         assert stats["circuit_breaker_status"] == CircuitBreakerStatus.CLOSED
         assert "circuit_breaker_open" in stats  # backward compatibility
 
-
 # =============================================================================
 # 2. Frustration Tracker - Single Instance Tests
 # =============================================================================
@@ -147,8 +142,8 @@ class TestFrustrationTrackerSingleInstance:
 
     def test_cascade_and_regex_share_tracker(self):
         """CascadeToneAnalyzer и RegexToneAnalyzer используют один tracker."""
-        from tone_analyzer.cascade_analyzer import CascadeToneAnalyzer
-        from tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.cascade_analyzer import CascadeToneAnalyzer
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
 
         analyzer = CascadeToneAnalyzer()
 
@@ -157,8 +152,8 @@ class TestFrustrationTrackerSingleInstance:
 
     def test_regex_does_not_own_shared_tracker(self):
         """RegexToneAnalyzer не владеет внешним tracker."""
-        from tone_analyzer.regex_analyzer import RegexToneAnalyzer
-        from tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
 
         shared_tracker = FrustrationTracker()
         analyzer = RegexToneAnalyzer(frustration_tracker=shared_tracker)
@@ -168,7 +163,7 @@ class TestFrustrationTrackerSingleInstance:
 
     def test_regex_owns_internal_tracker(self):
         """RegexToneAnalyzer владеет собственным tracker."""
-        from tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
 
         analyzer = RegexToneAnalyzer()
 
@@ -176,8 +171,8 @@ class TestFrustrationTrackerSingleInstance:
 
     def test_reset_does_not_reset_shared_tracker(self):
         """reset() не сбрасывает shared tracker."""
-        from tone_analyzer.regex_analyzer import RegexToneAnalyzer
-        from tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
 
         shared_tracker = FrustrationTracker()
         shared_tracker._level = 5  # Устанавливаем значение
@@ -190,7 +185,7 @@ class TestFrustrationTrackerSingleInstance:
 
     def test_reset_resets_owned_tracker(self):
         """reset() сбрасывает собственный tracker."""
-        from tone_analyzer.regex_analyzer import RegexToneAnalyzer
+        from src.tone_analyzer.regex_analyzer import RegexToneAnalyzer
 
         analyzer = RegexToneAnalyzer()
         analyzer._frustration_tracker._level = 5
@@ -201,8 +196,8 @@ class TestFrustrationTrackerSingleInstance:
 
     def test_no_double_frustration_update(self):
         """Frustration обновляется только один раз за analyze()."""
-        from tone_analyzer.cascade_analyzer import CascadeToneAnalyzer
-        from tone_analyzer.models import Tone
+        from src.tone_analyzer.cascade_analyzer import CascadeToneAnalyzer
+        from src.tone_analyzer.models import Tone
 
         analyzer = CascadeToneAnalyzer()
         analyzer.reset()
@@ -220,7 +215,6 @@ class TestFrustrationTrackerSingleInstance:
         # И он должен быть больше начального
         assert result.frustration_level > initial_level
 
-
 # =============================================================================
 # 3. Fork Stack LIFO Tests
 # =============================================================================
@@ -230,7 +224,7 @@ class TestForkStackLIFO:
 
     def test_complete_fork_removes_last_occurrence(self):
         """complete_fork удаляет последнее вхождение fork_id."""
-        from dag.models import DAGExecutionContext, DAGBranch
+        from src.dag.models import DAGExecutionContext, DAGBranch
 
         ctx = DAGExecutionContext(primary_state="greeting")
 
@@ -244,7 +238,7 @@ class TestForkStackLIFO:
 
     def test_complete_fork_lifo_order(self):
         """complete_fork соблюдает LIFO порядок."""
-        from dag.models import DAGExecutionContext
+        from src.dag.models import DAGExecutionContext
 
         ctx = DAGExecutionContext(primary_state="greeting")
 
@@ -263,7 +257,7 @@ class TestForkStackLIFO:
 
     def test_complete_fork_top_of_stack(self):
         """complete_fork для элемента на вершине стека."""
-        from dag.models import DAGExecutionContext
+        from src.dag.models import DAGExecutionContext
 
         ctx = DAGExecutionContext(primary_state="greeting")
         ctx.fork_stack = ["fork_A", "fork_B"]
@@ -274,7 +268,7 @@ class TestForkStackLIFO:
 
     def test_complete_fork_not_on_top(self):
         """complete_fork для элемента НЕ на вершине стека."""
-        from dag.models import DAGExecutionContext
+        from src.dag.models import DAGExecutionContext
 
         ctx = DAGExecutionContext(primary_state="greeting")
         ctx.fork_stack = ["fork_A", "fork_B", "fork_C"]
@@ -287,7 +281,7 @@ class TestForkStackLIFO:
 
     def test_complete_fork_nonexistent(self):
         """complete_fork для несуществующего fork_id."""
-        from dag.models import DAGExecutionContext
+        from src.dag.models import DAGExecutionContext
 
         ctx = DAGExecutionContext(primary_state="greeting")
         ctx.fork_stack = ["fork_A", "fork_B"]
@@ -296,7 +290,6 @@ class TestForkStackLIFO:
         ctx.complete_fork("fork_X")
 
         assert ctx.fork_stack == ["fork_A", "fork_B"]
-
 
 # =============================================================================
 # 4. Lead Scoring Turn-Based Decay Tests
@@ -307,7 +300,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_reset_initializes_turn_count(self):
         """reset() инициализирует счётчик ходов."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         assert scorer._turn_count == 0
@@ -315,7 +308,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_apply_turn_decay_increments_counter(self):
         """apply_turn_decay увеличивает счётчик ходов."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         scorer.add_signal("demo_request")  # Score > 0
@@ -327,7 +320,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_apply_turn_decay_applies_decay(self):
         """apply_turn_decay применяет decay к score."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer(decay_factor=0.9)
         scorer.add_signal("demo_request")  # +30
@@ -342,7 +335,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_decay_not_applied_twice_in_same_turn(self):
         """Decay не применяется дважды в одном ходу."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer(decay_factor=0.9)
         scorer.add_signal("demo_request")  # +30
@@ -358,7 +351,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_end_turn_resets_decay_flag(self):
         """end_turn сбрасывает флаг decay."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer()
         scorer.apply_turn_decay()
@@ -371,7 +364,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_decay_applied_even_without_signals(self):
         """Decay применяется даже без новых сигналов."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer(decay_factor=0.9)
 
@@ -395,7 +388,7 @@ class TestLeadScoringTurnBasedDecay:
 
     def test_add_signal_triggers_decay_if_not_applied(self):
         """add_signal вызывает decay если он ещё не применён."""
-        from lead_scoring import LeadScorer
+        from src.lead_scoring import LeadScorer
 
         scorer = LeadScorer(decay_factor=0.9)
         scorer.add_signal("demo_request")  # Ход 1: +30
@@ -410,7 +403,6 @@ class TestLeadScoringTurnBasedDecay:
         # Score: 30 * 0.9 + 5 = 32
         expected = 30 * 0.9 + 5
         assert scorer._raw_score == pytest.approx(expected, rel=0.01)
-
 
 # =============================================================================
 # 5. Disambiguation Path Protection Phases Tests
@@ -429,7 +421,7 @@ class TestDisambiguationPathProtection:
     @pytest.fixture
     def feature_flags_enabled(self):
         """Включаем все feature flags для тестов."""
-        from feature_flags import flags
+        from src.feature_flags import flags
 
         original_values = {}
         flags_to_enable = [
@@ -454,7 +446,7 @@ class TestDisambiguationPathProtection:
         self, mock_llm, feature_flags_enabled
     ):
         """_continue_with_classification вызывает tone analysis."""
-        from bot import SalesBot
+        from src.bot import SalesBot
         from unittest.mock import patch
 
         bot = SalesBot(mock_llm)
@@ -480,7 +472,7 @@ class TestDisambiguationPathProtection:
         self, mock_llm, feature_flags_enabled
     ):
         """_continue_with_classification вызывает guard check."""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         bot = SalesBot(mock_llm)
 
@@ -509,7 +501,7 @@ class TestDisambiguationPathProtection:
         self, mock_llm, feature_flags_enabled
     ):
         """_continue_with_classification вызывает objection check."""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         bot = SalesBot(mock_llm)
 
@@ -535,7 +527,7 @@ class TestDisambiguationPathProtection:
         self, mock_llm, feature_flags_enabled
     ):
         """_continue_with_classification обрабатывает guard intervention."""
-        from bot import SalesBot
+        from src.bot import SalesBot
 
         bot = SalesBot(mock_llm)
 

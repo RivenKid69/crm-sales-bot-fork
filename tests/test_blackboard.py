@@ -20,7 +20,6 @@ from src.blackboard.models import Proposal, ResolvedDecision, ContextSnapshot
 from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.protocols import TenantConfig, DEFAULT_TENANT
 
-
 class TestDialogueBlackboard:
     """Test suite for DialogueBlackboard class."""
 
@@ -355,7 +354,6 @@ class TestDialogueBlackboard:
         flags = blackboard.get_flags_to_set()
         assert flags["escalation_requested"] == True
 
-
 class TestContextSnapshot:
     """Test suite for ContextSnapshot helper methods."""
 
@@ -449,7 +447,6 @@ class TestContextSnapshot:
     def test_optional_data_fields_property(self, context_snapshot):
         """optional_data_fields should return from state_config."""
         assert context_snapshot.optional_data_fields == ["pain_point"]
-
 
 class TestMultiTenancy:
     """Test multi-tenancy support in DialogueBlackboard."""
@@ -563,7 +560,6 @@ class TestMultiTenancy:
         assert ctx.is_tenant_feature_enabled("price_questions") is True
         # Unknown features default to True
         assert ctx.is_tenant_feature_enabled("unknown_feature") is True
-
 
 class TestBlackboardProperties:
     """Test Blackboard properties and utility methods."""

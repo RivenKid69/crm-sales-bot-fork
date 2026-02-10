@@ -1,15 +1,3 @@
-"""
-Pytest configuration file.
+"""Global pytest bootstrap for the workspace."""
 
-Adds src/ directory to Python path for all tests.
-"""
-
-import sys
-import os
-
-# Add src/ directory to Python path
-_project_root = os.path.dirname(os.path.abspath(__file__))
-_src_path = os.path.join(_project_root, "src")
-
-if _src_path not in sys.path:
-    sys.path.insert(0, _src_path)
+import src  # noqa: F401

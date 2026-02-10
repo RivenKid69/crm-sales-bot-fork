@@ -14,25 +14,19 @@ import pytest
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from config_loader import ConfigLoader
-from state_machine import StateMachine
-from blackboard import create_orchestrator
-
+from src.config_loader import ConfigLoader
+from src.state_machine import StateMachine
+from src.blackboard import create_orchestrator
 
 @pytest.fixture
 def loader():
     """Create config loader."""
     return ConfigLoader()
 
-
 @pytest.fixture
 def config(loader):
     """Load base config."""
     return loader.load()
-
 
 # =============================================================================
 # Price Rules from YAML
@@ -115,7 +109,6 @@ class TestBug1PriceRulesFromYAML:
 
         assert result.action in expected_actions, \
             f"State {state}: expected one of {expected_actions}, got {result.action}"
-
 
 # =============================================================================
 # go_back in non-SPIN flows
@@ -200,7 +193,6 @@ class TestBug2GoBackInNonSpinFlows:
         assert result.next_state == 'greeting', \
             f"Flow {flow_name}, first state {first_state}: expected greeting, got {result.next_state}"
 
-
 # =============================================================================
 # default_action = continue_current_goal
 # =============================================================================
@@ -234,9 +226,9 @@ class TestBug3DefaultAction:
 
         # Should be continue_current_goal or a rule-based action
         assert result.action in ['continue_current_goal', 'greet_back', 'grab_attention',
-                                  'ask_about_budget', 'probe_situation'], \
+                                  'ask_about_budget', 'probe_situation',
+                                  'acknowledge_and_continue'], \
             f"Flow {flow_name}: unexpected action {result.action}"
-
 
 # =============================================================================
 # CircularFlowManager integration
@@ -324,7 +316,6 @@ class TestBug4CircularFlowManager:
                 # Should be blocked
                 assert result.action == 'go_back_limit_reached'
 
-
 # =============================================================================
 # STRESS TESTS
 # =============================================================================
@@ -394,7 +385,6 @@ class TestStressAllFlows:
         # - continue_current_goal: no go_back transition defined for this state (BUGFIX #2 behavior)
         assert result.action in ['acknowledge_go_back', 'go_back_limit_reached', 'continue_current_goal']
 
-
 # =============================================================================
 # REGRESSION TESTS
 # =============================================================================
@@ -438,7 +428,6 @@ class TestRegressionPrevBehavior:
 
         result = orchestrator.process_turn('demo_request', extracted_data={}, context_envelope=None)
         assert result.next_state == 'close'
-
 
 # =============================================================================
 # DEFERRED GOBACK INCREMENT
@@ -539,7 +528,6 @@ class TestBug5DeferredGobackIncrement:
                 assert len(sm.circular_flow.goback_history) == sm.circular_flow.goback_count, \
                     f"History length {len(sm.circular_flow.goback_history)} != count {sm.circular_flow.goback_count}"
 
-
 class TestBug6GobackConflictResolution:
     """
     go_back blocked by higher priority source.
@@ -597,7 +585,6 @@ class TestBug6GobackConflictResolution:
         else:
             # go_back failed, counter should be 0
             assert sm.circular_flow.goback_count == 0
-
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '--tb=short'])

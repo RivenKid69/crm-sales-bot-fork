@@ -23,11 +23,9 @@ from codebase_analyzer.indexer.models.entities import (
     create_entity_id,
 )
 
-
 # ============================================================================
 # Enum Tests
 # ============================================================================
-
 
 class TestEntityType:
     """Tests for EntityType enum."""
@@ -69,7 +67,6 @@ class TestEntityType:
         assert isinstance(EntityType.CLASS, str)
         assert EntityType.CLASS == "class"
 
-
 class TestVisibility:
     """Tests for Visibility enum."""
 
@@ -85,7 +82,6 @@ class TestVisibility:
         assert Visibility.PRIVATE.value == "private"
         assert Visibility.PROTECTED.value == "protected"
         assert Visibility.INTERNAL.value == "internal"
-
 
 class TestLanguage:
     """Tests for Language enum."""
@@ -103,11 +99,9 @@ class TestLanguage:
         assert Language.TYPESCRIPT.value == "typescript"
         assert Language.TSX.value == "tsx"
 
-
 # ============================================================================
 # SourceLocation Tests
 # ============================================================================
-
 
 class TestSourceLocation:
     """Tests for SourceLocation dataclass."""
@@ -171,11 +165,9 @@ class TestSourceLocation:
         assert "50" in str_repr
         assert str_repr == "/src/User.php:10-50"
 
-
 # ============================================================================
 # Parameter Tests
 # ============================================================================
-
 
 class TestParameter:
     """Tests for Parameter dataclass."""
@@ -227,11 +219,9 @@ class TestParameter:
 
         assert param.is_reference is True
 
-
 # ============================================================================
 # TypeInfo Tests
 # ============================================================================
-
 
 class TestTypeInfo:
     """Tests for TypeInfo dataclass."""
@@ -294,11 +284,9 @@ class TestTypeInfo:
 
         assert str(type_info) == "?Promise<User>"
 
-
 # ============================================================================
 # CodeEntity Tests
 # ============================================================================
-
 
 class TestCodeEntity:
     """Tests for CodeEntity base class."""
@@ -383,11 +371,9 @@ class TestCodeEntity:
         assert entity.metadata["complexity"] == 5
         assert entity.metadata["lines"] == 20
 
-
 # ============================================================================
 # FunctionEntity Tests
 # ============================================================================
-
 
 class TestFunctionEntity:
     """Tests for FunctionEntity."""
@@ -591,11 +577,9 @@ class TestFunctionEntity:
         assert "= 1" in sig
         assert "= 10" in sig
 
-
 # ============================================================================
 # ClassEntity Tests
 # ============================================================================
-
 
 class TestClassEntity:
     """Tests for ClassEntity."""
@@ -854,11 +838,9 @@ class TestClassEntity:
         assert len(public_props) == 1
         assert public_props[0].name == "publicProp"
 
-
 # ============================================================================
 # PropertyEntity Tests
 # ============================================================================
-
 
 class TestPropertyEntity:
     """Tests for PropertyEntity."""
@@ -943,11 +925,9 @@ class TestPropertyEntity:
 
         assert prop.is_readonly is True
 
-
 # ============================================================================
 # ConstantEntity Tests
 # ============================================================================
-
 
 class TestConstantEntity:
     """Tests for ConstantEntity."""
@@ -990,11 +970,9 @@ class TestConstantEntity:
         assert const.type_hint.name == "float64"
         assert const.value == "3.14159"
 
-
 # ============================================================================
 # ImportEntity Tests
 # ============================================================================
-
 
 class TestImportEntity:
     """Tests for ImportEntity."""
@@ -1068,11 +1046,9 @@ class TestImportEntity:
 
         assert imp.is_type_only is True
 
-
 # ============================================================================
 # FileEntity Tests
 # ============================================================================
-
 
 class TestFileEntity:
     """Tests for FileEntity."""
@@ -1296,11 +1272,9 @@ class TestFileEntity:
         assert EntityType.IMPORT in entity_types
         assert EntityType.FUNCTION in entity_types
 
-
 # ============================================================================
 # ComponentEntity Tests
 # ============================================================================
-
 
 class TestComponentEntity:
     """Tests for React ComponentEntity."""
@@ -1399,11 +1373,9 @@ class TestComponentEntity:
 
         assert component.is_functional is False
 
-
 # ============================================================================
 # RouteEntity Tests
 # ============================================================================
-
 
 class TestRouteEntity:
     """Tests for RouteEntity."""
@@ -1484,11 +1456,9 @@ class TestRouteEntity:
         assert route.response_type.name == "User"
         assert route.response_type.is_array is True
 
-
 # ============================================================================
 # create_entity_id Tests
 # ============================================================================
-
 
 class TestCreateEntityId:
     """Tests for create_entity_id function."""

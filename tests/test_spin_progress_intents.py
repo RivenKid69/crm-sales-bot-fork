@@ -11,13 +11,10 @@ import pytest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from state_machine import StateMachine
+from src.state_machine import StateMachine
 from src.yaml_config.constants import SPIN_PROGRESS_INTENTS
-from config import SALES_STATES
-from knowledge.retriever import INTENT_TO_CATEGORY
-
+from src.config import SALES_STATES
+from src.knowledge.retriever import INTENT_TO_CATEGORY
 
 class TestSPINProgressIntentsInTransitions:
     """Тесты что все SPIN progress intents есть в transitions соответствующих состояний"""
@@ -76,7 +73,6 @@ class TestSPINProgressIntentsInTransitions:
             assert intent in transitions, (
                 f"{intent} отсутствует в transitions {state}"
             )
-
 
 class TestSPINProgressIntentsInStateMachine:
     """Тесты поведения StateMachine с SPIN progress intents"""
@@ -142,7 +138,6 @@ class TestSPINProgressIntentsInStateMachine:
 
         assert result["next_state"] == "presentation"
 
-
 class TestContactProvidedInCloseState:
     """Тесты для contact_provided в close state"""
 
@@ -170,7 +165,6 @@ class TestContactProvidedInCloseState:
         assert result["next_state"] == "success"
         assert result["is_final"] == True
 
-
 class TestNavigationIntentsInIntentToCategory:
     """Тесты для go_back и correct_info в INTENT_TO_CATEGORY"""
 
@@ -192,7 +186,6 @@ class TestNavigationIntentsInIntentToCategory:
             "correct_info должен иметь пустой список категорий"
         )
 
-
 class TestNoLegacyQualificationState:
     """Тесты что legacy qualification state удалён"""
 
@@ -210,7 +203,6 @@ class TestNoLegacyQualificationState:
                     assert target_state != "qualification", (
                         f"Состояние {state_name} имеет переход в qualification через {intent}"
                     )
-
 
 class TestSPINProgressIntentsMapping:
     """Тесты соответствия SPIN_PROGRESS_INTENTS реальным transitions"""

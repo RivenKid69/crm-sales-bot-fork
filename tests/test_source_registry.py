@@ -16,12 +16,13 @@ import pytest
 from unittest.mock import Mock
 
 from src.blackboard.source_registry import (
+    BUILTIN_SOURCE_NAMES,
     SourceRegistry,
     SourceRegistration,
+    register_builtin_sources,
     register_source,
 )
 from src.blackboard.knowledge_source import KnowledgeSource
-
 
 class TestSourceRegistry:
     """Test suite for SourceRegistry (Plugin System)."""
@@ -310,7 +311,6 @@ class TestSourceRegistry:
         SourceRegistry.register(TestSource, name="TestSource")
         assert "TestSource" in SourceRegistry.list_registered()
 
-
 class TestSourceRegistration:
     """Test suite for SourceRegistration dataclass."""
 
@@ -364,7 +364,6 @@ class TestSourceRegistration:
         )
 
         assert reg.name == "TestSource"
-
 
 class TestRegisterSourceDecorator:
     """Test suite for @register_source decorator."""
@@ -441,7 +440,6 @@ class TestRegisterSourceDecorator:
         assert reg.enabled_by_default is True
         assert reg.config_key is None
         assert reg.description == ""
-
 
 class TestSourceRegistryIntegration:
     """Integration tests for SourceRegistry with real sources."""
@@ -560,3 +558,42 @@ class TestSourceRegistryIntegration:
         source_names = [s.name for s in debug_sources]
         assert "ProdSource" in source_names
         assert "DebugSource" in source_names
+
+class TestBuiltinSourceBootstrap:
+    """Tests for built-in source bootstrap behavior."""
+
+    @pytest.fixture(autouse=True)
+    def reset_registry(self):
+        SourceRegistry.reset()
+        yield
+        SourceRegistry.reset()
+
+    def test_register_builtin_sources_idempotent(self):
+        register_builtin_sources()
+        first = SourceRegistry.list_registered()
+
+        register_builtin_sources()
+        second = SourceRegistry.list_registered()
+
+        assert first == second
+        assert set(BUILTIN_SOURCE_NAMES).issubset(set(second))
+
+    def test_ensure_builtin_sources_reports_added_then_existing(self):
+        first = SourceRegistry.ensure_builtin_sources()
+        second = SourceRegistry.ensure_builtin_sources()
+
+        assert not first.conflicts
+        assert set(first.added).issubset(set(BUILTIN_SOURCE_NAMES))
+        assert not second.added
+        assert not second.conflicts
+        assert set(BUILTIN_SOURCE_NAMES).issubset(set(second.existing))
+
+    def test_ensure_builtin_sources_detects_conflict(self):
+        class FakePriceSource(KnowledgeSource):
+            def contribute(self, bb):
+                pass
+
+        SourceRegistry.register(FakePriceSource, name="PriceQuestionSource")
+        result = SourceRegistry.ensure_builtin_sources()
+
+        assert "PriceQuestionSource" in result.conflicts

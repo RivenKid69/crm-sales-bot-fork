@@ -5,9 +5,8 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from knowledge.retriever import CascadeRetriever, MatchStage
+from src.knowledge.retriever import CascadeRetriever, MatchStage
 
 # Тестовые данные: topic -> [3 клиентских запроса]
 TEST_QUERIES = {
@@ -276,7 +275,6 @@ TEST_QUERIES = {
     ],
 }
 
-
 def run_tests():
     """Запустить тесты и вывести результаты."""
     print("=" * 70)
@@ -284,7 +282,7 @@ def run_tests():
     print("=" * 70)
 
     # Инициализация retriever без embeddings для скорости
-    import knowledge.retriever as r
+    import src.knowledge.retriever as r
     r._retriever = None
     retriever = CascadeRetriever(use_embeddings=False)
 
@@ -359,7 +357,6 @@ def run_tests():
             print()
 
     return passed_tests, total_tests, failed_tests
-
 
 if __name__ == "__main__":
     passed, total, failed = run_tests()

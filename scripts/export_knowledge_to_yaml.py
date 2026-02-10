@@ -14,8 +14,8 @@ from datetime import date
 # Добавить src в path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from knowledge.data import WIPON_KNOWLEDGE
-from knowledge.base import KnowledgeSection
+from src.knowledge.data import WIPON_KNOWLEDGE
+from src.knowledge.base import KnowledgeSection
 
 # Директория для YAML файлов
 OUTPUT_DIR = Path(__file__).parent.parent / "src" / "knowledge" / "data"

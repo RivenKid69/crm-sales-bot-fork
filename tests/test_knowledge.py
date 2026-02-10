@@ -6,13 +6,11 @@ import sys
 import os
 
 # Добавляем src в путь для импорта
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import pytest
-from knowledge.retriever import KnowledgeRetriever
-from knowledge.base import KnowledgeBase, KnowledgeSection
-from knowledge import WIPON_KNOWLEDGE
-
+from src.knowledge.retriever import KnowledgeRetriever
+from src.knowledge.base import KnowledgeBase, KnowledgeSection
+from src.knowledge import WIPON_KNOWLEDGE
 
 class TestKnowledgeBase:
     """Тесты структуры базы знаний"""
@@ -43,7 +41,6 @@ class TestKnowledgeBase:
             assert section.keywords, f"Section {section.topic} has no keywords"
             assert section.facts, f"Section {section.topic} has no facts"
             assert 1 <= section.priority <= 10, f"Section {section.topic} has invalid priority"
-
 
 class TestKnowledgeRetriever:
     """Тесты для retriever'а"""
@@ -124,7 +121,6 @@ class TestKnowledgeRetriever:
         # Но "Привет" не содержит ключевых слов → пустой результат
         assert isinstance(facts, str)
 
-
 class TestKeywordSearch:
     """Тесты поиска по ключевым словам"""
 
@@ -161,7 +157,6 @@ class TestKeywordSearch:
         assert facts_upper
         assert facts_mixed
 
-
 class TestIntentFiltering:
     """Тесты фильтрации по интентам"""
 
@@ -185,7 +180,6 @@ class TestIntentFiltering:
         facts = retriever.retrieve("касса")
         assert facts
 
-
 class TestPerformance:
     """Тесты производительности"""
 
@@ -204,7 +198,6 @@ class TestPerformance:
 
         # 100 запросов должны выполниться за < 500ms (5ms на запрос)
         assert elapsed < 0.5, f"Keyword search too slow: {elapsed:.3f}s for 100 queries"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

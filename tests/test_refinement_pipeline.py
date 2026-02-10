@@ -29,7 +29,6 @@ from src.classifier.refinement_pipeline import (
     build_refinement_context,
 )
 
-
 # =============================================================================
 # FIXTURES
 # =============================================================================
@@ -40,7 +39,6 @@ def reset_registry():
     reset_refinement_pipeline()
     yield
     reset_refinement_pipeline()
-
 
 @pytest.fixture
 def sample_context() -> RefinementContext:
@@ -56,7 +54,6 @@ def sample_context() -> RefinementContext:
         confidence=0.6,
     )
 
-
 @pytest.fixture
 def sample_result() -> Dict[str, Any]:
     """Create sample classification result."""
@@ -66,7 +63,6 @@ def sample_result() -> Dict[str, Any]:
         "extracted_data": {},
         "method": "llm",
     }
-
 
 @pytest.fixture
 def sample_context_dict() -> Dict[str, Any]:
@@ -78,7 +74,6 @@ def sample_context_dict() -> Dict[str, Any]:
         "last_intent": "greeting",
         "turn_number": 3,
     }
-
 
 # =============================================================================
 # TEST: RefinementContext
@@ -132,7 +127,6 @@ class TestRefinementContext:
         # Original fields preserved
         assert new_ctx.message == sample_context.message
         assert new_ctx.state == sample_context.state
-
 
 # =============================================================================
 # TEST: RefinementResult
@@ -190,7 +184,6 @@ class TestRefinementResult:
         assert d["refinement_layer"] == "composite_message"
         assert d["extracted_data"] == {"company_size": 5}
         assert d["secondary_signals"] == ["request_brevity"]
-
 
 # =============================================================================
 # TEST: RefinementLayerRegistry
@@ -313,7 +306,6 @@ class TestRefinementLayerRegistry:
         registry = RefinementLayerRegistry.get_registry()
         assert registry.is_registered("decorated_layer")
 
-
 # =============================================================================
 # TEST: BaseRefinementLayer
 # =============================================================================
@@ -414,7 +406,6 @@ class TestBaseRefinementLayer:
 
         result = layer.refine("test", sample_result, sample_context)
         assert result.decision == RefinementDecision.PASS_THROUGH
-
 
 # =============================================================================
 # TEST: RefinementPipeline
@@ -607,7 +598,6 @@ class TestRefinementPipeline:
         assert stats["enabled"] is True
         assert "stats_layer" in stats["layer_stats"]
 
-
 # =============================================================================
 # TEST: Layer Adapters
 # =============================================================================
@@ -673,7 +663,6 @@ class TestShortAnswerRefinementLayer:
         # Should not refine - message too long
         assert result.decision == RefinementDecision.PASS_THROUGH
 
-
 class TestCompositeMessageLayer:
     """Tests for CompositeMessageLayer adapter."""
 
@@ -736,7 +725,6 @@ class TestCompositeMessageLayer:
         # Should pass through - already correct intent
         assert result.decision == RefinementDecision.PASS_THROUGH
 
-
 class TestObjectionRefinementLayerAdapter:
     """Tests for ObjectionRefinementLayerAdapter."""
 
@@ -796,7 +784,6 @@ class TestObjectionRefinementLayerAdapter:
         # Should pass through - not an objection
         assert result.decision == RefinementDecision.PASS_THROUGH
 
-
 # =============================================================================
 # TEST: Integration with UnifiedClassifier
 # =============================================================================
@@ -836,7 +823,6 @@ class TestUnifiedClassifierIntegration:
         # Pipeline should have been called
         assert result is not None
 
-
 # =============================================================================
 # TEST: build_refinement_context helper
 # =============================================================================
@@ -865,7 +851,6 @@ class TestBuildRefinementContext:
         assert ctx.extracted_data == {"field": "value"}
         assert ctx.state == "greeting"
         assert ctx.phase == "situation"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

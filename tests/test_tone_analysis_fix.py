@@ -17,11 +17,9 @@ import sys
 import os
 
 # Добавляем src в путь
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from feature_flags import FeatureFlags, flags
-from tone_analyzer import ToneAnalyzer, Tone, Style, CascadeToneAnalyzer
-
+from src.feature_flags import FeatureFlags, flags
+from src.tone_analyzer import ToneAnalyzer, Tone, Style, CascadeToneAnalyzer
 
 class TestToneAnalysisFlagEnabled:
     """Проверка что флаг tone_analysis включен"""
@@ -45,7 +43,6 @@ class TestToneAnalysisFlagEnabled:
         ff = FeatureFlags()
         ff.clear_all_overrides()
         assert ff.is_enabled("tone_analysis") is True
-
 
 class TestAggressiveMessagesDetection:
     """Тесты на детекцию агрессивных сообщений из e2e симуляции"""
@@ -92,7 +89,6 @@ class TestAggressiveMessagesDetection:
         assert result.tone in [Tone.SKEPTICAL, Tone.NEUTRAL], \
             f"Ожидался SKEPTICAL/NEUTRAL, получен {result.tone.value}"
 
-
 class TestFrustrationAccumulation:
     """Тесты накопления frustration_level"""
 
@@ -131,14 +127,13 @@ class TestFrustrationAccumulation:
         assert result.frustration_level == 0, \
             "После reset frustration должен быть 0"
 
-
 class TestBotAnalyzeToneIntegration:
     """Интеграционные тесты для Bot._analyze_tone()"""
 
     def test_analyze_tone_returns_real_analysis(self):
         """Bot._analyze_tone() должен возвращать реальный анализ, а не дефолт"""
         # Импортируем Bot и создаём mock LLM
-        from bot import SalesBot
+        from src.bot import SalesBot
         from unittest.mock import MagicMock
 
         # Создаём mock LLM (бот требует llm)
@@ -156,7 +151,7 @@ class TestBotAnalyzeToneIntegration:
 
     def test_analyze_tone_not_empty_when_frustrated(self):
         """При фрустрации должны быть заполнены поля"""
-        from bot import SalesBot
+        from src.bot import SalesBot
         from unittest.mock import MagicMock
 
         mock_llm = MagicMock()
@@ -169,7 +164,6 @@ class TestBotAnalyzeToneIntegration:
 
         assert tone != "neutral" or frustration > 0, \
             f"tone={tone}, frustration={frustration} - должен быть реальный анализ"
-
 
 class TestCascadeToneAnalyzerWorks:
     """Проверка что каскадный анализатор действительно работает"""
@@ -200,7 +194,6 @@ class TestCascadeToneAnalyzerWorks:
         if result.tone == Tone.FRUSTRATED:
             assert len(result.signals) > 0, \
                 "При FRUSTRATED должны быть сигналы"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
