@@ -8,6 +8,30 @@
 
 ---
 
+## 0.1 Актуальный статус (на основе последних 15 коммитов)
+
+Состояние документа синхронизировано с текущим кодом и последними изменениями:
+
+- Blackboard bootstrap перенесён в composition root:
+  `create_orchestrator()` выполняет `SourceRegistry.ensure_builtin_sources()`
+  и self-heal после `SourceRegistry.reset()`.
+- Добавлен fail-fast для критичных built-in sources:
+  при конфликтах/пропаже built-ins orchestrator падает сразу (strict bootstrap).
+- Runtime config/flow binding сделан атомарным:
+  `ConfigLoader.load_bundle(config_name, flow_name, validate)` возвращает
+  согласованные `(LoadedConfig, FlowConfig)`.
+- `SalesBot` использует `load_bundle()` и строго валидирует
+  `config.flow_name == flow.name` в runtime-path.
+- Канонический namespace: `src.*`.
+  Legacy bare-import paths поддерживаются временно через alias-layer
+  (`src/import_aliases.py`) и считаются deprecated.
+- Runtime config override (hot-reload) сохраняется:
+  структурные ключи по-прежнему требуют redeploy.
+- Python/dependency baseline обновлён: Python `>=3.12`, зависимости синхронизированы
+  с актуальными стабильными версиями.
+
+---
+
 ## 0. Глоссарий терминов
 
 | Термин | Определение |
@@ -227,6 +251,11 @@ Structured‑логи идут в stdout (JSON/Readable через `LOG_FORMAT`)
 > Если named-конфиг не найден, сервис загрузит default-конфиг. Управление конфигами —
 > через админ-панель или CI/CD деплой. Проверку существования нужного конфига
 > рекомендуется делать заранее через `GET /api/v1/configs`.
+>
+> **Runtime-контракт (актуально):**
+> при создании `SalesBot` загрузка config и flow выполняется атомарно через
+> `ConfigLoader.load_bundle(...)`; рассинхрон `config.flow_name != flow.name`
+> не допускается и приводит к fail-fast ошибке в runtime-path.
 >
 > **Динамическая конфигурация (реализовано):** для изменения лимитов, порогов
 > и поведения без редеплоя реализован `POST /api/v1/configs/{name}/override` —
@@ -1586,9 +1615,12 @@ demo_request:
 | Компонент | Где | Назначение |
 |---|---|---|
 | `SalesBot` | `src/bot.py` | `process()` — обработка хода, `to_snapshot()` / `from_snapshot()` — сериализация |
-| `ConfigLoader` | `src/config_loader.py` | Загрузка конфигурации из YAML по `config_name` + runtime override (`set_config_override()`) |
+| `ConfigLoader` | `src/config_loader.py` | Загрузка YAML-конфигурации; атомарный `load_bundle(config_name, flow_name)`; runtime overrides (`set_config_override()`) |
+| `DialogueOrchestrator` | `src/blackboard/orchestrator.py` | Composition root для Blackboard; bootstrap built-ins; fail-fast при критичных конфликтах источников |
+| `SourceRegistry` | `src/blackboard/source_registry.py` | Реестр knowledge sources; `ensure_builtin_sources()` (idempotent + conflict-aware), thread-safe операции |
 | LLM клиент | `src/llm.py` (`OllamaLLM`) | Можно заменить на другой клиент |
 | Knowledge retriever | `src/knowledge/retriever.py` (`CascadeRetriever`) | FRIDA + BGE reranker |
 | Decision trace | `src/decision_trace.py` | Формирование trace (теперь обязательный) |
+| Import aliases | `src/import_aliases.py` | Совместимость legacy import paths с каноническим `src.*`; защита от дублирования module identity |
 
 ---
