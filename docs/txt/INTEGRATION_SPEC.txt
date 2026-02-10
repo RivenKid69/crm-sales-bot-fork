@@ -61,18 +61,21 @@
 
 | Компонент | Технология | Версия |
 |---|---|---|
-| Язык | Python | 3.10+ |
+| Язык | Python | 3.12+ (target 3.13) |
 | LLM | Qwen3 14B через Ollama | localhost:11434 |
-| Embeddings | ai-forever/FRIDA | Sentence Transformers ≥2.2.0 |
+| Embeddings | ai-forever/FRIDA | Sentence Transformers ≥5.0.0 |
 | Reranker | BAAI/bge-reranker-v2-m3 | — |
-| Морфология | pymorphy3 | ≥2.0.0 |
-| HTTP-клиент | requests | ≥2.28.0 |
-| Сериализация конфигов | PyYAML | ≥6.0 |
-| Numpy | numpy | ≥1.24.0 |
-| Тесты | pytest | ≥7.0.0 |
-| Линтер | ruff | ≥0.1.0 |
-| Типизация | mypy | ≥1.0.0 |
-| **Для API-обёртки** | FastAPI ≥0.110.0, Uvicorn ≥0.29.0, Pydantic ≥2.0.0 | *Не в зависимостях ядра — нужно добавить при создании REST API* |
+| Морфология | pymorphy3 | ≥2.0.6 |
+| HTTP-клиент | requests | ≥2.32.0 |
+| Сериализация конфигов | PyYAML | ≥6.0.2 |
+| Numpy | numpy | ≥2.1.0 |
+| Async | aiohttp | ≥3.11.0 |
+| Валидация | Pydantic | ≥2.10.0 |
+| Логирование | structlog | ≥25.1.0 |
+| Тесты | pytest | ≥8.0.0 |
+| Линтер | ruff | ≥0.11.0 |
+| Типизация | mypy | ≥1.15.0 |
+| **Для API-обёртки** | FastAPI ≥0.115.0, Uvicorn ≥0.34.0 | *Не в зависимостях ядра — нужно добавить при создании REST API* |
 | Размер кодовой базы | ~82 000 строк кода | 170+ модулей (src/) |
 | Тесты | 229 файлов | 9 164 теста |
 
