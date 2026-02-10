@@ -37,6 +37,7 @@ from src.blackboard.source_registry import (
     BuiltinEnsureResult,
     SourceRegistry,
 )
+from src.blackboard.decision_sanitizer import INVALID_NEXT_STATE_REASON
 
 # =============================================================================
 # Mock Implementations for Testing
@@ -1714,6 +1715,72 @@ class TestExternalStateChanges:
             assert decision.prev_state == "spin_situation"
             assert decision.goal == "Identify problems"
             assert decision.spin_phase == "problem"
+
+
+class TestDecisionSanitizerIntegration:
+    """Runtime sanitizer integration tests for orchestrator paths."""
+
+    def test_invalid_transition_from_resolver_is_sanitized(self):
+        """Invalid next_state from proposals should be sanitized to current state."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig()
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=False,  # allow runtime sanitizer to be the last barrier
+        )
+        orch._sources.clear()
+        orch.add_source(SimpleTestSource(action="safe_action"))
+        orch.add_source(TransitionSource(next_state="ghost"))
+
+        decision = orch.process_turn(intent="unknown", extracted_data={})
+
+        assert decision.next_state == "greeting"
+        assert INVALID_NEXT_STATE_REASON in decision.reason_codes
+        assert decision.resolution_trace["transition_sanitization"]["requested_state"] == "ghost"
+        assert decision.resolution_trace["transition_sanitization"]["effective_state"] == "greeting"
+
+        errors = orch.event_bus.get_history(event_type=EventType.ERROR_OCCURRED, limit=20)
+        assert any(e.data.get("component") == "DecisionSanitizer" for e in errors)
+
+    def test_invalid_any_fallback_target_is_sanitized(self):
+        """Invalid fallback target from transitions.any should not mutate state."""
+        SourceRegistry.reset()
+
+        sm = MockStateMachine(state="greeting")
+        fc = MockFlowConfig(states={
+            "greeting": {
+                "goal": "Greet user",
+                "transitions": {"any": "ghost"},
+            },
+            "spin_situation": {
+                "goal": "Gather situation",
+                "phase": "situation",
+                "transitions": {},
+            },
+        })
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        orch.add_source(SimpleTestSource(action="safe_action"))
+
+        decision = orch.process_turn(intent="unknown", extracted_data={})
+
+        assert decision.next_state == "greeting"
+        assert INVALID_NEXT_STATE_REASON in decision.reason_codes
+        assert "fallback_transition_sanitization" in decision.resolution_trace
+        assert (
+            decision.resolution_trace["fallback_transition_sanitization"]["sanitized_reason"]
+            == INVALID_NEXT_STATE_REASON
+        )
+
+        errors = orch.event_bus.get_history(event_type=EventType.ERROR_OCCURRED, limit=20)
+        assert any(e.data.get("component") == "DecisionSanitizer" for e in errors)
 
 # -----------------------------------------------------------------------------
 # OBJECTION LIMIT TESTS

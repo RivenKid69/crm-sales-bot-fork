@@ -7,7 +7,7 @@ This module resolves conflicts between proposals from multiple Knowledge Sources
 It implements priority-based resolution with support for combinable/blocking actions.
 """
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Set
 from dataclasses import dataclass, field
 import logging
 
@@ -245,6 +245,7 @@ class ConflictResolver:
         proposals: List[Proposal],
         current_state: str,
         fallback_transition: Optional[str] = None,
+        valid_states: Optional[Set[str]] = None,
         data_updates: Optional[Dict[str, Any]] = None,
         flags_to_set: Optional[Dict[str, Any]] = None
     ) -> ResolvedDecision:
@@ -258,6 +259,8 @@ class ConflictResolver:
             proposals: List of all proposals from Knowledge Sources
             current_state: Current dialogue state
             fallback_transition: Fallback transition target (e.g., from "any" trigger)
+            valid_states: Optional set of valid state names. If provided, invalid
+                fallback targets are rejected with trace diagnostics.
             data_updates: Data updates to include in decision
             flags_to_set: Flags to include in decision
 
@@ -276,6 +279,18 @@ class ConflictResolver:
             action_blocked = decision.resolution_trace.get("merge_decision") == "BLOCKED"
 
             if not action_blocked:
+                if valid_states is not None and fallback_transition not in valid_states:
+                    logger.warning(
+                        f"Skipping invalid fallback transition: '{fallback_transition}' "
+                        f"(state='{current_state}')"
+                    )
+                    decision.resolution_trace["fallback_invalid_target"] = {
+                        "requested_state": fallback_transition,
+                        "current_state": current_state,
+                        "valid_states_provided": True,
+                    }
+                    return decision
+
                 logger.debug(
                     f"Applying fallback transition: {fallback_transition}"
                 )

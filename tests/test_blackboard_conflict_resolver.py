@@ -621,6 +621,30 @@ class TestConflictResolverFallback:
         assert decision.data_updates == {"key": "value"}
         assert decision.flags_to_set == {"flag": True}
 
+    def test_fallback_invalid_target_blocked_with_valid_states(self):
+        """Invalid fallback target should be ignored when valid_states is passed."""
+        resolver = ConflictResolver()
+
+        action = Proposal(
+            type=ProposalType.ACTION,
+            value="process",
+            priority=Priority.NORMAL,
+            source_name="Processor",
+            reason_code="PROCESS",
+            combinable=True,
+        )
+
+        decision = resolver.resolve_with_fallback(
+            proposals=[action],
+            current_state="current",
+            fallback_transition="ghost",
+            valid_states={"current", "next"},
+        )
+
+        assert decision.next_state == "current"
+        assert "fallback_any_transition" not in decision.reason_codes
+        assert "fallback_invalid_target" in decision.resolution_trace
+
 # =============================================================================
 # Test ConflictResolver - Complex Scenarios
 # =============================================================================

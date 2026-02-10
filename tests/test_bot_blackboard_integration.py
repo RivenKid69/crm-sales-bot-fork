@@ -370,6 +370,92 @@ class TestDataCollection:
         # Note: actual extraction depends on classifier
         assert collected is not None
 
+
+class TestBotTransitionSanitizer:
+    """Bot-level transition sanitizer integration tests (skip + policy override)."""
+
+    def test_policy_override_invalid_next_state_does_not_create_ghost(self, sales_bot, mock_llm):
+        from src.blackboard.models import ResolvedDecision
+        from src.dialogue_policy import PolicyOverride, PolicyDecision
+        from src.feature_flags import flags
+        from src.blackboard.decision_sanitizer import INVALID_NEXT_STATE_REASON
+
+        flags.set_override("context_policy_overlays", True)
+
+        decision = ResolvedDecision(action="continue_current_goal", next_state="greeting")
+        decision.prev_state = "greeting"
+        decision.goal = "test goal"
+        decision.collected_data = {}
+        decision.missing_data = []
+        decision.optional_data = []
+        decision.is_final = False
+        decision.spin_phase = None
+        decision.circular_flow = {}
+        decision.objection_flow = {}
+
+        sales_bot._orchestrator.process_turn = Mock(return_value=decision)
+        sales_bot.classifier.classify = Mock(return_value={
+            "intent": "greeting",
+            "confidence": 0.99,
+            "extracted_data": {},
+            "all_scores": {"greeting": 0.99},
+        })
+        sales_bot.dialogue_policy.maybe_override = Mock(return_value=PolicyOverride(
+            action="continue_current_goal",
+            next_state="ghost",
+            reason_codes=["policy.test_override"],
+            decision=PolicyDecision.REPAIR_CLARIFY,
+        ))
+        mock_llm.generate = Mock(return_value="ok")
+
+        result = sales_bot.process("привет")
+
+        assert sales_bot.state_machine.state != "ghost"
+        assert result["state"] != "ghost"
+        assert INVALID_NEXT_STATE_REASON in result.get("reason_codes", [])
+
+    def test_fallback_skip_invalid_target_stays_in_current_state(self, sales_bot, mock_llm):
+        from src.blackboard.models import ResolvedDecision
+        from src.feature_flags import flags
+        from src.blackboard.decision_sanitizer import INVALID_NEXT_STATE_REASON
+
+        flags.set_override("conversation_guard_in_pipeline", False)
+        flags.set_override("context_policy_overlays", False)
+
+        decision = ResolvedDecision(action="continue_current_goal", next_state="greeting")
+        decision.prev_state = "greeting"
+        decision.goal = "test goal"
+        decision.collected_data = {}
+        decision.missing_data = []
+        decision.optional_data = []
+        decision.is_final = False
+        decision.spin_phase = None
+        decision.circular_flow = {}
+        decision.objection_flow = {}
+
+        sales_bot._orchestrator.process_turn = Mock(return_value=decision)
+        sales_bot.classifier.classify = Mock(return_value={
+            "intent": "greeting",
+            "confidence": 0.95,
+            "extracted_data": {},
+            "all_scores": {"greeting": 0.95},
+        })
+        sales_bot._check_guard = Mock(return_value=Mock(can_continue=False, intervention="fallback_tier_3"))
+        sales_bot._apply_fallback = Mock(return_value={
+            "response": "skip",
+            "action": "skip",
+            "next_state": "ghost",
+            "options": None,
+        })
+        mock_llm.generate = Mock(return_value="ok")
+
+        current_state = sales_bot.state_machine.state
+        result = sales_bot.process("...")
+
+        assert sales_bot.state_machine.state == current_state
+        assert result["state"] == current_state
+        assert INVALID_NEXT_STATE_REASON in result.get("reason_codes", [])
+
 # =============================================================================
 # State Machine Deprecation Tests
 # =============================================================================

@@ -96,20 +96,21 @@ class IntentTaxonomyRegistry:
                 )
             except KeyError as e:
                 logger.error(
-                    "Invalid taxonomy entry",
-                    intent=intent,
-                    missing_field=str(e),
-                    meta=meta
+                    "Invalid taxonomy entry: intent=%s missing_field=%s meta=%s",
+                    intent,
+                    str(e),
+                    meta,
                 )
                 # Skip invalid entries
                 continue
 
         logger.info(
-            "Intent taxonomy registry initialized",
-            total_intents=len(self.taxonomy),
-            categories=len(self.category_defaults),
-            super_categories=len(self.super_category_defaults),
-            domains=len(self.domain_defaults)
+            "Intent taxonomy registry initialized: intents=%s categories=%s "
+            "super_categories=%s domains=%s",
+            len(self.taxonomy),
+            len(self.category_defaults),
+            len(self.super_category_defaults),
+            len(self.domain_defaults),
         )
 
     def get_fallback_chain(self, intent: str) -> List[Dict[str, Any]]:
@@ -141,9 +142,8 @@ class IntentTaxonomyRegistry:
         # If intent not in taxonomy, return default fallback only
         if intent not in self.taxonomy:
             logger.warning(
-                "Intent not in taxonomy",
-                intent=intent,
-                fallback="default_only"
+                "Intent not in taxonomy: intent=%s fallback=default_only",
+                intent,
             )
             chain.append({"level": "default", "action": "continue_current_goal"})
             return chain

@@ -18,7 +18,7 @@
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Set
 
 from src.classifier import UnifiedClassifier
 from src.state_machine import StateMachine
@@ -60,6 +60,11 @@ from src.settings import settings
 
 # Blackboard Architecture: DialogueOrchestrator (Stage 14)
 from src.blackboard import create_orchestrator
+from src.blackboard.decision_sanitizer import (
+    DecisionSanitizer,
+    SanitizedTransitionResult,
+    INVALID_NEXT_STATE_REASON,
+)
 
 # Personalization v2: Adaptive personalization
 from src.personalization import EffectiveActionTracker
@@ -258,6 +263,9 @@ class SalesBot:
         self.action_tracker: Optional[EffectiveActionTracker] = None
         if flags.personalization_session_memory:
             self.action_tracker = EffectiveActionTracker()
+
+        # Runtime state transition hardening
+        self._decision_sanitizer = DecisionSanitizer()
 
         # Decision Tracing: Store traces for each turn
         self._decision_traces: List[DecisionTrace] = []
@@ -734,6 +742,65 @@ class SalesBot:
         except Exception as e:
             logger.error("Metrics finalization failed", error=str(e))
 
+    def _get_valid_states(self) -> Set[str]:
+        """Return the valid state names for transition sanitization."""
+        if hasattr(self._flow, "states"):
+            return set(self._flow.states.keys())
+        return set()
+
+    def _sanitize_transition_target(
+        self,
+        requested_state: Optional[str],
+        current_state: str,
+        source: str,
+    ) -> SanitizedTransitionResult:
+        """Sanitize a transition target for bot-level state mutations."""
+        result = self._decision_sanitizer.sanitize_target(
+            requested_state=requested_state,
+            current_state=current_state,
+            valid_states=self._get_valid_states(),
+            source=source,
+        )
+        if result.sanitized:
+            logger.warning(
+                "Bot-level transition target sanitized",
+                source=source,
+                requested_state=result.requested_state,
+                effective_state=result.effective_state,
+                reason_code=result.reason_code,
+            )
+        return result
+
+    @staticmethod
+    def _append_reason_code(sm_result: Dict[str, Any], reason_code: Optional[str]) -> None:
+        """Append reason code to sm_result if missing."""
+        if not reason_code:
+            return
+        reason_codes = sm_result.get("reason_codes")
+        if not isinstance(reason_codes, list):
+            reason_codes = []
+        if reason_code not in reason_codes:
+            reason_codes.append(reason_code)
+        sm_result["reason_codes"] = reason_codes
+
+    @staticmethod
+    def _append_bot_sanitization_marker(
+        sm_result: Dict[str, Any],
+        marker: Dict[str, Any],
+    ) -> None:
+        """Attach bot-level transition sanitization diagnostics to resolution_trace."""
+        resolution_trace = sm_result.get("resolution_trace")
+        if not isinstance(resolution_trace, dict):
+            resolution_trace = {}
+
+        markers = resolution_trace.get("bot_transition_sanitization")
+        if not isinstance(markers, list):
+            markers = []
+
+        markers.append(marker)
+        resolution_trace["bot_transition_sanitization"] = markers
+        sm_result["resolution_trace"] = resolution_trace
+
     def process(self, user_message: str) -> Dict:
         """
         Обработать сообщение клиента.
@@ -785,6 +852,8 @@ class SalesBot:
         # intermediate states (e.g., greeting -> spin_situation -> spin_problem)
         initial_state = current_state
         visited_states = [initial_state]  # Start with initial state
+        bot_transition_markers: List[Dict[str, Any]] = []
+        pending_bot_reason_codes: List[str] = []
 
         # Phase 2: Analyze tone
         tone_start = time.time()
@@ -947,12 +1016,30 @@ class SalesBot:
                     # FIX: Handle "skip" action - apply state transition to break loops
                     # FIX (Distributed State Mutation): Use transition_to() for atomic update
                     elif fb_result.get("action") == "skip" and fb_result.get("next_state"):
-                        skip_next_state = fb_result["next_state"]
-                        self.state_machine.transition_to(
+                        skip_result = self._sanitize_transition_target(
+                            requested_state=fb_result["next_state"],
+                            current_state=current_state,
+                            source="bot.fallback_skip",
+                        )
+                        bot_transition_markers.append({
+                            **skip_result.diagnostic,
+                            "path": "fallback_skip",
+                        })
+                        if skip_result.sanitized and skip_result.reason_code:
+                            pending_bot_reason_codes.append(skip_result.reason_code)
+
+                        skip_next_state = skip_result.effective_state
+                        transition_ok = self.state_machine.transition_to(
                             next_state=skip_next_state,
                             action="skip",
                             source="fallback_skip",
                         )
+                        if not transition_ok:
+                            skip_next_state = self.state_machine.state
+                            bot_transition_markers[-1]["transition_ok"] = False
+                            bot_transition_markers[-1]["post_transition_state"] = skip_next_state
+                        else:
+                            bot_transition_markers[-1]["transition_ok"] = True
                         logger.info(
                             "Fallback skip applied - resetting fallback for normal generation",
                             from_state=current_state,
@@ -1061,6 +1148,13 @@ class SalesBot:
         )
         # Convert to sm_result dict for compatibility with DialoguePolicy/Generator
         sm_result = decision.to_sm_result()
+
+        # Attach bot-level sanitization diagnostics collected before orchestrator call.
+        for marker in bot_transition_markers:
+            self._append_bot_sanitization_marker(sm_result, marker)
+        for reason_code in pending_bot_reason_codes:
+            self._append_reason_code(sm_result, reason_code)
+
         sm_elapsed = (time.time() - sm_start) * 1000
 
         # Decision Tracing: Record state machine result
@@ -1093,14 +1187,33 @@ class SalesBot:
                         decision=policy_override.decision.value,
                     )
                 else:
-                    sm_result["next_state"] = policy_override.next_state
-                    # FIX (Distributed State Mutation): Use transition_to() for atomic update
-                    # This ensures current_phase is consistent with the new state
-                    self.state_machine.transition_to(
-                        next_state=policy_override.next_state,
+                    policy_result = self._sanitize_transition_target(
+                        requested_state=policy_override.next_state,
+                        current_state=self.state_machine.state,
+                        source="bot.policy_override",
+                    )
+                    policy_marker = {
+                        **policy_result.diagnostic,
+                        "path": "policy_override",
+                        "decision": policy_override.decision.value,
+                    }
+                    self._append_bot_sanitization_marker(sm_result, policy_marker)
+                    if policy_result.sanitized and policy_result.reason_code:
+                        self._append_reason_code(sm_result, policy_result.reason_code)
+
+                    # Apply ONLY effective state from sanitizer.
+                    transition_ok = self.state_machine.transition_to(
+                        next_state=policy_result.effective_state,
                         action=policy_override.action,
                         source="policy_override",
                     )
+                    if transition_ok:
+                        sm_result["next_state"] = policy_result.effective_state
+                        policy_marker["transition_ok"] = True
+                    else:
+                        sm_result["next_state"] = self.state_machine.state
+                        policy_marker["transition_ok"] = False
+                        policy_marker["post_transition_state"] = self.state_machine.state
 
         # Decision Tracing: Record policy override
         if trace_builder:
@@ -1629,6 +1742,8 @@ class SalesBot:
             "frustration_level": frustration_level,
             "lead_score": self.lead_scorer.current_score if flags.lead_scoring else None,
             "objection_detected": objection_info is not None,
+            "reason_codes": sm_result.get("reason_codes", []),
+            "resolution_trace": sm_result.get("resolution_trace", {}),
             "options": guard_options if action == "guard_offer_options" else (
                 fallback_response.get("options") if (not flags.conversation_guard_in_pipeline and fallback_response) else None
             ),

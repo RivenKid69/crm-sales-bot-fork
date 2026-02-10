@@ -386,9 +386,9 @@ def extract_phases_from_dialogue(
     if flow_config is not None:
         mapping = build_phase_mapping_from_flow(flow_config)
         logger.debug(
-            "Using flow_config for phase extraction",
-            flow_name=flow_config.name,
-            phase_mapping=mapping
+            "Using flow_config for phase extraction: flow_name=%s phase_mapping=%s",
+            flow_config.name,
+            mapping,
         )
     elif phase_mapping is not None:
         mapping = phase_mapping.copy()
