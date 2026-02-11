@@ -852,5 +852,254 @@ class TestBuildRefinementContext:
         assert ctx.state == "greeting"
         assert ctx.phase == "situation"
 
+# =============================================================================
+# METADATA MERGE TESTS
+# =============================================================================
+
+class TestMetadataMerge:
+    """Tests for refinement_metadata merge logic in pipeline."""
+
+    def test_metadata_merge_preserves_earlier_layer_data(self):
+        """When two layers both produce refinement_metadata, earlier keys survive."""
+
+        class CalibrationLayer(BaseRefinementLayer):
+            name = "calibration_layer"
+            priority = LayerPriority.HIGH
+
+            def _should_apply(self, ctx):
+                return True
+
+            def _do_refine(self, message, result, ctx):
+                return RefinementResult(
+                    decision=RefinementDecision.REFINED,
+                    intent=ctx.intent,
+                    confidence=0.72,
+                    layer_name=self.name,
+                    pre_calibration_confidence=0.85,
+                    metadata={
+                        "calibration": {"strategy": "entropy"},
+                        "original_confidence": 0.85,
+                    },
+                )
+
+        class DownstreamLayer(BaseRefinementLayer):
+            name = "downstream_layer"
+            priority = LayerPriority.NORMAL
+
+            def _should_apply(self, ctx):
+                return True
+
+            def _do_refine(self, message, result, ctx):
+                return RefinementResult(
+                    decision=RefinementDecision.REFINED,
+                    intent=ctx.intent,
+                    confidence=0.72,
+                    layer_name=self.name,
+                    metadata={
+                        "downstream_key": "some_value",
+                    },
+                )
+
+        registry = RefinementLayerRegistry()
+        registry.register("calibration_layer", CalibrationLayer)
+        registry.register("downstream_layer", DownstreamLayer)
+
+        pipeline = RefinementPipeline.__new__(RefinementPipeline)
+        pipeline._enabled = True
+        pipeline._layers = [CalibrationLayer(), DownstreamLayer()]
+        pipeline._calls_total = 0
+        pipeline._refinements_total = 0
+        pipeline._total_time_ms = 0.0
+
+        result = pipeline.refine(
+            message="test",
+            result={
+                "intent": "greeting",
+                "confidence": 0.85,
+            },
+            context={"state": "greeting", "phase": "situation"},
+        )
+
+        # Both metadata dicts should be merged
+        meta = result.get("refinement_metadata", {})
+        assert "calibration" in meta, "calibration key lost during merge"
+        assert "original_confidence" in meta, "original_confidence lost during merge"
+        assert "downstream_key" in meta, "downstream layer key missing"
+        assert meta["original_confidence"] == 0.85
+
+    def test_pre_calibration_confidence_survives_pipeline(self):
+        """pre_calibration_confidence should be present in final result."""
+
+        class CalibLayer(BaseRefinementLayer):
+            name = "calib"
+            priority = LayerPriority.HIGH
+
+            def _should_apply(self, ctx):
+                return True
+
+            def _do_refine(self, message, result, ctx):
+                return RefinementResult(
+                    decision=RefinementDecision.REFINED,
+                    intent=ctx.intent,
+                    confidence=0.70,
+                    layer_name=self.name,
+                    pre_calibration_confidence=0.88,
+                    metadata={"calibration": {"strategy": "gap"}},
+                )
+
+        pipeline = RefinementPipeline.__new__(RefinementPipeline)
+        pipeline._enabled = True
+        pipeline._layers = [CalibLayer()]
+        pipeline._calls_total = 0
+        pipeline._refinements_total = 0
+        pipeline._total_time_ms = 0.0
+
+        result = pipeline.refine(
+            message="test",
+            result={"intent": "price_check", "confidence": 0.88},
+            context={"state": "greeting", "phase": "situation"},
+        )
+
+        assert result.get("pre_calibration_confidence") == 0.88
+
+    def test_metadata_not_overwritten_by_layer_without_metadata(self):
+        """A layer that produces no metadata should NOT erase existing metadata."""
+
+        class MetaLayer(BaseRefinementLayer):
+            name = "meta_layer"
+            priority = LayerPriority.HIGH
+
+            def _should_apply(self, ctx):
+                return True
+
+            def _do_refine(self, message, result, ctx):
+                return RefinementResult(
+                    decision=RefinementDecision.REFINED,
+                    intent=ctx.intent,
+                    confidence=0.75,
+                    layer_name=self.name,
+                    metadata={"important": "data"},
+                )
+
+        class NoMetaLayer(BaseRefinementLayer):
+            name = "no_meta_layer"
+            priority = LayerPriority.NORMAL
+
+            def _should_apply(self, ctx):
+                return True
+
+            def _do_refine(self, message, result, ctx):
+                return RefinementResult(
+                    decision=RefinementDecision.REFINED,
+                    intent=ctx.intent,
+                    confidence=0.75,
+                    layer_name=self.name,
+                    metadata={},  # empty metadata
+                )
+
+        pipeline = RefinementPipeline.__new__(RefinementPipeline)
+        pipeline._enabled = True
+        pipeline._layers = [MetaLayer(), NoMetaLayer()]
+        pipeline._calls_total = 0
+        pipeline._refinements_total = 0
+        pipeline._total_time_ms = 0.0
+
+        result = pipeline.refine(
+            message="test",
+            result={"intent": "greeting", "confidence": 0.8},
+            context={"state": "greeting", "phase": "situation"},
+        )
+
+        # The "important" key from MetaLayer should survive
+        meta = result.get("refinement_metadata", {})
+        assert meta.get("important") == "data"
+
+
+# =============================================================================
+# STRUCTURAL GUARD: ALL REGISTERED LAYERS IN YAML
+# =============================================================================
+
+class TestRegisteredLayersConfigured:
+    """CI-level guard: every registered layer must appear in YAML config."""
+
+    @pytest.fixture(autouse=True)
+    def _repopulate_registry(self, reset_registry):
+        """
+        Re-populate the registry after the autouse reset_registry clears it.
+        We need the real registry state to verify layer registration.
+        """
+        from src.classifier.refinement_pipeline import RefinementLayerRegistry
+        registry = RefinementLayerRegistry.get_registry()
+
+        # Import layer modules (classes already loaded in memory)
+        from src.classifier.refinement_layers import (
+            ShortAnswerRefinementLayer,
+            CompositeMessageLayer,
+            FirstContactRefinementLayer,
+            GreetingContextRefinementLayer,
+            ObjectionRefinementLayerAdapter,
+            OptionSelectionRefinementLayer,
+        )
+        from src.classifier.confidence_calibration import ConfidenceCalibrationLayer
+        from src.classifier.disambiguation_resolution_layer import DisambiguationResolutionLayer
+        from src.classifier.secondary_intent_detection import SecondaryIntentDetectionLayer
+        from src.classifier.comparison_refinement import ComparisonRefinementLayer
+
+        layer_map = {
+            "short_answer": ShortAnswerRefinementLayer,
+            "composite_message": CompositeMessageLayer,
+            "first_contact": FirstContactRefinementLayer,
+            "greeting_context": GreetingContextRefinementLayer,
+            "objection": ObjectionRefinementLayerAdapter,
+            "option_selection": OptionSelectionRefinementLayer,
+            "confidence_calibration": ConfidenceCalibrationLayer,
+            "disambiguation_resolution": DisambiguationResolutionLayer,
+            "secondary_intent_detection": SecondaryIntentDetectionLayer,
+            "comparison": ComparisonRefinementLayer,
+        }
+        for name, cls in layer_map.items():
+            if not registry.is_registered(name):
+                registry.register(name, cls)
+
+    def test_all_registered_layers_are_configured(self):
+        """Every registered layer must be listed in YAML pipeline config."""
+        from src.classifier.refinement_layers import verify_layers_registered
+        registered = verify_layers_registered()
+
+        expected = [
+            "disambiguation_resolution",
+            "confidence_calibration",
+            "secondary_intent_detection",
+            "short_answer",
+            "composite_message",
+            "first_contact",
+            "greeting_context",
+            "objection",
+            "option_selection",
+            "comparison",
+        ]
+
+        for layer_name in expected:
+            assert layer_name in registered, (
+                f"Expected layer '{layer_name}' not registered in pipeline"
+            )
+
+    def test_yaml_config_lists_disambiguation_resolution(self):
+        """disambiguation_resolution must appear in YAML pipeline layers."""
+        from src.config_loader import ConfigLoader
+
+        loader = ConfigLoader()
+        config = loader.load()
+        pipeline_cfg = config.constants.get("refinement_pipeline", {})
+        layer_configs = pipeline_cfg.get("layers", [])
+        layer_names = [
+            (cfg if isinstance(cfg, str) else cfg.get("name"))
+            for cfg in layer_configs
+        ]
+        assert "disambiguation_resolution" in layer_names, (
+            "disambiguation_resolution must be in YAML refinement_pipeline.layers"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

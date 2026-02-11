@@ -76,10 +76,7 @@ class DisambiguationResult:
     @property
     def disambiguation_triggered(self) -> bool:
         """Флаг для метрик: была ли инициирована disambiguation."""
-        return self.decision in (
-            DisambiguationDecision.CONFIRM,
-            DisambiguationDecision.DISAMBIGUATE
-        )
+        return self.decision == DisambiguationDecision.DISAMBIGUATE
 
     def to_classification_result(self) -> Dict[str, Any]:
         """
@@ -123,6 +120,9 @@ class DisambiguationConfig:
 
     # Порог gap между top-1 и top-2
     gap_threshold: float = 0.20
+
+    # Порог gap для подтверждения (ниже → DISAMBIGUATE вместо EXECUTE)
+    confirm_gap_threshold: float = 0.10
 
     # Disambiguation options
     max_options: int = 3
@@ -175,6 +175,7 @@ class DisambiguationConfig:
             low_confidence=config.get("low_confidence", 0.45),
             min_confidence=config.get("min_confidence", 0.30),
             gap_threshold=config.get("gap_threshold", config.get("max_score_gap", 0.20)),
+            confirm_gap_threshold=config.get("confirm_gap_threshold", 0.10),
             max_options=config.get("max_options", 3),
             min_option_confidence=config.get("min_option_confidence", 0.25),
             bypass_intents=config.get("bypass_intents_override", []) or cls._get_taxonomy_bypass_intents(),
@@ -266,8 +267,17 @@ class DisambiguationDecisionEngine:
                     start_time=start_time
                 )
 
-            # Step 2: Calculate gap
-            gap = self._calculate_gap(confidence, alternatives)
+            # Step 2: Calculate gap using pre-calibration confidence
+            # Alternatives are raw/uncalibrated, so gap must use original confidence.
+            # IMPORTANT: use `is not None`, not `or` — confidence 0.0 is valid but falsy.
+            pcc = classification.get("pre_calibration_confidence")
+            if pcc is not None:
+                original_confidence = pcc
+            else:
+                pcc_meta = classification.get("refinement_metadata", {}).get("original_confidence")
+                original_confidence = pcc_meta if pcc_meta is not None else confidence
+
+            gap = self._calculate_gap(original_confidence, alternatives)
 
             # Step 3: Make decision based on confidence and gap
             decision, reasoning = self._make_decision(confidence, gap, intent)
@@ -278,15 +288,7 @@ class DisambiguationDecisionEngine:
             question = ""
             confirm_question = ""
 
-            if decision == DisambiguationDecision.CONFIRM:
-                confirm_question = self._build_confirm_question(intent)
-                options = [DisambiguationOption(
-                    intent=intent,
-                    label=INTENT_LABELS.get(intent, intent),
-                    confidence=confidence
-                )]
-
-            elif decision == DisambiguationDecision.DISAMBIGUATE:
+            if decision == DisambiguationDecision.DISAMBIGUATE:
                 options = self._build_options(intent, confidence, alternatives)
                 question = "Уточните, пожалуйста:"
 
@@ -407,61 +409,62 @@ class DisambiguationDecisionEngine:
         """
         Принять решение на основе confidence и gap.
 
-        Decision matrix:
+        New decision matrix (CONFIRM eliminated):
 
-        | Confidence | Gap      | Decision     |
-        |------------|----------|--------------|
-        | >= 0.85    | >= 0.20  | EXECUTE      |
-        | >= 0.85    | < 0.20   | CONFIRM      |
-        | >= 0.65    | >= 0.20  | EXECUTE      |
-        | >= 0.65    | < 0.20   | CONFIRM      |
-        | >= 0.45    | any      | DISAMBIGUATE |
-        | >= 0.30    | any      | DISAMBIGUATE |
-        | < 0.30     | any      | FALLBACK     |
+        | Confidence | Gap >= 0.20 | 0.10 <= Gap < 0.20 | Gap < 0.10   |
+        |------------|-------------|---------------------|--------------|
+        | >= 0.85    | EXECUTE     | EXECUTE             | DISAMBIGUATE |
+        | >= 0.65    | EXECUTE     | EXECUTE             | DISAMBIGUATE |
+        | >= 0.45    | EXECUTE     | DISAMBIGUATE        | DISAMBIGUATE |
+        | >= 0.30    | DISAMBIGUATE| DISAMBIGUATE        | DISAMBIGUATE |
+        | < 0.30     | FALLBACK    | FALLBACK            | FALLBACK     |
         """
-        # Level 1: High confidence + large gap
-        if confidence >= self.config.high_confidence and gap >= self.config.gap_threshold:
-            return (
-                DisambiguationDecision.EXECUTE,
-                f"High confidence ({confidence:.2f}) with clear leader (gap={gap:.2f})"
-            )
+        confirm_gap = self.config.confirm_gap_threshold  # 0.10
 
-        # Level 2: High confidence + small gap
-        if confidence >= self.config.high_confidence and gap < self.config.gap_threshold:
-            return (
-                DisambiguationDecision.CONFIRM,
-                f"High confidence ({confidence:.2f}) but close alternatives (gap={gap:.2f})"
-            )
-
-        # Level 3: Medium confidence + large gap
-        if confidence >= self.config.medium_confidence and gap >= self.config.gap_threshold:
-            return (
-                DisambiguationDecision.EXECUTE,
-                f"Medium confidence ({confidence:.2f}) with clear leader (gap={gap:.2f})"
-            )
-
-        # Level 4: Medium confidence + small gap
-        if confidence >= self.config.medium_confidence and gap < self.config.gap_threshold:
-            return (
-                DisambiguationDecision.CONFIRM,
-                f"Medium confidence ({confidence:.2f}) with close alternatives (gap={gap:.2f})"
-            )
-
-        # Level 5: Low confidence
-        if confidence >= self.config.low_confidence:
+        # Level 1: High confidence
+        if confidence >= self.config.high_confidence:
+            if gap >= confirm_gap:
+                return (
+                    DisambiguationDecision.EXECUTE,
+                    f"High confidence ({confidence:.2f}) with gap={gap:.2f}"
+                )
             return (
                 DisambiguationDecision.DISAMBIGUATE,
-                f"Low confidence ({confidence:.2f}), need user clarification"
+                f"High confidence ({confidence:.2f}) but very close alternatives (gap={gap:.2f})"
             )
 
-        # Level 6: Very low confidence
+        # Level 2: Medium confidence
+        if confidence >= self.config.medium_confidence:
+            if gap >= confirm_gap:
+                return (
+                    DisambiguationDecision.EXECUTE,
+                    f"Medium confidence ({confidence:.2f}) with gap={gap:.2f}"
+                )
+            return (
+                DisambiguationDecision.DISAMBIGUATE,
+                f"Medium confidence ({confidence:.2f}) with very close alternatives (gap={gap:.2f})"
+            )
+
+        # Level 3: Low confidence (ROOT 4 fix: add gap check)
+        if confidence >= self.config.low_confidence:
+            if gap >= self.config.gap_threshold:
+                return (
+                    DisambiguationDecision.EXECUTE,
+                    f"Low confidence ({confidence:.2f}) but clear leader (gap={gap:.2f})"
+                )
+            return (
+                DisambiguationDecision.DISAMBIGUATE,
+                f"Low confidence ({confidence:.2f}), ambiguous (gap={gap:.2f})"
+            )
+
+        # Level 4: Very low confidence
         if confidence >= self.config.min_confidence:
             return (
                 DisambiguationDecision.DISAMBIGUATE,
                 f"Very low confidence ({confidence:.2f}), showing options"
             )
 
-        # Level 7: Below minimum
+        # Level 5: Below minimum
         return (
             DisambiguationDecision.FALLBACK,
             f"Cannot classify ({confidence:.2f} < {self.config.min_confidence})"
@@ -554,8 +557,7 @@ class DisambiguationDecisionEngine:
         return DisambiguationResult(
             decision=decision,
             needs_disambiguation=decision in (
-                DisambiguationDecision.CONFIRM,
-                DisambiguationDecision.DISAMBIGUATE
+                DisambiguationDecision.DISAMBIGUATE,
             ),
             intent=intent,
             confidence=confidence,

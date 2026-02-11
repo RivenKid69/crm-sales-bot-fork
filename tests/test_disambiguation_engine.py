@@ -3,6 +3,9 @@ Comprehensive tests for DisambiguationDecisionEngine.
 
 Tests cover:
 - Decision matrix (all confidence/gap combinations)
+- New decision matrix: CONFIRM eliminated, confirm_gap_threshold
+- pre_calibration_confidence for gap calculation
+- Low confidence gap check (ROOT 4 fix)
 - Bypass conditions
 - Options building
 - Configuration loading
@@ -48,6 +51,7 @@ def custom_config():
         low_confidence=0.50,
         min_confidence=0.35,
         gap_threshold=0.25,
+        confirm_gap_threshold=0.12,
         max_options=4,
         min_option_confidence=0.20,
         bypass_intents=["rejection", "demo_request"],
@@ -83,6 +87,7 @@ class TestDisambiguationConfig:
         assert config.low_confidence == 0.45
         assert config.min_confidence == 0.30
         assert config.gap_threshold == 0.20
+        assert config.confirm_gap_threshold == 0.10
         assert config.max_options == 3
         assert config.min_option_confidence == 0.25
         assert config.cooldown_turns == 3
@@ -94,6 +99,7 @@ class TestDisambiguationConfig:
         config_dict = {
             "high_confidence": 0.90,
             "gap_threshold": 0.30,
+            "confirm_gap_threshold": 0.15,
             "max_options": 5,
             "bypass_intents_override": ["custom_bypass"],
             "excluded_intents": ["custom_excluded"],
@@ -103,6 +109,7 @@ class TestDisambiguationConfig:
 
         assert config.high_confidence == 0.90
         assert config.gap_threshold == 0.30
+        assert config.confirm_gap_threshold == 0.15
         assert config.max_options == 5
         assert config.bypass_intents == ["custom_bypass"]
         assert config.excluded_intents == ["custom_excluded"]
@@ -117,12 +124,22 @@ class TestDisambiguationConfig:
 
         assert config.gap_threshold == 0.25
 
+    def test_confirm_gap_threshold_default(self):
+        """confirm_gap_threshold defaults to 0.10."""
+        config = DisambiguationConfig()
+        assert config.confirm_gap_threshold == 0.10
+
+    def test_confirm_gap_threshold_from_config(self):
+        """confirm_gap_threshold loaded from config dict."""
+        config = DisambiguationConfig.from_config({"confirm_gap_threshold": 0.15})
+        assert config.confirm_gap_threshold == 0.15
+
 # =============================================================================
-# TEST: Decision Matrix
+# TEST: New Decision Matrix (CONFIRM eliminated)
 # =============================================================================
 
 class TestDecisionMatrix:
-    """Tests for the decision matrix logic."""
+    """Tests for the new decision matrix logic (CONFIRM eliminated)."""
 
     # High confidence tests
 
@@ -136,8 +153,7 @@ class TestDecisionMatrix:
 
         result = engine.analyze(classification, {})
 
-        # Gap is 0.30 (>= 0.20), confidence is 0.90 (>= 0.85)
-        # But demo_request is in bypass_intents, so always EXECUTE
+        # demo_request is in bypass_intents, so always EXECUTE
         assert result.decision == DisambiguationDecision.EXECUTE
         assert result.needs_disambiguation is False
 
@@ -151,12 +167,12 @@ class TestDecisionMatrix:
 
         result = engine.analyze(classification, {})
 
-        # Gap is 0.30 (>= 0.20), confidence is 0.90 (>= 0.85)
+        # Gap is 0.30 (>= 0.10 confirm_gap), confidence is 0.90 (>= 0.85)
         assert result.decision == DisambiguationDecision.EXECUTE
         assert result.needs_disambiguation is False
 
-    def test_high_confidence_small_gap_confirms(self, engine):
-        """High confidence + small gap -> CONFIRM."""
+    def test_high_confidence_very_small_gap_disambiguates(self, engine):
+        """High confidence + very small gap (< confirm_gap_threshold) -> DISAMBIGUATE."""
         classification = {
             "intent": "price_question",
             "confidence": 0.88,
@@ -165,10 +181,24 @@ class TestDecisionMatrix:
 
         result = engine.analyze(classification, {})
 
-        # Gap is 0.08 (< 0.20), confidence is 0.88 (>= 0.85)
-        assert result.decision == DisambiguationDecision.CONFIRM
+        # Gap is 0.08 (< 0.10 confirm_gap), confidence is 0.88 (>= 0.85)
+        # New behavior: DISAMBIGUATE instead of CONFIRM
+        assert result.decision == DisambiguationDecision.DISAMBIGUATE
         assert result.needs_disambiguation is True
-        assert result.confirm_question != ""
+
+    def test_high_confidence_medium_gap_executes(self, engine):
+        """High confidence + medium gap (>= confirm_gap) -> EXECUTE."""
+        classification = {
+            "intent": "price_question",
+            "confidence": 0.88,
+            "alternatives": [{"intent": "pricing_details", "confidence": 0.75}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Gap is 0.13 (>= 0.10 confirm_gap), confidence is 0.88 (>= 0.85)
+        assert result.decision == DisambiguationDecision.EXECUTE
+        assert result.needs_disambiguation is False
 
     # Medium confidence tests
 
@@ -182,28 +212,57 @@ class TestDecisionMatrix:
 
         result = engine.analyze(classification, {})
 
-        # Gap is 0.30 (>= 0.20), confidence is 0.75 (>= 0.65)
+        # Gap is 0.30 (>= 0.10 confirm_gap), confidence is 0.75 (>= 0.65)
         assert result.decision == DisambiguationDecision.EXECUTE
         assert result.needs_disambiguation is False
 
-    def test_medium_confidence_small_gap_confirms(self, engine):
-        """Medium confidence + small gap -> CONFIRM."""
+    def test_medium_confidence_confirm_gap_boundary_executes(self, engine):
+        """Medium confidence + gap clearly above confirm_gap_threshold -> EXECUTE."""
         classification = {
             "intent": "question_features",
             "confidence": 0.70,
-            "alternatives": [{"intent": "comparison", "confidence": 0.60}],
+            "alternatives": [{"intent": "comparison", "confidence": 0.59}],
         }
 
         result = engine.analyze(classification, {})
 
-        # Gap is 0.10 (< 0.20), confidence is 0.70 (>= 0.65)
-        assert result.decision == DisambiguationDecision.CONFIRM
+        # Gap is 0.11 (>= 0.10 confirm_gap), confidence is 0.70 (>= 0.65)
+        assert result.decision == DisambiguationDecision.EXECUTE
+        assert result.needs_disambiguation is False
+
+    def test_medium_confidence_very_small_gap_disambiguates(self, engine):
+        """Medium confidence + gap < confirm_gap_threshold -> DISAMBIGUATE."""
+        classification = {
+            "intent": "question_features",
+            "confidence": 0.70,
+            "alternatives": [{"intent": "comparison", "confidence": 0.65}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Gap is 0.05 (< 0.10 confirm_gap), confidence is 0.70 (>= 0.65)
+        assert result.decision == DisambiguationDecision.DISAMBIGUATE
         assert result.needs_disambiguation is True
 
-    # Low confidence tests
+    # Low confidence tests (ROOT 4 fix: gap check added)
 
-    def test_low_confidence_disambiguates(self, engine):
-        """Low confidence -> DISAMBIGUATE regardless of gap."""
+    def test_low_confidence_large_gap_executes(self, engine):
+        """Low confidence + large gap -> EXECUTE (ROOT 4 fix)."""
+        classification = {
+            "intent": "objection_think",
+            "confidence": 0.55,
+            "alternatives": [{"intent": "info_provided", "confidence": 0.30}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Gap is 0.25 (>= 0.20 gap_threshold), confidence is 0.55 (>= 0.45)
+        # ROOT 4 fix: this now EXECUTEs instead of always DISAMBIGUATing
+        assert result.decision == DisambiguationDecision.EXECUTE
+        assert result.needs_disambiguation is False
+
+    def test_low_confidence_small_gap_disambiguates(self, engine):
+        """Low confidence + small gap -> DISAMBIGUATE."""
         classification = {
             "intent": "agreement",
             "confidence": 0.50,
@@ -215,10 +274,12 @@ class TestDecisionMatrix:
 
         result = engine.analyze(classification, {})
 
-        # Confidence is 0.50 (< 0.65, >= 0.45)
+        # Gap is 0.05 (< 0.20 gap_threshold), confidence is 0.50 (>= 0.45)
         assert result.decision == DisambiguationDecision.DISAMBIGUATE
         assert result.needs_disambiguation is True
         assert len(result.options) > 0
+
+    # Very low and fallback tests
 
     def test_very_low_confidence_disambiguates(self, engine):
         """Very low confidence -> DISAMBIGUATE."""
@@ -234,8 +295,6 @@ class TestDecisionMatrix:
         assert result.decision == DisambiguationDecision.DISAMBIGUATE
         assert result.needs_disambiguation is True
 
-    # Fallback tests
-
     def test_below_minimum_confidence_fallback(self, engine):
         """Below minimum confidence -> FALLBACK."""
         classification = {
@@ -249,6 +308,127 @@ class TestDecisionMatrix:
         # Confidence is 0.20 (< 0.30)
         assert result.decision == DisambiguationDecision.FALLBACK
         assert result.needs_disambiguation is False
+
+    # CONFIRM is never produced
+
+    def test_confirm_decision_never_produced(self, engine):
+        """CONFIRM decision should never be produced by _make_decision."""
+        # Test all confidence/gap combinations
+        test_cases = [
+            (0.95, 0.30),  # High + large gap
+            (0.90, 0.05),  # High + tiny gap
+            (0.75, 0.15),  # Medium + medium gap
+            (0.70, 0.02),  # Medium + tiny gap
+            (0.55, 0.25),  # Low + large gap
+            (0.50, 0.05),  # Low + small gap
+            (0.35, 0.10),  # Very low
+            (0.20, 0.30),  # Below min
+        ]
+
+        for conf, gap in test_cases:
+            decision, _ = engine._make_decision(conf, gap, "test")
+            assert decision != DisambiguationDecision.CONFIRM, (
+                f"CONFIRM produced for conf={conf}, gap={gap}"
+            )
+
+
+# =============================================================================
+# TEST: pre_calibration_confidence for Gap Calculation (ROOT 2 fix)
+# =============================================================================
+
+class TestPreCalibrationConfidence:
+    """Tests for pre_calibration_confidence usage in gap calculation."""
+
+    def test_uses_pre_calibration_confidence_for_gap(self, engine):
+        """Gap uses pre_calibration_confidence when available."""
+        classification = {
+            "intent": "objection_competitor",
+            "confidence": 0.72,  # calibrated
+            "pre_calibration_confidence": 0.90,  # original (before calibration)
+            "alternatives": [{"intent": "comparison", "confidence": 0.72}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Gap should be 0.90 - 0.72 = 0.18 (using pre_calibration_confidence)
+        # NOT 0.72 - 0.72 = 0.00 (which would happen with calibrated confidence)
+        assert result.gap == pytest.approx(0.18)
+
+    def test_falls_back_to_metadata_original_confidence(self, engine):
+        """Falls back to refinement_metadata.original_confidence."""
+        classification = {
+            "intent": "objection_competitor",
+            "confidence": 0.72,  # calibrated
+            # No pre_calibration_confidence field
+            "refinement_metadata": {"original_confidence": 0.90},
+            "alternatives": [{"intent": "comparison", "confidence": 0.72}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Should fall back to refinement_metadata.original_confidence
+        assert result.gap == pytest.approx(0.18)
+
+    def test_falls_back_to_calibrated_confidence(self, engine):
+        """Falls back to calibrated confidence when no original available."""
+        classification = {
+            "intent": "objection_competitor",
+            "confidence": 0.72,
+            # No pre_calibration_confidence, no refinement_metadata
+            "alternatives": [{"intent": "comparison", "confidence": 0.60}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Gap = 0.72 - 0.60 = 0.12
+        assert result.gap == pytest.approx(0.12)
+
+    def test_pre_calibration_zero_is_valid(self, engine):
+        """pre_calibration_confidence of 0.0 is valid (not falsy)."""
+        classification = {
+            "intent": "test",
+            "confidence": 0.50,
+            "pre_calibration_confidence": 0.0,
+            "alternatives": [{"intent": "other", "confidence": 0.40}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Gap = 0.0 - 0.40 = -0.40 (negative, but valid)
+        assert result.gap == pytest.approx(-0.40)
+
+    def test_scenario_calibration_prevents_negative_gap(self, engine):
+        """Real scenario: calibration lowers confidence but gap uses original."""
+        # Before calibration: objection_competitor:0.90, alt:0.72
+        # After calibration: objection_competitor:0.72, alt:0.72 (uncalibrated)
+        # Without fix: gap = 0.72 - 0.72 = 0.00 → DISAMBIGUATE always
+        # With fix: gap = 0.90 - 0.72 = 0.18 → may EXECUTE
+        classification = {
+            "intent": "objection_competitor",
+            "confidence": 0.72,  # calibrated (from 0.90)
+            "pre_calibration_confidence": 0.90,  # original
+            "alternatives": [{"intent": "comparison", "confidence": 0.72}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # conf=0.72 >= 0.65 (medium), gap=0.18 >= 0.10 (confirm_gap) → EXECUTE
+        assert result.decision == DisambiguationDecision.EXECUTE
+
+    def test_scenario_low_confidence_clear_leader(self, engine):
+        """Scenario: low confidence but clear leader → EXECUTE (ROOT 4 fix)."""
+        # "Потом. Просто смотрю" → objection_think:0.55, alt:0.30
+        classification = {
+            "intent": "objection_think",
+            "confidence": 0.55,
+            "alternatives": [{"intent": "info_provided", "confidence": 0.30}],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # conf=0.55 >= 0.45 (low), gap=0.25 >= 0.20 (gap_threshold) → EXECUTE
+        assert result.decision == DisambiguationDecision.EXECUTE
+
 
 # =============================================================================
 # TEST: Bypass Conditions
@@ -309,13 +489,13 @@ class TestBypassConditions:
         classification = {
             "intent": "agreement",
             "confidence": 0.50,
-            "alternatives": [],
+            "alternatives": [{"intent": "info_provided", "confidence": 0.45}],
         }
         context = {"turns_since_last_disambiguation": 5}  # > 3 (cooldown)
 
         result = engine.analyze(classification, context)
 
-        # Normal analysis proceeds
+        # Normal analysis proceeds — low confidence with small gap → DISAMBIGUATE
         assert result.decision == DisambiguationDecision.DISAMBIGUATE
 
     def test_very_high_confidence_executes(self, engine):
@@ -416,8 +596,6 @@ class TestOptionsBuilding:
 
         intent_list = [o.intent for o in result.options]
         assert "pricing_details" in intent_list
-        # Note: max_options=3 means top + (max_options-1) alternatives + "other"
-        # So with 1 alternative we get: price_question, pricing_details, other
 
     def test_options_exclude_low_confidence_alternatives(self, engine):
         """Options exclude alternatives with low confidence."""
@@ -453,15 +631,17 @@ class TestOptionsBuilding:
         assert "agreement" in intent_list
 
     def test_options_always_include_other(self, engine):
-        """Options always include 'Other' option."""
+        """Options always include 'Other' option when disambiguation triggers."""
         classification = {
             "intent": "price_question",
             "confidence": 0.50,
-            "alternatives": [],
+            "alternatives": [{"intent": "comparison", "confidence": 0.45}],
         }
 
         result = engine.analyze(classification, {})
 
+        # With small gap and low confidence, should disambiguate
+        assert result.decision == DisambiguationDecision.DISAMBIGUATE
         intent_list = [o.intent for o in result.options]
         assert "other" in intent_list
 
@@ -480,9 +660,6 @@ class TestOptionsBuilding:
 
         result = engine.analyze(classification, {})
 
-        # max_options is 3, plus "other" = 4 total... actually max_options - 1 alternatives + top + other
-        # Let me check the logic...
-        # Actually options = top + (max_options - 1) alternatives + other
         assert len(result.options) <= engine.config.max_options + 1
 
     def test_options_have_labels(self, engine):
@@ -500,46 +677,6 @@ class TestOptionsBuilding:
             assert option.label != option.intent or option.intent == "other"
 
 # =============================================================================
-# TEST: Confirm Question
-# =============================================================================
-
-class TestConfirmQuestion:
-    """Tests for confirm question building."""
-
-    def test_confirm_question_for_known_intent(self, engine):
-        """Confirm question uses template for known intents."""
-        classification = {
-            "intent": "demo_request",
-            "confidence": 0.88,
-            "alternatives": [{"intent": "callback_request", "confidence": 0.80}],
-        }
-
-        # demo_request is bypass, so use different intent
-        classification = {
-            "intent": "price_question",
-            "confidence": 0.88,
-            "alternatives": [{"intent": "pricing_details", "confidence": 0.80}],
-        }
-
-        result = engine.analyze(classification, {})
-
-        assert result.decision == DisambiguationDecision.CONFIRM
-        assert "стоимость" in result.confirm_question.lower()
-
-    def test_confirm_question_for_unknown_intent(self, engine):
-        """Confirm question uses generic template for unknown intents."""
-        classification = {
-            "intent": "some_custom_intent",
-            "confidence": 0.88,
-            "alternatives": [{"intent": "another_intent", "confidence": 0.80}],
-        }
-
-        result = engine.analyze(classification, {})
-
-        assert result.decision == DisambiguationDecision.CONFIRM
-        assert "Правильно ли я понял" in result.confirm_question
-
-# =============================================================================
 # TEST: DisambiguationResult
 # =============================================================================
 
@@ -548,13 +685,14 @@ class TestDisambiguationResult:
 
     def test_disambiguation_triggered_property(self):
         """disambiguation_triggered property works correctly."""
+        # CONFIRM no longer triggers disambiguation
         result_confirm = DisambiguationResult(
             decision=DisambiguationDecision.CONFIRM,
             needs_disambiguation=True,
             intent="test",
             confidence=0.8,
         )
-        assert result_confirm.disambiguation_triggered is True
+        assert result_confirm.disambiguation_triggered is False
 
         result_disambiguate = DisambiguationResult(
             decision=DisambiguationDecision.DISAMBIGUATE,
@@ -624,9 +762,11 @@ class TestStatistics:
 
     def test_stats_tracking(self, engine):
         """Engine tracks statistics correctly."""
-        # Execute classification
+        # Execute: high confidence with gap
         engine.analyze({"intent": "test", "confidence": 0.95, "alternatives": []}, {})
-        engine.analyze({"intent": "test", "confidence": 0.50, "alternatives": []}, {})
+        # Disambiguate: low confidence with close alternative
+        engine.analyze({"intent": "test", "confidence": 0.50, "alternatives": [{"intent": "other_intent", "confidence": 0.45}]}, {})
+        # Fallback: very low confidence
         engine.analyze({"intent": "test", "confidence": 0.20, "alternatives": []}, {})
 
         stats = engine.get_stats()
@@ -791,9 +931,6 @@ class TestYAMLConfigLoading:
 
     def test_loads_from_yaml_config(self):
         """Engine loads config from YAML when available."""
-        # This test verifies the config loading chain
-        # Actual YAML config should be loaded in production
-
         reset_disambiguation_engine()
 
         # Get engine - should load from YAML/config
@@ -803,6 +940,7 @@ class TestYAMLConfigLoading:
         assert engine.config is not None
         assert engine.config.high_confidence > 0
         assert engine.config.gap_threshold > 0
+        assert engine.config.confirm_gap_threshold > 0
 
 # =============================================================================
 # TEST: Compound Bypass (Bypass 5)
@@ -888,3 +1026,56 @@ class TestCompoundBypass:
 
         # info_provided is NOT in compound_bypass_intents → bypass 5 doesn't apply
         assert "Compound" not in result.reasoning
+
+
+# =============================================================================
+# TEST: Comprehensive Decision Matrix Coverage
+# =============================================================================
+
+class TestDecisionMatrixComprehensive:
+    """Exhaustive tests for the new decision matrix with confirm_gap_threshold."""
+
+    @pytest.fixture
+    def precise_engine(self):
+        """Engine with precise config for testing boundaries."""
+        config = DisambiguationConfig(
+            high_confidence=0.85,
+            medium_confidence=0.65,
+            low_confidence=0.45,
+            min_confidence=0.30,
+            gap_threshold=0.20,
+            confirm_gap_threshold=0.10,
+        )
+        return DisambiguationDecisionEngine(config)
+
+    @pytest.mark.parametrize("confidence,gap,expected", [
+        # High confidence (>= 0.85)
+        (0.85, 0.30, DisambiguationDecision.EXECUTE),    # gap >= confirm_gap
+        (0.90, 0.20, DisambiguationDecision.EXECUTE),    # gap >= confirm_gap
+        (0.85, 0.10, DisambiguationDecision.EXECUTE),    # gap == confirm_gap
+        (0.85, 0.09, DisambiguationDecision.DISAMBIGUATE), # gap < confirm_gap
+        (0.90, 0.05, DisambiguationDecision.DISAMBIGUATE), # gap < confirm_gap
+        # Medium confidence (>= 0.65, < 0.85)
+        (0.75, 0.25, DisambiguationDecision.EXECUTE),    # gap >= confirm_gap
+        (0.65, 0.10, DisambiguationDecision.EXECUTE),    # gap == confirm_gap
+        (0.70, 0.09, DisambiguationDecision.DISAMBIGUATE), # gap < confirm_gap
+        (0.65, 0.05, DisambiguationDecision.DISAMBIGUATE), # gap < confirm_gap
+        # Low confidence (>= 0.45, < 0.65) — uses gap_threshold
+        (0.55, 0.25, DisambiguationDecision.EXECUTE),    # gap >= gap_threshold
+        (0.45, 0.20, DisambiguationDecision.EXECUTE),    # gap == gap_threshold
+        (0.50, 0.19, DisambiguationDecision.DISAMBIGUATE), # gap < gap_threshold
+        (0.45, 0.10, DisambiguationDecision.DISAMBIGUATE), # gap < gap_threshold
+        # Very low confidence (>= 0.30, < 0.45)
+        (0.35, 0.50, DisambiguationDecision.DISAMBIGUATE),
+        (0.30, 0.00, DisambiguationDecision.DISAMBIGUATE),
+        # Below minimum (< 0.30)
+        (0.29, 0.50, DisambiguationDecision.FALLBACK),
+        (0.10, 0.00, DisambiguationDecision.FALLBACK),
+    ])
+    def test_decision_matrix_parametrized(self, precise_engine, confidence, gap, expected):
+        """Parametrized test for all decision matrix cells."""
+        decision, _ = precise_engine._make_decision(confidence, gap, "test")
+        assert decision == expected, (
+            f"Expected {expected.value} for conf={confidence}, gap={gap}, "
+            f"got {decision.value}"
+        )

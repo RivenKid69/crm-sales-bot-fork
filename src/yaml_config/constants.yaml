@@ -261,6 +261,10 @@ disambiguation:
   # Маленький gap = близкие альтернативы = нужно уточнить
   gap_threshold: 0.20
 
+  # Порог gap для подтверждения (CONFIRM → DISAMBIGUATE при gap < этого значения)
+  # При gap >= confirm_gap_threshold решение EXECUTE, иначе DISAMBIGUATE
+  confirm_gap_threshold: 0.10
+
   # Настройки опций для показа пользователю
   options:
     max_options: 3             # Максимум вариантов (+ "Другое")
@@ -4843,6 +4847,14 @@ refinement_pipeline:
   # Каждый слой должен быть зарегистрирован в RefinementLayerRegistry
   # priority: CRITICAL (100) → HIGH (75) → NORMAL (50) → LOW (25) → FALLBACK (0)
   layers:
+    # Слой -1: Disambiguation Resolution (CRITICAL priority)
+    # Обрабатывает ответы пользователя ("1", "2", "первое") на меню disambiguation.
+    # Должен идти ДО confidence_calibration — если resolved, калибровка не нужна.
+    - name: disambiguation_resolution
+      enabled: true
+      priority: CRITICAL
+      feature_flag: unified_disambiguation
+
     # Слой 0: Confidence Calibration (CRITICAL priority)
     # Калибрует confidence ПЕРЕД другими слоями
     # Решает проблему overconfident LLM (0.85-0.95 при неверной классификации)

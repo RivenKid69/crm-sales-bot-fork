@@ -103,6 +103,9 @@ DISAMBIGUATION_CONFIG: Dict[str, Any] = {
     "gap_threshold": _disambiguation.get("gap_threshold", 0.20),
     "max_score_gap": _disambiguation.get("gap_threshold", 0.20),  # Alias for legacy
 
+    # Confirm gap threshold (below this → DISAMBIGUATE instead of EXECUTE)
+    "confirm_gap_threshold": _disambiguation.get("confirm_gap_threshold", 0.10),
+
     # Options config
     "max_options": _disambiguation_options.get("max_options", 3),
     "min_option_confidence": _disambiguation_options.get("min_option_confidence", 0.25),
