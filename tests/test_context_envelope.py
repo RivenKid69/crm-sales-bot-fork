@@ -82,6 +82,8 @@ class TestContextEnvelope:
         # Level 3
         assert envelope.first_objection_type is None
         assert envelope.total_objections == 0
+        assert envelope.max_consecutive_objections == 3
+        assert envelope.max_total_objections == 5
         assert envelope.has_breakthrough is False
 
         # Meta
@@ -401,6 +403,62 @@ class TestContextEnvelopeBuilder:
         assert envelope2.has_reason(ReasonCode.OBJECTION_REPEAT_PRICE)
         assert envelope2.has_reason(ReasonCode.OBJECTION_REPEAT_COMPETITOR)
         assert envelope2.has_reason(ReasonCode.OBJECTION_ESCALATE)
+
+    def test_resolve_persona_objection_limits(self):
+        """Builder resolves persona-specific objection limits into envelope."""
+        class MockStateMachine:
+            state = "handle_objection"
+            collected_data = {"persona": "competitor_user"}
+            in_disambiguation = False
+            turns_since_last_disambiguation = 0
+            states_config = {
+                "handle_objection": {"phase": "problem", "required_data": []}
+            }
+
+        builder = ContextEnvelopeBuilder(state_machine=MockStateMachine())
+        envelope = builder.build()
+
+        assert envelope.max_consecutive_objections == 4
+        assert envelope.max_total_objections == 7
+
+    def test_resolve_objection_limits_prefers_explicit_state_values(self):
+        """Explicit state-machine limits must win over persona limits."""
+        class MockStateMachine:
+            state = "handle_objection"
+            collected_data = {"persona": "competitor_user"}
+            in_disambiguation = False
+            turns_since_last_disambiguation = 0
+            states_config = {
+                "handle_objection": {"phase": "problem", "required_data": []}
+            }
+            max_consecutive_objections = 6
+            max_total_objections = 11
+
+        builder = ContextEnvelopeBuilder(state_machine=MockStateMachine())
+        envelope = builder.build()
+
+        assert envelope.max_consecutive_objections == 6
+        assert envelope.max_total_objections == 11
+
+    def test_reason_code_escalation_uses_resolved_limit(self):
+        """OBJECTION_ESCALATE must follow resolved threshold, not hardcoded global."""
+        builder = ContextEnvelopeBuilder()
+
+        envelope_below = ContextEnvelope(
+            total_objections=3,
+            max_consecutive_objections=4,
+            repeated_objection_types=["objection_competitor"],
+        )
+        builder._compute_reason_codes(envelope_below)
+        assert not envelope_below.has_reason(ReasonCode.OBJECTION_ESCALATE)
+
+        envelope_at = ContextEnvelope(
+            total_objections=4,
+            max_consecutive_objections=4,
+            repeated_objection_types=["objection_competitor"],
+        )
+        builder._compute_reason_codes(envelope_at)
+        assert envelope_at.has_reason(ReasonCode.OBJECTION_ESCALATE)
 
     def test_compute_reason_codes_breakthrough(self):
         """Проверить вычисление breakthrough reason codes."""

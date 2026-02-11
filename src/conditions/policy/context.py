@@ -18,6 +18,7 @@ from src.yaml_config.constants import (
     # Objection limits from YAML (single source of truth)
     MAX_CONSECUTIVE_OBJECTIONS,
     MAX_TOTAL_OBJECTIONS,
+    get_persona_objection_limits,
 )
 
 
@@ -134,6 +135,19 @@ class PolicyContext:
         if self.frustration_level < 0:
             raise ValueError("frustration_level cannot be negative")
 
+        # Auto-resolve persona-specific limits when context carries persona and
+        # limits were not explicitly overridden.
+        persona = (self.collected_data or {}).get("persona")
+        if (
+            isinstance(persona, str)
+            and persona
+            and self.max_consecutive_objections == MAX_CONSECUTIVE_OBJECTIONS
+            and self.max_total_objections == MAX_TOTAL_OBJECTIONS
+        ):
+            persona_limits = get_persona_objection_limits(persona)
+            self.max_consecutive_objections = persona_limits["consecutive"]
+            self.max_total_objections = persona_limits["total"]
+
     @property
     def spin_phase(self) -> Optional[str]:
         """Legacy alias for current_phase."""
@@ -158,9 +172,32 @@ class PolicyContext:
         Returns:
             Initialized PolicyContext
         """
+        raw_consecutive = getattr(envelope, "max_consecutive_objections", None)
+        raw_total = getattr(envelope, "max_total_objections", None)
+
+        def _is_valid_limit(value: Any) -> bool:
+            return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+        persona_limits = {}
+        collected = envelope.collected_data.copy() if envelope.collected_data else {}
+        persona = collected.get("persona")
+        if isinstance(persona, str) and persona:
+            persona_limits = get_persona_objection_limits(persona)
+
+        resolved_consecutive = (
+            raw_consecutive
+            if _is_valid_limit(raw_consecutive)
+            else persona_limits.get("consecutive", MAX_CONSECUTIVE_OBJECTIONS)
+        )
+        resolved_total = (
+            raw_total
+            if _is_valid_limit(raw_total)
+            else persona_limits.get("total", MAX_TOTAL_OBJECTIONS)
+        )
+
         return cls(
             # Base fields
-            collected_data=envelope.collected_data.copy() if envelope.collected_data else {},
+            collected_data=collected,
             state=envelope.state,
             turn_number=envelope.total_turns,
 
@@ -212,13 +249,9 @@ class PolicyContext:
             ),
             # Secondary intents
             secondary_intents=getattr(envelope, 'secondary_intents', []) or [],
-            # Objection limits (from envelope if available, else from YAML config)
-            max_consecutive_objections=getattr(
-                envelope, 'max_consecutive_objections', MAX_CONSECUTIVE_OBJECTIONS
-            ),
-            max_total_objections=getattr(
-                envelope, 'max_total_objections', MAX_TOTAL_OBJECTIONS
-            ),
+            # Objection limits (resolved: explicit envelope > persona > global)
+            max_consecutive_objections=resolved_consecutive,
+            max_total_objections=resolved_total,
         )
 
     @classmethod
@@ -367,6 +400,8 @@ class PolicyContext:
             "pre_intervention_triggered": self.pre_intervention_triggered,
             "stall_guard_cooldown": self.stall_guard_cooldown,
             "secondary_intents": self.secondary_intents,
+            "max_consecutive_objections": self.max_consecutive_objections,
+            "max_total_objections": self.max_total_objections,
         }
 
     def __repr__(self) -> str:

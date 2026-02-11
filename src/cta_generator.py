@@ -272,6 +272,17 @@ class CTAGenerator:
 
     # Early states where CTA should not be added (loaded from config)
     DEFAULT_EARLY_STATES = {"greeting", "spin_situation", "spin_problem"}
+    DEFAULT_BLOCKED_ACTIONS = {
+        "answer_with_facts",
+        "answer_and_continue",
+        "answer_with_summary",
+        "answer_with_pricing",
+        "answer_with_pricing_direct",
+        "answer_pricing_details",
+        "answer_question",
+        "ask_clarification",
+        "respond_briefly",
+    }
 
     def __init__(self, config: Optional["LoadedConfig"] = None):
         """
@@ -287,6 +298,7 @@ class CTAGenerator:
         self._ctas = self._load_ctas(config)
         self._cta_by_action = self._load_cta_by_action(config)
         self._early_states = self._load_early_states(config)
+        self._blocked_actions = self._load_blocked_actions(config)
 
         # Phase-based CTA (universal for all flows)
         self._state_phase_map = STATE_TO_CTA_PHASE.copy()
@@ -314,6 +326,13 @@ class CTAGenerator:
             return self.DEFAULT_EARLY_STATES
         early = config.cta.get("early_states", [])
         return set(early) if early else self.DEFAULT_EARLY_STATES
+
+    def _load_blocked_actions(self, config: Optional["LoadedConfig"]) -> set:
+        """Load CTA-blocked actions from config or use defaults."""
+        if config is None:
+            return set(self.DEFAULT_BLOCKED_ACTIONS)
+        blocked = config.cta.get("blocked_actions", [])
+        return set(blocked) if blocked else set(self.DEFAULT_BLOCKED_ACTIONS)
 
     def _load_cta_by_phase(self, config: Optional["LoadedConfig"]) -> Dict[str, List[str]]:
         """Load phase-based CTA templates from config or use default."""
@@ -443,12 +462,16 @@ class CTAGenerator:
         if last_action == "answer_question":
             return False, "just_answered_question"
 
+        # 5.5 Action semantic gate — never add CTA on blocked answer/clarification actions
+        action = context.get("action", "")
+        if action in self._blocked_actions:
+            return False, "action_blocked_for_cta"
+
         # 6. Backoff language gate — CTA contradicts backing-off sentiment
         if self._has_backoff_language(response):
             return False, "response_contains_backoff"
 
         # 7. Action gate — soft_close/objection_limit_reached skip CTA
-        action = context.get("action", "")
         if action in self.SOFT_CLOSE_ACTIONS:
             return False, "action_is_soft_close"
 
@@ -713,6 +736,13 @@ class CTAGenerator:
         Returns:
             Tuple[bool, Optional[str]]: (should add CTA, skip reason)
         """
+        context = context or {}
+
+        # Action semantic gate (must match legacy path behavior)
+        action = context.get("action", "")
+        if action in self._blocked_actions:
+            return False, "action_blocked_for_cta"
+
         # First check response-based rules (these don't need conditions)
         if response.rstrip().endswith("?"):
             return False, "response_ends_with_question"

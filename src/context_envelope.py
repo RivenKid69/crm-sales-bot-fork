@@ -30,7 +30,11 @@ from enum import Enum
 import re
 
 # Import objection limits from YAML (single source of truth)
-from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS
+from src.yaml_config.constants import (
+    MAX_CONSECUTIVE_OBJECTIONS,
+    MAX_TOTAL_OBJECTIONS,
+    get_persona_objection_limits,
+)
 
 
 class ReasonCode(Enum):
@@ -206,6 +210,8 @@ class ContextEnvelope:
     first_objection_type: Optional[str] = None
     first_objection_turn: Optional[int] = None
     total_objections: int = 0
+    max_consecutive_objections: int = field(default_factory=lambda: MAX_CONSECUTIVE_OBJECTIONS)
+    max_total_objections: int = field(default_factory=lambda: MAX_TOTAL_OBJECTIONS)
     repeated_objection_types: List[str] = field(default_factory=list)
     objection_types_seen: List[str] = field(default_factory=list)
     has_breakthrough: bool = False
@@ -294,6 +300,8 @@ class ContextEnvelope:
             # Level 3 (ключевые сигналы)
             "first_objection_type": self.first_objection_type,
             "total_objections": self.total_objections,
+            "max_consecutive_objections": self.max_consecutive_objections,
+            "max_total_objections": self.max_total_objections,
             "repeated_objection_types": self.repeated_objection_types,
             "has_breakthrough": self.has_breakthrough,
             "client_has_data": self.client_has_data,
@@ -365,6 +373,8 @@ class ContextEnvelope:
 
             # Level 3 сигналы (ключевые для policy)
             "total_objections": self.total_objections,
+            "max_consecutive_objections": self.max_consecutive_objections,
+            "max_total_objections": self.max_total_objections,
             "repeated_objection_types": self.repeated_objection_types,
             "has_breakthrough": self.has_breakthrough,
             "turns_since_breakthrough": self.turns_since_breakthrough,
@@ -415,6 +425,8 @@ class ContextEnvelope:
             # === Level 3 ===
             "first_objection_type": self.first_objection_type,
             "total_objections": self.total_objections,
+            "max_consecutive_objections": self.max_consecutive_objections,
+            "max_total_objections": self.max_total_objections,
             "repeated_objection_types": self.repeated_objection_types,
             "has_breakthrough": self.has_breakthrough,
             "breakthrough_action": self.breakthrough_action,
@@ -525,6 +537,9 @@ class ContextEnvelopeBuilder:
 
         # Bridge current_intent to envelope (fixes 1-turn lag for policy)
         envelope.current_intent = self.current_intent
+
+        # Resolve objection limits once (explicit state/envelope > persona > global)
+        self._resolve_objection_limits(envelope)
 
         # Flag: did DataExtractor find meaningful data in the current message?
         # Uses same whitelist as DataAwareRefinementLayer — excludes trivial fields
@@ -688,6 +703,87 @@ class ContextEnvelopeBuilder:
         """Заполнить информацию от guard."""
         envelope.guard_intervention = self.guard_info.get("intervention")
 
+    @staticmethod
+    def _is_valid_limit(value: Any) -> bool:
+        """Check that objection limit value is an int (0+), excluding bools."""
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+    @classmethod
+    def _extract_explicit_state_limit(
+        cls,
+        state_machine: Any,
+        key: str,
+        global_default: int,
+    ) -> Optional[int]:
+        """
+        Extract explicit objection limit from state machine.
+
+        Priority for explicit values:
+        1. Private `_limits` dict (if present on test/mocked state machine)
+        2. Direct instance attribute in `__dict__`
+        3. Property value if it differs from global default
+        """
+        limits = getattr(state_machine, "_limits", None)
+        if isinstance(limits, dict):
+            value = limits.get(key)
+            if cls._is_valid_limit(value):
+                return value
+
+        direct_value = getattr(state_machine, "__dict__", {}).get(key)
+        if cls._is_valid_limit(direct_value):
+            return direct_value
+
+        try:
+            property_value = getattr(state_machine, key)
+        except Exception:
+            property_value = None
+        if cls._is_valid_limit(property_value) and property_value != global_default:
+            return property_value
+
+        return None
+
+    def _resolve_objection_limits(self, envelope: ContextEnvelope) -> None:
+        """
+        Resolve objection limits for envelope with precedence:
+        explicit state/envelope > persona limits > global constants.
+        """
+        explicit_consecutive: Optional[int] = None
+        explicit_total: Optional[int] = None
+
+        if self.state_machine is not None:
+            explicit_consecutive = self._extract_explicit_state_limit(
+                self.state_machine,
+                "max_consecutive_objections",
+                MAX_CONSECUTIVE_OBJECTIONS,
+            )
+            explicit_total = self._extract_explicit_state_limit(
+                self.state_machine,
+                "max_total_objections",
+                MAX_TOTAL_OBJECTIONS,
+            )
+
+        persona_limits: Dict[str, int] = {}
+        persona = (envelope.collected_data or {}).get("persona")
+        if isinstance(persona, str) and persona:
+            persona_limits = get_persona_objection_limits(persona)
+
+        resolved_consecutive = explicit_consecutive
+        if resolved_consecutive is None:
+            resolved_consecutive = persona_limits.get(
+                "consecutive",
+                MAX_CONSECUTIVE_OBJECTIONS,
+            )
+
+        resolved_total = explicit_total
+        if resolved_total is None:
+            resolved_total = persona_limits.get(
+                "total",
+                MAX_TOTAL_OBJECTIONS,
+            )
+
+        envelope.max_consecutive_objections = resolved_consecutive
+        envelope.max_total_objections = resolved_total
+
     def _fill_secondary_intents(self, envelope: ContextEnvelope) -> None:
         """Fill secondary intents from classification_result."""
         secondary = self.classification_result.get("secondary_signals", [])
@@ -749,8 +845,8 @@ class ContextEnvelopeBuilder:
                 elif "competitor" in obj_type:
                     envelope.add_reason(ReasonCode.OBJECTION_REPEAT_COMPETITOR)
 
-        # Use configurable limit from constants.yaml
-        if envelope.total_objections >= MAX_CONSECUTIVE_OBJECTIONS:
+        # Use resolved limit from envelope (explicit > persona > global)
+        if envelope.total_objections >= envelope.max_consecutive_objections:
             envelope.add_reason(ReasonCode.OBJECTION_ESCALATE)
 
         # === Breakthrough signals (Level 3) ===

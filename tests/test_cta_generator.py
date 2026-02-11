@@ -167,6 +167,48 @@ class TestShouldAddCTA:
         assert should_add
         assert reason is None
 
+    @pytest.mark.parametrize(
+        "blocked_action",
+        [
+            "answer_with_facts",
+            "answer_and_continue",
+            "answer_with_summary",
+            "answer_with_pricing",
+            "answer_with_pricing_direct",
+            "answer_pricing_details",
+            "answer_question",
+            "ask_clarification",
+            "respond_briefly",
+        ],
+    )
+    def test_no_cta_for_blocked_answer_or_clarification_actions(self, blocked_action):
+        """CTA must be blocked for semantic answer/clarification actions."""
+        generator = CTAGenerator()
+        generator.turn_count = 5
+
+        should_add, reason = generator.should_add_cta(
+            "presentation",
+            "Wipon решает эту проблему.",
+            {"action": blocked_action}
+        )
+
+        assert not should_add
+        assert reason == "action_blocked_for_cta"
+
+    def test_cta_still_allowed_for_genuine_objection_action(self):
+        """Objection actions are not globally blocked by answer-action gate."""
+        generator = CTAGenerator()
+        generator.turn_count = 5
+
+        should_add, reason = generator.should_add_cta(
+            "handle_objection",
+            "Понимаю ваше возражение по цене.",
+            {"action": "handle_repeated_objection"}
+        )
+
+        assert should_add is True
+        assert reason is None
+
 class TestGetCTA:
     """Тесты получения CTA"""
 

@@ -51,6 +51,7 @@ from src.conditions.policy.conditions import (
     is_stalled,
     # Objection conditions
     has_repeated_objections,
+    is_current_intent_objection,
     total_objections_3_plus,
     total_objections_5_plus,
     should_escalate_objection,
@@ -122,6 +123,7 @@ __all__ = [
     "is_stalled",
     # Objection conditions
     "has_repeated_objections",
+    "is_current_intent_objection",
     "total_objections_3_plus",
     "total_objections_5_plus",
     "should_escalate_objection",
