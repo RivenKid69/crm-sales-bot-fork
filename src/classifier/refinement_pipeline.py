@@ -207,6 +207,7 @@ class RefinementResult:
     secondary_signals: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     processing_time_ms: float = 0.0
+    pre_calibration_confidence: Optional[float] = None
 
     @property
     def refined(self) -> bool:
@@ -234,6 +235,9 @@ class RefinementResult:
 
         if self.metadata:
             result["refinement_metadata"] = self.metadata
+
+        if self.pre_calibration_confidence is not None:
+            result["pre_calibration_confidence"] = self.pre_calibration_confidence
 
         return result
 
@@ -889,6 +893,20 @@ class RefinementPipeline:
         self._layers.sort(key=lambda l: l.priority.value, reverse=True)
         self._layer_order = [l.name for l in self._layers]
 
+        # Reverse validation: warn about registered layers not in YAML config
+        if layer_configs:
+            configured_names = {
+                (cfg if isinstance(cfg, str) else cfg.get("name"))
+                for cfg in layer_configs
+            }
+            registered_names = set(registry.get_all_names())
+            unconfigured = registered_names - configured_names
+            if unconfigured:
+                logger.warning(
+                    "Registered layers not in YAML config (will not run): %s",
+                    sorted(unconfigured),
+                )
+
     def refine(
         self,
         message: str,
@@ -926,7 +944,14 @@ class RefinementPipeline:
 
                 if layer_result.refined:
                     # Update result with refinement
-                    current_result.update(layer_result.to_dict())
+                    layer_dict = layer_result.to_dict()
+                    # Merge refinement_metadata (preserve original_confidence from calibration)
+                    if "refinement_metadata" in layer_dict and "refinement_metadata" in current_result:
+                        current_result["refinement_metadata"] = {
+                            **current_result["refinement_metadata"],
+                            **layer_dict.pop("refinement_metadata"),
+                        }
+                    current_result.update(layer_dict)
                     refinement_chain.append(layer.name)
 
                     # Update context for next layer

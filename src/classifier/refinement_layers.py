@@ -1070,12 +1070,17 @@ class OptionSelectionRefinementLayer(BaseRefinementLayer):
         Check if option selection refinement should apply.
 
         Conditions:
+        0. NOT in disambiguation (disambiguation_resolution handles that)
         1. Layer is enabled in config
         2. Intent is in suspicious_intents (might be wrong)
         3. Message is short (selection-like)
         4. last_bot_message contains option patterns
         """
         if not self._config.get("enabled", True):
+            return False
+
+        # Disambiguation resolution layer handles option selection during disambiguation
+        if ctx.in_disambiguation:
             return False
 
         # Check 1: Is intent suspicious?
@@ -1206,6 +1211,7 @@ def verify_layers_registered() -> List[str]:
     # FIX: Added first_contact for First Turn Objection Bug Fix
     # FIX: Added option_selection for Disambiguation Assist Fix
     expected = [
+        "disambiguation_resolution",  # Disambiguation Resolution Fix
         "confidence_calibration",
         "secondary_intent_detection",  # Lost Question Fix
         "short_answer",

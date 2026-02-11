@@ -732,6 +732,7 @@ class ConfidenceCalibrationLayer(BaseRefinementLayer):
             refinement_reason=reason_str,
             layer_name=self.name,
             extracted_data=result.get("extracted_data", {}),
+            pre_calibration_confidence=calibration.original_confidence,
             metadata={
                 "calibration": calibration.to_dict(),
                 "original_confidence": calibration.original_confidence,
