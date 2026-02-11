@@ -319,6 +319,7 @@ class TestPhase3Integration:
 
         envelope = ContextEnvelope(
             state="handle_objection",
+            current_intent="objection_price",
             total_objections=4,
             repeated_objection_types=["objection_price", "objection_competitor"],
         )
@@ -767,6 +768,7 @@ class TestPolicyOverrideLoggingRegression:
             (
                 ContextEnvelope(
                     state="handle_objection",
+                    current_intent="objection_price",
                     repeated_objection_types=["price"],
                     total_objections=2
                 ),

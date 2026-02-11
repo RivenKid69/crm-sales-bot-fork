@@ -3489,6 +3489,18 @@ cta:
     - spin_situation
     - spin_problem
 
+  # Actions where CTA is semantically forbidden (answers/clarifications).
+  blocked_actions:
+    - answer_with_facts
+    - answer_and_continue
+    - answer_with_summary
+    - answer_with_pricing
+    - answer_with_pricing_direct
+    - answer_pricing_details
+    - answer_question
+    - ask_clarification
+    - respond_briefly
+
   # CTA по состояниям
   templates:
     greeting: []

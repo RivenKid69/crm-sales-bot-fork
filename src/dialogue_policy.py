@@ -276,7 +276,7 @@ class DialoguePolicy:
             self._apply_price_question_overlay, ctx, sm_result, trace)
         override = self._eval_cascade_overlay(override, "can_apply_repair",
             self._apply_repair_overlay, ctx, sm_result, trace)
-        override = self._eval_cascade_overlay(override, "has_repeated_objections",
+        override = self._eval_cascade_overlay(override, "should_apply_objection_overlay",
             self._apply_objection_overlay, ctx, sm_result, trace)
         override = self._eval_cascade_overlay(override, "in_breakthrough_window",
             self._apply_breakthrough_overlay, ctx, sm_result, trace)
@@ -481,7 +481,18 @@ class DialoguePolicy:
         signals = {
             "repeated_objection_types": ctx.repeated_objection_types,
             "total_objections": ctx.total_objections,
+            "current_intent": ctx.current_intent,
         }
+
+        # Defense-in-depth: objection overlay can only run on eligible objection turns.
+        if not policy_registry.evaluate("should_apply_objection_overlay", ctx, trace):
+            if trace:
+                trace.set_result(
+                    None,
+                    Resolution.NONE,
+                    matched_condition="objection_overlay_not_eligible",
+                )
+            return None
 
         # Эскалация при достижении лимита возражений (configurable via constants.yaml)
         if policy_registry.evaluate("total_objections_3_plus", ctx, trace):

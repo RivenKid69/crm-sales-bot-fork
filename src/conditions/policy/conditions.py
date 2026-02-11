@@ -20,6 +20,7 @@ from src.conditions.policy.context import (
     AGGRESSIVE_ACTIONS,
 )
 from src.conditions.policy.registry import policy_condition
+from src.yaml_config.constants import OBJECTION_INTENTS
 
 # Import from Single Source of Truth for frustration thresholds
 from src.frustration_thresholds import (
@@ -149,6 +150,20 @@ def has_repeated_objections(ctx: PolicyContext) -> bool:
     This indicates client is bringing up same objections multiple times.
     """
     return len(ctx.repeated_objection_types) > 0
+
+
+@policy_condition(
+    "is_current_intent_objection",
+    description="Check if current primary intent is objection",
+    category="objection"
+)
+def is_current_intent_objection(ctx: PolicyContext) -> bool:
+    """
+    Returns True only when current turn intent is objection intent.
+
+    Strict intent-aware gate: historical objections alone are not enough.
+    """
+    return bool(ctx.current_intent and ctx.current_intent in OBJECTION_INTENTS)
 
 
 @policy_condition(
@@ -571,9 +586,16 @@ def should_apply_objection_overlay(ctx: PolicyContext) -> bool:
     """
     Returns True if objection overlay should be applied.
 
-    Requires: overlay allowed AND has repeated objections.
+    Requires ALL:
+    - overlay allowed
+    - repeated objection signal exists
+    - current primary intent is objection
     """
-    return is_overlay_allowed(ctx) and has_repeated_objections(ctx)
+    return (
+        is_overlay_allowed(ctx)
+        and has_repeated_objections(ctx)
+        and is_current_intent_objection(ctx)
+    )
 
 
 @policy_condition(
@@ -737,6 +759,7 @@ __all__ = [
     "is_stalled",
     # Objection conditions
     "has_repeated_objections",
+    "is_current_intent_objection",
     "total_objections_3_plus",
     "total_objections_5_plus",
     "should_escalate_objection",

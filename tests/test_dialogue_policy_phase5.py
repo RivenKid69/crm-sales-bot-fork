@@ -265,6 +265,7 @@ class TestObjectionOverlay:
 
         envelope = create_mock_envelope(
             state="handle_objection",
+            current_intent="objection_price",
             repeated_objection_types=["price"],
             total_objections=2
         )
@@ -284,6 +285,7 @@ class TestObjectionOverlay:
 
         envelope = create_mock_envelope(
             state="handle_objection",
+            current_intent="objection_price",
             repeated_objection_types=["price"],
             total_objections=3
         )

@@ -977,6 +977,23 @@ class TestCTAConfiguration:
         assert "trial" in by_action
         assert len(by_action["trial"]) >= 1
 
+    def test_blocked_actions_present(self, constants):
+        """Test cta.blocked_actions exists and includes answer/clarification actions."""
+        blocked = constants["cta"]["blocked_actions"]
+        assert isinstance(blocked, list)
+        for action in [
+            "answer_with_facts",
+            "answer_and_continue",
+            "answer_with_summary",
+            "answer_with_pricing",
+            "answer_with_pricing_direct",
+            "answer_pricing_details",
+            "answer_question",
+            "ask_clarification",
+            "respond_briefly",
+        ]:
+            assert action in blocked
+
 class TestConstantsConsistency:
     """Tests for internal consistency of constants."""
 

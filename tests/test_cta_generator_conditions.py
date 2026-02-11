@@ -223,6 +223,24 @@ class TestShouldAddCtaWithConditions:
         assert should_add is False
         assert "frustration" in reason
 
+    @pytest.mark.parametrize(
+        "blocked_action",
+        ["answer_with_facts", "answer_and_continue", "ask_clarification", "respond_briefly"],
+    )
+    def test_should_not_add_cta_for_blocked_actions(self, generator, presentation_context, blocked_action):
+        """Condition-based path must honor blocked answer/clarification actions."""
+        context = dict(presentation_context)
+        context["action"] = blocked_action
+
+        should_add, reason = generator.should_add_cta_with_conditions(
+            state="presentation",
+            response="Wipon решает эту проблему.",
+            context=context,
+        )
+
+        assert should_add is False
+        assert reason == "action_blocked_for_cta"
+
 # =============================================================================
 # GET OPTIMAL CTA TYPE TESTS
 # =============================================================================
@@ -331,6 +349,20 @@ class TestAppendCtaWithConditions:
             response=response,
             state="presentation",
             context=frustrated_context
+        )
+
+        assert result == response
+
+    def test_append_cta_skip_blocked_action(self, generator, presentation_context):
+        """append_cta_with_conditions should skip CTA on blocked actions."""
+        response = "Wipon решает эту проблему."
+        context = dict(presentation_context)
+        context["action"] = "answer_with_facts"
+
+        result = generator.append_cta_with_conditions(
+            response=response,
+            state="presentation",
+            context=context,
         )
 
         assert result == response

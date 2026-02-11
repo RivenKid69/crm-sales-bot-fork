@@ -195,6 +195,7 @@ class TestDialoguePolicy:
 
         envelope = ContextEnvelope(
             state="handle_objection",
+            current_intent="objection_price",
             total_objections=3,
             repeated_objection_types=["objection_price"],
         )
@@ -213,6 +214,7 @@ class TestDialoguePolicy:
 
         envelope = ContextEnvelope(
             state="handle_objection",
+            current_intent="objection_price",
             total_objections=2,
             repeated_objection_types=["objection_price"],
         )
@@ -243,6 +245,29 @@ class TestDialoguePolicy:
         assert result.action is None  # Не меняем action, только сигнализируем
         assert result.decision == PolicyDecision.BREAKTHROUGH_CTA
         assert ReasonCode.BREAKTHROUGH_CTA.value in result.reason_codes
+
+    @pytest.mark.parametrize(
+        ("intent", "action"),
+        [
+            ("question_features", "answer_with_facts"),
+            ("clarification_request", "answer_and_continue"),
+            ("disambiguation_needed", "ask_clarification"),
+        ],
+    )
+    def test_non_objection_turn_does_not_override_answer_or_clarification(self, intent, action):
+        """Policy must preserve SM answer/clarification actions on non-objection turns."""
+        policy = DialoguePolicy()
+        envelope = ContextEnvelope(
+            state="handle_objection",
+            current_intent=intent,
+            total_objections=5,
+            repeated_objection_types=["objection_price"],
+        )
+        sm_result = {"next_state": "handle_objection", "action": action}
+
+        result = policy.maybe_override(sm_result, envelope)
+
+        assert result is None or result.action != "handle_repeated_objection"
 
     def test_conservative_overlay(self):
         """Проверить conservative overlay."""
@@ -545,6 +570,7 @@ class TestDialoguePolicyIntegration:
         # Turn 3: Возражение
         envelope3 = ContextEnvelope(
             state="handle_objection",
+            current_intent="objection_price",
             total_objections=1,
             repeated_objection_types=[],
         )
@@ -557,6 +583,7 @@ class TestDialoguePolicyIntegration:
         # Turn 4: Повторное возражение
         envelope4 = ContextEnvelope(
             state="handle_objection",
+            current_intent="objection_price",
             total_objections=2,
             repeated_objection_types=["objection_price"],
         )

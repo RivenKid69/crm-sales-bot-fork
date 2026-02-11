@@ -456,6 +456,94 @@ class TestBotTransitionSanitizer:
         assert result["state"] == current_state
         assert INVALID_NEXT_STATE_REASON in result.get("reason_codes", [])
 
+
+class TestPolicyObjectionOverlayRegression:
+    """Regression tests for policy objection-overlay override pattern."""
+
+    @staticmethod
+    def _make_decision(action: str, next_state: str, **kwargs):
+        from src.blackboard.models import ResolvedDecision
+
+        decision = ResolvedDecision(action=action, next_state=next_state, **kwargs)
+        decision.prev_state = next_state
+        decision.goal = "test goal"
+        decision.collected_data = {}
+        decision.missing_data = []
+        decision.optional_data = []
+        decision.is_final = False
+        decision.spin_phase = "problem"
+        decision.circular_flow = {}
+        decision.objection_flow = {}
+        return decision
+
+    @staticmethod
+    def _seed_repeated_objections(bot):
+        """Seed context_window so envelope has historical objection signals."""
+        for idx in range(3):
+            bot.context_window.add_turn_from_dict(
+                user_message=f"дорого {idx}",
+                bot_response="Понимаю возражение",
+                intent="objection_price",
+                confidence=0.9,
+                action="handle_price_objection",
+                state="handle_objection",
+                next_state="handle_objection",
+            )
+
+    def test_disambiguation_ask_clarification_not_overridden_by_policy(self, sales_bot, mock_llm):
+        """disambiguation_needed must preserve ask_clarification action (no objection override)."""
+        self._seed_repeated_objections(sales_bot)
+        sales_bot.state_machine._state = "spin_problem"
+
+        decision = self._make_decision(
+            action="ask_clarification",
+            next_state="spin_problem",
+            disambiguation_options=[
+                {"intent": "price_question", "label": "Цены"},
+                {"intent": "question_features", "label": "Функции"},
+            ],
+            disambiguation_question="Уточните, пожалуйста:",
+        )
+        sales_bot._orchestrator.process_turn = Mock(return_value=decision)
+        sales_bot.classifier.classify = Mock(return_value={
+            "intent": "disambiguation_needed",
+            "confidence": 0.72,
+            "extracted_data": {},
+            "all_scores": {"disambiguation_needed": 0.72},
+        })
+        mock_llm.generate = Mock(return_value="ok")
+
+        result = sales_bot.process("уточните")
+
+        assert result["action"] == "ask_clarification"
+        assert sales_bot.state_machine.in_disambiguation is True
+        assert result["response"]  # UI clarification text should be present
+
+    def test_question_features_answer_action_preserved_and_cta_blocked(self, sales_bot, mock_llm):
+        """question_features with historical objections keeps answer action and skips CTA."""
+        self._seed_repeated_objections(sales_bot)
+        sales_bot.state_machine._state = "presentation"
+        sales_bot.cta_generator.turn_count = 5  # Ensure CTA would be allowed without blocked-action gate
+
+        decision = self._make_decision(
+            action="answer_with_facts",
+            next_state="presentation",
+        )
+        sales_bot._orchestrator.process_turn = Mock(return_value=decision)
+        sales_bot.classifier.classify = Mock(return_value={
+            "intent": "question_features",
+            "confidence": 0.91,
+            "extracted_data": {},
+            "all_scores": {"question_features": 0.91},
+        })
+        mock_llm.generate = Mock(return_value="Wipon автоматизирует процессы без лишней сложности.")
+
+        result = sales_bot.process("какие функции есть?")
+
+        assert result["action"] == "answer_with_facts"
+        assert result["cta_added"] is False
+        assert result["cta_text"] is None
+
 # =============================================================================
 # State Machine Deprecation Tests
 # =============================================================================

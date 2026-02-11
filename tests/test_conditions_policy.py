@@ -32,6 +32,7 @@ from src.conditions.policy import (
     high_unclear_count,
     # Objection conditions
     has_repeated_objections,
+    is_current_intent_objection,
     total_objections_3_plus,
     total_objections_5_plus,
     should_escalate_objection,
@@ -932,15 +933,43 @@ class TestCombinedConditions:
         """Test should_apply_objection_overlay condition."""
         ctx = PolicyContext.create_test_context(
             state="handle_objection",
+            current_intent="objection_price",
             repeated_objection_types=["price"]
         )
         assert should_apply_objection_overlay(ctx) is True
 
         ctx_no = PolicyContext.create_test_context(
             state="handle_objection",
+            current_intent="question_features",
             repeated_objection_types=[]
         )
         assert should_apply_objection_overlay(ctx_no) is False
+
+    @pytest.mark.parametrize(
+        "intent",
+        ["question_features", "clarification_request", "disambiguation_needed"],
+    )
+    def test_should_not_apply_objection_overlay_on_non_objection_intent(self, intent):
+        """Overlay must not trigger on non-objection current intents."""
+        ctx = PolicyContext.create_test_context(
+            state="handle_objection",
+            current_intent=intent,
+            total_objections=5,
+            repeated_objection_types=["objection_price"],
+        )
+        assert is_current_intent_objection(ctx) is False
+        assert should_apply_objection_overlay(ctx) is False
+
+    def test_should_apply_objection_overlay_on_real_objection_intent(self):
+        """Overlay must trigger on real objection intent with repeated signal."""
+        ctx = PolicyContext.create_test_context(
+            state="handle_objection",
+            current_intent="objection_competitor",
+            total_objections=2,
+            repeated_objection_types=["objection_competitor"],
+        )
+        assert is_current_intent_objection(ctx) is True
+        assert should_apply_objection_overlay(ctx) is True
 
     def test_should_apply_breakthrough_overlay(self):
         """Test should_apply_breakthrough_overlay condition."""
@@ -1051,6 +1080,7 @@ class TestIntegration:
         """Test objection escalation scenario."""
         ctx = PolicyContext.create_test_context(
             state="handle_objection",
+            current_intent="objection_price",
             total_objections=3,
             repeated_objection_types=["price", "competitor"],
             frustration_level=3
@@ -1063,6 +1093,52 @@ class TestIntegration:
         assert has_competitor_objection_repeat(ctx) is True
         assert frustration_high(ctx) is True
         assert needs_empathy(ctx) is True
+
+    def test_persona_limit_resolution_competitor_user(self):
+        """competitor_user: escalation on 4, not on 3 (persona-aware threshold)."""
+        class MockEnvelope:
+            collected_data = {"persona": "competitor_user"}
+            state = "handle_objection"
+            total_turns = 3
+            spin_phase = "problem"
+            last_action = "handle_price"
+            last_intent = "objection_price"
+            current_intent = "objection_price"
+            is_stuck = False
+            has_oscillation = False
+            repeated_question = None
+            confidence_trend = "stable"
+            unclear_count = 0
+            momentum = 0.0
+            momentum_direction = "neutral"
+            engagement_level = "medium"
+            engagement_trend = "stable"
+            funnel_velocity = 0.0
+            is_progressing = False
+            is_regressing = False
+            has_extracted_data = False
+            last_user_message = ""
+            last_bot_message = ""
+            repeated_objection_types = ["objection_price"]
+            has_breakthrough = False
+            turns_since_breakthrough = None
+            most_effective_action = None
+            least_effective_action = None
+            frustration_level = 0
+            guard_intervention = None
+            pre_intervention_triggered = False
+            secondary_intents = []
+
+        envelope = MockEnvelope()
+        envelope.total_objections = 3
+        ctx_3 = PolicyContext.from_envelope(envelope, current_action="handle_price")
+        assert ctx_3.max_consecutive_objections == 4
+        assert total_objections_3_plus(ctx_3) is False
+
+        envelope.total_objections = 4
+        ctx_4 = PolicyContext.from_envelope(envelope, current_action="handle_price")
+        assert ctx_4.max_consecutive_objections == 4
+        assert total_objections_3_plus(ctx_4) is True
 
     def test_conservative_mode_scenario(self):
         """Test conservative mode scenario."""
