@@ -4,7 +4,7 @@ Tests for 4 Clusters of E2E Simulation Error Fixes.
 Covers:
 - Cluster 1: _clean() proportion-based English detection
 - Cluster 2: CTA phase-based coverage for all flows
-- Cluster 3: Price question intent-aware get_facts()
+- Cluster 3: Price question intent-aware get_product_overview()
 - Cluster 4: Repair mode enriched directives
 - Additional A1: Retriever question_features mapping
 - Additional A3: Tariff names preserved by proportion-based _clean()
@@ -273,7 +273,7 @@ class TestCTAPhaseMapping:
         assert "high_frustration" in reason
 
 # =============================================================================
-# CLUSTER 3: Price question intent-aware get_facts()
+# CLUSTER 3: Price question intent-aware get_product_overview()
 # =============================================================================
 
 class TestPriceQuestionPipeline:
@@ -286,37 +286,37 @@ class TestPriceQuestionPipeline:
         gen = ResponseGenerator(llm)
         return gen
 
-    def test_get_facts_with_company_size(self):
-        """get_facts with company_size should return specific tariff."""
+    def test_get_product_overview_with_company_size(self):
+        """get_product_overview with company_size should return specific tariff."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=3)
+        result = gen.get_product_overview(company_size=3)
         assert "₽" in result
         assert "Тариф" in result
 
-    def test_get_facts_price_intent_no_size(self):
-        """get_facts with price intent but no company_size should return price range."""
+    def test_get_product_overview_price_intent_no_size(self):
+        """get_product_overview with price intent but no company_size should return price range."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=None, intent="price_question")
+        result = gen.get_product_overview(company_size=None, intent="price_question")
         assert "₽" in result, f"Price not in result: {result}"
         assert "Тарифы" in result or "чел" in result, f"No tariff info: {result}"
 
-    def test_get_facts_pricing_details_intent(self):
-        """get_facts with pricing_details intent should return prices."""
+    def test_get_product_overview_pricing_details_intent(self):
+        """get_product_overview with pricing_details intent should return prices."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=None, intent="pricing_details")
+        result = gen.get_product_overview(company_size=None, intent="pricing_details")
         assert "₽" in result, f"Price not in result: {result}"
 
-    def test_get_facts_no_intent_returns_features(self):
-        """get_facts without intent should return features list."""
+    def test_get_product_overview_no_intent_returns_features(self):
+        """get_product_overview without intent should return features list."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=None, intent="")
+        result = gen.get_product_overview(company_size=None, intent="")
         # Should be a comma-separated features list, not pricing
         assert "Тарифы" not in result
 
-    def test_get_facts_company_size_takes_priority(self):
+    def test_get_product_overview_company_size_takes_priority(self):
         """company_size should take priority over intent."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=10, intent="price_question")
+        result = gen.get_product_overview(company_size=10, intent="price_question")
         # Should return specific tariff, not range
         assert "Тариф" in result
         assert "10 чел" in result
@@ -324,7 +324,7 @@ class TestPriceQuestionPipeline:
     def test_price_intent_returns_all_three_tiers(self):
         """Price intent should return all three pricing tiers."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=None, intent="price_question")
+        result = gen.get_product_overview(company_size=None, intent="price_question")
         # Should mention all tiers
         assert "5" in result  # up to 5 people
         assert "25" in result or "6" in result  # team tier
@@ -668,12 +668,12 @@ class TestUniversality:
         assert should_add, f"Late phase of new flow should get CTA, got: {reason}"
 
     def test_intent_aware_facts_extensible(self):
-        """get_facts() intent parameter is extensible (Cluster 3 universality)."""
+        """get_product_overview() intent parameter is extensible (Cluster 3 universality)."""
         from src.generator import ResponseGenerator
         llm = MagicMock()
         gen = ResponseGenerator(llm)
         # Non-price intent should still return features
-        result = gen.get_facts(company_size=None, intent="question_features")
+        result = gen.get_product_overview(company_size=None, intent="question_features")
         assert "Тарифы" not in result  # Should NOT return pricing for non-price intent
 
     def test_repair_trigger_extensible(self):

@@ -87,23 +87,28 @@ templates:
       Задай ОДИН вопрос. Ответ на русском (2 предложения):
 
   answer_with_facts:
-    description: "Ответить по фактам"
+    description: "Ответить по фактам из базы знаний"
     addresses_question: true
     parameters:
-      required: [system, facts, history, user_message]
+      required: [system, retrieved_facts, history, user_message]
       optional: [goal]
     template: |
       {system}
 
-      Клиент спрашивает о продукте. Вот точные данные:
-      {facts}
+      ВАЖНО: Отвечай СТРОГО на основе фактов ниже.
+      Если информации нет в фактах — скажи "Уточню у коллег и вернусь с ответом".
+      НЕ ПРИДУМЫВАЙ информацию, которой нет в фактах.
+
+      === ФАКТЫ О ПРОДУКТЕ ===
+      {retrieved_facts}
+      ========================
 
       Диалог:
       {history}
 
       Клиент: "{user_message}"
 
-      Ответь точно по фактам (2-3 предложения).
+      Ответь точно по фактам выше (2-3 предложения).
       Цель текущего этапа: {goal}
       После ответа мягко задай ОДИН вопрос, продвигающий к цели этапа.
 
@@ -389,12 +394,19 @@ templates:
     description: "Ответить и продолжить разговор"
     addresses_question: true
     parameters:
-      required: [system, history, user_message, spin_phase, collected_data, facts]
+      required: [system, history, user_message, spin_phase, collected_data, retrieved_facts]
       optional: [goal]
     template: |
       {system}
 
       СИТУАЦИЯ: Клиент задал вопрос. Нужно ответить и продолжить диалог.
+
+      ВАЖНО: Отвечай СТРОГО на основе фактов ниже.
+      НЕ ПРИДУМЫВАЙ информацию, которой нет в фактах.
+
+      === ФАКТЫ ДЛЯ ОТВЕТА ===
+      {retrieved_facts}
+      =========================
 
       Диалог:
       {history}
@@ -404,12 +416,10 @@ templates:
       Текущая фаза: {spin_phase}
       Уже знаем: {collected_data}
 
-      Факты для ответа (если есть): {facts}
-
       Цель текущего этапа: {goal}
 
       Твоя задача:
-      1. Кратко и по делу ответь на вопрос клиента
+      1. Кратко и по делу ответь на вопрос клиента, используя ТОЛЬКО факты выше
       2. Плавно верни разговор к цели этапа ({goal})
 
       Ответ на русском (2-3 предложения):
@@ -421,7 +431,7 @@ templates:
   presentation:
     description: "Презентация продукта"
     parameters:
-      required: [system, company_size, pain_point, facts, history, user_message]
+      required: [system, company_size, pain_point, product_overview, history, user_message]
     template: |
       {system}
 
@@ -429,7 +439,7 @@ templates:
       - Размер команды: {company_size} человек
       - Проблема: {pain_point}
 
-      Наш продукт: {facts}
+      Наш продукт: {product_overview}
 
       Диалог:
       {history}
@@ -502,7 +512,8 @@ templates:
     description: "Обработка возражения о цене"
     addresses_question: true
     parameters:
-      required: [system, pain_point, company_size, facts, history, user_message]
+      required: [system, pain_point, company_size, product_overview, history, user_message]
+      optional: [retrieved_facts]
     template: |
       {system}
 
@@ -511,7 +522,11 @@ templates:
       - Проблема: {pain_point}
       - Размер: {company_size} человек
 
-      Наш продукт: {facts}
+      === РЕЛЕВАНТНЫЕ ФАКТЫ (если есть) ===
+      {retrieved_facts}
+      ======================================
+
+      Обзор продукта: {product_overview}
 
       Диалог:
       {history}
@@ -524,6 +539,7 @@ templates:
          - Сравни с ценой проблемы ("сколько теряете на {pain_point}...")
          - Или раздели на день/человека
          - Упомяни скидку 20% за год
+      Если есть релевантные факты выше — используй их для аргументации.
 
       Пример: "Да, вопрос бюджета важен. При этом, если сейчас теряете хотя бы одного клиента в месяц — это уже дороже подписки. А при оплате за год ещё скидка 20%."
 
@@ -809,17 +825,22 @@ templates:
 
   close_answer_and_collect:
     description: "Ответить на вопрос и попросить контакт"
+    addresses_question: true
     parameters:
-      required: [system, history, user_message, collected_data, facts]
-      optional: [retrieved_facts, goal]
+      required: [system, history, user_message, collected_data, retrieved_facts]
+      optional: [goal]
     template: |
       {system}
 
       СИТУАЦИЯ: Клиент задал вопрос на этапе закрытия сделки.
       Нужно ответить И попросить контакт для продолжения.
 
-      Факты для ответа: {facts}
+      ВАЖНО: Отвечай СТРОГО на основе фактов ниже.
+      НЕ ПРИДУМЫВАЙ информацию, которой нет в фактах.
+
+      === ФАКТЫ ДЛЯ ОТВЕТА ===
       {retrieved_facts}
+      =========================
 
       Диалог:
       {history}
@@ -828,7 +849,7 @@ templates:
       Уже знаем: {collected_data}
 
       Твоя задача:
-      1. Кратко ответь на вопрос клиента (1-2 предложения)
+      1. Кратко ответь на вопрос клиента используя ТОЛЬКО факты выше (1-2 предложения)
       2. Плавно перейди к получению контакта
 
       Примеры:
@@ -1041,11 +1062,16 @@ templates:
     description: "Переформулировать ценность при повторных возражениях"
     addresses_question: true
     parameters:
-      required: [system, history, user_message, collected_data, facts, pain_point]
+      required: [system, history, user_message, collected_data, product_overview, pain_point]
+      optional: [retrieved_facts]
     template: |
       {system}
 
       СИТУАЦИЯ: Клиент повторно возражает. Нужно переформулировать ценность с нового угла.
+
+      === РЕЛЕВАНТНЫЕ ФАКТЫ (если есть) ===
+      {retrieved_facts}
+      ======================================
 
       Диалог:
       {history}
@@ -1053,13 +1079,14 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
       Боль клиента: {pain_point}
 
       Твоя задача:
       1. Покажи, что слышишь клиента
       2. Переформулируй ценность с НОВОГО угла (не повторяй предыдущие аргументы)
       3. Свяжи ценность с конкретной болью клиента
+      Если есть релевантные факты выше — используй их.
 
       Ответ на русском (2-3 предложения):
 
@@ -1067,12 +1094,17 @@ templates:
     description: "Обработать многократное возражение — предложить пробный период/демо/референс"
     addresses_question: true
     parameters:
-      required: [system, history, user_message, collected_data, facts, pain_point]
+      required: [system, history, user_message, collected_data, product_overview, pain_point]
+      optional: [retrieved_facts]
     template: |
       {system}
 
       СИТУАЦИЯ: Клиент возражает 3+ раза. Стандартные аргументы не работают.
       Нужно предложить конкретный следующий шаг.
+
+      === РЕЛЕВАНТНЫЕ ФАКТЫ (если есть) ===
+      {retrieved_facts}
+      ======================================
 
       Диалог:
       {history}
@@ -1080,13 +1112,14 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
       Боль клиента: {pain_point}
 
       Твоя задача:
       1. Признать позицию клиента без спора
       2. Предложить один конкретный шаг: пробный период, демо, или кейс похожего клиента
       3. Дать клиенту выбор без давления
+      Если есть релевантные факты выше — используй их.
 
       Ответ на русском (2-3 предложения):
 
@@ -1094,11 +1127,16 @@ templates:
     description: "Эмпатия при эмоциональном возражении + перенаправление"
     addresses_question: true
     parameters:
-      required: [system, history, user_message, collected_data, facts, pain_point]
+      required: [system, history, user_message, collected_data, product_overview, pain_point]
+      optional: [retrieved_facts]
     template: |
       {system}
 
       СИТУАЦИЯ: Клиент эмоционально фрустрирован. Нужно проявить эмпатию и мягко вернуть к ранее проявленному интересу.
+
+      === РЕЛЕВАНТНЫЕ ФАКТЫ (если есть) ===
+      {retrieved_facts}
+      ======================================
 
       Диалог:
       {history}
@@ -1106,13 +1144,14 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
       Боль клиента: {pain_point}
 
       Твоя задача:
       1. Проявить искреннюю эмпатию (НЕ шаблонные фразы)
       2. Мягко напомнить о ранее высказанном интересе
       3. Предложить минимальный следующий шаг
+      Если есть релевантные факты выше — используй их.
 
       Ответ на русском (2-3 предложения):
 
@@ -1228,7 +1267,7 @@ templates:
     description: "Сравнить продукт с конкурентом"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, facts]
+      required: [system, retrieved_facts, history, user_message, product_overview]
     template: |
       {system}
 
@@ -1242,7 +1281,7 @@ templates:
 
       Клиент: "{user_message}"
 
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
 
       Твоя задача:
       1. Корректно и уважительно отметь разницу
@@ -1259,13 +1298,13 @@ templates:
     description: "Ответить на вопрос с ROI-фреймингом"
     addresses_question: true
     parameters:
-      required: [system, facts, retrieved_facts, history, user_message, collected_data]
+      required: [system, product_overview, retrieved_facts, history, user_message, collected_data]
     template: |
       {system}
 
       СИТУАЦИЯ: Клиент спрашивает про ROI, окупаемость или экономический эффект.
 
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
       База знаний: {retrieved_facts}
 
       Диалог:
@@ -1290,7 +1329,7 @@ templates:
     description: "Ответить на технический вопрос"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+      required: [system, retrieved_facts, history, user_message, collected_data, product_overview]
     template: |
       {system}
 
@@ -1305,7 +1344,7 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
 
       Твоя задача:
       1. Дать точный технический ответ на основе базы знаний
@@ -1317,7 +1356,7 @@ templates:
     description: "Ответить на вопрос о безопасности"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+      required: [system, retrieved_facts, history, user_message, collected_data, product_overview]
     template: |
       {system}
 
@@ -1332,7 +1371,7 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
 
       Твоя задача:
       1. Ответить о мерах безопасности и compliance на основе базы знаний
@@ -1344,7 +1383,7 @@ templates:
     description: "Рассказать о вариантах поддержки"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+      required: [system, retrieved_facts, history, user_message, collected_data, product_overview]
     template: |
       {system}
 
@@ -1359,7 +1398,7 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
 
       Твоя задача:
       1. Рассказать о доступных вариантах поддержки из базы знаний
@@ -1371,7 +1410,7 @@ templates:
     description: "Рассказать об обучении и онбординге"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+      required: [system, retrieved_facts, history, user_message, collected_data, product_overview]
     template: |
       {system}
 
@@ -1386,7 +1425,7 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
 
       Твоя задача:
       1. Описать процесс обучения и онбординга из базы знаний
@@ -1398,7 +1437,7 @@ templates:
     description: "Рассказать о процессе внедрения"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, collected_data, facts]
+      required: [system, retrieved_facts, history, user_message, collected_data, product_overview]
     template: |
       {system}
 
@@ -1413,7 +1452,7 @@ templates:
       Клиент: "{user_message}"
 
       Уже знаем: {collected_data}
-      Факты о продукте: {facts}
+      Обзор продукта: {product_overview}
 
       Твоя задача:
       1. Описать этапы внедрения из базы знаний

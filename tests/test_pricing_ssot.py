@@ -3,7 +3,7 @@
 
 Проверяет end-to-end поток:
 1. Classifier → price_question
-2. Generator → get_facts()
+2. Generator → get_product_overview()
 3. LLM response → только тенге ₸, нет рублей ₽
 """
 
