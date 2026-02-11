@@ -170,10 +170,19 @@ class UnifiedClassifier:
         # regardless of classifier mode.  These are high-confidence regex hits that
         # should never be overridden by the LLM's phase-biased reasoning.
         from src.classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
+        from src.classifier.extractors.extraction_validator import validate_extracted_data
         message_lower = message.lower().strip()
         for pattern, intent, confidence in COMPILED_PRIORITY_PATTERNS:
             if pattern.search(message_lower):
-                extracted = self.hybrid.data_extractor.extract(message, context)
+                extracted_raw = self.hybrid.data_extractor.extract(message, context)
+                validation = validate_extracted_data(extracted_raw, context=context)
+                extracted = validation.validated_data
+                if validation.removed_fields:
+                    logger.debug(
+                        "Priority-pattern extracted_data sanitized",
+                        intent=intent,
+                        removed_fields=validation.removed_fields,
+                    )
                 return {
                     "intent": intent,
                     "confidence": confidence,

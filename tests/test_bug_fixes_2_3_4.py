@@ -232,6 +232,37 @@ class TestGetPriceTemplateKey:
         result = generator._get_price_template_key("price_question", "some_random_action")
         assert result == "answer_with_pricing"  # Falls through to intent-based
 
+
+class TestTemplateRoutingPriority:
+    """Tests for template routing priority between action and request_brevity."""
+
+    @pytest.fixture
+    def generator(self):
+        from src.generator import ResponseGenerator
+        gen = ResponseGenerator.__new__(ResponseGenerator)
+        gen.PRICE_RELATED_INTENTS = {"price_question", "pricing_details", "cost_inquiry"}
+        gen.OBJECTION_RELATED_INTENTS = set()
+        gen._flow = None
+        return gen
+
+    def test_request_brevity_does_not_override_pricing_action(self, generator):
+        """request_brevity must not overwrite explicit pricing action template."""
+        template = generator._select_template_key(
+            intent="request_brevity",
+            action="answer_with_pricing_direct",
+            context={},
+        )
+        assert template == "answer_with_pricing_direct"
+
+    def test_request_brevity_still_maps_to_respond_briefly_for_generic_action(self, generator):
+        """request_brevity keeps style behavior for non-factual generic actions."""
+        template = generator._select_template_key(
+            intent="request_brevity",
+            action="continue_current_goal",
+            context={},
+        )
+        assert template == "respond_briefly"
+
 # =============================================================================
 # Phase 2 — do_not_ask fallback (2c)
 # =============================================================================

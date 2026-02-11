@@ -801,6 +801,80 @@ class SalesBot:
         resolution_trace["bot_transition_sanitization"] = markers
         sm_result["resolution_trace"] = resolution_trace
 
+    def _build_decision_trace_dict(
+        self,
+        trace_builder: Optional[DecisionTraceBuilder],
+        fallback_used: bool,
+        fallback_tier: Optional[str],
+        intervention: Optional[str],
+        fallback_action: Optional[str],
+        fallback_message: Optional[str],
+    ) -> Optional[Dict[str, Any]]:
+        """Build and persist decision trace dict when tracing is enabled."""
+        if not trace_builder:
+            return None
+
+        if fallback_used:
+            trace_builder.record_fallback(
+                tier=fallback_tier,
+                reason=intervention,
+                action=fallback_action,
+                message=fallback_message,
+            )
+
+        decision_trace = trace_builder.build()
+        self._decision_traces.append(decision_trace)
+        return decision_trace.to_dict()
+
+    @staticmethod
+    def _build_process_result(
+        *,
+        response: str,
+        intent: str,
+        action: str,
+        state: str,
+        is_final: bool,
+        confidence: float,
+        spin_phase: Optional[str] = None,
+        visited_states: Optional[List[str]] = None,
+        initial_state: str = "",
+        fallback_used: bool = False,
+        fallback_tier: Optional[str] = None,
+        tone: Optional[str] = None,
+        frustration_level: Optional[int] = None,
+        lead_score: Optional[float] = None,
+        objection_detected: bool = False,
+        reason_codes: Optional[List[str]] = None,
+        resolution_trace: Optional[Dict[str, Any]] = None,
+        options: Any = None,
+        cta_result: Optional[CTAResult] = None,
+        decision_trace: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Unified output payload for process() returns."""
+        return {
+            "response": response,
+            "intent": intent,
+            "action": action,
+            "state": state,
+            "is_final": is_final,
+            "confidence": confidence,
+            "spin_phase": spin_phase,
+            "visited_states": visited_states or [],
+            "initial_state": initial_state,
+            "fallback_used": fallback_used,
+            "fallback_tier": fallback_tier,
+            "tone": tone,
+            "frustration_level": frustration_level,
+            "lead_score": lead_score,
+            "objection_detected": objection_detected,
+            "reason_codes": reason_codes or [],
+            "resolution_trace": resolution_trace or {},
+            "options": options,
+            "cta_added": cta_result.cta_added if cta_result else False,
+            "cta_text": cta_result.cta if cta_result else None,
+            "decision_trace": decision_trace,
+        }
+
     def process(self, user_message: str) -> Dict:
         """
         Обработать сообщение клиента.
@@ -870,6 +944,7 @@ class SalesBot:
         classification = self.classifier.classify(user_message, current_context)
         intent = classification["intent"]
         extracted = classification["extracted_data"]
+        classification_confidence = float(classification.get("confidence", 0.0) or 0.0)
         classification_elapsed = (time.time() - classification_start) * 1000
 
         # Decision Tracing: Record classification
@@ -998,20 +1073,37 @@ class SalesBot:
                         })
 
                         self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
-
-                        return {
-                            "response": fb_result["response"],
-                            "intent": "fallback_close",
-                            "action": "soft_close",
-                            "state": "soft_close",
-                            "is_final": True,
-                            # FIX: Include visited_states for phase coverage tracking
-                            "visited_states": [initial_state, "soft_close"],
-                            "initial_state": initial_state,
-                            "fallback_used": True,
-                            "fallback_tier": intervention,
-                            "options": fb_result.get("options"),
-                        }
+                        if trace_builder:
+                            trace_builder.record_response(
+                                template_key="soft_close",
+                                requested_action="soft_close",
+                                response_text=fb_result["response"],
+                                elapsed_ms=0.0,
+                            )
+                        decision_trace_dict = self._build_decision_trace_dict(
+                            trace_builder=trace_builder,
+                            fallback_used=True,
+                            fallback_tier=intervention,
+                            intervention=intervention,
+                            fallback_action="close",
+                            fallback_message=fb_result.get("response"),
+                        )
+                        return self._build_process_result(
+                            response=fb_result["response"],
+                            intent="fallback_close",
+                            action="soft_close",
+                            state="soft_close",
+                            is_final=True,
+                            confidence=classification_confidence,
+                            visited_states=[initial_state, "soft_close"],
+                            initial_state=initial_state,
+                            fallback_used=True,
+                            fallback_tier=intervention,
+                            tone=tone_info.get("tone"),
+                            frustration_level=frustration_level,
+                            options=fb_result.get("options"),
+                            decision_trace=decision_trace_dict,
+                        )
 
                     # FIX: Handle "skip" action - apply state transition to break loops
                     # FIX (Distributed State Mutation): Use transition_to() for atomic update
@@ -1348,6 +1440,7 @@ class SalesBot:
             skip_reason="not_applicable"
         )
         response_elapsed: float = 0.0
+        generator_used: bool = False
 
         # If objection detected and needs soft close - override state machine result
         if objection_info and objection_info.get("should_soft_close"):
@@ -1397,6 +1490,7 @@ class SalesBot:
                 action = "continue_conversation"  # Fix action for context_window recording
                 response_start = time.time()
                 response = self.generator.generate(action, context)
+                generator_used = True
                 response_elapsed = (time.time() - response_start) * 1000
                 cta_result = CTAResult(
                     original_response=response,
@@ -1442,6 +1536,7 @@ class SalesBot:
                 # Transition happened — progress, don't show stale options
                 action = "continue_conversation"
                 response = self.generator.generate(action, context)
+                generator_used = True
             else:
                 # No transition — truly stuck, show options menu
                 fb_result = self.fallback.generate_options_menu(
@@ -1469,6 +1564,7 @@ class SalesBot:
             if not self.generator._get_template(rephrase_template):
                 rephrase_template = "continue_current_goal"
             response = self.generator.generate(rephrase_template, context)
+            generator_used = True
             response_elapsed = (time.time() - response_start) * 1000
             cta_result = CTAResult(
                 original_response=response, cta=None, final_response=response,
@@ -1505,6 +1601,7 @@ class SalesBot:
             # TIER_3: state already transitioned by orchestrator _apply_side_effects
             response_start = time.time()
             response = self.generator.generate("continue_conversation", context)
+            generator_used = True
             response_elapsed = (time.time() - response_start) * 1000
             fallback_used = True
             fallback_tier = "fallback_tier_3"
@@ -1546,14 +1643,36 @@ class SalesBot:
             )
             self.history.append({"user": user_message, "bot": response})
             self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
-            return {
-                "response": response, "intent": "fallback_close",
-                "action": "soft_close", "state": "soft_close", "is_final": True,
-                "visited_states": [initial_state, "soft_close"],
-                "initial_state": initial_state,
-                "fallback_used": True, "fallback_tier": "soft_close",
-                "options": None,
-            }
+            if trace_builder:
+                trace_builder.record_response(
+                    template_key="soft_close",
+                    requested_action="soft_close",
+                    response_text=response,
+                    elapsed_ms=response_elapsed,
+                )
+            decision_trace_dict = self._build_decision_trace_dict(
+                trace_builder=trace_builder,
+                fallback_used=True,
+                fallback_tier="soft_close",
+                intervention=intervention,
+                fallback_action="guard_soft_close",
+                fallback_message=response,
+            )
+            return self._build_process_result(
+                response=response,
+                intent="fallback_close",
+                action="soft_close",
+                state="soft_close",
+                is_final=True,
+                confidence=classification_confidence,
+                visited_states=[initial_state, "soft_close"],
+                initial_state=initial_state,
+                fallback_used=True,
+                fallback_tier="soft_close",
+                tone=tone_info.get("tone"),
+                frustration_level=frustration_level,
+                decision_trace=decision_trace_dict,
+            )
         else:
             # Defense-in-depth: verify template exists before generation
             if not self.generator._get_template(action):
@@ -1577,6 +1696,7 @@ class SalesBot:
             # 3. Generate response (normal path)
             response_start = time.time()
             response = self.generator.generate(action, context)
+            generator_used = True
             response_elapsed = (time.time() - response_start) * 1000
 
             # Phase 3: Apply CTA BEFORE recording response (critical fix!)
@@ -1603,8 +1723,15 @@ class SalesBot:
 
         # Decision Tracing: Record response generation WITH CTA info
         if trace_builder:
+            selected_template_key = action
+            requested_action = action
+            if generator_used and hasattr(self.generator, "get_last_generation_meta"):
+                generation_meta = self.generator.get_last_generation_meta() or {}
+                selected_template_key = generation_meta.get("selected_template_key") or action
+                requested_action = generation_meta.get("requested_action") or action
             trace_builder.record_response(
-                template_key=action,
+                template_key=selected_template_key,
+                requested_action=requested_action,
                 response_text=response,
                 elapsed_ms=response_elapsed,
                 cta_added=cta_result.cta_added,
@@ -1622,7 +1749,7 @@ class SalesBot:
             user_message=user_message,
             bot_response=response,
             intent=intent,
-            confidence=classification.get("confidence", 0.0),
+            confidence=classification_confidence,
             action=action,
             state=current_state,
             next_state=next_state,
@@ -1707,52 +1834,39 @@ class SalesBot:
             self.guard.record_progress()
 
         # Decision Tracing: Build and store final trace
-        decision_trace_dict = None
-        if trace_builder:
-            # Record fallback if used
-            if fallback_used:
-                trace_builder.record_fallback(
-                    tier=fallback_tier,
-                    reason=intervention,
-                    action=fallback_action,
-                    message=fallback_message,
-                )
+        decision_trace_dict = self._build_decision_trace_dict(
+            trace_builder=trace_builder,
+            fallback_used=fallback_used,
+            fallback_tier=fallback_tier,
+            intervention=intervention,
+            fallback_action=fallback_action,
+            fallback_message=fallback_message,
+        )
 
-            # Build final trace
-            decision_trace = trace_builder.build()
-            self._decision_traces.append(decision_trace)
-            decision_trace_dict = decision_trace.to_dict()
-
-        return {
-            "response": response,
-            "intent": intent,
-            "action": action,
-            "state": next_state,  # Используем локальную переменную
-            "is_final": is_final,
-            "spin_phase": sm_result.get("spin_phase"),
-            # FIX: All visited states during this turn for accurate phase coverage
-            # Critical for fallback skip scenarios where bot transitions through
-            # intermediate states (e.g., greeting -> spin_situation -> spin_problem)
-            "visited_states": visited_states,
-            "initial_state": initial_state,
-            # Additional info
-            "fallback_used": fallback_used,
-            "fallback_tier": fallback_tier,
-            "tone": tone_info.get("tone"),
-            "frustration_level": frustration_level,
-            "lead_score": self.lead_scorer.current_score if flags.lead_scoring else None,
-            "objection_detected": objection_info is not None,
-            "reason_codes": sm_result.get("reason_codes", []),
-            "resolution_trace": sm_result.get("resolution_trace", {}),
-            "options": guard_options if action == "guard_offer_options" else (
+        return self._build_process_result(
+            response=response,
+            intent=intent,
+            action=action,
+            state=next_state,
+            is_final=is_final,
+            confidence=classification_confidence,
+            spin_phase=sm_result.get("spin_phase"),
+            visited_states=visited_states,
+            initial_state=initial_state,
+            fallback_used=fallback_used,
+            fallback_tier=fallback_tier,
+            tone=tone_info.get("tone"),
+            frustration_level=frustration_level,
+            lead_score=self.lead_scorer.current_score if flags.lead_scoring else None,
+            objection_detected=objection_info is not None,
+            reason_codes=sm_result.get("reason_codes", []),
+            resolution_trace=sm_result.get("resolution_trace", {}),
+            options=guard_options if action == "guard_offer_options" else (
                 fallback_response.get("options") if (not flags.conversation_guard_in_pipeline and fallback_response) else None
             ),
-            # CTA tracking
-            "cta_added": cta_result.cta_added if cta_result else False,
-            "cta_text": cta_result.cta if cta_result else None,
-            # Decision Tracing
-            "decision_trace": decision_trace_dict,
-        }
+            cta_result=cta_result,
+            decision_trace=decision_trace_dict,
+        )
 
     def _load_persona_limits(self) -> Dict[str, Dict[str, int]]:
         """

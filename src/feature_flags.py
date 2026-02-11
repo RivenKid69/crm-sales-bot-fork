@@ -134,6 +134,11 @@ class FeatureFlags:
         "response_diversity": True,               # Post-processing замена монотонных вступлений
         "response_diversity_logging": True,       # Логирование замен для мониторинга
 
+        # === Response Boundary Validator: Final post-validation guardrail ===
+        "response_boundary_validator": True,      # Final boundary validation before sending response
+        "response_boundary_retry": True,          # Single targeted retry on detected violations
+        "response_boundary_fallback": True,       # Deterministic fallback if retry still violates boundary
+
         # === Question Deduplication: Prevent Re-asking Already Answered Questions ===
         "question_deduplication": True,           # Фильтрация вопросов по collected_data
         "question_deduplication_logging": True,   # Логирование фильтраций для мониторинга
@@ -252,6 +257,10 @@ class FeatureFlags:
         # Response Diversity groups
         "response_diversity_all": [
             "response_diversity", "response_diversity_logging"
+        ],
+        # Response Boundary Validator groups
+        "response_boundary_all": [
+            "response_boundary_validator", "response_boundary_retry", "response_boundary_fallback"
         ],
         # Lost Question Fix groups
         "lost_question_fix": [
@@ -477,6 +486,21 @@ class FeatureFlags:
     def response_diversity_logging(self) -> bool:
         """Включено ли логирование замен в response_diversity"""
         return self.is_enabled("response_diversity_logging")
+
+    @property
+    def response_boundary_validator(self) -> bool:
+        """Включён ли финальный Response Boundary Validator"""
+        return self.is_enabled("response_boundary_validator")
+
+    @property
+    def response_boundary_retry(self) -> bool:
+        """Включён ли единичный retry в Response Boundary Validator"""
+        return self.is_enabled("response_boundary_retry")
+
+    @property
+    def response_boundary_fallback(self) -> bool:
+        """Включён ли deterministic fallback в Response Boundary Validator"""
+        return self.is_enabled("response_boundary_fallback")
 
     # =========================================================================
     # Context Policy flags (PLAN_CONTEXT_POLICY.md)
