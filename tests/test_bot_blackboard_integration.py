@@ -544,6 +544,75 @@ class TestPolicyObjectionOverlayRegression:
         assert result["cta_added"] is False
         assert result["cta_text"] is None
 
+
+class TestBotTraceAndConfidenceContracts:
+    """Integration checks for confidence mirror and response trace template metadata."""
+
+    @staticmethod
+    def _make_decision(action: str, next_state: str):
+        from src.blackboard.models import ResolvedDecision
+
+        decision = ResolvedDecision(action=action, next_state=next_state)
+        decision.prev_state = "greeting"
+        decision.goal = "test goal"
+        decision.collected_data = {}
+        decision.missing_data = []
+        decision.optional_data = []
+        decision.is_final = False
+        decision.spin_phase = "situation"
+        decision.circular_flow = {}
+        decision.objection_flow = {}
+        return decision
+
+    def test_process_returns_confidence_mirror_and_trace_uses_selected_template(self, sales_bot):
+        from src.feature_flags import flags
+
+        flags.set_override("conversation_guard_in_pipeline", True)
+        sales_bot._orchestrator.process_turn = Mock(
+            return_value=self._make_decision("continue_current_goal", "spin_situation")
+        )
+        sales_bot.classifier.classify = Mock(return_value={
+            "intent": "request_brevity",
+            "confidence": 0.88,
+            "extracted_data": {},
+            "all_scores": {"request_brevity": 0.88},
+        })
+        sales_bot.generator.generate = Mock(return_value="Короткий ответ.")
+        sales_bot.generator.get_last_generation_meta = Mock(return_value={
+            "requested_action": "continue_current_goal",
+            "selected_template_key": "spin_situation",
+            "validation_events": [],
+        })
+
+        result = sales_bot.process("короче")
+
+        assert result["confidence"] == pytest.approx(0.88)
+        assert result["decision_trace"]["classification"]["confidence"] == pytest.approx(0.88)
+        assert result["decision_trace"]["response"]["template_key"] == "spin_situation"
+        assert result["decision_trace"]["response"]["requested_action"] == "continue_current_goal"
+
+    def test_early_fallback_return_keeps_confidence_mirror(self, sales_bot):
+        from src.feature_flags import flags
+
+        flags.set_override("conversation_guard_in_pipeline", False)
+        sales_bot.classifier.classify = Mock(return_value={
+            "intent": "unclear",
+            "confidence": 0.61,
+            "extracted_data": {},
+            "all_scores": {"unclear": 0.61},
+        })
+        sales_bot._check_guard = Mock(return_value=Mock(can_continue=False, intervention="fallback_tier_4"))
+        sales_bot._apply_fallback = Mock(return_value={
+            "response": "Остановимся здесь.",
+            "action": "close",
+            "options": None,
+        })
+
+        result = sales_bot.process("...")
+
+        assert result["confidence"] == pytest.approx(0.61)
+        assert result["decision_trace"]["classification"]["confidence"] == pytest.approx(0.61)
+
 # =============================================================================
 # State Machine Deprecation Tests
 # =============================================================================

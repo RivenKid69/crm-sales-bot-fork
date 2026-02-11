@@ -578,3 +578,22 @@ class TestEdgeCases:
         result = validator.validate_field("unknown_field", "some value")
         assert result.is_valid
         assert result.normalized_value == "some value"
+
+    def test_timeline_sentinel_removed(self, validator):
+        """timeline='undefined' must be rejected as sentinel."""
+        extracted = {"timeline": "undefined"}
+        result = validator.validate_extracted_data(extracted)
+        assert "timeline" in result.removed_fields
+        assert "timeline" not in result.validated_data
+
+    def test_decision_timeline_sentinel_removed(self, validator):
+        """decision_timeline='unknown' must be rejected as sentinel."""
+        extracted = {"decision_timeline": "unknown"}
+        result = validator.validate_extracted_data(extracted)
+        assert "decision_timeline" in result.removed_fields
+        assert "decision_timeline" not in result.validated_data
+
+    def test_unknown_field_sentinel_is_blocked(self, validator):
+        """Unknown fields keep passthrough, but sentinel garbage is blocked."""
+        result = validator.validate_field("custom_unknown_field", "n/a")
+        assert result.is_valid is False

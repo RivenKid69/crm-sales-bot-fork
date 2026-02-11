@@ -390,6 +390,30 @@ class ReportGenerator:
             lines.append(f"  Top intents: {dict(sorted(intents.items(), key=lambda x: -x[1])[:5])}")
             lines.append("")
 
+        # Dialogue confidence sanity-check (runner-level turn_data coverage).
+        dialogue_confidences = []
+        for r in results:
+            for turn in getattr(r, "dialogue", []) or []:
+                conf = turn.get("confidence")
+                if isinstance(conf, (int, float)):
+                    dialogue_confidences.append(float(conf))
+
+        if dialogue_confidences:
+            non_zero = len([c for c in dialogue_confidences if c > 0.0])
+            coverage = non_zero / len(dialogue_confidences) * 100
+            if non_zero == 0:
+                lines.append("SANITY CHECK:")
+                lines.append("  WARNING: dialogue confidence coverage is 0% (all turns are 0.0)")
+                lines.append("")
+            else:
+                lines.append("SANITY CHECK:")
+                lines.append(f"  Dialogue confidence non-zero coverage: {non_zero}/{len(dialogue_confidences)} ({coverage:.0f}%)")
+                lines.append("")
+        else:
+            lines.append("SANITY CHECK:")
+            lines.append("  WARNING: dialogue confidence values are missing")
+            lines.append("")
+
         # State machine stats
         transitions = {}
         states_visited = {}

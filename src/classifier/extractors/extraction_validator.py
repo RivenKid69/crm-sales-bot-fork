@@ -207,6 +207,25 @@ class ExtractionValidator:
         "losing_clients", "no_control", "manual_work", "manager_issues", "chaos",
     }
 
+    # Placeholder/sentinel values that must never leak into extracted_data.
+    SENTINEL_STRING_VALUES: Set[str] = {
+        "undefined",
+        "unknown",
+        "null",
+        "none",
+        "n/a",
+        "na",
+        "-",
+    }
+
+    # Canonical timeline buckets from DataExtractor.
+    ALLOWED_TIMELINES: Set[str] = {
+        "immediate",
+        "this_week",
+        "this_month",
+        "next_quarter",
+    }
+
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize validator.
@@ -332,6 +351,18 @@ class ExtractionValidator:
         """
         context = context or {}
 
+        # Global sentinel cleanup for all string fields (known and unknown).
+        if isinstance(value, str):
+            stripped_value = value.strip()
+            if self._is_sentinel_string(stripped_value):
+                return FieldValidationResult(
+                    field_name=field_name,
+                    is_valid=False,
+                    original_value=value,
+                    error="Sentinel placeholder value is not allowed",
+                    severity=ValidationSeverity.WARNING,
+                )
+
         # Route to specific validator
         validator_method = getattr(self, f"_validate_{field_name}", None)
 
@@ -346,6 +377,12 @@ class ExtractionValidator:
                 original_value=value,
                 normalized_value=value,
             )
+
+    @classmethod
+    def _is_sentinel_string(cls, value: str) -> bool:
+        """Return True if value is a known placeholder/sentinel token."""
+        normalized = value.strip().lower()
+        return normalized in cls.SENTINEL_STRING_VALUES
 
     # =========================================================================
     # FIELD-SPECIFIC VALIDATORS
@@ -895,6 +932,55 @@ class ExtractionValidator:
             is_valid=True,
             original_value=value,
             normalized_value=value,
+        )
+
+    def _validate_timeline(
+        self,
+        value: Any,
+        context: Dict[str, Any]
+    ) -> FieldValidationResult:
+        """Validate timeline field."""
+        field_name = "timeline"
+
+        if not isinstance(value, str):
+            return FieldValidationResult(
+                field_name=field_name,
+                is_valid=False,
+                original_value=value,
+                error=f"Must be a string, got {type(value).__name__}",
+            )
+
+        normalized = value.strip().lower()
+        if normalized not in self.ALLOWED_TIMELINES:
+            return FieldValidationResult(
+                field_name=field_name,
+                is_valid=False,
+                original_value=value,
+                error=f"Must be one of: {sorted(self.ALLOWED_TIMELINES)}",
+            )
+
+        return FieldValidationResult(
+            field_name=field_name,
+            is_valid=True,
+            original_value=value,
+            normalized_value=normalized,
+        )
+
+    def _validate_decision_timeline(
+        self,
+        value: Any,
+        context: Dict[str, Any]
+    ) -> FieldValidationResult:
+        """Validate decision_timeline field using same contract as timeline."""
+        timeline_result = self._validate_timeline(value, context)
+        return FieldValidationResult(
+            field_name="decision_timeline",
+            is_valid=timeline_result.is_valid,
+            original_value=value,
+            normalized_value=timeline_result.normalized_value,
+            error=timeline_result.error,
+            severity=timeline_result.severity,
+            suggested_field=timeline_result.suggested_field,
         )
 
     def _validate_value_acknowledged(

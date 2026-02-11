@@ -92,6 +92,28 @@ class SimulationRunner:
         self.flow_name = flow_name
         self.kb_question_pool = kb_question_pool
 
+    @staticmethod
+    def _resolve_turn_confidence(bot_result: Dict[str, Any]) -> float:
+        """
+        Resolve turn confidence with backward-compatible priority:
+        1. decision_trace.classification.confidence
+        2. top-level bot_result.confidence
+        3. 0.0
+        """
+        decision_trace = bot_result.get("decision_trace")
+        if isinstance(decision_trace, dict):
+            classification = decision_trace.get("classification")
+            if isinstance(classification, dict):
+                conf = classification.get("confidence")
+                if isinstance(conf, (int, float)):
+                    return float(conf)
+
+        conf = bot_result.get("confidence")
+        if isinstance(conf, (int, float)):
+            return float(conf)
+
+        return 0.0
+
     def run_batch(
         self,
         count: int = 50,
@@ -266,6 +288,7 @@ class SimulationRunner:
                     bot_result = bot.process(client_message)
 
                     # Записываем ход
+                    turn_confidence = self._resolve_turn_confidence(bot_result)
                     turn_data = {
                         "turn": turn + 1,
                         "client": client_message,
@@ -273,7 +296,7 @@ class SimulationRunner:
                         "state": bot_result.get("state", ""),
                         "intent": bot_result.get("intent", ""),
                         "action": bot_result.get("action", ""),
-                        "confidence": bot_result.get("confidence", 0),
+                        "confidence": turn_confidence,
                         # FIX: Include all visited states for accurate phase coverage
                         # This is critical for fallback skip scenarios where bot transitions
                         # through intermediate states in a single turn

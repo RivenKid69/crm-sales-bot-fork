@@ -510,6 +510,7 @@ class PolicyOverrideTrace:
 class ResponseTrace:
     """Трейс генерации ответа."""
     template_key: Optional[str] = None
+    requested_action: Optional[str] = None
     personalization_applied: Dict[str, Any] = field(default_factory=dict)
     cta_added: bool = False
     cta_type: Optional[str] = None
@@ -519,6 +520,7 @@ class ResponseTrace:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "template_key": self.template_key,
+            "requested_action": self.requested_action,
             "personalization_applied": self.personalization_applied,
             "cta_added": self.cta_added,
             "cta_type": self.cta_type,
@@ -912,7 +914,9 @@ class DecisionTrace:
         if self.response:
             r = self.response
             cta_str = f"yes ({r.cta_type})" if r.cta_added else "no"
-            lines.append(f"  [RESPONSE] template: {r.template_key} | CTA: {cta_str}")
+            lines.append(
+                f"  [RESPONSE] template: {r.template_key} | requested: {r.requested_action} | CTA: {cta_str}"
+            )
 
         if self.timing:
             lines.append(f"  [TIME] {self.timing.total_turn_ms:.0f}ms")
@@ -1143,6 +1147,7 @@ class DecisionTraceBuilder:
     def record_response(
         self,
         template_key: Optional[str] = None,
+        requested_action: Optional[str] = None,
         personalization: Dict[str, Any] = None,
         cta_added: bool = False,
         cta_type: Optional[str] = None,
@@ -1153,6 +1158,7 @@ class DecisionTraceBuilder:
         """Записать генерацию ответа."""
         self._trace.response = ResponseTrace(
             template_key=template_key,
+            requested_action=requested_action,
             personalization_applied=personalization or {},
             cta_added=cta_added,
             cta_type=cta_type,

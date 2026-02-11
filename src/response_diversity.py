@@ -293,6 +293,8 @@ class ResponseDiversityEngine:
 
         # Вырезаем banned opening из ответа
         rest_of_response = response[match.end() :].lstrip()
+        # Remove artifacts like "—", "-", ":" that can appear after replacement.
+        rest_of_response = re.sub(r"^[—\-:]+\s*", "", rest_of_response)
 
         # Если вступление пустое — возвращаем без него
         if not opening:
@@ -304,6 +306,8 @@ class ResponseDiversityEngine:
         # Собираем новый ответ
         # Capitalize first letter of rest if needed
         if len(rest_of_response) >= 1 and opening.endswith((".", "!", "?")):
+            # If opening already ends with punctuation, leading dash in rest is noise.
+            rest_of_response = re.sub(r"^[—\-]+\s*", "", rest_of_response)
             rest_of_response = rest_of_response[0].upper() + rest_of_response[1:]
 
         processed = f"{opening} {rest_of_response}".strip()

@@ -134,6 +134,13 @@ class TestBasicFunctionality:
         assert result.processed == ""
         assert result.was_modified is False
 
+    def test_replacement_cleans_dash_artifact_after_opening(self, engine_with_mocked_config):
+        """Replacement should not produce artifact like '. —'."""
+        with patch.object(engine_with_mocked_config, "get_opening", return_value="Услышал."):
+            result = engine_with_mocked_config.process_response("Понимаю. — Давайте по сути.")
+        assert ". —" not in result.processed
+        assert "Услышал. Давайте" in result.processed
+
 # =============================================================================
 # LRU ROTATION TESTS
 # =============================================================================

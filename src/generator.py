@@ -8,13 +8,14 @@
 """
 
 import random
-from typing import Dict, List, Optional, TYPE_CHECKING, Any, Set
+from typing import Dict, List, Optional, TYPE_CHECKING, Any, Set, Tuple
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from src.knowledge.retriever import get_retriever
 from src.settings import settings
 from src.logger import logger
 from src.feature_flags import flags
 from src.response_diversity import diversity_engine
+from src.response_boundary_validator import boundary_validator
 from src.question_dedup import question_dedup_engine
 
 if TYPE_CHECKING:
@@ -419,6 +420,11 @@ class ResponseGenerator:
         # === НОВОЕ: Deduplication ===
         self._response_history: List[str] = []
         self._max_response_history = 5
+        self._last_generation_meta: Dict[str, Any] = {
+            "requested_action": None,
+            "selected_template_key": None,
+            "validation_events": [],
+        }
 
         # CategoryRouter: LLM-классификация категорий перед поиском
         self.category_router = None
@@ -633,12 +639,111 @@ class ResponseGenerator:
             actions.update(self._flow.templates.keys())
         return actions
 
+    def get_last_generation_meta(self) -> Dict[str, Any]:
+        """Return metadata from the latest generate() call."""
+        return dict(self._last_generation_meta)
+
+    def _is_factual_action(self, action: str) -> bool:
+        """Return True when action already implies factual/pricing answer."""
+        from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
+
+        if action in PRICING_CORRECT_ACTIONS:
+            return True
+        return action.startswith("answer_") or action.startswith("calculate_")
+
+    def _select_template_key(self, intent: str, action: str, context: Dict[str, Any]) -> str:
+        """
+        Select template key with explicit priority:
+        1) pricing-correct action from policy
+        2) intent-aware pricing routing
+        3) objection routing
+        4) style intent request_brevity (only for non-factual actions)
+        5) transition/default mapping
+        """
+        from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
+
+        if action in PRICING_CORRECT_ACTIONS:
+            template_key = action
+            logger.debug(
+                "Pricing-correct action takes priority",
+                intent=intent,
+                action=action,
+                template_key=template_key,
+            )
+        elif intent in self.PRICE_RELATED_INTENTS:
+            template_key = self._get_price_template_key(intent, action)
+            logger.debug(
+                "Price-related intent detected, using pricing template",
+                intent=intent,
+                original_action=action,
+                template_key=template_key
+            )
+        elif intent in self.OBJECTION_RELATED_INTENTS:
+            template_key = self._get_objection_template_key(intent, action)
+            logger.debug(
+                "Objection-related intent detected, using specific template",
+                intent=intent,
+                original_action=action,
+                template_key=template_key
+            )
+        elif intent == "request_brevity" and not self._is_factual_action(action):
+            template_key = "respond_briefly"
+            logger.debug(
+                "Brevity request detected, using respond_briefly template",
+                intent=intent,
+                original_action=action,
+                template_key=template_key
+            )
+        elif action.startswith("transition_to_"):
+            template_key = action.replace("transition_to_", "")
+        else:
+            template_key = action
+
+        # Universal answer-template forcing for repeated questions.
+        _ctx_envelope = context.get("context_envelope")
+        if _ctx_envelope and getattr(_ctx_envelope, 'repeated_question', None):
+            from src.yaml_config.constants import INTENT_CATEGORIES, REPAIR_PROTECTED_ACTIONS
+            _rq = _ctx_envelope.repeated_question
+            _answerable = (
+                set(INTENT_CATEGORIES.get("question", []))
+                | set(INTENT_CATEGORIES.get("price_related", []))
+            )
+            if _rq in _answerable and template_key not in REPAIR_PROTECTED_ACTIONS:
+                _price = set(INTENT_CATEGORIES.get("price_related", []))
+                if _rq in _price:
+                    template_key = self._get_price_template_key(_rq, action)
+                else:
+                    template_key = "answer_with_knowledge"
+                logger.debug(
+                    "Repeated question forcing answer template",
+                    repeated_question=_rq,
+                    original_template=action,
+                    forced_template=template_key,
+                )
+
+        spin_phase = context.get("spin_phase", "")
+        if template_key == "continue_current_goal" and spin_phase and intent not in self.PRICE_RELATED_INTENTS:
+            spin_template_key = f"spin_{spin_phase}"
+            if self._flow and self._flow.get_template(spin_template_key):
+                template_key = spin_template_key
+            elif spin_template_key in PROMPT_TEMPLATES:
+                template_key = spin_template_key
+
+        return template_key
+
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""
 
         # Используем параметр из settings если не указано явно
         if max_retries is None:
             max_retries = self.max_retries
+
+        # Reset metadata for this generation attempt.
+        self._last_generation_meta = {
+            "requested_action": action,
+            "selected_template_key": None,
+            "validation_events": [],
+        }
 
         # Получаем релевантные факты из базы знаний
         intent = context.get("intent", "")
@@ -682,82 +787,14 @@ class ResponseGenerator:
         # Форматируем URLs для включения в ответ
         formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
 
-        # Выбираем шаблон
-        # === Intent-aware выбор шаблона для price-related вопросов ===
-        # Price-related интенты ВСЕГДА получают pricing шаблон, независимо от action
-        if intent in self.PRICE_RELATED_INTENTS:
-            template_key = self._get_price_template_key(intent, action)
-            logger.debug(
-                "Price-related intent detected, using pricing template",
-                intent=intent,
-                original_action=action,
-                template_key=template_key
-            )
-        # === Intent-aware выбор шаблона для objection-related интентов ===
-        # Objection интенты получают специфичный шаблон для типа возражения
-        elif intent in self.OBJECTION_RELATED_INTENTS:
-            template_key = self._get_objection_template_key(intent, action)
-            logger.debug(
-                "Objection-related intent detected, using specific template",
-                intent=intent,
-                original_action=action,
-                template_key=template_key
-            )
-        # === Intent-aware выбор шаблона для request_brevity ===
-        # Мета-интент: клиент хочет более краткие ответы
-        elif intent == "request_brevity":
-            template_key = "respond_briefly"
-            logger.debug(
-                "Brevity request detected, using respond_briefly template",
-                intent=intent,
-                original_action=action,
-                template_key=template_key
-            )
-        elif action.startswith("transition_to_"):
-            template_key = action.replace("transition_to_", "")
-        else:
-            template_key = action
+        requested_action = action
+        template_key = self._select_template_key(intent=intent, action=action, context=context)
+        selected_template_key = template_key
 
-        # Universal answer-template forcing for repeated questions.
-        # When user repeatedly asked a known question but classifier missed it
-        # on this turn, force an answering template instead of SPIN/generic.
-        # Analogous to existing price template forcing at L664.
-        _ctx_envelope = context.get("context_envelope")
-        if _ctx_envelope and getattr(_ctx_envelope, 'repeated_question', None):
-            from src.yaml_config.constants import INTENT_CATEGORIES, REPAIR_PROTECTED_ACTIONS
-            _rq = _ctx_envelope.repeated_question
-            _answerable = (
-                set(INTENT_CATEGORIES.get("question", []))
-                | set(INTENT_CATEGORIES.get("price_related", []))
-            )
-            # Only force if: (1) repeated question is answerable, (2) current
-            # template is NOT already an answering template
-            if _rq in _answerable and template_key not in REPAIR_PROTECTED_ACTIONS:
-                _price = set(INTENT_CATEGORIES.get("price_related", []))
-                if _rq in _price:
-                    template_key = self._get_price_template_key(_rq, action)
-                else:
-                    template_key = "answer_with_knowledge"
-                logger.debug(
-                    "Repeated question forcing answer template",
-                    repeated_question=_rq,
-                    original_template=action,
-                    forced_template=template_key,
-                )
-
-        # NOTE: "spin_phase" is a legacy name. This contains the current phase
-        # for ANY active flow (e.g., "situation" for SPIN, "budget" for BANT,
-        # "metrics" for MEDDIC). The dedup engine handles all phase names.
-        # Если есть phase-specific шаблон, используем его вместо generic continue_current_goal
-        # НО только если это не price-related интент (price имеет приоритет)
-        spin_phase = context.get("spin_phase", "")
-        if template_key == "continue_current_goal" and spin_phase and intent not in self.PRICE_RELATED_INTENTS:
-            spin_template_key = f"spin_{spin_phase}"
-            # Check if template exists (either in FlowConfig or PROMPT_TEMPLATES)
-            if self._flow and self._flow.get_template(spin_template_key):
-                template_key = spin_template_key
-            elif spin_template_key in PROMPT_TEMPLATES:
-                template_key = spin_template_key
+        # Mirror real template selection when fallback is triggered in _get_template().
+        has_flow_template = bool(self._flow and self._flow.get_template(template_key))
+        if not has_flow_template and template_key not in PROMPT_TEMPLATES:
+            selected_template_key = "continue_current_goal"
 
         # Get template using the new method with FlowConfig fallback
         template = self._get_template(template_key)
@@ -977,9 +1014,18 @@ class ResponseGenerator:
 
                 # Сохраняем в историю для отслеживания
                 self._add_to_response_history(cleaned)
-                # Apply post-processing before returning
-                processed = self._apply_diversity(cleaned, context)
-                processed = self._ensure_apology(processed, context)
+                processed, validation_events = self._post_process_response(
+                    cleaned,
+                    context=context,
+                    requested_action=requested_action,
+                    selected_template_key=selected_template_key,
+                    retrieved_facts=retrieved_facts,
+                )
+                self._last_generation_meta = {
+                    "requested_action": requested_action,
+                    "selected_template_key": selected_template_key,
+                    "validation_events": validation_events,
+                }
                 return processed
 
             # Иначе чистим и сохраняем лучший результат
@@ -1002,9 +1048,18 @@ class ResponseGenerator:
             final_response = self._regenerate_with_diversity(prompt, context, final_response)
 
         self._add_to_response_history(final_response)
-        # Apply post-processing before returning
-        processed = self._apply_diversity(final_response, context)
-        processed = self._ensure_apology(processed, context)
+        processed, validation_events = self._post_process_response(
+            final_response,
+            context=context,
+            requested_action=requested_action,
+            selected_template_key=selected_template_key,
+            retrieved_facts=retrieved_facts,
+        )
+        self._last_generation_meta = {
+            "requested_action": requested_action,
+            "selected_template_key": selected_template_key,
+            "validation_events": validation_events,
+        }
         return processed
 
     def _get_objection_counter(self, objection_type: str, collected_data: Dict) -> str:
@@ -1244,6 +1299,36 @@ class ResponseGenerator:
         """
         from src.apology_ssot import has_apology
         return has_apology(response)
+
+    def _post_process_response(
+        self,
+        response: str,
+        context: Dict[str, Any],
+        requested_action: str,
+        selected_template_key: str,
+        retrieved_facts: str,
+    ) -> Tuple[str, List[Dict[str, Any]]]:
+        """
+        Apply all post-processing layers, including final response boundary validation.
+        """
+        processed = self._apply_diversity(response, context)
+        processed = self._ensure_apology(processed, context)
+
+        validation_events: List[Dict[str, Any]] = []
+        validation_context = {
+            "intent": context.get("intent", ""),
+            "action": requested_action,
+            "selected_template": selected_template_key,
+            "retrieved_facts": retrieved_facts,
+        }
+        validation_result = boundary_validator.validate_response(
+            processed,
+            context=validation_context,
+            llm=self.llm,
+        )
+        processed = validation_result.response
+        validation_events = validation_result.validation_events
+        return processed, validation_events
 
     # =========================================================================
     # НОВОЕ: Deduplication методы
@@ -1495,6 +1580,11 @@ class ResponseGenerator:
     def reset(self) -> None:
         """Сбросить историю ответов для нового диалога."""
         self._response_history.clear()
+        self._last_generation_meta = {
+            "requested_action": None,
+            "selected_template_key": None,
+            "validation_events": [],
+        }
 
     def _get_price_template_key(self, intent: str, action: str) -> str:
         """
