@@ -10,6 +10,7 @@
 import re
 import sys
 import time
+import warnings
 import threading
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Set, Dict, Any
@@ -27,19 +28,24 @@ from .reranker import get_reranker
 
 # Маппинг интентов на категории базы знаний
 # Принцип: каждый интент связан с категориями, которые могут содержать релевантные факты
-# Пустой список [] означает, что для этого интента не нужен поиск по базе знаний
 #
 # ВАЖНО: Используйте только существующие категории из knowledge/data/:
 # equipment, products, tis, support, pricing, inventory, features, regions,
 # integrations, analytics, employees, fiscal, stability, mobile, promotions,
 # competitors, faq
+#
+# Интенты не требующие поиска по БЗ перечислены в SKIP_RETRIEVAL_INTENTS ниже.
 INTENT_TO_CATEGORY = {
     # =================================================================
     # ВОПРОСЫ О ПРОДУКТЕ/ЦЕНЕ (требуют информации из базы)
     # =================================================================
     "price_question": ["pricing"],
     "pricing_details": ["pricing", "promotions"],
-    "question_features": ["features", "products", "tis", "analytics", "inventory", "support", "integrations"],
+    "question_features": [
+        "features", "products", "tis", "analytics", "inventory",
+        "support", "integrations",
+        "equipment", "employees", "fiscal", "stability", "faq",
+    ],
     "question_integrations": ["integrations"],
     "comparison": ["competitors", "products", "features"],
 
@@ -67,47 +73,28 @@ INTENT_TO_CATEGORY = {
     # =================================================================
     # SPIN ИНТЕНТЫ
     # =================================================================
-    # situation_provided: клиент рассказывает о себе - факты не нужны
-    "situation_provided": [],
-    # problem_revealed: клиент озвучивает проблемы - факты не нужны
-    "problem_revealed": [],
-    # implication_acknowledged: клиент признает последствия - факты не нужны
-    "implication_acknowledged": [],
     # need_expressed: клиент хочет решение - можно показать преимущества
     "need_expressed": ["features", "products"],
     # no_problem/no_need: отрицание проблемы/потребности - показать ценность продукта
     "no_problem": ["products", "features"],
     "no_need": ["products", "features"],
-    # info_provided: общая информация от клиента
-    "info_provided": [],
 
     # =================================================================
-    # НЕЙТРАЛЬНЫЕ ИНТЕНТЫ (факты не нужны)
+    # МЕТА-ИНТЕНТЫ (request_brevity может потребовать фактов для краткого ответа)
     # =================================================================
-    "greeting": [],
-    "rejection": [],
-    "farewell": [],
-    "gratitude": [],
-    "small_talk": [],
-    "unclear": [],
-
-    # =================================================================
-    # НАВИГАЦИОННЫЕ ИНТЕНТЫ (возврат/исправление)
-    # =================================================================
-    "go_back": [],      # Вернуться к предыдущей фазе
-    "correct_info": [], # Исправить ранее предоставленную информацию
-
-    # =================================================================
-    # МЕТА-ИНТЕНТЫ (управление стилем общения)
-    # =================================================================
-    "request_brevity": [],  # Запрос краткости — не требует фактов, это meta-интент
-
-    # =================================================================
-    # СИСТЕМНЫЕ ИНТЕНТЫ (не требуют базы знаний)
-    # =================================================================
-    "disambiguation_needed": [],  # Требуется уточнение у пользователя
-    "fallback_close": [],         # Мягкое завершение после fallback
+    "request_brevity": [
+        "features", "products", "pricing", "equipment", "employees",
+        "support", "integrations",
+    ],
 }
+
+# Интенты, для которых поиск по базе знаний НЕ нужен.
+# При встрече этих интентов retrieve() возвращает "" сразу (без обращения к KB).
+SKIP_RETRIEVAL_INTENTS = frozenset({
+    "greeting", "farewell", "gratitude", "small_talk", "rejection", "unclear",
+    "go_back", "correct_info", "disambiguation_needed", "fallback_close",
+    "situation_provided", "problem_revealed", "implication_acknowledged", "info_provided",
+})
 
 
 class MatchStage(Enum):
@@ -262,6 +249,10 @@ class CascadeRetriever:
         if not message or not message.strip():
             return ""
 
+        # Интенты не требующие поиска — возвращаем сразу
+        if intent and intent in SKIP_RETRIEVAL_INTENTS:
+            return ""
+
         # Используем default_top_k из settings если не указано
         if top_k is None:
             top_k = settings.retriever.default_top_k
@@ -336,6 +327,10 @@ class CascadeRetriever:
                 - Список URL-объектов [{"url": ..., "label": ..., "type": ...}]
         """
         if not message or not message.strip():
+            return "", []
+
+        # Интенты не требующие поиска — возвращаем сразу
+        if intent and intent in SKIP_RETRIEVAL_INTENTS:
             return "", []
 
         if top_k is None:
@@ -666,6 +661,20 @@ class CascadeRetriever:
 KnowledgeRetriever = CascadeRetriever
 
 
+def _validate_category_coverage(kb_categories: Set[str]) -> None:
+    """Warn if any KB category is not referenced in INTENT_TO_CATEGORY."""
+    mapped: Set[str] = set()
+    for cats in INTENT_TO_CATEGORY.values():
+        mapped.update(cats)
+    orphans = kb_categories - mapped
+    if orphans:
+        warnings.warn(
+            f"KB categories not in INTENT_TO_CATEGORY: {orphans}. "
+            "Add them to an intent mapping or they'll only be reachable via CategoryRouter.",
+            stacklevel=2,
+        )
+
+
 # =============================================================================
 # Thread-safe Singleton для retriever
 # =============================================================================
@@ -716,6 +725,9 @@ def get_retriever(use_embeddings: bool = None) -> CascadeRetriever:
         if _retriever is None or _retriever_config != current_config:
             _retriever = CascadeRetriever(use_embeddings=use_embeddings)
             _retriever_config = current_config
+            # Validate KB category coverage on first init
+            kb_cats = {s.category for s in _retriever.kb.sections if s.category}
+            _validate_category_coverage(kb_cats)
 
         return _retriever
 

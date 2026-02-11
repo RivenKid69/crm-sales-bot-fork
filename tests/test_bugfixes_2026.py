@@ -215,7 +215,7 @@ class TestCompanySizeCheck:
         gen = ResponseGenerator.__new__(ResponseGenerator)
         gen.history_length = 4
 
-        result = gen.get_facts(company_size=None)
+        result = gen.get_product_overview(company_size=None)
         assert result, "При company_size=None должны вернуться features"
 
     def test_company_size_zero_returns_features(self):
@@ -225,7 +225,7 @@ class TestCompanySizeCheck:
         gen = ResponseGenerator.__new__(ResponseGenerator)
         gen.history_length = 4
 
-        result = gen.get_facts(company_size=0)
+        result = gen.get_product_overview(company_size=0)
         # 0 сотрудников - нереальный кейс, но не должен падать
         assert result, "При company_size=0 должны вернуться features"
         assert "Тариф:" not in result, (
@@ -239,7 +239,7 @@ class TestCompanySizeCheck:
         gen = ResponseGenerator.__new__(ResponseGenerator)
         gen.history_length = 4
 
-        result = gen.get_facts(company_size=10)
+        result = gen.get_product_overview(company_size=10)
         assert "Тариф:" in result, (
             "При company_size=10 должен рассчитываться тариф"
         )

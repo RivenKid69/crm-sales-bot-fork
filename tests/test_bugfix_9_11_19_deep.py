@@ -72,10 +72,10 @@ class TestBug9KnowledgeSource:
             f"Expected >= 5 categories, got {len(categories_found)}: {categories_found}"
         )
 
-    def test_t1_3_get_facts_rotation_no_fixation(self):
-        """T1.3: get_facts() returns diverse results across 20 calls."""
+    def test_t1_3_get_product_overview_rotation_no_fixation(self):
+        """T1.3: get_product_overview() returns diverse results across 20 calls."""
         gen = self._make_generator()
-        results = [gen.get_facts() for _ in range(20)]
+        results = [gen.get_product_overview() for _ in range(20)]
         distinct = set(results)
         assert len(distinct) >= 5, (
             f"Expected >= 5 distinct results, got {len(distinct)}"
@@ -90,19 +90,19 @@ class TestBug9KnowledgeSource:
                 f"Same result appears {count}/20 times (>50% fixation)"
             )
 
-    def test_t1_4_get_facts_returns_empty_for_price_intents(self):
-        """T1.4: get_facts() returns empty string for price_question intent (SSOT migration)."""
+    def test_t1_4_get_product_overview_returns_empty_for_price_intents(self):
+        """T1.4: get_product_overview() returns empty string for price_question intent (SSOT migration)."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=10, intent="price_question")
+        result = gen.get_product_overview(company_size=10, intent="price_question")
 
-        # Pricing данные НЕ генерируются в get_facts()
+        # Pricing данные НЕ генерируются в get_product_overview()
         # Они извлекаются через retriever и попадают в {retrieved_facts}
-        assert result == "", "get_facts() should return empty string for price intents"
+        assert result == "", "get_product_overview() should return empty string for price intents"
 
-    def test_t1_5_get_facts_fallback_for_non_price_intents(self):
-        """T1.5: get_facts() returns product overview for non-price intents."""
+    def test_t1_5_get_product_overview_fallback_for_non_price_intents(self):
+        """T1.5: get_product_overview() returns product overview for non-price intents."""
         gen = self._make_generator()
-        result = gen.get_facts(company_size=None, intent="greeting")
+        result = gen.get_product_overview(company_size=None, intent="greeting")
 
         # Для non-price интентов возвращается product overview
         assert isinstance(result, str)
@@ -116,16 +116,16 @@ class TestBug9KnowledgeSource:
         assert "pricing" not in KNOWLEDGE, "pricing removed — SSOT is pricing.yaml"
         assert "discount_annual" not in KNOWLEDGE, "discount removed — data in pricing.yaml"
 
-    def test_t1_7_no_hardcoded_ruble_prices_in_get_facts(self):
-        """T1.7: get_facts() returns empty string for price intents (no ruble data)."""
+    def test_t1_7_no_hardcoded_ruble_prices_in_get_product_overview(self):
+        """T1.7: get_product_overview() returns empty string for price intents (no ruble data)."""
         gen = self._make_generator()
 
         # Проверяем price-related интенты из PRICE_RELATED_INTENTS
         for intent in ["price_question", "pricing_details"]:
-            result = gen.get_facts(intent=intent)
+            result = gen.get_product_overview(intent=intent)
 
             # Для price интентов должна быть пустая строка
-            assert result == "", f"get_facts() should return empty for {intent}"
+            assert result == "", f"get_product_overview() should return empty for {intent}"
 
             # Проверяем что НЕТ рублей (на случай если кто-то вернет данные)
             assert "₽" not in result, f"Found ruble symbol in {intent} response"
@@ -172,7 +172,7 @@ class TestBug9KnowledgeSource:
             gen = ResponseGenerator(llm)
 
         assert gen._product_overview == []
-        assert gen.get_facts() == ""
+        assert gen.get_product_overview() == ""
 
 # =============================================================================
 # T2: FallbackHandler KB Integration

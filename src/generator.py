@@ -489,13 +489,13 @@ class ResponseGenerator:
         sample_size = min(6, len(self._product_overview))
         return ", ".join(random.sample(self._product_overview, sample_size))
 
-    def get_facts(self, company_size: int = None, intent: str = "") -> str:
+    def get_product_overview(self, company_size: int = None, intent: str = "") -> str:
         """
-        Получить факты о продукте.
+        Получить обзор продукта (случайная выборка из KB).
 
-        ВАЖНО: Для price-related интентов НЕ генерируем данные здесь!
-        Pricing данные уже извлекаются через retriever (строка 652 в generate())
-        и попадают в {retrieved_facts}.
+        ВАЖНО: Это НЕ факты для ответа на вопросы клиента!
+        Для ответа на вопросы используйте {retrieved_facts} из retriever.
+        Этот метод возвращает общий обзор продукта для презентаций и возражений.
 
         Context-aware:
         - Для price-related интентов → возвращаем пустую строку (данные в retrieved_facts)
@@ -508,7 +508,7 @@ class ResponseGenerator:
         Returns:
             Пустая строка для price интентов, product overview для остальных
         """
-        # Price-related интенты → НЕ генерируем факты
+        # Price-related интенты → НЕ генерируем обзор
         # Данные уже в {retrieved_facts} из основного retriever вызова (generate:652)
         if intent in self.PRICE_RELATED_INTENTS:
             return ""
@@ -765,7 +765,7 @@ class ResponseGenerator:
         # Собираем переменные
         collected = context.get("collected_data", {})
         intent = context.get("intent", "")
-        facts = self.get_facts(collected.get("company_size"), intent=intent)
+        product_overview = self.get_product_overview(collected.get("company_size"), intent=intent)
 
         # SPIN-специфичные данные
         current_tools = collected.get("current_tools", "не указано")
@@ -812,7 +812,7 @@ class ResponseGenerator:
             "missing_data": ", ".join(context.get("missing_data", [])) or "всё собрано",
             "company_size": collected.get("company_size") or "не указан",
             "pain_point": pain_point_value,
-            "facts": facts,
+            "product_overview": product_overview,
             # База знаний
             "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
             "retrieved_urls": formatted_urls,  # NEW: Structured URLs for documentation links

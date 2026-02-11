@@ -360,7 +360,7 @@ templates:
   transition_to_presentation:
     description: "Переход в презентацию после need_payoff"
     parameters:
-      required: [system, history, user_message, company_size, pain_point, desired_outcome, facts]
+      required: [system, history, user_message, company_size, pain_point, desired_outcome, product_overview]
     template: |
       {system}
 
@@ -376,7 +376,7 @@ templates:
       - Проблема: {pain_point}
       - Желаемый результат: {desired_outcome}
 
-      Наш продукт: {facts}
+      Наш продукт: {product_overview}
 
       Твоя задача:
       1. Подтверди что понял потребность клиента
