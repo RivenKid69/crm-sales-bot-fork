@@ -1,7 +1,12 @@
 # Развёртывание CRM Sales Bot — Hetzner GPU Server
 
 > Инструкция для системного администратора / DevOps-инженера.
-> Цель: развернуть бота на выделенном GPU-сервере Hetzner как постоянно работающий сервис.
+> Цель: развернуть «машину» (on-prem сервер с Qwen-14B) на выделенном GPU-сервере Hetzner
+> для интеграции в пайплайн **n8n → Redis → AI → n8n** (MVP).
+>
+> **Принцип MVP:** «машина» — **stateful**. Хранит память, историю диалогов и базу знаний
+> на своей стороне. Получает только последнее сообщение, отдаёт готовый ответ.
+> Со стороны WIPON — только доставка сообщения и отправка ответа в канал.
 
 ---
 
@@ -36,6 +41,47 @@
 
 ## 2. Обзор архитектуры
 
+### 2.1 Внешний пайплайн (MVP: WIPON → «машина»)
+
+```
+  WhatsApp / Instagram (входящее сообщение)
+         │
+         ▼
+  ┌──────────────────────┐
+  │  WIPON                │
+  │  n8n workflow          │
+  │       │               │
+  │       ▼               │
+  │  Redis буфер          │
+  │  (~5 сек, merge       │
+  │   сообщений)          │
+  └───────┬──────────────┘
+          │
+          │  POST /api/v1/process
+          │  Authorization: Bearer <api_key>
+          │  { session_id, user_id, message: { text } }
+          ▼
+  ┌────────────────────────────────────────────┐
+  │  «Машина» — Hetzner GEX44                  │
+  │                                            │
+  │  Nginx :443 → FastAPI :8000                │
+  │       ↓                                    │
+  │  CRM Sales Bot (stateful)                  │
+  │  ├── память / история (SQLite)             │
+  │  ├── KB поиск (FRIDA embeddings, in-proc)  │
+  │  └── генерация ответа (Ollama qwen3:14b)   │
+  └───────┬────────────────────────────────────┘
+          │
+          │  { "answer": "текст ответа" }
+          ▼
+  ┌──────────────────────┐
+  │  n8n workflow          │
+  │  → отправка в канал   │
+  └──────────────────────┘
+```
+
+### 2.2 Внутренняя архитектура сервера
+
 ```
                         Интернет
                            │
@@ -44,6 +90,7 @@
                     │  Firewall   │
                     └──────┬──────┘
                            │ :443 (HTTPS)
+                           │ Authorization: Bearer <api_key>
 ┌──────────────────────────┼──────────────────────────┐
 │             Hetzner GEX44 Server                    │
 │                          │                          │
@@ -65,23 +112,56 @@
 │  ┌──────────┐     ┌──────┴───────┐     ┌─────────┐ │
 │  │  Ollama  │◄────│  CRM Sales   │────►│ FRIDA   │ │
 │  │ qwen3:14b│     │     Bot      │     │embeddings│ │
-│  │ :11434   │     │   (Python)   │     │(in-proc)│ │
-│  └──────────┘     └──────────────┘     └─────────┘ │
-│       GPU                                           │
-│  RTX 4000 SFF                                       │
-│    20 GB VRAM                                       │
+│  │ :11434   │     │ (stateful)   │     │(in-proc)│ │
+│  └──────────┘     └──────┬───────┘     └─────────┘ │
+│       GPU                │                          │
+│  RTX 4000 SFF      ┌────┴────┐                     │
+│    20 GB VRAM       │ SQLite  │                     │
+│                     │(snapshot│                     │
+│                     │ storage)│                     │
+│                     └─────────┘                     │
 └─────────────────────────────────────────────────────┘
                            ▲
                            │ HTTPS POST /api/v1/process
-                           │
+                           │ Bearer <api_key>
               ┌────────────┴───────────┐
-              │   Внешняя система      │
-              │ (мессенджер-платформа,  │
-              │  MongoDB, Wazzup и тд) │
+              │  WIPON (n8n workflow)   │
+              │  WhatsApp / Instagram  │
+              │  Redis (буфер ~5 сек)  │
               └────────────────────────┘
 ```
 
-**Ключевой принцип:** бот — **stateless**. Состояние диалога (snapshot) хранится во внешней системе. Бот принимает snapshot на вход, обрабатывает сообщение, возвращает обновлённый snapshot.
+### 2.3 Идентификаторы
+
+| Поле | Описание | Пример |
+|---|---|---|
+| `session_id` | ID бота / аккаунта | `BOT_7000` (WAHA), `recipientId` (IG) |
+| `user_id` | ID конечного пользователя | номер телефона (WA), `senderId` (IG) |
+
+**Критически важно:** память / состояние хранится по ключу `(session_id, user_id)`.
+Разные пользователи внутри одного `BOT_7000` не смешиваются.
+
+### 2.4 Ограничения MVP
+
+| # | Ограничение |
+|---|---|
+| 1 | Передаётся **только последнее сообщение** (после Redis-буфферинга ~5 сек), не последние 10 |
+| 2 | KB и KB-поиск **полностью на стороне «машины»** (никаких вызовов инструментов/поиска со стороны WIPON) |
+| 3 | Стриминга нет |
+| 4 | Медиа (картинки/аудио) — «машина» получает **готовый текст**: `"[image]: <описание>"`, `"[audio transcript]: <транскрипт>"` |
+| 5 | Кросс-канальная склейка между Instagram и WhatsApp невозможна |
+| 6 | Требуется надёжная сетевая связность: облачная инфраструктура WIPON ↔ сервер в HQ |
+
+### 2.5 Сетевое подключение
+
+Допустимые варианты (важен результат, способ согласуется отдельно):
+- Публичный HTTPS endpoint + IP allowlist наших адресов + API key
+- VPN site-to-site
+- Reverse tunnel
+
+**Авторизация обязательна:** `Authorization: Bearer <api_key>`
+
+**Ключевой принцип:** «машина» — **stateful**. Хранит память, историю диалогов и базу знаний на своей стороне. Получает только последнее сообщение + идентификаторы, отдаёт готовый ответ.
 
 ---
 
@@ -257,20 +337,91 @@ python3 -m src.bot
 
 Бот поставляется без HTTP-сервера. Для работы по сети нужна API-обёртка.
 
-### 7.1 Создать файл API-сервера
+> **MVP-контракт:** WIPON отправляет только последнее сообщение + идентификаторы.
+> «Машина» сама хранит snapshot-ы в локальной SQLite и восстанавливает состояние
+> по ключу `(session_id, user_id)`.
+
+### 7.1 API-контракт
+
+#### Запрос (WIPON → машина): `POST /api/v1/process`
+
+Заголовки:
+- `Authorization: Bearer <api_key>`
+- `Content-Type: application/json`
+
+```json
+{
+  "request_id": "uuid",
+  "channel": "whatsapp|instagram",
+  "session_id": "BOT_7000",
+  "user_id": "77022951810",
+  "message": {
+    "text": "последнее сообщение (после Redis-буфферинга)",
+    "timestamp_ms": 1770801587839
+  },
+  "context": {
+    "time_of_day": "morning|day|evening|night",
+    "timezone": "Asia/Qyzylorda",
+    "meta": {}
+  }
+}
+```
+
+> Если вход был картинка/аудио, `message.text` содержит готовый текст:
+> `"[image]: <описание/капшен>"` или `"[audio transcript]: <транскрипт>"`.
+
+#### Ответ (машина → WIPON)
+
+```json
+{
+  "answer": "текст ответа пользователю",
+  "meta": {
+    "model": "qwen-14b",
+    "processing_ms": 0,
+    "kb_used": true
+  }
+}
+```
+
+- `answer` — строка, готовая к отправке в канал (кроме стандартной нарезки на ≤200 символов на стороне WIPON).
+- Ответ всегда валидный JSON.
+
+#### Ошибки
+
+При проблемах сервер возвращает структурированную ошибку (для fallback на Vertex/OpenAI):
+
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST|UNAUTHORIZED|RATE_LIMIT|INTERNAL",
+    "message": "описание"
+  }
+}
+```
+
+Правило на стороне WIPON: любой non-2xx HTTP или наличие поля `error` → запрос неуспешен → включить fallback.
+
+### 7.2 Создать файл API-сервера
 
 Создать файл `src/api.py`:
 
 ```python
 """
-REST API обёртка для CRM Sales Bot.
+REST API обёртка для CRM Sales Bot (MVP).
+Пайплайн: WIPON → n8n → Redis → POST /api/v1/process → ответ
+
 Запуск: uvicorn src.api:app --host 127.0.0.1 --port 8000
 """
 
+import json
 import logging
+import os
+import sqlite3
+import time
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel, Field
 
 from src.bot import SalesBot
@@ -278,71 +429,181 @@ from src.llm import OllamaLLM
 
 logger = logging.getLogger(__name__)
 
-# Глобальный LLM-клиент (переиспользуется между запросами)
+API_KEY = os.environ.get("API_KEY", "change-me-in-production")
+DB_PATH = os.environ.get("DB_PATH", "data/conversations.db")
+
 _llm = None
 
 
+# ── Auth ──────────────────────────────────────────────
+
+def verify_api_key(authorization: str = Header(...)):
+    """Проверка Bearer-токена."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Bearer token")
+    if authorization[7:] != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+
+# ── DB (snapshot storage) ─────────────────────────────
+
+def _init_db():
+    os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            session_id TEXT NOT NULL,
+            user_id    TEXT NOT NULL,
+            snapshot   TEXT,
+            updated_at REAL,
+            PRIMARY KEY (session_id, user_id)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+def _load_snapshot(session_id: str, user_id: str) -> dict | None:
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT snapshot FROM conversations WHERE session_id=? AND user_id=?",
+        (session_id, user_id),
+    ).fetchone()
+    conn.close()
+    return json.loads(row[0]) if row and row[0] else None
+
+
+def _save_snapshot(session_id: str, user_id: str, snapshot: dict):
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute(
+        """INSERT INTO conversations (session_id, user_id, snapshot, updated_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(session_id, user_id)
+           DO UPDATE SET snapshot=excluded.snapshot, updated_at=excluded.updated_at""",
+        (session_id, user_id, json.dumps(snapshot, ensure_ascii=False), time.time()),
+    )
+    conn.commit()
+    conn.close()
+
+
+# ── App ───────────────────────────────────────────────
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Инициализация LLM при старте, очистка при остановке."""
     global _llm
+    _init_db()
     _llm = OllamaLLM()
-    logger.info("LLM client initialized")
+    logger.info("LLM client initialized, DB ready")
     yield
     _llm = None
 
 
-app = FastAPI(
-    title="CRM Sales Bot API",
-    version="1.0.0",
-    lifespan=lifespan,
-)
+app = FastAPI(title="CRM Sales Bot API", version="1.0.0", lifespan=lifespan)
+
+
+# ── Models ────────────────────────────────────────────
+
+class MessagePayload(BaseModel):
+    text: str
+    timestamp_ms: int = 0
+
+
+class ContextPayload(BaseModel):
+    time_of_day: str = "day"
+    timezone: str = "Asia/Almaty"
+    meta: dict = {}
 
 
 class ProcessRequest(BaseModel):
-    message: str = Field(..., description="Сообщение пользователя")
-    snapshot: dict | None = Field(None, description="Snapshot предыдущего состояния")
-    flow_name: str = Field("spin_selling", description="Методология продаж")
-    config_name: str = Field("default", description="Имя конфигурации")
+    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    channel: str = "whatsapp"
+    session_id: str
+    user_id: str
+    message: MessagePayload
+    context: ContextPayload = ContextPayload()
 
 
-class HealthResponse(BaseModel):
-    status: str
-    model: str
+# ── Endpoints ─────────────────────────────────────────
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "model": "qwen-14b"}
 
 
-@app.get("/health", response_model=HealthResponse)
-async def health():
-    """Проверка доступности сервиса."""
-    return HealthResponse(status="ok", model="qwen3:14b")
-
-
-@app.post("/api/v1/process")
-async def process_message(req: ProcessRequest):
+@app.post("/api/v1/process", dependencies=[Depends(verify_api_key)])
+def process_message(req: ProcessRequest):
     """
-    Обработка одного хода диалога.
+    Обработка одного хода диалога (MVP).
 
-    - Если передан snapshot — восстанавливает бота из него.
-    - Если нет — создаёт нового бота с указанным flow.
-    - Возвращает ответ бота + обновлённый snapshot.
+    1. Загрузить snapshot из SQLite по (session_id, user_id).
+    2. Восстановить / создать бота (с history_tail для контекста LLM).
+    3. Обработать сообщение.
+    4. Сохранить snapshot обратно.
+    5. Вернуть { answer, meta }.
+
+    NOTE: `def` (не `async def`) — bot.process() синхронный (Ollama HTTP).
+    FastAPI автоматически запустит в threadpool.
     """
     try:
-        if req.snapshot:
-            bot = SalesBot.from_snapshot(req.snapshot, llm=_llm)
-        else:
-            bot = SalesBot(_llm, flow_name=req.flow_name, config_name=req.config_name)
+        snapshot = _load_snapshot(req.session_id, req.user_id)
 
-        result = bot.process(req.message)
-        snapshot = bot.to_snapshot()
+        start = time.time()
+        if snapshot:
+            # Извлечь history_tail из context_window snapshot-а,
+            # чтобы LLM имел контекст предыдущих сообщений в промптах.
+            history_tail = [
+                {"user": t["user_message"], "bot": t["bot_response"]}
+                for t in snapshot.get("context_window", [])
+                if "user_message" in t and "bot_response" in t
+            ]
+            bot = SalesBot.from_snapshot(
+                snapshot, llm=_llm, history_tail=history_tail,
+            )
+            # from_snapshot() не сохраняет enable_tracing — ставим вручную
+            bot.enable_tracing = True
+        else:
+            bot = SalesBot(
+                _llm, flow_name="spin_selling", config_name="default",
+                enable_tracing=True,
+            )
+
+        result = bot.process(req.message.text)
+        processing_ms = int((time.time() - start) * 1000)
+
+        _save_snapshot(req.session_id, req.user_id, bot.to_snapshot())
+
+        # kb_used: проверяем наличие KB-результатов в llm_traces
+        trace = result.get("decision_trace") or {}
+        kb_used = any(
+            t.get("purpose") in ("knowledge_search", "knowledge_retrieval")
+            for t in trace.get("llm_traces", [])
+        )
 
         return {
-            **result,
-            "snapshot": snapshot,
+            "answer": result["response"],
+            "meta": {
+                "model": "qwen-14b",
+                "processing_ms": processing_ms,
+                "kb_used": kb_used,
+            },
         }
     except Exception as e:
         logger.exception("Error processing message")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "error": {
+                "code": "INTERNAL",
+                "message": str(e),
+            }
+        }
 ```
+
+### 7.3 Нефункциональные требования
+
+| Параметр | Значение |
+|---|---|
+| Время ответа | ≤ 30–45 секунд (согласовать) |
+| Логи | Не логировать полный текст переписки по умолчанию |
+| Изоляция памяти | Ключ `(session_id, user_id)` — не смешивать пользователей |
 
 ---
 
@@ -370,6 +631,8 @@ Type=simple
 User=deploy
 WorkingDirectory=/home/deploy/crm_sales_bot
 Environment=PATH=/home/deploy/crm_sales_bot/.venv/bin:/usr/bin:/bin
+Environment=API_KEY=your-secret-api-key-here
+Environment=DB_PATH=/home/deploy/crm_sales_bot/data/conversations.db
 ExecStart=/home/deploy/crm_sales_bot/.venv/bin/uvicorn src.api:app \
     --host 127.0.0.1 \
     --port 8000 \
@@ -448,12 +711,18 @@ server {
     # Rate limiting (опционально)
     # limit_req zone=api burst=10 nodelay;
 
+    # IP allowlist (раскомментировать и указать IP WIPON-серверов)
+    # allow <IP_WIPON_1>;
+    # allow <IP_WIPON_2>;
+    # deny all;
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
     }
 }
 ```
@@ -486,7 +755,7 @@ sudo systemctl status certbot.timer
 ```bash
 # Health-check напрямую
 curl http://127.0.0.1:8000/health
-# {"status":"ok","model":"qwen3:14b"}
+# {"status":"ok","model":"qwen-14b"}
 
 # Ollama
 curl http://127.0.0.1:11434/api/tags
@@ -497,7 +766,7 @@ curl http://127.0.0.1:11434/api/tags
 ```bash
 # Health-check через Nginx + TLS
 curl https://bot.example.com/health
-# {"status":"ok","model":"qwen3:14b"}
+# {"status":"ok","model":"qwen-14b"}
 ```
 
 ### 10.3 Тестовый запрос (новый диалог)
@@ -505,25 +774,64 @@ curl https://bot.example.com/health
 ```bash
 curl -X POST https://bot.example.com/api/v1/process \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-secret-api-key-here" \
   -d '{
-    "message": "Привет, расскажи о вашей CRM",
-    "flow_name": "spin_selling"
+    "session_id": "BOT_7000",
+    "user_id": "77022951810",
+    "channel": "whatsapp",
+    "message": {
+      "text": "Привет, расскажи о вашей CRM",
+      "timestamp_ms": 1770801587839
+    },
+    "context": {
+      "time_of_day": "day",
+      "timezone": "Asia/Almaty"
+    }
   }'
 ```
 
-Ожидаемый ответ — JSON с полями `response`, `intent`, `state`, `snapshot` и др.
+Ожидаемый ответ:
+
+```json
+{
+  "answer": "Добрый день! Расскажите, пожалуйста, о вашей компании...",
+  "meta": {
+    "model": "qwen-14b",
+    "processing_ms": 8500,
+    "kb_used": false
+  }
+}
+```
 
 ### 10.4 Тестовый запрос (продолжение диалога)
 
-Взять `snapshot` из предыдущего ответа и отправить следующее сообщение:
+Повторный запрос от того же пользователя — «машина» сама восстановит контекст из SQLite:
 
 ```bash
 curl -X POST https://bot.example.com/api/v1/process \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-secret-api-key-here" \
   -d '{
-    "message": "Сколько стоит?",
-    "snapshot": { ... скопировать snapshot из предыдущего ответа ... }
+    "session_id": "BOT_7000",
+    "user_id": "77022951810",
+    "channel": "whatsapp",
+    "message": {
+      "text": "Сколько стоит?",
+      "timestamp_ms": 1770801592000
+    }
   }'
+```
+
+> Snapshot не передаётся — он хранится на стороне «машины» по ключу `(BOT_7000, 77022951810)`.
+
+### 10.5 Тест ошибки авторизации
+
+```bash
+curl -X POST https://bot.example.com/api/v1/process \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer wrong-key" \
+  -d '{"session_id":"X","user_id":"Y","message":{"text":"test"}}'
+# Ожидаемый ответ: 401 Unauthorized
 ```
 
 ---
@@ -659,17 +967,37 @@ sudo systemctl restart ollama
 - Ollama и API-сервер слушают только localhost
 - TLS через Let's Encrypt
 - Nginx как reverse proxy
+- **API-ключ (Bearer token)** — авторизация в FastAPI (`Authorization: Bearer <api_key>`)
+- **Nginx: заготовка IP allowlist** — раскомментировать и указать IP WIPON-серверов
+
+### Управление API-ключом
+
+API-ключ задаётся через переменную окружения `API_KEY` в systemd-юните:
+
+```bash
+# Сгенерировать ключ
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Вписать в юнит
+sudo systemctl edit crm-sales-bot
+# [Service]
+# Environment=API_KEY=<сгенерированный_ключ>
+
+sudo systemctl restart crm-sales-bot
+```
+
+Этот же ключ передаётся команде WIPON для настройки n8n HTTP Request node.
 
 ### Рекомендации на будущее
 
 | Мера | Как |
 |---|---|
 | Fail2ban | `sudo apt install fail2ban` — защита от брутфорса SSH |
-| API-ключ | Добавить header `X-API-Key` в FastAPI для авторизации клиентов |
+| IP whitelist (обязательно) | В Nginx: раскомментировать `allow/deny` блок, указать IP WIPON |
 | Rate limiting | В Nginx: `limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;` |
-| IP whitelist | В Nginx: `allow <IP_мессенджер_платформы>; deny all;` |
 | Мониторинг | Prometheus + Grafana или простой healthcheck через cron |
-| Бэкапы | Код в Git, конфиги в YAML — бэкапить нечего (бот stateless) |
+| Бэкапы SQLite | `data/conversations.db` — snapshot-ы диалогов. Бэкапить периодически |
+| Ротация ключей | Менять API_KEY периодически, координируя с WIPON |
 
 ---
 
@@ -749,16 +1077,27 @@ NVIDIA + OLLAMA
 [ ] Репозиторий склонирован в /home/deploy/crm_sales_bot
 [ ] Python venv создан, зависимости установлены (pip install -e .)
 [ ] FastAPI + Uvicorn установлены
-[ ] src/api.py создан
+[ ] src/api.py создан (MVP-контракт: session_id + user_id + message)
+[ ] API_KEY сгенерирован и задан в systemd-юните
+[ ] DB_PATH задан в systemd-юните
 [ ] Интерактивный тест пройден (python3 -m src.bot)
 [ ] Systemd-юнит crm-sales-bot.service создан и запущен
 [ ] curl http://127.0.0.1:8000/health отвечает OK
 
-СЕТЬ
+СЕТЬ + БЕЗОПАСНОСТЬ
 [ ] DNS настроен (домен → IP сервера)
 [ ] Nginx настроен как reverse proxy
+[ ] Nginx: Authorization header проксируется
+[ ] Nginx: IP allowlist (IP WIPON-серверов) — раскомментировать
 [ ] TLS-сертификат получен (certbot)
 [ ] curl https://bot.example.com/health отвечает OK снаружи
-[ ] Тестовый диалог прошёл успешно
+
+ИНТЕГРАЦИЯ (MVP)
+[ ] Тестовый запрос с Bearer-токеном прошёл (см. раздел 10.3)
+[ ] Тест продолжения диалога — бот помнит контекст (раздел 10.4)
+[ ] Тест ошибки авторизации — 401 при неверном ключе (раздел 10.5)
 [ ] Embedding-модели скачались (первый запрос прошёл)
+[ ] API_KEY передан команде WIPON для настройки n8n
+[ ] WIPON n8n workflow подключен и шлёт тестовые запросы
+[ ] Fallback на Vertex/OpenAI проверен (при ошибке «машины»)
 ```
