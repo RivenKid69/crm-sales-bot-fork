@@ -103,6 +103,9 @@ class AutonomousDecisionSource(KnowledgeSource):
         turn_in_state = getattr(envelope, 'consecutive_same_state', 0) if envelope else 0
         max_turns = state_config.get("max_turns_in_state", 6)
 
+        # Read optional_data from state config for data collection guidance
+        optional_data = state_config.get("optional_data", [])
+
         # Build prompt for LLM decision
         prompt = self._build_decision_prompt(
             state=state,
@@ -114,6 +117,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             available_states=available_states,
             turn_in_state=turn_in_state,
             max_turns=max_turns,
+            optional_data=optional_data,
         )
 
         try:
@@ -203,14 +207,26 @@ class AutonomousDecisionSource(KnowledgeSource):
         available_states: list,
         turn_in_state: int = 0,
         max_turns: int = 6,
+        optional_data: list = None,
     ) -> str:
         """Build the decision prompt for LLM."""
+        collected_keys = {
+            k for k, v in collected_data.items()
+            if v and not k.startswith("_")
+        }
         collected_str = ", ".join(
             f"{k}={v}" for k, v in collected_data.items()
             if v and not k.startswith("_")
         ) or "пока ничего"
 
         states_str = ", ".join(available_states) if available_states else "нет"
+
+        # Compute missing optional data
+        missing_optional = ""
+        if optional_data:
+            missing = [f for f in optional_data if f not in collected_keys]
+            if missing:
+                missing_optional = f"\nЖелательно собрать: {', '.join(missing)}"
 
         # Objection-specific decision rules
         objection_rules = ""
@@ -231,13 +247,20 @@ class AutonomousDecisionSource(KnowledgeSource):
 - Если прогресс застопорился — рассмотри переход к следующему этапу
 - Если есть прогресс (клиент делится информацией, отвечает на вопросы) — можно продолжить"""
 
+        # Data collection guidance (non-objection path)
+        data_collection_rule = ""
+        if not intent.startswith("objection_"):
+            data_collection_rule = """
+- Старайся собрать как можно больше данных о клиенте перед переходом
+- При возражении клиента — отработай его, не переходи сразу к следующему этапу"""
+
         return f"""Ты — контроллер sales-диалога. Реши нужно ли перейти к следующему этапу.
 
 Текущий этап: {phase} (состояние: {state})
 Цель этапа: {goal}
 Интент клиента: {intent}
 Сообщение клиента: "{user_message}"
-Собранные данные: {collected_str}
+Собранные данные: {collected_str}{missing_optional}
 
 Доступные состояния для перехода: {states_str}
 Также доступны: close, soft_close
@@ -247,6 +270,6 @@ class AutonomousDecisionSource(KnowledgeSource):
 - next_state = одно из доступных состояний (или close/soft_close)
 - Если клиент просит завершить — next_state="close" или "soft_close"
 - Если цель ещё не достигнута — should_transition=false, next_state="{state}"
-- action всегда "autonomous_respond"
+- action всегда "autonomous_respond"{data_collection_rule}
 {objection_rules}{progress_hint}
 Ответь JSON:"""

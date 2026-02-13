@@ -23,6 +23,11 @@ states:
     phase_exhaust_threshold: 5
     required_data:
       - business_type
+    optional_data:
+      - company_size
+      - current_tools
+      - contact_info
+      - role
     parameters:
       next_phase_state: autonomous_qualification
       prev_phase_state: greeting
@@ -46,6 +51,11 @@ states:
     phase_exhaust_threshold: 5
     required_data:
       - company_size
+    optional_data:
+      - budget_range
+      - decision_timeline
+      - users_count
+      - contact_info
     parameters:
       next_phase_state: autonomous_presentation
       prev_phase_state: autonomous_discovery
@@ -67,6 +77,10 @@ states:
     phase_exhaust_threshold: 5
     required_data:
       - pain_point
+    optional_data:
+      - pain_category
+      - urgency
+      - contact_info
     parameters:
       next_phase_state: autonomous_objection_handling
       prev_phase_state: autonomous_qualification
@@ -91,6 +105,10 @@ states:
         objection_phase_entered: true
     required_data:
       - objection_phase_entered
+    optional_data:
+      - urgency
+      - budget_range
+      - contact_info
     parameters:
       next_phase_state: autonomous_negotiation
       prev_phase_state: autonomous_presentation
@@ -115,6 +133,11 @@ states:
         negotiation_phase_entered: true
     required_data:
       - negotiation_phase_entered
+    optional_data:
+      - budget_range
+      - decision_timeline
+      - users_count
+      - contact_info
     parameters:
       next_phase_state: autonomous_closing
       prev_phase_state: autonomous_objection_handling
@@ -139,6 +162,9 @@ states:
         closing_phase_entered: true
     required_data:
       - closing_phase_entered
+    optional_data:
+      - contact_info
+      - decision_timeline
     parameters:
       next_phase_state: close
       prev_phase_state: autonomous_negotiation
