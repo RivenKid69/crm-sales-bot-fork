@@ -81,10 +81,12 @@ class PhaseExhaustedSource(KnowledgeSource):
 
         phase_threshold = ctx.state_config.get("phase_exhaust_threshold", 3)
 
-        # Only fire in exclusive window: [phase_threshold, stall_soft_threshold)
+        # Only fire in exclusive window: [effective_threshold, stall_soft_threshold)
         # Above this window, StallGuardSource handles escalation
         stall_soft = max(max_turns - 1, 3)
-        if consecutive < phase_threshold or consecutive >= stall_soft:
+        # Clamp phase_threshold to guarantee non-empty window [threshold, stall_soft)
+        effective_threshold = min(phase_threshold, stall_soft - 1)
+        if consecutive < effective_threshold or consecutive >= stall_soft:
             return False
 
         # Only fire when there's no progress (same condition as old Guard check 6)
@@ -107,10 +109,13 @@ class PhaseExhaustedSource(KnowledgeSource):
         consecutive = getattr(ctx.context_envelope, 'consecutive_same_state', 0) if ctx.context_envelope else 0
         max_turns = ctx.state_config.get("max_turns_in_state", 0)
         phase_threshold = ctx.state_config.get("phase_exhaust_threshold", 3)
+        # Use same clamping as should_contribute() for consistent logging
+        stall_soft = max(max_turns - 1, 3)
+        effective_threshold = min(phase_threshold, stall_soft - 1)
 
         logger.info(
             f"PhaseExhaustedSource: offer_options in '{ctx.state}' "
-            f"(consecutive={consecutive}, threshold={phase_threshold}, max={max_turns})"
+            f"(consecutive={consecutive}, threshold={effective_threshold}, max={max_turns})"
         )
 
         blackboard.propose_action(

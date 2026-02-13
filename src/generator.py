@@ -760,14 +760,17 @@ class ResponseGenerator:
 
         # === AUTONOMOUS FLOW: Direct KB access (bypass CategoryRouter + CascadeRetriever) ===
         _is_autonomous = self._flow and self._flow.name == "autonomous" and state.startswith("autonomous_")
+        _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
         if _is_autonomous:
             from src.knowledge.autonomous_kb import load_facts_for_state
             from src.knowledge.loader import load_knowledge_base
             _kb = load_knowledge_base()
-            retrieved_facts, retrieved_urls = load_facts_for_state(
+            recently_used = set(context.get("recent_fact_keys", []))
+            retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
                 state=state,
                 flow_config=self._flow,
                 kb=_kb,
+                recently_used_keys=recently_used,
             )
             _company_info = f"{_kb.company_name}: {_kb.company_description}"
         else:
@@ -1039,6 +1042,7 @@ class ResponseGenerator:
                     "requested_action": requested_action,
                     "selected_template_key": selected_template_key,
                     "validation_events": validation_events,
+                    "fact_keys": _fact_keys,
                 }
                 return processed
 
@@ -1073,6 +1077,7 @@ class ResponseGenerator:
             "requested_action": requested_action,
             "selected_template_key": selected_template_key,
             "validation_events": validation_events,
+            "fact_keys": _fact_keys,
         }
         return processed
 

@@ -8,13 +8,20 @@ Calls LLM generate_structured() with Pydantic schema to decide:
 - Whether to transition to the next sales phase
 - Which action to take (always "autonomous_respond")
 
+Safety layers:
+1. Decision history — informs LLM about its previous decisions (soft signal)
+2. Hard override — after N consecutive stay-decisions, forces transition
+   with HIGH priority, bypassing LLM entirely (same principle as StallGuard)
+
 Priority: NORMAL (42 in registry order).
 Safety sources (GoBackGuard, ConversationGuard, ObjectionGuard, PriceQuestion,
 StallGuard) all fire at CRITICAL/HIGH and override this source.
 """
 
-from typing import Optional, Any, TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import Optional, Any, List, TYPE_CHECKING
 import logging
+import time
 
 from pydantic import BaseModel
 
@@ -25,6 +32,18 @@ if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AutonomousDecisionRecord:
+    """Immutable record of one autonomous decision."""
+    turn_in_state: int
+    intent: str
+    state: str
+    should_transition: bool
+    next_state: str
+    reasoning: str
+    timestamp: float = field(default_factory=time.time)
 
 
 class AutonomousDecision(BaseModel):
@@ -45,11 +64,18 @@ class AutonomousDecisionSource(KnowledgeSource):
 
     Uses LLM to evaluate conversation context and decide whether to
     transition to the next sales phase.
+
+    Safety: Hard override forces transition after N consecutive stay-decisions
+    (threshold = phase_exhaust_threshold from state config). This creates:
+    - Turn 3: PhaseExhaustedSource shows options (NORMAL)
+    - Turn 4: Hard override forces transition (HIGH, LLM bypassed)
+    - Turn 5-6: StallGuard soft/hard as ultimate backstop
     """
 
     def __init__(self, llm: Any = None, name: str = "AutonomousDecisionSource"):
         super().__init__(name)
         self._llm = llm
+        self._decision_history: List[AutonomousDecisionRecord] = []
 
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """Only contribute for autonomous flow with LLM available."""
@@ -77,6 +103,9 @@ class AutonomousDecisionSource(KnowledgeSource):
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
         Call LLM to decide state transition, then propose to blackboard.
+
+        Hard override: if stay-streak >= phase_exhaust_threshold, bypass LLM
+        and force transition with HIGH priority.
         """
         ctx = blackboard.get_context()
         state = ctx.state
@@ -106,7 +135,65 @@ class AutonomousDecisionSource(KnowledgeSource):
         # Read optional_data from state config for data collection guidance
         optional_data = state_config.get("optional_data", [])
 
-        # Build prompt for LLM decision
+        # =====================================================================
+        # Hard override: force transition after consecutive stay decisions
+        # Threshold = phase_exhaust_threshold (options shown 1 turn before)
+        # =====================================================================
+        stay_override_threshold = state_config.get("phase_exhaust_threshold", 3)
+
+        # Count CONSECUTIVE stays (break on first transition or state change)
+        stay_streak = 0
+        for d in reversed(self._decision_history):
+            if d.state != state:
+                break
+            if not d.should_transition:
+                stay_streak += 1
+            else:
+                break  # Streak broken by transition decision
+
+        if stay_streak >= stay_override_threshold:
+            # Determine target: next_phase_state from config, or soft_close
+            target = state_config.get("next_phase_state", "soft_close")
+            if target not in all_states and target not in ("close", "soft_close", "success"):
+                target = "soft_close"
+
+            logger.info(
+                "AutonomousDecision: HARD OVERRIDE — %d consecutive stays in %s, "
+                "forcing transition to %s (LLM bypassed)",
+                stay_streak, state, target,
+            )
+
+            # Record the forced decision
+            self._decision_history.append(AutonomousDecisionRecord(
+                turn_in_state=turn_in_state,
+                intent=intent,
+                state=state,
+                should_transition=True,
+                next_state=target,
+                reasoning=f"hard_override_after_{stay_streak}_stays",
+            ))
+
+            # Propose with HIGH priority — same as StallGuard
+            blackboard.propose_action(
+                action="autonomous_respond",
+                priority=Priority.HIGH,
+                combinable=True,
+                reason_code=f"autonomous_hard_override_{stay_streak}_stays",
+                source_name=self.name,
+            )
+            blackboard.propose_transition(
+                next_state=target,
+                priority=Priority.HIGH,
+                reason_code=f"autonomous_hard_override_{stay_streak}_stays",
+                source_name=self.name,
+            )
+            return  # Skip LLM call entirely
+
+        # =====================================================================
+        # Normal path: LLM decides with decision history context
+        # =====================================================================
+
+        # Build prompt for LLM decision (with decision history)
         prompt = self._build_decision_prompt(
             state=state,
             phase=current_phase,
@@ -146,6 +233,16 @@ class AutonomousDecisionSource(KnowledgeSource):
                 source_name=self.name,
             )
             return
+
+        # Record decision in history
+        self._decision_history.append(AutonomousDecisionRecord(
+            turn_in_state=turn_in_state,
+            intent=intent,
+            state=state,
+            should_transition=decision.should_transition,
+            next_state=decision.next_state,
+            reasoning=decision.reasoning[:100],
+        ))
 
         # Always propose autonomous_respond action
         blackboard.propose_action(
@@ -228,16 +325,33 @@ class AutonomousDecisionSource(KnowledgeSource):
             if missing:
                 missing_optional = f"\nЖелательно собрать: {', '.join(missing)}"
 
-        # Objection-specific decision rules
+        # Decision history — helps LLM avoid repetition before hard override
+        decision_summary = ""
+        recent = [d for d in self._decision_history[-5:] if d.state == state]
+        if recent:
+            stay_count = sum(1 for d in recent if not d.should_transition)
+            lines = []
+            for d in recent:
+                verb = "ПЕРЕШЁЛ" if d.should_transition else "ОСТАЛСЯ"
+                lines.append(f"  Ход {d.turn_in_state}: {d.intent} → {verb}")
+            warning = ""
+            if stay_count >= 2:
+                warning = f"\n⚠️ Решение ОСТАТЬСЯ принято {stay_count} раз. Рассмотри переход."
+            decision_summary = (
+                "\nИСТОРИЯ ТВОИХ РЕШЕНИЙ в этом этапе:\n"
+                + "\n".join(lines)
+                + warning
+            )
+
+        # Objection-specific decision rules (softened — no unconditional hard lock)
         objection_rules = ""
         if intent.startswith("objection_"):
             objection_type = intent.replace("objection_", "")
             objection_rules = f"""
-ВАЖНО — ВОЗРАЖЕНИЕ: Клиент выразил возражение типа '{objection_type}'.
-- should_transition=false — ОСТАВАЙСЯ в текущем этапе для отработки возражения
-- Возражение нужно обработать В РАМКАХ текущего этапа, не переходя в другой
-- Переходи дальше ТОЛЬКО если возражение полностью снято И цель этапа достигнута
-- Если возражение серьёзное (цена, конкурент, доверие) — ВСЕГДА should_transition=false"""
+ВОЗРАЖЕНИЕ: Клиент выразил возражение типа '{objection_type}'.
+- Отработай возражение в рамках текущего этапа
+- Если возражение снято — продолжай к цели этапа
+- Если клиент повторяет то же возражение — смени подход или предложи демо/звонок"""
 
         # Turn progress context (replaces StallGuard soft nudge)
         progress_hint = ""
@@ -261,7 +375,7 @@ class AutonomousDecisionSource(KnowledgeSource):
 Интент клиента: {intent}
 Сообщение клиента: "{user_message}"
 Собранные данные: {collected_str}{missing_optional}
-
+{decision_summary}
 Доступные состояния для перехода: {states_str}
 Также доступны: close, soft_close
 

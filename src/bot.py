@@ -258,6 +258,7 @@ class SalesBot:
         # Хранит последние 5 ходов с полной информацией (intent, action, confidence)
         # Pass config for state_order, phase_order from YAML (v2.0)
         self.context_window = ContextWindow(max_size=5, config=self._config)
+        self._merge_flow_state_order()  # Merge flow-specific ordering
 
         # Personalization v2: Session memory for effective actions
         self.action_tracker: Optional[EffectiveActionTracker] = None
@@ -1400,6 +1401,8 @@ class SalesBot:
             "user_messages": [turn.get("user", "") for turn in self.history[-5:]] + [user_message],
             # Phase 2: ResponseDirectives для generator
             "response_directives": response_directives,
+            # Fact rotation: recently used KB section keys for autonomous flow
+            "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
         }
 
         # Determine action
@@ -1745,6 +1748,9 @@ class SalesBot:
         })
 
         # 4.1 Save to context window (расширенный контекст)
+        # Extract fact_keys from generator metadata for fact rotation tracking
+        _gen_meta = self.generator.get_last_generation_meta() if hasattr(self.generator, "get_last_generation_meta") else {}
+        _fact_keys = _gen_meta.get("fact_keys", [])
         self.context_window.add_turn_from_dict(
             user_message=user_message,
             bot_response=response,
@@ -1757,6 +1763,7 @@ class SalesBot:
             extracted_data=extracted,
             is_fallback=fallback_used,
             fallback_tier=fallback_tier,
+            fact_keys_used=_fact_keys,
         )
 
         # 4.2 Record action outcome for personalization v2
@@ -1867,6 +1874,12 @@ class SalesBot:
             cta_result=cta_result,
             decision_trace=decision_trace_dict,
         )
+
+    def _merge_flow_state_order(self) -> None:
+        """Merge flow-computed state ordering into context window."""
+        flow_state_order = self._flow.compute_state_order()
+        if flow_state_order:
+            self.context_window.merge_state_order(flow_state_order)
 
     def _load_persona_limits(self) -> Dict[str, Dict[str, int]]:
         """
@@ -2049,6 +2062,7 @@ class SalesBot:
             },
             config=bot._config,
         )
+        bot._merge_flow_state_order()  # Re-merge after snapshot restore
 
         bot.history = history_tail or []
         bot.history_compact = snapshot.get("history_compact")
