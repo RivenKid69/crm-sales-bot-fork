@@ -28,7 +28,7 @@ Context Window — расширенный контекст для классиф
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Tuple, TYPE_CHECKING
+from typing import List, Dict, Optional, Any, Set, Tuple, TYPE_CHECKING
 from collections import Counter
 from enum import Enum
 import time
@@ -144,6 +144,9 @@ class TurnContext:
     word_count: int = 0      # Количество слов
     has_data: bool = False   # Предоставил ли клиент данные
 
+    # Fact sections used in this turn (for fact rotation)
+    fact_keys_used: List[str] = field(default_factory=list)
+
     # Config-driven mappings (use DEFAULT_* if None)
     state_order: Optional[Dict[str, int]] = field(default=None, repr=False)
     progress_intents: Optional[set] = field(default=None, repr=False)
@@ -192,6 +195,7 @@ class TurnContext:
             "message_length": self.message_length,
             "word_count": self.word_count,
             "has_data": self.has_data,
+            "fact_keys_used": self.fact_keys_used,
         }
 
     @classmethod
@@ -240,6 +244,8 @@ class TurnContext:
             obj.word_count = int(data.get("word_count", obj.word_count))
         if "has_data" in data:
             obj.has_data = bool(data.get("has_data"))
+        if "fact_keys_used" in data:
+            obj.fact_keys_used = list(data.get("fact_keys_used") or [])
         return obj
 
     def _compute_turn_type(self) -> TurnType:
@@ -968,6 +974,23 @@ class ContextWindow:
         positive = categories.get("positive", [])
         return set(positive) if positive else DEFAULT_PROGRESS_INTENTS
 
+    def merge_state_order(self, additional: Dict[str, int]) -> None:
+        """Merge flow-specific state ordering into context window.
+
+        Used by bot.py to register flow-computed state positions.
+        Does not overwrite existing entries — flow positions are additive.
+        """
+        for state, pos in additional.items():
+            if state not in self._state_order:
+                self._state_order[state] = pos
+
+    def get_recent_fact_keys(self, limit: int = 3) -> Set[str]:
+        """Get fact section keys used in recent turns."""
+        keys: Set[str] = set()
+        for turn in self.turns[-limit:]:
+            keys.update(getattr(turn, 'fact_keys_used', []))
+        return keys
+
     def add_turn(self, turn: TurnContext) -> None:
         """
         Добавить ход в окно.
@@ -1008,6 +1031,7 @@ class ContextWindow:
         is_fallback: bool = False,
         fallback_tier: Optional[str] = None,
         is_disambiguation: bool = False,
+        fact_keys_used: List[str] = None,
     ) -> None:
         """
         Добавить ход из отдельных параметров.
@@ -1027,6 +1051,7 @@ class ContextWindow:
             is_fallback=is_fallback,
             fallback_tier=fallback_tier,
             is_disambiguation=is_disambiguation,
+            fact_keys_used=fact_keys_used or [],
             state_order=self._state_order,
             progress_intents=self._progress_intents,
         )

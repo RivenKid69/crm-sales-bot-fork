@@ -20,7 +20,7 @@ states:
       - features
       - faq
     max_turns_in_state: 6
-    phase_exhaust_threshold: 5
+    phase_exhaust_threshold: 3
     required_data:
       - business_type
     optional_data:
@@ -48,7 +48,7 @@ states:
       - promotions
       - products
     max_turns_in_state: 6
-    phase_exhaust_threshold: 5
+    phase_exhaust_threshold: 3
     required_data:
       - company_size
     optional_data:
@@ -74,7 +74,7 @@ states:
       - products
       - analytics
     max_turns_in_state: 6
-    phase_exhaust_threshold: 5
+    phase_exhaust_threshold: 3
     required_data:
       - pain_point
     optional_data:
@@ -99,7 +99,7 @@ states:
       - competitors
       - stability
     max_turns_in_state: 6
-    phase_exhaust_threshold: 5
+    phase_exhaust_threshold: 3
     on_enter:
       set_flags:
         objection_phase_entered: true
@@ -127,7 +127,7 @@ states:
       - promotions
       - integrations
     max_turns_in_state: 6
-    phase_exhaust_threshold: 5
+    phase_exhaust_threshold: 3
     on_enter:
       set_flags:
         negotiation_phase_entered: true
@@ -156,7 +156,7 @@ states:
       - support
       - promotions
     max_turns_in_state: 6
-    phase_exhaust_threshold: 5
+    phase_exhaust_threshold: 3
     on_enter:
       set_flags:
         closing_phase_entered: true

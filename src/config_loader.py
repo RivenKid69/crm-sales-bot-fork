@@ -756,6 +756,48 @@ class FlowConfig:
         except Exception:
             return None
 
+    def compute_state_order(self) -> Dict[str, int]:
+        """
+        Auto-compute state ordering by traversing next_phase_state chain.
+
+        Each autonomous state has parameters.next_phase_state forming a linked list:
+        greeting -> autonomous_discovery -> ... -> autonomous_closing -> close
+
+        Returns dict of {state_name: position} for funnel_delta calculation.
+        Works for ANY flow with next_phase_state parameters.
+        """
+        # Build adjacency: state -> next_state
+        forward: Dict[str, str] = {}
+        for state_name, state_cfg in self.states.items():
+            next_state = state_cfg.get("next_phase_state")
+            if next_state:
+                forward[state_name] = next_state
+
+        if not forward:
+            return {}
+
+        # Find chain start: states in forward that are NOT targets of other flow states
+        all_nexts = set(forward.values())
+        starts = [s for s in forward if s not in all_nexts]
+
+        if not starts:
+            # Circular — use first alphabetically as start
+            starts = [sorted(forward.keys())[0]]
+
+        # Walk the chain from start, assign positions
+        order: Dict[str, int] = {}
+        pos = 1  # Start from 1 (0 = greeting in global order)
+        current: Optional[str] = starts[0]
+        visited: Set[str] = set()
+        while current and current not in visited:
+            if current in self.states:  # Only include states that belong to this flow
+                order[current] = pos
+                pos += 1
+            visited.add(current)
+            current = forward.get(current)
+
+        return order
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert FlowConfig to dictionary.
