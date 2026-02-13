@@ -2,6 +2,7 @@
 venv/
 .venv/
 env/
+.tmp_tokenv/
 
 # Python
 __pycache__/

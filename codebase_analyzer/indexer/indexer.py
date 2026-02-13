@@ -10,8 +10,14 @@ from ..config import AppConfig, get_config
 from ..utils.logging import LogContext, get_logger
 from ..utils.progress import create_progress, get_metrics, reset_metrics
 from .graph.dependency_graph import DependencyGraph, build_dependency_graph
-from .models.entities import FileEntity, Language, CodeEntity
-from .models.relations import CodebaseStats
+from .models.entities import (
+    CodeEntity,
+    EntityType,
+    FileEntity,
+    Language,
+    SourceLocation,
+)
+from .models.relations import CodebaseStats, Relation, RelationType
 from .parsers.base import get_parser_for_file
 
 logger = get_logger("indexer")
@@ -487,6 +493,10 @@ class CodebaseIndexer:
     def load_index(self, index_dir: Path) -> bool:
         """Load a previously saved index.
 
+        Reconstructs the full dependency graph from graph.json and re-reads
+        source files from disk to populate entity source_code (needed by the
+        analysis pipeline / LLM summarizer).
+
         Args:
             index_dir: Directory containing the saved index
 
@@ -495,28 +505,92 @@ class CodebaseIndexer:
         """
         try:
             with LogContext("Loading index"):
-                # Load entities (minimal for now)
+                # Load entities metadata
                 entities_path = index_dir / "entities.json"
                 if entities_path.exists():
                     with open(entities_path) as f:
                         entities_data = json.load(f)
                     logger.info(f"Loaded {len(entities_data)} file entities")
 
-                # Load graph
+                # Load and reconstruct graph
                 graph_path = index_dir / "graph.json"
                 if graph_path.exists():
                     with open(graph_path) as f:
                         graph_data = json.load(f)
-                    # Reconstruct graph (simplified)
-                    self._dependency_graph = DependencyGraph()
-                    logger.info(f"Loaded graph with {len(graph_data.get('nodes', []))} nodes")
+
+                    graph = DependencyGraph()
+
+                    # Cache: file_path -> source content (read once per file)
+                    _file_source_cache: dict[str, str] = {}
+
+                    # 1) Reconstruct entities from graph nodes
+                    for node in graph_data.get("nodes", []):
+                        entity_id = node["id"]
+                        entity_type_str = node.get("entity_type", "file")
+                        name = node.get("name", "")
+                        lang_str = node.get("language", "typescript")
+                        file_str = node.get("file", "")
+
+                        # Map strings to enums
+                        try:
+                            entity_type = EntityType(entity_type_str)
+                        except ValueError:
+                            entity_type = EntityType.FILE
+                        try:
+                            language = Language(lang_str)
+                        except ValueError:
+                            language = Language.TYPESCRIPT
+
+                        file_path = Path(file_str) if file_str else Path("unknown")
+
+                        # Read source code from disk (cached per file)
+                        source_code = ""
+                        if file_str and file_str not in _file_source_cache:
+                            try:
+                                _file_source_cache[file_str] = Path(file_str).read_text(
+                                    encoding="utf-8", errors="replace"
+                                )
+                            except OSError:
+                                _file_source_cache[file_str] = ""
+                        if file_str:
+                            source_code = _file_source_cache.get(file_str, "")
+
+                        entity = CodeEntity(
+                            id=entity_id,
+                            name=name,
+                            entity_type=entity_type,
+                            language=language,
+                            location=SourceLocation(
+                                file_path=file_path,
+                                start_line=1,
+                                end_line=max(1, source_code.count("\n") + 1),
+                            ),
+                            source_code=source_code,
+                        )
+                        graph.add_entity(entity)
+
+                    # 2) Reconstruct edges
+                    for edge in graph_data.get("edges", []):
+                        source_id = edge["source"]
+                        target_id = edge["target"]
+                        rel_type_str = edge.get("relation_type", "depends_on")
+                        try:
+                            rel_type = RelationType(rel_type_str)
+                        except ValueError:
+                            rel_type = RelationType.IMPORTS
+                        relation = Relation.create(source_id, target_id, rel_type)
+                        graph.add_relation(relation)
+
+                    self._dependency_graph = graph
+                    logger.info(
+                        f"Loaded graph with {len(graph_data.get('nodes', []))} nodes"
+                    )
 
                 # Load stats
                 stats_path = index_dir / "stats.json"
                 if stats_path.exists():
                     with open(stats_path) as f:
                         stats_data = json.load(f)
-                    # Reconstruct stats
                     self._stats = CodebaseStats(**stats_data)
 
                 return True

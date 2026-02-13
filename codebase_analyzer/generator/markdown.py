@@ -72,7 +72,7 @@ DEFAULT_TEMPLATES = {
 ## Modules
 
 {% for module in modules %}
-- [{{ module.name }}](modules/{{ module.name | slugify }}.md) - {{ module.summary[:100] }}{% if module.summary|length > 100 %}...{% endif %}
+- [{{ module.name }}](modules/{{ module.name | slugify }}.md) - {{ module.summary }}
 
 {% endfor %}
 {% endif %}
