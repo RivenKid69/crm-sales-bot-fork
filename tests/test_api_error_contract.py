@@ -33,6 +33,19 @@ def test_process_returns_401_with_structured_error(monkeypatch, tmp_path: Path):
     assert resp.json()["error"]["code"] == "UNAUTHORIZED"
 
 
+def test_process_returns_401_with_structured_error_when_auth_missing(monkeypatch, tmp_path: Path):
+    import src.api as api_mod
+
+    monkeypatch.setattr(api_mod, "API_KEY", "test-key")
+    monkeypatch.setattr(api_mod, "DB_PATH", str(tmp_path / "test_401_missing_auth.db"))
+
+    with TestClient(api_mod.app) as client:
+        resp = client.post("/api/v1/process", json=_valid_payload())
+
+    assert resp.status_code == 401
+    assert resp.json()["error"]["code"] == "UNAUTHORIZED"
+
+
 def test_process_returns_400_with_structured_error_for_invalid_payload(monkeypatch, tmp_path: Path):
     import src.api as api_mod
 
@@ -70,3 +83,19 @@ def test_process_returns_500_with_structured_error_for_internal_exception(monkey
 
     assert resp.status_code == 500
     assert resp.json()["error"]["code"] == "INTERNAL"
+
+
+def test_get_user_profile_returns_404_with_structured_error(monkeypatch, tmp_path: Path):
+    import src.api as api_mod
+
+    monkeypatch.setattr(api_mod, "API_KEY", "test-key")
+    monkeypatch.setattr(api_mod, "DB_PATH", str(tmp_path / "test_profile_404.db"))
+
+    with TestClient(api_mod.app) as client:
+        resp = client.get(
+            "/api/v1/users/non-existing-user/profile",
+            headers={"Authorization": "Bearer test-key"},
+        )
+
+    assert resp.status_code == 404
+    assert resp.json()["error"]["code"] == "NOT_FOUND"
