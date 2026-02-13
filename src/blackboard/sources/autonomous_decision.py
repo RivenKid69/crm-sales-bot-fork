@@ -98,6 +98,11 @@ class AutonomousDecisionSource(KnowledgeSource):
             if s.startswith("autonomous_") and s != state
         ]
 
+        # Get turn-in-state count from context envelope
+        envelope = ctx.context_envelope if hasattr(ctx, 'context_envelope') else None
+        turn_in_state = getattr(envelope, 'consecutive_same_state', 0) if envelope else 0
+        max_turns = state_config.get("max_turns_in_state", 6)
+
         # Build prompt for LLM decision
         prompt = self._build_decision_prompt(
             state=state,
@@ -107,6 +112,8 @@ class AutonomousDecisionSource(KnowledgeSource):
             user_message=user_message,
             collected_data=collected_data,
             available_states=available_states,
+            turn_in_state=turn_in_state,
+            max_turns=max_turns,
         )
 
         try:
@@ -127,6 +134,13 @@ class AutonomousDecisionSource(KnowledgeSource):
                 reason_code="autonomous_llm_fallback",
                 source_name=self.name,
             )
+            # Must also propose stay-transition to prevent inherited mixin transitions
+            blackboard.propose_transition(
+                next_state=state,
+                priority=Priority.NORMAL,
+                reason_code="autonomous_stay_llm_fallback",
+                source_name=self.name,
+            )
             return
 
         # Always propose autonomous_respond action
@@ -138,7 +152,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             source_name=self.name,
         )
 
-        # Propose transition if LLM decided to move to next phase
+        # Propose transition — ALWAYS propose to win over inherited mixin transitions
         if decision.should_transition and decision.next_state:
             target = decision.next_state
             # Validate target state exists
@@ -159,9 +173,24 @@ class AutonomousDecisionSource(KnowledgeSource):
                 )
             else:
                 logger.warning(
-                    "AutonomousDecision: invalid target state %s, ignoring",
+                    "AutonomousDecision: invalid target state %s, staying",
                     target,
                 )
+                blackboard.propose_transition(
+                    next_state=state,
+                    priority=Priority.NORMAL,
+                    reason_code="autonomous_stay_invalid_target",
+                    source_name=self.name,
+                )
+        else:
+            # Stay in current state — MUST propose to win over inherited mixin transitions
+            # (TransitionResolverSource would otherwise propose handle_objection for objection intents)
+            blackboard.propose_transition(
+                next_state=state,
+                priority=Priority.NORMAL,
+                reason_code="autonomous_stay_in_state",
+                source_name=self.name,
+            )
 
     def _build_decision_prompt(
         self,
@@ -172,6 +201,8 @@ class AutonomousDecisionSource(KnowledgeSource):
         user_message: str,
         collected_data: dict,
         available_states: list,
+        turn_in_state: int = 0,
+        max_turns: int = 6,
     ) -> str:
         """Build the decision prompt for LLM."""
         collected_str = ", ".join(
@@ -180,6 +211,25 @@ class AutonomousDecisionSource(KnowledgeSource):
         ) or "пока ничего"
 
         states_str = ", ".join(available_states) if available_states else "нет"
+
+        # Objection-specific decision rules
+        objection_rules = ""
+        if intent.startswith("objection_"):
+            objection_type = intent.replace("objection_", "")
+            objection_rules = f"""
+ВАЖНО — ВОЗРАЖЕНИЕ: Клиент выразил возражение типа '{objection_type}'.
+- should_transition=false — ОСТАВАЙСЯ в текущем этапе для отработки возражения
+- Возражение нужно обработать В РАМКАХ текущего этапа, не переходя в другой
+- Переходи дальше ТОЛЬКО если возражение полностью снято И цель этапа достигнута
+- Если возражение серьёзное (цена, конкурент, доверие) — ВСЕГДА should_transition=false"""
+
+        # Turn progress context (replaces StallGuard soft nudge)
+        progress_hint = ""
+        if max_turns > 0 and turn_in_state >= max_turns - 2:
+            progress_hint = f"""
+ПРОГРЕСС: Ход {turn_in_state} из {max_turns} в этом этапе.
+- Если прогресс застопорился — рассмотри переход к следующему этапу
+- Если есть прогресс (клиент делится информацией, отвечает на вопросы) — можно продолжить"""
 
         return f"""Ты — контроллер sales-диалога. Реши нужно ли перейти к следующему этапу.
 
@@ -198,5 +248,5 @@ class AutonomousDecisionSource(KnowledgeSource):
 - Если клиент просит завершить — next_state="close" или "soft_close"
 - Если цель ещё не достигнута — should_transition=false, next_state="{state}"
 - action всегда "autonomous_respond"
-
+{objection_rules}{progress_hint}
 Ответь JSON:"""

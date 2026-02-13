@@ -671,7 +671,11 @@ class ResponseGenerator:
                 template_key=template_key,
             )
         elif intent in self.PRICE_RELATED_INTENTS:
-            template_key = self._get_price_template_key(intent, action)
+            # Autonomous flow handles price questions via KB facts + LLM
+            if action == "autonomous_respond":
+                template_key = action
+            else:
+                template_key = self._get_price_template_key(intent, action)
             logger.debug(
                 "Price-related intent detected, using pricing template",
                 intent=intent,
@@ -679,7 +683,11 @@ class ResponseGenerator:
                 template_key=template_key
             )
         elif intent in self.OBJECTION_RELATED_INTENTS:
-            template_key = self._get_objection_template_key(intent, action)
+            # Autonomous flow handles objections in-state with its own template + 4P/3F injection
+            if action == "autonomous_respond":
+                template_key = action
+            else:
+                template_key = self._get_objection_template_key(intent, action)
             logger.debug(
                 "Objection-related intent detected, using specific template",
                 intent=intent,
@@ -874,7 +882,13 @@ class ResponseGenerator:
             "do_not_ask": "",
             "collected_fields_list": "",
             "available_questions": "",
+            # Autonomous flow: objection-specific framework instructions (4P/3F)
+            "objection_instructions": "",
         })
+
+        # === Autonomous flow: inject objection-specific framework instructions ===
+        if _is_autonomous and intent.startswith("objection_"):
+            variables["objection_instructions"] = self._build_autonomous_objection_instructions(intent)
 
         # === Question Deduplication: Prevent asking about already collected data ===
         # SSoT: src/yaml_config/question_dedup.yaml
@@ -1585,6 +1599,32 @@ class ResponseGenerator:
             "selected_template_key": None,
             "validation_events": [],
         }
+
+    # Mapping: objection intent → framework type
+    _OBJECTION_4P_INTENTS = {
+        "objection_price", "objection_competitor", "objection_no_time",
+        "objection_timing", "objection_complexity",
+    }
+
+    def _build_autonomous_objection_instructions(self, intent: str) -> str:
+        """Build objection-specific instructions for autonomous flow response."""
+        objection_type = intent.replace("objection_", "").replace("_", " ")
+
+        if intent in self._OBJECTION_4P_INTENTS:
+            return f"""=== ОБРАБОТКА ВОЗРАЖЕНИЯ: {objection_type} ===
+Клиент выразил рациональное возражение. Используй подход 4P:
+1. ПАУЗА — признай опасения клиента, покажи что понимаешь
+2. УТОЧНЕНИЕ — задай уточняющий вопрос чтобы понять корень возражения
+3. ПРЕЗЕНТАЦИЯ ЦЕННОСТИ — приведи конкретный аргумент из базы знаний
+4. ПРОДВИЖЕНИЕ — предложи следующий шаг (демо, расчёт ROI, тест)
+Отработай возражение мягко, без давления. Используй данные из базы знаний."""
+        else:
+            return f"""=== ОБРАБОТКА ВОЗРАЖЕНИЯ: {objection_type} ===
+Клиент выразил эмоциональное возражение. Используй подход 3F:
+1. FEEL — покажи что понимаешь чувства клиента ("Да, это важный момент...")
+2. FELT — приведи социальное доказательство ("Многие клиенты изначально думали так же...")
+3. FOUND — покажи результат ("Но после внедрения они отметили...")
+Проявляй эмпатию. Не спорь с эмоциями. Приведи конкретный пример из базы знаний."""
 
     def _get_price_template_key(self, intent: str, action: str) -> str:
         """

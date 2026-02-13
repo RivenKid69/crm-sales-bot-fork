@@ -1,0 +1,540 @@
+# tests/test_sources_autonomous_decision.py
+
+"""
+Tests for AutonomousDecisionSource — deterministic LLM-driven objection handling.
+
+Verifies:
+1. Self-loop transitions always proposed (stay in state wins over mixin transitions)
+2. Objection-aware decision prompt enrichment
+3. Turn progress hints near max_turns
+4. LLM fallback proposes stay-transition
+5. Non-autonomous states are skipped
+6. Generator template key preservation for autonomous flow
+7. Autonomous objection framework instructions (4P/3F)
+"""
+
+import pytest
+from unittest.mock import Mock, MagicMock, patch
+from typing import Dict, Any, Optional
+
+from src.blackboard.sources.autonomous_decision import (
+    AutonomousDecisionSource,
+    AutonomousDecision,
+)
+from src.blackboard.enums import Priority
+
+
+# =============================================================================
+# Mock Helpers
+# =============================================================================
+
+class MockContextSnapshot:
+    """Mock ContextSnapshot for AutonomousDecisionSource tests."""
+
+    def __init__(
+        self,
+        state: str = "autonomous_qualification",
+        state_config: Optional[Dict[str, Any]] = None,
+        flow_config: Optional[Any] = None,
+        current_intent: str = "agreement",
+        user_message: str = "Да, расскажите",
+        collected_data: Optional[Dict[str, Any]] = None,
+        context_envelope: Optional[Any] = None,
+    ):
+        self.state = state
+        self.state_config = state_config or {
+            "phase": "qualification",
+            "goal": "Понять потребности клиента",
+            "max_turns_in_state": 6,
+        }
+        self.flow_config = flow_config or MockFlowConfig()
+        self.current_intent = current_intent
+        self.user_message = user_message
+        self.collected_data = collected_data or {}
+        self.context_envelope = context_envelope
+
+
+class MockFlowConfig:
+    """Mock FlowConfig for autonomous flow."""
+
+    def __init__(self, name: str = "autonomous", states: Optional[Dict] = None):
+        self.name = name
+        self.states = states or {
+            "autonomous_qualification": {"phase": "qualification", "goal": "Понять потребности"},
+            "autonomous_presentation": {"phase": "presentation", "goal": "Презентация продукта"},
+            "autonomous_closing": {"phase": "closing", "goal": "Закрытие сделки"},
+        }
+
+    def get(self, key, default=None):
+        return getattr(self, key, default)
+
+
+class MockEnvelope:
+    """Mock ContextEnvelope with consecutive_same_state."""
+
+    def __init__(self, consecutive_same_state: int = 0):
+        self.consecutive_same_state = consecutive_same_state
+
+
+def make_blackboard(
+    state: str = "autonomous_qualification",
+    intent: str = "agreement",
+    user_message: str = "Да, расскажите",
+    collected_data: Optional[Dict] = None,
+    flow_name: str = "autonomous",
+    states: Optional[Dict] = None,
+    state_config: Optional[Dict] = None,
+    context_envelope: Optional[Any] = None,
+):
+    """Create a mock blackboard for AutonomousDecisionSource tests."""
+    flow_config = MockFlowConfig(name=flow_name, states=states)
+    ctx = MockContextSnapshot(
+        state=state,
+        state_config=state_config or {
+            "phase": "qualification",
+            "goal": "Понять потребности клиента",
+            "max_turns_in_state": 6,
+        },
+        flow_config=flow_config,
+        current_intent=intent,
+        user_message=user_message,
+        collected_data=collected_data or {},
+        context_envelope=context_envelope,
+    )
+
+    bb = Mock()
+    bb.get_context.return_value = ctx
+
+    # Track proposals
+    bb._action_proposals = []
+    bb._transition_proposals = []
+
+    def propose_action(**kwargs):
+        bb._action_proposals.append(kwargs)
+
+    def propose_transition(**kwargs):
+        bb._transition_proposals.append(kwargs)
+
+    bb.propose_action.side_effect = propose_action
+    bb.propose_transition.side_effect = propose_transition
+
+    return bb
+
+
+def make_llm(decision: Optional[AutonomousDecision] = None, fail: bool = False):
+    """Create a mock LLM that returns given decision."""
+    llm = Mock()
+    if fail:
+        llm.generate_structured.side_effect = Exception("LLM unavailable")
+    else:
+        llm.generate_structured.return_value = decision
+    return llm
+
+
+# =============================================================================
+# Test: Always proposes transition on stay (Fix 1 — core fix)
+# =============================================================================
+
+class TestAlwaysProposesTransition:
+    """Verify AutonomousDecisionSource ALWAYS proposes a transition."""
+
+    @patch("src.feature_flags.flags")
+    def test_always_proposes_transition_on_stay(self, mock_flags):
+        """When LLM returns should_transition=false, verify a self-loop transition is proposed."""
+        mock_flags.is_enabled.return_value = True
+
+        decision = AutonomousDecision(
+            next_state="autonomous_qualification",
+            action="autonomous_respond",
+            reasoning="goal not achieved yet",
+            should_transition=False,
+        )
+        llm = make_llm(decision)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard(intent="objection_price", user_message="это дорого")
+
+        source.contribute(bb)
+
+        # Should have exactly 1 transition proposal — self-loop
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_qualification"
+        assert tp["priority"] == Priority.NORMAL
+        assert "autonomous_stay_in_state" in tp["reason_code"]
+
+    @patch("src.feature_flags.flags")
+    def test_always_proposes_transition_on_move(self, mock_flags):
+        """When LLM returns should_transition=true, verify target transition is proposed."""
+        mock_flags.is_enabled.return_value = True
+
+        decision = AutonomousDecision(
+            next_state="autonomous_presentation",
+            action="autonomous_respond",
+            reasoning="qualification complete",
+            should_transition=True,
+        )
+        llm = make_llm(decision)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard()
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_presentation"
+        assert tp["priority"] == Priority.NORMAL
+        assert "autonomous_transition" in tp["reason_code"]
+
+    @patch("src.feature_flags.flags")
+    def test_invalid_target_proposes_stay(self, mock_flags):
+        """When LLM returns invalid target, verify self-loop fallback."""
+        mock_flags.is_enabled.return_value = True
+
+        decision = AutonomousDecision(
+            next_state="nonexistent_state",
+            action="autonomous_respond",
+            reasoning="confused",
+            should_transition=True,
+        )
+        llm = make_llm(decision)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard()
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_qualification"
+        assert "autonomous_stay_invalid_target" in tp["reason_code"]
+
+
+# =============================================================================
+# Test: LLM fallback proposes stay-transition (Fix 1)
+# =============================================================================
+
+class TestLLMFallback:
+    """Verify LLM failure produces both action AND stay-transition."""
+
+    @patch("src.feature_flags.flags")
+    def test_llm_fallback_proposes_stay_transition(self, mock_flags):
+        """When LLM call fails, verify both action and stay-transition are proposed."""
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(fail=True)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard()
+
+        source.contribute(bb)
+
+        # Should have action
+        assert len(bb._action_proposals) == 1
+        assert bb._action_proposals[0]["action"] == "autonomous_respond"
+        assert "autonomous_llm_fallback" in bb._action_proposals[0]["reason_code"]
+
+        # Should have stay-transition
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_qualification"
+        assert "autonomous_stay_llm_fallback" in tp["reason_code"]
+
+    @patch("src.feature_flags.flags")
+    def test_llm_returns_none_proposes_stay_transition(self, mock_flags):
+        """When LLM returns None, verify stay-transition is proposed."""
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(decision=None)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard()
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        assert bb._transition_proposals[0]["next_state"] == "autonomous_qualification"
+
+
+# =============================================================================
+# Test: Non-autonomous state skipped
+# =============================================================================
+
+class TestShouldContribute:
+    """Verify should_contribute flow-gating logic."""
+
+    @patch("src.feature_flags.flags")
+    def test_non_autonomous_state_skipped(self, mock_flags):
+        """When state=handle_objection, verify should_contribute returns False."""
+        mock_flags.is_enabled.return_value = True
+
+        llm = Mock()
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard(state="handle_objection")
+
+        result = source.should_contribute(bb)
+
+        assert result is False
+
+    @patch("src.feature_flags.flags")
+    def test_non_autonomous_flow_skipped(self, mock_flags):
+        """When flow is not 'autonomous', should_contribute returns False."""
+        mock_flags.is_enabled.return_value = True
+
+        llm = Mock()
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard(flow_name="spin")
+
+        result = source.should_contribute(bb)
+
+        assert result is False
+
+    def test_no_llm_skipped(self):
+        """When no LLM available, should_contribute returns False."""
+        source = AutonomousDecisionSource(llm=None)
+        bb = make_blackboard()
+
+        result = source.should_contribute(bb)
+
+        assert result is False
+
+
+# =============================================================================
+# Test: Objection intent enriches decision prompt (Fix 2)
+# =============================================================================
+
+class TestDecisionPromptEnrichment:
+    """Verify decision prompt is enriched for objection intents and turn progress."""
+
+    def test_objection_intent_enriches_decision_prompt(self):
+        """When intent=objection_price, verify the decision prompt includes objection rules."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_qualification",
+            phase="qualification",
+            goal="Понять потребности",
+            intent="objection_price",
+            user_message="это дорого",
+            collected_data={"company_size": "10"},
+            available_states=["autonomous_presentation"],
+        )
+
+        assert "ВОЗРАЖЕНИЕ" in prompt
+        assert "price" in prompt
+        assert "should_transition=false" in prompt
+
+    def test_non_objection_intent_no_enrichment(self):
+        """When intent is not objection, verify no objection rules in prompt."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_qualification",
+            phase="qualification",
+            goal="Понять потребности",
+            intent="agreement",
+            user_message="Да, интересно",
+            collected_data={},
+            available_states=["autonomous_presentation"],
+        )
+
+        assert "ВОЗРАЖЕНИЕ" not in prompt
+
+    def test_progress_hint_near_max_turns(self):
+        """When turn_in_state >= max_turns-2, verify decision prompt includes progress hint."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_qualification",
+            phase="qualification",
+            goal="Понять потребности",
+            intent="agreement",
+            user_message="Да",
+            collected_data={},
+            available_states=["autonomous_presentation"],
+            turn_in_state=4,
+            max_turns=6,
+        )
+
+        assert "ПРОГРЕСС" in prompt
+        assert "4" in prompt
+        assert "6" in prompt
+
+    def test_no_progress_hint_early_turns(self):
+        """When turn_in_state < max_turns-2, verify no progress hint."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_qualification",
+            phase="qualification",
+            goal="Понять потребности",
+            intent="agreement",
+            user_message="Да",
+            collected_data={},
+            available_states=["autonomous_presentation"],
+            turn_in_state=1,
+            max_turns=6,
+        )
+
+        assert "ПРОГРЕСС" not in prompt
+
+
+# =============================================================================
+# Test: Generator template key preserved for autonomous objection (Fix 3b)
+# =============================================================================
+
+class TestGeneratorTemplateKeyPreservation:
+    """Verify _select_template_key returns autonomous_respond for autonomous flow."""
+
+    def test_template_key_preserved_for_autonomous_objection(self):
+        """When action=autonomous_respond and intent=objection_price, template stays autonomous_respond."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        llm.generate.return_value = "test"
+
+        gen = ResponseGenerator(llm)
+
+        template_key = gen._select_template_key(
+            intent="objection_price",
+            action="autonomous_respond",
+            context={},
+        )
+
+        assert template_key == "autonomous_respond"
+
+    def test_template_key_preserved_for_autonomous_price(self):
+        """When action=autonomous_respond and intent=price_question, template stays autonomous_respond."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        gen = ResponseGenerator(llm)
+
+        template_key = gen._select_template_key(
+            intent="price_question",
+            action="autonomous_respond",
+            context={},
+        )
+
+        assert template_key == "autonomous_respond"
+
+    def test_non_autonomous_objection_uses_specific_template(self):
+        """When action is NOT autonomous_respond, objection template is used normally."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        gen = ResponseGenerator(llm)
+
+        template_key = gen._select_template_key(
+            intent="objection_price",
+            action="handle_objection",
+            context={},
+        )
+
+        # Should NOT be autonomous_respond
+        assert template_key != "autonomous_respond"
+
+
+# =============================================================================
+# Test: Autonomous objection response includes framework (Fix 3d)
+# =============================================================================
+
+class TestAutonomousObjectionFramework:
+    """Verify _build_autonomous_objection_instructions returns correct frameworks."""
+
+    def test_4p_framework_for_rational_objection(self):
+        """Rational objections (price, competitor, etc.) use 4P framework."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        gen = ResponseGenerator(llm)
+
+        instructions = gen._build_autonomous_objection_instructions("objection_price")
+
+        assert "4P" in instructions
+        assert "ПАУЗА" in instructions
+        assert "УТОЧНЕНИЕ" in instructions
+        assert "ПРЕЗЕНТАЦИЯ ЦЕННОСТИ" in instructions
+        assert "ПРОДВИЖЕНИЕ" in instructions
+
+    def test_3f_framework_for_emotional_objection(self):
+        """Emotional objections (think, trust, no_need) use 3F framework."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        gen = ResponseGenerator(llm)
+
+        instructions = gen._build_autonomous_objection_instructions("objection_think")
+
+        assert "3F" in instructions
+        assert "FEEL" in instructions
+        assert "FELT" in instructions
+        assert "FOUND" in instructions
+
+    def test_competitor_objection_uses_4p(self):
+        """objection_competitor should use 4P (rational) framework."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        gen = ResponseGenerator(llm)
+
+        instructions = gen._build_autonomous_objection_instructions("objection_competitor")
+
+        assert "4P" in instructions
+
+    def test_trust_objection_uses_3f(self):
+        """objection_trust should use 3F (emotional) framework."""
+        from src.generator import ResponseGenerator
+
+        llm = Mock()
+        gen = ResponseGenerator(llm)
+
+        instructions = gen._build_autonomous_objection_instructions("objection_trust")
+
+        assert "3F" in instructions
+
+
+# =============================================================================
+# Test: Self-loop wins over inherited objection transition (Integration)
+# =============================================================================
+
+class TestSelfLoopPriority:
+    """Verify self-loop transition at order=42 beats TransitionResolver at order=50."""
+
+    @patch("src.feature_flags.flags")
+    def test_stay_transition_beats_inherited_objection(self, mock_flags):
+        """
+        Simulate both AutonomousDecisionSource (order=42) and
+        TransitionResolverSource (order=50) proposals.
+        With equal NORMAL priority, order=42 wins stable sort.
+        """
+        mock_flags.is_enabled.return_value = True
+
+        decision = AutonomousDecision(
+            next_state="autonomous_qualification",
+            action="autonomous_respond",
+            reasoning="handling objection in state",
+            should_transition=False,
+        )
+        llm = make_llm(decision)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard(intent="objection_price", user_message="это дорого")
+
+        source.contribute(bb)
+
+        # AutonomousDecisionSource proposes self-loop
+        assert len(bb._transition_proposals) == 1
+        autonomous_tp = bb._transition_proposals[0]
+        assert autonomous_tp["next_state"] == "autonomous_qualification"
+        assert autonomous_tp["priority"] == Priority.NORMAL
+
+        # Simulate what TransitionResolverSource (order=50) would propose
+        # In real system, ConflictResolver would see both and pick order=42
+        mock_transition_resolver_proposal = {
+            "next_state": "handle_objection",
+            "priority": Priority.NORMAL,
+            "reason_code": "intent_transition_objection_price",
+            "source_name": "TransitionResolverSource",
+        }
+
+        # The autonomous proposal (order=42) should win over
+        # TransitionResolver (order=50) for equal NORMAL priority
+        # because stable sort preserves order (42 < 50)
+        assert autonomous_tp["source_name"] == "AutonomousDecisionSource"
+        assert autonomous_tp["next_state"] != mock_transition_resolver_proposal["next_state"]
