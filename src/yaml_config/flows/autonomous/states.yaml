@@ -53,7 +53,7 @@ states:
       - company_size
     optional_data:
       - budget_range
-      - decision_timeline
+      - timeline
       - users_count
       - contact_info
     parameters:
@@ -135,7 +135,7 @@ states:
       - negotiation_phase_entered
     optional_data:
       - budget_range
-      - decision_timeline
+      - timeline
       - users_count
       - contact_info
     parameters:
@@ -164,7 +164,7 @@ states:
       - closing_phase_entered
     optional_data:
       - contact_info
-      - decision_timeline
+      - timeline
     parameters:
       next_phase_state: close
       prev_phase_state: autonomous_negotiation
