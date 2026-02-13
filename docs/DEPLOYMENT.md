@@ -199,7 +199,8 @@ chmod 600 /home/deploy/.ssh/authorized_keys
 
 sudo sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
 sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo systemctl restart sshd
+# Ubuntu 24.04: имя сервиса обычно `ssh`
+sudo systemctl restart ssh
 ```
 
 > После этого убедитесь, что можете зайти как `ssh deploy@<IP_СЕРВЕРА>` прежде чем закрывать root-сессию.
@@ -257,7 +258,7 @@ nvidia-smi
 
 ```bash
 # Установка
-curl -fsSL https://ollama.ai/install.sh | sh
+curl -fsSL https://ollama.com/install.sh | sh
 
 # Проверка
 ollama --version
@@ -313,17 +314,18 @@ pip install fastapi uvicorn
 python3 -c "from src.bot import SalesBot; print('OK')"
 ```
 
-> **Первый запуск** скачает embedding-модели (~1-2 GB):
+> Для некоторых flow/режимов первый запуск может скачать embedding-модели (~1-2 GB):
 > - `ai-forever/FRIDA` — для семантического поиска по базе знаний
 > - `BAAI/bge-reranker-v2-m3` — для ре-ранкинга результатов
 >
-> Модели кешируются в `~/.cache/huggingface/`.
+> В production API (`autonomous`) семантические embeddings по умолчанию отключены
+> для снижения GPU/RAM нагрузки.
 
 ### 6.3 Проверка в интерактивном режиме
 
 ```bash
 source /home/deploy/crm_sales_bot/.venv/bin/activate
-python3 -m src.bot
+python3 -m src.bot --flow autonomous
 
 # В консоли бота набрать:
 # > Привет, расскажи о вашей CRM
@@ -333,13 +335,14 @@ python3 -m src.bot
 
 ---
 
-## 7. API-обёртка (FastAPI)
+## 7. API-обёртка (FastAPI, autonomous-only)
 
-Бот поставляется без HTTP-сервера. Для работы по сети нужна API-обёртка.
+В репозитории уже есть production API: `src/api.py`.
+Для деплоя используем и дорабатываем **этот** файл, не создаём новый с нуля.
 
 > **MVP-контракт:** WIPON отправляет только последнее сообщение + идентификаторы.
-> «Машина» сама хранит snapshot-ы в локальной SQLite и восстанавливает состояние
-> по ключу `(session_id, user_id)`.
+> «Машина» сама хранит snapshot-ы в локальной SQLite, восстанавливает состояние по `(session_id, user_id)`
+> и отдельно сохраняет собранные данные в таблицу `user_profiles`.
 
 ### 7.1 API-контракт
 
@@ -369,6 +372,8 @@ python3 -m src.bot
 
 > Если вход был картинка/аудио, `message.text` содержит готовый текст:
 > `"[image]: <описание/капшен>"` или `"[audio transcript]: <транскрипт>"`.
+>
+> **Важно:** `flow_name` в API-запрос не передаётся. Продовый API фиксирован на `flow_name="autonomous"`.
 
 #### Ответ (машина → WIPON)
 
@@ -388,7 +393,7 @@ python3 -m src.bot
 
 #### Ошибки
 
-При проблемах сервер возвращает структурированную ошибку (для fallback на Vertex/OpenAI):
+При проблемах сервер возвращает структурированную ошибку **с non-2xx HTTP статусом**:
 
 ```json
 {
@@ -399,203 +404,24 @@ python3 -m src.bot
 }
 ```
 
+Статусы:
+- `400` → `BAD_REQUEST` (невалидный payload, пустой `message.text`)
+- `401` → `UNAUTHORIZED` (нет/неверный Bearer token)
+- `429` → `RATE_LIMIT` (если будет включён rate-limit слой)
+- `500` → `INTERNAL` (внутренняя ошибка)
+
 Правило на стороне WIPON: любой non-2xx HTTP или наличие поля `error` → запрос неуспешен → включить fallback.
 
-### 7.2 Создать файл API-сервера
+### 7.2 Что обязательно должно быть в `src/api.py`
 
-Создать файл `src/api.py`:
-
-```python
-"""
-REST API обёртка для CRM Sales Bot (MVP).
-Пайплайн: WIPON → n8n → Redis → POST /api/v1/process → ответ
-
-Запуск: uvicorn src.api:app --host 127.0.0.1 --port 8000
-"""
-
-import json
-import logging
-import os
-import sqlite3
-import time
-import uuid
-from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, HTTPException, Depends, Header
-from pydantic import BaseModel, Field
-
-from src.bot import SalesBot
-from src.llm import OllamaLLM
-
-logger = logging.getLogger(__name__)
-
-API_KEY = os.environ.get("API_KEY", "change-me-in-production")
-DB_PATH = os.environ.get("DB_PATH", "data/conversations.db")
-
-_llm = None
-
-
-# ── Auth ──────────────────────────────────────────────
-
-def verify_api_key(authorization: str = Header(...)):
-    """Проверка Bearer-токена."""
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing Bearer token")
-    if authorization[7:] != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-
-
-# ── DB (snapshot storage) ─────────────────────────────
-
-def _init_db():
-    os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS conversations (
-            session_id TEXT NOT NULL,
-            user_id    TEXT NOT NULL,
-            snapshot   TEXT,
-            updated_at REAL,
-            PRIMARY KEY (session_id, user_id)
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-def _load_snapshot(session_id: str, user_id: str) -> dict | None:
-    conn = sqlite3.connect(DB_PATH)
-    row = conn.execute(
-        "SELECT snapshot FROM conversations WHERE session_id=? AND user_id=?",
-        (session_id, user_id),
-    ).fetchone()
-    conn.close()
-    return json.loads(row[0]) if row and row[0] else None
-
-
-def _save_snapshot(session_id: str, user_id: str, snapshot: dict):
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """INSERT INTO conversations (session_id, user_id, snapshot, updated_at)
-           VALUES (?, ?, ?, ?)
-           ON CONFLICT(session_id, user_id)
-           DO UPDATE SET snapshot=excluded.snapshot, updated_at=excluded.updated_at""",
-        (session_id, user_id, json.dumps(snapshot, ensure_ascii=False), time.time()),
-    )
-    conn.commit()
-    conn.close()
-
-
-# ── App ───────────────────────────────────────────────
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global _llm
-    _init_db()
-    _llm = OllamaLLM()
-    logger.info("LLM client initialized, DB ready")
-    yield
-    _llm = None
-
-
-app = FastAPI(title="CRM Sales Bot API", version="1.0.0", lifespan=lifespan)
-
-
-# ── Models ────────────────────────────────────────────
-
-class MessagePayload(BaseModel):
-    text: str
-    timestamp_ms: int = 0
-
-
-class ContextPayload(BaseModel):
-    time_of_day: str = "day"
-    timezone: str = "Asia/Almaty"
-    meta: dict = {}
-
-
-class ProcessRequest(BaseModel):
-    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    channel: str = "whatsapp"
-    session_id: str
-    user_id: str
-    message: MessagePayload
-    context: ContextPayload = ContextPayload()
-
-
-# ── Endpoints ─────────────────────────────────────────
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "model": "qwen-14b"}
-
-
-@app.post("/api/v1/process", dependencies=[Depends(verify_api_key)])
-def process_message(req: ProcessRequest):
-    """
-    Обработка одного хода диалога (MVP).
-
-    1. Загрузить snapshot из SQLite по (session_id, user_id).
-    2. Восстановить / создать бота (с history_tail для контекста LLM).
-    3. Обработать сообщение.
-    4. Сохранить snapshot обратно.
-    5. Вернуть { answer, meta }.
-
-    NOTE: `def` (не `async def`) — bot.process() синхронный (Ollama HTTP).
-    FastAPI автоматически запустит в threadpool.
-    """
-    try:
-        snapshot = _load_snapshot(req.session_id, req.user_id)
-
-        start = time.time()
-        if snapshot:
-            # Извлечь history_tail из context_window snapshot-а,
-            # чтобы LLM имел контекст предыдущих сообщений в промптах.
-            history_tail = [
-                {"user": t["user_message"], "bot": t["bot_response"]}
-                for t in snapshot.get("context_window", [])
-                if "user_message" in t and "bot_response" in t
-            ]
-            bot = SalesBot.from_snapshot(
-                snapshot, llm=_llm, history_tail=history_tail,
-            )
-            # from_snapshot() не сохраняет enable_tracing — ставим вручную
-            bot.enable_tracing = True
-        else:
-            bot = SalesBot(
-                _llm, flow_name="spin_selling", config_name="default",
-                enable_tracing=True,
-            )
-
-        result = bot.process(req.message.text)
-        processing_ms = int((time.time() - start) * 1000)
-
-        _save_snapshot(req.session_id, req.user_id, bot.to_snapshot())
-
-        # kb_used: проверяем наличие KB-результатов в llm_traces
-        trace = result.get("decision_trace") or {}
-        kb_used = any(
-            t.get("purpose") in ("knowledge_search", "knowledge_retrieval")
-            for t in trace.get("llm_traces", [])
-        )
-
-        return {
-            "answer": result["response"],
-            "meta": {
-                "model": "qwen-14b",
-                "processing_ms": processing_ms,
-                "kb_used": kb_used,
-            },
-        }
-    except Exception as e:
-        logger.exception("Error processing message")
-        return {
-            "error": {
-                "code": "INTERNAL",
-                "message": str(e),
-            }
-        }
-```
+Проверочный список текущей production-версии:
+- `SalesBot` поднимается только в `autonomous` flow (`flow_name="autonomous"`).
+- В SQLite есть две таблицы: `conversations` (snapshot) и `user_profiles` (собранные данные отдельно).
+- Для SQLite включены `PRAGMA journal_mode=WAL` + `timeout/busy_timeout` для устойчивости под threadpool-нагрузкой.
+- Ошибки API возвращаются структурированно (`{"error": ...}`) и с корректным HTTP-кодом.
+- При восстановлении из snapshot вызывается `SalesBot.from_snapshot(..., enable_tracing=True)`.
+- После каждого хода сохраняются и snapshot, и профиль пользователя.
+- Доступен служебный endpoint `GET /api/v1/users/{user_id}/profile` для выгрузки накопленных данных.
 
 ### 7.3 Нефункциональные требования
 
@@ -618,6 +444,22 @@ sudo systemctl start ollama
 
 ### 8.2 CRM Sales Bot
 
+Секреты и runtime-параметры храним отдельно в root-only env-файле:
+
+```bash
+sudo install -m 600 -o root -g root /dev/null /etc/crm-sales-bot.env
+sudo nano /etc/crm-sales-bot.env
+```
+
+Пример содержимого `/etc/crm-sales-bot.env`:
+
+```bash
+API_KEY=<сгенерированный_длинный_ключ>
+DB_PATH=/home/deploy/crm_sales_bot/data/conversations.db
+SQLITE_TIMEOUT_SECONDS=30
+SQLITE_BUSY_TIMEOUT_MS=5000
+```
+
 Создать файл `/etc/systemd/system/crm-sales-bot.service`:
 
 ```ini
@@ -631,8 +473,7 @@ Type=simple
 User=deploy
 WorkingDirectory=/home/deploy/crm_sales_bot
 Environment=PATH=/home/deploy/crm_sales_bot/.venv/bin:/usr/bin:/bin
-Environment=API_KEY=your-secret-api-key-here
-Environment=DB_PATH=/home/deploy/crm_sales_bot/data/conversations.db
+EnvironmentFile=/etc/crm-sales-bot.env
 ExecStart=/home/deploy/crm_sales_bot/.venv/bin/uvicorn src.api:app \
     --host 127.0.0.1 \
     --port 8000 \
@@ -647,8 +488,10 @@ WantedBy=multi-user.target
 
 > **--host 127.0.0.1** — бот слушает только localhost. Наружу трафик идёт через Nginx.
 >
-> **--workers 1** — обязательно. Бот загружает embedding-модели в GPU-память.
-> Несколько воркеров будут дублировать загрузку и исчерпают VRAM.
+> **--workers 1** — обязательно. Это исключает дублирование тяжёлых runtime-компонентов
+> и гонки при stateful-обработке одного пользователя в нескольких воркерах.
+>
+> `EnvironmentFile=/etc/crm-sales-bot.env` — API-ключ не хранится в unit-файле и не утекает в `systemctl cat`.
 
 ```bash
 sudo systemctl daemon-reload
@@ -831,8 +674,20 @@ curl -X POST https://bot.example.com/api/v1/process \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer wrong-key" \
   -d '{"session_id":"X","user_id":"Y","message":{"text":"test"}}'
-# Ожидаемый ответ: 401 Unauthorized
+# Ожидаемый ответ: HTTP 401 + структурированный JSON error
+# {"error":{"code":"UNAUTHORIZED","message":"Invalid API key"}}
 ```
+
+### 10.6 Тест отдельного профиля пользователя
+
+После 2-3 диалоговых ходов проверить, что профиль сохраняется отдельно от snapshot:
+
+```bash
+curl -X GET "https://bot.example.com/api/v1/users/77022951810/profile" \
+  -H "Authorization: Bearer your-secret-api-key-here"
+```
+
+Ожидаемый результат: JSON со списком `profiles` (история собранных данных по пользователю).
 
 ---
 
@@ -849,7 +704,7 @@ curl -X POST https://bot.example.com/api/v1/process \
 | `llm` | Модель, URL Ollama, таймаут |
 | `retriever` | Поиск по базе знаний, модель эмбеддингов |
 | `reranker` | Ре-ранкинг результатов поиска |
-| `flow` | Активная методология продаж (по умолчанию `spin_selling`) |
+| `flow` | Активная методология продаж (в production API используется `autonomous`) |
 | `feature_flags` | Включение/отключение 62 фич |
 
 ### 11.2 База знаний
@@ -858,26 +713,28 @@ curl -X POST https://bot.example.com/api/v1/process \
 
 ### 11.3 Методологии продаж (flows)
 
-`src/yaml_config/flows/` — 21 flow:
-`spin_selling`, `aida`, `bant`, `meddic`, `neat`, `challenger`, `consultative`, `autonomous` и др.
+В репозитории есть несколько flow для разработки/экспериментов, но production endpoint
+`POST /api/v1/process` работает в режиме **autonomous-only**.
 
-Переключение flow — через параметр `flow_name` в API-запросе.
+Переключение flow через API-запрос **не используется**.
 
 ### 11.4 Переменные окружения
 
-Проект **не использует** `.env` файлов. Вся конфигурация — в YAML.
+Бизнес-конфигурация бота — в `src/settings.yaml`.
+Операционные параметры сервиса (`API_KEY`, `DB_PATH`, SQLite timeouts, FF overrides) —
+через `/etc/crm-sales-bot.env`, подключённый как `EnvironmentFile` в systemd.
 
-Единственное исключение — переопределение feature flags через окружение:
+Пример переопределения feature flags через окружение:
 
 ```bash
 export FF_tone_analysis=true
 export FF_reranker=false
 ```
 
-Для systemd — добавить в `[Service]` секцию юнита:
+Для systemd — добавить в `/etc/crm-sales-bot.env`:
 
 ```ini
-Environment=FF_tone_analysis=true
+FF_tone_analysis=true
 ```
 
 ---
@@ -972,16 +829,15 @@ sudo systemctl restart ollama
 
 ### Управление API-ключом
 
-API-ключ задаётся через переменную окружения `API_KEY` в systemd-юните:
+API-ключ задаётся через `/etc/crm-sales-bot.env` (root-only, `0600`):
 
 ```bash
 # Сгенерировать ключ
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
-# Вписать в юнит
-sudo systemctl edit crm-sales-bot
-# [Service]
-# Environment=API_KEY=<сгенерированный_ключ>
+# Обновить env-файл
+sudo nano /etc/crm-sales-bot.env
+# API_KEY=<сгенерированный_ключ>
 
 sudo systemctl restart crm-sales-bot
 ```
@@ -996,7 +852,7 @@ sudo systemctl restart crm-sales-bot
 | IP whitelist (обязательно) | В Nginx: раскомментировать `allow/deny` блок, указать IP WIPON |
 | Rate limiting | В Nginx: `limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;` |
 | Мониторинг | Prometheus + Grafana или простой healthcheck через cron |
-| Бэкапы SQLite | `data/conversations.db` — snapshot-ы диалогов. Бэкапить периодически |
+| Бэкапы SQLite | `data/conversations.db` — snapshot-ы + `user_profiles`. Бэкапить периодически |
 | Ротация ключей | Менять API_KEY периодически, координируя с WIPON |
 
 ---
@@ -1023,7 +879,7 @@ sudo systemctl restart crm-sales-bot
 
 | Ресурс | Доступно | Потребление в покое | При запросе |
 |---|---|---|---|
-| GPU VRAM | 20 GB | ~10 GB (модель + embeddings) | ~11-12 GB |
+| GPU VRAM | 20 GB | ~9-10 GB (модель + runtime-кэши) | ~10-12 GB |
 | RAM | 64 GB | ~3 GB | ~4 GB |
 | CPU | 14 ядер | < 5% | 20-40% |
 | Время ответа | — | — | 5-20 сек |
@@ -1077,10 +933,11 @@ NVIDIA + OLLAMA
 [ ] Репозиторий склонирован в /home/deploy/crm_sales_bot
 [ ] Python venv создан, зависимости установлены (pip install -e .)
 [ ] FastAPI + Uvicorn установлены
-[ ] src/api.py создан (MVP-контракт: session_id + user_id + message)
-[ ] API_KEY сгенерирован и задан в systemd-юните
-[ ] DB_PATH задан в systemd-юните
-[ ] Интерактивный тест пройден (python3 -m src.bot)
+[ ] src/api.py актуален (autonomous-only + user_profiles + structured errors + SQLite WAL/timeouts)
+[ ] /etc/crm-sales-bot.env создан с правами 600
+[ ] API_KEY сгенерирован и задан в /etc/crm-sales-bot.env
+[ ] DB_PATH задан в /etc/crm-sales-bot.env
+[ ] Интерактивный тест пройден (python3 -m src.bot --flow autonomous)
 [ ] Systemd-юнит crm-sales-bot.service создан и запущен
 [ ] curl http://127.0.0.1:8000/health отвечает OK
 
@@ -1096,7 +953,8 @@ NVIDIA + OLLAMA
 [ ] Тестовый запрос с Bearer-токеном прошёл (см. раздел 10.3)
 [ ] Тест продолжения диалога — бот помнит контекст (раздел 10.4)
 [ ] Тест ошибки авторизации — 401 при неверном ключе (раздел 10.5)
-[ ] Embedding-модели скачались (первый запрос прошёл)
+[ ] Профиль пользователя сохраняется и читается через /api/v1/users/{user_id}/profile (раздел 10.6)
+[ ] Модель Ollama прогрета (первый запрос прошёл без ошибок)
 [ ] API_KEY передан команде WIPON для настройки n8n
 [ ] WIPON n8n workflow подключен и шлёт тестовые запросы
 [ ] Fallback на Vertex/OpenAI проверен (при ошибке «машины»)

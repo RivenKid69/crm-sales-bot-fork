@@ -9,6 +9,7 @@ Two SQLite tables:
   - user_profiles: structured extracted data per (session_id, user_id)
 """
 
+import hmac
 import json
 import logging
 import os
@@ -17,20 +18,40 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from src.bot import SalesBot
-from src.llm import OllamaLLM
 from src.feature_flags import flags
+from src.llm import OllamaLLM
 from src.settings import settings
 
 logger = logging.getLogger(__name__)
 
 API_KEY = os.environ.get("API_KEY", "change-me-in-production")
 DB_PATH = os.environ.get("DB_PATH", "data/conversations.db")
+SQLITE_TIMEOUT_SECONDS = int(os.environ.get("SQLITE_TIMEOUT_SECONDS", "30"))
+SQLITE_BUSY_TIMEOUT_MS = int(os.environ.get("SQLITE_BUSY_TIMEOUT_MS", "5000"))
 
 _llm = None
+
+
+# ── Error helpers ──────────────────────────────────────
+
+class APIError(Exception):
+    """Structured API exception with HTTP status code."""
+
+    def __init__(self, status_code: int, code: str, message: str):
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
+def _error_payload(code: str, message: str) -> dict:
+    return {"error": {"code": code, "message": message}}
 
 
 # ── Auth ──────────────────────────────────────────────
@@ -38,16 +59,23 @@ _llm = None
 def verify_api_key(authorization: str = Header(...)):
     """Проверка Bearer-токена."""
     if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing Bearer token")
-    if authorization[7:] != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        raise APIError(401, "UNAUTHORIZED", "Missing Bearer token")
+    token = authorization[7:]
+    if not hmac.compare_digest(token, API_KEY):
+        raise APIError(401, "UNAUTHORIZED", "Invalid API key")
 
 
 # ── DB ────────────────────────────────────────────────
 
+def _db_connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT_SECONDS)
+    conn.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_MS}")
+    return conn
+
+
 def _init_db():
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = _db_connect()
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS conversations (
@@ -91,7 +119,7 @@ def _init_db():
 
 
 def _load_snapshot(session_id: str, user_id: str) -> dict | None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = _db_connect()
     row = conn.execute(
         "SELECT snapshot FROM conversations WHERE session_id=? AND user_id=?",
         (session_id, user_id),
@@ -101,7 +129,7 @@ def _load_snapshot(session_id: str, user_id: str) -> dict | None:
 
 
 def _save_snapshot(session_id: str, user_id: str, snapshot: dict):
-    conn = sqlite3.connect(DB_PATH)
+    conn = _db_connect()
     conn.execute(
         """INSERT INTO conversations (session_id, user_id, snapshot, updated_at)
            VALUES (?, ?, ?, ?)
@@ -153,7 +181,7 @@ def _save_user_profile(session_id: str, user_id: str, bot: SalesBot):
     interested_features = json.dumps(profile_dict.get("interested_features", []), ensure_ascii=False)
     objection_types = json.dumps(profile_dict.get("objection_types", []), ensure_ascii=False)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = _db_connect()
     conn.execute(
         """INSERT INTO user_profiles (
                session_id, user_id,
@@ -203,7 +231,7 @@ def _save_user_profile(session_id: str, user_id: str, bot: SalesBot):
 
 def _load_user_profile(user_id: str) -> list[dict]:
     """Load all profiles for a user across sessions."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = _db_connect()
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
         "SELECT * FROM user_profiles WHERE user_id=? ORDER BY updated_at DESC",
@@ -230,6 +258,8 @@ def _setup_production_flags():
 async def lifespan(app: FastAPI):
     global _llm
     _setup_production_flags()
+    if API_KEY == "change-me-in-production":
+        logger.warning("API_KEY is set to insecure default value")
     _init_db()
     _llm = OllamaLLM()
     logger.info("LLM client initialized, DB ready, autonomous flags set")
@@ -238,6 +268,24 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="CRM Sales Bot API", version="1.0.0", lifespan=lifespan)
+
+
+@app.exception_handler(APIError)
+async def api_error_handler(_: Request, exc: APIError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=_error_payload(exc.code, exc.message),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error_handler(_: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    first_error = errors[0].get("msg") if errors else "Invalid request payload"
+    return JSONResponse(
+        status_code=400,
+        content=_error_payload("BAD_REQUEST", first_error),
+    )
 
 
 # ── Models ────────────────────────────────────────────
@@ -250,7 +298,7 @@ class MessagePayload(BaseModel):
 class ContextPayload(BaseModel):
     time_of_day: str = "day"
     timezone: str = "Asia/Almaty"
-    meta: dict = {}
+    meta: dict = Field(default_factory=dict)
 
 
 class ProcessRequest(BaseModel):
@@ -259,7 +307,7 @@ class ProcessRequest(BaseModel):
     session_id: str
     user_id: str
     message: MessagePayload
-    context: ContextPayload = ContextPayload()
+    context: ContextPayload = Field(default_factory=ContextPayload)
 
 
 # ── Endpoints ─────────────────────────────────────────
@@ -284,6 +332,9 @@ def process_message(req: ProcessRequest):
     FastAPI автоматически запустит в threadpool.
     """
     try:
+        if not req.message.text.strip():
+            raise APIError(400, "BAD_REQUEST", "message.text must not be empty")
+
         snapshot = _load_snapshot(req.session_id, req.user_id)
 
         start = time.time()
@@ -325,14 +376,11 @@ def process_message(req: ProcessRequest):
                 "kb_used": kb_used,
             },
         }
-    except Exception as e:
+    except APIError:
+        raise
+    except Exception as err:
         logger.exception("Error processing message")
-        return {
-            "error": {
-                "code": "INTERNAL",
-                "message": str(e),
-            }
-        }
+        raise APIError(500, "INTERNAL", "Internal server error") from err
 
 
 @app.get("/api/v1/users/{user_id}/profile", dependencies=[Depends(verify_api_key)])
