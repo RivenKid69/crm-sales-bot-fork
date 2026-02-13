@@ -2003,7 +2003,8 @@ class SalesBot:
         cls,
         snapshot: Dict[str, Any],
         llm=None,
-        history_tail: Optional[List[Dict[str, Any]]] = None
+        history_tail: Optional[List[Dict[str, Any]]] = None,
+        enable_tracing: bool = False,
     ) -> "SalesBot":
         """Restore bot from snapshot."""
         flow_name = snapshot.get("flow_name") or settings.flow.active
@@ -2015,6 +2016,7 @@ class SalesBot:
             conversation_id=snapshot.get("conversation_id"),
             client_id=snapshot.get("client_id"),
             config_name=config_name,
+            enable_tracing=enable_tracing,
         )
 
         bot.conversation_id = snapshot.get("conversation_id", bot.conversation_id)
@@ -2066,7 +2068,7 @@ class SalesBot:
             flow_config=bot._flow,
             persona_limits=bot._load_persona_limits(),
             enable_metrics=flags.metrics_tracking,
-            enable_debug_logging=False,
+            enable_debug_logging=enable_tracing,
             guard=bot.guard,
             fallback_handler=bot.fallback,
             llm=llm,

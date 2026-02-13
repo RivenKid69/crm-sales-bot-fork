@@ -48,6 +48,7 @@ def verify_api_key(authorization: str = Header(...)):
 def _init_db():
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS conversations (
             session_id TEXT NOT NULL,
@@ -294,8 +295,8 @@ def process_message(req: ProcessRequest):
             ]
             bot = SalesBot.from_snapshot(
                 snapshot, llm=_llm, history_tail=history_tail,
+                enable_tracing=True,
             )
-            bot.enable_tracing = True
         else:
             bot = SalesBot(
                 _llm, flow_name="autonomous", config_name="default",
