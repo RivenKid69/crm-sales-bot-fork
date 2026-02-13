@@ -18,7 +18,7 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -56,8 +56,10 @@ def _error_payload(code: str, message: str) -> dict:
 
 # ── Auth ──────────────────────────────────────────────
 
-def verify_api_key(authorization: str = Header(...)):
+def verify_api_key(authorization: str | None = Header(default=None)):
     """Проверка Bearer-токена."""
+    if not authorization:
+        raise APIError(401, "UNAUTHORIZED", "Missing Authorization header")
     if not authorization.startswith("Bearer "):
         raise APIError(401, "UNAUTHORIZED", "Missing Bearer token")
     token = authorization[7:]
@@ -388,5 +390,5 @@ def get_user_profile(user_id: str):
     """Query collected user data across all sessions."""
     profiles = _load_user_profile(user_id)
     if not profiles:
-        raise HTTPException(status_code=404, detail="No profiles found for this user")
+        raise APIError(404, "NOT_FOUND", "No profiles found for this user")
     return {"user_id": user_id, "profiles": profiles}

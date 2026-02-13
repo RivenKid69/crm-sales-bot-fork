@@ -407,6 +407,7 @@ python3 -m src.bot --flow autonomous
 Статусы:
 - `400` → `BAD_REQUEST` (невалидный payload, пустой `message.text`)
 - `401` → `UNAUTHORIZED` (нет/неверный Bearer token)
+- `404` → `NOT_FOUND` (профиль не найден в `GET /api/v1/users/{user_id}/profile`)
 - `429` → `RATE_LIMIT` (если будет включён rate-limit слой)
 - `500` → `INTERNAL` (внутренняя ошибка)
 
