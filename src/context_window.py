@@ -358,6 +358,17 @@ class ClientProfile:
     contact_phone: Optional[str] = None
     contact_email: Optional[str] = None
 
+    # Расширенные данные (autonomous flow)
+    business_type: Optional[str] = None
+    current_tools: Optional[str] = None
+    budget_range: Optional[str] = None
+    timeline: Optional[str] = None
+    pain_category: Optional[str] = None
+    role: Optional[str] = None
+    users_count: Optional[str] = None
+    urgency: Optional[str] = None
+    preferred_channel: Optional[str] = None
+
     # Выявленные боли
     pain_points: List[str] = field(default_factory=list)
 
@@ -385,6 +396,35 @@ class ClientProfile:
             self.contact_phone = extracted_data["phone"]
         if "email" in extracted_data:
             self.contact_email = extracted_data["email"]
+
+        # Контактные данные (DataExtractor формат)
+        if "contact_info" in extracted_data:
+            ci = extracted_data["contact_info"]
+            ct = extracted_data.get("contact_type", "")
+            if ct == "phone" or (isinstance(ci, str) and ci.replace("+", "").replace("-", "").replace(" ", "").isdigit()):
+                self.contact_phone = ci
+            elif ct == "email" or (isinstance(ci, str) and "@" in ci):
+                self.contact_email = ci
+
+        # Расширенные данные (autonomous flow)
+        if "business_type" in extracted_data:
+            self.business_type = extracted_data["business_type"]
+        if "current_tools" in extracted_data:
+            self.current_tools = extracted_data["current_tools"]
+        if "budget_range" in extracted_data:
+            self.budget_range = extracted_data["budget_range"]
+        if "timeline" in extracted_data:
+            self.timeline = extracted_data["timeline"]
+        if "pain_category" in extracted_data:
+            self.pain_category = extracted_data["pain_category"]
+        if "role" in extracted_data:
+            self.role = extracted_data["role"]
+        if "users_count" in extracted_data:
+            self.users_count = extracted_data["users_count"]
+        if "urgency" in extracted_data:
+            self.urgency = extracted_data["urgency"]
+        if "preferred_channel" in extracted_data:
+            self.preferred_channel = extracted_data["preferred_channel"]
 
         # Боли
         if "pain_point" in extracted_data:
@@ -420,6 +460,15 @@ class ClientProfile:
             "contact_name": self.contact_name,
             "contact_phone": self.contact_phone,
             "contact_email": self.contact_email,
+            "business_type": self.business_type,
+            "current_tools": self.current_tools,
+            "budget_range": self.budget_range,
+            "timeline": self.timeline,
+            "pain_category": self.pain_category,
+            "role": self.role,
+            "users_count": self.users_count,
+            "urgency": self.urgency,
+            "preferred_channel": self.preferred_channel,
             "pain_points": self.pain_points,
             "interested_features": self.interested_features,
             "objection_types": self.objection_types,
@@ -437,6 +486,15 @@ class ClientProfile:
             contact_name=data.get("contact_name"),
             contact_phone=data.get("contact_phone"),
             contact_email=data.get("contact_email"),
+            business_type=data.get("business_type"),
+            current_tools=data.get("current_tools"),
+            budget_range=data.get("budget_range"),
+            timeline=data.get("timeline"),
+            pain_category=data.get("pain_category"),
+            role=data.get("role"),
+            users_count=data.get("users_count"),
+            urgency=data.get("urgency"),
+            preferred_channel=data.get("preferred_channel"),
             pain_points=list(data.get("pain_points", []) or []),
             interested_features=list(data.get("interested_features", []) or []),
             objection_types=list(data.get("objection_types", []) or []),

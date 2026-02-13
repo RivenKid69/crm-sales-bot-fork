@@ -4106,6 +4106,52 @@ extraction:
         invalid:
           - { value: "в течение месяца", reason: "Это decision_timeline" }
 
+    # =========================================================================
+    # AUTONOMOUS FLOW FIELDS
+    # =========================================================================
+
+    role:
+      description: "Роль/должность контактного лица"
+      type: str
+      spin_phase: null
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "Я руководитель отдела продаж", value: "руководитель отдела продаж" }
+          - { source: "Я директор", value: "директор" }
+        invalid:
+          - { value: "5", reason: "Это число, не должность" }
+
+    users_count:
+      description: "Количество пользователей, которые будут работать с CRM"
+      type: str
+      spin_phase: null
+      validation:
+        min_length: 1
+      examples:
+        valid:
+          - { source: "5 менеджеров будут работать", value: "5" }
+          - { source: "Вся команда, человек 10", value: "10" }
+        invalid:
+          - { value: "теряем клиентов", reason: "Это боль, не количество пользователей" }
+
+    urgency:
+      description: "Срочность решения проблемы"
+      type: enum
+      spin_phase: null
+      validation:
+        allowed_values:
+          - "high"
+          - "medium"
+          - "low"
+      examples:
+        valid:
+          - { source: "Нам срочно нужно решение", value: "high" }
+          - { source: "Не горит, но хотелось бы", value: "medium" }
+        invalid:
+          - { value: "Excel", reason: "Это инструмент, не срочность" }
+
   # =========================================================================
   # FIELD GROUPS BY SPIN PHASE
   # =========================================================================
@@ -4199,21 +4245,35 @@ extraction:
       - business_type
       - company_size
       - current_tools
+      - contact_info
+      - role
     qualification:
       - company_size
       - budget_range
       - decision_maker
+      - decision_timeline
+      - users_count
+      - contact_info
     presentation:
       - pain_point
       - desired_outcome
+      - pain_category
+      - urgency
+      - contact_info
     objection_handling:
       - pain_point
       - pain_category
+      - urgency
+      - budget_range
+      - contact_info
     negotiation:
       - budget_range
       - decision_timeline
+      - users_count
+      - contact_info
     closing:
       - contact_info
+      - decision_timeline
 
   # =========================================================================
   # VALIDATION RULES

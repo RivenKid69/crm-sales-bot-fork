@@ -300,6 +300,7 @@ feature_flags:
   circular_flow: false        # Возврат назад по фазам (опасно, включать осторожно)
   objection_handler: false    # Продвинутая обработка возражений
   cta_generator: true         # Генерация Call-to-Action
+  autonomous_flow: true       # LLM-driven sales flow
 
 # -----------------------------------------------------------------------------
 # PHONE VALIDATION (Валидация телефонных номеров)
