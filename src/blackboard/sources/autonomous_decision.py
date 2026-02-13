@@ -202,6 +202,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             user_message=user_message,
             collected_data=collected_data,
             available_states=available_states,
+            all_states_config=all_states,
             turn_in_state=turn_in_state,
             max_turns=max_turns,
             optional_data=optional_data,
@@ -302,6 +303,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         user_message: str,
         collected_data: dict,
         available_states: list,
+        all_states_config: dict = None,
         turn_in_state: int = 0,
         max_turns: int = 6,
         optional_data: list = None,
@@ -316,7 +318,20 @@ class AutonomousDecisionSource(KnowledgeSource):
             if v and not k.startswith("_")
         ) or "пока ничего"
 
-        states_str = ", ".join(available_states) if available_states else "нет"
+        # Build available states with goals for informed LLM choice
+        all_states_config = all_states_config or {}
+        if available_states:
+            state_lines = []
+            for s in available_states:
+                s_cfg = all_states_config.get(s, {})
+                s_goal = s_cfg.get("goal", "")
+                if s_goal:
+                    state_lines.append(f"  - {s}: {s_goal}")
+                else:
+                    state_lines.append(f"  - {s}")
+            states_str = "\n".join(state_lines)
+        else:
+            states_str = "нет"
 
         # Compute missing optional data
         missing_optional = ""
@@ -376,8 +391,10 @@ class AutonomousDecisionSource(KnowledgeSource):
 Сообщение клиента: "{user_message}"
 Собранные данные: {collected_str}{missing_optional}
 {decision_summary}
-Доступные состояния для перехода: {states_str}
-Также доступны: close, soft_close
+Доступные состояния для перехода:
+{states_str}
+  - close: Завершить диалог (клиент согласен или назначен следующий шаг)
+  - soft_close: Мягкое завершение (клиент не готов, оставить дверь открытой)
 
 Правила:
 - should_transition=true ТОЛЬКО если цель текущего этапа достигнута или клиент явно хочет двигаться дальше

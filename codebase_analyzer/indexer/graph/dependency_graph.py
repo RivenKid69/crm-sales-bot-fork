@@ -455,6 +455,26 @@ class DependencyGraph:
             if removed:
                 logger.info(f"Broke {len(removed)} edges to eliminate cycles")
 
+        # Remove self-loops first
+        self_loops = list(nx.selfloop_edges(self._graph))
+        if self_loops:
+            self._graph.remove_edges_from(self_loops)
+            logger.info(f"Removed {len(self_loops)} self-loop edges")
+
+        # Ensure no cycles remain — iteratively break any residual ones
+        max_iterations = 1000
+        iteration = 0
+        while not nx.is_directed_acyclic_graph(self._graph) and iteration < max_iterations:
+            try:
+                cycle = nx.find_cycle(self._graph)
+                # Remove the last edge in the cycle (arbitrary but consistent)
+                u, v = cycle[-1][:2]
+                self._graph.remove_edge(u, v)
+                logger.debug(f"Removed residual cycle edge: {u} -> {v}")
+            except nx.NetworkXNoCycle:
+                break
+            iteration += 1
+
         try:
             # Reverse topological sort: dependencies come BEFORE dependents
             # For bottom-up: we want leaves first, so reverse it

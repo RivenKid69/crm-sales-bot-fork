@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-ПОЛНАЯ ДЕТАЛЬНАЯ СИМУЛЯЦИЯ CRM SALES BOT - 100 ДИАЛОГОВ
+ПОЛНАЯ ДЕТАЛЬНАЯ СИМУЛЯЦИЯ CRM SALES BOT - 100 ДИАЛОГОВ (AUTONOMOUS FLOW)
 
 Параметры:
-- 100 диалогов (случайная выборка из 20 флоу × 8 персон)
+- 100 диалогов через AUTONOMOUS LLM-driven flow
+- 16 уникальных персон (8 оригинальных + 8 новых)
 - 8 параллельных потоков (GPU + CPU)
 - Qwen3 14B через Ollama
 - Полное логирование всех метрик
@@ -40,8 +41,9 @@ init(autoreset=True)
 # ПАРАМЕТРЫ СИМУЛЯЦИИ
 # =============================================================================
 TOTAL_DIALOGS = 100
-TOTAL_FLOWS = 20
-TOTAL_PERSONAS = 8
+TOTAL_FLOWS = 1          # Только autonomous flow
+TOTAL_PERSONAS = 16      # 16 персон (8 оригинальных + 8 новых)
+AUTONOMOUS_FLOW = "autonomous"  # Все прогоны через LLM-driven flow
 PARALLEL_THREADS = 8  # GPU и CPU потоки
 MODEL_NAME = "qwen3:14b"
 OLLAMA_URL = "http://localhost:11434"
@@ -314,14 +316,14 @@ def main():
     # ==========================================================================
     print_section("ПАРАМЕТРЫ СИМУЛЯЦИИ")
     print_metric("Всего диалогов", TOTAL_DIALOGS)
-    print_metric("Количество флоу", TOTAL_FLOWS)
+    print_metric("Flow", f"{AUTONOMOUS_FLOW} (LLM-driven)")
     print_metric("Количество персон", TOTAL_PERSONAS)
     print_metric("Параллельных потоков", PARALLEL_THREADS)
     print_metric("Модель", MODEL_NAME)
     print_metric("Ollama URL", OLLAMA_URL)
     print_metric("Директория отчетов", str(report_dir))
 
-    logger.info(f"Параметры: диалогов={TOTAL_DIALOGS}, флоу={TOTAL_FLOWS}, "
+    logger.info(f"Параметры: диалогов={TOTAL_DIALOGS}, flow={AUTONOMOUS_FLOW}, "
                 f"персон={TOTAL_PERSONAS}, потоков={PARALLEL_THREADS}")
 
     # ==========================================================================
@@ -423,12 +425,12 @@ def main():
     try:
         from src.llm import OllamaClient
         from src.simulator.runner import SimulationRunner
-        from src.simulator.e2e_scenarios import ALL_SCENARIOS, expand_scenarios_with_personas
-        from src.simulator.report import generate_e2e_report
-        from src.simulator.personas import PERSONAS
+        from src.simulator.report import ReportGenerator
+        from src.simulator.personas import PERSONAS, get_all_persona_names
         from src.simulator.kb_questions import load_kb_question_pool
 
         print_success("Модули симулятора импортированы")
+        print_success(f"Доступно персон: {len(PERSONAS)} ({', '.join(get_all_persona_names())})")
         logger.info("Модули симулятора загружены")
 
     except ImportError as e:
@@ -470,42 +472,19 @@ def main():
         logger.warning(f"Reranker: {e}")
 
     # ==========================================================================
-    # ГЕНЕРАЦИЯ СЦЕНАРИЕВ
+    # ПОДГОТОВКА ПЕРСОН
     # ==========================================================================
-    print_section("ГЕНЕРАЦИЯ СЦЕНАРИЕВ")
+    print_section("ПОДГОТОВКА ПЕРСОН")
 
-    # Генерируем все возможные сценарии (20 флоу × 8 персон = 160)
-    all_scenarios = expand_scenarios_with_personas(
-        scenarios=ALL_SCENARIOS,
-        personas_per_scenario=TOTAL_PERSONAS,
-        seed=42  # Для воспроизводимости
-    )
+    all_persona_names = get_all_persona_names()
+    print_info(f"Flow: {AUTONOMOUS_FLOW} (все {TOTAL_DIALOGS} прогонов через LLM-driven autonomous)")
+    print_info(f"Доступно персон: {len(all_persona_names)}")
+    for name in all_persona_names:
+        persona = PERSONAS[name]
+        print(f"  {Fore.CYAN}{name:.<30} {Fore.WHITE}{persona.name} (max_turns={persona.max_turns})")
 
-    print_info(f"Всего возможных комбинаций: {len(all_scenarios)}")
-    logger.info(f"Сгенерировано {len(all_scenarios)} комбинаций (20×8)")
-
-    # Выбираем случайные 100 сценариев
-    if len(all_scenarios) > TOTAL_DIALOGS:
-        random.seed(int(time.time()))
-        scenarios = random.sample(all_scenarios, TOTAL_DIALOGS)
-        print_info(f"Выбрано случайных сценариев: {len(scenarios)}")
-    else:
-        scenarios = all_scenarios
-
-    # Статистика по флоу и персонам
-    flows_used = set()
-    personas_used = set()
-    for s in scenarios:
-        flows_used.add(s.flow)
-        if hasattr(s, 'persona'):
-            personas_used.add(s.persona)
-
-    print_metric("Уникальных флоу", len(flows_used))
-    print_metric("Уникальных персон", len(personas_used))
-    print_success(f"Подготовлено {len(scenarios)} сценариев для симуляции")
-
-    logger.info(f"Выбрано {len(scenarios)} сценариев из {len(all_scenarios)}")
-    logger.info(f"Флоу: {len(flows_used)}, Персон: {len(personas_used)}")
+    logger.info(f"Flow: {AUTONOMOUS_FLOW}, Персон: {len(all_persona_names)}")
+    logger.info(f"Персоны: {', '.join(all_persona_names)}")
 
     # ==========================================================================
     # ЗАГРУЗКА KB QUESTION POOL (3000+ ВОПРОСОВ)
@@ -538,25 +517,28 @@ def main():
         bot_llm=llm,
         client_llm=llm,
         verbose=True,
-        kb_question_pool=kb_pool
+        flow_name=AUTONOMOUS_FLOW,
+        kb_question_pool=kb_pool,
     )
 
-    print_success("SimulationRunner инициализирован с KB question pool")
-    logger.info("SimulationRunner готов с KB вопросами")
+    print_success(f"SimulationRunner инициализирован: flow={AUTONOMOUS_FLOW}, KB question pool")
+    logger.info(f"SimulationRunner готов: flow={AUTONOMOUS_FLOW}")
 
     # ==========================================================================
     # ЗАПУСК СИМУЛЯЦИИ
     # ==========================================================================
-    print_header(f"ЗАПУСК СИМУЛЯЦИИ: {TOTAL_DIALOGS} ДИАЛОГОВ")
+    print_header(f"ЗАПУСК СИМУЛЯЦИИ: {TOTAL_DIALOGS} ДИАЛОГОВ (AUTONOMOUS FLOW)")
 
     print(Fore.CYAN + f"Начало: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(Fore.CYAN + f"Flow: {AUTONOMOUS_FLOW} (LLM-driven)")
+    print(Fore.CYAN + f"Персон: {len(all_persona_names)}")
     print(Fore.CYAN + f"Параллельность: {PARALLEL_THREADS} потоков")
     print(Fore.CYAN + f"Модель: {MODEL_NAME}")
     print()
     print(Fore.YELLOW + "-" * 100)
 
     logger.info("=" * 60)
-    logger.info("НАЧАЛО СИМУЛЯЦИИ")
+    logger.info("НАЧАЛО СИМУЛЯЦИИ (AUTONOMOUS FLOW)")
     logger.info("=" * 60)
 
     # Запуск мониторинга ресурсов
@@ -565,8 +547,6 @@ def main():
 
     start_time = time.time()
     completed_count = [0]
-    passed_count = [0]
-    failed_count = [0]
     detailed_results = []
     lock = threading.Lock()
 
@@ -575,52 +555,54 @@ def main():
         with lock:
             completed_count[0] += 1
 
-            if result.passed:
-                passed_count[0] += 1
-                status = Fore.GREEN + "PASS"
+            is_positive = result.outcome in ("success", "soft_close")
+            if is_positive:
+                status = Fore.GREEN + "OK"
             else:
-                failed_count[0] += 1
-                status = Fore.RED + "FAIL"
+                status = Fore.RED + "XX"
 
             # Детальная информация о результате
             result_info = {
                 "index": completed_count[0],
                 "timestamp": datetime.now().isoformat(),
-                "scenario_id": result.scenario_id,
-                "scenario_name": result.scenario_name,
-                "flow": result.flow_name,
-                "persona": result.scenario_id.split("_", 1)[1] if "_" in result.scenario_id else "unknown",
-                "passed": result.passed,
+                "flow": AUTONOMOUS_FLOW,
+                "persona": result.persona,
                 "outcome": result.outcome,
-                "score": result.score,
+                "turns": result.turns,
                 "phases_reached": result.phases_reached,
-                "turn_count": result.turns,
-                "coverage": result.details.get("phases", {}).get("coverage", 0.0),
+                "spin_coverage": result.spin_coverage,
+                "lead_score": result.final_lead_score,
+                "fallback_count": result.fallback_count,
+                "objections_count": result.objections_count,
+                "kb_questions_used": result.kb_questions_used,
+                "duration_seconds": result.duration_seconds,
+                "errors": result.errors,
             }
             detailed_results.append(result_info)
 
             # Вывод в консоль
-            progress = completed_count[0] / len(scenarios) * 100
-            print(f"  [{completed_count[0]:3d}/{len(scenarios)}] ({progress:5.1f}%) "
+            progress = completed_count[0] / TOTAL_DIALOGS * 100
+            phases_str = "→".join(result.phases_reached[:4]) if result.phases_reached else "none"
+            print(f"  [{completed_count[0]:3d}/{TOTAL_DIALOGS}] ({progress:5.1f}%) "
                   f"{status}{Style.RESET_ALL} "
-                  f"{result.scenario_name:35s} "
+                  f"{result.persona:25s} "
                   f"| {result.outcome:12s} "
-                  f"| score: {result.score:.3f} "
-                  f"| phases: {len(result.phases_reached)}")
+                  f"| turns: {result.turns:2d} "
+                  f"| phases: {phases_str}")
 
             # Логирование
-            logger.info(f"[{completed_count[0]}/{len(scenarios)}] "
-                       f"{'PASS' if result.passed else 'FAIL'} "
-                       f"{result.scenario_name} "
-                       f"outcome={result.outcome} "
-                       f"score={result.score:.3f}")
+            logger.info(f"[{completed_count[0]}/{TOTAL_DIALOGS}] "
+                       f"{result.outcome:12s} "
+                       f"persona={result.persona} "
+                       f"turns={result.turns} "
+                       f"phases={result.phases_reached}")
 
-    # Запуск batch симуляции
+    # Запуск batch симуляции (все 100 через autonomous flow)
     try:
-        results = runner.run_e2e_batch(
-            scenarios,
-            progress_callback=progress_callback,
-            parallel=PARALLEL_THREADS
+        results = runner.run_batch(
+            count=TOTAL_DIALOGS,
+            parallel=PARALLEL_THREADS,
+            progress_callback=progress_callback
         )
     except Exception as e:
         logger.error(f"Ошибка симуляции: {e}")
@@ -644,49 +626,37 @@ def main():
     print_header("ИТОГИ СИМУЛЯЦИИ")
 
     total = len(results)
-    passed = sum(1 for r in results if r.passed)
-    failed = total - passed
-    pass_rate = (passed / total * 100) if total > 0 else 0.0
-    avg_score = sum(r.score for r in results) / total if total > 0 else 0.0
+    positive_outcomes = ("success", "soft_close")
+    success_count = sum(1 for r in results if r.outcome in positive_outcomes)
+    success_rate = (success_count / total * 100) if total > 0 else 0.0
+    avg_turns = sum(r.turns for r in results) / total if total > 0 else 0.0
+    avg_coverage = sum(r.spin_coverage for r in results) / total if total > 0 else 0.0
+    error_count = sum(1 for r in results if r.outcome == "error")
 
     # Метрики по outcome
     outcomes = {}
     for r in results:
         outcomes[r.outcome] = outcomes.get(r.outcome, 0) + 1
 
-    # Метрики по флоу
-    flow_scores = {}
-    for r in results:
-        if r.flow_name not in flow_scores:
-            flow_scores[r.flow_name] = []
-        flow_scores[r.flow_name].append(r.score)
-
-    flow_avg_scores = {
-        flow: sum(scores) / len(scores)
-        for flow, scores in flow_scores.items()
-    }
-
     # Метрики по персонам
-    persona_scores = {}
+    persona_stats = {}
     for r in results:
-        persona = r.scenario_id.split("_", 1)[1] if "_" in r.scenario_id else "unknown"
-        if persona not in persona_scores:
-            persona_scores[persona] = []
-        persona_scores[persona].append(r.score)
-
-    persona_avg_scores = {
-        persona: sum(scores) / len(scores)
-        for persona, scores in persona_scores.items()
-    }
+        if r.persona not in persona_stats:
+            persona_stats[r.persona] = {"outcomes": [], "turns": [], "coverage": []}
+        persona_stats[r.persona]["outcomes"].append(r.outcome)
+        persona_stats[r.persona]["turns"].append(r.turns)
+        persona_stats[r.persona]["coverage"].append(r.spin_coverage)
 
     # ==========================================================================
     # ВЫВОД ИТОГОВ
     # ==========================================================================
     print_section("ОБЩИЕ РЕЗУЛЬТАТЫ")
+    print_metric("Flow", f"{AUTONOMOUS_FLOW} (LLM-driven)")
     print_metric("Всего диалогов", total)
-    print_metric("Успешно (PASS)", f"{passed} ({pass_rate:.1f}%)")
-    print_metric("Провалено (FAIL)", failed)
-    print_metric("Средний score", f"{avg_score:.4f}")
+    print_metric("Успешно (success+soft_close)", f"{success_count} ({success_rate:.1f}%)")
+    print_metric("Ошибки", error_count)
+    print_metric("Средние ходы", f"{avg_turns:.1f}")
+    print_metric("Средний phase coverage", f"{avg_coverage:.2f}")
     print_metric("Время выполнения", f"{duration:.1f} сек ({duration/60:.1f} мин)")
     print_metric("Среднее время на диалог", f"{duration/total:.2f} сек")
     print_metric("Производительность", f"{total/duration*60:.1f} диалогов/мин")
@@ -694,21 +664,26 @@ def main():
     print_section("РЕЗУЛЬТАТЫ ПО OUTCOME")
     for outcome, count in sorted(outcomes.items(), key=lambda x: -x[1]):
         percent = count / total * 100
-        print_metric(outcome, f"{count} ({percent:.1f}%)")
-
-    print_section("ТОП-10 ФЛОУ ПО SCORE")
-    sorted_flows = sorted(flow_avg_scores.items(), key=lambda x: -x[1])[:10]
-    for i, (flow, score) in enumerate(sorted_flows, 1):
-        count = len(flow_scores[flow])
-        print(f"  {i:2d}. {Fore.CYAN}{flow:30s}{Style.RESET_ALL} "
-              f"score: {Fore.GREEN}{score:.3f}{Style.RESET_ALL} "
-              f"(n={count})")
+        color = Fore.GREEN if outcome in positive_outcomes else Fore.RED
+        print(f"  {color}{outcome:.<40} {Fore.WHITE}{count} ({percent:.1f}%)")
 
     print_section("РЕЗУЛЬТАТЫ ПО ПЕРСОНАМ")
-    sorted_personas = sorted(persona_avg_scores.items(), key=lambda x: -x[1])
-    for persona, score in sorted_personas:
-        count = len(persona_scores[persona])
-        print_metric(persona, f"score: {score:.3f} (n={count})")
+    sorted_personas = sorted(
+        persona_stats.items(),
+        key=lambda x: sum(1 for o in x[1]["outcomes"] if o in positive_outcomes) / len(x[1]["outcomes"]),
+        reverse=True
+    )
+    for persona, stats in sorted_personas:
+        n = len(stats["outcomes"])
+        p_success = sum(1 for o in stats["outcomes"] if o in positive_outcomes)
+        p_rate = p_success / n * 100
+        avg_t = sum(stats["turns"]) / n
+        avg_c = sum(stats["coverage"]) / n
+        color = Fore.GREEN if p_rate >= 50 else Fore.YELLOW if p_rate >= 25 else Fore.RED
+        print(f"  {color}{persona:.<25}{Style.RESET_ALL} "
+              f"success: {p_success}/{n} ({p_rate:.0f}%) "
+              f"| avg_turns: {avg_t:.1f} "
+              f"| coverage: {avg_c:.2f}")
 
     # Мониторинг ресурсов
     resource_summary = monitor.get_summary()
@@ -729,7 +704,8 @@ def main():
     print_header("СОХРАНЕНИЕ ОТЧЕТОВ")
 
     # 1. Полный TXT отчет
-    report_data = generate_e2e_report(results, str(full_report))
+    reporter = ReportGenerator()
+    reporter.save_report(results, str(full_report), include_dialogues=True)
     print_success(f"Полный отчет: {full_report.name}")
 
     # 2. JSON метрики
@@ -737,23 +713,23 @@ def main():
         "metadata": {
             "timestamp": timestamp_readable,
             "timestamp_iso": datetime.now().isoformat(),
-            "version": "1.0",
+            "version": "2.0",
             "model": MODEL_NAME,
+            "flow": AUTONOMOUS_FLOW,
         },
         "parameters": {
             "total_dialogs": TOTAL_DIALOGS,
-            "total_flows": TOTAL_FLOWS,
+            "flow": AUTONOMOUS_FLOW,
             "total_personas": TOTAL_PERSONAS,
             "parallel_threads": PARALLEL_THREADS,
         },
         "summary": {
             "total": total,
-            "passed": passed,
-            "failed": failed,
-            "pass_rate_percent": pass_rate,
-            "avg_score": avg_score,
-            "min_score": min(r.score for r in results) if results else 0,
-            "max_score": max(r.score for r in results) if results else 0,
+            "success_count": success_count,
+            "success_rate_percent": success_rate,
+            "error_count": error_count,
+            "avg_turns": avg_turns,
+            "avg_phase_coverage": avg_coverage,
         },
         "performance": {
             "duration_seconds": duration,
@@ -762,10 +738,15 @@ def main():
             "dialogs_per_minute": total / duration * 60 if duration > 0 else 0,
         },
         "outcomes": outcomes,
-        "flow_scores": {k: {"avg": v, "count": len(flow_scores[k])}
-                       for k, v in flow_avg_scores.items()},
-        "persona_scores": {k: {"avg": v, "count": len(persona_scores[k])}
-                         for k, v in persona_avg_scores.items()},
+        "persona_stats": {
+            persona: {
+                "count": len(stats["outcomes"]),
+                "success_rate": sum(1 for o in stats["outcomes"] if o in positive_outcomes) / len(stats["outcomes"]),
+                "avg_turns": sum(stats["turns"]) / len(stats["turns"]),
+                "avg_coverage": sum(stats["coverage"]) / len(stats["coverage"]),
+            }
+            for persona, stats in persona_stats.items()
+        },
         "system_info": system_info,
         "resource_monitoring": resource_summary,
     }
@@ -813,8 +794,8 @@ def main():
     # ==========================================================================
     logger.info("=" * 60)
     logger.info("СИМУЛЯЦИЯ ЗАВЕРШЕНА")
-    logger.info(f"Результат: {passed}/{total} PASS ({pass_rate:.1f}%)")
-    logger.info(f"Средний score: {avg_score:.4f}")
+    logger.info(f"Результат: {success_count}/{total} success ({success_rate:.1f}%)")
+    logger.info(f"Средние ходы: {avg_turns:.1f}, coverage: {avg_coverage:.2f}")
     logger.info(f"Время: {duration:.1f} сек")
     logger.info("=" * 60)
 
@@ -840,8 +821,8 @@ def main():
     print()
 
     # Exit code
-    if pass_rate < 70:
-        print(Fore.RED + f"WARNING: Pass rate {pass_rate:.1f}% ниже порога 70%")
+    if success_rate < 30:
+        print(Fore.RED + f"WARNING: Success rate {success_rate:.1f}% ниже порога 30%")
         sys.exit(1)
 
     print(Fore.GREEN + Style.BRIGHT + "Симуляция успешно завершена!")

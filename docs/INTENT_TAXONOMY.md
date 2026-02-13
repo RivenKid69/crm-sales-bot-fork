@@ -17,7 +17,7 @@ SSOT: `src/yaml_config/constants.yaml`
 - Base categories: `34`
 - Composed categories: `7`
 - Total categories после резолва: `41`
-- Intent entries в `intent_taxonomy`: `271`
+- Intent entries в `intent_taxonomy`: `247`
 
 Часто используемые base-категории:
 - `question` — 18
@@ -32,8 +32,7 @@ SSOT: `src/yaml_config/constants.yaml`
 - Классификатор (через категории и refinement layers).
 - Blackboard sources (например, rule/intent guards).
 
-## 4. Важный operational note
+## 4. Operational note
 
-При импорте `src.yaml_config.constants` в текущей ревизии выводятся warnings о ghost-intents (`question_technical`, `question_answered`) в некоторых категориях.
-
-Это не ломает runtime, но это признак рассинхронизации между категориями и генератором интентов (`INTENT_ROOTS` в `src/config.py`).
+Категории интентов собираются через `INTENT_CATEGORIES` в `src/yaml_config/constants.py` (base + composed).
+При изменениях в taxonomy важно обновлять `constants.yaml` и тесты классификатора синхронно.
