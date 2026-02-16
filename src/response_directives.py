@@ -640,7 +640,7 @@ class ResponseDirectivesBuilder:
 
         SSoT: src/apology_ssot.py
         """
-        from src.apology_ssot import should_apologize, should_offer_exit
+        from src.apology_ssot import should_apologize, should_offer_exit, should_suppress_for_intent
 
         # Use SSoT functions for threshold logic
         frustration_level = self.envelope.frustration_level
@@ -649,6 +649,16 @@ class ResponseDirectivesBuilder:
         # Pass tone for tone-aware apology thresholds (SSOT)
         tone = getattr(self.envelope, 'tone', None)
         directives.should_apologize = should_apologize(frustration_level, tone=tone)
+
+        # SSoT: suppress for non-allowed intent domains
+        # IMPORTANT: Use current_intent (this turn), NOT last_intent (previous turn).
+        # last_intent is set at end of process() so it lags by 1 turn.
+        # current_intent is set from classification at envelope build time.
+        if directives.should_apologize:
+            intent = getattr(self.envelope, 'current_intent', None) or ""
+            if should_suppress_for_intent(intent, frustration_level):
+                directives.should_apologize = False
+
         # Pass pre_intervention_triggered to ensure exit is offered at WARNING level too
         directives.should_offer_exit = should_offer_exit(frustration_level, pre_intervention)
 

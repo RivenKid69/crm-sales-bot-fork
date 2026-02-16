@@ -275,7 +275,9 @@ class RegexToneAnalyzer:
                     "Будь кратким и деловым. "
                     "Признай возможные неудобства."
                 )
-                guidance["should_apologize"] = True
+                # Only FRUSTRATED tone at medium urgency warrants apology flag.
+                # RUSHED/CONFUSED = not bot-directed frustration.
+                guidance["should_apologize"] = (analysis.tone == Tone.FRUSTRATED)
                 # Offer exit for RUSHED users with medium urgency
                 if analysis.tone == Tone.RUSHED:
                     guidance["should_offer_exit"] = True
@@ -342,7 +344,9 @@ class RegexToneAnalyzer:
                     "Будь кратким и деловым. "
                     "Признай возможные неудобства."
                 )
-                guidance["should_apologize"] = True
+                # Only FRUSTRATED tone at medium urgency warrants apology flag.
+                # RUSHED/CONFUSED = not bot-directed frustration.
+                guidance["should_apologize"] = (analysis.tone == Tone.FRUSTRATED)
 
         # Специфика по тону (если frustration низкий)
         elif analysis.tone == Tone.RUSHED:

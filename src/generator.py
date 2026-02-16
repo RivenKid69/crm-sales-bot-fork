@@ -1279,6 +1279,15 @@ class ResponseGenerator:
         if not context.get("should_apologize"):
             return response
 
+        # SSoT: suppress generic canned apology for non-allowed intent domains
+        # At HIGH+ frustration, safety net is preserved (function returns False)
+        from src.apology_ssot import should_suppress_for_intent
+        if should_suppress_for_intent(
+            context.get("intent", ""),
+            frustration_level=context.get("frustration_level", 0),
+        ):
+            return response
+
         # Check if LLM already included apology
         if self._has_apology(response):
             return response

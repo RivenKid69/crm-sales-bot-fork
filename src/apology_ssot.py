@@ -44,7 +44,7 @@ from src.frustration_thresholds import (
     FRUSTRATION_CRITICAL,
     FRUSTRATION_MAX,
 )
-from src.yaml_config.constants import APOLOGY_TONE_OVERRIDES
+from src.yaml_config.constants import APOLOGY_TONE_OVERRIDES, APOLOGY_ALLOWED_DOMAINS, get_intent_semantic_domain
 
 if TYPE_CHECKING:
     from src.response_variations import ResponseVariations
@@ -208,6 +208,29 @@ def has_apology(response: str) -> bool:
 
 
 # =============================================================================
+# INTENT-DOMAIN SUPPRESSION
+# =============================================================================
+
+def should_suppress_for_intent(intent: str, frustration_level: int = 0) -> bool:
+    """Check if generic apology should be suppressed based on intent's semantic domain.
+
+    Suppresses when domain NOT in APOLOGY_ALLOWED_DOMAINS.
+    NEVER suppresses at HIGH+ frustration (7+) - safety net needed.
+    Unknown intents -> don't suppress (safe default).
+    Empty config -> don't suppress (feature disabled).
+    """
+    # At HIGH+ frustration, preserve canned apology as safety net
+    if frustration_level >= FRUSTRATION_HIGH:
+        return False
+    if not APOLOGY_ALLOWED_DOMAINS or not intent:
+        return False
+    domain = get_intent_semantic_domain(intent)
+    if domain is None:
+        return False
+    return domain not in APOLOGY_ALLOWED_DOMAINS
+
+
+# =============================================================================
 # VALIDATION
 # =============================================================================
 
@@ -250,6 +273,17 @@ def validate_thresholds() -> bool:
                 f"and FRUSTRATION_MAX({FRUSTRATION_MAX})"
             )
 
+    # Validate apology_allowed_domains reference valid taxonomy domains
+    if APOLOGY_ALLOWED_DOMAINS:
+        from src.yaml_config.constants import get_all_semantic_domains
+        all_domains = get_all_semantic_domains()
+        for domain in APOLOGY_ALLOWED_DOMAINS:
+            if domain not in all_domains:
+                logger.warning(
+                    f"APOLOGY_ALLOWED_DOMAINS contains unknown domain: {domain}. "
+                    f"Known domains: {sorted(all_domains)}"
+                )
+
     logger.info(
         f"Apology thresholds validated: "
         f"apology_at={APOLOGY_THRESHOLD}, exit_at={EXIT_OFFER_THRESHOLD}, "
@@ -275,6 +309,8 @@ __all__ = [
     # Phrase builders
     "build_apology_prefix",
     "build_exit_suffix",
+    # Intent-domain suppression
+    "should_suppress_for_intent",
     # Detection
     "APOLOGY_MARKERS",
     "has_apology",

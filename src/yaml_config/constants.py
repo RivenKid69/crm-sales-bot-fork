@@ -22,7 +22,7 @@ Usage:
 Part of Phase 1: State Machine Parameterization
 """
 
-from typing import Dict, List, Set, Any, Tuple
+from typing import Dict, List, Optional, Set, Any, Tuple
 from pathlib import Path
 import yaml
 import logging
@@ -477,6 +477,28 @@ _frustration_intensity = _frustration.get("intensity", {})
 # Tone-aware apology configuration
 _apology_config = _frustration.get("apology", {})
 APOLOGY_TONE_OVERRIDES: Dict[str, int] = _apology_config.get("tone_overrides", {})
+APOLOGY_ALLOWED_DOMAINS: Set[str] = set(_apology_config.get("apology_allowed_domains", []))
+
+# Taxonomy lookup for intent domain
+_taxonomy_data: Dict = _constants.get("intent_taxonomy", {})
+
+
+def get_intent_semantic_domain(intent: str) -> Optional[str]:
+    """Get semantic_domain for an intent from taxonomy SSoT."""
+    meta = _taxonomy_data.get(intent)
+    if meta and isinstance(meta, dict):
+        return meta.get("semantic_domain")
+    return None
+
+
+def get_all_semantic_domains() -> Set[str]:
+    """Get all unique semantic_domain values from taxonomy SSoT."""
+    domains = set()
+    for meta in _taxonomy_data.values():
+        if isinstance(meta, dict) and "semantic_domain" in meta:
+            domains.add(meta["semantic_domain"])
+    return domains
+
 
 FRUSTRATION_INTENSITY_CONFIG: Dict[str, Any] = {
     "base_weights": _frustration_intensity.get("base_weights", {
@@ -1050,6 +1072,9 @@ __all__ = [
     "FRUSTRATION_THRESHOLDS",
     "FRUSTRATION_INTENSITY_CONFIG",
     "APOLOGY_TONE_OVERRIDES",
+    "APOLOGY_ALLOWED_DOMAINS",
+    "get_intent_semantic_domain",
+    "get_all_semantic_domains",
     # Circular flow
     "ALLOWED_GOBACKS",
     # Context window
