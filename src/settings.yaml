@@ -83,6 +83,17 @@ category_router:
     - "features"
 
 # -----------------------------------------------------------------------------
+# ENHANCED RETRIEVAL (Autonomous query-driven retrieval)
+# -----------------------------------------------------------------------------
+enhanced_retrieval:
+  max_kb_chars: 40000
+  top_k_per_sub_query: 3
+  max_sub_queries: 4
+  min_complexity_length: 30
+  rrf_k: 60
+  rewrite_min_words: 4
+
+# -----------------------------------------------------------------------------
 # GENERATOR (Генерация ответов)
 # -----------------------------------------------------------------------------
 generator:
@@ -304,6 +315,7 @@ feature_flags:
   objection_handler: false    # Продвинутая обработка возражений
   cta_generator: true         # Генерация Call-to-Action
   autonomous_flow: true       # LLM-driven sales flow
+  enhanced_autonomous_retrieval: true  # Enhanced query-driven retrieval in autonomous flow
 
 # -----------------------------------------------------------------------------
 # PHONE VALIDATION (Валидация телефонных номеров)

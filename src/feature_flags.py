@@ -186,6 +186,7 @@ class FeatureFlags:
 
         # === Autonomous Flow ===
         "autonomous_flow": False,                  # LLM-driven sales flow (no YAML rules)
+        "enhanced_autonomous_retrieval": False,   # Query-driven retrieval for autonomous flow
     }
 
     # Группы флагов для удобного управления
@@ -276,7 +277,8 @@ class FeatureFlags:
         ],
         # Autonomous flow
         "autonomous": [
-            "autonomous_flow"
+            "autonomous_flow",
+            "enhanced_autonomous_retrieval",
         ],
     }
 
@@ -729,6 +731,11 @@ class FeatureFlags:
     def autonomous_flow(self) -> bool:
         """Включён ли автономный LLM-driven sales flow"""
         return self.is_enabled("autonomous_flow")
+
+    @property
+    def enhanced_autonomous_retrieval(self) -> bool:
+        """Включён ли enhanced query-driven retrieval для autonomous flow"""
+        return self.is_enabled("enhanced_autonomous_retrieval")
 
 
 # Singleton экземпляр
