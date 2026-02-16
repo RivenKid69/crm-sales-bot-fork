@@ -1293,6 +1293,33 @@ class ContextWindow:
 
         return oscillation_count >= 2
 
+    def detect_state_oscillation(self, last_n: int = 6) -> bool:
+        """
+        Обнаружить осцилляцию: revisit паттерн на уровне состояний.
+
+        Состояние покинуто и затем возвращено. >= 2 revisits → oscillation.
+        Ловит: A-B-A-B, A-B-C-A-B и любые паттерны возврата.
+        """
+        if len(self.turns) < 4:
+            return False
+
+        states = [t.state for t in self.turns[-last_n:]]
+        if len(states) < 4:
+            return False
+
+        seen_and_left = set()
+        prev = states[0]
+        revisit_count = 0
+
+        for state in states[1:]:
+            if state != prev:
+                seen_and_left.add(prev)
+                if state in seen_and_left:
+                    revisit_count += 1
+                prev = state
+
+        return revisit_count >= 2
+
     def detect_stuck_pattern(self, last_n: int = 3) -> bool:
         """
         Обнаружить застревание (одинаковые интенты подряд).
@@ -1325,6 +1352,20 @@ class ContextWindow:
         count = 0
         for turn in reversed(self.turns):
             if turn.state == current_state:
+                count += 1
+            else:
+                break
+        return count
+
+    def get_consecutive_same_action(self) -> int:
+        """Count consecutive turns with the same action from the end of history."""
+        if not self.turns:
+            return 0
+
+        current_action = self.turns[-1].action
+        count = 0
+        for turn in reversed(self.turns):
+            if turn.action == current_action:
                 count += 1
             else:
                 break

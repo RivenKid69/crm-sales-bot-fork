@@ -43,6 +43,7 @@ from src.yaml_config.constants import (
     REPAIR_ACTIONS as _YAML_REPAIR_ACTIONS,
     REPAIR_PROTECTED_ACTIONS,
     PRICING_CORRECT_ACTIONS,
+    REPAIR_ACTION_REPEAT_THRESHOLD,
 )
 
 
@@ -387,6 +388,7 @@ class DialoguePolicy:
         signals = {}
         action = None
         decision = PolicyDecision.NO_OVERRIDE
+        repair_protection_bypassed = False
 
         if policy_registry.evaluate("is_stuck", ctx, trace):
             signals["is_stuck"] = True
@@ -400,8 +402,11 @@ class DialoguePolicy:
             decision = PolicyDecision.REPAIR_SUMMARIZE
 
         elif policy_registry.evaluate("has_repeated_question", ctx, trace):
+            is_action_repeat_loop = (
+                ctx.consecutive_same_action >= REPAIR_ACTION_REPEAT_THRESHOLD
+            )
             # If current action already answers the question, protect it
-            if ctx.current_action in self._repair_protected:
+            if ctx.current_action in self._repair_protected and not is_action_repeat_loop:
                 if trace:
                     trace.set_result(None, Resolution.NONE,
                         matched_condition="repair_skipped_action_already_correct")
@@ -413,6 +418,18 @@ class DialoguePolicy:
                     expected_effect="Action already addresses question, skip repair",
                     # cascade_disposition=STOP (default) — protect from all lower overlays
                 )
+            elif ctx.current_action in self._repair_protected and is_action_repeat_loop:
+                if trace:
+                    trace.set_result(
+                        None,
+                        Resolution.NONE,
+                        matched_condition="repair_protection_bypassed_action_repeat",
+                    )
+                repair_protection_bypassed = True
+                signals["repeated_question"] = ctx.repeated_question
+                signals["consecutive_same_action"] = ctx.consecutive_same_action
+                action = self.REPAIR_ACTIONS["repeated_question"]
+                decision = PolicyDecision.REPAIR_CLARIFY
             # If repeated question is answerable, skip repair
             elif policy_registry.evaluate("is_answerable_question", ctx, trace):
                 if trace:
@@ -448,7 +465,16 @@ class DialoguePolicy:
 
         if action:
             if trace:
-                trace.set_result(action, Resolution.CONDITION_MATCHED, matched_condition="repair")
+                matched_condition = (
+                    "repair_protection_bypassed_action_repeat"
+                    if repair_protection_bypassed
+                    else "repair"
+                )
+                trace.set_result(
+                    action,
+                    Resolution.CONDITION_MATCHED,
+                    matched_condition=matched_condition,
+                )
 
             return PolicyOverride(
                 action=action,

@@ -15,7 +15,6 @@ Part of Phase 5: DialoguePolicy Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 
 from src.conditions.policy.context import (
     PolicyContext,
-    OVERLAY_ALLOWED_STATES,
     PROTECTED_STATES,
     AGGRESSIVE_ACTIONS,
 )
@@ -486,7 +485,7 @@ def needs_empathy(ctx: PolicyContext) -> bool:
 )
 def is_overlay_allowed(ctx: PolicyContext) -> bool:
     """Returns True if overlay is allowed for current state."""
-    return ctx.state in OVERLAY_ALLOWED_STATES
+    return ctx.state not in PROTECTED_STATES
 
 
 @policy_condition(
