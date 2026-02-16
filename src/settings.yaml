@@ -296,7 +296,7 @@ feature_flags:
   personalization: false      # Персонализация на основе данных
 
   # Фаза 3: Оптимизация SPIN Flow
-  lead_scoring: false         # Скоринг лидов (включить после калибровки)
+  lead_scoring: true          # Скоринг лидов (production-ready)
   circular_flow: false        # Возврат назад по фазам (опасно, включать осторожно)
   objection_handler: false    # Продвинутая обработка возражений
   cta_generator: true         # Генерация Call-to-Action

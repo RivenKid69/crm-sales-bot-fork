@@ -118,7 +118,7 @@ class ReportGenerator:
         lines.append(f"Soft close: {metrics.soft_close_count} ({metrics.soft_close_rate:.1f}%)")
         lines.append(f"Отказов: {metrics.rejection_count} ({metrics.rejection_rate:.1f}%)")
         lines.append(f"Ср. SPIN coverage: {metrics.avg_spin_coverage * 100:.0f}%")
-        lines.append(f"Ср. lead score: {metrics.avg_lead_score:.2f}")
+        lines.append(f"Ср. lead score: {metrics.avg_lead_score:.1f}")
         lines.append("=" * 60)
 
         return "\n".join(lines)
@@ -219,10 +219,12 @@ class ReportGenerator:
         lines = []
         lines.append("## LEAD SCORING")
         lines.append("-" * 50)
-        lines.append(f"Средний lead score: {metrics.avg_lead_score:.2f}")
-        lines.append(f"Hot leads (>=0.7): {metrics.hot_leads_count}")
-        lines.append(f"Warm leads (0.4-0.7): {metrics.warm_leads_count}")
-        lines.append(f"Cold leads (<0.4): {metrics.cold_leads_count}")
+        lines.append(f"Средний lead score: {metrics.avg_lead_score:.1f}")
+        for temp_name in reversed(list(metrics.lead_temperature_stats.keys())):
+            stats = metrics.lead_temperature_stats[temp_name]
+            low, high = stats["range"]
+            label = temp_name.replace("_", " ").title()
+            lines.append(f"{label} leads ({low}-{high}): {stats['count']}")
         lines.append("")
         return "\n".join(lines)
 
@@ -511,7 +513,7 @@ class ReportGenerator:
             lines.append(f"Исход: {r.outcome}")
             lines.append(f"Ходов: {r.turns}")
             lines.append(f"SPIN coverage: {r.spin_coverage * 100:.0f}%")
-            lines.append(f"Lead score: {r.final_lead_score:.2f}")
+            lines.append(f"Lead score: {r.final_lead_score:.0f} ({r.final_lead_temperature})")
             if r.collected_data:
                 lines.append(f"Собранные данные: {r.collected_data}")
             if r.errors:

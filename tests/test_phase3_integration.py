@@ -72,7 +72,7 @@ class TestFeatureFlagsPhase3:
         """Опасные флаги включают Phase 3 компоненты"""
         risky = flags.GROUPS.get("risky", [])
         assert "circular_flow" in risky
-        assert "lead_scoring" in risky
+        assert "lead_scoring" not in risky
 
 class TestLeadScoringWithStateMachine:
     """Интеграция Lead Scoring с State Machine"""
