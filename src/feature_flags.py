@@ -39,7 +39,7 @@ class FeatureFlags:
         "response_variations": True,      # Вариативность ответов (безопасно)
 
         # Фаза 3: Оптимизация SPIN Flow
-        "lead_scoring": False,            # Скоринг лидов для адаптивного SPIN
+        "lead_scoring": True,             # Скоринг лидов для адаптивного SPIN
         "circular_flow": False,           # Возврат назад по фазам (опасно)
 
         # Фаза 1: Защита и надёжность
@@ -195,8 +195,8 @@ class FeatureFlags:
         "phase_2": ["tone_analysis", "response_variations", "personalization", "response_diversity", "question_deduplication", "apology_system"],
         "phase_3": ["lead_scoring", "circular_flow", "objection_handler", "cta_generator", "dynamic_cta_fallback"],
         "phase_4": ["intent_disambiguation", "unified_disambiguation", "cascade_classifier", "semantic_objection_detection"],
-        "safe": ["response_variations", "response_diversity", "question_deduplication", "apology_system", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection"],
-        "risky": ["circular_flow", "lead_scoring"],
+        "safe": ["response_variations", "response_diversity", "question_deduplication", "apology_system", "multi_tier_fallback", "structured_logging", "metrics_tracking", "conversation_guard", "cascade_classifier", "semantic_objection_detection", "lead_scoring"],
+        "risky": ["circular_flow"],
         # Context Policy groups (PLAN_CONTEXT_POLICY.md)
         "context_phase_0": ["context_full_envelope", "context_shadow_mode"],
         "context_phase_2": ["context_response_directives"],

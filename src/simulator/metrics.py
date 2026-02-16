@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from collections import Counter
 import logging
 
-from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES
+from src.yaml_config.constants import SPIN_PHASES, SPIN_STATES, LEAD_TEMPERATURE_THRESHOLDS
 
 if TYPE_CHECKING:
     from .runner import SimulationResult
@@ -42,6 +42,7 @@ class SimulationMetrics:
 
     # Lead scoring
     final_lead_score: float = 0.0
+    final_lead_temperature: str = "cold"
 
     # Данные
     collected_data: Dict[str, Any] = field(default_factory=dict)
@@ -84,9 +85,7 @@ class AggregatedMetrics:
 
     # Lead scoring
     avg_lead_score: float = 0.0
-    hot_leads_count: int = 0
-    warm_leads_count: int = 0
-    cold_leads_count: int = 0
+    lead_temperature_stats: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     # По персонам
     persona_stats: Dict[str, Dict[str, Any]] = field(default_factory=dict)
@@ -131,6 +130,7 @@ class MetricsCollector:
             objections_handled=result.objections_handled,
             fallback_count=result.fallback_count,
             final_lead_score=result.final_lead_score,
+            final_lead_temperature=result.final_lead_temperature,
             collected_data=result.collected_data,
             errors=result.errors
         )
@@ -186,9 +186,10 @@ class MetricsCollector:
 
         # Lead scoring
         avg_lead = sum(r.final_lead_score for r in results) / n
-        hot = len([r for r in results if r.final_lead_score >= 0.7])
-        warm = len([r for r in results if 0.4 <= r.final_lead_score < 0.7])
-        cold = len([r for r in results if r.final_lead_score < 0.4])
+        lead_temp_stats: Dict[str, Dict[str, Any]] = {}
+        for temp_name, temp_range in LEAD_TEMPERATURE_THRESHOLDS.items():
+            count = len([r for r in results if r.final_lead_temperature == temp_name])
+            lead_temp_stats[temp_name] = {"count": count, "range": temp_range}
 
         # Статистика по персонам
         persona_stats = self._calc_persona_stats(results)
@@ -215,9 +216,7 @@ class MetricsCollector:
             total_fallbacks=total_fallbacks,
             fallback_rate=fallback_rate,
             avg_lead_score=avg_lead,
-            hot_leads_count=hot,
-            warm_leads_count=warm,
-            cold_leads_count=cold,
+            lead_temperature_stats=lead_temp_stats,
             persona_stats=persona_stats,
             error_count=error_count
         )

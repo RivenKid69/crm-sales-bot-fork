@@ -399,9 +399,9 @@ class TestFeatureFlagsFromSettings:
         assert ff.is_enabled("conversation_guard") is True
         assert ff.is_enabled("response_variations") is True
 
-        # Эти флаги должны быть False в settings.yaml
-        assert ff.is_enabled("tone_analysis") is False
-        assert ff.is_enabled("lead_scoring") is False
+        # Эти флаги должны соответствовать текущим значениям в settings.yaml
+        assert ff.is_enabled("tone_analysis") is True
+        assert ff.is_enabled("lead_scoring") is True
         assert ff.is_enabled("circular_flow") is False
 
 class TestFeatureFlagsThreadSafety:

@@ -48,6 +48,7 @@ class SimulationResult:
 
     # Lead
     final_lead_score: float = 0.0
+    final_lead_temperature: str = "cold"  # from LeadScorer via bot API, not re-derived
     collected_data: Dict[str, Any] = field(default_factory=dict)
 
     # KB questions
@@ -395,10 +396,13 @@ class SimulationRunner:
 
             # Получаем lead score
             lead_score = 0.0
+            lead_temperature = "cold"
             if hasattr(bot, 'get_lead_score'):
                 try:
                     lead_info = bot.get_lead_score()
-                    lead_score = lead_info.get("score", 0.0) if isinstance(lead_info, dict) else 0.0
+                    if isinstance(lead_info, dict):
+                        lead_score = lead_info.get("score", 0.0)
+                        lead_temperature = lead_info.get("temperature", "cold")
                 except Exception:
                     pass
 
@@ -419,6 +423,7 @@ class SimulationRunner:
                 objections_handled=0,  # TODO: track from bot
                 fallback_count=fallback_count,
                 final_lead_score=lead_score,
+                final_lead_temperature=lead_temperature,
                 collected_data=collected_data,
                 kb_questions_used=client_summary.get("kb_questions_used", 0),
                 kb_topics_covered=client_summary.get("kb_topics_covered", []),
