@@ -4068,8 +4068,8 @@ sections:
   - сынақ аккаунт
   - demo login password
   - демо логин құпиясөз
-  facts: Да. Демо доступ на https://console.wipon.kz/login логин +7 777 777 77 77
-    пароль 12345678.
+  facts: Да, демо-доступ есть. Оставьте контактные данные, и менеджер предоставит
+    персональный доступ.
 - topic: pricing_tariff_reminder_1902
   priority: 8
   keywords:

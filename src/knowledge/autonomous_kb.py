@@ -98,6 +98,8 @@ def load_facts_for_state(
     total_chars = 0
 
     for section in all_sections:
+        if section.sensitive:
+            continue
         section_text = f"[{section.category}/{section.topic}]\n{section.facts}\n"
         section_len = len(section_text)
 

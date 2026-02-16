@@ -26,6 +26,9 @@ class KnowledgeSection:
     # Format: [{"url": "https://...", "label": "Description", "type": "doc|spec|guide"}]
     urls: List[Dict[str, str]] = field(default_factory=list)
 
+    # If True, section facts are never passed to the LLM prompt
+    sensitive: bool = False
+
     # Для эмбеддингов (заполняется автоматически)
     embedding: Optional[List[float]] = field(default=None, repr=False)
     # Лемматизированные keywords (заполняется CascadeRetriever при инициализации)

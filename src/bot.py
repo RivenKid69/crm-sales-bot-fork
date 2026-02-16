@@ -1446,7 +1446,11 @@ class SalesBot:
         generator_used: bool = False
 
         # If objection detected and needs soft close - override state machine result
-        if objection_info and objection_info.get("should_soft_close"):
+        # In autonomous states, ObjectionGuardSource (blackboard-native) handles limits
+        current_state_config = self._flow.states.get(self.state_machine.state, {})
+        is_autonomous = current_state_config.get("autonomous", False)
+        if (objection_info and objection_info.get("should_soft_close")
+                and not is_autonomous):
             action = "soft_close"
             next_state = "soft_close"  # Синхронизируем состояние с action
             is_final = True  # soft_close - финальное состояние

@@ -296,6 +296,8 @@ class CascadeRetriever:
             # Высокий score — берём как есть
             results = results[:top_k]
 
+        # Filter out sensitive sections
+        results = [r for r in results if not r.section.sensitive]
         # Формируем строку
         facts = [r.section.facts.strip() for r in results]
         return "\n\n---\n\n".join(facts)
@@ -362,6 +364,8 @@ class CascadeRetriever:
         else:
             results = results[:top_k]
 
+        # Filter out sensitive sections
+        results = [r for r in results if not r.section.sensitive]
         # Собираем факты
         facts = [r.section.facts.strip() for r in results]
 
