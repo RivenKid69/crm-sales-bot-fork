@@ -787,6 +787,11 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
         if ctx.intent not in self._objection_intents:
             return False
 
+        # Hard ceiling: very confident objection classifications bypass all rules.
+        hard_ceiling = self._config.get("confidence_hard_ceiling", 0.92)
+        if ctx.confidence >= hard_ceiling:
+            return False
+
         # High confidence without context issues → accept
         min_confidence = self._config.get("min_confidence_to_accept", 0.85)
         if ctx.confidence >= min_confidence:
@@ -816,8 +821,9 @@ class ObjectionRefinementLayerAdapter(BaseRefinementLayer):
                     result=result,
                 )
 
-        # Rule 2: Question markers
-        if self._has_question_markers(message):
+        # Rule 2: Question markers — only for low-confidence objections
+        question_max_conf = self._config.get("question_refinement_max_confidence", 0.75)
+        if self._has_question_markers(message) and ctx.confidence < question_max_conf:
             alternative = self._get_question_alternative(ctx)
             if alternative:
                 return self._create_refined_result(
