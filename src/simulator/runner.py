@@ -392,6 +392,17 @@ class SimulationRunner:
             if hasattr(bot, 'state_machine') and hasattr(bot.state_machine, 'collected_data'):
                 collected_data = dict(bot.state_machine.collected_data)
 
+            # Track objections from bot-side intent classification (not client injections).
+            bot_objections_detected = 0
+            bot_objections_handled = 0
+            if hasattr(bot, 'state_machine') and hasattr(bot.state_machine, 'intent_tracker'):
+                tracker = bot.state_machine.intent_tracker
+                if tracker is not None:
+                    if hasattr(tracker, "category_total"):
+                        bot_objections_detected = tracker.category_total("objection")
+                    if hasattr(tracker, "objection_handled_total"):
+                        bot_objections_handled = tracker.objection_handled_total()
+
             outcome = determine_outcome(final_state, is_final, collected_data)
 
             # Получаем lead score
@@ -419,8 +430,8 @@ class SimulationRunner:
                 flow_name=active_flow or "",
                 phases_reached=phases,
                 spin_coverage=spin_coverage,
-                objections_count=client_summary.get("objections", 0),
-                objections_handled=0,  # TODO: track from bot
+                objections_count=bot_objections_detected,
+                objections_handled=bot_objections_handled,
                 fallback_count=fallback_count,
                 final_lead_score=lead_score,
                 final_lead_temperature=lead_temperature,

@@ -479,6 +479,14 @@ class ObjectionReturnSource(KnowledgeSource):
                 if isinstance(variables, dict):
                     entry_state = variables.get("entry_state")
 
+            # Backward-compatible fallback for tests/flows where ContextSnapshot.flow_config
+            # omits variables in to_dict(), but FlowConfig object still has .variables.
+            if not entry_state:
+                flow_obj = getattr(blackboard, "_flow_config", None)
+                flow_vars = getattr(flow_obj, "variables", None)
+                if isinstance(flow_vars, dict):
+                    entry_state = flow_vars.get("entry_state")
+
             if entry_state and entry_state in ctx.valid_states:
                 # Determine reason for transition
                 if is_objection_loop_escape and escape_trigger == "total":

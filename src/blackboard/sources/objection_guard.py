@@ -146,13 +146,12 @@ class ObjectionGuardSource(KnowledgeSource):
 
         reason_str = ", ".join(exceeded_reason)
 
-        # Propose action with CRITICAL priority
-        # Use combinable=True because we WANT the soft_close transition to happen
-        # The CRITICAL priority ensures this action wins over other proposals
+        # Propose BLOCKING action with CRITICAL priority.
+        # Transition to soft_close is proposed explicitly below.
         blackboard.propose_action(
             action="objection_limit_reached",
             priority=Priority.CRITICAL,
-            combinable=True,  # Allow transition to soft_close
+            combinable=False,
             reason_code="objection_limit_exceeded",
             source_name=self.name,
             metadata={

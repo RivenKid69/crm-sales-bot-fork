@@ -18,6 +18,7 @@ from unittest.mock import Mock
 from src.blackboard.sources.objection_guard import ObjectionGuardSource
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority, ProposalType
+from src.yaml_config.constants import PERSONA_OBJECTION_LIMITS, OBJECTION_INTENTS
 
 # =============================================================================
 # Mock Implementations for Testing
@@ -404,10 +405,11 @@ class TestObjectionGuardSourceMetadata:
         metadata = action_proposals[0].metadata
 
         assert metadata["persona"] == "default"
-        assert metadata["consecutive"] == 3
-        assert metadata["total"] == 4
-        assert metadata["max_consecutive"] == 3
-        assert metadata["max_total"] == 5
+        # begin_turn() records current objection intent before source evaluation.
+        assert metadata["consecutive"] == 4
+        assert metadata["total"] == 5
+        assert metadata["max_consecutive"] == source.persona_limits["default"]["consecutive"]
+        assert metadata["max_total"] == source.persona_limits["default"]["total"]
 
     def test_metadata_includes_exceeded_info(self, source):
         """Metadata should indicate which limit was exceeded."""
@@ -423,7 +425,10 @@ class TestObjectionGuardSourceMetadata:
         action_proposals = bb.get_action_proposals()
         metadata = action_proposals[0].metadata
 
-        assert "consecutive=3>=3" in metadata["exceeded"]
+        assert (
+            f"consecutive={metadata['consecutive']}>={metadata['max_consecutive']}"
+            in metadata["exceeded"]
+        )
 
 class TestObjectionGuardSourceProposalProperties:
     """Test ObjectionGuardSource proposal properties."""
@@ -448,7 +453,7 @@ class TestObjectionGuardSourceProposalProperties:
         assert action_proposals[0].combinable is False
 
     def test_action_proposal_is_high_priority(self, source):
-        """Action proposal must have HIGH priority."""
+        """Action proposal must have CRITICAL priority."""
         bb = create_blackboard(
             intent="objection_price",
             objection_consecutive=3,
@@ -458,7 +463,7 @@ class TestObjectionGuardSourceProposalProperties:
         source.contribute(bb)
 
         action_proposals = bb.get_action_proposals()
-        assert action_proposals[0].priority == Priority.HIGH
+        assert action_proposals[0].priority == Priority.CRITICAL
 
     def test_transition_proposal_to_soft_close(self, source):
         """Transition proposal must target soft_close."""
@@ -473,7 +478,7 @@ class TestObjectionGuardSourceProposalProperties:
         transition_proposals = bb.get_transition_proposals()
         assert len(transition_proposals) == 1
         assert transition_proposals[0].value == "soft_close"
-        assert transition_proposals[0].priority == Priority.HIGH
+        assert transition_proposals[0].priority == Priority.CRITICAL
 
 class TestObjectionGuardSourceEnableDisable:
     """Test ObjectionGuardSource enable/disable functionality."""
@@ -545,42 +550,14 @@ class TestObjectionGuardSourceInit:
         assert "objection_price" not in source.objection_intents
 
     def test_default_persona_limits(self):
-        """Test that default persona limits are correct."""
+        """Test that default persona limits match SSOT from constants."""
         source = ObjectionGuardSource()
-
-        assert source.persona_limits["aggressive"]["consecutive"] == 5
-        assert source.persona_limits["aggressive"]["total"] == 8
-        assert source.persona_limits["busy"]["consecutive"] == 2
-        assert source.persona_limits["busy"]["total"] == 4
-        assert source.persona_limits["default"]["consecutive"] == 3
-        assert source.persona_limits["default"]["total"] == 5
+        assert source.persona_limits == PERSONA_OBJECTION_LIMITS
 
     def test_default_objection_intents(self):
-        """Test that default objection intents are comprehensive."""
+        """Test that default objection intents match SSOT from constants."""
         source = ObjectionGuardSource()
-
-        expected_intents = {
-            "objection_price",
-            "objection_competitor",
-            "objection_timing",
-            "objection_authority",
-            "objection_need",
-            "objection_trust",
-            "objection_budget",
-            "objection_features",
-            "objection_complexity",
-            "objection_support",
-            "objection_integration",
-            "objection_security",
-            "objection_scalability",
-            "objection_contract",
-            "objection_implementation",
-            "objection_training",
-            "objection_roi",
-            "objection_change",
-            "objection_generic",
-        }
-        assert source.objection_intents == expected_intents
+        assert source.objection_intents == set(OBJECTION_INTENTS)
 
 class TestIsFinalWhenObjectionLimitReached:
     """

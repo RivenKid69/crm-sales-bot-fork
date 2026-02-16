@@ -92,6 +92,11 @@ class IntentTracker:
     # Turn tracking
     _turn_number: int = 0
 
+    # Objection handling lifecycle:
+    # pending objections are marked as handled when the next non-objection intent appears.
+    _pending_objections: int = 0
+    _objections_handled: int = 0
+
     @property
     def last_intent(self) -> Optional[str]:
         """Get the last recorded intent."""
@@ -154,6 +159,13 @@ class IntentTracker:
 
         # Update category tracking
         self._update_categories(intent)
+
+        # Track handled objections across all dialog flows.
+        if self.is_objection(intent):
+            self._pending_objections += 1
+        elif self._pending_objections > 0:
+            self._objections_handled += self._pending_objections
+            self._pending_objections = 0
 
     def advance_turn(self) -> None:
         """Advance turn counter unconditionally.
@@ -299,6 +311,8 @@ class IntentTracker:
         self._category_streak_counts.clear()
         self._last_category = None
         self._turn_number = 0
+        self._pending_objections = 0
+        self._objections_handled = 0
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -322,6 +336,8 @@ class IntentTracker:
             "intent_totals": dict(self._intent_totals),
             "category_totals": dict(self._category_totals),
             "category_streaks": dict(self._category_streak_counts),
+            "pending_objections": self._pending_objections,
+            "objections_handled": self._objections_handled,
             "recent_intents": self.get_recent_intents(5),
         }
 
@@ -338,6 +354,8 @@ class IntentTracker:
             "streak": (self._current_streak_intent, self._current_streak_count),
             "turn": self._turn_number,
             "objections": self.category_total("objection"),
+            "pending_objections": self._pending_objections,
+            "objections_handled": self._objections_handled,
         }
 
     @classmethod
@@ -368,6 +386,8 @@ class IntentTracker:
         tracker._intent_totals = dict(data.get("intent_totals", {}))
         tracker._category_totals = dict(data.get("category_totals", {}))
         tracker._category_streak_counts = dict(data.get("category_streaks", {}))
+        tracker._pending_objections = int(data.get("pending_objections", 0))
+        tracker._objections_handled = int(data.get("objections_handled", 0))
 
         # Note: History is not restored (too verbose for serialization)
         # If full history is needed, store it separately
@@ -391,6 +411,10 @@ class IntentTracker:
         Replaces ObjectionFlowManager.total_objections.
         """
         return self.category_total("objection")
+
+    def objection_handled_total(self) -> int:
+        """Get total objections marked as handled."""
+        return self._objections_handled
 
     def is_objection(self, intent: str) -> bool:
         """Check if intent is an objection."""

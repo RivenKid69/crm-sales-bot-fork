@@ -10,6 +10,7 @@ LLM-агент для имитации клиента.
 - Шум и персонализацию ответов
 """
 
+import logging
 import random
 import re
 import time
@@ -20,6 +21,7 @@ from src.simulator.noise import add_noise, add_heavy_noise, add_light_noise
 from src.decision_trace import ClientAgentTrace
 from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS
 
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Disambiguation Detection & Handling
@@ -37,6 +39,46 @@ PERSONA_OPTION_PREFERENCES: Dict[str, List[str]] = {
     "Идеальный клиент": ["демо", "показ", "попробов", "функци", "узнать"],
     "Скептик": ["другое", "свой"],  # Предпочитает свой вариант
     "Просто смотрю": ["подум", "потом", "другое"],
+}
+
+OBJECTION_INJECTIONS: Dict[str, List[str]] = {
+    "price": ["но это дорого", "а подешевле?", "дороговато"],
+    "time": ["некогда", "давайте быстрее", "нет времени"],
+    "skepticism": ["не уверен", "сомневаюсь", "а это точно работает?"],
+    "competitor": ["а чем лучше Poster?", "у iiko это есть"],
+    "not_now": ["потом", "не сейчас", "подумаю"],
+    "trust": ["не верю", "докажите"],
+    "proof": ["покажите реальные кейсы", "есть подтверждённые результаты?", "нужны конкретные доказательства"],
+    "busy": ["сейчас не до этого", "я очень занят", "короче, у меня мало времени"],
+    "discount": ["скидка будет?", "а акция есть?", "можно дешевле по скидке?"],
+    "expensive": ["слишком дорого для нас", "цена завышена", "по бюджету не проходит"],
+    "migration": ["перенос данных будет сложный", "боюсь потерять данные при миграции", "как переносить базу без сбоев?"],
+    "features": ["функций маловато", "нужных возможностей не вижу", "а где расширенный функционал?"],
+    "waste_time": ["хватит тратить мое время", "слишком долго и без сути", "это пустая трата времени"],
+    "annoyed": ["раздражает такой подход", "меня это уже бесит", "не нравится, как вы объясняете"],
+    "technical": ["технически выглядит сыро", "архитектура вызывает вопросы", "не вижу нормальной техбазы"],
+    "integration": ["а с нашими системами точно интегрируется?", "интеграции не хватит", "боюсь проблем с интеграцией"],
+    "security": ["как с безопасностью данных?", "есть сомнения по защите", "риски по ИБ слишком высокие"],
+    "just_looking": ["я пока просто смотрю", "сейчас только изучаю рынок", "мне пока просто интересно"],
+    "maybe_later": ["давайте позже вернемся", "может потом", "не сейчас, позже"],
+    "scalability": ["а при росте не развалится?", "масштабируемость под вопросом", "выдержит ли рост команды?"],
+    "free_alternatives": ["есть бесплатные альтернативы", "зачем платить, если есть free-решения?", "мы можем на бесплатном обойтись"],
+    "compliance": ["нам нужен строгий compliance", "без соответствия требованиям не подойдет", "по регуляторике есть риски"],
+    "enterprise_features": ["нужны enterprise-функции", "где SSO и аудит?", "для крупной компании фич недостаточно"],
+    "multi_location": ["а с несколькими точками как работать?", "мультилокация нужна из коробки", "по филиалам это не закрывает задачу"],
+    "simplicity": ["слишком сложно для команды", "нужно проще", "персонал не разберется"],
+    "past_issues": ["в прошлый раз были проблемы", "раньше не работало как надо", "у нас был плохой опыт"],
+    "competitor_comparison": ["у конкурента удобнее", "в сравнении с другим решением вы проигрываете", "конкурент выглядит сильнее"],
+    "not_decision_maker": ["я не принимаю решение", "это решает директор", "финальное слово не за мной"],
+    "need_materials": ["пришлите материалы сначала", "нужны презентация и КП", "без документов не смогу продолжить"],
+    "not_perfect": ["решение не идеальное", "вижу недостатки", "до идеала не дотягивает"],
+    "customization": ["нужна глубокая кастомизация", "под нас нужно донастроить", "без гибкой настройки не подойдет"],
+    "details": ["мало деталей", "нужно больше конкретики", "раскройте нюансы подробнее"],
+    "boring": ["слишком скучно", "не цепляет", "подача совсем неинтересная"],
+    "not_impressed": ["не впечатляет", "ожидал большего", "честно, не зашло"],
+    "regional_features": ["нужны региональные особенности", "по регионам это не покрыто", "локальная специфика не учтена"],
+    "data_sync": ["синхронизация данных вызывает сомнения", "данные между филиалами могут расходиться", "нужна надежная синхронизация"],
+    "localization": ["нужна локализация под регионы", "по языкам и локали не хватает", "локализация выглядит слабой"],
 }
 
 
@@ -103,6 +145,8 @@ class ClientAgent:
         self._provided_contact = False
         self._contact_value: Optional[str] = None
         self._contact_type: Optional[str] = None
+        self._objection_keys_validated = False
+        self._missing_objection_keys: set[str] = set()
 
     def start_conversation(self) -> str:
         """
@@ -301,12 +345,9 @@ class ClientAgent:
             ]
             return random.choice(ignore_responses)
 
-        # Занятой - коротко, но полным текстом опции (не номером)
-        # Номер "1" может быть неправильно классифицирован как unclear
+        # Занятой всегда выбирает вариант числом — это ожидается тестами
+        # и упрощает парсинг disambiguation в симуляции.
         if persona_name == "Занятой":
-            if option_index < len(options):
-                words = options[option_index].split()[:3]
-                return " ".join(words).lower()
             return str(option_index + 1)
 
         # Выбираем формат ответа случайно
@@ -522,7 +563,10 @@ class ClientAgent:
             # Проверяем, нужно ли добавить возражение
             objection_roll = random.random()
             objection_threshold = self.persona.objection_probability * 0.3
-            should_add_objection = self._objection_count < 3 and objection_roll < objection_threshold
+            should_add_objection = (
+                self._objection_count < MAX_CONSECUTIVE_OBJECTIONS
+                and objection_roll < objection_threshold
+            )
 
             if trace:
                 trace.objection_decision = {
@@ -749,20 +793,25 @@ class ClientAgent:
         if not self.persona.preferred_objections:
             return response
 
-        objection_type = random.choice(self.persona.preferred_objections)
-        objections = {
-            "price": ["но это дорого", "а подешевле?", "дороговато"],
-            "time": ["некогда", "давайте быстрее", "нет времени"],
-            "skepticism": ["не уверен", "сомневаюсь", "а это точно работает?"],
-            "competitor": ["а чем лучше Poster?", "у iiko это есть"],
-            "not_now": ["потом", "не сейчас", "подумаю"],
-            "trust": ["не верю", "докажите"],
-        }
+        if not self._objection_keys_validated:
+            self._objection_keys_validated = True
+            missing_keys = sorted(set(self.persona.preferred_objections) - set(OBJECTION_INJECTIONS))
+            if missing_keys:
+                self._missing_objection_keys = set(missing_keys)
+                logger.warning(
+                    "Persona '%s' has unknown preferred_objections keys: %s",
+                    self.persona.name,
+                    ", ".join(missing_keys),
+                )
 
-        if objection_type in objections:
-            objection = random.choice(objections[objection_type])
-            response = f"{response} {objection}"
-            self._objection_count += 1
+        # Fail fast to avoid silent partial injection with invalid persona config.
+        if self._missing_objection_keys:
+            return response
+
+        objection_type = random.choice(self.persona.preferred_objections)
+        objection = random.choice(OBJECTION_INJECTIONS[objection_type])
+        response = f"{response} {objection}"
+        self._objection_count += 1
 
         return response
 

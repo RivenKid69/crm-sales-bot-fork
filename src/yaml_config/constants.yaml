@@ -4511,6 +4511,12 @@ objection_refinement:
   # objection принимается как есть
   min_confidence_to_accept: 0.85
 
+  # Если confidence >= этого порога, рефайнмент полностью пропускается.
+  confidence_hard_ceiling: 0.92
+
+  # Rule 2 (question markers) применяется только при низкой confidence.
+  question_refinement_max_confidence: 0.75
+
   # Паттерны, указывающие что это скорее ВОПРОС, а не возражение
   # Если сообщение содержит эти маркеры, objection переклассифицируется
   question_markers:
