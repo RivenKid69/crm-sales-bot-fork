@@ -463,6 +463,9 @@ class ResponseGenerator:
             )
             logger.info("CategoryRouter initialized", top_k=self.category_router.top_k)
 
+        # Enhanced retrieval pipeline (lazy init on first autonomous call)
+        self._enhanced_pipeline = None
+
         # PersonalizationEngineV2: адаптивная персонализация на основе поведения
         self.personalization_engine: Optional["PersonalizationEngineV2"] = None
         if flags.personalization_v2:
@@ -785,16 +788,46 @@ class ResponseGenerator:
         _is_autonomous = self._flow and self._flow.name == "autonomous" and state.startswith("autonomous_")
         _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
         if _is_autonomous:
-            from src.knowledge.autonomous_kb import load_facts_for_state
             from src.knowledge.loader import load_knowledge_base
+            from src.knowledge.autonomous_kb import load_facts_for_state
+
             _kb = load_knowledge_base()
             recently_used = set(context.get("recent_fact_keys", []))
-            retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
-                state=state,
-                flow_config=self._flow,
-                kb=_kb,
-                recently_used_keys=recently_used,
-            )
+
+            if flags.is_enabled("enhanced_autonomous_retrieval"):
+                try:
+                    if self._enhanced_pipeline is None:
+                        from src.knowledge.enhanced_retrieval import EnhancedRetrievalPipeline
+                        self._enhanced_pipeline = EnhancedRetrievalPipeline(
+                            llm=self.llm,
+                            category_router=self.category_router,
+                        )
+
+                    retrieved_facts, retrieved_urls, _fact_keys = self._enhanced_pipeline.retrieve(
+                        user_message=user_message,
+                        intent=intent,
+                        state=state,
+                        flow_config=self._flow,
+                        kb=_kb,
+                        recently_used_keys=recently_used,
+                        history=context.get("history", []),
+                    )
+                except Exception as e:
+                    logger.error("Enhanced retrieval failed, falling back", error=str(e))
+                    retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
+                        state=state,
+                        flow_config=self._flow,
+                        kb=_kb,
+                        recently_used_keys=recently_used,
+                    )
+            else:
+                retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
+                    state=state,
+                    flow_config=self._flow,
+                    kb=_kb,
+                    recently_used_keys=recently_used,
+                )
+
             _company_info = f"{_kb.company_name}: {_kb.company_description}"
         else:
             retriever = get_retriever()
