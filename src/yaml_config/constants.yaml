@@ -1410,7 +1410,7 @@ intent_taxonomy:
     category: positive
     super_category: user_action
     semantic_domain: information
-    fallback_action: acknowledge_and_continue
+    fallback_action: continue_current_goal
     fallback_transition: null
     priority: medium
 
@@ -1418,7 +1418,7 @@ intent_taxonomy:
     category: positive
     super_category: user_action
     semantic_domain: information
-    fallback_action: acknowledge_and_continue
+    fallback_action: continue_current_goal
     fallback_transition: null
     priority: medium
 
@@ -1426,7 +1426,7 @@ intent_taxonomy:
     category: positive
     super_category: user_action
     semantic_domain: information
-    fallback_action: acknowledge_and_continue
+    fallback_action: continue_current_goal
     fallback_transition: null
     priority: medium
 
@@ -1434,7 +1434,7 @@ intent_taxonomy:
     category: positive
     super_category: user_action
     semantic_domain: information
-    fallback_action: acknowledge_and_continue
+    fallback_action: continue_current_goal
     fallback_transition: null
     priority: medium
 
@@ -1442,7 +1442,7 @@ intent_taxonomy:
     category: positive
     super_category: user_action
     semantic_domain: information
-    fallback_action: acknowledge_and_continue
+    fallback_action: continue_current_goal
     fallback_transition: null
     priority: low
 
@@ -3152,7 +3152,14 @@ frustration:
   apology:
     default_threshold: 4            # = thresholds.warning
     tone_overrides:
-      skeptical: 7                  # Don't apologize to skeptics below HIGH
+      skeptical: 7                  # = FRUSTRATION_HIGH: скептицизм ≠ фрустрация на бота
+      rushed: 7                     # = FRUSTRATION_HIGH: спешка ≠ фрустрация на бота
+      confused: 7                   # = FRUSTRATION_HIGH: непонимание ≠ фрустрация на бота
+    # Semantic domains where generic canned apology is allowed.
+    # All other domains get LLM contextual empathy via tone_instruction.
+    apology_allowed_domains:
+      - emotion       # фрустрация, гнев, негативные эмоции
+      - escalation    # "дайте оператора", "хочу с человеком"
 
   # =============================================================================
   # INTENSITY-BASED FRUSTRATION CALCULATION

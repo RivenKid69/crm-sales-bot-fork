@@ -37,6 +37,11 @@ states:
       unclear: ask_how_to_help
       gratitude: acknowledge_and_continue
       small_talk: small_talk_and_continue
+      situation_provided: continue_current_goal
+      problem_revealed: continue_current_goal
+      implication_acknowledged: continue_current_goal
+      need_expressed: continue_current_goal
+      info_provided: continue_current_goal
 
   # Базовое терминальное состояние
   _base_terminal:
