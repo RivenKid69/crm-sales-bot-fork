@@ -8,6 +8,7 @@
 """
 
 import random
+import re
 from typing import Dict, List, Optional, TYPE_CHECKING, Any, Set, Tuple
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from src.knowledge.retriever import get_retriever
@@ -399,6 +400,25 @@ class ResponseGenerator:
     # Порог схожести для детекции дубликатов
     # Lowered from 0.80 to 0.70 after adding punctuation normalization
     SIMILARITY_THRESHOLD = 0.70
+
+    _CREDENTIAL_PATTERNS = [
+        re.compile(
+            r'(?:логин|login)[:\s]*\+?\d[\d\s\-]{8,15}[\s,;.]*'
+            r'(?:пароль|password|құпиясөз)[:\s]*\S+',
+            re.IGNORECASE
+        ),
+        re.compile(
+            r'(?:пароль|password|құпиясөз)[:\s]*\d{4,}',
+            re.IGNORECASE
+        ),
+    ]
+
+    def _redact_credentials(self, text: str) -> str:
+        """Remove credential patterns from retrieved facts."""
+        result = text
+        for pattern in self._CREDENTIAL_PATTERNS:
+            result = pattern.sub('[демо-доступ предоставляется по запросу]', result)
+        return result
 
     def __init__(self, llm, flow: "FlowConfig" = None):
         """
@@ -794,6 +814,10 @@ class ResponseGenerator:
                 categories=categories,
                 top_k=self.retriever_top_k
             )
+
+        # Runtime safety net: redact any credentials that slipped through
+        if retrieved_facts:
+            retrieved_facts = self._redact_credentials(retrieved_facts)
 
         # Форматируем URLs для включения в ответ
         formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""

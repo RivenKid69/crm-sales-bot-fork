@@ -13,6 +13,7 @@
 states:
   autonomous_discovery:
     extends: _base_phase
+    autonomous: true
     goal: "Понять бизнес клиента, текущую ситуацию и боли. Успех: знаем тип бизнеса, размер компании, текущие инструменты"
     phase: discovery
     kb_categories:
@@ -41,6 +42,7 @@ states:
 
   autonomous_qualification:
     extends: _base_phase
+    autonomous: true
     goal: "Квалифицировать клиента: бюджет, полномочия, сроки, потребность (BANT). Успех: понимаем платёжеспособность и срочность"
     phase: qualification
     kb_categories:
@@ -67,6 +69,7 @@ states:
 
   autonomous_presentation:
     extends: _base_phase
+    autonomous: true
     goal: "Презентовать ценность продукта под конкретные боли клиента. Успех: клиент видит как продукт решает его проблемы"
     phase: presentation
     kb_categories:
@@ -92,6 +95,7 @@ states:
 
   autonomous_objection_handling:
     extends: _base_phase
+    autonomous: true
     goal: "Отработать возражения, переформулировать ценность, снять сомнения. Успех: основные возражения сняты, клиент готов обсуждать условия"
     phase: objection_handling
     kb_categories:
@@ -120,6 +124,7 @@ states:
 
   autonomous_negotiation:
     extends: _base_phase
+    autonomous: true
     goal: "Обсудить условия, варианты тарифов, найти взаимовыгодное решение. Успех: согласованы условия или клиент готов к следующему шагу"
     phase: negotiation
     kb_categories:
@@ -149,6 +154,7 @@ states:
 
   autonomous_closing:
     extends: _base_phase
+    autonomous: true
     goal: "Закрыть сделку: назначить демо, получить контакт, оформить следующий шаг. Успех: получен контакт или назначена встреча/демо"
     phase: closing
     kb_categories:

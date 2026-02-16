@@ -124,7 +124,12 @@ class TransitionResolverSource(KnowledgeSource):
             "explicit_close_request",
         }
 
-        priority = Priority.HIGH if intent in high_priority_intents else Priority.NORMAL
+        is_autonomous = ctx.state_config.get("autonomous", False)
+        if intent in high_priority_intents and is_autonomous:
+            # In autonomous states, exit intents compete on equal footing with LLM
+            priority = Priority.NORMAL
+        else:
+            priority = Priority.HIGH if intent in high_priority_intents else Priority.NORMAL
 
         # Propose the transition
         blackboard.propose_transition(

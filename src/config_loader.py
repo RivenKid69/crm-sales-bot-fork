@@ -1303,7 +1303,13 @@ class ConfigLoader:
             # State parameters override flow variables
             state_params = state_config.pop("parameters", {})
             merged_params = {**variables, **state_params}
-            all_states[name] = self._resolve_parameters(state_config, merged_params)
+            resolved = self._resolve_parameters(state_config, merged_params)
+            # Preserve resolved parameters for runtime access
+            resolved["_resolved_params"] = {
+                k: self._resolve_parameters(v, merged_params)
+                for k, v in merged_params.items()
+            }
+            all_states[name] = resolved
 
         # Build priorities
         priorities = base_priorities.get("default_priorities", [])

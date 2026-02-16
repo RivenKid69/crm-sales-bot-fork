@@ -152,8 +152,13 @@ class AutonomousDecisionSource(KnowledgeSource):
                 break  # Streak broken by transition decision
 
         if stay_streak >= stay_override_threshold:
-            # Determine target: next_phase_state from config, or soft_close
-            target = state_config.get("next_phase_state", "soft_close")
+            # Determine target: next_phase_state from resolved params, or soft_close
+            resolved_params = state_config.get("_resolved_params", {})
+            target = (
+                resolved_params.get("next_phase_state")
+                or state_config.get("max_turns_fallback")  # safety fallback
+                or "soft_close"
+            )
             if target not in all_states and target not in ("close", "soft_close", "success"):
                 target = "soft_close"
 

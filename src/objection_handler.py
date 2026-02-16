@@ -455,16 +455,34 @@ class ObjectionHandler:
         strategy = self.get_strategy(objection_type)
 
         if not strategy:
-            # Попытки исчерпаны — soft close
-            return ObjectionResult(
-                objection_type=objection_type,
-                strategy=None,
-                attempt_number=attempt,
-                should_soft_close=True,
-                response_parts={
-                    "message": self._get_soft_close_message(),
-                }
+            has_registered = (
+                objection_type in self.STRATEGIES_4PS
+                or objection_type in self.STRATEGIES_3FS
             )
+            if has_registered:
+                # Attempts truly exhausted — soft close
+                return ObjectionResult(
+                    objection_type=objection_type,
+                    strategy=None,
+                    attempt_number=attempt,
+                    should_soft_close=True,
+                    response_parts={
+                        "message": self._get_soft_close_message(),
+                    }
+                )
+            else:
+                # Type detected by regex but no strategy registered — continue dialogue
+                logger.info(
+                    "No strategy for objection type %s — continuing dialogue",
+                    objection_type.value if hasattr(objection_type, 'value') else str(objection_type),
+                )
+                return ObjectionResult(
+                    objection_type=objection_type,
+                    strategy=None,
+                    attempt_number=attempt,
+                    should_soft_close=False,
+                    response_parts={},
+                )
 
         # Персонализируем follow-up
         follow_up = self._personalize_follow_up(
