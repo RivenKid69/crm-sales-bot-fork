@@ -263,7 +263,8 @@ class AutonomousDecisionSource(KnowledgeSource):
         if decision.should_transition and decision.next_state:
             target = decision.next_state
             # Validate target state exists
-            if target in all_states or target in ("close", "soft_close", "success"):
+            valid_targets = set(available_states) | {"close", "soft_close", "success"}
+            if target in valid_targets:
                 blackboard.propose_transition(
                     next_state=target,
                     priority=Priority.NORMAL,

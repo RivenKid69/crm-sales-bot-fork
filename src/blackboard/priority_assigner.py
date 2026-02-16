@@ -163,6 +163,10 @@ class PriorityAssigner:
         if definition.condition:
             if not self._evaluate_condition(definition.condition, eval_ctx):
                 if definition.else_action == "use_transitions":
+                    # Don't boost intent-transitions in autonomous states —
+                    # autonomous states handle all routing via AutonomousDecisionSource
+                    if ctx.state_config.get("autonomous", False):
+                        return False
                     return (
                         proposal.type == ProposalType.TRANSITION
                         and self._is_intent_transition(proposal)
