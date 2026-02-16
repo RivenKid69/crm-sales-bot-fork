@@ -1401,18 +1401,37 @@ class ConfigLoader:
                     )
 
         # 3. Apply state's own configuration (overrides base/mixins)
+        is_autonomous = state_config.get("autonomous", False)
+
         for key, value in state_config.items():
             if key in ("extends", "mixins", "abstract"):
                 continue  # Skip meta keys
-            if key in ("rules", "transitions", "parameters"):
-                # Deep merge rules/transitions/parameters
-                # This ensures parameters from base states (like _base_phase) are inherited
-                # and child states can override specific values while keeping others
+            if key in ("rules", "transitions"):
+                if is_autonomous:
+                    # Autonomous states: direct assignment replaces inherited
+                    # rules/transitions — LLM controls all routing via
+                    # AutonomousDecisionSource, mixin transitions are not needed.
+                    result[key] = value
+                else:
+                    if key not in result:
+                        result[key] = {}
+                    result[key] = self._deep_merge(result[key], value)
+            elif key == "parameters":
+                # Parameters always deep-merge (both autonomous and standard)
                 if key not in result:
                     result[key] = {}
                 result[key] = self._deep_merge(result[key], value)
             else:
                 result[key] = value
+
+        # Autonomous enforcement: if rules/transitions were NOT declared in YAML,
+        # clear inherited values anyway. autonomous: true means LLM controls routing;
+        # mixin transitions must not leak regardless of YAML author convention.
+        if is_autonomous:
+            if "rules" not in state_config:
+                result["rules"] = {}
+            if "transitions" not in state_config:
+                result["transitions"] = {}
 
         return result
 

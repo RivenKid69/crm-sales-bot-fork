@@ -633,6 +633,13 @@ class ContextEnvelopeBuilder:
         elif cw.turns[-1].state == envelope.state:
             # Still in same state — add 1 for current (unrecorded) turn
             envelope.consecutive_same_state = raw_count + 1
+        elif envelope.state.startswith("autonomous_"):
+            # Autonomous state returning from detour (e.g., handle_objection).
+            # Count ALL turns in this autonomous session (including detour turns)
+            # so StallGuard's existing max_turns threshold catches oscillation.
+            envelope.consecutive_same_state = self._count_autonomous_session(
+                cw, envelope.state
+            )
         else:
             # State changed since last turn — this is turn 1 in new state
             envelope.consecutive_same_state = 1
@@ -688,6 +695,25 @@ class ContextEnvelopeBuilder:
             envelope.turns_since_breakthrough = (
                 envelope.total_turns - envelope.breakthrough_turn
             )
+
+    _DETOUR_STATES = frozenset({"handle_objection"})
+
+    def _count_autonomous_session(self, cw, autonomous_state: str) -> int:
+        """Count turns in an autonomous state's session, including detours.
+
+        Walks backward through history, counting turns that are in the
+        autonomous state itself or in detour states (handle_objection).
+        Stops at the first turn in a different non-detour state.
+
+        Returns count + 1 for the current (unrecorded) turn.
+        """
+        count = 0
+        for turn in reversed(cw.turns):
+            if turn.state == autonomous_state or turn.state in self._DETOUR_STATES:
+                count += 1
+            else:
+                break
+        return count + 1  # +1 for current unrecorded turn
 
     def _fill_tone_info(self, envelope: ContextEnvelope) -> None:
         """Заполнить информацию о тоне."""
