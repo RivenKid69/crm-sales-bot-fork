@@ -88,6 +88,7 @@ class PolicyContext:
     # Level 1 signals (Repair)
     is_stuck: bool = False
     consecutive_same_state: int = 0
+    consecutive_same_action: int = 0
     has_oscillation: bool = False
     repeated_question: Optional[str] = None
     confidence_trend: str = "stable"
@@ -211,6 +212,7 @@ class PolicyContext:
             # Level 1 signals
             is_stuck=envelope.is_stuck,
             consecutive_same_state=getattr(envelope, 'consecutive_same_state', 0),
+            consecutive_same_action=getattr(envelope, 'consecutive_same_action', 0),
             has_oscillation=envelope.has_oscillation,
             repeated_question=envelope.repeated_question,
             confidence_trend=envelope.confidence_trend,
@@ -267,6 +269,7 @@ class PolicyContext:
         current_action: Optional[str] = None,
         is_stuck: bool = False,
         consecutive_same_state: int = 0,
+        consecutive_same_action: int = 0,
         has_oscillation: bool = False,
         repeated_question: Optional[str] = None,
         confidence_trend: str = "stable",
@@ -314,6 +317,7 @@ class PolicyContext:
             current_action=current_action,
             is_stuck=is_stuck,
             consecutive_same_state=consecutive_same_state,
+            consecutive_same_action=consecutive_same_action,
             has_oscillation=has_oscillation,
             repeated_question=repeated_question,
             confidence_trend=confidence_trend,
@@ -354,7 +358,7 @@ class PolicyContext:
 
     def is_overlay_allowed(self) -> bool:
         """Check if overlay is allowed for current state."""
-        return self.state in OVERLAY_ALLOWED_STATES
+        return self.state not in PROTECTED_STATES
 
     def is_protected_state(self) -> bool:
         """Check if current state is protected from overlays."""
@@ -377,6 +381,7 @@ class PolicyContext:
             "current_action": self.current_action,
             "is_stuck": self.is_stuck,
             "consecutive_same_state": self.consecutive_same_state,
+            "consecutive_same_action": self.consecutive_same_action,
             "has_oscillation": self.has_oscillation,
             "repeated_question": self.repeated_question,
             "confidence_trend": self.confidence_trend,

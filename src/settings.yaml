@@ -95,6 +95,9 @@ generator:
   # Количество фактов из базы знаний для контекста
   retriever_top_k: 2
 
+  # Jaccard similarity threshold for duplicate detection
+  similarity_threshold: 0.65
+
   # Разрешённые английские слова (не считаются "иностранным языком")
   # Используются как safety net при proportion-based detection
   allowed_english_words:

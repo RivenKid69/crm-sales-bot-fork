@@ -286,12 +286,22 @@ class FactQuestionSource(KnowledgeSource):
         if not self._enabled:
             return False
 
+        # Autonomous states have LLM-driven response with KB context via
+        # kb_categories. FactQuestionSource's static template would override
+        # the LLM's varied response.
+        ctx = blackboard.get_context()
+        state_config = getattr(ctx, "state_config", {}) if ctx is not None else {}
+        if state_config.get("autonomous", False):
+            self._log_contribution(
+                reason="Skipped: autonomous state uses LLM-driven response"
+            )
+            return False
+
         # Check 1: Primary intent
         if blackboard.current_intent in self._fact_intents:
             return True
 
         # Check 2: Secondary intents (from SecondaryIntentDetectionLayer)
-        ctx = blackboard.get_context()
         secondary_intents = self._get_secondary_intents(ctx)
 
         if secondary_intents:

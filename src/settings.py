@@ -38,6 +38,7 @@ DEFAULTS = {
         "max_retries": 3,
         "history_length": 4,
         "retriever_top_k": 2,
+        "similarity_threshold": 0.65,  # Jaccard duplicate detection threshold
         "allowed_english_words": [
             "crm", "api", "ok", "id", "ip", "sms",
             "email", "excel", "whatsapp", "telegram", "hr"

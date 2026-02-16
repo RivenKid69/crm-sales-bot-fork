@@ -2924,7 +2924,8 @@ taxonomy_domain_defaults:
 # DIALOGUE POLICY SETTINGS
 # =============================================================================
 policy:
-  # Состояния где разрешены оверлеи DialoguePolicy
+  # DEPRECATED: overlay logic now uses blacklist via protected_states.
+  # Kept for reference. Any state NOT in protected_states gets overlays.
   # FIX: Добавлены BANT states для поддержки policy overlays в BANT flow
   overlay_allowed_states:
     # SPIN states
@@ -2952,6 +2953,7 @@ policy:
     - close
     - success
     - soft_close
+    - escalated
 
   # Агрессивные действия (требуют осторожности)
   aggressive_actions:
@@ -2985,6 +2987,9 @@ policy:
     - offer_options
     - explain_feature
     - demonstrate_feature
+
+  # Порог: после N подряд одного action repair protection снимается
+  repair_action_repeat_threshold: 2
 
   # SSOT: Actions that correctly handle pricing.
   # Used by: price overlay (dialogue_policy), generator price template selection.

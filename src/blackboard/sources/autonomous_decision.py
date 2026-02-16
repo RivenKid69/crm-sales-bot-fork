@@ -100,6 +100,46 @@ class AutonomousDecisionSource(KnowledgeSource):
 
         return True
 
+    @staticmethod
+    def _get_phase_order(all_states: dict) -> dict:
+        """Build {state_name: order_index} from next_phase_state chain in YAML."""
+        start = None
+        for state_name, cfg in all_states.items():
+            if not state_name.startswith("autonomous_"):
+                continue
+            prev = cfg.get("parameters", {}).get("prev_phase_state", "")
+            if not prev.startswith("autonomous_"):
+                start = state_name
+                break
+
+        if not start:
+            return {
+                state_name: idx
+                for idx, state_name in enumerate(
+                    sorted(s for s in all_states if s.startswith("autonomous_"))
+                )
+            }
+
+        result = {}
+        current = start
+        idx = 0
+        while current and current not in result:
+            result[current] = idx
+            nxt = all_states.get(current, {}).get("parameters", {}).get(
+                "next_phase_state", ""
+            )
+            current = nxt if nxt.startswith("autonomous_") else None
+            idx += 1
+
+        # Fallback: autonomous states not in chain get max_idx+1 (reachable forward)
+        max_idx = max(result.values()) if result else -1
+        for state_name in all_states:
+            if state_name.startswith("autonomous_") and state_name not in result:
+                max_idx += 1
+                result[state_name] = max_idx
+
+        return result
+
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
         Call LLM to decide state transition, then propose to blackboard.
@@ -122,13 +162,41 @@ class AutonomousDecisionSource(KnowledgeSource):
             all_states = flow_cfg.get("states", {})
         else:
             all_states = getattr(flow_cfg, "states", {})
+        phase_order = self._get_phase_order(all_states)
+        current_idx = phase_order.get(state, -1)
+        prev_phase = state_config.get("parameters", {}).get("prev_phase_state", "")
+
+        # Persistent visited states from ContextWindow, survives source re-instantiation
+        envelope = ctx.context_envelope if hasattr(ctx, 'context_envelope') else None
+        visited_states = set(getattr(envelope, "state_history", [])) if envelope else set()
         available_states = [
-            s for s in all_states
-            if s.startswith("autonomous_") and s != state
+            s
+            for s in all_states
+            if s.startswith("autonomous_")
+            and s != state
+            and (
+                phase_order.get(s, -1) > current_idx
+                or (s == prev_phase and s not in visited_states)
+            )
         ]
 
+        if logger.isEnabledFor(logging.DEBUG):
+            blocked = [
+                s
+                for s in all_states
+                if s.startswith("autonomous_")
+                and s != state
+                and s not in available_states
+            ]
+            if blocked:
+                logger.debug(
+                    "AutonomousDecision: blocked back-transitions from %s: %s (visited: %s)",
+                    state,
+                    blocked,
+                    visited_states,
+                )
+
         # Get turn-in-state count from context envelope
-        envelope = ctx.context_envelope if hasattr(ctx, 'context_envelope') else None
         turn_in_state = getattr(envelope, 'consecutive_same_state', 0) if envelope else 0
         max_turns = state_config.get("max_turns_in_state", 6)
 

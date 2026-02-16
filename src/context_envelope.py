@@ -176,6 +176,7 @@ class ContextEnvelope:
     # === Level 1: Sliding Window ===
     intent_history: List[str] = field(default_factory=list)
     action_history: List[str] = field(default_factory=list)
+    state_history: List[str] = field(default_factory=list)
     objection_count: int = 0
     positive_count: int = 0
     question_count: int = 0
@@ -183,6 +184,7 @@ class ContextEnvelope:
     has_oscillation: bool = False
     is_stuck: bool = False
     consecutive_same_state: int = 0
+    consecutive_same_action: int = 0
     repeated_question: Optional[str] = None
     confidence_trend: str = "unknown"
     avg_confidence: float = 0.0
@@ -282,12 +284,15 @@ class ContextEnvelope:
             # Level 1
             "intent_history": self.intent_history,
             "action_history": self.action_history,
+            "state_history": self.state_history,
             "objection_count": self.objection_count,
             "positive_count": self.positive_count,
             "question_count": self.question_count,
             "unclear_count": self.unclear_count,
             "has_oscillation": self.has_oscillation,
             "is_stuck": self.is_stuck,
+            "consecutive_same_state": self.consecutive_same_state,
+            "consecutive_same_action": self.consecutive_same_action,
             "repeated_question": self.repeated_question,
             "confidence_trend": self.confidence_trend,
 
@@ -358,6 +363,8 @@ class ContextEnvelope:
             # Level 1 сигналы
             "is_stuck": self.is_stuck,
             "has_oscillation": self.has_oscillation,
+            "consecutive_same_state": self.consecutive_same_state,
+            "consecutive_same_action": self.consecutive_same_action,
             "repeated_question": self.repeated_question,
             "confidence_trend": self.confidence_trend,
             "unclear_count": self.unclear_count,
@@ -401,12 +408,15 @@ class ContextEnvelope:
             # === Level 1 ===
             "intent_history": self.intent_history,
             "action_history": self.action_history,
+            "state_history": self.state_history,
             "objection_count": self.objection_count,
             "positive_count": self.positive_count,
             "question_count": self.question_count,
             "unclear_count": self.unclear_count,
             "has_oscillation": self.has_oscillation,
             "is_stuck": self.is_stuck,
+            "consecutive_same_state": self.consecutive_same_state,
+            "consecutive_same_action": self.consecutive_same_action,
             "repeated_question": self.repeated_question,
             "confidence_trend": self.confidence_trend,
             "avg_confidence": self.avg_confidence,
@@ -614,13 +624,16 @@ class ContextEnvelopeBuilder:
         if not envelope.intent_history:
             envelope.intent_history = cw.get_intent_history()
         envelope.action_history = cw.get_action_history()
+        envelope.state_history = cw.get_state_history()
         envelope.bot_responses = cw.get_bot_response_history(5)
         if envelope.objection_count == 0:
             envelope.objection_count = cw.get_objection_count()
         envelope.positive_count = cw.get_positive_count()
         envelope.question_count = cw.get_question_count()
         envelope.unclear_count = cw.get_unclear_count()
-        envelope.has_oscillation = cw.detect_oscillation()
+        envelope.has_oscillation = (
+            cw.detect_oscillation() or cw.detect_state_oscillation()
+        )
         envelope.is_stuck = cw.detect_stuck_pattern()
         raw_count = cw.get_consecutive_same_state()
         # TIMING FIX: build_context_envelope() runs BEFORE add_turn_from_dict()
@@ -643,6 +656,7 @@ class ContextEnvelopeBuilder:
         else:
             # State changed since last turn — this is turn 1 in new state
             envelope.consecutive_same_state = 1
+        envelope.consecutive_same_action = cw.get_consecutive_same_action()
         envelope.repeated_question = cw.detect_repeated_question(
             include_current_intent=self.current_intent
         )

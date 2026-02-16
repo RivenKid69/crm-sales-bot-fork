@@ -435,6 +435,9 @@ class ResponseGenerator:
         self.max_retries = settings.generator.max_retries
         self.history_length = settings.generator.history_length
         self.retriever_top_k = settings.generator.retriever_top_k
+        self.SIMILARITY_THRESHOLD = settings.get_nested(
+            "generator.similarity_threshold", 0.65
+        )
         self.allowed_english = set(settings.generator.allowed_english_words)
 
         # === НОВОЕ: Deduplication ===
@@ -1438,7 +1441,6 @@ class ResponseGenerator:
             Семантическая схожесть от 0.0 до 1.0
         """
         try:
-            from src.knowledge_retrieval import get_retriever
             import numpy as np
 
             retriever = get_retriever()
@@ -1480,7 +1482,7 @@ class ResponseGenerator:
         for prev in self._response_history[-3:]:
             # Stage 1: Fast Jaccard similarity
             jaccard_sim = self._compute_similarity(response, prev)
-            if jaccard_sim > self.SIMILARITY_THRESHOLD:  # 0.70
+            if jaccard_sim > self.SIMILARITY_THRESHOLD:
                 logger.debug(
                     "Duplicate detected (Jaccard) in response history",
                     similarity=f"{jaccard_sim:.2f}",
@@ -1489,7 +1491,7 @@ class ResponseGenerator:
                 return True
 
             # Stage 2: Semantic fallback (only if Jaccard borderline)
-            if 0.50 <= jaccard_sim <= 0.70:
+            if 0.50 <= jaccard_sim <= self.SIMILARITY_THRESHOLD:
                 semantic_sim = self._compute_semantic_similarity(response, prev)
                 if semantic_sim > 0.85:  # High semantic threshold
                     logger.debug(
@@ -1514,7 +1516,7 @@ class ResponseGenerator:
                     return True
 
                 # Stage 2: Semantic fallback (only if Jaccard borderline)
-                if 0.50 <= jaccard_sim <= 0.70:
+                if 0.50 <= jaccard_sim <= self.SIMILARITY_THRESHOLD:
                     semantic_sim = self._compute_semantic_similarity(response, bot_response)
                     if semantic_sim > 0.85:
                         logger.debug(
