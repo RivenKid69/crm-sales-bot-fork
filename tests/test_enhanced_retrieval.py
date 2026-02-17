@@ -438,7 +438,7 @@ class TestGeneratorIntegration:
         monkeypatch.setattr(
             generator_module.flags,
             "is_enabled",
-            lambda flag: flag == "enhanced_autonomous_retrieval",
+            lambda flag: False,
         )
 
         init_calls: List[Any] = []
@@ -501,7 +501,7 @@ class TestGeneratorIntegration:
         monkeypatch.setattr(
             generator_module.flags,
             "is_enabled",
-            lambda flag: flag == "enhanced_autonomous_retrieval",
+            lambda flag: False,
         )
 
         class FailingPipeline:
@@ -537,9 +537,3 @@ class TestGeneratorIntegration:
         prompt = llm.generate.call_args[0][0]
         assert "[features/fallback]" in prompt
 
-
-def test_feature_flag_for_enhanced_retrieval_exists():
-    ff = FeatureFlags()
-    assert "enhanced_autonomous_retrieval" in FeatureFlags.DEFAULTS
-    assert "enhanced_autonomous_retrieval" in FeatureFlags.GROUPS["autonomous"]
-    assert isinstance(ff.enhanced_autonomous_retrieval, bool)

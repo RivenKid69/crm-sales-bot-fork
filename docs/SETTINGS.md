@@ -74,7 +74,6 @@
 
 Новые флаги:
 - `separate_style_modifiers` (OFF) — разделение стилевых и семантических интентов в classifier
-- `enhanced_autonomous_retrieval` (OFF) — LLM-driven RAG pipeline для автономного flow
 
 ## 5. Проверка настроек
 

@@ -386,5 +386,31 @@ class TestEdgeCases:
         results = retriever.search("касса", top_k=5)
         assert len(results) <= 5
 
+class TestCategoryFilterEmptyReturnsEmpty:
+    """Тесты: фильтр по несуществующим категориям возвращает пустой список."""
+
+    @pytest.fixture
+    def retriever(self):
+        import src.knowledge.retriever as r
+        r._retriever = None
+        return CascadeRetriever(use_embeddings=False)
+
+    def test_invalid_category_returns_empty(self, retriever):
+        """Несуществующая категория — пустой результат, не fallback на все секции."""
+        results = retriever.search("касса", category="nonexistent_category_xyz")
+        assert results == []
+
+    def test_invalid_categories_list_returns_empty(self, retriever):
+        """Список несуществующих категорий — пустой результат."""
+        results = retriever.search("касса", categories=["nope", "also_nope"])
+        assert results == []
+
+    def test_valid_category_still_works(self, retriever):
+        """Валидная категория по-прежнему работает."""
+        results = retriever.search("касса", category="products")
+        # Может быть пустым если нет совпадений, но не должен падать
+        assert isinstance(results, list)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

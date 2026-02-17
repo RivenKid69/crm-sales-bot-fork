@@ -859,7 +859,7 @@ class ResponseGenerator:
         state = context.get("state", "")
         user_message = context.get("user_message", "")
 
-        # === AUTONOMOUS FLOW: Direct KB access (bypass CategoryRouter + CascadeRetriever) ===
+        # === AUTONOMOUS FLOW: EnhancedRetrievalPipeline (bypass CategoryRouter + CascadeRetriever) ===
         _is_autonomous = self._flow and self._flow.name == "autonomous" and state.startswith("autonomous_")
         _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
         if _is_autonomous:
@@ -869,33 +869,25 @@ class ResponseGenerator:
             _kb = get_retriever().kb
             recently_used = set(context.get("recent_fact_keys", []))
 
-            if flags.is_enabled("enhanced_autonomous_retrieval"):
-                try:
-                    if self._enhanced_pipeline is None:
-                        from src.knowledge.enhanced_retrieval import EnhancedRetrievalPipeline
-                        self._enhanced_pipeline = EnhancedRetrievalPipeline(
-                            llm=self.llm,
-                            category_router=self.category_router,
-                        )
+            try:
+                if self._enhanced_pipeline is None:
+                    from src.knowledge.enhanced_retrieval import EnhancedRetrievalPipeline
+                    self._enhanced_pipeline = EnhancedRetrievalPipeline(
+                        llm=self.llm,
+                        category_router=self.category_router,
+                    )
 
-                    retrieved_facts, retrieved_urls, _fact_keys = self._enhanced_pipeline.retrieve(
-                        user_message=user_message,
-                        intent=intent,
-                        state=state,
-                        flow_config=self._flow,
-                        kb=_kb,
-                        recently_used_keys=recently_used,
-                        history=context.get("history", []),
-                    )
-                except Exception as e:
-                    logger.error("Enhanced retrieval failed, falling back", error=str(e))
-                    retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
-                        state=state,
-                        flow_config=self._flow,
-                        kb=_kb,
-                        recently_used_keys=recently_used,
-                    )
-            else:
+                retrieved_facts, retrieved_urls, _fact_keys = self._enhanced_pipeline.retrieve(
+                    user_message=user_message,
+                    intent=intent,
+                    state=state,
+                    flow_config=self._flow,
+                    kb=_kb,
+                    recently_used_keys=recently_used,
+                    history=context.get("history", []),
+                )
+            except Exception as e:
+                logger.error("Enhanced retrieval failed, falling back", error=str(e))
                 retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
                     state=state,
                     flow_config=self._flow,

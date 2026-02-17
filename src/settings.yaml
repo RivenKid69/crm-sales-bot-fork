@@ -315,7 +315,6 @@ feature_flags:
   objection_handler: false    # Продвинутая обработка возражений
   cta_generator: true         # Генерация Call-to-Action
   autonomous_flow: true       # LLM-driven sales flow
-  enhanced_autonomous_retrieval: true  # Enhanced query-driven retrieval in autonomous flow
 
 # -----------------------------------------------------------------------------
 # PHONE VALIDATION (Валидация телефонных номеров)

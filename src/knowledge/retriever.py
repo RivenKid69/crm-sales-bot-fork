@@ -414,8 +414,13 @@ class CascadeRetriever:
             sections = [s for s in sections if s.category == category]
 
         if not sections:
-            # Если категория не найдена, ищем по всем
-            sections = self.kb.sections
+            requested = categories if categories else ([category] if category else [])
+            logger.warning(
+                "Category filter produced zero sections, returning empty results",
+                requested_categories=requested,
+                available_categories=list({s.category for s in self.kb.sections}),
+            )
+            return []
 
         # Этап 1: Exact match
         results = self._exact_search(query, sections)

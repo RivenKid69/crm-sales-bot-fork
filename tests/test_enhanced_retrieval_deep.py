@@ -331,42 +331,9 @@ class TestGeneratorDeepIntegration:
         )
         return kb, generator_module
 
-    def test_flag_disabled_keeps_old_state_based_retrieval(self, monkeypatch):
-        kb, generator_module = self._setup_common_patches(monkeypatch)
-        monkeypatch.setattr(generator_module.flags, "is_enabled", lambda flag: False)
-
-        # Must not initialize enhanced pipeline when flag is off.
-        class ShouldNotInit:
-            def __init__(self, *args, **kwargs):
-                raise AssertionError("enhanced pipeline should not be initialized")
-
-        monkeypatch.setattr("src.knowledge.enhanced_retrieval.EnhancedRetrievalPipeline", ShouldNotInit)
-        monkeypatch.setattr(
-            "src.knowledge.autonomous_kb.load_facts_for_state",
-            lambda **kwargs: ("[features/legacy]\nlegacy facts\n", [], ["features/legacy"]),
-        )
-
-        llm = MagicMock()
-        llm.generate.return_value = "ok"
-        gen = ResponseGenerator(llm=llm, flow=DummyAutonomousFlow())
-
-        context = {
-            "intent": "question_features",
-            "state": "autonomous_discovery",
-            "user_message": "Что умеет система?",
-            "history": [],
-            "recent_fact_keys": [],
-            "collected_data": {},
-            "missing_data": [],
-            "goal": "goal",
-        }
-        gen.generate("answer_with_facts", context)
-        prompt = llm.generate.call_args[0][0]
-        assert "[features/legacy]" in prompt
-        assert gen._enhanced_pipeline is None
-
     def test_autonomous_uses_retriever_kb_snapshot(self, monkeypatch):
         import src.generator as generator_module
+        import src.knowledge.enhanced_retrieval as er
         import src.knowledge.loader as loader
 
         kb = SimpleNamespace(company_name="Wipon", company_description="CRM platform", sections=[])
@@ -381,10 +348,15 @@ class TestGeneratorDeepIntegration:
             lambda: SimpleNamespace(kb=kb, get_company_info=lambda: "Wipon: CRM platform"),
         )
         monkeypatch.setattr(generator_module.flags, "is_enabled", lambda flag: False)
-        monkeypatch.setattr(
-            "src.knowledge.autonomous_kb.load_facts_for_state",
-            lambda **kwargs: ("[features/facts]\nhello\n", [], ["features/facts"]),
-        )
+
+        class StubPipeline:
+            def __init__(self, llm, category_router):
+                pass
+
+            def retrieve(self, **kwargs):
+                return ("[features/facts]\nhello\n", [], ["features/facts"])
+
+        monkeypatch.setattr(er, "EnhancedRetrievalPipeline", StubPipeline)
 
         llm = MagicMock()
         llm.generate.return_value = "ok"
@@ -410,7 +382,7 @@ class TestGeneratorDeepIntegration:
         monkeypatch.setattr(
             generator_module.flags,
             "is_enabled",
-            lambda flag: flag == "enhanced_autonomous_retrieval",
+            lambda flag: False,
         )
 
         class FailingCtor:
@@ -443,14 +415,20 @@ class TestGeneratorDeepIntegration:
 
     def test_autonomous_company_info_still_comes_from_kb(self, monkeypatch):
         self._setup_common_patches(monkeypatch)
-        monkeypatch.setattr(
-            "src.knowledge.autonomous_kb.load_facts_for_state",
-            lambda **kwargs: ("[features/facts]\nhello\n", [], ["features/facts"]),
-        )
 
         import src.generator as generator_module
+        import src.knowledge.enhanced_retrieval as er
 
         monkeypatch.setattr(generator_module.flags, "is_enabled", lambda flag: False)
+
+        class StubPipeline:
+            def __init__(self, llm, category_router):
+                pass
+
+            def retrieve(self, **kwargs):
+                return ("[features/facts]\nhello\n", [], ["features/facts"])
+
+        monkeypatch.setattr(er, "EnhancedRetrievalPipeline", StubPipeline)
 
         llm = MagicMock()
         llm.generate.return_value = "ok"
