@@ -29,6 +29,7 @@ templates:
 
       {do_not_ask}
       {objection_instructions}
+      {do_not_repeat_responses}
 
       Клиент: "{user_message}"
 
@@ -39,7 +40,6 @@ templates:
       - Используй факты из базы знаний для ответа
       - 2-3 предложения максимум
       - Один вопрос максимум в конце (если уместно)
-      - Не повторяй то что уже обсуждалось в диалоге
       - На русском языке
 
       Ответ:
@@ -68,6 +68,7 @@ templates:
 
       {do_not_ask}
       {available_questions}
+      {do_not_repeat_responses}
 
       Клиент: "{user_message}"
 

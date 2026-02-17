@@ -155,11 +155,7 @@ templates:
 
       {system}
 
-      {% if do_not_repeat_responses %}
-      ⚠️ ВНИМАНИЕ: Ты уже упоминал цены ранее:
       {do_not_repeat_responses}
-      НЕ ПОВТОРЯЙ дословно — переформулируй по-другому.
-      {% endif %}
 
       ⚠️ КРИТИЧЕСКИ ВАЖНО: Клиент спросил о цене.
       ПЕРВЫМ ДЕЛОМ назови конкретные тарифы из блока выше.
@@ -235,15 +231,13 @@ templates:
     description: "Краткое напоминание о ценах при повторном вопросе"
     addresses_question: true
     parameters:
-      required: [system, retrieved_facts, history, user_message, do_not_repeat_responses]
+      required: [system, retrieved_facts, history, user_message]
+      optional: [do_not_repeat_responses]
     template: |
       {system}
 
       КОНТЕКСТ: Клиент ПОВТОРНО спрашивает о цене.
-      Ты уже отвечал на этот вопрос ранее:
       {do_not_repeat_responses}
-
-      ⚠️ ВАЖНО: НЕ ПОВТОРЯЙ дословно предыдущие ответы!
 
       Вместо этого:
       - Кратко напомни ключевые тарифы (1 предложение)
