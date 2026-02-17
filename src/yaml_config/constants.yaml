@@ -232,6 +232,18 @@ limits:
     friendly:        { consecutive: 4, total: 7 }
     default:         { consecutive: 4, total: 6 }
 
+  # Persona-specific question suppression thresholds
+  # suppress: density >= suppress → НЕ задавай вопросов
+  # optional: density >= optional → можешь задать если уместно
+  # window: sliding window size for counting question intents
+  persona_question_suppression:
+    default:     { suppress: 2, optional: 1, window: 5 }
+    technical:   { suppress: 1, optional: 1, window: 5 }
+    analytical:  { suppress: 1, optional: 1, window: 5 }
+    aggressive:  { suppress: 1, optional: 1, window: 5 }
+    friendly:    { suppress: 3, optional: 2, window: 5 }
+    happy_path:  { suppress: 3, optional: 2, window: 5 }
+
 # =============================================================================
 # DISAMBIGUATION (Unified Disambiguation Decision Engine)
 # =============================================================================

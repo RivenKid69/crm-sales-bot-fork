@@ -28,6 +28,7 @@ from typing import Dict, List, Any
 from enum import Enum
 
 from src.context_envelope import ContextEnvelope, ReasonCode
+from src.yaml_config.constants import get_persona_question_thresholds
 
 
 class ResponseTone(Enum):
@@ -86,6 +87,8 @@ class ResponseDirectives:
     tone: ResponseTone = ResponseTone.NEUTRAL
     max_words: int = 60
     one_question: bool = True
+    suppress_question: bool = False
+    question_mode: str = "mandatory"  # "mandatory" | "optional" | "suppress"
     use_bullets: bool = False
     be_brief: bool = False
 
@@ -123,6 +126,8 @@ class ResponseDirectives:
                 "tone": self.tone.value,
                 "max_words": self.max_words,
                 "one_question": self.one_question,
+                "suppress_question": self.suppress_question,
+                "question_mode": self.question_mode,
                 "use_bullets": self.use_bullets,
                 "be_brief": self.be_brief,
             },
@@ -190,7 +195,7 @@ class ResponseDirectives:
         if self.summarize_client and self.client_card:
             parts.append(f"Можешь сослаться на: {self.client_card}")
 
-        if self.rephrase_mode:
+        if self.rephrase_mode and not self.suppress_question:
             parts.append(
                 "Переформулируй текущий вопрос другими словами. "
                 "Не повторяй его дословно."
@@ -217,8 +222,12 @@ class ResponseDirectives:
                 repair_parts.append("Перефразируй и уточни понимание.")
             parts.append(" ".join(repair_parts))
 
-        if self.ask_clarifying:
+        if self.suppress_question:
+            parts.append("НЕ задавай вопросов — отвечай развёрнуто, демонстрируя экспертизу.")
+        elif self.ask_clarifying:
             parts.append("Задай один конкретный уточняющий вопрос.")
+        elif self.one_question:
+            parts.append("Максимум 1 вопрос в конце ответа.")
 
         if self.offer_choices:
             parts.append("Предложи 2-3 варианта ответа.")
@@ -231,10 +240,6 @@ class ResponseDirectives:
 
         if self.cta_soft:
             parts.append("Добавь мягкий призыв к следующему шагу.")
-
-        # Ограничения
-        if self.one_question:
-            parts.append("Максимум 1 вопрос в конце ответа.")
 
         if self.be_brief:
             parts.append("Будь краток и по делу.")
@@ -373,6 +378,9 @@ class ResponseDirectivesBuilder:
         # === Определяем стиль ===
         self._apply_style(directives)
 
+        # === Question suppression (AFTER style, BEFORE dialogue moves) ===
+        self._apply_question_suppression(directives)
+
         # === Определяем диалоговые действия ===
         self._apply_dialogue_moves(directives)
 
@@ -442,6 +450,18 @@ class ResponseDirectivesBuilder:
         # Bullets при сложных объяснениях
         if envelope.repeated_question:
             directives.use_bullets = True
+
+    def _apply_question_suppression(self, directives: ResponseDirectives) -> None:
+        """Apply question suppression based on client question density."""
+        density = getattr(self.envelope, 'client_question_density', 0)
+        persona = (self.envelope.collected_data or {}).get("persona", "")
+        thresholds = get_persona_question_thresholds(persona)
+        if density >= thresholds.get("suppress", 2):
+            directives.suppress_question = True
+            directives.question_mode = "suppress"
+            directives.one_question = False
+        elif density >= thresholds.get("optional", 1):
+            directives.question_mode = "optional"
 
     def _apply_dialogue_moves(self, directives: ResponseDirectives) -> None:
         """Применить диалоговые действия."""
