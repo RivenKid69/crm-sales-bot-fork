@@ -1711,6 +1711,8 @@ class SalesBot:
             response_elapsed = (time.time() - response_start) * 1000
 
             # Phase 3: Apply CTA BEFORE recording response (critical fix!)
+            # NOTE: CTA is independent of question suppression by design —
+            # CTA drives conversion ("Хотите демо?"), not qualification questions.
             # Pass action + objection_info for semantic CTA gating
             cta_result = self._apply_cta(
                 response=response,

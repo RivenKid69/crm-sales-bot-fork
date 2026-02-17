@@ -83,16 +83,21 @@ class TestComputeQuestionDensity:
         )
         assert density == 1
 
-    def test_density_current_intent_dedup(self):
-        """current_intent == tail of history → not counted twice."""
+    def test_density_current_intent_same_as_tail(self):
+        """current_intent == tail of history → both counted (no dedup).
+
+        This is correct because intent_history contains PREVIOUS turns and
+        current_intent is the CURRENT turn — they are different turns even
+        if the intent is the same (e.g., client asks two feature questions).
+        """
         q_intents = self._get_question_intents()
-        density_with_dedup = ContextEnvelopeBuilder._compute_question_density(
+        density = ContextEnvelopeBuilder._compute_question_density(
             intent_history=["positive_feedback", q_intents[0]],
             current_intent=q_intents[0],
             window=5,
         )
-        # Should be 1, not 2 — dedup prevents double counting
-        assert density_with_dedup == 1
+        # Should be 2 — previous turn + current turn both count
+        assert density == 2
 
     def test_density_window_clips(self):
         """window=5 clips long history — only last 5 entries count."""
