@@ -404,7 +404,8 @@ class TestEnhancedRetrievalPipeline:
         monkeypatch.setattr(er, "load_facts_for_state", lambda **kwargs: (state_text, [], []))
 
         query_text, _, _ = pipeline._build_query_context([query_result])
-        expected_state_part = state_text[: max(0, pipeline.max_kb_chars - len(query_text))]
+        separator_len = len(EnhancedRetrievalPipeline.STATE_CONTEXT_SEPARATOR)
+        expected_state_part = state_text[: max(0, pipeline.max_kb_chars - len(query_text) - separator_len)]
 
         facts, _, _ = pipeline.retrieve(
             user_message="Расскажите стоимость тарифа Basic для кафе",
@@ -418,6 +419,7 @@ class TestEnhancedRetrievalPipeline:
 
         assert facts.endswith(expected_state_part)
         assert "[pricing/tariffs]" in facts
+        assert len(facts) <= pipeline.max_kb_chars
 
 
 class TestGeneratorIntegration:

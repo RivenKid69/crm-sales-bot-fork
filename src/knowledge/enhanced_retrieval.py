@@ -321,6 +321,7 @@ class LongContextReorder:
 
 class EnhancedRetrievalPipeline:
     """End-to-end query-driven retrieval for autonomous flow."""
+    STATE_CONTEXT_SEPARATOR = "\n=== КОНТЕКСТ ЭТАПА ===\n"
 
     def __init__(self, llm: LLMProtocol, category_router: Optional[CategoryRouter] = None):
         self.llm = llm
@@ -405,12 +406,18 @@ class EnhancedRetrievalPipeline:
             kb=kb,
             recently_used_keys=state_recently_used,
         )
-        remaining = max(0, self.max_kb_chars - len(query_facts_text))
+        remaining = self.max_kb_chars - len(query_facts_text)
+        if query_facts_text:
+            # Reserve separator budget only when both contexts are present.
+            remaining -= len(self.STATE_CONTEXT_SEPARATOR)
+        remaining = max(0, remaining)
         if len(state_text) > remaining:
             state_text = state_text[:remaining]
 
         # [8] Merge query-driven context with state context.
         facts_text = self._merge_context_text(query_facts_text, state_text)
+        if len(facts_text) > self.max_kb_chars:
+            facts_text = facts_text[:self.max_kb_chars]
         urls = self._merge_urls(query_urls, state_urls)
         fact_keys = self._merge_fact_keys(query_fact_keys, state_fact_keys)
 
@@ -442,13 +449,15 @@ class EnhancedRetrievalPipeline:
             if total_chars + section_len > self.max_kb_chars:
                 remaining = self.max_kb_chars - total_chars
                 if remaining > 200:
-                    facts_parts.append(section_text[:remaining] + "...")
+                    # Keep total length within budget including ellipsis.
+                    facts_parts.append(section_text[: max(0, remaining - 3)] + "...")
                     used_keys.append(key)
                     for url_info in section.urls or []:
                         url = url_info.get("url", "")
                         if url and url not in seen_urls:
                             urls.append(url_info)
                             seen_urls.add(url)
+                    total_chars = self.max_kb_chars
                 break
 
             facts_parts.append(section_text)
@@ -461,12 +470,15 @@ class EnhancedRetrievalPipeline:
                     urls.append(url_info)
                     seen_urls.add(url)
 
-        return "\n".join(facts_parts), urls, used_keys
+        facts_text = "".join(facts_parts)
+        if len(facts_text) > self.max_kb_chars:
+            facts_text = facts_text[:self.max_kb_chars]
+        return facts_text, urls, used_keys
 
-    @staticmethod
-    def _merge_context_text(query_facts: str, state_facts: str) -> str:
+    @classmethod
+    def _merge_context_text(cls, query_facts: str, state_facts: str) -> str:
         if query_facts and state_facts:
-            return f"{query_facts}\n=== КОНТЕКСТ ЭТАПА ===\n{state_facts}"
+            return f"{query_facts}{cls.STATE_CONTEXT_SEPARATOR}{state_facts}"
         return query_facts or state_facts
 
     @staticmethod

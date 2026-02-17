@@ -267,7 +267,7 @@ class TestEnhancedPipelineDeep:
         ]
         text, _, _ = pipe._build_query_context(results)
 
-        assert len(text) <= pipe.max_kb_chars + 10
+        assert len(text) <= pipe.max_kb_chars
 
     def test_merge_urls_and_fact_keys_deduplicate(self):
         llm = MagicMock()
@@ -364,6 +364,46 @@ class TestGeneratorDeepIntegration:
         prompt = llm.generate.call_args[0][0]
         assert "[features/legacy]" in prompt
         assert gen._enhanced_pipeline is None
+
+    def test_autonomous_uses_retriever_kb_snapshot(self, monkeypatch):
+        import src.generator as generator_module
+        import src.knowledge.loader as loader
+
+        kb = SimpleNamespace(company_name="Wipon", company_description="CRM platform", sections=[])
+        monkeypatch.setattr(
+            loader,
+            "load_knowledge_base",
+            lambda: (_ for _ in ()).throw(AssertionError("loader should not be called")),
+        )
+        monkeypatch.setattr(
+            generator_module,
+            "get_retriever",
+            lambda: SimpleNamespace(kb=kb, get_company_info=lambda: "Wipon: CRM platform"),
+        )
+        monkeypatch.setattr(generator_module.flags, "is_enabled", lambda flag: False)
+        monkeypatch.setattr(
+            "src.knowledge.autonomous_kb.load_facts_for_state",
+            lambda **kwargs: ("[features/facts]\nhello\n", [], ["features/facts"]),
+        )
+
+        llm = MagicMock()
+        llm.generate.return_value = "ok"
+        gen = ResponseGenerator(llm=llm, flow=DummyAutonomousFlow())
+
+        context = {
+            "intent": "question_features",
+            "state": "autonomous_discovery",
+            "user_message": "Что умеет система?",
+            "history": [],
+            "recent_fact_keys": [],
+            "collected_data": {},
+            "missing_data": [],
+            "goal": "goal",
+        }
+        gen.generate("custom_action", context)
+        prompt = llm.generate.call_args[0][0]
+        assert "Wipon: CRM platform" in prompt
+        assert "[features/facts]" in prompt
 
     def test_constructor_failure_falls_back_to_legacy_loader(self, monkeypatch):
         _, generator_module = self._setup_common_patches(monkeypatch)
