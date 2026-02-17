@@ -53,6 +53,14 @@
 - `reranker.enabled`
 - `reranker.threshold`
 
+### Enhanced Retrieval (только автономный flow)
+- `enhanced_retrieval.max_kb_chars` — бюджет символов (default: 40000)
+- `enhanced_retrieval.top_k_per_sub_query` — top-k на подзапрос (default: 3)
+- `enhanced_retrieval.max_sub_queries` — макс. подзапросов при декомпозиции (default: 4)
+- `enhanced_retrieval.rrf_k` — параметр RRF fusion (default: 60)
+- `enhanced_retrieval.rewrite_min_words` — порог для query rewrite (default: 4)
+- `enhanced_retrieval.min_complexity_length` — мин. длина для complexity detection (default: 30)
+
 ### Active flow
 - `flow.active`
 
@@ -60,9 +68,13 @@
 Источник: `src/feature_flags.py`.
 
 Текущее состояние defaults:
-- Всего флагов: 62
+- Всего флагов: 63
 - Включено по умолчанию: 43
-- Выключено по умолчанию: 19
+- Выключено по умолчанию: 20
+
+Новые флаги:
+- `separate_style_modifiers` (OFF) — разделение стилевых и семантических интентов в classifier
+- `enhanced_autonomous_retrieval` (OFF) — LLM-driven RAG pipeline для автономного flow
 
 ## 5. Проверка настроек
 
