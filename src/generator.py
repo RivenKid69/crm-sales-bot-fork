@@ -82,6 +82,7 @@ PERSONALIZATION_DEFAULTS: Dict[str, str] = {
     "do_not_repeat": "",
     "reference_pain": "",
     "objection_summary": "",
+    "do_not_repeat_responses": "",
 
     # Question suppression
     "question_instruction": "Задай ОДИН вопрос по цели этапа.",
@@ -1195,6 +1196,17 @@ class ResponseGenerator:
                     variables["reference_pain"] = memory["reference_pain"]
                 if memory.get("objection_summary"):
                     variables["objection_summary"] = memory["objection_summary"]
+
+                # Anti-repetition: inject previous bot responses as structured block
+                if memory.get("do_not_repeat_responses"):
+                    recent_responses = memory["do_not_repeat_responses"]
+                    # Responses already truncated to 100 chars by _get_recent_bot_responses()
+                    formatted = "\n".join(f"- {r}" for r in recent_responses[-3:])
+                    variables["do_not_repeat_responses"] = (
+                        "⚠️ НЕ ПОВТОРЯЙ дословно эти свои предыдущие ответы:\n"
+                        f"{formatted}\n"
+                        "Сформулируй мысль ДРУГИМИ словами."
+                    )
 
                 # Structured данные для templates
                 variables["directives_style"] = directives_dict.get("style", {})
