@@ -600,6 +600,42 @@ class ResponseGenerator:
 
         return "\n".join(lines)
     
+    def _format_client_card(self, collected: dict) -> str:
+        """Форматирует collected_data как читаемую карточку клиента для промпта."""
+        FIELD_LABELS = {
+            "contact_name": "Контактное лицо",
+            "client_name": "Контактное лицо",
+            "company_name": "Компания",
+            "company_size": "Размер компании (сотрудников)",
+            "business_type": "Сфера бизнеса",
+            "current_tools": "Текущие инструменты",
+            "pain_point": "Основная боль",
+            "budget_range": "Бюджет",
+            "role": "Должность",
+            "timeline": "Сроки",
+            "desired_outcome": "Желаемый результат",
+            "urgency": "Срочность",
+            "users_count": "Кол-во пользователей",
+            "preferred_channel": "Канал связи",
+            "contact_info": "Контакт",
+            "financial_impact": "Финансовые потери",
+            "pain_impact": "Влияние проблемы",
+        }
+        SKIP_KEYS = {
+            "_dag_results", "_objection_limit_final", "option_index",
+            "contact_type", "value_acknowledged", "pain_category",
+            "persona", "competitor_mentioned",
+        }
+        lines = []
+        for key, value in collected.items():
+            if key in SKIP_KEYS or value is None:
+                continue
+            if key == "client_name" and "contact_name" in collected:
+                continue
+            label = FIELD_LABELS.get(key, key)
+            lines.append(f"  - {label}: {value}")
+        return "\n".join(lines) if lines else "(нет данных)"
+
     def _has_chinese(self, text: str) -> bool:
         """Проверяем есть ли китайские/японские/корейские символы"""
         import re
@@ -983,7 +1019,7 @@ class ResponseGenerator:
             "user_message": user_message,
             "history": self.format_history(context.get("history", []), use_full=_is_autonomous),
             "goal": context.get("goal", ""),
-            "collected_data": str(collected),
+            "collected_data": self._format_client_card(collected) if _is_autonomous else str(collected),
             "missing_data": ", ".join(context.get("missing_data", [])) or "всё собрано",
             "company_size": collected.get("company_size") or "не указан",
             "pain_point": pain_point_value,

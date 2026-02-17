@@ -3664,6 +3664,36 @@ extraction:
 
   fields:
     # =========================================================================
+    # CLIENT IDENTITY FIELDS
+    # =========================================================================
+
+    company_name:
+      description: "Название компании клиента"
+      type: str
+      spin_phase: situation
+      validation: {}
+      examples:
+        valid:
+          - source: "из компании НефтеТрансСервис"
+            value: "НефтеТрансСервис"
+        invalid:
+          - value: "логистика"
+            reason: "Это business_type, не company_name"
+
+    contact_name:
+      description: "Полное имя контактного лица"
+      type: str
+      spin_phase: situation
+      validation: {}
+      examples:
+        valid:
+          - source: "меня зовут Алексей Петрович"
+            value: "Алексей Петрович"
+        invalid:
+          - value: "директор"
+            reason: "Это role, не contact_name"
+
+    # =========================================================================
     # SITUATION PHASE FIELDS
     # =========================================================================
 
@@ -4052,6 +4082,20 @@ extraction:
         invalid:
           - { value: "10 человек", reason: "Это company_size" }
 
+    timeline:
+      description: "Сроки принятия решения (когда планируют внедрять)"
+      type: str
+      spin_phase: timeline
+      validation:
+        min_length: 2
+      examples:
+        valid:
+          - { source: "До конца квартала хотим решить", value: "до конца квартала" }
+          - { source: "В ближайший месяц", value: "1 месяц" }
+          - { source: "Пока просто смотрим", value: "не определён" }
+        invalid:
+          - { value: "теряем клиентов", reason: "Это pain_point" }
+
     decision_timeline:
       description: "Сроки принятия решения (когда планируют внедрять)"
       type: str
@@ -4173,6 +4217,8 @@ extraction:
   phase_fields:
     # Existing SPIN phases
     situation:
+      - company_name
+      - contact_name
       - company_size
       - current_tools
       - business_type
@@ -4215,6 +4261,7 @@ extraction:
     need:
       - pain_point
     timeline:
+      - timeline
       - decision_timeline
 
     # Shared phases (used by multiple flows)
@@ -4262,6 +4309,7 @@ extraction:
     qualification:
       - company_size
       - budget_range
+      - timeline
       - decision_maker
       - decision_timeline
       - users_count
@@ -4280,11 +4328,13 @@ extraction:
       - contact_info
     negotiation:
       - budget_range
+      - timeline
       - decision_timeline
       - users_count
       - contact_info
     closing:
       - contact_info
+      - timeline
       - decision_timeline
 
   # =========================================================================
