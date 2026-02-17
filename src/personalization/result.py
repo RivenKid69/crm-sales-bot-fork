@@ -32,6 +32,10 @@ class StyleParameters:
     style_instruction: str = ""  # Основная инструкция стиля
     tactical_instruction: str = ""  # Тактическая рекомендация
 
+    # === Style modifier tracking (for style/semantic separation) ===
+    applied_modifiers: List[str] = field(default_factory=list)
+    modifier_source: str = "behavioral"  # "behavioral"|"classification"|"mixed"|"secondary"
+
     def to_instruction(self) -> str:
         """Сформировать полную инструкцию для промпта."""
         parts = []
@@ -168,6 +172,10 @@ class PersonalizationResult:
 
         # Convenience: combined personalization block
         variables["personalization_block"] = self._build_personalization_block()
+
+        # Style modifier tracking (for debugging/logging)
+        if self.style.applied_modifiers:
+            variables["applied_style_modifiers"] = ", ".join(self.style.applied_modifiers)
 
         return variables
 

@@ -1403,6 +1403,10 @@ class SalesBot:
             "response_directives": response_directives,
             # Fact rotation: recently used KB section keys for autonomous flow
             "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
+            # Style separation fields from classification (for generator._apply_style_modifiers)
+            "style_modifiers": classification.get("style_modifiers", []),
+            "secondary_signals": classification.get("secondary_signals", []),
+            "style_separation_applied": classification.get("style_separation_applied", False),
         }
 
         # Determine action

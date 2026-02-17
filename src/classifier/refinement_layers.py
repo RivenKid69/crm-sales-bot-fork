@@ -1217,6 +1217,7 @@ def verify_layers_registered() -> List[str]:
     # FIX: Added first_contact for First Turn Objection Bug Fix
     # FIX: Added option_selection for Disambiguation Assist Fix
     expected = [
+        "style_modifier_detection",  # Style/Semantic Separation
         "disambiguation_resolution",  # Disambiguation Resolution Fix
         "confidence_calibration",
         "secondary_intent_detection",  # Lost Question Fix
@@ -1268,6 +1269,12 @@ try:
     from src.classifier import comparison_refinement  # noqa: F401
 except ImportError as e:
     logger.warning(f"Could not import comparison_refinement: {e}")
+
+# Import style_modifier_detection to register the layer
+try:
+    from src.classifier import style_modifier_detection  # noqa: F401
+except ImportError as e:
+    logger.warning(f"Could not import style_modifier_detection: {e}")
 
 # Verify on import (DEBUG level)
 logger.debug(f"Refinement layers registered: {verify_layers_registered()}")

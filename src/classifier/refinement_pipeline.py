@@ -76,6 +76,7 @@ class LayerPriority(Enum):
 
     Higher priority layers run first.
     """
+    HIGHEST = 110     # Runs before everything (style separation)
     CRITICAL = 100    # Run first (e.g., data extraction)
     HIGH = 75         # High priority refinements
     NORMAL = 50       # Default priority

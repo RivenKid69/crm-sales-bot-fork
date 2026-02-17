@@ -965,6 +965,22 @@ def get_intent_pattern_guard_config() -> Dict[str, Any]:
     return _intents.get("intent_pattern_guard", {"patterns": {}})
 
 
+def get_style_modifier_detection_config() -> Dict[str, Any]:
+    """
+    Get style_modifier_detection config from constants.yaml.
+
+    Used by StyleModifierDetectionLayer to separate style intents
+    (request_brevity, example_request, summary_request) from semantic intents.
+
+    Returns:
+        Dict with style modifier detection configuration including:
+        - style_intents: List[str] - intents considered style modifiers
+        - intent_to_modifier: Dict[str, str] - intent name → modifier name mapping
+        - semantic_inference: Dict - inference strategy config
+    """
+    return _constants.get("style_modifier_detection", {})
+
+
 def get_fact_question_source_config() -> Dict[str, Any]:
     """
     Get fact_question_source config from constants.yaml.
@@ -1106,4 +1122,6 @@ __all__ = [
     # FIX: New functions for Lost Question Fix
     "get_secondary_intent_config",
     "get_fact_question_source_config",
+    # Style Modifier Detection
+    "get_style_modifier_detection_config",
 ]
