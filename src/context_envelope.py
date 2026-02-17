@@ -795,12 +795,18 @@ class ContextEnvelopeBuilder:
 
     @staticmethod
     def _compute_question_density(intent_history: List[str], current_intent: Optional[str], window: int = 5) -> int:
-        """Count question intents in the last N turns of intent history."""
+        """Count question intents in the last N turns of intent history.
+
+        Always includes current_intent in the window (it represents the
+        current turn which hasn't been added to intent_history yet at
+        envelope-build time).  Previous dedup logic incorrectly skipped
+        current_intent when it matched the tail, causing consecutive
+        same-type questions to not increase density.
+        """
         all_q = set(INTENT_CATEGORIES.get("all_questions", []))
-        recent = list(intent_history[-window:])
-        # Include current_intent if not already tail of history (timing-safe)
-        if current_intent and (not recent or recent[-1] != current_intent):
-            recent = recent[-(window - 1):] + [current_intent]
+        recent = list(intent_history[-(window - 1):]) if current_intent else list(intent_history[-window:])
+        if current_intent:
+            recent.append(current_intent)
         return sum(1 for i in recent if i in all_q)
 
     def _resolve_objection_limits(self, envelope: ContextEnvelope) -> None:
