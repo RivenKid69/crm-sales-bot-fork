@@ -84,6 +84,17 @@ def get_persona_objection_limits(persona: str) -> Dict[str, int]:
     return {"consecutive": MAX_CONSECUTIVE_OBJECTIONS, "total": MAX_TOTAL_OBJECTIONS}
 
 
+PERSONA_QUESTION_SUPPRESSION: Dict[str, Dict[str, int]] = _limits.get("persona_question_suppression", {})
+
+
+def get_persona_question_thresholds(persona: str = "") -> Dict[str, int]:
+    """Resolve persona-specific question suppression thresholds.
+    Falls back: persona -> 'default' -> hardcoded defaults."""
+    if persona and persona in PERSONA_QUESTION_SUPPRESSION:
+        return PERSONA_QUESTION_SUPPRESSION[persona]
+    return PERSONA_QUESTION_SUPPRESSION.get("default", {"suppress": 2, "optional": 1, "window": 5})
+
+
 # =============================================================================
 # DISAMBIGUATION (Unified Disambiguation Decision Engine)
 # =============================================================================
@@ -1025,6 +1036,8 @@ __all__ = [
     "MAX_GOBACKS",
     "PERSONA_OBJECTION_LIMITS",
     "get_persona_objection_limits",
+    "PERSONA_QUESTION_SUPPRESSION",
+    "get_persona_question_thresholds",
     # Intent categories - базовые
     "GO_BACK_INTENTS",
     "OBJECTION_INTENTS",

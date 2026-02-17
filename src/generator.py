@@ -82,6 +82,17 @@ PERSONALIZATION_DEFAULTS: Dict[str, str] = {
     "do_not_repeat": "",
     "reference_pain": "",
     "objection_summary": "",
+
+    # Question suppression
+    "question_instruction": "Задай ОДИН вопрос по цели этапа.",
+}
+
+# Actions exempt from trailing question stripping (probe/transition templates need "?")
+QUESTION_STRIP_EXEMPT_ACTIONS: set = {
+    "probe_situation", "probe_problem", "probe_implication", "probe_need_payoff",
+    "clarify_one_question",
+    "transition_to_spin_problem", "transition_to_spin_implication",
+    "transition_to_spin_need_payoff", "transition_to_presentation",
 }
 
 
@@ -1050,6 +1061,8 @@ class ResponseGenerator:
             "available_questions": "",
             # Autonomous flow: objection-specific framework instructions (4P/3F)
             "objection_instructions": "",
+            # Question suppression (default — overridden by ResponseDirectives block)
+            "question_instruction": "Задай ОДИН вопрос по цели этапа.",
         })
 
         # === Autonomous flow: inject objection-specific framework instructions ===
@@ -1187,11 +1200,28 @@ class ResponseGenerator:
                 variables["directives_style"] = directives_dict.get("style", {})
                 variables["directives_moves"] = directives_dict.get("dialogue_moves", {})
 
+                # Question suppression: override question_instruction + hide implicit triggers
+                if response_directives.question_mode == "suppress":
+                    variables["question_instruction"] = (
+                        "\u26a0\ufe0f Клиент активно задаёт вопросы — НЕ задавай свои вопросы в ответ. "
+                        "Отвечай развёрнуто и полезно, демонстрируя экспертизу. "
+                        "Можешь добавить пример, факт или преимущество продукта."
+                    )
+                    # Hide implicit question triggers
+                    variables["missing_data"] = ""
+                    variables["available_questions"] = ""
+                elif response_directives.question_mode == "optional":
+                    variables["question_instruction"] = (
+                        "Можешь задать один вопрос если это уместно и естественно, "
+                        "но НЕ обязательно."
+                    )
+
                 logger.debug(
                     "ResponseDirectives applied",
                     tone=directives_dict.get("style", {}).get("tone"),
                     max_words=directives_dict.get("style", {}).get("max_words"),
                     repair_mode=directives_dict.get("dialogue_moves", {}).get("repair_mode"),
+                    question_mode=response_directives.question_mode,
                 )
             except Exception as e:
                 logger.warning(f"ResponseDirectives integration failed: {e}")
@@ -1547,7 +1577,26 @@ class ResponseGenerator:
         )
         processed = validation_result.response
         validation_events = validation_result.validation_events
+
+        # Layer 5: Post-processing safety net — strip trailing question when suppressed
+        rd = context.get("response_directives")
+        should_strip = (
+            rd and getattr(rd, 'suppress_question', False)
+            and requested_action not in QUESTION_STRIP_EXEMPT_ACTIONS
+            and not getattr(rd, 'should_offer_exit', False)
+            and not getattr(rd, 'prioritize_contact', False)
+        )
+        if should_strip:
+            processed = self._strip_trailing_question(processed)
+
         return processed, validation_events
+
+    def _strip_trailing_question(self, text: str) -> str:
+        """Remove trailing question from response when suppress_question is active."""
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        if len(sentences) > 1 and sentences[-1].rstrip().endswith('?'):
+            return ' '.join(sentences[:-1])
+        return text
 
     # =========================================================================
     # НОВОЕ: Deduplication методы

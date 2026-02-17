@@ -34,6 +34,8 @@ from src.yaml_config.constants import (
     MAX_CONSECUTIVE_OBJECTIONS,
     MAX_TOTAL_OBJECTIONS,
     get_persona_objection_limits,
+    INTENT_CATEGORIES,
+    get_persona_question_thresholds,
 )
 
 
@@ -180,6 +182,7 @@ class ContextEnvelope:
     objection_count: int = 0
     positive_count: int = 0
     question_count: int = 0
+    client_question_density: int = 0  # Question suppression: count of question intents in window
     unclear_count: int = 0
     has_oscillation: bool = False
     is_stuck: bool = False
@@ -548,6 +551,14 @@ class ContextEnvelopeBuilder:
         # Bridge current_intent to envelope (fixes 1-turn lag for policy)
         envelope.current_intent = self.current_intent
 
+        # Compute question density AFTER all fields are set
+        persona = (envelope.collected_data or {}).get("persona", "")
+        thresholds = get_persona_question_thresholds(persona)
+        window = thresholds.get("window", 5)
+        envelope.client_question_density = self._compute_question_density(
+            envelope.intent_history, envelope.current_intent, window=window
+        )
+
         # Resolve objection limits once (explicit state/envelope > persona > global)
         self._resolve_objection_limits(envelope)
 
@@ -781,6 +792,16 @@ class ContextEnvelopeBuilder:
             return property_value
 
         return None
+
+    @staticmethod
+    def _compute_question_density(intent_history: List[str], current_intent: Optional[str], window: int = 5) -> int:
+        """Count question intents in the last N turns of intent history."""
+        all_q = set(INTENT_CATEGORIES.get("all_questions", []))
+        recent = list(intent_history[-window:])
+        # Include current_intent if not already tail of history (timing-safe)
+        if current_intent and (not recent or recent[-1] != current_intent):
+            recent = recent[-(window - 1):] + [current_intent]
+        return sum(1 for i in recent if i in all_q)
 
     def _resolve_objection_limits(self, envelope: ContextEnvelope) -> None:
         """
