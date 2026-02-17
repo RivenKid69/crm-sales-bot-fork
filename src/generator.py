@@ -788,10 +788,10 @@ class ResponseGenerator:
         _is_autonomous = self._flow and self._flow.name == "autonomous" and state.startswith("autonomous_")
         _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
         if _is_autonomous:
-            from src.knowledge.loader import load_knowledge_base
             from src.knowledge.autonomous_kb import load_facts_for_state
 
-            _kb = load_knowledge_base()
+            # Keep autonomous state-context and query-context on the same KB snapshot.
+            _kb = get_retriever().kb
             recently_used = set(context.get("recent_fact_keys", []))
 
             if flags.is_enabled("enhanced_autonomous_retrieval"):

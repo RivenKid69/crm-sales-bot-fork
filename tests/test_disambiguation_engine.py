@@ -394,8 +394,9 @@ class TestPreCalibrationConfidence:
 
         result = engine.analyze(classification, {})
 
-        # Gap = 0.0 - 0.40 = -0.40 (negative, but valid)
-        assert result.gap == pytest.approx(-0.40)
+        # Gap input would be negative (0.0 - 0.40), but engine clamps at 0.0
+        # for score-space stability.
+        assert result.gap == 0.0
 
     def test_scenario_calibration_prevents_negative_gap(self, engine):
         """Real scenario: calibration lowers confidence but gap uses original."""
@@ -533,6 +534,24 @@ class TestGapCalculation:
 
         # Gap = 0.80 - 0.60 = 0.20
         assert result.gap == pytest.approx(0.20)
+
+    def test_gap_ignores_duplicate_top_intent_in_alternatives(self, engine):
+        """Duplicate top-intent in alternatives must not force gap to zero."""
+        classification = {
+            "intent": "question_features",
+            "confidence": 0.7258,
+            "alternatives": [
+                {"intent": "question_features", "confidence": 0.92},  # malformed duplicate
+                {"intent": "competitor_dissatisfied", "confidence": 0.20},
+            ],
+        }
+
+        result = engine.analyze(classification, {})
+
+        # Duplicate top intent must be ignored:
+        # gap = 0.7258 - 0.20 = 0.5258
+        assert result.gap == pytest.approx(0.5258, abs=1e-4)
+        assert result.decision == DisambiguationDecision.EXECUTE
 
     def test_gap_without_alternatives_conservative(self, engine):
         """Without alternatives, gap is conservative (capped)."""

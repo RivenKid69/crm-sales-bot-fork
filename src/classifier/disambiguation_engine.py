@@ -253,7 +253,10 @@ class DisambiguationDecisionEngine:
             # Extract data from classification
             intent = classification.get("intent", "unclear")
             confidence = classification.get("confidence", 0.0)
-            alternatives = classification.get("alternatives", [])
+            alternatives = self._normalize_alternatives(
+                top_intent=intent,
+                alternatives=classification.get("alternatives", []),
+            )
 
             # Step 1: Check bypass conditions
             bypass_result = self._check_bypass_conditions(intent, confidence, context, alternatives)
@@ -398,7 +401,57 @@ class DisambiguationDecisionEngine:
             default=0.0
         )
 
-        return top_confidence - second_confidence
+        # Negative gap is possible when top confidence and alternatives come
+        # from different score spaces (e.g., calibrated top + raw alternatives).
+        # Treat it as zero to avoid unstable routing.
+        return max(top_confidence - second_confidence, 0.0)
+
+    def _normalize_alternatives(
+        self,
+        top_intent: str,
+        alternatives: Any,
+    ) -> List[Dict[str, float]]:
+        """
+        Normalize alternatives for stable gap/options computation.
+
+        Rules:
+        - Keep only dict items with valid intent/confidence
+        - Drop alternatives equal to top_intent (LLM can duplicate top-1 here)
+        - Deduplicate by intent, keeping max confidence
+        - Sort by confidence descending for deterministic behavior
+        """
+        if not isinstance(alternatives, list):
+            return []
+
+        by_intent: Dict[str, float] = {}
+        for alt in alternatives:
+            if not isinstance(alt, dict):
+                continue
+
+            alt_intent = alt.get("intent")
+            if not isinstance(alt_intent, str) or not alt_intent:
+                continue
+            if alt_intent == top_intent:
+                continue
+
+            try:
+                alt_conf = float(alt.get("confidence", 0.0))
+            except (TypeError, ValueError):
+                continue
+
+            alt_conf = max(0.0, min(1.0, alt_conf))
+            prev = by_intent.get(alt_intent)
+            if prev is None or alt_conf > prev:
+                by_intent[alt_intent] = alt_conf
+
+        return [
+            {"intent": intent, "confidence": conf}
+            for intent, conf in sorted(
+                by_intent.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        ]
 
     def _make_decision(
         self,
