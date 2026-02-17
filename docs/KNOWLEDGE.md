@@ -59,8 +59,6 @@
 
 ## 6. Enhanced Autonomous Retrieval
 
-Feature flag: `enhanced_autonomous_retrieval` (OFF по умолчанию).
-
 Используется **только** автономным flow (`--flow autonomous`). Стандартные flow (spin_selling, aida и др.) не используют этот pipeline.
 
 ### Зачем
@@ -146,10 +144,8 @@ enhanced_retrieval:
 `ResponseGenerator.generate()` (`src/generator.py`) выбирает путь:
 
 ```
-if autonomous + enhanced_autonomous_retrieval:
+if autonomous:
     → EnhancedRetrievalPipeline.retrieve()
-elif autonomous:
-    → load_facts_for_state()
 else:
     → CascadeRetriever.retrieve()
 ```

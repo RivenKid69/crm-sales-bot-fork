@@ -188,8 +188,8 @@ class TestCategoryRouterRetrieverIntegration:
         assert isinstance(facts_intent, str)
         assert isinstance(facts_categories, str)
 
-    def test_invalid_categories_fallback(self, retriever):
-        """Несуществующие категории не ломают поиск."""
+    def test_invalid_categories_return_empty(self, retriever):
+        """Несуществующие категории возвращают пустой результат."""
         query = "касса"
 
         # Поиск с невалидными категориями
@@ -199,8 +199,8 @@ class TestCategoryRouterRetrieverIntegration:
             top_k=3
         )
 
-        # Должен найти по всем категориям (fallback)
-        assert len(results) > 0
+        # Пустой результат — не ищем по всем категориям
+        assert len(results) == 0
 
 # =============================================================================
 # Тесты полного пайплайна

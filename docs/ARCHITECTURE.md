@@ -73,14 +73,9 @@ SSOT:
 
 Автономный flow (`--flow autonomous`) — режим, в котором LLM (Qwen) сам управляет переходами между фазами продаж без жёстких правил.
 
-### Два режима поиска фактов
+### Поиск фактов
 
-| Режим | Flag | Механизм |
-|-------|------|----------|
-| Базовый | `autonomous_flow: true` | Прямая загрузка по `kb_categories` из YAML состояния (`autonomous_kb.py`) |
-| Enhanced | `enhanced_autonomous_retrieval: true` | LLM-driven RAG pipeline (`enhanced_retrieval.py`) |
-
-Enhanced Autonomous Retrieval используется **только** автономным flow. Стандартные flow (spin_selling, aida и др.) используют `CascadeRetriever` напрямую.
+Автономный flow использует `EnhancedRetrievalPipeline` (`enhanced_retrieval.py`) — LLM-driven RAG pipeline. Стандартные flow (spin_selling, aida и др.) используют `CascadeRetriever` напрямую.
 
 ### Enhanced Retrieval Pipeline
 
