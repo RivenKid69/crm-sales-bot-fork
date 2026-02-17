@@ -31,6 +31,14 @@
 - `ResponseGenerator` отвечает за текст.
 - `CascadeRetriever` отвечает за факты.
 
+### Style/Semantic Separation
+
+Интенты разделены на два независимых канала:
+- **Semantic intent** (что хочет клиент) → маршрутизация и retrieval.
+- **Style modifier** (как доставить ответ) → рендеринг в `PersonalizationResult`.
+
+Это гарантирует, что стилевой запрос ("быстрее") не ломает маршрутизацию и поиск фактов. `StyleModifierDetectionLayer` работает на уровне classifier, `_apply_style_modifiers()` — на уровне generator.
+
 ## 5. Observability by default
 
 - Metrics (`src/metrics.py`)
