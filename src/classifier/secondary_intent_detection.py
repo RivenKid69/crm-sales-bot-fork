@@ -514,6 +514,11 @@ class SecondaryIntentDetectionLayer(BaseRefinementLayer):
                 if confidence >= 0.6:  # Threshold for keyword-only
                     detected.append((intent, confidence, pattern_def.priority))
 
+        # Filter out already-separated style intents (from StyleModifierDetectionLayer)
+        skip_intents = set(ctx.metadata.get("skip_secondary_detection", []))
+        if skip_intents:
+            detected = [d for d in detected if d[0] not in skip_intents]
+
         # If no secondary intents detected, pass through
         if not detected:
             return self._pass_through(result, ctx)

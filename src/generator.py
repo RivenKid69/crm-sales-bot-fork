@@ -466,6 +466,9 @@ class ResponseGenerator:
         # Enhanced retrieval pipeline (lazy init on first autonomous call)
         self._enhanced_pipeline = None
 
+        # Style modifier separation cache (lazy-loaded from YAML config)
+        self._style_intents_cache: Optional[Set[str]] = None
+
         # PersonalizationEngineV2: адаптивная персонализация на основе поведения
         self.personalization_engine: Optional["PersonalizationEngineV2"] = None
         if flags.personalization_v2:
@@ -669,6 +672,74 @@ class ResponseGenerator:
         """Return metadata from the latest generate() call."""
         return dict(self._last_generation_meta)
 
+    def _get_style_intents(self) -> Set[str]:
+        """Lazy-load style intents from config (cached)."""
+        if self._style_intents_cache is None:
+            try:
+                from src.yaml_config.constants import get_style_modifier_detection_config
+                config = get_style_modifier_detection_config()
+                self._style_intents_cache = set(config.get("style_intents", []))
+            except Exception:
+                self._style_intents_cache = set()
+        return self._style_intents_cache
+
+    def _apply_style_modifiers(
+        self,
+        context: Dict[str, Any],
+        personalization: Any,
+    ) -> Any:
+        """Apply style modifiers from classification to PersonalizationResult.
+
+        Merges TWO sources:
+        1. style_modifiers from StyleModifierDetectionLayer (primary intent was style)
+        2. secondary_signals from SecondaryIntentDetectionLayer (style as secondary)
+
+        Priority: classification > behavioral signals (already applied by PersonalizationEngine v2)
+        """
+        if not flags.is_enabled("separate_style_modifiers"):
+            return personalization
+
+        STYLE_INTENTS = self._get_style_intents()
+
+        # Source 1: style_modifiers from layer (via context, propagated in bot.py)
+        style_modifiers = set(context.get("style_modifiers", []))
+
+        # Source 2: secondary_signals that are style-related
+        secondary_signals = context.get("secondary_signals", [])
+        style_from_secondary = set(s for s in secondary_signals if s in STYLE_INTENTS)
+
+        # Merge both sources (set removes duplicates)
+        all_modifiers = style_modifiers | style_from_secondary
+
+        if not all_modifiers:
+            return personalization
+
+        # Apply with priority: brevity > examples > summary
+        if "request_brevity" in all_modifiers:
+            personalization.style.verbosity = "concise"
+            personalization.style.tactical_instruction += " Будь краток и по делу."
+            personalization.style.applied_modifiers.append("brevity")
+            all_modifiers -= {"request_examples", "example_request"}
+
+        for modifier in all_modifiers:
+            if modifier in ("request_examples", "example_request"):
+                personalization.style.verbosity = "detailed"
+                personalization.style.tactical_instruction += " Приведи конкретные примеры."
+                personalization.style.applied_modifiers.append("examples")
+            elif modifier in ("request_summary", "summary_request"):
+                personalization.style.tactical_instruction += " Суммируй ключевые моменты."
+                personalization.style.applied_modifiers.append("summary")
+
+        # Track source for debugging
+        if style_modifiers and not style_from_secondary:
+            personalization.style.modifier_source = "classification"
+        elif style_modifiers and style_from_secondary:
+            personalization.style.modifier_source = "mixed"
+        elif style_from_secondary:
+            personalization.style.modifier_source = "secondary"
+
+        return personalization
+
     def _is_factual_action(self, action: str) -> bool:
         """Return True when action already implies factual/pricing answer."""
         from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
@@ -721,13 +792,17 @@ class ResponseGenerator:
                 template_key=template_key
             )
         elif intent == "request_brevity" and not self._is_factual_action(action):
-            template_key = "respond_briefly"
-            logger.debug(
-                "Brevity request detected, using respond_briefly template",
-                intent=intent,
-                original_action=action,
-                template_key=template_key
-            )
+            # Legacy behavior: only when style separation is OFF
+            if not flags.is_enabled("separate_style_modifiers"):
+                template_key = "respond_briefly"
+                logger.debug(
+                    "Brevity request detected, using respond_briefly template",
+                    intent=intent,
+                    original_action=action,
+                    template_key=template_key
+                )
+            # With flag ON: request_brevity already refined to semantic intent by layer,
+            # so this branch won't be reached. Guard clause for safety only.
         elif action.startswith("transition_to_"):
             template_key = action.replace("transition_to_", "")
         else:
@@ -1017,6 +1092,9 @@ class ResponseGenerator:
                     action_tracker=context.get("action_tracker"),
                     messages=context.get("user_messages", []),
                 )
+                # Apply style modifiers from classification BEFORE to_prompt_variables()
+                p_result = self._apply_style_modifiers(context, p_result)
+
                 # Добавляем переменные персонализации
                 personalization_vars = p_result.to_prompt_variables()
                 variables.update(personalization_vars)
@@ -1035,10 +1113,35 @@ class ResponseGenerator:
             # Это гарантирует что bc_* переменные будут заполнены корректно
             self._apply_legacy_personalization(variables, collected)
 
+            # Apply style instruction in legacy mode (modify variables directly).
+            # Do NOT use PersonalizationResult().to_prompt_variables() here —
+            # it would overwrite legacy industry/business variables with empty defaults.
+            if flags.is_enabled("separate_style_modifiers"):
+                style_mods = set(context.get("style_modifiers", []))
+                style_additions = []
+                if "request_brevity" in style_mods:
+                    style_additions.append("Будь краток и по делу.")
+                elif any(m in style_mods for m in ("request_examples", "example_request")):
+                    style_additions.append("Приведи конкретные примеры.")
+                if any(m in style_mods for m in ("request_summary", "summary_request")):
+                    style_additions.append("Суммируй ключевые моменты.")
+                if style_additions:
+                    existing = variables.get("style_full_instruction", "")
+                    variables["style_full_instruction"] = (
+                        existing + " " + " ".join(style_additions)
+                    ).strip()
+
         # === ResponseDirectives integration ===
         response_directives = context.get("response_directives")
         if response_directives and flags.context_response_directives:
             try:
+                # Override directives for style modifiers BEFORE to_dict()
+                if flags.is_enabled("separate_style_modifiers"):
+                    style_mods = set(context.get("style_modifiers", []))
+                    if "request_brevity" in style_mods:
+                        response_directives.max_words = 30
+                        response_directives.be_brief = True
+
                 directives_dict = response_directives.to_dict()
                 memory = directives_dict.get("memory", {})
 

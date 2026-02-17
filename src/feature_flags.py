@@ -187,6 +187,9 @@ class FeatureFlags:
         # === Autonomous Flow ===
         "autonomous_flow": False,                  # LLM-driven sales flow (no YAML rules)
         "enhanced_autonomous_retrieval": False,   # Query-driven retrieval for autonomous flow
+
+        # === Style Modifier Separation ===
+        "separate_style_modifiers": False,         # Разделение semantic intent и style modifiers
     }
 
     # Группы флагов для удобного управления
@@ -249,7 +252,8 @@ class FeatureFlags:
             "objection_refinement",
             "confidence_calibration",
             "first_contact_refinement",
-            "data_aware_refinement"
+            "data_aware_refinement",
+            "separate_style_modifiers",
         ],
         # Confidence Calibration groups
         "confidence_calibration_all": [
@@ -280,6 +284,8 @@ class FeatureFlags:
             "autonomous_flow",
             "enhanced_autonomous_retrieval",
         ],
+        # Style Modifier Separation
+        "style_modifier_separation": ["separate_style_modifiers"],
     }
 
     def __init__(self):
@@ -736,6 +742,19 @@ class FeatureFlags:
     def enhanced_autonomous_retrieval(self) -> bool:
         """Включён ли enhanced query-driven retrieval для autonomous flow"""
         return self.is_enabled("enhanced_autonomous_retrieval")
+
+    # =========================================================================
+    # Style Modifier Separation flags
+    # =========================================================================
+
+    @property
+    def separate_style_modifiers(self) -> bool:
+        """Включено ли разделение semantic intent и style modifiers.
+
+        Когда включен, request_brevity/example_request/summary_request
+        разделяются на semantic intent (routing) + style modifier (rendering).
+        """
+        return self.is_enabled("separate_style_modifiers")
 
 
 # Singleton экземпляр

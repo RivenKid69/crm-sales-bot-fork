@@ -4935,8 +4935,16 @@ refinement_pipeline:
 
   # Список слоёв в порядке выполнения
   # Каждый слой должен быть зарегистрирован в RefinementLayerRegistry
-  # priority: CRITICAL (100) → HIGH (75) → NORMAL (50) → LOW (25) → FALLBACK (0)
+  # priority: HIGHEST (110) → CRITICAL (100) → HIGH (75) → NORMAL (50) → LOW (25) → FALLBACK (0)
   layers:
+    # Слой -2: Style Modifier Detection (HIGHEST priority)
+    # Разделяет style intents (request_brevity) на semantic intent + style modifier.
+    # Должен идти ПЕРВЫМ — до всех остальных слоёв.
+    - name: style_modifier_detection
+      enabled: true
+      # NOTE: priority determined by class attribute LayerPriority.HIGHEST (110)
+      # NOTE: no feature_flag here — dynamic check in _should_apply() instead
+
     # Слой -1: Disambiguation Resolution (CRITICAL priority)
     # Обрабатывает ответы пользователя ("1", "2", "первое") на меню disambiguation.
     # Должен идти ДО confidence_calibration — если resolved, калибровка не нужна.
@@ -5009,6 +5017,58 @@ refinement_pipeline:
 
     # Продолжать при ошибке слоя
     continue_on_error: true
+
+# =============================================================================
+# STYLE MODIFIER DETECTION (Semantic Intent / Style Separation)
+# =============================================================================
+# Архитектурное разделение semantic intent (ЧТО делать) и style modifiers (КАК отвечать).
+#
+# Проблема: request_brevity (style) иногда становится primary intent вместо
+# semantic intent (info_provided, question_pricing), что ломает routing.
+#
+# Решение: layer детектирует style intent, инферит semantic intent, разделяет.
+#
+# Feature flag: separate_style_modifiers (динамическая проверка в _should_apply)
+# SSoT: src/classifier/style_modifier_detection.py
+# =============================================================================
+style_modifier_detection:
+  enabled: true
+
+  # Style intents — single source of truth
+  style_intents:
+    - request_brevity
+    - example_request
+    - summary_request
+
+  # Intent → modifier name mapping
+  intent_to_modifier:
+    request_brevity: "request_brevity"
+    example_request: "request_examples"
+    summary_request: "request_summary"
+
+  semantic_inference:
+    # Strategy 1: Action-based (highest priority)
+    action_expects_data:
+      ask_about_company: "info_provided"
+      ask_about_problem: "info_provided"
+      ask_about_impact: "info_provided"
+      ask_about_outcome: "info_provided"
+      ask_situation: "info_provided"
+      ask_problem: "info_provided"
+      ask_implication: "info_provided"
+      ask_need_payoff: "info_provided"
+      continue_current_goal: "info_provided"
+      # NOTE: Never map to style intents here (validation enforced at startup)
+
+    # Strategy 4: Phase-based
+    phase_defaults:
+      situation: "info_provided"
+      problem: "problem_revealed"
+      implication: "need_expressed"
+      need_payoff: "need_expressed"
+
+    # Strategy 6: Fallback
+    default_semantic: "unclear"
 
 # =============================================================================
 # OPTION SELECTION REFINEMENT (Disambiguation Assist Fix)

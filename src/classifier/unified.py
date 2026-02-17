@@ -211,6 +211,21 @@ class UnifiedClassifier:
             if flags.objection_refinement:
                 result = self._apply_objection_refinement(message, result, context)
 
+        # Ensure style fields exist in result (backward compat — always present)
+        if "style_modifiers" not in result:
+            result["style_modifiers"] = []
+        if "style_separation_applied" not in result:
+            result["style_separation_applied"] = False
+
+        # Promote style fields from refinement_metadata to top-level (only when flag ON)
+        if flags.is_enabled("separate_style_modifiers"):
+            refinement_meta = result.get("refinement_metadata", {})
+            if "style_modifiers" in refinement_meta:
+                result["style_modifiers"] = refinement_meta["style_modifiers"]
+                result["style_separation_applied"] = refinement_meta.get(
+                    "style_separation_applied", False
+                )
+
         # Step 3: Unified disambiguation analysis
         if flags.unified_disambiguation:
             result = self._apply_disambiguation(result, context)
