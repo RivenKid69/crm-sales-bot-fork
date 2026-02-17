@@ -390,6 +390,9 @@ PainCategory = Literal["losing_clients", "no_control", "manual_work"]
 
 class ExtractedData(BaseModel):
     """Извлечённые данные из сообщения."""
+    company_name: Optional[str] = Field(None, description="Название компании клиента")
+    contact_name: Optional[str] = Field(None, description="Полное имя контактного лица")
+    budget_range: Optional[str] = Field(None, description="Бюджет клиента (сумма или оценка)")
     company_size: Optional[int] = Field(None, description="Размер компании (число сотрудников)")
     business_type: Optional[str] = Field(None, description="Тип бизнеса/отрасль")
     current_tools: Optional[str] = Field(None, description="Текущие инструменты")

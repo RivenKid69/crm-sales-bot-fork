@@ -1669,13 +1669,25 @@ class DataExtractor:
 
         # === Имя клиента ===
         name_patterns = [
-            r'(?:меня\s*зовут|я\s+)\s*([А-ЯЁ][а-яё]+)',
-            r'(?:это\s+)?([А-ЯЁ][а-яё]+)\s*(?:на связи|пишу|беспокоит)',
+            r'(?:меня\s*зовут|я\s+)\s*([А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+){0,2})',
+            r'(?:это\s+)?([А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+){0,2})\s*(?:на связи|пишу|беспокоит)',
         ]
         for pattern in name_patterns:
             name_match = re.search(pattern, message)
             if name_match:
                 extracted["client_name"] = name_match.group(1)
+                extracted["contact_name"] = name_match.group(1)
+                break
+
+        # === Название компании ===
+        company_patterns = [
+            r'(?:из\s+компании|компания|фирма|организация)\s+[«"]?([А-ЯЁA-Z][а-яёa-zA-Z\-]+(?:\s+[А-ЯЁA-Z][а-яёa-zA-Z\-]+){0,3})[»"]?',
+            r'(?:ООО|ЗАО|ПАО|АО|ИП|ТОО)\s+[«"]?([А-ЯЁA-Z][а-яёa-zA-Z\-]+(?:\s+[А-ЯЁA-Z][а-яёa-zA-Z\-]+){0,3})[»"]?',
+        ]
+        for pattern in company_patterns:
+            company_match = re.search(pattern, message)
+            if company_match:
+                extracted["company_name"] = company_match.group(1).strip()
                 break
 
         # =================================================================
