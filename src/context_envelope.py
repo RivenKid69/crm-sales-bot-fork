@@ -192,6 +192,9 @@ class ContextEnvelope:
     confidence_trend: str = "unknown"
     avg_confidence: float = 0.0
     last_confidence: float = 0.0
+    # Feedback loop: how many times user asked each repeatable intent category
+    # before the current turn. 0 = first ask, 1 = repeated once, 2+ = escalate.
+    intent_category_attempts: Dict[str, int] = field(default_factory=dict)
 
     # === Level 2: Structured Context ===
     turn_types: List[str] = field(default_factory=list)
@@ -515,6 +518,22 @@ class ContextEnvelopeBuilder:
         self.current_intent = current_intent
         self.classification_result = classification_result or {}
 
+    @staticmethod
+    def _compute_category_attempts(intent_history: List[str]) -> Dict[str, int]:
+        """
+        Cross-reference intent history with REPEATABLE_INTENT_GROUPS.
+        Excludes current turn (intent_history doesn't include it — builder runs
+        before add_turn_from_dict(), per TIMING FIX comment at line 650).
+        """
+        from src.yaml_config.constants import REPEATABLE_INTENT_GROUPS
+        counts: Dict[str, int] = {}
+        for intent in intent_history:
+            for group, members in REPEATABLE_INTENT_GROUPS.items():
+                if intent in members:
+                    counts[group] = counts.get(group, 0) + 1
+                    break
+        return counts
+
     def build(self) -> ContextEnvelope:
         """
         Построить ContextEnvelope.
@@ -670,6 +689,9 @@ class ContextEnvelopeBuilder:
         envelope.consecutive_same_action = cw.get_consecutive_same_action()
         envelope.repeated_question = cw.detect_repeated_question(
             include_current_intent=self.current_intent
+        )
+        envelope.intent_category_attempts = self._compute_category_attempts(
+            envelope.intent_history or []
         )
         envelope.confidence_trend = cw.get_confidence_trend()
         envelope.avg_confidence = cw.get_average_confidence()

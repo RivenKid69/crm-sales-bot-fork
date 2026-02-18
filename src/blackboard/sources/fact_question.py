@@ -166,6 +166,13 @@ class FactQuestionSource(KnowledgeSource):
         "budget_question",
     })
 
+    # BUG #2 FIX: Block repeated_question check on clearly off-topic intents.
+    # Defined at class level — not recreated on each call.
+    _STALE_BLOCK_INTENTS: FrozenSet[str] = frozenset({
+        "gratitude", "farewell", "small_talk", "rejection",
+        "unclear", "go_back", "fallback_close",
+    })
+
     # Default action when no YAML rule defined
     DEFAULT_ACTION = "answer_with_facts"
 
@@ -309,12 +316,16 @@ class FactQuestionSource(KnowledgeSource):
                 if intent in self._fact_intents:
                     return True
 
-        # Check 3: repeated_question fallback (catches classifier misses)
+        # Check 3: repeated_question fallback.
+        # BUG #2 FIX: block only on clearly off-topic intents that can't plausibly
+        # be about product features even with a weak classifier signal.
+        # (keyword approach not used: fact questions have no compact keyword list)
         envelope = getattr(ctx, 'context_envelope', None) if ctx else None
         if envelope:
             rq = getattr(envelope, 'repeated_question', None)
             if rq and rq in self._fact_intents:
-                return True
+                if blackboard.current_intent not in self._STALE_BLOCK_INTENTS:
+                    return True
 
         return False
 
@@ -386,6 +397,9 @@ class FactQuestionSource(KnowledgeSource):
             if envelope:
                 rq = getattr(envelope, 'repeated_question', None)
                 if rq and rq in self._fact_intents:
+                    if ctx.current_intent in self._STALE_BLOCK_INTENTS:
+                        self._log_contribution(reason="repeated_question ignored: off-topic intent")
+                        return
                     fact_intent = rq
                     detection_source = "repeated_question"
 
@@ -407,14 +421,34 @@ class FactQuestionSource(KnowledgeSource):
                     f"Fact intent '{fact_intent}' resolved from YAML rule: {action}"
                 )
 
-        # Fallback: intent-specific or default action (from YAML or hardcoded)
+        # Fallback: adaptive escalation or intent-specific/default action
         if not action:
-            action = self._intent_actions.get(
-                fact_intent, self._config.get("fallback_action", self.DEFAULT_ACTION)
+            from src.yaml_config.constants import (
+                REPEATABLE_INTENT_GROUPS, get_escalated_action,
+                should_notify_operator, notify_operator_stub,
             )
-            rule_source = "fallback"
+            category = next(
+                (grp for grp, members in REPEATABLE_INTENT_GROUPS.items()
+                 if fact_intent in members),
+                None
+            )
+            if category:
+                envelope = getattr(ctx, 'context_envelope', None)
+                attempts = getattr(envelope, 'intent_category_attempts', {}) if envelope else {}
+                attempt_count = attempts.get(category, 0)
+                action = get_escalated_action(category, attempt_count)
+                rule_source = f"escalated_fallback_attempt_{attempt_count}"
+                # Silent operator notification — client sees nothing, bot keeps talking
+                if should_notify_operator(attempt_count):
+                    notify_operator_stub(category, attempt_count,
+                                         getattr(envelope, 'last_user_message', ''))
+            else:
+                action = self._intent_actions.get(
+                    fact_intent, self._config.get("fallback_action", self.DEFAULT_ACTION)
+                )
+                rule_source = "fallback"
             logger.debug(
-                f"Fact intent '{fact_intent}' using fallback action: {action}"
+                f"Fact intent '{fact_intent}' → {action} (category={category})"
             )
 
         # Propose action with HIGH priority (but combinable!)

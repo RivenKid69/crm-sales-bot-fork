@@ -3020,6 +3020,99 @@ policy:
     price_core:
       - price_question
       - cost_inquiry
+    fact_features:
+      - question_features
+      - question_capabilities
+    fact_integrations:
+      - question_integrations
+      - question_kaspi_integration
+      - question_bank_terminal
+      - question_1c_integration
+    fact_technical:
+      - question_technical
+      - question_security
+      - question_requirements
+    fact_equipment:
+      - question_pos_monoblock
+      - question_scales
+      - question_scanner
+      - question_printer
+      - question_equipment_general
+    fact_tariffs:
+      - question_tariff_mini
+      - question_tariff_lite
+      - question_tariff_standard
+      - question_tariff_pro
+      - question_tariff_comparison
+    fact_tis:
+      - question_tis_general
+      - question_tis_limits
+      - question_tis_price
+      - question_tis_requirements
+      - question_tis_benefits
+      - question_tis_2026
+      - question_tis_components
+      - question_tis_multi_location
+      - question_tis_transition
+      - question_tis_reports
+      - question_fiscal_general
+    fact_support:
+      - question_support
+      - question_training
+      - question_implementation
+
+  # Threshold: attempt_count >= this → silent operator notification (bot keeps talking)
+  operator_notify_threshold: 2
+
+  # Escalation ladder per category (0-indexed: attempt 0 = first ask, 1 = repeated once, 2+ = escalate+notify)
+  intent_category_escalation:
+    price_core:
+      - answer_with_pricing
+      - answer_with_pricing_brief
+      - answer_with_pricing_brief
+    fact_features:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    fact_integrations:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    fact_technical:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    fact_equipment:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    fact_tariffs:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    fact_tis:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    fact_support:
+      - answer_with_facts
+      - answer_with_facts
+      - answer_with_facts
+    default:
+      - autonomous_respond
+      - autonomous_respond
+      - autonomous_respond
+
+  # Strict price keyword list for BUG#2 fix in PriceQuestionSource check#3
+  price_keywords_strict:
+    - "сколько стоит"
+    - "какая цена"
+    - "тариф"
+    - "прайс"
+    - "стоимость"
+    - "цена"
+    - "почём"
+    - "расценки"
 
   # Mapping для возражений
   objection_actions:

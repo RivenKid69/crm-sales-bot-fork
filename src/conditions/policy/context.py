@@ -93,6 +93,7 @@ class PolicyContext:
     repeated_question: Optional[str] = None
     confidence_trend: str = "stable"
     unclear_count: int = 0
+    intent_category_attempts: Dict[str, int] = field(default_factory=dict)
 
     # Level 2 signals (Momentum/Engagement)
     momentum: float = 0.0
@@ -124,6 +125,9 @@ class PolicyContext:
 
     # Secondary intents (from RefinementPipeline via ContextEnvelope)
     secondary_intents: List[str] = field(default_factory=list)
+
+    # Recent bot responses (for repetition detection, e.g. answer_with_pricing_brief)
+    bot_responses: List[str] = field(default_factory=list)
 
     # Objection limits (from YAML config, single source of truth)
     max_consecutive_objections: int = field(default_factory=lambda: MAX_CONSECUTIVE_OBJECTIONS)
@@ -217,6 +221,7 @@ class PolicyContext:
             repeated_question=envelope.repeated_question,
             confidence_trend=envelope.confidence_trend,
             unclear_count=envelope.unclear_count,
+            intent_category_attempts=getattr(envelope, 'intent_category_attempts', {}),
 
             # Level 2 signals
             momentum=envelope.momentum,
@@ -251,6 +256,8 @@ class PolicyContext:
             ),
             # Secondary intents
             secondary_intents=getattr(envelope, 'secondary_intents', []) or [],
+            # Recent bot responses (for repetition detection)
+            bot_responses=getattr(envelope, 'bot_responses', []) or [],
             # Objection limits (resolved: explicit envelope > persona > global)
             max_consecutive_objections=resolved_consecutive,
             max_total_objections=resolved_total,
@@ -296,6 +303,8 @@ class PolicyContext:
         stall_guard_cooldown: bool = False,
         # Secondary intents for testing
         secondary_intents: List[str] = None,
+        # Feedback loop: per-category attempt counts
+        intent_category_attempts: Dict[str, int] = None,
         # Objection limits (defaults from YAML config)
         max_consecutive_objections: int = None,
         max_total_objections: int = None,
@@ -343,6 +352,7 @@ class PolicyContext:
             pre_intervention_triggered=pre_intervention_triggered,
             stall_guard_cooldown=stall_guard_cooldown,
             secondary_intents=secondary_intents or [],
+            intent_category_attempts=intent_category_attempts or {},
             # Objection limits (use YAML defaults if not specified)
             max_consecutive_objections=(
                 max_consecutive_objections
@@ -405,6 +415,7 @@ class PolicyContext:
             "pre_intervention_triggered": self.pre_intervention_triggered,
             "stall_guard_cooldown": self.stall_guard_cooldown,
             "secondary_intents": self.secondary_intents,
+            "intent_category_attempts": dict(self.intent_category_attempts),
             "max_consecutive_objections": self.max_consecutive_objections,
             "max_total_objections": self.max_total_objections,
         }

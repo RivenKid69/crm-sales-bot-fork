@@ -44,6 +44,10 @@ from src.yaml_config.constants import (
     REPAIR_PROTECTED_ACTIONS,
     PRICING_CORRECT_ACTIONS,
     REPAIR_ACTION_REPEAT_THRESHOLD,
+    REPEATABLE_INTENT_GROUPS as _REPEATABLE_INTENT_GROUPS,
+    get_escalated_action as _get_escalated_action,
+    should_notify_operator as _should_notify_operator,
+    notify_operator_stub as _notify_operator_stub,
 )
 
 
@@ -428,7 +432,21 @@ class DialoguePolicy:
                 repair_protection_bypassed = True
                 signals["repeated_question"] = ctx.repeated_question
                 signals["consecutive_same_action"] = ctx.consecutive_same_action
-                action = self.REPAIR_ACTIONS["repeated_question"]
+                rq = ctx.repeated_question
+                _category = next(
+                    (grp for grp, members in _REPEATABLE_INTENT_GROUPS.items()
+                     if rq in members),
+                    None
+                ) if rq else None
+
+                if _category:
+                    _attempt_count = ctx.intent_category_attempts.get(_category, 0)
+                    action = _get_escalated_action(_category, _attempt_count)
+                    # Silent operator notify — client sees nothing, bot keeps talking
+                    if _should_notify_operator(_attempt_count):
+                        _notify_operator_stub(_category, _attempt_count, ctx.last_user_message or "")
+                else:
+                    action = self.REPAIR_ACTIONS["repeated_question"]  # answer_with_summary (safe default)
                 decision = PolicyDecision.REPAIR_CLARIFY
             # If repeated question is answerable, skip repair
             elif policy_registry.evaluate("is_answerable_question", ctx, trace):
@@ -624,28 +642,26 @@ class DialoguePolicy:
                 expected_effect="Explicit override to clear guard fallback for price question",
             )
 
-        # NEW: Detect if pricing already mentioned 2+ times
-        bot_responses = ctx.context_envelope.bot_responses[-5:] if hasattr(ctx.context_envelope, 'bot_responses') else []
-        pricing_keywords = ["тариф", "стоимость", "рубл", "₸", "₽", "цена"]
-
-        pricing_count = sum(
-            1 for resp in bot_responses
-            if any(kw in resp.lower() for kw in pricing_keywords)
+        # Unified escalation: use intent_category_attempts (not unreliable keyword-count)
+        intent_for_lookup = ctx.current_intent or ctx.last_intent or ""
+        category = next(
+            (grp for grp, members in _REPEATABLE_INTENT_GROUPS.items()
+             if intent_for_lookup in members),
+            "price_core"  # safe default for price overlay
         )
-
-        # Select template based on repetition
-        if pricing_count >= 2:
-            action = "answer_with_pricing_brief"
-            reason = "pricing_repeated_2x"
-        else:
-            action = "answer_with_pricing"
-            reason = "price_question_priority"
+        attempt_count = ctx.intent_category_attempts.get(category, 0)
+        action = _get_escalated_action(category, attempt_count)
+        reason = f"price_escalated_attempt_{attempt_count}"
 
         signals = {
             "intent": ctx.last_intent,
             "original_action": current_action,
-            "pricing_mention_count": pricing_count,
+            "category": category,
+            "attempt_count": attempt_count,
         }
+        # Silent operator notify — client sees nothing, bot keeps talking
+        if _should_notify_operator(attempt_count):
+            _notify_operator_stub(category, attempt_count, ctx.last_user_message or "")
 
         if trace:
             trace.set_result(
@@ -660,7 +676,8 @@ class DialoguePolicy:
             original_action=current_action,
             new_action=action,
             intent=ctx.last_intent,
-            pricing_mentions=pricing_count,
+            attempt_count=attempt_count,
+            category=category,
             reason=reason
         )
 

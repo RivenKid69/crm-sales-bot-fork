@@ -431,6 +431,57 @@ REPEATABLE_INTENT_GROUPS: Dict[str, Set[str]] = {
 }
 OBJECTION_ESCALATION_ACTIONS: Dict[str, str] = _policy.get("objection_actions", {})
 
+INTENT_CATEGORY_ESCALATION: Dict[str, List[str]] = _policy.get(
+    "intent_category_escalation", {}
+)
+
+PRICE_KEYWORDS_STRICT: List[str] = _policy.get("price_keywords_strict", [
+    "сколько стоит", "какая цена", "тариф", "прайс", "стоимость", "цена",
+])
+
+OPERATOR_NOTIFY_THRESHOLD: int = _policy.get("operator_notify_threshold", 2)
+
+
+def get_escalated_action(category: str, attempt_count: int) -> str:
+    """
+    Universal escalation: return the correct action for a category
+    given how many times the user asked before this turn (0-indexed).
+
+    0 = first ask → tier-0 action
+    1 = asked once before → tier-1 action (rephrase)
+    2+ = tier-2 action (rephrase again) + silent operator notify via should_notify_operator()
+    """
+    ladder = INTENT_CATEGORY_ESCALATION.get(
+        category,
+        INTENT_CATEGORY_ESCALATION.get("default", ["autonomous_respond"])
+    )
+    if not ladder:  # guard: empty list in YAML would cause IndexError
+        return "autonomous_respond"
+    return ladder[min(attempt_count, len(ladder) - 1)]
+
+
+def should_notify_operator(attempt_count: int) -> bool:
+    """True when bot has struggled enough that a real operator should be silently alerted."""
+    return attempt_count >= OPERATOR_NOTIFY_THRESHOLD
+
+
+def notify_operator_stub(category: str, attempt_count: int, user_message: str = "") -> None:
+    """
+    STUB: Silently notify real operator that bot is struggling.
+    Client sees NOTHING — bot continues dialogue normally.
+
+    TODO: Replace with real implementation:
+      - POST to webhook / CRM event / Telegram alert / internal queue
+      - Include: session_id, category, attempt_count, last user message
+    """
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+    _log.warning(
+        "OPERATOR_NOTIFY_STUB | bot struggling | category=%s attempts=%d msg='%.80s' "
+        "| TODO: implement real notification",
+        category, attempt_count, user_message,
+    )
+
 
 # =============================================================================
 # LEAD SCORING SETTINGS
@@ -1088,6 +1139,12 @@ __all__ = [
     "REPAIR_ACTION_REPEAT_THRESHOLD",
     "REPEATABLE_INTENT_GROUPS",
     "OBJECTION_ESCALATION_ACTIONS",
+    "INTENT_CATEGORY_ESCALATION",
+    "PRICE_KEYWORDS_STRICT",
+    "OPERATOR_NOTIFY_THRESHOLD",
+    "get_escalated_action",
+    "should_notify_operator",
+    "notify_operator_stub",
     # Lead scoring
     "LEAD_SCORING_POSITIVE_WEIGHTS",
     "LEAD_SCORING_NEGATIVE_WEIGHTS",

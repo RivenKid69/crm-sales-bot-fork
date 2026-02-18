@@ -161,12 +161,20 @@ class PriceQuestionSource(KnowledgeSource):
         if secondary and (set(secondary) & self._price_intents):
             return True
 
-        # Check 3: repeated_question fallback (catches classifier misses)
+        # Check 3: repeated_question fallback (catches classifier misses on price Q).
+        # BUG #2 FIX: Checks 1+2 found no price in primary/secondary.
+        # Only fire here if the message TEXT has explicit price keywords — the sole
+        # remaining evidence that this turn is about price despite classifier miss.
+        # Prevents stale repeated_question from firing on off-topic messages.
         envelope = getattr(ctx, 'context_envelope', None)
         if envelope:
             rq = getattr(envelope, 'repeated_question', None)
             if rq and rq in self._price_intents:
-                return True
+                from src.yaml_config.constants import PRICE_KEYWORDS_STRICT
+                msg = (getattr(envelope, 'last_user_message', '') or '').lower()
+                keywords = PRICE_KEYWORDS_STRICT or ["цена", "тариф", "стоимость", "сколько стоит"]
+                if msg and any(kw in msg for kw in keywords):
+                    return True
 
         return False
 
@@ -216,12 +224,20 @@ class PriceQuestionSource(KnowledgeSource):
                 detection_source = "secondary"
             else:
                 # Priority 3: repeated_question fallback
+                # BUG #2 FIX: require explicit price keyword in message text
                 envelope = getattr(ctx, 'context_envelope', None)
                 rq = getattr(envelope, 'repeated_question', None) if envelope else None
                 if rq and rq in self._price_intents:
+                    from src.yaml_config.constants import PRICE_KEYWORDS_STRICT
+                    msg = (getattr(envelope, 'last_user_message', '') or '').lower()
+                    keywords = PRICE_KEYWORDS_STRICT or ["цена", "тариф", "стоимость", "сколько стоит"]
+                    if not (msg and any(kw in msg for kw in keywords)):
+                        self._log_contribution(reason="repeated_question ignored: no price keyword in message")
+                        return
                     intent = rq
                     detection_source = "repeated_question"
                 else:
+                    # ⚠️ CRITICAL: no repeated_question signal either → exit contribute()
                     self._log_contribution(reason="Intent not price-related")
                     return
 
@@ -237,11 +253,31 @@ class PriceQuestionSource(KnowledgeSource):
                 rule_source = "yaml_rule"
                 logger.debug(f"Price intent '{intent}' resolved from YAML rule: {action}")
 
-        # If no rule or rule evaluated to None, use fallback
+        # If no rule or rule evaluated to None, use adaptive escalation fallback
         if not action:
-            action = self.DEFAULT_ACTIONS.get(intent, "answer_with_pricing")
-            rule_source = "fallback"
-            logger.debug(f"Price intent '{intent}' using fallback action: {action}")
+            from src.yaml_config.constants import (
+                REPEATABLE_INTENT_GROUPS, get_escalated_action,
+                should_notify_operator, notify_operator_stub,
+            )
+            category = next(
+                (grp for grp, members in REPEATABLE_INTENT_GROUPS.items()
+                 if intent in members),
+                None
+            )
+            if category:
+                envelope = getattr(ctx, 'context_envelope', None)
+                attempts = getattr(envelope, 'intent_category_attempts', {}) if envelope else {}
+                attempt_count = attempts.get(category, 0)
+                action = get_escalated_action(category, attempt_count)
+                rule_source = f"escalated_fallback_attempt_{attempt_count}"
+                # Silent operator notification — client sees nothing, bot keeps talking
+                if should_notify_operator(attempt_count):
+                    notify_operator_stub(category, attempt_count,
+                                         getattr(envelope, 'last_user_message', ''))
+            else:
+                action = self.DEFAULT_ACTIONS.get(intent, "answer_with_pricing")
+                rule_source = "fallback"
+            logger.debug(f"Price intent '{intent}' → {action} (category={category})")
 
         # Check if we have pricing data available
         has_pricing = bool(ctx.collected_data.get("pricing_tier"))
