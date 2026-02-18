@@ -12,8 +12,8 @@ flow:
 
   variables:
     entry_state: bant_budget
-    company_name: "Poster"
-    product_name: "CRM-система"
+    company_name: "Wipon"
+    product_name: "Wipon POS/ТИС"
 
   phases:
     order:

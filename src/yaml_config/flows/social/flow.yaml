@@ -11,8 +11,8 @@ flow:
 
   variables:
     entry_state: social_trust
-    company_name: "Poster"
-    product_name: "CRM-система"
+    company_name: "Wipon"
+    product_name: "Wipon POS/ТИС"
 
   phases:
     order:
