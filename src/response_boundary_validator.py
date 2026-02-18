@@ -9,6 +9,7 @@ Applies layered validation:
 
 from __future__ import annotations
 
+import random
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -53,6 +54,17 @@ class ResponseBoundaryValidator:
         "присылну": "пришлю",
     }
 
+    KZ_PHONE_PATTERN = re.compile(r'(?:\+?[78])[\s\-\(]?\d{3}[\s\-\)]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}')
+    IIN_PATTERN = re.compile(r'\b\d{12}\b')
+    SEND_PROMISE_PATTERN = re.compile(
+        r'(пришлю|отправлю|вышлю|скину).{0,40}(фото|видео|файл|документ|каталог)',
+        re.IGNORECASE,
+    )
+    PAST_ACTION_PATTERN = re.compile(
+        r'мы (уже |только что )?(отправили|выслали|прислали|связались|написали)',
+        re.IGNORECASE,
+    )
+
     def __init__(self) -> None:
         self._metrics = BoundaryValidationMetrics()
 
@@ -84,6 +96,18 @@ class ResponseBoundaryValidator:
         events: List[Dict[str, Any]] = [
             {"stage": "detect", "violations": sorted(initial_violations)}
         ]
+
+        # Hard hallucination violations → immediate deterministic fallback, no LLM retry.
+        _HARD_HALLUCINATIONS = {"hallucinated_iin", "hallucinated_phone", "hallucinated_past_action"}
+        if _HARD_HALLUCINATIONS & set(initial_violations):
+            self._metrics.fallback_used += 1
+            return BoundaryValidationResult(
+                response=self._hallucination_fallback(),
+                violations=sorted(initial_violations),
+                retry_used=False,
+                fallback_used=True,
+                validation_events=events + [{"stage": "hallucination_fallback"}],
+            )
 
         candidate = original
         retry_used = False
@@ -150,12 +174,31 @@ class ResponseBoundaryValidator:
                 violations.append("known_typos")
                 break
 
+        # IIN: 12-digit number not present in retrieved_facts
+        if self.IIN_PATTERN.search(response):
+            if not self.IIN_PATTERN.search(context.get("retrieved_facts", "")):
+                violations.append("hallucinated_iin")
+
+        # KZ/RU phone format not present in retrieved_facts
+        if self.KZ_PHONE_PATTERN.search(response):
+            if not self.KZ_PHONE_PATTERN.search(context.get("retrieved_facts", "")):
+                violations.append("hallucinated_phone")
+
+        # Promise to send a file/photo
+        if self.SEND_PROMISE_PATTERN.search(response):
+            violations.append("hallucinated_send_promise")
+
+        # Fabricated past action
+        if self.PAST_ACTION_PATTERN.search(response):
+            violations.append("hallucinated_past_action")
+
         return violations
 
     def _sanitize(self, response: str, context: Dict[str, Any]) -> str:
         sanitized = response
         sanitized = self._sanitize_opening_punctuation(sanitized)
         sanitized = self._sanitize_known_typos(sanitized)
+        sanitized = self._sanitize_send_promise(sanitized)
         if self._is_pricing_context(context):
             sanitized = self._sanitize_currency_locale(sanitized)
         return sanitized.strip()
@@ -175,6 +218,19 @@ class ResponseBoundaryValidator:
         for typo, replacement in self.KNOWN_TYPO_FIXES.items():
             fixed = re.sub(rf"(?iu)\b{re.escape(typo)}\b", replacement, fixed)
         return fixed
+
+    def _sanitize_send_promise(self, response: str) -> str:
+        return self.SEND_PROMISE_PATTERN.sub(
+            'Для фото и материалов — оставьте контакт, менеджер пришлёт вам всё.',
+            response,
+        )
+
+    def _hallucination_fallback(self) -> str:
+        return random.choice([
+            "Уточню детали у коллег и вернусь с ответом.",
+            "Этот момент уточню у специалиста — напишу вам.",
+            "Передам вопрос команде и вернусь с точным ответом.",
+        ])
 
     def _retry_once(
         self,
