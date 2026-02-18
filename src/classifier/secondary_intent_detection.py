@@ -89,6 +89,11 @@ class SecondaryIntentPattern:
 
 DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
     # Price-related questions (highest priority)
+    # keywords=frozenset() — patterns run unconditionally on every message.
+    # Removed homonyms "стоит" (worth/should vs costs) and "давайте" (let's vs pricing).
+    # Without frozenset(), removing those keywords would break "сколько стоит?" detection
+    # since the pattern r"сколько\s+стоит" requires a keyword gate to execute.
+    # Performance cost: ~13 regex checks per message — negligible for chatbot traffic.
     "price_question": SecondaryIntentPattern(
         intent="price_question",
         patterns=[
@@ -106,17 +111,14 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             r"цен[ау]\s+скаж",
             r"давай(?:те)?\s+(?:уже\s+)?(?:по\s+)?(?:цене|ценам|стоимости)",
         ],
-        keywords=frozenset({
-            "цена", "цену", "цены", "ценой", "ценам", "ценами",
-            "стоит", "стоимость", "стоимости",
-            "прайс", "тариф", "тарифы", "тарифа",
-            "расценки", "почём", "давайте",
-        }),
+        keywords=frozenset(),  # empty → all patterns always run; no keyword-gating homonyms
         min_confidence=0.9,
         priority=100,
     ),
 
     # Feature questions
+    # Removed homonyms: "может" (maybe/can), "какие" (generic which/what).
+    # "работает" kept — in sales context almost always means "how does it work".
     "question_features": SecondaryIntentPattern(
         intent="question_features",
         patterns=[
@@ -130,7 +132,8 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
         ],
         keywords=frozenset({
             "функции", "функционал", "возможности", "возможность",
-            "умеет", "может", "работает", "какие",
+            "умеет", "работает",
+            # Removed: "может" (homonym: may/maybe), "какие" (too generic)
         }),
         min_confidence=0.85,
         priority=80,
@@ -167,13 +170,15 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             "подключить", "подключение", "синхронизация",
             "каспи", "kaspi", "1с", "api",
 
-            # NEW: API keywords
+            # API keywords
             "webhook",
             "rest", "soap", "graphql",
             "эндпоинт", "endpoint",
             "токен", "token",
-            "импорт", "экспорт",
-            "обмен", "exchange",
+            # Removed: "импорт", "экспорт" — retail homonyms ("импорт товаров" = trade, not data)
+            # Removed: "обмен" — homonym ("обмен товаров" = return, "обмен валюты" = currency)
+            # Pattern r"импорт|экспорт" still runs when other integration keywords trigger it.
+            "exchange",
         }),
         min_confidence=0.8,
         priority=65,
@@ -211,20 +216,23 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             "технический", "настройка", "документация",
             "инструкция", "требования", "спецификация",
 
-            # NEW: Security/Technical
+            # Security/Technical
             "ssl", "tls", "https",
             "шифрование", "encryption",
             "сертификат", "certificate",
-            "протокол", "protocols",
+            # Removed: "протокол" — homonym ("протокол встречи" = meeting minutes)
+            # Removed: "protocols" — kept only specific Russian forms
 
-            # NEW: API/Integration
+            # API/Integration
             "api", "webhook", "sdk",
             "интеграция", "integration",
             "библиотека", "library",
 
-            # NEW: Configuration
-            "параметры", "конфигурация",
-            "характеристики", "specs",
+            # Configuration
+            # Removed: "параметры" — homonym ("параметры бизнеса", "эти параметры важны")
+            "конфигурация",
+            # Removed: "характеристики" — homonym ("характеристики клиентов")
+            "specs",
         }),
         min_confidence=0.75,  # Снизили с 0.8 для большего coverage
         priority=60,
@@ -263,8 +271,13 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             "конфиденциальность",
             "двухфакторная", "2fa", "mfa",
             "аутентификация", "authentication",
-            "авторизация", "authorization",
-            "доступа", "access",
+            # Removed: "авторизация" — POS homonym ("авторизация платежа" = payment auth)
+            # Pattern r"авторизаци[яи]" still runs when other security keywords gate it.
+            "authorization",
+            # Removed: "доступа" — homonym ("нет доступа к интернету" = connectivity issue)
+            "контроль",  # Gates r"контроль\s+доступа" pattern; safe — patterns are contextual
+            "роли",      # Gates r"роли\s+(?:и\s+)?права" pattern
+            "access",
             "права", "permissions",
             "бэкап", "backup",
             "восстановление", "recovery",
@@ -328,6 +341,13 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
     ),
 
     # Urgency signals (meta-intents)
+    # Removed homonym keywords: "давайте"/"давай" (let's do X ≠ get to the point),
+    # "быстрее" (faster delivery? faster than competitors? ≠ speak faster),
+    # "сразу" (right away / I immediately understood ≠ cut to the chase).
+    # Remaining keywords "короче", "конкретно", "конкретнее" are unambiguous brevity signals.
+    # Patterns that relied on removed keywords (e.g. r"давай(?:те)?\s+(?:уже\s+)?по\s+делу")
+    # will still fire when "короче" or "конкретно" gates the check — or the LLM catches
+    # bare "давайте по делу" as primary intent directly.
     "request_brevity": SecondaryIntentPattern(
         intent="request_brevity",
         patterns=[
@@ -339,8 +359,9 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             r"сразу\s+(?:к\s+делу|говори)",
         ],
         keywords=frozenset({
-            "короче", "быстрее", "конкретно",
-            "конкретнее", "сразу", "давайте", "давай",
+            "короче", "конкретно", "конкретнее",
+            # Removed: "быстрее" (homonym), "сразу" (homonym),
+            #          "давайте" (homonym), "давай" (homonym)
         }),
         min_confidence=0.85,
         priority=50,
