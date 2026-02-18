@@ -1412,6 +1412,13 @@ class ContextWindow:
 
         for category, count in sorted(category_counts.items(), key=lambda x: -x[1]):
             if count >= 2:
+                # If current intent is a question from a DIFFERENT category → topic changed,
+                # skip this category and check the next one (do NOT return None immediately,
+                # since the current topic may itself have count >= 2 in a later iteration).
+                if include_current_intent and include_current_intent in question_set:
+                    current_cat = self._get_repeatable_category(include_current_intent)
+                    if current_cat != category:
+                        continue
                 # Return most recent intent in that category
                 for intent in reversed(history):
                     if intent_to_category.get(intent) == category:
