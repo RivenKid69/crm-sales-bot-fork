@@ -176,40 +176,59 @@ class TestRepeatedQuestion_Stale_Carryover:
 
         return bb
 
-    def test_repeated_question_price_triggers_for_non_price_primary(self):
+    def test_repeated_question_topic_change_returns_none(self):
         """
-        Воспроизводит SIM #4 Turn 5:
-        Primary intent = question_features (казахский вопрос)
-        Secondary intents = [] (нет price ключевых слов в казахском)
-        repeated_question = price_question (из предыдущих ходов)
+        Фикс SIM #4 Turn 5: detect_repeated_question() должен вернуть None,
+        когда текущий интент — вопрос из другой категории (тема сменилась).
 
-        Ожидаемый результат: PriceQuestionSource.should_contribute() = True (через check #3)
-        Это НЕПРАВИЛЬНОЕ поведение — repeated_question из прошлого не должен форсировать прайс-ответ
-        на качественно другой вопрос.
+        История: 2× price_question → current: question_features
+        Ожидаемый результат: None (не возвращать устаревший price_question)
         """
-        from src.blackboard.sources.price_question import PriceQuestionSource
+        from src.context_window import ContextWindow, TurnContext
 
-        source = PriceQuestionSource()
-        bb = self._make_blackboard(
-            primary_intent="question_features",   # казахский вопрос
-            secondary_intents=[],                  # нет price сигналов
-            repeated_question="price_question",    # устаревший из предыдущих ходов
+        cw = ContextWindow(max_size=10)
+        cw.add_turn(TurnContext(
+            user_message="сколько стоит?", state="discovery",
+            intent="price_question", action="answer_with_pricing", confidence=0.9,
+        ))
+        cw.add_turn(TurnContext(
+            user_message="а цена какая?", state="discovery",
+            intent="price_question", action="answer_with_pricing", confidence=0.9,
+        ))
+
+        result = cw.detect_repeated_question(include_current_intent="question_features")
+
+        assert result is None, (
+            f"КОРЕНЬ НАРУШЕНИЯ: detect_repeated_question() вернул {result!r} вместо None.\n"
+            f"История: 2× price_question, current: question_features (другая тема).\n"
+            f"Цепь SIM #4 Turn 5: казахский вопрос про учёт → question_features →\n"
+            f"detect_repeated_question() возвращал 'price_question' (из прошлого) →\n"
+            f"PriceQuestionSource check #3 → HIGH priority → answer_with_pricing (нон-секвитур)."
         )
 
-        result = source.should_contribute(bb)
+    def test_repeated_question_same_category_still_detected(self):
+        """
+        True-positive регрессия: клиент дважды спросил цену и спрашивает снова.
+        current_intent=price_question → detect_repeated_question() должен вернуть 'price_question'.
+        """
+        from src.context_window import ContextWindow, TurnContext
 
-        # Этот assert ПРОВАЛИТСЯ если баг существует (что и ожидается)
-        assert not result, (
-            f"КОРЕНЬ НАРУШЕНИЯ НАЙДЕН: PriceQuestionSource.should_contribute()=True "
-            f"несмотря на то что:\n"
-            f"  primary_intent='question_features' (не прайс)\n"
-            f"  secondary_intents=[] (нет прайс-сигналов)\n"
-            f"  repeated_question='price_question' (УСТАРЕВШИЙ из предыдущих ходов)\n\n"
-            f"Check #3 в should_contribute() использует repeated_question как fallback "
-            f"даже когда текущий вопрос (казахский) вообще не связан с ценой.\n"
-            f"Цепь SIM #4 Turn 5: "
-            f"'ок. Есепті қалай оңай жүргізуге болады?' → question_features primary → "
-            f"check3(repeated_question=price_question) → HIGH priority → answer_with_pricing."
+        cw = ContextWindow(max_size=10)
+        cw.add_turn(TurnContext(
+            user_message="сколько стоит?", state="discovery",
+            intent="price_question", action="answer_with_pricing", confidence=0.9,
+        ))
+        cw.add_turn(TurnContext(
+            user_message="а цена какая?", state="discovery",
+            intent="price_question", action="answer_with_pricing", confidence=0.9,
+        ))
+
+        result = cw.detect_repeated_question(include_current_intent="price_question")
+
+        assert result == "price_question", (
+            f"True-positive сломан: detect_repeated_question() вернул {result!r}, "
+            f"ожидался 'price_question'. Клиент настойчиво переспрашивает цену — "
+            f"repeated_question должен срабатывать."
         )
 
     def test_non_price_message_no_repeated_price_not_triggered(self):
