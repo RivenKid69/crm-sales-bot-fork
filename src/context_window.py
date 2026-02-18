@@ -630,6 +630,31 @@ class EpisodicMemory:
             self.all_questions[turn.intent] = self.all_questions.get(turn.intent, 0) + 1
 
         # -----------------------------------------------------------------
+        # 4b. Retroactive question-failure attribution.
+        # If current intent is in the same REPEATABLE group as prev_turn's intent,
+        # the user repeated their question → prev_turn's answer FAILED.
+        # This is the true outcome signal: user repeated = our answer didn't work.
+        # -----------------------------------------------------------------
+        if (turn.intent and turn.intent != "unknown"
+                and prev_turn and prev_turn.action and prev_turn.action != "unknown"):
+            from src.yaml_config.constants import REPEATABLE_INTENT_GROUPS
+            cur_cat = next(
+                (grp for grp, members in REPEATABLE_INTENT_GROUPS.items()
+                 if turn.intent in members),
+                None
+            )
+            if cur_cat:
+                prev_cat = next(
+                    (grp for grp, members in REPEATABLE_INTENT_GROUPS.items()
+                     if prev_turn.intent in members),
+                    None
+                )
+                if prev_cat == cur_cat:
+                    self.failed_actions[prev_turn.action] = (
+                        self.failed_actions.get(prev_turn.action, 0) + 1
+                    )
+
+        # -----------------------------------------------------------------
         # 5. Обнаружение переломных моментов
         # -----------------------------------------------------------------
         if momentum_direction and self._last_momentum_direction:
