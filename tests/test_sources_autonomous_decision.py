@@ -20,6 +20,7 @@ from typing import Dict, Any, Optional
 from src.blackboard.sources.autonomous_decision import (
     AutonomousDecisionSource,
     AutonomousDecision,
+    AutonomousDecisionRecord,
 )
 from src.blackboard.enums import Priority
 
@@ -538,3 +539,169 @@ class TestSelfLoopPriority:
         # because stable sort preserves order (42 < 50)
         assert autonomous_tp["source_name"] == "AutonomousDecisionSource"
         assert autonomous_tp["next_state"] != mock_transition_resolver_proposal["next_state"]
+
+
+# =============================================================================
+# Test: Hard override objection detection (BUG #7)
+# =============================================================================
+
+_OVERRIDE_STATE_CONFIG = {
+    "phase": "qualification",
+    "goal": "Понять потребности клиента",
+    "max_turns_in_state": 6,
+    "phase_exhaust_threshold": 3,
+    "_resolved_params": {"next_phase_state": "autonomous_presentation"},
+}
+
+_OVERRIDE_STATES = {
+    "autonomous_qualification": {"phase": "qualification", "goal": "Понять потребности"},
+    "autonomous_presentation": {"phase": "presentation", "goal": "Презентация продукта"},
+    "autonomous_closing": {"phase": "closing", "goal": "Закрытие сделки"},
+}
+
+
+def _make_stay_record(intent: str, state: str = "autonomous_qualification") -> AutonomousDecisionRecord:
+    """Create a stay (should_transition=False) history record."""
+    return AutonomousDecisionRecord(
+        turn_in_state=1,
+        intent=intent,
+        state=state,
+        should_transition=False,
+        next_state=state,
+        reasoning="stay_in_state",
+    )
+
+
+class TestHardOverrideObjectionDetection:
+    """Verify hard override correctly distinguishes objection-driven vs LLM-indecision streaks."""
+
+    @patch("src.feature_flags.flags")
+    def test_objection_driven_streak_routes_to_soft_close(self, mock_flags):
+        """3 consecutive objection_timing stays → soft_close (not next phase)."""
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        source._decision_history = [
+            _make_stay_record("objection_timing"),
+            _make_stay_record("objection_timing"),
+            _make_stay_record("objection_timing"),
+        ]
+
+        bb = make_blackboard(
+            state="autonomous_qualification",
+            intent="objection_timing",
+            state_config=_OVERRIDE_STATE_CONFIG,
+            states=_OVERRIDE_STATES,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "soft_close"
+        assert tp["priority"] == Priority.HIGH
+
+    @patch("src.feature_flags.flags")
+    def test_indecision_streak_routes_to_next_phase(self, mock_flags):
+        """3 consecutive agreement stays (LLM indecisive) → autonomous_presentation."""
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        source._decision_history = [
+            _make_stay_record("agreement"),
+            _make_stay_record("agreement"),
+            _make_stay_record("agreement"),
+        ]
+
+        bb = make_blackboard(
+            state="autonomous_qualification",
+            intent="agreement",
+            state_config=_OVERRIDE_STATE_CONFIG,
+            states=_OVERRIDE_STATES,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_presentation"
+        assert tp["priority"] == Priority.HIGH
+
+    @patch("src.feature_flags.flags")
+    def test_mixed_streak_routes_to_next_phase(self, mock_flags):
+        """2× objection_timing + 1× agreement → autonomous_presentation (not soft_close)."""
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        source._decision_history = [
+            _make_stay_record("objection_timing"),
+            _make_stay_record("objection_timing"),
+            _make_stay_record("agreement"),
+        ]
+
+        bb = make_blackboard(
+            state="autonomous_qualification",
+            intent="agreement",
+            state_config=_OVERRIDE_STATE_CONFIG,
+            states=_OVERRIDE_STATES,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_presentation"
+        assert tp["priority"] == Priority.HIGH
+
+    @patch("src.feature_flags.flags")
+    def test_all_objection_types_route_to_soft_close(self, mock_flags):
+        """objection_price + objection_no_need + objection_think → soft_close."""
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        source._decision_history = [
+            _make_stay_record("objection_price"),
+            _make_stay_record("objection_no_need"),
+            _make_stay_record("objection_think"),
+        ]
+
+        bb = make_blackboard(
+            state="autonomous_qualification",
+            intent="objection_think",
+            state_config=_OVERRIDE_STATE_CONFIG,
+            states=_OVERRIDE_STATES,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "soft_close"
+        assert tp["priority"] == Priority.HIGH
+
+    @patch("src.feature_flags.flags")
+    def test_objection_streak_ignores_configured_next_phase(self, mock_flags):
+        """3× objection_no_need → soft_close even when next_phase_state is configured."""
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        source._decision_history = [
+            _make_stay_record("objection_no_need"),
+            _make_stay_record("objection_no_need"),
+            _make_stay_record("objection_no_need"),
+        ]
+
+        # next_phase_state is explicitly set, but objection streak must override it
+        bb = make_blackboard(
+            state="autonomous_qualification",
+            intent="objection_no_need",
+            state_config=_OVERRIDE_STATE_CONFIG,   # has next_phase_state=autonomous_presentation
+            states=_OVERRIDE_STATES,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "soft_close"        # NOT autonomous_presentation
+        assert tp["priority"] == Priority.HIGH
