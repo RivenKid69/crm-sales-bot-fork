@@ -11,8 +11,8 @@ flow:
 
   variables:
     entry_state: trans_qualify
-    company_name: "Poster"
-    product_name: "CRM-система"
+    company_name: "Wipon"
+    product_name: "Wipon POS/ТИС"
 
   phases:
     order:

@@ -16,8 +16,8 @@ flow:
   # Переменные для подстановки в шаблоны
   variables:
     entry_state: spin_situation
-    company_name: "Poster"
-    product_name: "CRM-система"
+    company_name: "Wipon"
+    product_name: "Wipon POS/ТИС"
 
   # Конфигурация фаз SPIN
   phases:
