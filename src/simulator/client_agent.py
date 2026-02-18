@@ -17,7 +17,7 @@ import time
 from typing import List, Dict, Any, Optional, Tuple
 
 from src.simulator.personas import Persona
-from src.simulator.noise import add_noise, add_heavy_noise, add_light_noise
+from src.simulator.noise import add_noise, add_heavy_noise, add_light_noise, add_kazakh_noise
 from src.decision_trace import ClientAgentTrace
 from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS
 
@@ -31,21 +31,30 @@ logger = logging.getLogger(__name__)
 # ВАЖНО: ключи - это persona.name (отображаемые имена из personas.py)
 PERSONA_OPTION_PREFERENCES: Dict[str, List[str]] = {
     # Русские имена персон (как в Persona.name)
-    "Ценовик": ["цен", "стоим", "прайс", "тариф", "скольк", "дорог"],
-    "Пользователь конкурента": ["конкур", "poster", "iiko", "r-keeper", "сравн", "другим"],
+    "Ценовик": ["цен", "стоим", "прайс", "тариф", "скольк", "дорог", "рассрочк"],
+    "Пользователь конкурента": ["конкур", "kaspi", "каспи", "1с", "просклад", "сравн", "другим"],
     "Технарь": ["api", "интеграц", "безопас", "данн", "техн", "функци"],
     "Занятой": [],  # Выбирает первый вариант
     "Агрессивный": [],  # Может игнорировать кнопки
     "Идеальный клиент": ["демо", "показ", "попробов", "функци", "узнать"],
     "Скептик": ["другое", "свой"],  # Предпочитает свой вариант
     "Просто смотрю": ["подум", "потом", "другое"],
+    # Новые персоны
+    "Готов купить": ["счёт", "счет", "оплат", "перечислен"],
+    "Казахоязычный": [],  # Выбирает первый вариант
+    "Недоверчивый": ["договор", "документ", "гарант", "офис"],
+    "Фрустрированный ожидающий": [],  # Выбирает первый — хочет быстро решить
+    "Нишевый бизнес": ["функци", "настройк", "специфик", "учёт"],
+    "Только открываюсь": ["базов", "минимальн", "старт", "просто"],
+    "Сеть магазинов": ["несколько", "точки", "склад", "магазин"],
+    "Владелец нескольких точек": ["несколько", "точки", "склад", "обе"],
 }
 
 OBJECTION_INJECTIONS: Dict[str, List[str]] = {
     "price": ["но это дорого", "а подешевле?", "дороговато"],
     "time": ["некогда", "давайте быстрее", "нет времени"],
     "skepticism": ["не уверен", "сомневаюсь", "а это точно работает?"],
-    "competitor": ["а чем лучше Poster?", "у iiko это есть"],
+    "competitor": ["а чем лучше Kaspi Kassa?", "у нас уже 1С стоит", "а зачем если Kaspy касса бесплатна?"],
     "not_now": ["потом", "не сейчас", "подумаю"],
     "trust": ["не верю", "докажите"],
     "proof": ["покажите реальные кейсы", "есть подтверждённые результаты?", "нужны конкретные доказательства"],
@@ -79,13 +88,19 @@ OBJECTION_INJECTIONS: Dict[str, List[str]] = {
     "regional_features": ["нужны региональные особенности", "по регионам это не покрыто", "локальная специфика не учтена"],
     "data_sync": ["синхронизация данных вызывает сомнения", "данные между филиалами могут расходиться", "нужна надежная синхронизация"],
     "localization": ["нужна локализация под регионы", "по языкам и локали не хватает", "локализация выглядит слабой"],
+    # Специфичные для Казахстана / Wipon возражения
+    "discount": ["скидка будет?", "а акция есть?", "можно дешевле?", "у вас акция сейчас есть?"],
+    "expensive": ["слишком дорого для нас", "цена завышена", "150 тысяч — это много"],
+    "migration": ["как перенести номенклатуру?", "боюсь потерять остатки при переходе", "как загрузить товары из Excel?"],
+    "simplicity": ["слишком сложно для продавца", "персонал не разберётся", "нужно попроще"],
+    "free_alternatives": ["а бесплатная версия есть?", "зачем платить если Kaspi касса бесплатная?", "есть пробный период?"],
 }
 
 
 class ClientAgent:
     """LLM-агент для имитации клиента"""
 
-    SYSTEM_PROMPT = """Ты играешь роль потенциального клиента CRM системы Wipon в Казахстане.
+    SYSTEM_PROMPT = """Ты играешь роль потенциального клиента системы автоматизации и учёта для розничных магазинов Wipon в Казахстане.
 
 ПЕРСОНА: {persona_name}
 {persona_description}
@@ -636,6 +651,27 @@ class ClientAgent:
             ]
             return random.choice(refusals)
 
+        # "Готов купить" сразу даёт ИИН — как в реальных диалогах
+        if self.persona.name == "Готов купить":
+            iins = [
+                "800514302145 ИП Нурова А.К.",
+                "920625300199 ИП Сейткали",
+                "770720401890 ИП Давыдовская О.В.",
+                "830112402689 ИП Ашимова",
+            ]
+            phone = self._generate_contact_value("phone")
+            iin = random.choice(iins)
+            return random.choice([
+                f"{phone} ИИН {iin}",
+                f"телефон {phone}, ИИН {iin}",
+                f"{phone}",
+            ])
+
+        # "Делегат от руководства" даёт телефон директора
+        if self.persona.name == "Делегат от руководства":
+            phone = self._generate_contact_value("phone")
+            return f"телефон директора: {phone}, мне бы сначала материалы"
+
         return self._generate_contact_response()
 
     def _generate_contact_response(self) -> str:
@@ -676,28 +712,41 @@ class ClientAgent:
     def _choose_contact_type(self) -> str:
         """Choose contact type based on persona."""
         persona = self.persona.name
-        if persona in ["Занятой", "Агрессивный", "Ценовик"]:
+        # В Казахстане большинство клиентов дают телефон, не email
+        if persona in ["Занятой", "Агрессивный", "Ценовик", "Готов купить",
+                       "Казахоязычный", "Фрустрированный ожидающий", "Нишевый бизнес"]:
             return "phone"
-        if persona in ["Технарь", "Пользователь конкурента"]:
+        if persona in ["Технарь", "Сеть магазинов"]:
             return "email"
-        return random.choice(["phone", "email"])
+        # По умолчанию телефон чаще (70/30 — как в реальных диалогах)
+        return "phone" if random.random() < 0.7 else "email"
 
     def _generate_contact_value(self, contact_type: str) -> str:
-        """Return a valid phone/email suitable for validators."""
+        """Return a valid phone/email suitable for validators.
+
+        Phones use real KZ format (87xxx) as used in actual Wipon client dialogs.
+        """
         if contact_type == "phone":
+            # KZ phone format — as seen in real dialogs: 87xxx or +77xxx
             phones = [
-                "+7 999 234-56-78",
-                "+7 925 456-78-90",
-                "+7 916 321-45-67",
-                "+7 903 548-12-39",
+                "87012345678",
+                "87751234567",
+                "87071234567",
+                "87021234567",
+                "+77015234567",
+                "+77053234567",
+                "+77082234567",
+                "87474234567",
             ]
             return random.choice(phones)
 
         emails = [
-            "ivan.petrov@mail.ru",
-            "olga.kim@gmail.com",
-            "sergey.ivanov@yandex.ru",
-            "aida.n@mail.ru",
+            "asel.nurova@mail.ru",
+            "dinara.k@gmail.com",
+            "aigerim.bakyt@mail.ru",
+            "nurlan.esen@yandex.ru",
+            "zarina.shop@gmail.com",
+            "sultan.ip@mail.ru",
         ]
         return random.choice(emails)
 
@@ -774,10 +823,12 @@ class ClientAgent:
 
     def _apply_persona_noise(self, text: str) -> str:
         """Применяет шум согласно персоне"""
-        if self.persona.name in ["Агрессивный", "Занятой"]:
+        if self.persona.name in ["Агрессивный", "Занятой", "Фрустрированный ожидающий"]:
             return add_heavy_noise(text)
-        elif self.persona.name in ["Технарь"]:
+        elif self.persona.name in ["Технарь", "Сеть магазинов", "Перфекционист"]:
             return add_light_noise(text)
+        elif self.persona.name == "Казахоязычный":
+            return add_kazakh_noise(text)
         else:
             return add_noise(text)
 

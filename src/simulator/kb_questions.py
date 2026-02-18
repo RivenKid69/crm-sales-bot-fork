@@ -61,6 +61,47 @@ PERSONA_CATEGORY_AFFINITY: Dict[str, Dict[str, float]] = {
     "tire_kicker": {
         "products": 0.8, "faq": 0.7, "pricing": 0.4, "features": 0.3,
     },
+    # Новые персоны из реальных диалогов
+    "ready_buyer": {
+        "pricing": 1.0, "products": 0.9, "equipment": 0.8, "promotions": 0.5,
+    },
+    "kazakh_speaker": {
+        "products": 0.8, "pricing": 0.7, "equipment": 0.6, "support": 0.4,
+    },
+    "suspicious_buyer": {
+        "support": 1.0, "stability": 0.9, "faq": 0.8, "competitors": 0.5,
+    },
+    "frustrated_waiter": {
+        "support": 1.0, "faq": 0.7, "products": 0.4,
+    },
+    "niche_business": {
+        "features": 1.0, "integrations": 0.8, "products": 0.7, "fiscal": 0.6,
+    },
+    # Переименованные персоны
+    "startup_founder": {
+        "pricing": 1.0, "products": 0.9, "equipment": 0.7, "features": 0.5,
+    },
+    "enterprise_buyer": {
+        "products": 1.0, "pricing": 0.9, "features": 0.8, "analytics": 0.7,
+    },
+    "franchise_owner": {
+        "products": 1.0, "features": 0.8, "pricing": 0.7, "support": 0.5,
+    },
+    "returning_customer": {
+        "support": 1.0, "stability": 0.8, "features": 0.7, "competitors": 0.5,
+    },
+    "delegator": {
+        "products": 0.9, "pricing": 0.8, "faq": 0.7, "features": 0.5,
+    },
+    "perfectionist": {
+        "features": 1.0, "integrations": 0.9, "stability": 0.8, "analytics": 0.7,
+    },
+    "emotional_buyer": {
+        "products": 1.0, "features": 0.7, "support": 0.5, "promotions": 0.6,
+    },
+    "multilocation_manager": {
+        "features": 1.0, "analytics": 0.9, "integrations": 0.8, "pricing": 0.7,
+    },
 }
 
 
