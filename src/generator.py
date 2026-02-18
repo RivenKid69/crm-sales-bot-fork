@@ -96,6 +96,17 @@ QUESTION_STRIP_EXEMPT_ACTIONS: set = {
     "transition_to_spin_need_payoff", "transition_to_presentation",
 }
 
+# Hallucination guard: intents requiring KB facts (prefix-based + explicit)
+KB_GUARD_FACTUAL_INTENTS_EXPLICIT: set = {
+    "price_question", "pricing_details", "cost_inquiry",
+    "pricing_comparison", "comparison",
+    "request_proposal", "request_invoice", "request_contract",
+    "request_sla", "request_references",
+    "roi_question", "case_study_request",
+    "company_info_question", "experience_question",
+}
+KB_GUARD_ACTIONS: set = {"autonomous_respond", "continue_current_goal"}
+
 
 # =============================================================================
 # PERSONALIZATION ENGINE
@@ -412,6 +423,26 @@ class ResponseGenerator:
     # Порог схожести для детекции дубликатов
     # Lowered from 0.80 to 0.70 after adding punctuation normalization
     SIMILARITY_THRESHOLD = 0.70
+
+    # KB-empty handoff response pools (class-level to avoid recreation per call)
+    _KB_EMPTY_CONTACT_KNOWN = [
+        "Уточню у коллег и вернусь с ответом.",
+        "Хороший вопрос — уточню у команды и напишу вам.",
+        "Этот момент уточню у специалиста и вернусь.",
+        "Передам ваш вопрос нашему специалисту — он свяжется с вами.",
+        "Точный ответ уточню и напишу, как только узнаю.",
+        "Проверю у коллег и сразу напишу вам.",
+    ]
+    _KB_EMPTY_CONTACT_UNKNOWN = [
+        "Хороший вопрос — уточню у команды. Как с вами связаться?",
+        "Уточню у специалиста — оставьте номер, он вам напишет.",
+        "Передам вопрос оператору. На какой номер перезвонить?",
+        "Этот момент лучше уточнить у специалиста. Оставьте контакт — он свяжется.",
+        "Уточню у коллег. Удобнее позвонить или написать?",
+        "Дам точный ответ через специалиста — оставьте номер или почту?",
+        "Передам вопрос нашему менеджеру. Как вас набрать?",
+        "Это уточню у команды — оставьте контакт, чтобы вернуться с ответом быстро.",
+    ]
 
     _CREDENTIAL_PATTERNS = [
         re.compile(
@@ -969,6 +1000,29 @@ class ResponseGenerator:
         # Runtime safety net: redact any credentials that slipped through
         if retrieved_facts:
             retrieved_facts = self._redact_credentials(retrieved_facts)
+
+        # --- KB-empty hallucination guard ---
+        # Short-circuit before LLM when KB returned nothing for a factual question.
+        # No LLM call, no state change — blackboard decisions remain intact.
+        _kb_empty = not retrieved_facts
+        _is_factual = (
+            intent.startswith("question_")
+            or intent.startswith("problem_")
+            or intent in KB_GUARD_FACTUAL_INTENTS_EXPLICIT
+        )
+        if _is_autonomous and _kb_empty and _is_factual and action in KB_GUARD_ACTIONS:
+            logger.info(
+                "kb_empty_guard_triggered",
+                intent=intent,
+                action=action,
+            )
+            self._last_generation_meta = {
+                "requested_action": action,
+                "selected_template_key": "kb_empty_handoff",
+                "validation_events": [],
+                "fact_keys": [],
+            }
+            return self._kb_empty_handoff(context)
 
         # Форматируем URLs для включения в ответ
         formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
@@ -1848,6 +1902,15 @@ class ResponseGenerator:
             best_similarity=f"{best_similarity:.2f}"
         )
         return best_response
+
+    def _kb_empty_handoff(self, context: Dict) -> str:
+        """Return a deterministic handoff phrase when KB has no facts for a factual question."""
+        import random
+        contact_info = context.get("collected_data", {}).get("contact_info")
+        pool = self._KB_EMPTY_CONTACT_KNOWN if contact_info else self._KB_EMPTY_CONTACT_UNKNOWN
+        response = random.choice(pool)
+        self._add_to_response_history(response)
+        return response
 
     def _add_to_response_history(self, response: str) -> None:
         """Добавить ответ в историю для отслеживания дубликатов."""
