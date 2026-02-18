@@ -27,6 +27,7 @@ from pydantic import BaseModel
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
+from src.yaml_config.constants import OBJECTION_INTENTS
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
@@ -211,29 +212,45 @@ class AutonomousDecisionSource(KnowledgeSource):
 
         # Count CONSECUTIVE stays (break on first transition or state change)
         stay_streak = 0
+        stay_streak_records: List[AutonomousDecisionRecord] = []
         for d in reversed(self._decision_history):
             if d.state != state:
                 break
             if not d.should_transition:
                 stay_streak += 1
+                stay_streak_records.append(d)        # <-- collect for objection detection
             else:
                 break  # Streak broken by transition decision
 
         if stay_streak >= stay_override_threshold:
-            # Determine target: next_phase_state from resolved params, or soft_close
             resolved_params = state_config.get("_resolved_params", {})
-            target = (
-                resolved_params.get("next_phase_state")
-                or state_config.get("max_turns_fallback")  # safety fallback
-                or "soft_close"
+
+            # Detect objection-driven streak: if ALL consecutive stays were caused by
+            # client objections (client disinterested), route to soft_close instead of
+            # forcing next phase (which would be wrong — client won't engage there either).
+            _objection_set = set(OBJECTION_INTENTS)
+            all_objection_driven = bool(stay_streak_records) and all(
+                d.intent in _objection_set for d in stay_streak_records
             )
+
+            if all_objection_driven:
+                target = "soft_close"
+                override_type = "objection_driven"
+            else:
+                target = (
+                    resolved_params.get("next_phase_state")
+                    or state_config.get("max_turns_fallback")  # safety fallback
+                    or "soft_close"
+                )
+                override_type = "phase_exhausted"
+
             if target not in all_states and target not in ("close", "soft_close", "success"):
                 target = "soft_close"
 
             logger.info(
                 "AutonomousDecision: HARD OVERRIDE — %d consecutive stays in %s, "
-                "forcing transition to %s (LLM bypassed)",
-                stay_streak, state, target,
+                "forcing transition to %s (type=%s, LLM bypassed)",
+                stay_streak, state, target, override_type,
             )
 
             # Record the forced decision
@@ -243,7 +260,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                 state=state,
                 should_transition=True,
                 next_state=target,
-                reasoning=f"hard_override_after_{stay_streak}_stays",
+                reasoning=f"hard_override_{override_type}_{stay_streak}_stays",
             ))
 
             # Propose with HIGH priority — same as StallGuard
