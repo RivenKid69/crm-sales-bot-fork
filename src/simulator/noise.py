@@ -35,7 +35,30 @@ TYPOS: Dict[str, List[str]] = {
     "нужно": ["нужна", "нужн", "нужно"],
     "почему": ["почму", "пачему", "почи|му"],
     "конечно": ["канечно", "конечн", "канешн"],
+    "оборудование": ["оборудовани", "оборудоания", "оборудованые"],
+    "программа": ["програма", "програмка", "программ"],
+    "установка": ["установк", "установки", "устновка"],
+    "подключение": ["подключени", "подклюение", "подключени"],
+    "рассрочка": ["рассрочк", "расрочка", "расрочк"],
 }
+
+# Казахские слова-вставки для реалистичности (характерны для рынка Казахстана)
+KAZAKH_INSERTS: List[str] = [
+    "жаксы",    # хорошо
+    "иә",       # да
+    "болады",   # можно/окей
+    "рахмет",   # спасибо
+    "жоқ",      # нет
+    "ок",       # ок (используется и в казахской речи)
+]
+
+# Казахские приветствия для замены "здравствуйте"
+KAZAKH_GREETINGS: List[str] = [
+    "Саляматсызба",
+    "Сәлеметсіз бе",
+    "Сәлем",
+    "Салем",
+]
 
 # Сокращения разговорной речи
 SHORTENINGS: Dict[str, str] = {
@@ -167,3 +190,56 @@ def add_heavy_noise(text: str) -> str:
 def add_light_noise(text: str) -> str:
     """Добавляет мало шума - для технических персон"""
     return add_noise(text, intensity=0.05)
+
+
+def add_kazakh_noise(text: str) -> str:
+    """
+    Добавляет казахский языковой шум — для казахоязычных персон.
+
+    Имитирует реальных клиентов из Казахстана, которые пишут на казахском
+    или смешивают казахский с русским (как в реальных диалогах ОП).
+    """
+    if not text:
+        return text
+
+    # 40% — убрать заглавную букву (казахские сообщения часто без регистра)
+    if random.random() < 0.4:
+        text = text[0].lower() + text[1:] if len(text) > 1 else text.lower()
+
+    # 30% — убрать знаки препинания в конце
+    if random.random() < 0.3:
+        text = text.rstrip('.,!?')
+
+    # 25% — заменить "здравствуйте" на казахское приветствие
+    text_lower = text.lower()
+    if random.random() < 0.25 and any(g in text_lower for g in ["здравствуй", "здраст", "привет", "добрый"]):
+        greeting = random.choice(KAZAKH_GREETINGS)
+        for ru_greeting in ["здравствуйте", "здрасте", "привет", "добрый день", "добрый вечер"]:
+            if ru_greeting in text_lower:
+                pattern = re.compile(re.escape(ru_greeting), re.IGNORECASE)
+                text = pattern.sub(greeting, text, count=1)
+                break
+
+    # 20% — заменить "да" / "хорошо" / "спасибо" на казахский эквивалент
+    if random.random() < 0.2:
+        replacements = {
+            "да": "иә",
+            "хорошо": "жаксы",
+            "спасибо": "рахмет",
+            "можно": "болады",
+            "нет": "жоқ",
+            "ок": "болды",
+        }
+        for ru_word, kk_word in replacements.items():
+            # Только если это отдельное слово (не часть другого)
+            pattern = re.compile(r'\b' + re.escape(ru_word) + r'\b', re.IGNORECASE)
+            if pattern.search(text):
+                text = pattern.sub(kk_word, text, count=1)
+                break
+
+    # 10% — добавить казахское слово-вставку в конце
+    if random.random() < 0.1:
+        insert = random.choice(KAZAKH_INSERTS)
+        text = f"{text} {insert}"
+
+    return text
