@@ -155,7 +155,13 @@ states:
   autonomous_closing:
     extends: _base_phase
     autonomous: true
-    goal: "Закрыть сделку: назначить демо, получить контакт, оформить следующий шаг. Успех: получен контакт или назначена встреча/демо"
+    goal: |
+      Закрыть сделку одним из двух путей:
+      ПУТЬ 1 — ОПЛАТА: если клиент говорит "хочу купить", "выставьте счёт", "оплачу", "ИИН" →
+        собери номер телефона Kaspi + ИИН → переходи в payment_ready.
+      ПУТЬ 2 — ВИДЕОЗВОНОК: во всех остальных случаях →
+        договорись о видеозвонке в рабочее время (10:00–17:00 по Алматы) + контакт → переходи в video_call_scheduled.
+      Не используй close или success — только payment_ready или video_call_scheduled.
     phase: closing
     kb_categories:
       - pricing
@@ -171,6 +177,9 @@ states:
     optional_data:
       - contact_info
       - timeline
+      - kaspi_phone
+      - iin
+      - preferred_call_time
     parameters:
       next_phase_state: close
       prev_phase_state: autonomous_negotiation
@@ -178,4 +187,7 @@ states:
       default_unclear_action: autonomous_respond
     rules: {}
     transitions:
-      data_complete: close
+      data_complete: close       # fallback compatibility, не трогать
+    terminal_states:
+      - payment_ready
+      - video_call_scheduled

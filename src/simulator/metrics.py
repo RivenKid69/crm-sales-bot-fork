@@ -274,7 +274,7 @@ def determine_outcome(state: str, is_final: bool, collected_data: Dict) -> str:
         ):
             return "success"
 
-    if state in ["success", "demo_scheduled"]:
+    if state in ["success", "demo_scheduled", "payment_ready", "video_call_scheduled"]:
         return "success"
 
     # Явный отказ

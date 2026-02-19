@@ -274,6 +274,18 @@ states:
     max_turns_in_state: 0     # 0 = disabled (terminal state)
     goal: "Завершить успешно"
 
+  # Клиент готов к оплате — Kaspi-телефон и ИИН собраны
+  payment_ready:
+    extends: _base_terminal
+    is_final: true
+    goal: "Клиент готов к оплате — Kaspi-телефон и ИИН собраны"
+
+  # Видеозвонок назначен — время (10:00–17:00) и контакт собраны
+  video_call_scheduled:
+    extends: _base_terminal
+    is_final: true
+    goal: "Видеозвонок назначен — время (10:00–17:00) и контакт собраны"
+
   # Эскалация на оператора (клиент просит человека)
   escalated:
     extends: _base_terminal

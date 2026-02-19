@@ -4154,6 +4154,45 @@ extraction:
           - "phone"
           - "email"
 
+    kaspi_phone:
+      description: "Номер телефона клиента, привязанный к Kaspi (формат: 87xxx или +77xxx)"
+      type: str
+      spin_phase: null
+      validation: {}
+      examples:
+        valid:
+          - source: "мой Kaspi 87012345678"
+            value: "87012345678"
+        invalid:
+          - value: "теряем клиентов"
+            reason: "это pain_point, не телефон"
+
+    iin:
+      description: "ИИН клиента — ровно 12 цифр"
+      type: str
+      spin_phase: null
+      validation: {}
+      examples:
+        valid:
+          - source: "мой ИИН 850101300123"
+            value: "850101300123"
+        invalid:
+          - value: "12345"
+            reason: "не 12 цифр — не ИИН"
+
+    preferred_call_time:
+      description: "Удобное время для видеозвонка (пример: 14:00, вторник 11:00)"
+      type: str
+      spin_phase: null
+      validation: {}
+      examples:
+        valid:
+          - source: "в 14:00 удобно"
+            value: "14:00"
+        invalid:
+          - value: "когда-нибудь"
+            reason: "нет конкретного времени"
+
     # =========================================================================
     # SHARED FIELDS (used across MEDDIC/BANT/Sandler/NEAT/etc.)
     # =========================================================================
@@ -4502,6 +4541,18 @@ extraction:
       5. **desired_outcome** (str): Желаемый результат
          - ✅ "хочу контролировать", "автоматизировать"
          - ❌ Контакты, инструменты, боли
+
+      6. **kaspi_phone** (str): Номер телефона Kaspi клиента
+         - ✅ "87012345678", "+77012345678", "мой Kaspi: 87..."
+         - ❌ Любой текст без 87xxx или +77xxx паттерна
+
+      7. **iin** (str): ИИН клиента — ровно 12 цифр
+         - ✅ "123456789012", "мой ИИН 850101..."
+         - ❌ Меньше/больше 12 цифр — НЕ ИИН!
+
+      8. **preferred_call_time** (str): Удобное время для видеозвонка
+         - ✅ "в 14:00", "завтра в 11", "во вторник утром"
+         - ❌ Общие фразы без конкретного времени
 
     examples: |
       ### Примеры правильного извлечения:

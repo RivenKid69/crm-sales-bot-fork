@@ -1822,11 +1822,30 @@ class SalesBot:
         # =================================================================
 
         # Определяем успешное завершение
-        is_success = is_final or next_state == "success"
+        is_success = is_final or next_state in (
+            "success", "payment_ready", "video_call_scheduled"
+        )
 
         if is_success:
-            # Определяем тип успеха по приоритету
-            if intent == "rejection":
+            # Новые terminal states: payment_ready / video_call_scheduled
+            if next_state == "payment_ready":
+                from src.yaml_config.constants import notify_operator_on_success
+                self._finalize_metrics(ConversationOutcome.PAYMENT_READY)
+                notify_operator_on_success(
+                    outcome="payment_ready",
+                    collected_data=self.state_machine.collected_data,
+                    conversation_id=self.conversation_id,
+                )
+            elif next_state == "video_call_scheduled":
+                from src.yaml_config.constants import notify_operator_on_success
+                self._finalize_metrics(ConversationOutcome.VIDEO_CALL_SCHEDULED)
+                notify_operator_on_success(
+                    outcome="video_call_scheduled",
+                    collected_data=self.state_machine.collected_data,
+                    conversation_id=self.conversation_id,
+                )
+            # Определяем тип успеха по приоритету (legacy paths)
+            elif intent == "rejection":
                 self._finalize_metrics(ConversationOutcome.REJECTED)
             elif "contact_provided" in self.metrics.intents_sequence:
                 # Контакт предоставлен — полный успех
