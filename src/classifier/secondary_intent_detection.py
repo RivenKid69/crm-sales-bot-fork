@@ -565,7 +565,7 @@ class SecondaryIntentDetectionLayer(BaseRefinementLayer):
             extra={
                 "primary_intent": ctx.intent,
                 "secondary_intents": secondary_intents,
-                "message": message[:50],
+                "log_message": message[:50],
             }
         )
 
