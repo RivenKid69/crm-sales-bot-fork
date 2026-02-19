@@ -239,9 +239,9 @@ class AutonomousDecisionSource(KnowledgeSource):
                 d.intent in _objection_set for d in stay_streak_records
             )
 
-            if all_objection_driven:
+            if all_objection_driven or terminal_names:
                 target = "soft_close"
-                override_type = "objection_driven"
+                override_type = "objection_driven" if all_objection_driven else "phase_exhausted_terminal"
             else:
                 target = (
                     resolved_params.get("next_phase_state")
@@ -302,6 +302,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             turn_in_state=turn_in_state,
             max_turns=max_turns,
             optional_data=optional_data,
+            terminal_names=terminal_names,
         )
 
         try:
@@ -353,11 +354,19 @@ class AutonomousDecisionSource(KnowledgeSource):
         # Propose transition — ALWAYS propose to win over inherited mixin transitions
         if decision.should_transition and decision.next_state:
             target = decision.next_state
+            # Intercept: LLM выбрал close из autonomous стейта — redirect
+            if target == "close" and state.startswith("autonomous_"):
+                if "autonomous_closing" in available_states:
+                    logger.info(
+                        "AutonomousDecision: redirecting close → autonomous_closing from %s", state
+                    )
+                    target = "autonomous_closing"
+                else:
+                    target = "soft_close"
             # Validate target state exists
-            valid_targets = set(available_states) | {
-                "close", "soft_close", "success",
-                "payment_ready", "video_call_scheduled",
-            }
+            # payment_ready/video_call_scheduled уже в available_states через terminal_names injection
+            # close и success убраны — LLM не должен прыгать туда напрямую из autonomous стейтов
+            valid_targets = set(available_states) | {"soft_close"}
             if target in valid_targets:
                 blackboard.propose_transition(
                     next_state=target,
@@ -407,6 +416,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         turn_in_state: int = 0,
         max_turns: int = 6,
         optional_data: list = None,
+        terminal_names: list = None,
     ) -> str:
         """Build the decision prompt for LLM."""
         collected_keys = {
@@ -483,6 +493,30 @@ class AutonomousDecisionSource(KnowledgeSource):
 - Старайся собрать как можно больше данных о клиенте перед переходом
 - При возражении клиента — отработай его, не переходи сразу к следующему этапу"""
 
+        # Build context-dependent close options for prompt
+        if terminal_names:
+            # autonomous_closing: LLM должен выбирать terminal states, а не close/success
+            close_section = "  - soft_close: Мягкое завершение (клиент твёрдо отказывается)"
+            close_rules = (
+                f"- next_state = одно из [{', '.join(terminal_names)}] (см. список выше) или soft_close при отказе\n"
+                f"- ⛔ ЗАПРЕЩЕНО: close, success"
+            )
+        elif state.startswith("autonomous_"):
+            close_section = "  - soft_close: Мягкое завершение (клиент твёрдо отказывается)"
+            close_rules = (
+                "- Если клиент твёрдо отказывается — next_state=\"soft_close\"\n"
+                "- Для закрытия сделки — переходи в autonomous_closing (если доступен выше)"
+            )
+        else:
+            close_section = (
+                "  - close: Завершить диалог (клиент согласен или назначен следующий шаг)\n"
+                "  - soft_close: Мягкое завершение (клиент не готов, оставить дверь открытой)"
+            )
+            close_rules = (
+                "- next_state = одно из доступных состояний (или close/soft_close)\n"
+                "- Если клиент просит завершить — next_state=\"close\" или \"soft_close\""
+            )
+
         return f"""Ты — контроллер sales-диалога. Реши нужно ли перейти к следующему этапу.
 
 Текущий этап: {phase} (состояние: {state})
@@ -493,13 +527,11 @@ class AutonomousDecisionSource(KnowledgeSource):
 {decision_summary}
 Доступные состояния для перехода:
 {states_str}
-  - close: Завершить диалог (клиент согласен или назначен следующий шаг)
-  - soft_close: Мягкое завершение (клиент не готов, оставить дверь открытой)
+{close_section}
 
 Правила:
 - should_transition=true ТОЛЬКО если цель текущего этапа достигнута или клиент явно хочет двигаться дальше
-- next_state = одно из доступных состояний (или close/soft_close)
-- Если клиент просит завершить — next_state="close" или "soft_close"
+{close_rules}
 - Если цель ещё не достигнута — should_transition=false, next_state="{state}"
 - action всегда "autonomous_respond"{data_collection_rule}
 {objection_rules}{progress_hint}
