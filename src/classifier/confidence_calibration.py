@@ -715,7 +715,7 @@ class ConfidenceCalibrationLayer(BaseRefinementLayer):
                     "delta": calibration.confidence_delta,
                     "reasons": [r.value for r in calibration.reasons],
                     "intent": ctx.intent,
-                    "message": message[:50],
+                    "log_message": message[:50],
                 }
             )
 
