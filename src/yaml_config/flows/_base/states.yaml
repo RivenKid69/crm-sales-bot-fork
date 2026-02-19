@@ -155,16 +155,16 @@ states:
       question_restaurant_cafe: "{{entry_state}}"
       question_pharmacy: "{{entry_state}}"
 
-      # NEW: Позитивные сигналы → close
-      ready_to_buy: close
-      budget_approved: close
-      urgency_expressed: close
-      internal_champion: close
+      # NEW: Позитивные сигналы → entry_closing_state (autonomous_closing or close)
+      ready_to_buy: "{{entry_closing_state}}"
+      budget_approved: "{{entry_closing_state}}"
+      urgency_expressed: "{{entry_closing_state}}"
+      internal_champion: "{{entry_closing_state}}"
 
-      # NEW: Этапы покупки → close
-      request_proposal: close
-      request_contract: close
-      request_invoice: close
+      # NEW: Этапы покупки → entry_closing_state
+      request_proposal: "{{entry_closing_state}}"
+      request_contract: "{{entry_closing_state}}"
+      request_invoice: "{{entry_closing_state}}"
 
       # RC1 FIX: Meta-intent escape transitions
       # Same pattern as greeting intent escape (line 114).
@@ -186,9 +186,9 @@ states:
           then: "{{entry_state}}"
         # Default: stay in greeting (rule acknowledge_and_continue fires)
 
-      # Клиент сразу хочет демо/звонок → close
-      demo_request: close
-      callback_request: close
+      # Клиент сразу хочет демо/звонок → entry_closing_state
+      demo_request: "{{entry_closing_state}}"
+      callback_request: "{{entry_closing_state}}"
       # Отказ → soft_close
       rejection: soft_close
       farewell: soft_close

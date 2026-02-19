@@ -12,6 +12,7 @@ flow:
 
   variables:
     entry_state: autonomous_discovery
+    entry_closing_state: autonomous_closing
 
   phases:
     order:

@@ -11,6 +11,7 @@ flow:
 
   variables:
     entry_state: trans_qualify
+    entry_closing_state: close
     company_name: "Wipon"
     product_name: "Wipon POS/ТИС"
 
