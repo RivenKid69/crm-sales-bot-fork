@@ -296,6 +296,11 @@ class ResolvedDecision:
     disambiguation_options: List[Dict[str, Any]] = field(default_factory=list)
     disambiguation_question: str = ""
 
+    # Terminal state requirements (filled by Orchestrator from YAML config).
+    # Maps terminal state name → list of required collected_data fields.
+    # Used by generator to build context-aware closing_data_request instructions.
+    terminal_state_requirements: Dict[str, Any] = field(default_factory=dict)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization/logging."""
         return {
@@ -351,6 +356,10 @@ class ResolvedDecision:
         # (decision_trace.record_state_machine reads sm_result.get("trace"))
         if self.resolution_trace:
             result["trace"] = self.resolution_trace
+
+        # Terminal state requirements — always include (empty dict is fine for non-closing states)
+        if self.terminal_state_requirements:
+            result["terminal_state_requirements"] = self.terminal_state_requirements
 
         # Disambiguation metadata (for bot.py ask_clarification response path)
         # NOTE: Intentional falsy check — empty list is NOT included in sm_result.

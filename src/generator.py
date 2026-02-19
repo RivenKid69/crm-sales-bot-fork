@@ -1122,21 +1122,49 @@ class ResponseGenerator:
             "closing_data_request": "",
         })
 
-        # === Autonomous closing: inject explicit data-request instruction ===
+        # === Autonomous closing: inject data-collection instruction ===
+        # Reads terminal_state_requirements from YAML (via context) — no hardcoded field names.
+        # Tiered urgency:
+        #   URGENT  (⚠️ ПРЯМО ПОПРОСИ) — NO terminal is reachable yet; bot must collect.
+        #   SOFT    (💡 желательно) — at least one terminal is reachable; bot may upgrade.
+        #   SILENT  (empty string) — all terminals already reachable; nothing to ask.
         if _is_autonomous and context.get("state") == "autonomous_closing":
-            _missing_for_close: list = []
-            if not collected.get("kaspi_phone") and not collected.get("contact_info"):
-                _missing_for_close.append("номер Kaspi (87xxx)")
-            if not collected.get("iin"):
-                _missing_for_close.append("ИИН (12 цифр)")
-            if not collected.get("contact_info"):
-                _missing_for_close.append("контакт для связи (телефон или email)")
-            if _missing_for_close:
-                variables["closing_data_request"] = (
-                    "⚠️ СЕЙЧАС НУЖНО СОБРАТЬ: " + ", ".join(_missing_for_close) + ".\n"
-                    "   ПРЯМО ПОПРОСИ клиента: спроси эти данные в своём ответе.\n"
-                    "   Ты МОЖЕШЬ и ДОЛЖЕН спрашивать ИИН и номер телефона Kaspi у клиента.\n"
-                )
+            terminal_reqs: dict = context.get("terminal_state_requirements", {})
+            if terminal_reqs:
+                # Evaluate each terminal: reachable = all required fields present in collected_data
+                reachable = [
+                    t for t, fields in terminal_reqs.items()
+                    if all(collected.get(f) for f in fields)
+                ]
+                not_reachable = [t for t in terminal_reqs if t not in reachable]
+
+                # Iterate easiest terminal first (fewest required fields) so the
+                # bot asks for the simplest blocking fields before harder ones.
+                # e.g. video_call_scheduled (1 field) before payment_ready (2 fields).
+                not_reachable.sort(key=lambda t: len(terminal_reqs.get(t, [])))
+
+                # Compute missing fields for each unreachable terminal (deduplicated)
+                urgent_fields: list = []
+                for t in not_reachable:
+                    for f in terminal_reqs[t]:
+                        if not collected.get(f) and f not in urgent_fields:
+                            urgent_fields.append(f)
+
+                if urgent_fields and not reachable:
+                    # URGENT: no terminal reachable — must collect blocking fields
+                    variables["closing_data_request"] = (
+                        "⚠️ СЕЙЧАС НУЖНО СОБРАТЬ: " + ", ".join(urgent_fields) + ".\n"
+                        "   ПРЯМО ПОПРОСИ клиента: задай вопрос об этих данных в ответе.\n"
+                        "   Ты МОЖЕШЬ и ДОЛЖЕН спрашивать ИИН и номер телефона Kaspi у клиента.\n"
+                    )
+                elif urgent_fields and reachable:
+                    # SOFT: at least one terminal reachable — suggest upgrade without forcing
+                    variables["closing_data_request"] = (
+                        "💡 Желательно уточнить (для полного оформления): "
+                        + ", ".join(urgent_fields) + ".\n"
+                        "   Спроси, если это уместно в контексте разговора.\n"
+                    )
+                # else: all terminals reachable — closing_data_request stays empty
 
         # === Autonomous flow: inject objection-specific framework instructions ===
         if _is_autonomous and intent.startswith("objection_"):
