@@ -110,6 +110,13 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             r"сколько\s+будет\s+стоить",
             r"цен[ау]\s+скаж",
             r"давай(?:те)?\s+(?:уже\s+)?(?:по\s+)?(?:цене|ценам|стоимости)",
+            # Payment-term patterns (RC4): installment/monthly payment vocabulary
+            r"рассрочк[аеуойи]",             # рассрочка/рассрочке/рассрочку/рассрочкой/рассрочки
+            r"в\s+рассрочку",                 # в рассрочку
+            r"помесячн",                       # помесячно, помесячная
+            r"ежемесячн",                      # ежемесячный платёж
+            r"частями",                        # оплатить частями, платить частями
+            r"(?:без\s+)?переплат",           # без переплат
         ],
         keywords=frozenset(),  # empty → all patterns always run; no keyword-gating homonyms
         min_confidence=0.9,
@@ -314,10 +321,19 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
             r"попробовать",
             r"тест(?:овый|ировать)",
             r"пробн(?:ый|ая|ую)",
+            # RC5: expanded demo/visual request patterns
+            r"(?:можно|хочу|хотел[аи]?\s+бы)\s+(?:посмотреть|глянуть|увидеть)",
+            r"посмотреть\s+(?:на\s+)?(?:примере|как|демо|в\s+деле|систему|интерфейс)",
+            r"(?:увидеть|глянуть)\s+(?:как|демо|пример|в\s+работе|в\s+деле)",
+            r"как\s+выглядит",
+            r"(?:покажите?|показать)\s+(?:интерфейс|систему|в\s+деле|пример)",
+            r"\bвидео\b",
+            r"скрин(?:шот)?",
         ],
         keywords=frozenset({
             "демо", "демонстрация", "показать", "покажите",
             "попробовать", "тестовый", "пробный",
+            "посмотреть", "глянуть", "увидеть", "видео", "скриншот", "интерфейс",
         }),
         min_confidence=0.9,
         priority=95,
@@ -365,6 +381,31 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
         }),
         min_confidence=0.85,
         priority=50,
+    ),
+
+    # Advance/continue requests — triggers SKIP_RETRIEVAL bypass (RC6a)
+    # keywords=frozenset() is REQUIRED: gate logic (line 521) only checks patterns
+    # when keywords match OR keywords is empty. Words like "продолжай", "всё что есть"
+    # have no natural keyword — frozenset() ensures patterns always run.
+    "advance_request": SecondaryIntentPattern(
+        intent="advance_request",
+        patterns=[
+            r"что\s+ещ[ёе]",                                        # "что ещё?", "что ещё можете?"
+            r"а\s+ещ[ёе]\b",                                        # "а ещё?"
+            r"какие\s+ещ[ёе]",                                      # "какие ещё?"
+            r"ещ[ёе]\s+что[- ](?:то|нибудь)",                       # "ещё что-то", "ещё что-нибудь"
+            r"расскажи(?:те)?\s+ещ[ёе]",                            # "расскажите ещё"
+            r"\bдальше\b",                                           # "дальше", "что дальше", "идём дальше"
+            r"продолж(?:ай|айте|и)",                                 # "продолжай", "продолжайте", "продолжи"
+            r"ещ[ёе]\s+расскажи",                                   # "ещё расскажи"
+            r"что\s+ещ[ёе]\s+(?:можете|умеет|есть|предлагаете|покажете)",  # "что ещё можете?"
+            r"а\s+помимо\s+(?:этого|того)",                         # "а помимо этого?"
+            r"(?:это\s+)?всё\s+(?:что\s+есть|что\s+можете)\??",    # "это всё что есть?"
+            r"что[- ]то\s+ещ[ёе]",                                  # "что-то ещё?"
+        ],
+        keywords=frozenset(),  # empty → patterns always run (no keyword gating)
+        min_confidence=0.85,
+        priority=75,
     ),
 }
 
@@ -478,7 +519,8 @@ class SecondaryIntentDetectionLayer(BaseRefinementLayer):
         - "agreement" + "demo_request" is valuable
         """
         # Only skip for very short messages (unlikely to have multiple intents)
-        if len(ctx.message) < 10:
+        # Threshold 5 (not 10): "что ещё?" (8 chars), "дальше" (6 chars) are valid
+        if len(ctx.message) < 5:
             return False
 
         return True

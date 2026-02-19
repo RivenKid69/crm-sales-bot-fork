@@ -538,8 +538,15 @@ class CascadeRetriever:
                         score += 0.5
 
             if score >= self.exact_threshold:
-                # Учитываем priority секции
-                final_score = score + (section.priority * 0.01)
+                # Specificity factor: penalize umbrella topics with many keywords
+                # 1 match out of 42 kw → factor 1.024 (almost no boost)
+                # 1 match out of 5 kw → factor 1.20 (+20% boost)
+                # 3/5 matches → factor 1.60; 5/5 → factor 2.00
+                unique_matches = len(set(matched_keywords))
+                unique_total = len(set(section.keywords))
+                match_ratio = unique_matches / max(unique_total, 1)
+                specificity = 1.0 + match_ratio  # [1.0 … 2.0]
+                final_score = score * specificity + (section.priority * 0.01)
 
                 results.append(SearchResult(
                     section=section,

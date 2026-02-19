@@ -339,6 +339,11 @@ class EnhancedRetrievalPipeline:
         self.query_decomposer = QueryDecomposer(llm=llm, max_sub_queries=self.max_sub_queries)
         self.multi_query_retriever = MultiQueryRetriever(rrf_k=self.rrf_k)
 
+    # Secondary intents that are purely meta/social and never need KB retrieval.
+    # Any NEW secondary intent NOT listed here triggers retrieval automatically.
+    # Default-safe: retrieval ON unless explicitly excluded.
+    _SOCIAL_ONLY_SECONDARY = frozenset({"request_brevity"})
+
     def retrieve(
         self,
         user_message: str,
@@ -348,18 +353,23 @@ class EnhancedRetrievalPipeline:
         kb: Any,
         recently_used_keys: Optional[Set[str]] = None,
         history: Optional[List[Dict[str, Any]]] = None,
+        secondary_intents: Optional[List[str]] = None,
     ) -> Tuple[str, List[Dict[str, str]], List[str]]:
         recently_used = set(recently_used_keys or set())
         history = history or []
 
         # [0] Fast path for non-factual intents.
         if intent in SKIP_RETRIEVAL_INTENTS:
-            return load_facts_for_state(
-                state=state,
-                flow_config=flow_config,
-                kb=kb,
-                recently_used_keys=recently_used,
-            )
+            # If ANY secondary intent needs KB data → DON'T skip
+            if secondary_intents and not set(secondary_intents).issubset(self._SOCIAL_ONLY_SECONDARY):
+                pass  # Fall through to full retrieval
+            else:
+                return load_facts_for_state(
+                    state=state,
+                    flow_config=flow_config,
+                    kb=kb,
+                    recently_used_keys=recently_used,
+                )
 
         retriever = get_retriever()
 
