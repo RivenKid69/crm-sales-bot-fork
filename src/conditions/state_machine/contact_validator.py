@@ -79,8 +79,11 @@ class ContactValidator:
 
     # Valid Russian mobile prefixes (900-999 range)
     VALID_MOBILE_PREFIXES = set(range(900, 1000))
-    # Valid Kazakhstan mobile prefixes
-    VALID_KZ_MOBILE_PREFIXES = set(range(700, 710)) | {747, 771} | set(range(775, 779))
+    # Valid Kazakhstan mobile prefixes — full 700-799 range.
+    # Kazakhstan carriers (Kcell 700-707/750/760-763, Beeline 708-709/747/775-778,
+    # Tele2 720-727/771, Altel 710-718, etc.) all fall within 700-799.
+    # Kaspi integrates with all major KZ carriers, so the full range is correct here.
+    VALID_KZ_MOBILE_PREFIXES = set(range(700, 800))
 
     # Russian city codes (Moscow, SPb, etc.)
     VALID_CITY_CODES = {495, 499, 812, 343, 383, 861}

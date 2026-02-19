@@ -356,16 +356,6 @@ class AutonomousDecisionSource(KnowledgeSource):
             )
             return
 
-        # Record decision in history
-        self._decision_history.append(AutonomousDecisionRecord(
-            turn_in_state=turn_in_state,
-            intent=intent,
-            state=state,
-            should_transition=decision.should_transition,
-            next_state=decision.next_state,
-            reasoning=decision.reasoning[:100],
-        ))
-
         # Always propose autonomous_respond action
         blackboard.propose_action(
             action="autonomous_respond",
@@ -376,6 +366,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         )
 
         # Propose transition — ALWAYS propose to win over inherited mixin transitions
+        terminal_gate_blocked = False
         if decision.should_transition and decision.next_state:
             target = decision.next_state
             # Intercept: LLM выбрал close из autonomous стейта — redirect
@@ -390,7 +381,6 @@ class AutonomousDecisionSource(KnowledgeSource):
 
             # Hard gate: block premature terminal transition if required data is missing
             # LLM may ignore prompt instructions; this ensures data integrity regardless
-            terminal_gate_blocked = False
             if target in terminal_names and terminal_requirements.get(target):
                 reqs = terminal_requirements[target]
                 missing_for_terminal = [f for f in reqs if not collected_data.get(f)]
@@ -449,6 +439,24 @@ class AutonomousDecisionSource(KnowledgeSource):
                 reason_code="autonomous_stay_in_state",
                 source_name=self.name,
             )
+
+        # Record decision in history AFTER gate resolution so stay_streak counts actual outcomes.
+        # If terminal_gate_blocked=True, LLM wanted to transition but code forced stay —
+        # record as should_transition=False so the streak counter increments correctly
+        # and hard override eventually fires instead of looping forever.
+        actual_transitioned = decision.should_transition and not terminal_gate_blocked
+        self._decision_history.append(AutonomousDecisionRecord(
+            turn_in_state=turn_in_state,
+            intent=intent,
+            state=state,
+            should_transition=actual_transitioned,
+            next_state=decision.next_state if actual_transitioned else state,
+            reasoning=(
+                f"gate_blocked:{decision.reasoning[:80]}"
+                if terminal_gate_blocked
+                else decision.reasoning[:100]
+            ),
+        ))
 
     def _build_decision_prompt(
         self,

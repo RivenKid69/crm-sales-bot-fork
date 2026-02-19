@@ -45,6 +45,12 @@ from typing import Dict, Any, Optional, List, Set, Tuple, Union
 from dataclasses import dataclass, field
 from enum import Enum
 
+# Import KZ prefix set from ContactValidator (SSoT).
+# Both the LLM-path validator (this module) and the rule-based path
+# (DataExtractor → ContactValidator.validate_phone) must accept the same prefixes.
+from src.conditions.state_machine.contact_validator import ContactValidator as _CV
+_KZ_MOBILE_PREFIXES: Set[int] = _CV.VALID_KZ_MOBILE_PREFIXES  # set(range(700, 800))
+
 logger = logging.getLogger(__name__)
 
 
@@ -124,14 +130,9 @@ class ExtractionValidator:
         re.IGNORECASE
     )
 
-    # Valid Russian mobile prefixes (900-999 range)
-    # + Kazakhstan mobile prefixes (700-709, 747, 771, 775-778)
-    VALID_MOBILE_PREFIXES = (
-        set(range(900, 1000))
-        | set(range(700, 710))
-        | {747, 771}
-        | set(range(775, 779))
-    )
+    # Valid mobile prefixes — SSoT is ContactValidator._KZ_MOBILE_PREFIXES (imported above).
+    # Russia: 900-999; Kazakhstan: 700-799 (all KZ carriers, consistent with ContactValidator).
+    VALID_MOBILE_PREFIXES: Set[int] = set(range(900, 1000)) | _KZ_MOBILE_PREFIXES
 
     # Valid city codes
     VALID_CITY_CODES = {495, 499, 812, 343, 383, 861, 727, 717}
@@ -1052,9 +1053,10 @@ class ExtractionValidator:
             if match:
                 groups = match.groups()
                 prefix = int(groups[0])
-                # kaspi_phone must be KZ prefix (700–799 range)
-                kz_prefixes = set(range(700, 710)) | {747, 771} | set(range(775, 779))
-                if prefix in kz_prefixes:
+                # kaspi_phone must be KZ prefix: full 700-799 range (SSoT: _KZ_MOBILE_PREFIXES).
+                # Uses range check (same as DataExtractor) rather than explicit set
+                # so both extraction paths accept identical phone numbers.
+                if 700 <= prefix <= 799:
                     normalized = f"+7{''.join(groups)}"
                     return FieldValidationResult(
                         field_name=field_name,
@@ -1062,8 +1064,6 @@ class ExtractionValidator:
                         original_value=value,
                         normalized_value=normalized,
                     )
-                # Not a KZ prefix — still accept but don't normalize
-                # (user might give RU phone as kaspi_phone by mistake)
                 return FieldValidationResult(
                     field_name=field_name,
                     is_valid=False,

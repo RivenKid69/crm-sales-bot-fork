@@ -1682,8 +1682,12 @@ class DataExtractor:
                 if iin_match:
                     extracted["iin"] = iin_match.group(1)
                     break
-            # Contextual: standalone 12-digit number when iin is expected
-            if "iin" not in extracted and "iin" in missing_data:
+            # Contextual: standalone 12-digit number when iin is not yet collected.
+            # Uses collected_data (not missing_data) so this works in all states,
+            # including autonomous_closing where missing_data only lists required_data
+            # fields and never contains "iin" even though it hasn't been collected.
+            collected_data = context.get("collected_data", {})
+            if "iin" not in extracted and not collected_data.get("iin"):
                 iin_ctx = re.search(r'\b(\d{12})\b', message)
                 if iin_ctx:
                     extracted["iin"] = iin_ctx.group(1)

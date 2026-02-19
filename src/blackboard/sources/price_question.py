@@ -151,12 +151,20 @@ class PriceQuestionSource(KnowledgeSource):
         if not self._enabled:
             return False
 
+        # In autonomous_closing, price questions are answered inline by autonomous_respond.
+        # That template has {closing_data_request} and KB pricing facts — sufficient to
+        # answer pricing AND collect closing data in one response.
+        # Intercepting here would switch to answer_with_pricing (no {closing_data_request}
+        # placeholder), silently dropping the data-collection instruction.
+        ctx = blackboard.get_context()
+        if getattr(ctx, 'state', None) == 'autonomous_closing':
+            return False
+
         # Check 1: Primary intent
         if blackboard.current_intent in self._price_intents:
             return True
 
         # Check 2: Secondary intents
-        ctx = blackboard.get_context()
         secondary = self._get_secondary_intents(ctx)
         if secondary and (set(secondary) & self._price_intents):
             return True

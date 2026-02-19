@@ -43,6 +43,7 @@ from src.blackboard.source_registry import BUILTIN_SOURCE_NAMES, SourceRegistry
 from src.yaml_config.constants import OBJECTION_INTENTS, POSITIVE_INTENTS
 
 logger = logging.getLogger(__name__)
+trace_logger = logging.getLogger("blackboard.trace")
 
 class DialogueOrchestrator:
     """
@@ -425,6 +426,16 @@ class DialogueOrchestrator:
                 resolution_time_ms=resolve_time_ms,
             ))
 
+            # === BLACKBOARD TRACE (diagnostic — enable via blackboard.trace logger) ===
+            self._log_blackboard_trace(
+                turn_number=turn_number,
+                intent=intent,
+                current_state=current_state,
+                context_envelope=context_envelope,
+                proposals=proposals,
+                decision=decision,
+            )
+
             # === STEP 5: Commit Decision ===
             self._blackboard.commit_decision(decision)
 
@@ -479,6 +490,76 @@ class DialogueOrchestrator:
                 reason="processing_error",
                 turn_number=turn_number,
             )
+
+    def _log_blackboard_trace(
+        self,
+        turn_number: int,
+        intent: str,
+        current_state: str,
+        context_envelope: Optional[Any],
+        proposals: List[Any],
+        decision: Any,
+    ) -> None:
+        """
+        Emit a detailed per-turn blackboard trace at DEBUG level.
+
+        Enable via:
+            logging.getLogger("blackboard.trace").setLevel(logging.DEBUG)
+        Or set env var BLACKBOARD_TRACE=1 before running simulation.
+
+        Logs:
+        - All proposals (source, type, value, priority, combinable, metadata)
+        - Secondary intents and repeated_question from context_envelope
+        - Winning action, transition, reason_codes, merge_decision
+        - Rejected proposals
+        """
+        if not trace_logger.isEnabledFor(logging.DEBUG):
+            return
+
+        # Extract secondary intents and repeated_question from envelope
+        secondary_intents: List[str] = []
+        repeated_question = None
+        if context_envelope is not None:
+            secondary_intents = list(getattr(context_envelope, "secondary_intents", None) or [])
+            repeated_question = getattr(context_envelope, "repeated_question", None)
+
+        # Format all proposals sorted by priority (HIGH → NORMAL → LOW)
+        proposal_lines = []
+        for p in sorted(proposals, key=lambda x: x.priority.value, reverse=True):
+            comb = f" combinable={p.combinable}" if p.type.name == "ACTION" else ""
+            meta_str = f" meta={p.metadata}" if p.metadata else ""
+            proposal_lines.append(
+                f"  [{p.priority.name:6s}] {p.type.name:10s} {p.value!r:30s} "
+                f"from={p.source_name} reason={p.reason_code}{comb}{meta_str}"
+            )
+
+        # Format rejected proposals
+        rejected_lines = []
+        for p in decision.rejected_proposals:
+            rejected_lines.append(
+                f"  REJECTED [{p.priority.name:6s}] {p.type.name:10s} {p.value!r:30s} "
+                f"from={p.source_name}"
+            )
+
+        proposals_block = "\n".join(f"│{line}" for line in proposal_lines) or "│  (none)"
+        rejected_block = ("\n".join(f"│{line}" for line in rejected_lines) + "\n") if rejected_lines else ""
+
+        trace_logger.debug(
+            "\n"
+            f"┌── BLACKBOARD TRACE  turn={turn_number} ─────────────────────────────\n"
+            f"│  intent={intent!r:30s}  state={current_state!r}\n"
+            f"│  secondary_intents={secondary_intents}\n"
+            f"│  repeated_question={repeated_question!r}\n"
+            f"│  proposals ({len(proposals)}):\n"
+            f"{proposals_block}\n"
+            f"│  resolution:\n"
+            f"│    action        = {decision.action!r}\n"
+            f"│    next_state    = {decision.next_state!r}\n"
+            f"│    reason_codes  = {decision.reason_codes}\n"
+            f"│    merge_decision= {decision.resolution_trace.get('merge_decision', 'N/A')!r}\n"
+            f"{rejected_block}"
+            f"└─────────────────────────────────────────────────────────────────"
+        )
 
     def _get_valid_states(self) -> Set[str]:
         """Get the set of valid state names for runtime transition checks."""
@@ -916,6 +997,8 @@ class DialogueOrchestrator:
         next_config = self._flow_config.states.get(decision.next_state, {})
         required = next_config.get("required_data", [])
         optional = next_config.get("optional_data", [])
+        # Terminal state requirements — forwarded to generator for context-aware closing prompts
+        decision.terminal_state_requirements = next_config.get("terminal_state_requirements", {})
 
         # Fill compatibility fields
         decision.prev_state = prev_state
