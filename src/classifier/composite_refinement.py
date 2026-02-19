@@ -460,7 +460,7 @@ class CompositeMessageRefinementLayer:
                         "extracted_data": result.extracted_data,
                         "secondary_signals": result.secondary_signals,
                         "ambiguity_resolved": result.ambiguity_resolved,
-                        "message": message[:50],
+                        "log_message": message[:50],
                         "current_phase": ctx.current_phase,
                         "state": ctx.state,
                         "last_action": ctx.last_action,

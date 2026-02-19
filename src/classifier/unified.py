@@ -266,7 +266,7 @@ class UnifiedClassifier:
                 "RefinementPipeline failed, returning original result",
                 extra={
                     "error": str(e),
-                    "message": message[:50],
+                    "log_message": message[:50],
                     "intent": result.get("intent")
                 }
             )
@@ -375,7 +375,7 @@ class UnifiedClassifier:
             # Fail-safe: return original result on any error
             logger.warning(
                 "Refinement layer failed, returning original result",
-                extra={"error": str(e), "message": message[:50]}
+                extra={"error": str(e), "log_message": message[:50]}
             )
             return result
 
@@ -434,7 +434,7 @@ class UnifiedClassifier:
                 "Composite refinement layer failed, returning original result",
                 extra={
                     "error": str(e),
-                    "message": message[:50],
+                    "log_message": message[:50],
                     "intent": result.get("intent")
                 }
             )
@@ -486,7 +486,7 @@ class UnifiedClassifier:
             # Fail-safe: return original result on any error
             logger.warning(
                 "Objection refinement layer failed, returning original result",
-                extra={"error": str(e), "message": message[:50], "intent": result.get("intent")}
+                extra={"error": str(e), "log_message": message[:50], "intent": result.get("intent")}
             )
             return result
 

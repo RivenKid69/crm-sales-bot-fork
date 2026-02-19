@@ -239,7 +239,7 @@ class ClassificationRefinementLayer:
                 logger.debug(
                     "Refinement not applicable - no matching config",
                     extra={
-                        "message": message[:50],
+                        "log_message": message[:50],
                         "llm_intent": llm_intent,
                         "phase": context.spin_phase,
                         "state": context.state,
@@ -257,7 +257,7 @@ class ClassificationRefinementLayer:
                     "confidence": refined_confidence,
                     "phase": context.spin_phase,
                     "state": context.state,
-                    "message": message[:50],
+                    "log_message": message[:50],
                     "reason": f"short_answer_in_{context.spin_phase or context.state}_context",
                 }
             )
@@ -281,7 +281,7 @@ class ClassificationRefinementLayer:
                 "Refinement failed, returning original result",
                 extra={
                     "error": str(e),
-                    "message": message[:50],
+                    "log_message": message[:50],
                     "llm_intent": llm_intent,
                 }
             )

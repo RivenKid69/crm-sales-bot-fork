@@ -264,7 +264,7 @@ class ObjectionRefinementLayer:
                         "reason": result.refinement_reason,
                         "original_confidence": ctx.confidence,
                         "refined_confidence": result.confidence,
-                        "message": message[:50],
+                        "log_message": message[:50],
                         "state": ctx.state,
                         "last_action": ctx.last_action,
                     }
