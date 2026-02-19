@@ -1663,9 +1663,30 @@ class DataExtractor:
                         # Сохраняем нормализованный телефон (+7XXXXXXXXXX)
                         extracted["contact_info"] = phone_result.normalized_value
                         extracted["contact_type"] = "phone"  # Явно указываем тип
+                        # KZ phones (prefix 7xx) also stored as kaspi_phone
+                        raw_digits = re.sub(r'\D', '', phone_raw)
+                        kz_prefix = int(raw_digits[-10:][:3]) if len(raw_digits) >= 10 else 0
+                        if 700 <= kz_prefix <= 799:
+                            extracted["kaspi_phone"] = phone_result.normalized_value
                         break
                     # Если телефон невалиден, продолжаем искать
                     # (не сохраняем невалидные паттерны типа 1234567890)
+
+        # === IIN (12-digit Kazakh national ID) ===
+        iin_patterns = [
+            r'(?:ИИН|ИНН|иин|инн)\s*:?\s*(\d{12})',  # with keyword
+        ]
+        if "iin" not in extracted:
+            for pattern in iin_patterns:
+                iin_match = re.search(pattern, message, re.IGNORECASE)
+                if iin_match:
+                    extracted["iin"] = iin_match.group(1)
+                    break
+            # Contextual: standalone 12-digit number when iin is expected
+            if "iin" not in extracted and "iin" in missing_data:
+                iin_ctx = re.search(r'\b(\d{12})\b', message)
+                if iin_ctx:
+                    extracted["iin"] = iin_ctx.group(1)
 
         # === Имя клиента ===
         name_patterns = [

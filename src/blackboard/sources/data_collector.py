@@ -69,6 +69,10 @@ class DataCollectorSource(KnowledgeSource):
         if ctx.state_config.get("is_final", False):
             return False
 
+        # Skip if state is autonomous (LLM controls all transitions via AutonomousDecisionSource)
+        if ctx.state_config.get("autonomous", False):
+            return False
+
         # Skip if no required_data defined
         required = ctx.state_config.get("required_data", [])
         if not required:

@@ -125,10 +125,16 @@ class ExtractionValidator:
     )
 
     # Valid Russian mobile prefixes (900-999 range)
-    VALID_MOBILE_PREFIXES = set(range(900, 1000))
+    # + Kazakhstan mobile prefixes (700-709, 747, 771, 775-778)
+    VALID_MOBILE_PREFIXES = (
+        set(range(900, 1000))
+        | set(range(700, 710))
+        | {747, 771}
+        | set(range(775, 779))
+    )
 
     # Valid city codes
-    VALID_CITY_CODES = {495, 499, 812, 343, 383, 861}
+    VALID_CITY_CODES = {495, 499, 812, 343, 383, 861, 727, 717}
 
     # =========================================================================
     # TOOL PATTERNS (from DataExtractor)
@@ -1021,6 +1027,91 @@ class ExtractionValidator:
             is_valid=False,
             original_value=value,
             error="Must be a boolean (true/false)",
+        )
+
+    def _validate_kaspi_phone(
+        self,
+        value: Any,
+        context: Dict[str, Any]
+    ) -> FieldValidationResult:
+        """Validate kaspi_phone — KZ phone in 87xxx or +77xxx format."""
+        field_name = "kaspi_phone"
+
+        if not isinstance(value, str):
+            return FieldValidationResult(
+                field_name=field_name,
+                is_valid=False,
+                original_value=value,
+                error=f"Must be a string, got {type(value).__name__}",
+            )
+
+        value = value.strip()
+
+        for pattern in self.PHONE_PATTERNS:
+            match = pattern.match(value)
+            if match:
+                groups = match.groups()
+                prefix = int(groups[0])
+                # kaspi_phone must be KZ prefix (700–799 range)
+                kz_prefixes = set(range(700, 710)) | {747, 771} | set(range(775, 779))
+                if prefix in kz_prefixes:
+                    normalized = f"+7{''.join(groups)}"
+                    return FieldValidationResult(
+                        field_name=field_name,
+                        is_valid=True,
+                        original_value=value,
+                        normalized_value=normalized,
+                    )
+                # Not a KZ prefix — still accept but don't normalize
+                # (user might give RU phone as kaspi_phone by mistake)
+                return FieldValidationResult(
+                    field_name=field_name,
+                    is_valid=False,
+                    original_value=value,
+                    error=f"kaspi_phone must be a KZ mobile number (87xxx/+77xxx), got prefix {prefix}",
+                )
+
+        return FieldValidationResult(
+            field_name=field_name,
+            is_valid=False,
+            original_value=value,
+            error="kaspi_phone format invalid — expected 87xxx or +77xxx",
+        )
+
+    def _validate_iin(
+        self,
+        value: Any,
+        context: Dict[str, Any]
+    ) -> FieldValidationResult:
+        """Validate iin — exactly 12 digits, Kazakh national ID."""
+        field_name = "iin"
+
+        if isinstance(value, int):
+            value = str(value)
+
+        if not isinstance(value, str):
+            return FieldValidationResult(
+                field_name=field_name,
+                is_valid=False,
+                original_value=value,
+                error=f"Must be a string, got {type(value).__name__}",
+            )
+
+        digits = re.sub(r'\D', '', value.strip())
+
+        if len(digits) != 12:
+            return FieldValidationResult(
+                field_name=field_name,
+                is_valid=False,
+                original_value=value,
+                error=f"IIN must be exactly 12 digits, got {len(digits)}",
+            )
+
+        return FieldValidationResult(
+            field_name=field_name,
+            is_valid=True,
+            original_value=value,
+            normalized_value=digits,
         )
 
 

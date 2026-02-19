@@ -1118,7 +1118,25 @@ class ResponseGenerator:
             "objection_instructions": "",
             # Question suppression (default — overridden by ResponseDirectives block)
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
+            # Closing-specific data request (injected below)
+            "closing_data_request": "",
         })
+
+        # === Autonomous closing: inject explicit data-request instruction ===
+        if _is_autonomous and context.get("state") == "autonomous_closing":
+            _missing_for_close: list = []
+            if not collected.get("kaspi_phone") and not collected.get("contact_info"):
+                _missing_for_close.append("номер Kaspi (87xxx)")
+            if not collected.get("iin"):
+                _missing_for_close.append("ИИН (12 цифр)")
+            if not collected.get("contact_info"):
+                _missing_for_close.append("контакт для связи (телефон или email)")
+            if _missing_for_close:
+                variables["closing_data_request"] = (
+                    "⚠️ СЕЙЧАС НУЖНО СОБРАТЬ: " + ", ".join(_missing_for_close) + ".\n"
+                    "   ПРЯМО ПОПРОСИ клиента: спроси эти данные в своём ответе.\n"
+                    "   Ты МОЖЕШЬ и ДОЛЖЕН спрашивать ИИН и номер телефона Kaspi у клиента.\n"
+                )
 
         # === Autonomous flow: inject objection-specific framework instructions ===
         if _is_autonomous and intent.startswith("objection_"):

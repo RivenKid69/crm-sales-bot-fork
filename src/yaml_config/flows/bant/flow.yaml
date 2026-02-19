@@ -12,6 +12,7 @@ flow:
 
   variables:
     entry_state: bant_budget
+    entry_closing_state: close
     company_name: "Wipon"
     product_name: "Wipon POS/ТИС"
 

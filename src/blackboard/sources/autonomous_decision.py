@@ -207,8 +207,9 @@ class AutonomousDecisionSource(KnowledgeSource):
         turn_in_state = getattr(envelope, 'consecutive_same_state', 0) if envelope else 0
         max_turns = state_config.get("max_turns_in_state", 6)
 
-        # Read optional_data from state config for data collection guidance
+        # Read optional_data and terminal requirements from state config
         optional_data = state_config.get("optional_data", [])
+        terminal_requirements = state_config.get("terminal_state_requirements", {})
 
         # =====================================================================
         # Hard override: force transition after consecutive stay decisions
@@ -239,9 +240,31 @@ class AutonomousDecisionSource(KnowledgeSource):
                 d.intent in _objection_set for d in stay_streak_records
             )
 
-            if all_objection_driven or terminal_names:
+            if all_objection_driven:
                 target = "soft_close"
-                override_type = "objection_driven" if all_objection_driven else "phase_exhausted_terminal"
+                override_type = "objection_driven"
+            elif terminal_names:
+                # Apply terminal gate: pick first terminal (easiest first = reversed order)
+                # where all required data is already collected. If none qualify → soft_close.
+                target = None
+                for t in reversed(terminal_names):
+                    reqs = terminal_requirements.get(t, [])
+                    missing = [f for f in reqs if not collected_data.get(f)]
+                    if not missing:
+                        target = t
+                        break
+                if target:
+                    override_type = "phase_exhausted_terminal"
+                else:
+                    # No terminal has required data — graceful exit
+                    target = "soft_close"
+                    override_type = "phase_exhausted_no_data"
+                    logger.info(
+                        "AutonomousDecision: HARD OVERRIDE — no terminal state has required data "
+                        "(missing for %s), falling back to soft_close",
+                        {t: [f for f in terminal_requirements.get(t, []) if not collected_data.get(f)]
+                         for t in terminal_names},
+                    )
             else:
                 target = (
                     resolved_params.get("next_phase_state")
@@ -303,6 +326,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             max_turns=max_turns,
             optional_data=optional_data,
             terminal_names=terminal_names,
+            terminal_requirements=terminal_requirements,
         )
 
         try:
@@ -363,36 +387,59 @@ class AutonomousDecisionSource(KnowledgeSource):
                     target = "autonomous_closing"
                 else:
                     target = "soft_close"
-            # Validate target state exists
-            # payment_ready/video_call_scheduled уже в available_states через terminal_names injection
-            # close и success убраны — LLM не должен прыгать туда напрямую из autonomous стейтов
-            valid_targets = set(available_states) | {"soft_close"}
-            if target in valid_targets:
-                blackboard.propose_transition(
-                    next_state=target,
-                    priority=Priority.NORMAL,
-                    reason_code=f"autonomous_transition_{decision.reasoning[:50]}" if decision.reasoning else "autonomous_transition",
-                    source_name=self.name,
-                )
-                logger.info(
-                    "AutonomousDecision: transition proposed",
-                    extra={
-                        "from_state": state,
-                        "to_state": target,
-                        "reasoning": decision.reasoning,
-                    },
-                )
-            else:
-                logger.warning(
-                    "AutonomousDecision: invalid target state %s, staying",
-                    target,
-                )
+
+            # Hard gate: block premature terminal transition if required data is missing
+            # LLM may ignore prompt instructions; this ensures data integrity regardless
+            terminal_gate_blocked = False
+            if target in terminal_names and terminal_requirements.get(target):
+                reqs = terminal_requirements[target]
+                missing_for_terminal = [f for f in reqs if not collected_data.get(f)]
+                if missing_for_terminal:
+                    logger.warning(
+                        "AutonomousDecision: terminal gate — blocked %s → %s "
+                        "(missing required fields: %s), forcing stay",
+                        state, target, missing_for_terminal,
+                    )
+                    terminal_gate_blocked = True
+
+            if terminal_gate_blocked:
                 blackboard.propose_transition(
                     next_state=state,
                     priority=Priority.NORMAL,
-                    reason_code="autonomous_stay_invalid_target",
+                    reason_code="autonomous_stay_terminal_gate",
                     source_name=self.name,
                 )
+            else:
+                # Validate target state exists
+                # payment_ready/video_call_scheduled уже в available_states через terminal_names injection
+                # close и success убраны — LLM не должен прыгать туда напрямую из autonomous стейтов
+                valid_targets = set(available_states) | {"soft_close"}
+                if target in valid_targets:
+                    blackboard.propose_transition(
+                        next_state=target,
+                        priority=Priority.NORMAL,
+                        reason_code=f"autonomous_transition_{decision.reasoning[:50]}" if decision.reasoning else "autonomous_transition",
+                        source_name=self.name,
+                    )
+                    logger.info(
+                        "AutonomousDecision: transition proposed",
+                        extra={
+                            "from_state": state,
+                            "to_state": target,
+                            "reasoning": decision.reasoning,
+                        },
+                    )
+                else:
+                    logger.warning(
+                        "AutonomousDecision: invalid target state %s, staying",
+                        target,
+                    )
+                    blackboard.propose_transition(
+                        next_state=state,
+                        priority=Priority.NORMAL,
+                        reason_code="autonomous_stay_invalid_target",
+                        source_name=self.name,
+                    )
         else:
             # Stay in current state — MUST propose to win over inherited mixin transitions
             # (TransitionResolverSource would otherwise propose handle_objection for objection intents)
@@ -417,6 +464,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         max_turns: int = 6,
         optional_data: list = None,
         terminal_names: list = None,
+        terminal_requirements: dict = None,
     ) -> str:
         """Build the decision prompt for LLM."""
         collected_keys = {
@@ -443,10 +491,15 @@ class AutonomousDecisionSource(KnowledgeSource):
         else:
             states_str = "нет"
 
-        # Compute missing optional data
+        # Compute missing optional data (only non-terminal-requirement fields)
+        terminal_req_fields: set = set()
+        if terminal_requirements:
+            for fields in terminal_requirements.values():
+                terminal_req_fields.update(fields)
         missing_optional = ""
         if optional_data:
-            missing = [f for f in optional_data if f not in collected_keys]
+            non_terminal_optional = [f for f in optional_data if f not in terminal_req_fields]
+            missing = [f for f in non_terminal_optional if f not in collected_keys]
             if missing:
                 missing_optional = f"\nЖелательно собрать: {', '.join(missing)}"
 
@@ -494,11 +547,55 @@ class AutonomousDecisionSource(KnowledgeSource):
 - При возражении клиента — отработай его, не переходи сразу к следующему этапу"""
 
         # Build context-dependent close options for prompt
+        terminal_status_block = ""
         if terminal_names:
+            # Build per-terminal requirements status so LLM knows exactly what blocks each transition
+            if terminal_requirements:
+                status_lines = []
+                for t in terminal_names:
+                    reqs = terminal_requirements.get(t, [])
+                    if reqs:
+                        missing_t = [f for f in reqs if not collected_data.get(f)]
+                        present_t = [f for f in reqs if collected_data.get(f)]
+                        if missing_t:
+                            status_lines.append(
+                                f"  ⛔ {t}: НЕ ГОТОВО — нужно собрать: {', '.join(missing_t)}"
+                            )
+                        else:
+                            status_lines.append(
+                                f"  ✅ {t}: ГОТОВО (собраны: {', '.join(present_t)})"
+                            )
+                    else:
+                        status_lines.append(f"  {t}")
+                terminal_status_block = (
+                    "\nСТАТУС ТЕРМИНАЛЬНЫХ СТЕЙТОВ:\n"
+                    + "\n".join(status_lines)
+                    + "\n"
+                )
+                # Build per-terminal missing fields instruction
+                missing_instructions = []
+                for t in terminal_names:
+                    reqs = terminal_requirements.get(t, [])
+                    if reqs:
+                        missing_t = [f for f in reqs if not collected_data.get(f)]
+                        if missing_t:
+                            missing_instructions.append(
+                                f"   → {t}: ПРЯМО СПРОСИ клиента про {', '.join(missing_t)}"
+                            )
+                ask_hint = ("\n".join(missing_instructions) + "\n") if missing_instructions else ""
+                gate_rule = (
+                    "⛔ СТРОГОЕ ПРАВИЛО: Переход в терминальный стейт ТОЛЬКО если статус ✅ ГОТОВО.\n"
+                    "   При ⛔ НЕ ГОТОВО — should_transition=false, next_state=текущий стейт.\n"
+                    f"{ask_hint}"
+                )
+            else:
+                gate_rule = ""
+
             # autonomous_closing: LLM должен выбирать terminal states, а не close/success
             close_section = "  - soft_close: Мягкое завершение (клиент твёрдо отказывается)"
             close_rules = (
-                f"- next_state = одно из [{', '.join(terminal_names)}] (см. список выше) или soft_close при отказе\n"
+                gate_rule
+                + f"- next_state = одно из [{', '.join(terminal_names)}] или soft_close при отказе\n"
                 f"- ⛔ ЗАПРЕЩЕНО: close, success"
             )
         elif state.startswith("autonomous_"):
@@ -524,7 +621,7 @@ class AutonomousDecisionSource(KnowledgeSource):
 Интент клиента: {intent}
 Сообщение клиента: "{user_message}"
 Собранные данные: {collected_str}{missing_optional}
-{decision_summary}
+{terminal_status_block}{decision_summary}
 Доступные состояния для перехода:
 {states_str}
 {close_section}

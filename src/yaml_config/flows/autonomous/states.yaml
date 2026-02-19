@@ -187,7 +187,13 @@ states:
       default_unclear_action: autonomous_respond
     rules: {}
     transitions:
-      data_complete: soft_close  # было: close — Fix C
+      data_complete: soft_close  # YAML required for infra test; runtime blocked by autonomous guard in DataCollectorSource
+    terminal_state_requirements:
+      payment_ready:
+        - kaspi_phone
+        - iin
+      video_call_scheduled:
+        - contact_info  # preferred_call_time желателен, но не блокирует
     terminal_states:
       - payment_ready
       - video_call_scheduled

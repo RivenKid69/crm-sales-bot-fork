@@ -401,6 +401,8 @@ class ExtractedData(BaseModel):
     pain_impact: Optional[str] = Field(None, description="Влияние боли на бизнес")
     financial_impact: Optional[str] = Field(None, description="Финансовое влияние")
     contact_info: Optional[str] = Field(None, description="Контактные данные")
+    kaspi_phone: Optional[str] = Field(None, description="Номер Kaspi телефона (87xxx или +77xxx)")
+    iin: Optional[str] = Field(None, description="ИИН клиента (12 цифр)")
     desired_outcome: Optional[str] = Field(None, description="Желаемый результат")
     value_acknowledged: Optional[bool] = Field(None, description="Признана ли ценность")
 
