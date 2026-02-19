@@ -186,16 +186,25 @@ class StallGuardSource(KnowledgeSource):
         Priority order:
         1. Saved return state (from detour states like handle_objection)
            → preserves conversation context (RC2 fix)
-        2. YAML-configured max_turns_fallback (already template-resolved
+        2. Terminal states present — eject to soft_close, not close
+           (autonomous_closing has terminal_states; max_turns_fallback resolves to "close"
+           via {{next_phase_state}} template, which is wrong here)
+        3. YAML-configured max_turns_fallback (already template-resolved
            by ConfigLoader at load time — no runtime template resolution needed)
-        3. Default: "close"
+        4. Default: "close"
         """
         # Priority 1: saved return state for detour states (RC2 fix)
         saved_return = self._get_saved_return_state(ctx)
         if saved_return:
             return saved_return
 
-        # Priority 2: YAML fallback (templates already resolved by ConfigLoader)
+        # Priority 2: if state has terminal_states — eject to soft_close (not close)
+        # max_turns_fallback for autonomous_closing resolves to "close" from {{next_phase_state}},
+        # but with terminal states present we should soft-close instead
+        if ctx.state_config.get("terminal_states"):
+            return "soft_close"
+
+        # Priority 3: YAML fallback (templates already resolved by ConfigLoader)
         return ctx.state_config.get("max_turns_fallback", "close")
 
     def _get_saved_return_state(

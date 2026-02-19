@@ -187,7 +187,7 @@ states:
       default_unclear_action: autonomous_respond
     rules: {}
     transitions:
-      data_complete: close       # fallback compatibility, не трогать
+      data_complete: soft_close  # было: close — Fix C
     terminal_states:
       - payment_ready
       - video_call_scheduled
