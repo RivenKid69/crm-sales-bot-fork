@@ -974,6 +974,7 @@ class ResponseGenerator:
                     kb=_kb,
                     recently_used_keys=recently_used,
                     history=context.get("history", []),
+                    secondary_intents=self._get_secondary_intents(context),
                 )
             except Exception as e:
                 logger.error("Enhanced retrieval failed, falling back", error=str(e))
