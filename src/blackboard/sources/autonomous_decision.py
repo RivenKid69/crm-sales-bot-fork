@@ -181,6 +181,12 @@ class AutonomousDecisionSource(KnowledgeSource):
             )
         ]
 
+        # Inject terminal states from YAML config into available_states (data-driven)
+        # Goals are already in all_states from _base/states.yaml — no need to modify all_states
+        terminal_names = state_config.get("terminal_states", [])
+        if terminal_names:
+            available_states = available_states + [n for n in terminal_names if n not in available_states]
+
         if logger.isEnabledFor(logging.DEBUG):
             blocked = [
                 s
@@ -348,7 +354,10 @@ class AutonomousDecisionSource(KnowledgeSource):
         if decision.should_transition and decision.next_state:
             target = decision.next_state
             # Validate target state exists
-            valid_targets = set(available_states) | {"close", "soft_close", "success"}
+            valid_targets = set(available_states) | {
+                "close", "soft_close", "success",
+                "payment_ready", "video_call_scheduled",
+            }
             if target in valid_targets:
                 blackboard.propose_transition(
                     next_state=target,

@@ -483,6 +483,29 @@ def notify_operator_stub(category: str, attempt_count: int, user_message: str = 
     )
 
 
+def notify_operator_on_success(
+    outcome: str,
+    collected_data: dict,
+    conversation_id: str = "",
+) -> None:
+    """
+    Notify operator of successful close. Logs structured data.
+    TODO: Replace with real transport (Telegram/webhook) when ready.
+    """
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+    if outcome == "payment_ready":
+        relevant = {k: collected_data.get(k) for k in
+                    ("kaspi_phone", "iin", "contact_info", "business_type", "company_size")}
+    else:  # video_call_scheduled
+        relevant = {k: collected_data.get(k) for k in
+                    ("preferred_call_time", "contact_info", "contact_type", "business_type")}
+    _log.info(
+        "OPERATOR_NOTIFY | outcome=%s | conversation=%s | data=%s",
+        outcome, conversation_id, relevant,
+    )
+
+
 # =============================================================================
 # LEAD SCORING SETTINGS
 # =============================================================================
@@ -1145,6 +1168,7 @@ __all__ = [
     "get_escalated_action",
     "should_notify_operator",
     "notify_operator_stub",
+    "notify_operator_on_success",
     # Lead scoring
     "LEAD_SCORING_POSITIVE_WEIGHTS",
     "LEAD_SCORING_NEGATIVE_WEIGHTS",
