@@ -49,6 +49,10 @@ class ResponseBoundaryValidator:
     RUB_PATTERN = re.compile(r"(?iu)\bруб(?:\.|ля|лей|ль)?\b|₽")
     LEADING_ARTIFACT_PATTERN = re.compile(r"^\s*[\.\,\!\?]?\s*[—\-:]+\s*")
     DASH_AFTER_PUNCT_PATTERN = re.compile(r"([.!?])\s*[—\-]+\s*")
+    MID_CONV_GREETING_PATTERN = re.compile(
+        r'^(Здравствуйте|Добрый день|Добрый вечер|Доброе утро)[,!.]?\s*',
+        re.IGNORECASE,
+    )
 
     KNOWN_TYPO_FIXES = {
         "присылну": "пришлю",
@@ -192,10 +196,16 @@ class ResponseBoundaryValidator:
         if self.PAST_ACTION_PATTERN.search(response):
             violations.append("hallucinated_past_action")
 
+        # Greeting opener is wrong in ANY non-greeting template (mid-conversation)
+        _tmpl = context.get("selected_template", "")
+        if "greeting" not in _tmpl and self.MID_CONV_GREETING_PATTERN.match(response):
+            violations.append("mid_conversation_greeting")
+
         return violations
 
     def _sanitize(self, response: str, context: Dict[str, Any]) -> str:
         sanitized = response
+        sanitized = self._sanitize_mid_conversation_greeting(sanitized, context)
         sanitized = self._sanitize_opening_punctuation(sanitized)
         sanitized = self._sanitize_known_typos(sanitized)
         sanitized = self._sanitize_send_promise(sanitized)
@@ -249,21 +259,39 @@ class ResponseBoundaryValidator:
             logger.warning("Response boundary retry failed", error=str(exc))
             return None
 
+    def _sanitize_mid_conversation_greeting(self, response: str, context: Dict[str, Any]) -> str:
+        if "greeting" in context.get("selected_template", ""):
+            return response  # не трогаем начальное приветствие
+        cleaned = self.MID_CONV_GREETING_PATTERN.sub("", response).strip()
+        if len(cleaned) < 10:
+            return response  # safety: не возвращать пустую/короткую строку
+        if cleaned and cleaned[0].islower():
+            cleaned = cleaned[0].upper() + cleaned[1:]
+        return cleaned
+
     def _build_repair_prompt(
         self,
         response: str,
         violations: List[str],
         context: Dict[str, Any],
     ) -> str:
+        rules = [
+            "- Удали артефакты пунктуации вида '. —' и ведущие '-/—/:'.",
+            "- Исправь опечатки.",
+            "- Если ответ о цене, используй валюту ₸ и не используй руб/₽.",
+        ]
+        if "mid_conversation_greeting" in violations:
+            rules.append(
+                "- Убери приветствие в начале ответа ('Здравствуйте', 'Добрый день' и т.п.) "
+                "— диалог уже начат, не здоровайся повторно."
+            )
         return (
             "Переформулируй ответ, сохранив смысл.\n"
             "Исправь только проблемы качества границы ответа.\n"
             f"Нарушения: {', '.join(violations)}.\n"
             "Правила:\n"
-            "- Удали артефакты пунктуации вида '. —' и ведущие '-/—/:'.\n"
-            "- Исправь опечатки.\n"
-            "- Если ответ о цене, используй валюту ₸ и не используй руб/₽.\n"
-            "Контекст:\n"
+            + "\n".join(rules) + "\n"
+            + "Контекст:\n"
             f"intent={context.get('intent', '')}\n"
             f"action={context.get('action', '')}\n"
             f"selected_template={context.get('selected_template', '')}\n\n"

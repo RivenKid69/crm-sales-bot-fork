@@ -1000,6 +1000,8 @@ class ResponseGenerator:
         # Runtime safety net: redact any credentials that slipped through
         if retrieved_facts:
             retrieved_facts = self._redact_credentials(retrieved_facts)
+            # Safety net: strip conversational greeting openers injected verbatim into KB facts
+            retrieved_facts = re.sub(r'(?m)^Здравствуйте[!.]?\s*', '', retrieved_facts)
 
         # --- KB-empty hallucination guard ---
         # Short-circuit before LLM when KB returned nothing for a factual question.
