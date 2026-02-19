@@ -1407,6 +1407,9 @@ class SalesBot:
             "style_modifiers": classification.get("style_modifiers", []),
             "secondary_signals": classification.get("secondary_signals", []),
             "style_separation_applied": classification.get("style_separation_applied", False),
+            # RC1 fix: terminal_state_requirements was missing — generator.py:1134 reads this
+            # to compute closing_data_request. Without it, closing_data_request was always "".
+            "terminal_state_requirements": sm_result.get("terminal_state_requirements", {}),
         }
 
         # Determine action
