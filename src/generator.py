@@ -107,6 +107,16 @@ KB_GUARD_FACTUAL_INTENTS_EXPLICIT: set = {
 }
 KB_GUARD_ACTIONS: set = {"autonomous_respond", "continue_current_goal"}
 
+# Actions that reach generator.generate() via the else-branch in bot.py and
+# should surface a secondary price answer via blocking_with_pricing template.
+# Does NOT include escalate_to_human (covered by its own template in Step 2),
+# guard_offer_options or ask_clarification (bot.py bypasses generator for those).
+BLOCKING_ACTIONS_FOR_SECONDARY_INJECT: frozenset = frozenset({
+    "objection_limit_reached",  # ObjectionGuardSource → else → generator
+    "go_back_limit_reached",    # GoBackGuardSource → else → generator
+})
+SECONDARY_ANSWER_ELIGIBLE: frozenset = frozenset({"price_question"})
+
 
 # =============================================================================
 # PERSONALIZATION ENGINE
@@ -1031,6 +1041,9 @@ class ResponseGenerator:
 
         requested_action = action
         template_key = self._select_template_key(intent=intent, action=action, context=context)
+        # Inject blocking_with_pricing when a blocking action has a secondary price question.
+        if _is_autonomous and self._should_inject_secondary_answer(action, context):
+            template_key = "blocking_with_pricing"
         selected_template_key = template_key
 
         # Mirror real template selection when fallback is triggered in _get_template().
@@ -2001,6 +2014,26 @@ class ResponseGenerator:
 2. FELT — приведи социальное доказательство ("Многие клиенты изначально думали так же...")
 3. FOUND — покажи результат ("Но после внедрения они отметили...")
 Проявляй эмпатию. Не спорь с эмоциями. Приведи конкретный пример из базы знаний."""
+
+    def _get_secondary_intents(self, context: dict) -> list:
+        """Return secondary_intents list from context_envelope, or empty list."""
+        envelope = context.get("context_envelope")
+        return list(getattr(envelope, "secondary_intents", None) or [])
+
+    def _should_inject_secondary_answer(self, action_key: str, context: dict) -> bool:
+        """
+        Return True when a blocking action should be overridden with
+        blocking_with_pricing to answer a secondary price question.
+
+        Conditions:
+        - action_key is in BLOCKING_ACTIONS_FOR_SECONDARY_INJECT
+        - At least one secondary intent is in SECONDARY_ANSWER_ELIGIBLE
+        """
+        si = self._get_secondary_intents(context)
+        return (
+            action_key in BLOCKING_ACTIONS_FOR_SECONDARY_INJECT
+            and any(s in SECONDARY_ANSWER_ELIGIBLE for s in si)
+        )
 
     def _get_price_template_key(self, intent: str, action: str) -> str:
         """

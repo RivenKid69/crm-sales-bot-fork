@@ -228,17 +228,30 @@ class EscalationSource(KnowledgeSource):
             self._log_contribution(reason="No escalation triggers met")
             return
 
+        # When contact is already collected, lower priority to HIGH + allow
+        # combinable=True so state-machine transitions (e.g. closing→payment_ready)
+        # can be merged with the escalation action by ConflictResolver.
+        # CRITICAL+combinable=False is kept only when contact is not yet known.
+        contact_already_collected = bool(
+            ctx.collected_data.get("contact_info") or ctx.collected_data.get("kaspi_phone")
+        )
+        combinable = False
+        if contact_already_collected and escalation_priority == Priority.CRITICAL:
+            escalation_priority = Priority.HIGH
+            combinable = True
+
         # Propose BLOCKING escalation action
         blackboard.propose_action(
             action="escalate_to_human",
             priority=escalation_priority,
-            combinable=False,  # BLOCKING: stops all other processing
+            combinable=combinable,
             reason_code=f"escalation_{escalation_reason}",
             source_name=self.name,
             metadata={
                 "trigger": escalation_reason,
                 "intent": intent,
                 "turn_number": ctx.turn_number,
+                "contact_already_collected": contact_already_collected,
             }
         )
 
