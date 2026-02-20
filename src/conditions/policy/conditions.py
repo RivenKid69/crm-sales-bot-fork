@@ -680,9 +680,13 @@ def is_price_question(ctx: PolicyContext) -> bool:
     if ctx.secondary_intents:
         if price_intents & set(ctx.secondary_intents):
             return True
-    # repeated_question fallback
+    # repeated_question fallback — require current-turn price signal
     if ctx.repeated_question and ctx.repeated_question in price_intents:
-        return True
+        from src.yaml_config.constants import PRICE_KEYWORDS_STRICT
+        msg = (ctx.last_user_message or '').lower()
+        keywords = PRICE_KEYWORDS_STRICT or ["цена", "тариф", "стоимость", "сколько стоит"]
+        if msg and any(kw in msg for kw in keywords):
+            return True
     return False
 
 
