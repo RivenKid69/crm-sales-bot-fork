@@ -1159,6 +1159,8 @@ class ResponseGenerator:
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
             # Closing-specific data request (injected below)
             "closing_data_request": "",
+            # Hotel-staff politeness: direct name variable for address instructions
+            "client_name": collected.get("contact_name") or collected.get("client_name") or "",
         })
 
         # === Autonomous closing: inject data-collection instruction ===
