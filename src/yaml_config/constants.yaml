@@ -203,6 +203,24 @@ spin:
       positive_confidence: 0.85
       negative_intent: no_need
       negative_confidence: 0.7
+    discovery:
+      positive_intent: info_provided
+      positive_confidence: 0.7
+    qualification:
+      positive_intent: info_provided
+      positive_confidence: 0.7
+    presentation:
+      positive_intent: info_provided
+      positive_confidence: 0.65
+    objection_handling:
+      positive_intent: info_provided
+      positive_confidence: 0.6
+    negotiation:
+      positive_intent: info_provided
+      positive_confidence: 0.7
+    closing:
+      positive_intent: info_provided
+      positive_confidence: 0.75
 
 # =============================================================================
 # LIMITS

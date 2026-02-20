@@ -47,6 +47,48 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# UTILITY: Bot question type detection
+# =============================================================================
+
+_BOT_QUESTION_PATTERNS = {
+    "ask_for_name": [
+        r"как\s+(?:к\s+вам|вас)\s+(?:обращаться|зовут|называть)",
+        r"(?:ваше|как\s+ваше)\s+имя",
+        r"(?:представ|назов)(?:ьтесь|итесь)",
+    ],
+    "ask_for_contact": [
+        r"(?:ваш|оставьте|скиньте)\s+(?:номер|телефон|контакт|email|почт)",
+        r"как\s+(?:с\s+вами|вам)\s+(?:связаться|позвонить|написать)",
+    ],
+    "ask_for_location": [
+        r"(?:из\s+какого|в\s+каком)\s+(?:вы\s+)?(?:города|регион)",
+        r"(?:где|откуда)\s+(?:вы\s+)?(?:находитесь|работаете|расположен)",
+    ],
+    "ask_for_business": [
+        r"(?:какой|чем|что\s+за)\s+(?:у\s+вас\s+)?(?:бизнес|магазин|заведение|торговл)",
+        r"(?:чем|каким\s+бизнесом)\s+(?:вы\s+)?(?:занимаетесь|торгуете)",
+        r"(?:расскажите|опишите)\s+(?:о\s+)?(?:вашем\s+)?(?:бизнесе|деле|деятельности)",
+    ],
+}
+
+_BOT_QUESTION_REGEXES = {
+    qtype: [re.compile(p, re.IGNORECASE) for p in patterns]
+    for qtype, patterns in _BOT_QUESTION_PATTERNS.items()
+}
+
+
+def detect_bot_question_type(bot_message: Optional[str]) -> Optional[str]:
+    """Detect what type of question the bot asked in its last message."""
+    if not bot_message:
+        return None
+    for question_type, regexes in _BOT_QUESTION_REGEXES.items():
+        for regex in regexes:
+            if regex.search(bot_message):
+                return question_type
+    return None
+
+
+# =============================================================================
 # LAYER 1: SHORT ANSWER REFINEMENT (State Loop Fix)
 # =============================================================================
 
@@ -146,7 +188,10 @@ class ShortAnswerRefinementLayer(BaseRefinementLayer):
         has_action_context = ctx.last_action in self.AWAITING_DATA_ACTIONS
         is_greeting_state = ctx.state == "greeting"
 
-        return has_phase_context or has_action_context or is_greeting_state
+        # Check 4: Bot asked a specific question → short answer is likely a response
+        has_bot_question = detect_bot_question_type(ctx.last_bot_message) is not None
+
+        return has_phase_context or has_action_context or is_greeting_state or has_bot_question
 
     def _do_refine(
         self,
@@ -186,6 +231,11 @@ class ShortAnswerRefinementLayer(BaseRefinementLayer):
         ctx: RefinementContext
     ) -> Optional[tuple]:
         """Get refined intent based on sentiment and phase."""
+        # Bot asked a specific question → short answer = info_provided
+        bot_question = detect_bot_question_type(ctx.last_bot_message)
+        if bot_question:
+            return ("info_provided", 0.80)
+
         phase = ctx.phase
 
         # If no phase but in greeting, use "situation" as default
