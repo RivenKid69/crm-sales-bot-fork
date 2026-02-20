@@ -1764,6 +1764,14 @@ class SalesBot:
         # Extract fact_keys from generator metadata for fact rotation tracking
         _gen_meta = self.generator.get_last_generation_meta() if hasattr(self.generator, "get_last_generation_meta") else {}
         _fact_keys = _gen_meta.get("fact_keys", [])
+        # Response embedding for content repetition detection.
+        # Only when generator was used — for fallback/guard paths generator.generate()
+        # is NOT called, so get_last_response_embedding() would return STALE data (I15).
+        _response_embedding = (
+            self.generator.get_last_response_embedding()
+            if generator_used and hasattr(self.generator, "get_last_response_embedding")
+            else None
+        )
         self.context_window.add_turn_from_dict(
             user_message=user_message,
             bot_response=response,
@@ -1777,6 +1785,7 @@ class SalesBot:
             is_fallback=fallback_used,
             fallback_tier=fallback_tier,
             fact_keys_used=_fact_keys,
+            response_embedding=_response_embedding,
         )
 
         # 4.2 Record action outcome for personalization v2
