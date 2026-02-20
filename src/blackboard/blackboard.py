@@ -100,6 +100,7 @@ class DialogueBlackboard:
         self._transition_proposals: List[Proposal] = []
         self._data_updates: Dict[str, Any] = {}
         self._flags_to_set: Dict[str, Any] = {}
+        self._context_signals: List[Dict[str, Any]] = []
 
         # === Decision Layer ===
         self._decision: Optional[ResolvedDecision] = None
@@ -238,14 +239,42 @@ class DialogueBlackboard:
         # Create immutable context snapshot
         # FUNDAMENTAL FIX: Pass state_to_phase mapping for custom flows
         state_to_phase = {}
-        if hasattr(self._flow_config, 'state_to_phase'):
-            state_to_phase = self._flow_config.state_to_phase
+        raw_state_to_phase = getattr(self._flow_config, 'state_to_phase', {})
+        if isinstance(raw_state_to_phase, dict):
+            state_to_phase = raw_state_to_phase
+        else:
+            try:
+                state_to_phase = dict(raw_state_to_phase)
+            except Exception:
+                state_to_phase = {}
 
         # Pre-compute GoBackInfo for go_back_guard (read-only snapshot)
         go_back_info = None
         circular_flow = getattr(self._state_machine, 'circular_flow', None)
-        if circular_flow:
+        circular_flow_ready = (
+            circular_flow is not None
+            and callable(getattr(circular_flow, "get_go_back_target", None))
+            and callable(getattr(circular_flow, "is_limit_reached", None))
+            and callable(getattr(circular_flow, "get_remaining_gobacks", None))
+            and callable(getattr(circular_flow, "get_history", None))
+            and isinstance(getattr(circular_flow, "goback_count", 0), int)
+            and isinstance(getattr(circular_flow, "max_gobacks", 0), int)
+        )
+        if circular_flow_ready:
             transitions = state_config.get("transitions", {})
+            raw_history = []
+            if hasattr(circular_flow, "get_history"):
+                try:
+                    raw_history = circular_flow.get_history() or []
+                except Exception:
+                    raw_history = []
+            if isinstance(raw_history, (list, tuple)):
+                history = tuple(raw_history)
+            else:
+                try:
+                    history = tuple(raw_history)
+                except TypeError:
+                    history = ()
             go_back_info = GoBackInfo(
                 target_state=circular_flow.get_go_back_target(
                     self._state_machine.state, transitions
@@ -254,8 +283,21 @@ class DialogueBlackboard:
                 remaining=circular_flow.get_remaining_gobacks(),
                 goback_count=circular_flow.goback_count,
                 max_gobacks=circular_flow.max_gobacks,
-                history=tuple(circular_flow.get_history()),
+                history=history,
             )
+
+        flow_dict_raw = {}
+        flow_to_dict = getattr(self._flow_config, "to_dict", None)
+        if callable(flow_to_dict):
+            try:
+                flow_dict_raw = flow_to_dict() or {}
+            except Exception:
+                flow_dict_raw = {}
+        if not isinstance(flow_dict_raw, dict):
+            flow_dict_raw = {}
+
+        raw_states = getattr(self._flow_config, "states", {})
+        valid_states = frozenset(raw_states.keys()) if isinstance(raw_states, dict) else frozenset()
 
         self._context = ContextSnapshot(
             state=self._state_machine.state,
@@ -266,12 +308,10 @@ class DialogueBlackboard:
             turn_number=tracker.turn_number if tracker else 0,
             persona=persona,
             state_config=deep_freeze_dict(dict(state_config)),
-            flow_config=deep_freeze_dict(
-                self._flow_config.to_dict() if hasattr(self._flow_config, 'to_dict') else {}
-            ),
+            flow_config=deep_freeze_dict(flow_dict_raw),
             state_to_phase=deep_freeze_dict(dict(state_to_phase)),
             state_before_objection=self._state_machine.state_before_objection if hasattr(self._state_machine, 'state_before_objection') else getattr(self._state_machine, '_state_before_objection', None),
-            valid_states=frozenset(self._flow_config.states.keys()) if hasattr(self._flow_config, 'states') else frozenset(),
+            valid_states=valid_states,
             go_back_info=go_back_info,
             # Multi-tenancy support
             tenant_id=self._tenant_config.tenant_id,
@@ -286,6 +326,7 @@ class DialogueBlackboard:
         self._transition_proposals.clear()
         self._data_updates.clear()
         self._flags_to_set.clear()
+        self._context_signals.clear()
 
         # Clear collision audit trail
         self._data_update_sources.clear()
@@ -526,6 +567,27 @@ class DialogueBlackboard:
     def get_flags_to_set(self) -> Dict[str, Any]:
         """Get proposed flags to set."""
         return dict(self._flags_to_set)
+
+    def add_context_signal(self, source_name: str, signal: Dict[str, Any]) -> None:
+        """
+        Add non-binding context signal for downstream sources (e.g., LLM decision).
+
+        Context signals are turn-local, reset in begin_turn(), and never participate
+        in conflict resolution because they are not action/transition proposals.
+        """
+        payload = dict(signal or {})
+        payload.setdefault("source", source_name)
+        self._context_signals.append(payload)
+
+        logger.debug(
+            "Context signal added: source=%s keys=%s",
+            source_name,
+            sorted(payload.keys()),
+        )
+
+    def get_context_signals(self) -> List[Dict[str, Any]]:
+        """Get turn-local context signals accumulated by prior sources."""
+        return list(self._context_signals)
 
     # =========================================================================
     # DECISION LAYER (Write by Resolver)

@@ -1,0 +1,13 @@
+baseline_generated_at=2026-02-20T20:31:09+05:00
+git_commit_hash=8f23f4df9888537e8f84eac973a48a39e7a8cabf
+simulation_script=scripts/run_full_simulation_100.py
+run_method=python3 inline globals override + main()
+TOTAL_DIALOGS=10
+AUTONOMOUS_FLOW=autonomous
+PARALLEL_THREADS=1
+TOTAL_PERSONAS=21
+RANDOM_SEED=42
+MODEL_NAME=qwen3:14b
+OLLAMA_URL=http://localhost:11434
+source_report_dir=reports/simulation_20260220_202508
+baseline_json=results/baseline_before_refactoring.json

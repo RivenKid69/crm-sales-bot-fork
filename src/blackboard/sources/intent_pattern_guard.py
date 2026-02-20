@@ -95,6 +95,11 @@ class IntentPatternGuardSource(KnowledgeSource):
         ctx = blackboard.get_context()
         current_intent = ctx.current_intent
 
+        # Autonomous flow delegates pattern fatigue judgment to LLM manager.
+        state_config = getattr(ctx, "state_config", {})
+        if isinstance(state_config, dict) and state_config.get("autonomous", False):
+            return False
+
         # O(1) lookup
         if current_intent not in self._all_pattern_intents:
             return False

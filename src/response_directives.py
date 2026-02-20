@@ -453,7 +453,8 @@ class ResponseDirectivesBuilder:
 
     def _apply_question_suppression(self, directives: ResponseDirectives) -> None:
         """Apply question suppression based on client question density."""
-        density = getattr(self.envelope, 'client_question_density', 0)
+        density_raw = getattr(self.envelope, 'client_question_density', 0)
+        density = density_raw if isinstance(density_raw, (int, float)) else 0
         persona = (self.envelope.collected_data or {}).get("persona", "")
         thresholds = get_persona_question_thresholds(persona)
         if density >= thresholds.get("suppress", 2):
