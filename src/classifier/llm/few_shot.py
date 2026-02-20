@@ -188,6 +188,22 @@ FEW_SHOT_EXAMPLES = [
         }
     },
 
+    # Bare name — ответ на вопрос бота, НЕ приветствие
+    {
+        "message": "Султан",
+        "context": {"last_action": "autonomous_respond", "spin_phase": "discovery"},
+        "result": {
+            "intent": "info_provided",
+            "confidence": 0.85,
+            "reasoning": "Короткий ответ — имя в ответ на вопрос бота",
+            "extracted_data": {"contact_name": "Султан"},
+            "alternatives": [
+                {"intent": "greeting", "confidence": 0.40},
+                {"intent": "situation_provided", "confidence": 0.20}
+            ]
+        }
+    },
+
     # SPIN проблема
     {
         "message": "Постоянно теряем клиентов из-за того что забываем перезвонить",

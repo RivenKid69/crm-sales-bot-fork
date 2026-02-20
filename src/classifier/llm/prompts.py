@@ -526,6 +526,12 @@ def build_classification_prompt(
     if context.get("last_intent"):
         context_parts.append(f"Предыдущий интент: {context['last_intent']}")
 
+    if context.get("last_bot_message"):
+        bot_msg = context["last_bot_message"]
+        if len(bot_msg) > 200:
+            bot_msg = "..." + bot_msg[-200:]
+        context_parts.append(f'Последнее сообщение бота: "{bot_msg}"')
+
     context_str = "\n".join(context_parts) if context_parts else "Нет контекста"
 
     # Получаем few-shot примеры для улучшения классификации
