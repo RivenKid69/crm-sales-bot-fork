@@ -71,6 +71,7 @@ BUILTIN_SOURCE_NAMES = (
     "IntentProcessorSource",
     "AutonomousDecisionSource",
     "PhaseExhaustedSource",
+    "ContentRepetitionGuardSource",
     "StallGuardSource",
     "TransitionResolverSource",
     "EscalationSource",
@@ -81,6 +82,7 @@ def _get_builtin_source_specs() -> List[Dict[str, Any]]:
     """Get built-in source registration specs (lazy imports)."""
 
     from .sources.autonomous_decision import AutonomousDecisionSource
+    from .sources.content_repetition_guard import ContentRepetitionGuardSource
     from .sources.conversation_guard_ks import ConversationGuardSource
     from .sources.data_collector import DataCollectorSource
     from .sources.disambiguation import DisambiguationSource
@@ -182,6 +184,13 @@ def _get_builtin_source_specs() -> List[Dict[str, Any]]:
             "priority_order": 43,
             "config_key": "phase_exhausted",
             "description": "Offers options menu when phase exhausted without progress",
+        },
+        {
+            "source_class": ContentRepetitionGuardSource,
+            "name": "ContentRepetitionGuardSource",
+            "priority_order": 44,
+            "config_key": "content_repetition_guard",
+            "description": "Cross-state window-based guard against content repetition",
         },
         {
             "source_class": StallGuardSource,

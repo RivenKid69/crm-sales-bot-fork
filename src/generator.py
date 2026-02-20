@@ -501,6 +501,7 @@ class ResponseGenerator:
             "selected_template_key": None,
             "validation_events": [],
         }
+        self._last_response_embedding: Optional[List[float]] = None
 
         # CategoryRouter: LLM-классификация категорий перед поиском
         self.category_router = None
@@ -761,6 +762,23 @@ class ResponseGenerator:
         """Return metadata from the latest generate() call."""
         return dict(self._last_generation_meta)
 
+    def get_last_response_embedding(self) -> Optional[List[float]]:
+        """Embedding последнего сгенерированного ответа (кэш)."""
+        return self._last_response_embedding
+
+    def _compute_and_cache_response_embedding(self, response: str) -> Optional[List[float]]:
+        """Вычисляет embedding ответа, кэширует, возвращает."""
+        self._last_response_embedding = None  # Reset BEFORE attempt (prevents stale data on failure)
+        try:
+            retriever = get_retriever()
+            if retriever is None or retriever.embedder is None:
+                return None
+            emb = retriever.embedder.encode(response)
+            self._last_response_embedding = emb.tolist() if emb is not None else None
+            return self._last_response_embedding
+        except Exception:
+            return None
+
     def _get_style_intents(self) -> Set[str]:
         """Lazy-load style intents from config (cached)."""
         if self._style_intents_cache is None:
@@ -840,12 +858,17 @@ class ResponseGenerator:
     def _select_template_key(self, intent: str, action: str, context: Dict[str, Any]) -> str:
         """
         Select template key with explicit priority:
+        0) ContentRepetitionGuard actions — dedicated templates, never remap (I19)
         1) pricing-correct action from policy
         2) intent-aware pricing routing
         3) objection routing
         4) style intent request_brevity (only for non-factual actions)
         5) transition/default mapping
         """
+        # ContentRepetitionGuard actions — dedicated templates, never remap (I19)
+        if action in {"redirect_after_repetition", "escalate_repeated_content"}:
+            return action
+
         from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
 
         if action in PRICING_CORRECT_ACTIONS:
@@ -1363,6 +1386,11 @@ class ResponseGenerator:
         best_response = ""
         history = context.get("history", [])
 
+        # Intervention actions have dedicated templates — skip dedup to preserve semantics (I20)
+        DEDUP_EXEMPT_ACTIONS = {"redirect_after_repetition", "escalate_repeated_content",
+                                "escalate_to_human", "guard_soft_close"}
+        skip_dedup = requested_action in DEDUP_EXEMPT_ACTIONS
+
         for attempt in range(max_retries):
             response = self.llm.generate(prompt)
 
@@ -1371,7 +1399,7 @@ class ResponseGenerator:
                 cleaned = self._clean(response)
 
                 # === НОВОЕ: Проверка на дубликаты ===
-                if flags.is_enabled("response_deduplication") and self._is_duplicate(cleaned, history):
+                if flags.is_enabled("response_deduplication") and not skip_dedup and self._is_duplicate(cleaned, history):
                     logger.info(
                         "Duplicate response detected, regenerating",
                         response_preview=cleaned[:50]
@@ -1387,6 +1415,7 @@ class ResponseGenerator:
                     selected_template_key=selected_template_key,
                     retrieved_facts=retrieved_facts,
                 )
+                self._compute_and_cache_response_embedding(processed)
                 self._last_generation_meta = {
                     "requested_action": requested_action,
                     "selected_template_key": selected_template_key,
@@ -1411,7 +1440,7 @@ class ResponseGenerator:
         final_response = best_response if best_response else "Чем могу помочь?"
 
         # === НОВОЕ: Проверка на дубликаты для fallback случая ===
-        if flags.is_enabled("response_deduplication") and self._is_duplicate(final_response, history):
+        if flags.is_enabled("response_deduplication") and not skip_dedup and self._is_duplicate(final_response, history):
             final_response = self._regenerate_with_diversity(prompt, context, final_response)
 
         self._add_to_response_history(final_response)
@@ -1422,6 +1451,7 @@ class ResponseGenerator:
             selected_template_key=selected_template_key,
             retrieved_facts=retrieved_facts,
         )
+        self._compute_and_cache_response_embedding(processed)
         self._last_generation_meta = {
             "requested_action": requested_action,
             "selected_template_key": selected_template_key,
@@ -1785,8 +1815,10 @@ class ResponseGenerator:
             import numpy as np
 
             retriever = get_retriever()
-            emb_a = retriever.embed_query(text_a)
-            emb_b = retriever.embed_query(text_b)
+            if retriever is None or retriever.embedder is None:
+                return 0.0
+            emb_a = retriever.embedder.encode(text_a)
+            emb_b = retriever.embedder.encode(text_b)
 
             # Cosine similarity
             dot_product = np.dot(emb_a, emb_b)

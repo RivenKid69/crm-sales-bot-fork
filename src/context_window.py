@@ -147,6 +147,9 @@ class TurnContext:
     # Fact sections used in this turn (for fact rotation)
     fact_keys_used: List[str] = field(default_factory=list)
 
+    # Response embedding for content repetition detection (transient, not serialized)
+    response_embedding: Optional[List[float]] = field(default=None, repr=False)
+
     # Config-driven mappings (use DEFAULT_* if None)
     state_order: Optional[Dict[str, int]] = field(default=None, repr=False)
     progress_intents: Optional[set] = field(default=None, repr=False)
@@ -1016,6 +1019,65 @@ class ContextWindow:
             keys.update(getattr(turn, 'fact_keys_used', []))
         return keys
 
+    def compute_content_repeat_count(self, window: int = 5) -> int:
+        """Сколько из последних `window` ответов семантически совпадают с текущим.
+
+        Window-based (НЕ consecutive) — ловит и прямые петли, и oscillation (A-B-A-B),
+        и meta-loops (KB→redirect→KB). Cross-state: state не учитывается.
+
+        Primary: cosine similarity response embeddings (универсальный).
+        Secondary: fact_keys overlap снижает порог cosine (детерминистическое подтверждение).
+        Fallback: если embeddings нет — только fact_keys.
+        """
+        if len(self.turns) < 2:
+            return 0
+
+        ref_turn = self.turns[-1]
+        ref_emb = ref_turn.response_embedding
+        ref_keys = set(ref_turn.fact_keys_used)
+
+        if ref_emb is None and not ref_keys:
+            return 0
+
+        count = 0
+        # Scan window (excluding the reference turn itself)
+        start = max(0, len(self.turns) - 1 - window)
+        for i in range(start, len(self.turns) - 1):
+            turn = self.turns[i]
+            is_similar = False
+
+            if ref_emb is not None and turn.response_embedding is not None:
+                cosine = self._cosine_similarity(ref_emb, turn.response_embedding)
+                fact_overlap = self._jaccard_overlap(ref_keys, set(turn.fact_keys_used))
+                threshold = 0.75 if fact_overlap >= 0.5 else 0.80
+                is_similar = cosine >= threshold
+            elif ref_keys and turn.fact_keys_used:
+                fact_overlap = self._jaccard_overlap(ref_keys, set(turn.fact_keys_used))
+                is_similar = fact_overlap >= 0.5
+
+            if is_similar:
+                count += 1
+
+        return count
+
+    @staticmethod
+    def _cosine_similarity(a: List[float], b: List[float]) -> float:
+        """Cosine similarity без numpy (context_window не импортирует numpy)."""
+        import math
+        dot = sum(x * y for x, y in zip(a, b))
+        norm_a = math.sqrt(sum(x * x for x in a))
+        norm_b = math.sqrt(sum(x * x for x in b))
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        return dot / (norm_a * norm_b)
+
+    @staticmethod
+    def _jaccard_overlap(a: set, b: set) -> float:
+        """Jaccard overlap between two sets."""
+        if not a or not b:
+            return 0.0
+        return len(a & b) / len(a | b)
+
     def add_turn(self, turn: TurnContext) -> None:
         """
         Добавить ход в окно.
@@ -1057,6 +1119,7 @@ class ContextWindow:
         fallback_tier: Optional[str] = None,
         is_disambiguation: bool = False,
         fact_keys_used: List[str] = None,
+        response_embedding: Optional[List[float]] = None,
     ) -> None:
         """
         Добавить ход из отдельных параметров.
@@ -1077,6 +1140,7 @@ class ContextWindow:
             fallback_tier=fallback_tier,
             is_disambiguation=is_disambiguation,
             fact_keys_used=fact_keys_used or [],
+            response_embedding=response_embedding,
             state_order=self._state_order,
             progress_intents=self._progress_intents,
         )

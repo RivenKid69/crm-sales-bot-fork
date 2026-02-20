@@ -80,6 +80,9 @@ class ReasonCode(Enum):
     POLICY_CTA_SOFT = "policy.cta_soft"
     POLICY_PRICE_OVERRIDE = "policy.price_override"  # НОВОЕ: override для вопросов о цене
 
+    # Content Repetition
+    REPAIR_CONTENT_REPETITION = "repair.content_repetition"
+
     # Guard/Fallback
     GUARD_INTERVENTION = "guard.intervention"
     GUARD_FRUSTRATION = "guard.frustration"
@@ -188,6 +191,7 @@ class ContextEnvelope:
     is_stuck: bool = False
     consecutive_same_state: int = 0
     consecutive_same_action: int = 0
+    content_repeat_count: int = 0
     repeated_question: Optional[str] = None
     confidence_trend: str = "unknown"
     avg_confidence: float = 0.0
@@ -687,6 +691,7 @@ class ContextEnvelopeBuilder:
             # State changed since last turn — this is turn 1 in new state
             envelope.consecutive_same_state = 1
         envelope.consecutive_same_action = cw.get_consecutive_same_action()
+        envelope.content_repeat_count = cw.compute_content_repeat_count()
         envelope.repeated_question = cw.detect_repeated_question(
             include_current_intent=self.current_intent
         )
