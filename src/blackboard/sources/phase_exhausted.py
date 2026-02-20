@@ -72,14 +72,19 @@ class PhaseExhaustedSource(KnowledgeSource):
         if envelope is None:
             return False
 
+        # Autonomous flow delegates phase-stall handling to LLM manager.
+        state_config = getattr(ctx, "state_config", {})
+        if isinstance(state_config, dict) and state_config.get("autonomous", False):
+            return False
+
         consecutive = getattr(envelope, 'consecutive_same_state', 0)
-        max_turns = ctx.state_config.get("max_turns_in_state", 0)
+        max_turns = state_config.get("max_turns_in_state", 0) if isinstance(state_config, dict) else 0
 
         # Skip terminal/disabled states (same guard as StallGuardSource)
         if max_turns <= 0:
             return False
 
-        phase_threshold = ctx.state_config.get("phase_exhaust_threshold", 3)
+        phase_threshold = state_config.get("phase_exhaust_threshold", 3) if isinstance(state_config, dict) else 3
 
         # Only fire in exclusive window: [effective_threshold, stall_soft_threshold)
         # Above this window, StallGuardSource handles escalation

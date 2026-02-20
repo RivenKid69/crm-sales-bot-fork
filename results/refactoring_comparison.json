@@ -1,0 +1,85 @@
+{
+  "generated_at": "2026-02-20T21:03:28.546206",
+  "baseline_file": "results/baseline_before_refactoring.json",
+  "after_file": "results/after_refactoring.json",
+  "metrics": {
+    "terminal_state_rate_percent_payment_or_video_call": {
+      "baseline": 30.0,
+      "after": 40.0,
+      "delta": 10.0,
+      "target": ">= baseline",
+      "meets_target": true
+    },
+    "avg_turns_to_terminal_payment_or_video_call": {
+      "baseline": 6.67,
+      "after": 9,
+      "delta": 2.33,
+      "target": "<= baseline",
+      "meets_target": false
+    },
+    "false_price_question_trigger_percent_proxy": {
+      "baseline": 0.0,
+      "after": 0.0,
+      "delta": 0.0,
+      "target": "-> 0%",
+      "meets_target": true
+    },
+    "false_fact_question_trigger_percent_proxy": {
+      "baseline": 16.67,
+      "after": 0.0,
+      "delta": -16.67,
+      "target": "-> 0%",
+      "meets_target": true
+    },
+    "template_override_percent_non_autonomous_respond_in_autonomous_states": {
+      "baseline": 60.29,
+      "after": 16.05,
+      "delta": -44.24,
+      "target": "-> 0% in autonomous",
+      "meets_target": false
+    },
+    "overlay_activations_total_percent": {
+      "baseline": 34.6,
+      "after": 0.0,
+      "delta": -34.6,
+      "target": "-> 0% in autonomous",
+      "meets_target": true
+    },
+    "spin_phase_coverage_avg": {
+      "baseline": 41.43,
+      "after": 44.29,
+      "delta": 2.86,
+      "target": ">= baseline",
+      "meets_target": true
+    },
+    "template_override_percent_pricing_fact_actions_in_autonomous_states": {
+      "baseline": 26.47,
+      "after": 9.88,
+      "delta": -16.59,
+      "target": "-> 0% in autonomous",
+      "meets_target": false
+    }
+  },
+  "baseline_counts": {
+    "dialogs_total": 10,
+    "turns_total": 81,
+    "autonomous_turns_total": 68,
+    "terminal_dialogs_count": 3,
+    "price_actions_count": 15,
+    "fact_actions_count": 6,
+    "template_override_count": 41,
+    "pricing_fact_override_count": 18
+  },
+  "after_counts": {
+    "dialogs_total": 10,
+    "turns_total": 89,
+    "autonomous_turns_total": 81,
+    "terminal_dialogs_count": 4,
+    "price_actions_count": 2,
+    "fact_actions_count": 6,
+    "template_override_count": 13,
+    "false_price_count": 0,
+    "false_fact_count": 0,
+    "pricing_fact_override_count": 8
+  }
+}

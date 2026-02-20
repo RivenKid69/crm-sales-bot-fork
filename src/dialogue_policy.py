@@ -379,6 +379,15 @@ class DialoguePolicy:
         - summarize_and_clarify: суммировать + уточнить
         - answer_with_summary: ответить + краткое резюме
         """
+        if ctx.state.startswith("autonomous_"):
+            if trace:
+                trace.set_result(
+                    None,
+                    Resolution.NONE,
+                    matched_condition="repair_overlay_skipped_autonomous",
+                )
+            return None
+
         # In handle_objection, yield to objection overlay (p3) when
         # trigger is only repeated_question (not stuck/oscillation which are more severe)
         if (ctx.state == "handle_objection"
@@ -523,6 +532,15 @@ class DialoguePolicy:
         - reframe_value: переформулировать ценность
         - handle_repeated_objection: эскалация тактики
         """
+        if ctx.state.startswith("autonomous_"):
+            if trace:
+                trace.set_result(
+                    None,
+                    Resolution.NONE,
+                    matched_condition="objection_overlay_skipped_autonomous",
+                )
+            return None
+
         signals = {
             "repeated_objection_types": ctx.repeated_objection_types,
             "total_objections": ctx.total_objections,
@@ -601,6 +619,15 @@ class DialoguePolicy:
         Этот оверлей гарантирует что вопрос о цене НИКОГДА не игнорируется,
         даже если state machine вернул другой action.
         """
+        if ctx.state.startswith("autonomous_"):
+            if trace:
+                trace.set_result(
+                    None,
+                    Resolution.NONE,
+                    matched_condition="price_overlay_skipped_autonomous",
+                )
+            return None
+
         current_action = ctx.current_action
 
         # Если action уже правильный — проверяем нет ли pending guard fallback
@@ -717,6 +744,15 @@ class DialoguePolicy:
         Actions:
         - добавить soft CTA (не меняем action, добавляем directive)
         """
+        if ctx.state.startswith("autonomous_"):
+            if trace:
+                trace.set_result(
+                    None,
+                    Resolution.NONE,
+                    matched_condition="breakthrough_overlay_skipped_autonomous",
+                )
+            return None
+
         signals = {
             "has_breakthrough": True,
             "turns_since_breakthrough": ctx.turns_since_breakthrough,
@@ -755,6 +791,15 @@ class DialoguePolicy:
         Actions:
         - Более осторожные действия (уточнение вместо прогресса)
         """
+        if ctx.state.startswith("autonomous_"):
+            if trace:
+                trace.set_result(
+                    None,
+                    Resolution.NONE,
+                    matched_condition="conservative_overlay_skipped_autonomous",
+                )
+            return None
+
         signals = {
             "confidence_trend": ctx.confidence_trend,
             "momentum_direction": ctx.momentum_direction,

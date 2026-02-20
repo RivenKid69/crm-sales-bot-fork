@@ -124,8 +124,8 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
     ),
 
     # Feature questions
-    # Removed homonyms: "может" (maybe/can), "какие" (generic which/what).
-    # "работает" kept — in sales context almost always means "how does it work".
+    # Removed homonyms: "может" (maybe/can), "какие" (generic which/what),
+    # "работает" (e.g., "магазин работает" false positive).
     "question_features": SecondaryIntentPattern(
         intent="question_features",
         patterns=[
@@ -139,8 +139,9 @@ DEFAULT_SECONDARY_INTENT_PATTERNS: Dict[str, SecondaryIntentPattern] = {
         ],
         keywords=frozenset({
             "функции", "функционал", "возможности", "возможность",
-            "умеет", "работает",
-            # Removed: "может" (homonym: may/maybe), "какие" (too generic)
+            "умеет",
+            # Removed: "может" (homonym: may/maybe), "какие" (too generic),
+            # "работает" (generic operational status phrase)
         }),
         min_confidence=0.85,
         priority=80,

@@ -10,8 +10,7 @@ Calls LLM generate_structured() with Pydantic schema to decide:
 
 Safety layers:
 1. Decision history — informs LLM about its previous decisions (soft signal)
-2. Hard override — after N consecutive stay-decisions, forces transition
-   with HIGH priority, bypassing LLM entirely (same principle as StallGuard)
+2. Deterministic terminal gate — blocks premature terminal transition without required data
 
 Priority: NORMAL (42 in registry order).
 Safety sources (GoBackGuard, ConversationGuard, ObjectionGuard, PriceQuestion,
@@ -27,7 +26,6 @@ from pydantic import BaseModel
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
-from src.yaml_config.constants import OBJECTION_INTENTS
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
@@ -66,11 +64,9 @@ class AutonomousDecisionSource(KnowledgeSource):
     Uses LLM to evaluate conversation context and decide whether to
     transition to the next sales phase.
 
-    Safety: Hard override forces transition after N consecutive stay-decisions
-    (threshold = phase_exhaust_threshold from state config). This creates:
-    - Turn 3: PhaseExhaustedSource shows options (NORMAL)
-    - Turn 4: Hard override forces transition (HIGH, LLM bypassed)
-    - Turn 5-6: StallGuard soft/hard as ultimate backstop
+    Safety: LLM remains in control for in-stage progression decisions.
+    Deterministic guards (terminal gate, StallGuard, ConversationGuard, etc.)
+    still provide hard safety limits around that decision.
     """
 
     def __init__(self, llm: Any = None, name: str = "AutonomousDecisionSource"):
@@ -145,8 +141,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         """
         Call LLM to decide state transition, then propose to blackboard.
 
-        Hard override: if stay-streak >= phase_exhaust_threshold, bypass LLM
-        and force transition with HIGH priority.
+        LLM-driven path only: no counter-based hard override.
         """
         ctx = blackboard.get_context()
         state = ctx.state
@@ -211,108 +206,11 @@ class AutonomousDecisionSource(KnowledgeSource):
         optional_data = state_config.get("optional_data", [])
         terminal_requirements = state_config.get("terminal_state_requirements", {})
 
-        # =====================================================================
-        # Hard override: force transition after consecutive stay decisions
-        # Threshold = phase_exhaust_threshold (options shown 1 turn before)
-        # =====================================================================
-        stay_override_threshold = state_config.get("phase_exhaust_threshold", 3)
+        # Build prompt for LLM decision with context signals from prior sources.
+        context_signals = blackboard.get_context_signals()
+        total_objections = int(getattr(envelope, "total_objections", 0) or 0)
+        repeated_objection_types = list(getattr(envelope, "repeated_objection_types", []) or [])
 
-        # Count CONSECUTIVE stays (break on first transition or state change)
-        stay_streak = 0
-        stay_streak_records: List[AutonomousDecisionRecord] = []
-        for d in reversed(self._decision_history):
-            if d.state != state:
-                break
-            if not d.should_transition:
-                stay_streak += 1
-                stay_streak_records.append(d)        # <-- collect for objection detection
-            else:
-                break  # Streak broken by transition decision
-
-        if stay_streak >= stay_override_threshold:
-            resolved_params = state_config.get("_resolved_params", {})
-
-            # Detect objection-driven streak: if ALL consecutive stays were caused by
-            # client objections (client disinterested), route to soft_close instead of
-            # forcing next phase (which would be wrong — client won't engage there either).
-            _objection_set = set(OBJECTION_INTENTS)
-            all_objection_driven = bool(stay_streak_records) and all(
-                d.intent in _objection_set for d in stay_streak_records
-            )
-
-            if all_objection_driven:
-                target = "soft_close"
-                override_type = "objection_driven"
-            elif terminal_names:
-                # Apply terminal gate: pick first terminal (easiest first = reversed order)
-                # where all required data is already collected. If none qualify → soft_close.
-                target = None
-                for t in reversed(terminal_names):
-                    reqs = terminal_requirements.get(t, [])
-                    missing = [f for f in reqs if not collected_data.get(f)]
-                    if not missing:
-                        target = t
-                        break
-                if target:
-                    override_type = "phase_exhausted_terminal"
-                else:
-                    # No terminal has required data — graceful exit
-                    target = "soft_close"
-                    override_type = "phase_exhausted_no_data"
-                    logger.info(
-                        "AutonomousDecision: HARD OVERRIDE — no terminal state has required data "
-                        "(missing for %s), falling back to soft_close",
-                        {t: [f for f in terminal_requirements.get(t, []) if not collected_data.get(f)]
-                         for t in terminal_names},
-                    )
-            else:
-                target = (
-                    resolved_params.get("next_phase_state")
-                    or state_config.get("max_turns_fallback")  # safety fallback
-                    or "soft_close"
-                )
-                override_type = "phase_exhausted"
-
-            if target not in all_states and target not in ("close", "soft_close", "success"):
-                target = "soft_close"
-
-            logger.info(
-                "AutonomousDecision: HARD OVERRIDE — %d consecutive stays in %s, "
-                "forcing transition to %s (type=%s, LLM bypassed)",
-                stay_streak, state, target, override_type,
-            )
-
-            # Record the forced decision
-            self._decision_history.append(AutonomousDecisionRecord(
-                turn_in_state=turn_in_state,
-                intent=intent,
-                state=state,
-                should_transition=True,
-                next_state=target,
-                reasoning=f"hard_override_{override_type}_{stay_streak}_stays",
-            ))
-
-            # Propose with HIGH priority — same as StallGuard
-            blackboard.propose_action(
-                action="autonomous_respond",
-                priority=Priority.HIGH,
-                combinable=True,
-                reason_code=f"autonomous_hard_override_{stay_streak}_stays",
-                source_name=self.name,
-            )
-            blackboard.propose_transition(
-                next_state=target,
-                priority=Priority.HIGH,
-                reason_code=f"autonomous_hard_override_{stay_streak}_stays",
-                source_name=self.name,
-            )
-            return  # Skip LLM call entirely
-
-        # =====================================================================
-        # Normal path: LLM decides with decision history context
-        # =====================================================================
-
-        # Build prompt for LLM decision (with decision history)
         prompt = self._build_decision_prompt(
             state=state,
             phase=current_phase,
@@ -327,6 +225,9 @@ class AutonomousDecisionSource(KnowledgeSource):
             optional_data=optional_data,
             terminal_names=terminal_names,
             terminal_requirements=terminal_requirements,
+            context_signals=context_signals,
+            total_objections=total_objections,
+            repeated_objection_types=repeated_objection_types,
         )
 
         try:
@@ -441,9 +342,8 @@ class AutonomousDecisionSource(KnowledgeSource):
             )
 
         # Record decision in history AFTER gate resolution so stay_streak counts actual outcomes.
-        # If terminal_gate_blocked=True, LLM wanted to transition but code forced stay —
-        # record as should_transition=False so the streak counter increments correctly
-        # and hard override eventually fires instead of looping forever.
+        # If terminal_gate_blocked=True, LLM wanted to transition but code forced stay.
+        # Record as stay to keep history aligned with actual transition outcome.
         actual_transitioned = decision.should_transition and not terminal_gate_blocked
         self._decision_history.append(AutonomousDecisionRecord(
             turn_in_state=turn_in_state,
@@ -473,6 +373,9 @@ class AutonomousDecisionSource(KnowledgeSource):
         optional_data: list = None,
         terminal_names: list = None,
         terminal_requirements: dict = None,
+        context_signals: list = None,
+        total_objections: int = 0,
+        repeated_objection_types: list = None,
     ) -> str:
         """Build the decision prompt for LLM."""
         collected_keys = {
@@ -511,7 +414,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             if missing:
                 missing_optional = f"\nЖелательно собрать: {', '.join(missing)}"
 
-        # Decision history — helps LLM avoid repetition before hard override
+        # Decision history — helps LLM avoid repetitive stay decisions
         decision_summary = ""
         recent = [d for d in self._decision_history[-5:] if d.state == state]
         if recent:
@@ -528,6 +431,33 @@ class AutonomousDecisionSource(KnowledgeSource):
                 + "\n".join(lines)
                 + warning
             )
+
+        # Context signals from prior sources (price/fact) + objection envelope context.
+        signal_lines: List[str] = []
+        for signal in context_signals or []:
+            if signal.get("price_intent_detected"):
+                category = signal.get("category", "price")
+                signal_lines.append(
+                    f"- Клиент спрашивает о цене ({category}). Реши: ответить в текущем этапе или переходить дальше."
+                )
+            fact_requested = signal.get("fact_requested")
+            if fact_requested:
+                signal_lines.append(
+                    f"- Клиент просит факты о продукте ({fact_requested}). Реши: ответить в текущем этапе или переходить дальше."
+                )
+
+        if intent.startswith("objection_"):
+            objection_type = intent.replace("objection_", "")
+            repeated = ", ".join(repeated_objection_types or [])
+            repeated_part = f"; повторяющиеся типы: {repeated}" if repeated else ""
+            signal_lines.append(
+                f"- Клиент возражает ({objection_type}), это возражение №{max(total_objections, 1)}{repeated_part}. "
+                "Реши: отработать возражение сейчас или предложить альтернативу."
+            )
+
+        context_signal_block = ""
+        if signal_lines:
+            context_signal_block = "\nКОНТЕКСТНЫЕ СИГНАЛЫ:\n" + "\n".join(signal_lines)
 
         # Objection-specific decision rules (softened — no unconditional hard lock)
         objection_rules = ""
@@ -628,6 +558,7 @@ class AutonomousDecisionSource(KnowledgeSource):
 Цель этапа: {goal}
 Интент клиента: {intent}
 Сообщение клиента: "{user_message}"
+{context_signal_block}
 Собранные данные: {collected_str}{missing_optional}
 {terminal_status_block}{decision_summary}
 Доступные состояния для перехода:

@@ -44,6 +44,7 @@ Usage:
 
 from typing import Set, Optional, Union, Dict, List, Any, TYPE_CHECKING, FrozenSet
 import logging
+import re
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
@@ -173,6 +174,14 @@ class FactQuestionSource(KnowledgeSource):
         "unclear", "go_back", "fallback_close",
     })
 
+    # Strict generic fact cue fallback for repeated_question carryover protection.
+    _GENERIC_FACT_SIGNAL_RE = re.compile(
+        r"\?|(?:^|\s)(?:как|какие|какой|какая|что|где|когда|почему|зачем|"
+        r"сколько|ли|расскажите|поддерживает|интеграц|функци|возможност|"
+        r"безопасн|оборудован)(?:\s|$)",
+        re.IGNORECASE,
+    )
+
     # Default action when no YAML rule defined
     DEFAULT_ACTION = "answer_with_facts"
 
@@ -293,16 +302,7 @@ class FactQuestionSource(KnowledgeSource):
         if not self._enabled:
             return False
 
-        # Autonomous states have LLM-driven response with KB context via
-        # kb_categories. FactQuestionSource's static template would override
-        # the LLM's varied response.
         ctx = blackboard.get_context()
-        state_config = getattr(ctx, "state_config", {}) if ctx is not None else {}
-        if state_config.get("autonomous", False):
-            self._log_contribution(
-                reason="Skipped: autonomous state uses LLM-driven response"
-            )
-            return False
 
         # Check 1: Primary intent
         if blackboard.current_intent in self._fact_intents:
@@ -324,7 +324,10 @@ class FactQuestionSource(KnowledgeSource):
         if envelope:
             rq = getattr(envelope, 'repeated_question', None)
             if rq and rq in self._fact_intents:
-                if blackboard.current_intent not in self._STALE_BLOCK_INTENTS:
+                if blackboard.current_intent in self._STALE_BLOCK_INTENTS:
+                    return False
+                msg = self._get_last_user_message(ctx)
+                if self._has_fact_signal_in_message(rq, msg):
                     return True
 
         return False
@@ -351,6 +354,64 @@ class FactQuestionSource(KnowledgeSource):
                 return list(secondary)
 
         return []
+
+    def _get_last_user_message(self, ctx: Any) -> str:
+        """Get normalized last user message from context envelope."""
+        envelope = getattr(ctx, "context_envelope", None)
+        raw_message = getattr(envelope, "last_user_message", "") if envelope is not None else ""
+        if not isinstance(raw_message, str):
+            return ""
+        return raw_message.strip().lower()
+
+    def _has_fact_signal_in_message(self, fact_intent: str, message: str) -> bool:
+        """
+        Require explicit fact signal for repeated_question fallback.
+
+        Uses the same secondary-intent pattern definition when available
+        (keywords + regex), with a strict generic question cue fallback.
+        """
+        if not message:
+            return False
+        if not isinstance(message, str):
+            return False
+
+        try:
+            from src.classifier.secondary_intent_detection import SECONDARY_PATTERNS
+
+            pattern_def = SECONDARY_PATTERNS.get(fact_intent)
+            if pattern_def:
+                words = set(re.findall(r"\w+", message))
+                keyword_match = bool(words & pattern_def.keywords)
+                if not (keyword_match or pattern_def.keywords == frozenset()):
+                    return False
+                return any(
+                    re.search(pattern, message, re.IGNORECASE)
+                    for pattern in pattern_def.patterns
+                )
+        except Exception:
+            logger.debug(
+                "FactQuestionSource: failed to load secondary pattern for %s",
+                fact_intent,
+                exc_info=True,
+            )
+
+        return bool(self._GENERIC_FACT_SIGNAL_RE.search(message))
+
+    @staticmethod
+    def _categorize_fact_intent(fact_intent: str) -> str:
+        """Map fact intent to coarse category for autonomous decision context."""
+        intent = (fact_intent or "").lower()
+        if "integr" in intent or "api" in intent or "kaspi" in intent or "1c" in intent:
+            return "integrations"
+        if "security" in intent or "safe" in intent:
+            return "security"
+        if "equipment" in intent or "scanner" in intent or "printer" in intent or "pos" in intent:
+            return "equipment"
+        if "support" in intent or "training" in intent or "implementation" in intent:
+            return "support"
+        if "feature" in intent or "capabilit" in intent:
+            return "features"
+        return "other"
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
@@ -400,11 +461,47 @@ class FactQuestionSource(KnowledgeSource):
                     if ctx.current_intent in self._STALE_BLOCK_INTENTS:
                         self._log_contribution(reason="repeated_question ignored: off-topic intent")
                         return
+                    msg = self._get_last_user_message(ctx)
+                    if not self._has_fact_signal_in_message(rq, msg):
+                        self._log_contribution(reason="repeated_question ignored: no fact signal in message")
+                        return
                     fact_intent = rq
                     detection_source = "repeated_question"
 
         if fact_intent is None:
             self._log_contribution(reason="No fact intent found")
+            return
+
+        # Autonomous states: provide context only; no HIGH action proposal.
+        state_config = getattr(ctx, "state_config", {})
+        is_autonomous = state_config.get("autonomous", False) if isinstance(state_config, dict) else False
+        if is_autonomous:
+            envelope = getattr(ctx, "context_envelope", None)
+            secondary_conf = getattr(envelope, "secondary_intent_confidence", {}) if envelope else {}
+            if not isinstance(secondary_conf, dict):
+                secondary_conf = {}
+            primary_conf_raw = getattr(envelope, "intent_confidence", 0.9) if envelope else 0.9
+            primary_conf = float(primary_conf_raw) if isinstance(primary_conf_raw, (int, float)) else 0.9
+            if detection_source == "primary":
+                confidence = primary_conf
+            elif detection_source == "secondary":
+                secondary_conf_raw = secondary_conf.get(fact_intent, 0.85)
+                confidence = float(secondary_conf_raw) if isinstance(secondary_conf_raw, (int, float)) else 0.85
+            else:
+                confidence = 0.8
+
+            blackboard.add_context_signal(
+                source_name="fact_question",
+                signal={
+                    "fact_requested": fact_intent,
+                    "category": self._categorize_fact_intent(fact_intent),
+                    "confidence": confidence,
+                    "detection_source": detection_source,
+                },
+            )
+            self._log_contribution(
+                reason=f"Autonomous context signal only: {fact_intent} ({detection_source})"
+            )
             return
 
         # Resolve action from YAML rules
@@ -435,7 +532,10 @@ class FactQuestionSource(KnowledgeSource):
             if category:
                 envelope = getattr(ctx, 'context_envelope', None)
                 attempts = getattr(envelope, 'intent_category_attempts', {}) if envelope else {}
-                attempt_count = attempts.get(category, 0)
+                if not isinstance(attempts, dict):
+                    attempts = {}
+                attempt_count_raw = attempts.get(category, 0)
+                attempt_count = int(attempt_count_raw) if isinstance(attempt_count_raw, (int, float)) else 0
                 action = get_escalated_action(category, attempt_count)
                 rule_source = f"escalated_fallback_attempt_{attempt_count}"
                 # Silent operator notification — client sees nothing, bot keeps talking

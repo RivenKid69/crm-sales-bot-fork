@@ -1,0 +1,769 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-20T20:32:40.998058",
+    "source_report_dir": "reports/simulation_20260220_202508",
+    "simulation_timestamp": "2026-02-20 20:25:08",
+    "model": "qwen3:14b",
+    "flow": "autonomous"
+  },
+  "parameters": {
+    "total_dialogs": 10,
+    "flow": "autonomous",
+    "total_personas": 21,
+    "parallel_threads": 1
+  },
+  "summary": {
+    "total": 10,
+    "success_count": 7,
+    "success_rate_percent": 70.0,
+    "error_count": 0,
+    "avg_turns": 8.1,
+    "avg_phase_coverage": 0.41428571428571426
+  },
+  "outcomes": {
+    "soft_close": 3,
+    "abandoned": 3,
+    "success": 4
+  },
+  "requested_metrics": {
+    "terminal_state_rate_percent_payment_or_video_call": 30.0,
+    "avg_turns_to_terminal_payment_or_video_call": 6.67,
+    "false_price_question_trigger_percent_proxy": 0.0,
+    "false_fact_question_trigger_percent_proxy": 16.67,
+    "template_override_percent_non_autonomous_respond_in_autonomous_states": 60.29,
+    "overlay_activations": {
+      "total": 28,
+      "total_percent": 34.6,
+      "conservative": 0,
+      "objection": 6,
+      "price": 7,
+      "repair": 15,
+      "breakthrough": 0
+    },
+    "counts": {
+      "dialogs_total": 10,
+      "turns_total": 81,
+      "autonomous_turns_total": 68,
+      "terminal_dialogs_count": 3,
+      "price_actions_count": 15,
+      "fact_actions_count": 6,
+      "template_override_count": 41
+    }
+  },
+  "notes": {
+    "false_trigger_metrics": "Proxy from trace intent/action alignment in full_report; not direct blackboard reason_code traces.",
+    "overlay_metrics": "Derived from full_report Policy Overrides decision distribution."
+  },
+  "dialogs": [
+    {
+      "simulation_index": 0,
+      "persona": "tire_kicker",
+      "outcome": "soft_close",
+      "turns": 6,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "answer_with_facts"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "objection_think",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "objection_think",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "objection_think",
+          "action": "nudge_progress"
+        },
+        {
+          "state": "soft_close",
+          "intent": "objection_think",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "soft_close",
+          "intent": "objection_no_time",
+          "action": "handle_objection"
+        }
+      ],
+      "final_state": "soft_close",
+      "final_action": "handle_objection",
+      "detailed": {
+        "index": 1,
+        "timestamp": "2026-02-20T20:25:57.026689",
+        "flow": "autonomous",
+        "persona": "tire_kicker",
+        "outcome": "soft_close",
+        "turns": 6,
+        "phases_reached": [
+          "discovery"
+        ],
+        "spin_coverage": 0.14285714285714285,
+        "lead_score": 0,
+        "fallback_count": 0,
+        "objections_count": 5,
+        "kb_questions_used": 0,
+        "duration_seconds": 29.979760885238647,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 1,
+      "persona": "price_sensitive",
+      "outcome": "soft_close",
+      "turns": 10,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "price_question",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "price_question",
+          "action": "answer_with_pricing_brief"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "soft_close",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing_brief"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "answer_and_continue"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_negotiation",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "soft_close",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing"
+        }
+      ],
+      "final_state": "soft_close",
+      "final_action": "answer_with_pricing",
+      "detailed": {
+        "index": 2,
+        "timestamp": "2026-02-20T20:26:52.417637",
+        "flow": "autonomous",
+        "persona": "price_sensitive",
+        "outcome": "soft_close",
+        "turns": 10,
+        "phases_reached": [
+          "discovery",
+          "objection_handling",
+          "negotiation"
+        ],
+        "spin_coverage": 0.42857142857142855,
+        "lead_score": 10,
+        "fallback_count": 0,
+        "objections_count": 0,
+        "kb_questions_used": 1,
+        "duration_seconds": 55.389941692352295,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 2,
+      "persona": "busy",
+      "outcome": "abandoned",
+      "turns": 7,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "price_question",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "info_provided",
+          "action": "nudge_progress"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "situation_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "answer_with_pricing_brief"
+        },
+        {
+          "state": "autonomous_presentation",
+          "intent": "price_question",
+          "action": "answer_with_pricing_brief"
+        }
+      ],
+      "final_state": "autonomous_presentation",
+      "final_action": "answer_with_pricing_brief",
+      "detailed": {
+        "index": 3,
+        "timestamp": "2026-02-20T20:27:17.616798",
+        "flow": "autonomous",
+        "persona": "busy",
+        "outcome": "abandoned",
+        "turns": 7,
+        "phases_reached": [
+          "discovery",
+          "qualification",
+          "presentation"
+        ],
+        "spin_coverage": 0.42857142857142855,
+        "lead_score": 21,
+        "fallback_count": 0,
+        "objections_count": 0,
+        "kb_questions_used": 2,
+        "duration_seconds": 25.198139905929565,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 3,
+      "persona": "startup_founder",
+      "outcome": "success",
+      "turns": 6,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "continue_current_goal"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "callback_request",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "agreement",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "contact_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "video_call_scheduled",
+          "intent": "contact_provided",
+          "action": "autonomous_respond"
+        }
+      ],
+      "final_state": "video_call_scheduled",
+      "final_action": "autonomous_respond",
+      "detailed": {
+        "index": 4,
+        "timestamp": "2026-02-20T20:27:36.083214",
+        "flow": "autonomous",
+        "persona": "startup_founder",
+        "outcome": "success",
+        "turns": 6,
+        "phases_reached": [
+          "discovery",
+          "qualification",
+          "closing"
+        ],
+        "spin_coverage": 0.42857142857142855,
+        "lead_score": 96,
+        "fallback_count": 0,
+        "objections_count": 0,
+        "kb_questions_used": 0,
+        "duration_seconds": 18.465362787246704,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 4,
+      "persona": "aggressive",
+      "outcome": "soft_close",
+      "turns": 5,
+      "trace": [
+        {
+          "state": "greeting",
+          "intent": "request_brevity",
+          "action": "respond_briefly"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "continue_current_goal"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "answer_with_pricing"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "answer_with_pricing_brief"
+        },
+        {
+          "state": "soft_close",
+          "intent": "fallback_close",
+          "action": "soft_close"
+        }
+      ],
+      "final_state": "soft_close",
+      "final_action": "soft_close",
+      "detailed": {
+        "index": 5,
+        "timestamp": "2026-02-20T20:27:52.134311",
+        "flow": "autonomous",
+        "persona": "aggressive",
+        "outcome": "soft_close",
+        "turns": 5,
+        "phases_reached": [
+          "discovery",
+          "qualification"
+        ],
+        "spin_coverage": 0.2857142857142857,
+        "lead_score": 9,
+        "fallback_count": 1,
+        "objections_count": 0,
+        "kb_questions_used": 0,
+        "duration_seconds": 16.050050735473633,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 5,
+      "persona": "technical",
+      "outcome": "success",
+      "turns": 9,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "answer_with_facts"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "question_features",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "question_features",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "question_features",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "question_features",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "soft_close",
+          "intent": "question_features",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "soft_close",
+          "intent": "contact_provided",
+          "action": "acknowledge_and_continue"
+        }
+      ],
+      "final_state": "soft_close",
+      "final_action": "acknowledge_and_continue",
+      "detailed": {
+        "index": 6,
+        "timestamp": "2026-02-20T20:28:39.965808",
+        "flow": "autonomous",
+        "persona": "technical",
+        "outcome": "success",
+        "turns": 9,
+        "phases_reached": [
+          "discovery",
+          "qualification",
+          "objection_handling"
+        ],
+        "spin_coverage": 0.42857142857142855,
+        "lead_score": 66,
+        "fallback_count": 0,
+        "objections_count": 0,
+        "kb_questions_used": 2,
+        "duration_seconds": 47.83045196533203,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 6,
+      "persona": "enterprise_buyer",
+      "outcome": "success",
+      "turns": 7,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "answer_with_facts"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "situation_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "situation_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "situation_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "situation_provided",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "situation_provided",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "video_call_scheduled",
+          "intent": "contact_provided",
+          "action": "clarify_one_question"
+        }
+      ],
+      "final_state": "video_call_scheduled",
+      "final_action": "clarify_one_question",
+      "detailed": {
+        "index": 7,
+        "timestamp": "2026-02-20T20:29:04.549870",
+        "flow": "autonomous",
+        "persona": "enterprise_buyer",
+        "outcome": "success",
+        "turns": 7,
+        "phases_reached": [
+          "discovery",
+          "qualification",
+          "closing"
+        ],
+        "spin_coverage": 0.42857142857142855,
+        "lead_score": 38,
+        "fallback_count": 0,
+        "objections_count": 0,
+        "kb_questions_used": 1,
+        "duration_seconds": 24.58295702934265,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 7,
+      "persona": "competitor_user",
+      "outcome": "abandoned",
+      "turns": 12,
+      "trace": [
+        {
+          "state": "handle_objection",
+          "intent": "objection_no_time",
+          "action": "answer_with_facts"
+        },
+        {
+          "state": "handle_objection",
+          "intent": "objection_competitor",
+          "action": "handle_objection"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "objection_competitor",
+          "action": "handle_objection"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "objection_no_need",
+          "action": "reframe_value"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "rejection",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "rejection",
+          "action": "nudge_progress"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "objection_no_need",
+          "action": "handle_repeated_objection"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "objection_competitor",
+          "action": "handle_repeated_objection"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "rejection",
+          "action": "nudge_progress"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "objection_no_need",
+          "action": "handle_repeated_objection"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "objection_competitor",
+          "action": "handle_repeated_objection"
+        },
+        {
+          "state": "autonomous_negotiation",
+          "intent": "question_features",
+          "action": "transition_to_autonomous_negotiation"
+        }
+      ],
+      "final_state": "autonomous_negotiation",
+      "final_action": "transition_to_autonomous_negotiation",
+      "detailed": {
+        "index": 8,
+        "timestamp": "2026-02-20T20:29:52.556151",
+        "flow": "autonomous",
+        "persona": "competitor_user",
+        "outcome": "abandoned",
+        "turns": 12,
+        "phases_reached": [
+          "discovery",
+          "objection_handling",
+          "negotiation"
+        ],
+        "spin_coverage": 0.42857142857142855,
+        "lead_score": 5,
+        "fallback_count": 0,
+        "objections_count": 7,
+        "kb_questions_used": 0,
+        "duration_seconds": 48.004995346069336,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 8,
+      "persona": "happy_path",
+      "outcome": "success",
+      "turns": 7,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "answer_with_facts"
+        },
+        {
+          "state": "autonomous_qualification",
+          "intent": "no_problem",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_presentation",
+          "intent": "contact_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "contact_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "video_call_scheduled",
+          "intent": "demo_request",
+          "action": "autonomous_respond"
+        }
+      ],
+      "final_state": "video_call_scheduled",
+      "final_action": "autonomous_respond",
+      "detailed": {
+        "index": 9,
+        "timestamp": "2026-02-20T20:30:17.710112",
+        "flow": "autonomous",
+        "persona": "happy_path",
+        "outcome": "success",
+        "turns": 7,
+        "phases_reached": [
+          "discovery",
+          "qualification",
+          "presentation",
+          "closing"
+        ],
+        "spin_coverage": 0.5714285714285714,
+        "lead_score": 97,
+        "fallback_count": 0,
+        "objections_count": 0,
+        "kb_questions_used": 2,
+        "duration_seconds": 25.15281343460083,
+        "errors": []
+      }
+    },
+    {
+      "simulation_index": 9,
+      "persona": "skeptic",
+      "outcome": "abandoned",
+      "turns": 12,
+      "trace": [
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "answer_with_facts"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "question_features",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "objection_trust",
+          "action": "clarify_one_question"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "rejection",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_objection_handling",
+          "intent": "objection_trust",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_negotiation",
+          "intent": "objection_trust",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_negotiation",
+          "intent": "question_features",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_negotiation",
+          "intent": "situation_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_negotiation",
+          "intent": "situation_provided",
+          "action": "autonomous_respond"
+        },
+        {
+          "state": "autonomous_closing",
+          "intent": "objection_trust",
+          "action": "reframe_value"
+        }
+      ],
+      "final_state": "autonomous_closing",
+      "final_action": "reframe_value",
+      "detailed": {
+        "index": 10,
+        "timestamp": "2026-02-20T20:30:55.393229",
+        "flow": "autonomous",
+        "persona": "skeptic",
+        "outcome": "abandoned",
+        "turns": 12,
+        "phases_reached": [
+          "discovery",
+          "objection_handling",
+          "negotiation",
+          "closing"
+        ],
+        "spin_coverage": 0.5714285714285714,
+        "lead_score": 4,
+        "fallback_count": 1,
+        "objections_count": 4,
+        "kb_questions_used": 2,
+        "duration_seconds": 37.681955099105835,
+        "errors": []
+      }
+    }
+  ],
+  "artifacts": {
+    "metrics_json": "reports/simulation_20260220_202508/metrics_20260220_202508.json",
+    "detailed_results_json": "reports/simulation_20260220_202508/detailed_results_20260220_202508.json",
+    "full_report_txt": "reports/simulation_20260220_202508/full_report_20260220_202508.txt",
+    "simulation_log": "reports/simulation_20260220_202508/simulation_log_20260220_202508.log"
+  }
+}

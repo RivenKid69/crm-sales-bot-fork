@@ -869,11 +869,20 @@ class ResponseGenerator:
         if action in {"redirect_after_repetition", "escalate_repeated_content"}:
             return action
 
-        # Greeting intent always uses greet_back in autonomous flow (I20).
-        # Prevents closing_data_request (IIN/kaspi_phone) from firing on a greeting
-        # when the session is already in autonomous_closing state.
-        if intent == "greeting" and action == "autonomous_respond":
-            return "greet_back"
+        state = str(context.get("state", "") or "")
+        is_autonomous_flow = bool(
+            self._flow
+            and self._flow.name == "autonomous"
+            and (state.startswith("autonomous_") or state == "greeting")
+        )
+
+        # Autonomous flow: always use autonomous_respond template (except greeting).
+        # Pricing/fact content is injected via retrieved_facts; template routing should
+        # not override the autonomous LLM action.
+        if is_autonomous_flow:
+            if intent == "greeting":
+                return "greet_back"
+            return "autonomous_respond"
 
         from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
 
@@ -886,11 +895,7 @@ class ResponseGenerator:
                 template_key=template_key,
             )
         elif intent in self.PRICE_RELATED_INTENTS:
-            # Autonomous flow handles price questions via KB facts + LLM
-            if action == "autonomous_respond":
-                template_key = action
-            else:
-                template_key = self._get_price_template_key(intent, action)
+            template_key = self._get_price_template_key(intent, action)
             logger.debug(
                 "Price-related intent detected, using pricing template",
                 intent=intent,
@@ -898,11 +903,7 @@ class ResponseGenerator:
                 template_key=template_key
             )
         elif intent in self.OBJECTION_RELATED_INTENTS:
-            # Autonomous flow handles objections in-state with its own template + 4P/3F injection
-            if action == "autonomous_respond":
-                template_key = action
-            else:
-                template_key = self._get_objection_template_key(intent, action)
+            template_key = self._get_objection_template_key(intent, action)
             logger.debug(
                 "Objection-related intent detected, using specific template",
                 intent=intent,
@@ -927,8 +928,9 @@ class ResponseGenerator:
             template_key = action
 
         # Universal answer-template forcing for repeated questions.
+        # Skip for autonomous_respond: autonomous flow decides in LLM.
         _ctx_envelope = context.get("context_envelope")
-        if _ctx_envelope and getattr(_ctx_envelope, 'repeated_question', None):
+        if action != "autonomous_respond" and _ctx_envelope and getattr(_ctx_envelope, 'repeated_question', None):
             from src.yaml_config.constants import INTENT_CATEGORIES, REPAIR_PROTECTED_ACTIONS
             _rq = _ctx_envelope.repeated_question
             _answerable = (
@@ -1165,8 +1167,8 @@ class ResponseGenerator:
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
             # Closing-specific data request (injected below)
             "closing_data_request": "",
-            # Hotel-staff politeness: direct name variable for address instructions
-            "client_name": collected.get("contact_name") or collected.get("client_name") or "",
+            # Hotel-staff politeness: conditional address instruction (prevents hallucinated names)
+            "address_instruction": self._build_address_instruction(collected),
         })
 
         # === Autonomous closing: inject data-collection instruction ===
@@ -1872,7 +1874,9 @@ class ResponseGenerator:
                 return True
 
             # Stage 2: Semantic fallback (only if Jaccard borderline)
-            if 0.50 <= jaccard_sim <= self.SIMILARITY_THRESHOLD:
+            # 0.30 threshold: catches Russian morphological variants
+            # ("предлагаем"/"предлагает", "включают"/"включающие")
+            if 0.30 <= jaccard_sim <= self.SIMILARITY_THRESHOLD:
                 semantic_sim = self._compute_semantic_similarity(response, prev)
                 if semantic_sim > 0.85:  # High semantic threshold
                     logger.debug(
@@ -1897,7 +1901,8 @@ class ResponseGenerator:
                     return True
 
                 # Stage 2: Semantic fallback (only if Jaccard borderline)
-                if 0.50 <= jaccard_sim <= self.SIMILARITY_THRESHOLD:
+                # 0.30 threshold: catches Russian morphological variants
+                if 0.30 <= jaccard_sim <= self.SIMILARITY_THRESHOLD:
                     semantic_sim = self._compute_semantic_similarity(response, bot_response)
                     if semantic_sim > 0.85:
                         logger.debug(
@@ -2055,6 +2060,16 @@ class ResponseGenerator:
 2. FELT — приведи социальное доказательство ("Многие клиенты изначально думали так же...")
 3. FOUND — покажи результат ("Но после внедрения они отметили...")
 Проявляй эмпатию. Не спорь с эмоциями. Приведи конкретный пример из базы знаний."""
+
+    @staticmethod
+    def _build_address_instruction(collected: dict) -> str:
+        """Build conditional ОБРАЩЕНИЕ instruction — prevents hallucinated names."""
+        name = collected.get("contact_name") or collected.get("client_name") or ""
+        if name:
+            return (f'ОБРАЩЕНИЕ: клиента зовут "{name}" — '
+                    f'используй "господин/госпожа {name}" или "{name}".')
+        return ('ОБРАЩЕНИЕ: имя клиента НЕИЗВЕСТНО — один раз мягко вплети '
+                '"как к вам обращаться?" в ответ. НЕ придумывай имя/фамилию.')
 
     def _get_secondary_intents(self, context: dict) -> list:
         """Return secondary_intents list from context_envelope, or empty list."""

@@ -179,7 +179,7 @@ class PriceQuestionSource(KnowledgeSource):
             rq = getattr(envelope, 'repeated_question', None)
             if rq and rq in self._price_intents:
                 from src.yaml_config.constants import PRICE_KEYWORDS_STRICT
-                msg = (getattr(envelope, 'last_user_message', '') or '').lower()
+                msg = self._normalize_message(getattr(envelope, 'last_user_message', ''))
                 keywords = PRICE_KEYWORDS_STRICT or ["цена", "тариф", "стоимость", "сколько стоит"]
                 if msg and any(kw in msg for kw in keywords):
                     return True
@@ -198,6 +198,13 @@ class PriceQuestionSource(KnowledgeSource):
             if secondary:
                 return list(secondary)
         return []
+
+    @staticmethod
+    def _normalize_message(raw_message: Any) -> str:
+        """Normalize envelope message to lowercase string."""
+        if isinstance(raw_message, str):
+            return raw_message.lower()
+        return ""
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
@@ -237,7 +244,7 @@ class PriceQuestionSource(KnowledgeSource):
                 rq = getattr(envelope, 'repeated_question', None) if envelope else None
                 if rq and rq in self._price_intents:
                     from src.yaml_config.constants import PRICE_KEYWORDS_STRICT
-                    msg = (getattr(envelope, 'last_user_message', '') or '').lower()
+                    msg = self._normalize_message(getattr(envelope, 'last_user_message', ''))
                     keywords = PRICE_KEYWORDS_STRICT or ["цена", "тариф", "стоимость", "сколько стоит"]
                     if not (msg and any(kw in msg for kw in keywords)):
                         self._log_contribution(reason="repeated_question ignored: no price keyword in message")
@@ -248,6 +255,38 @@ class PriceQuestionSource(KnowledgeSource):
                     # ⚠️ CRITICAL: no repeated_question signal either → exit contribute()
                     self._log_contribution(reason="Intent not price-related")
                     return
+
+        # Autonomous states: provide context only; do not dictate action.
+        state_config = getattr(ctx, "state_config", {})
+        is_autonomous = state_config.get("autonomous", False) if isinstance(state_config, dict) else False
+        if is_autonomous:
+            envelope = getattr(ctx, "context_envelope", None)
+            secondary_conf = getattr(envelope, "secondary_intent_confidence", {}) if envelope else {}
+            if not isinstance(secondary_conf, dict):
+                secondary_conf = {}
+            primary_conf_raw = getattr(envelope, "intent_confidence", 0.9) if envelope else 0.9
+            primary_conf = float(primary_conf_raw) if isinstance(primary_conf_raw, (int, float)) else 0.9
+            if detection_source == "primary":
+                confidence = primary_conf
+            elif detection_source == "secondary":
+                secondary_conf_raw = secondary_conf.get(intent, 0.85)
+                confidence = float(secondary_conf_raw) if isinstance(secondary_conf_raw, (int, float)) else 0.85
+            else:
+                confidence = 0.8
+
+            blackboard.add_context_signal(
+                source_name="price_question",
+                signal={
+                    "price_intent_detected": True,
+                    "category": intent,
+                    "confidence": confidence,
+                    "detection_source": detection_source,
+                },
+            )
+            self._log_contribution(
+                reason=f"Autonomous context signal only: {intent} ({detection_source})"
+            )
+            return
 
         # FIX: First, check YAML rules in state config
         rules = ctx.state_config.get("rules", {})
@@ -275,7 +314,10 @@ class PriceQuestionSource(KnowledgeSource):
             if category:
                 envelope = getattr(ctx, 'context_envelope', None)
                 attempts = getattr(envelope, 'intent_category_attempts', {}) if envelope else {}
-                attempt_count = attempts.get(category, 0)
+                if not isinstance(attempts, dict):
+                    attempts = {}
+                attempt_count_raw = attempts.get(category, 0)
+                attempt_count = int(attempt_count_raw) if isinstance(attempt_count_raw, (int, float)) else 0
                 action = get_escalated_action(category, attempt_count)
                 rule_source = f"escalated_fallback_attempt_{attempt_count}"
                 # Silent operator notification — client sees nothing, bot keeps talking
