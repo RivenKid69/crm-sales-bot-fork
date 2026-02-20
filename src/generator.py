@@ -869,6 +869,12 @@ class ResponseGenerator:
         if action in {"redirect_after_repetition", "escalate_repeated_content"}:
             return action
 
+        # Greeting intent always uses greet_back in autonomous flow (I20).
+        # Prevents closing_data_request (IIN/kaspi_phone) from firing on a greeting
+        # when the session is already in autonomous_closing state.
+        if intent == "greeting" and action == "autonomous_respond":
+            return "greet_back"
+
         from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
 
         if action in PRICING_CORRECT_ACTIONS:
