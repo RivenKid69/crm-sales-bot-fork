@@ -1504,7 +1504,10 @@ class ContextWindow:
                 # If current intent is a question from a DIFFERENT category → topic changed,
                 # skip this category and check the next one (do NOT return None immediately,
                 # since the current topic may itself have count >= 2 in a later iteration).
-                if include_current_intent and include_current_intent in question_set:
+                if include_current_intent:
+                    # Non-question intent → topic changed, skip stale category
+                    if include_current_intent not in question_set:
+                        continue
                     current_cat = self._get_repeatable_category(include_current_intent)
                     if current_cat != category:
                         continue

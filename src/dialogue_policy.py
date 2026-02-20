@@ -45,6 +45,7 @@ from src.yaml_config.constants import (
     PRICING_CORRECT_ACTIONS,
     REPAIR_ACTION_REPEAT_THRESHOLD,
     REPEATABLE_INTENT_GROUPS as _REPEATABLE_INTENT_GROUPS,
+    INTENT_CATEGORIES as _INTENT_CATEGORIES,
     get_escalated_action as _get_escalated_action,
     should_notify_operator as _should_notify_operator,
     notify_operator_stub as _notify_operator_stub,
@@ -647,9 +648,20 @@ class DialoguePolicy:
         category = next(
             (grp for grp, members in _REPEATABLE_INTENT_GROUPS.items()
              if intent_for_lookup in members),
-            "price_core"  # safe default for price overlay
+            None
         )
-        attempt_count = ctx.intent_category_attempts.get(category, 0)
+        if category is None:
+            _price = set(_INTENT_CATEGORIES.get("price_related", []))
+            if intent_for_lookup in _price:
+                # Легитимный ценовой интент (pricing_details, discount_request и т.д.)
+                category = "price_core"
+                attempt_count = ctx.intent_category_attempts.get(category, 0)
+            else:
+                # Non-price интент не наследует stale price_core counter
+                category = "default"
+                attempt_count = 0
+        else:
+            attempt_count = ctx.intent_category_attempts.get(category, 0)
         action = _get_escalated_action(category, attempt_count)
         reason = f"price_escalated_attempt_{attempt_count}"
 

@@ -54,6 +54,18 @@ class ContentRepetitionGuardSource(KnowledgeSource):
         ctx = blackboard.get_context()
         envelope = ctx.context_envelope
 
+        # Guard 1: Already in terminal state — never interfere
+        if ctx.state_config.get("max_turns_in_state", -1) == 0:
+            return False
+
+        # Guard 2: Terminal data complete — about to transition, don't interfere
+        terminal_reqs = ctx.state_config.get("terminal_state_requirements", {})
+        if terminal_reqs:
+            collected = ctx.collected_data or {}
+            for reqs in terminal_reqs.values():
+                if reqs and all(collected.get(f) for f in reqs):
+                    return False
+
         count = getattr(envelope, 'content_repeat_count', 0) if envelope else 0
         if count < self.SOFT_THRESHOLD:
             return False
