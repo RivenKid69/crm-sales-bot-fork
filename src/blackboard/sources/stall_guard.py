@@ -87,11 +87,6 @@ class StallGuardSource(KnowledgeSource):
 
         # Hard threshold: unconditional (existing behavior)
         if consecutive >= max_turns:
-            # Exemption: clear positive signals must NOT trigger stall eject
-            # (contact_provided/demo_request/callback_request are progress, not stalls)
-            progress_intents = {"contact_provided", "demo_request", "callback_request", "payment_confirmation"}
-            if ctx.current_intent in progress_intents:
-                return False
             return True
 
         # Soft threshold: max_turns - 1, but at least 3.

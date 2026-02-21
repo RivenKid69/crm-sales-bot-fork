@@ -497,7 +497,7 @@ SYSTEM_PROMPT = """/no_think
 def build_classification_prompt(
     message: str,
     context: dict = None,
-    n_few_shot: int = 8
+    n_few_shot: int = 5
 ) -> str:
     """
     Построить промпт для классификации.
