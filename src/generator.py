@@ -117,6 +117,13 @@ BLOCKING_ACTIONS_FOR_SECONDARY_INJECT: frozenset = frozenset({
 })
 SECONDARY_ANSWER_ELIGIBLE: frozenset = frozenset({"price_question"})
 
+# Layer 1 safety rules for autonomous templates (injected via {safety_rules}).
+SAFETY_RULES_V2 = """ГЛАВНЫЕ ПРАВИЛА:
+1. Только факты из БАЗЫ ЗНАНИЙ. Нет факта → "Уточню у коллег и вернусь с ответом."
+2. Цены: ТОЛЬКО из БАЗЫ ЗНАНИЙ. Нет цифры → "Точную стоимость уточнит менеджер." Не считай, не округляй, не интерполируй. Единицы (в год / в мес) — тоже только из БАЗЫ ЗНАНИЙ.
+3. Не утверждай, что уже что-то отправил/подключил/настроил, если этого нет в БАЗЕ ЗНАНИЙ.
+4. Не называй конкретные имена компаний-клиентов. Нет имени в БАЗЕ ЗНАНИЙ — это ложь. Говори обобщённо: "наши клиенты"."""
+
 
 # =============================================================================
 # PERSONALIZATION ENGINE
@@ -1258,6 +1265,10 @@ class ResponseGenerator:
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
             # Closing-specific data request (injected below)
             "closing_data_request": "",
+            # Layer 1: shared safety rules for autonomous templates
+            "safety_rules": SAFETY_RULES_V2,
+            # Layer 2: dynamic state/intent rules (computed below)
+            "state_gated_rules": "",
             # Hotel-staff politeness: ask name at most once, then stop repeating
             "address_instruction": self._build_address_instruction(
                 collected=collected,
@@ -1274,6 +1285,13 @@ class ResponseGenerator:
                 user_message=user_message,
             ),
         })
+        variables["state_gated_rules"] = self._build_state_gated_rules(
+            state=context.get("state", ""),
+            intent=intent,
+            user_message=user_message,
+            history=context.get("history", []),
+            collected=collected,
+        )
 
         # Human-readable labels for terminal data fields (used in closing_data_request).
         _FIELD_LABELS: dict = {
@@ -1457,11 +1475,7 @@ class ResponseGenerator:
             existing_do_not_ask = variables.get("do_not_ask", "")
             no_ask = (
                 "⚠️ НЕ задавай уточняющих вопросов в этом ответе. "
-                "Сначала закрой ценовой запрос фактом.\n"
-                "⚠️ ПРАВИЛЬНЫЕ ТАРИФЫ (строго из БАЗЫ ЗНАНИЙ): "
-                "Mini = 5 000 ₸/мес; Lite = 150 000 ₸/год (НЕ 15 000!); "
-                "Standard = 220 000 ₸/год (НЕ 22 000 и НЕ 30 000!); Pro = 500 000 ₸/год. "
-                "Сумма без единицы времени — НЕ называй."
+                "Сначала закрой ценовой запрос фактом."
             )
             variables["do_not_ask"] = (
                 f"{existing_do_not_ask}\n{no_ask}" if existing_do_not_ask else no_ask
@@ -1492,59 +1506,6 @@ class ResponseGenerator:
                     if existing_no_repeat
                     else consistency_hint
                 )
-
-        # Competitor price comparison guard: inject explicit fact into do_not_ask + objection_instructions
-        # to prevent LLM from conceding "мы дороже" vs iiko/1C without KB backing.
-        # Also fires when history mentions a competitor and current msg has price signal.
-        _competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
-        _price_concession_words = ("дороже", "дешевле", "цена", "стоит", "стоимость")
-        _msg_lower = user_message.lower()
-        _hist_lower = " ".join(
-            str(t.get("user", "") or "") for t in context.get("history", [])[-4:]
-        ).lower()
-        _has_competitor_context = any(c in _msg_lower or c in _hist_lower for c in _competitor_names)
-        _has_price_concession = any(p in _msg_lower for p in _price_concession_words)
-        if _is_autonomous and _has_competitor_context and _has_price_concession:
-            competitor_hint = (
-                "⚠️ ФАКТ О КОНКУРЕНТАХ: По данным базы знаний Wipon дешевле iiko/R-Keeper и проще во внедрении. "
-                "НЕ говори, что 'мы дороже'. Если точного сравнения нет в базе — скажи: "
-                "'Уточните у менеджера — как правило, мы выгоднее по совокупности.' "
-                "Не капитулируй перед ценовыми возражениями по конкурентам."
-            )
-            existing_dna = variables.get("do_not_ask", "")
-            variables["do_not_ask"] = f"{existing_dna}\n{competitor_hint}" if existing_dna else competitor_hint
-            # Also inject into objection_instructions so it appears near Клиент: in the template
-            existing_obj = variables.get("objection_instructions", "")
-            variables["objection_instructions"] = (
-                f"{existing_obj}\n{competitor_hint}" if existing_obj else competitor_hint
-            )
-
-        # Discount guard: prevent claiming discounts that aren't confirmed in KB.
-        # Fires when intent is request_discount or message contains explicit discount request.
-        _discount_keywords = ("скидку", "скидка", "скидок", "скидки", "дешевле", "акция", "акции")
-        if _is_autonomous and (
-            intent == "request_discount"
-            or any(k in _msg_lower for k in _discount_keywords)
-        ):
-            discount_guard = (
-                "⚠️ СКИДКИ: По данным базы знаний специальных скидок для крупных/постоянных клиентов НЕТ. "
-                "НЕ говори 'да, у нас есть скидки для крупных клиентов'. "
-                "Честный ответ: 'Специальных скидок для крупных клиентов нет. "
-                "Есть скидки при оплате за 2 или 5 лет — менеджер уточнит детали.'"
-            )
-            existing_dna = variables.get("do_not_ask", "")
-            variables["do_not_ask"] = f"{existing_dna}\n{discount_guard}" if existing_dna else discount_guard
-            existing_obj = variables.get("objection_instructions", "")
-            variables["objection_instructions"] = (
-                f"{existing_obj}\n{discount_guard}" if existing_obj else discount_guard
-            )
-
-        # Prevent template from asking about already-known data
-        if collected.get("company_size") and not variables.get("do_not_ask"):
-            variables["do_not_ask"] = (
-                "⚠️ НЕ СПРАШИВАЙ о размере команды/количестве сотрудников — "
-                f"уже известно: {collected['company_size']} человек."
-            )
 
         # Prevent template from asking about contact when already known
         try:
@@ -2601,6 +2562,66 @@ class ResponseGenerator:
 2. FELT — приведи социальное доказательство ("Многие клиенты изначально думали так же...")
 3. FOUND — покажи результат ("Но после внедрения они отметили...")
 Проявляй эмпатию. Не спорь с эмоциями. Приведи конкретный пример из базы знаний."""
+
+    def _build_state_gated_rules(
+        self,
+        state: str,
+        intent: str,
+        user_message: str,
+        history: List[Dict[str, Any]],
+        collected: Dict[str, Any],
+    ) -> str:
+        """Build Layer-2 rules that appear only when state/intent makes them relevant."""
+        rules: List[str] = []
+        state_value = str(state or "")
+        intent_value = str(intent or "")
+        message_lower = str(user_message or "").lower()
+
+        history_tail = history[-4:] if isinstance(history, list) else []
+        history_user_lower = " ".join(
+            str(turn.get("user", "") or "")
+            for turn in history_tail
+            if isinstance(turn, dict)
+        ).lower()
+
+        # Closing-only IIN guard. Conditional wording avoids conflict with anti-IIN hint
+        # when IIN is still absent in collected_data.
+        if state_value == "autonomous_closing":
+            rules.append(
+                "⚠️ ИИН: Если клиент даёт ИИН, не повторяй 12-значное число в ответе — "
+                "подтверди фразой «ИИН получен». Если клиент ИИН не давал — не придумывай и не подтверждай выдуманные цифры."
+            )
+
+        discount_keywords = ("скидку", "скидка", "скидок", "скидки", "дешевле", "акция", "акции")
+        discount_triggered = (
+            intent_value == "request_discount"
+            or any(keyword in message_lower for keyword in discount_keywords)
+        )
+        if discount_triggered and len(rules) < 2:
+            rules.append(
+                "⚠️ СКИДКИ: Для крупных/постоянных клиентов специальных скидок нет. "
+                "Есть скидки при оплате за 2 или 5 лет."
+            )
+
+        competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
+        price_concession_words = ("дороже", "дешевле", "цена", "стоимость")
+        has_competitor_context = any(
+            name in message_lower or name in history_user_lower
+            for name in competitor_names
+        )
+        has_price_concession = any(word in message_lower for word in price_concession_words)
+        if has_competitor_context and has_price_concession and len(rules) < 2:
+            rules.append(
+                "⚠️ КОНКУРЕНТЫ: Wipon дешевле iiko/R-Keeper и проще во внедрении. "
+                "Не говори «мы дороже». Если в БАЗЕ ЗНАНИЙ нет точного сравнения цен — "
+                "скажи: «Уточните у менеджера — обычно мы выгоднее по совокупности»."
+            )
+
+        if not rules:
+            return ""
+
+        formatted = "\n".join(f"- {rule}" for rule in rules)
+        return f"STATE-GATED ПРАВИЛА:\n{formatted}"
 
     @staticmethod
     def _has_address_question_in_history(history: list) -> bool:
