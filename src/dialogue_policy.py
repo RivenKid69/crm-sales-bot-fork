@@ -215,6 +215,19 @@ class DialoguePolicy:
                 note="These actions will silently fall back to continue_current_goal",
             )
 
+    def _is_autonomous_context(self, ctx: PolicyContext) -> bool:
+        """
+        Detect autonomous context for overlay gating.
+
+        Besides autonomous_* states, autonomous flow can start from shared
+        greeting state where overlays should also abstain.
+        """
+        state = str(getattr(ctx, "state", "") or "")
+        if state.startswith("autonomous_"):
+            return True
+        flow_name = getattr(self._flow, "name", "") if self._flow else ""
+        return flow_name == "autonomous" and state == "greeting"
+
     def maybe_override(
         self,
         sm_result: Dict[str, Any],
@@ -379,7 +392,7 @@ class DialoguePolicy:
         - summarize_and_clarify: суммировать + уточнить
         - answer_with_summary: ответить + краткое резюме
         """
-        if ctx.state.startswith("autonomous_"):
+        if self._is_autonomous_context(ctx):
             if trace:
                 trace.set_result(
                     None,
@@ -532,7 +545,7 @@ class DialoguePolicy:
         - reframe_value: переформулировать ценность
         - handle_repeated_objection: эскалация тактики
         """
-        if ctx.state.startswith("autonomous_"):
+        if self._is_autonomous_context(ctx):
             if trace:
                 trace.set_result(
                     None,
@@ -619,7 +632,7 @@ class DialoguePolicy:
         Этот оверлей гарантирует что вопрос о цене НИКОГДА не игнорируется,
         даже если state machine вернул другой action.
         """
-        if ctx.state.startswith("autonomous_"):
+        if self._is_autonomous_context(ctx):
             if trace:
                 trace.set_result(
                     None,
@@ -744,7 +757,7 @@ class DialoguePolicy:
         Actions:
         - добавить soft CTA (не меняем action, добавляем directive)
         """
-        if ctx.state.startswith("autonomous_"):
+        if self._is_autonomous_context(ctx):
             if trace:
                 trace.set_result(
                     None,
@@ -791,7 +804,7 @@ class DialoguePolicy:
         Actions:
         - Более осторожные действия (уточнение вместо прогресса)
         """
-        if ctx.state.startswith("autonomous_"):
+        if self._is_autonomous_context(ctx):
             if trace:
                 trace.set_result(
                     None,
