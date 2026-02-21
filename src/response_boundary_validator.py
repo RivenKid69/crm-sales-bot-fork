@@ -109,6 +109,10 @@ class ResponseBoundaryValidator:
         r')',
         re.IGNORECASE,
     )
+    QUANT_CLAIM_PATTERN = re.compile(
+        r'(?iu)\b(\d{1,3}(?:[.,]\d+)?)\s*(%|процент(?:а|ов)?|раз(?:а)?|'
+        r'минут(?:ы)?|час(?:а|ов)?|дн(?:я|ей)?|недел(?:и|ь)|месяц(?:а|ев)?)\b'
+    )
 
     def __init__(self) -> None:
         self._metrics = BoundaryValidationMetrics()
@@ -274,6 +278,10 @@ class ResponseBoundaryValidator:
         if "greeting" not in _tmpl and self.MID_CONV_GREETING_PATTERN.match(response):
             violations.append("mid_conversation_greeting")
 
+        # Ungrounded short numeric claims (e.g., "в 3 раза", "70%", "15 минут")
+        if self._has_ungrounded_quant_claim(response, context):
+            violations.append("ungrounded_quant_claim")
+
         return violations
 
     @staticmethod
@@ -324,6 +332,35 @@ class ResponseBoundaryValidator:
                 return True
         return False
 
+    def _has_ungrounded_quant_claim(self, response: str, context: Dict[str, Any]) -> bool:
+        """
+        Detect short numeric KPI/time claims that are absent from grounding context.
+        """
+        text = str(response or "")
+        if not text:
+            return False
+
+        grounding_blob = " ".join(
+            self._iter_scalar_values(context.get("retrieved_facts", ""))
+            + self._iter_scalar_values(context.get("user_message", ""))
+        )
+        if not grounding_blob:
+            grounding_blob = ""
+
+        for match in self.QUANT_CLAIM_PATTERN.finditer(text):
+            raw_num = match.group(1).replace(",", ".")
+            # Ignore explicit 1x style that can be conversationally benign.
+            try:
+                value = float(raw_num)
+            except ValueError:
+                continue
+            if value <= 1.0:
+                continue
+            # Claim considered grounded only if exact number+unit appears in facts/user message.
+            if match.group(0).lower() not in grounding_blob.lower():
+                return True
+        return False
+
     def _sanitize(self, response: str, context: Dict[str, Any]) -> str:
         sanitized = response
         sanitized = self._sanitize_mid_conversation_greeting(sanitized, context)
@@ -332,6 +369,7 @@ class ResponseBoundaryValidator:
         sanitized = self._sanitize_send_promise(sanitized)
         sanitized = self._sanitize_invoice_without_iin(sanitized)
         sanitized = self._sanitize_demo_without_contact(sanitized)
+        sanitized = self._sanitize_ungrounded_quant_claim(sanitized)
         if self._is_pricing_context(context):
             sanitized = self._sanitize_currency_locale(sanitized)
         return sanitized.strip()
@@ -382,6 +420,14 @@ class ResponseBoundaryValidator:
             return (
                 "Для демо нужен контакт, чтобы менеджер согласовал удобное время. "
                 "Если контакт пока не готовы дать, могу кратко ответить на вопросы здесь."
+            )
+        return response
+
+    def _sanitize_ungrounded_quant_claim(self, response: str) -> str:
+        if self.QUANT_CLAIM_PATTERN.search(response):
+            return (
+                "Опишу без неподтверждённых цифр: Wipon помогает упростить учёт и снизить ручную нагрузку. "
+                "Точные метрики и сроки уточним по вашему кейсу."
             )
         return response
 
@@ -460,6 +506,11 @@ class ResponseBoundaryValidator:
             rules.append(
                 "- Убери приветствие в начале ответа ('Здравствуйте', 'Добрый день' и т.п.) "
                 "— диалог уже начат, не здоровайся повторно."
+            )
+        if "ungrounded_quant_claim" in violations:
+            rules.append(
+                "- Удали неподтверждённые цифры и метрики (проценты, 'в N раз', минуты/часы/дни), "
+                "если их нет в фактах контекста."
             )
         return (
             "Переформулируй ответ, сохранив смысл.\n"

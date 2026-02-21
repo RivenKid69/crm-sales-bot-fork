@@ -122,7 +122,9 @@ SAFETY_RULES_V2 = """ГЛАВНЫЕ ПРАВИЛА:
 1. Только факты из БАЗЫ ЗНАНИЙ. Нет факта → "Уточню у коллег и вернусь с ответом."
 2. Цены: ТОЛЬКО из БАЗЫ ЗНАНИЙ. Нет цифры → "Точную стоимость уточнит менеджер." Не считай, не округляй, не интерполируй. Единицы (в год / в мес) — тоже только из БАЗЫ ЗНАНИЙ.
 3. Не утверждай, что уже что-то отправил/подключил/настроил, если этого нет в БАЗЕ ЗНАНИЙ.
-4. Не называй конкретные имена компаний-клиентов. Нет имени в БАЗЕ ЗНАНИЙ — это ложь. Говори обобщённо: "наши клиенты"."""
+4. Не называй конкретные имена компаний-клиентов. Нет имени в БАЗЕ ЗНАНИЙ — это ложь. Говори обобщённо: "наши клиенты".
+5. Не придумывай SLA, проценты, сроки, гарантии, количество клиентов, кейсы и показатели эффективности. Любая цифра или метрика — только если она есть в БАЗЕ ЗНАНИЙ.
+6. Не обещай "менеджер свяжется через N минут/часов" и не подтверждай уже назначенный звонок/демо, если этого явно нет в БАЗЕ ЗНАНИЙ или сообщении клиента."""
 
 
 # =============================================================================
@@ -1292,6 +1294,23 @@ class ResponseGenerator:
             history=context.get("history", []),
             collected=collected,
         )
+        # Respect explicit no-contact requests: answer without pushing questions.
+        _hard_no_contact_markers = (
+            "контакты не дам",
+            "контакт не дам",
+            "не дам контакт",
+            "не проси мои контакты",
+            "без контакта",
+            "без контактов",
+        )
+        _hard_no_contact = any(m in user_message.lower() for m in _hard_no_contact_markers)
+        if _is_autonomous and _hard_no_contact:
+            variables["question_instruction"] = (
+                "⚠️ Клиент отказался давать контакты: НЕ задавай встречных вопросов в этом сообщении. "
+                "Дай полезный ответ и мягко оставь открытой возможность вернуться позже."
+            )
+            variables["missing_data"] = ""
+            variables["available_questions"] = ""
 
         # Human-readable labels for terminal data fields (used in closing_data_request).
         _FIELD_LABELS: dict = {
@@ -1971,6 +1990,11 @@ class ResponseGenerator:
             return response
 
         try:
+            state = str(context.get("state", "") or "")
+            # Autonomous flow relies on a stable high-trust voice; avoid opener rewrites.
+            if state.startswith("autonomous_") or state == "greeting":
+                return response
+
             # In stress/conflict turns, keep wording stable and avoid "playful"
             # opening rewrites that can look dismissive.
             intent = str(context.get("intent", context.get("last_intent", "")) or "")
@@ -2576,6 +2600,7 @@ class ResponseGenerator:
         state_value = str(state or "")
         intent_value = str(intent or "")
         message_lower = str(user_message or "").lower()
+        is_autonomous_context = state_value.startswith("autonomous_") or state_value == "greeting"
 
         history_tail = history[-4:] if isinstance(history, list) else []
         history_user_lower = " ".join(
@@ -2599,8 +2624,9 @@ class ResponseGenerator:
         )
         if discount_triggered and len(rules) < 2:
             rules.append(
-                "⚠️ СКИДКИ: Для крупных/постоянных клиентов специальных скидок нет. "
-                "Есть скидки при оплате за 2 или 5 лет."
+                "⚠️ СКИДКИ: не придумывай индивидуальные акции или проценты. "
+                "Если в БАЗЕ ЗНАНИЙ нет точных условий скидки, скажи: "
+                "«Актуальные условия скидок уточнит менеджер»."
             )
 
         competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
@@ -2612,9 +2638,9 @@ class ResponseGenerator:
         has_price_concession = any(word in message_lower for word in price_concession_words)
         if has_competitor_context and has_price_concession and len(rules) < 2:
             rules.append(
-                "⚠️ КОНКУРЕНТЫ: Wipon дешевле iiko/R-Keeper и проще во внедрении. "
-                "Не говори «мы дороже». Если в БАЗЕ ЗНАНИЙ нет точного сравнения цен — "
-                "скажи: «Уточните у менеджера — обычно мы выгоднее по совокупности»."
+                "⚠️ КОНКУРЕНТЫ: не придумывай сравнительные цифры по конкурентам. "
+                "Если в БАЗЕ ЗНАНИЙ нет точного сравнения цен/условий — признай это и предложи "
+                "уточнить детали у менеджера."
             )
 
         explicit_buy_markers = (
@@ -2632,14 +2658,37 @@ class ResponseGenerator:
             "оформляйте",
         )
         if (
-            state_value.startswith("autonomous_")
+            is_autonomous_context
             and state_value != "autonomous_closing"
             and any(marker in message_lower for marker in explicit_buy_markers)
         ):
             rules.append(
                 "⚠️ КЛИЕНТ ГОТОВ ПОКУПАТЬ: не возвращайся в discovery/квалификацию. "
                 "Подтверди готовность, коротко опиши следующий шаг и мягко переведи к оформлению "
-                "(контакт/счёт), без лишних вопросов о бизнесе."
+                "(контакт/счёт), без лишних вопросов о бизнесе или боли."
+            )
+
+        hard_no_contact_markers = (
+            "контакты не дам",
+            "контакт не дам",
+            "не дам контакт",
+            "не проси мои контакты",
+            "без контакта",
+            "без контактов",
+        )
+        if is_autonomous_context and any(marker in message_lower for marker in hard_no_contact_markers):
+            rules.append(
+                "⚠️ КЛИЕНТ ОТКАЗАЛСЯ ОТ КОНТАКТОВ: не запрашивай телефон/email повторно в этом ответе. "
+                "Дай полезный следующий шаг без обязательной передачи контактов."
+            )
+
+        if is_autonomous_context and (
+            intent_value in {"request_sla", "request_references", "question_security", "question_integrations"}
+            or any(k in message_lower for k in ("sla", "rpo", "rto", "шифрован", "безопас", "аудит"))
+        ):
+            rules.append(
+                "⚠️ ТЕХНИЧЕСКИЕ ФАКТЫ: отвечай только тем, что есть в БАЗЕ ЗНАНИЙ. "
+                "Если конкретного параметра нет (SLA, RPO/RTO, стандарты) — прямо скажи, что уточнишь."
             )
 
         if not rules:
