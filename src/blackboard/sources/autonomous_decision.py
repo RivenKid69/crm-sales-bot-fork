@@ -250,25 +250,92 @@ class AutonomousDecisionSource(KnowledgeSource):
         optional_data = state_config.get("optional_data", [])
         terminal_requirements = state_config.get("terminal_state_requirements", {})
 
+        # Deterministic fast-track: demo_request / callback_request → autonomous_closing
+        # These are explicit readiness signals; skip intermediate phases immediately.
+        if intent in ("demo_request", "callback_request"):
+            if state != "autonomous_closing" and "autonomous_closing" in all_states:
+                # From any pre-closing phase: fast-track to closing
+                logger.info(
+                    "AutonomousDecision: fast-track %s → autonomous_closing (intent=%s)",
+                    state, intent,
+                )
+                blackboard.propose_action(
+                    action="autonomous_respond",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code="autonomous_fast_track_demo_callback",
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state="autonomous_closing",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code="autonomous_fast_track_demo_callback",
+                    source_name=self.name,
+                )
+                self._decision_history.append(
+                    AutonomousDecisionRecord(
+                        turn_in_state=turn_in_state,
+                        intent=intent,
+                        state=state,
+                        should_transition=True,
+                        next_state="autonomous_closing",
+                        reasoning="fast_track_demo_callback",
+                    )
+                )
+                return
+            elif state == "autonomous_closing":
+                # Already in closing: client wants demo/trial — stay in closing,
+                # acknowledge trial request, collect contact info. Do NOT soft_close.
+                logger.info(
+                    "AutonomousDecision: demo_request in closing → stay+collect_contact (intent=%s)",
+                    intent,
+                )
+                blackboard.propose_action(
+                    action="autonomous_respond",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code="autonomous_demo_in_closing",
+                    source_name=self.name,
+                )
+                # No state transition — stay in autonomous_closing
+                self._decision_history.append(
+                    AutonomousDecisionRecord(
+                        turn_in_state=turn_in_state,
+                        intent=intent,
+                        state=state,
+                        should_transition=False,
+                        next_state=None,
+                        reasoning="demo_in_closing_collect_contact",
+                    )
+                )
+                return
+
         # Deterministic fast-track: if client explicitly provided a real contact,
         # schedule video call immediately (from any autonomous phase).
-        # This prevents extra turns where LLM stays in intermediate phases despite
-        # ready contact data.
+        # NOTE: We do NOT check collected_data["contact_info"] here because of snapshot
+        # isolation — the data extractor writes contact_info in this same turn, but the
+        # snapshot (collected_data) was captured BEFORE extraction. Checking collected_data
+        # would always return False. Instead, we trust the intent classification.
         if (
             intent == "contact_provided"
-            and self._has_required_field(collected_data, "contact_info")
+            and state not in ("video_call_scheduled", "payment_ready")
             and "video_call_scheduled" in all_states
         ):
+            logger.info(
+                "AutonomousDecision: fast-track %s → video_call_scheduled (intent=%s)",
+                state, intent,
+            )
             blackboard.propose_action(
                 action="autonomous_respond",
-                priority=Priority.NORMAL,
+                priority=Priority.HIGH,
                 priority_rank=0,
                 reason_code="autonomous_fast_track_contact",
                 source_name=self.name,
             )
             blackboard.propose_transition(
                 next_state="video_call_scheduled",
-                priority=Priority.NORMAL,
+                priority=Priority.HIGH,
                 priority_rank=0,
                 reason_code="autonomous_fast_track_contact",
                 source_name=self.name,
@@ -526,12 +593,32 @@ class AutonomousDecisionSource(KnowledgeSource):
             if signal.get("price_intent_detected"):
                 category = signal.get("category", "price")
                 signal_lines.append(
-                    f"- Клиент спрашивает о цене ({category}). Реши: ответить в текущем этапе или переходить дальше."
+                    f"- Клиент спрашивает о цене ({category}). "
+                    "Ответь на цену ЗДЕСЬ (should_transition=false). "
+                    "Вопрос о цене ≠ готовность купить. Переход в closing ТОЛЬКО при явных словах: "
+                    "'хочу купить', 'как оплатить', 'выставьте счёт', 'оформляйте'."
                 )
             fact_requested = signal.get("fact_requested")
             if fact_requested:
                 signal_lines.append(
-                    f"- Клиент просит факты о продукте ({fact_requested}). Реши: ответить в текущем этапе или переходить дальше."
+                    f"- Клиент просит факты о продукте ({fact_requested}). "
+                    "Ответь на вопрос ЗДЕСЬ (should_transition=false), не переходи дальше только из-за вопроса о фактах."
+                )
+
+        if intent in ("demo_request", "callback_request"):
+            label = "демо/пробный доступ" if intent == "demo_request" else "созвон/перезвонить"
+            if state == "autonomous_closing":
+                signal_lines.append(
+                    f"⭐ КЛИЕНТ ХОЧЕТ {label.upper()} (intent={intent}) и уже находится в closing. "
+                    "should_transition=false (остаёмся в closing). "
+                    "Прими запрос на демо/триал, НЕМЕДЛЕННО попроси контакт (телефон или email). "
+                    "НЕ переходи в soft_close — клиент заинтересован!"
+                )
+            else:
+                signal_lines.append(
+                    f"⭐ КЛИЕНТ ХОЧЕТ {label.upper()} (intent={intent}). "
+                    "ОБЯЗАТЕЛЬНО: should_transition=true, next_state=autonomous_closing. "
+                    "Это сигнал готовности — НЕ задерживай в текущем этапе."
                 )
 
         if intent.startswith("objection_"):
@@ -656,6 +743,12 @@ class AutonomousDecisionSource(KnowledgeSource):
 
 Правила:
 - should_transition=true ТОЛЬКО если цель текущего этапа достигнута или клиент явно хочет двигаться дальше
+- ПЕРЕХОД В CLOSING (autonomous_closing) при ЛЮБОМ из сигналов:
+  a) Покупка: 'хочу купить', 'как оплатить', 'выставьте счёт', 'оформляйте' → ПУТЬ 1 (payment)
+  b) Демо/звонок: demo_request ('хочу попробовать', 'нужен демо-доступ', 'триал', 'есть демо?') → ПУТЬ 2 (video_call)
+  c) Звонок/контакт: callback_request ('давайте созвонимся', 'байланысайық', 'позвоните', 'запишите меня') → ПУТЬ 2 (video_call)
+  Вопрос о цене без намерения двигаться дальше — НЕ основание для перехода в closing.
+- demo_request + callback_request — НЕ отказ и НЕ soft_close. should_transition=true → next_state=autonomous_closing.
 {close_rules}
 - Если цель ещё не достигнута — should_transition=false, next_state="{state}"
 - action всегда "autonomous_respond"{data_collection_rule}

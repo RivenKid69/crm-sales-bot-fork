@@ -1254,11 +1254,22 @@ class ResponseGenerator:
                             "без требования ИИН/телефона в этом же сообщении.\n"
                         )
                     else:
+                        fields_str = ", ".join(urgent_fields)
+                        # Field label for LLM — no Russian example text (would be copy-pasted)
+                        if "contact_info" in urgent_fields:
+                            field_label = "контакт (телефон или email)"
+                        elif "kaspi_phone" in urgent_fields and "iin" in urgent_fields:
+                            field_label = "номер Kaspi и ИИН"
+                        elif "kaspi_phone" in urgent_fields:
+                            field_label = "номер телефона Kaspi"
+                        elif "iin" in urgent_fields:
+                            field_label = "ИИН"
+                        else:
+                            field_label = fields_str
                         variables["closing_data_request"] = (
-                            "⚠️ Для оформления на этом этапе нужны данные: "
-                            + ", ".join(urgent_fields) + ".\n"
-                            "   Если клиент готов двигаться к оформлению — прямо попроси эти данные.\n"
-                            "   Не дави и не повторяй один и тот же запрос подряд.\n"
+                            f"🔴 ОБЯЗАТЕЛЬНО В ЭТОМ ОТВЕТЕ: попроси у клиента {field_label}.\n"
+                            "   Клиент готов к следующему шагу — прямо и КРАТКО попроси именно это.\n"
+                            "   Не уходи от темы, не откладывай. Отвечай на языке клиента.\n"
                         )
                 elif urgent_fields and reachable:
                     # SOFT: at least one terminal reachable — suggest upgrade without forcing
@@ -1386,6 +1397,52 @@ class ResponseGenerator:
                 variables["do_not_ask"] = f"{existing}\n{contact_warning}" if existing else contact_warning
         except ImportError:
             pass
+
+        # === Bot question repetition guard ===
+        # If bot has asked the same question 2+ times without getting an answer, block it.
+        if _is_autonomous:
+            repeated_bot_questions = self._detect_repeated_bot_questions(
+                context.get("history", []), max_turns=8
+            )
+            if repeated_bot_questions:
+                questions_str = "; ".join(f'"{q}"' for q in repeated_bot_questions[:3])
+                repeat_block = (
+                    f"⛔ ЗАПРЕТ НА ПОВТОР: ты уже задавал эти вопросы несколько раз и не получил ответа — "
+                    f"НЕ задавай их снова: {questions_str}. "
+                    "Смени тему или двигайся к следующему шагу."
+                )
+                existing = variables.get("do_not_ask", "")
+                variables["do_not_ask"] = f"{existing}\n{repeat_block}" if existing else repeat_block
+
+            # Thematic topic guard: detect repeated unanswered question THEMES from bot history
+            blocked_themes = self._detect_repeated_question_themes(
+                context.get("history", []), max_turns=8
+            )
+            if blocked_themes:
+                themes_str = ", ".join(blocked_themes)
+                theme_block = (
+                    f"⛔ ТЕМА УЖЕ СПРОШЕНА {len(blocked_themes)}+ РАЗ И ПРОИГНОРИРОВАНА: {themes_str}. "
+                    "НЕ задавай вопросы на эти темы снова. Работай с тем, что знаешь, или двигайся дальше."
+                )
+                existing = variables.get("do_not_ask", "")
+                variables["do_not_ask"] = f"{existing}\n{theme_block}" if existing else theme_block
+
+            # Discovery stall guard: if in discovery 3+ turns and key fields still unknown,
+            # stop looping on discovery questions — answer the client's questions directly.
+            envelope_obj = context.get("context_envelope")
+            turns_in_discovery = getattr(envelope_obj, "consecutive_same_state", 0) if envelope_obj else 0
+            if (
+                spin_phase == "discovery"
+                and turns_in_discovery >= 3
+                and not collected.get("business_type")
+            ):
+                stall_block = (
+                    "⛔ СТОП: ты застрял в discovery более 3 ходов, не зная типа бизнеса клиента. "
+                    "НЕ задавай вопросы о сфере/типе/задачах/направлении бизнеса снова. "
+                    "Отвечай напрямую на то, что спрашивает клиент. Предложи демо или следующий шаг."
+                )
+                existing = variables.get("do_not_ask", "")
+                variables["do_not_ask"] = f"{existing}\n{stall_block}" if existing else stall_block
 
         # === Personalization v2: Adaptive personalization ===
         if self.personalization_engine and flags.personalization_v2:
@@ -2463,12 +2520,17 @@ class ResponseGenerator:
 
     @staticmethod
     def _is_payment_closing_signal(intent: str, user_message: str) -> bool:
-        """Detect explicit purchase/payment intent during autonomous closing."""
+        """Detect explicit purchase/payment intent during autonomous closing.
+
+        NOTE: 'agreement' is intentionally excluded — a client may agree to a call,
+        demo, or callback without intending to pay. Payment requires explicit invoice/
+        payment keywords. This prevents video_call scenarios from erroneously routing
+        to payment_ready collection (kaspi_phone + IIN) instead of contact_info.
+        """
         explicit_intents = {
             "request_invoice",
             "request_contract",
             "payment_terms",
-            "agreement",
             "ready_to_buy",
         }
         if intent in explicit_intents:
@@ -2526,13 +2588,21 @@ class ResponseGenerator:
         )
         has_kz_words = sum(1 for w in kz_words if w in msg) >= 2
 
-        if (kz_letters or has_kz_words) and ru_letters:
+        # Unique Kazakh-specific characters (ә, і, ң, ғ, ү, ұ, қ, ө, һ) are NOT used in
+        # Russian, so their presence definitively signals Kazakh text even if the message
+        # also contains common Cyrillic chars shared by both alphabets (а, б, к, м, etc.)
+        if kz_letters:
+            return (
+                "ЯЗЫК: сообщение на казахском. Отвечай НА КАЗАХСКОМ простыми понятными фразами. "
+                "Не переключайся на русский."
+            )
+        if has_kz_words and ru_letters:
             return (
                 "ЯЗЫК: сообщение смешанное (казахский+русский). "
                 "Отвечай ПОНЯТНО на русском (можно вкрапить 1-2 казахских слова по смыслу), "
                 "без повторяющихся фраз."
             )
-        if kz_letters or has_kz_words:
+        if has_kz_words:
             return (
                 "ЯЗЫК: отвечай на казахском простыми короткими фразами. "
                 "Не повторяй одинаковые предложения."
@@ -2642,6 +2712,90 @@ class ResponseGenerator:
                 if m:
                     return re.sub(r"\s+", " ", m.group(1)).strip()
         return ""
+
+    @staticmethod
+    def _detect_repeated_bot_questions(history: list, max_turns: int = 8) -> list:
+        """
+        Scan recent bot turns and return question phrases asked 2+ times.
+        Extracts only the question sentence (ends with '?') from each bot response.
+        """
+        if not isinstance(history, list):
+            return []
+
+        # Collect question sentences from recent bot turns
+        question_counts: dict = {}
+        recent = history[-max_turns:] if len(history) > max_turns else history
+        for turn in recent:
+            if not isinstance(turn, dict):
+                continue
+            bot_text = str(turn.get("bot", "") or "").strip()
+            if not bot_text:
+                continue
+            # Split into sentences and extract questions (ending with ?)
+            sentences = re.split(r"(?<=[.?!])\s+", bot_text)
+            for s in sentences:
+                s = s.strip()
+                if s.endswith("?") and len(s) > 15:
+                    # Normalize: lowercase, remove punctuation variation
+                    key = re.sub(r"[^\w\s]", "", s.lower()).strip()
+                    # Short key for comparison (first 60 chars)
+                    key = key[:60]
+                    question_counts[key] = question_counts.get(key, 0) + 1
+
+        # Return original questions that appear 2+ times
+        repeated = []
+        seen_keys = set()
+        for turn in recent:
+            if not isinstance(turn, dict):
+                continue
+            bot_text = str(turn.get("bot", "") or "").strip()
+            if not bot_text:
+                continue
+            sentences = re.split(r"(?<=[.?!])\s+", bot_text)
+            for s in sentences:
+                s = s.strip()
+                if s.endswith("?") and len(s) > 15:
+                    key = re.sub(r"[^\w\s]", "", s.lower()).strip()[:60]
+                    if question_counts.get(key, 0) >= 2 and key not in seen_keys:
+                        seen_keys.add(key)
+                        repeated.append(s[:100])
+        return repeated
+
+    @staticmethod
+    def _detect_repeated_question_themes(history: list, max_turns: int = 8) -> list:
+        """
+        Detect question THEMES asked 2+ times in recent bot turns even if phrased differently.
+        Returns a list of blocked theme labels (Russian) to inject into do_not_ask.
+        """
+        if not isinstance(history, list):
+            return []
+
+        # Themes: (label, keywords that indicate the question is about this theme)
+        THEMES = [
+            ("сфере/типе бизнеса", ["сфер", "бизнес", "вид деятельности", "направлени", "чем занимает",
+                                    "отрасл", "тип магазин", "тип бизнес", "тип предприят"]),
+            ("количестве сотрудников", ["сотрудник", "персонал", "работник", "штат", "команд"]),
+            ("бюджете", ["бюджет", "сколько готов", "планируете потратить"]),
+            ("болях/проблемах", ["проблем", "болит", "сложност", "трудност", "что не устраивает"]),
+        ]
+
+        # Count theme occurrences in bot questions across recent turns
+        theme_counts: dict = {}
+        recent = history[-max_turns:] if len(history) > max_turns else history
+        for turn in recent:
+            if not isinstance(turn, dict):
+                continue
+            bot_text = str(turn.get("bot", "") or "").lower()
+            if "?" not in bot_text:
+                continue
+            for label, keywords in THEMES:
+                for kw in keywords:
+                    if kw in bot_text:
+                        theme_counts[label] = theme_counts.get(label, 0) + 1
+                        break
+
+        # Return themes asked 2+ times
+        return [label for label, count in theme_counts.items() if count >= 2]
 
     def _get_secondary_intents(self, context: dict) -> list:
         """Return secondary_intents list from context_envelope, or empty list."""
