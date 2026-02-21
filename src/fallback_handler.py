@@ -401,6 +401,18 @@ class FallbackHandler:
         trace: Optional[EvaluationTrace]
     ) -> bool:
         """Check if immediate escalation to soft_close is needed."""
+        # Autonomous quality gate:
+        # In autonomous states with still-engaged client, do not jump to soft_close
+        # on the very first tier_2 intervention. Give one recovery turn first.
+        if (
+            ctx.state.startswith("autonomous_")
+            and ctx.current_tier == "fallback_tier_2"
+            and ctx.total_fallbacks <= 1
+            and ctx.engagement_level in ("high", "medium")
+            and ctx.frustration_level < 9
+        ):
+            return False
+
         result = fallback_registry.evaluate("needs_immediate_escalation", ctx, trace)
         if result:
             logger.event(

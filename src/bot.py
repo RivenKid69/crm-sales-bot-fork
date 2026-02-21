@@ -689,6 +689,20 @@ class SalesBot:
                 skip_reason="autonomous_non_closing_state"
             )
 
+        # In high-friction autonomous turns, suppress CTA to avoid sales pressure.
+        if (
+            self._flow
+            and self._flow.name == "autonomous"
+            and int(context.get("frustration_level", 0) or 0) >= 3
+        ):
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="autonomous_high_friction"
+            )
+
         # If question is intentionally suppressed for this turn, skip CTA too.
         if context.get("question_mode") == "suppress":
             return CTAResult(
@@ -1444,13 +1458,12 @@ class SalesBot:
         is_final = sm_result["is_final"]
 
         # Autonomous action normalization:
-        # In autonomous flow, non-structural actions that land in autonomous_*
-        # states should resolve through autonomous_respond.
+        # In autonomous flow, non-structural actions should resolve through
+        # autonomous_respond (including greeting stage), keeping generation
+        # logic in a single autonomous template family.
         if (
             self._flow
             and self._flow.name == "autonomous"
-            and isinstance(next_state, str)
-            and next_state.startswith("autonomous_")
         ):
             structural_actions = {
                 "ask_clarification",
@@ -1460,13 +1473,21 @@ class SalesBot:
                 "guard_soft_close",
                 "stall_guard_eject",
                 "stall_guard_nudge",
-                "redirect_after_repetition",
                 "escalate_repeated_content",
             }
-            if action not in structural_actions and action != "autonomous_respond":
+            current_state = self.state_machine.state
+            keep_greeting_action = (action == "greet_back" and current_state == "greeting")
+            keep_brevity_action = (action == "respond_briefly")
+            if (
+                action not in structural_actions
+                and action != "autonomous_respond"
+                and not keep_greeting_action
+                and not keep_brevity_action
+            ):
                 logger.info(
                     "Autonomous action normalization: action -> autonomous_respond",
                     original_action=action,
+                    current_state=current_state,
                     next_state=next_state,
                 )
                 action = "autonomous_respond"
@@ -1480,14 +1501,30 @@ class SalesBot:
 
         # Remap stall_guard actions to valid template actions
         if action == "stall_guard_eject":
-            action = f"transition_to_{next_state}"
-            # Fallback to continue_current_goal if specific transition template doesn't exist
-            if not self.generator._get_template(action):
-                action = "continue_current_goal"
+            if (
+                self._flow
+                and self._flow.name == "autonomous"
+            ):
+                # In autonomous flow, avoid transition_to_* template paths.
+                # Let state transition happen structurally via next_state.
+                if next_state == "soft_close":
+                    action = "soft_close"
+                elif next_state == "close":
+                    action = "close"
+                else:
+                    action = "autonomous_respond"
+            else:
+                action = f"transition_to_{next_state}"
+                # Fallback to continue_current_goal if specific transition template doesn't exist
+                if not self.generator._get_template(action):
+                    action = "continue_current_goal"
         elif action == "stall_guard_nudge":
-            action = "continue_conversation"
-            if not self.generator._get_template(action):
-                action = "continue_current_goal"
+            if self._flow and self._flow.name == "autonomous":
+                action = "autonomous_respond"
+            else:
+                action = "continue_conversation"
+                if not self.generator._get_template(action):
+                    action = "continue_current_goal"
 
         # FIX: Record the final state for phase coverage tracking
         if next_state not in visited_states:
@@ -1786,6 +1823,7 @@ class SalesBot:
                     "question_mode": (
                         response_directives.question_mode if response_directives else "adaptive"
                     ),
+                    "tone": tone_info.get("tone"),
                     # Flow context for dynamic CTA phase resolution
                     "flow_context": {
                         "phase_order": list(self.state_machine.phase_order),

@@ -116,6 +116,22 @@ class TransitionResolverSource(KnowledgeSource):
             )
             return
 
+        # Autonomous flow: keep objections inside autonomous stages.
+        # Shared _base transition "handle_objection" is deterministic and bypasses
+        # AutonomousDecisionSource; remap it to autonomous objection phase state
+        # instead of restarting from entry_state.
+        flow_config = ctx.flow_config
+        flow_name = flow_config.get("name", "") if isinstance(flow_config, dict) else getattr(flow_config, "name", "")
+        if flow_name == "autonomous" and next_state == "handle_objection":
+            phases = flow_config.get("phases", {}) if isinstance(flow_config, dict) else {}
+            mapping = phases.get("mapping", {}) if isinstance(phases, dict) else {}
+            entry_state = mapping.get("objection_handling", "autonomous_objection_handling")
+            logger.debug(
+                "TransitionResolverSource: autonomous remap handle_objection -> %s",
+                entry_state,
+            )
+            next_state = entry_state
+
         # Determine priority based on intent type
         high_priority_intents = {
             "rejection",

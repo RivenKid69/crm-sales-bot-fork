@@ -99,6 +99,10 @@ class IntentPatternGuardSource(KnowledgeSource):
         state_config = getattr(ctx, "state_config", {})
         if isinstance(state_config, dict) and state_config.get("autonomous", False):
             return False
+        flow_config = getattr(ctx, "flow_config", {})
+        flow_name = flow_config.get("name", "") if isinstance(flow_config, dict) else ""
+        if flow_name == "autonomous":
+            return False
 
         # O(1) lookup
         if current_intent not in self._all_pattern_intents:

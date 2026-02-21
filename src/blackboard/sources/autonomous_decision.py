@@ -18,7 +18,7 @@ StallGuard) all fire at CRITICAL/HIGH and override this source.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Any, List, TYPE_CHECKING
+from typing import Optional, Any, Dict, List, TYPE_CHECKING
 import logging
 import time
 
@@ -73,6 +73,50 @@ class AutonomousDecisionSource(KnowledgeSource):
         super().__init__(name)
         self._llm = llm
         self._decision_history: List[AutonomousDecisionRecord] = []
+
+    @staticmethod
+    def _is_non_empty(value: Any) -> bool:
+        if value is None:
+            return False
+        if isinstance(value, str):
+            return bool(value.strip())
+        if isinstance(value, (list, dict, tuple, set)):
+            return len(value) > 0
+        return True
+
+    @staticmethod
+    def _looks_like_phone(value: Any) -> bool:
+        if not isinstance(value, str):
+            return False
+        digits = "".join(ch for ch in value if ch.isdigit())
+        return len(digits) >= 10
+
+    def _has_required_field(self, collected_data: Dict[str, Any], field: str) -> bool:
+        """
+        Terminal-gate field presence with pragmatic aliases.
+
+        contact_info can be satisfied by kaspi_phone/phone/email.
+        kaspi_phone can be satisfied by phone-like contact_info/phone.
+        """
+        if self._is_non_empty(collected_data.get(field)):
+            return True
+
+        if field == "contact_info":
+            for alias in ("kaspi_phone", "phone", "email"):
+                if self._is_non_empty(collected_data.get(alias)):
+                    return True
+            return False
+
+        if field == "kaspi_phone":
+            phone_alias = collected_data.get("phone")
+            if self._is_non_empty(phone_alias) and self._looks_like_phone(str(phone_alias)):
+                return True
+            contact = collected_data.get("contact_info")
+            if self._is_non_empty(contact) and self._looks_like_phone(str(contact)):
+                return True
+            return False
+
+        return False
 
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """Only contribute for autonomous flow with LLM available."""
@@ -206,6 +250,41 @@ class AutonomousDecisionSource(KnowledgeSource):
         optional_data = state_config.get("optional_data", [])
         terminal_requirements = state_config.get("terminal_state_requirements", {})
 
+        # Deterministic fast-track: if client explicitly provided a real contact,
+        # schedule video call immediately (from any autonomous phase).
+        # This prevents extra turns where LLM stays in intermediate phases despite
+        # ready contact data.
+        if (
+            intent == "contact_provided"
+            and self._has_required_field(collected_data, "contact_info")
+            and "video_call_scheduled" in all_states
+        ):
+            blackboard.propose_action(
+                action="autonomous_respond",
+                priority=Priority.NORMAL,
+                priority_rank=0,
+                reason_code="autonomous_fast_track_contact",
+                source_name=self.name,
+            )
+            blackboard.propose_transition(
+                next_state="video_call_scheduled",
+                priority=Priority.NORMAL,
+                priority_rank=0,
+                reason_code="autonomous_fast_track_contact",
+                source_name=self.name,
+            )
+            self._decision_history.append(
+                AutonomousDecisionRecord(
+                    turn_in_state=turn_in_state,
+                    intent=intent,
+                    state=state,
+                    should_transition=True,
+                    next_state="video_call_scheduled",
+                    reasoning="fast_track_contact",
+                )
+            )
+            return
+
         # Build prompt for LLM decision with context signals from prior sources.
         context_signals = blackboard.get_context_signals()
         total_objections = int(getattr(envelope, "total_objections", 0) or 0)
@@ -245,6 +324,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             blackboard.propose_action(
                 action="autonomous_respond",
                 priority=Priority.NORMAL,
+                priority_rank=0,
                 reason_code="autonomous_llm_fallback",
                 source_name=self.name,
             )
@@ -252,6 +332,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             blackboard.propose_transition(
                 next_state=state,
                 priority=Priority.NORMAL,
+                priority_rank=0,
                 reason_code="autonomous_stay_llm_fallback",
                 source_name=self.name,
             )
@@ -261,6 +342,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         blackboard.propose_action(
             action="autonomous_respond",
             priority=Priority.NORMAL,
+            priority_rank=0,
             combinable=True,
             reason_code=f"autonomous_action_{decision.reasoning[:50]}" if decision.reasoning else "autonomous_action",
             source_name=self.name,
@@ -284,7 +366,9 @@ class AutonomousDecisionSource(KnowledgeSource):
             # LLM may ignore prompt instructions; this ensures data integrity regardless
             if target in terminal_names and terminal_requirements.get(target):
                 reqs = terminal_requirements[target]
-                missing_for_terminal = [f for f in reqs if not collected_data.get(f)]
+                missing_for_terminal = [
+                    f for f in reqs if not self._has_required_field(collected_data, f)
+                ]
                 if missing_for_terminal:
                     logger.warning(
                         "AutonomousDecision: terminal gate — blocked %s → %s "
@@ -297,6 +381,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                 blackboard.propose_transition(
                     next_state=state,
                     priority=Priority.NORMAL,
+                    priority_rank=0,
                     reason_code="autonomous_stay_terminal_gate",
                     source_name=self.name,
                 )
@@ -309,6 +394,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                     blackboard.propose_transition(
                         next_state=target,
                         priority=Priority.NORMAL,
+                        priority_rank=0,
                         reason_code=f"autonomous_transition_{decision.reasoning[:50]}" if decision.reasoning else "autonomous_transition",
                         source_name=self.name,
                     )
@@ -328,6 +414,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                     blackboard.propose_transition(
                         next_state=state,
                         priority=Priority.NORMAL,
+                        priority_rank=0,
                         reason_code="autonomous_stay_invalid_target",
                         source_name=self.name,
                     )
@@ -337,6 +424,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             blackboard.propose_transition(
                 next_state=state,
                 priority=Priority.NORMAL,
+                priority_rank=0,
                 reason_code="autonomous_stay_in_state",
                 source_name=self.name,
             )
@@ -481,7 +569,8 @@ class AutonomousDecisionSource(KnowledgeSource):
         data_collection_rule = ""
         if not intent.startswith("objection_"):
             data_collection_rule = """
-- Старайся собрать как можно больше данных о клиенте перед переходом
+- Собирай только данные, которые реально нужны для прогресса этапа
+- Если ценность уже понятна и клиент вовлечён — переходи дальше без лишних уточнений
 - При возражении клиента — отработай его, не переходи сразу к следующему этапу"""
 
         # Build context-dependent close options for prompt
@@ -493,8 +582,8 @@ class AutonomousDecisionSource(KnowledgeSource):
                 for t in terminal_names:
                     reqs = terminal_requirements.get(t, [])
                     if reqs:
-                        missing_t = [f for f in reqs if not collected_data.get(f)]
-                        present_t = [f for f in reqs if collected_data.get(f)]
+                        missing_t = [f for f in reqs if not self._has_required_field(collected_data, f)]
+                        present_t = [f for f in reqs if self._has_required_field(collected_data, f)]
                         if missing_t:
                             status_lines.append(
                                 f"  ⛔ {t}: НЕ ГОТОВО — нужно собрать: {', '.join(missing_t)}"
@@ -515,7 +604,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                 for t in terminal_names:
                     reqs = terminal_requirements.get(t, [])
                     if reqs:
-                        missing_t = [f for f in reqs if not collected_data.get(f)]
+                        missing_t = [f for f in reqs if not self._has_required_field(collected_data, f)]
                         if missing_t:
                             missing_instructions.append(
                                 f"   → {t}: ПРЯМО СПРОСИ клиента про {', '.join(missing_t)}"

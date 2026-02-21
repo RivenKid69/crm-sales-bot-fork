@@ -22,6 +22,7 @@ SSoT for pipeline: src/classifier/refinement_pipeline.py
 SSoT for layers: src/classifier/refinement_layers.py
 SSoT for config: src/yaml_config/constants.yaml (refinement_pipeline section)
 """
+import re
 from typing import Dict, Optional, Any
 
 from src.logger import logger
@@ -211,6 +212,17 @@ class UnifiedClassifier:
             if flags.objection_refinement:
                 result = self._apply_objection_refinement(message, result, context)
 
+        # Guardrail: prevent false contact_provided on explicit refusals
+        # (e.g. "не проси мои контакты"), unless message actually contains a contact payload.
+        if (
+            result.get("intent") == "contact_provided"
+            and self._looks_like_contact_refusal(message)
+            and not self._has_explicit_contact_payload(message, result.get("extracted_data", {}))
+        ):
+            result["intent"] = "rejection"
+            result["confidence"] = max(float(result.get("confidence", 0.0) or 0.0), 0.9)
+            result["method"] = f"{result.get('method', 'unknown')}_contact_refusal_guard"
+
         # Ensure style fields exist in result (backward compat — always present)
         if "style_modifiers" not in result:
             result["style_modifiers"] = []
@@ -231,6 +243,32 @@ class UnifiedClassifier:
             result = self._apply_disambiguation(result, context)
 
         return result
+
+    @staticmethod
+    def _has_explicit_contact_payload(message: str, extracted_data: Dict[str, Any]) -> bool:
+        if not isinstance(extracted_data, dict):
+            extracted_data = {}
+        if extracted_data.get("contact_info") or extracted_data.get("kaspi_phone"):
+            return True
+        msg = str(message or "")
+        if re.search(r"[\w\.-]+@[\w\.-]+\.\w{2,}", msg):
+            return True
+        # +7XXXXXXXXXX / 8XXXXXXXXXX / compact KZ-like formats
+        if re.search(r"(?:\+?[78])[\s\-\(]?\d{3}[\s\-\)]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}", msg):
+            return True
+        return False
+
+    @staticmethod
+    def _looks_like_contact_refusal(message: str) -> bool:
+        msg = str(message or "").lower()
+        refusal_patterns = (
+            r"не\s+(?:проси|просите)\s+(?:мой|мои)?\s*(?:контакт|контакты|номер|телефон)",
+            r"контакт(?:ы)?\s+не\s+(?:дам|даю|оставлю|оставляю)",
+            r"без\s+(?:контакта|контактов)",
+            r"не\s+даю\s+(?:контакт|номер|телефон)",
+            r"контакт\s+пока\s+не\s+даю",
+        )
+        return any(re.search(p, msg) for p in refusal_patterns)
 
     def _apply_refinement_pipeline(
         self,
