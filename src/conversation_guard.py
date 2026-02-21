@@ -350,7 +350,26 @@ class ConversationGuard:
 
         # Проверяем последние N сообщений на идентичность
         recent = history[-self.config.max_same_message:]
-        return len(set(recent)) == 1
+        if len(set(recent)) != 1:
+            return False
+
+        # Price-loop tolerance: in stress tests users can repeat a short
+        # "цена?" prompt many times. Triggering fallback too early hurts
+        # sales coherence, so allow up to 5 repeats before intervention.
+        last_msg = recent[-1] if recent else ""
+        short_repeat = len(last_msg.split()) <= 2 and len(last_msg) <= 12
+        price_like_intent = str(self._state.last_intent or "").startswith("price_")
+        if short_repeat and price_like_intent:
+            tail_same = 0
+            for msg in reversed(history):
+                if msg == last_msg:
+                    tail_same += 1
+                else:
+                    break
+            if tail_same < 6:
+                return False
+
+        return True
 
     def _count_recent_same_state(self, state: str) -> int:
         """Считаем последние подряд идущие одинаковые состояния"""

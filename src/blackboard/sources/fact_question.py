@@ -418,17 +418,17 @@ class FactQuestionSource(KnowledgeSource):
         """
         Detect autonomous context for this source.
 
-        Primary gate is per-state YAML flag. Additionally treat autonomous flow
-        greeting as autonomous context to avoid first-turn action dictation.
+        Primary gate is per-state YAML flag.
+        Fallback gate is flow-level name for shared states (e.g., greeting,
+        handle_objection) where state_config may come from _base.
         """
         state_config = getattr(ctx, "state_config", {})
         if isinstance(state_config, dict) and state_config.get("autonomous", False):
             return True
 
-        state = str(getattr(ctx, "state", "") or "")
         flow_config = getattr(ctx, "flow_config", {})
         flow_name = flow_config.get("name", "") if isinstance(flow_config, dict) else ""
-        return flow_name == "autonomous" and state == "greeting"
+        return flow_name == "autonomous"
 
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """

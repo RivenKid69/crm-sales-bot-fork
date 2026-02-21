@@ -1,0 +1,886 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-21T13:07:25.862963",
+    "model": "qwen3:14b",
+    "flow": "autonomous",
+    "seed": 42,
+    "threads": 1
+  },
+  "summary": {
+    "total_dialogs": 10,
+    "elapsed_sec": 428.84,
+    "terminal_rate_percent_payment_or_video_call": 30.0,
+    "avg_turns_to_terminal_payment_or_video_call": 7.33,
+    "avg_turns_all_dialogs": 8.6,
+    "autonomous_turns_total": 79,
+    "template_override_percent_non_autonomous_respond_in_autonomous_states": 1.27,
+    "template_override_percent_pricing_fact_actions_in_autonomous_states": 0.0,
+    "overlay_activations_total": 0
+  },
+  "dialogs": [
+    {
+      "simulation_id": 0,
+      "persona": "tire_kicker",
+      "outcome": "abandoned",
+      "turns": 6,
+      "final_state": "autonomous_objection_handling",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Программа Wipon — это решение для розничной торговли, которое помогает управлять магазином: вести учёт товаров, контроль продаж, кассу, бухгалтерию и аналитику. Она работает как в онлайн, так и в офлайн режиме, а также поддерживает интеграцию с кассовым оборудованием. Какой у вас формат магазина и сколько у вас сотрудников?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Хорошо, что вы не спешите. Многие начинают с изучения, и это нормально. Просто чтобы понять, как Wipon может помочь — стоит ли он внимания, когда вы будете готовы?"
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_discovery",
+          "intent": "objection_think",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, это понятно — часто бывает, что люди сначала просто изучают, а потом уже принимают решения. Многие магазины начинали с того же, и позже поняли, как Wipon помогает экономить время, контролировать бизнес и улучшать прибыльность. А если вы хотите, я могу рассказать, как это работает на примере вашего формата магазина."
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_think",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, это важный момент — не каждый готов принимать решения сразу, и это нормально. Многие магазины сначала изучали Wipon, а потом поняли, как она помогает упростить работу и сэкономить время. Например, один из наших клиентов сначала смотрел, а потом внедрил систему и сократил ошибки в учёте на 40%. Если вы когда-нибудь захотите углубиться — я всегда рядом."
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_think",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, это действительно важный момент — не каждый готов сразу принимать решения, и это нормально. Многие владельцы магазинов начинали с того же, но после того как попробовали Wipon, они заметили, как система помогает сэкономить время и снизить ошибки в учёте. Например, один из наших клиентов сократил потери на 30% всего за первый месяц использования. Если когда-нибудь захотите пройти по шагам — я помогу."
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю — вы сейчас в поиске, и это нормально. Многие владельцы магазинов начинают именно с изучения, а потом видят, как Wipon помогает экономить время и снижать ошибки. Если когда-нибудь захотите увидеть, как это работает на практике — я помогу запустить демо или рассчитать, как система сэкономит вам время и деньги."
+        }
+      ]
+    },
+    {
+      "simulation_id": 1,
+      "persona": "price_sensitive",
+      "outcome": "abandoned",
+      "turns": 12,
+      "final_state": "autonomous_negotiation",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Наш чековый аппарат (кассовый моноблок) — бесплатный, он входит в стоимость тарифа Wipon Lite или Wipon Standard. Это позволяет сэкономить на дополнительном оборудовании и сразу начать работу с полной системой учета, кассы и отчетности. Какой тариф лучше подойдет для вашего бизнеса?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Тариф Wipon Lite стоит 5 000 ₸ в месяц — это минимальная стоимость для полноценной работы с кассой, учетом и отчетами. Вы платите только за услугу, а оборудование уже включено."
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_qualification",
+          "intent": "objection_price",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, что 5 000 ₸ может показаться высокой суммой, особенно на начальном этапе. Хорошо, что вы спрашиваете — у нас есть возможность подобрать оптимальный тариф с учетом вашего бюджета, включая акции и скидки. Например, сейчас действует специальное предложение в Шымкенте — скидка 30% на Lite и Standard."
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Для клиентов из Алматы также действует скидка 30% на тариф Wipon Lite — это значит, что вместо 5 000 ₸ в месяц вы платите всего 3 500 ₸. Такой подход позволяет снизить расходы без потери функционала."
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_price",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, вы можете оформить рассрочку через Kaspi — это позволяет распределить платежи на удобные для вас сроки. Также стоит учесть, что скидка 30% уже снижает стоимость до 3 500 ₸ в месяц, что делает тариф более доступным."
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_objection_handling",
+          "intent": "demo_request",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "К сожалению, у нас нет бесплатного периода, но вы можете воспользоваться скидкой 30% на тариф Wipon Lite в Алматы — это 3 500 ₸ в месяц, а также оформить рассрочку через Kaspi, чтобы снизить нагрузку на бюджет."
+        },
+        {
+          "turn": 7,
+          "state": "autonomous_objection_handling",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Без скидки тариф Wipon Lite стоит 5 000 ₸ в месяц, а с скидкой — 3 500 ₸, что уже включает бесплатный чековый аппарат и доступ к интеграциям с ТИС и Kaspi. Рассрочка через Kaspi доступна для всех клиентов — вы можете распределить платежи на удобные сроки."
+        },
+        {
+          "turn": 8,
+          "state": "autonomous_negotiation",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Рассрочка через Kaspi доступна даже без скидки — вы можете распределить платежи на удобные сроки, не теряя доступа к бесплатной кассе и полному функционалу тарифа."
+        },
+        {
+          "turn": 9,
+          "state": "autonomous_negotiation",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Без скидки тариф Wipon Lite стоит 5 000 ₸ в месяц, но вы можете оформить рассрочку через Kaspi на удобные для вас сроки. Это позволяет снизить нагрузку на бюджет без потери доступа к бесплатной кассе и полному функционалу."
+        },
+        {
+          "turn": 10,
+          "state": "autonomous_negotiation",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, рассрочка через Kaspi доступна, и сейчас действует скидка 30% на тариф Wipon Lite — это 3 500 ₸ в месяц вместо 5 000."
+        },
+        {
+          "turn": 11,
+          "state": "autonomous_negotiation",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Рассрочка через Kaspi доступна без скидки — вы платите 5 000 ₸ в месяц, но получаете бесплатный чековый аппарат и полный функционал тарифа."
+        },
+        {
+          "turn": 12,
+          "state": "autonomous_negotiation",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Тариф Wipon Lite без скидки стоит 5 000 ₸ в месяц, но вы получаете бесплатный чековый аппарат и доступ к всем функциям учета и отчетности. Если хотите, я могу предложить альтернативные варианты оплаты или тарифы с меньшей стоимостью."
+        }
+      ]
+    },
+    {
+      "simulation_id": 2,
+      "persona": "busy",
+      "outcome": "abandoned",
+      "turns": 8,
+      "final_state": "autonomous_qualification",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon — это программа для автоматизации бизнеса, которая помогает управлять продажами, складом и отчётностью. Цена зависит от типа бизнеса и функций, но обычно начинается от 100 000 ₸ в год. Какой у вас бизнес?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_discovery",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, вы в сжатые сроки должны решить важные задачи — это действительно критично. Wipon помогает автоматизировать управление продажами, складом и отчётами, что экономит время и снижает ошибки. Давайте коротко — какие задачи сейчас решаете вручную? Это поможет подобрать именно то, что нужно вашему бизнесу."
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_discovery",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, вы в условиях плотного графика — это действительно важно. Wipon позволяет автоматизировать управление продажами, складом и отчётом, экономя время и минимизируя ошибки. Чтобы подобрать наиболее подходящее решение, скажите, пожалуйста, какой тип бизнеса вы ведёте?"
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_discovery",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, вы в условиях напряжённой работы — это действительно важно. Wipon автоматизирует управление продажами, складом и отчётностью, экономя время и снижая ошибки. Чтобы подобрать оптимальное решение, скажите, пожалуйста, какой тип бизнеса вы ведёте?"
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_discovery",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, вы в условиях напряжённой работы — это действительно критично. Wipon помогает с автоматизацией продаж, склада и отчётов, экономя время и снижая ошибки. Чтобы подобрать решение, подскажите, пожалуйста, какой тип бизнеса вы ведёте?"
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_discovery",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, вы сейчас в режиме \"всё срочно\" — это действительно сложно. Wipon помогает автоматизировать ключевые процессы: продажи, склад, отчёты, что экономит время и снижает ошибки. Чтобы подобрать решение под вашу специфику, скажите, пожалуйста, какой тип бизнеса вы ведёте?"
+        },
+        {
+          "turn": 7,
+          "state": "autonomous_qualification",
+          "intent": "request_brevity",
+          "action": "transition_to_autonomous_qualification",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon — это автоматизация бизнеса: продажи, склад, отчёты. Стоит от 100 000 ₸ в год, включая фискализацию и поддержку. Подойдёт для вашего IT-проекта — экономит время и снижает ошибки. Сколько сотрудников в вашей компании?"
+        },
+        {
+          "turn": 8,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon — это автоматизация продаж, склада и отчётов, стоит от 100 000 ₸ в год, включая фискализацию. Система сэкономит ваше время и снизит ошибки. Сколько сотрудников в вашей компании?"
+        }
+      ]
+    },
+    {
+      "simulation_id": 3,
+      "persona": "startup_founder",
+      "outcome": "success",
+      "turns": 12,
+      "final_state": "autonomous_closing",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "greeting",
+          "intent": "greeting",
+          "action": "greet_back",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Привет! Для начала расскажите, что именно вас интересует — я помогу подобрать оптимальный комплект."
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Привет! Для старта в розничной торговле одежды отлично подойдёт минималистичный комплект: кассовый моноблок, принтер чеков и тариф Wipon Lite. Он включает учёт товаров, контроль продаж, аналитику и бесплатную кассу с ОФД. Подойдёт ли такой вариант для вашего магазина?"
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Минимальный комплект с кассой и программой учёта обойдётся от 15 000 ₸, его можно оплатить в рассрочку 0 0 12 через Kaspi. Это позволит начать работу без лишних затрат и с минимальной нагрузкой на вас. Хотите, чтобы я подобрал точный набор и отправил счёт?"
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "15 000 ₸ — это примерно 1 250 ₸ в месяц при оплате в рассрочку 0 0 12 через Kaspi. Это позволит запустить магазин без крупных первоначальных затрат."
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Уточню детали у коллег и вернусь с ответом."
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_price",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, как важно начать работу без лишних задержек — особенно в такой срочной ситуации. Давайте посмотрим, как можно сократить сроки и снизить затраты, сохранив всё необходимое для старта."
+        },
+        {
+          "turn": 7,
+          "state": "autonomous_objection_handling",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, можно начать без кассы — минимальный комплект с программой учёта обойдётся от 5 000 ₸, и мы сможем подключить систему в течение 1 дня. Это позволит вам открыть магазин до 25 числа без лишних затрат."
+        },
+        {
+          "turn": 8,
+          "state": "autonomous_objection_handling",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, 5 000 ₸ — это минимальная стоимость для запуска учёта товаров в системе Wipon. Учёт будет вести себя автоматически, без лишних действий с вашей стороны, что сэкономит время на старте."
+        },
+        {
+          "turn": 9,
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Касса можно добавить позже — сейчас вы сможете запустить учёт за 5 000 ₸ и сразу начать работу. Кассу можно подключить в любой момент, даже через Kaspi. Готовы ли вы указать свой ИИН и телефон для оформления? Это позволит нам быстрее запустить систему."
+        },
+        {
+          "turn": 10,
+          "state": "autonomous_closing",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Хорошо, телефон указан. Для завершения оформления, пожалуйста, укажите ваш ИИН — это позволит нам быстрее запустить учёт и подготовить всё к 25 числу."
+        },
+        {
+          "turn": 11,
+          "state": "autonomous_closing",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Хорошо, телефон указан. Чтобы завершить оформление и запустить систему к 25 числу, пожалуйста, укажите ваш ИИН — это позволит нам быстрее начать работу."
+        },
+        {
+          "turn": 12,
+          "state": "autonomous_closing",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Телефон указан. Чтобы завершить оформление и запустить учёт к 25 числу, пожалуйста, укажите ваш ИИН — это позволит нам быстрее начать работу."
+        }
+      ]
+    },
+    {
+      "simulation_id": 4,
+      "persona": "aggressive",
+      "outcome": "soft_close",
+      "turns": 5,
+      "final_state": "soft_close",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Программа Wipon — это решение для управления розничным магазином: от кассы и ОФД до учёта товаров, аналитики и бухгалтерии. Она работает онлайн и оффлайн, подходит для разных форматов и масштабов. А какой у вас формат магазина и сколько у вас примерно товаров?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Стоимость зависит от масштаба: для маленького магазина — от 5 000 ₸ в месяц, для крупного — от 15 000 ₸ в месяц. В Pro входит обучение и поддержка, что ускоряет запуск."
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Тариф Wipon Mini стоит 5 000 ₸ в месяц — это базовый пакет с онлайн-кассой, учётом товаров и отчётами. Для вашего магазина он подойдёт, если нужно просто вести счёт и отслеживать остатки."
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_qualification",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Разница в функциях: Mini — базовый тариф с онлайн-кассой и учётом товаров, Pro — для сетей и оптовиков с расширенной аналитикой и поддержкой до 5 складов."
+        },
+        {
+          "turn": 5,
+          "state": "soft_close",
+          "intent": "fallback_close",
+          "action": "soft_close",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Давайте так: я оставлю контакты, и вы свяжетесь когда будет удобно. Хорошо?"
+        }
+      ]
+    },
+    {
+      "simulation_id": 5,
+      "persona": "technical",
+      "outcome": "success",
+      "turns": 12,
+      "final_state": "video_call_scheduled",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "greeting",
+          "intent": "question_offline",
+          "action": "answer_and_continue",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, Wipon работает без интернета — продажи сохраняются локально и синхронизируются, когда связь восстановится. Это удобно для работы в любом месте."
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, данные сохраняются локально на устройстве и синхронизируются при наличии интернета. В Wipon есть интеграция с 1С через API, что позволяет автоматизировать обмен данными."
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon поддерживает интеграцию с Kaspi, данные хранятся в локальной базе устройства и синхронизируются при наличии интернета. Это позволяет работать даже в условиях нестабильного соединения — вы можете продолжать вести бизнес без простоя."
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_discovery",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, интеграция с Kaspi доступна, что позволяет автоматизировать прием и выдачу платежей. Данные защищены через шифрование и регулярные резервные копии, хранящиеся в облаке."
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_qualification",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, интеграция с Kaspi доступна — вы сможете принимать и выдавать платежи автоматически. Данные защищены с помощью шифрования, а также создаются регулярные резервные копии в облаке. Это обеспечивает надёжность и минимизирует риски потери информации. Какая у вас текущая потребность — быстрая установка или расширение существующей системы?"
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_qualification",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Уточню детали у коллег и вернусь с ответом."
+        },
+        {
+          "turn": 7,
+          "state": "autonomous_qualification",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, интеграция с Kaspi реализована и активно используется нашими клиентами. В случае, если по каким-то причинам интеграция не сработает, мы вернём деньги в полном объёме — это наша гарантия. Какой бюджет вы рассматриваете на данный момент?"
+        },
+        {
+          "turn": 8,
+          "state": "autonomous_objection_handling",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Интеграция с Kaspi доступна и активно используется нашими клиентами — это проверено и работает стабильно. Если в процессе возникнут технические сложности, мы гарантируем возврат средств. Какой бюджет вы сейчас рассматриваете для внедрения?"
+        },
+        {
+          "turn": 9,
+          "state": "autonomous_objection_handling",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Интеграция с Kaspi доступна и успешно внедрена в наших решениях — это проверено на практике. Если по каким-либо причинам интеграция не сработает, мы гарантируем возврат средств. Какой бюджет вы готовы выделить на данный момент для внедрения?"
+        },
+        {
+          "turn": 10,
+          "state": "autonomous_objection_handling",
+          "intent": "question_integrations",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Интеграция с Kaspi реализована и успешно используется нашими клиентами — это проверено и работает без сбоев. Если по каким-либо причинам интеграция не сработает, мы гарантируем возврат средств. Какой бюджет вы сейчас готовы выделить на внедрение?"
+        },
+        {
+          "turn": 11,
+          "state": "autonomous_closing",
+          "intent": "agreement",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Интеграция с Kaspi уже доступна и используется нашими клиентами — мы проверили её стабильность и готовы подключить её для вас. Чтобы мы могли приступить к оформлению, нам понадобится ваш номер телефона для Kaspi и ИИН."
+        },
+        {
+          "turn": 12,
+          "state": "video_call_scheduled",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Почта получена — мы готовы приступить к оформлению."
+        }
+      ]
+    },
+    {
+      "simulation_id": 6,
+      "persona": "enterprise_buyer",
+      "outcome": "success",
+      "turns": 5,
+      "final_state": "video_call_scheduled",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Для 5 точек с аналитикой по каждой отлично подойдёт Wipon Standard — он позволяет управлять несколькими складами, вести учёт по разным ценам и получать подробную аналитику. А как сейчас у вас организовано управление точками и учётом?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_closing",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Тариф Wipon Standard стоит 50 000 ₸ за точку в месяц — всего на 5 точек это 250 000 ₸ в месяц. Он позволяет управлять несколькими точками, получать аналитику по каждой и автоматизировать процессы, что сэкономит вам время. Когда вам удобно вернуться к оформлению?"
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_closing",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Уточню детали у коллег и вернусь с ответом."
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_closing",
+          "intent": "callback_request",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "У вас срочно нужно автоматизировать процессы — Wipon Standard уже готов к внедрению и позволит управлять 5 точками с детальной аналитикой. Чтобы мы могли сразу приступить, мне нужно ваше имя и контактные данные (телефон или email). Как вам удобнее предоставить?"
+        },
+        {
+          "turn": 5,
+          "state": "video_call_scheduled",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Андрей, Wipon Standard уже готов к внедрению — он сэкономит время и поможет избежать авралов. Как удобнее приступить к настройке?"
+        }
+      ]
+    },
+    {
+      "simulation_id": 7,
+      "persona": "competitor_user",
+      "outcome": "abandoned",
+      "turns": 12,
+      "final_state": "autonomous_closing",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon — это не просто касса, а полноценная система управления бизнесом: от учета товаров и клиентов до автоматизации отчетности и поддержки налоговых режимов. Если вы ищете решение, которое поможет не только принимать оплату, но и управлять бизнесом эффективнее — мы можем рассмотреть варианты, подходящие именно вашему масштабу и потребностям. Какой тип бизнеса вы ведете?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_qualification",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "1С — отличный инструмент для учета, но он не интегрирован с кассой и не поддерживает автоматизацию розничных операций, что может привести к ошибкам и потере времени. Wipon объединяет учет, кассу и отчеты в одном месте, упрощая работу и сокращая ручные действия. Сколько сотрудников у вас в магазине?"
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_qualification",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon объединяет учет, кассу и отчеты в одной системе, что экономит время и уменьшает ошибки, особенно при работе с несколькими сотрудниками. В отличие от 1С, он позволяет автоматизировать не только учет, но и розничные операции — от продаж до фискализации. Какие именно задачи вы сейчас решаете вручную?"
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_qualification",
+          "intent": "objection_competitor",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, что текущая система уже функционирует, и перенос данных — важный момент. В Wipon можно импортировать товары, остатки и даже историю продаж из 1С, что ускорит адаптацию. Это позволяет сохранить ваш опыт, но при этом получить более интегрированное решение для розницы. Как вы оцениваете текущие затраты на ведение учета и кассовых операций?"
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_objection_handling",
+          "intent": "question_data_migration",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, мы можем импортировать товары, остатки и даже историю продаж из 1С, чтобы минимизировать прерывание текущих процессов. Это позволяет сохранить ваш опыт, но при этом перейти на более интегрированное решение."
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_objection_handling",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Мы обеспечиваем полную миграцию данных из 1С — от товаров и остатков до истории продаж — без потерь и с минимальным вмешательством в ваш текущий процесс. Это позволяет сохранить ваш опыт, но при этом перейти на более интегрированное решение. Как вы видите, переход на Wipon не прерывает работу, а, наоборот, упрощает управление бизнесом. Какой аспект вас сейчас больше всего волнует при переходе?"
+        },
+        {
+          "turn": 7,
+          "state": "autonomous_objection_handling",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Мы гарантируем точное копирование данных из 1С — товары, остатки, истории продаж — без потерь и с минимальным вмешательством в вашу работу. Процесс занимает обычно 1–2 дня, и вы можете продолжать вести бизнес без остановки. Как вы считаете, какие преимущества важнее: скорость перехода или полная сохранность данных?"
+        },
+        {
+          "turn": 8,
+          "state": "autonomous_objection_handling",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Мы проводим миграцию данных из 1С в Wipon с полной проверкой на точность — каждый товар, остаток и операция переносятся без потерь. В случае, если что-то всё же пропустится, у нас есть резервные копии и возможность восстановить данные из исходной системы. Как вы видите, мы берём на себя ответственность за сохранность ваших данных — это ключевой момент при переходе. Важно ли для вас, чтобы процесс был максимально прозрачным и безопасным?"
+        },
+        {
+          "turn": 9,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_think",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, это важный момент — мы понимаем, насколько критично сохранить все данные при переходе. Многие клиенты из розничной торговли сначала тоже сомневались, но после миграции с 1С на Wipon они отметили, что данные перенеслись полностью и без потерь. Мы обеспечиваем это через точную проверку и резервное копирование — так что даже если что-то пропустится, мы сможем восстановить."
+        },
+        {
+          "turn": 10,
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon включает в себя все ключевые функции учета, кассирования и отчетности, которые есть в 1С, и дополнительно объединяет их в одну систему — это упрощает работу и снижает ошибки. Если вы привыкли к функционалу 1С, мы можем перенести ваши данные без потерь, чтобы вы могли плавно перейти на Wipon. Хотите, чтобы мы показали, как это работает на примере вашей текущей системы?"
+        },
+        {
+          "turn": 11,
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Wipon включает все ключевые функции учета и кассирования, аналогичные 1С, и позволяет перенести данные без потерь — это проверено многими клиентами из розницы. Если хотите, мы можем показать, как это будет работать на вашем примере, и вернуться к оформлению позже, когда будет удобно."
+        },
+        {
+          "turn": 12,
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, в Wipon есть функция отслеживания товаров в реальном времени, аналогичная 1С, и данные можно перенести без потерь. Мы обеспечиваем плавный переход, чтобы вы могли продолжить работу без остановки. Если хотите, мы можем вернуться к оформлению позже, когда будет удобно."
+        }
+      ]
+    },
+    {
+      "simulation_id": 8,
+      "persona": "happy_path",
+      "outcome": "success",
+      "turns": 5,
+      "final_state": "video_call_scheduled",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Для магазина отлично подойдёт наша программа учёта — она помогает автоматизировать продажи, управлять складом, вести отчётность и работать с клиентами. Какой у вас формат магазина: небольшой локальный или с несколькими точками?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_qualification",
+          "intent": "no_problem",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Для вашего магазина подойдёт тариф Mini — он идеален для одной точки и поможет автоматизировать кассу и учёт остатков. Хотите узнать, как быстро можно запустить систему?"
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_presentation",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Систему можно запустить всего за 15 минут — достаточно подключить кассовый регистратор и добавить товары. Сейчас я могу вам показать живое демо через звонок или веб-окно, чтобы вы увидели, как это работает на практике. Хотите начать?"
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_closing",
+          "intent": "contact_provided",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Уточню детали у коллег и вернусь с ответом."
+        },
+        {
+          "turn": 5,
+          "state": "video_call_scheduled",
+          "intent": "callback_request",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Как к вам обращаться? Надеюсь, всё будет быстро — мы уже на финишной прямой, осталось только связаться по телефону и показать, как система работает. Ждём вашего звонка!"
+        }
+      ]
+    },
+    {
+      "simulation_id": 9,
+      "persona": "skeptic",
+      "outcome": "soft_close",
+      "turns": 9,
+      "final_state": "soft_close",
+      "trace": [
+        {
+          "turn": 1,
+          "state": "autonomous_discovery",
+          "intent": "objection_no_time",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Бесплатная касса может быть удобна для простых задач, но платная версия Wipon позволяет автоматизировать бизнес, сократить ошибки, улучшить контроль и получить доступ к аналитике, которая помогает принимать решения. Это особенно важно, когда вы начинаете масштабировать. А какая сейчас ваша основная цель — упростить процессы или уже выйти на рост?"
+        },
+        {
+          "turn": 2,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_no_need",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, это действительно важный момент — многие начинают с простых решений, но когда бизнес растёт, автоматизация становится ключом к эффективности. Например, клиенты, которые внедрили Wipon, отметили, что сократили время на отчётность в 2 раза и минимизировали ошибки в учёте. Как вы видите, платная версия — это не просто функции, а инструмент для роста. А как вы сейчас управляете отчётностью и контролируете процессы?"
+        },
+        {
+          "turn": 3,
+          "state": "autonomous_objection_handling",
+          "intent": "objection_no_need",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Мы понимаем, что сейчас всё работает, но автоматизация помогает сократить время на отчётность и минимизировать ошибки. Например, один из наших клиентов сократил время на закрытие смены в 2 раза после внедрения Wipon. А как вы сейчас обрабатываете данные и контролируете точность учёта?"
+        },
+        {
+          "turn": 4,
+          "state": "autonomous_objection_handling",
+          "intent": "question_system_requirements",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Даже при идеальной работе системы сбои могут возникнуть, но Wipon минимизирует их влияние за счёт автоматизации и локального хранения данных. Например, при отключении интернета или сбое оборудования информация сохраняется и восстанавливается автоматически — это уже проверено нашими клиентами. Как вы сейчас справлялись со сбоями?"
+        },
+        {
+          "turn": 5,
+          "state": "autonomous_closing",
+          "intent": "objection_no_need",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Мы понимаем ваш скептицизм — многие изначально сомневаются, но после внедрения Wipon клиенты отмечают, что сбои минимизируются за счёт автоматического сохранения данных даже при отключении интернета. Это уже проверено на практике. Хотите увидеть, как это работает на примере?"
+        },
+        {
+          "turn": 6,
+          "state": "autonomous_closing",
+          "intent": "objection_no_need",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Да, мы проверяли — клиенты, которые сомневались, после внедрения отметили, что сбои сократились за счёт автоматического сохранения данных даже при отключении интернета. Хотите увидеть, как это работает на практике?"
+        },
+        {
+          "turn": 7,
+          "state": "autonomous_closing",
+          "intent": "objection_no_need",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Мы проверили на практике — клиенты, которые сомневались, после внедрения отметили, что сбои сократились за счёт автоматического сохранения данных даже при отключении интернета. Хотите увидеть, как это работает на примере?"
+        },
+        {
+          "turn": 8,
+          "state": "autonomous_closing",
+          "intent": "question_features",
+          "action": "autonomous_respond",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Понимаю, это может раздражать. Мы проверили на практике — клиенты, у которых были сбои, отметили, что Wipon автоматически сохраняет данные даже при отключении интернета. Это помогает минимизировать риски и сократить время на восстановление. Если хотите, можем показать, как это работает — или вернуться к оформлению позже, когда будет удобно."
+        },
+        {
+          "turn": 9,
+          "state": "soft_close",
+          "intent": "fallback_close",
+          "action": "soft_close",
+          "reason_codes": [],
+          "user": null,
+          "bot": "Не буду отнимать время. Оставьте контакт — пришлю информацию, а вы решите."
+        }
+      ]
+    }
+  ]
+}

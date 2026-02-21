@@ -446,7 +446,7 @@ class ResponseGenerator:
     _KB_EMPTY_CONTACT_UNKNOWN = [
         "Хороший вопрос — уточню у команды. Как с вами связаться?",
         "Уточню у специалиста — оставьте номер, он вам напишет.",
-        "Передам вопрос оператору. На какой номер перезвонить?",
+        "Передам вопрос менеджеру. На какой номер перезвонить?",
         "Этот момент лучше уточнить у специалиста. Оставьте контакт — он свяжется.",
         "Уточню у коллег. Удобнее позвонить или написать?",
         "Дам точный ответ через специалиста — оставьте номер или почту?",
@@ -865,22 +865,34 @@ class ResponseGenerator:
         4) style intent request_brevity (only for non-factual actions)
         5) transition/default mapping
         """
-        # ContentRepetitionGuard actions — dedicated templates, never remap (I19)
-        if action in {"redirect_after_repetition", "escalate_repeated_content"}:
-            return action
-
         state = str(context.get("state", "") or "")
         is_autonomous_flow = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (state.startswith("autonomous_") or state == "greeting")
+            and (state.startswith("autonomous_") or state in {"greeting", "handle_objection"})
         )
+
+        # ContentRepetitionGuard actions — dedicated templates, never remap (I19)
+        if action in {"redirect_after_repetition", "escalate_repeated_content"}:
+            return action
 
         # Autonomous flow: always use autonomous_respond template (except greeting).
         # Pricing/fact content is injected via retrieved_facts; template routing should
         # not override the autonomous LLM action.
         if is_autonomous_flow:
-            if intent == "greeting":
+            passthrough_actions = {
+                "soft_close",
+                "close",
+                "escalate_to_human",
+                "guard_soft_close",
+                "guard_offer_options",
+                "guard_skip_phase",
+                "ask_clarification",
+                "offer_options",
+            }
+            if action in passthrough_actions:
+                return action
+            if intent == "greeting" and state == "greeting":
                 return "greet_back"
             return "autonomous_respond"
 
@@ -980,7 +992,11 @@ class ResponseGenerator:
         user_message = context.get("user_message", "")
 
         # === AUTONOMOUS FLOW: EnhancedRetrievalPipeline (bypass CategoryRouter + CascadeRetriever) ===
-        _is_autonomous = self._flow and self._flow.name == "autonomous" and state.startswith("autonomous_")
+        _is_autonomous = bool(
+            self._flow
+            and self._flow.name == "autonomous"
+            and (state.startswith("autonomous_") or state == "handle_objection")
+        )
         _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
         if _is_autonomous:
             from src.knowledge.autonomous_kb import load_facts_for_state
@@ -1171,6 +1187,16 @@ class ResponseGenerator:
             "address_instruction": self._build_address_instruction(
                 collected=collected,
                 history=context.get("history", []),
+                intent=intent,
+                frustration_level=context.get("frustration_level", 0),
+                state=context.get("state", ""),
+                user_message=user_message,
+            ),
+            "language_instruction": self._build_language_instruction(user_message),
+            "stress_instruction": self._build_stress_instruction(
+                intent=intent,
+                frustration_level=context.get("frustration_level", 0),
+                user_message=user_message,
             ),
         })
 
@@ -1183,6 +1209,11 @@ class ResponseGenerator:
         if _is_autonomous and context.get("state") == "autonomous_closing":
             terminal_reqs: dict = context.get("terminal_state_requirements", {})
             if terminal_reqs:
+                soften_closing_request = self._should_soften_closing_request(
+                    intent=intent,
+                    frustration_level=context.get("frustration_level", 0),
+                    user_message=user_message,
+                )
                 # Evaluate each terminal: reachable = all required fields present in collected_data
                 reachable = [
                     t for t, fields in terminal_reqs.items()
@@ -1210,19 +1241,38 @@ class ResponseGenerator:
                 ]
 
                 if urgent_fields and not reachable:
-                    # URGENT: no terminal reachable — must collect blocking fields
-                    variables["closing_data_request"] = (
-                        "⚠️ СЕЙЧАС НУЖНО СОБРАТЬ: " + ", ".join(urgent_fields) + ".\n"
-                        "   ПРЯМО ПОПРОСИ клиента: задай вопрос об этих данных в ответе.\n"
-                        "   Ты МОЖЕШЬ и ДОЛЖЕН спрашивать ИИН и номер телефона Kaspi у клиента.\n"
-                    )
+                    # URGENT: no terminal reachable — collect blocking fields,
+                    # but do not force hard asks when client is in stress mode.
+                    if (
+                        soften_closing_request
+                        and not self._is_payment_closing_signal(intent, user_message)
+                    ):
+                        variables["closing_data_request"] = (
+                            "⚠️ Клиент сейчас не готов к оформлению или просит без давления.\n"
+                            "   Сначала коротко ответь по сути запроса.\n"
+                            "   Затем мягко предложи вернуться к оформлению позже, "
+                            "без требования ИИН/телефона в этом же сообщении.\n"
+                        )
+                    else:
+                        variables["closing_data_request"] = (
+                            "⚠️ Для оформления на этом этапе нужны данные: "
+                            + ", ".join(urgent_fields) + ".\n"
+                            "   Если клиент готов двигаться к оформлению — прямо попроси эти данные.\n"
+                            "   Не дави и не повторяй один и тот же запрос подряд.\n"
+                        )
                 elif urgent_fields and reachable:
                     # SOFT: at least one terminal reachable — suggest upgrade without forcing
-                    variables["closing_data_request"] = (
-                        "💡 Желательно уточнить (для полного оформления): "
-                        + ", ".join(urgent_fields) + ".\n"
-                        "   Спроси, если это уместно в контексте разговора.\n"
-                    )
+                    if soften_closing_request:
+                        variables["closing_data_request"] = (
+                            "💡 Клиент в напряжении: не форсируй сбор данных.\n"
+                            "   При уместности кратко предложи вернуться к оформлению, когда будет удобно.\n"
+                        )
+                    else:
+                        variables["closing_data_request"] = (
+                            "💡 Желательно уточнить (для полного оформления): "
+                            + ", ".join(urgent_fields) + ".\n"
+                            "   Спроси, если это уместно в контексте разговора.\n"
+                        )
                 # else: all terminals reachable — closing_data_request stays empty
 
         # === Autonomous flow: inject objection-specific framework instructions ===
@@ -1256,6 +1306,60 @@ class ResponseGenerator:
                 )
             except Exception as e:
                 logger.warning(f"Question deduplication failed: {e}")
+
+        # Repeated price-question safety: answer directly with facts and avoid
+        # another clarifying loop. This improves dialogue coherence under stress.
+        envelope = context.get("context_envelope")
+        repeated_question = getattr(envelope, "repeated_question", None) if envelope else None
+        from src.yaml_config.constants import INTENT_CATEGORIES
+        price_related = set(INTENT_CATEGORIES.get("price_related", []))
+        has_price_signal = self._has_price_signal(user_message)
+        if _is_autonomous and (
+            intent in price_related
+            or (repeated_question in price_related and has_price_signal)
+        ):
+            same_user_repeat_count = self._count_recent_same_user_message(
+                context.get("history", []),
+                user_message,
+            )
+            variables["question_instruction"] = (
+                "Клиент повторно спрашивает о цене: дай конкретный ответ по стоимости "
+                "из БАЗЫ ЗНАНИЙ (цифры/диапазон/тариф), БЕЗ встречных вопросов."
+            )
+            existing_do_not_ask = variables.get("do_not_ask", "")
+            no_ask = (
+                "⚠️ НЕ задавай уточняющих вопросов в этом ответе. "
+                "Сначала закрой ценовой запрос фактом."
+            )
+            variables["do_not_ask"] = (
+                f"{existing_do_not_ask}\n{no_ask}" if existing_do_not_ask else no_ask
+            )
+            if same_user_repeat_count >= 2:
+                repeat_hint = (
+                    "⚠️ Это уже повтор одного и того же ценового вопроса. "
+                    "Ответь КОРОТКО (1-2 предложения), не повторяй прошлый ответ дословно, "
+                    "добавь новую полезную деталь (например, 1-2 альтернативы тарифа "
+                    "или формат оплаты, если есть в БЗ)."
+                )
+                existing_no_repeat = variables.get("do_not_repeat_responses", "")
+                variables["do_not_repeat_responses"] = (
+                    f"{existing_no_repeat}\n{repeat_hint}".strip()
+                    if existing_no_repeat
+                    else repeat_hint
+                )
+            prior_price_hint = self._get_last_bot_price_hint(context.get("history", []))
+            if prior_price_hint:
+                consistency_hint = (
+                    "⚠️ Держи консистентность цен в диалоге: "
+                    f"ранее уже называл(а) «{prior_price_hint}». "
+                    "Не меняй цифры без явного уточнения от клиента."
+                )
+                existing_no_repeat = variables.get("do_not_repeat_responses", "")
+                variables["do_not_repeat_responses"] = (
+                    f"{existing_no_repeat}\n{consistency_hint}".strip()
+                    if existing_no_repeat
+                    else consistency_hint
+                )
 
         # Prevent template from asking about already-known data
         if collected.get("company_size") and not variables.get("do_not_ask"):
@@ -1603,10 +1707,52 @@ class ResponseGenerator:
 
         text = '\n'.join(cleaned_lines)
 
+        # Collapse obvious repetitive loops (e.g. clause repeated 3+ times).
+        text = self._collapse_repetition_loops(text)
+
         # Убираем лишние пробелы
         text = re.sub(r'\s+', ' ', text).strip()
 
         return text
+
+    @staticmethod
+    def _collapse_repetition_loops(text: str) -> str:
+        """Collapse repeated clauses and repeated sentence loops."""
+        import re
+        from collections import Counter
+
+        if not text:
+            return text
+
+        collapsed = text
+
+        # Case 1: exact long clause repeated many times.
+        # Keep a single occurrence.
+        pattern = re.compile(r'(.{18,140}?[?.!])(?:\s*\1){2,}', re.IGNORECASE)
+        collapsed = pattern.sub(r'\1', collapsed)
+
+        # Case 2: high repeated trigram density -> keep first 2 unique sentences.
+        words = re.findall(r'\w+', collapsed.lower(), re.UNICODE)
+        if len(words) >= 18:
+            trigrams = [" ".join(words[i:i + 3]) for i in range(len(words) - 2)]
+            if trigrams:
+                max_tri = Counter(trigrams).most_common(1)[0][1]
+                if max_tri >= 4:
+                    sentences = re.split(r'(?<=[.!?])\s+', collapsed.strip())
+                    unique_sentences = []
+                    seen = set()
+                    for s in sentences:
+                        key = re.sub(r'\s+', ' ', s.strip().lower())
+                        if not key or key in seen:
+                            continue
+                        seen.add(key)
+                        unique_sentences.append(s.strip())
+                        if len(unique_sentences) >= 2:
+                            break
+                    if unique_sentences:
+                        collapsed = " ".join(unique_sentences)
+
+        return collapsed
 
     # =========================================================================
     # Response Diversity Post-Processing
@@ -1630,9 +1776,20 @@ class ResponseGenerator:
             return response
 
         try:
+            # In stress/conflict turns, keep wording stable and avoid "playful"
+            # opening rewrites that can look dismissive.
+            intent = str(context.get("intent", context.get("last_intent", "")) or "")
+            frustration = int(context.get("frustration_level", 0) or 0)
+            if (
+                frustration >= 3
+                or intent in {"request_brevity", "price_question", "rejection_soft", "farewell"}
+                or intent.startswith("objection_")
+            ):
+                return response
+
             # Формируем контекст для diversity engine
             diversity_context = {
-                "intent": context.get("last_intent", ""),
+                "intent": intent,
                 "state": context.get("state", ""),
                 "frustration_level": context.get("frustration_level", 0),
             }
@@ -1751,6 +1908,8 @@ class ResponseGenerator:
             "action": requested_action,
             "selected_template": selected_template_key,
             "retrieved_facts": retrieved_facts,
+            "user_message": context.get("user_message", ""),
+            "collected_data": context.get("collected_data", {}),
         }
         validation_result = boundary_validator.validate_response(
             processed,
@@ -1759,6 +1918,12 @@ class ResponseGenerator:
         )
         processed = validation_result.response
         validation_events = validation_result.validation_events
+
+        processed = self._compress_repeated_price_response(processed, context)
+        if self._should_force_no_question(context):
+            processed = self._strip_trailing_question(processed)
+        if self._is_low_quality_artifact(processed):
+            processed = self._low_quality_fallback(context)
 
         # Layer 5: Post-processing safety net — strip trailing question when suppressed
         rd = context.get("response_directives")
@@ -1773,12 +1938,110 @@ class ResponseGenerator:
 
         return processed, validation_events
 
+    def _compress_repeated_price_response(self, response: str, context: Dict[str, Any]) -> str:
+        """
+        Keep repeated price answers concise to avoid long loop-like responses.
+        """
+        try:
+            intent = str(context.get("intent", "") or "")
+            envelope = context.get("context_envelope")
+            repeated_question = getattr(envelope, "repeated_question", None) if envelope else None
+            has_price_signal = self._has_price_signal(str(context.get("user_message", "") or ""))
+
+            from src.yaml_config.constants import INTENT_CATEGORIES
+            price_related = set(INTENT_CATEGORIES.get("price_related", []))
+            if (
+                intent not in price_related
+                and not (repeated_question in price_related and has_price_signal)
+            ):
+                return response
+
+            repeat_count = self._count_recent_same_user_message(
+                context.get("history", []),
+                context.get("user_message", ""),
+            )
+            if repeat_count < 2:
+                return response
+
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', response.strip()) if s.strip()]
+            if not sentences:
+                return response
+
+            compact = " ".join(sentences[:2])
+            if len(compact) > 280:
+                compact = compact[:277].rstrip(" ,.;:") + "..."
+            return compact
+        except Exception:
+            return response
+
     def _strip_trailing_question(self, text: str) -> str:
         """Remove trailing question from response when suppress_question is active."""
         sentences = re.split(r'(?<=[.!?])\s+', text.strip())
         if len(sentences) > 1 and sentences[-1].rstrip().endswith('?'):
             return ' '.join(sentences[:-1])
         return text
+
+    @staticmethod
+    def _should_force_no_question(context: Dict[str, Any]) -> bool:
+        """Force no-question ending for explicit user directness/no-question requests."""
+        msg = str(context.get("user_message", "") or "").lower()
+        if not msg:
+            return False
+        hard_markers = (
+            "не задавай вопрос",
+            "не задавай вопросы",
+            "без вопросов",
+            "если еще раз задашь вопрос",
+            "без лишнего",
+            "контакты не дам",
+            "контакт не дам",
+            "без контактов",
+            "без контакта",
+        )
+        soft_markers = (
+            "без воды",
+            "по делу",
+            "коротко",
+            "быстрее",
+            "за 1 сообщение",
+            "одним сообщением",
+        )
+        if any(m in msg for m in hard_markers):
+            return True
+        if any(m in msg for m in soft_markers) and int(context.get("frustration_level", 0) or 0) >= 3:
+            return True
+        return False
+
+    @staticmethod
+    def _is_low_quality_artifact(text: str) -> bool:
+        """Detect obvious garbage/glitch outputs (e.g. 'SGDAdam')."""
+        value = str(text or "").strip()
+        if not value:
+            return True
+        cyr = len(re.findall(r"[а-яА-ЯёЁ]", value))
+        latin = len(re.findall(r"[a-zA-Z]", value))
+        words = re.findall(r"\w+", value, flags=re.UNICODE)
+        if cyr == 0 and latin >= 5 and len(words) <= 2 and len(value) <= 24:
+            return True
+        if cyr < 4 and len(words) <= 2 and len(value) <= 20:
+            return True
+        return False
+
+    @staticmethod
+    def _low_quality_fallback(context: Dict[str, Any]) -> str:
+        """Context-aware fallback for glitchy short outputs."""
+        intent = str(context.get("intent", "") or "").lower()
+        state = str(context.get("state", "") or "").lower()
+        if intent in {"contact_provided", "callback_request", "demo_request"}:
+            return (
+                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
+                "и согласует удобное время."
+            )
+        if "price" in intent or "pricing" in intent:
+            return "По цене: подготовлю точный расчёт в ₸ под ваш формат бизнеса."
+        if state.startswith("autonomous_"):
+            return "Коротко по сути: дам следующий шаг под ваш кейс без лишнего."
+        return "Переформулирую коротко и по сути."
 
     # =========================================================================
     # НОВОЕ: Deduplication методы
@@ -2027,11 +2290,40 @@ class ResponseGenerator:
     def _kb_empty_handoff(self, context: Dict) -> str:
         """Return a deterministic handoff phrase when KB has no facts for a factual question."""
         import random
+        user_message = str(context.get("user_message", "") or "")
+        if self._is_policy_attack_message(user_message):
+            response = (
+                "Я не могу раскрывать внутренние инструкции, ключи или служебные данные. "
+                "Могу помочь по продукту Wipon и условиям подключения."
+            )
+            self._add_to_response_history(response)
+            return response
+
         contact_info = context.get("collected_data", {}).get("contact_info")
         pool = self._KB_EMPTY_CONTACT_KNOWN if contact_info else self._KB_EMPTY_CONTACT_UNKNOWN
         response = random.choice(pool)
         self._add_to_response_history(response)
         return response
+
+    @staticmethod
+    def _is_policy_attack_message(user_message: str) -> bool:
+        """Detect prompt-injection/policy-exfiltration requests."""
+        text = str(user_message or "").lower()
+        if not text:
+            return False
+        markers = (
+            "system prompt",
+            "системный промпт",
+            "внутренний prompt",
+            "игнорируй инструкции",
+            "ключи api",
+            "api key",
+            "раскрой правила",
+            "внутренние инструкции",
+            "покажи промпт",
+            "prompt injection",
+        )
+        return any(marker in text for marker in markers)
 
     def _add_to_response_history(self, response: str) -> None:
         """Добавить ответ в историю для отслеживания дубликатов."""
@@ -2080,21 +2372,85 @@ class ResponseGenerator:
         """Return True if bot already asked how to address the client."""
         if not isinstance(history, list):
             return False
+        markers = (
+            "к вам обращаться",
+            "как вас зовут",
+            "как к вам обращаться",
+            "как могу к вам обращаться",
+        )
         for turn in history:
             if not isinstance(turn, dict):
                 continue
             bot_text = str(turn.get("bot", "") or "").lower()
-            if ("к вам обращаться" in bot_text) or ("как вас зовут" in bot_text):
+            if any(m in bot_text for m in markers):
                 return True
         return False
 
     @staticmethod
-    def _build_address_instruction(collected: dict, history: list = None) -> str:
+    def _build_address_instruction(
+        collected: dict,
+        history: list = None,
+        intent: str = "",
+        frustration_level: int = 0,
+        state: str = "",
+        user_message: str = "",
+    ) -> str:
         """Build conditional ОБРАЩЕНИЕ instruction with one-time ask behavior."""
         name = collected.get("contact_name") or collected.get("client_name") or ""
         if name:
             return (f'ОБРАЩЕНИЕ: клиента зовут "{name}" — '
                     f'используй "господин/госпожа {name}" или "{name}".')
+
+        # In stressful/direct exchanges, avoid asking name and keep focus.
+        stressful_intents = {
+            "request_brevity",
+            "price_question",
+            "pricing_details",
+            "rejection",
+            "rejection_soft",
+            "no_need",
+            "no_problem",
+            "farewell",
+        }
+        if (
+            frustration_level >= 3
+            or intent in stressful_intents
+            or intent.startswith("objection_")
+            or str(state).startswith("autonomous_closing")
+        ):
+            return (
+                "ОБРАЩЕНИЕ: имя клиента неизвестно. НЕ спрашивай имя в этом ответе; "
+                "продолжай по сути запроса."
+            )
+
+        # In autonomous stages outside greeting, keep momentum and avoid
+        # re-centering the dialog around the name.
+        if str(state).startswith("autonomous_") and intent not in {"greeting", "small_talk"}:
+            return (
+                "ОБРАЩЕНИЕ: имя клиента неизвестно. Не спрашивай имя; "
+                "сфокусируйся на текущем запросе."
+            )
+
+        directness_markers = (
+            "без воды",
+            "коротко",
+            "быстрее",
+            "по делу",
+            "за 1 сообщение",
+            "одним сообщением",
+            "не задавай вопрос",
+            "контакты не дам",
+            "контакт не дам",
+            "без контактов",
+            "без контакта",
+        )
+        low_msg = str(user_message or "").lower()
+        if any(marker in low_msg for marker in directness_markers):
+            return (
+                "ОБРАЩЕНИЕ: клиент просит максимально кратко. "
+                "Не спрашивай имя в этом ответе."
+            )
+
         if ResponseGenerator._has_address_question_in_history(history or []):
             return (
                 "ОБРАЩЕНИЕ: имя клиента неизвестно, но ты уже спрашивал его ранее. "
@@ -2120,6 +2476,172 @@ class ResponseGenerator:
         msg = str(user_message or "").lower()
         lexical_triggers = ("оплат", "счет", "договор", "купить", "иин", "бин")
         return any(token in msg for token in lexical_triggers)
+
+    @staticmethod
+    def _should_soften_closing_request(
+        intent: str,
+        frustration_level: int,
+        user_message: str,
+    ) -> bool:
+        """Decide whether closing data collection should be softened this turn."""
+        if int(frustration_level or 0) >= 3:
+            return True
+
+        if intent in {"rejection", "rejection_soft", "farewell"} or intent.startswith("objection_"):
+            return True
+
+        msg = str(user_message or "").lower()
+        resistance_markers = (
+            "без воды",
+            "без вопросов",
+            "не задавай",
+            "не спрашивай",
+            "контакты не дам",
+            "контакт не дам",
+            "телефон потом",
+            "телефон позже",
+            "телефон кейін",
+            "не сейчас",
+            "иначе пока",
+            "заканчиваем",
+            "не трать время",
+            "быстрее",
+            "по делу",
+        )
+        return any(marker in msg for marker in resistance_markers)
+
+    @staticmethod
+    def _build_language_instruction(user_message: str) -> str:
+        """
+        Build lightweight language guidance to reduce code-switch degradation.
+        """
+        import re
+
+        msg = str(user_message or "").lower()
+        kz_letters = bool(re.search(r"[әіңғүұқөһ]", msg))
+        ru_letters = bool(re.search(r"[а-яё]", msg))
+        kz_words = (
+            "сәлем", "салем", "бағасы", "қанша", "жоқ", "керек",
+            "ұсынасыз", "кейін", "маған", "нақты", "қазақша",
+        )
+        has_kz_words = sum(1 for w in kz_words if w in msg) >= 2
+
+        if (kz_letters or has_kz_words) and ru_letters:
+            return (
+                "ЯЗЫК: сообщение смешанное (казахский+русский). "
+                "Отвечай ПОНЯТНО на русском (можно вкрапить 1-2 казахских слова по смыслу), "
+                "без повторяющихся фраз."
+            )
+        if kz_letters or has_kz_words:
+            return (
+                "ЯЗЫК: отвечай на казахском простыми короткими фразами. "
+                "Не повторяй одинаковые предложения."
+            )
+        return ""
+
+    @staticmethod
+    def _build_stress_instruction(intent: str, frustration_level: int, user_message: str) -> str:
+        """Build brevity/sales focus hint for rushed or high-friction turns."""
+        text = str(user_message or "").lower()
+        direct_markers = (
+            "без воды",
+            "по делу",
+            "коротко",
+            "быстрее",
+            "в 1 сообщение",
+            "за 1 сообщение",
+            "докажи",
+        )
+        instructions: list[str] = []
+        if (
+            int(frustration_level or 0) >= 3
+            or intent in {"request_brevity", "price_question", "pricing_details"}
+            or any(m in text for m in direct_markers)
+        ):
+            instructions.append(
+                "РЕЖИМ КРАТКОСТИ: 1-2 предложения, сначала ключевой факт из БАЗЫ ЗНАНИЙ. "
+                "Затем добавь ОДНУ выгоду только если она явно подтверждена фактами. Без лишней воды и "
+                "без встречных вопросов, если клиент просит быстрее/кратко."
+            )
+
+        contact_refusal_markers = (
+            "контакты не дам",
+            "контакт не дам",
+            "без контактов",
+            "без контакта",
+            "номер не дам",
+            "телефон не дам",
+        )
+        if any(m in text for m in contact_refusal_markers):
+            instructions.append(
+                "КОНТАКТ-ОГРАНИЧЕНИЕ: клиент не даёт контакт. НЕ обещай отправить демо/документы "
+                "и НЕ обещай счёт/оформление без обязательных данных. "
+                "Дай полезный ответ в чате и мягко предложи вернуться к оформлению позже."
+            )
+
+        return "\n".join(instructions)
+
+    @staticmethod
+    def _count_recent_same_user_message(history: list, user_message: str) -> int:
+        """Count consecutive identical user messages at the end of history."""
+        if not isinstance(history, list) or not user_message:
+            return 0
+
+        def _norm(text: str) -> str:
+            return re.sub(r"\s+", " ", str(text or "").strip().lower())
+
+        target = _norm(user_message)
+        count = 0
+        for turn in reversed(history):
+            if not isinstance(turn, dict):
+                break
+            if _norm(turn.get("user", "")) == target:
+                count += 1
+            else:
+                break
+        return count
+
+    @staticmethod
+    def _has_price_signal(user_message: str) -> bool:
+        """Detect explicit price cues in current user message."""
+        text = str(user_message or "").lower()
+        if not text:
+            return False
+        keywords = (
+            "цена",
+            "сколько",
+            "стоим",
+            "тариф",
+            "₸",
+            "тг",
+            "тенге",
+            "баға",
+            "бағасы",
+            "қанша",
+        )
+        return any(k in text for k in keywords)
+
+    @staticmethod
+    def _get_last_bot_price_hint(history: list) -> str:
+        """Extract the most recent price-like snippet from bot history."""
+        if not isinstance(history, list):
+            return ""
+
+        patterns = [
+            r"(\d[\d\s]{1,12}\s*(?:₸|тг|тенге)\s*(?:/?\s*(?:мес|месяц|год|в год|в месяц))?)",
+            r"(от\s+\d[\d\s]{1,12}\s*(?:₸|тг|тенге))",
+        ]
+        for turn in reversed(history):
+            if not isinstance(turn, dict):
+                continue
+            bot_text = str(turn.get("bot", "") or "")
+            if not bot_text:
+                continue
+            for pattern in patterns:
+                m = re.search(pattern, bot_text, flags=re.IGNORECASE)
+                if m:
+                    return re.sub(r"\s+", " ", m.group(1)).strip()
+        return ""
 
     def _get_secondary_intents(self, context: dict) -> list:
         """Return secondary_intents list from context_envelope, or empty list."""

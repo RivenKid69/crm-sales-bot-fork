@@ -64,8 +64,33 @@ class ResponseBoundaryValidator:
         r'(пришлю|отправлю|вышлю|скину).{0,40}(фото|видео|файл|документ|каталог)',
         re.IGNORECASE,
     )
+    SEND_CAPABILITY_PATTERN = re.compile(
+        r'(?:я\s+)?(?:могу|можем|сможем).{0,25}(?:отправить|выслать|прислать|скинуть)'
+        r'.{0,40}(?:фото|видео|файл|документ|скриншот|каталог)',
+        re.IGNORECASE,
+    )
     PAST_ACTION_PATTERN = re.compile(
         r'мы (уже |только что )?(отправили|выслали|прислали|связались|написали)',
+        re.IGNORECASE,
+    )
+    PAST_SETUP_PATTERN = re.compile(
+        r'(?:уже\s+)?(?:всё\s+)?(?:подключ(?:ил(?:и)?|ен[аоы]?|ено)|'
+        r'настро(?:ил(?:и)?|ен[аоы]?|ено)|'
+        r'активир(?:овал(?:и)?|ован[аоы]?|овано)|'
+        r'готов[аоы]?\s+к\s+работе)',
+        re.IGNORECASE,
+    )
+    INVOICE_WITHOUT_IIN_PATTERN = re.compile(
+        r'(?:сч[её]т|договор).{0,40}без\s+иин',
+        re.IGNORECASE,
+    )
+    INVOICE_PROMISE_PATTERN = re.compile(
+        r'(?:выстав(?:им|лю|ить)|оформ(?:им|лю|ить)|подготов(?:им|лю|ить)).{0,24}(?:сч[её]т|договор)',
+        re.IGNORECASE,
+    )
+    DEMO_WITHOUT_CONTACT_PATTERN = re.compile(
+        r'(?:отправ(?:им|лю|ить)|покаж(?:ем|у|у?ть)|организуем|провед(?:ем|у|у?ть)).{0,40}'
+        r'(?:демо|презентац).{0,24}без\s+контакт',
         re.IGNORECASE,
     )
 
@@ -106,7 +131,7 @@ class ResponseBoundaryValidator:
         if _HARD_HALLUCINATIONS & set(initial_violations):
             self._metrics.fallback_used += 1
             return BoundaryValidationResult(
-                response=self._hallucination_fallback(),
+                response=self._hallucination_fallback(context),
                 violations=sorted(initial_violations),
                 retry_used=False,
                 fallback_used=True,
@@ -178,23 +203,42 @@ class ResponseBoundaryValidator:
                 violations.append("known_typos")
                 break
 
-        # IIN: 12-digit number not present in retrieved_facts
-        if self.IIN_PATTERN.search(response):
-            if not self.IIN_PATTERN.search(context.get("retrieved_facts", "")):
+        # IIN: 12-digit number not grounded in retrieved_facts/user_message/collected_data
+        for m in self.IIN_PATTERN.finditer(response):
+            if not self._is_number_grounded(m.group(0), context):
                 violations.append("hallucinated_iin")
+                break
 
-        # KZ/RU phone format not present in retrieved_facts
-        if self.KZ_PHONE_PATTERN.search(response):
-            if not self.KZ_PHONE_PATTERN.search(context.get("retrieved_facts", "")):
+        # Phone: not grounded in retrieved_facts/user_message/collected_data
+        for m in self.KZ_PHONE_PATTERN.finditer(response):
+            if not self._is_number_grounded(m.group(0), context):
                 violations.append("hallucinated_phone")
+                break
 
         # Promise to send a file/photo
-        if self.SEND_PROMISE_PATTERN.search(response):
+        if self.SEND_PROMISE_PATTERN.search(response) or self.SEND_CAPABILITY_PATTERN.search(response):
             violations.append("hallucinated_send_promise")
 
         # Fabricated past action
-        if self.PAST_ACTION_PATTERN.search(response):
+        if self.PAST_ACTION_PATTERN.search(response) or self.PAST_SETUP_PATTERN.search(response):
             violations.append("hallucinated_past_action")
+
+        collected = context.get("collected_data", {})
+        if not isinstance(collected, dict):
+            collected = {}
+
+        # Business-constraint violation: invoice/contract without IIN
+        if self.INVOICE_WITHOUT_IIN_PATTERN.search(response):
+            violations.append("invoice_without_iin")
+        elif self.INVOICE_PROMISE_PATTERN.search(response) and not collected.get("iin"):
+            violations.append("invoice_without_iin")
+
+        # Promise to run/send demo while explicitly having no contact data.
+        if (
+            self.DEMO_WITHOUT_CONTACT_PATTERN.search(response)
+            and not (collected.get("contact_info") or collected.get("kaspi_phone"))
+        ):
+            violations.append("demo_without_contact")
 
         # Greeting opener is wrong in ANY non-greeting template (mid-conversation)
         _tmpl = context.get("selected_template", "")
@@ -203,12 +247,62 @@ class ResponseBoundaryValidator:
 
         return violations
 
+    @staticmethod
+    def _normalize_digits(value: str) -> str:
+        return re.sub(r"\D", "", str(value or ""))
+
+    @staticmethod
+    def _iter_scalar_values(value: Any) -> List[str]:
+        out: List[str] = []
+        if value is None:
+            return out
+        if isinstance(value, dict):
+            for v in value.values():
+                out.extend(ResponseBoundaryValidator._iter_scalar_values(v))
+            return out
+        if isinstance(value, (list, tuple, set)):
+            for v in value:
+                out.extend(ResponseBoundaryValidator._iter_scalar_values(v))
+            return out
+        out.append(str(value))
+        return out
+
+    def _extract_grounded_numbers(self, context: Dict[str, Any]) -> List[str]:
+        grounded_sources: List[str] = []
+        grounded_sources.extend(self._iter_scalar_values(context.get("retrieved_facts", "")))
+        grounded_sources.extend(self._iter_scalar_values(context.get("user_message", "")))
+        grounded_sources.extend(self._iter_scalar_values(context.get("collected_data", {})))
+
+        grounded_numbers: List[str] = []
+        pattern = re.compile(r"(?:\+?[78][\d\s\-\(\)]{9,})|\b\d{10,12}\b")
+        for text in grounded_sources:
+            for m in pattern.finditer(text):
+                normalized = self._normalize_digits(m.group(0))
+                if len(normalized) >= 10:
+                    grounded_numbers.append(normalized)
+        return grounded_numbers
+
+    def _is_number_grounded(self, raw_number: str, context: Dict[str, Any]) -> bool:
+        candidate = self._normalize_digits(raw_number)
+        if len(candidate) < 10:
+            return True
+        grounded_numbers = self._extract_grounded_numbers(context)
+        for known in grounded_numbers:
+            if candidate == known:
+                return True
+            # Allow formatting/country-code differences by last 10 digits for phones
+            if len(candidate) >= 10 and len(known) >= 10 and candidate[-10:] == known[-10:]:
+                return True
+        return False
+
     def _sanitize(self, response: str, context: Dict[str, Any]) -> str:
         sanitized = response
         sanitized = self._sanitize_mid_conversation_greeting(sanitized, context)
         sanitized = self._sanitize_opening_punctuation(sanitized)
         sanitized = self._sanitize_known_typos(sanitized)
         sanitized = self._sanitize_send_promise(sanitized)
+        sanitized = self._sanitize_invoice_without_iin(sanitized)
+        sanitized = self._sanitize_demo_without_contact(sanitized)
         if self._is_pricing_context(context):
             sanitized = self._sanitize_currency_locale(sanitized)
         return sanitized.strip()
@@ -230,17 +324,49 @@ class ResponseBoundaryValidator:
         return fixed
 
     def _sanitize_send_promise(self, response: str) -> str:
-        return self.SEND_PROMISE_PATTERN.sub(
-            'Для фото и материалов — оставьте контакт, менеджер пришлёт вам всё.',
-            response,
-        )
+        safe_send = 'Для фото и материалов — оставьте контакт, менеджер пришлёт вам всё.'
+        safe_setup = 'Подключение выполняет менеджер после согласования деталей.'
+        if (
+            self.SEND_PROMISE_PATTERN.search(response)
+            or self.SEND_CAPABILITY_PATTERN.search(response)
+            or self.PAST_SETUP_PATTERN.search(response)
+        ):
+            return (
+                "В чате я не отправляю файлы и не подтверждаю подключение. "
+                "Могу передать запрос менеджеру — оставьте контакт."
+            )
+        sanitized = self.SEND_PROMISE_PATTERN.sub(safe_send, response)
+        sanitized = self.SEND_CAPABILITY_PATTERN.sub(safe_send, sanitized)
+        sanitized = self.PAST_SETUP_PATTERN.sub(safe_setup, sanitized)
+        return sanitized
 
-    def _hallucination_fallback(self) -> str:
-        return random.choice([
-            "Уточню детали у коллег и вернусь с ответом.",
-            "Этот момент уточню у специалиста — напишу вам.",
-            "Передам вопрос команде и вернусь с точным ответом.",
-        ])
+    def _sanitize_invoice_without_iin(self, response: str) -> str:
+        if self.INVOICE_WITHOUT_IIN_PATTERN.search(response) or self.INVOICE_PROMISE_PATTERN.search(response):
+            return (
+                "Для выставления счёта нужен ИИН и номер телефона Kaspi. "
+                "Если сейчас неудобно, можем вернуться к оформлению позже."
+            )
+        return response
+
+    def _sanitize_demo_without_contact(self, response: str) -> str:
+        if self.DEMO_WITHOUT_CONTACT_PATTERN.search(response):
+            return (
+                "Для демо нужен контакт, чтобы менеджер согласовал удобное время. "
+                "Если контакт пока не готовы дать, могу кратко ответить на вопросы здесь."
+            )
+        return response
+
+    def _hallucination_fallback(self, context: Optional[Dict[str, Any]] = None) -> str:
+        ctx = context or {}
+        intent = str(ctx.get("intent", "")).lower()
+        if intent in {"contact_provided", "callback_request", "demo_request"}:
+            return (
+                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
+                "и согласует удобное время."
+            )
+        if self._is_pricing_context(ctx):
+            return "По стоимости сориентирую в ₸. Подготовлю точный расчет под ваш кейс."
+        return "Переформулирую коротко и по сути."
 
     def _retry_once(
         self,
@@ -300,9 +426,20 @@ class ResponseBoundaryValidator:
         )
 
     def _deterministic_fallback(self, context: Dict[str, Any]) -> str:
+        intent = str(context.get("intent", "")).lower()
+        if intent == "request_brevity":
+            return (
+                "Коротко: внутренние настройки не раскрываю. "
+                "Могу ответить по продукту, цене и внедрению."
+            )
+        if intent in {"contact_provided", "callback_request", "demo_request"}:
+            return (
+                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
+                "и согласует удобное время."
+            )
         if self._is_pricing_context(context):
             return "По стоимости сориентирую в ₸. Пришлю точный расчет под ваш кейс."
-        return "Переформулирую коротко и по сути."
+        return "Коротко по делу: помогу выбрать следующий шаг под ваш кейс."
 
     def _is_pricing_context(self, context: Dict[str, Any]) -> bool:
         intent = str(context.get("intent", "")).lower()
@@ -330,4 +467,3 @@ class ResponseBoundaryValidator:
 
 
 boundary_validator = ResponseBoundaryValidator()
-

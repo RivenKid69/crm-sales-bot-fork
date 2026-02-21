@@ -43,6 +43,8 @@ class ContentRepetitionGuardSource(KnowledgeSource):
 
     SOFT_THRESHOLD = 2   # count >= 2 → redirect
     HARD_THRESHOLD = 3   # count >= 3 → escalate
+    AUTONOMOUS_SOFT_THRESHOLD = 3  # give autonomous LLM one extra turn to adapt
+    AUTONOMOUS_HARD_THRESHOLD = 4
 
     # Actions that are our own interventions (to prevent meta-loops)
     _INTERVENTION_ACTIONS = frozenset({
@@ -53,13 +55,20 @@ class ContentRepetitionGuardSource(KnowledgeSource):
     def should_contribute(self, blackboard) -> bool:
         ctx = blackboard.get_context()
         envelope = ctx.context_envelope
+        state_config = ctx.state_config if isinstance(ctx.state_config, dict) else {}
+        is_autonomous = bool(state_config.get("autonomous", False))
+        soft_threshold = (
+            self.AUTONOMOUS_SOFT_THRESHOLD if is_autonomous else self.SOFT_THRESHOLD
+        )
 
         # Guard 1: Already in terminal state — never interfere
-        if ctx.state_config.get("max_turns_in_state", -1) == 0:
+        if state_config.get("max_turns_in_state", -1) == 0:
             return False
 
         # Guard 2: Terminal data complete — about to transition, don't interfere
-        terminal_reqs = ctx.state_config.get("terminal_state_requirements", {})
+        terminal_reqs = state_config.get("terminal_state_requirements", {})
+        if not isinstance(terminal_reqs, dict):
+            terminal_reqs = {}
         if terminal_reqs:
             collected = ctx.collected_data or {}
             for reqs in terminal_reqs.values():
@@ -67,7 +76,7 @@ class ContentRepetitionGuardSource(KnowledgeSource):
                     return False
 
         count = getattr(envelope, 'content_repeat_count', 0) if envelope else 0
-        if count < self.SOFT_THRESHOLD:
+        if count < soft_threshold:
             return False
 
         # Anti-meta-loop: если предыдущий ход уже был нашим intervention,
@@ -91,9 +100,14 @@ class ContentRepetitionGuardSource(KnowledgeSource):
     def contribute(self, blackboard) -> None:
         ctx = blackboard.get_context()
         envelope = ctx.context_envelope
+        state_config = ctx.state_config if isinstance(ctx.state_config, dict) else {}
+        is_autonomous = bool(state_config.get("autonomous", False))
+        hard_threshold = (
+            self.AUTONOMOUS_HARD_THRESHOLD if is_autonomous else self.HARD_THRESHOLD
+        )
         count = getattr(envelope, 'content_repeat_count', 0) if envelope else 0
 
-        if count >= self.HARD_THRESHOLD:
+        if count >= hard_threshold:
             logger.info(
                 "Content repetition HARD: count=%d, escalating", count
             )

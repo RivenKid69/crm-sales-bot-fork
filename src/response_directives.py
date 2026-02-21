@@ -457,6 +457,21 @@ class ResponseDirectivesBuilder:
         density = density_raw if isinstance(density_raw, (int, float)) else 0
         persona = (self.envelope.collected_data or {}).get("persona", "")
         thresholds = get_persona_question_thresholds(persona)
+        # Repeated answerable questions (especially pricing) should be answered
+        # directly without another clarifying loop.
+        from src.yaml_config.constants import INTENT_CATEGORIES
+        repeated = getattr(self.envelope, "repeated_question", None)
+        price_related = set(INTENT_CATEGORIES.get("price_related", []))
+        answerable = price_related | set(INTENT_CATEGORIES.get("question", []))
+        if repeated in price_related:
+            directives.suppress_question = True
+            directives.question_mode = "suppress"
+            directives.one_question = False
+            return
+        if repeated in answerable and density >= thresholds.get("optional", 1):
+            directives.question_mode = "optional"
+            return
+
         if density >= thresholds.get("suppress", 2):
             directives.suppress_question = True
             directives.question_mode = "suppress"
@@ -551,6 +566,11 @@ class ResponseDirectivesBuilder:
         # Need minimum engagement (4+ turns)
         # Field is total_turns (not turn_number!) per context_envelope.py:238
         if envelope.total_turns < 4:
+            return False
+
+        # Keep contact push context-aware: only in closing-like stages.
+        state = str(getattr(envelope, "state", "") or "")
+        if not (state.startswith("autonomous_closing") or state in {"close", "soft_close"}):
             return False
 
         return True

@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-02-21T13:46:54.601493",
+  "baseline": "results/baseline_before_refactoring.json",
+  "after": "results/after_refactoring_fix_round6.json",
+  "metrics": {
+    "terminal_rate": {
+      "baseline": 30.0,
+      "after": 60.0,
+      "delta": 30.0
+    },
+    "avg_turns_terminal": {
+      "baseline": 6.67,
+      "after": 8.17,
+      "delta": 1.5
+    },
+    "avg_turns_all": {
+      "baseline": 8.1,
+      "after": 8.4,
+      "delta": 0.3
+    },
+    "override_all": {
+      "baseline": 60.29,
+      "after": 0.0,
+      "delta": -60.29
+    },
+    "override_pf": {
+      "baseline": null,
+      "after": 0.0,
+      "delta": null
+    },
+    "overlay_total": {
+      "baseline": 34.6,
+      "after": 0,
+      "delta": -34.6
+    }
+  }
+}

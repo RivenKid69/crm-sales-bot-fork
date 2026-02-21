@@ -76,6 +76,10 @@ class PhaseExhaustedSource(KnowledgeSource):
         state_config = getattr(ctx, "state_config", {})
         if isinstance(state_config, dict) and state_config.get("autonomous", False):
             return False
+        flow_config = getattr(ctx, "flow_config", {})
+        flow_name = flow_config.get("name", "") if isinstance(flow_config, dict) else ""
+        if flow_name == "autonomous":
+            return False
 
         consecutive = getattr(envelope, 'consecutive_same_state', 0)
         max_turns = state_config.get("max_turns_in_state", 0) if isinstance(state_config, dict) else 0

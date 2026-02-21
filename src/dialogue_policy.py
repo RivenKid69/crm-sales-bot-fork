@@ -219,14 +219,14 @@ class DialoguePolicy:
         """
         Detect autonomous context for overlay gating.
 
-        Besides autonomous_* states, autonomous flow can start from shared
-        greeting state where overlays should also abstain.
+        In autonomous flow, overlay dictation should abstain in all states
+        (including shared _base states like greeting/handle_objection).
         """
-        state = str(getattr(ctx, "state", "") or "")
-        if state.startswith("autonomous_"):
-            return True
         flow_name = getattr(self._flow, "name", "") if self._flow else ""
-        return flow_name == "autonomous" and state == "greeting"
+        if flow_name == "autonomous":
+            return True
+        state = str(getattr(ctx, "state", "") or "")
+        return state.startswith("autonomous_")
 
     def maybe_override(
         self,

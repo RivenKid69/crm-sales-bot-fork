@@ -134,6 +134,16 @@ class IntentProcessorSource(KnowledgeSource):
 
         # Get rules from state config
         rules = ctx.state_config.get("rules", {})
+        is_autonomous_state = bool(ctx.state_config.get("autonomous", False))
+
+        # In autonomous states, keep action choice in LLM manager.
+        # Taxonomy fallback here would dictate templates/actions and compete with
+        # AutonomousDecisionSource at the same priority.
+        if is_autonomous_state and intent not in rules:
+            self._log_contribution(
+                reason=f"Autonomous state: skip taxonomy fallback for intent: {intent}"
+            )
+            return
 
         # Check if intent has a rule — if not, delegate to RuleResolver for taxonomy fallback
         if intent not in rules:
