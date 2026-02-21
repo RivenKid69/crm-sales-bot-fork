@@ -690,10 +690,85 @@ class ResponseGenerator:
             lines.append(f"  - {label}: {value}")
         return "\n".join(lines) if lines else "(нет данных)"
 
-    def _has_chinese(self, text: str) -> bool:
-        """Проверяем есть ли китайские/японские/корейские символы"""
+    def _has_russian_fiscal_hallucination(self, text: str) -> bool:
+        """Detect mention of Russian fiscal standard ФФД in response.
+
+        Wipon is a KZ product and uses ОФД, not ФФД (Russian format).
+        Any mention of 'ФФД' followed by a digit (version number) signals hallucination.
+        """
         import re
-        return bool(re.search(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff]', text))
+        return bool(re.search(r'ФФД\s*\d', text))
+
+    # Official Wipon tariff prices (always legitimate, even when not in retrieved_facts)
+    _OFFICIAL_PRICES = frozenset({"5000", "150000", "220000", "500000", "1000000"})
+
+    def _has_price_hallucination(self, response: str, retrieved_facts: str) -> bool:
+        """Detect pricing figures in response that are NOT found in retrieved_facts.
+
+        Fires when the response contains a price (digits + ₸/тг/тенге) that is NOT
+        present in retrieved_facts AND is not an official Wipon tariff price.
+        Only fires when retrieved_facts is non-empty (empty KB case handled separately).
+        """
+        import re
+        if not retrieved_facts or len(retrieved_facts.strip()) < 30:
+            return False
+
+        price_pattern = re.compile(
+            r'(\d[\d\s]{1,9}\d|\d{3,})'
+            r'(?:\s*(?:₸|тг|тенге))',
+            re.IGNORECASE
+        )
+        for m in price_pattern.finditer(response):
+            raw = re.sub(r'\s+', '', m.group(1))
+            if not raw.isdigit():
+                continue
+            # Official tariff prices are always allowed (they're in CRITICAL RULES)
+            if raw in self._OFFICIAL_PRICES:
+                continue
+            # Check both compact ("80000") and spaced ("80 000") forms in KB.
+            # Use lookbehind/lookahead to avoid "50000" matching inside "150000"
+            # and "50 000" matching inside "150 000".
+            spaced = f"{int(raw):,}".replace(',', ' ')
+            raw_in_kb = bool(re.search(r'(?<!\d)' + raw + r'(?!\d)', retrieved_facts))
+            spaced_in_kb = bool(re.search(r'(?<!\d)' + re.escape(spaced) + r'(?!\d)', retrieved_facts))
+            if not raw_in_kb and not spaced_in_kb:
+                logger.debug("price_hallucination_candidate", price=raw)
+                return True
+        return False
+
+    @staticmethod
+    def _has_iin_hallucination(response: str, user_message: str, collected_data: dict) -> bool:
+        """Detect if response contains a 12-digit IIN not provided by the user.
+
+        Returns True when the response echoes a specific 12-digit IIN that was NOT
+        in the user's current message and NOT in collected_data. This prevents the
+        LLM from inventing IINs like "123456789012".
+        """
+        # Find any 12-digit IIN-like numbers in the response
+        iin_in_response = re.findall(r'\b(\d{12})\b', response)
+        if not iin_in_response:
+            return False
+        # Collect all legitimate IINs (from user + collected_data)
+        legitimate_iins = set()
+        for m in re.finditer(r'\b(\d{12})\b', user_message):
+            legitimate_iins.add(m.group(1))
+        if collected_data.get("iin"):
+            legitimate_iins.add(str(collected_data["iin"]))
+        # Flag if response has an IIN not found in legitimate sources
+        for iin in iin_in_response:
+            if iin not in legitimate_iins:
+                logger.debug("iin_hallucination_detected", fake_iin=iin)
+                return True
+        return False
+
+    def _has_chinese(self, text: str) -> bool:
+        """Проверяем есть ли китайские/японские/корейские/иврит/арабские символы"""
+        import re
+        return bool(re.search(
+            r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff'
+            r'\u0590-\u05ff\u0600-\u06ff\u0750-\u077f]',  # + Hebrew + Arabic
+            text,
+        ))
 
     def _has_english(self, text: str) -> bool:
         """Проверяем есть ли преимущественно английский текст (language switch).
@@ -1200,6 +1275,18 @@ class ResponseGenerator:
             ),
         })
 
+        # Human-readable labels for terminal data fields (used in closing_data_request).
+        _FIELD_LABELS: dict = {
+            "contact_info": "контакт (телефон или email)",
+            "kaspi_phone": "номер Kaspi (для Kaspi Pay)",
+            "iin": "ИИН",
+            "preferred_call_time": "удобное время для созвона",
+            "company_name": "название компании",
+        }
+
+        def _field_label(f: str) -> str:
+            return _FIELD_LABELS.get(f, f)
+
         # === Autonomous closing: inject data-collection instruction ===
         # Reads terminal_state_requirements from YAML (via context) — no hardcoded field names.
         # Tiered urgency:
@@ -1207,6 +1294,33 @@ class ResponseGenerator:
         #   SOFT    (💡 желательно) — at least one terminal is reachable; bot may upgrade.
         #   SILENT  (empty string) — all terminals already reachable; nothing to ask.
         if _is_autonomous and context.get("state") == "autonomous_closing":
+            # Anti-contact-hallucination: if we don't have contact_info yet, warn LLM
+            # not to fabricate a phone number or email (e.g. "+77751234567")
+            _has_contact = (
+                collected.get("contact_info")
+                or collected.get("kaspi_phone")
+                or collected.get("phone")
+                or collected.get("email")
+            )
+            if not _has_contact:
+                _no_contact_hint = (
+                    "⚠️ КОНТАКТ НЕ ПОЛУЧЕН: клиент ещё не давал телефон или email.\n"
+                    "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или подтверждать "
+                    "выдуманный номер телефона или email. Не пиши никаких контактных данных.\n"
+                    "   Просто попроси: 'Оставьте, пожалуйста, телефон или email.'"
+                )
+                _existing_dna = variables.get("do_not_ask", "")
+                variables["do_not_ask"] = f"{_existing_dna}\n{_no_contact_hint}" if _existing_dna else _no_contact_hint
+            # Anti-IIN-hallucination: if no IIN yet, explicitly forbid mentioning any 12-digit number
+            if not collected.get("iin"):
+                _no_iin_hint = (
+                    "⚠️ ИИН НЕ ПОЛУЧЕН: клиент ещё не давал ИИН.\n"
+                    "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или «подтверждать» "
+                    "выдуманный ИИН (12-значное число). Не пиши никаких 12-значных чисел.\n"
+                    "   Если нужен ИИН — просто попроси: 'Укажите, пожалуйста, ваш ИИН.'"
+                )
+                _existing_dna = variables.get("do_not_ask", "")
+                variables["do_not_ask"] = f"{_existing_dna}\n{_no_iin_hint}" if _existing_dna else _no_iin_hint
             terminal_reqs: dict = context.get("terminal_state_requirements", {})
             if terminal_reqs:
                 soften_closing_request = self._should_soften_closing_request(
@@ -1240,10 +1354,22 @@ class ResponseGenerator:
                     if not collected.get(f)
                 ]
 
+                # Snapshot isolation guard: if client JUST provided payment data in
+                # this turn's message, don't ask for it again — DataExtractor will
+                # extract it after response. Acknowledge receipt instead.
+                _just_provided_payment_data = self._client_just_provided_payment_data(user_message)
+
                 if urgent_fields and not reachable:
+                    if _just_provided_payment_data:
+                        # Client provided IIN+phone in this message — acknowledge, don't re-ask
+                        variables["closing_data_request"] = (
+                            "💡 Клиент только что предоставил платёжные данные (ИИН и телефон Kaspi).\n"
+                            "   Поблагодари и подтверди получение. Не спрашивай снова то, что уже дали.\n"
+                            "   Следующий шаг: подтверди что всё принято и менеджер свяжется.\n"
+                        )
                     # URGENT: no terminal reachable — collect blocking fields,
                     # but do not force hard asks when client is in stress mode.
-                    if (
+                    elif (
                         soften_closing_request
                         and not self._is_payment_closing_signal(intent, user_message)
                     ):
@@ -1254,11 +1380,12 @@ class ResponseGenerator:
                             "без требования ИИН/телефона в этом же сообщении.\n"
                         )
                     else:
+                        readable_fields = ", ".join(_field_label(f) for f in urgent_fields)
                         variables["closing_data_request"] = (
-                            "⚠️ Для оформления на этом этапе нужны данные: "
-                            + ", ".join(urgent_fields) + ".\n"
-                            "   Если клиент готов двигаться к оформлению — прямо попроси эти данные.\n"
-                            "   Не дави и не повторяй один и тот же запрос подряд.\n"
+                            "⚠️ ОБЯЗАТЕЛЬНО: твой ответ ДОЛЖЕН содержать вопрос про "
+                            + readable_fields + ".\n"
+                            "   Это единственный способ продвинуться к оформлению.\n"
+                            "   Попроси кратко и естественно. Пример: '...Оставьте, пожалуйста, телефон или email.'\n"
                         )
                 elif urgent_fields and reachable:
                     # SOFT: at least one terminal reachable — suggest upgrade without forcing
@@ -1268,10 +1395,11 @@ class ResponseGenerator:
                             "   При уместности кратко предложи вернуться к оформлению, когда будет удобно.\n"
                         )
                     else:
+                        readable_fields = ", ".join(_field_label(f) for f in urgent_fields)
                         variables["closing_data_request"] = (
-                            "💡 Желательно уточнить (для полного оформления): "
-                            + ", ".join(urgent_fields) + ".\n"
-                            "   Спроси, если это уместно в контексте разговора.\n"
+                            "💡 Если уместно, уточни: "
+                            + readable_fields + ".\n"
+                            "   Спроси в конце ответа, только если это не выглядит навязчиво.\n"
                         )
                 # else: all terminals reachable — closing_data_request stays empty
 
@@ -1329,7 +1457,11 @@ class ResponseGenerator:
             existing_do_not_ask = variables.get("do_not_ask", "")
             no_ask = (
                 "⚠️ НЕ задавай уточняющих вопросов в этом ответе. "
-                "Сначала закрой ценовой запрос фактом."
+                "Сначала закрой ценовой запрос фактом.\n"
+                "⚠️ ПРАВИЛЬНЫЕ ТАРИФЫ (строго из БАЗЫ ЗНАНИЙ): "
+                "Mini = 5 000 ₸/мес; Lite = 150 000 ₸/год (НЕ 15 000!); "
+                "Standard = 220 000 ₸/год (НЕ 22 000 и НЕ 30 000!); Pro = 500 000 ₸/год. "
+                "Сумма без единицы времени — НЕ называй."
             )
             variables["do_not_ask"] = (
                 f"{existing_do_not_ask}\n{no_ask}" if existing_do_not_ask else no_ask
@@ -1360,6 +1492,52 @@ class ResponseGenerator:
                     if existing_no_repeat
                     else consistency_hint
                 )
+
+        # Competitor price comparison guard: inject explicit fact into do_not_ask + objection_instructions
+        # to prevent LLM from conceding "мы дороже" vs iiko/1C without KB backing.
+        # Also fires when history mentions a competitor and current msg has price signal.
+        _competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
+        _price_concession_words = ("дороже", "дешевле", "цена", "стоит", "стоимость")
+        _msg_lower = user_message.lower()
+        _hist_lower = " ".join(
+            str(t.get("user", "") or "") for t in context.get("history", [])[-4:]
+        ).lower()
+        _has_competitor_context = any(c in _msg_lower or c in _hist_lower for c in _competitor_names)
+        _has_price_concession = any(p in _msg_lower for p in _price_concession_words)
+        if _is_autonomous and _has_competitor_context and _has_price_concession:
+            competitor_hint = (
+                "⚠️ ФАКТ О КОНКУРЕНТАХ: По данным базы знаний Wipon дешевле iiko/R-Keeper и проще во внедрении. "
+                "НЕ говори, что 'мы дороже'. Если точного сравнения нет в базе — скажи: "
+                "'Уточните у менеджера — как правило, мы выгоднее по совокупности.' "
+                "Не капитулируй перед ценовыми возражениями по конкурентам."
+            )
+            existing_dna = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = f"{existing_dna}\n{competitor_hint}" if existing_dna else competitor_hint
+            # Also inject into objection_instructions so it appears near Клиент: in the template
+            existing_obj = variables.get("objection_instructions", "")
+            variables["objection_instructions"] = (
+                f"{existing_obj}\n{competitor_hint}" if existing_obj else competitor_hint
+            )
+
+        # Discount guard: prevent claiming discounts that aren't confirmed in KB.
+        # Fires when intent is request_discount or message contains explicit discount request.
+        _discount_keywords = ("скидку", "скидка", "скидок", "скидки", "дешевле", "акция", "акции")
+        if _is_autonomous and (
+            intent == "request_discount"
+            or any(k in _msg_lower for k in _discount_keywords)
+        ):
+            discount_guard = (
+                "⚠️ СКИДКИ: По данным базы знаний специальных скидок для крупных/постоянных клиентов НЕТ. "
+                "НЕ говори 'да, у нас есть скидки для крупных клиентов'. "
+                "Честный ответ: 'Специальных скидок для крупных клиентов нет. "
+                "Есть скидки при оплате за 2 или 5 лет — менеджер уточнит детали.'"
+            )
+            existing_dna = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = f"{existing_dna}\n{discount_guard}" if existing_dna else discount_guard
+            existing_obj = variables.get("objection_instructions", "")
+            variables["objection_instructions"] = (
+                f"{existing_obj}\n{discount_guard}" if existing_obj else discount_guard
+            )
 
         # Prevent template from asking about already-known data
         if collected.get("company_size") and not variables.get("do_not_ask"):
@@ -1505,6 +1683,24 @@ class ResponseGenerator:
             except Exception as e:
                 logger.warning(f"ResponseDirectives integration failed: {e}")
 
+        # Question dedup: extract questions from last 3 full bot turns and inject into do_not_ask
+        # Done OUTSIDE response_directives block so it always fires when history exists.
+        # This prevents the LLM from repeating "Хотите посмотреть?" or similar CTA questions.
+        _full_history_for_dedup = context.get("history", [])
+        _recent_questions = self._extract_question_phrases_from_history(_full_history_for_dedup, n_turns=3)
+        if _recent_questions:
+            _q_lines = "\n".join(f"- {q}" for q in _recent_questions)
+            _q_block = f"⚠️ Эти вопросы уже задавались — НЕ ПОВТОРЯЙ их снова:\n{_q_lines}"
+            # Inject into do_not_ask (pre-user-message guard)
+            _existing_dna = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = f"{_existing_dna}\n{_q_block}" if _existing_dna else _q_block
+            # Also inject into do_not_repeat_responses (triggers the explicit line 108 rule:
+            # "Если в {do_not_repeat_responses} есть ответы с похожим вопросом — смени тему")
+            _existing_dnr = variables.get("do_not_repeat_responses", "")
+            variables["do_not_repeat_responses"] = (
+                f"{_existing_dnr}\n{_q_block}" if _existing_dnr else _q_block
+            )
+
         # Подставляем в шаблон с безопасной подстановкой
         # SafeDict возвращает пустую строку для отсутствующих ключей,
         # предотвращая KeyError и показ {переменных} клиенту
@@ -1519,8 +1715,46 @@ class ResponseGenerator:
                                 "escalate_to_human", "guard_soft_close"}
         skip_dedup = requested_action in DEDUP_EXEMPT_ACTIONS
 
+        _retrieved_facts_str = str(variables.get("retrieved_facts", ""))
+
         for attempt in range(max_retries):
             response = self.llm.generate(prompt)
+
+            # Domain hallucination check: ФФД — Russian fiscal standard, not KZ
+            if self._has_russian_fiscal_hallucination(response):
+                logger.info("russian_fiscal_hallucination_detected", attempt=attempt)
+                if attempt == 0:
+                    prompt += (
+                        "\n\nВАЖНО: Твой предыдущий ответ содержал 'ФФД' — это РОССИЙСКИЙ стандарт,"
+                        " Wipon работает в Казахстане только с ОФД. Перепиши ответ без ФФД."
+                        " Если клиент спросил про ФФД — объясни разницу ОФД/ФФД."
+                    )
+                continue
+
+            # Price hallucination check: fabricated prices not present in KB facts
+            if self._has_price_hallucination(response, _retrieved_facts_str):
+                logger.info("price_hallucination_detected", attempt=attempt)
+                if attempt == 0:
+                    prompt += (
+                        "\n\nВАЖНО: Твой предыдущий ответ содержал конкретные суммы в тенге,"
+                        " которых НЕТ в БАЗЕ ЗНАНИЙ выше. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО придумывать цены."
+                        " Перепиши ответ: если нужной цены нет в БАЗЕ ЗНАНИЙ — скажи:"
+                        " 'Точную стоимость уточнит менеджер.' Не называй никаких цифр кроме тех,"
+                        " что явно указаны в БАЗЕ ЗНАНИЙ."
+                    )
+                continue
+
+            # IIN hallucination check: LLM must not invent 12-digit IINs
+            if self._has_iin_hallucination(response, user_message, collected):
+                logger.info("iin_hallucination_detected", attempt=attempt)
+                if attempt == 0:
+                    prompt += (
+                        "\n\nВАЖНО: Твой предыдущий ответ содержал выдуманный ИИН (12-значный номер)."
+                        " КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО придумывать или повторять ИИН клиента."
+                        " Перепиши ответ: вместо ИИН напиши просто 'ИИН получен'."
+                        " Никаких цифр ИИН в ответе."
+                    )
+                continue
 
             # Если нет иностранного текста — проверяем на дубликаты
             if not self._has_foreign_language(response):
@@ -1906,6 +2140,7 @@ class ResponseGenerator:
         validation_context = {
             "intent": context.get("intent", ""),
             "action": requested_action,
+            "state": context.get("state", ""),
             "selected_template": selected_template_key,
             "retrieved_facts": retrieved_facts,
             "user_message": context.get("user_message", ""),
@@ -2463,19 +2698,37 @@ class ResponseGenerator:
 
     @staticmethod
     def _is_payment_closing_signal(intent: str, user_message: str) -> bool:
-        """Detect explicit purchase/payment intent during autonomous closing."""
+        """Detect explicit purchase/payment intent during autonomous closing.
+
+        NOTE: `agreement` is intentionally excluded — it's too broad (covers both
+        "I agree to a demo" and "I agree to buy"). Payment routing requires
+        explicit payment words or dedicated payment-specific intents.
+        """
         explicit_intents = {
             "request_invoice",
             "request_contract",
             "payment_terms",
-            "agreement",
             "ready_to_buy",
         }
         if intent in explicit_intents:
             return True
         msg = str(user_message or "").lower()
-        lexical_triggers = ("оплат", "счет", "договор", "купить", "иин", "бин")
+        lexical_triggers = ("оплат", "счет", "договор", "купить", "иин", "бин", "kaspi pay", "каспи пей")
         return any(token in msg for token in lexical_triggers)
+
+    @staticmethod
+    def _client_just_provided_payment_data(user_message: str) -> bool:
+        """Detect if client message appears to contain payment data (IIN, Kaspi phone).
+
+        Used to avoid re-asking for data that was literally just provided.
+        Snapshot isolation means DataExtractor hasn't run yet — trust the message.
+        """
+        import re
+        msg = str(user_message or "")
+        has_iin = bool(re.search(r'ИИН\s*:?\s*\d{12}', msg, re.IGNORECASE))
+        has_kaspi = bool(re.search(r'(?:kaspi|каспи|касса)\s*:?\s*[+\d]{10,}', msg, re.IGNORECASE))
+        has_plain_iin = bool(re.search(r'\b\d{12}\b', msg))  # 12 consecutive digits = IIN
+        return (has_iin or has_plain_iin) and (has_kaspi or bool(re.search(r'\b8\d{9}\b', msg)))
 
     @staticmethod
     def _should_soften_closing_request(
@@ -2488,6 +2741,11 @@ class ResponseGenerator:
             return True
 
         if intent in {"rejection", "rejection_soft", "farewell"} or intent.startswith("objection_"):
+            return True
+
+        # Snapshot isolation: if client JUST provided payment data, don't ask again.
+        # DataExtractor will handle extraction after this turn.
+        if intent == "contact_provided" and ResponseGenerator._client_just_provided_payment_data(user_message):
             return True
 
         msg = str(user_message or "").lower()
@@ -2642,6 +2900,30 @@ class ResponseGenerator:
                 if m:
                     return re.sub(r"\s+", " ", m.group(1)).strip()
         return ""
+
+    @staticmethod
+    def _extract_question_phrases_from_history(history: list, n_turns: int = 3) -> list:
+        """Extract question sentences from the last N bot turns in full history.
+
+        Uses full (non-truncated) bot responses so questions at the end of long
+        responses are captured. Returns deduplicated list of questions (≤80 chars)
+        to inject into do_not_ask so the LLM won't repeat the same questions.
+        """
+        questions = []
+        seen: set = set()
+        bot_turns = [t for t in history if isinstance(t, dict) and t.get("bot")]
+        for turn in bot_turns[-n_turns:]:
+            text = str(turn.get("bot", "")).strip()
+            # Split into sentence fragments on sentence-ending punctuation
+            parts = re.split(r"(?<=[.!?])\s+", text)
+            for part in parts:
+                part = part.strip()
+                if part.endswith("?") and len(part) > 10:
+                    key = part.lower()[:60]
+                    if key not in seen:
+                        seen.add(key)
+                        questions.append(part[:80])
+        return questions
 
     def _get_secondary_intents(self, context: dict) -> list:
         """Return secondary_intents list from context_envelope, or empty list."""

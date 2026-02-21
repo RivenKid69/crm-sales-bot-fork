@@ -70,7 +70,7 @@ class ResponseBoundaryValidator:
         re.IGNORECASE,
     )
     PAST_ACTION_PATTERN = re.compile(
-        r'мы (уже |только что )?(отправили|выслали|прислали|связались|написали)',
+        r'мы (уже |только что )?(отправили|выслали|прислали|связались|написали|подготовили|оформили)',
         re.IGNORECASE,
     )
     PAST_SETUP_PATTERN = re.compile(
@@ -91,6 +91,22 @@ class ResponseBoundaryValidator:
     DEMO_WITHOUT_CONTACT_PATTERN = re.compile(
         r'(?:отправ(?:им|лю|ить)|покаж(?:ем|у|у?ть)|организуем|провед(?:ем|у|у?ть)).{0,40}'
         r'(?:демо|презентац).{0,24}без\s+контакт',
+        re.IGNORECASE,
+    )
+    # Bot giving client's own phone back as "manager's contact" — always wrong
+    MANAGER_CONTACT_GIVEOUT_PATTERN = re.compile(
+        r'(?:контакт|телефон|номер)\s+менеджера\s*:\s*[+\d]',
+        re.IGNORECASE,
+    )
+    # Bot fabricating a named client/company testimonial ("наш клиент из «X»", "компания «X»")
+    FAKE_CLIENT_NAME_PATTERN = re.compile(
+        r'(?:'
+        r'(?:наш(?:его|их)?\s+)?клиент(?:ов|а)?\s+(?:из\s+)?(?:\w+\s+){0,3}[«"\']\w'
+        r'|'
+        r'компани[яи]\s+[«"\'][^«"\']{2,}'
+        r'|'
+        r'(?:сеть\s+магазин\w*|предприятие)\s+[«"\'][^«"\']{2,}'
+        r')',
         re.IGNORECASE,
     )
 
@@ -127,11 +143,12 @@ class ResponseBoundaryValidator:
         ]
 
         # Hard hallucination violations → immediate deterministic fallback, no LLM retry.
-        _HARD_HALLUCINATIONS = {"hallucinated_iin", "hallucinated_phone", "hallucinated_past_action"}
+        _HARD_HALLUCINATIONS = {"hallucinated_iin", "hallucinated_phone", "hallucinated_past_action", "hallucinated_manager_contact", "hallucinated_client_name"}
         if _HARD_HALLUCINATIONS & set(initial_violations):
             self._metrics.fallback_used += 1
+            _ctx_with_violations = {**context, "violations": sorted(initial_violations)}
             return BoundaryValidationResult(
-                response=self._hallucination_fallback(context),
+                response=self._hallucination_fallback(_ctx_with_violations),
                 violations=sorted(initial_violations),
                 retry_used=False,
                 fallback_used=True,
@@ -239,6 +256,18 @@ class ResponseBoundaryValidator:
             and not (collected.get("contact_info") or collected.get("kaspi_phone"))
         ):
             violations.append("demo_without_contact")
+
+        # Bot presenting client's own phone as "manager's contact" number
+        if self.MANAGER_CONTACT_GIVEOUT_PATTERN.search(response):
+            violations.append("hallucinated_manager_contact")
+
+        # Bot fabricating named client testimonial not grounded in retrieved_facts
+        if self.FAKE_CLIENT_NAME_PATTERN.search(response):
+            retrieved = str(context.get("retrieved_facts", ""))
+            # Only flag if the pattern fires but the full phrase isn't in retrieved_facts
+            m = self.FAKE_CLIENT_NAME_PATTERN.search(response)
+            if m and m.group(0)[:20] not in retrieved:
+                violations.append("hallucinated_client_name")
 
         # Greeting opener is wrong in ANY non-greeting template (mid-conversation)
         _tmpl = context.get("selected_template", "")
@@ -359,10 +388,31 @@ class ResponseBoundaryValidator:
     def _hallucination_fallback(self, context: Optional[Dict[str, Any]] = None) -> str:
         ctx = context or {}
         intent = str(ctx.get("intent", "")).lower()
+        state = str(ctx.get("state", "")).lower()
+        if intent == "contact_provided" and state == "payment_ready":
+            return (
+                "Данные получены — ИИН и телефон Kaspi зафиксированы. "
+                "Менеджер свяжется с вами для подтверждения оплаты."
+            )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             return (
                 "Контакт получил. Следующий шаг — менеджер свяжется с вами "
                 "и согласует удобное время."
+            )
+        # Payment/closing context: ask for missing data without hallucinating it
+        if intent == "payment_confirmation" or state == "autonomous_closing":
+            return (
+                "Для оплаты через Kaspi нужны ваш ИИН и номер Kaspi. "
+                "Пожалуйста, укажите их — и мы сразу оформим подписку."
+            )
+        # Discovery/early stage: neutral helpful response
+        if state in {"autonomous_discovery", "greeting"} or intent in {"situation_provided", "greeting"}:
+            return "Расскажите подробнее о вашем бизнесе — это поможет мне предложить оптимальное решение."
+        violations = ctx.get("violations", [])
+        if "hallucinated_client_name" in violations:
+            return (
+                "Наши клиенты отмечают стабильную работу системы — в том числе в условиях плохого "
+                "интернета и большой нагрузки. Хотите убедиться сами — предлагаем демо-доступ?"
             )
         if self._is_pricing_context(ctx):
             return "По стоимости сориентирую в ₸. Подготовлю точный расчет под ваш кейс."
