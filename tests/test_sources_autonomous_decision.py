@@ -16,6 +16,7 @@ Verifies:
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 from typing import Dict, Any, Optional
+from types import SimpleNamespace
 
 from src.blackboard.sources.autonomous_decision import (
     AutonomousDecisionSource,
@@ -118,6 +119,7 @@ def make_blackboard(
 
     bb.propose_action.side_effect = propose_action
     bb.propose_transition.side_effect = propose_transition
+    bb.get_context_signals.return_value = []
 
     return bb
 
@@ -705,3 +707,138 @@ class TestHardOverrideObjectionDetection:
         tp = bb._transition_proposals[0]
         assert tp["next_state"] == "soft_close"        # NOT autonomous_presentation
         assert tp["priority"] == Priority.HIGH
+
+
+class TestClosingDeterministicCompletion:
+    """Regression tests for deterministic completion in autonomous_closing."""
+
+    @patch("src.feature_flags.flags")
+    def test_payment_context_does_not_autofinish_video_call_without_iin(self, mock_flags):
+        """
+        If client is in invoice/payment context and only shared phone,
+        source must stay in autonomous_closing (collect IIN first), not auto video_call.
+        """
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(
+            AutonomousDecision(
+                next_state="autonomous_closing",
+                action="autonomous_respond",
+                reasoning="need missing payment fields",
+                should_transition=False,
+            )
+        )
+        source = AutonomousDecisionSource(llm=llm)
+
+        envelope = SimpleNamespace(
+            consecutive_same_state=1,
+            intent_history=["request_invoice"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery", "autonomous_closing"],
+        )
+        state_config = {
+            "phase": "closing",
+            "goal": "Закрытие сделки",
+            "max_turns_in_state": 6,
+            "terminal_states": ["payment_ready", "video_call_scheduled"],
+            "terminal_state_requirements": {
+                "payment_ready": ["kaspi_phone", "iin"],
+                "video_call_scheduled": ["contact_info"],
+            },
+        }
+        bb = make_blackboard(
+            state="autonomous_closing",
+            intent="contact_provided",
+            user_message="Телефон: +77015551234",
+            state_config=state_config,
+            context_envelope=envelope,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_closing"
+        assert "stay" in tp["reason_code"]
+
+    @patch("src.feature_flags.flags")
+    def test_video_call_autofinish_when_no_payment_context(self, mock_flags):
+        """Without payment/invoice intent, contact-only path can auto-finish video_call."""
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        envelope = SimpleNamespace(
+            consecutive_same_state=1,
+            intent_history=["question_features"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery", "autonomous_closing"],
+        )
+        state_config = {
+            "phase": "closing",
+            "goal": "Закрытие сделки",
+            "max_turns_in_state": 6,
+            "terminal_states": ["payment_ready", "video_call_scheduled"],
+            "terminal_state_requirements": {
+                "payment_ready": ["kaspi_phone", "iin"],
+                "video_call_scheduled": ["contact_info"],
+            },
+        }
+        bb = make_blackboard(
+            state="autonomous_closing",
+            intent="contact_provided",
+            user_message="Мой телефон +77073334455",
+            state_config=state_config,
+            context_envelope=envelope,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "video_call_scheduled"
+        assert tp["reason_code"] == "autonomous_terminal_video_call"
+
+    @patch("src.feature_flags.flags")
+    def test_contact_provided_redirect_keeps_closing_when_payment_missing_iin(self, mock_flags):
+        """
+        LLM may suggest autonomous_closing on contact_provided.
+        In payment context, redirect must not skip to video_call_scheduled without IIN.
+        """
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(
+            AutonomousDecision(
+                next_state="autonomous_closing",
+                action="autonomous_respond",
+                reasoning="move to closing",
+                should_transition=True,
+            )
+        )
+        source = AutonomousDecisionSource(llm=llm)
+        envelope = SimpleNamespace(
+            consecutive_same_state=0,
+            intent_history=["request_invoice"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery"],
+        )
+        state_config = {
+            "phase": "discovery",
+            "goal": "Понять контекст",
+            "max_turns_in_state": 6,
+        }
+        bb = make_blackboard(
+            state="autonomous_discovery",
+            intent="contact_provided",
+            user_message="Телефон: +77015551234",
+            state_config=state_config,
+            context_envelope=envelope,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_closing"
