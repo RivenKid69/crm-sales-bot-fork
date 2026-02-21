@@ -359,6 +359,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         context_signals = blackboard.get_context_signals()
         total_objections = int(getattr(envelope, "total_objections", 0) or 0)
         repeated_objection_types = list(getattr(envelope, "repeated_objection_types", []) or [])
+        explicit_ready_to_buy = self._looks_like_ready_to_buy_message(user_message)
 
         prompt = self._build_decision_prompt(
             state=state,
@@ -377,6 +378,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             context_signals=context_signals,
             total_objections=total_objections,
             repeated_objection_types=repeated_objection_types,
+            explicit_ready_to_buy=explicit_ready_to_buy,
         )
 
         try:
@@ -557,6 +559,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         context_signals: list = None,
         total_objections: int = 0,
         repeated_objection_types: list = None,
+        explicit_ready_to_buy: bool = False,
     ) -> str:
         """Build the decision prompt for LLM."""
         collected_keys = {
@@ -665,6 +668,13 @@ class AutonomousDecisionSource(KnowledgeSource):
             signal_lines.append(
                 f"- Клиент возражает ({objection_type}), это возражение №{max(total_objections, 1)}{repeated_part}. "
                 "Реши: отработать возражение сейчас или предложить альтернативу."
+            )
+
+        explicit_ready_rule = ""
+        if explicit_ready_to_buy and state != "autonomous_closing":
+            explicit_ready_rule = (
+                "\n- КРИТИЧНО: клиент явно готов покупать прямо сейчас. "
+                "Выбери should_transition=true и next_state=\"autonomous_closing\"."
             )
 
         context_signal_block = ""
@@ -783,5 +793,6 @@ class AutonomousDecisionSource(KnowledgeSource):
 {close_rules}
 - Если цель ещё не достигнута — should_transition=false, next_state="{state}"
 - action всегда "autonomous_respond"{data_collection_rule}
+{explicit_ready_rule}
 {objection_rules}{progress_hint}
 Ответь JSON:"""
