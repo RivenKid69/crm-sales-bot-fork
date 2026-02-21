@@ -1473,16 +1473,15 @@ class SalesBot:
                 "guard_soft_close",
                 "stall_guard_eject",
                 "stall_guard_nudge",
+                "redirect_after_repetition",
                 "escalate_repeated_content",
             }
             current_state = self.state_machine.state
             keep_greeting_action = (action == "greet_back" and current_state == "greeting")
-            keep_brevity_action = (action == "respond_briefly")
             if (
                 action not in structural_actions
                 and action != "autonomous_respond"
                 and not keep_greeting_action
-                and not keep_brevity_action
             ):
                 logger.info(
                     "Autonomous action normalization: action -> autonomous_respond",

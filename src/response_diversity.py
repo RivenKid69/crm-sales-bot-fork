@@ -295,9 +295,12 @@ class ResponseDiversityEngine:
         rest_of_response = response[match.end() :].lstrip()
         # Remove artifacts like "—", "-", ":" that can appear after replacement.
         rest_of_response = re.sub(r"^[—\-:]+\s*", "", rest_of_response)
+        rest_lower = rest_of_response.lower()
 
         # Если вступление пустое — возвращаем без него
         if not opening:
+            if rest_lower.startswith(("что ", "чтобы ", "если ", "когда ", "потому что ")):
+                return f"Вижу, {rest_of_response}", "Вижу,", category
             # Capitalize first letter of rest
             if len(rest_of_response) >= 1:
                 rest_of_response = rest_of_response[0].upper() + rest_of_response[1:]
@@ -309,6 +312,12 @@ class ResponseDiversityEngine:
             # If opening already ends with punctuation, leading dash in rest is noise.
             rest_of_response = re.sub(r"^[—\-]+\s*", "", rest_of_response)
             rest_of_response = rest_of_response[0].upper() + rest_of_response[1:]
+
+        # Grammar rescue: replacing "Понимаю, что ..." with short opening may yield
+        # awkward starts like "Записал. Что ...". Prefer a connective phrasing.
+        if opening and rest_lower.startswith(("что ", "чтобы ", "если ", "когда ", "потому что ")):
+            opening = "Вижу,"
+            rest_of_response = rest_of_response[0].lower() + rest_of_response[1:] if rest_of_response else rest_of_response
 
         processed = f"{opening} {rest_of_response}".strip()
 

@@ -92,6 +92,21 @@ class AutonomousDecisionSource(KnowledgeSource):
         digits = "".join(ch for ch in value if ch.isdigit())
         return len(digits) >= 10
 
+    @staticmethod
+    def _message_has_phone(value: str) -> bool:
+        msg = str(value or "")
+        return bool(re.search(r"\+?\d[\d\s\-()]{8,}\d", msg))
+
+    @staticmethod
+    def _message_has_iin(value: str) -> bool:
+        msg = str(value or "")
+        return bool(re.search(r"\b\d{12}\b", msg))
+
+    def _message_has_contact_info(self, value: str) -> bool:
+        msg = str(value or "")
+        has_email = bool(re.search(r"[\w\.-]+@[\w\.-]+\.\w+", msg))
+        return has_email or self._message_has_phone(msg)
+
     def _has_required_field(self, collected_data: Dict[str, Any], field: str) -> bool:
         """
         Terminal-gate field presence with pragmatic aliases.
@@ -120,12 +135,24 @@ class AutonomousDecisionSource(KnowledgeSource):
         return False
 
     @staticmethod
-    def _message_has_payment_data(user_message: str) -> bool:
-        """Detect IIN + Kaspi phone in user message (bypasses snapshot isolation)."""
-        msg = str(user_message or "")
-        has_iin = bool(re.search(r'ИИН\s*:?\s*\d{12}', msg, re.IGNORECASE)) or bool(re.search(r'\b\d{12}\b', msg))
-        has_kaspi_phone = bool(re.search(r'(?:kaspi|каспи)\s*:?\s*[+\d][\d\s\-]{9,}', msg, re.IGNORECASE)) or bool(re.search(r'\b(?:8|7)\d{10}\b', msg))
-        return has_iin and has_kaspi_phone
+    def _looks_like_ready_to_buy_message(user_message: str) -> bool:
+        """Detect explicit purchase readiness in free-form user message."""
+        text = str(user_message or "").lower()
+        buy_markers = (
+            "готов покупать",
+            "готов купить",
+            "хочу купить",
+            "выставляйте счет",
+            "выставьте счет",
+            "выставь счет",
+            "хочу счет",
+            "счёт выставляйте",
+            "оплачу",
+            "как оплатить",
+            "оформим",
+            "оформляйте",
+        )
+        return any(marker in text for marker in buy_markers)
 
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """Only contribute for autonomous flow with LLM available."""
@@ -259,27 +286,35 @@ class AutonomousDecisionSource(KnowledgeSource):
         optional_data = state_config.get("optional_data", [])
         terminal_requirements = state_config.get("terminal_state_requirements", {})
 
-        # Deterministic fast-track: if client explicitly provided a real contact,
-        # route to terminal state. Check for payment data (IIN + kaspi phone) first
-        # since snapshot isolation means those fields aren't in collected_data yet.
-        if intent == "contact_provided" and self._has_required_field(collected_data, "contact_info"):
-            # Payment fast-track: IIN + kaspi phone → payment_ready
-            if (
-                "payment_ready" in all_states
-                and self._message_has_payment_data(user_message)
-            ):
+        # Deterministic terminal completion in autonomous_closing only:
+        # if required terminal data is already present (including in current user turn),
+        # finalize transition without waiting for another LLM decision cycle.
+        if state == "autonomous_closing" and terminal_names:
+            has_contact = (
+                self._has_required_field(collected_data, "contact_info")
+                or self._message_has_contact_info(user_message)
+            )
+            has_kaspi_phone = (
+                self._has_required_field(collected_data, "kaspi_phone")
+                or self._message_has_phone(user_message)
+            )
+            has_iin = (
+                self._has_required_field(collected_data, "iin")
+                or self._message_has_iin(user_message)
+            )
+            if "payment_ready" in terminal_names and has_kaspi_phone and has_iin:
                 blackboard.propose_action(
                     action="autonomous_respond",
                     priority=Priority.HIGH,
                     priority_rank=0,
-                    reason_code="autonomous_fast_track_payment",
+                    reason_code="autonomous_terminal_payment_ready",
                     source_name=self.name,
                 )
                 blackboard.propose_transition(
                     next_state="payment_ready",
                     priority=Priority.HIGH,
                     priority_rank=0,
-                    reason_code="autonomous_fast_track_payment",
+                    reason_code="autonomous_terminal_payment_ready",
                     source_name=self.name,
                 )
                 self._decision_history.append(
@@ -289,25 +324,23 @@ class AutonomousDecisionSource(KnowledgeSource):
                         state=state,
                         should_transition=True,
                         next_state="payment_ready",
-                        reasoning="fast_track_payment_data",
+                        reasoning="terminal_data_ready_payment",
                     )
                 )
                 return
-
-            # Regular contact fast-track → video_call_scheduled
-            if "video_call_scheduled" in all_states:
+            if "video_call_scheduled" in terminal_names and has_contact:
                 blackboard.propose_action(
                     action="autonomous_respond",
-                    priority=Priority.NORMAL,
+                    priority=Priority.HIGH,
                     priority_rank=0,
-                    reason_code="autonomous_fast_track_contact",
+                    reason_code="autonomous_terminal_video_call",
                     source_name=self.name,
                 )
                 blackboard.propose_transition(
                     next_state="video_call_scheduled",
-                    priority=Priority.NORMAL,
+                    priority=Priority.HIGH,
                     priority_rank=0,
-                    reason_code="autonomous_fast_track_contact",
+                    reason_code="autonomous_terminal_video_call",
                     source_name=self.name,
                 )
                 self._decision_history.append(
@@ -317,7 +350,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                         state=state,
                         should_transition=True,
                         next_state="video_call_scheduled",
-                        reasoning="fast_track_contact",
+                        reasoning="terminal_data_ready_video_call",
                     )
                 )
                 return
@@ -399,6 +432,26 @@ class AutonomousDecisionSource(KnowledgeSource):
                 else:
                     target = "soft_close"
 
+            # If LLM already decided to move into autonomous_closing and client
+            # provided terminal data in the same turn, finalize directly.
+            if target == "autonomous_closing" and intent == "contact_provided":
+                has_contact = (
+                    self._has_required_field(collected_data, "contact_info")
+                    or self._message_has_contact_info(user_message)
+                )
+                has_kaspi_phone = (
+                    self._has_required_field(collected_data, "kaspi_phone")
+                    or self._message_has_phone(user_message)
+                )
+                has_iin = (
+                    self._has_required_field(collected_data, "iin")
+                    or self._message_has_iin(user_message)
+                )
+                if "payment_ready" in all_states and has_kaspi_phone and has_iin:
+                    target = "payment_ready"
+                elif "video_call_scheduled" in all_states and has_contact:
+                    target = "video_call_scheduled"
+
             # Hard gate: block premature terminal transition if required data is missing
             # LLM may ignore prompt instructions; this ensures data integrity regardless
             if target in terminal_names and terminal_requirements.get(target):
@@ -426,7 +479,10 @@ class AutonomousDecisionSource(KnowledgeSource):
                 # Validate target state exists
                 # payment_ready/video_call_scheduled уже в available_states через terminal_names injection
                 # close и success убраны — LLM не должен прыгать туда напрямую из autonomous стейтов
-                valid_targets = set(available_states) | {"soft_close"}
+                terminal_targets = {
+                    s for s in ("payment_ready", "video_call_scheduled") if s in all_states
+                }
+                valid_targets = set(available_states) | terminal_targets | {"soft_close"}
                 if target in valid_targets:
                     blackboard.propose_transition(
                         next_state=target,
@@ -577,6 +633,24 @@ class AutonomousDecisionSource(KnowledgeSource):
                 "Это сигнал готовности — сильный сигнал для перехода в autonomous_closing. "
                 "should_transition=true, next_state=autonomous_closing."
             )
+
+        if intent == "contact_provided" and state != "autonomous_closing":
+            signal_lines.append(
+                "- ⚡ Клиент уже оставил контакт. "
+                "Это сильный сигнал переходить в autonomous_closing, чтобы корректно завершить следующий шаг."
+            )
+
+        if intent in {"agreement", "ready_to_buy", "request_invoice", "request_contract"}:
+            if self._looks_like_ready_to_buy_message(user_message):
+                signal_lines.append(
+                    "- ⚡ Клиент явно готов к покупке/счёту. "
+                    "Считай это сильным сигналом: should_transition=true, next_state=autonomous_closing."
+                )
+            elif intent in {"ready_to_buy", "request_invoice", "request_contract"}:
+                signal_lines.append(
+                    f"- ⚡ Интент {intent} означает готовность к оформлению. "
+                    "Рассмотри переход в autonomous_closing без лишней квалификации."
+                )
 
         if intent == "agreement":
             signal_lines.append(
