@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-ПОЛНАЯ ДЕТАЛЬНАЯ СИМУЛЯЦИЯ CRM SALES BOT - 100 ДИАЛОГОВ (AUTONOMOUS FLOW)
+ПОЛНАЯ ДЕТАЛЬНАЯ СИМУЛЯЦИЯ CRM SALES BOT - 150 ДИАЛОГОВ (AUTONOMOUS FLOW)
 
 Параметры:
-- 100 диалогов через AUTONOMOUS LLM-driven flow
-- 16 уникальных персон (8 оригинальных + 8 новых)
+- 150 диалогов через AUTONOMOUS LLM-driven flow
+- 21 уникальная персона (8 оригинальных + 8 новых + 5 из реальных диалогов)
 - 8 параллельных потоков (GPU + CPU)
 - Qwen3 14B через Ollama
 - Полное логирование всех метрик
@@ -40,9 +40,9 @@ init(autoreset=True)
 # =============================================================================
 # ПАРАМЕТРЫ СИМУЛЯЦИИ
 # =============================================================================
-TOTAL_DIALOGS = 100
+TOTAL_DIALOGS = 150
 TOTAL_FLOWS = 1          # Только autonomous flow
-TOTAL_PERSONAS = 16      # 16 персон (8 оригинальных + 8 новых)
+TOTAL_PERSONAS = 21      # 21 персона (8 оригинальных + 8 новых + 5 из реальных диалогов)
 AUTONOMOUS_FLOW = "autonomous"  # Все прогоны через LLM-driven flow
 PARALLEL_THREADS = 8  # GPU и CPU потоки
 MODEL_NAME = "qwen3:14b"
@@ -290,7 +290,7 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     timestamp_readable = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    print_header(f"CRM SALES BOT - ПОЛНАЯ СИМУЛЯЦИЯ 100 ДИАЛОГОВ")
+    print_header(f"CRM SALES BOT - ПОЛНАЯ СИМУЛЯЦИЯ 150 ДИАЛОГОВ (21 ПЕРСОНА)")
     print_info(f"Дата и время запуска: {timestamp_readable}")
 
     # Создаем директорию для отчетов

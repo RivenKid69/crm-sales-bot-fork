@@ -405,6 +405,15 @@ class EnhancedRetrievalPipeline:
         # [5] Long-context reorder before text formatting.
         reordered_results = LongContextReorder.reorder(ranked_results)
 
+        # [5.5] Fact rotation: deprioritize recently-used sections in query results.
+        # Mirrors the fresh→seen ordering in autonomous_kb.load_facts_for_state().
+        if recently_used:
+            fresh_qr = [r for r in reordered_results
+                        if f"{r.section.category}/{r.section.topic}" not in recently_used]
+            seen_qr = [r for r in reordered_results
+                       if f"{r.section.category}/{r.section.topic}" in recently_used]
+            reordered_results = fresh_qr + seen_qr
+
         # [6] Sensitive filter + formatting + query context cap.
         query_facts_text, query_urls, query_fact_keys = self._build_query_context(reordered_results)
 
