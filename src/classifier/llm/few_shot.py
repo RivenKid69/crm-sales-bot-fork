@@ -16,21 +16,6 @@ FEW_SHOT_EXAMPLES = [
         }
     },
 
-    # Ценовой вопрос с контекстом количества точек — price_question, НЕ situation_provided
-    {
-        "message": "Сколько будет стоить на 5 точек?",
-        "context": {"spin_phase": "discovery"},
-        "result": {
-            "intent": "price_question",
-            "confidence": 0.93,
-            "reasoning": "Клиент спрашивает стоимость для конкретного масштаба — это ценовой вопрос",
-            "alternatives": [
-                {"intent": "situation_provided", "confidence": 0.30},
-                {"intent": "pricing_details", "confidence": 0.25}
-            ]
-        }
-    },
-
     # Ценовые - однозначное
     {
         "message": "Сколько стоит ваша система?",
@@ -42,36 +27,6 @@ FEW_SHOT_EXAMPLES = [
             "alternatives": [
                 {"intent": "pricing_details", "confidence": 0.25},
                 {"intent": "question_features", "confidence": 0.10}
-            ]
-        }
-    },
-
-    # Demo/пробный доступ с согласием — первичный intent demo_request, НЕ agreement
-    {
-        "message": "Хорошо, убедили. Есть демо?",
-        "context": {"last_action": "autonomous_respond"},
-        "result": {
-            "intent": "demo_request",
-            "confidence": 0.91,
-            "reasoning": "Клиент согласился и сразу спрашивает про демо — главный интент демо",
-            "alternatives": [
-                {"intent": "agreement", "confidence": 0.55},
-                {"intent": "question_features", "confidence": 0.20}
-            ]
-        }
-    },
-
-    # Callback с казахским — не мягкое закрытие
-    {
-        "message": "Жарайды, байланысайық",
-        "context": {"spin_phase": "discovery"},
-        "result": {
-            "intent": "callback_request",
-            "confidence": 0.88,
-            "reasoning": "Казахское 'байланысайық' = давайте будем на связи/созвонимся",
-            "alternatives": [
-                {"intent": "agreement", "confidence": 0.40},
-                {"intent": "farewell", "confidence": 0.15}
             ]
         }
     },
