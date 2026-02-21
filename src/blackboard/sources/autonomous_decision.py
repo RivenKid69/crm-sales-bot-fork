@@ -20,6 +20,7 @@ StallGuard) all fire at CRITICAL/HIGH and override this source.
 from dataclasses import dataclass, field
 from typing import Optional, Any, Dict, List, TYPE_CHECKING
 import logging
+import re
 import time
 
 from pydantic import BaseModel
@@ -117,6 +118,14 @@ class AutonomousDecisionSource(KnowledgeSource):
             return False
 
         return False
+
+    @staticmethod
+    def _message_has_payment_data(user_message: str) -> bool:
+        """Detect IIN + Kaspi phone in user message (bypasses snapshot isolation)."""
+        msg = str(user_message or "")
+        has_iin = bool(re.search(r'ИИН\s*:?\s*\d{12}', msg, re.IGNORECASE)) or bool(re.search(r'\b\d{12}\b', msg))
+        has_kaspi_phone = bool(re.search(r'(?:kaspi|каспи)\s*:?\s*[+\d][\d\s\-]{9,}', msg, re.IGNORECASE)) or bool(re.search(r'\b(?:8|7)\d{10}\b', msg))
+        return has_iin and has_kaspi_phone
 
     def should_contribute(self, blackboard: 'DialogueBlackboard') -> bool:
         """Only contribute for autonomous flow with LLM available."""
@@ -251,39 +260,67 @@ class AutonomousDecisionSource(KnowledgeSource):
         terminal_requirements = state_config.get("terminal_state_requirements", {})
 
         # Deterministic fast-track: if client explicitly provided a real contact,
-        # schedule video call immediately (from any autonomous phase).
-        # This prevents extra turns where LLM stays in intermediate phases despite
-        # ready contact data.
-        if (
-            intent == "contact_provided"
-            and self._has_required_field(collected_data, "contact_info")
-            and "video_call_scheduled" in all_states
-        ):
-            blackboard.propose_action(
-                action="autonomous_respond",
-                priority=Priority.NORMAL,
-                priority_rank=0,
-                reason_code="autonomous_fast_track_contact",
-                source_name=self.name,
-            )
-            blackboard.propose_transition(
-                next_state="video_call_scheduled",
-                priority=Priority.NORMAL,
-                priority_rank=0,
-                reason_code="autonomous_fast_track_contact",
-                source_name=self.name,
-            )
-            self._decision_history.append(
-                AutonomousDecisionRecord(
-                    turn_in_state=turn_in_state,
-                    intent=intent,
-                    state=state,
-                    should_transition=True,
-                    next_state="video_call_scheduled",
-                    reasoning="fast_track_contact",
+        # route to terminal state. Check for payment data (IIN + kaspi phone) first
+        # since snapshot isolation means those fields aren't in collected_data yet.
+        if intent == "contact_provided" and self._has_required_field(collected_data, "contact_info"):
+            # Payment fast-track: IIN + kaspi phone → payment_ready
+            if (
+                "payment_ready" in all_states
+                and self._message_has_payment_data(user_message)
+            ):
+                blackboard.propose_action(
+                    action="autonomous_respond",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code="autonomous_fast_track_payment",
+                    source_name=self.name,
                 )
-            )
-            return
+                blackboard.propose_transition(
+                    next_state="payment_ready",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code="autonomous_fast_track_payment",
+                    source_name=self.name,
+                )
+                self._decision_history.append(
+                    AutonomousDecisionRecord(
+                        turn_in_state=turn_in_state,
+                        intent=intent,
+                        state=state,
+                        should_transition=True,
+                        next_state="payment_ready",
+                        reasoning="fast_track_payment_data",
+                    )
+                )
+                return
+
+            # Regular contact fast-track → video_call_scheduled
+            if "video_call_scheduled" in all_states:
+                blackboard.propose_action(
+                    action="autonomous_respond",
+                    priority=Priority.NORMAL,
+                    priority_rank=0,
+                    reason_code="autonomous_fast_track_contact",
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state="video_call_scheduled",
+                    priority=Priority.NORMAL,
+                    priority_rank=0,
+                    reason_code="autonomous_fast_track_contact",
+                    source_name=self.name,
+                )
+                self._decision_history.append(
+                    AutonomousDecisionRecord(
+                        turn_in_state=turn_in_state,
+                        intent=intent,
+                        state=state,
+                        should_transition=True,
+                        next_state="video_call_scheduled",
+                        reasoning="fast_track_contact",
+                    )
+                )
+                return
 
         # Build prompt for LLM decision with context signals from prior sources.
         context_signals = blackboard.get_context_signals()
@@ -533,6 +570,19 @@ class AutonomousDecisionSource(KnowledgeSource):
                 signal_lines.append(
                     f"- Клиент просит факты о продукте ({fact_requested}). Реши: ответить в текущем этапе или переходить дальше."
                 )
+
+        if intent in {"demo_request", "callback_request"}:
+            signal_lines.append(
+                f"- ⚡ Клиент просит демо/звонок ({intent}). "
+                "Это сигнал готовности — сильный сигнал для перехода в autonomous_closing. "
+                "should_transition=true, next_state=autonomous_closing."
+            )
+
+        if intent == "agreement":
+            signal_lines.append(
+                "- ⚡ Клиент выражает согласие/готовность. "
+                "Рассмотри переход в autonomous_closing для сбора контакта."
+            )
 
         if intent.startswith("objection_"):
             objection_type = intent.replace("objection_", "")
