@@ -1167,8 +1167,11 @@ class ResponseGenerator:
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
             # Closing-specific data request (injected below)
             "closing_data_request": "",
-            # Hotel-staff politeness: conditional address instruction (prevents hallucinated names)
-            "address_instruction": self._build_address_instruction(collected),
+            # Hotel-staff politeness: ask name at most once, then stop repeating
+            "address_instruction": self._build_address_instruction(
+                collected=collected,
+                history=context.get("history", []),
+            ),
         })
 
         # === Autonomous closing: inject data-collection instruction ===
@@ -1192,12 +1195,19 @@ class ResponseGenerator:
                 # e.g. video_call_scheduled (1 field) before payment_ready (2 fields).
                 not_reachable.sort(key=lambda t: len(terminal_reqs.get(t, [])))
 
-                # Compute missing fields for each unreachable terminal (deduplicated)
-                urgent_fields: list = []
-                for t in not_reachable:
-                    for f in terminal_reqs[t]:
-                        if not collected.get(f) and f not in urgent_fields:
-                            urgent_fields.append(f)
+                # Ask only for one target terminal at a time.
+                # Default = easiest terminal (usually video_call_scheduled/contact).
+                target_terminal = not_reachable[0] if not_reachable else None
+                if (
+                    target_terminal
+                    and self._is_payment_closing_signal(intent, user_message)
+                    and "payment_ready" in not_reachable
+                ):
+                    target_terminal = "payment_ready"
+                urgent_fields = [
+                    f for f in (terminal_reqs.get(target_terminal, []) if target_terminal else [])
+                    if not collected.get(f)
+                ]
 
                 if urgent_fields and not reachable:
                     # URGENT: no terminal reachable — must collect blocking fields
@@ -1367,6 +1377,10 @@ class ResponseGenerator:
                         "\u26a0\ufe0f Клиент активно задаёт вопросы — НЕ задавай свои вопросы в ответ. "
                         "Отвечай развёрнуто и полезно, демонстрируя экспертизу. "
                         "Можешь добавить пример, факт или преимущество продукта."
+                    )
+                    variables["address_instruction"] = (
+                        "ОБРАЩЕНИЕ: имя клиента неизвестно. В этом ответе НЕ спрашивай имя, "
+                        "продолжай по сути запроса."
                     )
                     # Hide implicit question triggers
                     variables["missing_data"] = ""
@@ -2062,14 +2076,50 @@ class ResponseGenerator:
 Проявляй эмпатию. Не спорь с эмоциями. Приведи конкретный пример из базы знаний."""
 
     @staticmethod
-    def _build_address_instruction(collected: dict) -> str:
-        """Build conditional ОБРАЩЕНИЕ instruction — prevents hallucinated names."""
+    def _has_address_question_in_history(history: list) -> bool:
+        """Return True if bot already asked how to address the client."""
+        if not isinstance(history, list):
+            return False
+        for turn in history:
+            if not isinstance(turn, dict):
+                continue
+            bot_text = str(turn.get("bot", "") or "").lower()
+            if ("к вам обращаться" in bot_text) or ("как вас зовут" in bot_text):
+                return True
+        return False
+
+    @staticmethod
+    def _build_address_instruction(collected: dict, history: list = None) -> str:
+        """Build conditional ОБРАЩЕНИЕ instruction with one-time ask behavior."""
         name = collected.get("contact_name") or collected.get("client_name") or ""
         if name:
             return (f'ОБРАЩЕНИЕ: клиента зовут "{name}" — '
                     f'используй "господин/госпожа {name}" или "{name}".')
-        return ('ОБРАЩЕНИЕ: имя клиента НЕИЗВЕСТНО — один раз мягко вплети '
-                '"как к вам обращаться?" в ответ. НЕ придумывай имя/фамилию.')
+        if ResponseGenerator._has_address_question_in_history(history or []):
+            return (
+                "ОБРАЩЕНИЕ: имя клиента неизвестно, но ты уже спрашивал его ранее. "
+                "НЕ повторяй вопрос про имя; продолжай диалог по сути."
+            )
+        return (
+            'ОБРАЩЕНИЕ: имя клиента НЕИЗВЕСТНО — один раз мягко вплети '
+            '"как к вам обращаться?" в ответ. НЕ придумывай имя/фамилию.'
+        )
+
+    @staticmethod
+    def _is_payment_closing_signal(intent: str, user_message: str) -> bool:
+        """Detect explicit purchase/payment intent during autonomous closing."""
+        explicit_intents = {
+            "request_invoice",
+            "request_contract",
+            "payment_terms",
+            "agreement",
+            "ready_to_buy",
+        }
+        if intent in explicit_intents:
+            return True
+        msg = str(user_message or "").lower()
+        lexical_triggers = ("оплат", "счет", "договор", "купить", "иин", "бин")
+        return any(token in msg for token in lexical_triggers)
 
     def _get_secondary_intents(self, context: dict) -> list:
         """Return secondary_intents list from context_envelope, or empty list."""

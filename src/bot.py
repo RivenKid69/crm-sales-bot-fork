@@ -673,6 +673,32 @@ class SalesBot:
                 skip_reason="feature_flag_disabled"
             )
 
+        # Autonomous quality gate:
+        # Keep CTA only in closing-like states to avoid repetitive "sales push"
+        # in discovery/qualification/presentation turns.
+        if (
+            self._flow
+            and self._flow.name == "autonomous"
+            and state not in {"autonomous_closing", "close", "soft_close", "success"}
+        ):
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="autonomous_non_closing_state"
+            )
+
+        # If question is intentionally suppressed for this turn, skip CTA too.
+        if context.get("question_mode") == "suppress":
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="question_mode_suppress"
+            )
+
         try:
             self.cta_generator.increment_turn()
             # Use generate_cta_result() to get full CTAResult with tracking info
@@ -1417,6 +1443,35 @@ class SalesBot:
         next_state = sm_result["next_state"]
         is_final = sm_result["is_final"]
 
+        # Autonomous action normalization:
+        # In autonomous flow, non-structural actions that land in autonomous_*
+        # states should resolve through autonomous_respond.
+        if (
+            self._flow
+            and self._flow.name == "autonomous"
+            and isinstance(next_state, str)
+            and next_state.startswith("autonomous_")
+        ):
+            structural_actions = {
+                "ask_clarification",
+                "guard_offer_options",
+                "guard_rephrase",
+                "guard_skip_phase",
+                "guard_soft_close",
+                "stall_guard_eject",
+                "stall_guard_nudge",
+                "redirect_after_repetition",
+                "escalate_repeated_content",
+            }
+            if action not in structural_actions and action != "autonomous_respond":
+                logger.info(
+                    "Autonomous action normalization: action -> autonomous_respond",
+                    original_action=action,
+                    next_state=next_state,
+                )
+                action = "autonomous_respond"
+                self._append_reason_code(sm_result, "autonomous_action_normalized")
+
         # 9e: Set rephrase_mode for guard_rephrase action (new pipeline path)
         if flags.conversation_guard_in_pipeline and action == "guard_rephrase":
             rephrase_mode = True
@@ -1727,6 +1782,10 @@ class SalesBot:
                     "objection_info": objection_info,
                     # Pass collected_data for contact gate
                     "collected_data": self.state_machine.collected_data,
+                    # Keep CTA aligned with response directives
+                    "question_mode": (
+                        response_directives.question_mode if response_directives else "adaptive"
+                    ),
                     # Flow context for dynamic CTA phase resolution
                     "flow_context": {
                         "phase_order": list(self.state_machine.phase_order),

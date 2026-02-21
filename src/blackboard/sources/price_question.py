@@ -206,6 +206,23 @@ class PriceQuestionSource(KnowledgeSource):
             return raw_message.lower()
         return ""
 
+    @staticmethod
+    def _is_autonomous_context(ctx: Any) -> bool:
+        """
+        Detect autonomous context for this source.
+
+        Primary gate is per-state YAML flag. Additionally treat autonomous flow
+        greeting as autonomous context to avoid first-turn action dictation.
+        """
+        state_config = getattr(ctx, "state_config", {})
+        if isinstance(state_config, dict) and state_config.get("autonomous", False):
+            return True
+
+        state = str(getattr(ctx, "state", "") or "")
+        flow_config = getattr(ctx, "flow_config", {})
+        flow_name = flow_config.get("name", "") if isinstance(flow_config, dict) else ""
+        return flow_name == "autonomous" and state == "greeting"
+
     def contribute(self, blackboard: 'DialogueBlackboard') -> None:
         """
         Propose action for price questions, respecting YAML rules.
@@ -257,8 +274,7 @@ class PriceQuestionSource(KnowledgeSource):
                     return
 
         # Autonomous states: provide context only; do not dictate action.
-        state_config = getattr(ctx, "state_config", {})
-        is_autonomous = state_config.get("autonomous", False) if isinstance(state_config, dict) else False
+        is_autonomous = self._is_autonomous_context(ctx)
         if is_autonomous:
             envelope = getattr(ctx, "context_envelope", None)
             secondary_conf = getattr(envelope, "secondary_intent_confidence", {}) if envelope else {}
