@@ -183,6 +183,11 @@ class TestComplexityDetector:
         )
         assert detector.is_complex(query) is True
 
+    def test_single_if_without_then_is_not_logic_complexity(self):
+        detector = ComplexityDetector()
+        query = "Если возможно, расскажите про тарифы вашего продукта."
+        assert detector.is_complex(query) is False
+
 
 class TestQueryDecomposer:
     def test_decomposition_uses_structured_output(self):

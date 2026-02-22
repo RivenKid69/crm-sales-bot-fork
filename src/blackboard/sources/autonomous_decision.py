@@ -751,16 +751,19 @@ class AutonomousDecisionSource(KnowledgeSource):
         secondary_list = [str(i) for i in (secondary_intents or []) if i]
         question_like_secondary = [
             i for i in secondary_list
-            if i.startswith("question_") or i in {"comparison", "pricing_comparison"}
+            if i.startswith("question_") or i in {"comparison", "pricing_comparison", "question_tariff_comparison"}
         ]
         is_interrupt_question = (
             bool(question_like_secondary)
             or intent.startswith("question_")
-            or intent in {"comparison", "pricing_comparison"}
+            or intent in {"comparison", "pricing_comparison", "question_tariff_comparison"}
         )
         strong_closing_signal = (
             explicit_ready_to_buy
-            or intent in {"ready_to_buy", "request_invoice", "request_contract", "demo_request", "callback_request"}
+            or intent in {
+                "ready_to_buy", "request_invoice", "request_contract",
+                "request_proposal", "demo_request", "callback_request",
+            }
         )
         if (
             is_interrupt_question
