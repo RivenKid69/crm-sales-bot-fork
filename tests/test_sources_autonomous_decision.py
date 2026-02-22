@@ -912,3 +912,44 @@ class TestClosingDeterministicCompletion:
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
         assert tp["next_state"] == "autonomous_closing"
+
+    @patch("src.feature_flags.flags")
+    def test_video_call_allowed_after_recent_iin_refusal(self, mock_flags):
+        """
+        If payment context existed but client recently refused/deferred IIN,
+        contact-only path should auto-finish into video_call_scheduled.
+        """
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        envelope = SimpleNamespace(
+            consecutive_same_state=1,
+            intent_history=["request_invoice", "objection_contract_bound"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery", "autonomous_closing"],
+        )
+        state_config = {
+            "phase": "closing",
+            "goal": "Закрытие сделки",
+            "max_turns_in_state": 6,
+            "terminal_states": ["payment_ready", "video_call_scheduled"],
+            "terminal_state_requirements": {
+                "payment_ready": ["kaspi_phone", "iin"],
+                "video_call_scheduled": ["contact_info"],
+            },
+        }
+        bb = make_blackboard(
+            state="autonomous_closing",
+            intent="contact_provided",
+            user_message="Ок, тогда видеозвонок: founder@example.com",
+            state_config=state_config,
+            context_envelope=envelope,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "video_call_scheduled"
+        assert tp["reason_code"] == "autonomous_terminal_video_call"
