@@ -192,6 +192,11 @@ class FeatureFlags:
         "separate_style_modifiers": False,         # Разделение semantic intent и style modifiers
     }
 
+    # Emergency kill-switches: forced OFF regardless of settings/env/runtime override.
+    FORCED_DISABLED: Set[str] = {
+        "merged_autonomous_call",
+    }
+
     # Группы флагов для удобного управления
     GROUPS: Dict[str, List[str]] = {
         "phase_0": ["structured_logging", "metrics_tracking"],
@@ -328,6 +333,9 @@ class FeatureFlags:
         Returns:
             True если флаг включён, False иначе
         """
+        if flag in self.FORCED_DISABLED:
+            return False
+
         # Сначала проверяем runtime overrides
         if flag in self._overrides:
             return self._overrides[flag]
