@@ -1075,6 +1075,19 @@ class ResponseGenerator:
         state = context.get("state", "")
         user_message = context.get("user_message", "")
 
+        # Prompt/policy exfiltration guard: never route such requests through LLM.
+        # Keep response deterministic and safe while redirecting to business context.
+        if self._is_policy_attack_message(user_message):
+            response = self._policy_attack_safe_response()
+            self._last_generation_meta = {
+                "requested_action": action,
+                "selected_template_key": "policy_attack_guard",
+                "validation_events": [],
+                "fact_keys": [],
+            }
+            self._add_to_response_history(response)
+            return response
+
         # === AUTONOMOUS FLOW: EnhancedRetrievalPipeline (bypass CategoryRouter + CascadeRetriever) ===
         _is_autonomous = bool(
             self._flow
@@ -2544,6 +2557,14 @@ class ResponseGenerator:
             "prompt injection",
         )
         return any(marker in text for marker in markers)
+
+    @staticmethod
+    def _policy_attack_safe_response() -> str:
+        """Safe deterministic refusal for policy/prompt exfiltration attempts."""
+        return (
+            "Я не раскрываю системные инструкции и внутренние правила. "
+            "Могу помочь по продукту Wipon: внедрение, интеграции, стоимость и следующий шаг."
+        )
 
     def _add_to_response_history(self, response: str) -> None:
         """Добавить ответ в историю для отслеживания дубликатов."""
