@@ -141,11 +141,20 @@ class TransitionResolverSource(KnowledgeSource):
         }
 
         is_autonomous = ctx.state_config.get("autonomous", False)
-        if intent in high_priority_intents and is_autonomous:
+        is_autonomous_context = is_autonomous or (flow_name == "autonomous" and ctx.state == "greeting")
+        if intent in high_priority_intents and is_autonomous_context:
             # In autonomous states, exit intents compete on equal footing with LLM
             priority = Priority.NORMAL
         else:
             priority = Priority.HIGH if intent in high_priority_intents else Priority.NORMAL
+
+        # In autonomous greeting, avoid deterministic early exits (rejection/no_need/etc.).
+        # Let AutonomousDecisionSource handle unusual first-turn behavior via LLM context.
+        if flow_name == "autonomous" and ctx.state == "greeting" and intent in high_priority_intents:
+            self._log_contribution(
+                reason=f"Autonomous greeting: skip deterministic exit transition for intent {intent}"
+            )
+            return
 
         # Propose the transition
         blackboard.propose_transition(

@@ -723,12 +723,12 @@ class ResponseGenerator:
             return False
 
         price_pattern = re.compile(
-            r'(\d[\d\s]{1,9}\d|\d{3,})'
+            r'(\d(?:[\d\s,\.\u00A0\u202F]{1,14}\d|\d{2,}))'
             r'(?:\s*(?:₸|тг|тенге))',
             re.IGNORECASE
         )
         for m in price_pattern.finditer(response):
-            raw = re.sub(r'\s+', '', m.group(1))
+            raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
             if not raw.isdigit():
                 continue
             # Official tariff prices are always allowed (they're in CRITICAL RULES)
@@ -1337,6 +1337,14 @@ class ResponseGenerator:
             )
             variables["missing_data"] = ""
             variables["available_questions"] = ""
+            no_contact_rule = (
+                "⚠️ ЯВНЫЙ ЗАПРЕТ НА КОНТАКТ: в этом ответе НЕ проси телефон/email/ИИН "
+                "и не предлагай созвон."
+            )
+            existing_no_ask = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = (
+                f"{existing_no_ask}\n{no_contact_rule}" if existing_no_ask else no_contact_rule
+            )
 
         # Human-readable labels for terminal data fields (used in closing_data_request).
         _FIELD_LABELS: dict = {
@@ -1356,7 +1364,7 @@ class ResponseGenerator:
         #   URGENT  (⚠️ ПРЯМО ПОПРОСИ) — NO terminal is reachable yet; bot must collect.
         #   SOFT    (💡 желательно) — at least one terminal is reachable; bot may upgrade.
         #   SILENT  (empty string) — all terminals already reachable; nothing to ask.
-        if _is_autonomous and context.get("state") == "autonomous_closing":
+        if _is_autonomous and context.get("state") == "autonomous_closing" and not _hard_no_contact:
             # Anti-contact-hallucination: if we don't have contact_info yet, warn LLM
             # not to fabricate a phone number or email (e.g. "+77751234567")
             _has_contact = (
@@ -1465,6 +1473,11 @@ class ResponseGenerator:
                             "   Спроси в конце ответа, только если это не выглядит навязчиво.\n"
                         )
                 # else: all terminals reachable — closing_data_request stays empty
+        elif _is_autonomous and context.get("state") == "autonomous_closing" and _hard_no_contact:
+            variables["closing_data_request"] = (
+                "⚠️ Клиент прямо отказался от контактов: НЕ собирай телефон/email/ИИН в этом сообщении. "
+                "Дай полезный ответ по запросу и оставь нейтральный следующий шаг без давления."
+            )
 
         # === Autonomous flow: inject objection-specific framework instructions ===
         if _is_autonomous and intent.startswith("objection_"):
@@ -2168,6 +2181,7 @@ class ResponseGenerator:
         processed = self._compress_repeated_price_response(processed, context)
         if self._should_force_no_question(context):
             processed = self._strip_trailing_question(processed)
+        processed = self._enforce_no_contact_boundaries(processed, context)
         if self._is_low_quality_artifact(processed):
             processed = self._low_quality_fallback(context)
 
@@ -2183,6 +2197,36 @@ class ResponseGenerator:
             processed = self._strip_trailing_question(processed)
 
         return processed, validation_events
+
+    @staticmethod
+    def _enforce_no_contact_boundaries(text: str, context: Dict[str, Any]) -> str:
+        """Remove contact-push fragments when user explicitly refused to share contacts."""
+        msg = str(context.get("user_message", "") or "").lower()
+        refusal_markers = (
+            "контакты не дам",
+            "контакт не дам",
+            "без контактов",
+            "без контакта",
+            "не проси мои контакты",
+        )
+        if not any(m in msg for m in refusal_markers):
+            return text
+
+        result = str(text or "")
+        # Remove typical pressure phrases/questions for contact collection.
+        patterns = (
+            r"(?i)\s*на какой (?:email|номер)[^?.!]*[?.!]",
+            r"(?i)\s*остав(?:ьте|ь)\s+(?:контакт|номер|телефон|email)[^?.!]*[?.!]",
+            r"(?i)\s*укаж(?:ите|и)\s+пожалуйста,\s*ваш\s*иин[^?.!]*[?.!]",
+            r"(?i)\s*как вас набрать[^?.!]*[?.!]",
+            r"(?i)\s*менеджер свяжется[^?.!]*[?.!]",
+        )
+        for pat in patterns:
+            result = re.sub(pat, " ", result)
+        result = re.sub(r"\s+", " ", result).strip()
+        if not result:
+            return "Понял вас. Дам всю информацию в чате без запроса контактов."
+        return result
 
     def _compress_repeated_price_response(self, response: str, context: Dict[str, Any]) -> str:
         """
@@ -2725,6 +2769,20 @@ class ResponseGenerator:
             rules.append(
                 "⚠️ ТЕХНИЧЕСКИЕ ФАКТЫ: отвечай только тем, что есть в БАЗЕ ЗНАНИЙ. "
                 "Если конкретного параметра нет (SLA, RPO/RTO, стандарты) — прямо скажи, что уточнишь."
+            )
+
+        integration_markers = ("интеграц", "kaspi", "api", "1с", "amo", "bitrix", "crm", "whatsapp")
+        explicit_price_markers = ("цена", "стоимость", "тариф", "сколько стоит", "в тенге", "тг", "₸")
+        asks_integration = intent_value in {"question_integrations", "question_features"} or any(
+            m in message_lower for m in integration_markers
+        )
+        asks_price = intent_value in {"price_question", "pricing_details", "pricing_comparison"} or any(
+            m in message_lower for m in explicit_price_markers
+        )
+        if asks_integration and not asks_price:
+            rules.append(
+                "⚠️ TOPIC-LOCK: клиент спрашивает про интеграции/функции. "
+                "Отвечай по теме интеграций. Не уводи ответ в цену, если цену не спрашивали."
             )
 
         # Interruption handling: user may break the stage with a direct question/comparison.
