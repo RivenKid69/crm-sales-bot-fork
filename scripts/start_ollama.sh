@@ -6,12 +6,12 @@
 #
 # Требования:
 #   - Ollama установлен (curl -fsSL https://ollama.ai/install.sh | sh)
-#   - ~9 GB свободной VRAM для qwen3:14b
+#   - ~9 GB свободной VRAM для ministral-3:14b-instruct-2512-q8_0
 # =============================================================================
 
 set -e
 
-MODEL="qwen3:14b"
+MODEL="ministral-3:14b-instruct-2512-q8_0"
 HOST="0.0.0.0"
 PORT="11434"
 

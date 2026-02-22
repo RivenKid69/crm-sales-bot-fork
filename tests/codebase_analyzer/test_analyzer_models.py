@@ -44,7 +44,7 @@ class TestEntitySummary:
             dependencies_used=["httpx", "stripe-sdk"],
             input_tokens=150,
             output_tokens=200,
-            model="qwen3:14b",
+            model="ministral-3:14b-instruct-2512-q8_0",
             code_hash="abc123def456",
         )
 
@@ -232,7 +232,7 @@ class TestAnalysisResult:
             total_tokens_in=500,
             total_tokens_out=300,
             processing_time_seconds=10.5,
-            model_used="qwen3:14b",
+            model_used="ministral-3:14b-instruct-2512-q8_0",
             analysis_timestamp="2024-01-20T10:00:00",
         )
 

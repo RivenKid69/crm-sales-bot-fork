@@ -3523,8 +3523,7 @@ faq (4 секции) — общие частые вопросы
 
 
 # Structured Output версия для Ollama
-CATEGORY_ROUTER_PROMPT_STRUCTURED = """/no_think
-Определи категории для поиска в базе знаний Wipon.
+CATEGORY_ROUTER_PROMPT_STRUCTURED = """Определи категории для поиска в базе знаний Wipon.
 
 КАТЕГОРИИ: analytics, competitors, employees, equipment, faq, features, fiscal, integrations, inventory, mobile, pricing, products, promotions, regions, stability, support, tis
 

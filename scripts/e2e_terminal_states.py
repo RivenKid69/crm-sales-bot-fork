@@ -61,7 +61,7 @@ logging.getLogger("src.yaml_config.constants").addHandler(notify_capture)
 # КОНСТАНТЫ
 # =============================================================================
 OLLAMA_URL = "http://localhost:11434"
-MODEL_NAME  = "qwen3:14b"
+MODEL_NAME  = "ministral-3:14b-instruct-2512-q8_0"
 FLOW        = "autonomous"
 
 PLAN = [

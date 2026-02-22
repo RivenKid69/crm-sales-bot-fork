@@ -79,7 +79,7 @@ def check_qwen3_model() -> bool:
         if response.status_code == 200:
             data = response.json()
             models = [m.get("name", "") for m in data.get("models", [])]
-            return any("qwen3:14b" in m for m in models)
+            return any("ministral-3:14b-instruct-2512-q8_0" in m for m in models)
     except Exception:
         return False
     return False
@@ -181,10 +181,10 @@ def main():
     print_section("Проверка модели Qwen3 14B")
 
     if check_qwen3_model():
-        print_success("Модель qwen3:14b установлена")
+        print_success("Модель ministral-3:14b-instruct-2512-q8_0 установлена")
     else:
-        print_error("Модель qwen3:14b не найдена!")
-        print_info("Скачайте: ollama pull qwen3:14b")
+        print_error("Модель ministral-3:14b-instruct-2512-q8_0 не найдена!")
+        print_info("Скачайте: ollama pull ministral-3:14b-instruct-2512-q8_0")
         sys.exit(1)
 
     # Настройка окружения
@@ -226,7 +226,7 @@ def main():
         warmup_response = requests.post(
             "http://localhost:11434/api/chat",
             json={
-                "model": "qwen3:14b",
+                "model": "ministral-3:14b-instruct-2512-q8_0",
                 "messages": [{"role": "user", "content": "Привет"}],
                 "stream": False,
                 "options": {"num_predict": 10}
@@ -343,7 +343,7 @@ def main():
                 "total_flows": TOTAL_FLOWS,
                 "personas_per_flow": PERSONAS_PER_FLOW,
                 "parallel_threads": PARALLEL_THREADS,
-                "model": "qwen3:14b",
+                "model": "ministral-3:14b-instruct-2512-q8_0",
             },
             "results": {
                 "total": total,

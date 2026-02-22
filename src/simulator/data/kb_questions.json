@@ -3,7 +3,7 @@
   "total_generated": 5904,
   "total_after_dedup": 5344,
   "rejected": 3,
-  "model": "qwen3:14b",
+  "model": "ministral-3:14b-instruct-2512-q8_0",
   "questions": [
     {
       "text": "Как рассчитывается себестоимость товаров?",

@@ -9,14 +9,14 @@
 # -----------------------------------------------------------------------------
 # Запуск Ollama сервера:
 #   ollama serve
-#   ollama pull qwen3:14b
+#   ollama pull ministral-3:14b-instruct-2512-q8_0
 #
 # Или через скрипт:
 #   ./scripts/start_ollama.sh
 #
 llm:
-  # Модель Ollama (qwen3:14b - с thinking mode отключённым через API)
-  model: "qwen3:14b"
+  # Модель Ollama (Ministral 3 14B Instruct, Q8_0 квантизация)
+  model: "ministral-3:14b-instruct-2512-q8_0"
 
   # URL Ollama сервера (native API)
   base_url: "http://localhost:11434"

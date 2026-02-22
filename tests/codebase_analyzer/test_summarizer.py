@@ -97,7 +97,7 @@ class TestEntitySummarizerBasic:
         """Should initialize with default settings."""
         summarizer = EntitySummarizer()
         assert summarizer.api_base == "http://localhost:11434/v1"
-        assert summarizer.model == "qwen3:14b"
+        assert summarizer.model == "ministral-3:14b-instruct-2512-q8_0"
         assert summarizer._summaries == {}
 
     def test_get_code_hash(self, sample_function):

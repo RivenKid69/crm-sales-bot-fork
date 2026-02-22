@@ -13,7 +13,7 @@ Ollama Client для CRM Sales Bot.
 
 Запуск Ollama сервера:
     ollama serve
-    ollama pull qwen3:14b
+    ollama pull ministral-3:14b-instruct-2512-q8_0
 
 Примечание:
     Этот проект использует Ollama для inference.
@@ -92,11 +92,11 @@ class OllamaClient:
 
     Требования:
         - Ollama сервер запущен (ollama serve)
-        - Модель скачана (ollama pull qwen3:14b)
+        - Модель скачана (ollama pull ministral-3:14b-instruct-2512-q8_0)
 
     Пример запуска Ollama:
         ollama serve
-        ollama pull qwen3:14b
+        ollama pull ministral-3:14b-instruct-2512-q8_0
     """
 
     # Настройки retry
@@ -228,7 +228,6 @@ class OllamaClient:
                         "model": self.model,
                         "messages": [{"role": "user", "content": prompt}],
                         "stream": False,
-                        "think": False,  # Disable thinking mode (qwen3, deepseek-r1)
                         "format": json_schema,  # Ollama: schema напрямую в format
                         "options": {
                             "temperature": 0.1,
@@ -443,7 +442,6 @@ class OllamaClient:
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
-                "think": False,  # Disable thinking mode (qwen3, deepseek-r1)
                 "options": {
                     "temperature": 0.7,
                     "num_predict": 256,
@@ -643,7 +641,7 @@ if __name__ == "__main__":
     print("OLLAMA CLIENT DEMO")
     print("=" * 60)
     print("\nЭтот проект использует Ollama.")
-    print("Запуск Ollama: ollama serve && ollama pull qwen3:14b")
+    print("Запуск Ollama: ollama serve && ollama pull ministral-3:14b-instruct-2512-q8_0")
 
     llm = OllamaClient()
 

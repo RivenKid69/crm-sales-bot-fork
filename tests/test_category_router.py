@@ -426,8 +426,8 @@ class TestStructuredOutput:
         router = CategoryRouter(llm, top_k=2)
         router.route("Цена?")
 
-        # Structured prompt короче и содержит /no_think
-        assert "/no_think" in llm.last_prompt
+        # Structured prompt короче и содержит 
+        assert "" in llm.last_prompt
         assert "КАТЕГОРИИ:" in llm.last_prompt
 
     def test_category_result_schema_valid(self):

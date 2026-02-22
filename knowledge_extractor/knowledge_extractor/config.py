@@ -9,7 +9,7 @@ from typing import List, Optional
 class LLMConfig:
     """LLM configuration for Ollama."""
     base_url: str = "http://localhost:11434"  # Ollama default port
-    model: str = "qwen3:14b"  # Ollama model name
+    model: str = "ministral-3:14b-instruct-2512-q8_0"  # Ollama model name
     timeout: int = 120
     max_retries: int = 3
     temperature: float = 0.3

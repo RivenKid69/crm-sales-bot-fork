@@ -669,7 +669,7 @@ Snapshot — полный слепок состояния бота. Переда
     "tail_size": 4,
     "compacted_at": 1706000000.123,
     "compaction_version": "1.0",
-    "llm_model": "qwen3:14b"
+    "llm_model": "ministral-3:14b-instruct-2512-q8_0"
   },
 
   "last_action": "ask_current_tools",
@@ -1516,7 +1516,7 @@ sections:
 
 | Параметр | Описание |
 |---|---|
-| `llm.model` | Модель LLM (qwen3:14b) |
+| `llm.model` | Модель LLM (ministral-3:14b-instruct-2512-q8_0) |
 | `llm.base_url` | URL Ollama API |
 | `llm.timeout` | Таймаут запросов (120 сек) |
 | `retriever.use_embeddings` | Включить семантический поиск |

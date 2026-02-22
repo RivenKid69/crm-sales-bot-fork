@@ -441,10 +441,10 @@ class TestHealthCheck:
         mock_response.status_code = 200
         # Ollama /api/tags response format
         mock_response.json.return_value = {
-            "models": [{"name": "qwen3:14b"}]
+            "models": [{"name": "ministral-3:14b-instruct-2512-q8_0"}]
         }
         mock_get.return_value = mock_response
-        llm = OllamaLLM(model="qwen3:14b")
+        llm = OllamaLLM(model="ministral-3:14b-instruct-2512-q8_0")
 
         assert llm.health_check() is True
 
@@ -457,7 +457,7 @@ class TestHealthCheck:
             "models": [{"name": "llama3:8b"}]  # Different model
         }
         mock_get.return_value = mock_response
-        llm = OllamaLLM(model="qwen3:14b")
+        llm = OllamaLLM(model="ministral-3:14b-instruct-2512-q8_0")
 
         assert llm.health_check() is False
 

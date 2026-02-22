@@ -112,7 +112,7 @@ class AnalysisPipeline:
         self,
         graph: DependencyGraph,
         api_base: str = "http://localhost:11434",
-        model: str = "qwen3:14b",
+        model: str = "ministral-3:14b-instruct-2512-q8_0",
         config: AppConfig | None = None,
         cache: AnalysisCache | None = None,
     ):
@@ -692,7 +692,7 @@ Provide a high-level architecture overview."""
 async def analyze_codebase(
     graph: DependencyGraph,
     api_base: str = "http://localhost:11434",
-    model: str = "qwen3:14b",
+    model: str = "ministral-3:14b-instruct-2512-q8_0",
     output_path: Path | None = None,
     max_concurrent: int = 5,
     cache_dir: Path | None = None,

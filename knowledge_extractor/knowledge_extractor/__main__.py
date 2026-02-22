@@ -80,8 +80,8 @@ Supported formats:
     )
     parser.add_argument(
         "--llm-model",
-        default="qwen3:14b",
-        help="Ollama model name (default: qwen3:14b)",
+        default="ministral-3:14b-instruct-2512-q8_0",
+        help="Ollama model name (default: ministral-3:14b-instruct-2512-q8_0)",
     )
     parser.add_argument(
         "--max-tokens",

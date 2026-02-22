@@ -128,7 +128,7 @@ def sample_analysis_result(sample_entity_summaries, sample_module_summaries, sam
         total_tokens_in=1000,
         total_tokens_out=500,
         processing_time_seconds=10.5,
-        model_used="qwen3:14b",
+        model_used="ministral-3:14b-instruct-2512-q8_0",
         analysis_timestamp="2024-01-20T10:00:00",
         processing_levels=[
             ["db::DatabaseService::query"],
@@ -430,7 +430,7 @@ class TestStructureDocGeneration:
 
         assert "Total Entities" in content
         assert "Total Modules" in content
-        assert "qwen3:14b" in content
+        assert "ministral-3:14b-instruct-2512-q8_0" in content
 
     def test_structure_contains_modules_by_size(self, generator, sample_analysis_result, temp_output_dir):
         """Test structure doc lists modules by size."""

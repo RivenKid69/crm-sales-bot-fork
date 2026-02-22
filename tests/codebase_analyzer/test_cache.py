@@ -119,11 +119,11 @@ class TestCacheEntry:
             entity_id="test::entity",
             code_hash="abc123def456",
             timestamp=time.time(),
-            model="qwen3:14b",
+            model="ministral-3:14b-instruct-2512-q8_0",
         )
         assert entry.entity_id == "test::entity"
         assert entry.code_hash == "abc123def456"
-        assert entry.model == "qwen3:14b"
+        assert entry.model == "ministral-3:14b-instruct-2512-q8_0"
         assert entry.version == "1.0"
 
     def test_serialize_deserialize(self):

@@ -93,12 +93,12 @@ def run_audit(args):
 
     print("=" * 80)
     print(f"  FULL E2E AUDIT: Enhanced Retrieval → LLM Generation")
-    print(f"  Model: qwen3:14b | Queries: {total_q} (#{q_from+1}..#{q_from+total_q})")
+    print(f"  Model: ministral-3:14b-instruct-2512-q8_0 | Queries: {total_q} (#{q_from+1}..#{q_from+total_q})")
     print("=" * 80)
 
     # ── Initialize ──
     print("\n[INIT] Loading components...")
-    llm = OllamaLLM(model="qwen3:14b", base_url="http://localhost:11434", timeout=120)
+    llm = OllamaLLM(model="ministral-3:14b-instruct-2512-q8_0", base_url="http://localhost:11434", timeout=120)
     assert llm.health_check(), "Ollama not running! Run: ollama serve"
 
     loader = ConfigLoader()

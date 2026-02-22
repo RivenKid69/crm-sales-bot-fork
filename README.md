@@ -27,7 +27,7 @@ pip install -e .
 
 ```bash
 ollama serve
-ollama pull qwen3:14b
+ollama pull ministral-3:14b-instruct-2512-q8_0
 ```
 
 ### 3. Запустить бота

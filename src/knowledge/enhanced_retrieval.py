@@ -84,7 +84,6 @@ class QueryRewriter:
             return original
 
         prompt = (
-            "/no_think\n"
             "Перепиши вопрос клиента как самостоятельный поисковый запрос.\n"
             "Диалог:\n"
             f"{self._format_last_turns(history)}\n"
@@ -186,7 +185,6 @@ class QueryDecomposer:
 
         categories = ", ".join(CategoryRouter.CATEGORIES)
         prompt = (
-            "/no_think\n"
             "Разбей клиентский запрос на подзапросы для поиска в базе знаний.\n"
             "Правила:\n"
             f"- Максимум {self.max_sub_queries} подзапроса(ов).\n"

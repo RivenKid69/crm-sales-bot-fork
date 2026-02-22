@@ -8,7 +8,7 @@ from src.session_manager import SessionManager
 from src.snapshot_buffer import LocalSnapshotBuffer
 
 def _get_real_llm():
-    model = os.getenv("E2E_LLM_MODEL", "qwen3:14b")
+    model = os.getenv("E2E_LLM_MODEL", "ministral-3:14b-instruct-2512-q8_0")
     base_url = os.getenv("OLLAMA_BASE_URL")
     llm = OllamaClient(model=model, base_url=base_url)
     if not llm.health_check():

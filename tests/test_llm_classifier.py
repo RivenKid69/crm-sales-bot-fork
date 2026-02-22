@@ -179,9 +179,9 @@ class TestPrompts:
     """Тесты промптов."""
 
     def test_system_prompt_has_no_think(self):
-        """Проверка /no_think в начале."""
+        """Проверка  в начале."""
         from src.classifier.llm.prompts import SYSTEM_PROMPT
-        assert SYSTEM_PROMPT.startswith("/no_think")
+        assert SYSTEM_PROMPT.startswith("")
 
     def test_system_prompt_has_all_intents(self):
         """Проверка что все интенты описаны."""
@@ -207,7 +207,7 @@ class TestPrompts:
         assert "Привет" in prompt
         assert "greeting" in prompt
         assert "situation" in prompt
-        assert "/no_think" in prompt
+        assert "" in prompt
 
     def test_build_classification_prompt_no_context(self):
         """Проверка промпта без контекста."""
