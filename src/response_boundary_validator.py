@@ -81,7 +81,14 @@ class ResponseBoundaryValidator:
         re.IGNORECASE,
     )
     INVOICE_WITHOUT_IIN_PATTERN = re.compile(
-        r'(?:сч[её]т|договор).{0,40}без\s+иин',
+        r'(?:сч[её]т|договор).{0,60}(?:'
+        r'без(?:\s+(?:указани[яе]|предоставлени[яе]|данных))?\s+иин'
+        r'|иин\s*(?:не\s*)?(?:нужен|требуется|обязателен))',
+        re.IGNORECASE,
+    )
+    INVOICE_WITHOUT_IIN_REVERSED_PATTERN = re.compile(
+        r'без(?:\s+(?:указани[яе]|предоставлени[яе]|данных))?\s+иин.{0,80}'
+        r'(?:сч[её]т|договор|оформ(?:ить|им|лю)|выстав(?:ить|им|лю))',
         re.IGNORECASE,
     )
     INVOICE_PROMISE_PATTERN = re.compile(
@@ -162,9 +169,25 @@ class ResponseBoundaryValidator:
         r'по\s+вашему\s+номеру\s+уже\s+организован)',
         re.IGNORECASE,
     )
+    IIN_CONFIRMED_PATTERN = re.compile(
+        r'(?:иин\s+(?:получ(?:ен|или)|зафиксирован|подтвержд[её]н|уже\s+в\s+системе))',
+        re.IGNORECASE,
+    )
+    INVOICE_READY_PATTERN = re.compile(
+        r'(?:сч[её]т\s+(?:уже\s+)?(?:подготовлен|готов|выставлен|отправлен))',
+        re.IGNORECASE,
+    )
+    META_INSTRUCTION_PATTERN = re.compile(
+        r'[\(\[]\s*если[^)\]]*(?:переходи|next_state|state|`[^`]+`)[^)\]]*[\)\]]',
+        re.IGNORECASE,
+    )
+    IIN_REASK_PATTERN = re.compile(
+        r'(?:укаж(?:ите|и)|сообщ(?:ите|и)|нужн(?:ы|о|ен)|требуется).{0,24}иин',
+        re.IGNORECASE,
+    )
     QUANT_CLAIM_PATTERN = re.compile(
         r'(?iu)\b(\d{1,3}(?:[.,]\d+)?)\s*(%|процент(?:а|ов)?|раз(?:а)?|'
-        r'минут(?:ы)?|час(?:а|ов)?|дн(?:я|ей)?|недел(?:и|ь)|месяц(?:а|ев)?)\b'
+        r'минут(?:ы)?|час(?:а|ов)?|дн(?:я|ей)?|недел(?:и|ь)|месяц(?:а|ев)?)(?=\s|$|[.,;:!?])'
     )
 
     def __init__(self) -> None:
@@ -175,6 +198,31 @@ class ResponseBoundaryValidator:
 
     def get_metrics(self) -> Dict[str, Any]:
         return self._metrics.to_dict()
+
+    @staticmethod
+    def _has_iin_refusal_marker(text: str) -> bool:
+        low = str(text or "").lower()
+        refusal_markers = (
+            "без иин",
+            "иин не дам",
+            "не дам иин",
+            "без указания иин",
+            "пока без иин",
+        )
+        return any(marker in low for marker in refusal_markers)
+
+    @staticmethod
+    def _history_user_text(context: Dict[str, Any], limit: int = 4) -> str:
+        history = context.get("history", [])
+        if not isinstance(history, list):
+            return ""
+        chunks: List[str] = []
+        for item in history[-limit:]:
+            if isinstance(item, dict):
+                user = item.get("user", "")
+                if user:
+                    chunks.append(str(user))
+        return " ".join(chunks)
 
     def validate_response(
         self,
@@ -308,9 +356,21 @@ class ResponseBoundaryValidator:
         collected = context.get("collected_data", {})
         if not isinstance(collected, dict):
             collected = {}
+        user_msg = str(context.get("user_message", "") or "")
+        has_iin = bool(collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
+
+        if self.IIN_CONFIRMED_PATTERN.search(response) and not has_iin:
+            violations.append("hallucinated_iin_status")
+        if self.INVOICE_READY_PATTERN.search(response) and not has_iin:
+            violations.append("hallucinated_invoice_status")
+        if self.META_INSTRUCTION_PATTERN.search(response):
+            violations.append("meta_instruction_leak")
+        refusal_source = f"{user_msg} {self._history_user_text(context)}"
+        if self._has_iin_refusal_marker(refusal_source) and self.IIN_REASK_PATTERN.search(response):
+            violations.append("iin_refusal_reask")
 
         # Business-constraint violation: invoice/contract without IIN
-        if self.INVOICE_WITHOUT_IIN_PATTERN.search(response):
+        if self.INVOICE_WITHOUT_IIN_PATTERN.search(response) or self.INVOICE_WITHOUT_IIN_REVERSED_PATTERN.search(response):
             violations.append("invoice_without_iin")
         elif self.INVOICE_PROMISE_PATTERN.search(response) and not collected.get("iin"):
             violations.append("invoice_without_iin")
@@ -454,9 +514,13 @@ class ResponseBoundaryValidator:
         sanitized = self._sanitize_known_typos(sanitized)
         sanitized = self._sanitize_send_promise(sanitized)
         sanitized = self._sanitize_contact_claim(sanitized, context)
-        sanitized = self._sanitize_invoice_without_iin(sanitized)
+        sanitized = self._sanitize_iin_status_claim(sanitized, context)
+        sanitized = self._sanitize_invoice_status_claim(sanitized, context)
+        sanitized = self._sanitize_meta_instruction(sanitized)
+        sanitized = self._sanitize_invoice_without_iin(sanitized, context)
+        sanitized = self._sanitize_iin_refusal_reask(sanitized, context)
         sanitized = self._sanitize_demo_without_contact(sanitized)
-        sanitized = self._sanitize_ungrounded_quant_claim(sanitized)
+        sanitized = self._sanitize_ungrounded_quant_claim(sanitized, context)
         sanitized = self._sanitize_ungrounded_guarantee(sanitized)
         sanitized = self._sanitize_ungrounded_social_proof(sanitized)
         if self._is_pricing_context(context):
@@ -504,8 +568,26 @@ class ResponseBoundaryValidator:
         sanitized = self.PAST_SETUP_PATTERN.sub(safe_setup, sanitized)
         return sanitized
 
-    def _sanitize_invoice_without_iin(self, response: str) -> str:
-        if self.INVOICE_WITHOUT_IIN_PATTERN.search(response) or self.INVOICE_PROMISE_PATTERN.search(response):
+    def _sanitize_invoice_without_iin(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
+        if (
+            self.INVOICE_WITHOUT_IIN_PATTERN.search(response)
+            or self.INVOICE_WITHOUT_IIN_REVERSED_PATTERN.search(response)
+            or self.INVOICE_PROMISE_PATTERN.search(response)
+        ):
+            ctx = context or {}
+            user_msg = str(ctx.get("user_message", "") or "").lower()
+            refusal_markers = (
+                "без иин",
+                "иин не дам",
+                "не дам иин",
+                "пока без иин",
+                "позже иин",
+            )
+            if any(marker in user_msg for marker in refusal_markers):
+                return (
+                    "Без ИИН счёт или договор оформить нельзя. "
+                    "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
+                )
             return (
                 "Для выставления счёта нужен ИИН и номер телефона Kaspi. "
                 "Если сейчас неудобно, можем вернуться к оформлению позже."
@@ -529,11 +611,72 @@ class ResponseBoundaryValidator:
             )
         return response
 
-    def _sanitize_ungrounded_quant_claim(self, response: str) -> str:
-        if self.QUANT_CLAIM_PATTERN.search(response):
+    def _sanitize_iin_status_claim(self, response: str, context: Dict[str, Any]) -> str:
+        collected = context.get("collected_data", {})
+        user_msg = str(context.get("user_message", "") or "")
+        has_iin = bool(isinstance(collected, dict) and collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
+        if self.IIN_CONFIRMED_PATTERN.search(response) and not has_iin:
             return (
-                "Опишу без неподтверждённых цифр: Wipon помогает упростить учёт и снизить ручную нагрузку. "
-                "Точные метрики и сроки уточним по вашему кейсу."
+                "ИИН пока не фиксирую. "
+                "Для выставления счёта нужен ИИН и номер телефона Kaspi."
+            )
+        return response
+
+    def _sanitize_invoice_status_claim(self, response: str, context: Dict[str, Any]) -> str:
+        collected = context.get("collected_data", {})
+        user_msg = str(context.get("user_message", "") or "")
+        has_iin = bool(isinstance(collected, dict) and collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
+        if self.INVOICE_READY_PATTERN.search(response) and not has_iin:
+            return (
+                "Счёт ещё не оформлен: сначала нужен ИИН и номер телефона Kaspi. "
+                "Если ИИН пока не готовы дать, продолжим консультацию в чате."
+            )
+        return response
+
+    def _sanitize_meta_instruction(self, response: str) -> str:
+        if not self.META_INSTRUCTION_PATTERN.search(response):
+            return response
+        cleaned = self.META_INSTRUCTION_PATTERN.sub("", response)
+        cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+        if not cleaned:
+            return "Давайте продолжим по вашему кейсу без лишних формальностей."
+        return cleaned
+
+    def _sanitize_iin_refusal_reask(self, response: str, context: Dict[str, Any]) -> str:
+        user_msg = str(context.get("user_message", "") or "")
+        refusal_source = f"{user_msg} {self._history_user_text(context)}"
+        if self._has_iin_refusal_marker(refusal_source) and self.IIN_REASK_PATTERN.search(response):
+            return (
+                "Без ИИН счёт или договор оформить нельзя. "
+                "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
+            )
+        return response
+
+    def _sanitize_ungrounded_quant_claim(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
+        if self.QUANT_CLAIM_PATTERN.search(response):
+            # Remove only ungrounded numeric KPI/time chunks to preserve useful content.
+            cleaned = re.sub(
+                r'(?iu)(?:до|около|примерно|более|менее)?\s*\d{1,3}(?:[.,]\d+)?\s*'
+                r'(?:%|процент(?:а|ов)?|раз(?:а)?|минут(?:ы)?|час(?:а|ов)?|'
+                r'дн(?:я|ей)?|недел(?:и|ь)|месяц(?:а|ев)?)(?=\s|$|[.,;:!?])',
+                "",
+                response,
+            )
+            cleaned = re.sub(r"\s{2,}", " ", cleaned).strip(" ,.;:-")
+            if cleaned and not self.QUANT_CLAIM_PATTERN.search(cleaned):
+                return cleaned
+
+            ctx = context or {}
+            if self._is_pricing_context(ctx):
+                return (
+                    "По стоимости дам расчёт в ₸ без неподтверждённых цифр. "
+                    "Уточню точные параметры под ваш кейс."
+                )
+            if str(ctx.get("intent", "")).lower() == "request_brevity":
+                return "Коротко: даю только подтверждённые факты без неподтверждённых цифр."
+            return (
+                "Опишу без неподтверждённых цифр: расскажу только факты, "
+                "а точные метрики уточним по вашему кейсу."
             )
         return response
 
@@ -557,6 +700,8 @@ class ResponseBoundaryValidator:
         ctx = context or {}
         intent = str(ctx.get("intent", "")).lower()
         state = str(ctx.get("state", "")).lower()
+        user_message = str(ctx.get("user_message", "") or "")
+        refusal_source = f"{user_message} {self._history_user_text(ctx)}"
         violations = ctx.get("violations", [])
         if "policy_disclosure" in violations:
             return (
@@ -579,6 +724,16 @@ class ResponseBoundaryValidator:
             return (
                 "Контакт получил. Следующий шаг — менеджер свяжется с вами "
                 "и согласует удобное время."
+            )
+        if intent == "objection_contract_bound":
+            return (
+                "Без ИИН счёт или договор оформить нельзя. "
+                "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
+            )
+        if self._has_iin_refusal_marker(refusal_source):
+            return (
+                "Без ИИН счёт или договор оформить нельзя. "
+                "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
             )
         # Payment/closing context: ask for missing data without hallucinating it
         if intent == "payment_confirmation" or state == "autonomous_closing":
@@ -699,7 +854,7 @@ class ResponseBoundaryValidator:
         intent = str(context.get("intent", "")).lower()
         action = str(context.get("action", "")).lower()
         template = str(context.get("selected_template", "")).lower()
-        retrieved_facts = str(context.get("retrieved_facts", "")).lower()
+        user_message = str(context.get("user_message", "")).lower()
 
         pricing_signals = (
             "price" in intent
@@ -708,8 +863,7 @@ class ResponseBoundaryValidator:
             or "pricing" in action
             or "price" in template
             or "pricing" in template
-            or "цен" in retrieved_facts
-            or "тариф" in retrieved_facts
+            or any(marker in user_message for marker in ("цена", "стоимость", "тариф", "сколько", "прайс"))
         )
         return pricing_signals
 

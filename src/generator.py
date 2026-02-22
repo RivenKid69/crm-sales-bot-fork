@@ -126,6 +126,32 @@ SAFETY_RULES_V2 = """ГЛАВНЫЕ ПРАВИЛА:
 5. Не придумывай SLA, проценты, сроки, гарантии, количество клиентов, кейсы и показатели эффективности. Любая цифра или метрика — только если она есть в БАЗЕ ЗНАНИЙ.
 6. Не обещай "менеджер свяжется через N минут/часов" и не подтверждай уже назначенный звонок/демо, если этого явно нет в БАЗЕ ЗНАНИЙ или сообщении клиента."""
 
+HARD_NO_CONTACT_MARKERS: Tuple[str, ...] = (
+    "контакты не дам",
+    "контакт не дам",
+    "не дам контакт",
+    "не проси мои контакты",
+    "без контакта",
+    "без контактов",
+    "номер не дам",
+    "телефон не дам",
+    "без звонков",
+    "не звоните",
+)
+
+DEFER_CONTACT_MARKERS: Tuple[str, ...] = (
+    "потом дам контакт",
+    "позже дам контакт",
+    "контакт потом",
+    "контакт позже",
+    "контакт не сейчас",
+    "контакт позже дам",
+    "телефон потом",
+    "телефон позже",
+    "номер потом",
+    "если ок потом дам контакт",
+)
+
 
 # =============================================================================
 # PERSONALIZATION ENGINE
@@ -1320,27 +1346,31 @@ class ResponseGenerator:
                 "в этом сообщении. Заверши коротким мостом к цели этапа."
             )
             variables["available_questions"] = ""
-        # Respect explicit no-contact requests: answer without pushing questions.
-        _hard_no_contact_markers = (
-            "контакты не дам",
-            "контакт не дам",
-            "не дам контакт",
-            "не проси мои контакты",
-            "без контакта",
-            "без контактов",
-        )
-        _hard_no_contact = any(m in user_message.lower() for m in _hard_no_contact_markers)
-        if _is_autonomous and _hard_no_contact:
-            variables["question_instruction"] = (
-                "⚠️ Клиент отказался давать контакты: НЕ задавай встречных вопросов в этом сообщении. "
-                "Дай полезный ответ и мягко оставь открытой возможность вернуться позже."
-            )
+        _history = context.get("history", [])
+        _hard_no_contact = self._has_hard_no_contact_signal(user_message, _history)
+        _deferred_contact = self._has_deferred_contact_signal(user_message, _history)
+        if _is_autonomous and (_hard_no_contact or _deferred_contact):
+            if _hard_no_contact:
+                variables["question_instruction"] = (
+                    "⚠️ Клиент отказался давать контакты: НЕ задавай встречных вопросов в этом сообщении. "
+                    "Дай полезный ответ и мягко оставь открытой возможность вернуться позже."
+                )
+                no_contact_rule = (
+                    "⚠️ ЯВНЫЙ ЗАПРЕТ НА КОНТАКТ: в этом ответе НЕ проси телефон/email/ИИН "
+                    "и не предлагай созвон."
+                )
+            else:
+                variables["question_instruction"] = (
+                    "⚠️ Клиент просит вернуться к контакту позже: в этом ответе НЕ запрашивай "
+                    "телефон/email/ИИН повторно. Дай следующий шаг, который можно сделать прямо в чате."
+                )
+                no_contact_rule = (
+                    "⚠️ КОНТАКТ ПОЗЖЕ: не продавливай сбор контакта/созвон в этом сообщении. "
+                    "Сфокусируйся на пользе и конкретике."
+                )
+
             variables["missing_data"] = ""
             variables["available_questions"] = ""
-            no_contact_rule = (
-                "⚠️ ЯВНЫЙ ЗАПРЕТ НА КОНТАКТ: в этом ответе НЕ проси телефон/email/ИИН "
-                "и не предлагай созвон."
-            )
             existing_no_ask = variables.get("do_not_ask", "")
             variables["do_not_ask"] = (
                 f"{existing_no_ask}\n{no_contact_rule}" if existing_no_ask else no_contact_rule
@@ -1364,7 +1394,11 @@ class ResponseGenerator:
         #   URGENT  (⚠️ ПРЯМО ПОПРОСИ) — NO terminal is reachable yet; bot must collect.
         #   SOFT    (💡 желательно) — at least one terminal is reachable; bot may upgrade.
         #   SILENT  (empty string) — all terminals already reachable; nothing to ask.
-        if _is_autonomous and context.get("state") == "autonomous_closing" and not _hard_no_contact:
+        if (
+            _is_autonomous
+            and context.get("state") == "autonomous_closing"
+            and not (_hard_no_contact or _deferred_contact)
+        ):
             # Anti-contact-hallucination: if we don't have contact_info yet, warn LLM
             # not to fabricate a phone number or email (e.g. "+77751234567")
             _has_contact = (
@@ -1473,9 +1507,13 @@ class ResponseGenerator:
                             "   Спроси в конце ответа, только если это не выглядит навязчиво.\n"
                         )
                 # else: all terminals reachable — closing_data_request stays empty
-        elif _is_autonomous and context.get("state") == "autonomous_closing" and _hard_no_contact:
+        elif (
+            _is_autonomous
+            and context.get("state") == "autonomous_closing"
+            and (_hard_no_contact or _deferred_contact)
+        ):
             variables["closing_data_request"] = (
-                "⚠️ Клиент прямо отказался от контактов: НЕ собирай телефон/email/ИИН в этом сообщении. "
+                "⚠️ Клиент не готов к передаче контактов сейчас: НЕ собирай телефон/email/ИИН в этом сообщении. "
                 "Дай полезный ответ по запросу и оставь нейтральный следующий шаг без давления."
             )
 
@@ -2169,6 +2207,7 @@ class ResponseGenerator:
             "retrieved_facts": retrieved_facts,
             "user_message": context.get("user_message", ""),
             "collected_data": context.get("collected_data", {}),
+            "history": context.get("history", []),
         }
         validation_result = boundary_validator.validate_response(
             processed,
@@ -2201,25 +2240,25 @@ class ResponseGenerator:
     @staticmethod
     def _enforce_no_contact_boundaries(text: str, context: Dict[str, Any]) -> str:
         """Remove contact-push fragments when user explicitly refused to share contacts."""
-        msg = str(context.get("user_message", "") or "").lower()
-        refusal_markers = (
-            "контакты не дам",
-            "контакт не дам",
-            "без контактов",
-            "без контакта",
-            "не проси мои контакты",
-        )
-        if not any(m in msg for m in refusal_markers):
+        user_message = str(context.get("user_message", "") or "")
+        history = context.get("history", [])
+        if not ResponseGenerator._has_contact_boundary_signal(
+            user_message=user_message,
+            history=history,
+            include_deferred=True,
+        ):
             return text
 
         result = str(text or "")
         # Remove typical pressure phrases/questions for contact collection.
         patterns = (
             r"(?i)\s*на какой (?:email|номер)[^?.!]*[?.!]",
-            r"(?i)\s*остав(?:ьте|ь)\s+(?:контакт|номер|телефон|email)[^?.!]*[?.!]",
+            r"(?i)\s*остав(?:ьте|ь)(?:,\s*пожалуйста)?[^?.!]{0,40}(?:контакт|номер|телефон|email)[^?.!]*[?.!]",
             r"(?i)\s*укаж(?:ите|и)\s+пожалуйста,\s*ваш\s*иин[^?.!]*[?.!]",
             r"(?i)\s*как вас набрать[^?.!]*[?.!]",
             r"(?i)\s*менеджер свяжется[^?.!]*[?.!]",
+            r"(?i)\s*(?:давайте|предлагаю)\s*(?:созвон|созвониться)[^?.!]*[?.!]",
+            r"(?i)\s*(?:удобн\w*)\s*время\s*(?:для\s*)?(?:звонка|созвона)[^?.!]*[?.!]",
         )
         for pat in patterns:
             result = re.sub(pat, " ", result)
@@ -2287,6 +2326,8 @@ class ResponseGenerator:
             "контакт не дам",
             "без контактов",
             "без контакта",
+            "потом дам контакт",
+            "позже дам контакт",
         )
         soft_markers = (
             "без воды",
@@ -2748,15 +2789,11 @@ class ResponseGenerator:
                 "(контакт/счёт), без лишних вопросов о бизнесе или боли."
             )
 
-        hard_no_contact_markers = (
-            "контакты не дам",
-            "контакт не дам",
-            "не дам контакт",
-            "не проси мои контакты",
-            "без контакта",
-            "без контактов",
-        )
-        if is_autonomous_context and any(marker in message_lower for marker in hard_no_contact_markers):
+        if is_autonomous_context and self._has_contact_boundary_signal(
+            user_message=user_message,
+            history=history,
+            include_deferred=True,
+        ):
             rules.append(
                 "⚠️ КЛИЕНТ ОТКАЗАЛСЯ ОТ КОНТАКТОВ: не запрашивай телефон/email повторно в этом ответе. "
                 "Дай полезный следующий шаг без обязательной передачи контактов."
@@ -2951,6 +2988,8 @@ class ResponseGenerator:
             "контакт не дам",
             "без контактов",
             "без контакта",
+            "потом дам контакт",
+            "позже дам контакт",
         )
         low_msg = str(user_message or "").lower()
         if any(marker in low_msg for marker in directness_markers):
@@ -2968,6 +3007,41 @@ class ResponseGenerator:
             'ОБРАЩЕНИЕ: имя клиента НЕИЗВЕСТНО — один раз мягко вплети '
             '"как к вам обращаться?" в ответ. НЕ придумывай имя/фамилию.'
         )
+
+    @staticmethod
+    def _has_contact_boundary_signal(
+        user_message: str,
+        history: Optional[list] = None,
+        include_deferred: bool = True,
+    ) -> bool:
+        """Detect explicit contact refusal or defer signals in current/recent user messages."""
+        texts: List[str] = [str(user_message or "").lower()]
+        if isinstance(history, list):
+            for turn in history[-4:]:
+                if isinstance(turn, dict):
+                    texts.append(str(turn.get("user", "") or "").lower())
+
+        markers: Tuple[str, ...] = HARD_NO_CONTACT_MARKERS
+        if include_deferred:
+            markers = HARD_NO_CONTACT_MARKERS + DEFER_CONTACT_MARKERS
+        return any(marker in text for text in texts for marker in markers)
+
+    @staticmethod
+    def _has_hard_no_contact_signal(user_message: str, history: Optional[list] = None) -> bool:
+        return ResponseGenerator._has_contact_boundary_signal(
+            user_message=user_message,
+            history=history,
+            include_deferred=False,
+        )
+
+    @staticmethod
+    def _has_deferred_contact_signal(user_message: str, history: Optional[list] = None) -> bool:
+        texts: List[str] = [str(user_message or "").lower()]
+        if isinstance(history, list):
+            for turn in history[-4:]:
+                if isinstance(turn, dict):
+                    texts.append(str(turn.get("user", "") or "").lower())
+        return any(marker in text for text in texts for marker in DEFER_CONTACT_MARKERS)
 
     @staticmethod
     def _is_payment_closing_signal(intent: str, user_message: str) -> bool:
@@ -3031,6 +3105,10 @@ class ResponseGenerator:
             "контакт не дам",
             "телефон потом",
             "телефон позже",
+            "потом дам контакт",
+            "позже дам контакт",
+            "контакт потом",
+            "контакт позже",
             "телефон кейін",
             "не сейчас",
             "иначе пока",
@@ -3068,6 +3146,16 @@ class ResponseGenerator:
                 "ЯЗЫК: отвечай на казахском простыми короткими фразами. "
                 "Не повторяй одинаковые предложения."
             )
+        has_latin = bool(re.search(r"[a-z]", msg))
+        translit_markers = (
+            "nuzhno", "skolko", "stoit", "to4", "toch", "rabotaet",
+            "davai", "bystro", "korotk", "kaspi", "nal", "offline",
+        )
+        if has_latin and not ru_letters and any(marker in msg for marker in translit_markers):
+            return (
+                "ЯЗЫК: клиент пишет транслитом. Отвечай простым русским, "
+                "коротко (1-2 фразы), без длинных списков и канцелярита."
+            )
         return ""
 
     @staticmethod
@@ -3095,14 +3183,7 @@ class ResponseGenerator:
                 "без встречных вопросов, если клиент просит быстрее/кратко."
             )
 
-        contact_refusal_markers = (
-            "контакты не дам",
-            "контакт не дам",
-            "без контактов",
-            "без контакта",
-            "номер не дам",
-            "телефон не дам",
-        )
+        contact_refusal_markers = HARD_NO_CONTACT_MARKERS + DEFER_CONTACT_MARKERS
         if any(m in text for m in contact_refusal_markers):
             instructions.append(
                 "КОНТАКТ-ОГРАНИЧЕНИЕ: клиент не даёт контакт. НЕ обещай отправить демо/документы "

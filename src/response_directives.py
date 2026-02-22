@@ -548,6 +548,22 @@ class ResponseDirectivesBuilder:
         Uses Tone enum value (lowercase) and has_valid_contact from SSOT module.
         """
         envelope = self.envelope
+        msg = str(getattr(envelope, "last_user_message", "") or "").lower()
+        no_contact_markers = (
+            "контакты не дам",
+            "контакт не дам",
+            "без контактов",
+            "без контакта",
+            "номер не дам",
+            "телефон не дам",
+            "без звонков",
+            "потом дам контакт",
+            "позже дам контакт",
+            "контакт потом",
+            "контакт позже",
+        )
+        if any(marker in msg for marker in no_contact_markers):
+            return False
 
         # Only for RUSHED clients (Tone.RUSHED.value = "rushed", lowercase!)
         if envelope.tone != "rushed":
