@@ -870,6 +870,103 @@ class TestClosingDeterministicCompletion:
         assert tp["next_state"] == "video_call_scheduled"
         assert tp["reason_code"] == "autonomous_terminal_video_call"
 
+
+class TestMergedContactFastPath:
+    """Merged-mode regression guards for contact_provided handling."""
+
+    @patch("src.feature_flags.flags")
+    def test_merged_fastpath_finishes_video_call_from_autonomous_stage(self, mock_flags):
+        """When merged mode is on, contact_provided should not stall in non-closing stage."""
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(
+            AutonomousDecision(
+                next_state="autonomous_negotiation",
+                action="autonomous_respond",
+                reasoning="stay",
+                should_transition=False,
+            )
+        )
+        source = AutonomousDecisionSource(llm=llm)
+        states = {
+            "autonomous_negotiation": {"phase": "negotiation", "goal": "Обсудить условия"},
+            "autonomous_closing": {"phase": "closing", "goal": "Закрыть сделку"},
+            "payment_ready": {"phase": "terminal", "goal": "Оплата"},
+            "video_call_scheduled": {"phase": "terminal", "goal": "Видеозвонок"},
+        }
+        bb = make_blackboard(
+            state="autonomous_negotiation",
+            intent="contact_provided",
+            user_message="Мой номер: +77073334455",
+            states=states,
+            state_config={
+                "phase": "negotiation",
+                "goal": "Обсудить условия",
+                "max_turns_in_state": 6,
+            },
+            context_envelope=SimpleNamespace(
+                consecutive_same_state=1,
+                intent_history=["question_features"],
+                total_objections=0,
+                repeated_objection_types=[],
+                state_history=["autonomous_objection_handling", "autonomous_negotiation"],
+            ),
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "video_call_scheduled"
+        assert tp["reason_code"] == "autonomous_merged_terminal_video_call"
+        llm.generate_structured.assert_not_called()
+
+    @patch("src.feature_flags.flags")
+    def test_merged_fastpath_keeps_payment_guard_without_iin(self, mock_flags):
+        """Merged fastpath must not bypass payment-context IIN guard."""
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(
+            AutonomousDecision(
+                next_state="autonomous_closing",
+                action="autonomous_respond",
+                reasoning="collect iin first",
+                should_transition=True,
+            )
+        )
+        source = AutonomousDecisionSource(llm=llm)
+        states = {
+            "autonomous_negotiation": {"phase": "negotiation", "goal": "Обсудить условия"},
+            "autonomous_closing": {"phase": "closing", "goal": "Закрыть сделку"},
+            "payment_ready": {"phase": "terminal", "goal": "Оплата"},
+            "video_call_scheduled": {"phase": "terminal", "goal": "Видеозвонок"},
+        }
+        bb = make_blackboard(
+            state="autonomous_negotiation",
+            intent="contact_provided",
+            user_message="Телефон: +77015551234",
+            states=states,
+            state_config={
+                "phase": "negotiation",
+                "goal": "Обсудить условия",
+                "max_turns_in_state": 6,
+            },
+            context_envelope=SimpleNamespace(
+                consecutive_same_state=1,
+                intent_history=["request_invoice"],
+                total_objections=0,
+                repeated_objection_types=[],
+                state_history=["autonomous_objection_handling", "autonomous_negotiation"],
+            ),
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_closing"
+        llm.generate_structured.assert_called_once()
+
     @patch("src.feature_flags.flags")
     def test_contact_provided_redirect_keeps_closing_when_payment_missing_iin(self, mock_flags):
         """

@@ -637,6 +637,70 @@ class AutonomousDecisionSource(KnowledgeSource):
         merged_enabled = flags.is_enabled("merged_autonomous_call")
         response_context = blackboard.get_response_context() if merged_enabled else None
 
+        # Merged-mode stabilizer:
+        # contact_provided on autonomous stages should deterministically finish into
+        # terminal state when data is already sufficient. This avoids low-conversion
+        # regressions from conservative merged decisions (should_transition=false).
+        if merged_enabled and state != "autonomous_closing" and intent == "contact_provided":
+            has_contact = (
+                self._has_required_field(collected_data, "contact_info")
+                or self._message_has_contact_info(user_message)
+            )
+            has_kaspi_phone = (
+                self._has_required_field(collected_data, "kaspi_phone")
+                or self._message_has_phone(user_message)
+            )
+            has_iin = (
+                self._has_required_field(collected_data, "iin")
+                or self._message_has_iin(user_message)
+            )
+            iin_refusal_or_deferral = self._has_recent_iin_refusal_or_deferral(
+                envelope=envelope,
+                user_message=user_message,
+                current_intent=intent,
+            )
+
+            fast_target = ""
+            reason_code = ""
+            if has_kaspi_phone and has_iin and "payment_ready" in all_states:
+                fast_target = "payment_ready"
+                reason_code = "autonomous_merged_terminal_payment_ready"
+            elif (
+                has_contact
+                and "video_call_scheduled" in all_states
+                and (not payment_intent_active or has_iin or iin_refusal_or_deferral)
+            ):
+                fast_target = "video_call_scheduled"
+                reason_code = "autonomous_merged_terminal_video_call"
+
+            if fast_target:
+                blackboard.propose_action(
+                    action="autonomous_respond",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code=reason_code,
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state=fast_target,
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code=reason_code,
+                    source_name=self.name,
+                )
+                self._decision_history.append(
+                    AutonomousDecisionRecord(
+                        turn_in_state=turn_in_state,
+                        intent=intent,
+                        state=state,
+                        should_transition=True,
+                        next_state=fast_target,
+                        reasoning=reason_code,
+                        explicit_ready_to_buy=explicit_ready_to_buy,
+                    )
+                )
+                return
+
         if merged_enabled and isinstance(response_context, dict):
             merged_prompt = self._build_merged_prompt(
                 decision_prompt=prompt,
