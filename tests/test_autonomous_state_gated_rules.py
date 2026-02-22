@@ -41,6 +41,20 @@ class TestAutonomousStateGatedRules:
         assert "СРАВНЕНИЕ" in rules
         assert "ЛОГИЧЕСКАЯ СВЯЗЬ" in rules
 
+    def test_single_if_polite_phrase_does_not_trigger_logic_rule(self):
+        gen = _make_generator()
+
+        rules = gen._build_state_gated_rules(
+            state="autonomous_presentation",
+            intent="agreement",
+            user_message="Если возможно, расскажите про тарифы и интеграции.",
+            history=[],
+            collected={},
+            secondary_intents=[],
+        )
+
+        assert "ЛОГИЧЕСКАЯ СВЯЗЬ" not in rules
+
     def test_no_interruption_rule_in_autonomous_closing(self):
         gen = _make_generator()
 

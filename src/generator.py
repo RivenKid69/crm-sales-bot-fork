@@ -2754,7 +2754,7 @@ class ResponseGenerator:
         )
         comparison_requested = (
             intent_value in {"comparison", "pricing_comparison", "question_tariff_comparison"}
-            or "comparison" in secondary_set
+            or bool({"comparison", "pricing_comparison", "question_tariff_comparison"} & secondary_set)
             or any(m in message_lower for m in compare_markers)
         )
         if comparison_requested:
@@ -2765,10 +2765,13 @@ class ResponseGenerator:
 
         # Logical links between facts: cause-effect and constraints.
         logic_markers = (
-            "как связано", "в чем связь", "почему", "за счет чего", "если", "то",
+            "как связано", "в чем связь", "почему", "за счет чего",
             "что будет если", "как влияет", "зависит ли",
         )
-        asks_logic = any(m in message_lower for m in logic_markers)
+        asks_logic = (
+            any(m in message_lower for m in logic_markers)
+            or ("если" in message_lower and " то " in message_lower)
+        )
         if asks_logic:
             rules.append(
                 "⚠️ ЛОГИЧЕСКАЯ СВЯЗЬ: если клиент просит объяснить зависимость/причину, "
@@ -2807,10 +2810,12 @@ class ResponseGenerator:
 
         message_lower = str(user_message or "").lower()
         logic_markers = (
-            "как связано", "в чем связь", "почему", "за счет чего", "если", " то ",
+            "как связано", "в чем связь", "почему", "за счет чего",
             "что будет если", "как влияет", "зависит ли",
         )
-        return any(m in message_lower for m in logic_markers)
+        return any(m in message_lower for m in logic_markers) or (
+            "если" in message_lower and " то " in message_lower
+        )
 
     @staticmethod
     def _has_address_question_in_history(history: list) -> bool:

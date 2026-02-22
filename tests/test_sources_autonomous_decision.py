@@ -430,6 +430,23 @@ class TestDecisionPromptEnrichment:
 
         assert "ПЕРЕБИВАНИЕ ЭТАПА" not in prompt
 
+    def test_tariff_comparison_intent_is_treated_as_interrupt(self):
+        """question_tariff_comparison should trigger interruption handling in autonomous non-closing state."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_presentation",
+            phase="presentation",
+            goal="Показать ценность",
+            intent="question_tariff_comparison",
+            user_message="Сравните ваши тарифы между собой.",
+            collected_data={},
+            available_states=["autonomous_closing"],
+            secondary_intents=[],
+        )
+
+        assert "ПЕРЕБИВАНИЕ ЭТАПА" in prompt
+
 
 # =============================================================================
 # Test: Generator template key preserved for autonomous objection (Fix 3b)
