@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Max characters for KB facts (~10K tokens for Qwen3 14B)
+# Max characters for KB facts (~10K tokens for Ministral 3 14B)
 MAX_KB_CHARS = 40_000
 
 

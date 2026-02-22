@@ -128,7 +128,7 @@ def analyze(
     model: Annotated[
         str,
         typer.Option("--model", "-m", help="LLM model name"),
-    ] = "qwen3:14b",
+    ] = "ministral-3:14b-instruct-2512-q8_0",
     api_base: Annotated[
         str,
         typer.Option("--api-base", help="LLM API base URL"),

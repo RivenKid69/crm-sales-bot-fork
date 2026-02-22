@@ -56,10 +56,10 @@ else
     echo -e "${GREEN}✓ Ollama запущен${NC}"
 fi
 
-if ollama list 2>/dev/null | grep -q "qwen3:14b"; then
-    echo -e "${GREEN}✓ Модель qwen3:14b установлена${NC}"
+if ollama list 2>/dev/null | grep -q "ministral-3:14b-instruct-2512-q8_0"; then
+    echo -e "${GREEN}✓ Модель ministral-3:14b-instruct-2512-q8_0 установлена${NC}"
 else
-    echo -e "${RED}✗ Модель qwen3:14b не найдена! Скачайте: ollama pull qwen3:14b${NC}"
+    echo -e "${RED}✗ Модель ministral-3:14b-instruct-2512-q8_0 не найдена! Скачайте: ollama pull ministral-3:14b-instruct-2512-q8_0${NC}"
     exit 1
 fi
 

@@ -45,7 +45,7 @@ TOTAL_FLOWS = 1          # Только autonomous flow
 TOTAL_PERSONAS = 21      # 21 персона (8 оригинальных + 8 новых + 5 из реальных диалогов)
 AUTONOMOUS_FLOW = "autonomous"  # Все прогоны через LLM-driven flow
 PARALLEL_THREADS = 8  # GPU и CPU потоки
-MODEL_NAME = "qwen3:14b"
+MODEL_NAME = "ministral-3:14b-instruct-2512-q8_0"
 OLLAMA_URL = "http://localhost:11434"
 
 # =============================================================================

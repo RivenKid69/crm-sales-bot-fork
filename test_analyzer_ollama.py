@@ -10,7 +10,7 @@ TEST_FILE = Path("/home/corta/.continue/types/core/index.d.ts")
 
 # Ollama API (OpenAI-compatible)
 OLLAMA_BASE = "http://localhost:11434/v1"
-MODEL = "qwen3:14b"
+MODEL = "ministral-3:14b-instruct-2512-q8_0"
 
 
 async def test_ollama_connection():
@@ -105,7 +105,7 @@ Respond in Russian. Be concise."""
             json={
                 "model": MODEL,
                 "messages": [
-                    {"role": "system", "content": "You are a code analysis expert. /no_think"},
+                    {"role": "system", "content": "You are a code analysis expert. "},
                     {"role": "user", "content": prompt}
                 ],
                 "max_tokens": 1024,

@@ -61,7 +61,7 @@ class EntitySummarizer:
     def __init__(
         self,
         api_base: str = "http://localhost:11434",
-        model: str = "qwen3:14b",
+        model: str = "ministral-3:14b-instruct-2512-q8_0",
         config: AppConfig | None = None,
     ):
         """Initialize summarizer.

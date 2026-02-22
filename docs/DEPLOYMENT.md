@@ -23,7 +23,7 @@
 | Цена | ~€184-205/мес + €264 setup | ~€889-988/мес + €1555 setup |
 | ДЦ | Falkenstein (FSN1) | Nuremberg / Falkenstein |
 
-**GEX44 — оптимальный выбор.** Модели qwen3:14b (~9 GB VRAM) + embeddings (~1 GB) умещаются в 20 GB VRAM с запасом.
+**GEX44 — оптимальный выбор.** Модели ministral-3:14b-instruct-2512-q8_0 (~9 GB VRAM) + embeddings (~1 GB) умещаются в 20 GB VRAM с запасом.
 
 ### Заказ
 
@@ -69,7 +69,7 @@
   │  CRM Sales Bot (stateful)                  │
   │  ├── память / история (SQLite)             │
   │  ├── KB поиск (FRIDA embeddings, in-proc)  │
-  │  └── генерация ответа (Ollama qwen3:14b)   │
+  │  └── генерация ответа (Ollama ministral-3:14b-instruct-2512-q8_0)   │
   └───────┬────────────────────────────────────┘
           │
           │  { "answer": "текст ответа" }
@@ -111,7 +111,7 @@
 │                          │                          │
 │  ┌──────────┐     ┌──────┴───────┐     ┌─────────┐ │
 │  │  Ollama  │◄────│  CRM Sales   │────►│ FRIDA   │ │
-│  │ qwen3:14b│     │     Bot      │     │embeddings│ │
+│  │ ministral-3:14b-instruct-2512-q8_0│     │     Bot      │     │embeddings│ │
 │  │ :11434   │     │ (stateful)   │     │(in-proc)│ │
 │  └──────────┘     └──────┬───────┘     └─────────┘ │
 │       GPU                │                          │
@@ -268,11 +268,11 @@ sudo systemctl enable ollama
 sudo systemctl start ollama
 
 # Скачивание модели (~9 GB)
-ollama pull qwen3:14b
+ollama pull ministral-3:14b-instruct-2512-q8_0
 
 # Проверка
 ollama list
-# Должна появиться строка: qwen3:14b ... 9.3 GB
+# Должна появиться строка: ministral-3:14b-instruct-2512-q8_0 ... 9.3 GB
 
 # Тест
 curl http://localhost:11434/api/tags
@@ -810,7 +810,7 @@ sudo systemctl start crm-sales-bot
 ### Обновление модели LLM
 
 ```bash
-ollama pull qwen3:14b
+ollama pull ministral-3:14b-instruct-2512-q8_0
 sudo systemctl restart ollama
 ```
 
@@ -863,7 +863,7 @@ sudo systemctl restart crm-sales-bot
 | Проблема | Решение |
 |---|---|
 | `Connection refused :11434` | `sudo systemctl start ollama` — Ollama не запущен |
-| `model not found` | `ollama pull qwen3:14b` — модель не скачана |
+| `model not found` | `ollama pull ministral-3:14b-instruct-2512-q8_0` — модель не скачана |
 | `nvidia-smi` не работает | `sudo apt install nvidia-driver-550 && sudo reboot` |
 | Ответ > 2 мин | Проверить `nvidia-smi`: модель может быть на CPU вместо GPU |
 | `CUDA out of memory` | Проверить `nvidia-smi` — нет ли лишних процессов |
@@ -928,7 +928,7 @@ sudo systemctl restart crm-sales-bot
 NVIDIA + OLLAMA
 [ ] NVIDIA-драйвер установлен (nvidia-smi работает)
 [ ] Ollama установлен и запущен как systemd-сервис
-[ ] Модель qwen3:14b скачана (ollama list)
+[ ] Модель ministral-3:14b-instruct-2512-q8_0 скачана (ollama list)
 
 БОТ
 [ ] Репозиторий склонирован в /home/deploy/crm_sales_bot

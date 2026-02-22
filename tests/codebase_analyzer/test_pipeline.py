@@ -149,7 +149,7 @@ class TestPipelineInit:
 
         assert pipeline.graph is multi_module_graph
         assert pipeline.api_base == "http://localhost:11434/v1"
-        assert pipeline.model == "qwen3:14b"
+        assert pipeline.model == "ministral-3:14b-instruct-2512-q8_0"
 
     def test_init_with_custom_settings(self, multi_module_graph):
         """Should initialize with custom settings."""
@@ -303,7 +303,7 @@ class TestFullPipeline:
         # Check result has all components
         assert result.total_entities == 3
         assert result.processing_time_seconds > 0
-        assert result.model_used == "qwen3:14b"
+        assert result.model_used == "ministral-3:14b-instruct-2512-q8_0"
         assert result.analysis_timestamp != ""
 
     @pytest.mark.asyncio
@@ -381,12 +381,12 @@ class TestAnalyzeCodebase:
         with patch.object(AnalysisPipeline, 'analyze', new_callable=AsyncMock) as mock_analyze:
             mock_analyze.return_value = AnalysisResult(
                 total_entities=3,
-                model_used="qwen3:14b",
+                model_used="ministral-3:14b-instruct-2512-q8_0",
             )
 
             result = await analyze_codebase(
                 graph=multi_module_graph,
-                model="qwen3:14b",
+                model="ministral-3:14b-instruct-2512-q8_0",
             )
 
             assert result.total_entities == 3

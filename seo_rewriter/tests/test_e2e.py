@@ -1,6 +1,6 @@
 """End-to-end tests for SEO Rewriter.
 
-These tests require Ollama to be running with qwen3:14b model.
+These tests require Ollama to be running with ministral-3:14b-instruct-2512-q8_0 model.
 """
 
 import pytest
@@ -42,7 +42,7 @@ class TestOllamaConnection:
         """Test that Ollama is running and model is available."""
         client = OllamaClient()
         is_healthy = await client.check_health()
-        assert is_healthy, "Ollama is not running or qwen3:14b model is not available"
+        assert is_healthy, "Ollama is not running or ministral-3:14b-instruct-2512-q8_0 model is not available"
 
     @pytest.mark.asyncio
     async def test_list_models(self):

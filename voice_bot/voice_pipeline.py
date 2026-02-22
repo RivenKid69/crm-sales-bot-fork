@@ -80,7 +80,7 @@ class VoicePipeline:
     def __init__(
         self,
         whisper_model: str = "large-v3-turbo",
-        llm_model: str = "qwen3:14b",
+        llm_model: str = "ministral-3:14b-instruct-2512-q8_0",
         device: str = None,
         use_streaming: bool = False,
     ):
@@ -480,7 +480,7 @@ def main():
     # Initialize pipeline
     pipeline = VoicePipeline(
         whisper_model="large-v3-turbo",
-        llm_model="qwen3:14b",
+        llm_model="ministral-3:14b-instruct-2512-q8_0",
     )
 
     # Startup greeting text (50 words)

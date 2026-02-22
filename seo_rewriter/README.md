@@ -7,7 +7,7 @@
 - CLI: `seo-rewriter` (`seo_rewriter/src/seo_rewriter/cli.py`)
 - REST API: FastAPI (`seo_rewriter/src/seo_rewriter/api.py`)
 - Проверка уникальности: n-gram, Jaccard, SimHash, Winnowing
-- LLM backend: Ollama (`qwen3:14b` по умолчанию)
+- LLM backend: Ollama (`ministral-3:14b-instruct-2512-q8_0` по умолчанию)
 
 ## Установка
 
