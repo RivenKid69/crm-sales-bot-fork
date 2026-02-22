@@ -949,6 +949,12 @@ class AutonomousDecisionSource(KnowledgeSource):
 - Отработай возражение в рамках текущего этапа
 - Если возражение снято — продолжай к цели этапа
 - Если клиент повторяет то же возражение — смени подход или предложи демо/звонок"""
+        elif intent in ("no_problem", "no_need", "skepticism_expression"):
+            objection_rules = f"""
+СКЕПТИЦИЗМ: Клиент пока не видит проблемы или потребности (интент: {intent}).
+- Это НЕ отказ. НЕ переходи в soft_close.
+- Задай уточняющий вопрос: как сейчас ведётся учёт, что отнимает больше всего времени, бывают ли ошибки.
+- should_transition=false, оставайся в текущем этапе."""
 
         # Turn progress context (replaces StallGuard soft nudge)
         progress_hint = ""
@@ -1019,9 +1025,10 @@ class AutonomousDecisionSource(KnowledgeSource):
                 f"- ⛔ ЗАПРЕЩЕНО: close, success"
             )
         elif state.startswith("autonomous_"):
-            close_section = "  - soft_close: Мягкое завершение (клиент твёрдо отказывается)"
+            close_section = "  - soft_close: Мягкое завершение (ТОЛЬКО при прямом отказе от общения)"
             close_rules = (
-                "- Если клиент твёрдо отказывается — next_state=\"soft_close\"\n"
+                "- soft_close ТОЛЬКО если клиент прямо говорит 'не пишите', 'не звоните', 'уходите', 'прекратите'. "
+                "Скептицизм ('не верю', 'нам не нужно', 'дорого') — это возражения, НЕ отказ.\n"
                 "- Для закрытия сделки — переходи в autonomous_closing (если доступен выше)"
             )
         else:

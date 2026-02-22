@@ -310,9 +310,9 @@ states:
       # При rejection/farewell в soft_close — делаем action через rules, не transition
       # Это предотвращает бесконечное повторение одинаковых ответов
       # Вопросы = проявление интереса
-      # FIX 4: price_question, pricing_details, comparison removed —
-      # rules block handles them with answer_with_facts/answer_and_continue
-      # instead of regressing to presentation (which restarts the sales funnel)
+      # Price interest in soft_close = renewed engagement → re-enter flow
+      price_question: "{{entry_state}}"
+      pricing_details: "{{entry_state}}"
       question_features: "{{entry_state}}"
       question_integrations: "{{entry_state}}"
       consultation_request: close

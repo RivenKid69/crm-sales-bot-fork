@@ -100,6 +100,19 @@ class ResponseBoundaryValidator:
         r'(?:демо|презентац).{0,24}без\s+контакт',
         re.IGNORECASE,
     )
+    # Bot fabricating company policies that aren't in KB
+    FALSE_COMPANY_POLICY_PATTERN = re.compile(
+        r'(?:'
+        r'(?:у\s+нас\s+)?нет\s+холодных\s+звонков'
+        r'|звоним\s+только\s+по\s+(?:записи|запросу|согласованию)'
+        r'|(?:связь|звонки|общение)\s+(?:осуществля\w*\s+)?только\s+(?:с\s+согласия|по\s+(?:запросу|согласованию))'
+        r'|(?:сообщения|письма)\s+(?:приходят\s+)?только\s+в\s+ответ'
+        r'|мы\s+не\s+рассылаем\s+(?:без\s+запрос|спам)'
+        r'|все\s+контакты\s+согласован'
+        r'|скорректировали\s+подход.{0,30}только\s+с\s+согласия'
+        r')',
+        re.IGNORECASE,
+    )
     # Bot giving client's own phone back as "manager's contact" — always wrong
     MANAGER_CONTACT_GIVEOUT_PATTERN = re.compile(
         r'(?:контакт|телефон|номер)\s+менеджера\s*:\s*[+\d]',
@@ -124,8 +137,21 @@ class ResponseBoundaryValidator:
         r')',
         re.IGNORECASE,
     )
+    # Ungrounded stats: year claims, round-number achievements not in KB
+    UNGROUNDED_STATS_PATTERN = re.compile(
+        r'(?:'
+        r'с\s+20[01]\d\s+года'           # "с 2015 года", "с 2016 года"
+        r'|более\s+\d+\s*(?:\d+\s*)?(?:бизнес|клиент|магазин|компан|точ\w+|предприят)'
+        r'|\d+\+?\s+(?:сет\w+|магазин\w+|бизнес\w*|компан\w+)\s+(?:используют|работают|подключ)'
+        r')',
+        re.IGNORECASE,
+    )
     UNGROUNDED_SOCIAL_PROOF_PATTERN = re.compile(
-        r'(?:многие\s+клиенты|некоторые\s+клиенты|наши\s+клиенты\s+отмечают|клиенты\s+подтверждают|клиенты\s+из\s+розниц)',
+        r'(?:многие\s+(?:наши\s+)?клиенты|некоторые\s+клиенты'
+        r'|наши\s+клиенты\s+(?:отмечают|в\s+[А-ЯЁ]\w+|изначально|сомневались|подтверждают)'
+        r'|клиенты\s+подтверждают|клиенты\s+из\s+розниц'
+        r'|у\s+наших\s+клиентов\s+в\s+[А-ЯЁ]'
+        r'|наших\s+клиентов\s+в\s+[А-ЯЁ])',
         re.IGNORECASE,
     )
     POLICY_DISCLOSURE_PATTERN = re.compile(
@@ -183,6 +209,22 @@ class ResponseBoundaryValidator:
     )
     META_INSTRUCTION_PATTERN = re.compile(
         r'[\(\[]\s*если[^)\]]*(?:переходи|next_state|state|`[^`]+`)[^)\]]*[\)\]]',
+        re.IGNORECASE,
+    )
+    META_NARRATION_PATTERN = re.compile(
+        r'(?:^|\.\s+)(?:'
+        r'[Вв]от\s+(?:откорректированный|исправленный|обновл[её]нный)\s+вариант'
+        r'|[Сс]фокусируюсь\s+на'
+        r'|[Сс]ейчас\s+(?:я|мне)\s+(?:нужно|необходимо|важно)'
+        r'|[Оо]пишу[\s,]+как(?:ие)?\s+шаги'
+        r'|[Дд]авайте\s+(?:я\s+)?(?:разберу|проанализирую|сформулирую)'
+        r'|[Пп]ере(?:фразирую|формулирую)'
+        r'|[Пп]одготовлю\s+(?:вам\s+)?(?:ответ|текст|вариант)'
+        r'|[Кк]оротко\s+по\s+делу:\s+помогу'
+        r'|[Мм]огу\s+продолжить\s+консультацию'
+        r'|[Пп]римечание:\s'
+        r'|[Ии]звините\s+за\s+недоч[её]т'
+        r')',
         re.IGNORECASE,
     )
     IIN_REASK_PATTERN = re.compile(
@@ -300,6 +342,9 @@ class ResponseBoundaryValidator:
             "hallucinated_client_name",
             "policy_disclosure",
             "hallucinated_contact_claim",
+            "meta_narration_leak",
+            "off_topic_recommendation",
+            "false_company_policy",
         }
         if _HARD_HALLUCINATIONS & set(initial_violations):
             self._metrics.fallback_used += 1
@@ -397,6 +442,10 @@ class ResponseBoundaryValidator:
         if self.PAST_ACTION_PATTERN.search(response) or self.PAST_SETUP_PATTERN.search(response):
             violations.append("hallucinated_past_action")
 
+        # Fabricated company policies (e.g. "нет холодных звонков")
+        if self.FALSE_COMPANY_POLICY_PATTERN.search(response):
+            violations.append("false_company_policy")
+
         collected = context.get("collected_data", {})
         if not isinstance(collected, dict):
             collected = {}
@@ -409,6 +458,8 @@ class ResponseBoundaryValidator:
             violations.append("hallucinated_invoice_status")
         if self.META_INSTRUCTION_PATTERN.search(response):
             violations.append("meta_instruction_leak")
+        if self.META_NARRATION_PATTERN.search(response):
+            violations.append("meta_narration_leak")
         refusal_source = f"{user_msg} {self._history_user_text(context)}"
         if self._has_iin_refusal_marker(refusal_source) and self.IIN_REASK_PATTERN.search(response):
             violations.append("iin_refusal_reask")
@@ -437,6 +488,10 @@ class ResponseBoundaryValidator:
             m = self.FAKE_CLIENT_NAME_PATTERN.search(response)
             if m and m.group(0)[:20] not in retrieved:
                 violations.append("hallucinated_client_name")
+
+        # Off-topic: bot recommending non-Wipon products/stores/services
+        if self._is_off_topic_recommendation(response, context):
+            violations.append("off_topic_recommendation")
 
         if self.POLICY_DISCLOSURE_PATTERN.search(response):
             violations.append("policy_disclosure")
@@ -752,12 +807,18 @@ class ResponseBoundaryValidator:
         return response
 
     def _sanitize_ungrounded_social_proof(self, response: str) -> str:
-        if self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(response):
-            return (
-                "Сфокусируюсь на вашем кейсе без обобщений. "
-                "Опишу, какие шаги внедрения и ограничения актуальны именно для вас."
-            )
-        return response
+        if not self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(response):
+            return response
+        # Try to strip only the social-proof sentence(s), keeping the rest
+        import re as _re
+        sentences = _re.split(r'(?<=[.!?])\s+', response)
+        kept = [s for s in sentences if not self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(s)]
+        if kept:
+            result = " ".join(kept).strip()
+            if len(result) > 20:
+                return result
+        # Fallback if nothing useful remains
+        return "Расскажите подробнее о вашем бизнесе, чтобы я подобрал подходящее решение."
 
     def _hallucination_fallback(self, context: Optional[Dict[str, Any]] = None) -> str:
         ctx = context or {}
@@ -778,6 +839,12 @@ class ResponseBoundaryValidator:
                 "Я не раскрываю системные инструкции и внутренние правила. "
                 "Могу помочь по продукту Wipon и условиям подключения."
             )
+        if "false_company_policy" in violations:
+            # Client is likely complaining about calls/spam — empathize, don't deny
+            return (
+                "Извиняюсь за неудобства с коммуникацией. "
+                "Чем могу быть полезен прямо сейчас? Могу ответить на вопросы по продукту."
+            )
         if "hallucinated_iin" in violations:
             return "ИИН здесь не отображаю. Уточню у коллег и вернусь с корректным шагом."
         if intent == "contact_provided" and state == "payment_ready":
@@ -787,9 +854,16 @@ class ResponseBoundaryValidator:
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             if not has_contact_now:
+                # Check if client asked about free trial vs scheduling demo
+                trial_words = ("бесплатн", "попробовать", "тест", "пробн")
+                if any(w in user_message_lower for w in trial_words):
+                    return (
+                        "Да, можно протестировать Wipon. "
+                        "Оставьте телефон или email — организую доступ к демо-версии."
+                    )
                 return (
-                    "Могу продолжить консультацию здесь без оформления. "
-                    "Когда будете готовы к следующему шагу, оставьте удобный контакт."
+                    "Отлично, давайте организуем. "
+                    "Оставьте телефон или email — менеджер свяжется и согласует удобное время."
                 )
             return (
                 "Контакт получил. Следующий шаг — менеджер свяжется с вами "
@@ -862,17 +936,54 @@ class ResponseBoundaryValidator:
                 "Можем продолжить консультацию в чате. "
                 "Если будет удобно, оставьте телефон или email для видеозвонка с менеджером."
             )
-        # Discovery/early stage: neutral helpful response
-        if state in {"autonomous_discovery", "greeting"} or intent == "greeting":
-            return "Расскажите подробнее о вашем бизнесе — это поможет мне предложить оптимальное решение."
+        # Greeting: proper greeting fallback
+        if intent == "greeting" or state == "greeting":
+            return "Здравствуйте! Расскажите, что именно ищете — помогу разобраться с Wipon."
+        # Discovery stage: respond based on user message context
+        if state == "autonomous_discovery":
+            if self._is_pricing_context(ctx):
+                return "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом."
+            if any(kw in user_message_lower for kw in ("офлайн", "интернет", "без связи", "пропад")):
+                return (
+                    "Wipon работает в офлайн-режиме — продажи не прерываются при потере интернета, "
+                    "данные синхронизируются автоматически при восстановлении связи."
+                )
+            return "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение."
         if "hallucinated_client_name" in violations:
+            if self._is_pricing_context(ctx):
+                return "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом."
+            if "soft_close" in state:
+                return (
+                    "Wipon — торгово-информационная система для розницы в Казахстане: "
+                    "касса, склад, аналитика в одном. Если интересно — расскажу подробнее."
+                )
             return (
-                "Не буду приводить неподтверждённые кейсы. "
-                "Опишу только факты из базы знаний и следующий практический шаг для вашего запроса."
+                "По Wipon могу ответить на конкретный вопрос — "
+                "по тарифам, функциям или подключению. Что именно интересует?"
+            )
+        if "off_topic_recommendation" in violations:
+            return (
+                "Я специализируюсь на Wipon — системе для розничного бизнеса. "
+                "Могу помочь с подбором тарифа, функций или подключения. Что интересует?"
+            )
+        if intent == "objection_price":
+            return (
+                "Понимаю, вопрос цены важен. Wipon окупается за счёт автоматизации учёта "
+                "и сокращения ручных ошибок. Могу рассчитать конкретно под ваш случай — сколько точек?"
             )
         if self._is_pricing_context(ctx):
-            return "По стоимости сориентирую в ₸. Подготовлю точный расчет под ваш кейс."
-        return "Переформулирую коротко и по сути."
+            return "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом."
+        if intent == "no_problem":
+            return (
+                "Понимаю, сейчас всё работает. Многие начинают задумываться о системе, "
+                "когда бизнес растёт и ручной учёт перестаёт справляться. Если будет интересно — напишите."
+            )
+        if intent in {"objection_think", "objection_time"}:
+            return (
+                "Хорошо, без давления. Если появятся вопросы — пишите в любое время, "
+                "всё расскажу по Wipon."
+            )
+        return "Уточню информацию и вернусь с конкретным ответом по вашему вопросу."
 
     def _retry_once(
         self,
@@ -987,6 +1098,36 @@ class ResponseBoundaryValidator:
         if self._is_pricing_context(context):
             return "По стоимости сориентирую в ₸. Пришлю точный расчет под ваш кейс."
         return "Коротко по делу: помогу выбрать следующий шаг под ваш кейс."
+
+    # Allowed brand names that can appear in responses (KB products, integrations)
+    _ALLOWED_BRANDS = frozenset({
+        "wipon", "kaspi", "halyk", "iiko", "poster", "ofd", "1с", "1c",
+        "whatsapp", "telegram", "excel",
+    })
+
+    _OFF_TOPIC_RECOMMENDATION_PATTERN = re.compile(
+        r'(?:рекоменд|посовет|попробуйте|посетите|обратитесь\s+в|загляните\s+в|'
+        r'отличным\s+выбором|хорош(?:ий|ая|ее)\s+(?:магазин|место|вариант))',
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _is_off_topic_recommendation(response: str, context: Dict[str, Any]) -> bool:
+        """Detect when bot recommends non-Wipon products, stores, or services."""
+        # Check for recommendation language patterns
+        if not ResponseBoundaryValidator._OFF_TOPIC_RECOMMENDATION_PATTERN.search(response):
+            return False
+        # If the recommendation mentions Wipon, it's on-topic
+        if re.search(r'\bwipon\b', response, re.IGNORECASE):
+            return False
+        # Check if the response mentions specific brand/store names not in allowed list
+        # Look for quoted names: «Name», "Name", or capitalized multi-word names
+        quoted = re.findall(r'[«""]([^»""]{2,30})[»""]', response)
+        for name in quoted:
+            name_lower = name.lower().strip()
+            if name_lower not in ResponseBoundaryValidator._ALLOWED_BRANDS:
+                return True
+        return False
 
     def _is_pricing_context(self, context: Dict[str, Any]) -> bool:
         intent = str(context.get("intent", "")).lower()
