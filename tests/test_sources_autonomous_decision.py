@@ -412,6 +412,24 @@ class TestDecisionPromptEnrichment:
 
         assert "ПЕРЕБИВАНИЕ ЭТАПА" not in prompt
 
+    def test_interrupt_signal_not_added_for_strong_closing_signal(self):
+        """If client is explicitly ready to buy, interruption hint should not push stay-in-stage."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_presentation",
+            phase="presentation",
+            goal="Показать ценность",
+            intent="request_invoice",
+            user_message="Есть API? И выставляйте счёт.",
+            collected_data={},
+            available_states=["autonomous_closing"],
+            secondary_intents=["question_integrations"],
+            explicit_ready_to_buy=True,
+        )
+
+        assert "ПЕРЕБИВАНИЕ ЭТАПА" not in prompt
+
 
 # =============================================================================
 # Test: Generator template key preserved for autonomous objection (Fix 3b)

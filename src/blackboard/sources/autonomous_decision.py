@@ -758,7 +758,16 @@ class AutonomousDecisionSource(KnowledgeSource):
             or intent.startswith("question_")
             or intent in {"comparison", "pricing_comparison"}
         )
-        if is_interrupt_question and state.startswith("autonomous_") and state != "autonomous_closing":
+        strong_closing_signal = (
+            explicit_ready_to_buy
+            or intent in {"ready_to_buy", "request_invoice", "request_contract", "demo_request", "callback_request"}
+        )
+        if (
+            is_interrupt_question
+            and not strong_closing_signal
+            and state.startswith("autonomous_")
+            and state != "autonomous_closing"
+        ):
             joined_secondary = ", ".join(question_like_secondary) if question_like_secondary else "нет"
             signal_lines.append(
                 "- 🔀 ПЕРЕБИВАНИЕ ЭТАПА: клиент задал отдельный факт-вопрос/сравнение "

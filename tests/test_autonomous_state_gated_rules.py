@@ -54,3 +54,29 @@ class TestAutonomousStateGatedRules:
         )
 
         assert "INTERRUPTION" not in rules
+
+
+class TestInterruptQuestionSuppression:
+    def test_suppress_followup_question_for_question_intent(self):
+        assert ResponseGenerator._should_suppress_followup_question_for_interrupt(
+            state="autonomous_discovery",
+            intent="question_integrations",
+            user_message="Есть интеграция с Kaspi?",
+            secondary_intents=[],
+        ) is True
+
+    def test_suppress_followup_question_for_logic_marker(self):
+        assert ResponseGenerator._should_suppress_followup_question_for_interrupt(
+            state="autonomous_presentation",
+            intent="agreement",
+            user_message="Если у нас 5 точек, то как влияет это на внедрение?",
+            secondary_intents=[],
+        ) is True
+
+    def test_do_not_suppress_in_closing(self):
+        assert ResponseGenerator._should_suppress_followup_question_for_interrupt(
+            state="autonomous_closing",
+            intent="question_integrations",
+            user_message="Есть API?",
+            secondary_intents=["question_features"],
+        ) is False
