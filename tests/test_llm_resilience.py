@@ -755,6 +755,25 @@ class TestGenerateStructured:
 
         assert result is None
 
+    def test_generate_merged_uses_merged_options(self):
+        """Merged structured call should use higher temperature/token budget."""
+        from src.llm import OllamaClient
+
+        client = OllamaClient(enable_retry=False)
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "message": {"content": '{"intent": "test", "confidence": 0.8}'}
+        }
+
+        with patch('requests.post', return_value=mock_response) as mock_post:
+            result = client.generate_merged("test", self.SampleSchema)
+
+        assert result is not None
+        kwargs = mock_post.call_args.kwargs
+        options = kwargs["json"]["options"]
+        assert options["temperature"] == 0.3
+        assert options["num_predict"] == 1024
+
 class TestOllamaClientAliases:
     """Тесты алиасов для обратной совместимости."""
 

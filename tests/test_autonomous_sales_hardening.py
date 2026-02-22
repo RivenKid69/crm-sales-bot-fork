@@ -116,6 +116,48 @@ def test_payment_context_reads_last_intent_when_history_empty():
     ) is True
 
 
+def test_autonomous_decision_record_roundtrip_dict():
+    record = AutonomousDecisionRecord(
+        turn_in_state=2,
+        intent="question_features",
+        state="autonomous_discovery",
+        should_transition=False,
+        next_state="autonomous_discovery",
+        reasoning="stay_for_facts",
+        explicit_ready_to_buy=False,
+    )
+
+    restored = AutonomousDecisionRecord.from_dict(record.to_dict())
+    assert restored.turn_in_state == record.turn_in_state
+    assert restored.intent == record.intent
+    assert restored.state == record.state
+    assert restored.should_transition == record.should_transition
+    assert restored.next_state == record.next_state
+    assert restored.reasoning == record.reasoning
+    assert restored.explicit_ready_to_buy == record.explicit_ready_to_buy
+
+
+def test_autonomous_decision_source_restore_and_reset_history():
+    source = AutonomousDecisionSource(llm=None)
+    records = [
+        AutonomousDecisionRecord(
+            turn_in_state=1,
+            intent="agreement",
+            state="autonomous_discovery",
+            should_transition=True,
+            next_state="autonomous_presentation",
+            reasoning="progress",
+        )
+    ]
+
+    source.restore_history(records)
+    assert len(source.decision_history) == 1
+    assert source.decision_history[0].intent == "agreement"
+
+    source.reset()
+    assert source.decision_history == []
+
+
 def test_iin_refusal_signal_detected():
     assert AutonomousDecisionSource._has_iin_refusal_or_deferral(
         "ИИН не дам. Давайте без указания ИИН"

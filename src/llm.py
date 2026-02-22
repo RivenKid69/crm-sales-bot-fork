@@ -172,6 +172,8 @@ class OllamaClient:
         allow_fallback: bool = True,
         return_trace: bool = False,
         purpose: str = "structured_generation",
+        temperature: float = 0.1,
+        num_predict: int = 512,
     ) -> Union[Optional[T], Tuple[Optional[T], LLMTrace]]:
         """
         Генерация с гарантированным JSON через Ollama structured output.
@@ -230,8 +232,8 @@ class OllamaClient:
                         "stream": False,
                         "format": json_schema,  # Ollama: schema напрямую в format
                         "options": {
-                            "temperature": 0.1,
-                            "num_predict": 512,
+                            "temperature": temperature,
+                            "num_predict": num_predict,
                         }
                     },
                     timeout=self.timeout
@@ -297,6 +299,25 @@ class OllamaClient:
 
         logger.error(f"Ollama structured all retries failed: {str(last_error)[:100] if last_error else 'unknown'}")
         return (None, trace) if return_trace else None
+
+    def generate_merged(
+        self,
+        prompt: str,
+        schema: Type[T],
+        allow_fallback: bool = True,
+        return_trace: bool = False,
+        purpose: str = "merged_decision_response",
+    ) -> Union[Optional[T], Tuple[Optional[T], LLMTrace]]:
+        """Structured generation for merged decision+response call."""
+        return self.generate_structured(
+            prompt=prompt,
+            schema=schema,
+            allow_fallback=allow_fallback,
+            return_trace=return_trace,
+            purpose=purpose,
+            temperature=0.3,
+            num_predict=1024,
+        )
 
     # =========================================================================
     # FREE-FORM GENERATION (как в OllamaLLM)

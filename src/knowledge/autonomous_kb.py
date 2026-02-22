@@ -7,7 +7,7 @@ categories defined in the current state's kb_categories field.
 
 Zero LLM calls, zero ML overhead — just dict lookups + concatenation.
 
-Token budget: ~10K tokens (~40K chars) per turn.
+Token budget: ~6K tokens (~25K chars) per turn.
 
 Fact rotation: accepts recently_used_keys to deprioritize sections that
 were already shown in recent turns. Fresh sections appear first in the
@@ -20,8 +20,8 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Max characters for KB facts (~10K tokens for Ministral 3 14B)
-MAX_KB_CHARS = 40_000
+# Max characters for KB facts (~6K tokens for Ministral 3 14B)
+MAX_KB_CHARS = 25_000
 
 
 def load_facts_for_state(

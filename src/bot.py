@@ -65,6 +65,7 @@ from src.blackboard.decision_sanitizer import (
     SanitizedTransitionResult,
     INVALID_NEXT_STATE_REASON,
 )
+from src.blackboard.sources.autonomous_decision import AutonomousDecisionRecord
 
 # Personalization v2: Adaptive personalization
 from src.personalization import EffectiveActionTracker
@@ -344,6 +345,7 @@ class SalesBot:
 
         # Reset Context Window
         self.context_window.reset()
+        self._orchestrator.reset()
 
         # Reset Personalization v2
         if self.action_tracker:
@@ -1306,6 +1308,54 @@ class SalesBot:
 
         # Defer ResponseDirectives until AFTER policy override
         response_directives = None
+        prepared_response_ctx: Optional[Dict[str, Any]] = None
+
+        if (
+            self._flow
+            and self._flow.name == "autonomous"
+            and flags.is_enabled("merged_autonomous_call")
+        ):
+            try:
+                prepared_response_ctx = self.generator.prepare_response_context(
+                    state=current_state,
+                    context={
+                        "action": "autonomous_respond",
+                        "user_message": user_message,
+                        "intent": intent,
+                        "state": current_state,
+                        "history": self.history,
+                        "goal": self._flow.states.get(current_state, {}).get("goal", ""),
+                        "collected_data": self.state_machine.collected_data,
+                        "missing_data": [
+                            field
+                            for field in self._flow.states.get(current_state, {}).get("required_data", [])
+                            if not self.state_machine.collected_data.get(field)
+                        ],
+                        "spin_phase": self._flow.states.get(current_state, {}).get("phase"),
+                        "tone_instruction": tone_info.get("tone_instruction", ""),
+                        "style_instruction": tone_info.get("style_instruction", ""),
+                        "frustration_level": frustration_level,
+                        "should_apologize": tone_info.get("should_apologize", False),
+                        "should_offer_exit": tone_info.get("should_offer_exit", False),
+                        "objection_info": objection_info,
+                        "context_envelope": context_envelope,
+                        "response_directives": response_directives,
+                        "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
+                        "style_modifiers": classification.get("style_modifiers", []),
+                        "secondary_signals": classification.get("secondary_signals", []),
+                        "style_separation_applied": classification.get("style_separation_applied", False),
+                        "terminal_state_requirements": self._flow.states.get(current_state, {}).get(
+                            "terminal_state_requirements", {}
+                        ),
+                    },
+                )
+                self._orchestrator.blackboard.set_response_context(prepared_response_ctx)
+            except Exception as e:
+                logger.warning("prepare_response_context failed: %s", e)
+                prepared_response_ctx = None
+                self._orchestrator.blackboard.set_response_context(None)
+        else:
+            self._orchestrator.blackboard.set_response_context(None)
 
         # =========================================================================
         # Stage 14: Blackboard replaces state_machine.process()
@@ -1610,6 +1660,12 @@ class SalesBot:
         )
         response_elapsed: float = 0.0
         generator_used: bool = False
+        pre_gen = self._orchestrator.blackboard.get_pre_generated_response()
+        merged_retrieved_facts = (
+            str((prepared_response_ctx or {}).get("retrieved_facts", "") or "")
+            if isinstance(prepared_response_ctx, dict)
+            else ""
+        )
 
         # If objection detected and needs soft close - override state machine result
         # In autonomous states, ObjectionGuardSource (blackboard-native) handles limits
@@ -1642,6 +1698,33 @@ class SalesBot:
                 "Soft close triggered by objection handler",
                 objection_type=objection_info.get("objection_type"),
                 attempt_number=objection_info.get("attempt_number")
+            )
+        elif pre_gen and not fallback_response and action in ("autonomous_respond", "continue_current_goal"):
+            response_start = time.time()
+            processed, validation_events = self.generator.post_process_only(
+                response=pre_gen,
+                context=context,
+                requested_action=action,
+                selected_template_key=action,
+                retrieved_facts=merged_retrieved_facts,
+            )
+            response = processed
+            response_elapsed = (time.time() - response_start) * 1000
+            generator_used = False
+            self.generator._add_to_response_history(response)
+            self.generator._compute_and_cache_response_embedding(response)
+            self.generator._last_generation_meta = {
+                "requested_action": action,
+                "selected_template_key": action,
+                "validation_events": validation_events,
+                "fact_keys": (prepared_response_ctx or {}).get("fact_keys", []),
+            }
+            cta_result = CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="pre_generated_response",
             )
         elif fallback_response:
             # Fallback path - CTA not applicable
@@ -2198,7 +2281,7 @@ class SalesBot:
             else {"context_window": [], "_context_window_full": {}}
         )
 
-        return {
+        snapshot = {
             "version": "1.0",
             "conversation_id": self.conversation_id,
             "client_id": self.client_id,
@@ -2224,6 +2307,17 @@ class SalesBot:
             "last_intent": self.last_intent,
             "last_bot_message": self.last_bot_message,
         }
+
+        source = self._orchestrator.get_source("AutonomousDecisionSource")
+        if source is not None and hasattr(source, "decision_history"):
+            records = list(getattr(source, "decision_history", []) or [])
+            snapshot["autonomous_decision_history"] = [
+                record.to_dict()
+                for record in records[-20:]
+                if hasattr(record, "to_dict")
+            ]
+
+        return snapshot
 
     @classmethod
     def from_snapshot(
@@ -2303,6 +2397,20 @@ class SalesBot:
             blackboard_config=bot._config.blackboard,
             valid_actions=bot.generator.get_valid_actions(),
         )
+
+        history_payload = snapshot.get("autonomous_decision_history")
+        if isinstance(history_payload, list):
+            source = bot._orchestrator.get_source("AutonomousDecisionSource")
+            if source is not None and hasattr(source, "restore_history"):
+                restored_records: List[AutonomousDecisionRecord] = []
+                for item in history_payload:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        restored_records.append(AutonomousDecisionRecord.from_dict(item))
+                    except Exception as e:
+                        logger.warning("Failed to restore autonomous decision record: %s", e)
+                source.restore_history(restored_records)
 
         return bot
 

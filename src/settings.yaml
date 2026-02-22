@@ -86,7 +86,7 @@ category_router:
 # ENHANCED RETRIEVAL (Autonomous query-driven retrieval)
 # -----------------------------------------------------------------------------
 enhanced_retrieval:
-  max_kb_chars: 6000
+  max_kb_chars: 25000
   top_k_per_sub_query: 3
   max_sub_queries: 4
   min_complexity_length: 30
