@@ -679,7 +679,7 @@ class SalesBot:
         if (
             self._flow
             and self._flow.name == "autonomous"
-            and state not in {"autonomous_closing", "close", "soft_close", "success"}
+            and state not in {"autonomous_closing", "close", "success"}
         ):
             return CTAResult(
                 original_response=response,
@@ -687,6 +687,25 @@ class SalesBot:
                 final_response=response,
                 cta_added=False,
                 skip_reason="autonomous_non_closing_state"
+            )
+
+        # Respect explicit "no pressure / no contact" requests — no CTA push.
+        msg = str(context.get("user_message", "") or "").lower()
+        no_push_markers = (
+            "без контактов",
+            "без контакта",
+            "контакты не дам",
+            "контакт не дам",
+            "без давления",
+            "не дави",
+        )
+        if any(m in msg for m in no_push_markers):
+            return CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="explicit_no_push_request"
             )
 
         # In high-friction autonomous turns, suppress CTA to avoid sales pressure.
@@ -1194,16 +1213,26 @@ class SalesBot:
             if competitor_name:
                 self.state_machine.collected_data["competitor_name"] = competitor_name
 
-        # disambiguation_needed intent: fallback to original intent if no options
-        # (with options, DisambiguationSource handles it via Blackboard)
+        # disambiguation_needed intent: in autonomous flow avoid options menus in the
+        # middle of sales dialogue; continue with best available semantic intent.
         if intent == "disambiguation_needed":
             options = classification.get("disambiguation_options", [])
-            if not options:
+            if self._flow and self._flow.name == "autonomous":
+                intent = (
+                    classification.get("original_intent")
+                    or (options[0].get("intent") if options and isinstance(options[0], dict) else None)
+                    or "unclear"
+                )
+                classification["intent"] = intent
+                classification["disambiguation_options"] = []
+            elif not options:
                 intent = classification.get("original_intent", "unclear")
                 classification["intent"] = intent
 
         # Phase 3: Check for objection
-        objection_info = self._check_objection(user_message, collected_data)
+        objection_info = None
+        if not (self._flow and self._flow.name == "autonomous"):
+            objection_info = self._check_objection(user_message, collected_data)
 
         # Decision Tracing: Record objection
         if trace_builder and objection_info:
@@ -1464,9 +1493,12 @@ class SalesBot:
         if (
             self._flow
             and self._flow.name == "autonomous"
+            and (
+                self.state_machine.state.startswith("autonomous_")
+                or self.state_machine.state == "greeting"
+            )
         ):
             structural_actions = {
-                "ask_clarification",
                 "guard_offer_options",
                 "guard_rephrase",
                 "guard_skip_phase",
@@ -1491,6 +1523,26 @@ class SalesBot:
                 )
                 action = "autonomous_respond"
                 self._append_reason_code(sm_result, "autonomous_action_normalized")
+
+            # In autonomous dialogue stages, avoid disambiguation UI jumps.
+            if action == "ask_clarification":
+                logger.info(
+                    "Autonomous clarification normalization: ask_clarification -> autonomous_respond",
+                    current_state=self.state_machine.state,
+                    next_state=next_state,
+                )
+                action = "autonomous_respond"
+                self._append_reason_code(sm_result, "autonomous_clarification_normalized")
+
+        # In soft_close, keep template/action stable and avoid missing-template fallbacks.
+        if (
+            self._flow
+            and self._flow.name == "autonomous"
+            and self.state_machine.state == "soft_close"
+            and action in {"say_goodbye", "handle_objection", "respond_briefly"}
+        ):
+            action = "soft_close"
+            self._append_reason_code(sm_result, "autonomous_soft_close_action_normalized")
 
         # 9e: Set rephrase_mode for guard_rephrase action (new pipeline path)
         if flags.conversation_guard_in_pipeline and action == "guard_rephrase":
@@ -1546,7 +1598,14 @@ class SalesBot:
         # If objection detected and needs soft close - override state machine result
         # In autonomous states, ObjectionGuardSource (blackboard-native) handles limits
         current_state_config = self._flow.states.get(self.state_machine.state, {})
-        is_autonomous = current_state_config.get("autonomous", False)
+        is_autonomous = (
+            current_state_config.get("autonomous", False)
+            or (
+                self._flow
+                and self._flow.name == "autonomous"
+                and self.state_machine.state == "greeting"
+            )
+        )
         if (objection_info and objection_info.get("should_soft_close")
                 and not is_autonomous):
             action = "soft_close"
@@ -1816,6 +1875,7 @@ class SalesBot:
                     "last_action": self.last_action,
                     "action": action,
                     "objection_info": objection_info,
+                    "user_message": user_message,
                     # Pass collected_data for contact gate
                     "collected_data": self.state_machine.collected_data,
                     # Keep CTA aligned with response directives
