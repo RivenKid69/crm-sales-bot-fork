@@ -118,13 +118,16 @@ BLOCKING_ACTIONS_FOR_SECONDARY_INJECT: frozenset = frozenset({
 SECONDARY_ANSWER_ELIGIBLE: frozenset = frozenset({"price_question"})
 
 # Layer 1 safety rules for autonomous templates (injected via {safety_rules}).
-SAFETY_RULES_V2 = """ГЛАВНЫЕ ПРАВИЛА:
-1. Только факты из БАЗЫ ЗНАНИЙ. Нет факта → "Уточню у коллег и вернусь с ответом."
-2. Цены: ТОЛЬКО из БАЗЫ ЗНАНИЙ. Нет цифры → "Точную стоимость уточнит менеджер." Не считай, не округляй, не интерполируй. Единицы (в год / в мес) — тоже только из БАЗЫ ЗНАНИЙ.
-3. Не утверждай, что уже что-то отправил/подключил/настроил, если этого нет в БАЗЕ ЗНАНИЙ.
-4. Не называй конкретные имена компаний-клиентов. Нет имени в БАЗЕ ЗНАНИЙ — это ложь. Говори обобщённо: "наши клиенты".
-5. Не придумывай SLA, проценты, сроки, гарантии, количество клиентов, кейсы и показатели эффективности. Любая цифра или метрика — только если она есть в БАЗЕ ЗНАНИЙ.
-6. Не обещай "менеджер свяжется через N минут/часов" и не подтверждай уже назначенный звонок/демо, если этого явно нет в БАЗЕ ЗНАНИЙ или сообщении клиента."""
+SAFETY_RULES_V2 = """⛔ КРИТИЧЕСКИЕ ПРАВИЛА (нарушение = провал):
+1. ЛЮБАЯ цифра, цена — ТОЛЬКО из БАЗЫ ЗНАНИЙ ниже. Нет в базе → "уточню у коллег". НЕ считай, НЕ округляй.
+   Точные цены тарифов: Mini=5000₸/мес, Lite=150000₸/год, Standard=220000₸/год, Pro=500000₸/год. НЕ ПУТАЙ тариф и цену.
+2. Продукт = WIPON. Не упоминай WMS, 1C, Битрикс, WisePOS и любые другие системы.
+3. Не выдумывай кейсы, названия клиентов, истории, политики компании. Нет в базе = ложь.
+   НЕ утверждай что "у нас нет холодных звонков", "звоним только по записи", "только в ответ на обращения".
+   Если клиент жалуется на звонки — извинись за неудобство, НЕ отрицай его опыт.
+4. Не утверждай что уже отправил/подключил/настроил.
+5. Простой текст без форматирования (без **, списков, ссылок). Без примечаний и пояснений к себе.
+6. Если клиент задаёт вопрос НЕ о Wipon/POS/бизнесе — скажи "я специализируюсь на Wipon" и верни разговор к его бизнесу."""
 
 HARD_NO_CONTACT_MARKERS: Tuple[str, ...] = (
     "контакты не дам",
@@ -740,6 +743,14 @@ class ResponseGenerator:
     # Official Wipon tariff prices (always legitimate, even when not in retrieved_facts)
     _OFFICIAL_PRICES = frozenset({"5000", "150000", "220000", "500000", "1000000"})
 
+    # Tariff-price associations for validation (tariff name → valid prices as raw digit strings)
+    _TARIFF_PRICE_MAP = {
+        "mini": {"5000"},
+        "lite": {"150000"},
+        "standard": {"220000"},
+        "pro": {"500000"},
+    }
+
     def _has_price_hallucination(self, response: str, retrieved_facts: str) -> bool:
         """Detect pricing figures in response that are NOT found in retrieved_facts.
 
@@ -773,6 +784,125 @@ class ResponseGenerator:
                 logger.debug("price_hallucination_candidate", price=raw)
                 return True
         return False
+
+    def _strip_hallucinated_prices(self, response: str, retrieved_facts: str) -> str:
+        """Remove hallucinated price mentions from response, keeping valid ones.
+
+        Instead of rejecting the entire response, surgically removes only the
+        price fragments that aren't grounded in KB or official tariffs.
+        """
+        price_pattern = re.compile(
+            r'(\d(?:[\d\s,\.\u00A0\u202F]{1,14}\d|\d{2,}))'
+            r'(\s*(?:₸|тг|тенге))',
+            re.IGNORECASE
+        )
+        result = response
+        for m in reversed(list(price_pattern.finditer(response))):
+            raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
+            if not raw.isdigit():
+                continue
+            if raw in self._OFFICIAL_PRICES:
+                continue
+            # Context-aware subscription price check:
+            # Prices followed by time-period markers (/мес, в месяц, /год, в год)
+            # must be valid subscription prices, regardless of KB presence.
+            # This prevents equipment prices (e.g. 200K Rongta scales) from
+            # "validating" wrong tariff associations.
+            after_price = response[m.end():m.end() + 30]
+            _is_monthly = bool(re.match(r'\s*(?:/мес|в\s+мес)', after_price, re.IGNORECASE))
+            _is_yearly = bool(re.match(r'\s*(?:/год|в\s+год)', after_price, re.IGNORECASE))
+            if _is_monthly and raw not in self._VALID_MONTHLY_PRICES:
+                logger.info("invalid_monthly_subscription_price", price=raw)
+                # Fall through to strip
+            elif _is_yearly and raw not in self._VALID_YEARLY_PRICES:
+                logger.info("invalid_yearly_subscription_price", price=raw)
+                # Fall through to strip
+            else:
+                spaced = f"{int(raw):,}".replace(',', ' ')
+                raw_in_kb = bool(re.search(r'(?<!\d)' + raw + r'(?!\d)', retrieved_facts))
+                spaced_in_kb = bool(re.search(r'(?<!\d)' + re.escape(spaced) + r'(?!\d)', retrieved_facts))
+                if raw_in_kb or spaced_in_kb:
+                    continue  # Found in KB — keep
+                # Strip the hallucinated price from the sentence
+                # Find the surrounding sentence fragment and replace with generic text
+                start = m.start()
+                end = m.end()
+                # Extend to include "от " or "— " prefix
+                prefix_match = re.search(r'(?:от\s+|—\s+|за\s+)', response[max(0, start-5):start])
+                if prefix_match:
+                    start = start - 5 + prefix_match.start()
+                result = result[:start] + result[end:]
+                logger.debug("stripped_hallucinated_price", price=raw)
+        # Clean up artifacts left after price stripping
+        # "( в год)", "( в месяц)" → remove parenthesized residue
+        result = re.sub(r'\(\s*в\s*(?:год|месяц|мес)\w*\s*\)', '', result)
+        # "за в месяц", "от в год" → remove dangling preposition + time period
+        result = re.sub(r'(?:за|от|по|от\s+от)\s+в\s+(?:год|месяц|мес)\w*', '', result)
+        # Standalone "в месяц" or "в год" without a preceding number → remove
+        result = re.sub(r'(?<!\d)\s+в\s+(?:год|месяц|мес)\w*(?:\s*[.,])?', ' ', result)
+        # "/месяц" or "/год" without number before → remove (residue from "тг/месяц" stripping)
+        result = re.sub(r'(?<!\d)\s*/(?:месяц|мес|год)\w*', '', result)
+        # "стоит ," or "стоит ." → "стоит" (residue after price removed)
+        result = re.sub(r'(стоит)\s*[,.]', r'\1', result)
+        # "стоит Но" / "стоит но" — price stripped between "стоит" and "Но"
+        result = re.sub(r'стоит\s+[Нн]о\b', 'Но', result)
+        # "Стоимость  за точку" / "Стоимость  плюс" — price was between "стоимость" and rest
+        result = re.sub(r'[Сс]тоимость\s+(?:за\s+точку|плюс)', '', result)
+        # "от  за одну точку" — "от N тенге за точку" stripped leaving dangling "от за"
+        result = re.sub(r'\bот\s+за\b', 'за', result)
+        # "всего ," or "всего ." → "всего" (residue after calculated total stripped)
+        result = re.sub(r'(всего)\s*[,.]', r'\1', result)
+        # "— всего" without following price → remove "— всего"
+        result = re.sub(r'\s*(?:—|–)\s*всего(?:\s*[,.])?', '', result)
+        # "до  для" or "до  если" → remove dangling "до" (residue from "до N тенге" strip)
+        result = re.sub(r'\bдо\s+(?=[а-яё])', '', result)
+        # "и до  для" → "для"
+        result = re.sub(r'\bи\s+до\s+(?=[а-яё])', '', result)
+        # "— 12 месяцев" or "— /месяц" without actual price → remove dash + period
+        result = re.sub(r'\s*(?:—|–)\s*(?:\d+\s+)?(?:месяц\w*|год\w*)(?:\s*[,(])?', ' ', result)
+        # Clean up double spaces and dangling punctuation
+        result = re.sub(r'\s{2,}', ' ', result).strip()
+        result = re.sub(r'\s+([.,!?])', r'\1', result)
+        return result
+
+    # Valid subscription prices by time period (for context-aware validation)
+    _VALID_MONTHLY_PRICES = frozenset({"5000"})
+    _VALID_YEARLY_PRICES = frozenset({"150000", "220000", "500000"})
+
+    def _fix_tariff_price_mismatch(self, response: str) -> str:
+        """Fix wrong tariff-price associations (e.g. 'Standard 300 000' → 'Standard 220 000')."""
+        tariff_price_pattern = re.compile(
+            r'((?:Mini|Lite|Standard|Pro)\w*)'
+            r'(\s*(?:\([^)]{0,50}\)\s*)?'       # optional parenthetical: "(до 2 точек)"
+            r'(?:—|–|-|за|:|\(|стоит|по)?\s*)'  # optional connector
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'(\s*(?:₸|тг|тенге|тысяч\w*))',
+            re.IGNORECASE,
+        )
+        result = response
+        for m in reversed(list(tariff_price_pattern.finditer(response))):
+            tariff_name = m.group(1).lower().rstrip('а-яА-ЯёЁ')  # "Standard" → "standard"
+            # Normalize tariff name
+            for key in self._TARIFF_PRICE_MAP:
+                if key in tariff_name:
+                    tariff_name = key
+                    break
+            else:
+                continue
+            raw_price = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(3))
+            if not raw_price.isdigit():
+                continue
+            valid_prices = self._TARIFF_PRICE_MAP.get(tariff_name, set())
+            if raw_price in valid_prices:
+                continue  # correct association
+            # Wrong price — replace with correct one
+            if valid_prices:
+                correct = sorted(valid_prices)[0]
+                correct_spaced = f"{int(correct):,}".replace(',', ' ')
+                result = result[:m.start(3)] + correct_spaced + result[m.end(3):]
+                logger.info("tariff_price_mismatch_fixed",
+                           tariff=tariff_name, wrong=raw_price, correct=correct)
+        return result
 
     @staticmethod
     def _has_iin_hallucination(response: str, user_message: str, collected_data: dict) -> bool:
@@ -1791,18 +1921,17 @@ class ResponseGenerator:
                     )
                 continue
 
-            # Price hallucination check: fabricated prices not present in KB facts
+            # Fix tariff-price mismatches FIRST (e.g. "Standard 300 000" → "Standard 220 000")
+            # This must run before stripping so we correct wrong associations before removing them.
+            response = self._fix_tariff_price_mismatch(response)
+
+            # Price hallucination check: strip fabricated prices, keep valid ones.
+            # Instead of rejecting the whole response (which causes over-cautious retries),
+            # we surgically remove only the hallucinated price mentions.
             if self._has_price_hallucination(response, _retrieved_facts_str):
-                logger.info("price_hallucination_detected", attempt=attempt)
-                if attempt == 0:
-                    prompt += (
-                        "\n\nВАЖНО: Твой предыдущий ответ содержал конкретные суммы в тенге,"
-                        " которых НЕТ в БАЗЕ ЗНАНИЙ выше. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО придумывать цены."
-                        " Перепиши ответ: если нужной цены нет в БАЗЕ ЗНАНИЙ — скажи:"
-                        " 'Точную стоимость уточнит менеджер.' Не называй никаких цифр кроме тех,"
-                        " что явно указаны в БАЗЕ ЗНАНИЙ."
-                    )
-                continue
+                logger.info("price_hallucination_detected_stripping", attempt=attempt)
+                response = self._strip_hallucinated_prices(response, _retrieved_facts_str)
+                # Don't retry — the response with stripped prices is good enough
 
             # IIN hallucination check: LLM must not invent 12-digit IINs
             if self._has_iin_hallucination(response, user_message, collected):
@@ -2220,6 +2349,17 @@ class ResponseGenerator:
         processed = validation_result.response
         validation_events = validation_result.validation_events
 
+        # Strip markdown formatting from autonomous responses (plain text chat)
+        _is_autonomous = bool(
+            self._flow
+            and self._flow.name == "autonomous"
+        )
+        if _is_autonomous:
+            processed = self._strip_markdown(processed)
+            processed = self._fix_language_mismatch(
+                processed, str(context.get("user_message", "") or "")
+            )
+
         processed = self._compress_repeated_price_response(processed, context)
         if self._should_force_no_question(context):
             processed = self._strip_trailing_question(processed)
@@ -2308,6 +2448,60 @@ class ResponseGenerator:
         except Exception:
             return response
 
+    @staticmethod
+    def _strip_markdown(text: str) -> str:
+        """Strip markdown formatting from response to keep it plain-text chat style."""
+        result = text
+        # Remove bold: **text** or __text__
+        result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
+        result = re.sub(r'__(.+?)__', r'\1', result)
+        # Remove italic: *text* or _text_ (single)
+        result = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'\1', result)
+        # Remove markdown links: [text](url) → text
+        result = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', result)
+        # Remove headers: ### text → text
+        result = re.sub(r'^#{1,6}\s+', '', result, flags=re.MULTILINE)
+        # Remove bullet lists: - item or * item or • item → item
+        result = re.sub(r'^[\s]*[-*•]\s+', '', result, flags=re.MULTILINE)
+        # Remove numbered lists: 1. item or 1) item → item
+        result = re.sub(r'^[\s]*\d+[.)]\s+', '', result, flags=re.MULTILINE)
+        # Remove emoji (common ones that leak through).
+        # NOTE: Keycap emojis (1️⃣ etc.) must NOT be in character class — their digit
+        # codepoints match plain digits 0-9. Use alternation instead.
+        result = re.sub(r'[⛔🔹🔸✅❌💡📌📍🎯⚠️😊👍🤝💰📊📈📉🏪🛒]', '', result)
+        result = re.sub(r'[0-9]\uFE0F?\u20E3', '', result)  # keycap emojis: 1️⃣2️⃣ etc.
+        # Collapse multiple newlines into space (chat message = single block)
+        result = re.sub(r'\n\s*\n', ' ', result)
+        result = re.sub(r'\n', ' ', result)
+        # Collapse multiple spaces
+        result = re.sub(r'\s{2,}', ' ', result)
+        return result.strip()
+
+    # Kazakh-specific characters (not present in standard Russian Cyrillic)
+    _KZ_CHARS = set('әғқңөүһіӘҒҚҢӨҮҺІ')
+    # Kazakh phrases that may leak into Russian responses
+    _KZ_GREETING_PATTERN = re.compile(
+        r'\b(?:Сәлем|Саләм|Сәлеметсіз(?:\s+бе)?|рахмет|иә|жоқ|қалайсыз|қайырлы\s+\w+)\b[!?.,]?\s*',
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _fix_language_mismatch(response: str, user_message: str) -> str:
+        """Strip Kazakh phrases from response when user writes in Russian."""
+        if not user_message:
+            return response
+        # If user message has Kazakh-specific chars, don't strip
+        if any(c in ResponseGenerator._KZ_CHARS for c in user_message):
+            return response
+        # Also keep if user writes in Latin (might be Kazakh transliteration)
+        if re.search(r'[a-zA-Z]{3,}', user_message):
+            return response
+        # User writes in Russian Cyrillic — strip Kazakh phrases from response
+        cleaned = ResponseGenerator._KZ_GREETING_PATTERN.sub('', response).strip()
+        if len(cleaned) < 10:
+            return response  # safety: don't return empty/too short
+        return cleaned
+
     def _strip_trailing_question(self, text: str) -> str:
         """Remove trailing question from response when suppress_question is active."""
         sentences = re.split(r'(?<=[.!?])\s+', text.strip())
@@ -2334,6 +2528,12 @@ class ResponseGenerator:
             "без контакта",
             "потом дам контакт",
             "позже дам контакт",
+            "не давит",
+            "не дави",
+            "не настаива",
+            "надо подумать",
+            "дайте подумать",
+            "я подумаю",
         )
         soft_markers = (
             "без воды",
@@ -3214,6 +3414,17 @@ class ResponseGenerator:
                 "КОНТАКТ-ОГРАНИЧЕНИЕ: клиент не даёт контакт. НЕ обещай отправить демо/документы "
                 "и НЕ обещай счёт/оформление без обязательных данных. "
                 "Дай полезный ответ в чате и мягко предложи вернуться к оформлению позже."
+            )
+
+        # "Не давите" / "надо подумать" — respect client's space
+        pressure_markers = ("не давит", "не дави", "не настаива", "надо подумать", "дайте подумать", "я подумаю")
+        if any(m in text for m in pressure_markers):
+            instructions.append(
+                "СТОП-ДАВЛЕНИЕ: клиент просит не давить. СТРОГО:\n"
+                "- 1 предложение: подтверди что уважаешь решение.\n"
+                "- НЕ продавай, НЕ приводи примеры клиентов, НЕ перечисляй функции.\n"
+                "- НЕ задавай вопросов.\n"
+                "- Пример: 'Понял, если появятся вопросы — пишите, я на связи.'"
             )
 
         return "\n".join(instructions)
