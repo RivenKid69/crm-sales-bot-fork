@@ -125,7 +125,7 @@ class ResponseBoundaryValidator:
         re.IGNORECASE,
     )
     UNGROUNDED_SOCIAL_PROOF_PATTERN = re.compile(
-        r'(?:многие\s+клиенты|наши\s+клиенты\s+отмечают|клиенты\s+подтверждают)',
+        r'(?:многие\s+клиенты|некоторые\s+клиенты|наши\s+клиенты\s+отмечают|клиенты\s+подтверждают|клиенты\s+из\s+розниц)',
         re.IGNORECASE,
     )
     POLICY_DISCLOSURE_PATTERN = re.compile(
@@ -135,6 +135,8 @@ class ResponseBoundaryValidator:
         r'внутренн(?:ие|их)\s+(?:правил|инструкц)'
         r'|'
         r'системн(?:ый|ого)\s+промпт'
+        r'|'
+        r'моих\s+инструкц'
         r'|'
         r'\bты\s+[—-]\s+'
         r')',
@@ -148,7 +150,9 @@ class ResponseBoundaryValidator:
         r'|'
         r'не\s+ограничен(?:а|о)?\s+по\s+времени'
         r'|'
-        r'без\s+потерь\s+данных'
+        r'без\s+потер(?:ь|и)\s+данных'
+        r'|'
+        r'без\s+штраф(?:ов|а)'
         r'|'
         r'верн(?:ем|у)\s+все\s+средств'
         r'|'
@@ -212,6 +216,23 @@ class ResponseBoundaryValidator:
         return any(marker in low for marker in refusal_markers)
 
     @staticmethod
+    def _has_contact_refusal_marker(text: str) -> bool:
+        low = str(text or "").lower()
+        refusal_markers = (
+            "контакты не дам",
+            "контакт не дам",
+            "контакт пока не даю",
+            "пока не даю контакт",
+            "не дам контакт",
+            "не проси мои контакты",
+            "без контакта",
+            "без контактов",
+            "номер не дам",
+            "телефон не дам",
+        )
+        return any(marker in low for marker in refusal_markers)
+
+    @staticmethod
     def _history_user_text(context: Dict[str, Any], limit: int = 4) -> str:
         history = context.get("history", [])
         if not isinstance(history, list):
@@ -223,6 +244,29 @@ class ResponseBoundaryValidator:
                 if user:
                     chunks.append(str(user))
         return " ".join(chunks)
+
+    @staticmethod
+    def _has_payment_marker(text: str) -> bool:
+        low = str(text or "").lower()
+        return any(
+            marker in low
+            for marker in ("счет", "счёт", "оплат", "договор", "купить", "оформ")
+        )
+
+    def _is_payment_context(self, context: Optional[Dict[str, Any]]) -> bool:
+        ctx = context or {}
+        intent = str(ctx.get("intent", "") or "").lower()
+        payment_context_intents = {
+            "ready_to_buy",
+            "request_invoice",
+            "request_contract",
+            "payment_confirmation",
+        }
+        if intent in payment_context_intents:
+            return True
+        user_msg = str(ctx.get("user_message", "") or "")
+        history_user = self._history_user_text(ctx)
+        return self._has_payment_marker(f"{user_msg} {history_user}")
 
     def validate_response(
         self,
@@ -576,6 +620,8 @@ class ResponseBoundaryValidator:
         ):
             ctx = context or {}
             user_msg = str(ctx.get("user_message", "") or "").lower()
+            history_user = self._history_user_text(ctx).lower()
+            refusal_source = f"{user_msg} {history_user}"
             refusal_markers = (
                 "без иин",
                 "иин не дам",
@@ -583,14 +629,20 @@ class ResponseBoundaryValidator:
                 "пока без иин",
                 "позже иин",
             )
-            if any(marker in user_msg for marker in refusal_markers):
+            if any(marker in refusal_source for marker in refusal_markers):
                 return (
                     "Без ИИН счёт или договор оформить нельзя. "
                     "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
                 )
+            if self._is_payment_context(ctx):
+                return (
+                    "Для выставления счёта нужен ИИН и номер телефона Kaspi. "
+                    "Если сейчас неудобно, можем вернуться к оформлению позже."
+                )
             return (
-                "Для выставления счёта нужен ИИН и номер телефона Kaspi. "
-                "Если сейчас неудобно, можем вернуться к оформлению позже."
+                "Счёт без ИИН оформить нельзя. "
+                "Если хотите, можем продолжить консультацию в чате "
+                "или зафиксировать контакт для видеозвонка с менеджером."
             )
         return response
 
@@ -616,9 +668,14 @@ class ResponseBoundaryValidator:
         user_msg = str(context.get("user_message", "") or "")
         has_iin = bool(isinstance(collected, dict) and collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
         if self.IIN_CONFIRMED_PATTERN.search(response) and not has_iin:
+            if self._is_payment_context(context):
+                return (
+                    "ИИН пока не фиксирую. "
+                    "Для выставления счёта нужен ИИН и номер телефона Kaspi."
+                )
             return (
                 "ИИН пока не фиксирую. "
-                "Для выставления счёта нужен ИИН и номер телефона Kaspi."
+                "Можем продолжить консультацию и согласовать следующий шаг без оформления оплаты прямо сейчас."
             )
         return response
 
@@ -627,9 +684,15 @@ class ResponseBoundaryValidator:
         user_msg = str(context.get("user_message", "") or "")
         has_iin = bool(isinstance(collected, dict) and collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
         if self.INVOICE_READY_PATTERN.search(response) and not has_iin:
+            if self._is_payment_context(context):
+                return (
+                    "Счёт ещё не оформлен: сначала нужен ИИН и номер телефона Kaspi. "
+                    "Если ИИН пока не готовы дать, продолжим консультацию в чате."
+                )
             return (
-                "Счёт ещё не оформлен: сначала нужен ИИН и номер телефона Kaspi. "
-                "Если ИИН пока не готовы дать, продолжим консультацию в чате."
+                "Счёт ещё не оформлен. "
+                "Если захотите оформление, понадобится ИИН и номер телефона Kaspi. "
+                "Можем также перейти к видеозвонку с менеджером."
             )
         return response
 
@@ -701,6 +764,13 @@ class ResponseBoundaryValidator:
         intent = str(ctx.get("intent", "")).lower()
         state = str(ctx.get("state", "")).lower()
         user_message = str(ctx.get("user_message", "") or "")
+        user_message_lower = user_message.lower()
+        collected = ctx.get("collected_data", {})
+        has_contact_now = (
+            self._has_contact(collected)
+            or bool(self.KZ_PHONE_PATTERN.search(user_message))
+            or bool(re.search(r"[\w\.-]+@[\w\.-]+\.\w+", user_message))
+        )
         refusal_source = f"{user_message} {self._history_user_text(ctx)}"
         violations = ctx.get("violations", [])
         if "policy_disclosure" in violations:
@@ -716,7 +786,7 @@ class ResponseBoundaryValidator:
                 "Менеджер свяжется с вами для подтверждения оплаты."
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
-            if not self._has_contact(ctx.get("collected_data", {})):
+            if not has_contact_now:
                 return (
                     "Могу продолжить консультацию здесь без оформления. "
                     "Когда будете готовы к следующему шагу, оставьте удобный контакт."
@@ -726,23 +796,74 @@ class ResponseBoundaryValidator:
                 "и согласует удобное время."
             )
         if intent == "objection_contract_bound":
+            if self._has_iin_refusal_marker(refusal_source) or self._is_payment_context(ctx):
+                return (
+                    "Без ИИН счёт или договор оформить нельзя. "
+                    "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
+                )
             return (
-                "Без ИИН счёт или договор оформить нельзя. "
-                "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
+                "Условия подключения и прекращения работы фиксируются в договоре. "
+                "Если хотите, уточню точные пункты и вернусь с коротким ответом в чате."
+            )
+        if any(marker in user_message_lower for marker in ("выйти", "выход", "если не подойдет", "если не подойд", "расторг")):
+            return (
+                "Условия подключения и прекращения работы фиксируются в договоре. "
+                "Если нужно, уточню точные пункты и вернусь с коротким ответом в чате."
+            )
+        if self._has_contact_refusal_marker(refusal_source):
+            if any(marker in user_message_lower for marker in ("чем вы лучше", "чем лучше", "лучше текущ")):
+                return (
+                    "Коротко по фактам: Wipon помогает вести учёт, продажи и отчётность в одной системе, "
+                    "чтобы снизить ручные операции и ошибки. Могу разобрать ваш текущий процесс по шагам прямо в чате."
+                )
+            if any(marker in user_message_lower for marker in ("демо", "проверить", "1 день")):
+                return (
+                    "Понял, без контактов. "
+                    "Могу прямо в чате дать краткий чек-лист, что проверить за 1 день и где ограничения демо."
+                )
+            if "ограничения" in user_message_lower:
+                return (
+                    "Без контактов это ок. По демо дам кратко: какие функции обычно доступны сразу, "
+                    "а какие проверяются отдельно в тестовом сценарии."
+                )
+            return (
+                "Понял, без контактов и без давления. "
+                "Продолжим в чате: отвечу по делу на ваш следующий вопрос."
             )
         if self._has_iin_refusal_marker(refusal_source):
             return (
                 "Без ИИН счёт или договор оформить нельзя. "
                 "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
             )
-        # Payment/closing context: ask for missing data without hallucinating it
-        if intent == "payment_confirmation" or state == "autonomous_closing":
+        # Payment context in closing: ask only when client really pushes payment/invoice.
+        has_payment_marker = any(
+            marker in user_message_lower for marker in ("счет", "счёт", "оплат", "договор", "купить", "оформ")
+        )
+        if intent == "payment_confirmation" or (
+            state == "autonomous_closing"
+            and has_payment_marker
+        ):
             return (
                 "Для оплаты через Kaspi нужны ваш ИИН и номер Kaspi. "
                 "Пожалуйста, укажите их — и мы сразу оформим подписку."
             )
+        if state == "autonomous_closing" and has_contact_now:
+            return (
+                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
+                "и согласует удобное время."
+            )
+        if state == "autonomous_closing":
+            if self._has_contact_refusal_marker(refusal_source):
+                return (
+                    "Понял, контакт сейчас не запрашиваю. "
+                    "Продолжим консультацию в чате и разберём ваш вопрос по шагам."
+                )
+            return (
+                "Можем продолжить консультацию в чате. "
+                "Если будет удобно, оставьте телефон или email для видеозвонка с менеджером."
+            )
         # Discovery/early stage: neutral helpful response
-        if state in {"autonomous_discovery", "greeting"} or intent in {"situation_provided", "greeting"}:
+        if state in {"autonomous_discovery", "greeting"} or intent == "greeting":
             return "Расскажите подробнее о вашем бизнесе — это поможет мне предложить оптимальное решение."
         if "hallucinated_client_name" in violations:
             return (
@@ -831,6 +952,7 @@ class ResponseBoundaryValidator:
 
     def _deterministic_fallback(self, context: Dict[str, Any]) -> str:
         intent = str(context.get("intent", "")).lower()
+        refusal_source = f"{context.get('user_message', '')} {self._history_user_text(context)}"
         if intent == "request_brevity":
             return (
                 "Коротко: внутренние настройки не раскрываю. "
@@ -845,6 +967,22 @@ class ResponseBoundaryValidator:
             return (
                 "Контакт получил. Следующий шаг — менеджер свяжется с вами "
                 "и согласует удобное время."
+            )
+        if self._has_contact_refusal_marker(refusal_source):
+            user_msg_low = str(context.get("user_message", "") or "").lower()
+            if any(marker in user_msg_low for marker in ("чем вы лучше", "чем лучше", "лучше текущ")):
+                return (
+                    "Коротко по фактам: Wipon объединяет учёт, продажи и отчётность в одном контуре, "
+                    "что снижает ручные операции. Могу продолжить сравнение с вашим текущим процессом прямо в чате."
+                )
+            if any(marker in user_msg_low for marker in ("демо", "проверить", "1 день", "ограничения")):
+                return (
+                    "Понял, без контактов. "
+                    "Дам в чате конкретный чек-лист проверки демо и ограничения по шагам."
+                )
+            return (
+                "Понял, без контактов. "
+                "Дам конкретный следующий шаг в чате, без давления."
             )
         if self._is_pricing_context(context):
             return "По стоимости сориентирую в ₸. Пришлю точный расчет под ваш кейс."

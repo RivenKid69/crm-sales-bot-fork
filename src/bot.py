@@ -691,15 +691,31 @@ class SalesBot:
 
         # Respect explicit "no pressure / no contact" requests — no CTA push.
         msg = str(context.get("user_message", "") or "").lower()
+        history = context.get("history", [])
+        recent_user_text = " ".join(
+            str(turn.get("user", "") or "").lower()
+            for turn in (history[-4:] if isinstance(history, list) else [])
+            if isinstance(turn, dict)
+        )
+        no_push_source = f"{msg} {recent_user_text}"
         no_push_markers = (
+            "не проси мои контакты",
             "без контактов",
             "без контакта",
             "контакты не дам",
             "контакт не дам",
+            "контакт пока не даю",
             "без давления",
             "не дави",
+            "я сам решу",
+            "иин не дам",
+            "без иин",
+            "пока без иин",
+            "потом дам контакт",
+            "позже дам контакт",
+            "контакт позже",
         )
-        if any(m in msg for m in no_push_markers):
+        if any(m in no_push_source for m in no_push_markers):
             return CTAResult(
                 original_response=response,
                 cta=None,
@@ -1878,6 +1894,7 @@ class SalesBot:
                     "user_message": user_message,
                     # Pass collected_data for contact gate
                     "collected_data": self.state_machine.collected_data,
+                    "history": self.history,
                     # Keep CTA aligned with response directives
                     "question_mode": (
                         response_directives.question_mode if response_directives else "adaptive"
