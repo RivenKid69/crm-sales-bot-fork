@@ -1300,14 +1300,26 @@ class ResponseGenerator:
                 user_message=user_message,
             ),
         })
+        _secondary_intents = self._get_secondary_intents(context)
         variables["state_gated_rules"] = self._build_state_gated_rules(
             state=context.get("state", ""),
             intent=intent,
             user_message=user_message,
             history=context.get("history", []),
             collected=collected,
-            secondary_intents=self._get_secondary_intents(context),
+            secondary_intents=_secondary_intents,
         )
+        if _is_autonomous and self._should_suppress_followup_question_for_interrupt(
+            state=context.get("state", ""),
+            intent=intent,
+            user_message=user_message,
+            secondary_intents=_secondary_intents,
+        ):
+            variables["question_instruction"] = (
+                "⚠️ Клиент перебил этап вопросом: сначала ответь по фактам и НЕ задавай новый встречный вопрос "
+                "в этом сообщении. Заверши коротким мостом к цели этапа."
+            )
+            variables["available_questions"] = ""
         # Respect explicit no-contact requests: answer without pushing questions.
         _hard_no_contact_markers = (
             "контакты не дам",
@@ -2769,6 +2781,36 @@ class ResponseGenerator:
 
         formatted = "\n".join(f"- {rule}" for rule in rules)
         return f"STATE-GATED ПРАВИЛА:\n{formatted}"
+
+    @staticmethod
+    def _should_suppress_followup_question_for_interrupt(
+        state: str,
+        intent: str,
+        user_message: str,
+        secondary_intents: List[str] = None,
+    ) -> bool:
+        """Return True when bot should answer interruption without adding a new follow-up question."""
+        state_value = str(state or "")
+        if not state_value.startswith("autonomous_") or state_value == "autonomous_closing":
+            return False
+
+        intent_value = str(intent or "")
+        secondary_set = {str(i) for i in (secondary_intents or []) if i}
+        has_question_intent = (
+            intent_value.startswith("question_")
+            or intent_value in {"comparison", "pricing_comparison", "question_tariff_comparison"}
+            or any(i.startswith("question_") for i in secondary_set)
+            or bool({"comparison", "pricing_comparison", "question_tariff_comparison"} & secondary_set)
+        )
+        if has_question_intent:
+            return True
+
+        message_lower = str(user_message or "").lower()
+        logic_markers = (
+            "как связано", "в чем связь", "почему", "за счет чего", "если", " то ",
+            "что будет если", "как влияет", "зависит ли",
+        )
+        return any(m in message_lower for m in logic_markers)
 
     @staticmethod
     def _has_address_question_in_history(history: list) -> bool:
