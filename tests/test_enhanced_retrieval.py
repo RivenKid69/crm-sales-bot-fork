@@ -170,6 +170,19 @@ class TestComplexityDetector:
         query = "Как подключить эквайринг и сколько это будет стоить для кафе"
         assert detector.is_complex(query) is True
 
+    def test_compare_marker_detected(self):
+        detector = ComplexityDetector()
+        query = "Подскажи, что лучше для кафе: ваш продукт или iiko?"
+        assert detector.is_complex(query) is True
+
+    def test_if_then_logic_detected(self):
+        detector = ComplexityDetector()
+        query = (
+            "Если у нас большой поток заказов, то как это влияет на скорость работы "
+            "и требования к оборудованию в вашем решении?"
+        )
+        assert detector.is_complex(query) is True
+
 
 class TestQueryDecomposer:
     def test_decomposition_uses_structured_output(self):
@@ -197,6 +210,17 @@ class TestQueryDecomposer:
         decomposer = QueryDecomposer(llm=llm, max_sub_queries=4)
 
         assert decomposer.decompose("Сложный запрос") is None
+
+    def test_decomposer_prompt_contains_comparison_and_logic_guidance(self):
+        llm = MagicMock()
+        llm.generate_structured.return_value = DecompositionResult(is_complex=False, sub_queries=[])
+        decomposer = QueryDecomposer(llm=llm, max_sub_queries=4)
+
+        decomposer.decompose("Сравни и объясни причинно-следственные связи")
+
+        prompt = llm.generate_structured.call_args[0][0]
+        assert "Если это запрос на сравнение" in prompt
+        assert "Если это логическая связка" in prompt
 
 
 class TestMultiQueryRetriever:
@@ -536,4 +560,3 @@ class TestGeneratorIntegration:
 
         prompt = llm.generate.call_args[0][0]
         assert "[features/fallback]" in prompt
-

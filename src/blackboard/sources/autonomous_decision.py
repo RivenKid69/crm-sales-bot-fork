@@ -400,6 +400,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         context_signals = blackboard.get_context_signals()
         total_objections = int(getattr(envelope, "total_objections", 0) or 0)
         repeated_objection_types = list(getattr(envelope, "repeated_objection_types", []) or [])
+        secondary_intents = list(getattr(envelope, "secondary_intents", []) or []) if envelope else []
         explicit_ready_to_buy = self._looks_like_ready_to_buy_message(user_message)
         hard_contact_refusal = self._has_hard_contact_refusal(user_message)
         payment_intent_active = self._has_recent_payment_intent(
@@ -423,6 +424,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             terminal_names=terminal_names,
             terminal_requirements=terminal_requirements,
             context_signals=context_signals,
+            secondary_intents=secondary_intents,
             total_objections=total_objections,
             repeated_objection_types=repeated_objection_types,
             explicit_ready_to_buy=explicit_ready_to_buy,
@@ -615,6 +617,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         terminal_names: list = None,
         terminal_requirements: dict = None,
         context_signals: list = None,
+        secondary_intents: list = None,
         total_objections: int = 0,
         repeated_objection_types: list = None,
         explicit_ready_to_buy: bool = False,
@@ -740,6 +743,28 @@ class AutonomousDecisionSource(KnowledgeSource):
             signal_lines.append(
                 f"- Клиент возражает ({objection_type}), это возражение №{max(total_objections, 1)}{repeated_part}. "
                 "Реши: отработать возражение сейчас или предложить альтернативу."
+            )
+
+        # Interruption resilience: user can break stage sequence with direct fact/comparison questions.
+        # In this case we should usually stay in current stage, answer the interruption,
+        # and continue stage goal afterwards.
+        secondary_list = [str(i) for i in (secondary_intents or []) if i]
+        question_like_secondary = [
+            i for i in secondary_list
+            if i.startswith("question_") or i in {"comparison", "pricing_comparison"}
+        ]
+        is_interrupt_question = (
+            bool(question_like_secondary)
+            or intent.startswith("question_")
+            or intent in {"comparison", "pricing_comparison"}
+        )
+        if is_interrupt_question and state.startswith("autonomous_") and state != "autonomous_closing":
+            joined_secondary = ", ".join(question_like_secondary) if question_like_secondary else "нет"
+            signal_lines.append(
+                "- 🔀 ПЕРЕБИВАНИЕ ЭТАПА: клиент задал отдельный факт-вопрос/сравнение "
+                f"(primary={intent}; secondary={joined_secondary}). "
+                "Обычно: should_transition=false и next_state=текущий этап; "
+                "сначала ответь по фактам, затем мягко вернись к цели этапа."
             )
 
         explicit_ready_rule = ""

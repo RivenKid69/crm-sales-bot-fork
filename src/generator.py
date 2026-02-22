@@ -1306,6 +1306,7 @@ class ResponseGenerator:
             user_message=user_message,
             history=context.get("history", []),
             collected=collected,
+            secondary_intents=self._get_secondary_intents(context),
         )
         # Respect explicit no-contact requests: answer without pushing questions.
         _hard_no_contact_markers = (
@@ -2615,6 +2616,7 @@ class ResponseGenerator:
         user_message: str,
         history: List[Dict[str, Any]],
         collected: Dict[str, Any],
+        secondary_intents: List[str] = None,
     ) -> str:
         """Build Layer-2 rules that appear only when state/intent makes them relevant."""
         rules: List[str] = []
@@ -2629,6 +2631,7 @@ class ResponseGenerator:
             for turn in history_tail
             if isinstance(turn, dict)
         ).lower()
+        secondary_set = {str(i) for i in (secondary_intents or []) if i}
 
         # Closing-only IIN guard. Conditional wording avoids conflict with anti-IIN hint
         # when IIN is still absent in collected_data.
@@ -2710,6 +2713,55 @@ class ResponseGenerator:
             rules.append(
                 "⚠️ ТЕХНИЧЕСКИЕ ФАКТЫ: отвечай только тем, что есть в БАЗЕ ЗНАНИЙ. "
                 "Если конкретного параметра нет (SLA, RPO/RTO, стандарты) — прямо скажи, что уточнишь."
+            )
+
+        # Interruption handling: user may break the stage with a direct question/comparison.
+        # Answer first, then bridge back to stage goal.
+        interruption_secondary = {
+            i for i in secondary_set
+            if i.startswith("question_") or i in {"comparison", "pricing_comparison"}
+        }
+        interruption_primary = (
+            intent_value.startswith("question_")
+            or intent_value in {"comparison", "pricing_comparison"}
+        )
+        if is_autonomous_context and state_value != "autonomous_closing" and (
+            interruption_primary or interruption_secondary
+        ):
+            rules.append(
+                "⚠️ INTERRUPTION: клиент перебил этап новым вопросом. "
+                "Сначала дай прямой ответ на текущий вопрос по фактам БАЗЫ ЗНАНИЙ, "
+                "затем одной короткой фразой вернись к цели этапа. "
+                "Не игнорируй вопрос и не перескакивай сразу в сбор контакта/закрытие."
+            )
+
+        # Comparison handling must be structured and bounded.
+        compare_markers = (
+            "сравни", "сравнение", "чем лучше", "чем отличается", "vs", "против",
+            "плюсы", "минусы", "альтернатива", "конкурент",
+        )
+        comparison_requested = (
+            intent_value in {"comparison", "pricing_comparison", "question_tariff_comparison"}
+            or "comparison" in secondary_set
+            or any(m in message_lower for m in compare_markers)
+        )
+        if comparison_requested:
+            rules.append(
+                "⚠️ СРАВНЕНИЕ: отвечай структурно (2-4 критерия: функционал, интеграции, стоимость, внедрение) "
+                "и только по фактам из БАЗЫ ЗНАНИЙ. Если по одному из критериев фактов нет — так и скажи, не додумывай."
+            )
+
+        # Logical links between facts: cause-effect and constraints.
+        logic_markers = (
+            "как связано", "в чем связь", "почему", "за счет чего", "если", "то",
+            "что будет если", "как влияет", "зависит ли",
+        )
+        asks_logic = any(m in message_lower for m in logic_markers)
+        if asks_logic:
+            rules.append(
+                "⚠️ ЛОГИЧЕСКАЯ СВЯЗЬ: если клиент просит объяснить зависимость/причину, "
+                "свяжи минимум 2 релевантных факта из БАЗЫ ЗНАНИЙ в формате «факт → следствие». "
+                "Если связи нет в фактах — честно укажи, что это нужно уточнить."
             )
 
         if not rules:

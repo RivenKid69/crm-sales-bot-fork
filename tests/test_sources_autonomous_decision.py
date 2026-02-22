@@ -377,6 +377,41 @@ class TestDecisionPromptEnrichment:
 
         assert "ПРОГРЕСС" not in prompt
 
+    def test_interrupt_question_secondary_adds_signal(self):
+        """Secondary question intent should add interruption guard in autonomous non-closing stage."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_qualification",
+            phase="qualification",
+            goal="Понять потребности",
+            intent="agreement",
+            user_message="Да, но чем вы отличаетесь от iiko?",
+            collected_data={},
+            available_states=["autonomous_presentation"],
+            secondary_intents=["comparison", "question_features"],
+        )
+
+        assert "ПЕРЕБИВАНИЕ ЭТАПА" in prompt
+        assert "should_transition=false" in prompt
+
+    def test_interrupt_signal_not_added_in_closing(self):
+        """Interruption guard must not be injected for autonomous_closing."""
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_closing",
+            phase="closing",
+            goal="Закрытие сделки",
+            intent="question_features",
+            user_message="А как работает интеграция с Kaspi?",
+            collected_data={},
+            available_states=["autonomous_closing"],
+            secondary_intents=["question_integrations"],
+        )
+
+        assert "ПЕРЕБИВАНИЕ ЭТАПА" not in prompt
+
 
 # =============================================================================
 # Test: Generator template key preserved for autonomous objection (Fix 3b)
