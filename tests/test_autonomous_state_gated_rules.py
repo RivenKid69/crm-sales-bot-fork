@@ -69,6 +69,54 @@ class TestAutonomousStateGatedRules:
 
         assert "INTERRUPTION" not in rules
 
+    def test_comparison_rule_excludes_interruption_rule(self):
+        gen = _make_generator()
+
+        rules = gen._build_state_gated_rules(
+            state="autonomous_presentation",
+            intent="comparison",
+            user_message="Сравни с конкурентом и почему так отличается?",
+            history=[],
+            collected={},
+            secondary_intents=["question_features"],
+        )
+
+        assert "СРАВНЕНИЕ" in rules
+        assert "INTERRUPTION" not in rules
+
+    def test_hard_no_contact_rule_uses_merged_text(self):
+        gen = _make_generator()
+
+        rules = gen._build_state_gated_rules(
+            state="autonomous_discovery",
+            intent="agreement",
+            user_message="Контакты не дам, просто по делу ответьте",
+            history=[],
+            collected={},
+            secondary_intents=[],
+        )
+
+        assert "NO-CONTACT (HARD)" in rules
+        assert "КЛИЕНТ ОТКАЗАЛСЯ ОТ КОНТАКТОВ" not in rules
+
+    def test_rules_are_capped_to_max_five(self):
+        gen = _make_generator()
+
+        rules = gen._build_state_gated_rules(
+            state="autonomous_discovery",
+            intent="request_sla",
+            user_message=(
+                "Дайте скидку, сравни с iiko по цене и интеграциям, почему это влияет, "
+                "и если не подойдет как выйти?"
+            ),
+            history=[],
+            collected={},
+            secondary_intents=["comparison", "question_integrations"],
+        )
+
+        rule_lines = [line for line in rules.splitlines() if line.startswith("- ")]
+        assert len(rule_lines) <= 5
+
 
 class TestInterruptQuestionSuppression:
     def test_suppress_followup_question_for_question_intent(self):

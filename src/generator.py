@@ -18,6 +18,30 @@ from src.feature_flags import flags
 from src.response_diversity import diversity_engine
 from src.response_boundary_validator import boundary_validator
 from src.question_dedup import question_dedup_engine
+from src.generator_autonomous import (
+    SAFETY_RULES_V2 as AUTONOMOUS_SAFETY_RULES_V2,
+    HARD_NO_CONTACT_MARKERS as AUTONOMOUS_HARD_NO_CONTACT_MARKERS,
+    DEFER_CONTACT_MARKERS as AUTONOMOUS_DEFER_CONTACT_MARKERS,
+    KB_GUARD_FACTUAL_INTENTS_EXPLICIT as AUTONOMOUS_KB_GUARD_FACTUAL_INTENTS_EXPLICIT,
+    KB_GUARD_ACTIONS as AUTONOMOUS_KB_GUARD_ACTIONS,
+    BLOCKING_ACTIONS_FOR_SECONDARY_INJECT as AUTONOMOUS_BLOCKING_ACTIONS_FOR_SECONDARY_INJECT,
+    MAX_GATED_RULES as AUTONOMOUS_MAX_GATED_RULES,
+    MAX_PROMPT_CHARS as AUTONOMOUS_MAX_PROMPT_CHARS,
+    CRITICAL_TEMPLATE_VARS as AUTONOMOUS_CRITICAL_TEMPLATE_VARS,
+    _OBJECTION_4P_INTENTS as AUTONOMOUS_OBJECTION_4P_INTENTS,
+    build_state_gated_rules,
+    build_autonomous_objection_instructions,
+    should_suppress_followup_question_for_interrupt,
+    build_address_instruction,
+    has_address_question_in_history,
+    build_language_instruction,
+    build_stress_instruction,
+    has_contact_boundary_signal,
+    has_hard_no_contact_signal,
+    has_deferred_contact_signal,
+    enforce_no_contact_boundaries,
+    format_client_card,
+)
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
@@ -107,6 +131,9 @@ KB_GUARD_FACTUAL_INTENTS_EXPLICIT: set = {
 }
 KB_GUARD_ACTIONS: set = {"autonomous_respond", "continue_current_goal"}
 
+# Template variables that must always be present before prompt rendering.
+CRITICAL_TEMPLATE_VARS = {"system", "user_message", "history", "retrieved_facts"}
+
 # Actions that reach generator.generate() via the else-branch in bot.py and
 # should surface a secondary price answer via blocking_with_pricing template.
 # Does NOT include escalate_to_human (covered by its own template in Step 2),
@@ -116,6 +143,10 @@ BLOCKING_ACTIONS_FOR_SECONDARY_INJECT: frozenset = frozenset({
     "go_back_limit_reached",    # GoBackGuardSource → else → generator
 })
 SECONDARY_ANSWER_ELIGIBLE: frozenset = frozenset({"price_question"})
+
+# Guardrails for prompt/rules size in autonomous flow.
+MAX_GATED_RULES = 5
+MAX_PROMPT_CHARS = 35_000
 
 # Layer 1 safety rules for autonomous templates (injected via {safety_rules}).
 SAFETY_RULES_V2 = """⛔ КРИТИЧЕСКИЕ ПРАВИЛА (нарушение = провал):
@@ -157,6 +188,17 @@ DEFER_CONTACT_MARKERS: Tuple[str, ...] = (
     "номер потом",
     "если ок потом дам контакт",
 )
+
+# Re-export autonomous constants from extracted module for backward compatibility.
+SAFETY_RULES_V2 = AUTONOMOUS_SAFETY_RULES_V2
+HARD_NO_CONTACT_MARKERS = AUTONOMOUS_HARD_NO_CONTACT_MARKERS
+DEFER_CONTACT_MARKERS = AUTONOMOUS_DEFER_CONTACT_MARKERS
+KB_GUARD_FACTUAL_INTENTS_EXPLICIT = AUTONOMOUS_KB_GUARD_FACTUAL_INTENTS_EXPLICIT
+KB_GUARD_ACTIONS = AUTONOMOUS_KB_GUARD_ACTIONS
+BLOCKING_ACTIONS_FOR_SECONDARY_INJECT = AUTONOMOUS_BLOCKING_ACTIONS_FOR_SECONDARY_INJECT
+MAX_GATED_RULES = AUTONOMOUS_MAX_GATED_RULES
+MAX_PROMPT_CHARS = AUTONOMOUS_MAX_PROMPT_CHARS
+CRITICAL_TEMPLATE_VARS = AUTONOMOUS_CRITICAL_TEMPLATE_VARS
 
 
 # =============================================================================
@@ -697,39 +739,7 @@ class ResponseGenerator:
     
     def _format_client_card(self, collected: dict) -> str:
         """Форматирует collected_data как читаемую карточку клиента для промпта."""
-        FIELD_LABELS = {
-            "contact_name": "Контактное лицо",
-            "client_name": "Контактное лицо",
-            "company_name": "Компания",
-            "company_size": "Размер компании (сотрудников)",
-            "business_type": "Сфера бизнеса",
-            "current_tools": "Текущие инструменты",
-            "pain_point": "Основная боль",
-            "budget_range": "Бюджет",
-            "role": "Должность",
-            "timeline": "Сроки",
-            "desired_outcome": "Желаемый результат",
-            "urgency": "Срочность",
-            "users_count": "Кол-во пользователей",
-            "preferred_channel": "Канал связи",
-            "contact_info": "Контакт",
-            "financial_impact": "Финансовые потери",
-            "pain_impact": "Влияние проблемы",
-        }
-        SKIP_KEYS = {
-            "_dag_results", "_objection_limit_final", "option_index",
-            "contact_type", "value_acknowledged", "pain_category",
-            "persona", "competitor_mentioned",
-        }
-        lines = []
-        for key, value in collected.items():
-            if key in SKIP_KEYS or value is None:
-                continue
-            if key == "client_name" and "contact_name" in collected:
-                continue
-            label = FIELD_LABELS.get(key, key)
-            lines.append(f"  - {label}: {value}")
-        return "\n".join(lines) if lines else "(нет данных)"
+        return format_client_card(collected)
 
     def _has_russian_fiscal_hallucination(self, text: str) -> bool:
         """Detect mention of Russian fiscal standard ФФД in response.
@@ -1119,6 +1129,9 @@ class ResponseGenerator:
         if action in {"redirect_after_repetition", "escalate_repeated_content"}:
             return action
 
+        if action == "autonomous_respond":
+            return "autonomous_respond"
+
         # Autonomous flow: always use autonomous_respond template (except greeting).
         # Pricing/fact content is injected via retrieved_facts; template routing should
         # not override the autonomous LLM action.
@@ -1214,6 +1227,202 @@ class ResponseGenerator:
                 template_key = spin_template_key
 
         return template_key
+
+    def prepare_response_context(self, state: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Prepare autonomous response variables/facts without an LLM generation call."""
+        intent = str(context.get("intent", "") or "")
+        user_message = str(context.get("user_message", "") or "")
+        action = str(context.get("action", "autonomous_respond") or "autonomous_respond")
+        history = context.get("history", []) or []
+        collected = context.get("collected_data", {}) or {}
+        working_context = dict(context)
+        working_context["state"] = state
+
+        _is_autonomous = bool(
+            self._flow
+            and self._flow.name == "autonomous"
+            and (state.startswith("autonomous_") or state in {"handle_objection", "greeting"})
+        )
+
+        _fact_keys: List[str] = []
+        retrieved_urls: List[Dict[str, str]] = []
+        if _is_autonomous:
+            from src.knowledge.autonomous_kb import load_facts_for_state
+
+            _kb = get_retriever().kb
+            recently_used = set(working_context.get("recent_fact_keys", []))
+            try:
+                if self._enhanced_pipeline is None:
+                    from src.knowledge.enhanced_retrieval import EnhancedRetrievalPipeline
+                    self._enhanced_pipeline = EnhancedRetrievalPipeline(
+                        llm=self.llm,
+                        category_router=self.category_router,
+                    )
+
+                retrieved_facts, retrieved_urls, _fact_keys = self._enhanced_pipeline.retrieve(
+                    user_message=user_message,
+                    intent=intent,
+                    state=state,
+                    flow_config=self._flow,
+                    kb=_kb,
+                    recently_used_keys=recently_used,
+                    history=history,
+                    secondary_intents=self._get_secondary_intents(working_context),
+                )
+            except Exception as e:
+                logger.error("Enhanced retrieval failed in prepare_response_context", error=str(e))
+                retrieved_facts, retrieved_urls, _fact_keys = load_facts_for_state(
+                    state=state,
+                    flow_config=self._flow,
+                    kb=_kb,
+                    recently_used_keys=recently_used,
+                )
+            company_info = f"{_kb.company_name}: {_kb.company_description}"
+        else:
+            retriever = get_retriever()
+            company_info = retriever.get_company_info()
+            categories = None
+            if self.category_router and user_message:
+                categories = self.category_router.route(user_message)
+            retrieved_facts, retrieved_urls = retriever.retrieve_with_urls(
+                message=user_message,
+                intent=intent,
+                state=state,
+                categories=categories,
+                top_k=self.retriever_top_k,
+            )
+
+        if retrieved_facts:
+            retrieved_facts = self._redact_credentials(retrieved_facts)
+            retrieved_facts = re.sub(r'(?m)^Здравствуйте[!.]?\s*', '', retrieved_facts)
+            if _is_autonomous and len(retrieved_facts) > 25_000:
+                retrieved_facts = retrieved_facts[:24_800] + "\n..."
+                logger.warning("KB facts truncated to 25K for autonomous prompt")
+
+        formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
+
+        tone_instruction = working_context.get("tone_instruction", "")
+        style_instruction = working_context.get("style_instruction", "")
+        system_prompt = SYSTEM_PROMPT.format(
+            tone_instruction=tone_instruction,
+            style_instruction=style_instruction,
+        )
+
+        objection_info = working_context.get("objection_info") or {}
+        objection_type = objection_info.get("objection_type", "")
+        objection_counter = self._get_objection_counter(objection_type, collected)
+        raw_pain_point = collected.get("pain_point")
+        pain_point_value = (
+            str(raw_pain_point).strip()
+            if raw_pain_point and raw_pain_point != "?" and str(raw_pain_point).strip()
+            else "текущие сложности"
+        )
+        spin_phase = working_context.get("spin_phase", "")
+        product_overview = self.get_product_overview(collected.get("company_size"), intent=intent)
+
+        variables = dict(PERSONALIZATION_DEFAULTS)
+        variables.update({
+            "system": system_prompt,
+            "user_message": user_message,
+            "history": self.format_history(history, use_full=_is_autonomous),
+            "goal": working_context.get("goal", ""),
+            "collected_data": self._format_client_card(collected) if _is_autonomous else str(collected),
+            "missing_data": ", ".join(working_context.get("missing_data", [])) or "всё собрано",
+            "company_size": collected.get("company_size") or "не указан",
+            "pain_point": pain_point_value,
+            "product_overview": product_overview,
+            "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
+            "retrieved_urls": formatted_urls,
+            "company_info": company_info,
+            "current_tools": collected.get("current_tools", "не указано"),
+            "business_type": collected.get("business_type", "не указано"),
+            "pain_impact": collected.get("pain_impact", "не определено"),
+            "financial_impact": collected.get("financial_impact", ""),
+            "desired_outcome": collected.get("desired_outcome", "не сформулирован"),
+            "spin_phase": spin_phase,
+            "tone_instruction": tone_instruction,
+            "style_instruction": style_instruction,
+            "objection_type": objection_type,
+            "objection_counter": objection_counter,
+            "should_apologize": working_context.get("should_apologize", False),
+            "should_offer_exit": working_context.get("should_offer_exit", False),
+            "do_not_ask": "",
+            "collected_fields_list": "",
+            "available_questions": "",
+            "objection_instructions": "",
+            "question_instruction": "Задай ОДИН вопрос по цели этапа.",
+            "closing_data_request": "",
+            "safety_rules": SAFETY_RULES_V2,
+            "state_gated_rules": "",
+            "address_instruction": self._build_address_instruction(
+                collected=collected,
+                history=history,
+                intent=intent,
+                frustration_level=working_context.get("frustration_level", 0),
+                state=state,
+                user_message=user_message,
+            ),
+            "language_instruction": self._build_language_instruction(user_message),
+            "stress_instruction": self._build_stress_instruction(
+                intent=intent,
+                frustration_level=working_context.get("frustration_level", 0),
+                user_message=user_message,
+            ),
+        })
+
+        secondary_intents = self._get_secondary_intents(working_context)
+        variables["state_gated_rules"] = self._build_state_gated_rules(
+            state=state,
+            intent=intent,
+            user_message=user_message,
+            history=history,
+            collected=collected,
+            secondary_intents=secondary_intents,
+        )
+        if _is_autonomous and self._should_suppress_followup_question_for_interrupt(
+            state=state,
+            intent=intent,
+            user_message=user_message,
+            secondary_intents=secondary_intents,
+        ):
+            variables["question_instruction"] = (
+                "⚠️ Клиент перебил этап вопросом: сначала ответь по фактам и НЕ задавай новый встречный вопрос "
+                "в этом сообщении. Заверши коротким мостом к цели этапа."
+            )
+            variables["available_questions"] = ""
+
+        hard_no_contact = self._has_hard_no_contact_signal(user_message, history)
+        deferred_contact = self._has_deferred_contact_signal(user_message, history)
+        if _is_autonomous and (hard_no_contact or deferred_contact):
+            variables["question_instruction"] = (
+                "⚠️ Клиент отказался от передачи контакта: не запрашивай телефон/email/ИИН повторно в этом ответе."
+            )
+            variables["missing_data"] = ""
+            variables["available_questions"] = ""
+
+        if intent.startswith("objection_"):
+            variables["objection_instructions"] = self._build_autonomous_objection_instructions(intent)
+
+        recent_bot_responses = [
+            str(turn.get("bot", "") or "").strip()
+            for turn in history[-4:]
+            if isinstance(turn, dict) and str(turn.get("bot", "") or "").strip()
+        ]
+        if recent_bot_responses:
+            variables["do_not_repeat_responses"] = "Недавние ответы (не повторяй дословно):\n" + "\n".join(
+                f"- {text[:220]}" for text in recent_bot_responses
+            )
+
+        return {
+            "state": state,
+            "intent": intent,
+            "requested_action": action,
+            "selected_template_key": action,
+            "retrieved_facts": retrieved_facts,
+            "retrieved_urls": formatted_urls,
+            "fact_keys": _fact_keys,
+            "variables": variables,
+        }
 
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""
@@ -1316,6 +1525,9 @@ class ResponseGenerator:
             retrieved_facts = self._redact_credentials(retrieved_facts)
             # Safety net: strip conversational greeting openers injected verbatim into KB facts
             retrieved_facts = re.sub(r'(?m)^Здравствуйте[!.]?\s*', '', retrieved_facts)
+            if _is_autonomous and len(retrieved_facts) > 25_000:
+                retrieved_facts = retrieved_facts[:24_800] + "\n..."
+                logger.warning("KB facts truncated to 25K for autonomous prompt")
 
         # --- KB-empty hallucination guard ---
         # Short-circuit before LLM when KB returned nothing for a factual question.
@@ -1891,6 +2103,15 @@ class ResponseGenerator:
                 f"{_existing_dnr}\n{_q_block}" if _existing_dnr else _q_block
             )
 
+        for var in CRITICAL_TEMPLATE_VARS:
+            if var not in variables or not variables[var]:
+                logger.warning(
+                    "Critical template var '%s' missing/empty for action=%s state=%s",
+                    var,
+                    action,
+                    state,
+                )
+
         # Подставляем в шаблон с безопасной подстановкой
         # SafeDict возвращает пустую строку для отсутствующих ключей,
         # предотвращая KeyError и показ {переменных} клиенту
@@ -2380,37 +2601,29 @@ class ResponseGenerator:
 
         return processed, validation_events
 
+    def post_process_only(
+        self,
+        response: str,
+        context: Dict[str, Any],
+        requested_action: str,
+        selected_template_key: str,
+        retrieved_facts: str,
+    ) -> Tuple[str, List[Dict[str, Any]]]:
+        """
+        Run post-processing stack for a pre-generated response (without LLM generation).
+        """
+        return self._post_process_response(
+            response=response,
+            context=context,
+            requested_action=requested_action,
+            selected_template_key=selected_template_key,
+            retrieved_facts=retrieved_facts,
+        )
+
     @staticmethod
     def _enforce_no_contact_boundaries(text: str, context: Dict[str, Any]) -> str:
         """Remove contact-push fragments when user explicitly refused to share contacts."""
-        user_message = str(context.get("user_message", "") or "")
-        history = context.get("history", [])
-        if not ResponseGenerator._has_contact_boundary_signal(
-            user_message=user_message,
-            history=history,
-            include_deferred=True,
-        ):
-            return text
-
-        result = str(text or "")
-        # Remove typical pressure phrases/questions for contact collection.
-        patterns = (
-            r"(?i)\s*на какой (?:email|номер)[^?.!]*[?.!]",
-            r"(?i)\s*остав(?:ьте|ь)(?:,\s*пожалуйста)?[^?.!]{0,40}(?:контакт|номер|телефон|email)[^?.!]*[?.!]",
-            r"(?i)\s*(?:пришл(?:ите|и)|напиш(?:ите|и)|укаж(?:ите|и)|дайте)\s*(?:почту|email)[^?.!]*[?.!]",
-            r"(?i)\s*(?:пришлю|отправлю|вышлю|скину)[^?.!]{0,50}(?:почт|email)[^?.!]*[?.!]",
-            r"(?i)\s*укаж(?:ите|и)\s+пожалуйста,\s*ваш\s*иин[^?.!]*[?.!]",
-            r"(?i)\s*как вас набрать[^?.!]*[?.!]",
-            r"(?i)\s*менеджер свяжется[^?.!]*[?.!]",
-            r"(?i)\s*(?:давайте|предлагаю)\s*(?:созвон|созвониться)[^?.!]*[?.!]",
-            r"(?i)\s*(?:удобн\w*)\s*время\s*(?:для\s*)?(?:звонка|созвона)[^?.!]*[?.!]",
-        )
-        for pat in patterns:
-            result = re.sub(pat, " ", result)
-        result = re.sub(r"\s+", " ", result).strip()
-        if not result:
-            return "Понял вас. Дам всю информацию в чате без запроса контактов."
-        return result
+        return enforce_no_contact_boundaries(text=text, context=context)
 
     def _compress_repeated_price_response(self, response: str, context: Dict[str, Any]) -> str:
         """
@@ -2887,30 +3100,11 @@ class ResponseGenerator:
         }
 
     # Mapping: objection intent → framework type
-    _OBJECTION_4P_INTENTS = {
-        "objection_price", "objection_competitor", "objection_no_time",
-        "objection_timing", "objection_complexity",
-    }
+    _OBJECTION_4P_INTENTS = AUTONOMOUS_OBJECTION_4P_INTENTS
 
     def _build_autonomous_objection_instructions(self, intent: str) -> str:
         """Build objection-specific instructions for autonomous flow response."""
-        objection_type = intent.replace("objection_", "").replace("_", " ")
-
-        if intent in self._OBJECTION_4P_INTENTS:
-            return f"""=== ОБРАБОТКА ВОЗРАЖЕНИЯ: {objection_type} ===
-Клиент выразил рациональное возражение. Используй подход 4P:
-1. ПАУЗА — признай опасения клиента, покажи что понимаешь
-2. УТОЧНЕНИЕ — задай уточняющий вопрос чтобы понять корень возражения
-3. ПРЕЗЕНТАЦИЯ ЦЕННОСТИ — приведи конкретный аргумент из базы знаний
-4. ПРОДВИЖЕНИЕ — предложи следующий шаг (демо, расчёт ROI, тест)
-Отработай возражение мягко, без давления. Используй данные из базы знаний."""
-        else:
-            return f"""=== ОБРАБОТКА ВОЗРАЖЕНИЯ: {objection_type} ===
-Клиент выразил эмоциональное возражение. Используй подход 3F:
-1. FEEL — покажи что понимаешь чувства клиента ("Да, это важный момент...")
-2. FELT — приведи социальное доказательство ("Многие клиенты изначально думали так же...")
-3. FOUND — покажи результат ("Но после внедрения они отметили...")
-Проявляй эмпатию. Не спорь с эмоциями. Приведи конкретный пример из базы знаний."""
+        return build_autonomous_objection_instructions(intent)
 
     def _build_state_gated_rules(
         self,
@@ -2922,188 +3116,14 @@ class ResponseGenerator:
         secondary_intents: List[str] = None,
     ) -> str:
         """Build Layer-2 rules that appear only when state/intent makes them relevant."""
-        rules: List[str] = []
-        state_value = str(state or "")
-        intent_value = str(intent or "")
-        message_lower = str(user_message or "").lower()
-        is_autonomous_context = state_value.startswith("autonomous_") or state_value == "greeting"
-
-        history_tail = history[-4:] if isinstance(history, list) else []
-        history_user_lower = " ".join(
-            str(turn.get("user", "") or "")
-            for turn in history_tail
-            if isinstance(turn, dict)
-        ).lower()
-        secondary_set = {str(i) for i in (secondary_intents or []) if i}
-
-        # Closing-only IIN guard. Conditional wording avoids conflict with anti-IIN hint
-        # when IIN is still absent in collected_data.
-        if state_value == "autonomous_closing":
-            rules.append(
-                "⚠️ ИИН: Если клиент даёт ИИН, не повторяй 12-значное число в ответе — "
-                "подтверди фразой «ИИН получен». Если клиент ИИН не давал — не придумывай и не подтверждай выдуманные цифры."
-            )
-
-        discount_keywords = ("скидку", "скидка", "скидок", "скидки", "дешевле", "акция", "акции")
-        discount_triggered = (
-            intent_value == "request_discount"
-            or any(keyword in message_lower for keyword in discount_keywords)
-        )
-        if discount_triggered and len(rules) < 2:
-            rules.append(
-                "⚠️ СКИДКИ: не придумывай индивидуальные акции или проценты. "
-                "Если в БАЗЕ ЗНАНИЙ нет точных условий скидки, скажи: "
-                "«Актуальные условия скидок уточнит менеджер»."
-            )
-
-        competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
-        price_concession_words = ("дороже", "дешевле", "цена", "стоимость")
-        has_competitor_context = any(
-            name in message_lower or name in history_user_lower
-            for name in competitor_names
-        )
-        has_price_concession = any(word in message_lower for word in price_concession_words)
-        if has_competitor_context and has_price_concession and len(rules) < 2:
-            rules.append(
-                "⚠️ КОНКУРЕНТЫ: не придумывай сравнительные цифры по конкурентам. "
-                "Если в БАЗЕ ЗНАНИЙ нет точного сравнения цен/условий — признай это и предложи "
-                "уточнить детали у менеджера."
-            )
-
-        explicit_buy_markers = (
-            "готов покупать",
-            "готов купить",
-            "хочу купить",
-            "выставляйте счет",
-            "выставьте счет",
-            "выставь счет",
-            "хочу счет",
-            "счёт выставляйте",
-            "оплачу",
-            "как оплатить",
-            "оформим",
-            "оформляйте",
-        )
-        if (
-            is_autonomous_context
-            and state_value != "autonomous_closing"
-            and any(marker in message_lower for marker in explicit_buy_markers)
-        ):
-            rules.append(
-                "⚠️ КЛИЕНТ ГОТОВ ПОКУПАТЬ: не возвращайся в discovery/квалификацию. "
-                "Подтверди готовность, коротко опиши следующий шаг и мягко переведи к оформлению "
-                "(контакт/счёт), без лишних вопросов о бизнесе или боли."
-            )
-
-        if is_autonomous_context and self._has_contact_boundary_signal(
+        return build_state_gated_rules(
+            state=state,
+            intent=intent,
             user_message=user_message,
             history=history,
-            include_deferred=True,
-        ):
-            rules.append(
-                "⚠️ КЛИЕНТ ОТКАЗАЛСЯ ОТ КОНТАКТОВ: не запрашивай телефон/email повторно в этом ответе. "
-                "Дай полезный следующий шаг без обязательной передачи контактов."
-            )
-        if is_autonomous_context and self._has_hard_no_contact_signal(
-            user_message=user_message,
-            history=history,
-        ):
-            rules.append(
-                "⚠️ HARD NO-CONTACT: формат 1-2 предложения, один практический self-serve шаг, "
-                "без абсолютов/гарантий/неподтверждённых цифр и без фраз про отправку материалов."
-            )
-
-        exit_risk_markers = ("выйти", "выход", "расторг", "если не подойдет", "если не подойд")
-        if is_autonomous_context and (
-            intent_value in {"objection_risk", "objection_contract_bound"}
-            or any(marker in message_lower for marker in exit_risk_markers)
-        ):
-            rules.append(
-                "⚠️ EXIT/CONTRACT: не обещай «без штрафов», «без потери данных», сроки теста или иные гарантии, "
-                "если этого нет в БАЗЕ ЗНАНИЙ. Если точных условий нет — скажи: "
-                "«Уточню у коллег и вернусь с ответом»."
-            )
-
-        if is_autonomous_context and (
-            intent_value in {"request_sla", "request_references", "question_security", "question_integrations"}
-            or any(k in message_lower for k in ("sla", "rpo", "rto", "шифрован", "безопас", "аудит"))
-        ):
-            rules.append(
-                "⚠️ ТЕХНИЧЕСКИЕ ФАКТЫ: отвечай только тем, что есть в БАЗЕ ЗНАНИЙ. "
-                "Если конкретного параметра нет (SLA, RPO/RTO, стандарты) — прямо скажи, что уточнишь."
-            )
-
-        integration_markers = ("интеграц", "kaspi", "api", "1с", "amo", "bitrix", "crm", "whatsapp")
-        explicit_price_markers = ("цена", "стоимость", "тариф", "сколько стоит", "в тенге", "тг", "₸")
-        asks_integration = intent_value in {"question_integrations", "question_features"} or any(
-            m in message_lower for m in integration_markers
+            collected=collected,
+            secondary_intents=secondary_intents,
         )
-        asks_price = intent_value in {"price_question", "pricing_details", "pricing_comparison"} or any(
-            m in message_lower for m in explicit_price_markers
-        )
-        if asks_integration and not asks_price:
-            rules.append(
-                "⚠️ TOPIC-LOCK: клиент спрашивает про интеграции/функции. "
-                "Отвечай по теме интеграций. Не уводи ответ в цену, если цену не спрашивали."
-            )
-
-        # Interruption handling: user may break the stage with a direct question/comparison.
-        # Answer first, then bridge back to stage goal.
-        interruption_secondary = {
-            i for i in secondary_set
-            if i.startswith("question_") or i in {"comparison", "pricing_comparison"}
-        }
-        interruption_primary = (
-            intent_value.startswith("question_")
-            or intent_value in {"comparison", "pricing_comparison"}
-        )
-        if is_autonomous_context and state_value != "autonomous_closing" and (
-            interruption_primary or interruption_secondary
-        ):
-            rules.append(
-                "⚠️ INTERRUPTION: клиент перебил этап новым вопросом. "
-                "Сначала дай прямой ответ на текущий вопрос по фактам БАЗЫ ЗНАНИЙ, "
-                "затем одной короткой фразой вернись к цели этапа. "
-                "Не игнорируй вопрос и не перескакивай сразу в сбор контакта/закрытие."
-            )
-
-        # Comparison handling must be structured and bounded.
-        compare_markers = (
-            "сравни", "сравнение", "чем лучше", "чем отличается", "vs", "против",
-            "плюсы", "минусы", "альтернатива", "конкурент",
-        )
-        comparison_requested = (
-            intent_value in {"comparison", "pricing_comparison", "question_tariff_comparison"}
-            or bool({"comparison", "pricing_comparison", "question_tariff_comparison"} & secondary_set)
-            or any(m in message_lower for m in compare_markers)
-        )
-        if comparison_requested:
-            rules.append(
-                "⚠️ СРАВНЕНИЕ: отвечай структурно (2-4 критерия: функционал, интеграции, стоимость, внедрение) "
-                "и только по фактам из БАЗЫ ЗНАНИЙ. Если по одному из критериев фактов нет — так и скажи, не додумывай."
-            )
-
-        # Logical links between facts: cause-effect and constraints.
-        logic_markers = (
-            "как связано", "в чем связь", "почему", "за счет чего",
-            "что будет если", "как влияет", "зависит ли",
-        )
-        asks_logic = (
-            any(m in message_lower for m in logic_markers)
-            or ("если" in message_lower and " то " in message_lower)
-        )
-        if asks_logic:
-            rules.append(
-                "⚠️ ЛОГИЧЕСКАЯ СВЯЗЬ: если клиент просит объяснить зависимость/причину, "
-                "свяжи минимум 2 релевантных факта из БАЗЫ ЗНАНИЙ в формате «факт → следствие». "
-                "Если связи нет в фактах — честно укажи, что это нужно уточнить."
-            )
-
-        if not rules:
-            return ""
-
-        formatted = "\n".join(f"- {rule}" for rule in rules)
-        return f"STATE-GATED ПРАВИЛА:\n{formatted}"
 
     @staticmethod
     def _should_suppress_followup_question_for_interrupt(
@@ -3113,48 +3133,17 @@ class ResponseGenerator:
         secondary_intents: List[str] = None,
     ) -> bool:
         """Return True when bot should answer interruption without adding a new follow-up question."""
-        state_value = str(state or "")
-        if not state_value.startswith("autonomous_") or state_value == "autonomous_closing":
-            return False
-
-        intent_value = str(intent or "")
-        secondary_set = {str(i) for i in (secondary_intents or []) if i}
-        has_question_intent = (
-            intent_value.startswith("question_")
-            or intent_value in {"comparison", "pricing_comparison", "question_tariff_comparison"}
-            or any(i.startswith("question_") for i in secondary_set)
-            or bool({"comparison", "pricing_comparison", "question_tariff_comparison"} & secondary_set)
-        )
-        if has_question_intent:
-            return True
-
-        message_lower = str(user_message or "").lower()
-        logic_markers = (
-            "как связано", "в чем связь", "почему", "за счет чего",
-            "что будет если", "как влияет", "зависит ли",
-        )
-        return any(m in message_lower for m in logic_markers) or (
-            "если" in message_lower and " то " in message_lower
+        return should_suppress_followup_question_for_interrupt(
+            state=state,
+            intent=intent,
+            user_message=user_message,
+            secondary_intents=secondary_intents,
         )
 
     @staticmethod
     def _has_address_question_in_history(history: list) -> bool:
         """Return True if bot already asked how to address the client."""
-        if not isinstance(history, list):
-            return False
-        markers = (
-            "к вам обращаться",
-            "как вас зовут",
-            "как к вам обращаться",
-            "как могу к вам обращаться",
-        )
-        for turn in history:
-            if not isinstance(turn, dict):
-                continue
-            bot_text = str(turn.get("bot", "") or "").lower()
-            if any(m in bot_text for m in markers):
-                return True
-        return False
+        return has_address_question_in_history(history)
 
     @staticmethod
     def _build_address_instruction(
@@ -3166,71 +3155,13 @@ class ResponseGenerator:
         user_message: str = "",
     ) -> str:
         """Build conditional ОБРАЩЕНИЕ instruction with one-time ask behavior."""
-        name = collected.get("contact_name") or collected.get("client_name") or ""
-        if name:
-            return (f'ОБРАЩЕНИЕ: клиента зовут "{name}" — '
-                    f'используй "господин/госпожа {name}" или "{name}".')
-
-        # In stressful/direct exchanges, avoid asking name and keep focus.
-        stressful_intents = {
-            "request_brevity",
-            "price_question",
-            "pricing_details",
-            "rejection",
-            "rejection_soft",
-            "no_need",
-            "no_problem",
-            "farewell",
-        }
-        if (
-            frustration_level >= 3
-            or intent in stressful_intents
-            or intent.startswith("objection_")
-            or str(state).startswith("autonomous_closing")
-        ):
-            return (
-                "ОБРАЩЕНИЕ: имя клиента неизвестно. НЕ спрашивай имя в этом ответе; "
-                "продолжай по сути запроса."
-            )
-
-        # In autonomous stages outside greeting, keep momentum and avoid
-        # re-centering the dialog around the name.
-        if str(state).startswith("autonomous_") and intent not in {"greeting", "small_talk"}:
-            return (
-                "ОБРАЩЕНИЕ: имя клиента неизвестно. Не спрашивай имя; "
-                "сфокусируйся на текущем запросе."
-            )
-
-        directness_markers = (
-            "без воды",
-            "коротко",
-            "быстрее",
-            "по делу",
-            "за 1 сообщение",
-            "одним сообщением",
-            "не задавай вопрос",
-            "контакты не дам",
-            "контакт не дам",
-            "без контактов",
-            "без контакта",
-            "потом дам контакт",
-            "позже дам контакт",
-        )
-        low_msg = str(user_message or "").lower()
-        if any(marker in low_msg for marker in directness_markers):
-            return (
-                "ОБРАЩЕНИЕ: клиент просит максимально кратко. "
-                "Не спрашивай имя в этом ответе."
-            )
-
-        if ResponseGenerator._has_address_question_in_history(history or []):
-            return (
-                "ОБРАЩЕНИЕ: имя клиента неизвестно, но ты уже спрашивал его ранее. "
-                "НЕ повторяй вопрос про имя; продолжай диалог по сути."
-            )
-        return (
-            'ОБРАЩЕНИЕ: имя клиента НЕИЗВЕСТНО — один раз мягко вплети '
-            '"как к вам обращаться?" в ответ. НЕ придумывай имя/фамилию.'
+        return build_address_instruction(
+            collected=collected,
+            history=history,
+            intent=intent,
+            frustration_level=frustration_level,
+            state=state,
+            user_message=user_message,
         )
 
     @staticmethod
@@ -3240,33 +3171,22 @@ class ResponseGenerator:
         include_deferred: bool = True,
     ) -> bool:
         """Detect explicit contact refusal or defer signals in current/recent user messages."""
-        texts: List[str] = [str(user_message or "").lower()]
-        if isinstance(history, list):
-            for turn in history[-4:]:
-                if isinstance(turn, dict):
-                    texts.append(str(turn.get("user", "") or "").lower())
-
-        markers: Tuple[str, ...] = HARD_NO_CONTACT_MARKERS
-        if include_deferred:
-            markers = HARD_NO_CONTACT_MARKERS + DEFER_CONTACT_MARKERS
-        return any(marker in text for text in texts for marker in markers)
+        return has_contact_boundary_signal(
+            user_message=user_message,
+            history=history,
+            include_deferred=include_deferred,
+        )
 
     @staticmethod
     def _has_hard_no_contact_signal(user_message: str, history: Optional[list] = None) -> bool:
-        return ResponseGenerator._has_contact_boundary_signal(
+        return has_hard_no_contact_signal(
             user_message=user_message,
             history=history,
-            include_deferred=False,
         )
 
     @staticmethod
     def _has_deferred_contact_signal(user_message: str, history: Optional[list] = None) -> bool:
-        texts: List[str] = [str(user_message or "").lower()]
-        if isinstance(history, list):
-            for turn in history[-4:]:
-                if isinstance(turn, dict):
-                    texts.append(str(turn.get("user", "") or "").lower())
-        return any(marker in text for text in texts for marker in DEFER_CONTACT_MARKERS)
+        return has_deferred_contact_signal(user_message=user_message, history=history)
 
     @staticmethod
     def _is_payment_closing_signal(intent: str, user_message: str) -> bool:
@@ -3349,85 +3269,16 @@ class ResponseGenerator:
         """
         Build lightweight language guidance to reduce code-switch degradation.
         """
-        import re
-
-        msg = str(user_message or "").lower()
-        kz_letters = bool(re.search(r"[әіңғүұқөһ]", msg))
-        ru_letters = bool(re.search(r"[а-яё]", msg))
-        kz_words = (
-            "сәлем", "салем", "бағасы", "қанша", "жоқ", "керек",
-            "ұсынасыз", "кейін", "маған", "нақты", "қазақша",
-        )
-        has_kz_words = sum(1 for w in kz_words if w in msg) >= 2
-
-        if (kz_letters or has_kz_words) and ru_letters:
-            return (
-                "ЯЗЫК: сообщение смешанное (казахский+русский). "
-                "Отвечай ПОНЯТНО на русском (можно вкрапить 1-2 казахских слова по смыслу), "
-                "без повторяющихся фраз."
-            )
-        if kz_letters or has_kz_words:
-            return (
-                "ЯЗЫК: отвечай на казахском простыми короткими фразами. "
-                "Не повторяй одинаковые предложения."
-            )
-        has_latin = bool(re.search(r"[a-z]", msg))
-        translit_markers = (
-            "nuzhno", "skolko", "stoit", "to4", "toch", "rabotaet",
-            "davai", "bystro", "korotk", "kaspi", "nal", "offline",
-        )
-        if has_latin and not ru_letters and any(marker in msg for marker in translit_markers):
-            return (
-                "ЯЗЫК: клиент пишет транслитом. Отвечай простым русским, "
-                "коротко (1-2 фразы), без длинных списков и канцелярита."
-            )
-        return ""
+        return build_language_instruction(user_message)
 
     @staticmethod
     def _build_stress_instruction(intent: str, frustration_level: int, user_message: str) -> str:
         """Build brevity/sales focus hint for rushed or high-friction turns."""
-        text = str(user_message or "").lower()
-        direct_markers = (
-            "без воды",
-            "по делу",
-            "коротко",
-            "быстрее",
-            "в 1 сообщение",
-            "за 1 сообщение",
-            "докажи",
+        return build_stress_instruction(
+            intent=intent,
+            frustration_level=frustration_level,
+            user_message=user_message,
         )
-        instructions: list[str] = []
-        if (
-            int(frustration_level or 0) >= 3
-            or intent in {"request_brevity", "price_question", "pricing_details"}
-            or any(m in text for m in direct_markers)
-        ):
-            instructions.append(
-                "РЕЖИМ КРАТКОСТИ: 1-2 предложения, сначала ключевой факт из БАЗЫ ЗНАНИЙ. "
-                "Затем добавь ОДНУ выгоду только если она явно подтверждена фактами. Без лишней воды и "
-                "без встречных вопросов, если клиент просит быстрее/кратко."
-            )
-
-        contact_refusal_markers = HARD_NO_CONTACT_MARKERS + DEFER_CONTACT_MARKERS
-        if any(m in text for m in contact_refusal_markers):
-            instructions.append(
-                "КОНТАКТ-ОГРАНИЧЕНИЕ: клиент не даёт контакт. НЕ обещай отправить демо/документы "
-                "и НЕ обещай счёт/оформление без обязательных данных. "
-                "Дай полезный ответ в чате и мягко предложи вернуться к оформлению позже."
-            )
-
-        # "Не давите" / "надо подумать" — respect client's space
-        pressure_markers = ("не давит", "не дави", "не настаива", "надо подумать", "дайте подумать", "я подумаю")
-        if any(m in text for m in pressure_markers):
-            instructions.append(
-                "СТОП-ДАВЛЕНИЕ: клиент просит не давить. СТРОГО:\n"
-                "- 1 предложение: подтверди что уважаешь решение.\n"
-                "- НЕ продавай, НЕ приводи примеры клиентов, НЕ перечисляй функции.\n"
-                "- НЕ задавай вопросов.\n"
-                "- Пример: 'Понял, если появятся вопросы — пишите, я на связи.'"
-            )
-
-        return "\n".join(instructions)
 
     @staticmethod
     def _count_recent_same_user_message(history: list, user_message: str) -> int:

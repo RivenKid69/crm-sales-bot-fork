@@ -108,6 +108,8 @@ class DialogueBlackboard:
         # === Metadata ===
         self._turn_start_time: Optional[datetime] = None
         self._current_intent: Optional[str] = None
+        self._pre_generated_response: Optional[str] = None
+        self._response_context: Optional[Dict[str, Any]] = None
 
         # === Strict collision detection (#7) ===
         self._strict_data_updates = strict_data_updates
@@ -334,6 +336,7 @@ class DialogueBlackboard:
 
         # Clear decision layer
         self._decision = None
+        self._pre_generated_response = None
 
         logger.debug(
             f"Blackboard turn started: intent={intent}, state={self._state_machine.state}, "
@@ -386,6 +389,23 @@ class DialogueBlackboard:
     def collected_data(self) -> Dict[str, Any]:
         """Get collected data (from context snapshot)."""
         return self._context.collected_data if self._context else {}
+
+    def set_response_context(self, context: Optional[Dict[str, Any]]) -> None:
+        """Set per-turn response context prepared before source execution."""
+        self._response_context = dict(context) if isinstance(context, dict) else None
+
+    def get_response_context(self) -> Optional[Dict[str, Any]]:
+        """Get response context prepared by SalesBot before process_turn()."""
+        return dict(self._response_context) if isinstance(self._response_context, dict) else None
+
+    def set_pre_generated_response(self, text: Optional[str]) -> None:
+        """Persist merged-call pre-generated response for bot interception."""
+        value = str(text or "").strip()
+        self._pre_generated_response = value if value else None
+
+    def get_pre_generated_response(self) -> Optional[str]:
+        """Get pre-generated response text from merged autonomous call."""
+        return self._pre_generated_response
 
     # =========================================================================
     # PROPOSAL LAYER (Write by Sources)

@@ -186,6 +186,7 @@ class FeatureFlags:
 
         # === Autonomous Flow ===
         "autonomous_flow": False,                  # LLM-driven sales flow (no YAML rules)
+        "merged_autonomous_call": False,           # Single LLM call for autonomous decision+response
 
         # === Style Modifier Separation ===
         "separate_style_modifiers": False,         # Разделение semantic intent и style modifiers
@@ -281,6 +282,7 @@ class FeatureFlags:
         # Autonomous flow
         "autonomous": [
             "autonomous_flow",
+            "merged_autonomous_call",
         ],
         # Style Modifier Separation
         "style_modifier_separation": ["separate_style_modifiers"],

@@ -241,6 +241,17 @@ class DialogueOrchestrator:
                 return source
         return None
 
+    def reset(self) -> None:
+        """Reset stateful sources between dialogues."""
+        for source in self._sources:
+            reset_fn = getattr(source, "reset", None)
+            if not callable(reset_fn):
+                continue
+            try:
+                reset_fn()
+            except Exception as e:
+                logger.warning("Failed to reset source %s: %s", source.name, e)
+
     def process_turn(
         self,
         intent: str,
