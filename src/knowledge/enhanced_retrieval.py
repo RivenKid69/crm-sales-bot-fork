@@ -134,6 +134,12 @@ class ComplexityDetector:
     """Rule-based complexity detection without LLM calls."""
 
     STRONG_MARKERS = (" сравн", " vs ", " против ", " отлич")
+    STRONG_COMPARE_MARKERS = (
+        "что лучше", "чем лучше", "чем отличается", "плюсы", "минусы", "альтернатива",
+    )
+    STRONG_LOGIC_MARKERS = (
+        "как связано", "в чем связь", "как влияет", "зависит ли", "если", "то",
+    )
     WEAK_MARKERS = (" и ", " а также ", " или ", " ещё ", " плюс ")
     COMPLEX_PATTERNS = (
         re.compile(r"как.*и.*сколько", re.IGNORECASE | re.DOTALL),
@@ -157,6 +163,13 @@ class ComplexityDetector:
 
         if length > self.min_complexity_length:
             if any(marker in lowered for marker in self.STRONG_MARKERS):
+                return True
+            if any(marker in lowered for marker in self.STRONG_COMPARE_MARKERS):
+                return True
+            # "если ... то ..." is usually a logical relation query needing multi-fact retrieval.
+            if "если" in lowered and " то " in lowered:
+                return True
+            if any(marker in lowered for marker in self.STRONG_LOGIC_MARKERS):
                 return True
 
         weak_hits = sum(lowered.count(marker) for marker in self.WEAK_MARKERS)
@@ -190,6 +203,10 @@ class QueryDecomposer:
             f"- Максимум {self.max_sub_queries} подзапроса(ов).\n"
             "- Каждый подзапрос должен быть самодостаточным: включай все сущности явно.\n"
             "- НЕ используй местоимения (это, они, там, его и т.п.).\n"
+            "- Если это запрос на сравнение: выдели отдельные подзапросы по критериям "
+            "(функционал, интеграции, стоимость, внедрение/поддержка).\n"
+            "- Если это логическая связка (\"если ... то\", \"почему\", \"как связано\"): "
+            "выдели отдельные подзапросы для причины, условия и последствия.\n"
             "- Для каждого подзапроса выбери релевантные категории из списка.\n"
             f"- Допустимые категории: {categories}\n"
             "Верни JSON строго по схеме.\n"
