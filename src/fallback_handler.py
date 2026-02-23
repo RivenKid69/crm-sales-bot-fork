@@ -117,6 +117,13 @@ class FallbackHandler:
         "spin_need_payoff": "presentation",
         "presentation": "close",
         "handle_objection": "soft_close",
+        # Autonomous flow — skip to next phase, not soft_close
+        "autonomous_discovery": "autonomous_qualification",
+        "autonomous_qualification": "autonomous_presentation",
+        "autonomous_presentation": "autonomous_objection_handling",
+        "autonomous_objection_handling": "autonomous_negotiation",
+        "autonomous_negotiation": "autonomous_closing",
+        "autonomous_closing": "soft_close",
     }
     # Backward compatibility alias
     SKIP_MAP = DEFAULT_SKIP_MAP

@@ -5,7 +5,7 @@
 competitor_mentioned:
   question: "Что важнее всего при выборе системы?"
   generic_options:
-    - "Связаться с менеджером"
+    - "Коллега сравнит под ваш кейс — оставить номер?"
     - "Узнать цены"
   priority: 10
 
@@ -30,7 +30,7 @@ pain_manual_work:
 large_company:
   question: "Что важнее для вашей команды?"
   generic_options:
-    - "Связаться с менеджером"
+    - "Коллега из отдела enterprise перезвонит — оставить номер?"
   priority: 5
 
 small_company:
@@ -44,11 +44,11 @@ after_price_question:
   generic_options:
     - "Условия оплаты"
     - "Рассрочка"
-    - "Связаться с менеджером"
+    - "Коллега расскажет подробнее — оставить номер?"
   priority: 7
 
 after_features_question:
   question: "Какие функции интересуют больше всего?"
   generic_options:
-    - "Получить консультацию менеджера"
+    - "Коллега покажет на вашем примере — оставить номер?"
   priority: 6

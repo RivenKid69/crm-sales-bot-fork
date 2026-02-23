@@ -513,19 +513,19 @@ class ResponseGenerator:
     _KB_EMPTY_CONTACT_KNOWN = [
         "Уточню у коллег и вернусь с ответом.",
         "Хороший вопрос — уточню у команды и напишу вам.",
-        "Этот момент уточню у специалиста и вернусь.",
-        "Передам ваш вопрос нашему специалисту — он свяжется с вами.",
+        "Этот момент уточню у коллег и вернусь.",
+        "Передам ваш вопрос коллеге — он свяжется с вами.",
         "Точный ответ уточню и напишу, как только узнаю.",
         "Проверю у коллег и сразу напишу вам.",
     ]
     _KB_EMPTY_CONTACT_UNKNOWN = [
         "Хороший вопрос — уточню у команды. Как с вами связаться?",
-        "Уточню у специалиста — оставьте номер, он вам напишет.",
-        "Передам вопрос менеджеру. На какой номер перезвонить?",
-        "Этот момент лучше уточнить у специалиста. Оставьте контакт — он свяжется.",
+        "Уточню у коллег — оставьте номер, вам напишут.",
+        "Передам вопрос коллеге. На какой номер перезвонить?",
+        "Этот момент лучше уточнить у коллег. Оставьте контакт — свяжемся.",
         "Уточню у коллег. Удобнее позвонить или написать?",
-        "Дам точный ответ через специалиста — оставьте номер или почту?",
-        "Передам вопрос нашему менеджеру. Как вас набрать?",
+        "Дам точный ответ через коллегу — оставьте номер или почту?",
+        "Передам вопрос коллеге. Как вас набрать?",
         "Это уточню у команды — оставьте контакт, чтобы вернуться с ответом быстро.",
     ]
 
@@ -959,6 +959,113 @@ class ResponseGenerator:
         result = re.sub(r'\s+([.,!?])', r'\1', result)
         return result
 
+    @staticmethod
+    def _strip_ungrounded_modules(response: str, retrieved_facts: str) -> str:
+        """Strip sentences with fabricated module names not grounded in KB.
+
+        Bot sometimes invents module names like 'модуль Запасы',
+        'модуль Контроль сроков годности', 'модуль Лицензирование'.
+        Strip the sentence if the module name is not found in retrieved_facts.
+        """
+        rf_low = (retrieved_facts or "").lower()
+
+        def _strip_sentence(text: str, match_start: int, match_end: int) -> str:
+            """Remove the sentence containing the match range."""
+            sent_start = text.rfind('.', 0, match_start)
+            sent_start = sent_start + 1 if sent_start >= 0 else 0
+            sent_end_m = re.search(r'[.!?]', text[match_end:])
+            sent_end = match_end + sent_end_m.end() if sent_end_m else len(text)
+            return text[:sent_start] + text[sent_end:]
+
+        result = response
+
+        # Pattern 1: "модуль" + quoted name: «X», "X", 'X'
+        quoted_pat = re.compile(
+            r'модул\w+\s+[«"\'"]([^»"\'\"]{2,40})[»"\'\"]',
+            re.IGNORECASE,
+        )
+        for m in reversed(list(quoted_pat.finditer(result))):
+            module_name = m.group(1).strip().lower()
+            if module_name not in rf_low:
+                result = _strip_sentence(result, m.start(), m.end())
+
+        # Pattern 2: "модуль" + unquoted multi-word name (2+ words after "модуль")
+        # e.g. "модуль управления сроками годности", "модуль CRM с рассылкой SMS"
+        unquoted_pat = re.compile(
+            r'модул\w+\s+((?:[\w]+\s+){1,5}[\w]+)',
+            re.IGNORECASE,
+        )
+        for m in reversed(list(unquoted_pat.finditer(result))):
+            module_name = m.group(1).strip().lower()
+            if module_name not in rf_low:
+                result = _strip_sentence(result, m.start(), m.end())
+
+        result = re.sub(r'\s{2,}', ' ', result).strip()
+        return result if len(result) > 10 else response
+
+    # Known integration targets that are ALWAYS allowed (part of Wipon core)
+    _ALLOWED_INTEGRATION_TARGETS = frozenset({
+        'фискальн', 'kaspi', 'каспи', 'ofd', 'офд', 'qr',
+    })
+
+    @staticmethod
+    def _strip_ungrounded_integrations(response: str, retrieved_facts: str) -> str:
+        """Strip sentences claiming integration with specific services not in retrieved_facts.
+
+        Bot sometimes fabricates integrations (iiko, Glovo, Wolt, 1C, etc.).
+        Allowed without grounding: фискальный регистратор, Kaspi, OFD.
+        Everything else must be present in retrieved_facts.
+        """
+        rf_low = (retrieved_facts or "").lower()
+
+        def _strip_sentence(text: str, start: int, end: int) -> str:
+            sent_start = text.rfind('.', 0, start)
+            sent_start = sent_start + 1 if sent_start >= 0 else 0
+            sent_end_m = re.search(r'[.!?]', text[end:])
+            sent_end = end + sent_end_m.end() if sent_end_m else len(text)
+            return text[:sent_start] + text[sent_end:]
+
+        result = response
+        # Match: "интеграци*/интегрирован*/подключен*/синхронизируется/совместим с/к [ServiceName]"
+        pat = re.compile(
+            r'(?:интеграци\w+|интегрирован\w*|подключен\w*|синхронизир\w+|совместим\w*)\s+'
+            r'(?:с|к)\s+'
+            r'([\w][\w\s/\-]{1,30}?)(?=[,.!?:;—\-]|\s+[—\-]|\s+и\s+|\s+для|\s+без|$)',
+            re.IGNORECASE,
+        )
+        for m in reversed(list(pat.finditer(result))):
+            service_raw = m.group(1).strip()
+            service_low = service_raw.lower()
+            # Skip generic (non-service) words
+            if re.match(
+                r'^(?:вашей|вашим|другими|разными|внешними|любыми|нашей|ним|ней'
+                r'|этой|этим|банком|кассой|системой|программой)$',
+                service_low,
+            ):
+                continue
+            # Check whitelist
+            if any(ok in service_low for ok in ResponseGenerator._ALLOWED_INTEGRATION_TARGETS):
+                continue
+            # Check against retrieved_facts
+            if service_low not in rf_low:
+                result = _strip_sentence(result, m.start(), m.end())
+
+        # Also strip "готов\w+ интеграции с X и Y" — multiple services
+        multi_pat = re.compile(
+            r'(?:готов\w+\s+)?интеграци\w+\s+с\s+([\w]+)\s+и\s+([\w]+)',
+            re.IGNORECASE,
+        )
+        for m in reversed(list(multi_pat.finditer(result))):
+            svc1 = m.group(1).strip().lower()
+            svc2 = m.group(2).strip().lower()
+            svc1_ok = any(ok in svc1 for ok in ResponseGenerator._ALLOWED_INTEGRATION_TARGETS) or svc1 in rf_low
+            svc2_ok = any(ok in svc2 for ok in ResponseGenerator._ALLOWED_INTEGRATION_TARGETS) or svc2 in rf_low
+            if not svc1_ok or not svc2_ok:
+                result = _strip_sentence(result, m.start(), m.end())
+
+        result = re.sub(r'\s{2,}', ' ', result).strip()
+        return result if len(result) > 10 else response
+
     # Valid subscription prices by time period (for context-aware validation)
     _VALID_MONTHLY_PRICES = frozenset({"5000"})
     _VALID_YEARLY_PRICES = frozenset({"150000", "220000", "500000", "80000", "300000", "1000000"})
@@ -1285,7 +1392,7 @@ class ResponseGenerator:
             snippet = m.group(0)
             if re.search(r'\bТИС\b', snippet, re.IGNORECASE):
                 continue
-            result = result.replace(snippet, "Точную стоимость для дополнительных точек уточнит менеджер. ")
+            result = result.replace(snippet, "Точную стоимость для дополнительных точек уточню у коллег. ")
 
         # Collapse malformed "/год/точка" style artifacts.
         result = re.sub(
@@ -2476,7 +2583,7 @@ class ResponseGenerator:
                         variables["closing_data_request"] = (
                             "💡 Клиент только что предоставил платёжные данные (ИИН и телефон Kaspi).\n"
                             "   Поблагодари и подтверди получение. Не спрашивай снова то, что уже дали.\n"
-                            "   Следующий шаг: подтверди что всё принято и менеджер свяжется.\n"
+                            "   Следующий шаг: подтверди что всё принято и коллега позвонит.\n"
                         )
                     # URGENT: no terminal reachable — collect blocking fields,
                     # but do not force hard asks when client is in stress mode.
@@ -3292,6 +3399,14 @@ class ResponseGenerator:
             r'|результат\s+зависит\s+от\s+вашего\s+сценари[яю][^.]*\.)',
             '', text, flags=re.IGNORECASE,
         )
+        # Prompt leak: LLM echoes internal instructions
+        # "Если нет ответа, перехожу к презентации ценности: «..."
+        text = re.sub(
+            r'(?:Если\s+(?:нет\s+ответа|клиент\s+не\s+отвечает|молчит),?\s+)?'
+            r'перехожу\s+к\s+(?:презентации|квалификации|закрытию|обработке|следующему)\s+'
+            r'[^.!?]*[.!?]?\s*',
+            '', text, flags=re.IGNORECASE,
+        )
         # Product name typos: "Wipro" / "Wipo" → "Wipon"
         text = re.sub(r'\bWipro\b', 'Wipon', text)
         text = re.sub(r'\bWipo\b(?!n)', 'Wipon', text)
@@ -3603,18 +3718,10 @@ class ResponseGenerator:
             processed = self._strip_misrouted_subd_answer(processed, _um)
             if self._has_price_hallucination(processed, _rf):
                 processed = self._strip_hallucinated_prices(processed, _rf)
-            # Trial denial fix (same as in main pipeline)
-            processed = re.sub(
-                r'(?:пробн\w+|тестов\w+)\s+период\w*\s+.{0,20}'
-                r'(?:не\s+предусмотрен\w*|отсутствует|не\s+(?:предлага|предоставля)\w*)',
-                'есть 7-дневный тестовый период',
-                processed, flags=re.IGNORECASE,
-            )
-            processed = re.sub(
-                r'(?:нет|без)\s+(?:пробн\w+|тестов\w+)\s+период\w*',
-                'есть 7-дневный тестовый период',
-                processed, flags=re.IGNORECASE,
-            )
+            processed = self._strip_ungrounded_modules(processed, _rf)
+            processed = self._strip_ungrounded_integrations(processed, _rf)
+            # Strip false trial/test period claims — Wipon has no trial
+            # (sentences containing "тестовый период" claims are stripped in _strip_fabricated_claims)
             processed = self._clean(processed)
 
         # Strip markdown formatting from autonomous responses (plain text chat)
@@ -3633,6 +3740,10 @@ class ResponseGenerator:
             processed = self._enforce_feminine_gender(processed)
             processed = self._strip_banned_phrases(processed)
             processed = self._strip_fabricated_claims(processed)
+            processed = self._strip_ungrounded_modules(processed, str(retrieved_facts or ""))
+            processed = self._strip_ungrounded_integrations(processed, str(retrieved_facts or ""))
+            processed = self._simplify_or_questions(processed)
+            processed = self._truncate_to_max_sentences(processed, max_sentences=3)
             processed = self._enforce_word_limit(processed)
 
         processed = self._compress_repeated_price_response(processed, context)
@@ -3641,6 +3752,10 @@ class ResponseGenerator:
             processed = self._strip_trailing_question(processed)
         processed = self._enforce_no_contact_boundaries(processed, context)
         if self._is_low_quality_artifact(processed):
+            processed = self._low_quality_fallback(context)
+        # Detect off-topic API/integration answer when user asked about payment
+        _um = context.get("user_message", "")
+        if self._is_offtopic_technical_answer(processed, _um):
             processed = self._low_quality_fallback(context)
 
         # Layer 5: Post-processing safety net — strip trailing question when suppressed
@@ -3814,14 +3929,28 @@ class ResponseGenerator:
             result = re.sub(pattern, replacement, result)
         return result
 
+    # Common female names that LLM hallucinates instead of "Айбота"
+    _FAKE_BOT_NAMES = re.compile(
+        r'\b(?:меня зовут|я)\s+'
+        r'(?:Ирина|Мария|Анна|Елена|Наталья|Ольга|Светлана|Татьяна|'
+        r'Екатерина|Марина|Алия|Дана|Айгуль|Динара|Гульнар\w*|'
+        r'Жанна|Камила|Лариса|Юлия|Виктория|Кристина|Алина)\b',
+        re.IGNORECASE,
+    )
+
     @staticmethod
     def _strip_banned_phrases(text: str) -> str:
         """Remove banned phrases that LLM sometimes generates despite instructions."""
+        # Fix hallucinated bot name → always "Айбота"
+        result = ResponseGenerator._FAKE_BOT_NAMES.sub(
+            lambda m: m.group(0).split()[0] + ' Айбота' if 'зовут' in m.group(0).lower() else 'Айбота',
+            text,
+        )
         # "Как вас зовут?" / "А как вас зовут?" — forbidden per prompt rules
         result = re.sub(
             r'[АаA]?\s*[Кк]ак\s+вас\s+зовут\s*\??\s*',
             '',
-            text,
+            result,
         )
         # "Чем могу помочь?" — too generic/formal
         result = re.sub(
@@ -3841,7 +3970,7 @@ class ResponseGenerator:
             result,
             flags=re.IGNORECASE,
         )
-        # Replace "менеджер" → "коллега" to sound like a real person, not AI
+        # Replace "менеджер"/"специалист" → "коллега" to sound like a real person
         result = re.sub(r'[Мм]енеджер\s+свяжется', 'коллега позвонит', result)
         result = re.sub(r'[Мм]енеджер\s+перезвонит', 'коллега позвонит', result)
         result = re.sub(r'[Мм]енеджер\s+позвонит', 'коллега позвонит', result)
@@ -3849,6 +3978,33 @@ class ResponseGenerator:
         result = re.sub(r'Менеджеру', 'Коллеге', result)
         result = re.sub(r'менеджер(?=\s+(?:помо|подбер|уточн|рассчит|объясн|ответ|расскаж))', 'коллега', result)
         result = re.sub(r'Менеджер(?=\s+(?:помо|подбер|уточн|рассчит|объясн|ответ|расскаж))', 'Коллега', result)
+        # Catch-all: any remaining "менеджер*" → "коллег*" (all declensions)
+        result = re.sub(r'\bменеджером\b', 'коллегой', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bменеджеру\b', 'коллеге', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bменеджера\b', 'коллегу', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bменеджеры\b', 'коллеги', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bменеджеров\b', 'коллег', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bменеджер\b', 'коллега', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bМенеджер\b', 'Коллега', result)
+        # Replace "специалист" → "коллега" (common forms)
+        result = re.sub(r'\b[Сс]пециалист\b', 'коллега', result)
+        result = re.sub(r'\b[Сс]пециалисту\b', 'коллеге', result)
+        result = re.sub(r'\b[Сс]пециалиста\b', 'коллегу', result)
+        result = re.sub(r'\b[Сс]пециалистом\b', 'коллегой', result)
+        result = re.sub(r'\b[Сс]пециалисте\b', 'коллеге', result)
+        result = re.sub(r'\b[Нн]аш\s+специалист', 'коллега', result, flags=re.IGNORECASE)
+        # Remove meta-commentary in parentheses: "(Спросила, чтобы...)", "(Потому что...)"
+        result = re.sub(
+            r'\s*\([^)]*(?:спросил\w*|потому\s+что|чтобы\s+понять|для\s+того|важно\s+понять|уточн\w+)[^)]*\)\s*',
+            ' ',
+            result, flags=re.IGNORECASE,
+        )
+        # "Прошу прощения [за X]" / "Извините" without reason — remove at start of response
+        result = re.sub(
+            r'^(?:Прошу\s+прощения|Извините|Простите)(?:\s+за\s+\w+)*[.!,]?\s*',
+            '',
+            result,
+        )
         # Bot can't call/email anyone — replace "я свяжусь/позвоню" with "коллега позвонит"
         result = re.sub(
             r'я\s+(?:сейчас\s+)?(?:свяжусь|позвоню|перезвоню)\s+с\s+вами',
@@ -3856,21 +4012,66 @@ class ResponseGenerator:
             result, flags=re.IGNORECASE,
         )
         result = re.sub(
-            r'(?:свяжусь|позвоню|перезвоню)\s+(?:вам|с\s+вами)',
+            r'(?:свяжусь|позвоню|перезвоню|звоню)\s+(?:вам|с\s+вами|в\s+это\s+время|именно\s+тогда|в\s+\w+\s+время|завтра|сегодня)',
             'коллега позвонит вам',
             result, flags=re.IGNORECASE,
+        )
+        # Strip emoji (bot should never use emoji)
+        result = re.sub(
+            r'[\U0001F300-\U0001F9FF\U00002702-\U000027B0\U0000FE00-\U0000FE0F'
+            r'\U0000200D\U00002600-\U000026FF\U00002300-\U000023FF]+',
+            '', result,
         )
         # Clean up leftover double spaces / trailing dots
         result = re.sub(r'\s{2,}', ' ', result).strip()
         return result
 
     @staticmethod
+    def _truncate_to_max_sentences(text: str, max_sentences: int = 3) -> str:
+        """Truncate response to max N sentences to enforce brevity."""
+        # Split by sentence-ending punctuation, keeping the delimiter
+        parts = re.split(r'(?<=[.!?])\s+', text.strip())
+        if len(parts) <= max_sentences:
+            return text
+        truncated = ' '.join(parts[:max_sentences])
+        # Make sure it ends with punctuation
+        if truncated and truncated[-1] not in '.!?':
+            truncated += '.'
+        return truncated
+
+    @staticmethod
+    def _simplify_or_questions(text: str) -> str:
+        """Strip 'или [words]?' at the end and 'Или [words]?' as a separate trailing sentence.
+
+        Only matches when the "или" part has 2+ words (to keep short 'Mini или Lite?').
+        """
+        # Pattern 1: "...[,;] или [2+ words]?" at the end of text
+        result = re.sub(
+            r'[,;]?\s+или\s+\w+\s+[\w\s\-—,]+\?\s*$',
+            '?',
+            text,
+        )
+        # Pattern 2: "[.!?] Или [2+ words]?" as a separate trailing sentence
+        # e.g. "это весовые товары? Или всё-таки на полках?"
+        result = re.sub(
+            r'([.!?])\s+[Ии]ли\s+\w+\s+[\w\s\-—,]+\?\s*$',
+            r'\1',
+            result,
+        )
+        return result
+
+    @staticmethod
     def _strip_fabricated_claims(text: str) -> str:
         """Strip sentences containing fabricated promotions, discounts, or false claims."""
         # Strip sentences with fabricated discounts/promotions
-        # "скидка 20%", "акция: скидка", "специальное предложение"
+        # "скидка 20%", "до 30% скидка", "действует скидка", "скидка для новых клиентов"
         result = re.sub(
-            r'[^.!?]*(?:скидк\w+\s+\d+\s*%|действует\s+акци\w+|'
+            r'[^.!?]*(?:скидк\w+\s+(?:до\s+)?\d+\s*%|'
+            r'до\s+\d+\s*%\s+скидк\w*|'
+            r'скидк\w+\s+(?:в|на)\s+\d+\s*%|'
+            r'действует\s+(?:акци\w+|скидк\w+)|'
+            r'скидк\w+\s+(?:на\s+)?(?:годов\w+|месячн\w+|новы\w+|первы\w+)\s+\w+|'
+            r'скидк\w+\s+для\s+(?:новых|первых|постоянн\w+)\s+клиент\w+|'
             r'специальн\w+\s+предложени\w+|промо[-\s]?акци\w+)[^.!?]*[.!?]?\s*',
             '',
             text,
@@ -3880,6 +4081,16 @@ class ResponseGenerator:
         result = re.sub(
             r'[^.!?]*(?:все\s+клиенты\s+(?:из|остаются|довольны)|'
             r'(?:аптек|магазин|кафе)\w*[,]?\s+котор\w+\s+(?:внедрил|подключил|использу)\w+)[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip false integration claims with government/external services
+        # Bot sometimes fabricates "интегрирован с Минздравом", "интегрирован с ИС ЭСФ" etc.
+        result = re.sub(
+            r'[^.!?]*(?:интегрирован\w*|подключен\w*)\s+(?:с|к)\s+'
+            r'(?:Минздрав\w*|министерств\w*|ФСМС|ИС\s+ЭСФ|Нацбанк\w*|Минфин\w*)'
+            r'[^.!?]*[.!?]?\s*',
             '',
             result,
             flags=re.IGNORECASE,
@@ -3905,6 +4116,22 @@ class ResponseGenerator:
             result,
             flags=re.IGNORECASE,
         )
+        # Strip fabricated competitor comparisons: "у конкурентов нет X", "у них дороже"
+        _COMPETITORS = r'(?:Poster|poster|iiko|1[CcСс]|R[-\s]?Keeper|Умаг|умаг|UMAG|МойСклад|мойсклад)'
+        result = re.sub(
+            r'[^.!?]*(?:у\s+конкурент\w+|конкурент\w+\s+(?:не\s+)?(?:имеют|предлагают|дают|есть|дешевле|дороже|хуже)|'
+            r'у\s+них\s+(?:такого|нет|без)\s+[\w\s]+(?:не\s+будет|нет)|'
+            r'у\s+них\s+(?:нет|без)\s+\w+|'
+            r'там\s+(?:либо\s+)?без\s+\w+|'
+            r'чего\s+в\s+' + _COMPETITORS + r'\s+нет|'
+            r'в\s+' + _COMPETITORS + r'\s+(?:проще|дороже|хуже|сложнее|нет\s+\w+|не\s+\w+)|'
+            r'(?:дешевле|дороже|лучше|хуже|быстрее|проще|сложнее)\s+' + _COMPETITORS + r'|'
+            r'у\s+' + _COMPETITORS + r'\s+(?:нет|без|не\s+\w+)'
+            r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
         # Strip meta-narration: "Цель вопроса:", "Примечание:", "Цель:" etc.
         result = re.sub(
             r'(?:Цель(?:\s+(?:вопроса|ответа|сообщения))?|Примечание|Комментарий|Контекст|Задача)\s*:\s*[^.!?]*[.!?]?\s*',
@@ -3919,6 +4146,67 @@ class ResponseGenerator:
             r'видео[-\s]?\w+|'
             r'(?:организую|запланирую|назначу|могу\s+организовать)\s+(?:\w+\s+){0,3}(?:звонок|созвон|встреч\w*)'
             r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip fabricated SLA/uptime claims (99.9%, 4 hours recovery, "падения не бывает")
+        result = re.sub(
+            r'[^.!?]*(?:'
+            r'99[.,]9\s*%|'
+            r'восстановлени\w+\s+(?:не\s+)?(?:превышает|более|составляет)\s+\d+\s+час\w*|'
+            r'гарантие\w*\s+доступност\w*|'
+            r'падени\w+\s+не\s+бывает|сбо\w+\s+не\s+бывает|'
+            r'простоев\s+не\s+бывает|никогда\s+не\s+(?:падал|лежал|отключал)'
+            r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip fabricated infrastructure claims (Google Cloud, AWS, specific DC locations)
+        result = re.sub(
+            r'[^.!?]*(?:Google\s+Cloud|Amazon\s+Web|AWS|Azure|Hetzner|'
+            r'дата[-\s]?центр\w*\s+(?:в\s+)?(?:Almaty|Astana|Алматы|Астана|Нур[-\s]?Султан))'
+            r'[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Fix false tariff denial: "нет тарифа Lite" → strip (all tariffs exist)
+        result = re.sub(
+            r'[^.!?]*(?:нет|не\s+существует|отсутствует)\s+тариф\w*\s+(?:Mini|Lite|Standard|Pro)'
+            r'[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Also: "у нас нет тарифа X"
+        result = re.sub(
+            r'[^.!?]*у\s+нас\s+нет\s+тариф\w*\s+(?:Mini|Lite|Standard|Pro)'
+            r'[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip CRM feature promises — Wipon is POS/ТИС, NOT CRM
+        # Bot sometimes promises рассылки, воронка продаж, маркетинг campaigns
+        result = re.sub(
+            r'[^.!?]*(?:'
+            r'рассылк\w+\s+(?:клиент\w*|покупател\w*|по\s+(?:базе|клиент))|'
+            r'рассылк\w+\s+(?:sms|email|смс|емейл)|'
+            r'(?:email|sms|смс)[-\s]?рассылк\w+|'
+            r'воронк\w+\s+продаж|'
+            r'(?:crm|срм)[-\s]?(?:систем\w*|функци\w*|модул\w*)|'
+            r'маркетинг\w+\s+(?:инструмент\w*|автоматизаци\w*|кампани\w*)'
+            r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip "бесплатная касса/система" — no free tier exists, Mini = 5000₸/мес
+        result = re.sub(
+            r'[^.!?]*бесплатн\w+\s+(?:онлайн[-\s]?касс\w*|касс\w*|систем\w*|тариф\w*|wipon\w*|подключени\w*)'
+            r'[^.!?]*[.!?]?\s*',
             '',
             result,
             flags=re.IGNORECASE,
@@ -3943,6 +4231,54 @@ class ResponseGenerator:
             flags=re.IGNORECASE,
         )
 
+        # Strip fabricated hardware pricing (bot fabricates "терминал Paycom за 500000₸")
+        result = re.sub(
+            r'[^.!?]*(?:терминал|оборудовани\w+|устройств\w+)\s+\w+\s+'
+            r'(?:за|от|по)\s+\d[\d\s]*(?:₸|тг|тенге)'
+            r'[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip fabricated monthly calculations for yearly tariffs
+        # Bot divides yearly price by 12 and presents it as monthly (e.g. 18333₸/мес)
+        # Only valid monthly price is 5000₸ (Mini)
+        _FAKE_MONTHLY = re.compile(
+            r'(\d[\d\s]*)\s*(?:₸|тг|тенге)\s*(?:в\s+месяц|/мес)',
+            re.IGNORECASE,
+        )
+        for m in reversed(list(_FAKE_MONTHLY.finditer(result))):
+            price_raw = m.group(1).replace(' ', '').replace('\u00a0', '')
+            if price_raw.isdigit() and int(price_raw) != 5000:
+                # Any monthly price that isn't 5000 is fabricated
+                sent_start = result.rfind('.', 0, m.start())
+                sent_start = sent_start + 1 if sent_start >= 0 else 0
+                sent_end_m = re.search(r'[.!?]', result[m.end():])
+                sent_end = m.end() + sent_end_m.end() if sent_end_m else len(result)
+                result = result[:sent_start] + result[sent_end:]
+        # Strip fabricated phone numbers (bot should NEVER give phone numbers)
+        # Catches: "телефону: +7 701...", "номер: 8 700 500...", "звоните 87..."
+        result = re.sub(
+            r'[^.!?]*(?:телефон\w*|номер\w*|звоните|позвоните|набирайте)\s*:?\s+'
+            r'(?:[\w\s]*\s)?'
+            r'(?:\+?[78]\s*[\(\d][\d\s\-\(\)]{5,18})'
+            r'[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Also catch standalone phone-number-like patterns in "техподдержка — это 8 700 500"
+        # or "Техподдержка Wipon доступна по телефону: +7 (701) 123-45-67"
+        result = re.sub(
+            r'[^.!?]*(?:техподдержк\w*|поддержк\w+|саппорт\w*)'
+            r'(?:\s+\w+){0,5}\s*'
+            r'(?:—|–|-|:)?\s*(?:это)?\s*'
+            r'(?:\+?[78]\s*[\(\d][\d\s\-\(\)]{5,18})'
+            r'[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
         # Fix tariff name duplication: "Mini тариф Mini" → "тариф Mini"
         result = re.sub(
             r'\b(Mini|Lite|Standard|Pro)\s+тариф\s+\1\b',
@@ -3958,7 +4294,8 @@ class ResponseGenerator:
             flags=re.IGNORECASE,
         )
 
-        # Clean up
+        # Clean up: fix missing space after sentence-ending punctuation
+        result = re.sub(r'([.!?])([А-ЯA-ZЁ])', r'\1 \2', result)
         result = re.sub(r'\s{2,}', ' ', result).strip()
         if len(result) > 15:
             return result
@@ -4110,6 +4447,32 @@ class ResponseGenerator:
         return False
 
     @staticmethod
+    def _is_offtopic_technical_answer(response: str, user_message: str) -> bool:
+        """Detect when response talks about API/integration but user asked about basic product."""
+        resp_low = response.lower()
+        user_low = (user_message or "").lower()
+        # User asked about payment/pricing OR basic product need
+        basic_q = any(w in user_low for w in (
+            "рассрочк", "оплат", "платёж", "платеж", "каспи", "kaspi",
+            "скольк", "стоим", "цен", "тариф",
+            "нужна касс", "нужен касс", "нужна систем", "ищу касс",
+            "хочу касс", "мне нужн",
+        ))
+        if not basic_q:
+            return False
+        # Response talks about technical dev topics (not relevant to basic users)
+        tech_resp = any(w in resp_low for w in ("rest api", "api", "sdk", "документац"))
+        if not tech_resp:
+            return False
+        # Response has NO basic product/payment context
+        has_product = any(w in resp_low for w in (
+            "рассрочк", "оплат", "₸", "тенге", "тариф", "стоим", "цен",
+            "kaspi", "каспи", "платёж", "платеж",
+            "касс", "учёт", "учет", "фискал", "товар",
+        ))
+        return not has_product
+
+    @staticmethod
     def _low_quality_fallback(context: Dict[str, Any]) -> str:
         """Context-aware fallback for glitchy short outputs."""
         intent = str(context.get("intent", "") or "").lower()
@@ -4120,7 +4483,7 @@ class ResponseGenerator:
                 "в ближайшее время."
             )
         if "price" in intent or "pricing" in intent:
-            return "Точную стоимость под ваш формат бизнеса уточнит менеджер."
+            return "Точную стоимость под ваш формат бизнеса уточню у коллег."
         if state.startswith("autonomous_"):
             return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант."
         return "Расскажите, что вас интересует по Wipon?"

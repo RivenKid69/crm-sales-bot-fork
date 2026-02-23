@@ -40,7 +40,7 @@ class GuardConfig:
     # Основные лимиты
     max_turns: int = 25                    # Средний sales диалог: 8-15 turns
     max_phase_attempts: int = 3            # LivePerson recommendation
-    max_same_state: int = 4                # Loop detection
+    max_same_state: int = 6                # Loop detection (aligned with max_turns_in_state)
     max_same_message: int = 3              # Raised from 2 — two identical is too aggressive
     timeout_seconds: int = 1800            # 30 минут
 
@@ -226,18 +226,28 @@ class ConversationGuard:
         # 3. Проверка высокого раздражения ИЛИ pre_intervention_triggered
         # Pre-intervention срабатывает при WARNING уровне (5-6) с определёнными условиями
         # (RUSHED tone, multiple frustration signals), поэтому нужно проверять оба флага
+        #
+        # IMPORTANT: Don't give up on early turns even if client is aggressive.
+        # A good salesperson handles objections, not abandons after 4 messages.
+        _min_turns_before_frustration_close = 6
         if (self._state.frustration_level >= self.config.high_frustration_threshold
                 or pre_intervention_triggered):
             # If client is engaged (asking questions, objecting, providing data),
             # offer structured options (TIER_2) instead of skipping phase (TIER_3).
-            # The client may be frustrated BECAUSE their question wasn't answered —
-            # skipping the phase makes it worse. TIER_2 gives them structured choices,
-            # and policy layer can still override to answer directly.
             if self._is_engagement_intent():
                 logger.info(
                     "High frustration but client is engaged — TIER_2 instead of TIER_3",
                     frustration_level=self._state.frustration_level,
                     last_intent=self._state.last_intent,
+                )
+                return True, self.TIER_2
+
+            # Don't escalate to TIER_3 too early — handle objections first
+            if self._state.turn_count < _min_turns_before_frustration_close:
+                logger.info(
+                    "High frustration but too early to close — TIER_2",
+                    frustration_level=self._state.frustration_level,
+                    turns=self._state.turn_count,
                 )
                 return True, self.TIER_2
 

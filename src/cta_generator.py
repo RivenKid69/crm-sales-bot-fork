@@ -131,15 +131,14 @@ STATE_TO_CTA_PHASE: Dict[str, str] = {
 CTA_BY_PHASE: Dict[str, List[str]] = {
     "early": [],
     "mid": [
-        "Хотите посмотреть как это решается на демо?",
+        "Коллега из нашей команды разбирается в деталях — хотите, перезвонит?",
         "Могу показать на примере — буквально 10 минут.",
         "Интересно увидеть решение?",
     ],
     "late": [
-        "Готовы попробовать?",
-        "Запланируем демо?",
-        "Хотите тестовый доступ?",
+        "Готовы подключить?",
         "Оставите контакт для связи?",
+        "Коллега по подключениям перезвонит и всё оформит — удобно?",
     ],
     "close": [
         "Какой контакт для связи удобнее?",
@@ -191,25 +190,24 @@ class CTAGenerator:
 
         # В средних SPIN состояниях — мягкие CTA (клиент уже понимает проблему)
         "spin_implication": [
-            "Хотите посмотреть как это решается на демо?",
+            "Хотите посмотреть как это можно решить?",
             "Могу показать на примере — буквально 10 минут.",
         ],
         "spin_need_payoff": [
-            "Готовы посмотреть как это работает?",
-            "Давайте покажу на демо — увидите сами.",
-            "Хотите тестовый доступ?",
+            "Хотите покажу как это работает?",
+            "Интересно увидеть систему в действии?",
+            "Хотите, коллега из отдела подключений вам перезвонит?",
         ],
 
         # В поздних состояниях — прямые CTA (defaults)
         "presentation": [
-            "Готовы попробовать?",
-            "Запланируем демо?",
-            "Хотите тестовый доступ?",
+            "Готовы подключить?",
             "Оставите контакт для связи?",
+            "Коллега, который занимается подключениями, может перезвонить — оставите номер?",
         ],
         "handle_objection": [
-            "Может всё-таки глянем демо? Это бесплатно и ни к чему не обязывает.",
-            "Давайте просто покажу — 15 минут, и всё станет понятнее.",
+            "Коллега из техотдела разбирается в этом лучше — хотите, перезвонит?",
+            "Давайте просто покажу на примере — и всё станет понятнее.",
         ],
         "close": [
             "Какой контакт для связи удобнее?",
@@ -221,9 +219,9 @@ class CTAGenerator:
     # Альтернативные CTA по типу действия
     CTA_BY_ACTION: Dict[str, List[str]] = {
         "demo": [
-            "Запланируем демо?",
-            "Показать на демо?",
-            "Хотите увидеть в действии?",
+            "Коллега покажет всё на вашем примере — оставите номер?",
+            "Оставите контакт для подключения?",
+            "Хотите узнать подробнее?",
         ],
         "contact": [
             "Оставите контакт?",
@@ -231,14 +229,52 @@ class CTAGenerator:
             "На какую почту прислать?",
         ],
         "trial": [
-            "Хотите тестовый доступ?",
-            "Попробуете бесплатно?",
-            "Дать пробный период?",
+            "Оставите контакт для подключения?",
+            "Коллега по подключениям перезвонит и всё настроит — оставите номер?",
         ],
         "info": [
             "Прислать подробную информацию?",
-            "Отправить презентацию?",
             "Скинуть материалы на почту?",
+        ],
+    }
+
+    # Intent-based CTA: contextual explanations so client understands WHY colleague calls
+    INTENT_CTA_MAP: Dict[str, List[str]] = {
+        # Competitor comparison → colleague will compare for their specific case
+        "competitor_dissatisfied": [
+            "Коллега детально сравнит под ваш бизнес — оставите номер?",
+            "Коллега подберёт лучший вариант под ваш кейс — скажете номер?",
+        ],
+        "pricing_comparison": [
+            "Коллега рассчитает точную стоимость и сравнит — оставите номер?",
+            "Коллега детально сравнит цены под ваш бизнес — скажете номер?",
+        ],
+        # Price questions → colleague will calculate exact cost
+        "price_question": [
+            "Коллега рассчитает точную стоимость под ваш кейс — оставите номер?",
+            "Для точного расчёта коллега перезвонит — скажете номер?",
+        ],
+        "objection_price": [
+            "Коллега подберёт оптимальный тариф под бюджет — оставите номер?",
+        ],
+        # Feature/integration questions → colleague will show on their example
+        "question_features": [
+            "Коллега покажет всё на вашем примере — оставите номер?",
+            "Коллега расскажет подробнее — оставите номер?",
+        ],
+        "question_integrations": [
+            "Коллега покажет как это работает с вашей системой — оставите номер?",
+        ],
+        # Agreement/ready to buy → colleague will finalize
+        "agreement": [
+            "Коллега позвонит и оформит подключение — скажите номер?",
+            "Коллега оформит всё за 10 минут — скажите номер?",
+        ],
+        "callback_request": [
+            "Коллега перезвонит в удобное время — скажите когда и номер?",
+        ],
+        "demo_request": [
+            "Коллега расскажет всё за 10 минут — оставите номер?",
         ],
     }
 
@@ -482,18 +518,20 @@ class CTAGenerator:
         state: str,
         cta_type: Optional[str] = None,
         soft: bool = False,
-        flow_context: Optional[Dict] = None
+        flow_context: Optional[Dict] = None,
+        intent: Optional[str] = None,
     ) -> Optional[str]:
         """
         Получить подходящий CTA.
 
-        State-specific first (preserves SPIN behavior), then phase fallback.
+        Priority: intent-specific → state-specific → phase fallback.
 
         Args:
             state: Текущее состояние
             cta_type: Тип CTA (demo, contact, trial, info)
             soft: Использовать мягкий CTA
             flow_context: Flow context for dynamic phase resolution
+            intent: Current user intent for context-dependent CTA
 
         Returns:
             CTA или None
@@ -501,6 +539,9 @@ class CTAGenerator:
         # Выбираем источник CTA
         if soft:
             ctas = self.SOFT_CTAS
+        elif intent and intent in self.INTENT_CTA_MAP:
+            # Intent-specific CTA: explains WHY colleague calls
+            ctas = self.INTENT_CTA_MAP[intent]
         elif cta_type and cta_type in self._cta_by_action:
             ctas = self._cta_by_action[cta_type]
         else:
@@ -565,8 +606,9 @@ class CTAGenerator:
         cta_type = context.get("preferred_cta_type")
         soft = context.get("frustration_level", 0) >= 3  # Мягкий при среднем frustration
         flow_context = context.get("flow_context")
+        intent = context.get("intent", "")
 
-        cta = self.get_cta(state, cta_type=cta_type, soft=soft, flow_context=flow_context)
+        cta = self.get_cta(state, cta_type=cta_type, soft=soft, flow_context=flow_context, intent=intent)
         if not cta:
             return response
 
@@ -611,8 +653,9 @@ class CTAGenerator:
         cta_type = context.get("preferred_cta_type")
         soft = context.get("frustration_level", 0) >= 3
         flow_context = context.get("flow_context")
+        intent = context.get("intent", "")
 
-        cta = self.get_cta(state, cta_type=cta_type, soft=soft, flow_context=flow_context)
+        cta = self.get_cta(state, cta_type=cta_type, soft=soft, flow_context=flow_context, intent=intent)
         if not cta:
             return CTAResult(
                 original_response=response,

@@ -110,6 +110,20 @@ FEW_SHOT_EXAMPLES = [
         }
     },
 
+    # "Давайте оформим" — согласие на покупку, НЕ demo_request
+    {
+        "message": "давайте оформим",
+        "context": {"state": "autonomous_negotiation"},
+        "result": {
+            "intent": "agreement",
+            "confidence": 0.95,
+            "reasoning": "Клиент готов оформить сделку — прямое согласие",
+            "alternatives": [
+                {"intent": "demo_request", "confidence": 0.20},
+            ]
+        }
+    },
+
     # ДВУСМЫСЛЕННОЕ - "ладно" может быть разным
     {
         "message": "ладно, давайте",

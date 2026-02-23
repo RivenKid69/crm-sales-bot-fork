@@ -1976,6 +1976,7 @@ class SalesBot:
                     "frustration_level": frustration_level,
                     "last_action": self.last_action,
                     "action": action,
+                    "intent": intent,
                     "objection_info": objection_info,
                     "user_message": user_message,
                     # Pass collected_data for contact gate

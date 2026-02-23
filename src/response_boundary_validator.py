@@ -1031,6 +1031,8 @@ class ResponseBoundaryValidator:
     def _sanitize_send_promise(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
         ctx = context or {}
         user_low = str(ctx.get("user_message", "") or "").lower()
+        intent = str(ctx.get("intent", "") or "").lower()
+        state = str(ctx.get("state", "") or "").lower()
         refusal_source = f"{user_low} {self._history_user_text(ctx).lower()}"
         safe_setup = 'Технические действия выполняются после согласования деталей.'
         if (
@@ -1038,6 +1040,17 @@ class ResponseBoundaryValidator:
             or self.SEND_CAPABILITY_PATTERN.search(response)
             or self.PAST_SETUP_PATTERN.search(response)
         ):
+            # In closing/terminal states with agreement/contact_provided — do targeted substitution,
+            # don't discard the entire closing response
+            _is_closing_or_terminal = (
+                "closing" in state
+                or state in {"payment_ready", "video_call_scheduled", "success"}
+            )
+            if _is_closing_or_terminal and intent in {"agreement", "contact_provided", "payment_confirmation"}:
+                sanitized = self.SEND_PROMISE_PATTERN.sub("Оформим всё прямо здесь.", response)
+                sanitized = self.SEND_CAPABILITY_PATTERN.sub("Оформим прямо в чате.", sanitized)
+                sanitized = self.PAST_SETUP_PATTERN.sub(safe_setup, sanitized)
+                return sanitized
             if any(k in user_low for k in ("план", "шаг", "next step", "следующий шаг", "что дальше")):
                 return (
                     "Короткий план запуска в чате: сначала фиксируем требования и точки, "
@@ -1055,8 +1068,8 @@ class ResponseBoundaryValidator:
                     "Продолжим в чате — дам конкретный следующий шаг по вашему вопросу."
                 )
             return (
-                "В этом чате не отправляю файлы и не выполняю системные действия. "
-                "Могу дать конкретный ответ текстом и следующий шаг прямо здесь."
+                "Расскажу всё прямо здесь, в чате. "
+                "Что именно хотите узнать?"
             )
         sanitized = self.SEND_PROMISE_PATTERN.sub("Дам детали в этом чате текстом.", response)
         sanitized = self.SEND_CAPABILITY_PATTERN.sub("Могу описать детали прямо в чате.", sanitized)
@@ -1094,7 +1107,7 @@ class ResponseBoundaryValidator:
             return (
                 "Счёт без ИИН оформить нельзя. "
                 "Если хотите, можем продолжить консультацию в чате "
-                "или зафиксировать контакт для видеозвонка с менеджером."
+                "или зафиксировать контакт для видеозвонка с коллегой."
             )
         return response
 
@@ -1484,11 +1497,11 @@ class ResponseBoundaryValidator:
         if "closing" in state:
             return (
                 "Чтобы продолжить оформление, оставьте телефон или email — "
-                "менеджер свяжется и согласует удобное время."
+                "коллега позвонит и согласует удобное время."
             )
         if "negotiation" in state:
             return (
-                "Точную стоимость для вашего случая уточнит менеджер. "
+                "Точную стоимость для вашего случая уточню у коллег. "
                 "Оставьте телефон или email — подберём подходящий вариант."
             )
         return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon."
