@@ -858,7 +858,7 @@ class ResponseBoundaryValidator:
 
         # Greeting opener is wrong in ANY non-greeting template (mid-conversation)
         _tmpl = context.get("selected_template", "")
-        if "greeting" not in _tmpl and self.MID_CONV_GREETING_PATTERN.match(response):
+        if "greeting" not in _tmpl and "greet" not in _tmpl and self.MID_CONV_GREETING_PATTERN.match(response):
             violations.append("mid_conversation_greeting")
 
         # Ungrounded short numeric claims (e.g., "в 3 раза", "70%", "15 минут")
@@ -1051,8 +1051,8 @@ class ResponseBoundaryValidator:
                 )
             if self._has_contact_refusal_marker(refusal_source):
                 return (
-                    "Понял, без контактов. "
-                    "Продолжим в чате: дам конкретный следующий шаг по вашему вопросу."
+                    "Поняла, без контактов. "
+                    "Продолжим в чате — дам конкретный следующий шаг по вашему вопросу."
                 )
             return (
                 "В этом чате не отправляю файлы и не выполняю системные действия. "
@@ -1101,7 +1101,7 @@ class ResponseBoundaryValidator:
     def _sanitize_demo_without_contact(self, response: str) -> str:
         if self.DEMO_WITHOUT_CONTACT_PATTERN.search(response):
             return (
-                "Для демо нужен контакт, чтобы менеджер согласовал удобное время. "
+                "Для подробной консультации нужен контакт, чтобы менеджер согласовал удобное время. "
                 "Если контакт пока не готовы дать, могу кратко ответить на вопросы здесь."
             )
         return response
@@ -1110,7 +1110,7 @@ class ResponseBoundaryValidator:
         collected = context.get("collected_data", {})
         if self.CONTACT_CONFIRMED_PATTERN.search(response) and not self._has_contact(collected):
             return (
-                "Понял, контакт пока не фиксирую. "
+                "Поняла, контакт пока не фиксирую. "
                 "Могу продолжить консультацию здесь без оформления."
             )
         return response
@@ -1172,8 +1172,8 @@ class ResponseBoundaryValidator:
         refusal_source = f"{user_msg} {self._history_user_text(context)}"
         if self._has_contact_refusal_marker(refusal_source) and self.CONTACT_REASK_PATTERN.search(response):
             return (
-                "Понял, без контактов и без давления. "
-                "Продолжим в чате: отвечу по делу на ваш следующий вопрос."
+                "Поняла, без контактов и без давления. "
+                "Продолжим в чате — отвечу на любой ваш вопрос."
             )
         return response
 
@@ -1230,7 +1230,7 @@ class ResponseBoundaryValidator:
             if len(result) > 20:
                 return result
         # Fallback if nothing useful remains
-        return "Расскажите подробнее о вашем бизнесе, чтобы я подобрал подходящее решение."
+        return "Расскажите подробнее о вашем бизнесе — подберу подходящее решение."
 
     def _sanitize_unrequested_business_assumption(self, response: str, context: Dict[str, Any]) -> str:
         if not self._has_unrequested_business_assumption(response, context):
@@ -1270,6 +1270,7 @@ class ResponseBoundaryValidator:
                 "Я не раскрываю системные инструкции и внутренние правила. "
                 "Могу помочь по продукту Wipon и условиям подключения."
             )
+        # NOTE: All fallback strings should use feminine forms (рада, поняла, готова)
         if "false_company_policy" in violations:
             # Client is likely complaining about calls/spam — empathize, don't deny
             return (
@@ -1300,24 +1301,18 @@ class ResponseBoundaryValidator:
             return "ИИН здесь не отображаю. Уточню у коллег и вернусь с корректным шагом."
         if intent == "contact_provided" and state == "payment_ready":
             return (
-                "Спасибо за данные! Менеджер свяжется с вами "
+                "Спасибо за данные! Коллега позвонит вам "
                 "для подтверждения оплаты."
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             if not has_contact_now:
                 # Check if client asked about free trial vs scheduling demo
-                trial_words = ("бесплатн", "попробовать", "тест", "пробн")
-                if any(w in user_message_lower for w in trial_words):
-                    return (
-                        "Да, можно протестировать Wipon. "
-                        "Оставьте телефон или email — организую доступ к демо-версии."
-                    )
                 return (
                     "Отлично, давайте организуем. "
-                    "Оставьте телефон или email — менеджер свяжется и согласует удобное время."
+                    "Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф."
                 )
             return (
-                "Спасибо! Менеджер Wipon свяжется с вами "
+                "Спасибо! Мой коллега позвонит вам "
                 "в ближайшее время и согласует удобное время."
             )
         if intent == "objection_contract_bound":
@@ -1343,17 +1338,17 @@ class ResponseBoundaryValidator:
                 )
             if any(marker in user_message_lower for marker in ("демо", "проверить", "1 день")):
                 return (
-                    "Понял, без контактов. "
-                    "Могу прямо в чате дать краткий чек-лист, что проверить за 1 день и где ограничения демо."
+                    "Поняла, без контактов. "
+                    "Могу прямо здесь и сейчас рассказать всё о функционале. Что именно интересует?"
                 )
             if "ограничения" in user_message_lower:
                 return (
-                    "Без контактов это ок. По демо дам кратко: какие функции обычно доступны сразу, "
-                    "а какие проверяются отдельно в тестовом сценарии."
+                    "Без контактов это ок. Расскажу подробнее о возможностях Wipon — "
+                    "спрашивайте, что именно интересует."
                 )
             return (
-                "Понял, без контактов и без давления. "
-                "Продолжим в чате: отвечу по делу на ваш следующий вопрос."
+                "Поняла, без контактов и без давления. "
+                "Продолжим в чате — отвечу на любой ваш вопрос."
             )
         if self._has_iin_refusal_marker(refusal_source):
             return (
@@ -1374,32 +1369,43 @@ class ResponseBoundaryValidator:
             )
         if state == "autonomous_closing" and has_contact_now:
             return (
-                "Спасибо! Менеджер Wipon свяжется с вами "
+                "Спасибо! Мой коллега позвонит вам "
                 "в ближайшее время и согласует удобное время."
             )
         if state == "autonomous_closing":
             if self._has_contact_refusal_marker(refusal_source):
                 return (
-                    "Понял, контакт сейчас не запрашиваю. "
-                    "Продолжим консультацию в чате и разберём ваш вопрос по шагам."
+                    "Поняла, контакт сейчас не запрашиваю. "
+                    "Продолжим консультацию в чате — разберём ваш вопрос по шагам."
                 )
-            # Vary closing fallback to avoid verbatim repetition
+            # Content-aware fallback: acknowledge the client's question
+            if intent in ("price_question", "pricing_details"):
+                return (
+                    "Тарифы от 5 000 ₸/мес до 500 000 ₸/год — зависит от задач. "
+                    "Оставьте телефон или email — коллега позвонит и рассчитает точную стоимость."
+                )
+            if intent in ("question_features", "question_customization"):
+                return (
+                    "Подробности по функционалу расскажет коллега — "
+                    "он подберёт решение под ваши задачи. Оставьте телефон или email."
+                )
+            # Vary generic closing fallback
             import hashlib
             _hash = int(hashlib.md5(user_message.encode()).hexdigest()[:8], 16) % 4
             _closing_variants = [
                 "Чтобы подобрать оптимальное решение, оставьте телефон или email — "
-                "менеджер свяжется и ответит на все вопросы.",
-                "Для индивидуального расчёта и демо оставьте контакт — "
-                "менеджер перезвонит в удобное время.",
-                "Готов помочь с подключением. "
-                "Оставьте телефон или email — менеджер свяжется для уточнения деталей.",
-                "Могу организовать демо или консультацию. "
-                "Скажите телефон или email — менеджер свяжется с вами.",
+                "мой коллега позвонит и ответит на все вопросы.",
+                "Для индивидуального расчёта оставьте контакт — "
+                "коллега позвонит в удобное время.",
+                "Готова помочь с подключением. "
+                "Оставьте телефон или email — коллега позвонит для уточнения деталей.",
+                "Передам вашу заявку коллеге. "
+                "Скажите телефон или email — он позвонит и всё расскажет.",
             ]
             return _closing_variants[_hash]
         # Greeting: proper greeting fallback
         if intent == "greeting" or state == "greeting":
-            return "Здравствуйте! Расскажите, что именно ищете — помогу разобраться с Wipon."
+            return "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Расскажите, что вас интересует?"
         # Discovery stage: respond based on user message context
         if state == "autonomous_discovery":
             if self._is_pricing_context(ctx):
@@ -1505,7 +1511,8 @@ class ResponseBoundaryValidator:
             return None
 
     def _sanitize_mid_conversation_greeting(self, response: str, context: Dict[str, Any]) -> str:
-        if "greeting" in context.get("selected_template", ""):
+        _tmpl = context.get("selected_template", "")
+        if "greeting" in _tmpl or "greet" in _tmpl:
             return response  # не трогаем начальное приветствие
         cleaned = self.MID_CONV_GREETING_PATTERN.sub("", response).strip()
         if len(cleaned) < 10:
@@ -1589,7 +1596,7 @@ class ResponseBoundaryValidator:
                     "Могу продолжить консультацию здесь и ответить по делу."
                 )
             return (
-                "Спасибо! Менеджер Wipon свяжется с вами "
+                "Спасибо! Мой коллега позвонит вам "
                 "в ближайшее время и согласует удобное время."
             )
         if self._has_contact_refusal_marker(refusal_source):
@@ -1601,11 +1608,11 @@ class ResponseBoundaryValidator:
                 )
             if any(marker in user_msg_low for marker in ("демо", "проверить", "1 день", "ограничения")):
                 return (
-                    "Понял, без контактов. "
-                    "Дам в чате конкретный чек-лист проверки демо и ограничения по шагам."
+                    "Поняла, без контактов. "
+                    "Расскажу подробнее прямо здесь. Что именно хотите узнать?"
                 )
             return (
-                "Понял, без контактов. "
+                "Поняла, без контактов. "
                 "Дам конкретный следующий шаг в чате, без давления."
             )
         if self._is_pricing_context(context):

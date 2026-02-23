@@ -149,16 +149,8 @@ MAX_GATED_RULES = 5
 MAX_PROMPT_CHARS = 35_000
 
 # Layer 1 safety rules for autonomous templates (injected via {safety_rules}).
-SAFETY_RULES_V2 = """⛔ КРИТИЧЕСКИЕ ПРАВИЛА (нарушение = провал):
-1. ЛЮБАЯ цифра, цена — ТОЛЬКО из БАЗЫ ЗНАНИЙ ниже. Нет в базе → "уточню у коллег". НЕ считай, НЕ округляй.
-   Точные цены тарифов: Mini=5000₸/мес, Lite=150000₸/год, Standard=220000₸/год, Pro=500000₸/год. НЕ ПУТАЙ тариф и цену.
-2. Продукт = WIPON. Не упоминай WMS, 1C, Битрикс, WisePOS и любые другие системы.
-3. Не выдумывай кейсы, названия клиентов, истории, политики компании. Нет в базе = ложь.
-   НЕ утверждай что "у нас нет холодных звонков", "звоним только по записи", "только в ответ на обращения".
-   Если клиент жалуется на звонки — извинись за неудобство, НЕ отрицай его опыт.
-4. Не утверждай что уже отправил/подключил/настроил.
-5. Простой текст без форматирования (без **, списков, ссылок). Без примечаний и пояснений к себе.
-6. Если клиент задаёт вопрос НЕ о Wipon/POS/бизнесе — скажи "я специализируюсь на Wipon" и верни разговор к его бизнесу."""
+# NOTE: Dead code — overwritten at line ~197 by AUTONOMOUS_SAFETY_RULES_V2.
+# Active SAFETY_RULES_V2 is in generator_autonomous.py.
 
 HARD_NO_CONTACT_MARKERS: Tuple[str, ...] = (
     "контакты не дам",
@@ -3636,6 +3628,13 @@ class ResponseGenerator:
                 processed, str(context.get("user_message", "") or "")
             )
 
+        # Deterministic autonomous post-processing
+        if _is_autonomous:
+            processed = self._enforce_feminine_gender(processed)
+            processed = self._strip_banned_phrases(processed)
+            processed = self._strip_fabricated_claims(processed)
+            processed = self._enforce_word_limit(processed)
+
         processed = self._compress_repeated_price_response(processed, context)
         processed = self._enforce_enterprise_tis_quote(processed, context)
         if self._should_force_no_question(context):
@@ -3778,6 +3777,219 @@ class ResponseGenerator:
         )
 
     @staticmethod
+    def _enforce_feminine_gender(text: str) -> str:
+        """Deterministic masculine→feminine replacement for Айбота persona.
+
+        Catches LLM leaks like "понял" → "поняла", "рад" → "рада", etc.
+        Uses word-boundary regex to avoid false positives (e.g. "подобрала" stays).
+        """
+        _MASC_TO_FEM = [
+            (r'\bпонял\b', 'поняла'),
+            (r'\bПонял\b', 'Поняла'),
+            (r'\bрад\b', 'рада'),
+            (r'\bРад\b', 'Рада'),
+            (r'\bготов\b', 'готова'),
+            (r'\bГотов\b', 'Готова'),
+            (r'\bподобрал\b', 'подобрала'),
+            (r'\bПодобрал\b', 'Подобрала'),
+            (r'\bуточнил\b', 'уточнила'),
+            (r'\bУточнил\b', 'Уточнила'),
+            (r'\bузнал\b', 'узнала'),
+            (r'\bУзнал\b', 'Узнала'),
+            (r'\bзаписал\b', 'записала'),
+            (r'\bЗаписал\b', 'Записала'),
+            (r'\bотправил\b', 'отправила'),
+            (r'\bОтправил\b', 'Отправила'),
+            (r'\bсохранил\b', 'сохранила'),
+            (r'\bСохранил\b', 'Сохранила'),
+            (r'\bрассказал\b', 'рассказала'),
+            (r'\bРассказал\b', 'Рассказала'),
+            (r'\bпредложил\b', 'предложила'),
+            (r'\bПредложил\b', 'Предложила'),
+            (r'\bпомог\b', 'помогла'),
+            (r'\bПомог\b', 'Помогла'),
+        ]
+        result = text
+        for pattern, replacement in _MASC_TO_FEM:
+            result = re.sub(pattern, replacement, result)
+        return result
+
+    @staticmethod
+    def _strip_banned_phrases(text: str) -> str:
+        """Remove banned phrases that LLM sometimes generates despite instructions."""
+        # "Как вас зовут?" / "А как вас зовут?" — forbidden per prompt rules
+        result = re.sub(
+            r'[АаA]?\s*[Кк]ак\s+вас\s+зовут\s*\??\s*',
+            '',
+            text,
+        )
+        # "Чем могу помочь?" — too generic/formal
+        result = re.sub(
+            r'[Чч]ем\s+(?:я\s+)?могу\s+помочь\s*\??\s*',
+            '',
+            result,
+        )
+        # Strip bot/AI self-disclosure: "я бот", "я не человек", "ChatGPT", "GPT"
+        # Replace entire sentences containing self-disclosure
+        result = re.sub(
+            r'[^.!?]*(?:'
+            r'я\s+(?:не\s+)?(?:человек|бот|робот|искусственн\w+\s+интеллект|нейросет\w+|ИИ)'
+            r'|работаю\s+на\s+(?:платформ|основ|баз)\w+'
+            r'|(?:ChatGPT|GPT|OpenAI|нейронн\w+\s+сет\w+|языков\w+\s+модел\w+)'
+            r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Replace "менеджер" → "коллега" to sound like a real person, not AI
+        result = re.sub(r'[Мм]енеджер\s+свяжется', 'коллега позвонит', result)
+        result = re.sub(r'[Мм]енеджер\s+перезвонит', 'коллега позвонит', result)
+        result = re.sub(r'[Мм]енеджер\s+позвонит', 'коллега позвонит', result)
+        result = re.sub(r'менеджеру', 'коллеге', result)
+        result = re.sub(r'Менеджеру', 'Коллеге', result)
+        result = re.sub(r'менеджер(?=\s+(?:помо|подбер|уточн|рассчит|объясн|ответ|расскаж))', 'коллега', result)
+        result = re.sub(r'Менеджер(?=\s+(?:помо|подбер|уточн|рассчит|объясн|ответ|расскаж))', 'Коллега', result)
+        # Bot can't call/email anyone — replace "я свяжусь/позвоню" with "коллега позвонит"
+        result = re.sub(
+            r'я\s+(?:сейчас\s+)?(?:свяжусь|позвоню|перезвоню)\s+с\s+вами',
+            'коллега позвонит вам',
+            result, flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r'(?:свяжусь|позвоню|перезвоню)\s+(?:вам|с\s+вами)',
+            'коллега позвонит вам',
+            result, flags=re.IGNORECASE,
+        )
+        # Clean up leftover double spaces / trailing dots
+        result = re.sub(r'\s{2,}', ' ', result).strip()
+        return result
+
+    @staticmethod
+    def _strip_fabricated_claims(text: str) -> str:
+        """Strip sentences containing fabricated promotions, discounts, or false claims."""
+        # Strip sentences with fabricated discounts/promotions
+        # "скидка 20%", "акция: скидка", "специальное предложение"
+        result = re.sub(
+            r'[^.!?]*(?:скидк\w+\s+\d+\s*%|действует\s+акци\w+|'
+            r'специальн\w+\s+предложени\w+|промо[-\s]?акци\w+)[^.!?]*[.!?]?\s*',
+            '',
+            text,
+            flags=re.IGNORECASE,
+        )
+        # Strip fabricated client stories: "все клиенты остаются", "аптеки которые внедрили"
+        result = re.sub(
+            r'[^.!?]*(?:все\s+клиенты\s+(?:из|остаются|довольны)|'
+            r'(?:аптек|магазин|кафе)\w*[,]?\s+котор\w+\s+(?:внедрил|подключил|использу)\w+)[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Fix false "24/7 support" claim — actual: будни до 00:00, выходные до 21:00
+        result = re.sub(
+            r'(?:поддержка|support)\s+24\s*/?\s*7\s*(?:включена|доступна|есть)?\s*(?:во\s+все\w*\s+тариф\w*)?',
+            'поддержка доступна в будни до полуночи, в выходные до 21:00',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # "круглосуточная поддержка/техподдержка" → fix (both word orders)
+        result = re.sub(
+            r'круглосуточн\w+\s+(?:тех)?(?:поддержк|помощ|обслужива)\w+',
+            'поддержка в будни до полуночи, в выходные до 21:00',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Reversed: "поддержка работает круглосуточно"
+        result = re.sub(
+            r'(?:тех)?(?:поддержк|помощ)\w+\s+(?:\w+\s+)?круглосуточн\w*',
+            'поддержка в будни до полуночи, в выходные до 21:00',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip meta-narration: "Цель вопроса:", "Примечание:", "Цель:" etc.
+        result = re.sub(
+            r'(?:Цель(?:\s+(?:вопроса|ответа|сообщения))?|Примечание|Комментарий|Контекст|Задача)\s*:\s*[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+
+        # Strip false promises: video calls, scheduling, organizing calls (bot can't do this)
+        result = re.sub(
+            r'[^.!?]*(?:'
+            r'видео[-\s]?\w+|'
+            r'(?:организую|запланирую|назначу|могу\s+организовать)\s+(?:\w+\s+){0,3}(?:звонок|созвон|встреч\w*)'
+            r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip ANY sentence containing "демо" — Wipon has no demo
+        result = re.sub(
+            r'[^.!?]*демо\w*[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Strip sentences with test/trial offers — Wipon has no trial or test access
+        result = re.sub(
+            r'[^.!?]*(?:'
+            r'тестов\w+\s+(?:доступ|период|верси\w+)|'
+            r'пробн\w+\s+(?:период|верси\w+|доступ)|'
+            r'(?:попробовать|протестировать)\s+бесплатно|'
+            r'бесплатн\w+\s+(?:тест|пробн|доступ|период)\w*'
+            r')[^.!?]*[.!?]?\s*',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+
+        # Fix tariff name duplication: "Mini тариф Mini" → "тариф Mini"
+        result = re.sub(
+            r'\b(Mini|Lite|Standard|Pro)\s+тариф\s+\1\b',
+            r'тариф \1',
+            result,
+            flags=re.IGNORECASE,
+        )
+        # Also: "тариф Mini Mini" → "тариф Mini"
+        result = re.sub(
+            r'\bтариф\s+(Mini|Lite|Standard|Pro)\s+\1\b',
+            r'тариф \1',
+            result,
+            flags=re.IGNORECASE,
+        )
+
+        # Clean up
+        result = re.sub(r'\s{2,}', ' ', result).strip()
+        if len(result) > 15:
+            return result
+        # If stripping removed everything, use a safe fallback instead of original
+        return "Оставьте, пожалуйста, телефон или email — мой коллега позвонит и подберёт оптимальный тариф."
+
+    @staticmethod
+    def _enforce_word_limit(text: str, max_words: int = 55) -> str:
+        """Hard-truncate response at sentence boundary if it exceeds word limit.
+
+        Cuts at the last sentence boundary (. ! ?) before max_words.
+        Preserves at least 2 sentences to keep response coherent.
+        """
+        words = text.split()
+        if len(words) <= max_words:
+            return text
+
+        # Find sentence boundaries within the first max_words words
+        truncated = ' '.join(words[:max_words])
+        # Find last sentence-ending punctuation
+        last_period = -1
+        for m in re.finditer(r'[.!?](?:\s|$)', truncated):
+            last_period = m.end()
+
+        if last_period > 20:  # At least ~20 chars = meaningful content
+            return truncated[:last_period].strip()
+
+        # No good sentence boundary found — just cut at max_words
+        return truncated.rstrip(',.;: ') + '.'
+
+    @staticmethod
     def _strip_markdown(text: str) -> str:
         """Strip markdown formatting from response to keep it plain-text chat style."""
         result = text
@@ -3904,14 +4116,14 @@ class ResponseGenerator:
         state = str(context.get("state", "") or "").lower()
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             return (
-                "Спасибо! Менеджер Wipon свяжется с вами "
+                "Спасибо! Мой коллега позвонит вам "
                 "в ближайшее время."
             )
         if "price" in intent or "pricing" in intent:
             return "Точную стоимость под ваш формат бизнеса уточнит менеджер."
         if state.startswith("autonomous_"):
-            return "Расскажите подробнее о вашем бизнесе, чтобы подобрать подходящий вариант."
-        return "Расскажите, чем могу помочь по Wipon?"
+            return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант."
+        return "Расскажите, что вас интересует по Wipon?"
 
     # =========================================================================
     # НОВОЕ: Deduplication методы

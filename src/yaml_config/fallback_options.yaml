@@ -5,7 +5,7 @@
 competitor_mentioned:
   question: "Что важнее всего при выборе системы?"
   generic_options:
-    - "Посмотреть демо"
+    - "Связаться с менеджером"
     - "Узнать цены"
   priority: 10
 
@@ -30,25 +30,25 @@ pain_manual_work:
 large_company:
   question: "Что важнее для вашей команды?"
   generic_options:
-    - "Запланировать демо"
+    - "Связаться с менеджером"
   priority: 5
 
 small_company:
   question: "С чего хотите начать?"
   generic_options:
-    - "Попробовать бесплатно"
+    - "Узнать подробнее"
   priority: 5
 
 after_price_question:
   question: "Что ещё хотите узнать?"
   generic_options:
     - "Условия оплаты"
-    - "Есть ли пробный период"
-    - "Запланировать демо"
+    - "Рассрочка"
+    - "Связаться с менеджером"
   priority: 7
 
 after_features_question:
   question: "Какие функции интересуют больше всего?"
   generic_options:
-    - "Показать всё на демо"
+    - "Получить консультацию менеджера"
   priority: 6

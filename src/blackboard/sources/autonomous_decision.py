@@ -203,6 +203,14 @@ class AutonomousDecisionSource(KnowledgeSource):
             "как оплатить",
             "оформим",
             "оформляйте",
+            "как подключиться",
+            "как подключить",
+            "хочу подключить",
+            "давайте подключим",
+            "куда платить",
+            "как начать",
+            "как оформить",
+            "давайте оформим",
         )
         return any(marker in text for marker in buy_markers)
 
@@ -503,6 +511,46 @@ class AutonomousDecisionSource(KnowledgeSource):
                     next_state=override_target,
                     reasoning=override_reason,
                     explicit_ready_to_buy=self._looks_like_ready_to_buy_message(user_message),
+                )
+            )
+            return
+
+        # Deterministic fast-track: purchase/invoice/demo intents → autonomous_closing
+        # This MUST be deterministic (not LLM-dependent) to guarantee the bot never
+        # "breaks" when a customer suddenly decides to buy at any point in the dialog.
+        _PURCHASE_FAST_TRACK_INTENTS = {
+            "ready_to_buy", "request_invoice", "request_contract",
+            "demo_request", "callback_request",
+        }
+        if (
+            intent in _PURCHASE_FAST_TRACK_INTENTS
+            and state != "autonomous_closing"
+            and "autonomous_closing" in [s for s in all_states if s.startswith("autonomous_")]
+        ):
+            reason_code = f"deterministic_purchase_fast_track_{intent}"
+            blackboard.propose_action(
+                action="autonomous_respond",
+                priority=Priority.HIGH,
+                priority_rank=0,
+                reason_code=reason_code,
+                source_name=self.name,
+            )
+            blackboard.propose_transition(
+                next_state="autonomous_closing",
+                priority=Priority.HIGH,
+                priority_rank=0,
+                reason_code=reason_code,
+                source_name=self.name,
+            )
+            self._decision_history.append(
+                AutonomousDecisionRecord(
+                    turn_in_state=turn_in_state,
+                    intent=intent,
+                    state=state,
+                    should_transition=True,
+                    next_state="autonomous_closing",
+                    reasoning=reason_code,
+                    explicit_ready_to_buy=intent in {"ready_to_buy", "request_invoice", "request_contract"},
                 )
             )
             return
@@ -1090,8 +1138,9 @@ class AutonomousDecisionSource(KnowledgeSource):
 
         if intent in {"demo_request", "callback_request"} and not policy_attack:
             signal_lines.append(
-                f"- ⚡ Клиент просит демо/звонок ({intent}). "
-                "Это сигнал готовности — сильный сигнал для перехода в autonomous_closing. "
+                f"- ⚡ Клиент просит звонок/консультацию ({intent}). "
+                "Не предлагай демо. Вместо этого предложи рассказать всё прямо в чате. "
+                "Предложи связь с менеджером или оставить контакт для подключения. "
                 "should_transition=true, next_state=autonomous_closing."
             )
 
@@ -1118,6 +1167,14 @@ class AutonomousDecisionSource(KnowledgeSource):
                 signal_lines.append(
                     "- ⚡ Клиент выражает согласие и явно готов к покупке. "
                     "Рассмотри переход в autonomous_closing."
+                )
+            elif re.search(
+                r'давайте\s+(?:mini|lite|standard|pro)\b',
+                str(user_message or "").lower(),
+            ):
+                signal_lines.append(
+                    "- ⚡ Клиент выбрал конкретный тариф и говорит 'давайте'. "
+                    "Это сигнал к переходу в autonomous_closing для сбора контакта."
                 )
             else:
                 signal_lines.append(
