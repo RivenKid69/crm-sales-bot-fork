@@ -249,6 +249,8 @@ class AutonomousDecisionSource(KnowledgeSource):
         refusal_markers = (
             "без иин",
             "иин не дам",
+            "иин пока не дам",
+            "пока иин не дам",
             "не дам иин",
             "без указания иин",
             "без предоставления иин",

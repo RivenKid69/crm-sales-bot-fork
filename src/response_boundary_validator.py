@@ -396,6 +396,7 @@ class ResponseBoundaryValidator:
     )
     UNGROUNDED_SOCIAL_PROOF_PATTERN = re.compile(
         r'(?:многие\s+(?:наши\s+)?клиенты|некоторые\s+клиенты'
+        r'|многие\s+(?:наши\s+)?пользователи'
         r'|наши\s+клиенты\s+(?:отмечают|в\s+[А-ЯЁ]\w+|изначально|сомневались|подтверждают)'
         r'|клиенты\s+подтверждают|клиенты\s+из\s+розниц'
         r'|у\s+наших\s+клиентов\s+в\s+[А-ЯЁ]'
@@ -523,6 +524,8 @@ class ResponseBoundaryValidator:
         r'|[Дд]ам\s+конкретные\s+шаги'
         r'|результат\s+зависит\s+от\s+вашего\s+сценари'
         r'|без\s+обещаний[,.]?\s+которых\s+нет\s+в\s+базе'
+        r'|правило\s+interruption'
+        r'|state-gated\s+правил'
         r')',
         re.IGNORECASE,
     )
@@ -530,9 +533,21 @@ class ResponseBoundaryValidator:
         r'(?:укаж(?:ите|и)|сообщ(?:ите|и)|нужн(?:ы|о|ен)|требуется).{0,24}иин',
         re.IGNORECASE,
     )
+    CONTACT_REASK_PATTERN = re.compile(
+        r'(?:'
+        r'остав(?:ьте|ь|ите)|укаж(?:ите|и|ете)|напиш(?:ите|и|ете)|сообщ(?:ите|и)|'
+        r'дайте|поделитесь|скиньте|пришлите|уточн(?:ите|и)'
+        r')\s*(?:,\s*)?[^.!?]{0,45}(?:телефон|номер|контакт|email|почт)'
+        r'|(?:нуж(?:ен|ны|но)|требуется)\s*(?:,\s*)?[^.!?]{0,35}(?:телефон|номер|контакт|email|почт)',
+        re.IGNORECASE,
+    )
     QUANT_CLAIM_PATTERN = re.compile(
         r'(?iu)\b(\d{1,3}(?:[.,]\d+)?)\s*(%|процент(?:а|ов)?|раз(?:а)?|'
         r'минут(?:ы)?|час(?:а|ов)?|дн(?:я|ей)?|недел(?:и|ь)|месяц(?:а|ев)?)(?=\s|$|[.,;:!?])'
+    )
+    VERTICAL_ASSUMPTION_TERMS = (
+        "аптек", "кафе", "ресторан", "салон",
+        "общепит", "кофейн", "барбер", "фастфуд",
     )
 
     def __init__(self) -> None:
@@ -550,9 +565,12 @@ class ResponseBoundaryValidator:
         refusal_markers = (
             "без иин",
             "иин не дам",
+            "иин пока не дам",
+            "пока иин не дам",
             "не дам иин",
             "без указания иин",
             "пока без иин",
+            "иин позже дам",
         )
         return any(marker in low for marker in refusal_markers)
 
@@ -570,6 +588,23 @@ class ResponseBoundaryValidator:
             "без контактов",
             "номер не дам",
             "телефон не дам",
+            "без обязательств",
+            "не готов к звонкам",
+            "без звонка",
+            "без созвона",
+            "созвон не нужен",
+            "без звонков пожалуйста",
+            "звонка не надо",
+            "звоноксыз",
+            "қоңыраусыз",
+            "созвонсыз",
+            "контакт кейін",
+            "контакт кейін беремін",
+            "контакт кейін беремiн",
+            "кейін беремін",
+            "кейін беремiн",
+            "контакт бермеймін",
+            "контакт бермеймiн",
         )
         return any(marker in low for marker in refusal_markers)
 
@@ -608,6 +643,23 @@ class ResponseBoundaryValidator:
         user_msg = str(ctx.get("user_message", "") or "")
         history_user = self._history_user_text(ctx)
         return self._has_payment_marker(f"{user_msg} {history_user}")
+
+    def _is_technical_query_context(self, context: Optional[Dict[str, Any]]) -> bool:
+        ctx = context or {}
+        intent = str(ctx.get("intent", "") or "").lower()
+        if intent in {"request_sla", "question_security", "question_integrations"}:
+            return True
+        source = " ".join(
+            [
+                str(ctx.get("user_message", "") or "").lower(),
+                self._history_user_text(ctx).lower(),
+            ]
+        )
+        markers = (
+            "sla", "rpo", "rto", "где хран", "дата-центр", "дата центр",
+            "шифрован", "безопас", "api", "webhook", "rest",
+        )
+        return any(marker in source for marker in markers)
 
     def validate_response(
         self,
@@ -764,6 +816,8 @@ class ResponseBoundaryValidator:
         refusal_source = f"{user_msg} {self._history_user_text(context)}"
         if self._has_iin_refusal_marker(refusal_source) and self.IIN_REASK_PATTERN.search(response):
             violations.append("iin_refusal_reask")
+        if self._has_contact_refusal_marker(refusal_source) and self.CONTACT_REASK_PATTERN.search(response):
+            violations.append("contact_pressure_after_refusal")
 
         # Business-constraint violation: invoice/contract without IIN
         if self.INVOICE_WITHOUT_IIN_PATTERN.search(response) or self.INVOICE_WITHOUT_IIN_REVERSED_PATTERN.search(response):
@@ -793,6 +847,8 @@ class ResponseBoundaryValidator:
         # Off-topic: bot recommending non-Wipon products/stores/services
         if self._is_off_topic_recommendation(response, context):
             violations.append("off_topic_recommendation")
+        if self._has_unrequested_business_assumption(response, context):
+            violations.append("unrequested_business_assumption")
 
         if self.POLICY_DISCLOSURE_PATTERN.search(response):
             violations.append("policy_disclosure")
@@ -931,17 +987,19 @@ class ResponseBoundaryValidator:
         sanitized = self._sanitize_mid_conversation_greeting(sanitized, context)
         sanitized = self._sanitize_opening_punctuation(sanitized)
         sanitized = self._sanitize_known_typos(sanitized)
-        sanitized = self._sanitize_send_promise(sanitized)
+        sanitized = self._sanitize_send_promise(sanitized, context)
         sanitized = self._sanitize_contact_claim(sanitized, context)
         sanitized = self._sanitize_iin_status_claim(sanitized, context)
         sanitized = self._sanitize_invoice_status_claim(sanitized, context)
         sanitized = self._sanitize_meta_instruction(sanitized)
         sanitized = self._sanitize_invoice_without_iin(sanitized, context)
         sanitized = self._sanitize_iin_refusal_reask(sanitized, context)
+        sanitized = self._sanitize_contact_pressure_after_refusal(sanitized, context)
         sanitized = self._sanitize_demo_without_contact(sanitized)
         sanitized = self._sanitize_ungrounded_quant_claim(sanitized, context)
         sanitized = self._sanitize_ungrounded_guarantee(sanitized)
         sanitized = self._sanitize_ungrounded_social_proof(sanitized)
+        sanitized = self._sanitize_unrequested_business_assumption(sanitized, context)
         if self._is_pricing_context(context):
             sanitized = self._sanitize_currency_locale(sanitized)
         return sanitized.strip()
@@ -970,20 +1028,38 @@ class ResponseBoundaryValidator:
             fixed = re.sub(rf"(?iu)\b{re.escape(typo)}\b", replacement, fixed)
         return fixed
 
-    def _sanitize_send_promise(self, response: str) -> str:
-        safe_send = 'Для фото и материалов — оставьте контакт, менеджер пришлёт вам всё.'
-        safe_setup = 'Подключение выполняет менеджер после согласования деталей.'
+    def _sanitize_send_promise(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
+        ctx = context or {}
+        user_low = str(ctx.get("user_message", "") or "").lower()
+        refusal_source = f"{user_low} {self._history_user_text(ctx).lower()}"
+        safe_setup = 'Технические действия выполняются после согласования деталей.'
         if (
             self.SEND_PROMISE_PATTERN.search(response)
             or self.SEND_CAPABILITY_PATTERN.search(response)
             or self.PAST_SETUP_PATTERN.search(response)
         ):
+            if any(k in user_low for k in ("план", "шаг", "next step", "следующий шаг", "что дальше")):
+                return (
+                    "Короткий план запуска в чате: сначала фиксируем требования и точки, "
+                    "затем настраиваем кассы и интеграции, после этого проводим тест на одной точке "
+                    "и масштабируем на остальные."
+                )
+            if self._is_technical_query_context(ctx):
+                return (
+                    "По техническим параметрам даю только подтверждённые данные. "
+                    "Точные SLA/RPO/RTO и детали размещения уточню у коллег."
+                )
+            if self._has_contact_refusal_marker(refusal_source):
+                return (
+                    "Понял, без контактов. "
+                    "Продолжим в чате: дам конкретный следующий шаг по вашему вопросу."
+                )
             return (
-                "В чате я не отправляю файлы и не подтверждаю подключение. "
-                "Могу передать запрос менеджеру — оставьте контакт."
+                "В этом чате не отправляю файлы и не выполняю системные действия. "
+                "Могу дать конкретный ответ текстом и следующий шаг прямо здесь."
             )
-        sanitized = self.SEND_PROMISE_PATTERN.sub(safe_send, response)
-        sanitized = self.SEND_CAPABILITY_PATTERN.sub(safe_send, sanitized)
+        sanitized = self.SEND_PROMISE_PATTERN.sub("Дам детали в этом чате текстом.", response)
+        sanitized = self.SEND_CAPABILITY_PATTERN.sub("Могу описать детали прямо в чате.", sanitized)
         sanitized = self.PAST_SETUP_PATTERN.sub(safe_setup, sanitized)
         return sanitized
 
@@ -1000,6 +1076,7 @@ class ResponseBoundaryValidator:
             refusal_markers = (
                 "без иин",
                 "иин не дам",
+                "иин пока не дам",
                 "не дам иин",
                 "пока без иин",
                 "позже иин",
@@ -1090,6 +1167,16 @@ class ResponseBoundaryValidator:
             )
         return response
 
+    def _sanitize_contact_pressure_after_refusal(self, response: str, context: Dict[str, Any]) -> str:
+        user_msg = str(context.get("user_message", "") or "")
+        refusal_source = f"{user_msg} {self._history_user_text(context)}"
+        if self._has_contact_refusal_marker(refusal_source) and self.CONTACT_REASK_PATTERN.search(response):
+            return (
+                "Понял, без контактов и без давления. "
+                "Продолжим в чате: отвечу по делу на ваш следующий вопрос."
+            )
+        return response
+
     def _sanitize_ungrounded_quant_claim(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
         if self.QUANT_CLAIM_PATTERN.search(response):
             # Remove only ungrounded numeric KPI/time chunks to preserve useful content.
@@ -1105,6 +1192,11 @@ class ResponseBoundaryValidator:
                 return cleaned
 
             ctx = context or {}
+            if self._is_technical_query_context(ctx):
+                return (
+                    "По техническим параметрам даю только подтверждённые факты. "
+                    "Точные SLA/RPO/RTO и детали размещения уточню у коллег."
+                )
             if self._is_pricing_context(ctx):
                 return (
                     "По стоимости дам расчёт в ₸ без неподтверждённых цифр. "
@@ -1140,6 +1232,25 @@ class ResponseBoundaryValidator:
         # Fallback if nothing useful remains
         return "Расскажите подробнее о вашем бизнесе, чтобы я подобрал подходящее решение."
 
+    def _sanitize_unrequested_business_assumption(self, response: str, context: Dict[str, Any]) -> str:
+        if not self._has_unrequested_business_assumption(response, context):
+            return response
+        sanitized = response
+        sanitized = re.sub(
+            r'ваш\s+бизнес\s*[—-]\s*(?:аптек\w*|кафе|ресторан\w*|салон\w*|общепит\w*)\??',
+            "ваш бизнес",
+            sanitized,
+            flags=re.IGNORECASE,
+        )
+        sanitized = re.sub(
+            r'для\s+(?:аптек\w*|кафе|ресторан\w*|салон\w*|общепит\w*)\b',
+            "для вашего бизнеса",
+            sanitized,
+            flags=re.IGNORECASE,
+        )
+        sanitized = re.sub(r'\s{2,}', ' ', sanitized).strip()
+        return sanitized
+
     def _hallucination_fallback(self, context: Optional[Dict[str, Any]] = None) -> str:
         ctx = context or {}
         intent = str(ctx.get("intent", "")).lower()
@@ -1166,9 +1277,24 @@ class ResponseBoundaryValidator:
                 "Чем могу быть полезен прямо сейчас? Могу ответить на вопросы по продукту."
             )
         if "ungrounded_tech_claim" in violations:
+            if self._is_technical_query_context(ctx):
+                return (
+                    "По техническим параметрам в чате даю только подтверждённые факты. "
+                    "Точные SLA/RPO/RTO, размещение данных и детали API уточню у коллег."
+                )
             return (
                 "Тип СУБД и внутренняя архитектура — коммерческая тайна. "
                 "Для интеграции доступен REST API с документацией. Что ещё интересует по техчасти?"
+            )
+        if "ungrounded_stats" in violations:
+            if self._is_technical_query_context(ctx):
+                return (
+                    "Точные SLA/RPO/RTO и параметры резервирования в этой переписке не подтверждены. "
+                    "Уточню их у коллег и вернусь с конкретными значениями."
+                )
+            return (
+                "Скажу только подтверждённые факты без неподтверждённой статистики. "
+                "Если нужно, уточню точные цифры у коллег."
             )
         if "hallucinated_iin" in violations:
             return "ИИН здесь не отображаю. Уточню у коллег и вернусь с корректным шагом."
@@ -1383,6 +1509,9 @@ class ResponseBoundaryValidator:
             return response  # не трогаем начальное приветствие
         cleaned = self.MID_CONV_GREETING_PATTERN.sub("", response).strip()
         if len(cleaned) < 10:
+            intent = str(context.get("intent", "") or "").lower()
+            if intent.startswith("question_") or intent in {"price_question", "pricing_details", "comparison"}:
+                return "Уточню точные параметры у коллег и вернусь с коротким ответом по вашему вопросу."
             return response  # safety: не возвращать пустую/короткую строку
         if cleaned and cleaned[0].islower():
             cleaned = cleaned[0].upper() + cleaned[1:]
@@ -1422,6 +1551,14 @@ class ResponseBoundaryValidator:
             rules.append(
                 "- Удали неподтверждённые обобщения про клиентов "
                 "('многие клиенты', 'наши клиенты отмечают')."
+            )
+        if "unrequested_business_assumption" in violations:
+            rules.append(
+                "- Не приписывай клиенту отрасль (аптека/кафе/ресторан и т.д.), если он сам это не говорил."
+            )
+        if "contact_pressure_after_refusal" in violations:
+            rules.append(
+                "- Клиент отказался давать контакт. Удали повторные просьбы оставить телефон/email/контакт."
             )
         return (
             "Переформулируй ответ, сохранив смысл.\n"
@@ -1472,7 +1609,7 @@ class ResponseBoundaryValidator:
                 "Дам конкретный следующий шаг в чате, без давления."
             )
         if self._is_pricing_context(context):
-            return "По стоимости сориентирую в ₸. Пришлю точный расчет под ваш кейс."
+            return "По стоимости сориентирую в ₸. Дам точный расчёт под ваш кейс в чате."
         return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon."
 
     # Allowed brand names that can appear in responses (KB products, integrations)
@@ -1504,6 +1641,24 @@ class ResponseBoundaryValidator:
             if name_lower not in ResponseBoundaryValidator._ALLOWED_BRANDS:
                 return True
         return False
+
+    @staticmethod
+    def _has_unrequested_business_assumption(response: str, context: Dict[str, Any]) -> bool:
+        low_resp = str(response or "").lower()
+        if not any(term in low_resp for term in ResponseBoundaryValidator.VERTICAL_ASSUMPTION_TERMS):
+            return False
+        user_msg = str(context.get("user_message", "") or "").lower()
+        history = ResponseBoundaryValidator._history_user_text(context).lower()
+        source = f"{user_msg} {history}"
+        # If user already mentioned this domain, don't flag.
+        if any(term in source for term in ResponseBoundaryValidator.VERTICAL_ASSUMPTION_TERMS):
+            return False
+        # Trigger only when bot explicitly assigns vertical context.
+        explicit_patterns = (
+            r'ваш\s+бизнес\s*[—-]\s*(?:аптек\w*|кафе|ресторан\w*|салон\w*|общепит\w*)',
+            r'для\s+(?:аптек\w*|кафе|ресторан\w*|салон\w*|общепит\w*)',
+        )
+        return any(re.search(p, low_resp) for p in explicit_patterns)
 
     def _is_pricing_context(self, context: Dict[str, Any]) -> bool:
         intent = str(context.get("intent", "")).lower()

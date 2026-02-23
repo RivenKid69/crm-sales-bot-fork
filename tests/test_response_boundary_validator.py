@@ -33,7 +33,7 @@ def test_pricing_currency_locale_is_canonicalized_to_tenge():
 def test_known_typo_is_fixed_without_retry():
     validator = ResponseBoundaryValidator()
     result = validator.validate_response(
-        "Хорошо, присылну детали сегодня.",
+        "Хорошо, присылну ответ сегодня.",
         context={"intent": "info_provided", "action": "continue_current_goal"},
         llm=None,
     )

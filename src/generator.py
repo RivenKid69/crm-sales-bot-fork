@@ -787,6 +787,43 @@ class ResponseGenerator:
         "10000", "12000", "1400",
     })
 
+    @staticmethod
+    def _is_valid_tis_total_price(raw: str, text: str, index: int) -> bool:
+        """Return True for valid dynamic TIS totals near a TIS mention.
+
+        TIS formula: 220 000 + 80 000 * (N-1), where N > 5 points.
+        """
+        if not raw.isdigit():
+            return False
+        value = int(raw)
+        if value < 220000:
+            return False
+        if (value - 220000) % 80000 != 0:
+            return False
+        # Must be in local TIS context to avoid letting unrelated prices pass.
+        left = max(0, index - 140)
+        right = min(len(text), index + 140)
+        window = text[left:right].lower()
+        if "тис" not in window:
+            return False
+        points = (value - 220000) // 80000 + 1
+        return points > 5
+
+    @staticmethod
+    def _is_valid_tis_component_price(raw: str, text: str, index: int) -> bool:
+        """Allow TIS formula components (220k base, 80k per additional point)."""
+        if raw not in {"220000", "80000"}:
+            return False
+        left = max(0, index - 180)
+        right = min(len(text), index + 180)
+        window = text[left:right].lower()
+        if "тис" not in window:
+            return False
+        # Keep strict local context to avoid allowing unrelated prices.
+        if raw == "220000":
+            return bool(re.search(r"(перв\w+\s+точ\w*|баз\w+|старт\w+)", window))
+        return bool(re.search(r"(дополнительн\w+\s+точ\w*|кажд\w+\s+дополнительн\w+|\+\s*80\s*000)", window))
+
     def _has_price_hallucination(self, response: str, retrieved_facts: str) -> bool:
         """Detect pricing figures in response that are NOT found in retrieved_facts.
 
@@ -811,7 +848,11 @@ class ResponseGenerator:
                 continue
             if empty_kb:
                 # No KB to ground against — only allow known KB prices
-                if raw not in self._ALL_KNOWN_KB_PRICES:
+                if (
+                    raw not in self._ALL_KNOWN_KB_PRICES
+                    and not self._is_valid_tis_total_price(raw, response, m.start())
+                    and not self._is_valid_tis_component_price(raw, response, m.start())
+                ):
                     logger.debug("price_hallucination_empty_kb", price=raw)
                     return True
                 continue
@@ -821,6 +862,8 @@ class ResponseGenerator:
             spaced = f"{int(raw):,}".replace(',', ' ')
             raw_in_kb = bool(re.search(r'(?<!\d)' + raw + r'(?!\d)', retrieved_facts))
             spaced_in_kb = bool(re.search(r'(?<!\d)' + re.escape(spaced) + r'(?!\d)', retrieved_facts))
+            if self._is_valid_tis_total_price(raw, response, m.start()) or self._is_valid_tis_component_price(raw, response, m.start()):
+                continue
             if not raw_in_kb and not spaced_in_kb:
                 logger.debug("price_hallucination_candidate", price=raw)
                 return True
@@ -849,6 +892,8 @@ class ResponseGenerator:
             if empty_kb:
                 if raw in self._ALL_KNOWN_KB_PRICES:
                     continue  # Known price — keep
+                if self._is_valid_tis_total_price(raw, response, m.start()) or self._is_valid_tis_component_price(raw, response, m.start()):
+                    continue
                 # Unknown price with empty KB — strip
             else:
                 # Context-aware subscription price check:
@@ -862,10 +907,17 @@ class ResponseGenerator:
                 if _is_monthly and raw not in self._VALID_MONTHLY_PRICES:
                     logger.info("invalid_monthly_subscription_price", price=raw)
                     # Fall through to strip
-                elif _is_yearly and raw not in self._VALID_YEARLY_PRICES:
+                elif (
+                    _is_yearly
+                    and raw not in self._VALID_YEARLY_PRICES
+                    and not self._is_valid_tis_total_price(raw, response, m.start())
+                    and not self._is_valid_tis_component_price(raw, response, m.start())
+                ):
                     logger.info("invalid_yearly_subscription_price", price=raw)
                     # Fall through to strip
                 else:
+                    if self._is_valid_tis_total_price(raw, response, m.start()) or self._is_valid_tis_component_price(raw, response, m.start()):
+                        continue
                     spaced = f"{int(raw):,}".replace(',', ' ')
                     raw_in_kb = bool(re.search(r'(?<!\d)' + raw + r'(?!\d)', retrieved_facts))
                     spaced_in_kb = bool(re.search(r'(?<!\d)' + re.escape(spaced) + r'(?!\d)', retrieved_facts))
@@ -1221,6 +1273,37 @@ class ResponseGenerator:
                 break
 
         return result
+
+    def _strip_fake_per_point_surcharges(self, response: str) -> str:
+        """Remove fabricated per-point surcharge claims for non-TIS tariffs.
+
+        Non-TIS tariffs should not claim explicit "+X per additional point" formulas
+        unless that formula exists in KB context. For autonomous safety we keep TIS
+        formula and strip dubious surcharge fragments for Mini/Lite/Standard/Pro.
+        """
+        result = response
+
+        # Drop hard claims like "каждая дополнительная +220 000 ₸/год" outside TIS.
+        surcharge_pattern = re.compile(
+            r'[^.!?]*кажд\w+\s+дополнительн\w+[^.!?]{0,35}'
+            r'(?:\+|плюс)\s*\d[\d\s,\.\u00A0\u202F]{2,}\s*(?:₸|тг|тенге)[^.!?]*[.!?]\s*',
+            re.IGNORECASE,
+        )
+        for m in list(surcharge_pattern.finditer(result)):
+            snippet = m.group(0)
+            if re.search(r'\bТИС\b', snippet, re.IGNORECASE):
+                continue
+            result = result.replace(snippet, "Точную стоимость для дополнительных точек уточнит менеджер. ")
+
+        # Collapse malformed "/год/точка" style artifacts.
+        result = re.sub(
+            r'(\d[\d\s,\.\u00A0\u202F]{2,}\s*(?:₸|тг|тенге))\s*/\s*год\s*/\s*точк\w*',
+            r'\1/год',
+            result,
+            flags=re.IGNORECASE,
+        )
+
+        return re.sub(r'\s{2,}', ' ', result).strip()
 
     def _fix_false_integration_denial(self, response: str) -> str:
         """Fix false denials of supported integrations.
@@ -2742,6 +2825,7 @@ class ResponseGenerator:
 
             # Fix TIS pricing (e.g. "ТИС 500 000" for 12 points → "ТИС 1 100 000")
             response = self._fix_tis_pricing(response)
+            response = self._strip_fake_per_point_surcharges(response)
 
             # Fix false denials of supported integrations (iiko, r_keeper, poster, 1C)
             response = self._fix_false_integration_denial(response)
@@ -3085,6 +3169,13 @@ class ResponseGenerator:
         text = re.sub(r'в\s+течение\s*[.,]', 'в течение 7 дней.', text, flags=re.IGNORECASE)
         # "— тариф." / "— тариф," — sentence ends abruptly at "тариф" (truncated after price strip)
         text = re.sub(r'—\s+тариф\s*[.,]', '.', text)
+        # "каждая дополнительная обходится в." — truncated TIS phrase after aggressive stripping
+        text = re.sub(
+            r'кажд\w+\s+дополнительн\w+\s+обход\w*\s+в\s*[.!?]',
+            'стоимость каждой дополнительной точки уточняется.',
+            text,
+            flags=re.IGNORECASE,
+        )
         # "подходящим тариф email" — garbled text from price strip (remove broken fragment)
         text = re.sub(r'подходящ\w+\s+тариф\s+(?=email|почт|телефон)', 'подходящим тарифом на ', text)
         # Standalone "+" before text (residue from stripped "+ 25 000 за точку")
@@ -3163,6 +3254,19 @@ class ResponseGenerator:
             r'\s*-{2,}\s*\(?\s*(?:Цель|Важно|Примечание|Задача|Контекст|Пояснение'
             r'|Следующий\s+(?:этап|шаг|вопрос)|Проверяю|Комментарий|Рекомендация)(?:\s+\w+)?\s*[:,.].*$',
             '', text,
+        )
+        # Prompt leakage: "--- Правило INTERRUPTION: ..." / "STATE-GATED ПРАВИЛА: ..."
+        text = re.sub(
+            r'\s*-{2,}\s*(?:Правило\s+INTERRUPTION|RULE\s+INTERRUPTION)[^.!?]*[.!?]?',
+            '',
+            text,
+            flags=re.IGNORECASE,
+        )
+        text = re.sub(
+            r'(?:STATE-GATED\s+ПРАВИЛА|INTER(R)?UPTION)\s*:[^.!?]*[.!?]?',
+            '',
+            text,
+            flags=re.IGNORECASE,
         )
         # Standalone prefix meta-talk: "Исправленный вариант:" / "Вот исправленная версия:" / "Версия с исправлениями:" at start
         # Also handles trailing qualifiers: "без неподтверждённых гарантий и с исправлением артефактов:"
@@ -3495,6 +3599,7 @@ class ResponseGenerator:
             processed = self._fix_price_period_confusion(processed)
             processed = self._fix_tariff_point_count(processed)
             processed = self._fix_tis_pricing(processed)
+            processed = self._strip_fake_per_point_surcharges(processed)
             processed = self._fix_false_integration_denial(processed)
             processed = self._fix_tariff_price_mismatch(processed)
             processed = self._fix_price_period_confusion(processed)
@@ -3532,6 +3637,7 @@ class ResponseGenerator:
             )
 
         processed = self._compress_repeated_price_response(processed, context)
+        processed = self._enforce_enterprise_tis_quote(processed, context)
         if self._should_force_no_question(context):
             processed = self._strip_trailing_question(processed)
         processed = self._enforce_no_contact_boundaries(processed, context)
@@ -3611,6 +3717,66 @@ class ResponseGenerator:
         except Exception:
             return response
 
+    def _extract_points_from_context(self, context: Dict[str, Any]) -> int:
+        """Extract declared point count from current user message and recent history."""
+        user_message = str(context.get("user_message", "") or "")
+        history = context.get("history", [])
+        chunks: List[str] = [user_message]
+        if isinstance(history, list):
+            for turn in history[-6:]:
+                if isinstance(turn, dict):
+                    chunks.append(str(turn.get("user", "") or ""))
+        source = " ".join(chunks).lower()
+
+        _word_num_alts = "|".join(self._WORD_NUMBERS.keys())
+        point_re = re.compile(
+            r'(\d+|' + _word_num_alts + r')\w*\s+(?:торгов\w+\s+)?(?:точ\w*|магазин\w*|филиал\w*|касс\w*|локаци\w*)',
+            re.IGNORECASE,
+        )
+        best = 0
+        for m in point_re.finditer(source):
+            n = self._parse_point_count(m.group(1))
+            if n and n > best:
+                best = n
+        return best
+
+    def _enforce_enterprise_tis_quote(self, response: str, context: Dict[str, Any]) -> str:
+        """Force deterministic TIS quote for 5+ points in pricing turns."""
+        points = self._extract_points_from_context(context)
+        if points <= 5:
+            return response
+
+        user_low = str(context.get("user_message", "") or "").lower()
+        intent_low = str(context.get("intent", "") or "").lower()
+        pricing_markers = (
+            "цена", "стоимость", "сколько", "тариф", "ориентир", "прайс", "по деньгам",
+        )
+        asks_pricing = (
+            intent_low in {"price_question", "pricing_details", "pricing_comparison"}
+            or any(marker in user_low for marker in pricing_markers)
+        )
+        if not asks_pricing:
+            return response
+
+        total = 220000 + (points - 1) * 80000
+        total_spaced = f"{total:,}".replace(",", " ")
+        normalized_digits = re.sub(r"\D", "", response)
+        has_total = str(total) in normalized_digits
+        mentions_tis = bool(re.search(r"\bТИС\b", response, re.IGNORECASE))
+        has_non_tis_tariff = bool(re.search(r"\b(?:Mini|Lite|Standard|Pro)\b", response, re.IGNORECASE))
+        has_broken_tail = bool(re.search(r"обход\w*\s+в\s*[.!?]?$", response.strip(), re.IGNORECASE))
+        has_vague_quote = any(
+            phrase in response.lower()
+            for phrase in ("уточню у коллег", "точную стоимость", "вернусь с ответом")
+        )
+        if mentions_tis and has_total and not has_non_tis_tariff and not has_broken_tail and not has_vague_quote:
+            return response
+
+        return (
+            f"Для {points} точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку "
+            f"и +80 000 ₸/год за каждую дополнительную, итого {total_spaced} ₸/год."
+        )
+
     @staticmethod
     def _strip_markdown(text: str) -> str:
         """Strip markdown formatting from response to keep it plain-text chat style."""
@@ -3622,6 +3788,10 @@ class ResponseGenerator:
         result = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'\1', result)
         # Remove markdown links: [text](url) → text
         result = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', result)
+        # Handle broken markdown links: [text]( or [text](
+        result = re.sub(r'\[([^\]]+)\]\(\s*', r'\1 ', result)
+        # Remove orphaned bracket links: [text] → text
+        result = re.sub(r'\[([^\]]+)\]', r'\1', result)
         # Remove headers: ### text → text
         result = re.sub(r'^#{1,6}\s+', '', result, flags=re.MULTILINE)
         # Remove bullet lists: - item or * item or • item → item
