@@ -37,16 +37,20 @@ retriever:
   # Модель для эмбеддингов (FRIDA - лучшая модель для русского языка, ruMTEB avg ~71)
   embedder_model: "ai-forever/FRIDA"
 
+  # Устройство для эмбеддингов: "cpu" или "cuda"
+  embedder_device: "cpu"
+
   # Пороги для каждого этапа каскада
   thresholds:
-    # Exact match - точное совпадение keyword
+    # Semantic match (этап 1) - косинусное сходство эмбеддингов FRIDA
+    # Benchmark: 0.25 → 90.4% HR, 0.20 → 94.2% HR, 0.30 → 86.5% HR
+    semantic: 0.25
+
+    # Exact match (этап 2) - точное совпадение keyword
     exact: 1.0
 
-    # Lemma match - совпадение по леммам
+    # Lemma match (этап 3) - совпадение по леммам
     lemma: 0.15
-
-    # Semantic match - косинусное сходство эмбеддингов
-    semantic: 0.5
 
   # Количество результатов по умолчанию
   default_top_k: 2

@@ -2,9 +2,9 @@
 Каскадный Retriever с 3-этапным поиском.
 
 Этапы:
-1. Exact Match — поиск keyword как подстроки в запросе
-2. Lemma Match — сравнение лемматизированных множеств
-3. Semantic Match — cosine similarity эмбеддингов (fallback)
+1. Semantic Match — cosine similarity эмбеддингов (FRIDA, CPU)
+2. Exact Match — поиск keyword как подстроки в запросе
+3. Lemma Match — сравнение лемматизированных множеств
 """
 
 import re
@@ -120,9 +120,9 @@ class CascadeRetriever:
     Каскадный retriever с 3-этапным поиском.
 
     Этапы:
-    1. Exact match — поиск keyword как подстроки в запросе
-    2. Lemma match — сравнение лемматизированных множеств
-    3. Semantic match — cosine similarity эмбеддингов
+    1. Semantic match — cosine similarity эмбеддингов (FRIDA, CPU)
+    2. Exact match — поиск keyword как подстроки в запросе
+    3. Lemma match — сравнение лемматизированных множеств
     """
 
     def __init__(
@@ -201,7 +201,10 @@ class CascadeRetriever:
             self.np = np
             # Модель из settings (по умолчанию: ai-forever/FRIDA)
             embedder_model = settings.retriever.embedder_model
-            self.embedder = SentenceTransformer(embedder_model)
+            embedder_device = getattr(
+                getattr(settings, 'retriever', None), 'embedder_device', 'cpu'
+            )
+            self.embedder = SentenceTransformer(embedder_model, device=embedder_device)
 
             # Проверяем нужны ли префиксы (FRIDA использует префиксы для лучшего качества)
             self._use_prefixes = "FRIDA" in embedder_model.upper()
@@ -422,20 +425,21 @@ class CascadeRetriever:
             )
             return []
 
-        # Этап 1: Exact match
+        # Этап 1: Semantic match (если включено)
+        if self.use_embeddings and self.embedder:
+            results = self._semantic_search(query, sections, top_k)
+            if results:
+                return results
+
+        # Этап 2: Exact match
         results = self._exact_search(query, sections)
         if results:
             return results[:top_k]
 
-        # Этап 2: Lemma match
+        # Этап 3: Lemma match
         results = self._lemma_search(query, sections)
         if results:
             return results[:top_k]
-
-        # Этап 3: Semantic match (если включено)
-        if self.use_embeddings and self.embedder:
-            results = self._semantic_search(query, sections, top_k)
-            return results
 
         return []
 
@@ -450,9 +454,9 @@ class CascadeRetriever:
         Returns:
             (results, stats) где stats содержит:
             - stage_used: какой этап сработал
-            - exact_time_ms: время exact match
-            - lemma_time_ms: время lemma match
-            - semantic_time_ms: время semantic match (если использовался)
+            - semantic_time_ms: время semantic match (этап 1)
+            - exact_time_ms: время exact match (этап 2)
+            - lemma_time_ms: время lemma match (этап 3)
             - total_time_ms: общее время
         """
         stats = {
@@ -469,7 +473,18 @@ class CascadeRetriever:
         start_total = time.perf_counter()
         sections = self.kb.sections
 
-        # Этап 1: Exact match
+        # Этап 1: Semantic match
+        if self.use_embeddings and self.embedder:
+            start = time.perf_counter()
+            results = self._semantic_search(query, sections, top_k)
+            stats["semantic_time_ms"] = (time.perf_counter() - start) * 1000
+
+            if results:
+                stats["stage_used"] = "semantic"
+                stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
+                return results, stats
+
+        # Этап 2: Exact match
         start = time.perf_counter()
         results = self._exact_search(query, sections)
         stats["exact_time_ms"] = (time.perf_counter() - start) * 1000
@@ -479,7 +494,7 @@ class CascadeRetriever:
             stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
             return results[:top_k], stats
 
-        # Этап 2: Lemma match
+        # Этап 3: Lemma match
         start = time.perf_counter()
         results = self._lemma_search(query, sections)
         stats["lemma_time_ms"] = (time.perf_counter() - start) * 1000
@@ -489,17 +504,8 @@ class CascadeRetriever:
             stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
             return results[:top_k], stats
 
-        # Этап 3: Semantic match
-        if self.use_embeddings and self.embedder:
-            start = time.perf_counter()
-            results = self._semantic_search(query, sections, top_k)
-            stats["semantic_time_ms"] = (time.perf_counter() - start) * 1000
-
-            if results:
-                stats["stage_used"] = "semantic"
-
         stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
-        return results, stats
+        return [], stats
 
     def _exact_search(
         self,
@@ -507,7 +513,7 @@ class CascadeRetriever:
         sections: List[KnowledgeSection]
     ) -> List[SearchResult]:
         """
-        Этап 1: Exact substring match.
+        Этап 2: Exact substring match (fallback после semantic).
 
         Логика:
         - Для каждой секции проверяем все keywords
@@ -565,7 +571,7 @@ class CascadeRetriever:
         sections: List[KnowledgeSection]
     ) -> List[SearchResult]:
         """
-        Этап 2: Lemma-based search.
+        Этап 3: Lemma-based search (fallback после exact).
 
         Логика:
         - Лемматизируем query → query_lemmas (Set[str])
@@ -634,7 +640,7 @@ class CascadeRetriever:
         top_k: int
     ) -> List[SearchResult]:
         """
-        Этап 3: Semantic search (embeddings).
+        Этап 1: Semantic search (embeddings, FRIDA CPU).
 
         Логика:
         - Если embedder не инициализирован → return []

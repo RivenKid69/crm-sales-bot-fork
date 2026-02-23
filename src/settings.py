@@ -27,10 +27,11 @@ DEFAULTS = {
     "retriever": {
         "use_embeddings": True,
         "embedder_model": "ai-forever/FRIDA",
+        "embedder_device": "cpu",
         "thresholds": {
+            "semantic": 0.25,
             "exact": 1.0,
             "lemma": 0.15,
-            "semantic": 0.5,
         },
         "default_top_k": 2,
     },

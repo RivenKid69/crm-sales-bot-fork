@@ -2515,11 +2515,10 @@ if __name__ == "__main__":
     flags.enable_group("phase_3")
 
     # Auto-enable autonomous_flow flag when --flow autonomous
-    # Disable GPU-heavy models (FRIDA embeddings, semantic tone) to avoid CUDA OOM
+    # FRIDA embeddings теперь на CPU (embedder_device), OOM невозможен
     if args.flow == "autonomous":
         flags.set_override("autonomous_flow", True)
         flags.set_override("tone_semantic_tier2", False)
-        settings["retriever"]["use_embeddings"] = False
 
     llm = OllamaLLM()
     bot = SalesBot(llm, flow_name=args.flow)

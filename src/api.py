@@ -250,8 +250,8 @@ def _setup_production_flags():
     flags.set_override("autonomous_flow", True)
     flags.set_override("lead_scoring", True)
     flags.set_override("personalization_session_memory", True)
-    flags.set_override("tone_semantic_tier2", False)   # GPU OOM prevention
-    settings["retriever"]["use_embeddings"] = False     # GPU OOM prevention
+    flags.set_override("tone_semantic_tier2", False)
+    # FRIDA embeddings теперь на CPU (embedder_device), OOM невозможен
 
 
 # ── App ───────────────────────────────────────────────
