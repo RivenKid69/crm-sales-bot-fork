@@ -761,16 +761,41 @@ class ResponseGenerator:
         "pro": {"500000"},
     }
 
+    # Tariff → maximum point count capacity (KB ground truth)
+    _TARIFF_MAX_POINTS = {
+        "mini": 1,
+        "lite": 2,
+        "standard": 3,
+        "pro": 5,
+    }
+
+    # ALL known legitimate prices from KB (tariffs + equipment + add-ons).
+    # Used as whitelist when retrieved_facts is too short to ground against.
+    _ALL_KNOWN_KB_PRICES = frozenset({
+        # Tariffs
+        "5000", "150000", "220000", "500000", "1000000",
+        # Equipment
+        "140000", "160000", "300000", "330000", "365000",
+        "60000", "100000", "200000",
+        "168000", "219000",
+        "21000", "25000", "30000", "45000", "24000",
+        # Add-ons
+        "80000", "50000", "14000",
+        # Installment / рассрочка
+        "265000", "22084",
+        # Accessories / modules
+        "10000", "12000", "1400",
+    })
+
     def _has_price_hallucination(self, response: str, retrieved_facts: str) -> bool:
         """Detect pricing figures in response that are NOT found in retrieved_facts.
 
         Fires when the response contains a price (digits + ₸/тг/тенге) that is NOT
-        present in retrieved_facts AND is not an official Wipon tariff price.
-        Only fires when retrieved_facts is non-empty (empty KB case handled separately).
+        present in retrieved_facts AND is not a known legitimate KB price.
+        When retrieved_facts is empty, any non-whitelisted price is hallucinated.
         """
         import re
-        if not retrieved_facts or len(retrieved_facts.strip()) < 30:
-            return False
+        empty_kb = not retrieved_facts or len(retrieved_facts.strip()) < 30
 
         price_pattern = re.compile(
             r'(\d(?:[\d\s,\.\u00A0\u202F]{1,14}\d|\d{2,}))'
@@ -783,6 +808,12 @@ class ResponseGenerator:
                 continue
             # Official tariff prices are always allowed (they're in CRITICAL RULES)
             if raw in self._OFFICIAL_PRICES:
+                continue
+            if empty_kb:
+                # No KB to ground against — only allow known KB prices
+                if raw not in self._ALL_KNOWN_KB_PRICES:
+                    logger.debug("price_hallucination_empty_kb", price=raw)
+                    return True
                 continue
             # Check both compact ("80000") and spaced ("80 000") forms in KB.
             # Use lookbehind/lookahead to avoid "50000" matching inside "150000"
@@ -801,6 +832,7 @@ class ResponseGenerator:
         Instead of rejecting the entire response, surgically removes only the
         price fragments that aren't grounded in KB or official tariffs.
         """
+        empty_kb = not retrieved_facts or len(retrieved_facts.strip()) < 30
         price_pattern = re.compile(
             r'(\d(?:[\d\s,\.\u00A0\u202F]{1,14}\d|\d{2,}))'
             r'(\s*(?:₸|тг|тенге))',
@@ -813,26 +845,32 @@ class ResponseGenerator:
                 continue
             if raw in self._OFFICIAL_PRICES:
                 continue
-            # Context-aware subscription price check:
-            # Prices followed by time-period markers (/мес, в месяц, /год, в год)
-            # must be valid subscription prices, regardless of KB presence.
-            # This prevents equipment prices (e.g. 200K Rongta scales) from
-            # "validating" wrong tariff associations.
-            after_price = response[m.end():m.end() + 30]
-            _is_monthly = bool(re.match(r'\s*(?:/мес|в\s+мес)', after_price, re.IGNORECASE))
-            _is_yearly = bool(re.match(r'\s*(?:/год|в\s+год)', after_price, re.IGNORECASE))
-            if _is_monthly and raw not in self._VALID_MONTHLY_PRICES:
-                logger.info("invalid_monthly_subscription_price", price=raw)
-                # Fall through to strip
-            elif _is_yearly and raw not in self._VALID_YEARLY_PRICES:
-                logger.info("invalid_yearly_subscription_price", price=raw)
-                # Fall through to strip
+            # When KB is empty, only allow known KB prices
+            if empty_kb:
+                if raw in self._ALL_KNOWN_KB_PRICES:
+                    continue  # Known price — keep
+                # Unknown price with empty KB — strip
             else:
-                spaced = f"{int(raw):,}".replace(',', ' ')
-                raw_in_kb = bool(re.search(r'(?<!\d)' + raw + r'(?!\d)', retrieved_facts))
-                spaced_in_kb = bool(re.search(r'(?<!\d)' + re.escape(spaced) + r'(?!\d)', retrieved_facts))
-                if raw_in_kb or spaced_in_kb:
-                    continue  # Found in KB — keep
+                # Context-aware subscription price check:
+                # Prices followed by time-period markers (/мес, в месяц, /год, в год)
+                # must be valid subscription prices, regardless of KB presence.
+                # This prevents equipment prices (e.g. 200K Rongta scales) from
+                # "validating" wrong tariff associations.
+                after_price = response[m.end():m.end() + 30]
+                _is_monthly = bool(re.match(r'\s*(?:/мес|в\s+мес)', after_price, re.IGNORECASE))
+                _is_yearly = bool(re.match(r'\s*(?:/год|в\s+год)', after_price, re.IGNORECASE))
+                if _is_monthly and raw not in self._VALID_MONTHLY_PRICES:
+                    logger.info("invalid_monthly_subscription_price", price=raw)
+                    # Fall through to strip
+                elif _is_yearly and raw not in self._VALID_YEARLY_PRICES:
+                    logger.info("invalid_yearly_subscription_price", price=raw)
+                    # Fall through to strip
+                else:
+                    spaced = f"{int(raw):,}".replace(',', ' ')
+                    raw_in_kb = bool(re.search(r'(?<!\d)' + raw + r'(?!\d)', retrieved_facts))
+                    spaced_in_kb = bool(re.search(r'(?<!\d)' + re.escape(spaced) + r'(?!\d)', retrieved_facts))
+                    if raw_in_kb or spaced_in_kb:
+                        continue  # Found in KB — keep
                 # Strip the hallucinated price from the sentence
                 # Find the surrounding sentence fragment and replace with generic text
                 start = m.start()
@@ -862,6 +900,8 @@ class ResponseGenerator:
         result = re.sub(r'\bот\s+за\b', 'за', result)
         # "всего ," or "всего ." → "всего" (residue after calculated total stripped)
         result = re.sub(r'(всего)\s*[,.]', r'\1', result)
+        # "итого ," or "итого ." → remove entirely (residue after calculated total stripped)
+        result = re.sub(r',?\s*итого\s*[,.]?', '', result)
         # "— всего" without following price → remove "— всего"
         result = re.sub(r'\s*(?:—|–)\s*всего(?:\s*[,.])?', '', result)
         # "до  для" or "до  если" → remove dangling "до" (residue from "до N тенге" strip)
@@ -877,14 +917,90 @@ class ResponseGenerator:
 
     # Valid subscription prices by time period (for context-aware validation)
     _VALID_MONTHLY_PRICES = frozenset({"5000"})
-    _VALID_YEARLY_PRICES = frozenset({"150000", "220000", "500000"})
+    _VALID_YEARLY_PRICES = frozenset({"150000", "220000", "500000", "80000", "300000", "1000000"})
+
+    def _fix_price_period_confusion(self, response: str) -> str:
+        """Fix wrong period markers for official tariff prices.
+
+        Catches: "150 000 тенге в месяц" → "150 000 тенге в год" (Lite is yearly).
+        Catches: "5 000 ₸ в год" → "5 000 ₸ в месяц" (Mini is monthly).
+        Runs BEFORE price hallucination check because official prices bypass that check.
+        """
+        # Match price + currency + period marker
+        period_pattern = re.compile(
+            r'(\d(?:[\d\s,\.\u00A0\u202F]{1,14}\d|\d{2,}))'
+            r'(\s*(?:₸|тг|тенге))'
+            r'(\s*(?:в\s+месяц\w*|/мес\w*|в\s+год\w*|/год\w*))',
+            re.IGNORECASE
+        )
+        result = response
+        for m in reversed(list(period_pattern.finditer(response))):
+            raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
+            if not raw.isdigit():
+                continue
+            period_text = m.group(3).strip().lower()
+            is_monthly = bool(re.match(r'(?:в\s+мес|/мес)', period_text))
+            is_yearly = bool(re.match(r'(?:в\s+год|/год)', period_text))
+            # Yearly prices marked as monthly → fix to yearly
+            if is_monthly and raw in self._VALID_YEARLY_PRICES and raw not in self._VALID_MONTHLY_PRICES:
+                new_period = " в год"
+                result = result[:m.start(3)] + new_period + result[m.end(3):]
+                logger.info("price_period_confusion_fixed", price=raw, wrong="месяц", correct="год")
+            # Monthly prices marked as yearly → fix to monthly
+            elif is_yearly and raw in self._VALID_MONTHLY_PRICES and raw not in self._VALID_YEARLY_PRICES:
+                new_period = " в месяц"
+                result = result[:m.start(3)] + new_period + result[m.end(3):]
+                logger.info("price_period_confusion_fixed", price=raw, wrong="год", correct="месяц")
+        return result
+
+    # Reverse lookup: price → expected tariff name
+    _PRICE_TO_TARIFF = {
+        "5000": "Mini",
+        "150000": "Lite",
+        "220000": "Standard",
+        "500000": "Pro",
+    }
+
+    # Price → required period suffix (monthly vs yearly)
+    _PRICE_PERIOD = {
+        "5000": "/мес",
+        "150000": "/год",
+        "220000": "/год",
+        "500000": "/год",
+    }
+
+    def _inject_missing_period(self, response: str) -> str:
+        """Add missing billing period after known tariff prices.
+
+        E.g. "5 000 ₸" → "5 000 ₸/мес", "150 000 тенге" → "150 000 тенге в год".
+        Only fires when no period marker follows the price+currency.
+        """
+        # Match: price + currency, NOT followed by period marker
+        pattern = re.compile(
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'(\s*(?:₸|тг|тенге))'
+            r'(?!\s*(?:в\s+(?:месяц|год)|/(?:мес|год)))',
+            re.IGNORECASE,
+        )
+        result = response
+        for m in reversed(list(pattern.finditer(response))):
+            raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
+            if raw in self._PRICE_PERIOD:
+                suffix = self._PRICE_PERIOD[raw]
+                # Insert period suffix after the currency marker
+                result = result[:m.end(2)] + suffix + result[m.end(2):]
+        return result
 
     def _fix_tariff_price_mismatch(self, response: str) -> str:
         """Fix wrong tariff-price associations (e.g. 'Standard 300 000' → 'Standard 220 000')."""
+        # Pattern 1: Tariff → Price (e.g. "Pro 220 000 ₸")
+        # Negative lookahead (?!\d) in parens prevents "(150 000 ₸)" from being consumed
         tariff_price_pattern = re.compile(
             r'((?:Mini|Lite|Standard|Pro)\w*)'
-            r'(\s*(?:\([^)]{0,50}\)\s*)?'       # optional parenthetical: "(до 2 точек)"
-            r'(?:—|–|-|за|:|\(|стоит|по)?\s*)'  # optional connector
+            r'(\s*(?:\((?!\d)[^)]{0,50}\)\s*)?'     # optional parenthetical NOT starting with digit
+            r'(?:—|–|-|за|:|\(|от|стоит|по|составля\w*|обойд[её]\w*|включа\w*|содерж\w*|предлага\w*)?\s*'
+            r'(?:(?:\w|—|–|-)+\s+){0,6}?'            # up to 6 intervening words (allows em-dashes)
+            r')'
             r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
             r'(\s*(?:₸|тг|тенге|тысяч\w*))',
             re.IGNORECASE,
@@ -912,7 +1028,471 @@ class ResponseGenerator:
                 result = result[:m.start(3)] + correct_spaced + result[m.end(3):]
                 logger.info("tariff_price_mismatch_fixed",
                            tariff=tariff_name, wrong=raw_price, correct=correct)
+
+        # Pattern 2: Price → Tariff (e.g. "150 000 ₸/год (тар. PRO)" — price before tariff name)
+        price_tariff_pattern = re.compile(
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'(\s*(?:₸|тг|тенге)\s*'
+            r'(?:/?\s*(?:год|мес|в\s+(?:год|месяц))\w*\s*)?'  # optional period
+            r'(?:\([^)]{0,60}\)\s*)?'                          # optional parenthetical
+            r'(?:[\w\s—–\-:.,]{0,40}?)'                       # intervening text
+            r')'
+            r'((?:Mini|Lite|Standard|Pro)\w*)',
+            re.IGNORECASE,
+        )
+        for m in reversed(list(price_tariff_pattern.finditer(result))):
+            raw_price = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
+            if not raw_price.isdigit():
+                continue
+            tariff_name = m.group(3).lower().rstrip('а-яА-ЯёЁ')
+            for key in self._TARIFF_PRICE_MAP:
+                if key in tariff_name:
+                    tariff_name = key
+                    break
+            else:
+                continue
+            valid_prices = self._TARIFF_PRICE_MAP.get(tariff_name, set())
+            if raw_price in valid_prices:
+                continue  # correct
+            # Guard: don't re-fix a price that is valid for ANOTHER tariff
+            # also present in the response (prevents Pattern 2 undoing Pattern 1 fixes
+            # across sentence boundaries, e.g. "Mini ... 5 000 ₸. Тариф Lite ...")
+            is_valid_elsewhere = False
+            for other_tariff, other_prices in self._TARIFF_PRICE_MAP.items():
+                if raw_price in other_prices and other_tariff != tariff_name:
+                    if re.search(rf'\b{other_tariff}\b', result, re.IGNORECASE):
+                        is_valid_elsewhere = True
+                        break
+            if is_valid_elsewhere:
+                continue
+            # Price is wrong for this tariff — fix the price
+            if valid_prices:
+                correct = sorted(valid_prices)[0]
+                correct_spaced = f"{int(correct):,}".replace(',', ' ')
+                result = result[:m.start(1)] + correct_spaced + result[m.end(1):]
+                logger.info("tariff_price_mismatch_fixed_reverse",
+                           tariff=tariff_name, wrong=raw_price, correct=correct)
+
         return result
+
+    # Word-form numbers → digits (Russian, for point count extraction)
+    _WORD_NUMBERS = {
+        'одн': 1, 'двух': 2, 'двум': 2, 'два': 2, 'две': 2,
+        'трёх': 3, 'трех': 3, 'три': 3,
+        'четыр': 4, 'четырёх': 4, 'четырех': 4,
+        'пяти': 5, 'пять': 5,
+        'шести': 6, 'шесть': 6,
+        'семи': 7, 'семь': 7,
+        'восьми': 8, 'восемь': 8,
+        'девяти': 9, 'девять': 9,
+        'десяти': 10, 'десять': 10,
+        'двенадцати': 12, 'двенадцать': 12,
+        'пятнадцати': 15, 'пятнадцать': 15,
+        'двадцати': 20, 'двадцать': 20,
+    }
+
+    def _parse_point_count(self, text: str) -> int | None:
+        """Extract point count (digit or word-form) from a regex match group."""
+        if text.isdigit():
+            return int(text)
+        text_lower = text.lower()
+        for prefix, val in self._WORD_NUMBERS.items():
+            if text_lower.startswith(prefix):
+                return val
+        return None
+
+    def _fix_tariff_point_count(self, response: str) -> str:
+        """Fix tariff recommendations that can't support the stated number of points.
+
+        KB ground truth: Mini=1, Lite=1-2, Standard=до 3, Pro=до 5, TIS=5+.
+        Example: 'Standard для 5 точек' → 'Pro для 5 точек'
+        Only fixes cases where tariff CANNOT handle the stated point count
+        (does not downgrade correct upselling, e.g. Standard for 2 points is fine).
+        """
+        tariff_re = re.compile(r'\b(Mini|Lite|Standard|Pro)\b', re.IGNORECASE)
+        # Match both digit and word-form numbers before point keywords
+        _word_num_alts = '|'.join(self._WORD_NUMBERS.keys())
+        point_re = re.compile(
+            r'(\d+|' + _word_num_alts + r')\w*\s+(?:торгов\w+\s+)?(?:точ\w*|магазин\w*|филиал\w*|касс\w*|локаци\w*)',
+            re.IGNORECASE,
+        )
+
+        # Collect all (offset, length, replacement) tuples
+        replacements = []
+
+        for tm in tariff_re.finditer(response):
+            tariff = tm.group(1).lower()
+            max_pts = self._TARIFF_MAX_POINTS.get(tariff)
+            if max_pts is None:
+                continue
+
+            # Look for point count within ±200 chars of tariff mention
+            ctx_start = max(0, tm.start() - 200)
+            ctx_end = min(len(response), tm.end() + 200)
+            context_window = response[ctx_start:ctx_end]
+
+            for pm in point_re.finditer(context_window):
+                n = self._parse_point_count(pm.group(1))
+                if n is None or n <= 0 or n > 100 or n <= max_pts:
+                    continue
+
+                # N > max_pts → wrong tariff for this point count
+                if n <= 2:
+                    correct = "Lite"
+                elif n <= 3:
+                    correct = "Standard"
+                elif n <= 5:
+                    correct = "Pro"
+                else:
+                    correct = "ТИС"
+
+                replacements.append((tm.start(), tm.end(), correct))
+                logger.info("tariff_point_count_fix",
+                           wrong_tariff=tariff, points=n, correct_tariff=correct)
+                break  # One fix per tariff mention
+
+        # Apply replacements in reverse offset order to preserve positions
+        result = response
+        seen_offsets = set()
+        for start, end, new_text in sorted(replacements, key=lambda r: r[0], reverse=True):
+            if start in seen_offsets:
+                continue
+            seen_offsets.add(start)
+            result = result[:start] + new_text + result[end:]
+
+        return result
+
+    def _fix_tis_pricing(self, response: str) -> str:
+        """Fix wrong TIS pricing based on point count.
+
+        TIS formula: 220 000₸/year base + 80 000₸/year per additional point.
+        Example: 12 points = 220 000 + 11 * 80 000 = 1 100 000₸/year.
+        """
+        # Find ТИС mention + price + point count (in any order within 300 chars)
+        tis_re = re.compile(r'\bТИС\b', re.IGNORECASE)
+        price_re = re.compile(
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'(\s*(?:₸|тг|тенге))',
+            re.IGNORECASE,
+        )
+        _word_num_alts = '|'.join(self._WORD_NUMBERS.keys())
+        point_re = re.compile(
+            r'(\d+|' + _word_num_alts + r')\w*\s+(?:торгов\w+\s+)?(?:точ\w*|магазин\w*|филиал\w*|касс\w*|локаци\w*)',
+            re.IGNORECASE,
+        )
+
+        result = response
+        for tis_m in tis_re.finditer(response):
+            ctx_start = max(0, tis_m.start() - 300)
+            ctx_end = min(len(response), tis_m.end() + 300)
+            window = response[ctx_start:ctx_end]
+
+            # Find point count in window
+            n_points = None
+            for pm in point_re.finditer(window):
+                n = self._parse_point_count(pm.group(1))
+                if n and n > 5:
+                    n_points = n
+                    break
+
+            if n_points is None:
+                continue
+
+            # Correct TIS price
+            correct_total = 220000 + (n_points - 1) * 80000
+            correct_total_str = str(correct_total)
+
+            # Find price in window and fix if wrong
+            for price_m in price_re.finditer(window):
+                raw = re.sub(r'[\s,\.\u00A0\u202F]', '', price_m.group(1))
+                if not raw.isdigit():
+                    continue
+                if raw == correct_total_str:
+                    continue  # already correct
+                if raw == "220000" or raw == "80000":
+                    continue  # base/per-point prices are part of formula explanation
+                # Wrong TIS price — replace
+                abs_start = ctx_start + price_m.start(1)
+                abs_end = ctx_start + price_m.end(1)
+                correct_spaced = f"{correct_total:,}".replace(',', ' ')
+                result = result[:abs_start] + correct_spaced + result[abs_end:]
+                logger.info("tis_price_fix",
+                           points=n_points, wrong=raw, correct=correct_total_str)
+                break
+
+        return result
+
+    def _fix_false_integration_denial(self, response: str) -> str:
+        """Fix false denials of supported integrations.
+
+        KB confirms: 1С, iiko, r_keeper, Poster are supported.
+        Bot sometimes denies these exist.
+        """
+        # Pattern: "не интегрируется / нет интеграции / не поддерживает интеграцию" + supported system
+        supported = {'iiko': 'iiko', 'r_keeper': 'R-Keeper', 'r-keeper': 'R-Keeper',
+                     'poster': 'Poster', '1с': '1С', '1c': '1С'}
+
+        for key, display_name in supported.items():
+            # "нет интеграции с iiko" / "не интегрируется с iiko"
+            denial_pattern = re.compile(
+                r'[^.!?]*(?:(?:не\s+(?:интегриру\w*|поддержива\w*|совмести\w*|работа\w*))'
+                r'|(?:нет\s+(?:интеграци\w*|совместимост\w*|поддержк\w*))'
+                r'|(?:интеграци\w*\s+(?:с\s+)?' + re.escape(key) + r'[^.!?]*\s+нет)'
+                r')[^.!?]*\b' + re.escape(key) + r'\b[^.!?]*[.!?]\s*',
+                re.IGNORECASE,
+            )
+            if denial_pattern.search(response):
+                response = denial_pattern.sub(
+                    f'Интеграция с {display_name} поддерживается. ',
+                    response,
+                )
+                logger.info("false_integration_denial_fixed", integration=key)
+
+        return response
+
+    def _fix_tech_hallucinations(self, response: str, retrieved_facts: str) -> str:
+        """Strip specific ungrounded technical claims from response.
+
+        Catches:
+        - Hallucinated TLS/SSL version numbers (e.g. "TLS 2.56+")
+        - Fabricated tariff names (anything other than Mini/Lite/Standard/Pro)
+        """
+        # Fix hallucinated TLS versions (only 1.0, 1.1, 1.2, 1.3 exist)
+        response = re.sub(
+            r'(?:TLS|SSL)\s+\d+\.\d+\+?',
+            lambda m: m.group(0) if re.search(r'(?:1\.[0-3]|1\.3)', m.group(0)) else 'TLS',
+            response,
+            flags=re.IGNORECASE,
+        )
+        # Fix GDPR mention when KB says КЗ law (not European regulation)
+        if 'GDPR' in response and 'GDPR' not in (retrieved_facts or ''):
+            response = re.sub(r'GDPR', 'законодательству РК о персональных данных', response)
+        # Strip specific tech standards not in KB (rule 7: ISO, PCI DSS, ГОСТ, AES, specific TLS)
+        if retrieved_facts:
+            rf_lower = retrieved_facts.lower()
+            # ISO standards (ISO 27001, ISO 9001, etc.) — strip if not in KB
+            if 'iso' not in rf_lower:
+                response = re.sub(r'(?:по\s+)?(?:стандарт\w*\s+)?ISO\s+\d+\w*', '', response)
+            # PCI DSS — strip if not in KB
+            if 'pci' not in rf_lower:
+                response = re.sub(r'PCI\s*DSS\w*', '', response)
+            # AES-NNN — replace with generic "шифрование"
+            if 'aes' not in rf_lower:
+                response = re.sub(r'AES[-\s]?\d+', 'шифрование', response)
+            # Specific TLS version numbers — keep "TLS" but strip version
+            if 'tls 1' not in rf_lower and 'tls1' not in rf_lower:
+                response = re.sub(r'TLS\s+\d+\.\d+', 'TLS', response, flags=re.IGNORECASE)
+            # ГОСТ standards — strip if not in KB
+            if 'гост' not in rf_lower:
+                response = re.sub(r'ГОСТ\s+(?:Р\s+)?\d+[-\d]*', '', response)
+            # FIDO2/WebAuthn — fabricated security standard
+            if 'fido' not in rf_lower and 'webauthn' not in rf_lower:
+                response = re.sub(r'(?:по\s+стандарт\w*\s+)?FIDO2?\b', '', response)
+                response = re.sub(r'\bWebAuthn\b', '', response)
+            # GraphQL: KB says NOT supported — strip any positive GraphQL claims
+            # (KB article support_db_technical says GraphQL NOT supported)
+            graphql_positive = re.search(
+                r'(?:поддержива\w*|доступ\w*|частично|есть)\s+GraphQL'
+                r'|GraphQL\s+(?:для|поддержива\w*|доступ\w*|есть)',
+                response, re.IGNORECASE,
+            )
+            if graphql_positive:
+                response = re.sub(
+                    r'(?:,?\s*а\s+также\s+)?(?:частично\s+)?GraphQL[^.]*\.',
+                    '.', response, flags=re.IGNORECASE,
+                )
+
+        # Backup tariff-name-aware period correction:
+        # "Lite/Standard/Pro ... в месяц" → "в год" (these are always yearly)
+        # "Mini ... в год" → "в месяц" (Mini is always monthly)
+        # This catches cases where _fix_price_period_confusion misses.
+        # Allows up to 60 chars between tariff name and period marker (connector, price, etc.)
+        response = re.sub(
+            r'((?:Lite|Standard|Pro)\w*'
+            r'(?:\s+(?:\([^)]{0,50}\)\s*)?'
+            r'(?:—|–|-|за|:|\(|стоит|по|составля\w*|обойд[её]\w*)?\s*'
+            r'(?:[\w\s,\.₸]{0,60}?)?)'
+            r')'
+            r'в\s+месяц\w*',
+            r'\1в год',
+            response, flags=re.IGNORECASE,
+        )
+        response = re.sub(
+            r'(Mini\w*'
+            r'(?:\s+(?:\([^)]{0,50}\)\s*)?'
+            r'(?:—|–|-|за|:|\(|стоит|по|составля\w*|обойд[её]\w*)?\s*'
+            r'(?:[\w\s,\.₸]{0,60}?)?)'
+            r')'
+            r'в\s+год\w*',
+            r'\1в месяц',
+            response, flags=re.IGNORECASE,
+        )
+
+        # "БД/база данных не используется" → СУБД is commercial secret (KB ground truth)
+        # Bot sometimes fabricates "we don't use a database" instead of the correct answer
+        response = re.sub(
+            r'[^.!?]*(?:(?:баз\w*\s+данных|БД)\s+не\s+использу\w*'
+            r'|без\s+(?:баз\w*\s+данных|БД)'
+            r'|(?:баз\w*\s+данных|БД)\s+(?:нет|отсутствует)'
+            r'|не\s+(?:использу\w*|применя\w*)\s+(?:баз\w*\s+данных|БД))'
+            r'[^.!?]*[.!?]\s*',
+            'Тип СУБД и внутренняя архитектура Wipon — коммерческая тайна. ',
+            response,
+            flags=re.IGNORECASE,
+        )
+
+        # Kitchen/recipe/menu features fabrication — KB explicitly says NOT supported
+        # "функционал для залов, кухни" / "учёт рецептов" / "управление меню"
+        # Only strip positive claims (not "у нас нет функционала для кухни")
+        # Note: уч[её]т handles both "учёт" (ё) and "учет" (е)
+        kitchen_claim = re.search(
+            r'(?:функционал\w*|модул\w+|уч[её]т\w*|управлени\w*)\s+'
+            r'(?:для\s+)?(?:залов|кухн\w+|рецепт\w+|меню\b|блюд\w*|ингредиент\w+|калькуляци\w+'
+            r'|приготовлени\w+)',
+            response, re.IGNORECASE,
+        )
+        if kitchen_claim:
+            # Check the sentence doesn't contain a denial (e.g., "нет модуля для кухни")
+            sent_start = response.rfind('.', 0, kitchen_claim.start())
+            sent_start = 0 if sent_start == -1 else sent_start
+            sentence_before = response[sent_start:kitchen_claim.start()]
+            if not re.search(r'(?:нет|не\s+поддержива|не\s+подходит|отсутствует|к\s+сожалению)', sentence_before, re.IGNORECASE):
+                response = re.sub(
+                    r'[^.!?]*(?:функционал\w*|модул\w+|уч[её]т\w*|управлени\w*)\s+'
+                    r'(?:для\s+)?(?:залов|кухн\w+|рецепт\w+|меню\b|блюд\w*|ингредиент\w+|калькуляци\w+'
+                    r'|приготовлени\w+)'
+                    r'[^.!?]*[.!?]\s*',
+                    '', response, flags=re.IGNORECASE,
+                )
+                logger.info("kitchen_feature_fabrication_stripped")
+
+        return response
+
+    _SUBD_TECH_KEYWORDS = re.compile(
+        r'(?:субд|база\s+данных|стек|архитектур\w+|на\s+чём\s+написан|postgresql|mysql|mongodb|'
+        r'язык\s+программирования|технологи\w+\s+стек|технический\s+стек|шифрован|безопасност|'
+        r'какая\s+(?:база|субд|технолог))',
+        re.IGNORECASE,
+    )
+
+    def _strip_misrouted_subd_answer(self, response: str, user_message: str) -> str:
+        """Remove 'СУБД...коммерческая тайна' sentences when user didn't ask about tech stack.
+
+        The KB article 'support_db_technical' sometimes wins retrieval for unrelated
+        queries (demo requests, integration questions). This strips the misrouted answer.
+        """
+        if 'СУБД' not in response or 'коммерческ' not in response:
+            return response
+        # If user asked about tech → keep the answer
+        if self._SUBD_TECH_KEYWORDS.search(user_message):
+            return response
+        # Strip the СУБД sentence(s)
+        cleaned = re.sub(
+            r'[^.!?]*СУБД[^.!?]*коммерческ\w+\s+тайн\w*[^.!?]*[.!?]\s*',
+            '', response,
+        )
+        # Also strip reversed: "коммерческая тайна...СУБД"
+        cleaned = re.sub(
+            r'[^.!?]*коммерческ\w+\s+тайн\w*[^.!?]*СУБД[^.!?]*[.!?]\s*',
+            '', cleaned,
+        )
+        return cleaned.strip() if cleaned.strip() else response
+
+    def _fix_global_tariff_price_consistency(self, response: str) -> str:
+        """Global pass: if response mentions ONE tariff and ONE wrong price, fix it.
+
+        Handles the case where tariff name and price are in different sentences,
+        e.g. "Mini — фискальная касса. Стоимость — 500 000 ₸/год".
+        """
+        # Find all tariff mentions
+        tariffs_found = set()
+        for t in ("mini", "lite", "standard", "pro"):
+            if re.search(rf'\b{t}\b', response, re.IGNORECASE):
+                tariffs_found.add(t)
+        if len(tariffs_found) != 1:
+            return response  # multiple or zero tariffs — skip
+        tariff = tariffs_found.pop()
+
+        # Find all prices in the response
+        price_pattern = re.compile(
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'(\s*(?:₸|тг|тенге))',
+            re.IGNORECASE,
+        )
+        valid_prices = self._TARIFF_PRICE_MAP.get(tariff, set())
+        if not valid_prices:
+            return response
+
+        result = response
+        for m in reversed(list(price_pattern.finditer(response))):
+            raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
+            if not raw.isdigit():
+                continue
+            if raw in valid_prices:
+                continue  # correct
+            # Check if this price belongs to another tariff
+            if any(raw in v for v in self._TARIFF_PRICE_MAP.values()):
+                correct = sorted(valid_prices)[0]
+                correct_spaced = f"{int(correct):,}".replace(',', ' ')
+                result = result[:m.start(1)] + correct_spaced + result[m.end(1):]
+                logger.info("global_tariff_price_fix",
+                           tariff=tariff, wrong=raw, correct=correct)
+        return result
+
+    def _fix_collapsed_price_range(self, response: str) -> str:
+        """Fix price ranges where the same price is used for different tariffs.
+
+        E.g. "от 5 000 ₸/мес за Mini до 5 000 ₸/мес за Pro"
+        → "от 5 000 ₸/мес (Mini) до 500 000 ₸/год (Pro)"
+        """
+        # Match: "от PRICE за/( TARIFF1 до PRICE за/( TARIFF2"
+        pattern = re.compile(
+            r'от\s+'
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'\s*(?:₸|тг|тенге)\w*'
+            r'(?:\s*/?\s*(?:мес\w*|год\w*|в\s+(?:месяц|год)\w*))?\s*'
+            r'(?:за\s+|для\s+|\(\s*)?'
+            r'(Mini|Lite|Standard|Pro)\w*'
+            r'[^₸]{0,40}?'
+            r'до\s+'
+            r'(\d[\d\s,\.\u00A0\u202F]{0,14}\d|\d{3,})'
+            r'\s*(?:₸|тг|тенге)\w*'
+            r'(?:\s*/?\s*(?:мес\w*|год\w*|в\s+(?:месяц|год)\w*))?\s*'
+            r'(?:за\s+|для\s+|\(\s*)?'
+            r'(Mini|Lite|Standard|Pro)\w*',
+            re.IGNORECASE,
+        )
+        m = pattern.search(response)
+        if not m:
+            return response
+        price1_raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(1))
+        price2_raw = re.sub(r'[\s,\.\u00A0\u202F]', '', m.group(3))
+        tariff1 = m.group(2).lower()
+        tariff2 = m.group(4).lower()
+        if tariff1 == tariff2:
+            return response  # same tariff, nothing to fix
+        # If both prices are the same but tariffs are different → fix the wrong one
+        if price1_raw == price2_raw:
+            valid1 = self._TARIFF_PRICE_MAP.get(tariff1, set())
+            valid2 = self._TARIFF_PRICE_MAP.get(tariff2, set())
+            # Replace the range with a correct listing
+            correct1 = sorted(valid1)[0] if valid1 else price1_raw
+            correct2 = sorted(valid2)[0] if valid2 else price2_raw
+            period1 = self._PRICE_PERIOD.get(correct1, "")
+            period2 = self._PRICE_PERIOD.get(correct2, "")
+            spaced1 = f"{int(correct1):,}".replace(',', ' ')
+            spaced2 = f"{int(correct2):,}".replace(',', ' ')
+            replacement = (
+                f"от {spaced1} ₸{period1} ({m.group(2)}) "
+                f"до {spaced2} ₸{period2} ({m.group(4)})"
+            )
+            result = response[:m.start()] + replacement + response[m.end():]
+            logger.info("collapsed_price_range_fixed",
+                       tariff1=tariff1, tariff2=tariff2,
+                       wrong_price=price1_raw,
+                       correct1=correct1, correct2=correct2)
+            return result
+        return response
 
     @staticmethod
     def _has_iin_hallucination(response: str, user_message: str, collected_data: dict) -> bool:
@@ -1122,7 +1702,7 @@ class ResponseGenerator:
         is_autonomous_flow = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (state.startswith("autonomous_") or state in {"greeting", "handle_objection"})
+            and (state.startswith("autonomous_") or state in {"greeting", "handle_objection", "soft_close"})
         )
 
         # ContentRepetitionGuard actions — dedicated templates, never remap (I19)
@@ -1130,6 +1710,9 @@ class ResponseGenerator:
             return action
 
         if action == "autonomous_respond":
+            # In soft_close state, use soft_close template — don't keep pitching after refusal
+            if state == "soft_close":
+                return "soft_close"
             return "autonomous_respond"
 
         # Autonomous flow: always use autonomous_respond template (except greeting).
@@ -1150,6 +1733,9 @@ class ResponseGenerator:
                 return action
             if intent == "greeting" and state == "greeting":
                 return "greet_back"
+            # Farewell in any state: use handle_farewell template (not autonomous_respond)
+            if intent == "farewell" and action in {"acknowledge_farewell", "handle_farewell", "polite_farewell"}:
+                return "handle_farewell"
             return "autonomous_respond"
 
         from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
@@ -2142,9 +2728,94 @@ class ResponseGenerator:
                     )
                 continue
 
-            # Fix tariff-price mismatches FIRST (e.g. "Standard 300 000" → "Standard 220 000")
+            # Strip markdown bold/italic BEFORE price fixes — LLM may wrap prices
+            # in **bold** which breaks regex matching (e.g. "**220 000 ₸**")
+            response = re.sub(r'\*{1,3}', '', response)
+
+            # Fix price period confusion FIRST (e.g. "150 000 ₸ в месяц" → "в год")
+            # Must run before all price checks because official prices bypass hallucination detection.
+            response = self._fix_price_period_confusion(response)
+
+            # Fix tariff-point-count mismatches FIRST (e.g. "Standard для 5 точек" → "Pro")
+            # Must run before tariff-price fix so the price fixer sees the correct tariff name.
+            response = self._fix_tariff_point_count(response)
+
+            # Fix TIS pricing (e.g. "ТИС 500 000" for 12 points → "ТИС 1 100 000")
+            response = self._fix_tis_pricing(response)
+
+            # Fix false denials of supported integrations (iiko, r_keeper, poster, 1C)
+            response = self._fix_false_integration_denial(response)
+
+            # Fix tariff-price mismatches (e.g. "Standard 300 000" → "Standard 220 000")
             # This must run before stripping so we correct wrong associations before removing them.
             response = self._fix_tariff_price_mismatch(response)
+
+            # Second pass: tariff_price_mismatch may have created new period mismatches
+            # e.g. "Mini 150000 ₸/год" → "Mini 5000 ₸/год" → need "₸/мес"
+            response = self._fix_price_period_confusion(response)
+
+            # Inject missing billing period qualifiers: "5 000 ₸" → "5 000 ₸/мес",
+            # "150 000 ₸" → "150 000 ₸/год" etc.  Only when no period follows.
+            response = self._inject_missing_period(response)
+
+            # Global tariff-price consistency: catches cross-sentence mismatches
+            # e.g. "Mini — фискальная касса. Стоимость — 500 000 ₸/год"
+            response = self._fix_global_tariff_price_consistency(response)
+
+            # Fix collapsed price ranges: "от X ₸ за Mini до X ₸ за Pro" where
+            # both prices are the same (LLM copies Mini price for all tariffs)
+            response = self._fix_collapsed_price_range(response)
+
+            # Fix ungrounded tech claims (TLS versions, GDPR, etc.)
+            response = self._fix_tech_hallucinations(response, _retrieved_facts_str)
+
+            # Strip misrouted СУБД answer when user didn't ask about tech stack
+            response = self._strip_misrouted_subd_answer(response, user_message)
+
+            # Fix hallucinated trial period: any N-day trial where N != 7 → 7 days
+            # Catches 14 days, 30 days, 10 days, etc.
+            def _fix_trial_duration(m):
+                n = int(m.group(1))
+                if n == 7:
+                    return m.group(0)  # correct, keep as-is
+                return '7 дней'
+            response = re.sub(
+                r'(?:на\s+)?(\d{1,3})\s*(?:[-–]?\s*)?(?:дневн\w+|дн\w*|день|суток)',
+                _fix_trial_duration,
+                response,
+                flags=re.IGNORECASE,
+            )
+
+            # Fix trial period denial: "пробный период [у нас] не предусмотрен" → KB says 7 days
+            # Allow up to 20 chars between "период" and denial (handles "у нас", "пока" etc.)
+            response = re.sub(
+                r'(?:пробн\w+|тестов\w+)\s+период\w*\s+.{0,20}'
+                r'(?:не\s+предусмотрен\w*|отсутствует|не\s+(?:предлага|предоставля)\w*)',
+                'есть 7-дневный тестовый период',
+                response,
+                flags=re.IGNORECASE,
+            )
+            # "нет пробного периода" / "без пробного периода"
+            response = re.sub(
+                r'(?:нет|без)\s+(?:пробн\w+|тестов\w+)\s+период\w*',
+                'есть 7-дневный тестовый период',
+                response,
+                flags=re.IGNORECASE,
+            )
+            # "у нас нет пробного" / "у нас нет тестового"
+            response = re.sub(
+                r'у\s+нас\s+нет\s+(?:пробн\w+|тестов\w+)\s+период\w*',
+                'есть 7-дневный тестовый период',
+                response,
+                flags=re.IGNORECASE,
+            )
+            # "Пробного периода нет" — reversed word order
+            response = re.sub(
+                r'(?:пробн\w+|тестов\w+)\s+период\w*\s+нет\b',
+                'есть 7-дневный тестовый период',
+                response,
+                flags=re.IGNORECASE,
+            )
 
             # Price hallucination check: strip fabricated prices, keep valid ones.
             # Instead of rejecting the whole response (which causes over-cautious retries),
@@ -2164,6 +2835,38 @@ class ResponseGenerator:
                         " Перепиши ответ: вместо ИИН напиши просто 'ИИН получен'."
                         " Никаких цифр ИИН в ответе."
                     )
+                continue
+
+            # Generic dodge detection: LLM sometimes generates lazy redirects
+            # like "По Wipon могу ответить на конкретный вопрос" instead of answering.
+            # Retry with explicit instruction to address the user's message directly.
+            if attempt == 0 and re.search(
+                r'(?:По\s+Wipon\s+могу\s+ответить|Могу\s+помочь\s+по\s+продукту\s+Wipon)',
+                response, re.IGNORECASE,
+            ) and len(response.split()) < 25:
+                logger.info("generic_dodge_detected", attempt=attempt, response=response[:80])
+                prompt += (
+                    "\n\nВАЖНО: Твой предыдущий ответ был слишком общим и не отвечал на конкретный"
+                    f" запрос клиента: \"{user_message[:100]}\". Ответь КОНКРЕТНО на его вопрос/"
+                    "запрос, используя факты из БАЗЫ ЗНАНИЙ. Не повторяй шаблонные фразы."
+                )
+                continue
+
+            # Extended dodge detection: "Расскажите подробнее о вашем бизнесе" used
+            # as a cop-out when user asks a direct question (contains "?").
+            # Only triggers when the bot's response is mostly just the dodge phrase.
+            if attempt == 0 and '?' in user_message and re.search(
+                r'[Рр]асскажите\s+подробнее\s+о\s+вашем\s+бизнесе',
+                response,
+            ) and len(response.split()) < 30:
+                logger.info("discovery_dodge_on_question", attempt=attempt, response=response[:80])
+                prompt += (
+                    "\n\nВАЖНО: Клиент задал КОНКРЕТНЫЙ ВОПРОС: \""
+                    + user_message[:120]
+                    + "\". Не уклоняйся фразой 'Расскажите подробнее о вашем бизнесе'."
+                    " Ответь ПРЯМО на вопрос клиента, используя факты из базы знаний."
+                    " Если точного ответа нет — честно скажи 'уточню у коллег'."
+                )
                 continue
 
             # Если нет иностранного текста — проверяем на дубликаты
@@ -2316,6 +3019,12 @@ class ResponseGenerator:
             if text.startswith(prefix):
                 text = text[len(prefix):].strip()
 
+        # Strip echoed prompt template labels ("Клиент: ... Вы: ..." / "Клиент: ... Ответ: ...")
+        # LLM sometimes copies the dialog format from the prompt into its response
+        text = re.sub(r'^Клиент:\s*.*?\s*(?:Вы|Ответ):\s*', '', text, flags=re.DOTALL)
+        # Strip mid-response prompt echo ("Клиент: Текст Ответ: Текст" appearing later)
+        text = re.sub(r'Клиент:\s*.*?\s*(?:Вы|Ответ):\s*', '', text, flags=re.DOTALL)
+
         # Удаляем китайские/японские/корейские символы и пунктуацию (Qwen иногда переключается)
         # Иероглифы + китайская пунктуация (。，！？：；「」『』【】)
         text = re.sub(r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\u3000-\u303f\uff00-\uffef]+', '', text)
@@ -2353,6 +3062,213 @@ class ResponseGenerator:
 
         # Collapse obvious repetitive loops (e.g. clause repeated 3+ times).
         text = self._collapse_repetition_loops(text)
+
+        # Strip LLM formatting artifacts
+        # "--- [Вернёмся к основному вопросу...]" — triple-dash separator + bracketed note
+        text = re.sub(r'\s*-{3,}\s*\[.*?\]', '', text)
+        # "(всего )" — residue from calculated price stripping
+        text = re.sub(r'\(\s*всего\s*\)', '', text)
+        # "около )" / "от )" / "до )" — residue from price stripping inside parens
+        text = re.sub(r'(?:около|от|до|за|всего|итого)\s*\)', ')', text)
+        # "(экономия )" / "(стоимость )" — residue with empty value inside parens
+        text = re.sub(r'\(\s*(?:экономия|стоимость|итого|цена|сумма)\s*\)', '', text)
+        # "по за каждую" / "дополнительно по —." — broken text from price stripping
+        text = re.sub(r'\bпо\s+за\s+кажд', 'за кажд', text)
+        text = re.sub(r'(?:дополнительно|обойдутся)\s+по\s+(?:—|–|-|\.)', '', text)
+        # "на 1–." / "за —." / "+ за каждую" — truncated price ranges
+        text = re.sub(r'(?:на|за|по|от|до)\s+\d*\s*(?:—|–|-)\s*\.', '.', text)
+        # "будет вместо." / "снижается с до за год." — empty numeric placeholders
+        text = re.sub(r'(?:будет|составит|обойд[её]тся)\s+(?:вместо|за)\s*[.,]', '.', text)
+        text = re.sub(r'(?:снижа\w+|уменьша\w+)\s+с\s+до\s+', '', text)
+        # "В течение вы можете" / "в течение." — missing duration
+        text = re.sub(r'[Вв]\s+течение\s+(?=вы\s|можно\s|клиент)', 'В течение 7 дней ', text)
+        text = re.sub(r'в\s+течение\s*[.,]', 'в течение 7 дней.', text, flags=re.IGNORECASE)
+        # "— тариф." / "— тариф," — sentence ends abruptly at "тариф" (truncated after price strip)
+        text = re.sub(r'—\s+тариф\s*[.,]', '.', text)
+        # "подходящим тариф email" — garbled text from price strip (remove broken fragment)
+        text = re.sub(r'подходящ\w+\s+тариф\s+(?=email|почт|телефон)', 'подходящим тарифом на ', text)
+        # Standalone "+" before text (residue from stripped "+ 25 000 за точку")
+        text = re.sub(r'^\+\s+', '', text)
+        text = re.sub(r'\.\s*\+\s+', '. ', text)
+        # Standalone "()" empty parens
+        text = re.sub(r'\(\s*\)', '', text)
+        # "****" — LLM asterisk placeholders for calculated values
+        text = re.sub(r'\*{2,}', '', text)
+        # Prompt leakage: "(Цель: ...)" / "(Следующий вопрос для...: ...)" / "(Проверяю, ...)" / "(Задаю вопрос, ...)" — internal reasoning
+        # Use [^)]* to match all content up to closing paren (delimiter may not be adjacent to keyword)
+        text = re.sub(
+            r'\((?:Цель(?:\s+\w+)?|Важно|Примечание|Задача|Контекст|Пояснение'
+            r'|Следующий\s+(?:этап|шаг|вопрос)|Проверяю|Комментарий|Рекомендация'
+            r'|Задаю\s+вопрос|Уточняю|Переход\s+в\s+(?:статус|стейт|состояние)'
+            r'|Если\s+(?:клиент|учёт|учет|нужен|нужно|нужна|нет|да))[^)]*\)',
+            '', text,
+        )
+        # System instruction leakage: "Продолжайте только если клиент..." / "не указана в контексте"
+        # These are LLM-generated echoes of internal system prompts
+        text = re.sub(
+            r'(?:Продолжайте|Продолжай)\s+только\s+если\s+клиент\s+.{0,80}(?:closing|discovery|qualification|presentation|negotiation)\w*\.?\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        text = re.sub(
+            r'(?:его|её|их)\s+длительность\s+не\s+указана\s+в\s+контексте\.?\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Generic meta-references to context/instructions/KB that shouldn't be in client-facing text
+        text = re.sub(
+            r'(?:не\s+указан[аоы]?\s+в\s+(?:контексте|базе|БЗ|промпте|инструкци\w+)\.?\s*)',
+            '', text, flags=re.IGNORECASE,
+        )
+        # False segment denial: "рестораны мы не обслуживаем" — KB supports restaurants/HoReCa
+        text = re.sub(
+            r'[^.!?]*(?:ресторан\w*|общепит\w*|HoReCa|кафе)\s+(?:мы\s+)?(?:не\s+обслужива\w*|не\s+поддержива\w*|не\s+работаем)[^.!?]*[.!?]\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Reversed: "мы не работаем с ресторанами"
+        text = re.sub(
+            r'[^.!?]*(?:мы\s+)?не\s+(?:обслужива\w*|работаем\s+с|поддержива\w*)\s+(?:ресторан\w*|общепит\w*|HoReCa|кафе)[^.!?]*[.!?]\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # False function denial: "нет модуля/функции для онлайн-продаж" when KB has online features
+        text = re.sub(
+            r'[^.!?]*нет\s+(?:встроенн\w+\s+)?(?:модул\w+|функци\w+)\s+(?:для|по)\s+(?:онлайн[\s-]?продаж)\w*[^.!?]*[.!?]\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Fabricated architecture: "написан на базе современных технологий с использованием Windows и Linux"
+        text = re.sub(
+            r'[^.!?]*написан\w*\s+на\s+базе\s+(?:современн\w+\s+)?технолог\w+[^.!?]*[.!?]\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Fabricated Mini annual price: "(или 60 000 ₸/год)" — Mini has no annual plan
+        text = re.sub(
+            r'\s*\(\s*или\s+60\s*0{3}[\s\u00A0]*₸[^)]*\)',
+            '', text,
+        )
+        # More generic: strip "(или X ₸/год)" parenthetical after Mini price
+        text = re.sub(
+            r'(Mini[^.]{0,40}5\s*0{3}[\s\u00A0]*₸[^)]{0,20})\s*\(\s*или\s+\d[\d\s\u00A0]*₸\s*/?\s*год\w*\s*\)',
+            r'\1',
+            text, flags=re.IGNORECASE,
+        )
+        # Fabricated "собственная облачная платформа на базе современных технологий"
+        text = re.sub(
+            r'[^.!?]*(?:собственн\w+\s+)?(?:облачн\w+\s+)?(?:платформ\w+|систем\w+)\s+на\s+базе\s+(?:современн\w+\s+)?технолог\w+[^.!?]*[.!?]\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # "кошмар" emotional hallucination — LLM invents emotional context
+        text = re.sub(r'\bкошмар\w*', 'сложности', text, flags=re.IGNORECASE)
+        # Missing space before email: "emailX@Y" → "email X@Y"
+        text = re.sub(r'\bemail(\S+@\S+)', r'email \1', text, flags=re.IGNORECASE)
+        # Prompt leakage: "--- (Цель вопроса: ...)" without parens — freestanding at end of response
+        text = re.sub(
+            r'\s*-{2,}\s*\(?\s*(?:Цель|Важно|Примечание|Задача|Контекст|Пояснение'
+            r'|Следующий\s+(?:этап|шаг|вопрос)|Проверяю|Комментарий|Рекомендация)(?:\s+\w+)?\s*[:,.].*$',
+            '', text,
+        )
+        # Standalone prefix meta-talk: "Исправленный вариант:" / "Вот исправленная версия:" / "Версия с исправлениями:" at start
+        # Also handles trailing qualifiers: "без неподтверждённых гарантий и с исправлением артефактов:"
+        text = re.sub(
+            r'^(?:Вот\s+)?(?:Исправленн\w+|Обновл[её]нн\w+|Откорректированн\w+|Отредактированн\w+)\s+'
+            r'(?:вариант|версия|ответ|текст)(?:\s+без\s+[^:]{0,80})?\s*:\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # "Версия с исправлениями:" / "Ответ с правками:" / "Переработанный ответ:" at start
+        text = re.sub(
+            r'^(?:Вот\s+)?(?:Версия|Ответ|Вариант|Текст)\s+с\s+(?:исправлени\w+|правк\w+|корректировк\w+)\s*:\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # "Переработанный ответ:" / "Отредактированный вариант:" at start
+        # Also handles trailing qualifiers: "без X и с Y:"
+        text = re.sub(
+            r'^(?:Вот\s+)?(?:Переработанн\w+|Отредактированн\w+|Улучшенн\w+)\s+'
+            r'(?:вариант|версия|ответ|текст)(?:\s+без\s+[^:]{0,80})?\s*:\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Mid-text meta-narration prefix: "Вот отредактированный ответ без X:" (not just at start)
+        text = re.sub(
+            r'(?:Вот\s+)?(?:отредактированн\w+|исправленн\w+|обновл[её]нн\w+|откорректированн\w+)\s+'
+            r'(?:ответ|вариант|текст|версия)(?:\s+без\s+[^:]{0,80})?\s*:\s*',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Meta-talk: LLM narrating its own process instead of answering
+        text = re.sub(
+            r'(?:^|(?<=\.\s))'
+            r'(?:Опишу\s+аккуратно[^.]*\.|Дам\s+конкретные\s+шаги[^.]*\.'
+            r'|результат\s+зависит\s+от\s+вашего\s+сценари[яю][^.]*\.)',
+            '', text, flags=re.IGNORECASE,
+        )
+        # Product name typos: "Wipro" / "Wipo" → "Wipon"
+        text = re.sub(r'\bWipro\b', 'Wipon', text)
+        text = re.sub(r'\bWipo\b(?!n)', 'Wipon', text)
+        # Truncated tech terms: "Граф не поддерживается" → "GraphQL не поддерживается"
+        text = re.sub(r'\bГраф\b(?=\s+(?:не|поддерж|доступ))', 'GraphQL', text)
+        # KZ jurisdiction fix: ФНС (Russian) → ОФД (Kazakhstan)
+        text = re.sub(r'\bФНС\b', 'ОФД', text)
+        # Mixed Latin/Cyrillic words: "frustрацию" → "фрустрацию" (keep Cyrillic part)
+        # Strips Latin prefix from words that continue in Cyrillic
+        text = re.sub(r'\b[a-zA-Z]+(?=[а-яА-ЯёЁ]{2,})', '', text)
+        # Reversed: Cyrillic prefix + Latin suffix: "тарiff" → "тариф"
+        text = re.sub(r'([а-яА-ЯёЁ]{2,})[a-zA-Z]+\b', r'\1', text)
+        # Stray common English words in Russian text (LLM code-switch artifacts)
+        text = re.sub(r'\b(?:shortly|please|soon|also|however|moreover|furthermore)\b', '', text, flags=re.IGNORECASE)
+        # Fabricated tariff names: only Mini/Lite/Standard/Pro are valid
+        # Strip quoted fake tariff names like тариф "Базовый", тариф "Опт", тариф "Розница"
+        text = re.sub(
+            r'тариф\w*\s+[«"\']((?!Mini|Lite|Standard|Pro)[^«"\']+)[«"\']',
+            lambda m: 'тариф ' + m.group(1).strip() if m.group(1).strip() in ('Mini', 'Lite', 'Standard', 'Pro') else 'тариф',
+            text, flags=re.IGNORECASE,
+        )
+        # Unquoted fake tariff names after "тариф": тариф TEN, тариф Бизнес, etc.
+        _VALID_TARIFF_NAMES = {'mini', 'lite', 'standard', 'pro'}
+        def _fix_unquoted_tariff(m):
+            name = m.group(1).strip()
+            if name.lower() in _VALID_TARIFF_NAMES:
+                return m.group(0)
+            return 'тариф'
+        text = re.sub(
+            r'тариф\w*\s+(?!Mini\b|Lite\b|Standard\b|Pro\b)([A-ZА-ЯЁa-zа-яё]\w{1,20})',
+            _fix_unquoted_tariff,
+            text, flags=re.IGNORECASE,
+        )
+        # Common LLM tariff name confusions: "Premium" → "Pro", "Basic" → "Mini"
+        text = re.sub(r'\bPremium\b', 'Pro', text)
+        text = re.sub(r'\bBasic\b', 'Mini', text)
+        # Product name typos: "Wipip", "Wippon", "Wippen", "WipPOS", "Wipion" → "Wipon"
+        text = re.sub(r'\bWip(?:ip|ion|pon|pen|POS)\b', 'Wipon', text, flags=re.IGNORECASE)
+        # Standalone "Wip" (not followed by "on"/"er"/"e") → "Wipon"
+        text = re.sub(r'\bWip\b(?!on|er|e\b)', 'Wipon', text)
+        text = re.sub(r'\b(?:Базов\w+)\s+(?=тариф|пакет)', 'Mini ', text)
+        # Unquoted fake tariff names: "Wipon Starter", "Wipon Базовый" → "Wipon"
+        _VALID_TARIFFS = {'Mini', 'Lite', 'Standard', 'Pro'}
+        text = re.sub(
+            r'Wipon\s+((?:(?!Mini|Lite|Standard|Pro)[A-ZА-ЯЁ]\w+))',
+            lambda m: 'Wipon' if m.group(1) not in _VALID_TARIFFS else m.group(0),
+            text,
+        )
+        # Garbled text at start of response (LLM generation artifact like "usadas", "étoile", "choisir."):
+        # Strip isolated lowercase Latin word (incl. accented chars) + optional trailing punct
+        # at position 0 if followed by Cyrillic content.
+        # Only lowercase to preserve brand names (Wipon, REST etc.)
+        # IMPORTANT: Do NOT strip mid-text English words — causes false positives
+        text = re.sub(r'^[a-zà-ÿ]{3,15}[.,;:!?]?\s+(?=[а-яА-ЯёЁ])', '', text)
+        # Fabricated URLs: bot can't give links (rule 5)
+        text = re.sub(r'(?:https?://|www\.)\S+', '', text)
+        # Bare domain names (e.g. "wipon.kz", "site.com")
+        text = re.sub(r'\b(?:wipon|сайт\w*)\s*\.\s*(?:kz|com|ru)\b', '', text)
+        # Fabricated URL-like references: "(ссылка на ...)" placeholder
+        text = re.sub(r'\(\s*ссылка\s+на\s+[^)]+\)', '', text)
+        # Orphaned "на" after number stripping: "на без" → "без"
+        text = re.sub(r'\bна\s+(?=без\b)', '', text)
+        # Asterisk+quote wrapping: *"..."* or *'...'*
+        text = re.sub(r'^\*["\'](.+?)["\']\*$', r'\1', text, flags=re.DOTALL)
+        # Quoted response wrapping: remove leading/trailing quotes from entire response
+        if text.startswith('"') and text.endswith('"') and text.count('"') == 2:
+            text = text[1:-1].strip()
+        # Orphaned preposition after number stripping: "— на." / "— за." / "— в." etc.
+        text = re.sub(r'\s*—\s+(?:на|за|в|по|до)\s*\.', '.', text)
+        # Garbled trailing fragments: "(или)." / "(или)" / "(и)." at end of sentence
+        text = re.sub(r'\s*\(\s*(?:или|и|либо)\s*\)\s*\.?', '.', text)
+        # Trailing orphaned conjunctions: "или." / "и." at the very end of response
+        text = re.sub(r'\s+(?:или|либо)\s*\.\s*$', '.', text)
 
         # Убираем лишние пробелы
         text = re.sub(r'\s+', ' ', text).strip()
@@ -2570,6 +3486,40 @@ class ResponseGenerator:
         processed = validation_result.response
         validation_events = validation_result.validation_events
 
+        # Re-run price/tariff fixes + _clean on validator output: retry/regen produces
+        # new LLM text that hasn't been through the price-fixing pipeline.
+        if validation_result.retry_used or validation_result.fallback_used:
+            _rf = str(retrieved_facts or "")
+            # Strip markdown before price fixes (LLM may wrap in **bold**)
+            processed = re.sub(r'\*{1,3}', '', processed)
+            processed = self._fix_price_period_confusion(processed)
+            processed = self._fix_tariff_point_count(processed)
+            processed = self._fix_tis_pricing(processed)
+            processed = self._fix_false_integration_denial(processed)
+            processed = self._fix_tariff_price_mismatch(processed)
+            processed = self._fix_price_period_confusion(processed)
+            processed = self._inject_missing_period(processed)
+            processed = self._fix_global_tariff_price_consistency(processed)
+            processed = self._fix_collapsed_price_range(processed)
+            processed = self._fix_tech_hallucinations(processed, _rf)
+            _um = context.get("user_message", "")
+            processed = self._strip_misrouted_subd_answer(processed, _um)
+            if self._has_price_hallucination(processed, _rf):
+                processed = self._strip_hallucinated_prices(processed, _rf)
+            # Trial denial fix (same as in main pipeline)
+            processed = re.sub(
+                r'(?:пробн\w+|тестов\w+)\s+период\w*\s+.{0,20}'
+                r'(?:не\s+предусмотрен\w*|отсутствует|не\s+(?:предлага|предоставля)\w*)',
+                'есть 7-дневный тестовый период',
+                processed, flags=re.IGNORECASE,
+            )
+            processed = re.sub(
+                r'(?:нет|без)\s+(?:пробн\w+|тестов\w+)\s+период\w*',
+                'есть 7-дневный тестовый период',
+                processed, flags=re.IGNORECASE,
+            )
+            processed = self._clean(processed)
+
         # Strip markdown formatting from autonomous responses (plain text chat)
         _is_autonomous = bool(
             self._flow
@@ -2784,14 +3734,14 @@ class ResponseGenerator:
         state = str(context.get("state", "") or "").lower()
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             return (
-                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
-                "и согласует удобное время."
+                "Спасибо! Менеджер Wipon свяжется с вами "
+                "в ближайшее время."
             )
         if "price" in intent or "pricing" in intent:
-            return "По цене: подготовлю точный расчёт в ₸ под ваш формат бизнеса."
+            return "Точную стоимость под ваш формат бизнеса уточнит менеджер."
         if state.startswith("autonomous_"):
-            return "Коротко по сути: дам следующий шаг под ваш кейс без лишнего."
-        return "Переформулирую коротко и по сути."
+            return "Расскажите подробнее о вашем бизнесе, чтобы подобрать подходящий вариант."
+        return "Расскажите, чем могу помочь по Wipon?"
 
     # =========================================================================
     # НОВОЕ: Deduplication методы

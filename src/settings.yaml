@@ -156,10 +156,12 @@ generator:
     - "cloud"
     - "online"
     # Brand names from knowledge base
+    - "wipon"
     - "kaspi"
     - "halyk"
     - "iiko"
     - "poster"
+    - "zebra"
 
 # -----------------------------------------------------------------------------
 # TONE ANALYZER (Анализ тона клиента)

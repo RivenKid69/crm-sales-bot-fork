@@ -457,7 +457,11 @@ class AutonomousDecisionSource(KnowledgeSource):
             for record in self._decision_history[-3:]
             if record.state == state and not record.should_transition
         ]
-        if state != "autonomous_closing" and len(recent_stays) == 3:
+        # Exempt progress intents from streak override — these should be handled
+        # by their own deterministic fast-tracks (contact_provided, demo_request, etc.)
+        _STREAK_EXEMPT_INTENTS = {"contact_provided", "demo_request", "callback_request",
+                                   "payment_confirmation", "ready_to_buy", "request_invoice"}
+        if state != "autonomous_closing" and len(recent_stays) == 3 and intent not in _STREAK_EXEMPT_INTENTS:
             streak_intents = [str(record.intent or "") for record in recent_stays]
             all_objection_streak = all(i.startswith("objection_") for i in streak_intents) and intent.startswith("objection_")
             if all_objection_streak:
@@ -637,11 +641,10 @@ class AutonomousDecisionSource(KnowledgeSource):
         merged_enabled = flags.is_enabled("merged_autonomous_call")
         response_context = blackboard.get_response_context() if merged_enabled else None
 
-        # Merged-mode stabilizer:
-        # contact_provided on autonomous stages should deterministically finish into
-        # terminal state when data is already sufficient. This avoids low-conversion
-        # regressions from conservative merged decisions (should_transition=false).
-        if merged_enabled and state != "autonomous_closing" and intent == "contact_provided":
+        # Deterministic fast-track for contact_provided on non-closing autonomous stages.
+        # When client provides contact info, either go directly to terminal (if data sufficient)
+        # or at least transition to autonomous_closing to collect remaining fields.
+        if state != "autonomous_closing" and intent == "contact_provided":
             has_contact = (
                 self._has_required_field(collected_data, "contact_info")
                 or self._message_has_contact_info(user_message)
@@ -664,14 +667,14 @@ class AutonomousDecisionSource(KnowledgeSource):
             reason_code = ""
             if has_kaspi_phone and has_iin and "payment_ready" in all_states:
                 fast_target = "payment_ready"
-                reason_code = "autonomous_merged_terminal_payment_ready"
+                reason_code = "autonomous_contact_terminal_payment_ready"
             elif (
                 has_contact
                 and "video_call_scheduled" in all_states
                 and (not payment_intent_active or has_iin or iin_refusal_or_deferral)
             ):
                 fast_target = "video_call_scheduled"
-                reason_code = "autonomous_merged_terminal_video_call"
+                reason_code = "autonomous_contact_terminal_video_call"
 
             if fast_target:
                 blackboard.propose_action(
@@ -695,6 +698,36 @@ class AutonomousDecisionSource(KnowledgeSource):
                         state=state,
                         should_transition=True,
                         next_state=fast_target,
+                        reasoning=reason_code,
+                        explicit_ready_to_buy=explicit_ready_to_buy,
+                    )
+                )
+                return
+
+            # Not enough data for terminal — at least fast-track to closing
+            if "autonomous_closing" in all_states:
+                reason_code = "autonomous_contact_fast_to_closing"
+                blackboard.propose_action(
+                    action="autonomous_respond",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code=reason_code,
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state="autonomous_closing",
+                    priority=Priority.HIGH,
+                    priority_rank=0,
+                    reason_code=reason_code,
+                    source_name=self.name,
+                )
+                self._decision_history.append(
+                    AutonomousDecisionRecord(
+                        turn_in_state=turn_in_state,
+                        intent=intent,
+                        state=state,
+                        should_transition=True,
+                        next_state="autonomous_closing",
                         reasoning=reason_code,
                         explicit_ready_to_buy=explicit_ready_to_buy,
                     )

@@ -61,23 +61,156 @@ class ResponseBoundaryValidator:
     KZ_PHONE_PATTERN = re.compile(r'(?:\+?[78])[\s\-\(]?\d{3}[\s\-\)]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}')
     IIN_PATTERN = re.compile(r'\b\d{12}\b')
     SEND_PROMISE_PATTERN = re.compile(
-        r'(пришлю|отправлю|вышлю|скину).{0,40}(фото|видео|файл|документ|каталог|на\s+почт)',
+        r'(пришлю|отправлю|вышлю|скину).{0,40}'
+        r'(фото|видео|файл|документ|каталог|на\s+почт|на\s+\S+@\S+|на\s+адрес|на\s+email|предложени|пакет\s+документ|коммерческ'
+        r'|детали|ссылк|счёт|счет|инвойс)',
         re.IGNORECASE,
     )
     SEND_CAPABILITY_PATTERN = re.compile(
         r'(?:я\s+)?(?:могу|можем|сможем).{0,25}(?:отправить|выслать|прислать|скинуть)'
-        r'.{0,40}(?:фото|видео|файл|документ|скриншот|каталог)',
+        r'.{0,40}(?:фото|видео|файл|документ|скриншот|каталог|ссылк|счёт|счет)',
         re.IGNORECASE,
     )
     PAST_ACTION_PATTERN = re.compile(
-        r'мы (уже |только что )?(отправили|выслали|прислали|связались|написали|подготовили|оформили)',
+        r'(?:'
+        r'мы\s+(?:уже\s+|только что\s+)?(?:отправили|выслали|прислали|связались|написали|подготовили|оформили)'
+        r'|'
+        r'(?:на\s+(?:почту|email|адрес)\s+\S+\s+)?(?:отправлен[аоы]?|выслан[аоы]?|прислан[аоы]?)\s+(?:ссылк|письм|документ|предложени)'
+        r'|'
+        r'(?:ссылк\w+|письм\w+)\s+(?:уже\s+)?(?:отправлен\w*|готов\w*|придёт|придет)'
+        r'|'
+        r'через\s+\d+\s+минут\s+(?:на\s+\S+\s+)?(?:придёт|придет|получите|отправим)'
+        r'|'
+        # First-person future promises to send (вышлю, отправлю, скину на почту)
+        r'(?:вышлю|отправлю|скину|пришлю)\s+(?:на\s+)?(?:\S+@\S+|\S+\s+)?(?:прямо\s+)?(?:сейчас|сразу|немедленно)'
+        r'|'
+        # First-person present tense action (пишу/отправляю/высылаю на почту/email)
+        r'(?:пишу|отправляю|высылаю|посылаю)\s+(?:на\s+)?(?:указанн\w+\s+)?(?:почт\w+|email|адрес|\S+@\S+)'
+        r'|'
+        # Reversed passive: "Письмо/Ссылка отправлено/отправлена на адрес X@Y"
+        r'(?:письм\w*|ссылк\w*|документ\w*|предложени\w*|информаци\w*)\s+.{0,40}(?:отправлен[аоы]?|выслан[аоы]?|прислан[аоы]?)\s+(?:на\s+)?(?:адрес\s+|почт\w*\s+)?\S+@\S+'
+        r'|'
+        # "будет отправлен/выслан" passive future
+        r'(?:будет|будут)\s+(?:отправлен|выслан|прислан)\w*'
+        r'|'
+        # "на сайте уже заполнено/сохранено" — fabricated system action
+        r'на\s+сайте\s+\S*\s*(?:уже\s+)?(?:всё\s+)?(?:заполнен|сохранен|оформлен)\w*'
+        r'|'
+        # "менеджер перезвонит сегодня/завтра в NN:NN" or "с NN:NN до NN:NN" — fabricated schedule
+        r'(?:менеджер|специалист|коллега)\s+(?:перезвонит|свяжется|позвонит)\s+(?:сегодня|завтра)\s+(?:в\s+)?(?:рабочее\s+)?(?:время\s+)?(?:(?:—|–|-)\s*)?(?:(?:с|от)\s+)?\d{1,2}[:\-\.]\d{2}(?:\s+(?:до)\s+\d{1,2}[:\-\.]\d{2})?'
+        r'|'
+        # "сегодня в рабочее время — с 09:00 до 21:00" — fabricated time range after context
+        r'(?:перезвон\w+|свяж\w+)\s+.{0,40}(?:с|от)\s+\d{1,2}[:\-\.]\d{2}\s+до\s+\d{1,2}[:\-\.]\d{2}'
+        r'|'
+        # Generic fabricated time ranges: "между 10:00 и 17:00", "в 10:00--17:00", "с 10:00 до 17:00"
+        r'(?:между|окно|слоты?)\s+\d{1,2}[:\-\.]\d{2}\s+(?:и|—|–|-|до)\s+\d{1,2}[:\-\.]\d{2}'
+        r'|'
+        # "в удобное время с/от NN:NN до NN:NN" — any specific time range
+        r'(?:удобн\w+\s+)?(?:время|день|вечер|утро)\s+.{0,20}(?:с|от|между)\s+\d{1,2}[:\-\.]\d{2}\s+(?:до|и|—|–|-)\s+\d{1,2}[:\-\.]\d{2}'
+        r'|'
+        # "назначили/назначен видеозвонок/встречу" — fabricated scheduled action
+        r'(?:уже\s+)?назнач(?:ил[иа]?|ен[аоы]?)\s+(?:видеозвонок|встреч|демо|консультаци)'
+        r'|'
+        # Reversed: "Видеозвонок назначен" / "Встреча запланирована"
+        r'(?:видеозвонок|встреч\w*|демо)\s+(?:уже\s+)?(?:назнач|запланирован|согласован)\w*'
+        r'|'
+        # "уже пришло подтверждение/письмо" — fabricated delivery confirmation
+        r'(?:уже\s+)?(?:пришл[оа]|получен[оа]?|доставлен[оа]?)\s+(?:подтвержден|письм|уведомлен)\w*'
+        r'|'
+        # "счёт на X ₸ в вашем кабинете Kaspi Pay" — fabricated invoice/account creation
+        r'сч[её]т\s+(?:на\s+)?(?:\d[\d\s,\.₸\u00A0]*\s+)?(?:уже\s+)?(?:в\s+)?(?:вашем\s+)?(?:личном\s+)?кабинет'
+        r'|'
+        # "записал на демо на завтра" / "записал в календаре" — fabricated scheduling by bot
+        r'(?:записал[аи]?\s+(?:на\s+)?(?:демо|встреч|консультаци|звонок|видеозвонок)\w*\s+(?:на\s+)?(?:завтра|сегодня|понедельник|вторник|сред\w+|четверг|пятниц\w+|субботу|воскресенье))'
+        r'|'
+        # "в календаре / в расписании" — fabricated calendar action
+        r'(?:(?:зафиксировал|внёс|внес|добавил|поставил|записал)\w*\s+(?:в\s+)?(?:календар|расписани|планировщик)\w*)'
+        r'|'
+        # "отправил заявку / запрос" — bot fabricated sending application
+        r'(?:уже\s+)?(?:отправил[аи]?|подал[аи]?)\s+(?:заявк|запрос|обращени)\w*'
+        r'|'
+        # "телефон/номер/данные/контакт исправлен/сохранён/записан/получен/подтверждён" — fabricated data action
+        r'(?:телефон|номер|данные|контакт)\w*\s+(?:исправлен|скорректирован|обновл[её]н|сохран[её]н|записан|получен|принят|зафиксирован|подтвержд[её]н)\w*'
+        r'|'
+        # "контакт получил / записал / сохранил" — first-person fabricated data save
+        r'(?:контакт|телефон|номер|данные)\w*\s+(?:получил|записал|сохранил|зафиксировал|принял|подтвердил)\w*'
+        r'|'
+        # "организуем тестовый доступ / настроим систему" — fabricated setup actions
+        r'(?:сейчас\s+)?(?:организуем|настроим|подготовим|активируем)\s+(?:тестов\w+|пробн\w+)\s+(?:доступ|период|верси)'
+        r'|'
+        # "письма придут / придёт ссылка" — fabricated delivery notification
+        r'(?:письм\w*|ссылк\w*|документ\w*)\s+.{0,20}(?:придут|придёт|придет|поступ\w+)\s+(?:в\s+течение|через|на)'
+        r'|'
+        # "письмо/ссылка уже отправлено/отправлена" — passive fabricated send
+        r'(?:письм\w*|ссылк\w*|документ\w*|информаци\w*)\s+(?:на\s+\S+\s+)?(?:уже\s+)?(?:отправлен\w*|выслан\w*|прислан\w*)'
+        r'|'
+        # "счёт/доступ/систему оформим/настроим" — fabricated future action
+        r'(?:сч[её]т|доступ|систем\w+|подписк\w+)\s+(?:на\s+.{0,30})?\s*(?:оформим|настроим|активируем|подготовим)\b'
+        r'|'
+        # "подготовил счёт / выставил счёт" — fabricated invoice creation
+        r'(?:уже\s+)?(?:подготовил[аи]?|выставил[аи]?|оформил[аи]?|сформировал[аи]?)\s+(?:сч[её]т|инвойс|договор)\w*'
+        r'|'
+        # "счёт уже подготовлен/выставлен/оформлен" — passive fabricated invoice
+        r'(?:сч[её]т|инвойс|договор)\w*\s+(?:уже\s+)?(?:подготовлен|выставлен|оформлен|сформирован)\w*'
+        r'|'
+        # "отправлю ссылку для оплаты прямо сейчас" — fabricated payment link
+        r'(?:отправ\w+|вышл\w+|приш\w+)\s+ссылк\w*\s+(?:для|на)\s+оплат\w*'
+        r'|'
+        # "письмо уже на пути / уже в пути" — fabricated delivery status
+        r'(?:письм\w*|ссылк\w*|документ\w*)\s+.{0,30}(?:уже\s+)?(?:на\s+пути|в\s+пути|в\s+дороге|на\s+подходе)'
+        r'|'
+        # "номер передан на регистрацию" / "номер Kaspi успешно передан" — fabricated system action
+        r'(?:номер|телефон|контакт|данные)\w*\s+(?:Kaspi\s+|вашего?\s+)?(?:уже\s+|успешно\s+)?(?:передан|принят|внес[её]н|зарегистрирован)\w*'
+        r'|'
+        # "подготовил для быстрого старта/оформления" — fabricated preparation action
+        r'(?:я\s+)?(?:подготовил[аи]?|всё\s+подготовил)\s+(?:для|к)\s+'
+        r'|'
+        # "подключу/оформлю/активирую пробный доступ" — first-person future fabricated action
+        r'(?:я\s+)?(?:подключу|оформлю|активирую|настрою|организую)\s+(?:пробн\w+|тестов\w+|бесплатн\w+)\s+(?:доступ|период|верси)\w*'
+        r'|'
+        # "подготовим все документы" — fabricated future document preparation
+        r'(?:подготовим|соберём|оформим)\s+(?:все\s+)?(?:документ|бумаг|договор)\w*'
+        r'|'
+        # "на X@Y всё пришло/отправлено/доставлено" — fabricated delivery confirmation
+        r'(?:на\s+\S+@\S+|на\s+(?:почту|email|адрес))\s+(?:уже\s+|всё\s+)?(?:пришл\w*|отправлен\w*|доставлен\w*|дошл\w*)'
+        r'|'
+        # "всё пришло на X@Y" — reversed fabricated delivery
+        r'(?:всё|все)\s+(?:уже\s+)?(?:пришл\w*|отправлен\w*|доставлен\w*|дошл\w*)\s+(?:на\s+)?(?:\S+@\S+|почт\w+|email)'
+        r'|'
+        # "могу отправить/выслать демодоступ/детали" — fabricated send capability
+        r'(?:могу|можем)\s+(?:отправить|выслать|прислать|скинуть)\s+(?:демо\w*|детали|подробност|доступ|материал)\w*'
+        r'|'
+        # "Записал ваш email/телефон" — fabricated data save
+        r'(?:записал[аи]?|зафиксировал[аи]?|сохранил[аи]?)\s+(?:ваш\w*\s+)?(?:email|телефон|номер|адрес|контакт)\w*'
+        r'|'
+        # "запишу/запишем демо на ближайшее время" — fabricated scheduling
+        r'(?:запишу|запишем|назначу|назначим|зарезервирую)\s+(?:вам\s+)?(?:демо|встреч|звонок|консультаци)\w*\s+(?:на\s+)?(?:ближайш|завтра|сегодня)'
+        r'|'
+        # "на встречу с X запишем" — reversed fabricated scheduling
+        r'(?:на\s+)?(?:встреч\w*|демо|консультаци\w*)\s+(?:с\s+\w+\s+)?(?:запишем|назначим|зарезервируем)\b'
+        r'|'
+        # "уже привязан к вашему счету" — fabricated account binding
+        r'(?:уже\s+)?привязан\w*\s+(?:к\s+)?(?:вашему?\s+)?(?:счет|счёт|аккаунт|кабинет|профил)\w*'
+        r'|'
+        # "Коммерческое предложение [на X] готово" — fabricated document readiness
+        r'(?:коммерческ\w+\s+предложени\w*|КП)\s+(?:\w+\s+){0,4}(?:уже\s+)?(?:готов\w*|подготовлен\w*|составлен\w*)'
+        r'|'
+        # "Мы отправим его/её/документ на адрес" — future tense send (1st person plural)
+        r'(?:мы\s+)?(?:отправим|вышлем|пришлём)\s+(?:его|её|это|документ|предложени|КП)\w*\s+(?:на\s+)?(?:адрес|почт\w+|email|\S+@\S+)'
+        r')',
         re.IGNORECASE,
     )
     PAST_SETUP_PATTERN = re.compile(
-        r'(?:уже\s+)?(?:всё\s+)?(?:подключ(?:ил(?:и)?|ен[аоы]?|ено)|'
-        r'настро(?:ил(?:и)?|ен[аоы]?|ено)|'
+        r'(?:уже\s+)?(?:всё\s+)?(?:подключ(?:ил(?:и)?|[её]н[аоы]?|ено)|'
+        r'настро(?:ил(?:и)?|[её]н[аоы]?|ено)|'
         r'активир(?:овал(?:и)?|ован[аоы]?|овано)|'
-        r'готов[аоы]?\s+к\s+работе)',
+        r'готов[аоы]?\s+к\s+работе|'
+        # "данные сохранены/записаны/зафиксированы" — fabricated data save action
+        r'(?:данные|информаци\w*)\s+(?:Kaspi\s+)?(?:уже\s+)?(?:сохранен|записан|зафиксирован)\w*|'
+        # "мы уже собрали данные" — fabricated data collection
+        r'(?:уже\s+)?(?:собрали|зафиксировали|сохранили)\s+(?:ваши\s+)?(?:данные|информаци)\w*|'
+        # "счёт будет готов" — fabricated future invoice promise
+        r'сч[её]т\s+(?:будет\s+)?готов\w*)',
         re.IGNORECASE,
     )
     INVOICE_WITHOUT_IIN_PATTERN = re.compile(
@@ -127,6 +260,8 @@ class ResponseBoundaryValidator:
         r'|'
         r'(?:сеть\s+магазин\w*|предприятие)\s+[«"\'][^«"\']{2,}'
         r'|'
+        r'(?:кафе|ресторан\w*|аптек\w*|салон\w*|магазин\w*)\s+[«"\'][^«"\']{2,}'
+        r'|'
         r'кейс\s*:\s*[A-ZА-ЯЁ][\w\- ]{2,40}'
         r'|'
         r'сеть\s+[A-ZА-ЯЁ][\w\-]{2,40}'
@@ -134,6 +269,17 @@ class ResponseBoundaryValidator:
         r'(?:например,\s*)?клиент\s+из\s+[A-ZА-ЯЁ][\w\-]{2,40}'
         r'|'
         r'компани[яи]\s+из\s+[A-ZА-ЯЁ][\w\-]{2,40}'
+        r'|'
+        # Unquoted company name: "компания KazTrade", "фирма АльфаТрейд" (not Wipon)
+        r'компани[яи]\s+(?!Wipon\b)[A-ZА-ЯЁa-zA-Zа-яёЁ][\w\-]{2,30}(?:\s+(?:после|из|в|уже|тоже))'
+        r'|'
+        r'(?:один\s+из\s+)?(?:наших?\s+)?клиент\w*\s+(?:—\s+)?(?:небольш\w+\s+)?(?:продуктов\w+\s+)?(?:магазин|кафе|ресторан|аптек|салон)\w*\s+в\s+[A-ZА-ЯЁ]'
+        r'|'
+        # "один из наших клиентов из аптеки перешёл" — fabricated testimonial without city
+        r'(?:один\s+из\s+)?(?:наших?\s+)?клиент\w*\s+(?:из\s+)?(?:аптек|магазин|кафе|ресторан|салон)\w*\s+(?:переш[ёе]?л|сэконом|увелич|сократ|начал|отказал|внедр|получ)\w*'
+        r'|'
+        # "одна аптека из Алматы" / "магазин из Караганды" + action verb (fabricated success story)
+        r'(?:одна?\s+)?(?:аптек\w*|магазин\w*|кафе|ресторан\w*|салон\w*|компани\w*)\s+из\s+[A-ZА-ЯЁ]\w+\s+(?:после|сэконом|увелич|сократ|получ|внедр|переш[ёе]?л)'
         r')',
         re.IGNORECASE,
     )
@@ -143,6 +289,108 @@ class ResponseBoundaryValidator:
         r'с\s+20[01]\d\s+года'           # "с 2015 года", "с 2016 года"
         r'|более\s+\d+\s*(?:\d+\s*)?(?:бизнес|клиент|магазин|компан|точ\w+|предприят)'
         r'|\d+\+?\s+(?:сет\w+|магазин\w+|бизнес\w*|компан\w+)\s+(?:используют|работают|подключ)'
+        r'|отч[её]т\w*\s+20\d{2}\s+года'  # "отчёты 2023 года" — fabricated year-specific claims
+        r'|99[.,]9\s*%\s*(?:доступност|uptime|SLA)'  # "99.9% доступности" — NOT confirmed in KB
+        r'|\d+\s*%\s+больше\s+функций'  # "на 30% больше функций" — fabricated comparison
+        # "в 2023 году не было простоев" / "за 2024 год ни одного сбоя" — fabricated uptime year claims
+        r'|(?:в|за)\s+20\d{2}\s+(?:году?\s+)?(?:не\s+было|ни\s+одного)\s+(?:простоев|сбо\w+|инцидент\w*|отключени\w*)'
+        # Fabricated throughput stats: "300 чеков в час" — no throughput benchmarks in KB
+        r'|\d+\s+чек\w*\s+в\s+(?:час|минуту|секунду|день|смену)'
+        # Fabricated percentage savings/efficiency claims: "30% экономии/времени"
+        r'|\d+\s*%\s+(?:экономи\w*|времени|затрат|потерь|расходов|выручк\w*|прибыл\w*|эффективност\w*|производительност\w*)'
+        # Reversed: "экономия до 30%" / "сокращение на 30%"
+        r'|(?:экономи\w*|сокращени\w*|рост\w*|увеличени\w*|повышени\w*)\s+(?:до|на|в)\s+\d+\s*%'
+        r')',
+        re.IGNORECASE,
+    )
+    # Ungrounded tech claims: specific DB/framework/language/standard names not in KB
+    UNGROUNDED_TECH_CLAIM_PATTERN = re.compile(
+        r'(?:'
+        r'(?:написан\w*|использу\w*|построен\w*|работает|разработан\w*)\s+на\s+'
+        r'(?:PostgreSQL|MySQL|MongoDB|Redis|Elasticsearch|Python|Java|Go|Node\.?js|React|Angular|Vue|Django|Flask|Laravel|Ruby'
+        r'|C\#|C\+\+|\.NET(?:\s+Core)?|ASP\.NET|Kotlin|Swift|Rust|Perl|PHP|Scala'
+        r'|1С[\s-]?Битрикс|1C[\s-]?Bitrix|Windows|Linux|macOS)'
+        r'|'
+        r'(?:базу?\s+данных\s+)?(?:PostgreSQL|MySQL|MongoDB|MariaDB|Oracle|MS\s+SQL|SQL\s+Server|Microsoft\s+SQL|SQLite|CouchDB|Cassandra|DynamoDB)'
+        r'|'
+        r'GraphQL\s+(?:доступ|поддерж|есть|API)'
+        r'|'
+        r'(?:поддерж\w*|доступ\w*)\s+GraphQL'
+        r'|'
+        r'(?:3|три)\s+(?:инцидент|случа|сбо)\w*\s+за\s+(?:последн|два)\s+года'
+        r'|'
+        # Security standards not in KB: ISO, PCI DSS, ГОСТ
+        r'(?:стандарт\w*\s+)?ISO\s+\d{4,5}'
+        r'|'
+        r'PCI[\s\-]*DSS'
+        r'|'
+        # Specific encryption/protocol/standard versions
+        r'AES[-\s]?\d{3}'
+        r'|'
+        r'TLS\s+\d+\.\d+'
+        r'|'
+        r'ГОСТ\s+(?:Р\s+)?\d{4,}'
+        r'|'
+        # FIDO2/WebAuthn — fabricated security standard
+        r'FIDO2?\b|WebAuthn\b'
+        r'|'
+        # OAuth 2.0 claim — unless supported in KB
+        r'OAuth\s+2\.0'
+        r'|'
+        r'(?:SQL|PostgreSQL|MySQL)-совместим\w*'
+        r'|'
+        # DDoS protection — not in KB
+        r'(?:защит\w*|устойчив\w*)\s+(?:от|к)\s+DDoS'
+        r'|'
+        r'DDoS[\s-]?(?:защит|атак)\w*'
+        r'|'
+        # "собственная СУБД / база данных / платформа" — fabricated architecture
+        r'собственн\w+\s+(?:СУБД|базу?\s+данных|платформ\w+|архитектур\w+)'
+        r'|'
+        # Fabricated OS/platform limitations or claims
+        r'не\s+поддержива\w*\s+(?:Linux|Windows|macOS|iOS|Android)\b'
+        r'|'
+        r'(?:открыт\w+\s+исходн\w+\s+код\w*|open[\s-]?source)'
+        r'|'
+        # Fabricated integrations with non-KZ marketplaces/banks (Wipon = KZ retail product)
+        r'(?:интеграци\w*|подключ\w*|синхрониз\w*).{0,40}(?:СберМаркет|Wildberries|Ozon|Авито|Яндекс[\s.]?Маркет|Lamoda|Сбербанк|Тинькофф|ВТБ)'
+        r'|'
+        # Fabricated integrations with specific POS/accounting systems not in KB
+        # NOTE: iiko, r_keeper, poster are REAL integrations per KB (tis.yaml, integrations.yaml) — NOT listed here
+        r'(?:интеграци\w*|подключ\w*|синхрониз\w*|совмести\w*|возможн\w*).{0,40}(?:Битрикс|bitrix|Мой\s*Склад|moysklad|Эвотор|evotor|AmoCRM|amocrm|Shopify|WooCommerce|Tilda|тильд\w+|Kaspi\s*Marketplace)'
+        r'|'
+        # Reversed: "Битрикс интегрируется" etc. (iiko/r_keeper/poster excluded — they're real)
+        r'(?:Битрикс|bitrix|Мой\s*Склад|moysklad|Sprinter|Wialon|AmoCRM|amocrm|Shopify|WooCommerce|Tilda)\s+(?:возможн\w*|интегрир\w*|подключ\w*|совмести\w*|синхрониз\w*|доступн\w*)'
+        r'|'
+        # Russian banks/payment systems referenced as integrations (Wipon = Kazakhstan only)
+        r'(?:Сбербанк|Тинькофф|ВТБ|Альфа[\s-]?Банк|Газпромбанк)\s+(?:Онлайн|Pay|Бизнес)?'
+        r'|'
+        # Specific demo/meeting platforms not in KB
+        r'(?:через|по|в)\s+(?:Zoom|Microsoft\s+Teams|Google\s+Meet|Skype)\b'
+        r'|'
+        # Fabricated features not in KB: GPS tracking, geolocation
+        r'(?:GPS|геолокаци\w*|геотрекинг\w*)\s+(?:в\s+)?(?:мобильн\w*\s+)?(?:приложени|версии|режим)'
+        r'|'
+        r'(?:GPS|геолокаци\w*|геотрекинг\w*).{0,30}(?:сотрудник|персонал|курьер|работник|кассир)\w*'
+        r'|'
+        r'(?:отслежива\w*|мониторинг\w*|контрол\w*)\s+(?:сотрудник|персонал|курьер|работник)\w*\s+(?:через\s+)?(?:GPS|геолокаци)'
+        r'|'
+        # Fabricated receipt delivery via messaging apps
+        r'чек\w*\s+(?:по|через|на|в)\s+(?:WhatsApp|Telegram|Viber|SMS)\b'
+        r'|'
+        r'(?:отправ\w*|высл\w*|приш\w*)\s+чек\w*\s+.{0,20}(?:WhatsApp|Telegram|Viber|SMS)\b'
+        r'|'
+        # Fabricated platform/framework claims
+        r'(?:на\s+)?(?:платформ\w+|базе)\s+(?:1С[\s-]?Битрикс|1C[\s-]?Bitrix)\b'
+        r'|'
+        # Fabricated non-KZ e-commerce/CRM platforms as integrations
+        r'(?:через|типа|как)\s+(?:Shopify|WooCommerce|Tilda|AmoCRM|Битрикс24|HubSpot)'
+        r'|'
+        # "сторонние сервисы типа Shopify" — fabricated integration pathway
+        r'(?:сторонни\w+\s+сервис\w*|платформ\w*)\s+(?:типа|как|например)\s+(?:Shopify|WooCommerce|Tilda|AmoCRM)'
+        r'|'
+        # Fabricated competitor pricing: "конкуренты предлагают кассу по 3000"
+        r'(?:у\s+)?конкурент\w*\s+.{0,40}\d[\d\s]*(?:₸|тенге|тг)'
         r')',
         re.IGNORECASE,
     )
@@ -151,7 +399,18 @@ class ResponseBoundaryValidator:
         r'|наши\s+клиенты\s+(?:отмечают|в\s+[А-ЯЁ]\w+|изначально|сомневались|подтверждают)'
         r'|клиенты\s+подтверждают|клиенты\s+из\s+розниц'
         r'|у\s+наших\s+клиентов\s+в\s+[А-ЯЁ]'
-        r'|наших\s+клиентов\s+в\s+[А-ЯЁ])',
+        r'|наших\s+клиентов\s+в\s+[А-ЯЁ]'
+        # "многие из тех, кто начинал/перешёл/подключил" — fabricated general social proof
+        r'|(?:многие|некоторые)\s+из\s+тех\s*,?\s+кто\s+(?:начин|переш|переход|подключ|внедр|пробов)\w*'
+        # Fabricated success stories: "сеть из N магазинов смогла/отметила/сэкономила"
+        r'|сеть\s+из\s+\w+\s+магазин\w*\s+(?:смогл|отметил|сэконом|увелич|сократ|переш)'
+        # "после внедрения удалось сократить/сэкономить/увеличить"
+        r'|после\s+(?:её\s+|его\s+)?внедрени\w*\s+удалось\s+(?:сократ|сэконом|увелич|ускор)\w*'
+        # "многие бизнесы/магазины/сети, которые перешли/переходили...отмечали"
+        r'|(?:многие|некоторые)\s+(?:бизнес\w*|магазин\w*|компани\w*|точ\w+|сет\w+|розничн\w+\s+сет\w+)\s*,?\s+котор\w+\s+(?:переш|переход|внедр|подключ)\w*'
+        # "многие розничные сети после внедрения отмечали"
+        r'|(?:многие|некоторые)\s+(?:розничн\w+\s+)?(?:сет\w+|магазин\w*|компани\w*)\s+после\s+(?:внедрени|подключени|переход)\w*\s+(?:\w+\s+){0,3}(?:отмеч|замеч|замет|подтверд|сообщ|говор)\w*'
+        r')',
         re.IGNORECASE,
     )
     POLICY_DISCLOSURE_PATTERN = re.compile(
@@ -170,7 +429,7 @@ class ResponseBoundaryValidator:
     )
     UNGROUNDED_GUARANTEE_PATTERN = re.compile(
         r'(?:'
-        r'гарантир(?:уем|ую|ует|овано)'
+        r'гарантир(?:уем|ую|ует|ован[аоы]?)'
         r'|'
         r'без\s+ошиб(?:ок|ки)'
         r'|'
@@ -189,6 +448,44 @@ class ResponseBoundaryValidator:
         r'точно\s+получит'
         r'|'
         r'всегда\s+работает'
+        r'|'
+        # Fabricated refund/compensation policies
+        r'возвращ(?:аем|ём|у)\s+(?:депозит|средств|деньг)\w*'
+        r'|'
+        r'компенсир(?:уем|ую)\s+(?:разниц|стоимост|затрат)\w*'
+        r'|'
+        r'(?:возврат|отказ)\s+без\s+(?:штраф|санкци|ограничен|потер)\w*'
+        r'|'
+        # "без дополнительных затрат/расходов" — fabricated cost guarantee
+        r'без\s+дополнительных\s+(?:затрат|расходов|платежей|оплат)\w*'
+        r'|'
+        # "годовую гарантию на ТО / бесплатные обновления оборудования" — fabricated warranty
+        r'годов\w+\s+гаранти\w+\s+на\s+(?:техничес\w*\s+обслужива\w*|ТО)'
+        r'|'
+        r'бесплатн\w+\s+обновлени\w+\s+оборудовани\w*'
+        r'|'
+        # "задержек нет" / "без задержек" — fabricated performance guarantee
+        r'задержек\s+нет'
+        r'|'
+        r'без\s+задержек'
+        r'|'
+        # "можно отказаться без ..." — fabricated cancellation policy
+        r'(?:можно|возможность)\s+отказ\w*\s+без\s+'
+        r'|'
+        # "нет ограничений по срокам возврата" — fabricated refund terms
+        r'нет\s+ограничений\s+по\s+(?:срок\w*\s+)?(?:возврат|отказ|расторжен)\w*'
+        r'|'
+        # "оплата автоматически продлевается" — fabricated auto-renewal policy
+        r'(?:оплата|подписка|тариф)\s+(?:автоматически\s+)?(?:продлевается|продлится|продлён\w*)'
+        r'|'
+        # "специальная акция / скидка / промо" — fabricated promotions
+        r'(?:специальн\w+|эксклюзивн\w+|текущ\w+)\s+(?:акци\w+|скидк\w+|промо\w*|предложени\w+)'
+        r'|'
+        # "скидка 10% на первый год" — fabricated percentage discount
+        r'\bскидк\w+\s+\d+\s*%'
+        r'|'
+        # "при оплате за N года/лет стоимость снижается" — fabricated bulk discount
+        r'(?:при|за)\s+оплат\w+\s+(?:сразу\s+)?за\s+\d+\s+(?:год|лет|года)\s+(?:стоимость|цена)\s+(?:снижа|уменьша|падает)'
         r')',
         re.IGNORECASE,
     )
@@ -213,17 +510,19 @@ class ResponseBoundaryValidator:
     )
     META_NARRATION_PATTERN = re.compile(
         r'(?:^|\.\s+)(?:'
-        r'[Вв]от\s+(?:откорректированный|исправленный|обновл[её]нный)\s+вариант'
+        r'[Вв]от\s+(?:откорректированный|исправленный|обновл[её]нный|отредактированный)\s+(?:вариант|ответ|текст)'
         r'|[Сс]фокусируюсь\s+на'
         r'|[Сс]ейчас\s+(?:я|мне)\s+(?:нужно|необходимо|важно)'
-        r'|[Оо]пишу[\s,]+как(?:ие)?\s+шаги'
+        r'|[Оо]пишу[\s,]+(?:как(?:ие)?\s+шаги|аккуратно)'
         r'|[Дд]авайте\s+(?:я\s+)?(?:разберу|проанализирую|сформулирую)'
         r'|[Пп]ере(?:фразирую|формулирую)'
         r'|[Пп]одготовлю\s+(?:вам\s+)?(?:ответ|текст|вариант)'
-        r'|[Кк]оротко\s+по\s+делу:\s+помогу'
         r'|[Мм]огу\s+продолжить\s+консультацию'
         r'|[Пп]римечание:\s'
         r'|[Ии]звините\s+за\s+недоч[её]т'
+        r'|[Дд]ам\s+конкретные\s+шаги'
+        r'|результат\s+зависит\s+от\s+вашего\s+сценари'
+        r'|без\s+обещаний[,.]?\s+которых\s+нет\s+в\s+базе'
         r')',
         re.IGNORECASE,
     )
@@ -345,6 +644,8 @@ class ResponseBoundaryValidator:
             "meta_narration_leak",
             "off_topic_recommendation",
             "false_company_policy",
+            "ungrounded_tech_claim",
+            "ungrounded_stats",
         }
         if _HARD_HALLUCINATIONS & set(initial_violations):
             self._metrics.fallback_used += 1
@@ -517,6 +818,16 @@ class ResponseBoundaryValidator:
             if m and m.group(0).lower() not in grounding_blob:
                 violations.append("ungrounded_guarantee")
 
+        # Ungrounded statistics: "с 2015 года", "более 10 000 бизнесов"
+        if self.UNGROUNDED_STATS_PATTERN.search(response):
+            grounding_blob = " ".join(
+                self._iter_scalar_values(context.get("retrieved_facts", ""))
+                + self._iter_scalar_values(context.get("user_message", ""))
+            ).lower()
+            m = self.UNGROUNDED_STATS_PATTERN.search(response)
+            if m and m.group(0).lower() not in grounding_blob:
+                violations.append("ungrounded_stats")
+
         if self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(response):
             grounding_blob = " ".join(
                 self._iter_scalar_values(context.get("retrieved_facts", ""))
@@ -525,6 +836,15 @@ class ResponseBoundaryValidator:
             m = self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(response)
             if m and m.group(0).lower() not in grounding_blob:
                 violations.append("ungrounded_social_proof")
+
+        # Ungrounded tech claims: PostgreSQL, GraphQL, specific DB names not in KB
+        if self.UNGROUNDED_TECH_CLAIM_PATTERN.search(response):
+            grounding_blob = " ".join(
+                self._iter_scalar_values(context.get("retrieved_facts", ""))
+            ).lower()
+            m = self.UNGROUNDED_TECH_CLAIM_PATTERN.search(response)
+            if m and m.group(0).lower() not in grounding_blob:
+                violations.append("ungrounded_tech_claim")
 
         return violations
 
@@ -845,12 +1165,17 @@ class ResponseBoundaryValidator:
                 "Извиняюсь за неудобства с коммуникацией. "
                 "Чем могу быть полезен прямо сейчас? Могу ответить на вопросы по продукту."
             )
+        if "ungrounded_tech_claim" in violations:
+            return (
+                "Тип СУБД и внутренняя архитектура — коммерческая тайна. "
+                "Для интеграции доступен REST API с документацией. Что ещё интересует по техчасти?"
+            )
         if "hallucinated_iin" in violations:
             return "ИИН здесь не отображаю. Уточню у коллег и вернусь с корректным шагом."
         if intent == "contact_provided" and state == "payment_ready":
             return (
-                "Данные получены — ИИН и телефон Kaspi зафиксированы. "
-                "Менеджер свяжется с вами для подтверждения оплаты."
+                "Спасибо за данные! Менеджер свяжется с вами "
+                "для подтверждения оплаты."
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             if not has_contact_now:
@@ -866,8 +1191,8 @@ class ResponseBoundaryValidator:
                     "Оставьте телефон или email — менеджер свяжется и согласует удобное время."
                 )
             return (
-                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
-                "и согласует удобное время."
+                "Спасибо! Менеджер Wipon свяжется с вами "
+                "в ближайшее время и согласует удобное время."
             )
         if intent == "objection_contract_bound":
             if self._has_iin_refusal_marker(refusal_source) or self._is_payment_context(ctx):
@@ -923,8 +1248,8 @@ class ResponseBoundaryValidator:
             )
         if state == "autonomous_closing" and has_contact_now:
             return (
-                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
-                "и согласует удобное время."
+                "Спасибо! Менеджер Wipon свяжется с вами "
+                "в ближайшее время и согласует удобное время."
             )
         if state == "autonomous_closing":
             if self._has_contact_refusal_marker(refusal_source):
@@ -932,10 +1257,20 @@ class ResponseBoundaryValidator:
                     "Понял, контакт сейчас не запрашиваю. "
                     "Продолжим консультацию в чате и разберём ваш вопрос по шагам."
                 )
-            return (
-                "Можем продолжить консультацию в чате. "
-                "Если будет удобно, оставьте телефон или email для видеозвонка с менеджером."
-            )
+            # Vary closing fallback to avoid verbatim repetition
+            import hashlib
+            _hash = int(hashlib.md5(user_message.encode()).hexdigest()[:8], 16) % 4
+            _closing_variants = [
+                "Чтобы подобрать оптимальное решение, оставьте телефон или email — "
+                "менеджер свяжется и ответит на все вопросы.",
+                "Для индивидуального расчёта и демо оставьте контакт — "
+                "менеджер перезвонит в удобное время.",
+                "Готов помочь с подключением. "
+                "Оставьте телефон или email — менеджер свяжется для уточнения деталей.",
+                "Могу организовать демо или консультацию. "
+                "Скажите телефон или email — менеджер свяжется с вами.",
+            ]
+            return _closing_variants[_hash]
         # Greeting: proper greeting fallback
         if intent == "greeting" or state == "greeting":
             return "Здравствуйте! Расскажите, что именно ищете — помогу разобраться с Wipon."
@@ -948,6 +1283,24 @@ class ResponseBoundaryValidator:
                     "Wipon работает в офлайн-режиме — продажи не прерываются при потере интернета, "
                     "данные синхронизируются автоматически при восстановлении связи."
                 )
+            # Factual questions in discovery — don't dodge with "расскажите о бизнесе"
+            if any(kw in user_message_lower for kw in (
+                "интеграц", "1с", "kaspi", "каспи", "api", "подключ",
+            )):
+                return (
+                    "Wipon интегрируется с Kaspi, 1С, ОФД и другими сервисами через REST API. "
+                    "Расскажите, какой у вас бизнес — подберу подходящий вариант подключения."
+                )
+            if any(kw in user_message_lower for kw in ("безопасн", "шифрован", "защит", "данные")):
+                return (
+                    "Данные защищены: шифрование при передаче и хранении, "
+                    "автоматические бэкапы. Расскажите о вашем бизнесе — уточню детали под ваш случай."
+                )
+            if any(kw in user_message_lower for kw in ("функци", "возможност", "умеет", "может")):
+                return (
+                    "Wipon — касса, склад, аналитика и учёт в одном. "
+                    "Подходит для магазинов, аптек, оптовиков. Какой у вас бизнес?"
+                )
             return "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение."
         if "hallucinated_client_name" in violations:
             if self._is_pricing_context(ctx):
@@ -958,8 +1311,7 @@ class ResponseBoundaryValidator:
                     "касса, склад, аналитика в одном. Если интересно — расскажу подробнее."
                 )
             return (
-                "По Wipon могу ответить на конкретный вопрос — "
-                "по тарифам, функциям или подключению. Что именно интересует?"
+                "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант."
             )
         if "off_topic_recommendation" in violations:
             return (
@@ -983,7 +1335,31 @@ class ResponseBoundaryValidator:
                 "Хорошо, без давления. Если появятся вопросы — пишите в любое время, "
                 "всё расскажу по Wipon."
             )
-        return "Уточню информацию и вернусь с конкретным ответом по вашему вопросу."
+        if intent in {"farewell", "gratitude"}:
+            return (
+                "Спасибо за интерес! Если возникнут вопросы — пишите, всегда на связи."
+            )
+        if intent in {"question_features", "question_integrations", "question_security"}:
+            return (
+                "Wipon включает кассу, склад и аналитику для розничного бизнеса. "
+                "Какая именно функция вас интересует?"
+            )
+        if intent in {"objection_competitor", "comparison"}:
+            return (
+                "Коротко по делу: Wipon — полноценная POS-система для Казахстана с кассой, "
+                "складом и аналитикой в одном. Что конкретно хотите сравнить?"
+            )
+        if "closing" in state:
+            return (
+                "Чтобы продолжить оформление, оставьте телефон или email — "
+                "менеджер свяжется и согласует удобное время."
+            )
+        if "negotiation" in state:
+            return (
+                "Точную стоимость для вашего случая уточнит менеджер. "
+                "Оставьте телефон или email — подберём подходящий вариант."
+            )
+        return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon."
 
     def _retry_once(
         self,
@@ -1076,8 +1452,8 @@ class ResponseBoundaryValidator:
                     "Могу продолжить консультацию здесь и ответить по делу."
                 )
             return (
-                "Контакт получил. Следующий шаг — менеджер свяжется с вами "
-                "и согласует удобное время."
+                "Спасибо! Менеджер Wipon свяжется с вами "
+                "в ближайшее время и согласует удобное время."
             )
         if self._has_contact_refusal_marker(refusal_source):
             user_msg_low = str(context.get("user_message", "") or "").lower()
@@ -1097,7 +1473,7 @@ class ResponseBoundaryValidator:
             )
         if self._is_pricing_context(context):
             return "По стоимости сориентирую в ₸. Пришлю точный расчет под ваш кейс."
-        return "Коротко по делу: помогу выбрать следующий шаг под ваш кейс."
+        return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon."
 
     # Allowed brand names that can appear in responses (KB products, integrations)
     _ALLOWED_BRANDS = frozenset({

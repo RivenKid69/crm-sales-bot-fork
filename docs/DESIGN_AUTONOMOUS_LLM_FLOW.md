@@ -1,193 +1,186 @@
-# Design Document: Autonomous LLM Flow
+# Design Document: Autonomous LLM Flow (Current Architecture)
 
-> Коммиты-основа: `0766d13` (refactor autonomous policy to context signals and gate deterministic overrides) и `3966625` (Refine autonomous flow: context gating, normalization, and CTA restraint).
+> Актуализировано после коммитов `5d2831c` и `a3f4187` (февраль 2026).  
+> Этот документ описывает состояние "как есть" в коде, а не исходный план.
 
 ---
 
-## 1. Проблема, которую решает рефакторинг
+## 1. Контекст и текущий статус
 
-До рефакторинга система работала в парадигме **"код решает, LLM озвучивает"**:
+В автономном flow внедрены архитектурные изменения из плана P2–P6.  
+P1 (merged decision+response в одном LLM вызове) реализован технически, но **принудительно выключен kill-switch'ем** из-за регрессии по конверсии.
 
-- **Sources диктовали action** — PriceQuestionSource и FactQuestionSource напрямую выбирали шаблон ответа (`answer_with_pricing`, `answer_with_facts`) и проставляли HIGH priority, перекрывая решение LLM.
-- **Overlay-политики** (repair, objection, price, breakthrough, conservative) в `DialoguePolicy` переписывали action после blackboard'а — ещё один слой детерминизма поверх уже детерминированного решения.
-- **Hard override по счётчику** — в `AutonomousDecisionSource` после N последовательных stay-решений LLM принудительно переключался в следующую фазу, вне зависимости от контекста диалога.
-- **Template routing ломал единство prompt'а** — в зависимости от intent, `generator.py` подменял `autonomous_respond` на `answer_with_pricing` / `handle_objection_*`, каждый со своим набором инструкций.
+Ключевой принцип остался прежним:
+- LLM определяет содержимое ответа и обычно определяет переходы между фазами.
+- Код держит safety-границы, терминальные условия и инфраструктуру пайплайна.
 
-Результат: LLM генерировал ~60% ответов не через свой основной шаблон, overlay-политики срабатывали в ~35% ходов, ложные срабатывания fact-вопросов ~17%. Бот звучал непоследовательно — каждый ход мог прийти из разного prompt'а с разным "голосом".
+---
 
-## 2. Центральный принцип
+## 2. Что реально изменено в архитектуре
 
-**LLM — единственный decision-maker для содержания и тона ответа в автономных состояниях.**
+### 2.1. P3: lifecycle decision history (утечки/потери закрыты)
 
-Код не решает *что* и *как* говорить клиенту. Код отвечает за:
-- **контекст** — собрать и передать LLM всё, что нужно для решения,
-- **границы** — не дать выйти за рамки безопасности (не придумывать данные, не обещать невозможного),
-- **инфраструктуру** — переходы между состояниями, сбор данных, терминальные условия.
+Реализовано в `src/blackboard/sources/autonomous_decision.py`:
+- `AutonomousDecisionRecord.to_dict()` / `from_dict()`
+- `AutonomousDecisionSource.decision_history`
+- `AutonomousDecisionSource.restore_history()`
+- `AutonomousDecisionSource.reset()`
 
-## 3. Архитектурные принципы
+Интеграция snapshot/reset:
+- `src/blackboard/orchestrator.py`: `DialogueOrchestrator.reset()`
+- `src/bot.py`: вызов `self._orchestrator.reset()` в `reset()`
+- `src/bot.py`: сериализация `autonomous_decision_history` в `to_snapshot()`
+- `src/bot.py`: восстановление history в `from_snapshot()`
 
-### 3.1. Sources = context providers, не action-dictators
+Итог: история решений теперь корректно живёт между `to_snapshot()/from_snapshot()` и очищается между диалогами.
 
-Sources (PriceQuestion, FactQuestion) в автономных состояниях:
-- **Не предлагают action** через `propose_action()` с HIGH priority
-- **Добавляют context signal** через `blackboard.add_context_signal()` — структурированное сообщение, которое попадает в decision prompt AutonomousDecisionSource
+### 2.2. P4: SafeDict больше не скрывает критичные пропуски
 
-Context signal — это не команда, а информация: "клиент спрашивает о цене (тариф)" или "клиент просит факты о интеграциях". LLM видит это и сам решает: ответить на вопрос в рамках текущего этапа, перейти к следующему, или сделать что-то третье.
+В `src/generator.py` перед рендером шаблона добавлена проверка:
+- `CRITICAL_TEMPLATE_VARS = {"system", "user_message", "history", "retrieved_facts"}`
+- warning-лог при отсутствии/пустоте критичной переменной
 
-### 3.2. Один шаблон — один голос
+`SafeDict.__missing__` сохранён (для мягкой деградации), но критичные дыры теперь наблюдаемы в логах.
 
-В автономных состояниях `generator.py` всегда возвращает `autonomous_respond` (кроме greeting → `greet_back`). Нет template routing по intent — нет ситуации, когда price intent уводит в `answer_with_pricing` с другим набором инструкций.
+### 2.3. P5: state-gated rules дедуплицированы и ограничены
 
-Вся информация (факты о ценах, данные о продукте, контекст возражений) поступает через единые переменные основного шаблона:
-- `{retrieved_facts}` — KB-факты, уже отобранные EnhancedRetrievalPipeline
-- `{objection_instructions}` — тактика работы с возражением (4P/3F)
-- `{collected_data}` / `{missing_data}` — что известно, что нет
-- `{closing_data_request}` — что нужно собрать для терминального состояния
-- `{address_instruction}` — как обращаться к клиенту
+Логика вынесена в `src/generator_autonomous.py`:
+- правила стали `List[Tuple[priority, text]]`
+- cap: `MAX_GATED_RULES = 5`
+- сортировка по приоритету + обрезка
+- форматирование фиксировано (`rule[1]`)
 
-### 3.3. Overlay-политики отключены в автономном контексте
+Содержательные изменения:
+- объединён duplicate блок no-contact в HARD/SOFT
+- `COMPARISON` и `INTERRUPTION` теперь взаимоисключающие
+- `EXIT/CONTRACT` умеет инлайнить hard no-contact формат
+- удалены дублирующие строки из автономного prompt template (`prompts.yaml`)
 
-Все 5 overlay'ев в `DialoguePolicy` — repair, objection, price, breakthrough, conservative — возвращают `None` для autonomous-состояний. LLM достаточно компетентен, чтобы обработать возражение, ответить на вопрос о цене или сменить тактику без программной подсказки.
+### 2.4. P2: лимиты размера prompt/KB
 
-Overlay'и остаются активными для legacy-потоков (не-autonomous), где по-прежнему нужен жёсткий контроль.
+Лимиты синхронизированы:
+- `src/knowledge/autonomous_kb.py`: `MAX_KB_CHARS = 25_000`
+- `src/settings.yaml`: `enhanced_retrieval.max_kb_chars: 25000`
 
-### 3.4. Нет hard override по счётчику
+Дополнительно в `src/generator.py`:
+- safety-truncation facts до ~25K для autonomous
+- предупреждение в логах при обрезке
+- `MAX_PROMPT_CHARS = 35_000` как guardrail-константа
 
-Удалён механизм `stay_streak >= phase_exhaust_threshold → force transition`. LLM видит в decision prompt историю своих решений ("3 раза подряд решил остаться") и сам понимает, когда пора двигаться дальше.
+Итог: prompt-budget стал предсказуемее, а runaway-context режется раньше.
 
-Детерминистические safety-net'ы остались:
-- **Terminal gate** — нельзя перейти в `payment_ready` без kaspi_phone и IIN
-- **StallGuard** — жёсткий предел ходов в состоянии (последний рубеж, не оптимизационный)
-- **ConversationGuard** — обнаружение зацикливания
+### 2.5. P6: декомпозиция `generator.py`
 
-### 3.5. Автономный контекст шире, чем `autonomous_*` состояния
+Создан `src/generator_autonomous.py` и в него вынесены:
+- автономные константы
+- сбор state-gated правил
+- contact-boundary helpers
+- address/language/stress инструкции
+- форматирование client card и post-boundary helper-функции
 
-Greeting-состояние в autonomous flow (`state == "greeting"`, `flow.name == "autonomous"`) — это тоже автономный контекст. Sources и overlay'и не должны срабатывать на первом ходу, когда клиент ещё только поздоровался.
+`src/generator.py` теперь в основном делегирует автономную логику в extracted module и делает re-export констант для backward compatibility.
 
-`_is_autonomous_context()` в каждом Source и в DialoguePolicy проверяет оба условия: и `state.startswith("autonomous_")`, и greeting в автономном flow.
+Итог: меньшая связность, проще ревью/тестировать автономный слой отдельно.
 
-### 3.6. Action normalization на выходе
+### 2.6. P1: merged call реализован, но отключён
 
-В `bot.py` после resolve — если action не входит в список структурных (guard, stall, escalation), он нормализуется в `autonomous_respond`. Это страховка: даже если какой-то Source прорвался с нестандартным action, pipeline всё равно пойдёт через единый шаблон.
+Что реализовано:
+- `src/llm.py`: `generate_merged()` (structured, temp=0.3, num_predict=1024)
+- `src/blackboard/sources/autonomous_decision.py`:
+  `AutonomousDecisionAndResponse`, merged prompt, merged path в `contribute()`
+- `src/blackboard/blackboard.py`: `_response_context`, `_pre_generated_response`
+- `src/generator.py`: `prepare_response_context()` и `post_process_only()`
+- `src/bot.py`: pre-generated intercept path + воспроизведение side effects
 
-Структурные action'ы, которые проходят без нормализации:
-```
-ask_clarification, guard_offer_options, guard_rephrase, guard_skip_phase,
-guard_soft_close, stall_guard_eject, stall_guard_nudge,
-redirect_after_repetition, escalate_repeated_content
-```
+Что добавлено после регрессии:
+- merged-mode stabilizer для `contact_provided` (детерминированный fast-path к terminal, когда данных достаточно)
 
-### 3.7. CTA — только в closing-like состояниях
+Текущий production-статус:
+- `src/feature_flags.py`: `FORCED_DISABLED = {"merged_autonomous_call"}`
+- `flags.is_enabled("merged_autonomous_call")` всегда `False` даже при env/runtime override
 
-CTA (Call-To-Action) в автономном flow добавляется только в `{autonomous_closing, close, soft_close, success}`. В discovery/qualification/presentation CTA выглядит навязчиво и режет доверие.
+---
 
-Если `question_mode == "suppress"` (response directives определили, что вопрос не нужен), CTA тоже не добавляется.
+## 3. Текущий поведенческий контракт autonomous flow
 
-## 4. Поток данных в автономном ходе
+### 3.1. Переходы и safety
+
+В `AutonomousDecisionSource` сейчас одновременно действуют:
+- LLM-driven переходы по decision prompt
+- terminal gates (`payment_ready`/`video_call_scheduled`) по required data
+- payment-context guard (не финализировать путь оплаты без IIN, если не было явного отказа/дефера)
+- deterministic streak override (3 stay подряд: objection-streak -> `soft_close`, иначе продвижение по фазе)
+
+Это не "чисто LLM без детерминизма": автономный режим гибридный, с жёсткими safety-рамками.
+
+### 3.2. Генерация ответа
+
+- В autonomous-контексте ответ идёт через единый template family (`autonomous_respond` / `continue_current_goal`)
+- Контент-инструкции собираются из:
+  - layer-1 `SAFETY_RULES_V2`
+  - layer-2 `state_gated_rules` (приоритет/кап)
+  - KB facts + history + collected/missing + directives
+- Перед рендером проверяются `CRITICAL_TEMPLATE_VARS`
+
+### 3.3. Policy overlays
+
+`DialoguePolicy` overlays (`repair/price/objection/breakthrough/conservative`) по-прежнему abstain в autonomous-контексте.  
+Для non-autonomous flow поведение не менялось.
+
+---
+
+## 4. Поток данных (as-built)
 
 ```
 User message
-    │
-    ▼
-LLMClassifier → intent + secondary_intents
-    │
-    ▼
-Blackboard.begin_turn() → ContextSnapshot (frozen)
-    │
-    ▼
-Sources evaluate sequentially:
-    ├─ PriceQuestionSource → add_context_signal(price_intent_detected)
-    ├─ FactQuestionSource  → add_context_signal(fact_requested)
-    ├─ IntentPatternGuard  → skip (autonomous)
-    ├─ PhaseExhaustedSource → skip (autonomous)
-    └─ AutonomousDecisionSource:
-         ├─ reads context_signals from blackboard
-         ├─ builds decision prompt (state + goal + signals + history)
-         ├─ LLM decides: {stay | transition to X}
-         ├─ terminal gate: blocks if missing required data
-         └─ proposes action=autonomous_respond + optional transition
-    │
-    ▼
-Resolver picks winning action (usually autonomous_respond @ NORMAL)
-    │
-    ▼
-DialoguePolicy.maybe_override():
-    └─ all overlays return None for autonomous context
-    │
-    ▼
-bot.py action normalization:
-    └─ non-structural action → autonomous_respond
-    │
-    ▼
-ResponseGenerator._resolve_template_key():
-    └─ autonomous flow → always "autonomous_respond" (except greeting)
-    │
-    ▼
-ResponseGenerator._build_autonomous_variables():
-    ├─ {retrieved_facts} ← EnhancedRetrievalPipeline
-    ├─ {collected_data}, {missing_data}
-    ├─ {address_instruction} ← one-time name ask logic
-    ├─ {objection_instructions} ← 4P/3F if intent is objection
-    ├─ {closing_data_request} ← terminal requirements
-    ├─ {do_not_repeat_responses} ← anti-repetition
-    ├─ {language_instruction}, {stress_instruction}
-    └─ all injected into autonomous_respond template
-    │
-    ▼
-Qwen generates response through single unified prompt
-    │
-    ▼
-CTA gate: only in closing-like states
-    │
-    ▼
-Final response to client
+  -> классификация intent/secondary
+  -> Blackboard.begin_turn()
+  -> Sources (context signals + guards + AutonomousDecisionSource)
+  -> Resolver (action + transition)
+  -> DialoguePolicy (autonomous: overlays mostly abstain)
+  -> bot action normalization (non-structural -> autonomous_respond)
+  -> ResponseGenerator (KB + variables + rules)
+  -> boundary validation / CTA gating
+  -> final response
 ```
 
-## 5. Как улучшать качество диалога
+Если когда-либо будет снова включён merged path:
+- bot сначала готовит `response_context`
+- decision source может вернуть `pre_generated_response`
+- bot пускает ответ через `post_process_only()` и применяет side effects вручную
 
-Правильная парадигма — **промпт-инжиниринг и контекстная подготовка**:
+---
 
-| Что улучшить | Где менять | Чего НЕ делать |
-|---|---|---|
-| Тон, стиль ответов | `prompts.yaml` → `autonomous_respond` template | Не создавать новые action'ы с отдельными шаблонами |
-| SPIN-фазы, цели этапов | `states.yaml` → `goal` для каждого состояния | Не добавлять rule-based переходы |
-| Работа с возражениями | `generator.py` → `{objection_instructions}` | Не добавлять overlay в DialoguePolicy |
-| Ответы на вопросы о цене | KB data (`knowledge/data/*.yaml`) + EnhancedRetrievalPipeline | Не маршрутизировать в отдельный template |
-| Запрос данных (имя, IIN) | `generator.py` → `_build_address_instruction()`, `{closing_data_request}` | Не хардкодить fast-track'и в Sources |
-| Галлюцинации | `prompts.yaml` → "КРИТИЧЕСКИЕ ПРАВИЛА" секция | Не добавлять keyword-based фильтры |
-| Повторяющиеся ответы | `{do_not_repeat_responses}` переменная + content repetition guard | Не блокировать intent'ы детерминистически |
+## 5. Результаты ручных стресс-прогонов (10 сложных диалогов)
 
-## 6. Границы рефакторинга — что осталось без изменений
+Источник: `scripts/run_manual_direct_stress10.py` (без симулятора).
 
-- **6-фазный SPIN FSM** (`discovery → qualification → presentation → objection_handling → negotiation → closing`) — структура этапов не менялась
-- **Safety guards** (StallGuard, ConversationGuard) — остались как hard limits
-- **Terminal gate** — детерминистическая проверка required data перед переходом
-- **Blackboard как информационный слой** — архитектура Sources → Resolver не менялась, поменялось содержание contribute()
-- **EnhancedRetrievalPipeline** — message-driven KB retrieval остался без изменений
-- **Детерминистическая валидация данных** (ExtractionValidator, DataExtractor) — неизменна
-- **Legacy flows** (не-autonomous) — overlay'и и routing работают как раньше
+| Прогон | elapsed_sec | terminal_rate (payment/video) | avg_turns_all |
+|---|---:|---:|---:|
+| baseline (`before_codex_plan6`) | 253.27 | 80% | 4.7 |
+| после интеграции с merged ON | 251.32 | 10% | 4.8 |
+| после интеграции с merged OFF | 246.45 | 70% | 4.7 |
+| после P1 stabilizer, merged ON | 247.34 | 40% | 4.7 |
 
-## 7. Метрики (10 диалогов, baseline vs after)
+Вывод:
+- P1 в текущей реализации не достигал приемлемой конверсии, даже после стабилизатора.
+- Поэтому принят operational decision: держать merged path выключенным принудительно.
+- P2/P3/P4/P5/P6 остаются в коде и считаются рабочими.
 
-| Метрика | До | После | Интерпретация |
-|---|---|---|---|
-| Terminal state rate | 30% | 40% | +10% — LLM доводит больше диалогов до конца |
-| Template override | 60.3% | 16.1% | -44pp — LLM решает через единый шаблон |
-| Overlay activations | 34.6% | 0% | Полностью убраны для autonomous |
-| False fact trigger | 16.7% | 0% | Stale carryover защищён |
-| False price trigger | 0% | 0% | Было ок, осталось ок |
-| SPIN coverage | 41.4% | 44.3% | +3pp — чуть больше фаз проходится |
-| Avg turns to terminal | 6.7 | 9.0 | +2.3 хода — регрессия, LLM тщательнее |
+---
 
-## 8. Антипаттерны — чего избегать
+## 6. Операционные правила
 
-1. **Добавлять Sources с HIGH priority в autonomous** — это откат к "код решает". Sources в autonomous = context signals only.
-2. **Добавлять overlay'и в DialoguePolicy для autonomous** — overlay'и отключены сознательно.
-3. **Добавлять fast-track'и и short-circuit'ы** — код не должен "помогать" LLM принимать решения быстрее. LLM видит контекст и принимает решения сам.
-4. **Создавать новые шаблоны для отдельных intent'ов** — один шаблон, один голос. Вариативность через переменные, не через template routing.
-5. **Хардкодить keyword patterns для routing** — если pattern нужен, он должен быть в classifier, а результат — в intent, а intent — в context signal для LLM.
-6. **Считать "стоит" / "работает" надёжными keyword-маркерами** — омонимы в русском языке требуют контекстных паттернов, а не голых keyword match'ей.
+1. `merged_autonomous_call` считается экспериментальным и заблокирован kill-switch'ем.
+2. Любое повторное включение P1 требует:
+   - снятия `merged_autonomous_call` из `FORCED_DISABLED`
+   - обязательного прогона manual stress-10 и сравнения с baseline по terminal_rate
+3. Документ фиксирует фактическую архитектуру; при изменении kill-switch или decision contract обновляется в том же PR.
 
-## 9. Одно предложение
+---
 
-Система качества диалога строится на том, что LLM получает хорошо подготовленный контекст (KB-факты, данные клиента, цель этапа, история решений) и генерирует ответ через единый шаблон — а код обеспечивает безопасность, инфраструктуру переходов и сбор данных, но не вмешивается в содержание ответа.
+## 7. Ограничения и дальнейшие шаги
+
+- Известный вне-скоуп issue: порядок инициализации `do_not_repeat_responses` (отдельный backlog).
+- Для объективной оценки P2/P5 нужен отдельный telemetry отчёт по размерам prompt и частоте срабатывания rule-cap (а не только terminal-rate).
+- Для P1 нужен отдельный redesign merged prompt/decision contract; текущий вариант не проходит quality gate.
