@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/find-or-create-item.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис, который ищет предмет в базе данных по типу и коду. Если предмет не найден, он создает новый. Использует репозиторий для работы с базой и объект DAO для хранения данных.",
+  "purpose": "Убедиться, что предмет всегда существует в базе данных, чтобы его можно было использовать в других частях приложения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет предмет по типу и коду",
+    "Создает предмет, если он не найден",
+    "Использует репозиторий для работы с базой данных",
+    "Работает с объектами DAO для хранения данных",
+    "Выполняет асинхронные операции"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "ItemsRepository",
+    "ItemDao"
+  ],
+  "input_tokens": 1237,
+  "output_tokens": 681,
+  "model": "qwen3:14b",
+  "code_hash": "590047becf005a07"
+}

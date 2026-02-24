@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/presenter/ugds.controller.ts:import:../dto/get-ugds-list.dto",
+  "summary": "Этот код создает контроллер в NestJS, который обрабатывает HTTP-запросы для получения списка Ugds. Он использует DTO для валидации данных, сервис для логики и интерцептор для преобразования ответа.",
+  "purpose": "Обеспечивает обработку запросов на получение списка Ugds с возможностью валидации и трансформации данных.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения списка Ugds",
+    "Использование DTO для валидации входных данных",
+    "Интеграция с сервисом для выполнения бизнес-логики",
+    "Применение интерцептора для трансформации ответа",
+    "Документация через Swagger для API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "UgdsService",
+    "TransformInterceptor",
+    "GetUgdsListDto"
+  ],
+  "input_tokens": 1209,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "06ee7151fdb9e47b"
+}

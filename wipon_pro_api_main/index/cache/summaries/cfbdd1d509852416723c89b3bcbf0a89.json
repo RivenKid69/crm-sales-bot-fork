@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/domain/billings.service.ts:method:BillingsService:st from IP ${i",
+  "summary": "Этот метод обрабатывает запросы от Qiwi, проверяет существование счета, логирует действия и возвращает XML-ответы. Он использует базу данных и кэш для хранения информации.",
+  "purpose": "Обработка платежей и проверка информации о счетах через Qiwi",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка существования счета по номеру телефона",
+    "Генерация XML-ответов для Qiwi",
+    "Логирование запросов и ответов",
+    "Использование TypeORM для работы с базой данных",
+    "Обработка команд 'check' и 'pay'"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "cache-manager",
+    "express",
+    "xml-helper"
+  ],
+  "input_tokens": 2839,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "0dd11b1ca7ca3303"
+}

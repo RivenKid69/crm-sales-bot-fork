@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/old-form-of-saving-store-without-region.dto.ts:property:OldFormOfSavingStoreWithoutRegionDto:buisness_dgd_id",
+  "summary": "Этот код - DTO (Data Transfer Object) для валидации данных при создании/обновлении магазина без региона. Он проверяет, что все обязательные поля заполнены, значения соответствуют формату и существуют в базе данных.",
+  "purpose": "Обеспечивает корректность данных при передаче их из API в бизнес-логику",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка существования DGD в базе",
+    "Валидация формата БИН (12 цифр)",
+    "Обязательное заполнение ключевых полей",
+    "Проверка существования типа магазина",
+    "Опциональное заполнение адреса"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsDgdExists",
+    "IsStoreTypeExists",
+    "IsUgdExists",
+    "IsNumeric"
+  ],
+  "input_tokens": 1499,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "5e6a2cbd52565243"
+}

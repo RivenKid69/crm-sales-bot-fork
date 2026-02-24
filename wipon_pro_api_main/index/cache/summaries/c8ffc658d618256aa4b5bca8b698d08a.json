@@ -1,0 +1,17 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/utils/common.ts:function:fileGetContents",
+  "summary": "Эта функция читает содержимое файла с диска и возвращает его как строку. Она использует встроенный модуль Node.js для работы с файловой системой.",
+  "purpose": "Нужна для получения данных из файла, например, для загрузки конфигураций или шаблонов",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Синхронное чтение файлов с диска",
+    "Возвращает содержимое в виде строки UTF-8"
+  ],
+  "dependencies_used": [
+    "fs"
+  ],
+  "input_tokens": 1933,
+  "output_tokens": 570,
+  "model": "qwen3:14b",
+  "code_hash": "bd4f6ad37004a6d3"
+}

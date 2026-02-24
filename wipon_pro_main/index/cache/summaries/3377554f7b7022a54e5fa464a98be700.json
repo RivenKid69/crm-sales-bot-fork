@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:vuex",
+  "summary": "Этот код настраивает Vuex-модуль для управления подписками. Он определяет мутации для изменения состояния, геттеры для получения данных и действия для работы с API.",
+  "purpose": "Управление состоянием подписок в приложении Vue с возможностью получения и покупки подписок",
+  "domain": "база данных, api, настройки",
+  "key_behaviors": [
+    "Обновление состояния подписок через мутации",
+    "Получение данных подписок через API",
+    "Фильтрация активных подписок по дате",
+    "Сортировка подписок по статусу и дате окончания",
+    "Связь с конфигурационными данными (цены, типы)"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "@/api/subscriptions.api",
+    "@/config/rates",
+    "../../initialState"
+  ],
+  "input_tokens": 2895,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "80d89ee0c49ebfd8"
+}

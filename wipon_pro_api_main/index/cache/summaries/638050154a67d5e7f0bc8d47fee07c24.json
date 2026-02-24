@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/update-notification-status.dto.ts:import:class-validator",
+  "summary": "Этот код создает DTO (объект данных) для обновления статуса уведомления. Он проверяет, что поле 'is_unread' является логическим (true/false) и обязательно заполнено. Также добавляет описание этого поля в документации API.",
+  "purpose": "Используется для валидации входных данных при обновлении статуса уведомления в API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что значение является булевым",
+    "Обязательное заполнение поля",
+    "Генерация документации для API",
+    "Использование декораторов для валидации",
+    "Работа с DTO для передачи данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1075,
+  "output_tokens": 614,
+  "model": "qwen3:14b",
+  "code_hash": "2966b8806489f000"
+}

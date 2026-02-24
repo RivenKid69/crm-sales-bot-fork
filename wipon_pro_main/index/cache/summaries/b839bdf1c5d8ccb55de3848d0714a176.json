@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/jest.config.js:file",
+  "summary": "Этот файл настраивает Jest для тестирования Vue-приложений. Он использует preset для TypeScript и Babel, а также преобразует файлы .vue с помощью vue-jest.",
+  "purpose": "Позволяет запускать юнит-тесты для Vue-компонентов с поддержкой TypeScript и Babel",
+  "domain": "тестирование",
+  "key_behaviors": [
+    "Настройка Jest с поддержкой Vue",
+    "Использование preset для TypeScript и Babel",
+    "Преобразование .vue файлов через vue-jest"
+  ],
+  "dependencies_used": [
+    "@vue/cli-plugin-unit-jest",
+    "vue-jest"
+  ],
+  "input_tokens": 967,
+  "output_tokens": 677,
+  "model": "qwen3:14b",
+  "code_hash": "6a83a39da1fe1739"
+}

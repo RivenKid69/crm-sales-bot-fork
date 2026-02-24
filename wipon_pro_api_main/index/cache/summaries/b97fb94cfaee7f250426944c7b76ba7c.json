@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:method:StoresService:o();\n    oldFormOfSavingStoreWithRegion.r",
+  "summary": "Этот код представляет сервис для работы с магазинами, включая проверку лицензии, получение информации о магазине пользователя и обновление данных. Использует репозитории, use-cases и DTO для взаимодействия с базой данных и бизнес-логикой.",
+  "purpose": "Управление данными магазинов, проверка лицензий и подписок для обеспечения корректной работы приложения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Проверка лицензии магазина",
+    "Поиск магазина по пользователю",
+    "Использование валидации данных",
+    "Интеграция с другими сервисами (регионы, подписки)",
+    "Работа с репозиториями и use-cases"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3075,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

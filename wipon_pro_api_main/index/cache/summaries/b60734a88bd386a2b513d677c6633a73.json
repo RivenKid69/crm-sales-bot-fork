@@ -1,0 +1,28 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node.dao.ts:property:GeoNodeDao:name_ru",
+  "summary": "Этот код описывает сущность 'GeoNodeDao', которая хранит информацию о географических узлах. У неё есть поля для названия на разных языках, координат, времени создания и обновления, а также связи с другими сущностями.",
+  "purpose": "Используется для хранения и управления данными о географических объектах с поддержкой нескольких языков и связями с лицензиями и регионами",
+  "domain": "база данных, географические данные, картография, мультиязычные приложения",
+  "key_behaviors": [
+    "Хранит координаты и идентификаторы регионов",
+    "Поддерживает названия на русском, английском и казахском языках",
+    "Отслеживает время создания и обновления записей",
+    "Связывает узлы с лицензиями через @OneToMany",
+    "Создаёт прямую связь с регионами через @OneToOne"
+  ],
+  "dependencies_used": [
+    "typeorm/BaseEntity",
+    "typeorm/Column",
+    "typeorm/CreateDateColumn",
+    "typeorm/Entity",
+    "typeorm/JoinColumn",
+    "typeorm/OneToMany",
+    "typeorm/OneToOne",
+    "typeorm/PrimaryGeneratedColumn",
+    "typeorm/UpdateDateColumn"
+  ],
+  "input_tokens": 1658,
+  "output_tokens": 839,
+  "model": "qwen3:14b",
+  "code_hash": "fab82ca42099d334"
+}

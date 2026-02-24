@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../../../common/dao/dgd.dao",
+  "summary": "Этот код реализует сервис для работы со складами, валидации данных и взаимодействия с базой данных. Он использует репозитории, use-case и DTO для обработки запросов.",
+  "purpose": "Управление данными о складах, проверка лицензий и активных подписок пользователей",
+  "domain": "бизнес-логика, работа с базой данных",
+  "key_behaviors": [
+    "Проверка лицензии склада и активных подписок пользователя",
+    "Поиск склада по пользователю",
+    "Обновление или создание данных о складе",
+    "Использование валидации данных через DTO",
+    "Интеграция с репозиториями и use-case для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 2989,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

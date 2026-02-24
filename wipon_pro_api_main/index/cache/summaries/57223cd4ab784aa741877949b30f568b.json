@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:method:NotificationsService:sendNotification",
+  "summary": "Этот метод управляет уведомлениями: отправляет уведомления пользователям, показывает их список, обновляет статус, удаляет и отправляет массовые уведомления.",
+  "purpose": "Обеспечивает работу с уведомлениями в приложении, включая отправку, управление и массовую рассылку.",
+  "domain": "уведомления, пользовательский интерфейс, API",
+  "key_behaviors": [
+    "Отправка уведомления одному пользователю",
+    "Получение списка уведомлений пользователя",
+    "Обновление статуса уведомления (прочитано/не прочитано)",
+    "Удаление уведомления",
+    "Отправка массовых уведомлений нескольким пользователям"
+  ],
+  "dependencies_used": [
+    "PushService",
+    "NotificationsRepository",
+    "FindUserByIdUseCase"
+  ],
+  "input_tokens": 1949,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

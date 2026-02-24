@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/presenter/notifications.controller.ts:class:NotificationsController",
+  "summary": "Этот класс - контроллер для управления уведомлениями. Он обрабатывает HTTP-запросы для получения, отправки, обновления и удаления уведомлений, используя аутентификацию и валидацию данных.",
+  "purpose": "Обрабатывает все операции с уведомлениями пользователями через REST API",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Получение уведомлений пользователя",
+    "Отправка уведомлений с валидацией данных",
+    "Обновление статуса уведомления",
+    "Удаление уведомлений",
+    "Массовая отправка уведомлений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "NotificationsService",
+    "AuthGuard",
+    "ValidationPipe"
+  ],
+  "input_tokens": 2301,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "693e2857eabd9d27"
+}

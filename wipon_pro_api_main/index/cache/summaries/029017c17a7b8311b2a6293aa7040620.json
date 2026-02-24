@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/dto/post-callback.dto.ts:property:PostCallbackDto:status",
+  "summary": "Этот код проверяет данные, которые приходят при звонке: id должен быть числом, телефон должен быть в формате Казахстана, статус не может быть пустым, время и ошибка не обязательны. sha1 не проверяется.",
+  "purpose": "Убедиться, что данные, которые приходят в API, соответствуют определенным правилам и форматам.",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Валидация формата телефона",
+    "Ограничение типов данных",
+    "Поддержка необязательных полей",
+    "Проверка целых чисел"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1150,
+  "output_tokens": 536,
+  "model": "qwen3:14b",
+  "code_hash": "49e3af4a6401e910"
+}

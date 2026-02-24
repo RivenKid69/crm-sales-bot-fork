@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/transactions.module.ts:import:../../common/services/subscription/subscriptionCharge.producer.service",
+  "summary": "Этот модуль объединяет контроллер транзакций, сервисы и другие модули для обработки финансовых операций. Он использует очередь для обработки подписок и отправляет уведомления.",
+  "purpose": "Обеспечивает обработку транзакций, подписок и уведомлений в приложении",
+  "domain": "платежи, финансовые транзакции, уведомления",
+  "key_behaviors": [
+    "Интеграция с модулями пользователей и подписок",
+    "Обработка транзакций через сервисы",
+    "Использование очереди для фоновой обработки",
+    "Отправка уведомлений через FCM",
+    "Работа с сервисами баланса и подписок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/bull"
+  ],
+  "input_tokens": 1437,
+  "output_tokens": 658,
+  "model": "qwen3:14b",
+  "code_hash": "0dfadbebf28f002e"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/main.ts:import:@nestjs/core",
+  "summary": "Этот код запускает сервер NestJS, настраивает Swagger для документации API, включает CORS, добавляет обработчики ошибок и промежуточное ПО для парсинга данных. Он использует модуль приложения и настраивает порт сервера.",
+  "purpose": "Инициализация сервера с базовой конфигурацией для API-приложения",
+  "domain": "api",
+  "key_behaviors": [
+    "Настройка Swagger для документации API",
+    "Включение CORS для кросс-доменных запросов",
+    "Добавление глобальных интерцепторов и фильтров",
+    "Настройка промежуточного ПО для обработки JSON и URL-кодирования",
+    "Установка префикса для всех эндпоинтов"
+  ],
+  "dependencies_used": [
+    "@nestjs/core",
+    "express",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1456,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "32969d35d6034143"
+}

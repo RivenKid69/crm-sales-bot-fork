@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/data/ugds.repository.ts:import:../../../common/dao/ugd.dao",
+  "summary": "Этот код создаёт репозиторий для работы с сущностью UgdDao в базе данных. Он позволяет выполнять операции вроде создания, чтения и обновления данных через TypeORM.",
+  "purpose": "Позволяет управлять данными UgdDao в базе данных через типизированный интерфейс",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Выполнение CRUD-операций",
+    "Работа с сущностями через TypeORM",
+    "Управление базой данных через репозиторий",
+    "Использование аннотаций для связи с базой",
+    "Типобезопасное взаимодействие с данными"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1019,
+  "output_tokens": 704,
+  "model": "qwen3:14b",
+  "code_hash": "2c695faa43a7e4b6"
+}

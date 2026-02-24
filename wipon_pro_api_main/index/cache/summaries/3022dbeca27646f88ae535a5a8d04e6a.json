@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/save-accounts.use-case.ts:method:SaveAccountsUseCase:constructor",
+  "summary": "Этот метод сохраняет массив объектов AccountDao в базу данных. Если передан transaction, он использует его для сохранения, иначе работает через репозиторий напрямую.",
+  "purpose": "Позволяет сохранять данные аккаунтов с поддержкой транзакций для обеспечения целостности данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохраняет массив аккаунтов в базу данных",
+    "Поддерживает работу в рамках транзакции",
+    "Использует репозиторий для сохранения данных",
+    "Работает с объектами AccountDao",
+    "Поддерживает асинхронную обработку"
+  ],
+  "dependencies_used": [
+    "AccountsRepository",
+    "EntityManager",
+    "InjectRepository",
+    "Injectable"
+  ],
+  "input_tokens": 1087,
+  "output_tokens": 716,
+  "model": "qwen3:14b",
+  "code_hash": "5817af3179c3c297"
+}

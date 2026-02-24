@@ -1,0 +1,96 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  font-size: 16px;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: "IBM Plex Sans", sans-serif;
+  color: $dark;
+  text-align: start;
+  background-color: $body-bg;
+  overflow-x: hidden;
+  position: relative;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul {
+  list-style: none;
+}
+
+#invoice {
+  position: absolute;
+  top: -400px;
+  left: -750px;
+  z-index: -9;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.section {
+  padding: 24px 40px;
+}
+
+.block {
+  display: block;
+  width: 100%;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background: rgba($dark, 0.5);
+  z-index: 9;
+}
+
+.divider {
+  height: 1px;
+  width: 100%;
+  background: $secondary-light-2;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid $secondary-light-2;
+  border-radius: 50%;
+  cursor: pointer;
+
+  &_active {
+    border: 6px solid $primary;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .section {
+    padding: 24px 20px;
+  }
+}

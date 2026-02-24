@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-users-all-active-devices.use-case.ts:method:FindUsersAllActiveDevicesUseCase:constructor",
+  "summary": "Этот код создает класс, который получает количество активных устройств пользователя. Он использует репозиторий для поиска данных и возвращает результат как обещание.",
+  "purpose": "Позволяет получить информацию об активных устройствах пользователя для отслеживания устройств или управления аккаунтом",
+  "domain": "управление пользователями",
+  "key_behaviors": [
+    "Получает ID пользователя",
+    "Использует репозиторий для поиска данных",
+    "Возвращает количество активных устройств",
+    "Работает с базой данных через TypeORM",
+    "Использует паттерн репозиторий"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DevicesRepository"
+  ],
+  "input_tokens": 1102,
+  "output_tokens": 625,
+  "model": "qwen3:14b",
+  "code_hash": "334dc0b132f6351c"
+}

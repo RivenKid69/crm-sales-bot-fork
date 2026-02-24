@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/user.dao.ts:import:typeorm",
+  "summary": "Этот код создает класс UserDao, который представляет таблицу 'users' в базе данных. Он использует аннотации TypeORM для определения полей, связей и других настроек.",
+  "purpose": "Этот класс используется для работы с таблицей пользователей в базе данных, позволяя сохранять, получать и управлять данными пользователей.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Определяет структуру таблицы 'users' в базе данных",
+    "Использует аннотации для указания полей и их типов",
+    "Устанавливает связи с другими сущностями (Store, FeedbackMessage, Ledger, Device)",
+    "Использует Exclude для пропуска определенных полей при сериализации",
+    "Использует конструктор для удобного создания объектов"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "class-transformer"
+  ],
+  "input_tokens": 1562,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "e5acb75d7fe51965"
+}

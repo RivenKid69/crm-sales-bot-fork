@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/decorators/user.decorator.ts:file",
+  "summary": "Этот код создает декоратор User, который извлекает объект пользователя из HTTP-запроса. Он использует NestJS-функцию createParamDecorator для получения данных из контекста выполнения.",
+  "purpose": "Позволяет легко получать информацию о текущем пользователе в контроллерах NestJS-приложения",
+  "domain": "api",
+  "key_behaviors": [
+    "Извлекает объект пользователя из HTTP-запроса",
+    "Работает с контекстом выполнения NestJS",
+    "Позволяет использовать user в контроллерах как декоратор",
+    "Не требует внутренних зависимостей",
+    "Упрощает доступ к аутентифицированному пользователю"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 1033,
+  "output_tokens": 605,
+  "model": "qwen3:14b",
+  "code_hash": "7ca99905bcaadd86"
+}

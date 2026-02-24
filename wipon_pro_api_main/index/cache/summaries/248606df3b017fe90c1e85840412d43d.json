@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/find-users-active-subscription.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который ищет активную подписку пользователя в базе данных. Использует TypeORM для работы с репозиторием и DAO-объектом для хранения данных.",
+  "purpose": "Позволяет проверить, есть ли у пользователя активная подписка в системе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет подписку по ID пользователя",
+    "Фильтрует только активные подписки",
+    "Использует TypeORM для базовых операций",
+    "Возвращает объект DAO с данными подписки",
+    "Работает с репозиторием через инъекцию зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1177,
+  "output_tokens": 632,
+  "model": "qwen3:14b",
+  "code_hash": "22e9fd3778bebf87"
+}

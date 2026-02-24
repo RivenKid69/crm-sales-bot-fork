@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger-chronic.dao.ts:property:LedgerChronicDao:ledger_id",
+  "summary": "Этот код определяет сущность для хранения информации о событиях в учетной книге. Класс содержит поля для идентификатора, пользователя, времени начала и окончания события, а также использует TypeORM для работы с базой данных.",
+  "purpose": "Создать модель данных для хранения событий в учетной книге с временными метками",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу в базе данных",
+    "Хранит идентификатор события",
+    "Связывает событие с пользователем",
+    "Записывает время начала и окончания события",
+    "Использует автоматически генерируемый первичный ключ"
+  ],
+  "dependencies_used": [
+    "typeorm/BaseEntity",
+    "typeorm/Column",
+    "typeorm/Entity",
+    "typeorm/PrimaryGeneratedColumn"
+  ],
+  "input_tokens": 1194,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "b62f498bfd6a312f"
+}

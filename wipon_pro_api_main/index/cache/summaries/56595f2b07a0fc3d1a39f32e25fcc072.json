@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/user-rate-limit.guard.ts:import:@nestjs/common",
+  "summary": "Этот код создает защиту (guard) для ограничения количества запросов от одного пользователя. Он использует кэш для подсчета попыток и блокирует пользователя, если он превышает лимит",
+  "purpose": "Защищает API от перегрузки, ограничивая количество запросов от одного пользователя в день",
+  "domain": "api",
+  "key_behaviors": [
+    "Подсчет количества запросов пользователя",
+    "Использование Redis для хранения данных",
+    "Блокировка при превышении лимита",
+    "Логирование через DoomguyService",
+    "Авторизация через проверку пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "rxjs"
+  ],
+  "input_tokens": 1819,
+  "output_tokens": 665,
+  "model": "qwen3:14b",
+  "code_hash": "bc505f40aa633407"
+}

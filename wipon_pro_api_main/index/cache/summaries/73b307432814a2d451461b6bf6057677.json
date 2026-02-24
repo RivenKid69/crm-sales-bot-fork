@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node_licenses.dao.ts:import:./geo-node.dao",
+  "summary": "Этот код определяет сущность для хранения связи между географическими узлами и лицензиями. Она содержит уникальные идентификаторы, координаты и связи с другими объектами.",
+  "purpose": "Создает таблицу в базе данных для связи между географическими узлами и лицензиями",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует составной первичный ключ",
+    "Связывает сущности GeoNode и License",
+    "Хранит географические координаты",
+    "Работает с типом double precision",
+    "Использует ORM для взаимодействия с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm/BaseEntity",
+    "typeorm/Column",
+    "typeorm/Entity",
+    "typeorm/JoinColumn",
+    "typeorm/ManyToOne",
+    "typeorm/PrimaryColumn"
+  ],
+  "input_tokens": 1407,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "e26ea19e46064133"
+}

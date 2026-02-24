@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/presenter/billings.controller.ts:method:BillingsController:kaspiBilling",
+  "summary": "Этот контроллер обрабатывает запросы для работы с различными платежными системами (Qiwi, Kaspi и др.). Каждый метод вызывает соответствующий сервис для обработки платежей и использует защиту по IP-адресу.",
+  "purpose": "Обработка платежей через разные платежные шлюзы с защитой от несанкционированного доступа",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Обработка платежей через Qiwi, Kaspi, Kassa24 и другие системы",
+    "Фильтрация IP-адресов с помощью IpFilterGuard",
+    "Трансформация ответов через TransformInterceptor",
+    "Исключение из документации Swagger с помощью ApiExcludeController",
+    "Работа с параметрами запроса и ответа"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "BillingsService",
+    "TransformInterceptor",
+    "IpFilterGuard",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1887,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "595d99ff0e49fa97"
+}

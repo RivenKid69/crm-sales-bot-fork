@@ -1,0 +1,638 @@
+[
+  {
+    "id": 173026,
+    "create_time": "2025-12-15T17:49:58.179Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день. Мы не смогли до Вас дозвониться. Для Вас еще заявка актуальна?"
+  },
+  {
+    "id": 173028,
+    "create_time": "2025-12-15T17:50:00.898Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ТИС позволяет увеличить порог по НДС до 566 млн ₸.\nОн подходит для ИП на упрощённом режиме, особенно если вы в основном работаете с физическими лицами.\nПри подключении к ТИС вам предоставляется дополнительный лимит — 488 млн ₸.\nВ результате у вас будет два порога:\n•\t78 млн ₸ — сюда входят наличные платежи и переводы с счёта на счёт;\n•\t488 млн ₸ — сюда входят безналичные оплаты:\no\tбанковские карты;\no\tQR-оплата;\no\tудалённые переводы через POS-терминалы;\no\tпродажи через Kaspi Магазин"
+  },
+  {
+    "id": 163361,
+    "create_time": "2025-12-14T11:46:57.899Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! Мне нужна информация про ТИС 2025"
+  },
+  {
+    "id": 163365,
+    "create_time": "2025-12-14T11:47:11.031Z",
+    "author_type": "ai",
+    "sent_content": "ТИС — это Трёхкомпонентная интегрированная система, которая включает в себя товароучётную программу Wipon, онлайн-кассу и POS-терминал."
+  },
+  {
+    "id": 163366,
+    "create_time": "2025-12-14T11:47:13.266Z",
+    "author_type": "ai",
+    "sent_content": "В 2026 году она позволит увеличить лимит по НДС до 2,5 млрд тенге и работать по обновлённым правилам."
+  },
+  {
+    "id": 163367,
+    "create_time": "2025-12-14T11:47:15.402Z",
+    "author_type": "ai",
+    "sent_content": "Если у вас ТОО, то уточняем возможность перехода на ТИС 2026, как только будут опубликованы официальные правила.\n\nМогу предложить короткий звонок для подробной консультации."
+  },
+  {
+    "id": 163368,
+    "create_time": "2025-12-14T11:47:17.549Z",
+    "author_type": "ai",
+    "sent_content": "Укажите, пожалуйста, удобное время с 09:00 до 17:30."
+  },
+  {
+    "id": 164865,
+    "create_time": "2025-12-14T16:32:49.060Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите, какой у Вас бизнес и какой у Вас вопрос?"
+  },
+  {
+    "id": 181230,
+    "create_time": "2025-12-18T13:48:54.727Z",
+    "author_type": "client",
+    "sent_content": "Сколько стоит ?"
+  },
+  {
+    "id": 181232,
+    "create_time": "2025-12-18T13:49:08.787Z",
+    "author_type": "ai",
+    "sent_content": "Условия зависят от формата и интеграций. Предлагаю зафиксировать короткий звонок, чтобы обсудить ваш кейс и уточнить детали. Укажите удобное время с 09:00 до 17:30."
+  },
+  {
+    "id": 181233,
+    "create_time": "2025-12-18T13:49:13.662Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Условия зависят от формата и интеграций. Предлагаю зафиксировать короткий звонок, чтобы обсудить ваш кейс и уточнить детали. Укажите удобное время с 09:00 до 17:30."
+  },
+  {
+    "id": 181236,
+    "create_time": "2025-12-18T13:49:45.653Z",
+    "author_type": "client",
+    "sent_content": "17:00"
+  },
+  {
+    "id": 181249,
+    "create_time": "2025-12-18T13:52:04.896Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У Вас бизнес на упрощенном режиме?"
+  },
+  {
+    "id": 181250,
+    "create_time": "2025-12-18T13:52:09.303Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Какой у Вас вопрос?"
+  },
+  {
+    "id": 181253,
+    "create_time": "2025-12-18T13:53:07.015Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 181254,
+    "create_time": "2025-12-18T13:53:10.155Z",
+    "author_type": "client",
+    "sent_content": "Ип"
+  },
+  {
+    "id": 181258,
+    "create_time": "2025-12-18T13:53:56.080Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "за год стоит 220 000 тг"
+  },
+  {
+    "id": 181312,
+    "create_time": "2025-12-18T14:12:31.910Z",
+    "author_type": "client",
+    "sent_content": "А на 2026 год он перейдет ?"
+  },
+  {
+    "id": 181314,
+    "create_time": "2025-12-18T14:12:39.854Z",
+    "author_type": "client",
+    "sent_content": "Или в 2026 году его отменят ?"
+  },
+  {
+    "id": 181317,
+    "create_time": "2025-12-18T14:12:58.089Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 181318,
+    "create_time": "2025-12-18T14:13:09.927Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В налоговом кодексе он есть"
+  },
+  {
+    "id": 181320,
+    "create_time": "2025-12-18T14:13:28.897Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Будут изменения в плане уменьшения налоговой ставки"
+  },
+  {
+    "id": 181323,
+    "create_time": "2025-12-18T14:13:41.785Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "возможно на 1-2 процента"
+  },
+  {
+    "id": 181326,
+    "create_time": "2025-12-18T14:14:03.339Z",
+    "author_type": "client",
+    "sent_content": "Если упращенка?"
+  },
+  {
+    "id": 181331,
+    "create_time": "2025-12-18T14:14:23.806Z",
+    "author_type": "client",
+    "sent_content": "А если окэд попадет в розничный режим ?"
+  },
+  {
+    "id": 181792,
+    "create_time": "2025-12-18T16:20:49.628Z",
+    "author_type": "client",
+    "sent_content": "До конца когда мне нужно подключить"
+  },
+  {
+    "id": 181793,
+    "create_time": "2025-12-18T16:20:52.999Z",
+    "author_type": "client",
+    "sent_content": "Скидку сделаете ?"
+  },
+  {
+    "id": 181795,
+    "create_time": "2025-12-18T16:21:00.015Z",
+    "author_type": "client",
+    "sent_content": "На 2026 год уже не нужно"
+  },
+  {
+    "id": 181807,
+    "create_time": "2025-12-18T16:22:55.955Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы сейчас на упрощенке находитесь верно?"
+  },
+  {
+    "id": 181808,
+    "create_time": "2025-12-18T16:23:11.317Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 181809,
+    "create_time": "2025-12-18T16:23:18.525Z",
+    "author_type": "client",
+    "sent_content": "На упрпщенке"
+  },
+  {
+    "id": 181825,
+    "create_time": "2025-12-18T16:26:58.647Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можем Вас подключить за 130 000 тг"
+  },
+  {
+    "id": 181828,
+    "create_time": "2025-12-18T16:27:13.872Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите Вы оплату, как принимаете в основном?"
+  },
+  {
+    "id": 181832,
+    "create_time": "2025-12-18T16:27:33.585Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "И бизнес у Вас какой?"
+  },
+  {
+    "id": 181833,
+    "create_time": "2025-12-18T16:27:50.060Z",
+    "author_type": "client",
+    "sent_content": "Каспи магазин"
+  },
+  {
+    "id": 181835,
+    "create_time": "2025-12-18T16:27:58.214Z",
+    "author_type": "client",
+    "sent_content": "100 000 тг можете сделать ?"
+  },
+  {
+    "id": 181839,
+    "create_time": "2025-12-18T16:28:10.596Z",
+    "author_type": "client",
+    "sent_content": "Каспи магазин"
+  },
+  {
+    "id": 188478,
+    "create_time": "2025-12-20T13:36:01.065Z",
+    "author_type": "client",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 188523,
+    "create_time": "2025-12-20T13:45:51.071Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 188527,
+    "create_time": "2025-12-20T13:45:55.011Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "🤝"
+  },
+  {
+    "id": 181855,
+    "create_time": "2025-12-18T16:30:04.316Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 181993,
+    "create_time": "2025-12-18T18:46:31.650Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "А ок"
+  },
+  {
+    "id": 181532,
+    "create_time": "2025-12-18T15:07:00.933Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Его не будет"
+  },
+  {
+    "id": 181533,
+    "create_time": "2025-12-18T15:07:03.289Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Будет упрощенный"
+  },
+  {
+    "id": 181849,
+    "create_time": "2025-12-18T16:28:58.752Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас у Вас какой оборот?"
+  },
+  {
+    "id": 181851,
+    "create_time": "2025-12-18T16:29:23.944Z",
+    "author_type": "client",
+    "sent_content": "70 000 000 млн около"
+  },
+  {
+    "id": 181852,
+    "create_time": "2025-12-18T16:29:40.906Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "с января месяца"
+  },
+  {
+    "id": 181858,
+    "create_time": "2025-12-18T16:30:45.933Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Так как у Вас каспий магазин, у нас интеграция дополнительно стоит 30 000 тг"
+  },
+  {
+    "id": 181861,
+    "create_time": "2025-12-18T16:31:18.396Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я Вам лично делаю скидку так как у Вас интеграция идет с каспий"
+  },
+  {
+    "id": 181863,
+    "create_time": "2025-12-18T16:31:35.023Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Общая сумма будет 160 000 тг"
+  },
+  {
+    "id": 181865,
+    "create_time": "2025-12-18T16:31:55.954Z",
+    "author_type": "client",
+    "sent_content": "Мой друг у вас заказывал"
+  },
+  {
+    "id": 181867,
+    "create_time": "2025-12-18T16:32:01.605Z",
+    "author_type": "client",
+    "sent_content": "Я через него к вам пришла"
+  },
+  {
+    "id": 181869,
+    "create_time": "2025-12-18T16:32:06.345Z",
+    "author_type": "client",
+    "sent_content": "Он сказал 120к"
+  },
+  {
+    "id": 181871,
+    "create_time": "2025-12-18T16:32:15.544Z",
+    "author_type": "client",
+    "sent_content": "🥲"
+  },
+  {
+    "id": 181875,
+    "create_time": "2025-12-18T16:32:57.777Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо. Сейчас уточню у руководителя"
+  },
+  {
+    "id": 181879,
+    "create_time": "2025-12-18T16:33:50.032Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 181882,
+    "create_time": "2025-12-18T16:36:01.258Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Переговорил с руководителем. \nПодключим Вас за 129 000 тг."
+  },
+  {
+    "id": 181883,
+    "create_time": "2025-12-18T16:36:23.976Z",
+    "author_type": "client",
+    "sent_content": "Это общая сумма ?"
+  },
+  {
+    "id": 181884,
+    "create_time": "2025-12-18T16:36:42.272Z",
+    "author_type": "client",
+    "sent_content": "Вместе с интеграцией ?"
+  },
+  {
+    "id": 181885,
+    "create_time": "2025-12-18T16:36:51.981Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 181886,
+    "create_time": "2025-12-18T16:36:57.947Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 181887,
+    "create_time": "2025-12-18T16:36:59.395Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вместе с интеграцией"
+  },
+  {
+    "id": 181888,
+    "create_time": "2025-12-18T16:37:03.035Z",
+    "author_type": "client",
+    "sent_content": "Что нужно делать ?"
+  },
+  {
+    "id": 181889,
+    "create_time": "2025-12-18T16:37:06.704Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все верно"
+  },
+  {
+    "id": 181890,
+    "create_time": "2025-12-18T16:37:19.145Z",
+    "author_type": "client",
+    "sent_content": "Сегодня подключите ?"
+  },
+  {
+    "id": 181891,
+    "create_time": "2025-12-18T16:37:35.387Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для подключения напишите номер куда выставить счет и напишите свой ИИН"
+  },
+  {
+    "id": 181892,
+    "create_time": "2025-12-18T16:37:54.287Z",
+    "author_type": "client",
+    "sent_content": "На этот номер можете выставить"
+  },
+  {
+    "id": 181893,
+    "create_time": "2025-12-18T16:38:03.278Z",
+    "author_type": "client",
+    "sent_content": "Иин 980415400114"
+  },
+  {
+    "id": 181894,
+    "create_time": "2025-12-18T16:38:04.789Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сегодня начнем, завтра будет готово"
+  },
+  {
+    "id": 181895,
+    "create_time": "2025-12-18T16:38:11.308Z",
+    "author_type": "client",
+    "sent_content": "Отлично 👍"
+  },
+  {
+    "id": 181896,
+    "create_time": "2025-12-18T16:38:17.111Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я Вам после оплаты отправлю список документов"
+  },
+  {
+    "id": 181897,
+    "create_time": "2025-12-18T16:38:32.662Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вас как зовут и с какого Вы города?"
+  },
+  {
+    "id": 181902,
+    "create_time": "2025-12-18T16:39:04.825Z",
+    "author_type": "client",
+    "sent_content": "Город Шымкент"
+  },
+  {
+    "id": 181903,
+    "create_time": "2025-12-18T16:39:06.653Z",
+    "author_type": "client",
+    "sent_content": "Наргиз"
+  },
+  {
+    "id": 181905,
+    "create_time": "2025-12-18T16:39:29.069Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 181908,
+    "create_time": "2025-12-18T16:40:05.462Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас отправим счет"
+  },
+  {
+    "id": 181909,
+    "create_time": "2025-12-18T16:40:18.835Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 181911,
+    "create_time": "2025-12-18T16:41:10.616Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "После оплаты скинете чек пожалуйста"
+  },
+  {
+    "id": 181912,
+    "create_time": "2025-12-18T16:41:12.159Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 181913,
+    "create_time": "2025-12-18T16:41:51.891Z",
+    "author_type": "client",
+    "sent_content": "."
+  },
+  {
+    "id": 181914,
+    "create_time": "2025-12-18T16:42:16.923Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я сейчас отправлю на Ваш номер смс"
+  },
+  {
+    "id": 181915,
+    "create_time": "2025-12-18T16:42:28.970Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Чтобы Вам открыть кабинеь"
+  },
+  {
+    "id": 181987,
+    "create_time": "2025-12-18T18:46:28.396Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У Вас продажа чего идет?"
+  },
+  {
+    "id": 181988,
+    "create_time": "2025-12-18T18:46:28.491Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Одежда?"
+  },
+  {
+    "id": 181975,
+    "create_time": "2025-12-18T18:46:26.923Z",
+    "author_type": "client",
+    "sent_content": "9728"
+  },
+  {
+    "id": 181976,
+    "create_time": "2025-12-18T18:46:26.988Z",
+    "author_type": "client",
+    "sent_content": "Ок отправляйте"
+  },
+  {
+    "id": 181977,
+    "create_time": "2025-12-18T18:46:29.613Z",
+    "author_type": "client",
+    "sent_content": "Смартфоны"
+  },
+  {
+    "id": 181978,
+    "create_time": "2025-12-18T18:46:28.206Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 181979,
+    "create_time": "2025-12-18T18:46:26.969Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 181980,
+    "create_time": "2025-12-18T18:46:30.043Z",
+    "author_type": "client",
+    "sent_content": "Пылесосы"
+  },
+  {
+    "id": 181982,
+    "create_time": "2025-12-18T18:46:27.159Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправил"
+  },
+  {
+    "id": 181455,
+    "create_time": "2025-12-18T14:56:02.013Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 181456,
+    "create_time": "2025-12-18T14:56:28.717Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Розничный режим в 2026 году упразнят"
+  },
+  {
+    "id": 181458,
+    "create_time": "2025-12-18T14:56:54.445Z",
+    "author_type": "client",
+    "sent_content": "А если розница сколько %?"
+  },
+  {
+    "id": 181459,
+    "create_time": "2025-12-18T14:56:57.001Z",
+    "author_type": "client",
+    "sent_content": "Не подскажите ?"
+  },
+  {
+    "id": 181463,
+    "create_time": "2025-12-18T14:57:28.974Z",
+    "author_type": "client",
+    "sent_content": "Просто мой окэд в след году на розницу попадает"
+  },
+  {
+    "id": 181984,
+    "create_time": "2025-12-18T18:46:31.627Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для удаленной регистраций ТИС, отправьте следующие данные на номер: +77003007300 / ссылка: https://wa.me/77003007300\n\n1) Подготовьте ЭЦП для регистрации в ОФД и КНП\n2) Скачайте программу Anydesk для удалённого подключения\n3) Талон ИП либо ИИН компаний\n4) Юридический адрес ИП (адрес где зарегистрировано ИП. ОБЬЯЗАТЕЛЬНО! Укажите область, город, район, улицу)\n5) Фактический адрес использования кассы (адрес где будет происходить сами продажи. ОБЯЗАТЕЛЬНО! Укажите область, город, район, улицу)\n6) Адрес электронной почты для регистрации в ОФД.\n7) Если у вас ПОС терминал:\n-1 Пост терминал какого банка(Каспий, Жусан,Халык, Форте, БЦК)\n-2 Модель POS терминала (например Aisino A80, Aisino A90 - Pax A930, Pax D210)\n-3 ID номер пост терминала(можете пробить чек через терминал и там посмотреть ID, если Каспий в виде телефона-настройки, Каспий гид, о терминале)\n\n7) Если у вас онлайн маркет:\n-В случае Каспий магазина\n-1 Заходите на сайт https://kaspi.kz/mc/#/login\n-2 Заходите в настройки и общая информация и там будет айди Партнера\n-В случае Халык маркета\n-1 ИИН компаний\n\nКак отправите данные, напишите на номер: +77003007300\nссылка: https://wa.me/77003007300"
+  },
+  {
+    "id": 181985,
+    "create_time": "2025-12-18T18:46:28.415Z",
+    "author_type": "client",
+    "sent_content": "Техника"
+  },
+  {
+    "id": 182035,
+    "create_time": "2025-12-18T18:47:00.821Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 181998,
+    "create_time": "2025-12-18T18:46:32.703Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Наргиз по данному списку отправите данные по указанному номеру"
+  },
+  {
+    "id": 182031,
+    "create_time": "2025-12-18T18:46:55.390Z",
+    "author_type": "client",
+    "sent_content": "KZ11UWQ07991531_ru.pdf"
+  },
+  {
+    "id": 182033,
+    "create_time": "2025-12-18T18:46:59.162Z",
+    "author_type": "client",
+    "sent_content": "KZ252175083508Ru.pdf"
+  },
+  {
+    "id": 182034,
+    "create_time": "2025-12-18T18:46:58.639Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "77003007300"
+  },
+  {
+    "id": 182036,
+    "create_time": "2025-12-18T18:47:00.375Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам надо на данный номер отправить"
+  },
+  {
+    "id": 182037,
+    "create_time": "2025-12-18T18:47:01.755Z",
+    "author_type": "client",
+    "sent_content": "Отправила"
+  },
+  {
+    "id": 182048,
+    "create_time": "2025-12-18T18:47:10.056Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  }
+]

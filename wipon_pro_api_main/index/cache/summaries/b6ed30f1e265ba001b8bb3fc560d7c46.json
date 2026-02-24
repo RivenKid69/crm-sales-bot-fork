@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/presenter/notifications.controller.ts:method:NotificationsController:deleteUsersNotification",
+  "summary": "Этот метод удаляет уведомление пользователя. Он получает идентификатор уведомления из URL и идентификатор пользователя из декоратора @User(), затем передает их сервису для удаления уведомления.",
+  "purpose": "Удаление конкретного уведомления пользователя из его списка уведомлений",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "Удаляет уведомление по его ID",
+    "Использует аутентификацию через AuthGuard",
+    "Получает данные пользователя из декоратора @User()",
+    "Взаимодействует с сервисом для удаления данных",
+    "Возвращает статус успешного удаления"
+  ],
+  "dependencies_used": [
+    "AuthGuard",
+    "User",
+    "notificationsService"
+  ],
+  "input_tokens": 2096,
+  "output_tokens": 716,
+  "model": "qwen3:14b",
+  "code_hash": "693e2857eabd9d27"
+}

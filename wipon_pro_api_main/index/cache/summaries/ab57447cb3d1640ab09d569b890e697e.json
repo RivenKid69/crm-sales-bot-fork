@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/store-subscription.dto.ts:class:StoreSubscriptionDto",
+  "summary": "Этот класс используется для валидации данных при создании подписки. Он проверяет, что телефонный номер существует в системе, имеет правильный формат и что срок подписки (если указан) больше нуля.",
+  "purpose": "Обеспечивает корректность данных при регистрации новых подписок",
+  "domain": "подписки, валидация данных",
+  "key_behaviors": [
+    "Проверка существования телефона в базе пользователей",
+    "Валидация формата казахстанского номера телефона",
+    "Обязательное поле телефонного номера",
+    "Опциональное поле срока подписки",
+    "Проверка, что срок подписки не меньше 1"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsPhoneExistsInUsers"
+  ],
+  "input_tokens": 1165,
+  "output_tokens": 648,
+  "model": "qwen3:14b",
+  "code_hash": "b6357451b8af90fe"
+}

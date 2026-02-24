@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-22T17:22:56.422853",
+    "mode": "manual_codex_d5_after_patch17",
+    "source": "results/manual_codex_iter_live_baseline.json"
+  },
+  "dialog": {
+    "id": "d5_invoice_without_iin_pressure",
+    "trace": [
+      {
+        "turn": 1,
+        "intent": "ready_to_buy",
+        "state": "autonomous_closing",
+        "is_final": false,
+        "bot": "Оставьте, пожалуйста, **ИИН компании** и **номер телефона Kaspi Pay**, чтобы я сразу отправил счёт на оплату. Ваш заказ обработаем в приоритетном режиме — всё будет готово к внедрению в кратчайшие сроки. *(Если ИИН уже известен, уточните только номер Kaspi Pay.)*"
+      },
+      {
+        "turn": 2,
+        "intent": "contact_provided",
+        "state": "autonomous_closing",
+        "is_final": false,
+        "bot": "Для выставления счёта нужен ИИН и номер телефона Kaspi. Если сейчас неудобно, можем вернуться к оформлению позже."
+      },
+      {
+        "turn": 3,
+        "intent": "objection_contract_bound",
+        "state": "autonomous_closing",
+        "is_final": false,
+        "bot": "Коротко по делу: помогу выбрать следующий шаг под ваш кейс."
+      },
+      {
+        "turn": 4,
+        "intent": "objection_contract_bound",
+        "state": "autonomous_closing",
+        "is_final": false,
+        "bot": "Коротко по делу: помогу выбрать следующий шаг под ваш кейс."
+      }
+    ],
+    "final_state": "autonomous_closing"
+  }
+}

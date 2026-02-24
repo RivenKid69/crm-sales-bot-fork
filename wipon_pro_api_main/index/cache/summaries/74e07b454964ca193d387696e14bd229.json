@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/data/accounts.repository.ts:class:AccountsRepository",
+  "summary": "Этот класс представляет собой репозиторий для работы с объектами AccountDao через TypeORM. Он позволяет выполнять операции с базой данных, такие как сохранение, чтение и обновление записей.",
+  "purpose": "Обеспечивает доступ к данным аккаунтов через базу данных в приложении.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Позволяет выполнять стандартные операции с аккаунтами (создание, чтение, обновление)",
+    "Связывает модель AccountDao с таблицей в базе данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "AccountDao"
+  ],
+  "input_tokens": 997,
+  "output_tokens": 612,
+  "model": "qwen3:14b",
+  "code_hash": "26e3f16f647f4318"
+}

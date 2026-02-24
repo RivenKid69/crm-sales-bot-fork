@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger-chronic.dao.ts:import:typeorm",
+  "summary": "Этот код определяет класс для хранения данных в базе данных. Он описывает таблицу с полями, такими как ID, ID леджера, ID пользователя и временные метки начала и окончания операции",
+  "purpose": "Создает модель данных для хранения информации о хронологических записях в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Определяет таблицу 'ledger_chronics' в базе данных",
+    "Использует автоматически генерируемый ID как первичный ключ",
+    "Связывает записи с леджерами и пользователями через внешние ключи",
+    "Хранит даты начала и окончания операций",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm/BaseEntity",
+    "typeorm/Column",
+    "typeorm/Entity",
+    "typeorm/PrimaryGeneratedColumn"
+  ],
+  "input_tokens": 1221,
+  "output_tokens": 712,
+  "model": "qwen3:14b",
+  "code_hash": "b62f498bfd6a312f"
+}

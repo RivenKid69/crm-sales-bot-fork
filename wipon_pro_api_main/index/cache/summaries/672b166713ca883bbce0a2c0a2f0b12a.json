@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/ssl/ssl.service.ts:file",
+  "summary": "Этот сервис проверяет цифровые подписи с помощью публичного ключа. Он использует криптографические функции для проверки, что данные не были изменены.",
+  "purpose": "Убедиться, что данные не были подделаны и принадлежат доверенному источнику",
+  "domain": "безопасность",
+  "key_behaviors": [
+    "Проверка подписи с использованием публичного ключа",
+    "Поддержка разных алгоритмов хеширования (по умолчанию SHA1)",
+    "Чтение ключей из файлов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "crypto (Node.js)"
+  ],
+  "input_tokens": 1128,
+  "output_tokens": 628,
+  "model": "qwen3:14b",
+  "code_hash": "40b3ee6d8382b91c"
+}

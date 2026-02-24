@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/item-data-to-response.ts:import:../format-attributes",
+  "summary": "Этот код форматирует данные о товаре для вывода в ответе API. Он использует DAO-объект, маскирует часть кода товара и собирает информацию из разных источников",
+  "purpose": "Подготовка данных для отображения информации о товаре в интерфейсе или API",
+  "domain": "api",
+  "key_behaviors": [
+    "Форматирование данных товара в удобный для вывода формат",
+    "Маскировка части кода товара (например, ***1234)",
+    "Объединение данных из разных источников (DAO, атрибуты)",
+    "Обработка разных вариантов кода (например, поштучный или партийный)",
+    "Использование вспомогательных функций для упрощения логики"
+  ],
+  "dependencies_used": [
+    "ItemDao",
+    "getItemsStatusAttribute",
+    "formatProductDataToResponse",
+    "substr"
+  ],
+  "input_tokens": 1573,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "6740c87ea2c4e889"
+}

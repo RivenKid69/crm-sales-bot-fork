@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/dto/get-ugds-list.dto.ts:import:class-validator",
+  "summary": "Этот код определяет DTO-класс для фильтрации списка UGD. Он использует валидацию и документацию Swagger для проверки и описания параметра dgd_id",
+  "purpose": "Обеспечивает корректный ввод данных и документацию для API-запроса, фильтрующего UGD по dgd_id",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что dgd_id является строкой",
+    "Создание документации Swagger для API",
+    "Поддержка необязательного параметра",
+    "Фильтрация данных по dgd_id",
+    "Четкое описание параметра для разработчиков"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1118,
+  "output_tokens": 581,
+  "model": "qwen3:14b",
+  "code_hash": "871c0b6fc8109af0"
+}

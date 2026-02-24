@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store.dao.ts:property:StoreDao:created_at",
+  "summary": "Класс StoreDao представляет собой сущность базы данных, описывающую магазин. Он содержит множество полей для хранения информации о магазине, включая связи с другими сущностями, такими как пользователь, тип магазина, DGD и UGD.",
+  "purpose": "Используется для хранения и управления данными о магазинах в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит информацию о магазине: адрес, BIN, лицензия и т.д.",
+    "Использует TypeORM для работы с базой данных",
+    "Содержит связи с другими сущностями (OneToOne)",
+    "Автоматически устанавливает даты создания, обновления и удаления",
+    "Поддерживает мягкое удаление через deleted_at"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreTypeDao",
+    "DgdDao",
+    "UgdDao",
+    "UserDao"
+  ],
+  "input_tokens": 2113,
+  "output_tokens": 651,
+  "model": "qwen3:14b",
+  "code_hash": "f69c06843df0eb5a"
+}

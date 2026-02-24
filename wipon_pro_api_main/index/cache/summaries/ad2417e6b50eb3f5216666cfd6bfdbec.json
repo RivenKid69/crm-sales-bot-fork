@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/ugds.module.ts:import:./domain/ugds.service",
+  "summary": "Этот код создает модуль NestJS для работы с сущностью 'ugds'. Он объединяет репозиторий (для работы с базой данных), сервис (для бизнес-логики) и контроллер (для обработки HTTP-запросов) в одном модуле.",
+  "purpose": "Организует компоненты для управления данными 'ugds' в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Интеграция с базой данных через TypeORM",
+    "Обработка HTTP-запросов через контроллер",
+    "Реализация бизнес-логики в сервисе",
+    "Экспорт use-case для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1257,
+  "output_tokens": 581,
+  "model": "qwen3:14b",
+  "code_hash": "aade1eae54815877"
+}

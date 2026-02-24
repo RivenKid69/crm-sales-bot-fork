@@ -1,0 +1,156 @@
+[
+  {
+    "scenario": "Session Restore — context survival after snapshot",
+    "flow": "autonomous",
+    "total_turns": 6,
+    "facts_retained": 1,
+    "facts_lost": 2,
+    "dedup_violations": 0,
+    "total_elapsed_s": 21.818796157836914,
+    "avg_response_len": 219.0,
+    "history_compact_used": true,
+    "turns": [
+      {
+        "turn": 1,
+        "user": "Здравствуйте, я из компании ТехноМаркет, у нас интернет-магазин электроники.",
+        "bot": "Здравствуйте, рад приветствовать вас! У вас срочные задачи — расскажите, что именно требует вашего внимания прямо сейчас?",
+        "intent": "no_problem",
+        "state": "greeting",
+        "history_len": 1,
+        "history_formatted_len": 210,
+        "cw_turns": 1,
+        "episodic_episodes": 1,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": null
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 4888.047933578491
+      },
+      {
+        "turn": 2,
+        "user": "Наша проблема — постоянно теряем лиды, потому что нет нормальной CRM, всё в головах менеджеров.",
+        "bot": "Как это неприятно — терять клиентов из-за хаоса в учёте. А как вы сейчас сортируете и распределяете заявки?",
+        "intent": "no_problem",
+        "state": "greeting",
+        "history_len": 2,
+        "history_formatted_len": 426,
+        "cw_turns": 2,
+        "episodic_episodes": 2,
+        "episodic_pain_points": [
+          "пропускаем заявки"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.030303030303030304,
+        "elapsed_ms": 3851.417303085327
+      },
+      {
+        "turn": 3,
+        "user": "В команде продаж у нас 25 человек.",
+        "bot": "Понятно, у вас большая команда, и хаос в учёте заявок — это действительно серьёзная проблема. Что именно мешает вашим менеджерам эффективно работать с лидами и не терять клиентов?",
+        "intent": "situation_provided",
+        "state": "autonomous_discovery",
+        "history_len": 3,
+        "history_formatted_len": 653,
+        "cw_turns": 3,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [
+          "пропускаем заявки"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 25,
+          "industry": null,
+          "role": "sales_head"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.1282051282051282,
+        "elapsed_ms": 1366.5626049041748
+      },
+      {
+        "turn": 4,
+        "user": "Да, пробовали Битрикс24, не подошёл — слишком перегруженный.",
+        "bot": "Понял. Битрикс24 действительно может быть сложным в освоении. Наша система, напротив, упрощает работу с лидами — автоматизирует распределение, напоминания и отслеживание этапов. А как вы сейчас следите за прогрессом ваших менеджеров?",
+        "intent": "objection_competitor",
+        "state": "autonomous_qualification",
+        "history_len": 4,
+        "history_formatted_len": 960,
+        "cw_turns": 4,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "пропускаем заявки"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 25,
+          "industry": null,
+          "role": "sales_head"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.11538461538461539,
+        "elapsed_ms": 3968.576669692993
+      },
+      {
+        "turn": 5,
+        "user": "Так, на чём мы остановились? Расскажите что вы поняли о наших потребностях.",
+        "bot": "Мы поняли, что ваша команда из 25 человек теряет лиды из-за отсутствия структурированной CRM, и Битрикс24 не справляется с вашими ожиданиями. Наша система автоматизирует распределение заявок, отслеживание прогресса и напоминания, чтобы вы не упускали ни одного клиента. А как вы сейчас измеряете эффективность работы вашей команды?",
+        "intent": "clarification_request",
+        "state": "autonomous_presentation",
+        "history_len": 5,
+        "history_formatted_len": 1380,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "пропускаем заявки"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 25,
+          "industry": null,
+          "role": "sales_head"
+        },
+        "fact_checks": {
+          "ТехноМаркет": false
+        },
+        "similarity_to_prev": 0.15625,
+        "elapsed_ms": 3725.0888347625732
+      },
+      {
+        "turn": 6,
+        "user": "А что именно вы предлагаете для решения нашей проблемы с лидами?",
+        "bot": "Мы предлагаем CRM-систему, которая автоматически распределяет лиды между менеджерами, напоминает о следующих шагах и отслеживает прогресс в реальном времени — это снижает пропуски на 70%. Также интегрируется с вашими текущими инструментами, включая Битрикс24, если это необходимо. А как вы сейчас оцениваете эффективность работы вашей команды?",
+        "intent": "question_features",
+        "state": "autonomous_objection_handling",
+        "history_len": 6,
+        "history_formatted_len": 1801,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "пропускаем заявки"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 25,
+          "industry": null,
+          "role": "sales_head"
+        },
+        "fact_checks": {
+          "лид": true,
+          "потер": false
+        },
+        "similarity_to_prev": 0.17567567567567569,
+        "elapsed_ms": 3807.2221279144287
+      }
+    ]
+  }
+]

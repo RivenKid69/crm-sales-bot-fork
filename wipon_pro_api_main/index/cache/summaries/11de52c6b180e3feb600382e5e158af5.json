@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:import:../../../common/dao/notification.dao",
+  "summary": "Этот код - сервис для работы с уведомлениями. Он может отправлять уведомления, получать список уведомлений пользователя, менять статус уведомлений, удалять их и создавать новые. Использует базу данных и сервис для отправки уведомлений по push.",
+  "purpose": "Управление уведомлениями пользователей в приложении",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Отправка уведомлений через push-сервис",
+    "Получение списка уведомлений пользователя",
+    "Обновление статуса уведомления (прочитано/не прочитано)",
+    "Удаление уведомления",
+    "Создание нового уведомления"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "NotificationsRepository",
+    "PushService",
+    "FindUserByIdUseCase"
+  ],
+  "input_tokens": 2023,
+  "output_tokens": 750,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

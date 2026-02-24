@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/transaction.guard.ts:file",
+  "summary": "Этот код проверяет, есть ли у запроса допустимый токен в заголовке Authorization. Если токен совпадает с тем, что указано в настройках приложения, доступ разрешён, иначе выдаётся ошибка.",
+  "purpose": "Защищает транзакционные endpoints, проверяя наличие валидного токена для авторизации",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие заголовка Authorization в запросе",
+    "Сравнивает токен из заголовка с токеном из настроек",
+    "Блокирует доступ, если токен не совпадает",
+    "Игнорирует проверку, если токен в настройках отсутствует",
+    "Вызывает ошибку ForbiddenException при отсутствии токена"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "express"
+  ],
+  "input_tokens": 1182,
+  "output_tokens": 746,
+  "model": "qwen3:14b",
+  "code_hash": "8b2b0537c1fdd073"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/data/dgds.repostitory.ts:class:DgdsRepostitory",
+  "summary": "Этот класс представляет собой репозиторий для работы с сущностью DgdDao. Он наследуется от класса Repository из TypeORM и позволяет выполнять операции с базой данных.",
+  "purpose": "Обеспечивает удобный доступ к данным в базе, связанным с DgdDao, через TypeORM.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Работа с сущностями базы данных",
+    "Использование ORM для взаимодействия с БД",
+    "Поддержка типизации данных",
+    "Выполнение CRUD-операций",
+    "Интеграция с другими частями приложения"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1027,
+  "output_tokens": 662,
+  "model": "qwen3:14b",
+  "code_hash": "20fd61e6b9fa257c"
+}

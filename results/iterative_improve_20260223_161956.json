@@ -1,0 +1,488 @@
+[
+  {
+    "scenario": "s17_product_confusion",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Здравствуйте, мне сказали у вас хорошая CRM система",
+        "bot": "А что конкретно важно для вас в CRM? Насколько сейчас автоматизированы продажи и работа с клиентами?",
+        "state": "autonomous_discovery",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 10.33
+      },
+      {
+        "turn": 2,
+        "user": "Ну я хочу вести базу клиентов, делать рассылки, воронку продаж настроить",
+        "bot": "Базу клиентов, рассылки и воронку продаж легко настраиваем — у нас есть готовые шаблоны для этого. А как сейчас храните контакты клиентов и как часто обновляете базу?",
+        "state": "autonomous_discovery",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.69
+      },
+      {
+        "turn": 3,
+        "user": "А что тогда у вас? Я думал это типа Битрикс24",
+        "bot": "А, у нас не CRM, а кассовые системы + учёт для розницы и общепита. Типа \"Орландо\" или \"1С:Розница\", но без лишней бюрократии — всё в одном устройстве. А что продаёте?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 8.36
+      },
+      {
+        "turn": 4,
+        "user": "Ааа, то есть это типа кассы? У меня магазин электроники",
+        "bot": "А, электроника — у вас много товара и часто привозят новинки? Тогда учёт и продажи должны быть быстрыми — в Wipon всё синхронизируется в реальном времени, даже если товарный остаток меняется каждый день. А что сейчас с кассой — ручная?",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 2.58
+      },
+      {
+        "turn": 5,
+        "user": "Ну у меня 1 точка пока. А можно и онлайн продажи вести?",
+        "bot": "О, онлайн-продажи — это легко! В Wipon можно настроить магазин в Kaspi Pay и принимать заказы прямо с кассы. Расскажите, пожалуйста, ваш телефон?",
+        "state": "autonomous_closing",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 2.41
+      },
+      {
+        "turn": 6,
+        "user": "Понятно. Сколько стоит?",
+        "bot": "У нас базовый тариф Mini — 5 000 ₸ в месяц за кассу + фискализацию. А как у вас сейчас с учетом товаров и клиентской базой? Оставьте, пожалуйста, телефон или email.",
+        "state": "autonomous_closing",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 7.03
+      },
+      {
+        "turn": 7,
+        "user": "Давайте подключимся, 87001234567",
+        "bot": "Давайте подключим вас к тарифу Lite (150 000 ₸ в год) — он уже включает базу клиентов, рассылки и настройку воронки. Подскажите ИИН, чтобы я сразу отправила счёт на почту или Kaspi? (Уже знаю ваш номер — он совпадает с Kaspi.)",
+        "state": "autonomous_closing",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 43,
+        "is_final": false,
+        "elapsed_s": 5.66
+      }
+    ]
+  },
+  {
+    "scenario": "s18_buying_for_relative",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Здравствуйте, я для мамы ищу. У неё маленький магазин продуктов",
+        "bot": "А что мама сейчас больше всего ругается в работе? Товар часто теряется?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.16
+      },
+      {
+        "turn": 2,
+        "user": "Она пожилая, технически не очень. Ей нужно чтобы было очень просто",
+        "bot": "А мама сейчас всё вручную считает или на кассе старой какой-то работает? В Wipon можно всё настроить так, что даже бабушка разберётся: сканировать штрих-коды, цена сама выскочит, остатки обновляются сами. А если что-то не получится, мы всё подключим и покажем.",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.65
+      },
+      {
+        "turn": 3,
+        "user": "А можно ей установить и настроить? Она в Таразе",
+        "bot": "Да, можем установить и настроить в Таразе — мы работаем по всей стране. Расскажите, что именно маме сложно сейчас: например, если она боится запутаться в счетах или теряет товар, я покажу, как в Wipon всё делается само — сканируете штрих-код, цена выбивается, остатки обновляются. А что сейчас чаще всего вызывает головную боль: подсчёт налички?",
+        "state": "autonomous_presentation",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 6.53
+      },
+      {
+        "turn": 4,
+        "user": "Хорошо. Сколько это стоит? Самый простой вариант",
+        "bot": "Самый простой вариант — \"Mini\" за 5 000 ₸/мес. С ним мама сможет сканировать штрих-коды, цены сами выбиваются, остатки обновляются, а мы всё настроим так, что даже пожилым людям просто.",
+        "state": "autonomous_negotiation",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 8.93
+      },
+      {
+        "turn": 5,
+        "user": "Ок я ей передам. А можете на мой номер позвонить когда подключите?",
+        "bot": "Отлично, давайте организуем. Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф.",
+        "state": "autonomous_closing",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 44,
+        "is_final": false,
+        "elapsed_s": 1.71
+      },
+      {
+        "turn": 6,
+        "user": "87771234567, звоните в рабочее время",
+        "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 77,
+        "is_final": true,
+        "elapsed_s": 1.84
+      }
+    ]
+  },
+  {
+    "scenario": "s19_flip_flopper",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет, у меня магазин обуви",
+        "bot": "Обувной магазин — это классно! А что сейчас с учётом товара сложнее всего: следят ли за остатками?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.27
+      },
+      {
+        "turn": 2,
+        "user": "Сколько стоит ваша касса?",
+        "bot": "Для обуви — тариф Standard от 220 000 ₸ в год. Учёт размеров, цветов и остатков в автомате, а касса подключается к фискалу без лишних забот. А как сейчас ведёте учёт — на бумаге?",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 5.24
+      },
+      {
+        "turn": 3,
+        "user": "Давайте подключимся!",
+        "bot": "Передам вашу заявку коллеге. Скажите телефон или email — он позвонит и всё расскажет.",
+        "state": "autonomous_closing",
+        "intent": "agreement",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 7,
+        "is_final": false,
+        "elapsed_s": 4.78
+      },
+      {
+        "turn": 4,
+        "user": "Хотя нет, подождите. Мне надо ещё с партнёром обсудить",
+        "bot": "Хорошо, если партнёру нужна дополнительная информация — оставьте, пожалуйста, свой телефон или email, чтобы я передала коллегам. Вам перезвонят в течение часа.",
+        "state": "autonomous_closing",
+        "intent": "agreement",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 10,
+        "is_final": false,
+        "elapsed_s": 2.21
+      },
+      {
+        "turn": 5,
+        "user": "Ладно он сказал ок. Давайте подключаемся",
+        "bot": "Обувь — сложный товар! А какие именно размеры и цвета вы ведёте — всё вместе или по отдельности? Оставьте, пожалуйста, телефон или email. Готовы подключить?",
+        "state": "autonomous_closing",
+        "intent": "agreement",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 12,
+        "is_final": false,
+        "elapsed_s": 2.18
+      },
+      {
+        "turn": 6,
+        "user": "ИИН 900101350123, каспи 87075554433",
+        "bot": "Благодарю за данные. Как к вам обращаться? А что именно в вашем учёте вызывает наибольший сложности — остатки?",
+        "state": "payment_ready",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 47,
+        "is_final": true,
+        "elapsed_s": 5.32
+      }
+    ]
+  },
+  {
+    "scenario": "s20_premature_negotiator",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет, мне нужна касса",
+        "bot": "У нас есть бесплатная онлайн-касса Wipon — фискализированная, с отчётами, без доплаты за оборудование. А у вас какой бизнес?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 3.93
+      },
+      {
+        "turn": 2,
+        "user": "Стоп, сначала скажите — какая у вас максимальная скидка?",
+        "bot": "По стоимости сориентирую в ₸. Дам точный расчёт под ваш кейс в чате.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 6.14
+      },
+      {
+        "turn": 3,
+        "user": "То есть скидки нет? Тогда что вы можете предложить чтобы я выбрал вас?",
+        "bot": "Акционных скидок у нас нет — зато у Wipon фискализация входит в базовый тариф Mini (5 000 ₸/мес), а не требует доплаты за оборудование. Скажите, а у вас уже есть учёт товаров или денег — или ведёте всё вручную? Это поможет точнее подобрать решение.",
+        "state": "autonomous_discovery",
+        "intent": "objection_price",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 7.44
+      },
+      {
+        "turn": 4,
+        "user": "Ладно, а что вообще ваша система умеет?",
+        "bot": "Ваша система Wipon — это всё в одном: касса с фискализацией, учёт товаров и денег, отчёты по продажам, возврат товара на кассе и даже управлением несколькими точками из одного аккаунта. А что именно сейчас сложнее всего в вашей работе?",
+        "state": "autonomous_presentation",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 2.92
+      },
+      {
+        "turn": 5,
+        "user": "У меня 2 точки, магазин одежды. Сколько будет стоить?",
+        "bot": "У вас 2 точки — одежда. Для такого формата идеально подойдёт тариф Lite — 150 000 ₸ в год. Включает кассу с фискализацией, учёт товаров и продаж по обеим точкам из одного аккаунта.",
+        "state": "autonomous_negotiation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 2.78
+      },
+      {
+        "turn": 6,
+        "user": "Хм ок. Давайте созвонимся",
+        "bot": "Спасибо!",
+        "state": "autonomous_closing",
+        "intent": "callback_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 29,
+        "is_final": false,
+        "elapsed_s": 1.37
+      },
+      {
+        "turn": 7,
+        "user": "Завтра в 11, номер 87021112233",
+        "bot": "Звонок запланирован на завтра в 11:00. Как лучше вас называть при обращении? Мы свяжемся заранее, чтобы уточнить детали.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 63,
+        "is_final": true,
+        "elapsed_s": 2.67
+      }
+    ]
+  },
+  {
+    "scenario": "s21_specific_tariff_ask",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Добрый день, расскажите про тариф Lite",
+        "bot": "Тариф Lite — это базовый тариф учёта и кассы с фискализацией. Включает учёт товаров, остатков, приёмку, онлайн-кассу и синхронизацию с фискальным регистратором. А что именно из этого у вас уже есть, а что хотелось бы добавить или изменить?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 1.88
+      },
+      {
+        "turn": 2,
+        "user": "А чем Lite отличается от Standard?",
+        "bot": "Тариф Lite — это онлайн-касса + фискализация + учёт товаров и остатков. Standard добавляет к этому мультиточек, склад, закупки и отчёты в реальном времени. А что именно из этих функций важнее для вашей IT-сферы — скорость обработки или аналитика?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 7.49
+      },
+      {
+        "turn": 3,
+        "user": "У меня 1 магазин бытовой химии. Мне Lite хватит?",
+        "bot": "Для одного магазина бытовой химии Lite точно хватит — касса, учёт остатков и фискализация включены.",
+        "state": "autonomous_closing",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 2.27
+      },
+      {
+        "turn": 4,
+        "user": "А если я потом захочу добавить вторую точку?",
+        "bot": "Подробности по функционалу расскажет коллега — он подберёт решение под ваши задачи. Оставьте телефон или email.",
+        "state": "autonomous_closing",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 13,
+        "is_final": false,
+        "elapsed_s": 4.59
+      },
+      {
+        "turn": 5,
+        "user": "Сколько Lite стоит?",
+        "bot": "Lite стоит 150 000 ₸ в год. Это всё, что нужно для одного магазина: касса, фискализация и учёт остатков без лишних наворотов. Оставьте, пожалуйста, телефон или email — уточню детали и помогу оформить.",
+        "state": "autonomous_closing",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 18,
+        "is_final": false,
+        "elapsed_s": 7.52
+      },
+      {
+        "turn": 6,
+        "user": "Давайте оформим. ИИН 860315300789, телефон 87013214567",
+        "bot": "Спасибо за данные! Коллега позвонит вам для подтверждения оплаты.",
+        "state": "payment_ready",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 52,
+        "is_final": true,
+        "elapsed_s": 2.43
+      }
+    ]
+  },
+  {
+    "scenario": "s22_direct_competitor_compare",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Здравствуйте, я выбираю между вами и Poster. Чем вы лучше?",
+        "bot": "Wipon проще внедрять, чем Poster, — не нужен отдельный сервер, а настройка занимает меньше времени. Вам важнее всего сейчас получить контроль над продажами или упростить работу с кассой? Как к вам обращаться?",
+        "state": "greeting",
+        "intent": "competitor_dissatisfied",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 4.96
+      },
+      {
+        "turn": 2,
+        "user": "У Poster есть бесплатный тариф. У вас такой есть?",
+        "bot": "У нас нет бесплатного тарифа — минимальный Mini стоит 5 000 ₸ в месяц и включает только кассу с фискализацией. А в Poster что именно бесплатно?",
+        "state": "greeting",
+        "intent": "pricing_comparison",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.76
+      },
+      {
+        "turn": 3,
+        "user": "А по функционалу в чём разница? Только честно",
+        "bot": "А, по функционалу так: Poster силен в аналитике и отчётах, а мы в Wipon — в быстром внедрении и работе \"из коробки\". У нас, например, с нуля можно завести кассу за час, а с кассирами разберутся автоматически — никаких ручных настроек.",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 4.64
+      },
+      {
+        "turn": 4,
+        "user": "У меня кафе, 1 точка. Мне нужна интеграция с iiko",
+        "bot": "У нас есть готовая интеграция с iiko для общепита — заказы приходят напрямую на кухню, а продажи синхронизируются с кассой без ручного ввода. Расскажите, пожалуйста, телефон или email — покажу на примере, как это работает в кафе.",
+        "state": "autonomous_closing",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 2.68
+      },
+      {
+        "turn": 5,
+        "user": "А интеграция с Glovo/Wolt есть?",
+        "bot": "Да, у нас есть готовые интеграции с Glovo и Wolt: заказы автоматически передаются на кухню, а оплата поступает без ручного ввода данных. Оставьте, пожалуйста, контактный телефон или адрес электронной почты — покажу настройку на вашем примере.",
+        "state": "autonomous_closing",
+        "intent": "question_integrations",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 5.84
+      },
+      {
+        "turn": 6,
+        "user": "Ок, давайте попробуем. Звоните завтра, 87771119988",
+        "bot": "Ваше кафе на iiko — отлично, я покажу, как у вас заказы с доставки автоматически уходят на кухню, а продажи сразу попадают в отчётность.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 44,
+        "is_final": true,
+        "elapsed_s": 1.68
+      }
+    ]
+  }
+]

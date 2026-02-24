@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/data/checks.repository.ts:import:../../../common/utils/common",
+  "summary": "Этот код представляет собой репозиторий для работы с сущностью CheckDao, используя TypeORM. Он выполняет различные операции: подсчет чеков пользователя, получение уникальных чеков и загрузку чеков с деталями товаров. Также использует вспомогательные функции для форматирования данных и пагинации.",
+  "purpose": "Обеспечивает доступ к данным о чеках для отображения истории покупок и аналитики пользователей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подсчет чеков пользователя за определенный период",
+    "Получение уникальных чеков пользователя",
+    "Загрузка чеков с деталями товаров",
+    "Поддержка пагинации результатов",
+    "Использование вспомогательных функций для форматирования данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "common/dao/check.dao",
+    "common/utils/common",
+    "common/helpers/dataToResponse/checks-data-to-response"
+  ],
+  "input_tokens": 2868,
+  "output_tokens": 771,
+  "model": "qwen3:14b",
+  "code_hash": "6ef7aaa354c2b1ba"
+}

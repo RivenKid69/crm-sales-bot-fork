@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/presenter/users.controller.ts:import:../../auth/guard/auth.guard",
+  "summary": "Этот код создает контроллер для управления пользователями в приложении. Он использует декораторы и интерсепторы для обработки HTTP-запросов, валидации данных и аутентификации пользователей.",
+  "purpose": "Обеспечивает функционал для получения, обновления и удаления информации о пользователях, а также защиту маршрутов от неавторизованных доступов.",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение информации о пользователе",
+    "Обновление данных пользователя",
+    "Удаление пользователя",
+    "Аутентификация через AuthGuard",
+    "Использование Swagger для документирования API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "User",
+    "UsersService",
+    "UserDao",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1590,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "1808cadd56fd9cc7"
+}

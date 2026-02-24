@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:./use-cases/count-users-active-subscription.use-case",
+  "summary": "Этот код импортирует различные модули и сервисы для работы с подписками в приложении. Он использует репозитории, DTO, use-cases и сервисы для управления подписками, пользователями и устройствами.",
+  "purpose": "Обеспечивает функционал для управления подписками, проверки активных подписок и взаимодействия с пользователями и устройствами.",
+  "domain": "подписки, пользователи, устройства",
+  "key_behaviors": [
+    "Проверка активной подписки по номеру телефона",
+    "Поиск пользователя по номеру телефона",
+    "Работа с репозиторием подписок",
+    "Использование use-case для подсчета активных подписок",
+    "Интеграция с сервисом оплаты"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "common/helpers/datetime",
+    "common/utils/common",
+    "common/dao/user.dao",
+    "common/dao/device.dao",
+    "common/dao/subscription.dao",
+    "common/services/billing/billing.service"
+  ],
+  "input_tokens": 2564,
+  "output_tokens": 788,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

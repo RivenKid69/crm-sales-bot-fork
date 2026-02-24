@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/doomguy/doomguy.service.ts:import:../../logger/error-logger",
+  "summary": "Этот код создает сервис, который отправляет сообщения в Slack через HTTP-запросы. Он логирует ошибки, использует настройки приложения и формирует сообщения с данными пользователей и ошибок.",
+  "purpose": "Нужен для отправки уведомлений в Slack о действиях пользователей, SMS-статусах и ошибках в приложении",
+  "domain": "messaging",
+  "key_behaviors": [
+    "Отправка сообщений в Slack через webhook",
+    "Логирование ошибок с детализацией",
+    "Использование разных каналов в зависимости от окружения",
+    "Форматирование сообщений с данными пользователей и ошибок",
+    "Использование кастомного логгера для ошибок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "error-logger",
+    "app.config",
+    "getNowAlmatyTime",
+    "PostCallbackDto"
+  ],
+  "input_tokens": 2602,
+  "output_tokens": 750,
+  "model": "qwen3:14b",
+  "code_hash": "4e3be25ad0adb3a0"
+}

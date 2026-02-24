@@ -1,0 +1,1058 @@
+[
+  {
+    "id": 132672,
+    "create_time": "2025-12-04T18:55:13.431Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите , с какого вы города ?"
+  },
+  {
+    "id": 132660,
+    "create_time": "2025-12-04T18:51:14.212Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте!"
+  },
+  {
+    "id": 132661,
+    "create_time": "2025-12-04T18:51:20.729Z",
+    "author_type": "client",
+    "sent_content": "Магазин игрушек у нас."
+  },
+  {
+    "id": 132662,
+    "create_time": "2025-12-04T18:51:23.922Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте! Я Айлана из Wipon. Как к вам обращаться?"
+  },
+  {
+    "id": 132663,
+    "create_time": "2025-12-04T18:51:31.678Z",
+    "author_type": "ai",
+    "sent_content": "Спасибо! Что сейчас нужно: онлайн‑касса и ОФД или товароучёт/оборудование?"
+  },
+  {
+    "id": 132664,
+    "create_time": "2025-12-04T18:51:45.576Z",
+    "author_type": "client",
+    "sent_content": "Нурсултан"
+  },
+  {
+    "id": 132665,
+    "create_time": "2025-12-04T18:51:56.002Z",
+    "author_type": "ai",
+    "sent_content": "Приятно познакомиться, Нурсултан! Теперь про вашу нужду: что предпочтительнее — онлайн‑касса и ОФД или товароучёт/оборудование?"
+  },
+  {
+    "id": 132666,
+    "create_time": "2025-12-04T18:51:57.223Z",
+    "author_type": "client",
+    "sent_content": "Нужно все"
+  },
+  {
+    "id": 132667,
+    "create_time": "2025-12-04T18:52:09.043Z",
+    "author_type": "ai",
+    "sent_content": "Поняла. Wipon предлагает бесплатную онлайн‑кассу, мы поможем с регистрацией ОФД и товарами. Также у нас есть решения для товароучёта. \n\nЕсть вопросы по этому поводу?"
+  },
+  {
+    "id": 132668,
+    "create_time": "2025-12-04T18:52:10.109Z",
+    "author_type": "client",
+    "sent_content": "Кажется это ИИ)"
+  },
+  {
+    "id": 132671,
+    "create_time": "2025-12-04T18:55:01.756Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый вечер ! Это Дана с компании Вайпон"
+  },
+  {
+    "id": 135852,
+    "create_time": "2025-12-07T15:17:44.630Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 135858,
+    "create_time": "2025-12-07T15:20:32.022Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 136791,
+    "create_time": "2025-12-08T09:12:39.324Z",
+    "author_type": "client",
+    "sent_content": "Доброе утро!"
+  },
+  {
+    "id": 136829,
+    "create_time": "2025-12-08T09:24:32.449Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доброе утро!"
+  },
+  {
+    "id": 136831,
+    "create_time": "2025-12-08T09:24:41.744Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 136833,
+    "create_time": "2025-12-08T09:24:48.514Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно ИИН"
+  },
+  {
+    "id": 136841,
+    "create_time": "2025-12-08T09:25:02.659Z",
+    "author_type": "client",
+    "sent_content": "Для чего?"
+  },
+  {
+    "id": 136847,
+    "create_time": "2025-12-08T09:25:57.247Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Это для гарантийного талона"
+  },
+  {
+    "id": 136859,
+    "create_time": "2025-12-08T09:28:00.836Z",
+    "author_type": "client",
+    "sent_content": "Выставьте мне счет для начала\nРассрочку оформить"
+  },
+  {
+    "id": 136863,
+    "create_time": "2025-12-08T09:31:29.617Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо, мы отправим два счета \nОборудование отдельно программа отдельно"
+  },
+  {
+    "id": 136864,
+    "create_time": "2025-12-08T09:31:36.058Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 137023,
+    "create_time": "2025-12-08T09:58:33.295Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "нет, сбои не так часто"
+  },
+  {
+    "id": 137032,
+    "create_time": "2025-12-08T09:59:14.862Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Неделю  назад мы сервера меняли и тогда тех поддержка перегрузилась"
+  },
+  {
+    "id": 137039,
+    "create_time": "2025-12-08T09:59:31.455Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В тот момент были отзывы по ней"
+  },
+  {
+    "id": 137040,
+    "create_time": "2025-12-08T09:59:36.133Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас уже все стабильно"
+  },
+  {
+    "id": 137044,
+    "create_time": "2025-12-08T10:00:11.214Z",
+    "author_type": "client",
+    "sent_content": "В целом сколько лет уже работаете?"
+  },
+  {
+    "id": 137048,
+    "create_time": "2025-12-08T10:00:46.251Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "с 2011"
+  },
+  {
+    "id": 137059,
+    "create_time": "2025-12-08T10:03:06.576Z",
+    "author_type": "client",
+    "sent_content": "Моноблок этот самый топовый у вас?"
+  },
+  {
+    "id": 137061,
+    "create_time": "2025-12-08T10:03:10.134Z",
+    "author_type": "client",
+    "sent_content": "Или еще другие есть?"
+  },
+  {
+    "id": 137065,
+    "create_time": "2025-12-08T10:04:41.953Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "на данный момент из того что в наличии"
+  },
+  {
+    "id": 137066,
+    "create_time": "2025-12-08T10:04:44.036Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "этот"
+  },
+  {
+    "id": 137070,
+    "create_time": "2025-12-08T10:05:49.805Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Есть этот он сейчас 240,000тг стоит \nНо он маленький и лежачий"
+  },
+  {
+    "id": 137072,
+    "create_time": "2025-12-08T10:05:53.341Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 137074,
+    "create_time": "2025-12-08T10:06:05.758Z",
+    "author_type": "client",
+    "sent_content": "Да вот видел его"
+  },
+  {
+    "id": 137077,
+    "create_time": "2025-12-08T10:06:22.910Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "некоторым не удобен"
+  },
+  {
+    "id": 137078,
+    "create_time": "2025-12-08T10:06:28.836Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "но тоже хороший"
+  },
+  {
+    "id": 137079,
+    "create_time": "2025-12-08T10:06:32.630Z",
+    "author_type": "client",
+    "sent_content": "В одно стороны да"
+  },
+  {
+    "id": 137085,
+    "create_time": "2025-12-08T10:08:00.436Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 137087,
+    "create_time": "2025-12-08T10:08:45.519Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 137147,
+    "create_time": "2025-12-08T10:24:35.895Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Получилось оплатить ?"
+  },
+  {
+    "id": 138404,
+    "create_time": "2025-12-08T14:02:26.602Z",
+    "author_type": "client",
+    "sent_content": "Оплатил"
+  },
+  {
+    "id": 138405,
+    "create_time": "2025-12-08T14:02:44.662Z",
+    "author_type": "client",
+    "sent_content": "За программу чуть позже, к приезду Вашему"
+  },
+  {
+    "id": 138407,
+    "create_time": "2025-12-08T14:03:19.986Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас я открою вам личный кабинет вам придет код можете подсказать"
+  },
+  {
+    "id": 138408,
+    "create_time": "2025-12-08T14:03:30.048Z",
+    "author_type": "client",
+    "sent_content": "Давайте"
+  },
+  {
+    "id": 138410,
+    "create_time": "2025-12-08T14:05:27.589Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправил"
+  },
+  {
+    "id": 138411,
+    "create_time": "2025-12-08T14:05:51.029Z",
+    "author_type": "client",
+    "sent_content": "2023"
+  },
+  {
+    "id": 138426,
+    "create_time": "2025-12-08T14:08:02.209Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Адрес можно"
+  },
+  {
+    "id": 138429,
+    "create_time": "2025-12-08T14:08:41.233Z",
+    "author_type": "client",
+    "sent_content": "Papmam_nukupi\nhttps://2gis.kz/astana/geo/70000001109930463"
+  },
+  {
+    "id": 138435,
+    "create_time": "2025-12-08T14:09:10.960Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Принял"
+  },
+  {
+    "id": 138438,
+    "create_time": "2025-12-08T14:09:23.880Z",
+    "author_type": "client",
+    "sent_content": "Будем ждать"
+  },
+  {
+    "id": 138482,
+    "create_time": "2025-12-08T14:12:44.197Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно *"
+  },
+  {
+    "id": 138496,
+    "create_time": "2025-12-08T14:13:19.289Z",
+    "author_type": "client",
+    "sent_content": "Мой?"
+  },
+  {
+    "id": 138497,
+    "create_time": "2025-12-08T14:13:23.279Z",
+    "author_type": "client",
+    "sent_content": "Или ИП?"
+  },
+  {
+    "id": 138504,
+    "create_time": "2025-12-08T14:13:57.229Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИП"
+  },
+  {
+    "id": 138506,
+    "create_time": "2025-12-08T14:14:10.784Z",
+    "author_type": "client",
+    "sent_content": "Это для чего?"
+  },
+  {
+    "id": 138507,
+    "create_time": "2025-12-08T14:14:14.466Z",
+    "author_type": "client",
+    "sent_content": "Потом можно поменять"
+  },
+  {
+    "id": 138521,
+    "create_time": "2025-12-08T14:15:59.686Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Это для гарантийного и  личного кабинета"
+  },
+  {
+    "id": 138524,
+    "create_time": "2025-12-08T14:16:59.845Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Желательно точный что бы не менять"
+  },
+  {
+    "id": 138550,
+    "create_time": "2025-12-08T14:30:33.090Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам моноблок белый или черный ?"
+  },
+  {
+    "id": 138552,
+    "create_time": "2025-12-08T14:30:42.354Z",
+    "author_type": "client",
+    "sent_content": "Белый"
+  },
+  {
+    "id": 138553,
+    "create_time": "2025-12-08T14:30:45.457Z",
+    "author_type": "client",
+    "sent_content": "Симпатичнее"
+  },
+  {
+    "id": 138555,
+    "create_time": "2025-12-08T14:31:16.235Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 138562,
+    "create_time": "2025-12-08T14:31:53.091Z",
+    "author_type": "client",
+    "sent_content": "Подарок будет какой-нибудь?)"
+  },
+  {
+    "id": 138564,
+    "create_time": "2025-12-08T14:32:02.134Z",
+    "author_type": "client",
+    "sent_content": "Все так оборудование и программу берем"
+  },
+  {
+    "id": 138573,
+    "create_time": "2025-12-08T14:33:55.929Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1 рулон этикеток вам в подарок 🤗"
+  },
+  {
+    "id": 138636,
+    "create_time": "2025-12-08T14:42:22.914Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно ИИН"
+  },
+  {
+    "id": 138641,
+    "create_time": "2025-12-08T14:42:47.221Z",
+    "author_type": "client",
+    "sent_content": "960426451016"
+  },
+  {
+    "id": 138644,
+    "create_time": "2025-12-08T14:42:56.461Z",
+    "author_type": "client",
+    "sent_content": "Так много😅"
+  },
+  {
+    "id": 138650,
+    "create_time": "2025-12-08T14:46:49.585Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если честно я выпросил у руководителя 😅😅"
+  },
+  {
+    "id": 141487,
+    "create_time": "2025-12-09T12:34:53.412Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 141493,
+    "create_time": "2025-12-09T12:35:20.428Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы сегодня отправим вам сканер и рулоны чеков"
+  },
+  {
+    "id": 141495,
+    "create_time": "2025-12-09T12:35:24.045Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам сколько шт ?"
+  },
+  {
+    "id": 141515,
+    "create_time": "2025-12-09T12:36:33.395Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "да"
+  },
+  {
+    "id": 141536,
+    "create_time": "2025-12-09T12:37:43.010Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "29 на 20 есть \n58 на 40 есть"
+  },
+  {
+    "id": 141542,
+    "create_time": "2025-12-09T12:38:00.821Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сколько штук вам"
+  },
+  {
+    "id": 141552,
+    "create_time": "2025-12-09T12:38:41.117Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы сегодня их отправим со сканером"
+  },
+  {
+    "id": 141566,
+    "create_time": "2025-12-09T12:39:39.415Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 142024,
+    "create_time": "2025-12-09T13:22:29.499Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "58mm"
+  },
+  {
+    "id": 143403,
+    "create_time": "2025-12-09T15:49:58.006Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Извините, не успеваем отправить до 16:30 поставщик задерживает поставку можно мы вам до вечера отправить?"
+  },
+  {
+    "id": 143506,
+    "create_time": "2025-12-09T16:00:10.208Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 143508,
+    "create_time": "2025-12-09T16:00:21.005Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "спасибо"
+  },
+  {
+    "id": 168968,
+    "create_time": "2025-12-15T11:37:26.612Z",
+    "author_type": "ai",
+    "sent_content": "Пожалуйста, уточните, какие именно данные нужно изменить?"
+  },
+  {
+    "id": 168975,
+    "create_time": "2025-12-15T11:37:58.764Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте! \nПросим Вас обратиться в техническую поддержку:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77003007300\nИли можете сразу написать по WhatsApp по ссылке: https://wa.me/77003007300\n\nСәлеметсіз бе!\nТехникалық қолдауға хабарласуыңызды өтінеміз:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77003007300\nНемесе мына сілтеме арқылы WhatsApp-қа тікелей жаза аласыз: https://wa.me/77003007300"
+  },
+  {
+    "id": 168976,
+    "create_time": "2025-12-15T11:38:08.990Z",
+    "author_type": "client",
+    "sent_content": "ИП Пап-мам ну купи"
+  },
+  {
+    "id": 168994,
+    "create_time": "2025-12-15T11:39:13.651Z",
+    "author_type": "client",
+    "sent_content": "900122351244"
+  },
+  {
+    "id": 169045,
+    "create_time": "2025-12-15T11:42:20.744Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Напишите ваш запрос в тех поддержку они вам исправят"
+  },
+  {
+    "id": 177754,
+    "create_time": "2025-12-17T13:20:34.804Z",
+    "author_type": "client",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 177755,
+    "create_time": "2025-12-17T13:20:49.720Z",
+    "author_type": "ai",
+    "sent_content": "Добрый день! Как могу помочь?"
+  },
+  {
+    "id": 177756,
+    "create_time": "2025-12-17T13:20:58.936Z",
+    "author_type": "client",
+    "sent_content": "Что-то так долго мы ждем пока ответа, звонка по изменениям"
+  },
+  {
+    "id": 177758,
+    "create_time": "2025-12-17T13:21:11.895Z",
+    "author_type": "ai",
+    "sent_content": "Извините за ожидание. Дайте мне уточнить информацию и передать ваши данные менеджеру. Могу узнать, какие изменения нужно внести?"
+  },
+  {
+    "id": 177760,
+    "create_time": "2025-12-17T13:22:05.737Z",
+    "author_type": "client",
+    "sent_content": "Мы заказали денежный ящик"
+  },
+  {
+    "id": 177761,
+    "create_time": "2025-12-17T13:22:18.855Z",
+    "author_type": "ai",
+    "sent_content": "Поняла. Я передам вашу заявку ещё раз, чтобы уточнить информацию по денежному ящику. Ожидайте, пожалуйста, звонка менеджера."
+  },
+  {
+    "id": 177762,
+    "create_time": "2025-12-17T13:22:25.219Z",
+    "author_type": "client",
+    "sent_content": "И чтобы менеджер приехал к нам для изменений технических"
+  },
+  {
+    "id": 177763,
+    "create_time": "2025-12-17T13:22:35.725Z",
+    "author_type": "ai",
+    "sent_content": "Хорошо, укажу, что необходимо техническое изменение на месте. Передаю заявку менеджеру с этой информацией. Ждите звонка."
+  },
+  {
+    "id": 136447,
+    "create_time": "2025-12-07T20:45:04.833Z",
+    "author_type": "client",
+    "sent_content": "Добрый вечер"
+  },
+  {
+    "id": 136448,
+    "create_time": "2025-12-07T20:45:19.463Z",
+    "author_type": "client",
+    "sent_content": "Тут поменяйте на сканер беспроводной"
+  },
+  {
+    "id": 136449,
+    "create_time": "2025-12-07T20:46:43.888Z",
+    "author_type": "client",
+    "sent_content": "И счет на этот номер выставите"
+  },
+  {
+    "id": 136912,
+    "create_time": "2025-12-08T09:39:33.035Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "отправили оба счета"
+  },
+  {
+    "id": 136929,
+    "create_time": "2025-12-08T09:45:51.887Z",
+    "author_type": "client",
+    "sent_content": "Второй счет общий?"
+  },
+  {
+    "id": 136933,
+    "create_time": "2025-12-08T09:46:37.700Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "нет"
+  },
+  {
+    "id": 136937,
+    "create_time": "2025-12-08T09:46:57.313Z",
+    "author_type": "client",
+    "sent_content": "456 это без программы?"
+  },
+  {
+    "id": 136938,
+    "create_time": "2025-12-08T09:47:06.163Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок 220,000\nПринтер чеков 15,000\nПринтер этикеток 30,000\nСканер проводной 17,000\nСканер стационарный 24,000\nПрограмма учета 150,000\n456,000,"
+  },
+  {
+    "id": 136939,
+    "create_time": "2025-12-08T09:47:06.776Z",
+    "author_type": "client",
+    "sent_content": "Не верно же"
+  },
+  {
+    "id": 136940,
+    "create_time": "2025-12-08T09:47:12.908Z",
+    "author_type": "client",
+    "sent_content": "Ну вот"
+  },
+  {
+    "id": 136941,
+    "create_time": "2025-12-08T09:47:24.129Z",
+    "author_type": "client",
+    "sent_content": "Вы же мне отправили два счета, отдельно 150"
+  },
+  {
+    "id": 136942,
+    "create_time": "2025-12-08T09:47:26.267Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "а нет извините"
+  },
+  {
+    "id": 136943,
+    "create_time": "2025-12-08T09:47:26.937Z",
+    "author_type": "client",
+    "sent_content": "Или еще 456"
+  },
+  {
+    "id": 136944,
+    "create_time": "2025-12-08T09:47:35.533Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ошибся"
+  },
+  {
+    "id": 136945,
+    "create_time": "2025-12-08T09:48:15.565Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "306,000"
+  },
+  {
+    "id": 136946,
+    "create_time": "2025-12-08T09:48:21.101Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "сейчас выставим"
+  },
+  {
+    "id": 136955,
+    "create_time": "2025-12-08T09:50:11.359Z",
+    "author_type": "client",
+    "sent_content": "Дайте расшифровку"
+  },
+  {
+    "id": 136963,
+    "create_time": "2025-12-08T09:51:01.178Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок 220,000\nПринтер чеков 15,000\nПринтер этикеток 30,000\nСканер проводной 17,000\nСканер стационарный 24,000"
+  },
+  {
+    "id": 136973,
+    "create_time": "2025-12-08T09:51:48.487Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 137001,
+    "create_time": "2025-12-08T09:55:15.055Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если оплата пройдет можете отправить чек"
+  },
+  {
+    "id": 137006,
+    "create_time": "2025-12-08T09:55:38.454Z",
+    "author_type": "client",
+    "sent_content": "Что-то пишут, что тех поддержка работает слабо"
+  },
+  {
+    "id": 137008,
+    "create_time": "2025-12-08T09:55:59.278Z",
+    "author_type": "client",
+    "sent_content": "Часто бывают сбои?"
+  },
+  {
+    "id": 138285,
+    "create_time": "2025-12-08T13:50:05.996Z",
+    "author_type": "client",
+    "sent_content": "Сейчас оплачу"
+  },
+  {
+    "id": 138286,
+    "create_time": "2025-12-08T13:50:10.234Z",
+    "author_type": "client",
+    "sent_content": "Сегодня привести смогут?"
+  },
+  {
+    "id": 138297,
+    "create_time": "2025-12-08T13:51:34.554Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Уточню"
+  },
+  {
+    "id": 138299,
+    "create_time": "2025-12-08T13:51:50.022Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "мы отправить сможем по обучению уточню есть ли свободный менеджер"
+  },
+  {
+    "id": 138300,
+    "create_time": "2025-12-08T13:52:01.169Z",
+    "author_type": "client",
+    "sent_content": "Давайте жду"
+  },
+  {
+    "id": 138301,
+    "create_time": "2025-12-08T13:52:03.129Z",
+    "author_type": "client",
+    "sent_content": "Надо бы"
+  },
+  {
+    "id": 138481,
+    "create_time": "2025-12-08T14:12:41.094Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "жно ИИН"
+  },
+  {
+    "id": 138339,
+    "create_time": "2025-12-08T13:57:04.890Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сегодня к 17 00 можем приехать"
+  },
+  {
+    "id": 138342,
+    "create_time": "2025-12-08T13:57:12.751Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 138343,
+    "create_time": "2025-12-08T13:57:14.610Z",
+    "author_type": "client",
+    "sent_content": "Давайте"
+  },
+  {
+    "id": 138344,
+    "create_time": "2025-12-08T13:57:19.464Z",
+    "author_type": "client",
+    "sent_content": "Договор будем составлять?"
+  },
+  {
+    "id": 138350,
+    "create_time": "2025-12-08T13:57:38.441Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "все тогда бронирую"
+  },
+  {
+    "id": 138364,
+    "create_time": "2025-12-08T13:58:42.685Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У нас публичная оферта"
+  },
+  {
+    "id": 138366,
+    "create_time": "2025-12-08T13:58:55.815Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Публичная оферта Wipon _1_ _1_.pdf"
+  },
+  {
+    "id": 138680,
+    "create_time": "2025-12-08T14:54:45.888Z",
+    "author_type": "client",
+    "sent_content": "Чек ленту и этикет ленты положите?"
+  },
+  {
+    "id": 138682,
+    "create_time": "2025-12-08T14:54:51.833Z",
+    "author_type": "client",
+    "sent_content": "Сколько надо на первое время?"
+  },
+  {
+    "id": 138683,
+    "create_time": "2025-12-08T14:55:07.857Z",
+    "author_type": "client",
+    "sent_content": "Этикет лента сколько размер или количество?"
+  },
+  {
+    "id": 138688,
+    "create_time": "2025-12-08T14:55:43.355Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Чековая лента там есть , этикетки положим"
+  },
+  {
+    "id": 138691,
+    "create_time": "2025-12-08T14:56:06.135Z",
+    "author_type": "client",
+    "sent_content": "В одном рулоне сколько штук или как?"
+  },
+  {
+    "id": 138692,
+    "create_time": "2025-12-08T14:56:08.461Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Этикеток там 700шт \nЛента один рулон"
+  },
+  {
+    "id": 138714,
+    "create_time": "2025-12-08T15:00:05.101Z",
+    "author_type": "client",
+    "sent_content": "Положите еще одну"
+  },
+  {
+    "id": 138715,
+    "create_time": "2025-12-08T15:00:15.881Z",
+    "author_type": "client",
+    "sent_content": "Чековая лента сколько штук?"
+  },
+  {
+    "id": 138718,
+    "create_time": "2025-12-08T15:01:14.672Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Там от завода один рулон в коробке"
+  },
+  {
+    "id": 138720,
+    "create_time": "2025-12-08T15:01:36.142Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В наличии нет сейчас у нас"
+  },
+  {
+    "id": 138731,
+    "create_time": "2025-12-08T15:05:29.064Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 138745,
+    "create_time": "2025-12-08T15:06:56.774Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "🤝"
+  },
+  {
+    "id": 141651,
+    "create_time": "2025-12-09T12:46:09.078Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 141657,
+    "create_time": "2025-12-09T12:46:34.899Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Чековых сколько шт? \nОни по 250тг"
+  },
+  {
+    "id": 141667,
+    "create_time": "2025-12-09T12:47:47.035Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1100"
+  },
+  {
+    "id": 141675,
+    "create_time": "2025-12-09T12:48:46.943Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1600шт в рулоне"
+  },
+  {
+    "id": 141735,
+    "create_time": "2025-12-09T12:55:46.510Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "20метров"
+  },
+  {
+    "id": 149980,
+    "create_time": "2025-12-10T15:20:55.261Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 150000,
+    "create_time": "2025-12-10T15:24:27.019Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На какой адрес ?"
+  },
+  {
+    "id": 150938,
+    "create_time": "2025-12-10T16:56:37.682Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас уточню"
+  },
+  {
+    "id": 155743,
+    "create_time": "2025-12-11T17:00:08.590Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 155750,
+    "create_time": "2025-12-11T17:00:36.482Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 155770,
+    "create_time": "2025-12-11T17:02:18.136Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 168966,
+    "create_time": "2025-12-15T11:37:18.110Z",
+    "author_type": "client",
+    "sent_content": "Нам нужно изменить данные"
+  },
+  {
+    "id": 168961,
+    "create_time": "2025-12-15T11:37:04.470Z",
+    "author_type": "client",
+    "sent_content": "Приветствую Вас"
+  },
+  {
+    "id": 168964,
+    "create_time": "2025-12-15T11:37:13.181Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте! Как могу помочь?"
+  },
+  {
+    "id": 175952,
+    "create_time": "2025-12-16T20:14:20.313Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 175953,
+    "create_time": "2025-12-16T20:14:25.045Z",
+    "author_type": "client",
+    "sent_content": "Можно дакать денежный ящик?"
+  },
+  {
+    "id": 175954,
+    "create_time": "2025-12-16T20:14:39.761Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте! Да, Wipon поддерживает подключение денежного ящика к онлайн‑кассе. Вам нужна помощь с выбором или настройкой?"
+  },
+  {
+    "id": 175956,
+    "create_time": "2025-12-16T20:15:01.643Z",
+    "author_type": "client",
+    "sent_content": "Да, выберем давайте"
+  },
+  {
+    "id": 175959,
+    "create_time": "2025-12-16T20:15:15.012Z",
+    "author_type": "ai",
+    "sent_content": "Отлично! Какой тип денежного ящика вас интересует? Мы можем предложить разные варианты."
+  },
+  {
+    "id": 175964,
+    "create_time": "2025-12-16T20:15:35.320Z",
+    "author_type": "client",
+    "sent_content": "Давайте с 5 отделениями для купюр"
+  },
+  {
+    "id": 175966,
+    "create_time": "2025-12-16T20:15:40.103Z",
+    "author_type": "client",
+    "sent_content": "За 21к может"
+  },
+  {
+    "id": 175967,
+    "create_time": "2025-12-16T20:15:55.660Z",
+    "author_type": "ai",
+    "sent_content": "По цене лучше обсудить на звонке — подберём оптимальный вариант под вашу задачу. Я передам вашу заявку менеджеру. Ждете, когда свяжутся?"
+  },
+  {
+    "id": 175968,
+    "create_time": "2025-12-16T20:16:05.688Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 175969,
+    "create_time": "2025-12-16T20:16:26.128Z",
+    "author_type": "ai",
+    "sent_content": "Передаю вашу заявку специалисту. Мы работаем Пн–Пт 09:00–17:30; вам позвонят в ближайшее свободное окно."
+  },
+  {
+    "id": 175970,
+    "create_time": "2025-12-16T20:16:34.907Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 175973,
+    "create_time": "2025-12-16T20:16:44.989Z",
+    "author_type": "ai",
+    "sent_content": "Готово. Если будут вопросы, обращайтесь!"
+  },
+  {
+    "id": 175975,
+    "create_time": "2025-12-16T20:16:56.478Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 175978,
+    "create_time": "2025-12-16T20:17:10.152Z",
+    "author_type": "ai",
+    "sent_content": "Спасибо! Хорошего дня!"
+  },
+  {
+    "id": 135924,
+    "create_time": "2025-12-07T15:41:43.929Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 135973,
+    "create_time": "2025-12-07T15:50:26.610Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 135978,
+    "create_time": "2025-12-07T15:52:31.800Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "нет там такого нет"
+  },
+  {
+    "id": 138160,
+    "create_time": "2025-12-08T13:16:17.144Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Что вы решили ?"
+  },
+  {
+    "id": 141766,
+    "create_time": "2025-12-09T12:57:34.349Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "30"
+  }
+]

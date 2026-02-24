@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/count-users-active-subscription.use-case.ts:method:CountUsersActiveSubscriptionUseCase:constructor",
+  "summary": "Этот код считает количество активных подписок у пользователя. Он использует репозиторий для поиска записей, где user_id совпадает с переданным userId и флаг is_active равен true.",
+  "purpose": "Позволяет проверить, есть ли у пользователя активная подписка (например, для ограничения доступа к функциям)",
+  "domain": "управление подписками",
+  "key_behaviors": [
+    "Считает активные подписки пользователя",
+    "Фильтрует по user_id и статусу подписки",
+    "Использует TypeORM репозиторий для запросов",
+    "Возвращает результат как Promise<number>",
+    "Поддерживает внедрение зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1135,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "75c5050abd21ff28"
+}

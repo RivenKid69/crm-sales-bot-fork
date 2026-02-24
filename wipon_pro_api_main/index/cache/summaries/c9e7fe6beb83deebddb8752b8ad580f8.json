@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:import:../dto/update-notification-status.dto",
+  "summary": "Этот код создает сервис для работы с уведомлениями. Он может отправлять уведомления, удалять их, менять статус и получать уведомления пользователя. Также есть функция для массовой отправки уведомлений.",
+  "purpose": "Сервис нужен для управления уведомлениями в приложении, например, для уведомления пользователей о новых сообщениях или событиях.",
+  "domain": "уведомления, пользовательский интерфейс, мобильные приложения",
+  "key_behaviors": [
+    "Отправка уведомлений отдельному пользователю",
+    "Массовая отправка уведомлений нескольким пользователям",
+    "Изменение статуса уведомления (прочитано/не прочитано)",
+    "Удаление уведомления",
+    "Получение списка уведомлений пользователя"
+  ],
+  "dependencies_used": [
+    "NotificationsRepository",
+    "PushService",
+    "FindUserByIdUseCase",
+    "UserDao",
+    "NotificationDao"
+  ],
+  "input_tokens": 1930,
+  "output_tokens": 777,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:import:../../common/logger/request-logger",
+  "summary": "Этот код импортирует различные модули и зависимости для создания сервиса аутентификации, который взаимодействует с внешними API и использует кэш для хранения данных. Он также использует логгер для записи информации о запросах и ответах.",
+  "purpose": "Сервис используется для проверки подлинности товаров через внешние API и сохранения результатов в кэше для повышения производительности.",
+  "domain": "авторизация, API, кэширование, логирование",
+  "key_behaviors": [
+    "Взаимодействие с внешними API для проверки подлинности товаров",
+    "Использование кэша для хранения результатов запросов",
+    "Логирование информации о запросах и ответах",
+    "Использование конфигурационных файлов для настройки поведения сервиса",
+    "Интеграция с другими сервисами, такими как Doomguy и FindOrCreateProductUseCase"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager",
+    "locutus/php/strings/substr",
+    "https"
+  ],
+  "input_tokens": 2762,
+  "output_tokens": 794,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

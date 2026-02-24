@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:method:StoresService:\n        break",
+  "summary": "Этот метод проверяет наличие активной подписки у пользователя через лицензию магазина, получает данные магазина по пользователю и обновляет информацию о магазине. Использует валидацию, базу данных и внешние сервисы для поиска регионов и подписок.",
+  "purpose": "Обеспечивает корректную работу с данными магазинов, проверку активности подписки и взаимодействие с другими частями приложения",
+  "domain": "база данных, авторизация, бизнес-логика",
+  "key_behaviors": [
+    "Проверка активной подписки по лицензии",
+    "Получение данных магазина по пользователю",
+    "Валидация входных данных",
+    "Интеграция с сервисами поиска регионов и подписок",
+    "Обновление информации о магазине"
+  ],
+  "dependencies_used": [
+    "StoresRepository",
+    "FindRegionByNameUseCase",
+    "FindRegionByIdUseCase",
+    "FindDgdByNameUseCase",
+    "CountUsersActiveSubscriptionUseCase",
+    "validateOrReject"
+  ],
+  "input_tokens": 3061,
+  "output_tokens": 791,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

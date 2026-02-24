@@ -1,0 +1,506 @@
+[
+  {
+    "id": 46509,
+    "create_time": "2025-11-05T16:34:31.476Z",
+    "author_type": "client",
+    "sent_content": "Установка сегодня будет ?"
+  },
+  {
+    "id": 46511,
+    "create_time": "2025-11-05T16:34:47.718Z",
+    "author_type": "client",
+    "sent_content": "Сказали что к вам поступит, сразу же доставит"
+  },
+  {
+    "id": 46512,
+    "create_time": "2025-11-05T16:34:53.050Z",
+    "author_type": "client",
+    "sent_content": "Так и ответ не дали"
+  },
+  {
+    "id": 35836,
+    "create_time": "2025-10-31T21:53:53.269Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 35837,
+    "create_time": "2025-10-31T21:53:53.306Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 35838,
+    "create_time": "2025-10-31T21:53:53.324Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте!\n\nПишу из приложения 2ГИС."
+  },
+  {
+    "id": 35839,
+    "create_time": "2025-10-31T21:53:53.672Z",
+    "author_type": "client",
+    "sent_content": "Завтра вы работаете?"
+  },
+  {
+    "id": 35840,
+    "create_time": "2025-10-31T21:53:54.015Z",
+    "author_type": "client",
+    "sent_content": "Хотела приобрести аппарат"
+  },
+  {
+    "id": 36367,
+    "create_time": "2025-11-01T10:03:37.607Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!\nБлагодарим за обращение в компанию Wipon.\nМеня зовут Сабыр, буду Вашим персональным менеджером.\nПодскажите, как могу к Вам обращаться?"
+  },
+  {
+    "id": 36379,
+    "create_time": "2025-11-01T10:06:15.849Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте! Чем мы можем вам помочь?"
+  },
+  {
+    "id": 36380,
+    "create_time": "2025-11-01T10:06:15.875Z",
+    "author_type": "client",
+    "sent_content": "Алтынай"
+  },
+  {
+    "id": 36459,
+    "create_time": "2025-11-01T10:17:38.863Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рад знакомству!\nЧтобы предложить лучшее решение, уточните пожалуйста пару моментов (это займет 2-3минуты):\n1. У Вас ИП или ТОО, чем занимаетесь (сфера)?\n2. Какой город?\n3. Пользуетесь ли Вы в данный момент автоматизацией бизнеса?\n4. В течении какого времени Вам необходим продукт?"
+  },
+  {
+    "id": 36884,
+    "create_time": "2025-11-01T11:24:43.390Z",
+    "author_type": "client",
+    "sent_content": "ИП \nГород Астана"
+  },
+  {
+    "id": 36888,
+    "create_time": "2025-11-01T11:24:53.846Z",
+    "author_type": "client",
+    "sent_content": "В течение дня )"
+  },
+  {
+    "id": 36889,
+    "create_time": "2025-11-01T11:24:55.646Z",
+    "author_type": "client",
+    "sent_content": "Надо"
+  },
+  {
+    "id": 36913,
+    "create_time": "2025-11-01T11:29:44.593Z",
+    "author_type": "client",
+    "sent_content": "Вы сегодня работете?0"
+  },
+  {
+    "id": 36916,
+    "create_time": "2025-11-01T11:30:13.532Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Адрес г.Астана пр.Туран 19/2 БЦ Estra 3 этаж"
+  },
+  {
+    "id": 36918,
+    "create_time": "2025-11-01T11:30:31.861Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "оз адресынызды жибересизбе:"
+  },
+  {
+    "id": 36925,
+    "create_time": "2025-11-01T11:31:01.136Z",
+    "author_type": "client",
+    "sent_content": "Жанадария 126/1 \nТД Омар"
+  },
+  {
+    "id": 36969,
+    "create_time": "2025-11-01T11:35:12.007Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сиздин заявканызды кабылдадым \nпонедельник 16-00 комплект стандарт+ оборудованиясымен сизде боламыз"
+  },
+  {
+    "id": 36971,
+    "create_time": "2025-11-01T11:35:33.399Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 36977,
+    "create_time": "2025-11-01T11:35:57.268Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Каталог 13 окт _1_.pdf"
+  },
+  {
+    "id": 36984,
+    "create_time": "2025-11-01T11:36:17.478Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 36989,
+    "create_time": "2025-11-01T11:36:23.220Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 37125,
+    "create_time": "2025-11-01T12:00:46.795Z",
+    "author_type": "client",
+    "sent_content": "Бұл аппаратты бірінші сіздерге барып көруге боладыма?"
+  },
+  {
+    "id": 37157,
+    "create_time": "2025-11-01T12:03:41.918Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "болады сиз кашан келеаласыз:"
+  },
+  {
+    "id": 37161,
+    "create_time": "2025-11-01T12:03:59.942Z",
+    "author_type": "client",
+    "sent_content": "Бүгін , ертең"
+  },
+  {
+    "id": 37169,
+    "create_time": "2025-11-01T12:04:34.218Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "биздин адрес Астана каласы, Туран.д. 19/2 БЦ ESTRA"
+  },
+  {
+    "id": 37170,
+    "create_time": "2025-11-01T12:04:52.023Z",
+    "author_type": "client",
+    "sent_content": "Жақсы 👍🏻\nБүгін барып көрейік"
+  },
+  {
+    "id": 37172,
+    "create_time": "2025-11-01T12:05:19.534Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "3 этаж есимим Сабыр мени сурастырасыз мен сизге корсетипберемин"
+  },
+  {
+    "id": 37175,
+    "create_time": "2025-11-01T12:05:33.245Z",
+    "author_type": "client",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 37176,
+    "create_time": "2025-11-01T12:05:48.724Z",
+    "author_type": "client",
+    "sent_content": "5 ке дейін жұмыс жасайыздар ия бүгін?"
+  },
+  {
+    "id": 37177,
+    "create_time": "2025-11-01T12:05:54.874Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "сагат 15-00 дейн жумыс имтеймиз"
+  },
+  {
+    "id": 37178,
+    "create_time": "2025-11-01T12:06:21.837Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "жок 15-00"
+  },
+  {
+    "id": 37179,
+    "create_time": "2025-11-01T12:06:30.083Z",
+    "author_type": "client",
+    "sent_content": "Аа жақсы"
+  },
+  {
+    "id": 37181,
+    "create_time": "2025-11-01T12:06:53.273Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "баска кундери 9-00 дан 18-00 дейн"
+  },
+  {
+    "id": 37624,
+    "create_time": "2025-11-01T13:29:18.613Z",
+    "author_type": "client",
+    "sent_content": "Бара жатырмыз"
+  },
+  {
+    "id": 37846,
+    "create_time": "2025-11-01T14:17:15.490Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 41569,
+    "create_time": "2025-11-02T13:16:12.203Z",
+    "author_type": "client",
+    "sent_content": "ИП Altusha"
+  },
+  {
+    "id": 41570,
+    "create_time": "2025-11-02T13:16:45.568Z",
+    "author_type": "client",
+    "sent_content": "960423401519"
+  },
+  {
+    "id": 41573,
+    "create_time": "2025-11-02T13:17:12.259Z",
+    "author_type": "client",
+    "sent_content": "Номер удаленно на оплату :  \n87028360478"
+  },
+  {
+    "id": 41574,
+    "create_time": "2025-11-02T13:17:44.387Z",
+    "author_type": "client",
+    "sent_content": "Белый расцветка"
+  },
+  {
+    "id": 41581,
+    "create_time": "2025-11-02T13:20:18.431Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Установку сможем сделать в среду"
+  },
+  {
+    "id": 41583,
+    "create_time": "2025-11-02T13:23:32.927Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставляем счет на оплату?"
+  },
+  {
+    "id": 41653,
+    "create_time": "2025-11-02T14:00:27.316Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 41654,
+    "create_time": "2025-11-02T14:00:31.685Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 41658,
+    "create_time": "2025-11-02T14:01:41.753Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо, будет 2 счета"
+  },
+  {
+    "id": 41661,
+    "create_time": "2025-11-02T14:01:54.605Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "219 000 за оборудование и 150 000 за программу"
+  },
+  {
+    "id": 41664,
+    "create_time": "2025-11-02T14:02:12.000Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 41704,
+    "create_time": "2025-11-02T14:19:42.930Z",
+    "author_type": "client",
+    "sent_content": "Отправите ?"
+  },
+  {
+    "id": 41705,
+    "create_time": "2025-11-02T14:20:44.375Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Секунду, бухгалтер должен отправить"
+  },
+  {
+    "id": 41716,
+    "create_time": "2025-11-02T14:24:12.336Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставили вам счет"
+  },
+  {
+    "id": 41719,
+    "create_time": "2025-11-02T14:25:11.609Z",
+    "author_type": "client",
+    "sent_content": "Оплатили"
+  },
+  {
+    "id": 41730,
+    "create_time": "2025-11-02T14:25:46.705Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете отправить пожалуйста чек"
+  },
+  {
+    "id": 42597,
+    "create_time": "2025-11-02T22:31:25.474Z",
+    "author_type": "client",
+    "sent_content": "Спасибо 👍🏻"
+  },
+  {
+    "id": 46527,
+    "create_time": "2025-11-05T16:38:58.943Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оборудование завтра в течение дня придет на склад! Скорее послезавтра кнаши специалисты  Вам выедут с оборудованием и проведут обучение"
+  },
+  {
+    "id": 46533,
+    "create_time": "2025-11-05T16:41:23.436Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да Алла буйрыса не переживайте просто на СВХ задержка была с растоможкой товара!"
+  },
+  {
+    "id": 56348,
+    "create_time": "2025-11-07T18:56:11.119Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. Поскольку тех.поддержка больше не имеет доступа к данному чату, Вам нужно позвонить на номер: +77470956496\nИли обратитесь по вацап, ссылка: https://wa.me/77003007300"
+  },
+  {
+    "id": 56354,
+    "create_time": "2025-11-07T19:04:16.264Z",
+    "author_type": "client",
+    "sent_content": "Никто из этих номеров не отвечает"
+  },
+  {
+    "id": 46520,
+    "create_time": "2025-11-05T16:36:45.331Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый вечер!"
+  },
+  {
+    "id": 46536,
+    "create_time": "2025-11-05T16:41:39.677Z",
+    "author_type": "client",
+    "sent_content": "Хорошо, ждем"
+  },
+  {
+    "id": 46504,
+    "create_time": "2025-11-05T16:33:59.218Z",
+    "author_type": "client",
+    "sent_content": "Саламатсыз ба"
+  },
+  {
+    "id": 46505,
+    "create_time": "2025-11-05T16:34:05.390Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 56791,
+    "create_time": "2025-11-08T11:18:04.532Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 56792,
+    "create_time": "2025-11-08T11:18:13.063Z",
+    "author_type": "client",
+    "sent_content": "Вчера нам установили аппарат"
+  },
+  {
+    "id": 56793,
+    "create_time": "2025-11-08T11:18:38.761Z",
+    "author_type": "client",
+    "sent_content": "И через пол часа при переименование название компании, мой аккаунт заблокировался"
+  },
+  {
+    "id": 56794,
+    "create_time": "2025-11-08T11:18:52.383Z",
+    "author_type": "client",
+    "sent_content": "Установщик сказал что передал тех поддержку"
+  },
+  {
+    "id": 56795,
+    "create_time": "2025-11-08T11:18:56.176Z",
+    "author_type": "client",
+    "sent_content": "Так и ответа нет"
+  },
+  {
+    "id": 56796,
+    "create_time": "2025-11-08T11:19:11.413Z",
+    "author_type": "client",
+    "sent_content": "Можете сегодня отправить другого установщика ?"
+  },
+  {
+    "id": 41565,
+    "create_time": "2025-11-02T13:15:32.945Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 41566,
+    "create_time": "2025-11-02T13:15:37.954Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 41811,
+    "create_time": "2025-11-02T14:42:12.154Z",
+    "author_type": "client",
+    "sent_content": "Хорошо сейчас"
+  },
+  {
+    "id": 41814,
+    "create_time": "2025-11-02T14:43:10.732Z",
+    "author_type": "client",
+    "sent_content": "download.pdf"
+  },
+  {
+    "id": 41815,
+    "create_time": "2025-11-02T14:43:10.887Z",
+    "author_type": "client",
+    "sent_content": "download.pdf"
+  },
+  {
+    "id": 41827,
+    "create_time": "2025-11-02T14:48:59.614Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Благодарим за покупку!"
+  },
+  {
+    "id": 43396,
+    "create_time": "2025-11-03T10:02:06.483Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "для вода в учетную систему Wipon:\nлогин 77071030377\nпароль 12345678"
+  },
+  {
+    "id": 43705,
+    "create_time": "2025-11-03T10:45:37.592Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Алтынай адресинизди жибересизбе?"
+  },
+  {
+    "id": 43719,
+    "create_time": "2025-11-03T10:48:31.184Z",
+    "author_type": "client",
+    "sent_content": "Жанадария 126/1 \nТД Омар \nПоследний бутик , без номера"
+  },
+  {
+    "id": 46530,
+    "create_time": "2025-11-05T16:39:51.745Z",
+    "author_type": "client",
+    "sent_content": "🥲 каждый день обещаете.  \nТочно будет послезавтра?"
+  },
+  {
+    "id": 47310,
+    "create_time": "2025-11-06T10:26:16.317Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "🤝"
+  },
+  {
+    "id": 47312,
+    "create_time": "2025-11-06T10:27:16.593Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Алтынай салеметсизбе Оборудование келди Астанага Ертен жиберемиз сизге"
+  },
+  {
+    "id": 47315,
+    "create_time": "2025-11-06T10:28:02.929Z",
+    "author_type": "client",
+    "sent_content": "Бүгін жіберіңіздер, мен күнде сіздерді күтіп отыра алмаймын"
+  },
+  {
+    "id": 47320,
+    "create_time": "2025-11-06T10:28:26.434Z",
+    "author_type": "client",
+    "sent_content": "Уәде еткен күні жібермедіңіздер, складтарыңызға келсе , бүгін алып келіңіздер"
+  },
+  {
+    "id": 47366,
+    "create_time": "2025-11-06T10:34:54.822Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Алтынай мен сизге ертен методологтармен жиберем келип орнатып уйретип кетеди, оте коп заявка тосып откан"
+  }
+]

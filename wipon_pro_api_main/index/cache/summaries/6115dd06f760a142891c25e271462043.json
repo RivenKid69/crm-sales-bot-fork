@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/delete-users-all-auth-codes.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис, который удаляет все коды аутентификации для конкретного пользователя. Он использует репозиторий для работы с базой данных и возвращает результат удаления.",
+  "purpose": "Позволяет очищать коды аутентификации пользователя при удалении аккаунта или смене пароля",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Удаляет все коды аутентификации по ID пользователя",
+    "Использует TypeORM для работы с базой данных",
+    "Работает асинхронно",
+    "Возвращает результат операции удаления",
+    "Поддерживает инъекцию зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1146,
+  "output_tokens": 693,
+  "model": "qwen3:14b",
+  "code_hash": "61e198e8721b3683"
+}

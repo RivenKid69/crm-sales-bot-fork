@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/dto/post-report.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для передачи данных при создании отчета. Он использует валидаторы для проверки данных и интегрируется с Swagger для автоматической генерации документации API.",
+  "purpose": "Обеспечивает корректность данных, отправляемых в API, и упрощает понимание эндпоинта для разработчиков и пользователей",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка обязательных полей (item_id)",
+    "Проверка формата чисел (item_id, gtin)",
+    "Проверка существования сущности (IsItemExists)",
+    "Валидация Base64-изображений (sticker_photo, label_photo)",
+    "Генерация документации API через Swagger"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "class-transformer",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1571,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "4f81e8444d096783"
+}

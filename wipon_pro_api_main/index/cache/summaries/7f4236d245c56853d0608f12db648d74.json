@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/save-accounts.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис для сохранения данных аккаунтов. Он может сохранять аккаунты как обычно, так и в рамках транзакции, используя репозиторий и менеджер транзакций.",
+  "purpose": "Позволяет удобно сохранять данные аккаунтов с поддержкой транзакций в приложении на NestJS",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохраняет массив аккаунтов в базу данных",
+    "Поддерживает работу в рамках транзакции",
+    "Использует репозиторий для взаимодействия с базой данных",
+    "Работает с объектами AccountDao из общего модуля",
+    "Использует инъекцию зависимостей для управления репозиторием"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1142,
+  "output_tokens": 746,
+  "model": "qwen3:14b",
+  "code_hash": "5817af3179c3c297"
+}

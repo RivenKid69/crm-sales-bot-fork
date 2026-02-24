@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/domain/ledgers.service.ts:import:../../../common/dao/ledger-chronic.dao",
+  "summary": "Этот код обрабатывает перевод средств между пользователями. Он проверяет валидность пользователей, обновляет их счета и ведёт запись операций в бухгалтерском журнале",
+  "purpose": "Обеспечивает безопасный перевод средств между пользователями с логированием операций",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка существования пользователей",
+    "Обновление данных счетов в базе",
+    "Создание записей в бухгалтерском журнале",
+    "Обработка ошибок и логирование",
+    "Использование транзакций для обеспечения целостности данных"
+  ],
+  "dependencies_used": [
+    "HttpException",
+    "Injectable",
+    "PostTransferDto",
+    "FindUserByIdUseCase",
+    "getManager",
+    "AccountDao",
+    "LedgerChronicDao",
+    "greaterThan",
+    "BillingService",
+    "createCustomErrorLogger"
+  ],
+  "input_tokens": 2706,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "e9c0b294f1e03b7c"
+}

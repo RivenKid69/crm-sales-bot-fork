@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/excise-hashes.dao.ts:class:ExciseHashesDao",
+  "summary": "Этот класс описывает сущность для хранения хэшей в базе данных. Он использует TypeORM для создания таблицы с полями id, hash и saved_at, где id автоматически генерируется, hash - это строка, а saved_at - дата сохранения.",
+  "purpose": "Создать таблицу в базе данных для хранения хэшей и времени их сохранения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое создание уникального ID",
+    "Хранение хэшей в виде строк",
+    "Запись даты сохранения в отдельное поле",
+    "Использование кастомного имени таблицы 'excise-hashs'",
+    "Связь между классом и таблицей в базе данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "typeorm/decorators"
+  ],
+  "input_tokens": 1078,
+  "output_tokens": 704,
+  "model": "qwen3:14b",
+  "code_hash": "dd1c102a8479e6c0"
+}

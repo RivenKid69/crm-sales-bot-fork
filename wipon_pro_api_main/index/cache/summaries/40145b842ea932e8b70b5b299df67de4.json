@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/presenter/transactions.controller.ts:import:../dto/get-users-transactions.dto",
+  "summary": "Этот код импортирует различные декораторы и утилиты из NestJS для создания контроллера, который обрабатывает запросы к транзакциям. Он использует валидацию данных, аутентификацию и преобразование ответов.",
+  "purpose": "Обеспечивает обработку HTTP-запросов для получения, создания и перевода транзакций с проверкой данных и аутентификацией",
+  "domain": "API для транзакций",
+  "key_behaviors": [
+    "Использует декораторы для обработки HTTP-запросов",
+    "Проверяет данные с помощью ValidationPipe",
+    "Использует аутентификацию через AuthGuard",
+    "Преобразует ответы с помощью TransformInterceptor",
+    "Работает с DTO для валидации входных данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "TransactionsService",
+    "AuthGuard",
+    "ValidationPipe"
+  ],
+  "input_tokens": 1951,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "81b780e4aa1aacb8"
+}

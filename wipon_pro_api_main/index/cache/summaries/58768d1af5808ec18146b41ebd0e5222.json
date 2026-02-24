@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/save-image.ts:import:fs",
+  "summary": "Этот код импортирует модуль fs из Node.js, который позволяет работать с файловой системой. Он используется для создания директорий, записи и чтения файлов на сервере.",
+  "purpose": "Позволяет сохранять и обрабатывать изображения, загруженные пользователем, на сервере.",
+  "domain": "утилиты, обработка файлов",
+  "key_behaviors": [
+    "создание директорий",
+    "запись файлов",
+    "чтение файлов",
+    "удаление файлов",
+    "работа с файловой системой"
+  ],
+  "dependencies_used": [
+    "fs",
+    "path",
+    "sharp",
+    "uniqid",
+    "substr",
+    "validateImage"
+  ],
+  "input_tokens": 1646,
+  "output_tokens": 678,
+  "model": "qwen3:14b",
+  "code_hash": "d62299ef0d836d3b"
+}

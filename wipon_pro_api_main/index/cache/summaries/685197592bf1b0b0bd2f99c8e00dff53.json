@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/feedbacks.module.ts:import:./data/feedbacks.repository",
+  "summary": "Этот код создает модуль для работы с отзывами. Он подключает контроллер для обработки запросов, сервис для логики, репозиторий для работы с базой данных, HTTP-модуль для внешних запросов и модуль пользователей.",
+  "purpose": "Организовать логику работы с отзывами в приложении",
+  "domain": "управление отзывами",
+  "key_behaviors": [
+    "Обработка HTTP-запросов через контроллер",
+    "Работа с базой данных через TypeORM",
+    "Использование внешних HTTP-сервисов",
+    "Интеграция с модулем пользователей",
+    "Использование общего сервиса Doomguy"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "UsersModule"
+  ],
+  "input_tokens": 1271,
+  "output_tokens": 677,
+  "model": "qwen3:14b",
+  "code_hash": "9ba0411130d12230"
+}

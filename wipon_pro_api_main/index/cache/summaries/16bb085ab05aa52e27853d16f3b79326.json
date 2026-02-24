@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/make-refund.dto.ts:import:../../../config/subscription.config",
+  "summary": "Этот код определяет класс MakeRefundDto, который используется для валидации данных при возврате подписки. В классе используются проверки на заполненность, числовые значения и допустимые типы подписки.",
+  "purpose": "Обеспечивает корректный ввод данных при возврате подписки в системе.",
+  "domain": "валидация, API",
+  "key_behaviors": [
+    "Проверка, что поля не пустые",
+    "Проверка, что значения числовые",
+    "Ограничение допустимых типов подписки",
+    "Генерация документации API через Swagger",
+    "Использование настроек из subscription.config"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "class-transformer",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1092,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "5ccce823d74ad731"
+}

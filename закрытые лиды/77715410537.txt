@@ -1,0 +1,590 @@
+[
+  {
+    "id": 174309,
+    "create_time": "2025-12-16T08:54:30.179Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 174312,
+    "create_time": "2025-12-16T08:54:45.750Z",
+    "author_type": "client",
+    "sent_content": "Біздіңкі дайын болып қалды ма?"
+  },
+  {
+    "id": 174311,
+    "create_time": "2025-12-16T08:54:41.814Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе! Сізге қалай көмектесе аламын?"
+  },
+  {
+    "id": 174314,
+    "create_time": "2025-12-16T08:54:56.398Z",
+    "author_type": "ai",
+    "sent_content": "Кешіріңіз, мен бұл сұраққа нақты жауап бере алмаймын. Жұмысыңыздың дайындығын тексеру үшін менеджерге хабарласу қажет. Менеджер жақын арада сізбен байланысады."
+  },
+  {
+    "id": 137802,
+    "create_time": "2025-12-08T12:23:54.890Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 137803,
+    "create_time": "2025-12-08T12:24:03.568Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе! Сізге қалай көмектесе аламын?"
+  },
+  {
+    "id": 137806,
+    "create_time": "2025-12-08T12:24:23.101Z",
+    "author_type": "client",
+    "sent_content": "ТИС бойынша ақпарат білейін деп едім"
+  },
+  {
+    "id": 137807,
+    "create_time": "2025-12-08T12:24:37.157Z",
+    "author_type": "ai",
+    "sent_content": "ТИС — это трёхкомпонентная интегрированная система для ИП на упрощёнке, включающая Wipon учёт, онлайн-кассу и POS-терминал."
+  },
+  {
+    "id": 137808,
+    "create_time": "2025-12-08T12:24:39.442Z",
+    "author_type": "ai",
+    "sent_content": "Она позволяет легально увеличить лимиты по доходам и НДС в 5 раз без перехода на ТОО. \n\nХотите обсудить подробнее? Укажите удобное время 09:00–17:30 — закреплю."
+  },
+  {
+    "id": 137827,
+    "create_time": "2025-12-08T12:26:52.132Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нурлы, саламатсыз ба!"
+  },
+  {
+    "id": 137829,
+    "create_time": "2025-12-08T12:26:56.677Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день! Не смогли до Вас дозвониться, подскажите какой у вас бизнес? \n\nСәлеметсіз бе! Сізге қоңырау шала алмадық. Бизнесіңіздің түрі қандай еді?"
+  },
+  {
+    "id": 137833,
+    "create_time": "2025-12-08T12:27:38.380Z",
+    "author_type": "client",
+    "sent_content": "Каспи магазиніміз бар, лимит асып кетті. ТИС қосайын деп едік"
+  },
+  {
+    "id": 137837,
+    "create_time": "2025-12-08T12:28:11.185Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Кандай оборот казир сизде?"
+  },
+  {
+    "id": 137838,
+    "create_time": "2025-12-08T12:28:29.003Z",
+    "author_type": "client",
+    "sent_content": "75 миллиондай"
+  },
+  {
+    "id": 137839,
+    "create_time": "2025-12-08T12:28:31.280Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Январь-дан бастап"
+  },
+  {
+    "id": 137840,
+    "create_time": "2025-12-08T12:28:52.408Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, ТИС косу болады сизге"
+  },
+  {
+    "id": 137842,
+    "create_time": "2025-12-08T12:29:01.130Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хабарласу бола ма?"
+  },
+  {
+    "id": 137843,
+    "create_time": "2025-12-08T12:29:08.528Z",
+    "author_type": "client",
+    "sent_content": "Қанша уақытта қосып бере аласыздар?"
+  },
+  {
+    "id": 137844,
+    "create_time": "2025-12-08T12:29:10.556Z",
+    "author_type": "client",
+    "sent_content": "Иа"
+  },
+  {
+    "id": 137845,
+    "create_time": "2025-12-08T12:29:17.168Z",
+    "author_type": "client",
+    "sent_content": "87471481847"
+  },
+  {
+    "id": 137858,
+    "create_time": "2025-12-08T12:30:20.856Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1 кун алады"
+  },
+  {
+    "id": 137859,
+    "create_time": "2025-12-08T12:30:21.015Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Осы номер дурыс па?"
+  },
+  {
+    "id": 137861,
+    "create_time": "2025-12-08T12:30:31.838Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 137868,
+    "create_time": "2025-12-08T12:32:49.517Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ТІС (ТИС) қосу кезеңдері:\n\nБіз сізді базамызға тіркейміз\n\nСіз төлем жасайсыз\n\nМен ТІС-ті есепке қою үшін қажетті мәліметтер тізімін жіберемін\n\nСіз барлық мәліметтерді электронды поштаға жібересіз\n\nБіз сізді мемлекеттік органдарда тіркеп, бәрі дайын екенін хабарлаймыз\n\nСізбен оқыту бөлімі хабарласып, уақытын белгілейді\n\nОқудан өтіп, жұмысты бастайсыз"
+  },
+  {
+    "id": 137869,
+    "create_time": "2025-12-08T12:33:12.989Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Первичный регистрация жасау ушин ИИН ИП керек"
+  },
+  {
+    "id": 137892,
+    "create_time": "2025-12-08T12:36:40.075Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 137895,
+    "create_time": "2025-12-08T12:37:16.658Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "150.000 тг бул программа продуктовый-га арналган"
+  },
+  {
+    "id": 137898,
+    "create_time": "2025-12-08T12:37:29.964Z",
+    "author_type": "client",
+    "sent_content": "Ааа түсіндім"
+  },
+  {
+    "id": 137900,
+    "create_time": "2025-12-08T12:37:44.506Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ТИС 220.000 тг + 30.000 тг интеграция Каспи Магазинмен"
+  },
+  {
+    "id": 137919,
+    "create_time": "2025-12-08T12:41:02.948Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подключение бастау ушин, ИИН ИП керек болады"
+  },
+  {
+    "id": 174817,
+    "create_time": "2025-12-16T12:18:36.121Z",
+    "author_type": "client",
+    "sent_content": "Касса бойынша білейін деа едім"
+  },
+  {
+    "id": 174818,
+    "create_time": "2025-12-16T12:18:45.853Z",
+    "author_type": "ai",
+    "sent_content": "Касса бойынша қандай нақты ақпарат қызықтырады? Онлайн-касса, интеграция немесе басқа сұрақтарыңыз бар ма? Уақытты белгілеңіз, 09:00–17:30 аралығында — қысқа сөйлесуге дайынмын."
+  },
+  {
+    "id": 180902,
+    "create_time": "2025-12-18T12:33:01.742Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизбен уже хабарласкан, дурыс па?"
+  },
+  {
+    "id": 138194,
+    "create_time": "2025-12-08T13:25:20.062Z",
+    "author_type": "client",
+    "sent_content": "Жоқ"
+  },
+  {
+    "id": 138195,
+    "create_time": "2025-12-08T13:25:23.634Z",
+    "author_type": "client",
+    "sent_content": "Қосайын ба?"
+  },
+  {
+    "id": 138196,
+    "create_time": "2025-12-08T13:25:23.745Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизде превышение екен"
+  },
+  {
+    "id": 138198,
+    "create_time": "2025-12-08T13:25:47.382Z",
+    "author_type": "client",
+    "sent_content": "Отмена болған товар көп оның ішінде, соларда есептеліп тұр"
+  },
+  {
+    "id": 138202,
+    "create_time": "2025-12-08T13:26:15.349Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жок"
+  },
+  {
+    "id": 138205,
+    "create_time": "2025-12-08T13:26:27.681Z",
+    "author_type": "client",
+    "sent_content": "Болмайды ма енді?"
+  },
+  {
+    "id": 138213,
+    "create_time": "2025-12-08T13:27:27.812Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Болады"
+  },
+  {
+    "id": 138224,
+    "create_time": "2025-12-08T13:32:37.232Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 138226,
+    "create_time": "2025-12-08T13:33:07.526Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рахмет"
+  },
+  {
+    "id": 138227,
+    "create_time": "2025-12-08T13:33:11.696Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир сизге перечеьн документов жиберемин"
+  },
+  {
+    "id": 138228,
+    "create_time": "2025-12-08T13:33:29.146Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 138229,
+    "create_time": "2025-12-08T13:33:46.269Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для удаленной регистраций Онлайн маркета в ТИС, отправьте следующие данные на номер:\n\n1) Отправьте ЭЦП для регистрации в ОФД и КНП\n2) Отправьте пароль от ЭЦП\n3) Талон ИП либо ИИН компаний\n4) Информация о онлайн маркете:\n-В случае Каспий магазина\n-1 Заходите на сайт https://kaspi.kz/mc/#/login\n-2 Заходите в настройки и общая информация и там будет айди Партнера\n-В случае Халык маркета\n-1 ИИН компаний"
+  },
+  {
+    "id": 138231,
+    "create_time": "2025-12-08T13:34:08.571Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Осы номерге 77003007300"
+  },
+  {
+    "id": 138233,
+    "create_time": "2025-12-08T13:34:21.454Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Данныйлар жиберу керек"
+  },
+  {
+    "id": 138235,
+    "create_time": "2025-12-08T13:34:26.641Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 138254,
+    "create_time": "2025-12-08T13:37:55.970Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 138255,
+    "create_time": "2025-12-08T13:38:30.838Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, жетеди"
+  },
+  {
+    "id": 138256,
+    "create_time": "2025-12-08T13:38:39.130Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир сизге регистратор жауабын береди"
+  },
+  {
+    "id": 138257,
+    "create_time": "2025-12-08T13:38:43.179Z",
+    "author_type": "client",
+    "sent_content": "Рахмет үлкен"
+  },
+  {
+    "id": 138000,
+    "create_time": "2025-12-08T12:52:01.400Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нурли, 1 айга 150.000 тг шыгады"
+  },
+  {
+    "id": 138006,
+    "create_time": "2025-12-08T12:52:19.685Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Егер интеграция керек емес болса, 129.000 тг шыгады"
+  },
+  {
+    "id": 138009,
+    "create_time": "2025-12-08T12:52:50.403Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 138061,
+    "create_time": "2025-12-08T13:02:38.327Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 138093,
+    "create_time": "2025-12-08T13:07:52.975Z",
+    "author_type": "client",
+    "sent_content": "Годовой қосатын сияқтымыз"
+  },
+  {
+    "id": 138103,
+    "create_time": "2025-12-08T13:08:31.214Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы"
+  },
+  {
+    "id": 138107,
+    "create_time": "2025-12-08T13:09:02.014Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИИН ИП жиберинизши, биз первичный регистрация бастаймыз"
+  },
+  {
+    "id": 138108,
+    "create_time": "2025-12-08T13:09:19.509Z",
+    "author_type": "client",
+    "sent_content": "47910 окэд упрощенкада қалады иа? 😁"
+  },
+  {
+    "id": 138110,
+    "create_time": "2025-12-08T13:09:32.939Z",
+    "author_type": "client",
+    "sent_content": "060515601137"
+  },
+  {
+    "id": 138111,
+    "create_time": "2025-12-08T13:09:47.898Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир айтам"
+  },
+  {
+    "id": 138113,
+    "create_time": "2025-12-08T13:09:52.951Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, калады"
+  },
+  {
+    "id": 138114,
+    "create_time": "2025-12-08T13:10:09.704Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Первичный регистрация казир бастаймыз, смс код номерге жиберемиз"
+  },
+  {
+    "id": 138115,
+    "create_time": "2025-12-08T13:10:12.047Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 138116,
+    "create_time": "2025-12-08T13:10:15.802Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Кай номерге жиберу болады?"
+  },
+  {
+    "id": 138117,
+    "create_time": "2025-12-08T13:10:28.967Z",
+    "author_type": "client",
+    "sent_content": "87055505127"
+  },
+  {
+    "id": 138118,
+    "create_time": "2025-12-08T13:10:32.197Z",
+    "author_type": "client",
+    "sent_content": "Осы"
+  },
+  {
+    "id": 138122,
+    "create_time": "2025-12-08T13:11:49.632Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все, жаксы"
+  },
+  {
+    "id": 138124,
+    "create_time": "2025-12-08T13:11:56.016Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир смс код жиберемиз"
+  },
+  {
+    "id": 138125,
+    "create_time": "2025-12-08T13:12:12.027Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 138126,
+    "create_time": "2025-12-08T13:12:36.447Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жибердик"
+  },
+  {
+    "id": 138127,
+    "create_time": "2025-12-08T13:12:40.721Z",
+    "author_type": "client",
+    "sent_content": "Біздің оборотымыз 100 миллион болып қалған екен. Бола береді ма?"
+  },
+  {
+    "id": 138128,
+    "create_time": "2025-12-08T13:12:43.022Z",
+    "author_type": "client",
+    "sent_content": "9103"
+  },
+  {
+    "id": 138130,
+    "create_time": "2025-12-08T13:12:49.555Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 138134,
+    "create_time": "2025-12-08T13:13:22.428Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сиздин выписка бола ма?"
+  },
+  {
+    "id": 138153,
+    "create_time": "2025-12-08T13:15:16.652Z",
+    "author_type": "client",
+    "sent_content": "Выписка_по_счету_KZ58722S000041851679.pdf"
+  },
+  {
+    "id": 138193,
+    "create_time": "2025-12-08T13:25:11.842Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизде Каспи касса косылып тур ма?"
+  },
+  {
+    "id": 174506,
+    "create_time": "2025-12-16T10:41:38.067Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 174507,
+    "create_time": "2025-12-16T10:41:46.714Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе! Сізге қалай көмектесе аламын?"
+  },
+  {
+    "id": 174512,
+    "create_time": "2025-12-16T10:42:06.198Z",
+    "author_type": "client",
+    "sent_content": "?"
+  },
+  {
+    "id": 174513,
+    "create_time": "2025-12-16T10:42:15.314Z",
+    "author_type": "ai",
+    "sent_content": "Сізден қандай ақпарат қажет? Көмектесуге дайынмын."
+  },
+  {
+    "id": 180505,
+    "create_time": "2025-12-18T11:33:30.635Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 180506,
+    "create_time": "2025-12-18T11:33:43.022Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе! Сізге қалай көмектесе аламын?"
+  },
+  {
+    "id": 180507,
+    "create_time": "2025-12-18T11:33:43.864Z",
+    "author_type": "client",
+    "sent_content": "Бүгін тіркеп бере аласыздар ма кассаны?"
+  },
+  {
+    "id": 180509,
+    "create_time": "2025-12-18T11:33:58.147Z",
+    "author_type": "ai",
+    "sent_content": "Кешіріңіз, бірақ мен тіркеу рәсімін жүргізе алмаймын. Менеджерге хабарласу керек. Уақытты белгілеңіз, 09:00–17:30 аралығында — қысқа сөйлесуге дайынмын."
+  },
+  {
+    "id": 180513,
+    "create_time": "2025-12-18T11:34:59.246Z",
+    "author_type": "client",
+    "sent_content": "Өткенде айтқан едім ғой, оборотымыз асып кетті, ертерек тіркеу керек болып жатыр. Менеджерді күтіп жүргеніме 1 апта болды"
+  },
+  {
+    "id": 180514,
+    "create_time": "2025-12-18T11:35:03.205Z",
+    "author_type": "client",
+    "sent_content": "Хабарласпай жатыр"
+  },
+  {
+    "id": 180519,
+    "create_time": "2025-12-18T11:35:18.419Z",
+    "author_type": "client",
+    "sent_content": "Өтініш, бүгін жасап беріңіздерші"
+  },
+  {
+    "id": 180520,
+    "create_time": "2025-12-18T11:35:18.435Z",
+    "author_type": "ai",
+    "sent_content": "Кешіріңіз, жағдайыңызға байланысты. Менеджерге хабарласамын, бірақ бұл үшін уақытты белгілейсіз бе? 09:00–17:30 аралығында — қысқа сөйлесуге дайынмын."
+  },
+  {
+    "id": 180521,
+    "create_time": "2025-12-18T11:35:22.269Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Кешіріңіз, жағдайыңызға байланысты. Менеджерге хабарласамын, бірақ бұл үшін уақытты белгілейсіз бе? 09:00–17:30 аралығында — қысқа сөйлесуге дайынмын."
+  },
+  {
+    "id": 180523,
+    "create_time": "2025-12-18T11:35:42.244Z",
+    "author_type": "client",
+    "sent_content": "11:40"
+  },
+  {
+    "id": 180883,
+    "create_time": "2025-12-18T12:31:05.330Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Саламатсыз ба Нурлы"
+  },
+  {
+    "id": 180884,
+    "create_time": "2025-12-18T12:31:13.532Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир сизбен менеджер хабарласады"
+  },
+  {
+    "id": 180885,
+    "create_time": "2025-12-18T12:31:35.179Z",
+    "author_type": "client",
+    "sent_content": "Қайырлы күн. Ок"
+  },
+  {
+    "id": 180904,
+    "create_time": "2025-12-18T12:33:05.768Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ертен сизге регистрация жасайды"
+  },
+  {
+    "id": 180924,
+    "create_time": "2025-12-18T12:37:25.333Z",
+    "author_type": "client",
+    "sent_content": "Иа"
+  },
+  {
+    "id": 180925,
+    "create_time": "2025-12-18T12:37:26.879Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  }
+]

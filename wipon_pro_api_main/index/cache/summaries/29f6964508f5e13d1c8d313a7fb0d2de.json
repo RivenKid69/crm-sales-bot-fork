@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/accounts.service.ts:import:../data/accounts.repository",
+  "summary": "Этот код создает сервис для работы с аккаунтами, используя репозиторий и другой use-case для получения информации о счетах пользователя. Он форматирует данные перед отправкой клиенту.",
+  "purpose": "Обеспечивает логику получения и форматирования данных аккаунтов пользователя для отображения в интерфейсе.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получает данные аккаунтов из репозитория",
+    "Использует use-case для получения информации о пользователе",
+    "Форматирует данные для отображения",
+    "Возвращает пустой массив, если данные не найдены",
+    "Использует DAO-объекты для работы с данными"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "AccountsRepository",
+    "FindUsersLedgerUseCase",
+    "AccountDao",
+    "LedgerDao",
+    "UserDao"
+  ],
+  "input_tokens": 1226,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "fdb479782a52e2aa"
+}

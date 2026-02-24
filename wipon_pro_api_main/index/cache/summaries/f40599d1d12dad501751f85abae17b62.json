@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/dto/get-license.dto.ts:file",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для передачи данных лицензийного номера. Он использует валидацию и документацию для API.",
+  "purpose": "Обеспечивает валидацию и документацию для параметра лицензийного номера в API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поле не пустое",
+    "Проверка, что значение является строкой",
+    "Генерация документации для Swagger",
+    "Структурирование данных для передачи",
+    "Использование типизации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1058,
+  "output_tokens": 559,
+  "model": "qwen3:14b",
+  "code_hash": "60851383e58d9cce"
+}

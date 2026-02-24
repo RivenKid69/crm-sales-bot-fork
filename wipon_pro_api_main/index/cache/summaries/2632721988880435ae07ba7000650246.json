@@ -1,0 +1,28 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../../../common/logger/error-logger",
+  "summary": "Этот код импортирует различные модули и сервисы, необходимые для работы с проверками (checks) в приложении. Он использует репозитории, DTO, утилиты и внешние сервисы для обработки данных, валидации, сохранения изображений и логирования ошибок.",
+  "purpose": "Обеспечивает функциональность для работы с проверками, включая обработку данных, валидацию, сохранение изображений и логирование ошибок.",
+  "domain": "база данных, утилиты, логирование, api",
+  "key_behaviors": [
+    "Использует репозитории для работы с базой данных",
+    "Обрабатывает данные через DTO",
+    "Сохраняет изображения в файловую систему",
+    "Логирует ошибки с помощью error-logger",
+    "Использует внешние сервисы для валидации и проверки данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston",
+    "locutus"
+  ],
+  "input_tokens": 4480,
+  "output_tokens": 801,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

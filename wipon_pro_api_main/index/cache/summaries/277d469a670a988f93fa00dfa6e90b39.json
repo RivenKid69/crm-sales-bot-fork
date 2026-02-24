@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/dto/assign-device-code.dto.ts:property:AssignDeviceCodeDto:device_code",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для передачи данных, который проверяет, что device_code является непустой строкой, а application_type может быть только 'desktop' или 'mobile_scan'. Также добавляет описание для документации API.",
+  "purpose": "Обеспечивает валидацию и документацию для DTO, используемого при назначении кода устройства в API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что device_code не пустой и является строкой",
+    "Ограничение значений application_type до двух вариантов",
+    "Генерация документации для API через Swagger",
+    "Обязательное заполнение полей",
+    "Использование валидации через class-validator"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1170,
+  "output_tokens": 614,
+  "model": "qwen3:14b",
+  "code_hash": "60a05289565d1802"
+}

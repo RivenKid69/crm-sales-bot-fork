@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../../excise-hashes/domain/use-cases/find-or-create-excise-hash.use-case",
+  "summary": "Этот код импортирует различные модули и сервисы, необходимые для работы с проверками (checks), включая обработку ошибок, работу с базой данных, HTTP-запросы, файлы и вспомогательные функции.",
+  "purpose": "Обеспечивает функциональность для управления проверками, взаимодействия с внешними сервисами и обработки данных в приложении.",
+  "domain": "база данных, api, утилиты",
+  "key_behaviors": [
+    "Обработка ошибок (ForbiddenException, NotFoundException)",
+    "Работа с базой данных через TypeORM и репозитории",
+    "Отправка HTTP-запросов с использованием NestJS HttpService",
+    "Использование вспомогательных функций для работы с файлами и изображениями",
+    "Интеграция с внешними сервисами и API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston"
+  ],
+  "input_tokens": 4527,
+  "output_tokens": 790,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

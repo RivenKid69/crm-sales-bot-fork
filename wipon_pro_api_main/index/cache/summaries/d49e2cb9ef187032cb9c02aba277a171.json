@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/check.dao.ts:property:CheckDao:store_id",
+  "summary": "Этот код описывает сущность 'CheckDao' в TypeORM, которая представляет собой таблицу в базе данных. Она содержит поля, такие как id, item_id, user_id, store_id, координаты, даты создания и обновления, а также связь с другой сущностью 'Item'.",
+  "purpose": "Эта сущность используется для хранения информации о проверках в приложении, например, в системе учета или логистики.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор записи (id)",
+    "Связывает проверку с товаром через item_id",
+    "Хранит геолокационные данные (широта, долгота, точность)",
+    "Записывает даты создания и обновления записи",
+    "Создает связь с сущностью 'Item' через аннотацию @ManyToOne"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "ItemDao"
+  ],
+  "input_tokens": 1186,
+  "output_tokens": 761,
+  "model": "qwen3:14b",
+  "code_hash": "11b70f1d672cf2b2"
+}

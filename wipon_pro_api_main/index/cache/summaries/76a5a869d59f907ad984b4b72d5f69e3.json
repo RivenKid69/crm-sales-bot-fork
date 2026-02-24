@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/create-users-auth-code.use-case.ts:import:../../../../common/helpers/generateAuthCode",
+  "summary": "Этот код создает и сохраняет временный код авторизации для пользователя. Он генерирует уникальный код, устанавливает время его действия и сохраняет в базе данных.",
+  "purpose": "Используется для создания временных кодов подтверждения (например, для входа или сброса пароля)",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Генерация уникального кода",
+    "Установка времени истечения срока действия",
+    "Сохранение в базу данных",
+    "Использование конфигурации для настройки срока действия",
+    "Возвращает объект с данными кода"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "datetime helper",
+    "auth config",
+    "generateAuthCode helper"
+  ],
+  "input_tokens": 1319,
+  "output_tokens": 713,
+  "model": "qwen3:14b",
+  "code_hash": "7a3d308719e73e1e"
+}

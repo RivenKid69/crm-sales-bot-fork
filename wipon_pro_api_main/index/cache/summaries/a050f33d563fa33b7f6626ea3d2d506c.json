@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:import:@nestjs/bull",
+  "summary": "Этот код использует библиотеку Bull для обработки задач в фоновом режиме. Он получает данные о уведомлении, создает запись в базе данных и отправляет уведомление через FCM (Firebase Cloud Messaging).",
+  "purpose": "Обработка уведомлений в фоновом режиме и их отправка пользователям через FCM.",
+  "domain": "уведомления, api, фоновые задачи",
+  "key_behaviors": [
+    "Обработка задач из очереди 'push_pro-job'",
+    "Создание уведомлений в базе данных",
+    "Отправка уведомлений через FCM",
+    "Логирование ошибок и успешных операций",
+    "Использование кастомного логгера"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin",
+    "notifications-service",
+    "fcm-service"
+  ],
+  "input_tokens": 1436,
+  "output_tokens": 739,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

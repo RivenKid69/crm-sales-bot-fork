@@ -1,0 +1,60 @@
+.vue-notification {
+  margin: 0 5px 5px;
+  padding: 16px 16px 16px 18px;
+  font-size: 16px;
+  line-height: 22px;
+  color: $dark;
+  font-weight: 400;
+
+  background: #44a4fc;
+  border-radius: 10px;
+
+  &-wrapper {
+    padding-top: 15px;
+    padding-right: 10px;
+  }
+
+  &.success {
+    background: $success-light-2;
+    border: 1px solid $success-light-1;
+    color: $dark;
+
+    .notification-content::before {
+      position: absolute;
+      left: 0;
+      content: "";
+      width: 24px;
+      height: 24px;
+      background-image: url("../../images/icons/success.svg");
+      display: block;
+    }
+  }
+
+  &.warn {
+    background: $danger-light-2;
+    border: 1px solid $danger-light-1;
+  }
+
+  .notification-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding-left: 30px;
+    word-break: break-word;
+  }
+
+  &.error {
+    background: $danger-light-2;
+    border: 1px solid $danger-light-1;
+
+    .notification-content::before {
+      position: absolute;
+      left: 0;
+      content: "";
+      width: 24px;
+      height: 24px;
+      background-image: url("../../images/icons/error.svg");
+      display: block;
+    }
+  }
+}

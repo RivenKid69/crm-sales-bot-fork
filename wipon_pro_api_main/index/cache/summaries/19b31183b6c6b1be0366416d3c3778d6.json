@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/invoice.dao.ts:import:./ledger.dao",
+  "summary": "Этот код определяет сущность InvoiceDao для работы с таблицей invoices в базе данных. Он описывает поля, такие как id, bill_id, status, amount и связь с LedgerDao, используя TypeORM для маппинга на таблицу.",
+  "purpose": "Создает модель данных для хранения информации о счетах в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Определяет структуру таблицы invoices с полями id, bill_id, status и т.д.",
+    "Устанавливает связь один-к-одному с LedgerDao через поле ledger_id",
+    "Автоматически добавляет даты создания и обновления (created_at и updated_at)",
+    "Использует типы данных, совместимые с базой данных (numeric, varchar)",
+    "Генерирует уникальный id для каждой записи"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "./ledger.dao"
+  ],
+  "input_tokens": 1515,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "44b6761a156d5159"
+}

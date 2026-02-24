@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/link-store-to-license.task.ts:method:LinkStoreToLicenseTask:linkStoreToLicenseTask",
+  "summary": "Этот код запускает задачу раз в день в 5 утра, которая связывает магазины с лицензиями. Сначала он создает уникальный ключ в Redis, чтобы избежать одновременного выполнения, потом ищет магазины без лицензии в базе данных и привязывает их к нужным лицензиям.",
+  "purpose": "Автоматически синхронизировать данные магазинов и лицензий в базе данных",
+  "domain": "синхронизация данных",
+  "key_behaviors": [
+    "Выполняется по расписанию (каждый день в 5 утра)",
+    "Использует Redis для блокировки задачи",
+    "Обновляет записи в базе данных",
+    "Логирует ошибки в отдельный логгер",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "cache-manager",
+    "typeorm",
+    "uuid",
+    "@nestjs/schedule",
+    "@nestjs/common"
+  ],
+  "input_tokens": 2028,
+  "output_tokens": 768,
+  "model": "qwen3:14b",
+  "code_hash": "5f90b69b957bb38f"
+}

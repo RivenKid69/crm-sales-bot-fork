@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/excise-hashes/excise-hashes.module.ts:import:./data/excise-hashes.repository",
+  "summary": "Этот код создает модуль NestJS, который подключает репозиторий для работы с базой данных и предоставляет сервис для поиска или создания хэшей акцизных марок. Модуль использует TypeORM для взаимодействия с базой данных.",
+  "purpose": "Обеспечивает работу с данными акцизных хэшей через базу данных и предоставляет функционал для их обработки",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подключение к базе данных через TypeORM",
+    "Предоставление сервиса для работы с хэшами",
+    "Экспорт сервиса для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1171,
+  "output_tokens": 644,
+  "model": "qwen3:14b",
+  "code_hash": "346c25f863a80467"
+}

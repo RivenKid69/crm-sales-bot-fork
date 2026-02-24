@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/users.service.ts:method:UsersService:getUserWithStore",
+  "summary": "Этот метод обновляет данные пользователя, проверяя уникальность номера телефона и сохраняя изменения в базе данных. Он использует репозиторий для поиска и обновления данных.",
+  "purpose": "Обеспечивает безопасное обновление данных пользователя с проверкой уникальности номера телефона",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Проверяет уникальность номера телефона",
+    "Обновляет данные пользователя",
+    "Использует репозиторий TypeORM",
+    "Возвращает статус обновления",
+    "Выбрасывает ошибку при дублировании телефона"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "UsersRepository",
+    "UserDao"
+  ],
+  "input_tokens": 1451,
+  "output_tokens": 696,
+  "model": "qwen3:14b",
+  "code_hash": "9f18c803fb824532"
+}

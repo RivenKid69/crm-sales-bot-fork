@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/data/subscription.repository.ts:class:SubscriptionRepository",
+  "summary": "Этот класс управляет подписками пользователей. Он может найти последнюю активную подписку по ID пользователя и деактивировать её, пометив как удалённую.",
+  "purpose": "Обеспечивает работу с подписками в приложении, например для отмены подписки или проверки её статуса.",
+  "domain": "управление подписками, пользователи",
+  "key_behaviors": [
+    "Ищет последнюю подписку пользователя по ID",
+    "Отключает подписку и ставит отметку об удалении",
+    "Работает с базой данных через TypeORM",
+    "Возвращает null, если подписка не найдена",
+    "Использует данные из SubscriptionDao"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "SubscriptionDao"
+  ],
+  "input_tokens": 1224,
+  "output_tokens": 682,
+  "model": "qwen3:14b",
+  "code_hash": "df84cb522be37e97"
+}

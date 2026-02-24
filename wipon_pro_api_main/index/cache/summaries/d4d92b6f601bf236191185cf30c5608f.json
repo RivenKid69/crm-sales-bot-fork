@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/validations/is-entity-exists.ts:function:IsUgdExists",
+  "summary": "Этот код проверяет, существует ли запись UGD в базе данных по заданному ID. Он использует декоратор для валидации данных перед сохранением или обновлением.",
+  "purpose": "Убедиться, что ссылка на UGD-запись действительна и не указывает на несуществующий объект",
+  "domain": "валидация данных",
+  "key_behaviors": [
+    "Проверка существования UGD по ID",
+    "Асинхронная валидация через базу данных",
+    "Использование декораторов для валидации полей в DTO",
+    "Интеграция с DAO для доступа к данным",
+    "Поддержка настройки валидации через параметры"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "UgdDao"
+  ],
+  "input_tokens": 2576,
+  "output_tokens": 716,
+  "model": "qwen3:14b",
+  "code_hash": "6765c3cb44480c13"
+}

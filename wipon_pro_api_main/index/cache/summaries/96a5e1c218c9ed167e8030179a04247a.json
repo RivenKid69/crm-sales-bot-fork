@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/check.dao.ts:property:CheckDao:latitude",
+  "summary": "Свойство latitude хранит широту местоположения в виде числа с плавающей точкой. Оно используется для точного определения географических координат",
+  "purpose": "Позволяет отслеживать точное местоположение проверки в системе",
+  "domain": "геолокация, логирование местоположения",
+  "key_behaviors": [
+    "Хранит числовые значения с высокой точностью",
+    "Работает вместе с longitude для определения координат",
+    "Используется в системах отслеживания местоположения"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1345,
+  "output_tokens": 623,
+  "model": "qwen3:14b",
+  "code_hash": "11b70f1d672cf2b2"
+}

@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getAccountRequest",
+  "summary": "Эта функция отправляет GET-запрос на сервер по адресу /accounts, чтобы получить информацию о счёте. Она использует общую функцию request из модуля API.",
+  "purpose": "Позволяет получить данные о счёте пользователя для отображения в интерфейсе или дальнейшей обработки",
+  "domain": "API (запросы к серверу)",
+  "key_behaviors": [
+    "Отправляет GET-запрос на эндпоинт /accounts",
+    "Использует централизованную функцию request для HTTP-запросов",
+    "Возвращает данные о счёте в формате, определённом сервером"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 950,
+  "output_tokens": 697,
+  "model": "qwen3:14b",
+  "code_hash": "0500daef3f629ee3"
+}

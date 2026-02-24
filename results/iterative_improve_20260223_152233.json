@@ -1,0 +1,156 @@
+[
+  {
+    "scenario": "s9_freeloader",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет! Мне нужна касса, но денег сейчас нет совсем",
+        "bot": "Сейчас касса Wipon стоит 365 000 ₸ — в нём уже всё встроено: весы, принтер, экраны, фискализация. А чтобы сэкономить, можно оформить рассрочку на 24 месяца без переплат. А что у вас за точка?",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 9.42
+      },
+      {
+        "turn": 2,
+        "user": "А бесплатный период есть?",
+        "bot": "Однако можно оформить рассрочку без процентов.",
+        "state": "autonomous_negotiation",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 3.34
+      },
+      {
+        "turn": 3,
+        "user": "А можно хотя бы месяц бесплатно попробовать?",
+        "bot": "А что именно вас задерживает с покупкой — не хватает только денег?",
+        "state": "autonomous_negotiation",
+        "intent": "request_trial_extension",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 5.34
+      },
+      {
+        "turn": 4,
+        "user": "А рассрочка 0-0-12 через Каспи есть?",
+        "bot": "Да, рассрочка через Каспи без процентов на 12 месяцев точно есть! Например, WP930Z — проводной сканер за 10 000 ₸ можно растянуть на год.",
+        "state": "autonomous_negotiation",
+        "intent": "payment_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 5.28
+      },
+      {
+        "turn": 5,
+        "user": "Ладно а если я приведу клиентов вам, дадите бесплатно?",
+        "bot": "Для индивидуального расчёта оставьте контакт — коллега позвонит в удобное время.",
+        "state": "autonomous_closing",
+        "intent": "negotiate_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 6.33
+      },
+      {
+        "turn": 6,
+        "user": "Окей, а какой самый минимальный тариф?",
+        "bot": "Самый минимальный тариф — Mini за 5 000 ₸/мес, касса + фискализация. А как сейчас ведёте учёт и продажи — всё руками или уже что-то используете? Оставьте, пожалуйста, телефон или email, чтобы поделиться деталями.",
+        "state": "autonomous_closing",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 3,
+        "is_final": false,
+        "elapsed_s": 2.36
+      },
+      {
+        "turn": 7,
+        "user": "Думаю можно попробовать. Как подключиться?",
+        "bot": "Отлично, давайте организуем. Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф.",
+        "state": "autonomous_closing",
+        "intent": "demo_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 33,
+        "is_final": false,
+        "elapsed_s": 2.58
+      },
+      {
+        "turn": 8,
+        "user": "ИИН 920304500678, каспи 87081234567",
+        "bot": "Спасибо за данные! Коллега позвонит вам для подтверждения оплаты.",
+        "state": "payment_ready",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 66,
+        "is_final": true,
+        "elapsed_s": 6.82
+      }
+    ]
+  },
+  {
+    "scenario": "s3_aggressive_pushy",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Короче мне нужна касса, сколько стоит, без воды",
+        "bot": "Касса Wipon Mini стоит 5 000 ₸/мес — фискализация, продажи, наличка/карты, доступ с телефона или кассы.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 3.82
+      },
+      {
+        "turn": 2,
+        "user": "Я спросил цену. Не надо мне ваших вопросов, просто цена",
+        "bot": "Касса с фискализацией обойдётся в 5 000 ₸/мес — всё в одном: продажи, карты, наличка, доступ с телефона или кассы. А что сейчас больше всего мешает работать без этой кассы?",
+        "state": "autonomous_discovery",
+        "intent": "no_need",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.83
+      },
+      {
+        "turn": 3,
+        "user": "Дорого. У конкурентов дешевле. Последний шанс — скидка есть?",
+        "bot": "Вам Mini — 5 000 ₸/мес, фискализация + продажи в одном, доступ с телефона. Актуальные скидки уточню у коллег — они зависят от объёма.",
+        "state": "autonomous_negotiation",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.11
+      },
+      {
+        "turn": 4,
+        "user": "Значит нет скидки? Тогда зачем мне ваш продукт?",
+        "bot": "Не буду отнимать время. Оставьте контакт — пришлю информацию, а вы решите.",
+        "state": "soft_close",
+        "intent": "fallback_close",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": null,
+        "is_final": true,
+        "elapsed_s": 0.18
+      }
+    ]
+  }
+]

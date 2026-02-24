@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/get-check.dto.ts:class:GetCheckDto",
+  "summary": "Этот класс используется для валидации и документирования данных, которые приходят в API. Он проверяет, что поле license_number не пустое и является строкой.",
+  "purpose": "Обеспечивает корректный формат входных данных для эндпоинта проверки лицензии",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка что поле не пустое",
+    "Проверка типа данных (строка)",
+    "Генерация документации для Swagger",
+    "Структурирование входных данных",
+    "Обеспечение типизации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1035,
+  "output_tokens": 541,
+  "model": "qwen3:14b",
+  "code_hash": "966a3f9c28e0f940"
+}

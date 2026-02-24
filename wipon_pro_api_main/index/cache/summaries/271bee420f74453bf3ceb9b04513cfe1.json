@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/count-item-by-excise-code.use-case.ts:method:CountItemByExciseCodeUseCase:constructor",
+  "summary": "Этот код создает сервис, который считает количество товаров в базе данных по заданному типу и коду. Он использует репозиторий для выполнения запроса к таблице товаров.",
+  "purpose": "Позволяет быстро получать статистику товаров по определенным критериям в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Считает товары по динамическим фильтрам",
+    "Использует TypeORM для работы с БД",
+    "Поддерживает инъекцию зависимостей",
+    "Возвращает результат как Promise",
+    "Работает с репозиторием данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1119,
+  "output_tokens": 647,
+  "model": "qwen3:14b",
+  "code_hash": "1c0b1b4c7ac2bdf5"
+}

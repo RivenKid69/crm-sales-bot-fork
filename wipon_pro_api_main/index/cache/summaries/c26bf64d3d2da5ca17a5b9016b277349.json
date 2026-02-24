@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/accounts.module.ts:import:./domain/use-cases/count-ledger-accounts-providers.use-case",
+  "summary": "Этот код создает модуль для работы с банковскими счетами. Он подключает базу данных через TypeORM, использует сервисы для обработки данных и предоставляет контроллер для взаимодействия с пользователем. В модуле есть специальные функции для работы с балансами, транзакциями и учетом проводок.",
+  "purpose": "Обеспечивает управление банковскими счетами и финансовыми операциями в приложении",
+  "domain": "база данных, финансовые операции, API",
+  "key_behaviors": [
+    "Работа с базой данных через TypeORM",
+    "Обработка транзакций и балансов",
+    "Использование специальных use-case для бизнес-логики",
+    "Интеграция с другими модулями через импорт UsersModule",
+    "Экспорт use-case для использования в других частях приложения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1641,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "c4b9b766cb1868f1"
+}

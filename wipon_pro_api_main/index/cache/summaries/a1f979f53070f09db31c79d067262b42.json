@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/store-types/store-types.module",
+  "summary": "Этот код импортирует и настраивает модули и зависимости для NestJS-приложения, включая базу данных, кэш, международизацию и другие функциональные модули.",
+  "purpose": "Создание и настройка структуры приложения с поддержкой базы данных, кэширования, международизации и других функций.",
+  "domain": "база данных, международизация, кэширование, модули приложения",
+  "key_behaviors": [
+    "Настройка подключения к базе данных PostgreSQL",
+    "Использование Redis для кэширования и очередей задач",
+    "Поддержка международизации через i18n",
+    "Интеграция модулей для пользователей, проверок, подписок и других функций",
+    "Настройка расписания задач и кэширования"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/bull",
+    "@nestjs/schedule",
+    "nestjs-i18n",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 2594,
+  "output_tokens": 782,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

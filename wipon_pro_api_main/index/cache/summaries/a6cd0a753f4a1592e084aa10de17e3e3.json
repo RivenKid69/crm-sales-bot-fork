@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-subscription.dto.ts:property:ShowActiveSubscriptionDto:phone_number",
+  "summary": "Этот код определяет свойство phone_number в DTO-классе, которое проверяет, что номер телефона не пустой и соответствует формату Казахстана. Также добавляет описание для документации API.",
+  "purpose": "Обеспечивает валидацию номера телефона и документацию для API при работе с подписками",
+  "domain": "валидация, API, подписки",
+  "key_behaviors": [
+    "Проверка на пустое значение",
+    "Проверка формата номера телефона Казахстана",
+    "Добавление описания для Swagger документации",
+    "Использование декораторов для валидации",
+    "Интеграция с Swagger"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1072,
+  "output_tokens": 609,
+  "model": "qwen3:14b",
+  "code_hash": "5aa2a8ef42649136"
+}

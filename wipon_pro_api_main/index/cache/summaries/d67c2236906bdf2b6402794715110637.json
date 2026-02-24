@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/decorators/full-url.decorator.ts:import:@nestjs/common",
+  "summary": "Этот код создает декоратор, который извлекает полный URL-адрес из HTTP-запроса. Он использует объект запроса Express и модуль url для построения строки URL.",
+  "purpose": "Позволяет легко получать полный URL-адрес запроса в контроллерах NestJS для логирования или аналитики",
+  "domain": "веб-приложения (HTTP-запросы)",
+  "key_behaviors": [
+    "Извлекает протокол, хост и путь из запроса",
+    "Создает полный URL с помощью модуля url",
+    "Работает как декоратор в NestJS для использования в контроллерах",
+    "Использует ExecutionContext для получения объекта запроса",
+    "Поддерживает работу с Express"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "url"
+  ],
+  "input_tokens": 1110,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "38f21076deb30dbc"
+}

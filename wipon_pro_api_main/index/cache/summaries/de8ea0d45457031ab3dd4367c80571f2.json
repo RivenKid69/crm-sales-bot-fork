@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/checks.module.ts:import:./domain/checks.service",
+  "summary": "Этот код создает модуль NestJS для проверок (checks), который подключает базу данных, кэш, HTTP-запросы и другие сервисы. Он использует Redis для кэширования и TypeORM для работы с базой данных.",
+  "purpose": "Обеспечивает функционал проверок данных, интеграцию с другими модулями и кэширование часто используемых данных",
+  "domain": "бизнес-логика, данные, интеграции",
+  "key_behaviors": [
+    "Работа с базой данных через TypeORM",
+    "Кэширование данных через Redis",
+    "Использование HTTP-запросов",
+    "Интеграция с модулями подписок и пользователей",
+    "Подключение к внешним сервисам"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1681,
+  "output_tokens": 747,
+  "model": "qwen3:14b",
+  "code_hash": "1a6069e313ede4d4"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/subscription.dao.ts:property:SubscriptionDao:is_active",
+  "summary": "Свойство is_active - это флаг, который показывает, активна ли подписка. Оно хранит значение true или false и помогает определить, работает ли подписка в данный момент.",
+  "purpose": "Используется для отслеживания текущего статуса подписки пользователя",
+  "domain": "подписки, управление пользователями",
+  "key_behaviors": [
+    "Хранит булево значение (true/false)",
+    "Показывает активность подписки",
+    "Обязательное поле в таблице",
+    "Используется для фильтрации активных подписок",
+    "Часть сущности SubscriptionDao"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1246,
+  "output_tokens": 621,
+  "model": "qwen3:14b",
+  "code_hash": "08dac1712468bc24"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/data/subscription.repository.ts:method:SubscriptionRepository:findUsersSubscription",
+  "summary": "Этот код определяет два метода в репозитории для работы с подписками: один находит последнюю активную подписку пользователя, а другой деактивирует подписку, помечая её как неактивную и удаляя из базы данных.",
+  "purpose": "Эти методы нужны для управления подписками пользователей в приложении, например, в сервисе с подписками или платными функциями.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Находит последнюю подписку пользователя по его ID",
+    "Деактивирует подписку, устанавливая флаг is_active в false и добавляя дату удаления",
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Возвращает null, если подписка не найдена",
+    "Возвращает результат обновления подписки"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "SubscriptionDao"
+  ],
+  "input_tokens": 1060,
+  "output_tokens": 739,
+  "model": "qwen3:14b",
+  "code_hash": "df84cb522be37e97"
+}

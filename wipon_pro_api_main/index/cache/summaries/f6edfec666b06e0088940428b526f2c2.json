@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/use-cases/find-dgd-by-id.use-case.ts:method:FindDgdByIdUseCase:constructor",
+  "summary": "Этот метод ищет объект DGD по его ID с помощью репозитория. Он возвращает данные или undefined, если объект не найден.",
+  "purpose": "Позволяет получать конкретные данные из базы по идентификатору для дальнейшего использования в приложении.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет объект по ID",
+    "Возвращает данные или undefined",
+    "Использует репозиторий для доступа к базе",
+    "Асинхронная операция",
+    "Используется в бизнес-логике"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DgdsRepostitory",
+    "DgdDao"
+  ],
+  "input_tokens": 1053,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "eb469a23f084e5b3"
+}

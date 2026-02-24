@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/dto/post-transfer.dto.ts:property:PostTransferDto:from_user_id",
+  "summary": "Этот код создает класс DTO для передачи данных, который проверяет, что поля from_user_id и to_user_id не пустые и содержат числа. Это как проверка формы в веб-приложении, чтобы пользователь ввел корректные значения.",
+  "purpose": "Обеспечивает валидацию данных при передаче информации между пользователями в API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поля не пустые",
+    "Проверка, что значения числовые",
+    "Персонализированные сообщения об ошибках",
+    "Гарантирует корректный тип данных",
+    "Используется в HTTP-запросах"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "custom IsNumeric validator"
+  ],
+  "input_tokens": 1128,
+  "output_tokens": 629,
+  "model": "qwen3:14b",
+  "code_hash": "b4fecf32c5078b3c"
+}

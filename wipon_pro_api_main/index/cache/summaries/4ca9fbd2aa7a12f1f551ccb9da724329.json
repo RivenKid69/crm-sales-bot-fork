@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/dto/generate-invoice.dto.ts:import:class-validator",
+  "summary": "Этот код импортирует валидаторы для проверки данных в DTO-классе. Он использует декораторы из библиотеки class-validator и кастомную проверку чисел",
+  "purpose": "Обеспечивает корректную валидацию входных данных при создании счета",
+  "domain": "валидация данных, API",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Ограничение значений по списку (enum)",
+    "Проверка типов данных (число/строка)",
+    "Использование кастомной валидации",
+    "Интеграция с конфигурационными данными"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "custom IsNumeric validation"
+  ],
+  "input_tokens": 1197,
+  "output_tokens": 635,
+  "model": "qwen3:14b",
+  "code_hash": "fcb64ead6704fd66"
+}

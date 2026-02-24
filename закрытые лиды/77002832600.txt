@@ -1,0 +1,404 @@
+[
+  {
+    "id": 32264,
+    "create_time": "2025-10-31T11:05:22.160Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 32265,
+    "create_time": "2025-10-31T11:05:22.185Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ербол добрый день!"
+  },
+  {
+    "id": 32273,
+    "create_time": "2025-10-31T11:06:29.431Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "как освободитесь напишите мне я Вам перезвоню Сабыр"
+  },
+  {
+    "id": 196798,
+    "create_time": "2025-12-26T11:51:44.761Z",
+    "author_type": "client",
+    "sent_content": "ок хорошо"
+  },
+  {
+    "id": 197035,
+    "create_time": "2025-12-26T12:09:52.104Z",
+    "author_type": "client",
+    "sent_content": "правильно?"
+  },
+  {
+    "id": 92755,
+    "create_time": "2025-11-24T15:53:49.649Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "WP Заявление на возврат каз-рус.docx"
+  },
+  {
+    "id": 158382,
+    "create_time": "2025-12-12T11:13:55.006Z",
+    "author_type": "client",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 158384,
+    "create_time": "2025-12-12T11:13:58.188Z",
+    "author_type": "client",
+    "sent_content": "насчет возврата"
+  },
+  {
+    "id": 158400,
+    "create_time": "2025-12-12T11:16:23.452Z",
+    "author_type": "client",
+    "sent_content": "образец можете отправить"
+  },
+  {
+    "id": 158401,
+    "create_time": "2025-12-12T11:16:32.558Z",
+    "author_type": "client",
+    "sent_content": "а то я не пойму как все это заполнять"
+  },
+  {
+    "id": 158443,
+    "create_time": "2025-12-12T11:20:56.780Z",
+    "author_type": "client",
+    "sent_content": "??"
+  },
+  {
+    "id": 159257,
+    "create_time": "2025-12-12T12:46:27.243Z",
+    "author_type": "client",
+    "sent_content": "правильно?"
+  },
+  {
+    "id": 159480,
+    "create_time": "2025-12-12T13:31:04.573Z",
+    "author_type": "client",
+    "sent_content": "правильно??"
+  },
+  {
+    "id": 160064,
+    "create_time": "2025-12-12T14:55:34.618Z",
+    "author_type": "client",
+    "sent_content": "О наличии счета (без суммы)_010105501757.pdf"
+  },
+  {
+    "id": 160065,
+    "create_time": "2025-12-12T14:55:41.312Z",
+    "author_type": "client",
+    "sent_content": "может ответите???"
+  },
+  {
+    "id": 160541,
+    "create_time": "2025-12-12T16:11:42.703Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://go.2gis.com/HwdqS"
+  },
+  {
+    "id": 160543,
+    "create_time": "2025-12-12T16:11:53.498Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "пн-пт с 09-00 до 18-00"
+  },
+  {
+    "id": 160553,
+    "create_time": "2025-12-12T16:12:52.816Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "как отправите напишите, это заявление с подписью ручкой в оригинале"
+  },
+  {
+    "id": 196856,
+    "create_time": "2025-12-26T11:55:33.821Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "подписанный отправьте"
+  },
+  {
+    "id": 197162,
+    "create_time": "2025-12-26T12:23:51.952Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИП Касымжан и Касымжан Ербол надо разные"
+  },
+  {
+    "id": 197174,
+    "create_time": "2025-12-26T12:25:07.521Z",
+    "author_type": "client",
+    "sent_content": "щас"
+  },
+  {
+    "id": 197180,
+    "create_time": "2025-12-26T12:25:30.425Z",
+    "author_type": "client",
+    "sent_content": "вот"
+  },
+  {
+    "id": 197150,
+    "create_time": "2025-12-26T12:23:10.966Z",
+    "author_type": "client",
+    "sent_content": "поставил же"
+  },
+  {
+    "id": 198085,
+    "create_time": "2025-12-26T15:35:33.589Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "сегодня"
+  },
+  {
+    "id": 158681,
+    "create_time": "2025-12-12T11:47:34.405Z",
+    "author_type": "client",
+    "sent_content": "вы отвечаете на сообщение?"
+  },
+  {
+    "id": 159254,
+    "create_time": "2025-12-12T12:46:22.917Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 160126,
+    "create_time": "2025-12-12T15:06:21.448Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "да все получили"
+  },
+  {
+    "id": 194126,
+    "create_time": "2025-12-25T14:59:58.350Z",
+    "author_type": "client",
+    "sent_content": "Ип"
+  },
+  {
+    "id": 194120,
+    "create_time": "2025-12-25T14:59:29.316Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 194121,
+    "create_time": "2025-12-25T14:59:31.962Z",
+    "author_type": "client",
+    "sent_content": "насчет возврата"
+  },
+  {
+    "id": 194123,
+    "create_time": "2025-12-25T14:59:42.021Z",
+    "author_type": "client",
+    "sent_content": "блин уже который день я об этой теме пишу вам"
+  },
+  {
+    "id": 194124,
+    "create_time": "2025-12-25T14:59:45.659Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день. Пожалуйста, уточните, какое именно заявление вы хотите обсудить и в каком формате вы работаете (ИП/ТОО). Это поможет мне дать вам более точную информацию."
+  },
+  {
+    "id": 194125,
+    "create_time": "2025-12-25T14:59:46.218Z",
+    "author_type": "client",
+    "sent_content": "верните мои деньги"
+  },
+  {
+    "id": 194127,
+    "create_time": "2025-12-25T14:59:59.165Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Понимаю ваше недовольство. Чтобы помочь вам быстрее, укажите, пожалуйста, ваш город и удобное время для звонка, чтобы мы могли обсудить возврат средств."
+  },
+  {
+    "id": 194129,
+    "create_time": "2025-12-25T15:00:13.211Z",
+    "author_type": "client",
+    "sent_content": "Щас удобно позвоните!"
+  },
+  {
+    "id": 194130,
+    "create_time": "2025-12-25T15:00:14.104Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Спасибо за информацию. Укажите, пожалуйста, ваш город и удобное время для звонка, чтобы мы могли обсудить возврат ваших средств."
+  },
+  {
+    "id": 194131,
+    "create_time": "2025-12-25T15:00:19.674Z",
+    "author_type": "client",
+    "sent_content": "Алматы"
+  },
+  {
+    "id": 194132,
+    "create_time": "2025-12-25T15:00:26.883Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "К сожалению, я не могу инициировать звонки. Пожалуйста, укажите удобное время для звонка в будущем, чтобы мы могли обсудить ваш вопрос."
+  },
+  {
+    "id": 194133,
+    "create_time": "2025-12-25T15:00:31.928Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Спасибо, что указали город. Пожалуйста, сообщите, в какое время вам удобно поговорить в течение рабочего дня, чтобы мы могли обсудить возврат."
+  },
+  {
+    "id": 194134,
+    "create_time": "2025-12-25T15:00:37.010Z",
+    "author_type": "client",
+    "sent_content": "оператор Аида мне нужен"
+  },
+  {
+    "id": 194137,
+    "create_time": "2025-12-25T15:00:48.996Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "К сожалению, я не могу передать вас конкретному оператору. Но я могу помочь с вашим вопросом. Пожалуйста, уточните, в какое время вам удобно поговорить, чтобы я могла помочь вам с возвратом."
+  },
+  {
+    "id": 195416,
+    "create_time": "2025-12-25T22:58:04.915Z",
+    "author_type": "client",
+    "sent_content": "Завтра с утра вам доставят оригинал возврат"
+  },
+  {
+    "id": 195417,
+    "create_time": "2025-12-25T22:58:17.192Z",
+    "author_type": "ai",
+    "sent_content": "Уточните, пожалуйста, ваше имя и город, чтобы я могла помочь вам более точно."
+  },
+  {
+    "id": 196966,
+    "create_time": "2025-12-26T12:05:54.193Z",
+    "author_type": "client",
+    "sent_content": "где подписать"
+  },
+  {
+    "id": 196967,
+    "create_time": "2025-12-26T12:05:56.046Z",
+    "author_type": "client",
+    "sent_content": "скажете?"
+  },
+  {
+    "id": 198077,
+    "create_time": "2025-12-26T15:32:07.724Z",
+    "author_type": "client",
+    "sent_content": "деньги когда поступят?"
+  },
+  {
+    "id": 198089,
+    "create_time": "2025-12-26T15:37:15.171Z",
+    "author_type": "client",
+    "sent_content": "спасибо🤙"
+  },
+  {
+    "id": 197148,
+    "create_time": "2025-12-26T12:23:07.313Z",
+    "author_type": "client",
+    "sent_content": "Да разные"
+  },
+  {
+    "id": 197149,
+    "create_time": "2025-12-26T12:23:08.987Z",
+    "author_type": "client",
+    "sent_content": "подписи"
+  },
+  {
+    "id": 197151,
+    "create_time": "2025-12-26T12:23:12.778Z",
+    "author_type": "client",
+    "sent_content": "посмотрите"
+  },
+  {
+    "id": 158707,
+    "create_time": "2025-12-12T11:50:25.775Z",
+    "author_type": "client",
+    "sent_content": "??!!"
+  },
+  {
+    "id": 158767,
+    "create_time": "2025-12-12T11:59:29.820Z",
+    "author_type": "client",
+    "sent_content": "??"
+  },
+  {
+    "id": 159266,
+    "create_time": "2025-12-12T12:47:28.256Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "можете пожалуйста еще раз отправить"
+  },
+  {
+    "id": 159268,
+    "create_time": "2025-12-12T12:47:38.507Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 159286,
+    "create_time": "2025-12-12T12:50:32.825Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 159287,
+    "create_time": "2025-12-12T12:50:32.886Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 159295,
+    "create_time": "2025-12-12T12:53:59.126Z",
+    "author_type": "client",
+    "sent_content": "а теперь?"
+  },
+  {
+    "id": 159314,
+    "create_time": "2025-12-12T12:56:56.108Z",
+    "author_type": "client",
+    "sent_content": "KZ242172105966Ru.pdf"
+  },
+  {
+    "id": 159315,
+    "create_time": "2025-12-12T12:57:08.886Z",
+    "author_type": "client",
+    "sent_content": "020701601537-20250211135127826.pdf"
+  },
+  {
+    "id": 159827,
+    "create_time": "2025-12-12T14:18:04.852Z",
+    "author_type": "client",
+    "sent_content": "???!"
+  },
+  {
+    "id": 196762,
+    "create_time": "2025-12-26T11:48:35.742Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 196776,
+    "create_time": "2025-12-26T11:49:20.127Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "сейчас бухгалтер отправит акт взаимозачета, нужно подписать документы"
+  },
+  {
+    "id": 196800,
+    "create_time": "2025-12-26T11:51:46.267Z",
+    "author_type": "client",
+    "sent_content": "здравствуйте"
+  },
+  {
+    "id": 197131,
+    "create_time": "2025-12-26T12:21:58.281Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "там от разных людей должны быть подписи"
+  },
+  {
+    "id": 197215,
+    "create_time": "2025-12-26T12:29:03.976Z",
+    "author_type": "client",
+    "sent_content": "ааа все понял"
+  },
+  {
+    "id": 197250,
+    "create_time": "2025-12-26T12:30:30.112Z",
+    "author_type": "client",
+    "sent_content": "вот"
+  },
+  {
+    "id": 197276,
+    "create_time": "2025-12-26T12:31:59.238Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "все ок, принято🤗"
+  }
+]

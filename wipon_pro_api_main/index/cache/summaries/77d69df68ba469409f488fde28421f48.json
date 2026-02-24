@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:method:SubscriptionsController:fundDto: M",
+  "summary": "Этот контроллер обрабатывает различные операции с подписками, такие как создание, получение активной подписки, покупка, возврат средств и получение всех подписок пользователя. Он использует валидацию данных, аутентификацию и документацию через Swagger.",
+  "purpose": "Обеспечивает функционал для управления подписками пользователей в приложении",
+  "domain": "подписки, авторизация, платежи, API",
+  "key_behaviors": [
+    "Создание подписки",
+    "Получение активной подписки по телефону",
+    "Покупка подписки с аутентификацией",
+    "Возврат средств за подписку",
+    "Получение всех подписок пользователя"
+  ],
+  "dependencies_used": [
+    "NestJS Controller",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor",
+    "Swagger декораторы"
+  ],
+  "input_tokens": 2783,
+  "output_tokens": 682,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

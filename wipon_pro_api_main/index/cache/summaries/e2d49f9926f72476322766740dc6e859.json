@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/create-user-by-phone-use-case.ts:class:CreateUserByPhoneUseCase",
+  "summary": "Этот класс отвечает за создание пользователя по номеру телефона. Он использует репозиторий для взаимодействия с базой данных и возвращает объект UserDao, который содержит информацию о созданном пользователе.",
+  "purpose": "Позволяет регистрировать новых пользователей на основе их номера телефона",
+  "domain": "авторизация, управление пользователями",
+  "key_behaviors": [
+    "Создает пользователя по номеру телефона",
+    "Использует репозиторий для сохранения данных в базе",
+    "Возвращает объект UserDao с информацией о пользователе",
+    "Использует инъекцию зависимостей для получения репозитория",
+    "Работает асинхронно через Promise"
+  ],
+  "dependencies_used": [
+    "@nestjs/typeorm",
+    "UsersRepository",
+    "UserDao"
+  ],
+  "input_tokens": 1054,
+  "output_tokens": 720,
+  "model": "qwen3:14b",
+  "code_hash": "a18cabd96a0ffc95"
+}

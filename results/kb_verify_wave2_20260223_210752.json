@@ -1,0 +1,37 @@
+{
+  "summary": {
+    "pass": 0,
+    "fail": 1,
+    "pct": 0.0
+  },
+  "results": [
+    {
+      "scenario": "w2_03_ofd_cost",
+      "trace": [
+        {
+          "turn": 1,
+          "user": "Привет, хочу подключить кассу",
+          "bot": "О, отлично! Чеки сразу уходят в ОФД, а регистрация там и налоговом учёте бесплатная. А какую именно кассу используете сейчас?",
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "elapsed_s": 11.49
+        },
+        {
+          "turn": 2,
+          "user": "Сколько стоит ОФД в месяц? Можно подключить ОФД отдельно без программы?",
+          "bot": "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом.",
+          "state": "autonomous_discovery",
+          "intent": "pricing_details",
+          "elapsed_s": 7.81
+        }
+      ],
+      "check": {
+        "description": "ОФД 1400₸/мес, только с Wipon (не отдельно)",
+        "pass": false,
+        "issues": [
+          "MISS: none of ['1 400', '1400'] found"
+        ]
+      }
+    }
+  ]
+}

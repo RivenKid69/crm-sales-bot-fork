@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/data/ugd-license.repository.ts:class:UgdLicenseRepository",
+  "summary": "Этот класс представляет репозиторий для работы с сущностью UgdLicenseDao в базе данных. Он наследуется от Repository из TypeORM и позволяет выполнять операции с данными.",
+  "purpose": "Обеспечивает доступ к данным сущности UgdLicenseDao через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Чтение данных из базы",
+    "Запись новых данных",
+    "Обновление существующих записей",
+    "Удаление данных",
+    "Поиск по критериям"
+  ],
+  "dependencies_used": [
+    "typeorm/Repository",
+    "typeorm/EntityRepository"
+  ],
+  "input_tokens": 1014,
+  "output_tokens": 550,
+  "model": "qwen3:14b",
+  "code_hash": "080aaa32bb41d00e"
+}

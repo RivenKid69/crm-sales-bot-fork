@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/dto/post-report.dto.ts:import:../../../common/validations/is-numeric",
+  "summary": "Этот код определяет DTO-класс для отчетов, используя валидационные декораторы и Swagger для документирования API. Класс проверяет данные, которые приходят в запросе.",
+  "purpose": "Обеспечивает валидацию данных и документацию API для отчетов в приложении",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка наличия обязательных полей",
+    "Валидация числовых значений",
+    "Проверка существования сущности",
+    "Документация через Swagger",
+    "Проверка формата Base64"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1548,
+  "output_tokens": 661,
+  "model": "qwen3:14b",
+  "code_hash": "4f81e8444d096783"
+}

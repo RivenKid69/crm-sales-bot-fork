@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/presenter/stores.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код определяет контроллер в NestJS, который управляет операциями, связанными с магазинами. Он использует декораторы для маршрутизации, аутентификации и документирования API с помощью Swagger.",
+  "purpose": "Обрабатывает HTTP-запросы для получения, создания и проверки магазинов, обеспечивая безопасность и документацию API.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения магазина пользователя",
+    "Обработка POST-запросов для создания или обновления магазина",
+    "Использование аутентификации для защиты маршрутов",
+    "Документирование API с помощью Swagger",
+    "Использование интерцептора для преобразования данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "StoresService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1952,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "3e6aa9ba085d76a5"
+}

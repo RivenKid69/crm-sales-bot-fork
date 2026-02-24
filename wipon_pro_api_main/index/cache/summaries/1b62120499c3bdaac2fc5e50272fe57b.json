@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/presenter/stores.controller.ts:class:StoresController",
+  "summary": "Этот класс — контроллер, который обрабатывает запросы, связанные с магазинами. Он позволяет получить данные магазина пользователя, создать или обновить магазин, проверить существование магазина и обновить информацию о пользователе и магазине.",
+  "purpose": "Обеспечивает API для взаимодействия с данными магазинов, включая создание, обновление и проверку активности подписки.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получение данных магазина пользователя",
+    "Создание/обновление магазина",
+    "Проверка существования магазина по лицензии",
+    "Использование аутентификации для защиты эндпоинтов",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "StoresService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2162,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "3e6aa9ba085d76a5"
+}

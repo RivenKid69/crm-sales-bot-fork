@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:property:BfAuthenticityService:response",
+  "summary": "Класс BfAuthenticityService отправляет запросы к внешнему API для проверки подлинности товаров и обрабатывает ответы. Он использует кэш, логирование и другие сервисы для выполнения задач.",
+  "purpose": "Проверка подлинности товаров через интеграцию с внешним API и обработка полученных данных",
+  "domain": "API интеграция, проверка подлинности товаров",
+  "key_behaviors": [
+    "Отправка HTTP-запросов к внешнему API",
+    "Проверка валидности ответа от API",
+    "Извлечение информации о продукте из ответа",
+    "Использование кэша для хранения данных",
+    "Логирование запросов и ответов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager",
+    "locutus/php/strings/substr"
+  ],
+  "input_tokens": 2922,
+  "output_tokens": 734,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

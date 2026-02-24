@@ -1,0 +1,997 @@
+{
+  "nodes": [
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:file",
+      "entity_type": "file",
+      "name": "main.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:vue",
+      "entity_type": "import",
+      "name": "vue",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./App.vue",
+      "entity_type": "import",
+      "name": "App.vue",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./router",
+      "entity_type": "import",
+      "name": "router",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./store",
+      "entity_type": "import",
+      "name": "store",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/bootstrap-grid/bootstrap-grid.min.css",
+      "entity_type": "import",
+      "name": "bootstrap-grid.min.css",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/base/app.scss",
+      "entity_type": "import",
+      "name": "app.scss",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:vue-axios",
+      "entity_type": "import",
+      "name": "vue-axios",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:axios",
+      "entity_type": "import",
+      "name": "axios",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:maska",
+      "entity_type": "import",
+      "name": "maska",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@kyvg/vue3-notification",
+      "entity_type": "import",
+      "name": "vue3-notification",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:file",
+      "entity_type": "file",
+      "name": "shims-vue.d.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:import:vue",
+      "entity_type": "import",
+      "name": "vue",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/rates.ts:file",
+      "entity_type": "file",
+      "name": "rates.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/rates.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:file",
+      "entity_type": "file",
+      "name": "ugds.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:function:getUgdsRequest",
+      "entity_type": "function",
+      "name": "getUgdsRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:file",
+      "entity_type": "file",
+      "name": "auth.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:sendVerificationCodeRequest",
+      "entity_type": "function",
+      "name": "sendVerificationCodeRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:getApiTokenRequest",
+      "entity_type": "function",
+      "name": "getApiTokenRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:getUserData",
+      "entity_type": "function",
+      "name": "getUserData",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:file",
+      "entity_type": "file",
+      "name": "dgds.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:function:getDgdsRequest",
+      "entity_type": "function",
+      "name": "getDgdsRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:file",
+      "entity_type": "file",
+      "name": "subscriptions.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:getSubsRequest",
+      "entity_type": "function",
+      "name": "getSubsRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:buySubsRequest",
+      "entity_type": "function",
+      "name": "buySubsRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:makeRefund",
+      "entity_type": "function",
+      "name": "makeRefund",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:file",
+      "entity_type": "file",
+      "name": "storeTypes.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:function:getStoreTypesRequest",
+      "entity_type": "function",
+      "name": "getStoreTypesRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:file",
+      "entity_type": "file",
+      "name": "payment.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:function:generateInvoice",
+      "entity_type": "function",
+      "name": "generateInvoice",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:file",
+      "entity_type": "file",
+      "name": "account.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getAccountRequest",
+      "entity_type": "function",
+      "name": "getAccountRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getTransactionsRequest",
+      "entity_type": "function",
+      "name": "getTransactionsRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:file",
+      "entity_type": "file",
+      "name": "company.api.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:import:@/api/request",
+      "entity_type": "import",
+      "name": "request",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:getCompanyRequest",
+      "entity_type": "function",
+      "name": "getCompanyRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:setCompanyRequest",
+      "entity_type": "function",
+      "name": "setCompanyRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:updateCompanyRequest",
+      "entity_type": "function",
+      "name": "updateCompanyRequest",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:file",
+      "entity_type": "file",
+      "name": "request.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:axios",
+      "entity_type": "import",
+      "name": "axios",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/config/index",
+      "entity_type": "import",
+      "name": "index",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/router",
+      "entity_type": "import",
+      "name": "router",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/store",
+      "entity_type": "import",
+      "name": "store",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@kyvg/vue3-notification",
+      "entity_type": "import",
+      "name": "vue3-notification",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:file",
+      "entity_type": "file",
+      "name": "routes.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:vue-router",
+      "entity_type": "import",
+      "name": "vue-router",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/MainLayout.vue",
+      "entity_type": "import",
+      "name": "MainLayout.vue",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/EmptyLayout.vue",
+      "entity_type": "import",
+      "name": "EmptyLayout.vue",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/store",
+      "entity_type": "import",
+      "name": "store",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:vue-router",
+      "entity_type": "import",
+      "name": "vue-router",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:./routes",
+      "entity_type": "import",
+      "name": "routes",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:@/store",
+      "entity_type": "import",
+      "name": "store",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:file",
+      "entity_type": "file",
+      "name": "helpers.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:import:axios",
+      "entity_type": "import",
+      "name": "axios",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:function:sleep",
+      "entity_type": "function",
+      "name": "sleep",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:function:downloadBlob",
+      "entity_type": "function",
+      "name": "downloadBlob",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:vuex",
+      "entity_type": "import",
+      "name": "vuex",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./initialState",
+      "entity_type": "import",
+      "name": "initialState",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/auth",
+      "entity_type": "import",
+      "name": "auth",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/company",
+      "entity_type": "import",
+      "name": "company",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/account",
+      "entity_type": "import",
+      "name": "account",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/subscriptions",
+      "entity_type": "import",
+      "name": "subscriptions",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:State",
+      "entity_type": "class",
+      "name": "State",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:MutationPayload",
+      "entity_type": "class",
+      "name": "MutationPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:ActionsPayload",
+      "entity_type": "class",
+      "name": "ActionsPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Getters",
+      "entity_type": "class",
+      "name": "Getters",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Store",
+      "entity_type": "class",
+      "name": "Store",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:function:useStore",
+      "entity_type": "function",
+      "name": "useStore",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts:file",
+      "entity_type": "file",
+      "name": "initialState.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts:import:@/config/rates",
+      "entity_type": "import",
+      "name": "rates",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:vuex",
+      "entity_type": "import",
+      "name": "vuex",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:../../initialState",
+      "entity_type": "import",
+      "name": "initialState",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:@/api/account.api",
+      "entity_type": "import",
+      "name": "account.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:MutationPayload",
+      "entity_type": "class",
+      "name": "MutationPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Getters",
+      "entity_type": "class",
+      "name": "Getters",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:ActionsPayload",
+      "entity_type": "class",
+      "name": "ActionsPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Actions",
+      "entity_type": "class",
+      "name": "Actions",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:AugmentedActionContext",
+      "entity_type": "class",
+      "name": "AugmentedActionContext",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Mutations",
+      "entity_type": "class",
+      "name": "Mutations",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:State",
+      "entity_type": "class",
+      "name": "State",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:vuex",
+      "entity_type": "import",
+      "name": "vuex",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:../../initialState",
+      "entity_type": "import",
+      "name": "initialState",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:@/api/auth.api",
+      "entity_type": "import",
+      "name": "auth.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:@/store",
+      "entity_type": "import",
+      "name": "store",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:MutationPayload",
+      "entity_type": "class",
+      "name": "MutationPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Getters",
+      "entity_type": "class",
+      "name": "Getters",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:ActionsPayload",
+      "entity_type": "class",
+      "name": "ActionsPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Actions",
+      "entity_type": "class",
+      "name": "Actions",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:AugmentedActionContext",
+      "entity_type": "class",
+      "name": "AugmentedActionContext",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Mutations",
+      "entity_type": "class",
+      "name": "Mutations",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:State",
+      "entity_type": "class",
+      "name": "State",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:vuex",
+      "entity_type": "import",
+      "name": "vuex",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:../../initialState",
+      "entity_type": "import",
+      "name": "initialState",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:@/api/subscriptions.api",
+      "entity_type": "import",
+      "name": "subscriptions.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:@/config/rates",
+      "entity_type": "import",
+      "name": "rates",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:MutationPayload",
+      "entity_type": "class",
+      "name": "MutationPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:Getters",
+      "entity_type": "class",
+      "name": "Getters",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:ActionsPayload",
+      "entity_type": "class",
+      "name": "ActionsPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:yof Act",
+      "entity_type": "class",
+      "name": "yof Act",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:commit<K extends keyof",
+      "entity_type": "class",
+      "name": "commit<K extends keyof",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:keyof Mut",
+      "entity_type": "class",
+      "name": "keyof Mut",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:",
+      "entity_type": "class",
+      "name": "",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:file",
+      "entity_type": "file",
+      "name": "index.ts",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:vuex",
+      "entity_type": "import",
+      "name": "vuex",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:../../initialState",
+      "entity_type": "import",
+      "name": "initialState",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/company.api",
+      "entity_type": "import",
+      "name": "company.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/ugds.api",
+      "entity_type": "import",
+      "name": "ugds.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/dgds.api",
+      "entity_type": "import",
+      "name": "dgds.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/storeTypes.api",
+      "entity_type": "import",
+      "name": "storeTypes.api",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/router",
+      "entity_type": "import",
+      "name": "router",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:MutationPayload",
+      "entity_type": "class",
+      "name": "MutationPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:Getters",
+      "entity_type": "class",
+      "name": "Getters",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:ActionsPayload",
+      "entity_type": "class",
+      "name": "ActionsPayload",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:K exten",
+      "entity_type": "class",
+      "name": "K exten",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:erty in keyof Mutation",
+      "entity_type": "class",
+      "name": "erty in keyof Mutation",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:",
+      "entity_type": "class",
+      "name": "",
+      "language": "typescript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/vue.config.js:file",
+      "entity_type": "file",
+      "name": "vue.config.js",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/vue.config.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/jest.config.js:file",
+      "entity_type": "file",
+      "name": "jest.config.js",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/jest.config.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.eslintrc.js:file",
+      "entity_type": "file",
+      "name": ".eslintrc.js",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.eslintrc.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/babel.config.js:file",
+      "entity_type": "file",
+      "name": "babel.config.js",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/babel.config.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.prettierrc.js:file",
+      "entity_type": "file",
+      "name": ".prettierrc.js",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.prettierrc.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:file",
+      "entity_type": "file",
+      "name": "download-qr.js",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:ishex",
+      "entity_type": "function",
+      "name": "ishex",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:svg",
+      "entity_type": "function",
+      "name": "svg",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:DATAMatrix",
+      "entity_type": "function",
+      "name": "DATAMatrix",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js"
+    },
+    {
+      "id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:component:DATAMatrix",
+      "entity_type": "component",
+      "name": "DATAMatrix",
+      "language": "javascript",
+      "file": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js"
+    }
+  ],
+  "edges": [
+    {
+      "source": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:file",
+      "target": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Store",
+      "relation_type": "imports",
+      "weight": 1.0
+    },
+    {
+      "source": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:DATAMatrix",
+      "target": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:ishex",
+      "relation_type": "calls",
+      "weight": 1.0
+    },
+    {
+      "source": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:DATAMatrix",
+      "target": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:svg",
+      "relation_type": "calls",
+      "weight": 1.0
+    }
+  ]
+}

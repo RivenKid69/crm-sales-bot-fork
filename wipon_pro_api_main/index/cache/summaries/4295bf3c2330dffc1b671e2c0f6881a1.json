@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/use-cases/find-dgd-by-name.use-case.ts:method:FindDgdByNameUseCase:constructor",
+  "summary": "Этот метод ищет объект DGD по его русскому названию в базе данных. Если объект не найден, возвращается null.",
+  "purpose": "Используется для поиска конкретного объекта DGD по имени в проекте, например, при отображении информации или обработке данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет объект по русскому названию",
+    "Возвращает null, если объект не найден",
+    "Использует репозиторий для доступа к данным",
+    "Асинхронно выполняет поиск",
+    "Возвращает объект DgdDao"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DgdsRepostitory",
+    "DgdDao"
+  ],
+  "input_tokens": 1054,
+  "output_tokens": 713,
+  "model": "qwen3:14b",
+  "code_hash": "7db5273dc1e723d0"
+}

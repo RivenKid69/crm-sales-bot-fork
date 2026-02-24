@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:class:NotificationsService",
+  "summary": "Этот класс управляет уведомлениями пользователей: отправляет, получает, обновляет статус, удаляет и создает уведомления. Использует базу данных и сервис для отправки уведомлений.",
+  "purpose": "Обеспечивает полный цикл работы с уведомлениями в приложении",
+  "domain": "уведомления, пользовательский интерфейс",
+  "key_behaviors": [
+    "Отправка уведомлений отдельному пользователю",
+    "Получение всех уведомлений пользователя",
+    "Обновление статуса уведомления (прочитано/не прочитано)",
+    "Удаление уведомления",
+    "Массовая отправка уведомлений нескольким пользователям"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "PushService",
+    "FindUserByIdUseCase"
+  ],
+  "input_tokens": 2113,
+  "output_tokens": 699,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

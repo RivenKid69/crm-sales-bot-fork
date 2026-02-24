@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/guard/auth.guard.ts:method:AuthGuard:canActivate",
+  "summary": "Этот код проверяет наличие и валидность токена в заголовке запроса. Если токен действителен, он привязывает пользователя к запросу, иначе возвращает ошибку. Как бouncer в клубе, который проверяет билеты",
+  "purpose": "Защищает маршруты, позволяя доступ только аутентифицированным пользователям",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие заголовка Authorization",
+    "Извлекает токен из заголовка",
+    "Ищет пользователя по токену в базе данных",
+    "Привязывает пользователя к запросу, если он найден",
+    "Возвращает ошибку, если токен отсутствует или недействителен"
+  ],
+  "dependencies_used": [
+    "FindUserByTokenUseCase",
+    "UnauthorizedException",
+    "Request",
+    "Injectable",
+    "CanActivate"
+  ],
+  "input_tokens": 1309,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "aa5f49446dc9da5b"
+}

@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:import:axios",
+  "summary": "Этот код содержит две функции: `sleep`, которая приостанавливает выполнение на заданное время, и `downloadBlob`, которая позволяет скачивать файлы из ответа API, если данные пришли в виде Blob. Обе функции полезны для работы с асинхронными операциями и обработки файлов.",
+  "purpose": "Обеспечивает утилиты для временного ожидания и скачивания файлов из API-ответов",
+  "domain": "api",
+  "key_behaviors": [
+    "Приостановка выполнения кода на заданное время",
+    "Скачивание файлов из ответа API в виде Blob",
+    "Совместимость с различными браузерами (включая Internet Explorer)"
+  ],
+  "dependencies_used": [
+    "axios"
+  ],
+  "input_tokens": 1245,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "ac763cac80758359"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/regions.module.ts:class:RegionsModule",
+  "summary": "Этот код создает модуль NestJS для управления регионами. Он использует TypeORM для работы с базой данных, содержит сервисы, логику поиска регионов и контроллер для обработки HTTP-запросов.",
+  "purpose": "Организует компоненты, связанные с регионами, чтобы их можно было использовать в других частях приложения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для подключения к базе данных",
+    "Содержит сервисы для работы с регионами",
+    "Предоставляет функции поиска регионов по названию и ID",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Экспортирует use-cases для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1255,
+  "output_tokens": 736,
+  "model": "qwen3:14b",
+  "code_hash": "83777b9675658c31"
+}

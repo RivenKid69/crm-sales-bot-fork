@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/presenter/reports.controller.ts:import:../../../common/decorators/user.decorator",
+  "summary": "Этот код представляет собой контроллер в NestJS, который обрабатывает POST-запросы для создания отчетов. Он использует валидацию данных, аутентификацию и интеграцию с Swagger для документирования API.",
+  "purpose": "Обработка POST-запросов для создания отчетов с проверкой аутентификации и валидацией данных",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запросов для создания отчетов",
+    "Использование аутентификации через AuthGuard",
+    "Валидация данных с помощью ValidationPipe",
+    "Интеграция с Swagger для документирования API",
+    "Использование декоратора @User() для получения данных пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "ReportsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "User decorator"
+  ],
+  "input_tokens": 1543,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "52d97f09d0487dda"
+}

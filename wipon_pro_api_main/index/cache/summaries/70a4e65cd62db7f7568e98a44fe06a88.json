@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../devices/domain/use-cases/find-users-device-by-at",
+  "summary": "Этот код импортирует необходимые зависимости для создания сервиса аутентификации. Он использует кейсы для работы с пользователями, кодами подтверждения, устройствами и другими сервисами, такими как SMS и биллинг. Также используются утилиты для работы с временем и криптографией.",
+  "purpose": "Этот код нужен для реализации функционала аутентификации и авторизации пользователей в приложении.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка пользователя по номеру телефона",
+    "Создание пользователя при необходимости",
+    "Генерация и управление кодами подтверждения",
+    "Интеграция с SMS-сервисом и биллингом",
+    "Работа с токенами и устройствами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService",
+    "BillingService"
+  ],
+  "input_tokens": 2605,
+  "output_tokens": 763,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

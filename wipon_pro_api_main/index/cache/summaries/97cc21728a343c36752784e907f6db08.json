@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/user-rate-limit.guard.ts:method:UserRateLimitGuard:canActivate",
+  "summary": "Этот код проверяет, не превысил ли пользователь лимит запросов за день. Использует кэш для подсчёта запросов и отправляет предупреждение, если лимит превышен. Работает только для авторизованных пользователей.",
+  "purpose": "Ограничивает количество запросов от одного пользователя для предотвращения перегрузки системы",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверяет авторизацию пользователя",
+    "Считает количество запросов в кэше",
+    "Устанавливает временные ключи для кэша",
+    "Отправляет предупреждение при превышении лимита",
+    "Использует конфигурацию из rate-limits.config"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "rxjs"
+  ],
+  "input_tokens": 1851,
+  "output_tokens": 684,
+  "model": "qwen3:14b",
+  "code_hash": "bc505f40aa633407"
+}

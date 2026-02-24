@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/presenter/stores.controller.ts:import:../dto/get-check.dto",
+  "summary": "Этот код - контроллер NestJS, который обрабатывает HTTP-запросы для управления магазинами. Он использует аутентификацию, валидацию данных и документацию Swagger для API.",
+  "purpose": "Позволяет создавать, получать и проверять информацию о магазинах через REST-интерфейс",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET/POST запросов для магазинов",
+    "Аутентификация пользователей через AuthGuard",
+    "Валидация данных через DTO",
+    "Использование TransformInterceptor для преобразования ответов",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "StoresService",
+    "AuthGuard",
+    "TransformInterceptor",
+    "UserDao"
+  ],
+  "input_tokens": 2103,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "3e6aa9ba085d76a5"
+}

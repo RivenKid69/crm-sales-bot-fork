@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:file",
+  "summary": "Этот файл содержит функции для работы с подписками через API. Он позволяет получать список подписок, покупать их и оформлять возвраты.",
+  "purpose": "Обеспечивает взаимодействие с системой подписок через HTTP-запросы",
+  "domain": "платежи, API",
+  "key_behaviors": [
+    "Получение списка всех подписок",
+    "Покупка подписки",
+    "Оформление возврата средств",
+    "Использование общего API-клиента",
+    "Работа с данными подписок"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 1030,
+  "output_tokens": 585,
+  "model": "qwen3:14b",
+  "code_hash": "39f9bb99ebd1bf53"
+}

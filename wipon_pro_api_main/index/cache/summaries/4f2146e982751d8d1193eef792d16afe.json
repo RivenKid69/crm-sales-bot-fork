@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/domain/cashboxes.service.ts:class:CashboxesService",
+  "summary": "Этот класс отправляет уведомления пользователям через push-сообщения. Он использует коды подтверждения и сообщения для взаимодействия с пользователями.",
+  "purpose": "Отправка push-сообщений для уведомления пользователей о кодах подтверждения и других сообщениях.",
+  "domain": "утилиты, уведомления, авторизация",
+  "key_behaviors": [
+    "Отправка кода подтверждения через push-сообщение",
+    "Отправка произвольных сообщений через push-сообщение",
+    "Поиск пользователя по номеру телефона",
+    "Обработка ошибок при отсутствии пользователя",
+    "Возврат статуса отправки сообщения"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "PushService"
+  ],
+  "input_tokens": 1350,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "152af5f651eacbf3"
+}

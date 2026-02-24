@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/save-accounts.use-case.ts:import:typeorm",
+  "summary": "Этот код создает сервис для сохранения данных аккаунтов с использованием TypeORM. Сервис может сохранять аккаунты как самостоятельно, так и в рамках транзакции.",
+  "purpose": "Позволяет централизованно сохранять данные аккаунтов с поддержкой транзакций в приложении на NestJS",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохранение массива аккаунтов через репозиторий",
+    "Поддержка транзакций через EntityManager",
+    "Инъекция репозитория с помощью NestJS",
+    "Работа с DAO-объектами (Data Access Objects)",
+    "Использование TypeORM для взаимодействия с БД"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1211,
+  "output_tokens": 675,
+  "model": "qwen3:14b",
+  "code_hash": "5817af3179c3c297"
+}

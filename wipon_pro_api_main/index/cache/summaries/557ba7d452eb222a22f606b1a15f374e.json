@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/subscription/subscriptionCharge.producer.service.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис, который отправляет задания в очередь для обработки подписок. Он использует библиотеку Bull для работы с очередями и аннотацию @InjectQueue для инъекции конкретной очереди.",
+  "purpose": "Используется для асинхронной обработки задач, например, для начисления подписок или платежей в фоновом режиме.",
+  "domain": "утилиты, очереди, обработка задач",
+  "key_behaviors": [
+    "Отправка задач в очередь",
+    "Использование аннотации @InjectQueue для выбора нужной очереди",
+    "Асинхронная обработка с задержкой",
+    "Интеграция с библиотекой Bull",
+    "Использование аннотации @Injectable для создания сервиса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/bull",
+    "bull"
+  ],
+  "input_tokens": 916,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "556b8107615d53bd"
+}

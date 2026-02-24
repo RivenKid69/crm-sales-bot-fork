@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/EmptyLayout.vue",
+  "summary": "Этот код настраивает маршруты для Vue-приложения, используя разные макеты (EmptyLayout и MainLayout) и защищая некоторые страницы авторизацией. Он определяет пути для входа, верификации и личного кабинета.",
+  "purpose": "Управление навигацией и защита доступа к разным частям приложения в зависимости от статуса пользователя",
+  "domain": "routing",
+  "key_behaviors": [
+    "Определение маршрутов с разными макетами",
+    "Защита маршрутов через meta-поля (requiresAuth, onlyLoggedOut)",
+    "Ленивая загрузка компонентов с помощью динамического импорта",
+    "Использование разных компонентов для разных частей приложения",
+    "Настройка заголовков страниц через meta-поля"
+  ],
+  "dependencies_used": [
+    "vue-router",
+    "webpack"
+  ],
+  "input_tokens": 1658,
+  "output_tokens": 746,
+  "model": "qwen3:14b",
+  "code_hash": "24645fe475e8fbd2"
+}

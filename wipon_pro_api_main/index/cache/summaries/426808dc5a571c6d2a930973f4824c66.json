@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/presenter/reports.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код создает контроллер для обработки POST-запросов по созданию отчетов. Использует валидацию данных, аутентификацию и интерсептор для преобразования ответа",
+  "purpose": "Обеспечивает безопасный API-эндпоинт для создания отчетов с проверкой данных и преобразованием ответа",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запросов для создания отчетов",
+    "Валидация данных через ValidationPipe",
+    "Аутентификация через AuthGuard",
+    "Преобразование ответа через TransformInterceptor",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "ReportsService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1542,
+  "output_tokens": 655,
+  "model": "qwen3:14b",
+  "code_hash": "52d97f09d0487dda"
+}

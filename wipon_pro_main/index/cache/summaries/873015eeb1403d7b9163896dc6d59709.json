@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.eslintrc.js:file",
+  "summary": "Этот файл настраивает ESLint для проекта Vue.js с TypeScript. Он определяет правила проверки кода, форматирования и окружения, в котором будет работать линтер.",
+  "purpose": "Обеспечивает единые стандарты кодирования, проверку ошибок и форматирование в проекте Vue с TypeScript",
+  "domain": "code quality",
+  "key_behaviors": [
+    "Проверка кода по правилам ESLint",
+    "Интеграция с Prettier для форматирования",
+    "Поддержка TypeScript и Vue 3",
+    "Отключение console/debugger в production",
+    "Специальные правила для тестов Jest"
+  ],
+  "dependencies_used": [
+    "eslint",
+    "plugin-vue",
+    "typescript",
+    "prettier"
+  ],
+  "input_tokens": 1313,
+  "output_tokens": 662,
+  "model": "qwen3:14b",
+  "code_hash": "8e9e0d0192d8cd6c"
+}

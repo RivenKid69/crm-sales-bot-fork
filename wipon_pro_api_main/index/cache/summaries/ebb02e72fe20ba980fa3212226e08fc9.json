@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/ledgers.module.ts:import:../../common/services/billing/billing.service",
+  "summary": "Этот код импортирует и настраивает модуль для работы с записями (ledgers). Он использует сервисы для управления записями и выставления счетов, а также подключает другие модули, такие как пользователи и счета.",
+  "purpose": "Создает модуль, который управляет записями и использует другие модули для обеспечения функциональности.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует сервисы для управления записями",
+    "Подключает модули пользователей и счетов",
+    "Настройка контроллера для обработки запросов",
+    "Использует сервис выставления счетов",
+    "Организует логику в отдельный модуль"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LedgersService",
+    "BillingService",
+    "UsersModule",
+    "AccountsModule"
+  ],
+  "input_tokens": 968,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "6cd2ef049e79b256"
+}

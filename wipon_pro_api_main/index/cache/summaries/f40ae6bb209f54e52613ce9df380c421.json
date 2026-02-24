@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/set-users-token.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который обновляет API-токен пользователя в базе данных. Он использует репозиторий для работы с пользователями и возвращает результат обновления.",
+  "purpose": "Обеспечивает возможность изменения токенов пользователей в системе",
+  "domain": "управление пользователями / авторизация",
+  "key_behaviors": [
+    "Обновляет API-токен конкретного пользователя",
+    "Использует инъекцию зависимостей для получения репозитория",
+    "Возвращает результат операции обновления",
+    "Работает с базой данных через TypeORM",
+    "Использует декоратор @Injectable для регистрации сервиса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1080,
+  "output_tokens": 708,
+  "model": "qwen3:14b",
+  "code_hash": "227193b3dfa822ce"
+}

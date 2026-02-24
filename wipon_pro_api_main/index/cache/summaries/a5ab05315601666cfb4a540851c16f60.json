@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/domain/cashboxes.service.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис для отправки уведомлений пользователям через push-сообщения. Он ищет пользователя по номеру телефона и отправляет коды подтверждения или другие сообщения.",
+  "purpose": "Используется для отправки кодов активации и уведомлений пользователям через push-уведомления",
+  "domain": "уведомления, авторизация",
+  "key_behaviors": [
+    "Отправка кодов подтверждения через push",
+    "Поиск пользователя по номеру телефона",
+    "Обработка ошибок при отсутствии пользователя",
+    "Возврат статуса отправки сообщения",
+    "Использование DTO для валидации данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "FindUserByPhoneUseCase",
+    "PushService",
+    "PushAuthcodeDto",
+    "PushMessageDto"
+  ],
+  "input_tokens": 1490,
+  "output_tokens": 728,
+  "model": "qwen3:14b",
+  "code_hash": "152af5f651eacbf3"
+}

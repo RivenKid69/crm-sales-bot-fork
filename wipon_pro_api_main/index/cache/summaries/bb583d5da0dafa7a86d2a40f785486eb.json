@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/subscription/subscription.service.ts:import:@nestjs/common",
+  "summary": "Этот код импортирует декоратор @Injectable из библиотеки NestJS, который используется для пометки класса как сервиса, который можно внедрять в другие части приложения.",
+  "purpose": "Позволить классу SubscriptionService быть доступным для использования в других компонентах приложения через внедрение зависимостей.",
+  "domain": "api",
+  "key_behaviors": [
+    "Пометка класса как сервиса",
+    "Поддержка внедрения зависимостей",
+    "Упрощение управления объектами в приложении"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 906,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "35b0e3cd8d042afe"
+}

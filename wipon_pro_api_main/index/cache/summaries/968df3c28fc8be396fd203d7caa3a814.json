@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger-chronic.dao.ts:property:LedgerChronicDao:finished_at",
+  "summary": "Это свойство хранит дату и время окончания события в формате timestamp. Оно используется для записи момента, когда процесс или операция завершилась.",
+  "purpose": "Позволяет отслеживать и анализировать временные интервалы выполнения операций в системе",
+  "domain": "логирование, таймстемпинг, аналитика",
+  "key_behaviors": [
+    "Хранит дату окончания в формате timestamp",
+    "Связано с колонкой 'finished_at' в базе данных",
+    "Использует тип данных Date в TypeScript",
+    "Автоматически генерирует значение при сохранении",
+    "Интегрируется с ORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "Date"
+  ],
+  "input_tokens": 1183,
+  "output_tokens": 638,
+  "model": "qwen3:14b",
+  "code_hash": "b62f498bfd6a312f"
+}

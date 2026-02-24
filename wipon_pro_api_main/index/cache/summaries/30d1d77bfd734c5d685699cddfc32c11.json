@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/find-users-all-subscriptions.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис, который получает все подписки пользователя из базы данных. Использует репозиторий для поиска данных и возвращает их в виде объектов SubscriptionDao.",
+  "purpose": "Позволяет получать информацию о подписках конкретного пользователя для отображения в интерфейсе или обработки в приложении.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует репозиторий для поиска подписок по ID пользователя",
+    "Возвращает данные в виде объектов SubscriptionDao",
+    "Работает с базой данных через TypeORM",
+    "Использует декоратор @Injectable для регистрации сервиса",
+    "Поддерживает асинхронную работу через Promise"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "SubscriptionRepository",
+    "SubscriptionDao"
+  ],
+  "input_tokens": 1044,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "a4ae8e31ce034065"
+}

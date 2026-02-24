@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Getters",
+  "summary": "Этот код создает центральный магазин (store) для управления состоянием в приложении на Vue.js. Он объединяет несколько модулей (авторизация, компания, аккаунт, подписки) и настраивает логирование в режиме разработки.",
+  "purpose": "Обеспечивает единое место для хранения и управления данными в приложении, упрощая их доступ и изменение.",
+  "domain": "front-end state management (Vue.js + Vuex)",
+  "key_behaviors": [
+    "Объединение нескольких модулей в один магазин",
+    "Поддержка логирования изменений состояния в разработке",
+    "Типизация через TypeScript для безопасного кода",
+    "Экспорт готового store для использования в компонентах",
+    "Поддержка dispatch/commit для изменения состояния"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "moduleAuth",
+    "moduleCompany",
+    "moduleAccount",
+    "moduleSubs"
+  ],
+  "input_tokens": 1835,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "5be824242a718057"
+}

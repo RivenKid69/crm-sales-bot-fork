@@ -1,0 +1,71 @@
+.modal {
+  &-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: $white;
+    box-shadow: 0px 2px 45px rgba(0, 0, 0, 0.04);
+    border-radius: 20px;
+    opacity: 1;
+    width: $modal-wd;
+    &__head,
+    &__body {
+      padding: 24px;
+    }
+
+    &__head {
+      &-icon {
+        margin-right: 10px;
+        color: $primary;
+      }
+
+      &_flex {
+        display: flex;
+        align-items: center;
+      }
+
+      &-status {
+        background: $success-light-2;
+        border: 1px solid $success-light-1;
+        border-radius: 10px;
+        padding: 8px 12px;
+        color: $success;
+
+        &_expired {
+          background: $danger-light-2;
+          border: 1px solid $danger-light-1;
+          color: $danger;
+        }
+
+        &-wrapper {
+          margin-left: auto;
+        }
+      }
+    }
+
+    &__title {
+      font-weight: 500;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    &__subtitle {
+      font-size: 15px;
+      color: $secondary-color;
+      line-height: 22px;
+    }
+  }
+}
+
+//.modal-card__body {
+//  padding: 0;
+//}
+
+@media (max-width: 499.98px) {
+  .modal {
+    &-card {
+      width: 95%;
+    }
+  }
+}

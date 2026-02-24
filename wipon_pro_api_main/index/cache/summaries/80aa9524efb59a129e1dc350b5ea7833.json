@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/datetime.ts:function:ltNow",
+  "summary": "Функция ltNow проверяет, является ли переданное время старым по сравнению с текущим моментом. Она возвращает true, если сейчас позже, чем указанное время.",
+  "purpose": "Используется для проверки, прошло ли определённое время",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Сравнение времени с текущим моментом",
+    "Проверка, не прошло ли заданное время",
+    "Возвращает булево значение",
+    "Работает с объектами Date",
+    "Используется в таймерах и планировщиках"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 1898,
+  "output_tokens": 676,
+  "model": "qwen3:14b",
+  "code_hash": "0d25fdd307f2caa7"
+}

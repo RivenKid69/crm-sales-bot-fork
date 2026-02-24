@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/find-users-active-subscription.use-case.ts:method:FindUsersActiveSubscriptionUseCase:handle",
+  "summary": "Этот метод ищет активную подписку пользователя в базе данных. Он проверяет, что подписка существует, не удалена и находится в активном состоянии.",
+  "purpose": "Используется для получения текущей активной подписки пользователя, например, для отображения информации в профиле или проверки доступа к функциям.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет подписку по ID пользователя",
+    "Проверяет, что подписка активна",
+    "Игнорирует удаленные подписки",
+    "Возвращает подписку или undefined, если её нет",
+    "Использует репозиторий для доступа к данным"
+  ],
+  "dependencies_used": [
+    "SubscriptionRepository",
+    "SubscriptionDao"
+  ],
+  "input_tokens": 1050,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "22e9fd3778bebf87"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../dto/get-check.dto",
+  "summary": "Этот код представляет собой сервис, который работает со складами, проверяет лицензии, находит склады пользователей, обновляет данные и использует валидацию и базу данных для выполнения операций.",
+  "purpose": "Обеспечивает управление складами, проверку активных подписок и взаимодействие с другими частями системы через DTO и репозитории.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Проверка лицензии склада",
+    "Поиск склада по пользователю",
+    "Обновление данных склада",
+    "Использование валидации DTO",
+    "Интеграция с другими сервисами через use-case"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 2984,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/domain/transactions.service.ts:class:TransactionsService",
+  "summary": "Этот класс - сервис для обработки транзакций пользователей. Он умеет получать историю транзакций, обрабатывать переводы между пользователями и взаимодействовать с системами учета, оплат и уведомлений.",
+  "purpose": "Управление финансовыми операциями пользователей в приложении",
+  "domain": "платежи, транзакции, учет",
+  "key_behaviors": [
+    "Получение истории транзакций пользователя",
+    "Обработка переводов между пользователями",
+    "Проверка валидности операций",
+    "Взаимодействие с системой оплат",
+    "Работа с подписками и уведомлениями"
+  ],
+  "dependencies_used": [
+    "FindUsersAccountsWithTransactionsUseCase",
+    "FindUserByIdUseCase",
+    "BillingService",
+    "FindUsersAllSubscriptionsUseCase",
+    "CountUsersActiveSubscriptionUseCase",
+    "ActivateUsersSubscriptionUseCase",
+    "SumLedgerAccountsBalanceUseCase",
+    "PushService",
+    "FindUsersActiveSubscriptionUseCase",
+    "I18nRequestScopeService"
+  ],
+  "input_tokens": 2619,
+  "output_tokens": 807,
+  "model": "qwen3:14b",
+  "code_hash": "759ff281f4fed029"
+}

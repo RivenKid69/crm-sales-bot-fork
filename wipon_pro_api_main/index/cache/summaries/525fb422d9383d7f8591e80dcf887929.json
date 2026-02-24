@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account-transaction.dao.ts:property:AccountTransactionDao:raw_info",
+  "summary": "Этот код описывает сущность для хранения информации о транзакциях, используя аннотации TypeORM. Он определяет поля, такие как ID, сумма, временные метки и связь с другим объектом (счетом).",
+  "purpose": "Хранение данных о финансовых транзакциях с возможностью связи с владельцами счетов",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранение информации о транзакциях в формате JSON",
+    "Автоматическое присвоение ID для каждой транзакции",
+    "Связь с объектом AccountDao через внешний ключ",
+    "Запись временных меток создания и обновления",
+    "Поддержка числовых значений с заданной точностью"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "AccountDao"
+  ],
+  "input_tokens": 1505,
+  "output_tokens": 705,
+  "model": "qwen3:14b",
+  "code_hash": "98365361d7082291"
+}

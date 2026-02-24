@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:import:vue",
+  "summary": "Этот код объясняет TypeScript, как работать с файлами .vue в проекте Vue. Он говорит, что каждый .vue файл — это компонент, который использует типы из Vue.",
+  "purpose": "Позволяет TypeScript правильно понимать и проверять код Vue компонентов",
+  "domain": "фронтенд-разработка (Vue.js)",
+  "key_behaviors": [
+    "Распознавание файлов .vue как компонентов",
+    "Поддержка типизации Vue компонентов",
+    "Интеграция с TypeScript для проверки кода",
+    "Поддержка Composition API",
+    "Упрощение импорта компонентов"
+  ],
+  "dependencies_used": [
+    "vue",
+    "typescript"
+  ],
+  "input_tokens": 995,
+  "output_tokens": 643,
+  "model": "qwen3:14b",
+  "code_hash": "81bc8a731567e4ee"
+}

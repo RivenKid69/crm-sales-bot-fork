@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/logger/error-logger.ts:import:../helpers/datetime",
+  "summary": "Этот код создает логгер для записи ошибок в файл с таймстемпом и локальным временем Алматы. В режиме разработки ошибки также выводятся в консоль.",
+  "purpose": "Позволяет отслеживать ошибки в приложении с удобной системой логирования",
+  "domain": "логирование",
+  "key_behaviors": [
+    "Запись ошибок в файл с датой в названии",
+    "Форматирование логов в JSON с таймстемпом",
+    "Вывод ошибок в консоль в режиме разработки",
+    "Использование локального времени Алматы для названия файла",
+    "Настройка логгера через Winston"
+  ],
+  "dependencies_used": [
+    "winston",
+    "datetime"
+  ],
+  "input_tokens": 1257,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "c8bcdca1c27f56ea"
+}

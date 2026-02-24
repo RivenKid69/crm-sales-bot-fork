@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/presenter/feedbacks.controller.ts:method:FeedbacksController:postFeedback",
+  "summary": "Этот код - контроллер, который принимает POST-запросы для отправки обратной связи. Пользователь должен быть авторизован, данные проверяются через DTO, а результат преобразуется с помощью интерцептора.",
+  "purpose": "Позволяет зарегистрированным пользователям отправлять отзывы в систему",
+  "domain": "обратная связь",
+  "key_behaviors": [
+    "Обрабатывает POST-запросы по адресу /feedback",
+    "Требует аутентификации через AuthGuard",
+    "Использует DTO для валидации данных",
+    "Преобразует ответ с помощью TransformInterceptor",
+    "Возвращает объект с состоянием 'success'"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "FeedbacksService",
+    "UserDao",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1441,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "b0e8372d7500cec5"
+}

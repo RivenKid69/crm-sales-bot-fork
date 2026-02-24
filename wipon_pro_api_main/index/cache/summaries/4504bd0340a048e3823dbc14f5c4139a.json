@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-users-all-active-devices.use-case.ts:import:../../data/devices.repository",
+  "summary": "Этот код создает сервис, который получает активные устройства пользователя. Он использует репозиторий для работы с базой данных и возвращает количество устройств через промис.",
+  "purpose": "Позволяет получить информацию об активных устройствах пользователя для аналитики или управления доступом",
+  "domain": "управление пользователями",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Возвращает количество активных устройств",
+    "Работает с конкретным пользователем по ID",
+    "Использует инъекцию зависимостей",
+    "Возвращает данные в виде промиса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DevicesRepository"
+  ],
+  "input_tokens": 1098,
+  "output_tokens": 610,
+  "model": "qwen3:14b",
+  "code_hash": "334dc0b132f6351c"
+}

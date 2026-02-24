@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/dto/assign-device-code.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код импортирует декораторы для валидации данных и документации API. Они проверяют, что поля не пустые, имеют правильный тип и соответствуют определённым значениям.",
+  "purpose": "Обеспечивает корректность входных данных и генерирует документацию для API-запросов",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поле не пустое",
+    "Ограничение значений по списку",
+    "Документация для Swagger UI",
+    "Проверка типа данных",
+    "Обязательные поля"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1156,
+  "output_tokens": 659,
+  "model": "qwen3:14b",
+  "code_hash": "60a05289565d1802"
+}

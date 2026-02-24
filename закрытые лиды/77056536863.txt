@@ -1,0 +1,788 @@
+[
+  {
+    "id": 271847,
+    "create_time": "2026-02-02T17:16:59.459Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "переговорили ?"
+  },
+  {
+    "id": 271848,
+    "create_time": "2026-02-02T17:17:19.970Z",
+    "author_type": "client",
+    "sent_content": "Пока нет я отпишусь"
+  },
+  {
+    "id": 271859,
+    "create_time": "2026-02-02T17:26:40.859Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ждем ответа"
+  },
+  {
+    "id": 271866,
+    "create_time": "2026-02-02T17:33:48.256Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271868,
+    "create_time": "2026-02-02T17:35:47.214Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271870,
+    "create_time": "2026-02-02T17:36:22.373Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271872,
+    "create_time": "2026-02-02T17:36:51.913Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271902,
+    "create_time": "2026-02-02T17:43:16.837Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271915,
+    "create_time": "2026-02-02T17:44:58.324Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нет цена остается за вами"
+  },
+  {
+    "id": 271916,
+    "create_time": "2026-02-02T17:45:06.833Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271917,
+    "create_time": "2026-02-02T17:45:15.534Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271942,
+    "create_time": "2026-02-02T18:01:17.464Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Есть ли у вас еще вопросы ?"
+  },
+  {
+    "id": 271951,
+    "create_time": "2026-02-02T18:05:22.524Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272590,
+    "create_time": "2026-02-03T16:06:46.511Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день !"
+  },
+  {
+    "id": 272591,
+    "create_time": "2026-02-03T16:06:57.292Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы собираемся отправлять"
+  },
+  {
+    "id": 272592,
+    "create_time": "2026-02-03T16:07:22.518Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Индрайвер курьером \nЦена 20,000тг \nВас устроит ?"
+  },
+  {
+    "id": 272598,
+    "create_time": "2026-02-03T16:14:18.283Z",
+    "author_type": "client",
+    "sent_content": "Мы оплачиваем доставку?"
+  },
+  {
+    "id": 272599,
+    "create_time": "2026-02-03T16:14:25.056Z",
+    "author_type": "client",
+    "sent_content": "Почему?"
+  },
+  {
+    "id": 272600,
+    "create_time": "2026-02-03T16:15:44.510Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставка платная курьеру напрямую оплачиваете"
+  },
+  {
+    "id": 272601,
+    "create_time": "2026-02-03T16:15:51.908Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272602,
+    "create_time": "2026-02-03T16:16:13.787Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бесплатно только по городу"
+  },
+  {
+    "id": 272603,
+    "create_time": "2026-02-03T16:16:34.665Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272604,
+    "create_time": "2026-02-03T16:16:54.093Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 272605,
+    "create_time": "2026-02-03T16:17:30.064Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272606,
+    "create_time": "2026-02-03T16:18:16.366Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 272607,
+    "create_time": "2026-02-03T16:18:35.325Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 272608,
+    "create_time": "2026-02-03T16:18:47.875Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272609,
+    "create_time": "2026-02-03T16:18:57.138Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "🤝"
+  },
+  {
+    "id": 272610,
+    "create_time": "2026-02-03T16:19:17.125Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "дада"
+  },
+  {
+    "id": 272611,
+    "create_time": "2026-02-03T16:19:22.412Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 272612,
+    "create_time": "2026-02-03T16:20:01.329Z",
+    "author_type": "client",
+    "sent_content": "Устраивает сумма"
+  },
+  {
+    "id": 272614,
+    "create_time": "2026-02-03T16:21:17.169Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "👍"
+  },
+  {
+    "id": 272615,
+    "create_time": "2026-02-03T16:21:34.583Z",
+    "author_type": "client",
+    "sent_content": "👍🏻"
+  },
+  {
+    "id": 281742,
+    "create_time": "2026-02-13T11:29:45.024Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281743,
+    "create_time": "2026-02-13T11:30:02.891Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281744,
+    "create_time": "2026-02-13T11:30:34.363Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас вам напишут"
+  },
+  {
+    "id": 271652,
+    "create_time": "2026-02-02T15:45:20.520Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271653,
+    "create_time": "2026-02-02T15:45:45.265Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 271654,
+    "create_time": "2026-02-02T15:46:15.906Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тариф идет годовой 150,000тг \nМожно в рассрочку оформить все"
+  },
+  {
+    "id": 271655,
+    "create_time": "2026-02-02T15:46:26.286Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бессрочного тарифа нет"
+  },
+  {
+    "id": 271688,
+    "create_time": "2026-02-02T16:09:30.533Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оборудование 319,000тг \nПрограмма 150,000тг"
+  },
+  {
+    "id": 271690,
+    "create_time": "2026-02-02T16:10:39.156Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271700,
+    "create_time": "2026-02-02T16:13:44.827Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271702,
+    "create_time": "2026-02-02T16:14:00.432Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для оформления требуется ИИН ИП и номер телефона"
+  },
+  {
+    "id": 271735,
+    "create_time": "2026-02-02T16:34:01.487Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оформим ?"
+  },
+  {
+    "id": 271740,
+    "create_time": "2026-02-02T16:35:14.300Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271746,
+    "create_time": "2026-02-02T16:36:34.202Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271750,
+    "create_time": "2026-02-02T16:37:18.285Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Договор конечно \nгарантийный талон"
+  },
+  {
+    "id": 271751,
+    "create_time": "2026-02-02T16:37:31.806Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Договор Оферты у нас идет"
+  },
+  {
+    "id": 271752,
+    "create_time": "2026-02-02T16:37:32.904Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас вам видео запишу"
+  },
+  {
+    "id": 271754,
+    "create_time": "2026-02-02T16:38:54.237Z",
+    "author_type": "client",
+    "sent_content": "ИП Репина Е.В.\n861203401514\n8771 653 68 63"
+  },
+  {
+    "id": 271755,
+    "create_time": "2026-02-02T16:39:12.804Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271756,
+    "create_time": "2026-02-02T16:40:34.844Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо"
+  },
+  {
+    "id": 271757,
+    "create_time": "2026-02-02T16:40:40.043Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271758,
+    "create_time": "2026-02-02T16:41:17.265Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Открылось видео ?"
+  },
+  {
+    "id": 271759,
+    "create_time": "2026-02-02T16:41:32.894Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да в комплекте такой же идет"
+  },
+  {
+    "id": 271761,
+    "create_time": "2026-02-02T16:42:13.428Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271762,
+    "create_time": "2026-02-02T16:42:15.542Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Программа 150,000\nОборудование 226,000тг \nСканер без проводной на 7тыс дороже идет"
+  },
+  {
+    "id": 271764,
+    "create_time": "2026-02-02T16:42:25.557Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271765,
+    "create_time": "2026-02-02T16:43:10.862Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271766,
+    "create_time": "2026-02-02T16:43:26.606Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271769,
+    "create_time": "2026-02-02T16:44:17.783Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271771,
+    "create_time": "2026-02-02T16:44:26.890Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271773,
+    "create_time": "2026-02-02T16:44:54.412Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271775,
+    "create_time": "2026-02-02T16:45:12.148Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Программа 150,000\nОборудование 326,000тг"
+  },
+  {
+    "id": 271776,
+    "create_time": "2026-02-02T16:45:18.206Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271777,
+    "create_time": "2026-02-02T16:45:26.108Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271779,
+    "create_time": "2026-02-02T16:45:48.329Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271787,
+    "create_time": "2026-02-02T16:47:10.830Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271789,
+    "create_time": "2026-02-02T16:47:30.362Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 271795,
+    "create_time": "2026-02-02T16:49:11.788Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271800,
+    "create_time": "2026-02-02T16:52:07.974Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок 3в1 365,000\nСканер 17,000\nпринтер этикеток 30,000\nДенежный ящик 21,000\n433,000\nПрограмма 150,000"
+  },
+  {
+    "id": 272706,
+    "create_time": "2026-02-03T16:56:21.870Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "белый минивен 871\n+7 747 200 5262\n20,000 тг \n5 мест"
+  },
+  {
+    "id": 272730,
+    "create_time": "2026-02-03T17:12:35.573Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272732,
+    "create_time": "2026-02-03T17:13:41.441Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 272734,
+    "create_time": "2026-02-03T17:13:49.255Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 273458,
+    "create_time": "2026-02-04T17:28:11.012Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 273459,
+    "create_time": "2026-02-04T17:28:12.064Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 271952,
+    "create_time": "2026-02-02T18:05:23.690Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271781,
+    "create_time": "2026-02-02T16:46:05.423Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "верно"
+  },
+  {
+    "id": 271782,
+    "create_time": "2026-02-02T16:46:05.709Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271956,
+    "create_time": "2026-02-02T18:09:38.427Z",
+    "author_type": "client",
+    "sent_content": "И можно будет ли отключить экран для покупателей оставить только для продавца"
+  },
+  {
+    "id": 271962,
+    "create_time": "2026-02-02T18:12:55.293Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 271966,
+    "create_time": "2026-02-02T18:13:50.536Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271967,
+    "create_time": "2026-02-02T18:13:50.709Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "107тыс"
+  },
+  {
+    "id": 271970,
+    "create_time": "2026-02-02T18:14:07.446Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271972,
+    "create_time": "2026-02-02T18:14:26.599Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Верно"
+  },
+  {
+    "id": 271973,
+    "create_time": "2026-02-02T18:14:45.780Z",
+    "author_type": "client",
+    "sent_content": "Спасибо"
+  },
+  {
+    "id": 271974,
+    "create_time": "2026-02-02T18:14:53.730Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271975,
+    "create_time": "2026-02-02T18:15:19.532Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо"
+  },
+  {
+    "id": 271981,
+    "create_time": "2026-02-02T18:23:28.653Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271982,
+    "create_time": "2026-02-02T18:23:31.866Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271983,
+    "create_time": "2026-02-02T18:23:40.106Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 271984,
+    "create_time": "2026-02-02T18:31:07.585Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 271985,
+    "create_time": "2026-02-02T18:31:29.339Z",
+    "author_type": "client",
+    "sent_content": "👍🏻"
+  },
+  {
+    "id": 271986,
+    "create_time": "2026-02-02T18:31:30.738Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам придет два счет 150 и 326"
+  },
+  {
+    "id": 271987,
+    "create_time": "2026-02-02T18:31:40.388Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 271988,
+    "create_time": "2026-02-02T18:31:46.553Z",
+    "author_type": "client",
+    "sent_content": "Когда"
+  },
+  {
+    "id": 271990,
+    "create_time": "2026-02-02T18:32:03.004Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас"
+  },
+  {
+    "id": 271991,
+    "create_time": "2026-02-02T18:32:16.473Z",
+    "author_type": "client",
+    "sent_content": "И документы нужны от вас договор и все остальное гарантии"
+  },
+  {
+    "id": 271992,
+    "create_time": "2026-02-02T18:32:40.598Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да конечно"
+  },
+  {
+    "id": 271993,
+    "create_time": "2026-02-02T18:32:52.806Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "у вас каспи на каком номере ?"
+  },
+  {
+    "id": 271994,
+    "create_time": "2026-02-02T18:32:56.243Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тот который вы отправили там нет"
+  },
+  {
+    "id": 271995,
+    "create_time": "2026-02-02T18:33:05.940Z",
+    "author_type": "client",
+    "sent_content": "Да на этом"
+  },
+  {
+    "id": 271996,
+    "create_time": "2026-02-02T18:33:26.350Z",
+    "author_type": "client",
+    "sent_content": "Я думаю прежде чем оформить рассрочку вышлите договор"
+  },
+  {
+    "id": 271997,
+    "create_time": "2026-02-02T18:33:40.938Z",
+    "author_type": "client",
+    "sent_content": "На этом с которого пишу"
+  },
+  {
+    "id": 271998,
+    "create_time": "2026-02-02T18:34:06.494Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас"
+  },
+  {
+    "id": 271999,
+    "create_time": "2026-02-02T18:34:15.496Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 272000,
+    "create_time": "2026-02-02T18:37:36.670Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно адрес доставки"
+  },
+  {
+    "id": 272001,
+    "create_time": "2026-02-02T18:37:49.781Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272002,
+    "create_time": "2026-02-02T18:39:49.613Z",
+    "author_type": "client",
+    "sent_content": "070818, РК, ВКО, район Алтай, п.Октябрьский, ул.Бостандык, дом 28"
+  },
+  {
+    "id": 272003,
+    "create_time": "2026-02-02T18:40:20.841Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 272004,
+    "create_time": "2026-02-02T18:40:26.358Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, полный адрес"
+  },
+  {
+    "id": 272005,
+    "create_time": "2026-02-02T18:40:42.960Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Принял"
+  },
+  {
+    "id": 272006,
+    "create_time": "2026-02-02T18:41:22.551Z",
+    "author_type": "client",
+    "sent_content": "Благодарю"
+  },
+  {
+    "id": 272007,
+    "create_time": "2026-02-02T18:41:53.634Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 272011,
+    "create_time": "2026-02-02T18:42:16.850Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "и вам спасибо большое за покупку"
+  },
+  {
+    "id": 272013,
+    "create_time": "2026-02-02T18:45:11.741Z",
+    "author_type": "client",
+    "sent_content": "Долго я вас мурыжыл извиняюсь конечно но должен был изучить все нюансы"
+  },
+  {
+    "id": 272014,
+    "create_time": "2026-02-02T18:45:55.643Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нет, все правильно"
+  },
+  {
+    "id": 272015,
+    "create_time": "2026-02-02T18:46:05.059Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "👍"
+  },
+  {
+    "id": 272016,
+    "create_time": "2026-02-02T18:46:14.739Z",
+    "author_type": "client",
+    "sent_content": "👍🏻"
+  },
+  {
+    "id": 273456,
+    "create_time": "2026-02-04T17:26:20.551Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 273457,
+    "create_time": "2026-02-04T17:26:36.284Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281711,
+    "create_time": "2026-02-13T11:08:10.919Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281712,
+    "create_time": "2026-02-13T11:08:21.907Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281714,
+    "create_time": "2026-02-13T11:08:24.969Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281717,
+    "create_time": "2026-02-13T11:08:57.926Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 281719,
+    "create_time": "2026-02-13T11:09:11.805Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Размеры есть разные"
+  },
+  {
+    "id": 281721,
+    "create_time": "2026-02-13T11:09:16.837Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Стандарт 58*40"
+  },
+  {
+    "id": 281723,
+    "create_time": "2026-02-13T11:09:29.752Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 281727,
+    "create_time": "2026-02-13T11:10:44.852Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "🤝"
+  }
+]

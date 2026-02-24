@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/find-user-by-id.use-case.ts:class:FindUserByIdUseCase",
+  "summary": "Этот класс - сервис, который ищет пользователя по его ID. Он использует репозиторий для работы с базой данных и возвращает объект пользователя или undefined, если пользователь не найден.",
+  "purpose": "Позволяет получать информацию о конкретном пользователе по его идентификатору в системе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет пользователя по ID в базе данных",
+    "Использует репозиторий для доступа к данным",
+    "Возвращает промис с объектом пользователя или undefined",
+    "Работает с UserDao для представления данных",
+    "Использует инъекцию зависимостей для получения репозитория"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1142,
+  "output_tokens": 710,
+  "model": "qwen3:14b",
+  "code_hash": "80d87add35e670f4"
+}

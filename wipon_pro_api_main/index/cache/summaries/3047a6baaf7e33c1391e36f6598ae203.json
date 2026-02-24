@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/dto/check-device.dto.ts:class:CheckDeviceDto",
+  "summary": "Этот класс используется для передачи данных при проверке устройства. Он проверяет, что поле application_type не пустое и является строкой, а также добавляет описание для документации API.",
+  "purpose": "Обеспечивает валидацию входных данных и генерацию документации для эндпоинта проверки устройства",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка что поле не пустое",
+    "Проверка типа данных (строка)",
+    "Добавление описания для Swagger документации",
+    "Структурирование входных данных для API",
+    "Обеспечение корректного формата данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1073,
+  "output_tokens": 519,
+  "model": "qwen3:14b",
+  "code_hash": "64ad94082b028cb5"
+}

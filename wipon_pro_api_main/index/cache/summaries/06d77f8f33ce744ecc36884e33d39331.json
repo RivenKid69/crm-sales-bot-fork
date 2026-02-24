@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/product.dao.ts:import:./item.dao",
+  "summary": "Этот код определяет сущность ProductDao для работы с таблицей 'products' в базе данных. Он использует аннотации TypeORM для описания полей и связи с другой сущностью ItemDao.",
+  "purpose": "Позволяет TypeORM понимать, как маппировать класс ProductDao в таблицу products и управлять связями между сущностями.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Определяет таблицу products в базе данных",
+    "Создает первичный ключ id",
+    "Хранит информацию о продукте (тип, организация, имя и флаг экспорта)",
+    "Устанавливает связь один-к-одному с ItemDao",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1154,
+  "output_tokens": 671,
+  "model": "qwen3:14b",
+  "code_hash": "e8e21d09ba6dff9d"
+}

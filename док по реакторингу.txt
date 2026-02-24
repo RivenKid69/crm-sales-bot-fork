@@ -1,0 +1,152 @@
+Что говорит наука и производственный опыт
+Мои выводы в целом подтверждены — но с важными нюансами
+ПОДТВЕРЖДЕНО: ЛЛМ должен быть основным Decision-Maker
+
+Hudeček & Dusek, SIGDIAL 2023 — прямой ответ на вопрос "Are LLMs All You Need for Task-Oriented Dialogue?": ЛЛМ плохо справляются с отслеживанием состояния диалога (belief state tracking — что клиент уже сказал), но хорошо справляются с управлением диалогом (что делать дальше, как реагировать). Это точно описывает вашу архитектуру: Blackboard правильно существует для трекинга состояния, но неправильно претендует на управление диалогом через HIGH-приоритетные оверрайды.
+
+Anthropic "Building Effective Agents":
+
+"Start with optimized single LLM calls; escalate complexity only when measurably needed."
+
+Они явно называют anti-pattern: добавлять правила "before it demonstrably improves outcomes." Каждый fix: коммит, добавляющий ещё одно правило — это именно этот anti-pattern, если outcome не измерен.
+
+Rasa, Intercom, Salesforce Agentforce — все три production-системы пришли к одному: правила — для структурных гарантий, ЛЛМ — для всего остального.
+
+НЮАНС: Blackboard имеет право на жизнь, но не как Action-Dictator
+
+Hudeček & Dusek специально указывают: ЛЛМ-трекеры диалогового состояния хуже специализированных классификаторов. Ваш Blackboard как информационный слой (что нужно знать ЛЛМ) — это правильно. Неправильно то, что он принимает решения об action через HIGH priority, не давая ЛЛМ это решение пересмотреть.
+
+CLARITY system (EMNLP 2025, production медицинский бот): используют FSM из 6 состояний — минимальный скелет, который определяет что может произойти, но не как ЛЛМ должен ответить. Их FSM описывает допустимые переходы, не action templates.
+
+Вывод: ваш 6-фазный SPIN-флоу как FSM — правильная архитектура. Неправильно то, что поверх него навешаны 16 источников и 6 оверлеев, которые диктуют конкретный action.
+
+НОВОЕ: Две находки, которых я не учёл
+
+1. IFScale benchmark (arXiv:2507.11538) — проблема количества инструкций
+
+Модели класса Qwen3 14B (линейный или пороговый паттерн деградации) при 50–100+ одновременных инструкциях начинают их молча игнорировать. Это не потому что инструкция плохо написана — это физический предел модели. Если сложить:
+
+prompts.yaml autonomous_respond (длинный системный промпт)
+{closing_data_request} инъекция
+{address_instruction}, {do_not_ask}, {available_questions}, {retrieved_facts}
+{objection_instructions}, {question_instruction}
+все implicit ограничения из каждого шаблона
+...скорее всего уже 60–100+ одновременных констрейнтов. Бот игнорирует некоторые правила не потому что в коде баг — а потому что лимит исчерпан. Это объясняет почему некоторые правила "работают иногда".
+
+2. Liu et al., TACL 2024 "Lost in the Middle"
+
+ЛЛМ имеет U-образную кривую внимания: инструкции в начале и конце промпта выполняются надёжно, в середине — на 30% хуже. {closing_data_request}, вставленный в середину шаблона, системно менее эффективен, чем если бы он был в конце.
+
+ОПРОВЕРГНУТ один мой тезис
+
+Я предлагал убрать FactQuestionSource (HIGH). Исследования показывают другое: проблема не в том что источники существуют, а в том что они диктуют action вместо того чтобы передавать контекст. Intercom специально построил fin-cx-retrieval и fin-cx-reranker — отдельные специализированные модели для подготовки контекста до ЛЛМ. Это правильная роль ваших KnowledgeSources: готовить факты, а не выбирать template.
+
+Итоговая архитектурная модель (подтверждённая research)
+
+Layer 1 — Hard rules, pre-LLM (детерминированно, мс):
+  spam, routing, PII extraction patterns, terminal state gates
+  → ОСТАВИТЬ: GoBackGuard, ContentRepetitionGuard, StallGuard
+
+Layer 2 — Context preparation, ML classifiers (не action-диктаторы):
+  intent classification, KB retrieval, state tracking, slot extraction
+  → РЕФАКТОРИРОВАТЬ: PriceQuestionSource, FactQuestionSource — передают
+    {price_intent_detected}, {fact_requested}, {objection_count} как контекст,
+    не как HIGH-priority action proposal
+
+Layer 3 — LLM as dialogue manager (primary decision-maker):
+  что сказать, когда говорить о цене, как реагировать на pain points,
+  когда переходить к closing
+  → AutonomousDecisionSource на HIGH, получает богатый контекст от Layer 2
+
+Layer 4 — Output validation, post-generation (lightweight):
+  grounding check, hallucination detection, confidence threshold
+  → DoorDash pattern: отдельный быстрый классификатор, не inline rules в промпте
+Ключевой принцип из 5 независимых источников: правила отвечают за что "допустимо", ЛЛМ отвечает за что "оптимально" в пределах допустимого.
+
+Sources:
+
+Hudeček & Dusek — SIGDIAL 2023
+IFScale benchmark — arXiv:2507.11538
+Lost in the Middle — TACL 2024
+CLARITY — EMNLP 2025 Industry
+Anthropic: Building Effective Agents
+Intercom Fin Architecture
+Rasa LLM Chatbot Architecture
+Теперь у меня оба результата. Второй агент существенно нюансирует картину — в ряде пунктов мои выводы оказались слишком смелыми.
+
+Полный синтез: наука vs. мои выводы
+Где наука меня поправляет (важнее всего)
+Мой вывод: поднять AutonomousDecisionSource на HIGH, снизить большинство rule-based источников до NORMAL, максимально делегировать ЛЛМ.
+
+Что говорит research: нет. Архитектура HIGH > NORMAL академически валидна. PPDPP, ICLR 2024 прямо показывает: zero-shot LLM policy для proactive goal-directed диалога (продажи, переговоры, SPIN) provably suboptimal. Не "немного хуже" — доказуемо неоптимален без trainable plug-in компонента или flow constraints.
+
+SIGDIAL 2024 Dialog Flow Induction: автоматически индуцированные domain-specific flows, которые ограничивают ЛЛМ, обходят как pure LLM так и manual rules на 24 доменах. Это описывает ваш FSM (6 SPIN-фаз) — он правильный.
+
+Вывод: проблема не в том что HIGH-priority источники существуют. Проблема в том что их trigger conditions содержат баги — "стоит" как хомоним, stale repeated_question carryover. Архитектурный паттерн правильный, критерии срабатывания сломаны.
+
+Где наука подтверждает мои выводы
+PriceQuestionSource и FactQuestionSource — action dictators вместо context providers
+
+Это подтверждается через Intercom Fin: они построили специализированные retrieval/reranking модели чтобы готовить контекст ДО ЛЛМ — а не чтобы принимать решение вместо него. Источники на HIGH должны передавать {price_intent_detected: true} в контекст, а не диктовать action=answer_with_pricing.
+
+Conservative overlay → continue_current_goal
+
+Подтверждается однозначно. Ни один источник не рекомендует rule-based определение "мы застряли" через счётчики. Это именно тот хардкод который ЛЛМ заменит лучше.
+
+Instruction overload (новое, важное)
+
+IFScale, arXiv:2507.11538: Qwen3 14B при 60-100+ одновременных инструкциях начинает их молча игнорировать — линейный паттерн деградации. Это механизм объясняющий баги где правило "существует но не выполняется". Нужен аудит общего числа constraint-ов в промпте.
+
+"Lost in the Middle" эффект
+
+Liu et al., TACL 2024: инструкции в середине промпта выполняются на 30% хуже. {closing_data_request} вставленный mid-template — системно ненадёжен по позиции, не по содержанию.
+
+Что должно быть детерминированным — расширенный список
+Исследования показывают: не только safety, но и:
+
+Что	Почему детерминированно	Источник
+Валидация данных (ИИН формат, KZ-телефон)	Data capture — compliance gate	Rasa, NeMo guardrails
+Переходы между SPIN-фазами (FSM)	Goal-directed dialogue требует constrained transitions	SIGDIAL 2024, CLARITY
+Confidence threshold → fallback routing	Детерминированный gate, не LLM judgment	Rasa, 80% production deployments
+Escalation к оператору	Triggered by threshold, not LLM choice	NeMo, IJCAI 2024
+Terminal state gates (IIN+phone required)	Compliance-sensitive data capture	Springer 2025
+Priority conflict resolution	Должно быть explicit, не LLM	IJCAI 2024
+Что должно быть делегировано ЛЛМ — уточнённый список
+Что	Почему ЛЛМ	Источник
+Response generation (КАК сказать)	ЛЛМ доминирует однозначно	Все источники
+Обработка phrasing variation, code-switching, опечатки	Regex definitively brittle	Voiceflow, arXiv 2411
+Решение задавать ли вопрос и какой	Within-stage flexibility	Hudeček SIGDIAL 2023
+Conservative overlay — "мы застряли"?	ЛЛМ читает full history, счётчики нет	Anthropic guidelines
+Реакция на pain points vs. objections	Семантика, не паттерны	Rasa, PPDPP
+Уточнённая рекомендация (скорректированная research)
+
+Правильная архитектура (подтверждена наукой):
+
+HIGH/CRITICAL — Safety + structural gates (оставить):
+  GoBackGuard, ContentRepetitionGuard, StallGuard, ConversationGuard,
+  Terminal state gates (ИИН+phone required before payment_ready)
+
+HIGH — но только как context providers, не action dictators (рефакторировать):
+  PriceQuestionSource → передаёт {price_intent: true, category: price_core}
+  FactQuestionSource  → передаёт {fact_requested: "tariffs"}
+  ...ЛЛМ решает что с этим делать в рамках автономного действия
+
+Детерминированный FSM (оставить):
+  6-фазный SPIN flow, transitions по чётким условиям
+  ЛЛМ выбирает КАК работать внутри фазы
+
+NORMAL — AutonomousDecisionSource (оставить на NORMAL, но улучшить input):
+  Получает богатый контекст от Layer 2 источников
+  Выбирает next_state + action
+
+Fix bugs в trigger conditions (приоритет #1):
+  Не убирать HIGH-priority архитектуру — фиксить КОГДА она срабатывает
+Intent classification отдельный вопрос: research однозначно говорит — hybrid NLU retriever + LLM reranker, не regex-only. Ваш текущий LLMClassifier + keyword patterns — движение в правильном направлении, но keyword layer нужно сократить до minimum (убрать хомонимы, оставить только highly specific patterns).
+
+Sources:
+
+PPDPP — ICLR 2024
+Dialog Flow Induction — SIGDIAL 2024
+Voiceflow Hybrid Classification Benchmark
+IFScale — arXiv:2507.11538
+IJCAI 2024 Multi-Agent Survey

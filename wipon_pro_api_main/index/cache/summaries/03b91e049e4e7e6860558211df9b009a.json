@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/domain/feedbacks.service.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис для обработки отзывов пользователей. Он очищает данные, проверяет дубликаты, сохраняет информацию в базу и отправляет уведомления через Slack, если это не тестовая среда.",
+  "purpose": "Обработка и хранение отзывов пользователей с защитой от дубликатов и отправкой уведомлений",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Очистка HTML-тегов из текста",
+    "Проверка на дубликаты по данным пользователя",
+    "Сохранение изображений в формате Base64",
+    "Отправка уведомлений через Slack",
+    "Использование конфигурации приложения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "common/helpers/datetime",
+    "common/helpers/save-image",
+    "config/app.config",
+    "common/services/doomguy/doomguy.service",
+    "common/dao/user.dao"
+  ],
+  "input_tokens": 2331,
+  "output_tokens": 774,
+  "model": "qwen3:14b",
+  "code_hash": "85d4cbefa0fbdee8"
+}

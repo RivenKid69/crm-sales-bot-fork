@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/auth.module.ts:import:./domain/auth.service",
+  "summary": "Этот код создает модуль аутентификации, который использует сервис для проверки пользователей и контроллер для обработки запросов. Он подключается к другим модулям для работы с пользователями, устройствами и SMS.",
+  "purpose": "Обеспечивает безопасный вход и управление учетными записями пользователей",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка учетных данных пользователей",
+    "Интеграция с SMS для 2FA",
+    "Работа с подписками через billing",
+    "Использование данных из модулей пользователей и устройств",
+    "Экспорт сервиса для других модулей"
+  ],
+  "dependencies_used": [
+    "UsersModule",
+    "SmsModule",
+    "BillingService",
+    "AuthCodesModule",
+    "AccountsModule"
+  ],
+  "input_tokens": 1466,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "5ce99e3c2ac70170"
+}

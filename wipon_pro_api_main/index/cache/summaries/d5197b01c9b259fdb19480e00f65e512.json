@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/validations/is-entity-exists.ts:import:../dao/region.dao",
+  "summary": "Этот код создает кастомные валидаторы для проверки существования записей в базе данных. Каждый валидатор использует соответствующий DAO-класс, чтобы убедиться, что объект с определенным ID существует перед сохранением данных.",
+  "purpose": "Обеспечивает корректность данных, проверяя, что связанные сущности уже существуют в базе данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Проверка существования storeTypeId в базе данных",
+    "Проверка существования dgdId в базе данных",
+    "Проверка существования ugdId в базе данных",
+    "Проверка существования regionId в базе данных",
+    "Проверка существования itemId в базе данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "StoreTypeDao",
+    "DgdDao",
+    "UgdDao",
+    "RegionDao",
+    "ItemDao"
+  ],
+  "input_tokens": 2509,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "6765c3cb44480c13"
+}

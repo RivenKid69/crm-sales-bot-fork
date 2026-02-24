@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-subscription.dto.ts:file",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для валидации номера телефона при активной подписке. Он использует правила валидации и документирует API через Swagger.",
+  "purpose": "Обеспечивает корректный ввод и проверку номера телефона в API для подписок",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поле не пустое",
+    "Проверка формата казахстанского номера телефона",
+    "Генерация документации для Swagger",
+    "Использование DTO для передачи данных",
+    "Валидация входных данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1053,
+  "output_tokens": 544,
+  "model": "qwen3:14b",
+  "code_hash": "5aa2a8ef42649136"
+}

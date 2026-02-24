@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:import:../../../modules/notifications/domain/notifications.service",
+  "summary": "Этот код создает обработчик задач для отправки уведомлений. Он берет данные из очереди, создает уведомление в системе и отправляет его через Firebase на мобильное устройство.",
+  "purpose": "Обработка асинхронных задач по отправке push-уведомлений пользователям",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Обработка задач из очереди 'push_pro-job'",
+    "Создание записей об уведомлениях в базе данных",
+    "Отправка уведомлений через Firebase",
+    "Логирование успешных и ошибочных попыток",
+    "Работа с токенами устройств и пользовательскими данными"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin"
+  ],
+  "input_tokens": 1639,
+  "output_tokens": 715,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

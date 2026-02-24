@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/store-checks-picture.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код импортирует декораторы для валидации данных и документирования API. Класс StoreChecksPictureDto проверяет, что свойство hash не пустое и является строкой, а также описывает это поле для документации API.",
+  "purpose": "Обеспечивает валидацию входных данных и генерацию документации для API-запросов",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что hash не пустой",
+    "Проверка типа hash как строки",
+    "Генерация документации для API через Swagger",
+    "Использование декораторов для метаданных",
+    "Создание DTO-класса для передачи данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1065,
+  "output_tokens": 613,
+  "model": "qwen3:14b",
+  "code_hash": "9427a71f45db847c"
+}

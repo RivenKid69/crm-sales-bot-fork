@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/feedbacks.module.ts:import:@nestjs/axios",
+  "summary": "Этот код создает модуль NestJS для обработки отзывов. Он подключает контроллер для HTTP-запросов, сервис для логики, репозиторий для работы с базой данных, HTTP-модуль для внешних запросов и модуль пользователей.",
+  "purpose": "Обеспечивает полный стек для управления отзывами: от приема данных до взаимодействия с базой и внешними сервисами",
+  "domain": "база данных, api, утилиты",
+  "key_behaviors": [
+    "Обработка HTTP-запросов через контроллер",
+    "Работа с базой данных через TypeORM",
+    "Выполнение внешних HTTP-запросов",
+    "Использование общих сервисов из других модулей",
+    "Организация кода в модуль для удобства управления"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm"
+  ],
+  "input_tokens": 1236,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "9ba0411130d12230"
+}

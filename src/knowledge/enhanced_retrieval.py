@@ -357,6 +357,25 @@ class LongContextReorder:
 class EnhancedRetrievalPipeline:
     """End-to-end query-driven retrieval for autonomous flow."""
     STATE_CONTEXT_SEPARATOR = "\n=== КОНТЕКСТ ЭТАПА ===\n"
+    _DIRECT_FACTUAL_LEXICAL_RE = re.compile(
+        r"(?:сколько|какие?|какой|расскажите|посоветуй|поч[её]м|цен[аы]|стоимост"
+        r"|можно\s+ли|есть\s+ли|как\s+работает|как\s+это\s+работает|чем\s+отлич"
+        r"|какие\s+банки|какой\s+тариф|какие\s+тарифы|рассрочк|офд|маркировк|1[cс]\b)",
+        re.IGNORECASE,
+    )
+    _DIRECT_FACTUAL_INTENT_PREFIXES = (
+        "question_",
+        "price_",
+        "pricing_",
+        "comparison",
+        "cost_",
+        "roi_",
+    )
+    _DIRECT_FACTUAL_INTENTS_EXACT = frozenset({
+        "payment_terms",
+        "company_info_question",
+        "experience_question",
+    })
 
     def __init__(self, llm: LLMProtocol, category_router: Optional[CategoryRouter] = None):
         self.llm = llm
@@ -368,6 +387,16 @@ class EnhancedRetrievalPipeline:
         self.min_complexity_length = int(settings.get_nested("enhanced_retrieval.min_complexity_length", 30))
         self.rrf_k = int(settings.get_nested("enhanced_retrieval.rrf_k", 60))
         self.rewrite_min_words = int(settings.get_nested("enhanced_retrieval.rewrite_min_words", 4))
+        self.factual_state_backfill_max_chars = int(
+            settings.get_nested("enhanced_retrieval.factual_state_backfill_max_chars", 1200)
+        )
+        self.reranker_top_k = int(settings.get_nested("enhanced_retrieval.reranker_top_k", 5))
+        self.reranker_skip_on_direct_factual = bool(
+            settings.get_nested("enhanced_retrieval.reranker_skip_on_direct_factual", True)
+        )
+        self.reranker_preserve_exact_on_factual = bool(
+            settings.get_nested("enhanced_retrieval.reranker_preserve_exact_on_factual", True)
+        )
 
         self.query_rewriter = QueryRewriter(llm=llm, rewrite_min_words=self.rewrite_min_words)
         self.complexity_detector = ComplexityDetector(min_complexity_length=self.min_complexity_length)
@@ -426,6 +455,7 @@ class EnhancedRetrievalPipeline:
                 )
 
         retriever = get_retriever()
+        is_direct_factual_turn = self._is_direct_factual_turn(intent=intent, user_message=user_message)
 
         # [1] Rewrite follow-up query when needed.
         rewritten_query = self.query_rewriter.rewrite(user_message=user_message, history=history)
@@ -556,9 +586,38 @@ class EnhancedRetrievalPipeline:
                 ranked_results = self.multi_query_retriever.merge_rankings([base_results, *sub_results])
 
         # [4.5] Cross-encoder reranking over hybrid candidates.
+        pre_rerank_candidates = ranked_results[:20]
         reranker = get_reranker()
-        if reranker.is_available() and len(ranked_results) > 1:
-            ranked_results = reranker.rerank(rewritten_query, ranked_results[:20], top_k=5)
+        if reranker.is_available() and len(pre_rerank_candidates) > 1:
+            if self.reranker_skip_on_direct_factual and is_direct_factual_turn:
+                ranked_results = pre_rerank_candidates[: self.reranker_top_k]
+            else:
+                reranked = reranker.rerank(
+                    rewritten_query,
+                    pre_rerank_candidates,
+                    top_k=self.reranker_top_k,
+                )
+                if self.reranker_preserve_exact_on_factual and is_direct_factual_turn:
+                    reranked_keys = {self._result_key(r) for r in reranked}
+                    lexical_anchors = [
+                        candidate
+                        for candidate in pre_rerank_candidates[:10]
+                        if self._is_lexical_anchor(candidate)
+                    ]
+                    if lexical_anchors and not any(
+                        self._result_key(anchor) in reranked_keys
+                        for anchor in lexical_anchors
+                    ):
+                        logger.info(
+                            "Reranker dropped lexical anchors on factual query, fallback to pre-rerank",
+                            intent=intent,
+                            query=(user_message or "")[:120],
+                        )
+                        ranked_results = pre_rerank_candidates[: self.reranker_top_k]
+                    else:
+                        ranked_results = reranked
+                else:
+                    ranked_results = reranked
 
         # [5] Long-context reorder before text formatting.
         reordered_results = LongContextReorder.reorder(ranked_results)
@@ -589,8 +648,11 @@ class EnhancedRetrievalPipeline:
             # Reserve separator budget only when both contexts are present.
             remaining -= len(self.STATE_CONTEXT_SEPARATOR)
         remaining = max(0, remaining)
-        if len(state_text) > remaining:
-            state_text = state_text[:remaining]
+        state_budget = remaining
+        if is_direct_factual_turn and query_fact_keys:
+            state_budget = min(state_budget, self.factual_state_backfill_max_chars)
+        if len(state_text) > state_budget:
+            state_text = state_text[:state_budget]
 
         # [8] Merge query-driven context with state context.
         facts_text = self._merge_context_text(query_facts_text, state_text)
@@ -684,6 +746,36 @@ class EnhancedRetrievalPipeline:
             merged.append(key)
             seen.add(key)
         return merged
+
+    @classmethod
+    def _looks_like_direct_factual_question(cls, user_message: str) -> bool:
+        msg = (user_message or "").strip()
+        if not msg:
+            return False
+        if "?" in msg:
+            return True
+        return bool(cls._DIRECT_FACTUAL_LEXICAL_RE.search(msg))
+
+    @classmethod
+    def _is_direct_factual_turn(cls, intent: str, user_message: str) -> bool:
+        normalized_intent = str(intent or "").lower().strip()
+        if not normalized_intent:
+            return False
+        is_factual_intent = (
+            normalized_intent.startswith(cls._DIRECT_FACTUAL_INTENT_PREFIXES)
+            or normalized_intent in cls._DIRECT_FACTUAL_INTENTS_EXACT
+        )
+        if not is_factual_intent:
+            return False
+        return cls._looks_like_direct_factual_question(user_message)
+
+    @staticmethod
+    def _is_lexical_anchor(result: SearchResult) -> bool:
+        if getattr(result, "matched_keywords", None):
+            return True
+        if getattr(result, "matched_lemmas", None):
+            return True
+        return False
 
 
 __all__ = [

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/subscription.dao.ts:property:SubscriptionDao:deleted_at",
+  "summary": "Этот код определяет структуру таблицы 'subscriptions' в базе данных. Класс SubscriptionDao описывает поля, такие как id, user_id, is_active, type, paid_name, paid_bin, created_at, updated_at, expires_at и deleted_at, которые будут хранить данные о подписках пользователей",
+  "purpose": "Создает модель данных для работы с подписками в приложении, позволяя хранить и управлять информацией о подписках пользователей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Определение структуры таблицы в базе данных",
+    "Использование автоматически генерируемого id",
+    "Хранение даты создания, обновления и удаления записей",
+    "Поддержка мягкого удаления через поле deleted_at",
+    "Ограничение длины поля paid_bin"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1232,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "08dac1712468bc24"
+}

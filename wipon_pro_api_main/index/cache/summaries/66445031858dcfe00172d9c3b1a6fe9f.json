@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/license.dao.ts:property:LicenseDao:status",
+  "summary": "Этот код описывает сущность 'LicenseDao' в базе данных, которая хранит информацию о лицензиях: уникальный номер, статус, дополнительные настройки и временные метки. Также устанавливает связь с другой сущностью 'GeoNodeToLicensesDao'.",
+  "purpose": "Используется для хранения и управления данными о лицензиях в системе, включая их статус и связь с географическими узлами.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание таблицы 'licenses' в базе данных",
+    "Хранение уникального номера лицензии",
+    "Сохранение статуса лицензии",
+    "Запись даты создания и обновления лицензии",
+    "Связь с другими сущностями через 'geo_node_licenses'"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "GeoNodeToLicensesDao"
+  ],
+  "input_tokens": 1317,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "d7b10891b5fe40da"
+}

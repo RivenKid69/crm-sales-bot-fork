@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/reports.module.ts:import:./presenter/reports.controller",
+  "summary": "Этот код создает модуль NestJS для управления отчетами. Он подключает базу данных через TypeORM, использует сервис для логики и контроллер для обработки HTTP-запросов. Также интегрируется с модулем пользователей.",
+  "purpose": "Модуль нужен для организации логики, хранения данных и обработки запросов, связанных с отчетами в приложении.",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "подключение к базе данных",
+    "обработка HTTP-запросов",
+    "интеграция с другими модулями",
+    "использование сервисов для бизнес-логики",
+    "организация кода в модули"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1028,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "bb5f6d6891d20198"
+}

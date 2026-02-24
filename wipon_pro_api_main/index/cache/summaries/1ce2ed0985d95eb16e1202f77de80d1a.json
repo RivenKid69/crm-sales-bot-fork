@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transaction.dto.ts:file",
+  "summary": "Этот код создает DTO (Data Transfer Object) для создания транзакции. Он использует валидаторы, чтобы убедиться, что данные корректны: например, проверяет, что user_id — число, provider — из списка опций, amount — числовое значение и т.д.",
+  "purpose": "Валидация данных при создании транзакции в API, чтобы предотвратить ошибки и обеспечить целостность данных",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка обязательных полей (user_id, provider, amount)",
+    "Ограничение значений provider и account из фиксированного списка",
+    "Проверка числовых типов данных (amount, timestamp, contracter_id)",
+    "Валидация существования ledger по contracter_id",
+    "Проверка формата raw_info как JSON"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsIn",
+    "IsInt",
+    "IsJSON",
+    "IsNotEmpty",
+    "IsNumber",
+    "IsNumberString",
+    "IsOptional",
+    "IsString",
+    "IsLedgerExists"
+  ],
+  "input_tokens": 1489,
+  "output_tokens": 791,
+  "model": "qwen3:14b",
+  "code_hash": "016d7685d03071fe"
+}

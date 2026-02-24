@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account.dao.ts:import:typeorm",
+  "summary": "Этот код определяет сущность 'AccountDao' для базы данных, описывающую аккаунты с полями, такими как id, пользователь, баланс и связи с другими сущностями. Использует аннотации TypeORM для работы с ORM.",
+  "purpose": "Определяет структуру таблицы accounts в базе данных для хранения информации об аккаунтах и их связей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу accounts с полями id, user_id, provider, balance и т.д.",
+    "Добавляет временные метки (created_at, updated_at, deleted_at)",
+    "Устанавливает связь 'многие к одному' с ledger",
+    "Создает связь 'один ко многим' с транзакциями",
+    "Использует аннотации TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao",
+    "AccountTransactionDao"
+  ],
+  "input_tokens": 1534,
+  "output_tokens": 704,
+  "model": "qwen3:14b",
+  "code_hash": "550426ffa65ba1f2"
+}

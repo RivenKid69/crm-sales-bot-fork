@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node.dao.ts:property:GeoNodeDao:longitude",
+  "summary": "Этот код описывает сущность 'GeoNodeDao' в TypeORM, которая представляет географический узел с такими свойствами, как идентификатор, регион, имя на разных языках, координаты и даты создания и обновления. Также определены связи с другими сущностями, такими как GeoNodeToLicensesDao и RegionDao.",
+  "purpose": "Эта сущность используется для хранения и управления данными о географических узлах в базе данных, обеспечивая связь с лицензиями и регионами.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит информацию о географических узлах",
+    "Использует TypeORM для работы с базой данных",
+    "Связывает узлы с регионами и лицензиями",
+    "Хранит даты создания и обновления",
+    "Поддерживает многоязычные названия"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "GeoNodeToLicensesDao",
+    "RegionDao"
+  ],
+  "input_tokens": 1388,
+  "output_tokens": 787,
+  "model": "qwen3:14b",
+  "code_hash": "fab82ca42099d334"
+}

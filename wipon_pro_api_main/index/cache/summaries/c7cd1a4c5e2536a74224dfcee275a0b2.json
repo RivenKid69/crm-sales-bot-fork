@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/transaction.guard.ts:class:TransactionGuard",
+  "summary": "TransactionGuard проверяет, есть ли у запроса специальный токен в заголовке. Если токена нет или он не совпадает с настроенным, доступ запрещён. Использует настройки из app.config",
+  "purpose": "Ограничивает доступ к определённым API-роутам только для авторизованных пользователей через токен",
+  "domain": "авторизация, API",
+  "key_behaviors": [
+    "Проверяет наличие заголовка Authorization",
+    "Сравнивает токен из заголовка с конфигурационным",
+    "Вызывает ошибку, если токен отсутствует или неверный",
+    "Использует настройки из app.config",
+    "Работает как защита для определённых маршрутов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "express"
+  ],
+  "input_tokens": 1236,
+  "output_tokens": 736,
+  "model": "qwen3:14b",
+  "code_hash": "8b2b0537c1fdd073"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/data/accounts.repository.ts:import:typeorm",
+  "summary": "Этот код создает репозиторий для работы с сущностью AccountDao в базе данных. Он использует TypeORM для управления записями в таблице, связанной с AccountDao.",
+  "purpose": "Позволяет выполнять операции чтения/записи данных для объектов AccountDao в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Выполняет запросы к базе данных",
+    "Управляет жизненным циклом объектов AccountDao",
+    "Обеспечивает типобезопасное взаимодействие с БД",
+    "Использует аннотации для связи с таблицей",
+    "Расширяет базовый функционал Repository TypeORM"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1023,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "26e3f16f647f4318"
+}

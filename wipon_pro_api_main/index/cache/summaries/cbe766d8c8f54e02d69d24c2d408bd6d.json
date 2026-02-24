@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/version/version.module.ts:class:VersionModule",
+  "summary": "Этот код создает модуль в NestJS, который объединяет контроллер и сервис для работы с версиями. Контроллер обрабатывает HTTP-запросы, а сервис содержит бизнес-логику.",
+  "purpose": "Организует связанную логику и endpoints для работы с версиями приложения в одном модуле",
+  "domain": "API",
+  "key_behaviors": [
+    "Группирует контроллер и сервис в отдельный модуль",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Использует сервис для реализации бизнес-логики",
+    "Создает структуру для расширения функциональности",
+    "Упрощает управление зависимостями"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 1039,
+  "output_tokens": 644,
+  "model": "qwen3:14b",
+  "code_hash": "c82938e1223b3bee"
+}

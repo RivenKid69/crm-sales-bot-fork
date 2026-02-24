@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/domain/smsc.service.ts:import:../dto/post-callback.dto",
+  "summary": "Этот код обрабатывает входящие callback-уведомления от SMS-сервиса, проверяет их подлинность с помощью SHA1-хэша и отправляет данные в другой сервис. Использует логирование и настройки из конфига.",
+  "purpose": "Обеспечивает безопасный прием и обработку callback-уведомлений от SMS-сервиса",
+  "domain": "sms-уведомления, валидация данных, интеграция сервисов",
+  "key_behaviors": [
+    "Проверка подлинности данных через хэш-сумму",
+    "Логирование событий в разные уровни",
+    "Использование конфигурационных переменных",
+    "Интеграция с внешним сервисом через DoomguyService",
+    "Динамический импорт библиотеки crypto"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "crypto",
+    "PostCallbackDto",
+    "DoomguyService",
+    "appConfig"
+  ],
+  "input_tokens": 1544,
+  "output_tokens": 764,
+  "model": "qwen3:14b",
+  "code_hash": "1dea76578f313352"
+}

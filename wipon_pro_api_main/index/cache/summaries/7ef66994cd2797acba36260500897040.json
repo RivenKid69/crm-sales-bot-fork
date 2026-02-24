@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/payment-fiscalization.task.ts:import:@nestjs/axios",
+  "summary": "Этот код реализует задачу, которая периодически проверяет платежи и отправляет их в фискальную систему. Использует кэш для предотвращения повторных обработок и HTTP-запросы для связи с внешним API.",
+  "purpose": "Обеспечивает автоматическую фискализацию платежей в системе, чтобы они соответствовали требованиям законодательства.",
+  "domain": "автоматизация, фискализация, API, база данных",
+  "key_behaviors": [
+    "Периодически проверяет новые платежи",
+    "Использует Redis для предотвращения повторной обработки",
+    "Отправляет данные в внешний фискальный API",
+    "Обновляет статус платежа в базе данных",
+    "Логирует ошибки в отдельный логгер"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "uuid",
+    "@nestjs/schedule",
+    "typeorm",
+    "@nestjs/axios"
+  ],
+  "input_tokens": 2732,
+  "output_tokens": 761,
+  "model": "qwen3:14b",
+  "code_hash": "289855327fc251f7"
+}

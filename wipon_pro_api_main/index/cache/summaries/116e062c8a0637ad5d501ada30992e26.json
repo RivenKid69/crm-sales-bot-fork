@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/store-subscription.dto.ts:import:../../../common/validations/is-entity-exists",
+  "summary": "Этот код создает DTO (Data Transfer Object) для хранения подписки, проверяя телефонный номер на валидность и наличие в системе, а также опционально проверяя количество месяцев подписки.",
+  "purpose": "Обеспечивает корректный ввод данных при создании подписки пользователя",
+  "domain": "валидация данных, подписки",
+  "key_behaviors": [
+    "Проверяет формат казахстанского номера телефона",
+    "Проверяет существует ли пользователь с таким номером",
+    "Делает поле 'lifetime' необязательным",
+    "Проверяет, что 'lifetime' является целым числом",
+    "Устанавливает минимальное значение для 'lifetime' в 1"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "../../../common/validations/is-entity-exists"
+  ],
+  "input_tokens": 1175,
+  "output_tokens": 647,
+  "model": "qwen3:14b",
+  "code_hash": "b6357451b8af90fe"
+}

@@ -1,0 +1,25 @@
+{
+  "total_files": 28,
+  "total_lines": 1476,
+  "total_classes": 33,
+  "total_functions": 21,
+  "total_methods": 0,
+  "total_interfaces": 0,
+  "total_traits": 0,
+  "total_components": 1,
+  "files_by_language": {
+    "typescript": 22,
+    "javascript": 6
+  },
+  "lines_by_language": {
+    "typescript": 937,
+    "javascript": 539
+  },
+  "total_imports": 57,
+  "total_relations": 3,
+  "external_dependencies": 0,
+  "total_sql_queries": 0,
+  "tables_accessed": [],
+  "total_endpoints": 0,
+  "endpoints_by_method": {}
+}

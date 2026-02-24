@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/data/auth-codes.repository.ts:class:AuthCodesRepository",
+  "summary": "Этот класс - репозиторий для работы с кодами авторизации. Он ищет коды по пользователю и конкретному коду, а также находит самый свежий код пользователя из базы данных.",
+  "purpose": "Позволяет безопасно получать и проверять коды авторизации из базы данных для системы входа",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск кода по пользователю и конкретному значению кода",
+    "Поиск последнего созданного кода пользователя",
+    "Возвращает null, если код не найден",
+    "Использует TypeORM для работы с базой данных",
+    "Работает с объектами AuthCodeDao"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository",
+    "AuthCodeDao"
+  ],
+  "input_tokens": 1302,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "2a0205f15fc42976"
+}

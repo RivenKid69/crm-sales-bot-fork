@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:method:SubscriptionsService:(user.id);\n    return !!desktopAndTs",
+  "summary": "Этот код проверяет, есть ли у пользователя активная подписка. Сначала ищет пользователя по номеру телефона, затем проверяет наличие активной подписки в базе данных и возвращает её детали, если она есть. Если пользователь или подписка не найдены, возвращает ошибку.",
+  "purpose": "Позволяет проверить статус подписки пользователя для отображения в интерфейсе или API",
+  "domain": "управление подписками",
+  "key_behaviors": [
+    "Ищет пользователя по номеру телефона",
+    "Проверяет наличие активной подписки",
+    "Возвращает ошибку, если пользователь или подписка не найдены",
+    "Формирует ответ с информацией о подписке",
+    "Использует репозиторий для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "SubscriptionRepository",
+    "HttpException",
+    "Injectable",
+    "InjectRepository"
+  ],
+  "input_tokens": 2704,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

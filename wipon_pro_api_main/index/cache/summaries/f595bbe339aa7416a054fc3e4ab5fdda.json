@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/billings.module.ts:import:../../common/services/ssl/ssl.service",
+  "summary": "Этот код импортирует сервис для работы с SSL-сертификатами, который используется в модуле оплат. Он подключает необходимые зависимости и настройки для работы с кэшированием через Redis.",
+  "purpose": "Обеспечивает безопасное соединение и кэширование данных в модуле оплат",
+  "domain": "платежи, кэширование, безопасность",
+  "key_behaviors": [
+    "Использует SSL-сертификаты для безопасного соединения",
+    "Интегрируется с кэшированием через Redis",
+    "Подключает модули пользователей и счетов",
+    "Использует общие сервисы из папки common",
+    "Работает в рамках NestJS-модуля"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager-redis-store",
+    "UsersModule",
+    "AccountsModule"
+  ],
+  "input_tokens": 1314,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "ddc128a566174f32"
+}

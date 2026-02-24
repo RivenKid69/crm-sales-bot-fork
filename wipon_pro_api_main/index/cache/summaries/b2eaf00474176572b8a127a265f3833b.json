@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/find-users-ledger.use-case.ts:import:../../data/users.repository",
+  "summary": "Этот код создает сервис, который ищет пользователя по ID и возвращает его финансовый леджер. Использует репозиторий для базы данных и объект DAO для работы с данными.",
+  "purpose": "Позволяет получить информацию о финансовых записях пользователя для отображения в интерфейсе или аналитики",
+  "domain": "база данных, авторизация, финансовые операции",
+  "key_behaviors": [
+    "Ищет пользователя по ID с загрузкой связанных данных",
+    "Возвращает объект леджера или null, если пользователь не найден",
+    "Использует TypeORM для работы с базой данных",
+    "Работает с DAO-объектами для обработки данных",
+    "Поддерживает загрузку вложенных данных (например, счета)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UsersRepository",
+    "LedgerDao"
+  ],
+  "input_tokens": 1199,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "41e784dd45415025"
+}

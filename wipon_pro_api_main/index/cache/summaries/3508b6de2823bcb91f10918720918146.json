@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/subscriptionCharge.consumer.ts:import:../../../modules/subscriptions/domain/use-cases/activate-users-subscription.use-case",
+  "summary": "Этот код - потребитель задач, который обрабатывает оплату подписки пользователя. Он проверяет активную подписку, списывает деньги и активирует подписку, если оплата прошла успешно.",
+  "purpose": "Автоматизация процесса оплаты и активации подписок пользователей",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Обработка задач из очереди Bull",
+    "Проверка наличия активной подписки",
+    "Списание средств через BillingService",
+    "Транзакционное обновление данных в базе",
+    "Логирование процесса выполнения"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "typeorm",
+    "@nestjs/common"
+  ],
+  "input_tokens": 2000,
+  "output_tokens": 642,
+  "model": "qwen3:14b",
+  "code_hash": "3ed7f67e58569a57"
+}

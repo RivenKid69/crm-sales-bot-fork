@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/presenter/devices.controller.ts:import:../../../common/dao/user.dao",
+  "summary": "Этот контроллер обрабатывает запросы для назначения и проверки устройств пользователя. Использует валидацию данных, аутентификацию и документацию через Swagger.",
+  "purpose": "Управление привязкой устройств к пользователям с защитой доступа и проверкой данных",
+  "domain": "устройства, авторизация",
+  "key_behaviors": [
+    "Назначение кода устройства через POST-запрос",
+    "Проверка устройства через GET-запрос",
+    "Использование DTO для валидации данных",
+    "Интеграция с Swagger для документации API",
+    "Защита маршрутов через AuthGuard"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "DevicesService",
+    "AssignDeviceCodeDto",
+    "AuthGuard"
+  ],
+  "input_tokens": 1827,
+  "output_tokens": 658,
+  "model": "qwen3:14b",
+  "code_hash": "3c3d7e78c2486ad4"
+}

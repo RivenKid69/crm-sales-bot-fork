@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/get-users-transactions.dto.ts:property:GetUsersTransactionsDto:type",
+  "summary": "Этот класс используется для валидации параметров запроса при получении транзакций пользователя. Он проверяет, что страница — число, а тип — 'income' или 'expense', и добавляет описание для документации API.",
+  "purpose": "Обеспечивает корректную валидацию и документацию параметров запроса для эндпоинта получения транзакций",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка числа страницы",
+    "Ограничение типа транзакции значениями 'income'/'expense'",
+    "Генерация документации для Swagger",
+    "Поддержка необязательных параметров",
+    "Интеграция с валидацией NestJS"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1175,
+  "output_tokens": 712,
+  "model": "qwen3:14b",
+  "code_hash": "c3b672b62c595eb9"
+}

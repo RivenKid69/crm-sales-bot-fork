@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/notifications.module.ts:import:../../common/services/push/push.service",
+  "summary": "Этот код создает модуль для работы с уведомлениями в NestJS. Он подключает базу данных через TypeORM, использует сервисы для отправки уведомлений и интегрируется с модулем пользователей и FCM (Firebase Cloud Messaging).",
+  "purpose": "Обеспечивает логику работы с уведомлениями, включая хранение данных, отправку уведомлений и взаимодействие с другими частями приложения.",
+  "domain": "уведомления, мессенджеры, база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с FCM для отправки уведомлений",
+    "Использует сервисы из общих модулей",
+    "Экспортирует сервис уведомлений для других модулей",
+    "Разделяет логику на слои: данные, бизнес-логика, представление"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UsersModule",
+    "FcmModule",
+    "PushService"
+  ],
+  "input_tokens": 1271,
+  "output_tokens": 796,
+  "model": "qwen3:14b",
+  "code_hash": "472bfba0612d5b93"
+}

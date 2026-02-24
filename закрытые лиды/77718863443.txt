@@ -1,0 +1,584 @@
+[
+  {
+    "id": 4794,
+    "create_time": "2025-10-16T16:57:54.499Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рахмет 💐"
+  },
+  {
+    "id": 4873,
+    "create_time": "2025-10-16T17:30:21.548Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 3576,
+    "create_time": "2025-10-16T12:20:18.249Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 3577,
+    "create_time": "2025-10-16T12:20:28.989Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "в самом в городе находитесь ?"
+  },
+  {
+    "id": 3592,
+    "create_time": "2025-10-16T12:24:45.497Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 3593,
+    "create_time": "2025-10-16T12:25:09.664Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 3604,
+    "create_time": "2025-10-16T12:26:55.985Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 3681,
+    "create_time": "2025-10-16T12:50:24.945Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4103,
+    "create_time": "2025-10-16T14:51:25.171Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 7072,
+    "create_time": "2025-10-17T18:11:39.126Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Келдіма ?"
+  },
+  {
+    "id": 4182,
+    "create_time": "2025-10-16T15:03:26.213Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия, гарантия және обслуживания бар"
+  },
+  {
+    "id": 4136,
+    "create_time": "2025-10-16T14:56:49.654Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 7074,
+    "create_time": "2025-10-17T18:11:50.290Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 5778,
+    "create_time": "2025-10-17T11:46:15.649Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 7100,
+    "create_time": "2025-10-17T18:29:01.800Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для оплаты за оборудования\n\n1. Пройдите по ссылке https://pay.kaspi.kz/pay/gcysl1ym\n2. наберите сумму платежа 219.000 тг\n3. выберите способ оплаты\n4. Отправьте чек на Ватсап после успешной оплаты."
+  },
+  {
+    "id": 5820,
+    "create_time": "2025-10-17T11:46:22.543Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қайырлы күн !"
+  },
+  {
+    "id": 5865,
+    "create_time": "2025-10-17T11:46:25.779Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 9743,
+    "create_time": "2025-10-20T11:13:42.172Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қайырлы күн !"
+  },
+  {
+    "id": 9745,
+    "create_time": "2025-10-20T11:13:52.721Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для оплаты за оборудования\n\n1. Пройдите по ссылке https://pay.kaspi.kz/pay/gcysl1ym"
+  },
+  {
+    "id": 9752,
+    "create_time": "2025-10-20T11:14:27.931Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 3508,
+    "create_time": "2025-10-16T12:05:51.029Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 3515,
+    "create_time": "2025-10-16T12:06:29.929Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 3526,
+    "create_time": "2025-10-16T12:08:40.541Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 3557,
+    "create_time": "2025-10-16T12:16:22.995Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 3868,
+    "create_time": "2025-10-16T13:48:32.240Z",
+    "author_type": "client",
+    "sent_content": "????"
+  },
+  {
+    "id": 3929,
+    "create_time": "2025-10-16T14:12:07.859Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Комплект оборудования-219.000 тг \nСистема учета 150.000 тг \nОбщая сумма 369.000"
+  },
+  {
+    "id": 3933,
+    "create_time": "2025-10-16T14:12:30.325Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Умные весы 100.000 тг"
+  },
+  {
+    "id": 3935,
+    "create_time": "2025-10-16T14:12:36.911Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 3940,
+    "create_time": "2025-10-16T14:13:07.186Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 4239,
+    "create_time": "2025-10-16T15:09:55.888Z",
+    "author_type": "client",
+    "sent_content": "Time City\nhttps://2gis.kz/almaty/geo/70000001062430310"
+  },
+  {
+    "id": 4248,
+    "create_time": "2025-10-16T15:10:41.693Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4263,
+    "create_time": "2025-10-16T15:11:52.168Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Система учетага оплата жасау керек болады. Чтобы обучение орынын за вами забронировать"
+  },
+  {
+    "id": 4266,
+    "create_time": "2025-10-16T15:11:59.883Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оборудованияны на месте оплата жасасаныз болады"
+  },
+  {
+    "id": 4280,
+    "create_time": "2025-10-16T15:14:26.033Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4287,
+    "create_time": "2025-10-16T15:14:54.926Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия , 150.000 тг"
+  },
+  {
+    "id": 4293,
+    "create_time": "2025-10-16T15:15:20.809Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4295,
+    "create_time": "2025-10-16T15:15:27.846Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оборудования общая сумма 319.000 тг болады."
+  },
+  {
+    "id": 4299,
+    "create_time": "2025-10-16T15:15:57.406Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4303,
+    "create_time": "2025-10-16T15:16:24.274Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир счет жиберып кояйын, до 18.00 оплата жасаныз болады"
+  },
+  {
+    "id": 4309,
+    "create_time": "2025-10-16T15:16:45.932Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы🙌🏻"
+  },
+  {
+    "id": 4517,
+    "create_time": "2025-10-16T15:51:12.873Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "После оплаты чек жибере аласызба"
+  },
+  {
+    "id": 4528,
+    "create_time": "2025-10-16T15:54:02.070Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 4533,
+    "create_time": "2025-10-16T15:55:03.467Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИИН ИП жібере аласыз ба , аккаунт создавать етемін 💐"
+  },
+  {
+    "id": 4724,
+    "create_time": "2025-10-16T16:37:53.382Z",
+    "author_type": "client",
+    "sent_content": "791107402347"
+  },
+  {
+    "id": 4727,
+    "create_time": "2025-10-16T16:38:14.158Z",
+    "author_type": "client",
+    "sent_content": "ИП Гулжан"
+  },
+  {
+    "id": 6973,
+    "create_time": "2025-10-17T17:50:15.896Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 5869,
+    "create_time": "2025-10-17T11:46:25.937Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 5877,
+    "create_time": "2025-10-17T11:46:25.181Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 9750,
+    "create_time": "2025-10-20T11:14:19.647Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Остаток суммы 11.000 тг"
+  },
+  {
+    "id": 9751,
+    "create_time": "2025-10-20T11:14:24.062Z",
+    "author_type": "client",
+    "sent_content": "Сумма"
+  },
+  {
+    "id": 4920,
+    "create_time": "2025-10-16T17:42:50.566Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 4928,
+    "create_time": "2025-10-16T17:45:01.396Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы , ертең сізге оборудования бірге сагат 17.30 келеді"
+  },
+  {
+    "id": 3409,
+    "create_time": "2025-10-16T11:39:36.689Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 3410,
+    "create_time": "2025-10-16T11:39:36.757Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте! Чем мы можем вам помочь?"
+  },
+  {
+    "id": 3411,
+    "create_time": "2025-10-16T11:39:36.780Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! Консультация по программе учёта Wipon? г.Астана"
+  },
+  {
+    "id": 3412,
+    "create_time": "2025-10-16T11:39:36.736Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 3413,
+    "create_time": "2025-10-16T11:40:27.467Z",
+    "author_type": "client",
+    "sent_content": "Цена"
+  },
+  {
+    "id": 3414,
+    "create_time": "2025-10-16T11:40:37.428Z",
+    "author_type": "client",
+    "sent_content": "Сколько"
+  },
+  {
+    "id": 3416,
+    "create_time": "2025-10-16T11:41:19.869Z",
+    "author_type": "client",
+    "sent_content": "Это как умаг работает"
+  },
+  {
+    "id": 3453,
+    "create_time": "2025-10-16T11:54:54.208Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!\nБлагодарим за обращение в компанию Wipon.\nМеня зовут Дана, буду Вашим персональным менеджером.\nПодскажите, как могу к Вам обращаться?"
+  },
+  {
+    "id": 3458,
+    "create_time": "2025-10-16T11:55:41.673Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, наша система работает аналогично UMAG.\nТакже мы осуществляем интеграцию с POS-терминалами.\nПодскажите, пожалуйста, какой у вас бизнес и из какого вы города?"
+  },
+  {
+    "id": 3469,
+    "create_time": "2025-10-16T11:57:19.827Z",
+    "author_type": "client",
+    "sent_content": "Цену скажите"
+  },
+  {
+    "id": 3477,
+    "create_time": "2025-10-16T11:59:09.174Z",
+    "author_type": "client",
+    "sent_content": "Г.Алматы"
+  },
+  {
+    "id": 3478,
+    "create_time": "2025-10-16T11:59:51.098Z",
+    "author_type": "client",
+    "sent_content": "Магазин продуктовый"
+  },
+  {
+    "id": 3480,
+    "create_time": "2025-10-16T12:00:09.798Z",
+    "author_type": "client",
+    "sent_content": "ИП"
+  },
+  {
+    "id": 3482,
+    "create_time": "2025-10-16T12:00:29.279Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 3483,
+    "create_time": "2025-10-16T12:00:29.913Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы получаете бесплатную интеграцию с pos-терминалом, онлайн-кассой - wipon-кассой (если необходима фискализация товара), техническую поддержку, бесплатное приложение для предпринимателя Wipon, в которой вы можете смотреть всю информацию, находясь в любой точки мира. к"
+  },
+  {
+    "id": 3484,
+    "create_time": "2025-10-16T12:00:36.936Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Могу вам записать аудио ?"
+  },
+  {
+    "id": 3486,
+    "create_time": "2025-10-16T12:01:17.402Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 3506,
+    "create_time": "2025-10-16T12:05:05.096Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 4188,
+    "create_time": "2025-10-16T15:03:44.274Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ертен менеджер обучения өткізе алады , после обеда"
+  },
+  {
+    "id": 4191,
+    "create_time": "2025-10-16T15:03:58.476Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Магазин адресін жібересіз бе"
+  },
+  {
+    "id": 4219,
+    "create_time": "2025-10-16T15:06:45.233Z",
+    "author_type": "client",
+    "sent_content": "Микр Кайрат \nУл Кунаева 501/20\nМаг Асылай"
+  },
+  {
+    "id": 4223,
+    "create_time": "2025-10-16T15:07:33.164Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИИН ИП жібересізбе , қай нөмрге счет жіберейін ?"
+  },
+  {
+    "id": 4417,
+    "create_time": "2025-10-16T15:37:00.561Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4423,
+    "create_time": "2025-10-16T15:37:40.104Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 6960,
+    "create_time": "2025-10-17T17:48:00.622Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Менеджер звандадыма сізге ?"
+  },
+  {
+    "id": 4428,
+    "create_time": "2025-10-16T15:38:22.417Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "видео звонокпен звандай аламын , біздің офисты көрсете аламын, витринаны толыктай"
+  },
+  {
+    "id": 6961,
+    "create_time": "2025-10-17T17:48:05.891Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ол шыгыкты сізге карай"
+  },
+  {
+    "id": 4433,
+    "create_time": "2025-10-16T15:38:58.115Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4438,
+    "create_time": "2025-10-16T15:40:12.062Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4917,
+    "create_time": "2025-10-16T17:42:19.950Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сагат 17,00 обученияға келсе ыңғайлыма ?"
+  },
+  {
+    "id": 4483,
+    "create_time": "2025-10-16T15:46:42.169Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизге конырау шала алмай жатырмын"
+  },
+  {
+    "id": 4486,
+    "create_time": "2025-10-16T15:47:29.650Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 4491,
+    "create_time": "2025-10-16T15:48:17.732Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 4513,
+    "create_time": "2025-10-16T15:50:58.951Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы, казир сизге счет жиберемыз"
+  },
+  {
+    "id": 5822,
+    "create_time": "2025-10-17T11:46:22.699Z",
+    "author_type": "client",
+    "sent_content": "Рахмет жақсы"
+  },
+  {
+    "id": 5821,
+    "create_time": "2025-10-17T11:46:22.597Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қалыңыз қалай ?"
+  },
+  {
+    "id": 5851,
+    "create_time": "2025-10-17T11:46:25.264Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия, в наличии тек кара түсі калды"
+  },
+  {
+    "id": 5871,
+    "create_time": "2025-10-17T11:46:25.942Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Осы комплект болады 💐"
+  },
+  {
+    "id": 6524,
+    "create_time": "2025-10-17T15:34:21.116Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 6530,
+    "create_time": "2025-10-17T15:35:25.504Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я сагат 17:00 келеды"
+  },
+  {
+    "id": 6905,
+    "create_time": "2025-10-17T17:35:04.037Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 7127,
+    "create_time": "2025-10-17T18:42:56.370Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 9759,
+    "create_time": "2025-10-20T11:15:35.608Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 9877,
+    "create_time": "2025-10-20T11:39:00.587Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы, сізге курьермен жіберді"
+  },
+  {
+    "id": 9889,
+    "create_time": "2025-10-20T11:41:28.201Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  }
+]

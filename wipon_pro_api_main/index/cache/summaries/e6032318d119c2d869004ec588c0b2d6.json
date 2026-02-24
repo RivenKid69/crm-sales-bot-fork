@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/domain/transactions.service.ts:method:TransactionsService:constructor",
+  "summary": "Этот код представляет собой сервис для работы с транзакциями, который использует различные use-case и сервисы для обработки операций, связанных с пользователями, их аккаунтами, подписками и уведомлениями. Он также проверяет валидность данных и взаимодействует с базой данных.",
+  "purpose": "Обрабатывать транзакции, проверять данные, управлять подписками и взаимодействовать с другими сервисами в приложении",
+  "domain": "транзакции, подписки, пользователи, уведомления",
+  "key_behaviors": [
+    "Получение транзакций пользователя",
+    "Обработка перевода между пользователями",
+    "Проверка валидности данных",
+    "Управление подписками и активациями",
+    "Использование внешних сервисов (например, billing, push)"
+  ],
+  "dependencies_used": [
+    "FindUsersAccountsWithTransactionsUseCase",
+    "FindUserByIdUseCase",
+    "BillingService",
+    "FindUsersAllSubscriptionsUseCase",
+    "CountUsersActiveSubscriptionUseCase",
+    "ActivateUsersSubscriptionUseCase",
+    "PushService",
+    "I18nRequestScopeService",
+    "LedgerDao",
+    "AccountDao"
+  ],
+  "input_tokens": 2624,
+  "output_tokens": 818,
+  "model": "qwen3:14b",
+  "code_hash": "759ff281f4fed029"
+}

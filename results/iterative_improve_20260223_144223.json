@@ -1,0 +1,168 @@
+[
+  {
+    "scenario": "s3_aggressive_pushy",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Короче мне нужна касса, сколько стоит, без воды",
+        "bot": "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 4.46
+      },
+      {
+        "turn": 2,
+        "user": "Я спросил цену. Не надо мне ваших вопросов, просто цена",
+        "bot": "Прошу прощения за это. Поняла, что срочно нужна касса. Для вашего бизнеса подойдёт тариф Lite от 150 000 ₸ в год — с фискализацией и интеграцией с банками. Уточните, сколько касс вам нужно для одной точки, чтобы назвать точную сумму.",
+        "state": "autonomous_discovery",
+        "intent": "no_need",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 7.8
+      },
+      {
+        "turn": 3,
+        "user": "Дорого. У конкурентов дешевле. Последний шанс — скидка есть?",
+        "bot": "Поняла, что важно сэкономить. Тариф Lite от 150 000 ₸ в год включает фискализацию, интеграцию с банками и полный пакет для одной точки — дешевле, чем у конкурентов, если они не предлагают фискализацию или банковские интеграции. Актуальные условия скидок уточнит коллега.",
+        "state": "autonomous_negotiation",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.57
+      },
+      {
+        "turn": 4,
+        "user": "Значит нет скидки? Тогда зачем мне ваш продукт?",
+        "bot": "Понимаю, это может раздражать. Поняла, что важно получить именно то, что нужно. Тариф Lite от 150 000 ₸ в год уже включает фискализацию, интеграцию с Kaspi и Halyk, а также REST API — это больше функций, чем просто \"касса\". Актуальные условия скидок уточнит коллега, если это критично для вашего решения.",
+        "state": "autonomous_negotiation",
+        "intent": "no_problem",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 6.12
+      },
+      {
+        "turn": 5,
+        "user": "Ладно убедили. Давайте быстрее оформляйте",
+        "bot": "Не буду отнимать время. Оставьте контакт — пришлю информацию, а вы решите.",
+        "state": "soft_close",
+        "intent": "fallback_close",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": null,
+        "is_final": true,
+        "elapsed_s": 0.02
+      }
+    ]
+  },
+  {
+    "scenario": "s9_freeloader",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет! Мне нужна касса, но денег сейчас нет совсем",
+        "bot": "Поняла, сложно сейчас с бюджетом. У нас есть тариф Mini за 5 000 тенге в месяц — это минимальная касса с фискализацией и базовым учетом, чтобы сразу начать работать. Подходит ли вам именно касса с минимальным функционалом или нужны дополнительные возможности?",
+        "state": "greeting",
+        "intent": "no_problem",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.27
+      },
+      {
+        "turn": 2,
+        "user": "А бесплатный период есть?",
+        "bot": "Подходит для быстрого старта. Оставьте, пожалуйста, телефон или email — свяжу с менеджером для уточнения деталей.",
+        "state": "autonomous_closing",
+        "intent": "demo_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 30,
+        "is_final": false,
+        "elapsed_s": 2.04
+      },
+      {
+        "turn": 3,
+        "user": "А можно хотя бы месяц бесплатно попробовать?",
+        "bot": "Поняла, хочется минимизировать риски перед запуском.Однако первый месяц обойдётся всего в 5 000 тенге/мес — это минимальная сумма для запуска с фискализацией и базовым учётом. Какие именно функции вам важно протестировать в первую очередь? Это поможет подобрать максимально подходящий тариф с минимальными затратами.",
+        "state": "autonomous_closing",
+        "intent": "objection_timing",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 28,
+        "is_final": false,
+        "elapsed_s": 6.16
+      },
+      {
+        "turn": 4,
+        "user": "А рассрочка 0-0-12 через Каспи есть?",
+        "bot": "Поняла, рассрочка 0-0-12 доступна через Kaspi для всех наших тарифов, включая оборудование и кассы. Чтобы подобрать оптимальный вариант, оставьте, пожалуйста, номер телефона Kaspi и ИИН. Готовы подключить?",
+        "state": "autonomous_closing",
+        "intent": "payment_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 27,
+        "is_final": false,
+        "elapsed_s": 5.38
+      },
+      {
+        "turn": 5,
+        "user": "Ладно а если я приведу клиентов вам, дадите бесплатно?",
+        "bot": "Для индивидуального расчёта оставьте контакт — коллега позвонит в удобное время. Связать с менеджером?",
+        "state": "autonomous_closing",
+        "intent": "negotiate_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 25,
+        "is_final": false,
+        "elapsed_s": 5.51
+      },
+      {
+        "turn": 6,
+        "user": "Окей, а какой самый минимальный тариф?",
+        "bot": "Самый минимальный тариф — это Mini за 5 000 ₸/мес. Он включает онлайн-кассу с фискализацией и базовый учёт. Оставьте, пожалуйста, телефон или email, чтобы подобрать оптимальное решение.",
+        "state": "autonomous_closing",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 24,
+        "is_final": false,
+        "elapsed_s": 2.86
+      },
+      {
+        "turn": 7,
+        "user": "Думаю можно попробовать. Как подключиться?",
+        "bot": "Отлично, давайте организуем. Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф.",
+        "state": "soft_close",
+        "intent": "demo_request",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": 53,
+        "is_final": false,
+        "elapsed_s": 2.33
+      },
+      {
+        "turn": 8,
+        "user": "ИИН 920304500678, каспи 87081234567",
+        "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+        "state": "soft_close",
+        "intent": "contact_provided",
+        "action": "acknowledge_and_continue",
+        "spin_phase": null,
+        "lead_score": 85,
+        "is_final": false,
+        "elapsed_s": 3.24
+      }
+    ]
+  }
+]

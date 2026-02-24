@@ -1,0 +1,1070 @@
+[
+  {
+    "id": 202728,
+    "create_time": "2025-12-28T12:38:47.161Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 202730,
+    "create_time": "2025-12-28T12:38:57.849Z",
+    "author_type": "client",
+    "sent_content": "Не звонит ваш менеджер"
+  },
+  {
+    "id": 202731,
+    "create_time": "2025-12-28T12:39:01.651Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Чем могу помочь?"
+  },
+  {
+    "id": 202735,
+    "create_time": "2025-12-28T12:39:11.232Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Приношу извинения за задержку. Я передала информацию менеджеру, он свяжется с вами в ближайшее свободное время."
+  },
+  {
+    "id": 202739,
+    "create_time": "2025-12-28T12:39:20.802Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 202740,
+    "create_time": "2025-12-28T12:39:35.701Z",
+    "author_type": "ai",
+    "sent_content": "Спасибо за понимание. Ожидайте, пожалуйста, звонка."
+  },
+  {
+    "id": 202747,
+    "create_time": "2025-12-28T12:39:58.886Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 202751,
+    "create_time": "2025-12-28T12:40:14.520Z",
+    "author_type": "ai",
+    "sent_content": "Мы ценим ваше терпение. Менеджер свяжется с вами в ближайшее время, чтобы помочь с вопросами по кассовому комплекту для магазина хозтоваров."
+  },
+  {
+    "id": 202849,
+    "create_time": "2025-12-28T13:04:08.492Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Адьмира, спасибо за продуктивный разговор!\nВ продолжение нашего разговора отправляю Вам презентацию нашей учетной системы!\n\nНе стесняйтесь задавать дополнительные вопросы или уточнения – я всегда готов ответить на ваши вопросы и помочь вам.\n\nС уважением, Айдан, Ваш личный менеджер"
+  },
+  {
+    "id": 202850,
+    "create_time": "2025-12-28T13:04:27.803Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок\nПринтер чеков \n143.000 тг"
+  },
+  {
+    "id": 202855,
+    "create_time": "2025-12-28T13:06:14.096Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если готовы оформить, отправьте нам номер Каспи для выставления счета"
+  },
+  {
+    "id": 202856,
+    "create_time": "2025-12-28T13:06:38.659Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "После оплаты, мы запишем вас на обучение и забронируем время"
+  },
+  {
+    "id": 203745,
+    "create_time": "2025-12-28T19:25:43.949Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, все верно"
+  },
+  {
+    "id": 203747,
+    "create_time": "2025-12-28T19:25:58.936Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "По видео могут"
+  },
+  {
+    "id": 203748,
+    "create_time": "2025-12-28T19:26:17.021Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На какой номер можем выставить счет в рассрочку?"
+  },
+  {
+    "id": 203794,
+    "create_time": "2025-12-28T19:50:12.192Z",
+    "author_type": "client",
+    "sent_content": "Давайте завтра с утра \nНа этот номер"
+  },
+  {
+    "id": 204572,
+    "create_time": "2025-12-29T09:22:13.121Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте \nСтрашно, смогу ли я сама..."
+  },
+  {
+    "id": 204683,
+    "create_time": "2025-12-29T09:37:13.820Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы не будете сами, мы будем соппровождать вас на всех этапах"
+  },
+  {
+    "id": 204863,
+    "create_time": "2025-12-29T09:52:39.317Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сканер мы убираем"
+  },
+  {
+    "id": 204864,
+    "create_time": "2025-12-29T09:52:41.082Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Как договаривались, так как он у вас есть?"
+  },
+  {
+    "id": 204869,
+    "create_time": "2025-12-29T09:53:09.761Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок\nПринтер чеков\n143.500 тг"
+  },
+  {
+    "id": 204872,
+    "create_time": "2025-12-29T09:53:30.241Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все верно?"
+  },
+  {
+    "id": 204874,
+    "create_time": "2025-12-29T09:53:56.569Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym\nЗа оборудование можете оплатить по ссылке. Сумма 143.500 тг"
+  },
+  {
+    "id": 204879,
+    "create_time": "2025-12-29T09:55:03.002Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У нас канер который надо держать в руке"
+  },
+  {
+    "id": 204880,
+    "create_time": "2025-12-29T09:55:03.653Z",
+    "author_type": "client",
+    "sent_content": "Он бодходит для вашего оборудования"
+  },
+  {
+    "id": 204881,
+    "create_time": "2025-12-29T09:55:14.068Z",
+    "author_type": "client",
+    "sent_content": "Мой"
+  },
+  {
+    "id": 204882,
+    "create_time": "2025-12-29T09:55:16.767Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, вот ваш сканер подойдет"
+  },
+  {
+    "id": 204885,
+    "create_time": "2025-12-29T09:55:53.983Z",
+    "author_type": "client",
+    "sent_content": "Его отдали мне года два назад"
+  },
+  {
+    "id": 204888,
+    "create_time": "2025-12-29T09:56:13.911Z",
+    "author_type": "client",
+    "sent_content": "Одежда закрылась"
+  },
+  {
+    "id": 204892,
+    "create_time": "2025-12-29T09:56:39.853Z",
+    "author_type": "client",
+    "sent_content": "Но остальное у них пиратское было"
+  },
+  {
+    "id": 204900,
+    "create_time": "2025-12-29T09:58:00.265Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В целом эта модель работает без проблем"
+  },
+  {
+    "id": 204901,
+    "create_time": "2025-12-29T09:58:10.080Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 204907,
+    "create_time": "2025-12-29T09:58:45.601Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставка оборудования будет платная, помните да?"
+  },
+  {
+    "id": 204919,
+    "create_time": "2025-12-29T09:59:33.518Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 204962,
+    "create_time": "2025-12-29T10:03:47.275Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нет, оборудование немного места занимает"
+  },
+  {
+    "id": 204965,
+    "create_time": "2025-12-29T10:04:06.112Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете сфоткать зону кассовую"
+  },
+  {
+    "id": 204981,
+    "create_time": "2025-12-29T10:06:13.976Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "И можете адрес доставки написать ( город, улица и дом )"
+  },
+  {
+    "id": 204993,
+    "create_time": "2025-12-29T10:07:29.684Z",
+    "author_type": "client",
+    "sent_content": "Г.Экибастуз\nБеркембаева 186-1 Магазин Лотос"
+  },
+  {
+    "id": 216633,
+    "create_time": "2026-01-02T09:58:52.521Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте,  вы говорили, что 2 января начнём работу"
+  },
+  {
+    "id": 216634,
+    "create_time": "2026-01-02T09:58:56.752Z",
+    "author_type": "client",
+    "sent_content": "Обучение"
+  },
+  {
+    "id": 216642,
+    "create_time": "2026-01-02T10:19:10.398Z",
+    "author_type": "client",
+    "sent_content": "Пришли, ждём...."
+  },
+  {
+    "id": 216644,
+    "create_time": "2026-01-02T10:19:30.182Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Вижу, что вы всё еще ожидаете звонка. Приношу извинения за задержку."
+  },
+  {
+    "id": 216645,
+    "create_time": "2026-01-02T10:19:32.641Z",
+    "author_type": "ai",
+    "sent_content": "Я повторно передала информацию нашим менеджерам, они свяжутся с вами в ближайшее свободное время, чтобы обсудить кассовый комплект для вашего магазина хозтоваров."
+  },
+  {
+    "id": 217140,
+    "create_time": "2026-01-02T14:41:57.067Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 217141,
+    "create_time": "2026-01-02T14:42:10.804Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "С 5го числа будет обучение"
+  },
+  {
+    "id": 217142,
+    "create_time": "2026-01-02T14:46:44.037Z",
+    "author_type": "client",
+    "sent_content": "Вы же сказали со 2 января...!!!!"
+  },
+  {
+    "id": 217143,
+    "create_time": "2026-01-02T14:47:11.848Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас уточним"
+  },
+  {
+    "id": 217841,
+    "create_time": "2026-01-03T11:07:36.192Z",
+    "author_type": "client",
+    "sent_content": "Я жду, давайте просто начнём, объясните как вводить, товара у нас много...\nМного товара который без штрихов"
+  },
+  {
+    "id": 217893,
+    "create_time": "2026-01-03T11:40:49.588Z",
+    "author_type": "client",
+    "sent_content": "Мммда...."
+  },
+  {
+    "id": 218503,
+    "create_time": "2026-01-03T14:34:27.335Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 218505,
+    "create_time": "2026-01-03T14:34:38.331Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас с вами свяжутся"
+  },
+  {
+    "id": 218508,
+    "create_time": "2026-01-03T14:35:13.398Z",
+    "author_type": "client",
+    "sent_content": "Нет, я ушла"
+  },
+  {
+    "id": 218529,
+    "create_time": "2026-01-03T14:36:21.602Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите, можем ли мы назначить обучение?"
+  },
+  {
+    "id": 218558,
+    "create_time": "2026-01-03T14:40:16.524Z",
+    "author_type": "client",
+    "sent_content": "Да, давайте завтра в 10.00"
+  },
+  {
+    "id": 218574,
+    "create_time": "2026-01-03T14:43:31.612Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 218591,
+    "create_time": "2026-01-03T14:47:48.403Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите"
+  },
+  {
+    "id": 218594,
+    "create_time": "2026-01-03T14:48:00.367Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В 12:00 вам удобно будет пройти?"
+  },
+  {
+    "id": 218597,
+    "create_time": "2026-01-03T14:48:12.441Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В 10:00 окошки заняты"
+  },
+  {
+    "id": 218601,
+    "create_time": "2026-01-03T14:48:20.282Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 222547,
+    "create_time": "2026-01-05T10:10:52.315Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 222548,
+    "create_time": "2026-01-05T10:11:04.292Z",
+    "author_type": "client",
+    "sent_content": "Как мне активировать тариф"
+  },
+  {
+    "id": 222549,
+    "create_time": "2026-01-05T10:11:06.767Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Чем могу вам помочь?"
+  },
+  {
+    "id": 222551,
+    "create_time": "2026-01-05T10:11:14.225Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!"
+  },
+  {
+    "id": 222552,
+    "create_time": "2026-01-05T10:11:20.854Z",
+    "author_type": "ai",
+    "sent_content": "Активация тарифа зависит от выбранного продукта и настроек. Менеджер сможет помочь вам с этим и уточнить все детали. Он свяжется с вами в ближайшее свободное время."
+  },
+  {
+    "id": 222554,
+    "create_time": "2026-01-05T10:11:34.717Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 222557,
+    "create_time": "2026-01-05T10:11:58.386Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас активируем тариф"
+  },
+  {
+    "id": 222563,
+    "create_time": "2026-01-05T10:13:16.176Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Актвировали вам тариф✅"
+  },
+  {
+    "id": 222570,
+    "create_time": "2026-01-05T10:14:30.200Z",
+    "author_type": "client",
+    "sent_content": "Не забудьте про мою скидку!"
+  },
+  {
+    "id": 222571,
+    "create_time": "2026-01-05T10:15:18.925Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, это будет учтено"
+  },
+  {
+    "id": 224163,
+    "create_time": "2026-01-05T14:41:16.885Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я понимаю вас. Приносим свои извинения, в связи с загруженностью не успевают ответить"
+  },
+  {
+    "id": 224164,
+    "create_time": "2026-01-05T14:41:21.591Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас должны с вами связаться"
+  },
+  {
+    "id": 224181,
+    "create_time": "2026-01-05T14:44:01.571Z",
+    "author_type": "client",
+    "sent_content": "Да, я понимаю"
+  },
+  {
+    "id": 245942,
+    "create_time": "2026-01-12T10:30:13.249Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 245944,
+    "create_time": "2026-01-12T10:30:29.536Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Денежный ящик 21.000 тг \nБесрповодной сканер 17.000 тг"
+  },
+  {
+    "id": 246796,
+    "create_time": "2026-01-12T12:43:30.545Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 247422,
+    "create_time": "2026-01-12T14:06:27.494Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам какой город нужен?"
+  },
+  {
+    "id": 247525,
+    "create_time": "2026-01-12T14:23:09.646Z",
+    "author_type": "client",
+    "sent_content": "Мне нужно забрать ящик денежный, который я сегодня оплатила, по какому адресу"
+  },
+  {
+    "id": 247536,
+    "create_time": "2026-01-12T14:24:22.954Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У нас офисы находятся в разных городах"
+  },
+  {
+    "id": 247537,
+    "create_time": "2026-01-12T14:24:24.737Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Какой город вам нужен?"
+  },
+  {
+    "id": 247544,
+    "create_time": "2026-01-12T14:24:53.872Z",
+    "author_type": "client",
+    "sent_content": "Астана"
+  },
+  {
+    "id": 247553,
+    "create_time": "2026-01-12T14:25:22.333Z",
+    "author_type": "client",
+    "sent_content": "Что вам надо для предъявления?"
+  },
+  {
+    "id": 247554,
+    "create_time": "2026-01-12T14:25:25.771Z",
+    "author_type": "client",
+    "sent_content": "Чек"
+  },
+  {
+    "id": 247557,
+    "create_time": "2026-01-12T14:25:55.455Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ул Туран 19/2, БЦ Estra 3 этаж"
+  },
+  {
+    "id": 247560,
+    "create_time": "2026-01-12T14:26:08.219Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете отправить чек об оплате"
+  },
+  {
+    "id": 248586,
+    "create_time": "2026-01-12T17:01:24.184Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день! Компания Wipon"
+  },
+  {
+    "id": 248589,
+    "create_time": "2026-01-12T17:01:34.807Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите Вы ранее проходили обучение по программе ?"
+  },
+  {
+    "id": 201470,
+    "create_time": "2025-12-27T21:03:40.265Z",
+    "author_type": "client",
+    "sent_content": "Хочу узнать подробнее про кассовый комплект в рассрочку на 24 месяца."
+  },
+  {
+    "id": 201471,
+    "create_time": "2025-12-27T21:03:57.794Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Условия по кассовому комплекту и рассрочке зависят от формата вашего бизнеса."
+  },
+  {
+    "id": 201472,
+    "create_time": "2025-12-27T21:04:00.198Z",
+    "author_type": "ai",
+    "sent_content": "Менеджер сможет уточнить детали и подобрать оптимальный вариант на коротком звонке. Сейчас нерабочее время, поэтому менеджер свяжется с вами завтра в рабочее время."
+  },
+  {
+    "id": 201476,
+    "create_time": "2025-12-27T21:04:11.250Z",
+    "author_type": "client",
+    "sent_content": "И сколько в месяц обслуживание"
+  },
+  {
+    "id": 201477,
+    "create_time": "2025-12-27T21:04:26.183Z",
+    "author_type": "ai",
+    "sent_content": "Условия обслуживания зависят от формата вашего бизнеса и выбранных интеграций. Менеджер сможет более точно рассказать о вариантах и стоимости на звонке. Он свяжется с вами завтра в рабочее время."
+  },
+  {
+    "id": 201478,
+    "create_time": "2025-12-27T21:04:26.606Z",
+    "author_type": "client",
+    "sent_content": "Магазин хоз товаров"
+  },
+  {
+    "id": 201480,
+    "create_time": "2025-12-27T21:04:40.552Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 201481,
+    "create_time": "2025-12-27T21:04:42.460Z",
+    "author_type": "ai",
+    "sent_content": "Поняла, магазин хозяйственных товаров. Это поможет менеджеру подобрать подходящее решение. Он свяжется с вами завтра в рабочее время для консультации по условиям обслуживания и рассрочке."
+  },
+  {
+    "id": 201483,
+    "create_time": "2025-12-27T21:04:55.830Z",
+    "author_type": "ai",
+    "sent_content": "Отлично! Тогда ожидайте звонка от нашего менеджера завтра в рабочее время, чтобы обсудить все детали для вашего магазина."
+  },
+  {
+    "id": 203727,
+    "create_time": "2025-12-28T19:20:49.681Z",
+    "author_type": "client",
+    "sent_content": "Можно и оборудование и обслуживание в рассрочку на год"
+  },
+  {
+    "id": 203729,
+    "create_time": "2025-12-28T19:21:07.768Z",
+    "author_type": "client",
+    "sent_content": "Не так жалко будет"
+  },
+  {
+    "id": 203731,
+    "create_time": "2025-12-28T19:21:13.040Z",
+    "author_type": "client",
+    "sent_content": "🥹"
+  },
+  {
+    "id": 203738,
+    "create_time": "2025-12-28T19:25:01.008Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, можно"
+  },
+  {
+    "id": 204754,
+    "create_time": "2025-12-29T09:41:44.015Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 204756,
+    "create_time": "2025-12-29T09:41:51.224Z",
+    "author_type": "client",
+    "sent_content": "Давайте тогда"
+  },
+  {
+    "id": 204763,
+    "create_time": "2025-12-29T09:42:00.656Z",
+    "author_type": "client",
+    "sent_content": "Отправляйте счет"
+  },
+  {
+    "id": 204767,
+    "create_time": "2025-12-29T09:42:22.716Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИИН ИП можете отправить пожалуйста"
+  },
+  {
+    "id": 204770,
+    "create_time": "2025-12-29T09:42:37.113Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для выставления счета и создания аккаунта в программе"
+  },
+  {
+    "id": 204785,
+    "create_time": "2025-12-29T09:43:32.721Z",
+    "author_type": "client",
+    "sent_content": "781226402779"
+  },
+  {
+    "id": 204797,
+    "create_time": "2025-12-29T09:44:13.680Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставили счет на ваш номер"
+  },
+  {
+    "id": 204800,
+    "create_time": "2025-12-29T09:44:37.939Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Как оплату проведете, отправьте чек пожалуйста и мы начнем регистрацию"
+  },
+  {
+    "id": 204806,
+    "create_time": "2025-12-29T09:46:27.715Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Благодарю за доверие!"
+  },
+  {
+    "id": 204810,
+    "create_time": "2025-12-29T09:46:49.589Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ваш номер телефона можем использовать для регистрации аккаунта?"
+  },
+  {
+    "id": 204815,
+    "create_time": "2025-12-29T09:47:48.226Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 204825,
+    "create_time": "2025-12-29T09:48:58.059Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На ваш номер телефона отправили смс код"
+  },
+  {
+    "id": 204827,
+    "create_time": "2025-12-29T09:49:16.447Z",
+    "author_type": "client",
+    "sent_content": "8415"
+  },
+  {
+    "id": 204833,
+    "create_time": "2025-12-29T09:50:30.354Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Аккаунт успешно создан✅"
+  },
+  {
+    "id": 204836,
+    "create_time": "2025-12-29T09:50:53.675Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/settings/company/list\nЛогин 77754430226\nПароль 12345678"
+  },
+  {
+    "id": 204838,
+    "create_time": "2025-12-29T09:51:06.275Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "По программе оплата прошла, теперь выставить счет за оборудование?"
+  },
+  {
+    "id": 204840,
+    "create_time": "2025-12-29T09:51:18.035Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 204842,
+    "create_time": "2025-12-29T09:51:23.898Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Так же в рассрочку?"
+  },
+  {
+    "id": 204845,
+    "create_time": "2025-12-29T09:51:31.254Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 213160,
+    "create_time": "2025-12-30T15:38:13.335Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У нас моноблока нет в черном цвете"
+  },
+  {
+    "id": 213163,
+    "create_time": "2025-12-30T15:38:36.641Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можем доставкой отправить или самовывозом забрать"
+  },
+  {
+    "id": 215018,
+    "create_time": "2025-12-31T11:22:05.471Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы можете приобрести колонки дополнительно"
+  },
+  {
+    "id": 215020,
+    "create_time": "2025-12-31T11:22:26.831Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оборудование просто предназначено для работы , ведению учета и продажам"
+  },
+  {
+    "id": 215026,
+    "create_time": "2025-12-31T11:24:27.621Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хоршо"
+  },
+  {
+    "id": 246628,
+    "create_time": "2026-01-12T12:20:48.322Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246630,
+    "create_time": "2026-01-12T12:20:57.316Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246632,
+    "create_time": "2026-01-12T12:21:10.078Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246639,
+    "create_time": "2026-01-12T12:21:48.613Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, сможете"
+  },
+  {
+    "id": 246653,
+    "create_time": "2026-01-12T12:23:18.272Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246654,
+    "create_time": "2026-01-12T12:23:23.761Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246688,
+    "create_time": "2026-01-12T12:28:18.319Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 246705,
+    "create_time": "2026-01-12T12:30:50.629Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246772,
+    "create_time": "2026-01-12T12:39:40.395Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, можете с ними переговорить"
+  },
+  {
+    "id": 247715,
+    "create_time": "2026-01-12T14:54:30.738Z",
+    "author_type": "client",
+    "sent_content": "Я же оплатила, посмотрите"
+  },
+  {
+    "id": 247722,
+    "create_time": "2026-01-12T14:55:04.501Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы не видим, можете чек отправить пожалуйста"
+  },
+  {
+    "id": 247725,
+    "create_time": "2026-01-12T14:55:24.812Z",
+    "author_type": "client",
+    "sent_content": "Рассрочка на 3 мес"
+  },
+  {
+    "id": 247732,
+    "create_time": "2026-01-12T14:56:06.529Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Чек отправьте пожалуйста"
+  },
+  {
+    "id": 247814,
+    "create_time": "2026-01-12T15:05:05.426Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Благодарю за оплату"
+  },
+  {
+    "id": 204476,
+    "create_time": "2025-12-29T09:07:56.220Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доброе утро"
+  },
+  {
+    "id": 204479,
+    "create_time": "2025-12-29T09:08:12.414Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можем выставить счет на ваш номер?"
+  },
+  {
+    "id": 205001,
+    "create_time": "2025-12-29T10:09:04.246Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, сегодня постараемся отправить"
+  },
+  {
+    "id": 205033,
+    "create_time": "2025-12-29T10:11:09.032Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 213152,
+    "create_time": "2025-12-30T15:35:20.411Z",
+    "author_type": "client",
+    "sent_content": "Тоже нужен"
+  },
+  {
+    "id": 213053,
+    "create_time": "2025-12-30T15:11:52.440Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!"
+  },
+  {
+    "id": 213055,
+    "create_time": "2025-12-30T15:12:35.472Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, мы с вами переговаривали что вам только моноблок и принтер чеков нужен"
+  },
+  {
+    "id": 213064,
+    "create_time": "2025-12-30T15:14:52.655Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Денежный ящик стоит 19.000 тг"
+  },
+  {
+    "id": 214681,
+    "create_time": "2025-12-31T10:06:45.618Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 214682,
+    "create_time": "2025-12-31T10:06:54.187Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, пленка есть"
+  },
+  {
+    "id": 214683,
+    "create_time": "2025-12-31T10:07:04.186Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "С вами должны связаться по поводу обучения , назначить"
+  },
+  {
+    "id": 214686,
+    "create_time": "2025-12-31T10:08:45.652Z",
+    "author_type": "client",
+    "sent_content": "Хорошо,  спасибо"
+  },
+  {
+    "id": 217312,
+    "create_time": "2026-01-02T16:26:52.533Z",
+    "author_type": "client",
+    "sent_content": "Вы меня обманули!!"
+  },
+  {
+    "id": 217327,
+    "create_time": "2026-01-02T16:39:14.884Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам завтра смогут провести обучение, у вас получится завтра пройти?"
+  },
+  {
+    "id": 217331,
+    "create_time": "2026-01-02T16:42:25.166Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На сегодня все менеджера по обучению заняты"
+  },
+  {
+    "id": 217332,
+    "create_time": "2026-01-02T16:42:34.268Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можем завтра в удобное для вас время назначить"
+  },
+  {
+    "id": 217356,
+    "create_time": "2026-01-02T16:54:27.152Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите, на какое время можем вас записать?"
+  },
+  {
+    "id": 217374,
+    "create_time": "2026-01-02T17:22:10.609Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В качестве компенсации 1 месяц подключения в подарок"
+  },
+  {
+    "id": 217376,
+    "create_time": "2026-01-02T17:22:53.350Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Приносим извинения, за доставленные неудобства"
+  },
+  {
+    "id": 217688,
+    "create_time": "2026-01-03T09:31:56.163Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте в 11.00\nПришлось свои планы переносить"
+  },
+  {
+    "id": 218614,
+    "create_time": "2026-01-03T14:49:21.477Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отлично, завтра обучение в 12:00✅"
+  },
+  {
+    "id": 223794,
+    "create_time": "2026-01-05T13:19:00.110Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас передам ваш запрос"
+  },
+  {
+    "id": 245470,
+    "create_time": "2026-01-12T09:40:22.827Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 245474,
+    "create_time": "2026-01-12T09:40:34.299Z",
+    "author_type": "client",
+    "sent_content": "Нужен денежный ящик"
+  },
+  {
+    "id": 245476,
+    "create_time": "2026-01-12T09:40:37.420Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Чем могу помочь?"
+  },
+  {
+    "id": 245480,
+    "create_time": "2026-01-12T09:40:49.376Z",
+    "author_type": "client",
+    "sent_content": "И сколько стоит сканер беспроводной"
+  },
+  {
+    "id": 245481,
+    "create_time": "2026-01-12T09:40:50.224Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Мы можем предложить различные модели денежных ящиков."
+  },
+  {
+    "id": 245482,
+    "create_time": "2026-01-12T09:40:52.701Z",
+    "author_type": "ai",
+    "sent_content": "Чтобы подобрать подходящий вариант и обсудить совместимость с вашим оборудованием, наш менеджер свяжется с вами в ближайшее свободное время."
+  },
+  {
+    "id": 245485,
+    "create_time": "2026-01-12T09:41:05.026Z",
+    "author_type": "ai",
+    "sent_content": "Стоимость беспроводного сканера зависит от конкретной модели и актуальных предложений. Менеджер сможет предоставить вам подробную информацию и подобрать оптимальный вариант."
+  },
+  {
+    "id": 245486,
+    "create_time": "2026-01-12T09:41:07.364Z",
+    "author_type": "ai",
+    "sent_content": "Он свяжется с вами в ближайшее свободное время."
+  },
+  {
+    "id": 246959,
+    "create_time": "2026-01-12T13:01:24.327Z",
+    "author_type": "client",
+    "sent_content": "Вы оформите мне ящик"
+  },
+  {
+    "id": 246960,
+    "create_time": "2026-01-12T13:01:41.184Z",
+    "author_type": "client",
+    "sent_content": "И цвет желательно черный"
+  },
+  {
+    "id": 246975,
+    "create_time": "2026-01-12T13:03:34.797Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Они у нас черного цвета"
+  },
+  {
+    "id": 246977,
+    "create_time": "2026-01-12T13:03:45.869Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym\nЗа оборудование можете оплатить по ссылке. Сумма 21.000 тг"
+  },
+  {
+    "id": 246978,
+    "create_time": "2026-01-12T13:03:46.991Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставка будет платная"
+  },
+  {
+    "id": 246980,
+    "create_time": "2026-01-12T13:03:52.104Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Через курьера отправим"
+  },
+  {
+    "id": 246983,
+    "create_time": "2026-01-12T13:04:35.409Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 246990,
+    "create_time": "2026-01-12T13:06:14.752Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо, можете провести оплату, мы подготовим вам ящик"
+  },
+  {
+    "id": 247054,
+    "create_time": "2026-01-12T13:17:03.462Z",
+    "author_type": "client",
+    "sent_content": "Адрес и режим работы"
+  },
+  {
+    "id": 247055,
+    "create_time": "2026-01-12T13:17:09.256Z",
+    "author_type": "client",
+    "sent_content": "Наришите"
+  },
+  {
+    "id": 247817,
+    "create_time": "2026-01-12T15:06:00.972Z",
+    "author_type": "client",
+    "sent_content": "Наверное мы оформим  рассрочку и беспроводной"
+  }
+]

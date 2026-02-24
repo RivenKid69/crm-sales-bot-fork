@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:typeorm",
+  "summary": "Этот код импортирует различные модули и зависимости, необходимые для работы с проверками (checks) в приложении. Он использует TypeORM для работы с базой данных, HTTP-запросы, вспомогательные функции и сервисы для обработки данных.",
+  "purpose": "Обеспечивает функциональность для управления проверками, взаимодействия с базой данных и внешними сервисами.",
+  "domain": "база данных, api, утилиты",
+  "key_behaviors": [
+    "Работа с базой данных через TypeORM",
+    "Обработка HTTP-запросов и ответов",
+    "Использование вспомогательных функций для работы с изображениями и временем",
+    "Интеграция с внешними сервисами",
+    "Обработка ошибок и проверка данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston"
+  ],
+  "input_tokens": 4519,
+  "output_tokens": 775,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

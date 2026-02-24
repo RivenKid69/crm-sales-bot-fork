@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/use-cases/find-dgd-by-id.use-case.ts:import:../../../../common/dao/dgd.dao",
+  "summary": "Этот код создает сервис, который ищет объект DgdDao по его ID. Он использует репозиторий для взаимодействия с базой данных и возвращает результат асинхронно.",
+  "purpose": "Позволяет получать данные о конкретном объекте из базы данных по его идентификатору",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Поиск объекта по ID",
+    "Использование TypeORM репозитория",
+    "Асинхронная работа с базой данных",
+    "Инъекция зависимостей через NestJS",
+    "Возвращает объект DgdDao или undefined"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1131,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "eb469a23f084e5b3"
+}

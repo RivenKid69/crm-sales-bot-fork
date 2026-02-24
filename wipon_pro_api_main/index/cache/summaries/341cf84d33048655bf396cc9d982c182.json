@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transaction.dto.ts:property:PostTransactionDto:account",
+  "summary": "Этот код проверяет данные транзакции перед их обработкой. Он убедится, что все обязательные поля заполнены, значения соответствуют нужным типам и находятся в допустимых диапазонах.",
+  "purpose": "Обеспечивает корректность данных при создании транзакции в системе",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка обязательных полей (user_id, provider, amount)",
+    "Ограничение значений provider и account определенными типами",
+    "Проверка числовых значений с кастомными сообщениями об ошибках",
+    "Валидация существования ledger через IsLedgerExists",
+    "Поддержка необязательных полей (timestamp, raw_info)"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsLedgerExists",
+    "IsNumeric"
+  ],
+  "input_tokens": 1492,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "016d7685d03071fe"
+}

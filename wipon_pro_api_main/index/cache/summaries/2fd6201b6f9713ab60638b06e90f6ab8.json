@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/data/items.repository.ts:import:typeorm",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с объектами ItemDao. Он позволяет выполнять операции с базой данных, такие как чтение, запись и обновление данных.",
+  "purpose": "Обеспечивает удобный способ взаимодействия с таблицей ItemDao в базе данных через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использование TypeORM для работы с базой данных",
+    "Создание репозитория для ItemDao",
+    "Поддержка операций CRUD (создание, чтение, обновление, удаление)"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 959,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "7b82f828d1de1255"
+}

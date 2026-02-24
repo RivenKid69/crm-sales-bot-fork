@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:method:SubscriptionsController:ubForErpDto: ShowActiveSubFo",
+  "summary": "Этот контроллер обрабатывает различные операции с подписками: создание, просмотр активных подписок, покупка, возврат средств и получение всех подписок пользователя. Использует аутентификацию, валидацию данных и преобразование ответов.",
+  "purpose": "Управление подписками пользователей через API с защитой и валидацией данных",
+  "domain": "подписки, авторизация, платежи",
+  "key_behaviors": [
+    "Создание новой подписки через POST /subscription",
+    "Получение активной подписки по телефону через GET /subscription/active",
+    "Покупка подписки с аутентификацией через POST /subscription/buy",
+    "Возврат средств за подписку через POST /subscription/refund",
+    "Получение всех подписок пользователя через GET /subscription/all"
+  ],
+  "dependencies_used": [
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor",
+    "UserDecorator",
+    "SubscriptionsService"
+  ],
+  "input_tokens": 2787,
+  "output_tokens": 749,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

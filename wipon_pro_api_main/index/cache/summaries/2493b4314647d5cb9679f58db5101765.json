@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/fcm/fcm.service..ts:class:FcmService",
+  "summary": "Этот класс отправляет уведомления через Firebase Cloud Messaging. Он использует токен устройства и данные сообщения для отправки уведомления",
+  "purpose": "Позволяет отправлять push-уведомления пользователям в мобильных приложениях",
+  "domain": "push-уведомления",
+  "key_behaviors": [
+    "Отправка уведомлений через FCM",
+    "Использование токена устройства для доставки",
+    "Асинхронная работа с Firebase",
+    "Интеграция с NestJS через @Injectable",
+    "Работа с объектом MessagingPayload"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "firebase-admin"
+  ],
+  "input_tokens": 1060,
+  "output_tokens": 637,
+  "model": "qwen3:14b",
+  "code_hash": "6bd6a1686ec3cec5"
+}

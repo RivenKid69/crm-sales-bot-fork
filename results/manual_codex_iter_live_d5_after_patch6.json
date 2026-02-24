@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-22T16:57:48.212197",
+    "mode": "manual_codex_d5_after_patch6",
+    "source": "results/manual_codex_iter_live_baseline.json"
+  },
+  "dialog": {
+    "id": "d5_invoice_without_iin_pressure",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Готов платить сейчас, выставляйте счет немедленно.",
+        "bot": "Выставляю счёт на **Wipon Pro** с оплатой через Kaspi Pay. Осталось подтвердить два данных: - Ваш **ИИН** (уже получен? Если да, уточните — счёт сформирую за 2 минуты). - Номер телефона, привязанного к Kaspi Pay, чтобы отправить счёт. Какой номер Kaspi Pay использовать для оплаты?",
+        "state": "autonomous_closing",
+        "intent": "ready_to_buy",
+        "is_final": false
+      },
+      {
+        "turn": 2,
+        "user": "Телефон: +77070001122",
+        "bot": "Ваш номер Kaspi Pay подтверждён (+77070001122).\nОсталось уточнить ИИН — счёт на **Wipon Pro** с полным функционалом будет выставлен сразу после подтверждения. Готовы назвать ИИН?",
+        "state": "autonomous_closing",
+        "intent": "contact_provided",
+        "is_final": false
+      },
+      {
+        "turn": 3,
+        "user": "ИИН не дам. Давайте без ИИН, но счет сегодня.",
+        "bot": "Без ИИН счёт или договор оформить нельзя. Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы.",
+        "state": "autonomous_closing",
+        "intent": "objection_no_need",
+        "is_final": false
+      },
+      {
+        "turn": 4,
+        "user": "Если нельзя, то какой следующий шаг без ИИН?",
+        "bot": "Без ИИН счёт или договор оформить нельзя. Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы.",
+        "state": "autonomous_closing",
+        "intent": "question_iiko_integration",
+        "is_final": false
+      }
+    ],
+    "final_state": "autonomous_closing"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/dto/post-feedback.dto.ts:file",
+  "summary": "Этот код создает DTO-класс для валидации данных, которые пользователь отправляет при оставлении обратной связи. Он проверяет, например, корректность номера телефона, email, формат JSON и Base64.",
+  "purpose": "Обеспечивает корректную валидацию данных формы обратной связи перед их обработкой в приложении",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка номера телефона по формату Казахстана",
+    "Проверка корректности email",
+    "Обязательное поле для текста сообщения",
+    "Проверка формата JSON в логах",
+    "Проверка Base64 изображения"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1453,
+  "output_tokens": 640,
+  "model": "qwen3:14b",
+  "code_hash": "507dc6b08d3bd5a6"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/dto/post-callback.dto.ts:property:PostCallbackDto:err",
+  "summary": "Этот код описывает DTO-класс для валидации данных, получаемых при обратном вызове. Свойство 'err' - необязательное целое число, используемое для хранения кодов ошибок.",
+  "purpose": "Обеспечивает корректную валидацию данных при обработке callback-запросов от внешних сервисов",
+  "domain": "API валидация",
+  "key_behaviors": [
+    "Проверка обязательных полей (id, phone, status)",
+    "Валидация телефонного номера по формату Казахстана",
+    "Поддержка необязательных полей (time, err)",
+    "Типизация данных (числа, строки)",
+    "Хранение хеша данных через свойство sha1"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1181,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "49e3af4a6401e910"
+}

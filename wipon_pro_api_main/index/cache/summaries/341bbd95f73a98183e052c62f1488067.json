@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/use-cases/find-users-store.use-case.ts:class:FindUsersStoreUseCase",
+  "summary": "Этот класс ищет информацию о магазине по ID пользователя. Он использует репозиторий для поиска в базе данных и возвращает данные в виде объекта StoreDao.",
+  "purpose": "Позволяет получить данные магазина, связанного с конкретным пользователем",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет запись по user_id в таблице магазинов",
+    "Использует TypeORM для работы с базой данных",
+    "Возвращает объект StoreDao или undefined",
+    "Поддерживает асинхронные операции",
+    "Инъектируется в другие сервисы через NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1156,
+  "output_tokens": 676,
+  "model": "qwen3:14b",
+  "code_hash": "51a95652e2367c69"
+}

@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/subscriptions.module.ts:import:../stores/stores.module",
+  "summary": "Этот код создает модуль для работы с подписками в приложении. Он использует репозитории, сервисы, контроллеры и другие модули, чтобы управлять подписками пользователей и взаимодействовать с внешними системами, такими как уведомления и оплаты.",
+  "purpose": "Модуль нужен для организации логики подписок, включая их активацию, отслеживание и взаимодействие с другими частями приложения.",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с модулями пользователей, аккаунтов и устройств",
+    "Обрабатывает подписки и активирует их",
+    "Использует Bull для асинхронных задач, например, отправки уведомлений",
+    "Экспортирует сервисы для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/bull",
+    "@nestjs/axios",
+    "UsersModule",
+    "StoresModule",
+    "AccountsModule",
+    "DevicesModule"
+  ],
+  "input_tokens": 1670,
+  "output_tokens": 813,
+  "model": "qwen3:14b",
+  "code_hash": "1dda264d8725753e"
+}

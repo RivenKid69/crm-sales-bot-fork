@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/config/rate-limits.config.ts:function:getKeyValueFromStringAsInteger",
+  "summary": "Функция getKeyValueFromStringAsInteger разбивает строку на пары ключ-значение, разделённые символом '='. Она используется для преобразования строковых настроек в удобный для использования объект.",
+  "purpose": "Позволяет легко парсить и использовать настройки из строк, например, для ограничений или кэширования.",
+  "domain": "настройки",
+  "key_behaviors": [
+    "Разбивает строку на элементы по символу ';'",
+    "Разделяет каждый элемент на ключ и значение по символу '='",
+    "Игнорирует элементы без символа '='",
+    "Возвращает объект с ключами и значениями",
+    "Не использует внешние зависимости"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 1316,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "eee779a9c980f4b9"
+}

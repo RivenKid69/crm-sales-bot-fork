@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:../../../common/dao/device.dao",
+  "summary": "Этот код импортирует необходимые зависимости для работы с подписками, включая репозитории, DTO, use-cases и сервисы. Он позволяет проверять активные подписки, взаимодействовать с пользователями и устройствами, а также обрабатывать платежи и возвраты.",
+  "purpose": "Обеспечивает функционал управления подписками, проверки активности и взаимодействия с пользователями и устройствами",
+  "domain": "подписки, авторизация, платежи, устройства",
+  "key_behaviors": [
+    "Проверка активной подписки по номеру телефона",
+    "Обработка покупки подписки и платежей",
+    "Взаимодействие с базой данных через репозитории",
+    "Генерация кодов для устройств",
+    "Обработка возврата подписки"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "common/helpers/datetime",
+    "common/utils/common",
+    "common/dao/user.dao",
+    "common/dao/device.dao",
+    "common/dao/subscription.dao",
+    "common/services/billing/billing.service"
+  ],
+  "input_tokens": 2741,
+  "output_tokens": 801,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

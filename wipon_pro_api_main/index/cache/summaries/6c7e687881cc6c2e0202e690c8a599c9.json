@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/push/push.service.ts:method:PushService:send",
+  "summary": "Этот метод отправляет push-уведомления пользователю, проверяя наличие устройства, токена и платформы. Он считает количество непрочитанных уведомлений и использует сервис для отправки сообщения.",
+  "purpose": "Отправка push-уведомлений с проверкой данных и подсчетом непрочитанных сообщений",
+  "domain": "уведомления, мобильные приложения",
+  "key_behaviors": [
+    "Проверка наличия устройства и токена",
+    "Определение платформы (Android/iOS)",
+    "Подсчет непрочитанных уведомлений",
+    "Отправка сообщения через сервис-производитель",
+    "Возврат результата (true/false)"
+  ],
+  "dependencies_used": [
+    "NotificationDao",
+    "UserDao",
+    "PushProducerService",
+    "appConfig"
+  ],
+  "input_tokens": 1361,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "8e1f2ccaff4b79a1"
+}

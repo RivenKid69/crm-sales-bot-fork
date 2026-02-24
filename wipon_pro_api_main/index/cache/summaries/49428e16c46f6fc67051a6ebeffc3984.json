@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/data/ugds.repository.ts:class:UgdsRepository",
+  "summary": "Этот класс представляет собой репозиторий для работы с сущностью UgdDao. Он расширяет функционал базового репозитория TypeORM и позволяет выполнять операции с базой данных.",
+  "purpose": "Обеспечивает удобный способ взаимодействия с сущностью UgdDao через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Расширение базового репозитория TypeORM",
+    "Интеграция с сущностью UgdDao",
+    "Выполнение операций с базой данных",
+    "Упрощение работы с ORM",
+    "Позволяет использовать методы репозитория"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 996,
+  "output_tokens": 648,
+  "model": "qwen3:14b",
+  "code_hash": "2c695faa43a7e4b6"
+}

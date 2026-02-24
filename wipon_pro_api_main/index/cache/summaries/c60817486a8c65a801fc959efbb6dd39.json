@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/billings.module.ts:class:BillingsModule",
+  "summary": "Этот модуль отвечает за работу с оплатами и счетами, используя сервисы и контроллеры. Он подключается к другим модулям и настраивает кэширование через Redis.",
+  "purpose": "Обеспечивает функциональность для управления оплатами и кэширования данных в приложении",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Использует сервисы для обработки оплат",
+    "Интегрируется с модулями пользователей и аккаунтов",
+    "Настраивает кэширование через Redis",
+    "Использует SSL для обеспечения безопасности",
+    "Работает с контроллерами для обработки HTTP-запросов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1294,
+  "output_tokens": 663,
+  "model": "qwen3:14b",
+  "code_hash": "ddc128a566174f32"
+}

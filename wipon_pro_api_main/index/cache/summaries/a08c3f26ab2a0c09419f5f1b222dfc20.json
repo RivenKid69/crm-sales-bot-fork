@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/user.dao.ts:property:UserDao:app_version",
+  "summary": "Свойство app_version хранит версию мобильного приложения, установленного пользователем. Оно помогает отслеживать, какие версии приложения используют пользователи",
+  "purpose": "Позволяет анализировать популярность версий приложения и выявлять необходимость обновлений",
+  "domain": "управление пользователями",
+  "key_behaviors": [
+    "Хранит строковое значение версии приложения",
+    "Отображается в сериализованных данных пользователя",
+    "Используется для аналитики версий приложения"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "class-transformer"
+  ],
+  "input_tokens": 1698,
+  "output_tokens": 617,
+  "model": "qwen3:14b",
+  "code_hash": "e5acb75d7fe51965"
+}

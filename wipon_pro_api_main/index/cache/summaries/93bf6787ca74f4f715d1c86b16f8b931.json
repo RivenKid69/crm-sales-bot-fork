@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/sms.module.ts:import:@nestjs/axios",
+  "summary": "Этот код создает модуль для работы со SMS. Он использует HttpModule для отправки HTTP-запросов, подключает сервисы для обработки сообщений и контроллер для управления запросами.",
+  "purpose": "Организует логику отправки SMS и взаимодействие с внешними сервисами в отдельном модуле",
+  "domain": "утилиты, API, коммуникация",
+  "key_behaviors": [
+    "Использует HTTP для связи с внешними сервисами",
+    "Разделяет логику на контроллеры и сервисы",
+    "Экспортирует сервис для использования в других модулях",
+    "Использует общие утилиты из common-слоя",
+    "Поддерживает модульную структуру проекта"
+  ],
+  "dependencies_used": [
+    "@nestjs/axios",
+    "@nestjs/common"
+  ],
+  "input_tokens": 1206,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "431bdf552fddfd62"
+}

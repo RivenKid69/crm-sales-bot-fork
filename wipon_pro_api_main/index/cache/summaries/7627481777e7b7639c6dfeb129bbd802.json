@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/domain/reports.service.ts:class:ReportsService",
+  "summary": "Этот класс отвечает за создание и обновление отчётов, сохраняет изображения в формате base64, удаляет старые файлы при изменении данных и использует транзакции для безопасной работы с базой данных.",
+  "purpose": "Обеспечивает корректную обработку отчётов, включая работу с изображениями и управление файлами в системе.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохранение изображений в base64",
+    "Обновление данных отчёта в БД",
+    "Удаление старых файлов при изменении",
+    "Использование транзакций для безопасной работы с БД",
+    "Логирование ошибок"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "fs",
+    "path",
+    "nestjs/common",
+    "nestjs/typeorm"
+  ],
+  "input_tokens": 2513,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "608441468e01b302"
+}

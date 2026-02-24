@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/get-users-check.dto.ts:class:GetUsersChecksDto",
+  "summary": "Этот класс служит для передачи данных в API и позволяет фильтровать пользователей по статусу проверки. Он использует валидацию и документацию через Swagger.",
+  "purpose": "Обеспечивает передачу и валидацию параметров фильтрации пользователей в API",
+  "domain": "API",
+  "key_behaviors": [
+    "Фильтрация пользователей по статусу проверки",
+    "Валидация значения с помощью @IsIn",
+    "Поддержка необязательного параметра с помощью @IsOptional",
+    "Документация параметров через Swagger",
+    "Использование DTO для структурирования данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1108,
+  "output_tokens": 674,
+  "model": "qwen3:14b",
+  "code_hash": "8eaa7e0a542eabc6"
+}

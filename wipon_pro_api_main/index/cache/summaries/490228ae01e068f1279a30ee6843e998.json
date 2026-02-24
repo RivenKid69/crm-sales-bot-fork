@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/user.dao.ts:property:UserDao:updated_at",
+  "summary": "Свойство 'updated_at' хранит дату последнего изменения пользователя и автоматически обновляется при любых изменениях в объекте. Оно скрыто от вывода в API-ответах.",
+  "purpose": "Отслеживает время последнего редактирования пользователя для аудита изменений",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматически обновляется при изменении объекта",
+    "Скрыто от вывода в API-ответах",
+    "Хранит дату в формате Date",
+    "Используется для отслеживания изменений",
+    "Связано с другими сущностями через отношения"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "class-transformer"
+  ],
+  "input_tokens": 1616,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "e5acb75d7fe51965"
+}

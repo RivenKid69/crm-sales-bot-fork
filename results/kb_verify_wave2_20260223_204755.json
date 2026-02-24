@@ -1,0 +1,65 @@
+{
+  "summary": {
+    "pass": 0,
+    "fail": 2,
+    "pct": 0.0
+  },
+  "results": [
+    {
+      "scenario": "w2_03_ofd_cost",
+      "trace": [
+        {
+          "turn": 1,
+          "user": "Привет, хочу подключить кассу",
+          "bot": "Привет! Она поддерживает наличные, карты и даже продажу в долг, а чеки автоматически отправляются в ОФД. А каким бизнесом занимаетесь?",
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "elapsed_s": 11.81
+        },
+        {
+          "turn": 2,
+          "user": "Сколько стоит ОФД в месяц? Можно подключить ОФД отдельно без программы?",
+          "bot": "ОФД входит в любой тариф: Mini — 5 000 ₸/мес, Lite — 150 000 ₸ в год. Подключить отдельно нельзя.",
+          "state": "autonomous_discovery",
+          "intent": "pricing_details",
+          "elapsed_s": 8.33
+        }
+      ],
+      "check": {
+        "description": "ОФД 1400₸/мес, только с Wipon (не отдельно)",
+        "pass": false,
+        "issues": [
+          "MISS: none of ['1 400', '1400'] found"
+        ]
+      }
+    },
+    {
+      "scenario": "w2_09_marketplaces",
+      "trace": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, продаю через интернет",
+          "bot": "Продажи через интернет — классная идея! А что продаёте: конкретные товары (одежда, техника) или услуги? И что сейчас больше всего мешает расти — логистика, учёт заказов или что-то другое?",
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "elapsed_s": 4.62
+        },
+        {
+          "turn": 2,
+          "user": "Можно ли через Wipon продавать на Ozon и Wildberries? А на Kaspi Магазин?",
+          "bot": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант.",
+          "state": "autonomous_discovery",
+          "intent": "question_integrations",
+          "elapsed_s": 6.14
+        }
+      ],
+      "check": {
+        "description": "Kaspi Магазин и Halyk Market (не Ozon/Wildberries)",
+        "pass": false,
+        "issues": [
+          "MISS: none of ['Kaspi Магазин', 'kaspi магазин', 'Halyk Market', 'halyk market', 'Каспи Магазин', 'Халык Маркет', 'каспи магазин'] found"
+        ]
+      }
+    }
+  ]
+}

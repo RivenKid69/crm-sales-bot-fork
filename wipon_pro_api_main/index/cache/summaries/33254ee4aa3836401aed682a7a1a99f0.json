@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.module.ts:import:@nestjs/axios",
+  "summary": "Этот код импортирует модули и сервисы для работы с задачами, кэшированием, уведомлениями и HTTP-запросами. Он настраивает кэш через Redis и использует внешние модули для взаимодействия с FCM и пользователями.",
+  "purpose": "Создание модуля для управления задачами, включая кэширование, отправку уведомлений и выполнение периодических операций.",
+  "domain": "утилиты, задачи, кэширование, уведомления",
+  "key_behaviors": [
+    "Настройка кэша через Redis",
+    "Использование FCM для отправки уведомлений",
+    "Интеграция с модулем пользователей",
+    "Выполнение задач, таких как отправка уведомлений и связь лицензии с хранилищем",
+    "Использование HTTP-запросов через Axios"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store",
+    "FcmModule",
+    "UsersModule"
+  ],
+  "input_tokens": 1228,
+  "output_tokens": 784,
+  "model": "qwen3:14b",
+  "code_hash": "174b7772bcb71f6a"
+}

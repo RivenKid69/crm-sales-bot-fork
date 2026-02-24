@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/company.api",
+  "summary": "Этот код импортирует типы и функции из библиотеки Vuex и API-модулей, чтобы управлять состоянием компании в приложении. Он определяет мутации, геттеры и действия для работы с данными компании, такими как информация о компании, UGDS, DGDS и типы магазинов.",
+  "purpose": "Этот код используется для управления состоянием компании в приложении, получая и сохраняя данные из API, и обеспечивая доступ к ним через Vuex.",
+  "domain": "база данных, api, настройки",
+  "key_behaviors": [
+    "Получение данных компании из API",
+    "Сохранение данных компании в состоянии Vuex",
+    "Управление UGDS, DGDS и типами магазинов",
+    "Проверка наличия магазина и перенаправление пользователя",
+    "Использование localStorage для хранения состояния"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через company.api, ugds.api, dgds.api, storeTypes.api)"
+  ],
+  "input_tokens": 2866,
+  "output_tokens": 780,
+  "model": "qwen3:14b",
+  "code_hash": "34d439fdd0d5a6a8"
+}

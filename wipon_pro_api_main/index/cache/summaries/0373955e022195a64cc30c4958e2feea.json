@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/presenter/feedbacks.controller.ts:class:FeedbacksController",
+  "summary": "Этот класс - контроллер в NestJS, который обрабатывает POST-запросы для отправки обратной связи. Он проверяет аутентификацию пользователя, использует DTO для валидации данных и преобразует ответы с помощью интерцептора.",
+  "purpose": "Позволяет авторизованным пользователям отправлять обратную связь в систему",
+  "domain": "обратная связь, API",
+  "key_behaviors": [
+    "Обработка POST-запросов для создания обратной связи",
+    "Проверка аутентификации через AuthGuard",
+    "Использование DTO для валидации данных",
+    "Преобразование ответов через TransformInterceptor",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "FeedbacksService",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1475,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "b0e8372d7500cec5"
+}

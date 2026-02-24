@@ -1580,6 +1580,38 @@ class ResponseGenerator:
         )
         return cleaned.strip() if cleaned.strip() else response
 
+    @staticmethod
+    def _is_deflective_factual_response(response: str) -> bool:
+        """Detect generic deflection instead of factual answer."""
+        if not response:
+            return False
+        return bool(re.search(
+            r'(?:расскажите\s+подробнее|что\s+именно\s+хотите\s+узнать'
+            r'|подберу\s+подходящ(?:ий|ий\s+вариант)|уточните\s+ваш\s+запрос'
+            r'|какой\s+у\s+вас\s+бизнес)',
+            response,
+            re.IGNORECASE,
+        ))
+
+    @staticmethod
+    def _extract_factual_fallback(retrieved_facts: str) -> str:
+        """Build a short grounded fallback from retrieved facts."""
+        if not retrieved_facts:
+            return ""
+
+        for raw_line in retrieved_facts.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("["):
+                continue
+            # Keep first concise sentence to avoid long/noisy fallback.
+            sentence = re.split(r'(?<=[.!?])\s+', line, maxsplit=1)[0].strip()
+            if not sentence:
+                continue
+            if sentence[-1] not in ".!?":
+                sentence += "."
+            return sentence
+        return ""
+
     def _fix_global_tariff_price_consistency(self, response: str) -> str:
         """Global pass: if response mentions ONE tariff and ONE wrong price, fix it.
 
@@ -1870,6 +1902,33 @@ class ResponseGenerator:
             return True
         return action.startswith("answer_") or action.startswith("calculate_")
 
+    @staticmethod
+    def _is_direct_factual_request(intent: str, user_message: str) -> bool:
+        """Return True for direct factual asks that must be answered before discovery probing."""
+        normalized_intent = str(intent or "").lower().strip()
+        if not normalized_intent:
+            return False
+
+        factual_intent = (
+            normalized_intent.startswith(("question_", "price_", "pricing_", "comparison", "cost_", "roi_"))
+            or normalized_intent in {"payment_terms", "company_info_question", "experience_question"}
+        )
+        if not factual_intent:
+            return False
+
+        msg = str(user_message or "").strip().lower()
+        if not msg:
+            return False
+        if "?" in msg:
+            return True
+        return bool(re.search(
+            r"(?:сколько|какие?|какой|расскажите|посоветуй|поч[её]м|цен[аы]|стоимост"
+            r"|можно\s+ли|есть\s+ли|как\s+работает|как\s+это\s+работает|чем\s+отлич"
+            r"|какие\s+банки|какой\s+тариф|какие\s+тарифы|рассрочк|офд|маркировк|1[cс]\b)",
+            msg,
+            re.IGNORECASE,
+        ))
+
     def _select_template_key(self, intent: str, action: str, context: Dict[str, Any]) -> str:
         """
         Select template key with explicit priority:
@@ -1895,6 +1954,12 @@ class ResponseGenerator:
             # In soft_close state, use soft_close template — don't keep pitching after refusal
             if state == "soft_close":
                 return "soft_close"
+            # For direct factual asks in autonomous flow, force concise factual template.
+            if (
+                intent != "greeting"
+                and self._is_direct_factual_request(intent, str(context.get("user_message", "") or ""))
+            ):
+                return "answer_with_facts"
             return "autonomous_respond"
 
         # Autonomous flow: always use autonomous_respond template (except greeting).
@@ -2229,7 +2294,7 @@ class ResponseGenerator:
         _is_autonomous = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (state.startswith("autonomous_") or state == "handle_objection")
+            and (state.startswith("autonomous_") or state in {"handle_objection", "greeting"})
         )
         _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
         if _is_autonomous:
@@ -2873,6 +2938,26 @@ class ResponseGenerator:
                 f"{_existing_dnr}\n{_q_block}" if _existing_dnr else _q_block
             )
 
+        # Direct factual answer mode in autonomous flow:
+        # answer first, no discovery follow-up in the same message.
+        if (
+            _is_autonomous
+            and self._is_direct_factual_request(intent, user_message)
+        ):
+            variables["question_instruction"] = (
+                "⚠️ DIRECT FACTUAL MODE: сначала дай прямой ответ по фактам из БАЗЫ ЗНАНИЙ. "
+                "В этом сообщении НЕ задавай встречных вопросов."
+            )
+            variables["available_questions"] = ""
+            _no_followup_rule = (
+                "⚠️ Для этого сообщения запрещены discovery-вопросы. "
+                "Сначала закрой запрос конкретным фактом."
+            )
+            _existing_dna = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = (
+                f"{_existing_dna}\n{_no_followup_rule}" if _existing_dna else _no_followup_rule
+            )
+
         for var in CRITICAL_TEMPLATE_VARS:
             if var not in variables or not variables[var]:
                 logger.warning(
@@ -3053,6 +3138,37 @@ class ResponseGenerator:
                     " Если точного ответа нет — честно скажи 'уточню у коллег'."
                 )
                 continue
+
+            # Factual-template guard: prevent discovery deflection and force grounded answer.
+            if selected_template_key == "answer_with_facts":
+                _bundle_query = bool(re.search(
+                    r'(?:комплект|всё\s+вместе|все\s+вместе'
+                    r'|касса.*сканер|сканер.*принтер|принтер.*вес)',
+                    user_message,
+                    re.IGNORECASE,
+                ))
+                _bundle_anchor_present = bool(re.search(
+                    r'(?:комплект|standard|168\s*000|219\s*000|100\s*000)',
+                    response,
+                    re.IGNORECASE,
+                ))
+                _deflective = self._is_deflective_factual_response(response)
+                _needs_fallback = _deflective or (_bundle_query and not _bundle_anchor_present)
+
+                if attempt == 0 and _needs_fallback:
+                    logger.info("answer_with_facts_deflection_retry", response=response[:100])
+                    prompt += (
+                        "\n\nВАЖНО: это factual-запрос. Нужен ПРЯМОЙ ответ по БАЗЕ ЗНАНИЙ."
+                        " НЕ задавай встречных вопросов и не проси рассказать подробнее."
+                        " Дай 1-2 конкретных факта (при наличии — цифры/названия)."
+                    )
+                    continue
+
+                if _needs_fallback:
+                    fallback = self._extract_factual_fallback(_retrieved_facts_str)
+                    if fallback:
+                        logger.info("answer_with_facts_fallback_applied")
+                        response = fallback
 
             # Если нет иностранного текста — проверяем на дубликаты
             if not self._has_foreign_language(response):

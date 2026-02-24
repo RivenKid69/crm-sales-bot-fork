@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store.dao.ts:import:typeorm",
+  "summary": "Этот код определяет сущность 'StoreDao' с помощью TypeORM, которая представляет таблицу 'stores' в базе данных. Она содержит поля для хранения информации о магазинах, включая связи с другими сущностями и временные метки.",
+  "purpose": "Создает структуру данных для хранения информации о магазинах и их связей в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит данные о магазинах (адрес, владелец, BIN, лицензия)",
+    "Использует временные метки для отслеживания изменений (created_at, updated_at, deleted_at)",
+    "Создает связи с другими сущностями (StoreTypeDao, DgdDao, UgdDao, UserDao)",
+    "Использует генерируемый первичный ключ для идентификации записей",
+    "Поддерживает soft delete через поле deleted_at"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "typeorm/decorators"
+  ],
+  "input_tokens": 2165,
+  "output_tokens": 770,
+  "model": "qwen3:14b",
+  "code_hash": "f69c06843df0eb5a"
+}

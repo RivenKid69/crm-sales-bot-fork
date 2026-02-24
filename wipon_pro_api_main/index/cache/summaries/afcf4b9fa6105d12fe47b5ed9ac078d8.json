@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-sub-for-erp.dto.ts:property:ShowActiveSubForErpDto:bin",
+  "summary": "Этот код создает DTO-класс для валидации данных. Он проверяет, что телефонный номер соответствует формату Казахстана, а BIN является непустой строкой.",
+  "purpose": "Обеспечивает корректность входных данных в API-запросах",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка формата казахстанского номера телефона",
+    "Обязательное заполнение поля BIN",
+    "Валидация типов данных для безопасности",
+    "Упрощает обработку входных данных в контроллерах",
+    "Снижает ошибки из-за некорректных данных"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1037,
+  "output_tokens": 628,
+  "model": "qwen3:14b",
+  "code_hash": "5147ad91835160a1"
+}

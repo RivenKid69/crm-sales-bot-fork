@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/dto/push-message.dto.ts:property:PushMessageDto:phone_number",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для валидации данных, которые используются при отправке сообщения на телефон. Он проверяет, что номер телефона и сообщение не пустые и соответствуют правилам формата.",
+  "purpose": "Используется для проверки корректности данных перед отправкой сообщения на телефон.",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка, что номер телефона не пустой",
+    "Проверка, что сообщение не пустое",
+    "Проверка формата номера телефона по стандарту Казахстана",
+    "Использование декораторов для валидации",
+    "Подготовка данных для передачи в API"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 885,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "c33635981a5c531e"
+}

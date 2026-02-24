@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:function:getDgdsRequest",
+  "summary": "Эта функция отправляет GET-запрос на сервер по адресу /dgds и получает данные. Она использует встроенную функцию request для выполнения запроса.",
+  "purpose": "Используется для получения данных из API по маршруту /dgds, например, для отображения информации на странице",
+  "domain": "api",
+  "key_behaviors": [
+    "Выполняет GET-запрос на сервер",
+    "Использует централизованный request-объект для HTTP-запросов",
+    "Возвращает данные из маршрута /dgds"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 955,
+  "output_tokens": 630,
+  "model": "qwen3:14b",
+  "code_hash": "82a400f17de260bb"
+}

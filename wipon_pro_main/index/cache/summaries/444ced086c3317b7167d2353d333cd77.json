@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/babel.config.js:file",
+  "summary": "Этот файл настраивает Babel для проекта Vue, используя готовый пресет из Vue CLI. Он позволяет преобразовывать современный JavaScript в версии, совместимые с старыми браузерами.",
+  "purpose": "Обеспечивает совместимость кода с разными браузерами через транспиляцию",
+  "domain": "JavaScript-инструменты, конфигурация сборки",
+  "key_behaviors": [
+    "Преобразует ES6+ код в ES5",
+    "Поддерживает синтаксис Vue (например, single-file components)",
+    "Добавляет необходимые полифилы для старых браузеров"
+  ],
+  "dependencies_used": [
+    "@vue/cli-plugin-babel/preset"
+  ],
+  "input_tokens": 968,
+  "output_tokens": 665,
+  "model": "qwen3:14b",
+  "code_hash": "9691fcd054c7705c"
+}

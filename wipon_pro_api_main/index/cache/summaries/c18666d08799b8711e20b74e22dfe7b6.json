@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/devices.service.ts:import:@nestjs/typeorm",
+  "summary": "Этот код реализует сервис для управления привязкой устройств к пользователям. Он проверяет наличие устройства, привязывает его к пользователю и проверяет, не привязано ли устройство другому пользователю",
+  "purpose": "Обеспечивает логику работы с устройствами и их привязкой к пользователям в приложении",
+  "domain": "управление устройствами, авторизация",
+  "key_behaviors": [
+    "Проверка существования устройства по коду",
+    "Привязка устройства к пользователю",
+    "Обработка ошибок (NotFoundException, HttpException)",
+    "Использование TypeORM через репозиторий",
+    "Обрезка строки кода устройства"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "locutus/php/strings/substr",
+    "typeorm"
+  ],
+  "input_tokens": 1840,
+  "output_tokens": 689,
+  "model": "qwen3:14b",
+  "code_hash": "03de6843288a4e01"
+}

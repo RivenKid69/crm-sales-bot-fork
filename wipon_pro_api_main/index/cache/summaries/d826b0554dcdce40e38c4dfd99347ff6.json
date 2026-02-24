@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.controller.ts:class:PdfController",
+  "summary": "Этот класс - контроллер, который генерирует PDF-счета. Он принимает POST-запросы на адрес /pdf/invoice, проверяет авторизацию, создает PDF-файл и отправляет его в браузер пользователя.",
+  "purpose": "Обрабатывает создание и отправку PDF-счетов авторизованным пользователям",
+  "domain": "генерация документов",
+  "key_behaviors": [
+    "Требует авторизации через AuthGuard",
+    "Генерирует PDF-файлы на основе DTO",
+    "Устанавливает заголовки для отображения PDF в браузере",
+    "Использует UserDao для получения информации о пользователе",
+    "Отправляет результат через HTTP-ответ"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "AuthGuard",
+    "UserDecorator",
+    "UserDao",
+    "GenerateInvoiceDto",
+    "PdfService"
+  ],
+  "input_tokens": 1302,
+  "output_tokens": 736,
+  "model": "qwen3:14b",
+  "code_hash": "b3425c857e12eca8"
+}

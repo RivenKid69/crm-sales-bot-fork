@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/domain/store-types.service.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создаёт сервис, который получает все типы магазинов из базы данных. Использует декораторы NestJS для инъекции репозитория и управления зависимостями.",
+  "purpose": "Позволяет получать данные о типах магазинов для использования в других частях приложения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получает все записи из таблицы типов магазинов",
+    "Использует TypeORM для работы с базой данных",
+    "Поддерживает инъекцию зависимостей через декораторы NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1058,
+  "output_tokens": 694,
+  "model": "qwen3:14b",
+  "code_hash": "ff0de80424b5569e"
+}

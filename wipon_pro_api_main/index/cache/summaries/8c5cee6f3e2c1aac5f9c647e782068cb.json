@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/presenter/stores.controller.ts:import:../../../common/decorators/user.decorator",
+  "summary": "Этот код импортирует пользовательский декоратор @User(), который используется для извлечения информации о пользователе из запроса. Он помогает получать данные аутентифицированного пользователя в контроллерах.",
+  "purpose": "Позволяет извлекать данные пользователя в контроллерах для дальнейшей обработки",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Извлечение данных пользователя из запроса",
+    "Использование в контроллерах для аутентификации",
+    "Работа с объектом UserDao",
+    "Интеграция с AuthGuard для проверки прав",
+    "Поддержка работы с сервисами через DI"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "AuthGuard",
+    "UserDao",
+    "StoresService",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2170,
+  "output_tokens": 682,
+  "model": "qwen3:14b",
+  "code_hash": "3e6aa9ba085d76a5"
+}

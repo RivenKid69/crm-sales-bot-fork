@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/data/dgds.repostitory.ts:import:typeorm",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с сущностью DgdDao. Это позволяет управлять данными в базе через TypeORM.",
+  "purpose": "Обеспечивает возможность взаимодействия с базой данных через TypeORM для сущности DgdDao",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Работа с сущностями в базе данных",
+    "Использование TypeORM для управления данными",
+    "Расширение возможностей Repository для DgdDao",
+    "Упрощение операций CRUD",
+    "Интеграция с другими частями приложения"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 994,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "20fd61e6b9fa257c"
+}

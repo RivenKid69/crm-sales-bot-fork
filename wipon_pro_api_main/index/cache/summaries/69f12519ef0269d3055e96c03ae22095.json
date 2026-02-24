@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/presenter/sms.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код создает контроллер для обработки SMS-запросов. Он использует валидацию данных и преобразование ответов через интерсепторы.",
+  "purpose": "Обработка входящих SMS-колбэков от внешних сервисов с проверкой данных и преобразованием ответа",
+  "domain": "API",
+  "key_behaviors": [
+    "Преобразование ответов через TransformInterceptor",
+    "Валидация входных данных с помощью ValidationPipe",
+    "Обработка POST-запросов по пути /smsc/callback",
+    "Использование SmscService для бизнес-логики",
+    "Исключение из Swagger-документации"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1244,
+  "output_tokens": 668,
+  "model": "qwen3:14b",
+  "code_hash": "7cceea5fdf18ad59"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/user-rate-limit.guard.ts:import:../services/doomguy/doomguy.service",
+  "summary": "Этот код проверяет, не превышает ли пользователь лимит запросов. Использует кэш для подсчёта запросов и сервис для логирования ошибок, если лимит превышен.",
+  "purpose": "Защищает API от перегрузки, ограничивая количество действий одного пользователя",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверяет аутентификацию пользователя",
+    "Считает количество запросов в кэше",
+    "Устанавливает временные ограничения на кэш",
+    "Флагирует превышение лимита",
+    "Логирует ошибки через DoomguyService"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "rxjs"
+  ],
+  "input_tokens": 1827,
+  "output_tokens": 687,
+  "model": "qwen3:14b",
+  "code_hash": "bc505f40aa633407"
+}

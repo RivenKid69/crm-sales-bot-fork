@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/ssl/ssl.service.ts:import:../../utils/common",
+  "summary": "Этот код импортирует модуль `Injectable` из библиотеки NestJS для создания сервиса и использует встроенный модуль `crypto` Node.js для проверки цифровой подписи данных. Также используется функция `fileGetContents` из файла `common` для чтения содержимого файла с публичным ключом.",
+  "purpose": "Проверка подлинности данных с использованием цифровой подписи и публичного ключа, что важно для обеспечения безопасности в приложениях.",
+  "domain": "безопасность, авторизация",
+  "key_behaviors": [
+    "Проверка цифровой подписи данных",
+    "Чтение содержимого файла с публичным ключом",
+    "Использование алгоритма SHA1 для проверки подписи",
+    "Интеграция с NestJS через `@Injectable()`",
+    "Работа с модулем `crypto` Node.js"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "crypto",
+    "fileGetContents"
+  ],
+  "input_tokens": 960,
+  "output_tokens": 761,
+  "model": "qwen3:14b",
+  "code_hash": "40b3ee6d8382b91c"
+}

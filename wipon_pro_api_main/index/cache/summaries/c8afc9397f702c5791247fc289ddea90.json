@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/domain/licenses.service.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис для получения информации о лицензиях. Он ищет лицензию по номеру, загружает связанные географические данные и формирует ответ с деталями.",
+  "purpose": "Позволяет получать информацию о лицензиях вместе с географическими данными для отображения в системе.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Поиск лицензии по номеру",
+    "Загрузка связанных географических узлов",
+    "Формирование структурированного ответа",
+    "Обработка ошибок (лицензия не найдена)",
+    "Извлечение дополнительных данных (адрес, BIN)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "GeoNodeDao",
+    "LicensesRepository"
+  ],
+  "input_tokens": 2103,
+  "output_tokens": 704,
+  "model": "qwen3:14b",
+  "code_hash": "e4c83e40972244dd"
+}

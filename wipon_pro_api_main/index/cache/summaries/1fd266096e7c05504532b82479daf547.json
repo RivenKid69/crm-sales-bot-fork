@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/domain/transactions.service.ts:import:../../accounts/domain/use-cases/sum-ledger-accounts-balance.use-case",
+  "summary": "Этот код импортирует различные сервисы и use-cases для обработки транзакций, управления пользователями, подписками и взаимодействия с банковскими системами. Он использует TypeORM для работы с базой данных и другие утилиты для обработки ошибок и локализации.",
+  "purpose": "Обработка финансовых транзакций, управление подписками и взаимодействие с пользователями в приложении",
+  "domain": "Финансовые операции, управление подписками, пользовательские сервисы",
+  "key_behaviors": [
+    "Обработка переводов между пользователями",
+    "Проверка наличия счета у пользователя",
+    "Использование BillingService для платежей",
+    "Логирование ошибок через кастомный логгер",
+    "Использование i18n для локализации сообщений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "nestjs-i18n"
+  ],
+  "input_tokens": 2668,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "759ff281f4fed029"
+}

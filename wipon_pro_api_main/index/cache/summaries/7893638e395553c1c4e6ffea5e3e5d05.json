@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/ugds.module.ts:import:./data/ugds.repository",
+  "summary": "Этот код создает модуль в NestJS, который подключается к базе данных через TypeORM, использует репозиторий для работы с данными, сервис для логики и контроллер для обработки HTTP-запросов. В модуле также есть use-case для поиска данных по ID.",
+  "purpose": "Организует логику работы с сущностью Ugds в приложении, обеспечивая разделение на данные, бизнес-логику и интерфейсы.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подключение к базе данных через TypeORM",
+    "Обработка HTTP-запросов через контроллер",
+    "Использование репозитория для доступа к данным",
+    "Выполнение бизнес-логики через сервис",
+    "Экспорт use-case для других модулей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1278,
+  "output_tokens": 740,
+  "model": "qwen3:14b",
+  "code_hash": "aade1eae54815877"
+}

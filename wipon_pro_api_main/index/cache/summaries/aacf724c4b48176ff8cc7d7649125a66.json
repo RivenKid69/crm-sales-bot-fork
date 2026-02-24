@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/activate-users-subscription.use-case.ts:method:ActivateUsersSubscriptionUseCase:constructor",
+  "summary": "Этот метод активирует подписку пользователя, отключая предыдущие активные подписки, создавая новую с указанным сроком и типом, и отправляя уведомление, если это первая активация.",
+  "purpose": "Обеспечивает корректное управление подписками пользователей, включая их активацию, обновление и уведомление.",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Отключает предыдущие активные подписки пользователя",
+    "Создаёт новую подписку с указанным сроком действия",
+    "Определяет тип подписки в зависимости от количества дней",
+    "Отправляет уведомление пользователю при первой активации",
+    "Поддерживает транзакции для обеспечения целостности данных"
+  ],
+  "dependencies_used": [
+    "SubscriptionRepository",
+    "PushService",
+    "I18nRequestScopeService",
+    "EntityManager",
+    "subscriptionConfig",
+    "datetime helpers"
+  ],
+  "input_tokens": 2005,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "349f18e3da29c9c0"
+}

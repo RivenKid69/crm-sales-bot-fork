@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account-transaction.dao.ts:property:AccountTransactionDao:created_at",
+  "summary": "Этот код описывает свойство `created_at` в сущности `AccountTransactionDao`, которое хранит дату создания записи. Оно автоматически заполняется системой при создании объекта в базе данных.",
+  "purpose": "Используется для отслеживания времени, когда была создана запись о транзакции.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматически заполняется при создании записи",
+    "Хранит дату и время создания",
+    "Использует тип `Date` для хранения значения",
+    "Связано с таблицей `account_transactions`",
+    "Не требует вручную указания значения"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1268,
+  "output_tokens": 697,
+  "model": "qwen3:14b",
+  "code_hash": "98365361d7082291"
+}

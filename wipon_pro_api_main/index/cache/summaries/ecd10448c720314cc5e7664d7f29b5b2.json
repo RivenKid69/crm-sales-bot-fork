@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:@nestjs/bull",
+  "summary": "Этот код настраивает модуль NestJS с подключением базы данных, кэшированием, международизацией и модулями приложения. Использует TypeORM для работы с PostgreSQL и Redis для кэша и задач.",
+  "purpose": "Создает структуру backend-приложения с поддержкой нескольких модулей, локализации и асинхронных задач",
+  "domain": "backend-сервис",
+  "key_behaviors": [
+    "Настройка подключения к PostgreSQL через TypeORM",
+    "Использование Redis для кэширования и очередей задач",
+    "Поддержка нескольких языков через i18n",
+    "Интеграция с модулями авторизации, пользователей, уведомлений и транзакций",
+    "Настройка асинхронных задач через Bull"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "@nestjs/bull",
+    "cache-manager-redis-store",
+    "typeorm",
+    "pg"
+  ],
+  "input_tokens": 2808,
+  "output_tokens": 775,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

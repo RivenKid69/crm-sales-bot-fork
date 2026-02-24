@@ -1,0 +1,476 @@
+[
+  {
+    "id": 238679,
+    "create_time": "2026-01-09T11:34:57.044Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238680,
+    "create_time": "2026-01-09T11:35:01.551Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238681,
+    "create_time": "2026-01-09T11:35:07.209Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238408,
+    "create_time": "2026-01-09T10:45:39.750Z",
+    "author_type": "client",
+    "sent_content": "Меня интересует моноблок \" Wipon Kvadro\""
+  },
+  {
+    "id": 238409,
+    "create_time": "2026-01-09T10:45:58.554Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Моноблок Wipon Quadro – это решение \"все в одном\": касса, весы до 30 кг, принтер чеков и два экрана."
+  },
+  {
+    "id": 238410,
+    "create_time": "2026-01-09T10:46:01.036Z",
+    "author_type": "ai",
+    "sent_content": "Для какого бизнеса вы рассматриваете это устройство?"
+  },
+  {
+    "id": 246273,
+    "create_time": "2026-01-12T11:18:50.531Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте\nНачнем подключение?"
+  },
+  {
+    "id": 248781,
+    "create_time": "2026-01-12T17:25:37.653Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "да"
+  },
+  {
+    "id": 248277,
+    "create_time": "2026-01-12T16:13:08.434Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "звоню"
+  },
+  {
+    "id": 248327,
+    "create_time": "2026-01-12T16:23:17.204Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "у вас каспи на другом номере?"
+  },
+  {
+    "id": 248329,
+    "create_time": "2026-01-12T16:24:16.097Z",
+    "author_type": "client",
+    "sent_content": "87076010588"
+  },
+  {
+    "id": 248381,
+    "create_time": "2026-01-12T16:31:25.983Z",
+    "author_type": "client",
+    "sent_content": "Нужно Каспи пополнить"
+  },
+  {
+    "id": 248772,
+    "create_time": "2026-01-12T17:24:39.846Z",
+    "author_type": "client",
+    "sent_content": "Что дальше"
+  },
+  {
+    "id": 248704,
+    "create_time": "2026-01-12T17:18:48.891Z",
+    "author_type": "client",
+    "sent_content": "Оплатила"
+  },
+  {
+    "id": 248719,
+    "create_time": "2026-01-12T17:21:01.979Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "благодарим за доверие"
+  },
+  {
+    "id": 248722,
+    "create_time": "2026-01-12T17:21:09.240Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "оплата принята"
+  },
+  {
+    "id": 248774,
+    "create_time": "2026-01-12T17:24:45.567Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ваш логин 77761515051\nпароль 12345678\n\nпосле обучения можете поменять пароль"
+  },
+  {
+    "id": 248778,
+    "create_time": "2026-01-12T17:25:09.298Z",
+    "author_type": "client",
+    "sent_content": "На телефон могу скачать программу?"
+  },
+  {
+    "id": 249631,
+    "create_time": "2026-01-13T09:31:33.570Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доброе утро ! Компания Wipon , хотели бы Вас записать на онлайн обучение"
+  },
+  {
+    "id": 249632,
+    "create_time": "2026-01-13T09:31:43.089Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите когда Вам удобно?"
+  },
+  {
+    "id": 249633,
+    "create_time": "2026-01-13T09:31:47.488Z",
+    "author_type": "client",
+    "sent_content": "Доброе утро!"
+  },
+  {
+    "id": 249635,
+    "create_time": "2026-01-13T09:31:59.367Z",
+    "author_type": "client",
+    "sent_content": "Может начнем после установки"
+  },
+  {
+    "id": 249641,
+    "create_time": "2026-01-13T09:32:57.605Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "После доставки оборудования?"
+  },
+  {
+    "id": 249643,
+    "create_time": "2026-01-13T09:33:04.274Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 249644,
+    "create_time": "2026-01-13T09:33:19.491Z",
+    "author_type": "client",
+    "sent_content": "Тогда это все будет наглядно"
+  },
+  {
+    "id": 249645,
+    "create_time": "2026-01-13T09:33:45.008Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо тогда как получите сообщите нам"
+  },
+  {
+    "id": 249646,
+    "create_time": "2026-01-13T09:33:53.779Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 249647,
+    "create_time": "2026-01-13T09:34:00.043Z",
+    "author_type": "client",
+    "sent_content": "Когда отправят?"
+  },
+  {
+    "id": 238415,
+    "create_time": "2026-01-09T10:47:33.812Z",
+    "author_type": "client",
+    "sent_content": "Магазин"
+  },
+  {
+    "id": 238417,
+    "create_time": "2026-01-09T10:47:49.018Z",
+    "author_type": "ai",
+    "sent_content": "Отлично, Wipon Quadro хорошо подходит для магазинов. Какой тип товаров вы продаете и какая у вас форма собственности (ИП или ТОО)?"
+  },
+  {
+    "id": 248339,
+    "create_time": "2026-01-12T16:26:17.158Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "чеки отправите пожалуйста"
+  },
+  {
+    "id": 248345,
+    "create_time": "2026-01-12T16:27:07.550Z",
+    "author_type": "client",
+    "sent_content": "За оборудование оплатила"
+  },
+  {
+    "id": 248346,
+    "create_time": "2026-01-12T16:27:23.794Z",
+    "author_type": "client",
+    "sent_content": "За программу чуть позже"
+  },
+  {
+    "id": 248349,
+    "create_time": "2026-01-12T16:28:10.922Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "можно адрес"
+  },
+  {
+    "id": 248352,
+    "create_time": "2026-01-12T16:28:41.664Z",
+    "author_type": "client",
+    "sent_content": "ВКО г. Алтай ул Астана 88 магазин Шашлындос"
+  },
+  {
+    "id": 248361,
+    "create_time": "2026-01-12T16:29:50.148Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо\nза программу когда ожидать подскажите?"
+  },
+  {
+    "id": 248375,
+    "create_time": "2026-01-12T16:31:03.473Z",
+    "author_type": "client",
+    "sent_content": "Если сегодня закину то сегодня если нет то до завтра терпит"
+  },
+  {
+    "id": 248378,
+    "create_time": "2026-01-12T16:31:12.913Z",
+    "author_type": "client",
+    "sent_content": "Или через пару часов"
+  },
+  {
+    "id": 248383,
+    "create_time": "2026-01-12T16:32:01.094Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо ждем"
+  },
+  {
+    "id": 248387,
+    "create_time": "2026-01-12T16:32:22.491Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "можно сегодня пожалуйста\nчтобы даты совпадали с оплатой оборудования"
+  },
+  {
+    "id": 248462,
+    "create_time": "2026-01-12T16:42:13.959Z",
+    "author_type": "client",
+    "sent_content": "Да через час оплачу"
+  },
+  {
+    "id": 249691,
+    "create_time": "2026-01-13T09:44:57.869Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Наш менеджер Вам сообщит как только отправят"
+  },
+  {
+    "id": 238682,
+    "create_time": "2026-01-09T11:35:20.856Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238683,
+    "create_time": "2026-01-09T11:35:26.939Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238685,
+    "create_time": "2026-01-09T11:35:35.527Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238686,
+    "create_time": "2026-01-09T11:35:40.204Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 238687,
+    "create_time": "2026-01-09T11:36:26.496Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "- легкая и точная ревизия без закрытия магазина\n- остатки товаров в штуках и деньгах\n- фото товара чтобы не запутаться\n- контроль сотрудников и долгов покупателей\n- самые продаваемые и непродаваемые товары\n- мобильное приложение\n- продажа оптом и в розницу, штучно и пачками\n- рекомендации по закупу товаров\n- система бонусов для ваших покупателей\n- бесплатная онлайн касса и ОФД, встроенный НКТ\n- повышение дохода\n- возможность работать без интернета\n\n1 торговая точка 150 000тг в год"
+  },
+  {
+    "id": 238421,
+    "create_time": "2026-01-09T10:48:01.821Z",
+    "author_type": "client",
+    "sent_content": "Им"
+  },
+  {
+    "id": 238424,
+    "create_time": "2026-01-09T10:48:16.076Z",
+    "author_type": "ai",
+    "sent_content": "Поняла, у вас ИП. Подскажите, пожалуйста, какой тип товаров вы продаете в своем магазине?"
+  },
+  {
+    "id": 238429,
+    "create_time": "2026-01-09T10:48:31.663Z",
+    "author_type": "client",
+    "sent_content": "Продуктовый магазин"
+  },
+  {
+    "id": 238431,
+    "create_time": "2026-01-09T10:48:47.199Z",
+    "author_type": "ai",
+    "sent_content": "Отлично, для продуктового магазина Wipon Quadro очень удобен, так как включает весы."
+  },
+  {
+    "id": 238432,
+    "create_time": "2026-01-09T10:48:49.617Z",
+    "author_type": "ai",
+    "sent_content": "Из какого вы города? Могу предложить вам короткий звонок с менеджером, чтобы он подобрал оптимальное решение под ваши задачи."
+  },
+  {
+    "id": 238434,
+    "create_time": "2026-01-09T10:49:06.194Z",
+    "author_type": "client",
+    "sent_content": "Звонок"
+  },
+  {
+    "id": 238435,
+    "create_time": "2026-01-09T10:49:20.778Z",
+    "author_type": "ai",
+    "sent_content": "Отлично! Менеджер свяжется с вами в ближайшее свободное время, чтобы обсудить все детали по Wipon Quadro для вашего продуктового магазина."
+  },
+  {
+    "id": 248129,
+    "create_time": "2026-01-12T15:48:05.001Z",
+    "author_type": "client",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 248130,
+    "create_time": "2026-01-12T15:48:09.712Z",
+    "author_type": "client",
+    "sent_content": "Перезвоните"
+  },
+  {
+    "id": 248735,
+    "create_time": "2026-01-12T17:22:04.701Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "аккаунт в программе регистрировать на ваш номер?"
+  },
+  {
+    "id": 248740,
+    "create_time": "2026-01-12T17:22:17.851Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 248749,
+    "create_time": "2026-01-12T17:23:02.858Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "отправила смс код"
+  },
+  {
+    "id": 248751,
+    "create_time": "2026-01-12T17:23:08.726Z",
+    "author_type": "client",
+    "sent_content": "Пришло"
+  },
+  {
+    "id": 248755,
+    "create_time": "2026-01-12T17:23:31.487Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "подскажете"
+  },
+  {
+    "id": 248756,
+    "create_time": "2026-01-12T17:23:35.815Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "провожу регистрацию"
+  },
+  {
+    "id": 248759,
+    "create_time": "2026-01-12T17:23:46.253Z",
+    "author_type": "client",
+    "sent_content": "6569"
+  },
+  {
+    "id": 248767,
+    "create_time": "2026-01-12T17:24:29.194Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "регистрация прошла"
+  },
+  {
+    "id": 248769,
+    "create_time": "2026-01-12T17:24:35.422Z",
+    "author_type": "client",
+    "sent_content": "Отлично"
+  },
+  {
+    "id": 248782,
+    "create_time": "2026-01-12T17:25:48.914Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Wipon называется"
+  },
+  {
+    "id": 248795,
+    "create_time": "2026-01-12T17:27:01.444Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/login"
+  },
+  {
+    "id": 248798,
+    "create_time": "2026-01-12T17:27:17.703Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://apps.apple.com/kz/app/wipon/id6502893602"
+  },
+  {
+    "id": 248811,
+    "create_time": "2026-01-12T17:29:07.841Z",
+    "author_type": "client",
+    "sent_content": "Скачала"
+  },
+  {
+    "id": 248818,
+    "create_time": "2026-01-12T17:29:42.804Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "передала ваш номер менеджеру по оборудованию\nон с вами свяжется в течение двух дней"
+  },
+  {
+    "id": 248821,
+    "create_time": "2026-01-12T17:29:57.405Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "пока можете просто посмотреть\nно действия не выполняйте, это уже после обучения"
+  },
+  {
+    "id": 248825,
+    "create_time": "2026-01-12T17:30:29.864Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 248857,
+    "create_time": "2026-01-12T17:37:00.968Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я дико извиняюсь\nЯ неправильно посчитала оборудование \n\nМоноблок 140 000\nВесы 100 000\nБеспроводной сканер 17 000\nПринтер этикеток 30 000\n\n287 000\n\nа выставили счет на 278 000🥺 выставим вам остаток, хорошо? 9000 тг"
+  },
+  {
+    "id": 248860,
+    "create_time": "2026-01-12T17:37:32.340Z",
+    "author_type": "client",
+    "sent_content": "У меня есть выбор?"
+  },
+  {
+    "id": 248861,
+    "create_time": "2026-01-12T17:37:46.204Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "цифры местами перепутала🙏"
+  },
+  {
+    "id": 248863,
+    "create_time": "2026-01-12T17:37:54.561Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 248865,
+    "create_time": "2026-01-12T17:38:10.136Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "😅 извините пожалуйста\nсейчас выставим"
+  },
+  {
+    "id": 248872,
+    "create_time": "2026-01-12T17:40:26.212Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym  по ссылке можете оплатить пожалуйста"
+  },
+  {
+    "id": 248913,
+    "create_time": "2026-01-12T17:46:10.718Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "спасибо"
+  }
+]

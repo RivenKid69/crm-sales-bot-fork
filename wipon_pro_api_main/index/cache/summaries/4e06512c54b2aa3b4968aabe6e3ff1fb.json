@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/dgds.service.ts:method:DgdsService:getDgdsList",
+  "summary": "Этот метод получает список данных из базы, используя репозиторий. Он асинхронно запрашивает все записи и возвращает их.",
+  "purpose": "Позволяет получить данные из базы для дальнейшего использования в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Асинхронный запрос данных из базы",
+    "Использование репозитория для взаимодействия с БД",
+    "Возвращает полный список записей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1098,
+  "output_tokens": 599,
+  "model": "qwen3:14b",
+  "code_hash": "70ce8a0cc378978c"
+}

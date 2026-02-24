@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:function:generateInvoice",
+  "summary": "Эта функция отправляет данные на сервер для создания счета-фактуры в формате PDF и возвращает файл как объект blob. Она использует POST-запрос к эндпоинту /pdf/invoice.",
+  "purpose": "Создание и скачивание PDF-счетов-фактур через API",
+  "domain": "PDF генерация, API вызовы",
+  "key_behaviors": [
+    "Отправляет POST-запрос на сервер",
+    "Обрабатывает ответ в формате blob (бинарный файл)",
+    "Принимает пользовательские данные для генерации PDF",
+    "Использует относительный путь к API",
+    "Работает как утилитарная функция"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 1001,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "d4c1ee3bd4915178"
+}

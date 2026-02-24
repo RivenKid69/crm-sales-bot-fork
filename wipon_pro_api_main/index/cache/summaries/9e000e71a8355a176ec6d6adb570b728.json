@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:import:../../config/app.config",
+  "summary": "Этот код создает сервис для проверки подлинности товаров, отправляя HTTP-запросы на внешние API. Использует конфигурации, кэш и логирование для работы с продуктами и предметами.",
+  "purpose": "Проверка подлинности товаров через внешние API для систем управления инвентарем или электронной коммерции",
+  "domain": "авторизация, логирование, API-запросы, настройки",
+  "key_behaviors": [
+    "Отправка HTTP-запросов на внешние серверы",
+    "Использование кэша для хранения данных",
+    "Работа с конфигурациями окружения",
+    "Использование логгера для отслеживания запросов",
+    "Интеграция с другими сервисами через use-case"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager",
+    "locutus/php/strings/substr",
+    "https"
+  ],
+  "input_tokens": 2925,
+  "output_tokens": 764,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

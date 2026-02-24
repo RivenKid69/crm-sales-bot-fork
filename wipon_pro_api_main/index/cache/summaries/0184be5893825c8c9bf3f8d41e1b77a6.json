@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/data/items.repository.ts:import:../../../common/dao/item.dao",
+  "summary": "Этот код создает репозиторий для работы с сущностью ItemDao в базе данных. Он использует TypeORM для управления данными, как будто это ящик, в котором хранятся предметы, и мы можем добавлять, удалять или искать их.",
+  "purpose": "Позволяет приложению взаимодействовать с данными ItemDao через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Управление данными сущности ItemDao",
+    "Использование TypeORM для работы с БД",
+    "Расширяемость через наследование Repository",
+    "Поддержка CRUD операций"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 984,
+  "output_tokens": 696,
+  "model": "qwen3:14b",
+  "code_hash": "7b82f828d1de1255"
+}

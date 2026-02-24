@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/presenter/licenses.controller.ts:import:@nestjs/common",
+  "summary": "Этот код создает контроллер для управления лицензиями в приложении. Он обрабатывает HTTP-запросы, проверяет авторизацию, валидирует данные и поддерживает международные переводы.",
+  "purpose": "Обеспечивает API для получения и проверки лицензий с защитой от неавторизованного доступа",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения лицензий",
+    "Проверка подлинности пользователя через AuthGuard",
+    "Валидация входных данных с помощью ValidationPipe",
+    "Поддержка международных переводов через I18nService",
+    "Генерация документации API с помощью Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "nestjs-i18n",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1679,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "c6bfb5217b093c37"
+}

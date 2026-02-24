@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:import:@/api/request",
+  "summary": "Этот код импортирует утилиту для HTTP-запросов и создает функцию, которая отправляет GET-запрос на сервер для получения списка типов магазинов",
+  "purpose": "Позволяет получить данные о типах магазинов из backend-системы для отображения в интерфейсе",
+  "domain": "api",
+  "key_behaviors": [
+    "Отправка GET-запросов на сервер",
+    "Получение данных о типах магазинов",
+    "Использование относительного пути к API",
+    "Работа с внешними API-ресурсами",
+    "Формирование запросов в формате JSON"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 965,
+  "output_tokens": 628,
+  "model": "qwen3:14b",
+  "code_hash": "7397d508f9a591fd"
+}

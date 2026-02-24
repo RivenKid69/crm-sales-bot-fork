@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/validations/is-entity-exists.ts:function:IsPhoneExistsInUsers",
+  "summary": "Этот код создает валидаторы для проверки существования записей в базе данных. Каждая функция проверяет, существует ли объект (например, магазин или пользователь) по его идентификатору, используя соответствующий DAO (Data Access Object).",
+  "purpose": "Обеспечивает валидацию данных перед сохранением, предотвращая ссылки на несуществующие объекты",
+  "domain": "валидация данных",
+  "key_behaviors": [
+    "Проверка существования записей в БД",
+    "Асинхронная валидация через DAO",
+    "Персонализированные декораторы для разных сущностей",
+    "Интеграция с класс-валидатором",
+    "Поддержка настраиваемых параметров валидации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "StoreTypeDao",
+    "DgdDao",
+    "UgdDao",
+    "RegionDao",
+    "ItemDao",
+    "UserDao",
+    "LedgerDao"
+  ],
+  "input_tokens": 2644,
+  "output_tokens": 771,
+  "model": "qwen3:14b",
+  "code_hash": "6765c3cb44480c13"
+}

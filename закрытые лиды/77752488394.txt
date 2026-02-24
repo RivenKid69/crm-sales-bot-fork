@@ -1,0 +1,470 @@
+[
+  {
+    "id": 33738,
+    "create_time": "2025-10-31T14:18:16.995Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 33739,
+    "create_time": "2025-10-31T14:18:17.034Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 33740,
+    "create_time": "2025-10-31T14:18:17.070Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 33742,
+    "create_time": "2025-10-31T14:18:41.778Z",
+    "author_type": "client",
+    "sent_content": "Подскажите пожалуйста, я бы хотела проконсультироваться насчет вашей программы и блог, с кем возможно переговорить ?"
+  },
+  {
+    "id": 33746,
+    "create_time": "2025-10-31T14:19:27.299Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!\nБлагодарим за обращение в компанию Wipon.\n\nПодскажите, с какого города вы к нам обратились?"
+  },
+  {
+    "id": 33748,
+    "create_time": "2025-10-31T14:20:12.332Z",
+    "author_type": "client",
+    "sent_content": "Город Уральск"
+  },
+  {
+    "id": 33754,
+    "create_time": "2025-10-31T14:21:09.081Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Могу вам позвонить"
+  },
+  {
+    "id": 33755,
+    "create_time": "2025-10-31T14:21:11.445Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для полной консультации ?"
+  },
+  {
+    "id": 33757,
+    "create_time": "2025-10-31T14:21:23.578Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 34206,
+    "create_time": "2025-10-31T15:19:15.516Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "По поводу принтера есть один сейчас мы его проверим если все хорошо"
+  },
+  {
+    "id": 34208,
+    "create_time": "2025-10-31T15:19:40.281Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "То можем его вам отправить"
+  },
+  {
+    "id": 34275,
+    "create_time": "2025-10-31T15:27:54.912Z",
+    "author_type": "client",
+    "sent_content": "Хорошо, жду"
+  },
+  {
+    "id": 34506,
+    "create_time": "2025-10-31T16:01:28.621Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам кроме принтера еще какое оборудование нудно было ?"
+  },
+  {
+    "id": 34511,
+    "create_time": "2025-10-31T16:02:43.057Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ж*"
+  },
+  {
+    "id": 34515,
+    "create_time": "2025-10-31T16:03:07.718Z",
+    "author_type": "client",
+    "sent_content": "Моноблок \nСканер штрих кода \nДенежный ящик \nПринтер чеков"
+  },
+  {
+    "id": 34516,
+    "create_time": "2025-10-31T16:03:19.633Z",
+    "author_type": "client",
+    "sent_content": "Моноблок белый"
+  },
+  {
+    "id": 34525,
+    "create_time": "2025-10-31T16:05:13.453Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все принтер проверили"
+  },
+  {
+    "id": 34533,
+    "create_time": "2025-10-31T16:06:32.793Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок с одним экраном 140,000\nСканер штрих кода проводной 10,000\nДенежный ящик 21,000\nПринтер чеков 58мм 15,000\nПринтер этикеток для ювелирки  80,000\nПрограмма учета 150,000\n406,000тг в общем"
+  },
+  {
+    "id": 34538,
+    "create_time": "2025-10-31T16:06:58.482Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Обучение, тех поддержка включена в стоимость"
+  },
+  {
+    "id": 34549,
+    "create_time": "2025-10-31T16:09:17.333Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас в наличии есть только черный, белый будет в среду или в четверг с новой поставкой \nТам кол-во тоже ограничено могу забронировать сейчас один за вами"
+  },
+  {
+    "id": 34586,
+    "create_time": "2025-10-31T16:14:40.713Z",
+    "author_type": "client",
+    "sent_content": "Да , забронируйте пожалуйста белый"
+  },
+  {
+    "id": 34592,
+    "create_time": "2025-10-31T16:15:19.068Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 34593,
+    "create_time": "2025-10-31T16:15:25.752Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тогда оформим ?"
+  },
+  {
+    "id": 34596,
+    "create_time": "2025-10-31T16:15:39.155Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для оформление мне требуется ИИН и номер телефона"
+  },
+  {
+    "id": 34682,
+    "create_time": "2025-10-31T16:27:14.491Z",
+    "author_type": "client",
+    "sent_content": "Сейчас минуточку"
+  },
+  {
+    "id": 34704,
+    "create_time": "2025-10-31T16:32:29.731Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ждем😇"
+  },
+  {
+    "id": 34806,
+    "create_time": "2025-10-31T16:46:52.480Z",
+    "author_type": "client",
+    "sent_content": "980920450176\n87752488394"
+  },
+  {
+    "id": 34818,
+    "create_time": "2025-10-31T16:49:22.741Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас вам отправим два счета за программу и оборудование"
+  },
+  {
+    "id": 34824,
+    "create_time": "2025-10-31T16:52:33.602Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Перед тем как за оборудование счет выставлять, принтер для ювелирки он без коробки так как остался последний и на складе коробку потеряли  но он новый мы его проверили, включался пару раз для теста"
+  },
+  {
+    "id": 34825,
+    "create_time": "2025-10-31T16:53:02.824Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 34826,
+    "create_time": "2025-10-31T16:53:05.122Z",
+    "author_type": "client",
+    "sent_content": "Я забыла"
+  },
+  {
+    "id": 34829,
+    "create_time": "2025-10-31T16:53:30.937Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Предупреждаю что бы завтра не было недопонимании  )"
+  },
+  {
+    "id": 34831,
+    "create_time": "2025-10-31T16:53:45.817Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На счет"
+  },
+  {
+    "id": 34832,
+    "create_time": "2025-10-31T16:54:02.173Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "?"
+  },
+  {
+    "id": 34833,
+    "create_time": "2025-10-31T16:54:02.219Z",
+    "author_type": "client",
+    "sent_content": "Не могли бы вы прислать фото или видео как он выглядит и какие именно этикетки там  могут быть"
+  },
+  {
+    "id": 34854,
+    "create_time": "2025-10-31T16:58:35.210Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 34863,
+    "create_time": "2025-10-31T16:59:09.329Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "размер бумаги можно менять"
+  },
+  {
+    "id": 34864,
+    "create_time": "2025-10-31T16:59:33.601Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если нужен другой размер"
+  },
+  {
+    "id": 34867,
+    "create_time": "2025-10-31T16:59:58.624Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "с этими же этикетками отправим вам там рулон почти полный"
+  },
+  {
+    "id": 34873,
+    "create_time": "2025-10-31T17:02:03.014Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 34878,
+    "create_time": "2025-10-31T17:02:52.841Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 34885,
+    "create_time": "2025-10-31T17:03:32.161Z",
+    "author_type": "client",
+    "sent_content": "Вот такие"
+  },
+  {
+    "id": 34947,
+    "create_time": "2025-10-31T17:10:41.035Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Такую этикетку он не печатает"
+  },
+  {
+    "id": 34956,
+    "create_time": "2025-10-31T17:11:22.913Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Такой можно"
+  },
+  {
+    "id": 35025,
+    "create_time": "2025-10-31T17:20:54.940Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 35044,
+    "create_time": "2025-10-31T17:22:54.286Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 35178,
+    "create_time": "2025-10-31T17:55:22.455Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Валерия, вы прослушали голосовые?"
+  },
+  {
+    "id": 35180,
+    "create_time": "2025-10-31T17:56:12.840Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 35181,
+    "create_time": "2025-10-31T17:56:44.394Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 35182,
+    "create_time": "2025-10-31T17:56:55.324Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можем попробовать"
+  },
+  {
+    "id": 35183,
+    "create_time": "2025-10-31T17:57:12.239Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Валерия, мы вам счет отправили на номер"
+  },
+  {
+    "id": 35185,
+    "create_time": "2025-10-31T17:57:28.342Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете оплатить и чек скинуть"
+  },
+  {
+    "id": 35186,
+    "create_time": "2025-10-31T17:57:31.240Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы вас на обучение запишем"
+  },
+  {
+    "id": 35187,
+    "create_time": "2025-10-31T17:57:32.377Z",
+    "author_type": "client",
+    "sent_content": "Пять сек"
+  },
+  {
+    "id": 35190,
+    "create_time": "2025-10-31T17:58:44.880Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 35199,
+    "create_time": "2025-10-31T18:00:48.843Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Благодарю"
+  },
+  {
+    "id": 35242,
+    "create_time": "2025-10-31T18:09:49.891Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все я за вами забронировал оборудование"
+  },
+  {
+    "id": 35248,
+    "create_time": "2025-10-31T18:10:14.469Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 35252,
+    "create_time": "2025-10-31T18:10:54.145Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок с одним экраном 140,000\nСканер штрих кода проводной 10,000\nДенежный ящик 21,000\nПринтер чеков 58мм 15,000\nПринтер этикеток 30,000\n216,000 тг"
+  },
+  {
+    "id": 35401,
+    "create_time": "2025-10-31T18:43:20.974Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 35403,
+    "create_time": "2025-10-31T18:43:34.896Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 49371,
+    "create_time": "2025-11-06T15:01:14.156Z",
+    "author_type": "client",
+    "sent_content": "Давайте этот комплект"
+  },
+  {
+    "id": 49374,
+    "create_time": "2025-11-06T15:01:25.125Z",
+    "author_type": "client",
+    "sent_content": "Этикетки я узнала там идут матовые"
+  },
+  {
+    "id": 49381,
+    "create_time": "2025-11-06T15:02:02.416Z",
+    "author_type": "client",
+    "sent_content": "Только выставите счет пожалуйста на этот номер 87024749904"
+  },
+  {
+    "id": 49383,
+    "create_time": "2025-11-06T15:02:24.862Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо"
+  },
+  {
+    "id": 49544,
+    "create_time": "2025-11-06T15:20:10.043Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 50026,
+    "create_time": "2025-11-06T16:07:13.268Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно ваш адрес"
+  },
+  {
+    "id": 50028,
+    "create_time": "2025-11-06T16:07:37.379Z",
+    "author_type": "client",
+    "sent_content": "Город Уральск \nВсеволода Иванова 14"
+  },
+  {
+    "id": 50031,
+    "create_time": "2025-11-06T16:08:20.303Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "🤝"
+  },
+  {
+    "id": 49132,
+    "create_time": "2025-11-06T14:45:07.814Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день !"
+  },
+  {
+    "id": 49134,
+    "create_time": "2025-11-06T14:45:31.533Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы получили оборудование сегодня начинаем всем отправлять"
+  },
+  {
+    "id": 49144,
+    "create_time": "2025-11-06T14:46:03.493Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "По ценнику айти еще делает под ваш размер он пока что не готов"
+  },
+  {
+    "id": 49155,
+    "create_time": "2025-11-06T14:46:57.263Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок с одним экраном 140,000\nСканер штрих кода проводной 10,000\nДенежный ящик 21,000\nПринтер чеков 58мм 15,000\nПринтер этикеток для ювелирки 80,000"
+  },
+  {
+    "id": 49158,
+    "create_time": "2025-11-06T14:47:16.598Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Данный комплект сейчас вам подойдет"
+  },
+  {
+    "id": 49166,
+    "create_time": "2025-11-06T14:48:05.519Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "на этот комплект сейчас скидка за 199,000тг"
+  },
+  {
+    "id": 49168,
+    "create_time": "2025-11-06T14:48:18.113Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 49176,
+    "create_time": "2025-11-06T14:48:50.150Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 49670,
+    "create_time": "2025-11-06T15:35:33.795Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "принято"
+  }
+]

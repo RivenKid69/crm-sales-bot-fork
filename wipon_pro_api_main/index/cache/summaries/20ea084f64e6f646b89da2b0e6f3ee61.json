@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/domain/reports.service.ts:import:@nestjs/common",
+  "summary": "Этот код реализует сервис для обработки отчётов, загрузки изображений и работы с базой данных. Он сохраняет фото, обновляет данные отчёта и удаляет старые файлы при изменении информации.",
+  "purpose": "Обработка данных отчётов и управление изображениями в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Загрузка и сохранение изображений в Base64",
+    "Обновление записей в базе данных",
+    "Удаление старых файлов при изменении данных",
+    "Транзакционная обработка данных",
+    "Логирование ошибок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "fs",
+    "path"
+  ],
+  "input_tokens": 2505,
+  "output_tokens": 712,
+  "model": "qwen3:14b",
+  "code_hash": "608441468e01b302"
+}

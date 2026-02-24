@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/find-newest-users-auth-code.use-case.ts:import:../../../../common/dao/auth-code.dao",
+  "summary": "Этот код создает сервис, который ищет самый свежий код авторизации для пользователя. Он использует репозиторий для работы с базой данных и возвращает данные через специальный объект (DAO).",
+  "purpose": "Позволяет получить последний код авторизации конкретного пользователя из базы данных",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Ищет код авторизации по ID пользователя",
+    "Использует репозиторий для доступа к базе данных",
+    "Возвращает данные в формате DAO",
+    "Работает асинхронно через Promise",
+    "Поддерживает инъекцию зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "AuthCodesRepository",
+    "AuthCodeDao"
+  ],
+  "input_tokens": 1170,
+  "output_tokens": 656,
+  "model": "qwen3:14b",
+  "code_hash": "3599844b61d70a99"
+}

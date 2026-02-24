@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:locutus/php/strings/substr",
+  "summary": "Этот код импортирует модули для работы с ошибками, базой данных, валидацией данных и обработкой изображений. Использует сервисы для работы с проверками, товарами и аутентификацией.",
+  "purpose": "Обработка и валидация данных проверок, взаимодействие с базой данных и внешними сервисами.",
+  "domain": "база данных, валидация, обработка изображений, авторизация",
+  "key_behaviors": [
+    "Обработка ошибок (NotFoundException, ForbiddenException)",
+    "Работа с базой данных через TypeORM",
+    "Валидация изображений и сохранение в файловую систему",
+    "Использование вспомогательных функций для работы с датой и временем",
+    "Использование substr для обработки строк"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "locutus/php/strings/substr"
+  ],
+  "input_tokens": 4988,
+  "output_tokens": 775,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

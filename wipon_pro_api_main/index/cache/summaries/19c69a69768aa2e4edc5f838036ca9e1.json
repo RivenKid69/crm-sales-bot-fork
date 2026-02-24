@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:class:BillingService",
+  "summary": "Этот класс отвечает за создание и обновление бухгалтерских записей и счетов пользователей. Он проверяет, существуют ли уже записи, создает их при необходимости и использует различные сервисы для обработки данных.",
+  "purpose": "Обеспечивает корректное создание и синхронизацию бухгалтерских записей и счетов пользователей в системе",
+  "domain": "бухгалтерия и управление счетами",
+  "key_behaviors": [
+    "Создание новых бухгалтерских записей для пользователей",
+    "Проверка существующих записей и их обновление",
+    "Использование сервисов для обработки данных",
+    "Генерация кодов для бухгалтерских записей",
+    "Создание хронических записей для бухгалтерии"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase",
+    "SaveAccountsUseCase",
+    "SumLedgerAccountsBalanceUseCase"
+  ],
+  "input_tokens": 2792,
+  "output_tokens": 779,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

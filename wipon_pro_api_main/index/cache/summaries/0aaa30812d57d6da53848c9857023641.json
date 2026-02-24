@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transaction.dto.ts:property:PostTransactionDto:amount",
+  "summary": "Этот код проверяет данные, которые приходят в DTO для транзакции, чтобы убедиться, что они соответствуют определённым правилам, например, что 'amount' — это число, а 'provider' — из определённого списка.",
+  "purpose": "Обеспечить корректность данных перед их обработкой в системе",
+  "domain": "API, DTO для транзакций",
+  "key_behaviors": [
+    "Проверка, что поля не пустые",
+    "Проверка типов данных (число, строка, JSON)",
+    "Ограничение значений по списку (например, 'provider')",
+    "Использование кастомных валидаций (например, IsLedgerExists)",
+    "Поддержка необязательных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsNumeric (из common/validations)",
+    "IsLedgerExists (из common/validations)"
+  ],
+  "input_tokens": 1488,
+  "output_tokens": 682,
+  "model": "qwen3:14b",
+  "code_hash": "016d7685d03071fe"
+}

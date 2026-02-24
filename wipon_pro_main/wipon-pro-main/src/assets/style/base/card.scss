@@ -1,0 +1,21 @@
+.card {
+  width: 100%;
+  background: $white;
+  box-shadow: 0px 2px 45px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+
+  &__title {
+    font-weight: 500;
+    font-size: 18px;
+    padding: 16px 24px 14px 24px;
+
+    &_sm {
+      padding: 11px 24px;
+    }
+  }
+
+  &__body {
+    padding: 18px 24px 24px 24px;
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/find-ledgers-accounts.use-case.ts:import:../../data/accounts.repository",
+  "summary": "Этот код создает сервис, который ищет информацию о счетах в базе данных по идентификатору леджера и провайдеру. Использует репозиторий для взаимодействия с базой и возвращает данные в виде объекта AccountDao.",
+  "purpose": "Позволяет получать данные о конкретном счете для использования в других частях приложения, например, для отображения или обработки.",
+  "domain": "база данных, финансовые операции",
+  "key_behaviors": [
+    "Ищет запись по ledger_id и provider",
+    "Использует TypeORM для работы с базой данных",
+    "Возвращает данные в виде AccountDao",
+    "Работает как отдельный use-case",
+    "Использует инъекцию зависимостей для репозитория"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1149,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "74e57e5526b7c4d1"
+}

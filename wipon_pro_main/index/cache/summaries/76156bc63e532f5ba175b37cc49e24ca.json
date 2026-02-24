@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:function:getStoreTypesRequest",
+  "summary": "Эта функция отправляет GET-запрос на сервер для получения списка типов магазинов. Она использует централизованный инструмент для работы с API, что упрощает управление запросами и делает код более читаемым.",
+  "purpose": "Используется для получения данных о типах магазинов из внешнего источника, например, сервера.",
+  "domain": "api",
+  "key_behaviors": [
+    "Отправляет GET-запрос",
+    "Использует централизованный API-инструмент",
+    "Возвращает данные о типах магазинов"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 839,
+  "output_tokens": 681,
+  "model": "qwen3:14b",
+  "code_hash": "7397d508f9a591fd"
+}

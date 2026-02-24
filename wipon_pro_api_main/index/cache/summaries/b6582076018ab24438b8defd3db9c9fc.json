@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../stores/dto/post-or-update-store.dto",
+  "summary": "Этот код импортирует необходимые зависимости для создания сервиса аутентификации, включая DTO, use-cases, сервисы и конфигурации, которые используются для обработки входа пользователей, работы с кодами подтверждения и управления токенами.",
+  "purpose": "Подготовка всех необходимых компонентов для реализации функционала аутентификации и авторизации пользователей",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Использование DTO для валидации входных данных",
+    "Интеграция с use-cases для работы с пользователями и кодами подтверждения",
+    "Взаимодействие с сервисами SMS и биллинга",
+    "Использование конфигураций для настройки аутентификации",
+    "Подготовка к созданию сервиса аутентификации"
+  ],
+  "dependencies_used": [
+    "LoginDto",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService",
+    "BillingService",
+    "authConfig"
+  ],
+  "input_tokens": 2691,
+  "output_tokens": 782,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

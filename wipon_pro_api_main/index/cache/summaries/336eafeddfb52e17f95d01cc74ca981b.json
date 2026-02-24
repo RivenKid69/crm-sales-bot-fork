@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/domain/feedbacks.service.ts:method:FeedbacksService:rn '';\n   ",
+  "summary": "Этот код обрабатывает отправку обратной связи от пользователей. Он очищает данные, проверяет дубликаты, сохраняет фото и отправляет уведомления в Slack, если это не тестовая среда.",
+  "purpose": "Обеспечивает безопасную обработку и хранение обратной связи пользователей с предотвращением дубликатов и уведомлением команды",
+  "domain": "обратная связь пользователей, уведомления, валидация данных",
+  "key_behaviors": [
+    "Очищает HTML-теги и сущности из текста",
+    "Проверяет наличие дубликатов за последние 5 минут",
+    "Сохраняет изображение в Base64 формате",
+    "Отправляет уведомления в Slack, если это не тестовая среда",
+    "Создаёт и сохраняет запись обратной связи в базе данных"
+  ],
+  "dependencies_used": [
+    "FeedbacksRepository",
+    "DoomguyService",
+    "saveBase64ImageExif",
+    "subMinutesFromNow",
+    "appConfig"
+  ],
+  "input_tokens": 2327,
+  "output_tokens": 786,
+  "model": "qwen3:14b",
+  "code_hash": "85d4cbefa0fbdee8"
+}

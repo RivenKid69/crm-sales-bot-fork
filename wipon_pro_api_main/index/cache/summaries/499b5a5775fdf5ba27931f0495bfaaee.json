@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/version/version.controller.ts:method:VersionController:getMobileVersion",
+  "summary": "Этот метод получает текущую версию мобильного приложения и сравнивает её с версией пользователя. Он использует сервис для получения данных и возвращает результат в нужном формате.",
+  "purpose": "Позволяет определить, нужно ли пользователю обновить мобильное приложение",
+  "domain": "управление версиями приложений",
+  "key_behaviors": [
+    "Получает версию мобильного приложения",
+    "Сравнивает с версией пользователя",
+    "Использует сервис для получения данных",
+    "Возвращает результат в нужном формате",
+    "Документирован через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1354,
+  "output_tokens": 693,
+  "model": "qwen3:14b",
+  "code_hash": "c1f412f2bb1df155"
+}

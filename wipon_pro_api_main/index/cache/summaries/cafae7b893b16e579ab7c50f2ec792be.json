@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/push/push.service.ts:import:./push.producer.service",
+  "summary": "Этот код создает сервис для отправки уведомлений на устройства пользователей. Он проверяет наличие устройства, определяет платформу (Android/iOS), считает непрочитанные уведомления и отправляет сообщение через отдельный сервис.",
+  "purpose": "Отправка push-уведомлений пользователям с учетом их настроек и состояния",
+  "domain": "уведомления, мобильные приложения",
+  "key_behaviors": [
+    "Отправка уведомлений на устройства",
+    "Определение платформы устройства",
+    "Подсчет непрочитанных сообщений",
+    "Использование конфигурации окружения",
+    "Работа с базой данных через DAO"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "NotificationDao",
+    "UserDao",
+    "appConfig",
+    "PushProducerService"
+  ],
+  "input_tokens": 1439,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "8e1f2ccaff4b79a1"
+}

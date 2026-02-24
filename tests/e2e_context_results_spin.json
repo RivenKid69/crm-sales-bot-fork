@@ -1,0 +1,459 @@
+[
+  {
+    "scenario": "Long B2B Dialog — 18 turns, fact retention stress",
+    "flow": "spin_selling",
+    "total_turns": 17,
+    "facts_retained": 3,
+    "facts_lost": 15,
+    "dedup_violations": 0,
+    "total_elapsed_s": 44.318899154663086,
+    "avg_response_len": 190.1764705882353,
+    "history_compact_used": false,
+    "turns": [
+      {
+        "turn": 1,
+        "user": "Добрый день! Меня зовут Алексей Петрович, я из компании НефтеТрансСервис. Нам посоветовали ваш продукт.",
+        "bot": "Добрый день, Алексей Петрович! Рады, что обратились к нам. Чем именно можем вам помочь?",
+        "intent": "greeting",
+        "state": "greeting",
+        "history_len": 1,
+        "history_formatted_len": 203,
+        "cw_turns": 1,
+        "episodic_episodes": 0,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": null
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 6527.117013931274
+      },
+      {
+        "turn": 2,
+        "user": "У нас в компании 450 сотрудников, работаем в логистике и транспорте нефтепродуктов.",
+        "bot": "В таком масштабе важно поддерживать порядок. А как вы сейчас управляете коммуникацией между отделами?",
+        "intent": "situation_provided",
+        "state": "spin_situation",
+        "history_len": 2,
+        "history_formatted_len": 401,
+        "cw_turns": 2,
+        "episodic_episodes": 1,
+        "episodic_pain_points": [
+          "конфликты в команде"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 787.17041015625
+      },
+      {
+        "turn": 3,
+        "user": "Основная проблема — весь учёт заявок ведём в Excel вручную, постоянно теряются данные, дубли.",
+        "bot": "Это действительно проблема. Excel не справляется с нагрузкой — это приводит к ошибкам и потере времени. А как часто возникают дубли и пропуски?",
+        "intent": "situation_provided",
+        "state": "spin_problem",
+        "history_len": 3,
+        "history_formatted_len": 651,
+        "cw_turns": 3,
+        "episodic_episodes": 2,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.06060606060606061,
+        "elapsed_ms": 2960.5484008789062
+      },
+      {
+        "turn": 4,
+        "user": "Да, пробовали пару CRM раньше, но они были слишком сложные для наших ребят.",
+        "bot": "Логичное сомнение. Другие системы тоже имеют свои плюсы, но в вашем случае важна простота и понятные отчёты — как раз то, чем мы можем выделиться. Хотите посмотреть, как это работает на практике? Может всё-таки глянем демо? Это бесплатно и ни к чему не обязывает.",
+        "intent": "objection_competitor",
+        "state": "handle_objection",
+        "history_len": 4,
+        "history_formatted_len": 1003,
+        "cw_turns": 4,
+        "episodic_episodes": 4,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.10714285714285714,
+        "elapsed_ms": 6158.2348346710205
+      },
+      {
+        "turn": 5,
+        "user": "Бюджет у нас где-то в районе 2 миллионов рублей на год, может чуть больше.",
+        "bot": "У нас тарифы: 220 000 ₸ в год, 350 000 ₸ на 2 года, 500 000 ₸ на 5 лет. Рассрочка от 22 084 ₸ в месяц. На сколько точек хватит такого бюджета?",
+        "intent": "budget_question",
+        "state": "spin_problem",
+        "history_len": 5,
+        "history_formatted_len": 1029,
+        "cw_turns": 5,
+        "episodic_episodes": 5,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.03125,
+        "elapsed_ms": 3076.9290924072266
+      },
+      {
+        "turn": 6,
+        "user": "Да, интересно. А как у вас с интеграцией с 1С? Это для нас критично.",
+        "bot": "Спасибо, что поделились! Интеграция с 1С — у нас настроена из коробки, это важно для автоматизации. А как вы сейчас синхронизируете данные между системами? Хотите тестовый доступ?",
+        "intent": "agreement",
+        "state": "presentation",
+        "history_len": 6,
+        "history_formatted_len": 1092,
+        "cw_turns": 5,
+        "episodic_episodes": 8,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.04,
+        "elapsed_ms": 887.9921436309814
+      },
+      {
+        "turn": 7,
+        "user": "А мобильное приложение есть? Наши водители в разъездах постоянно.",
+        "bot": "Да, время действительно важно. Мы можем отправить вам подробную информацию по мобильному приложению и интеграции с 1С — на почту или в мессенджер, как вам удобнее? Давайте просто покажу — 15 минут, и всё станет понятнее.",
+        "intent": "objection_no_time",
+        "state": "handle_objection",
+        "history_len": 7,
+        "history_formatted_len": 1141,
+        "cw_turns": 5,
+        "episodic_episodes": 10,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.07142857142857142,
+        "elapsed_ms": 981.7533493041992
+      },
+      {
+        "turn": 8,
+        "user": "Так, давайте подытожим — что конкретно вы можете предложить для нашей компании?",
+        "bot": "Понял. Мы предлагаем простую CRM с готовой интеграцией 1С, мобильным приложением и автоматизацией — всё это под ваш бюджет. Какой из модулей вас больше всего заинтересовал?",
+        "intent": "request_brevity",
+        "state": "handle_objection",
+        "history_len": 8,
+        "history_formatted_len": 1054,
+        "cw_turns": 5,
+        "episodic_episodes": 10,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "НефтеТрансСервис": false
+        },
+        "similarity_to_prev": 0.09259259259259259,
+        "elapsed_ms": 2647.252321243286
+      },
+      {
+        "turn": 9,
+        "user": "А можете ещё раз объяснить мне лично, какие преимущества именно для меня как руководителя?",
+        "bot": "Понял. Для вас — готовая интеграция с 1С, мобильное приложение и контроль процессов. Что из этого важно для вашей логистики? Может всё-таки глянем демо? Это бесплатно и ни к чему не обязывает.",
+        "intent": "request_brevity",
+        "state": "handle_objection",
+        "history_len": 9,
+        "history_formatted_len": 1120,
+        "cw_turns": 5,
+        "episodic_episodes": 10,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "Алексей": false
+        },
+        "similarity_to_prev": 0.16666666666666666,
+        "elapsed_ms": 2619.5099353790283
+      },
+      {
+        "turn": 10,
+        "user": "А у вас тариф зависит от количества пользователей? Сколько нам нужно лицензий?",
+        "bot": "Для компании в 450 человек с текущими затратами в 2 млн — Wipon сокращает ручную работу на 40%, экономя до 800 тыс. в год. Тариф зависит от количества торговых точек, не от пользователей — это важно для вас. Хотите, чтобы я рассчитал примерный ROI под вашу логистику?",
+        "intent": "price_question",
+        "state": "spin_situation",
+        "history_len": 10,
+        "history_formatted_len": 1218,
+        "cw_turns": 5,
+        "episodic_episodes": 10,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "450": true
+        },
+        "similarity_to_prev": 0.09090909090909091,
+        "elapsed_ms": 3408.935785293579
+      },
+      {
+        "turn": 11,
+        "user": "Напомните, как именно ваш продукт решит наши текущие проблемы?",
+        "bot": "Ваша проблема — это конфликты в команде из-за недостатка прозрачности. Wipon позволяет контролировать процессы в реальном времени, уменьшая ошибки и сокращая время на согласование. Это снижает напряжение в команде. Что именно вызывает наибольшие трудности в вашей логистике?",
+        "intent": "clarification_request",
+        "state": "spin_problem",
+        "history_len": 11,
+        "history_formatted_len": 1269,
+        "cw_turns": 5,
+        "episodic_episodes": 10,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "excel": false,
+          "ручн": false
+        },
+        "similarity_to_prev": 0.07142857142857142,
+        "elapsed_ms": 2915.750503540039
+      },
+      {
+        "turn": 12,
+        "user": "Хорошо, а есть кейсы из нашей отрасли? Чтобы мы могли сравнить.",
+        "bot": "Конечно, недоверие — это нормально, на рынке действительно много обещаний без результатов. У нас есть кейсы из логистики, отзывы клиентов и возможность бесплатного пробного периода — можно посмотреть, как это работает на практике. Хотите, чтобы я показал пример из вашей сферы? Давайте просто покажу — 15 минут, и всё станет понятнее.",
+        "intent": "objection_trust",
+        "state": "handle_objection",
+        "history_len": 12,
+        "history_formatted_len": 1415,
+        "cw_turns": 5,
+        "episodic_episodes": 12,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "логистик": true,
+          "транспорт": false,
+          "нефт": false
+        },
+        "similarity_to_prev": 0.0684931506849315,
+        "elapsed_ms": 1077.1667957305908
+      },
+      {
+        "turn": 13,
+        "user": "Давайте по деньгам — вписываемся в наш бюджет или нет?",
+        "bot": "Бюджет — ключевой момент. А какую сумму вы готовы выделить на автоматизацию в этом году? Давайте просто покажу — 15 минут, и всё станет понятнее.",
+        "intent": "no_problem",
+        "state": "handle_objection",
+        "history_len": 13,
+        "history_formatted_len": 1332,
+        "cw_turns": 5,
+        "episodic_episodes": 13,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "2 миллион": false,
+          "2 млн": false,
+          "бюджет": true
+        },
+        "similarity_to_prev": 0.1896551724137931,
+        "elapsed_ms": 998.6848831176758
+      },
+      {
+        "turn": 14,
+        "user": "А сроки внедрения какие? Нам нужно запуститься до конца квартала.",
+        "bot": "Подключение Wipon занимает от нескольких часов до 2 дней — всё зависит от готовности вашей стороны. Мы сможем уложиться в сроки до конца квартала. А какие именно процессы вы хотите запустить первыми?",
+        "intent": "question_implementation",
+        "state": "spin_problem",
+        "history_len": 14,
+        "history_formatted_len": 1251,
+        "cw_turns": 5,
+        "episodic_episodes": 14,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.10204081632653061,
+        "elapsed_ms": 1129.3063163757324
+      },
+      {
+        "turn": 15,
+        "user": "Техподдержка у вас 24/7 или только в рабочее время?",
+        "bot": "Техподдержка доступна круглосуточно — по телефону, в чате и через удалённую настройку. Это позволяет оперативно решать любые вопросы, даже в нерабочее время. Какие именно ситуации чаще всего вызывают у вас срочные вопросы?",
+        "intent": "question_support",
+        "state": "spin_implication",
+        "history_len": 15,
+        "history_formatted_len": 1188,
+        "cw_turns": 5,
+        "episodic_episodes": 15,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.07017543859649122,
+        "elapsed_ms": 2858.2358360290527
+      },
+      {
+        "turn": 16,
+        "user": "Слушайте, а вот наша главная боль которую я описывал в начале — вы точно её решите?",
+        "bot": "Понял — вы хотите, чтобы мы точно решили проблему с управлением и снизили потери. А как именно вы сейчас теряете деньги из-за сложной CRM? Показать на демо?",
+        "intent": "clarification_request",
+        "state": "spin_need_payoff",
+        "history_len": 16,
+        "history_formatted_len": 1030,
+        "cw_turns": 5,
+        "episodic_episodes": 15,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "excel": false,
+          "ручн": false,
+          "заявк": false,
+          "учёт": false
+        },
+        "similarity_to_prev": 0.05555555555555555,
+        "elapsed_ms": 2712.803602218628
+      },
+      {
+        "turn": 17,
+        "user": "Ок, подготовьте мне краткое резюме нашего разговора — что мы обсудили, что решили.",
+        "bot": "Хорошо, я подготовлю резюме — сразу после этого вы получите краткий обзор. А сколько человек будет работать с системой? Запланируем демо?",
+        "intent": "summary_request",
+        "state": "presentation",
+        "history_len": 17,
+        "history_formatted_len": 1050,
+        "cw_turns": 5,
+        "episodic_episodes": 15,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли",
+          "CRM были слишком сложные для сотрудников"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "НефтеТрансСервис": false,
+          "450": false,
+          "Excel": false
+        },
+        "similarity_to_prev": 0.11904761904761904,
+        "elapsed_ms": 2570.6567764282227
+      }
+    ]
+  }
+]

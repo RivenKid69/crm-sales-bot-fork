@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:luxon",
+  "summary": "Этот код отвечает за создание и управление финансовыми записями пользователей, используя леджеры и транзакции. Он работает с базой данных через TypeORM и использует Luxon для работы со временем.",
+  "purpose": "Создает и синхронизирует финансовые данные пользователей, такие как счета и транзакции",
+  "domain": "Финансовая система, бухгалтерия",
+  "key_behaviors": [
+    "Создание и сохранение леджеров для пользователей",
+    "Генерация кодов для леджеров",
+    "Работа с транзакциями и операторами (Qiwi, Kaspi и др.)",
+    "Использование TypeORM для взаимодействия с базой данных",
+    "Обработка времени с помощью Luxon"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon"
+  ],
+  "input_tokens": 2726,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

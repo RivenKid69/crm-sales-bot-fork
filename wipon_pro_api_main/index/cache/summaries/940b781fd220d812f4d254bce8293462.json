@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/push/push.producer.service.ts:method:PushProducerService:constructor",
+  "summary": "Этот класс - сервис, который отправляет push-уведомления через очередь. Он использует Bull для асинхронной обработки задач и добавляет сообщения в очередь 'push_pro-job' с данными о пользователе и сообщении.",
+  "purpose": "Позволяет отправлять push-уведомления асинхронно, не блокируя основной поток приложения",
+  "domain": "мessaging/push notifications",
+  "key_behaviors": [
+    "Использует Bull для асинхронной обработки",
+    "Добавляет задачи в очередь 'push_pro-job'",
+    "Принимает данные о пользователе и сообщении",
+    "Поддерживает несколько платформ",
+    "Работает с нечитаемыми сообщениями"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "@nestjs/common",
+    "bull"
+  ],
+  "input_tokens": 1132,
+  "output_tokens": 659,
+  "model": "qwen3:14b",
+  "code_hash": "2146cbdc422add00"
+}

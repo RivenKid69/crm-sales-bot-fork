@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/domain/use-cases/find-region-by-id.use-case.ts:method:FindRegionByIdUseCase:handle",
+  "summary": "Этот метод ищет регион в базе данных по его ID. Он использует репозиторий для поиска и возвращает объект RegionDao или undefined, если регион не найден.",
+  "purpose": "Позволяет получать информацию о конкретном регионе по его идентификатору в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Поиск региона по ID",
+    "Возврат объекта или undefined",
+    "Использование TypeORM репозитория",
+    "Асинхронная работа с базой данных",
+    "Инъекция зависимостей через NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1147,
+  "output_tokens": 633,
+  "model": "qwen3:14b",
+  "code_hash": "16bd617af9dda3d0"
+}

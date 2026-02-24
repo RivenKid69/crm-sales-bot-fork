@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transfer.dto.ts:property:PostTransferDto:sum",
+  "summary": "Этот код описывает объект данных (DTO), который используется для передачи информации о переводе между пользователями. Он проверяет, что поля from_user_id, to_user_id и sum являются числами, а raw_info_from и raw_info_to — необязательными строками в формате JSON.",
+  "purpose": "Этот DTO используется для валидации данных при переводе средств между пользователями в приложении.",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка, что from_user_id и to_user_id — числа",
+    "Проверка, что сумма перевода — число",
+    "Позволяет передавать необязательные JSON-поля raw_info_from и raw_info_to",
+    "Использует валидаторы для обеспечения корректности данных",
+    "Подходит для использования в API-запросах"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsNumeric",
+    "IsJSON",
+    "IsNotEmpty",
+    "IsOptional"
+  ],
+  "input_tokens": 1034,
+  "output_tokens": 757,
+  "model": "qwen3:14b",
+  "code_hash": "5ea31e4dc0d7d108"
+}

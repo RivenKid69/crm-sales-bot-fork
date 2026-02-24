@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:../../initialState",
+  "summary": "Этот код настраивает Vuex-модуль для управления данными компании. Он определяет мутации, геттеры и действия для работы с данными, получаемыми с сервера, и сохраняет их в состоянии приложения.",
+  "purpose": "Управление и хранение данных компании в приложении с использованием Vuex",
+  "domain": "state management",
+  "key_behaviors": [
+    "Получение данных с сервера через API",
+    "Обновление состояния при изменении данных",
+    "Сохранение данных в localStorage",
+    "Навигация по роутам в зависимости от данных",
+    "Работа с разными типами данных (UGDS, DGDS, магазины)"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через company.api)",
+    "vue-router"
+  ],
+  "input_tokens": 3052,
+  "output_tokens": 646,
+  "model": "qwen3:14b",
+  "code_hash": "34d439fdd0d5a6a8"
+}

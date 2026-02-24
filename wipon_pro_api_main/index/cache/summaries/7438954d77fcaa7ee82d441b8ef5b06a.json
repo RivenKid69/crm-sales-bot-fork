@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/store-checks-picture.dto.ts:class:StoreChecksPictureDto",
+  "summary": "Этот класс используется для валидации данных, поступающих в API. Он проверяет, что свойство 'hash' является непустой строкой и добавляет описание для документации API.",
+  "purpose": "Обеспечивает корректный формат данных при передаче изображений в систему и упрощает понимание API для разработчиков",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка непустого значения",
+    "Проверка типа строки",
+    "Генерация документации Swagger",
+    "Использование в API-запросах",
+    "Форматирование данных для базы"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1052,
+  "output_tokens": 567,
+  "model": "qwen3:14b",
+  "code_hash": "9427a71f45db847c"
+}

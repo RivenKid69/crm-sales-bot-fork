@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/presenter/checks.controller.ts:method:ChecksController:validateCheckDataWithoutSubscription",
+  "summary": "Этот код представляет собой контроллер в NestJS, который обрабатывает различные HTTP-запросы, связанные с проверкой товаров и загрузкой изображений. Он использует валидацию данных, аутентификацию и другие утилиты для обеспечения корректной работы API.",
+  "purpose": "Обработка запросов, связанных с проверкой товаров, статистикой, загрузкой изображений и управлением подписками.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения проверок пользователей",
+    "Обработка POST-запросов для проверки товаров и загрузки изображений",
+    "Использование валидации данных через ValidationPipe",
+    "Использование аутентификации и ограничений скорости через гварды",
+    "Использование Swagger для документирования API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "@nestjs/platform-express",
+    "ValidationPipe",
+    "AuthGuard",
+    "CheckSubscriptionGuard",
+    "FileInterceptor"
+  ],
+  "input_tokens": 2644,
+  "output_tokens": 775,
+  "model": "qwen3:14b",
+  "code_hash": "3516f3694956962a"
+}

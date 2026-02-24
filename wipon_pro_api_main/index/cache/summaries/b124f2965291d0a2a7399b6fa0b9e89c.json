@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/check-api-key.guard.ts:method:CheckApiKeyGuard:ffset, length",
+  "summary": "Этот код проверяет валидность API-ключа для авторизации. Он проверяет, существует ли пользователь, имеет ли он активное устройство и соответствует ли ключ определенным правилам.",
+  "purpose": "Обеспечивает защиту API-эндпоинтов, проверяя корректность API-ключа и статус подписки пользователя",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка существования пользователя",
+    "Проверка активности подписки через устройства",
+    "Генерация API-ключа на основе параметров запроса",
+    "Сравнение подстрок для валидации ключа",
+    "Возврат ошибки при несоответствии ключа"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "locutus/php/strings/crc32",
+    "locutus/php/strings/substr",
+    "express"
+  ],
+  "input_tokens": 2987,
+  "output_tokens": 734,
+  "model": "qwen3:14b",
+  "code_hash": "e3ef3a07b02c2c82"
+}

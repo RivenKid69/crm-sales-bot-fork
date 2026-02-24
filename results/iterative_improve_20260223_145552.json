@@ -1,0 +1,216 @@
+[
+  {
+    "scenario": "s10a_natural_discovery",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет",
+        "bot": "Привет! Меня зовут Айбота, ваш персональный консультант по Wipon. А что именно хотите узнать о нашей системе для вашего бизнеса?",
+        "state": "greeting",
+        "intent": "greeting",
+        "action": "greet_back",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.93
+      },
+      {
+        "turn": 2,
+        "user": "Мне знакомый посоветовал, у меня магазин продуктов",
+        "bot": "А сейчас как ведёте учёт товара? На бумаге, в Excel или уже на кассе?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.03
+      },
+      {
+        "turn": 3,
+        "user": "Да в ауезовском районе, маленький магазин",
+        "bot": "А как часто заканчивается товар? Например, молоко, хлеб, сыр — что быстрее всего раскупается и приходится подзаказывать?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.25
+      },
+      {
+        "turn": 4,
+        "user": "2 продавца, я сам тоже иногда за кассой стою",
+        "bot": "А, поняла — три человека, и каждый за всё отвечает. Сейчас что главное теряете: время на подсчёты или товар заканчивается в самый неподходящий момент?",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.25
+      },
+      {
+        "turn": 5,
+        "user": "Ну пока на калькуляторе считаем если честно)) Каспи QR есть",
+        "bot": "А, на калькуляторе и Каспи — значит, каждый день ручной подсчёт продаж и остатков. А что чаще всего вылетает из головы: сколько уже продали сегодня или сколько осталось на складе?",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 6.44
+      },
+      {
+        "turn": 6,
+        "user": "А у вас прям касса или софт на телефон?",
+        "bot": "У нас всё в одном — Wipon Mini — это и касса, и софт на телефон. Записывает продажи автоматически, пока вы занимаетесь покупателями. А что чаще всего \"срывает\" график — когда товар заканчивается или когда смена заканчивается, а отчёты не сделаны?",
+        "state": "autonomous_presentation",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 5.58
+      },
+      {
+        "turn": 7,
+        "user": "Интересно. А сколько это стоит?",
+        "bot": "Мини — 5 000 ₸ в месяц, это касса + автоматическая фискализация, чтобы не считать всё вручную.",
+        "state": "autonomous_negotiation",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 7.21
+      },
+      {
+        "turn": 8,
+        "user": "Хм, надо подумать. А можно попозже вернуться к разговору?",
+        "bot": "Поняла, когда будешь готова — пиши, рада помочь.",
+        "state": "autonomous_negotiation",
+        "intent": "objection_think",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.87
+      }
+    ]
+  },
+  {
+    "scenario": "s10b_enterprise_discovery",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Добрый день",
+        "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант по Wipon. Расскажите, пожалуйста, что именно вас интересует в нашей системе для вашего бизнеса?",
+        "state": "greeting",
+        "intent": "greeting",
+        "action": "greet_back",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.3
+      },
+      {
+        "turn": 2,
+        "user": "У нас сеть магазинов косметики, 5 точек в Астане",
+        "bot": "Ого, 5 магазинов косметики — это уже серьезно! А что сейчас сложнее всего: следить за остатками товара по всем точкам или управляться с кассой в каждой?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.27
+      },
+      {
+        "turn": 3,
+        "user": "Сейчас используем 1С, но она постоянно глючит",
+        "bot": "1С тормозит из-за объёмов данных? У нас в Wipon синхронизация между 5 точками — в реальном времени, без глюков. А что именно в 1С вызывает больше всего раздражения: отчёты или работа касс?",
+        "state": "autonomous_discovery",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.48
+      },
+      {
+        "turn": 4,
+        "user": "Нет, 1С Розница. Проблема в том что данные не синхронизируются между точками",
+        "bot": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon.",
+        "state": "autonomous_discovery",
+        "intent": "no_problem",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.42
+      },
+      {
+        "turn": 5,
+        "user": "А у вас как с этим? Данные реально в реальном времени видны?",
+        "bot": "Да, данные синхронизируются между точками в реальном времени — никаких задержек, как в 1С. А что конкретно ломается у вас в системе чаще всего: отчёты или синхронизация между точками?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 7.06
+      },
+      {
+        "turn": 6,
+        "user": "И сотрудники на местах не смогут подтасовать данные?",
+        "bot": "В Wipon все действия сотрудников логируются с указанием времени и даты. Это защищает от подтасовок — данные не меняются без отслеживания. А что сейчас важнее: чтобы каждая точка видела актуальные остатки или чтобы продажи не зависели от 1С?",
+        "state": "autonomous_qualification",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "qualification",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 4.31
+      },
+      {
+        "turn": 7,
+        "user": "Звучит хорошо. Сколько будет стоить на 5 точек?",
+        "bot": "Для 5 точек с синхронизацией в реальном времени нужен тариф: 220 000 ₸/год на все магазины.",
+        "state": "autonomous_negotiation",
+        "intent": "agreement",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 12,
+        "is_final": false,
+        "elapsed_s": 2.79
+      },
+      {
+        "turn": 8,
+        "user": "Давайте созвонимся на этой неделе, обсудим детально",
+        "bot": "Окей, отлично! Давайте подберём время для звонка — останьте, пожалуйста, телефон или email.",
+        "state": "autonomous_closing",
+        "intent": "callback_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 36,
+        "is_final": false,
+        "elapsed_s": 2.14
+      },
+      {
+        "turn": 9,
+        "user": "Четверг после обеда, мой номер 87012345678",
+        "bot": "Четверг после обеда — отлично, запишем на 14:00 или 15:00? На звонке можно сразу проверить, как у вас синхронизация с фискализацией через Каспийскую банковскую систему, чтобы потом не было сюрпризов.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 69,
+        "is_final": true,
+        "elapsed_s": 5.18
+      }
+    ]
+  }
+]

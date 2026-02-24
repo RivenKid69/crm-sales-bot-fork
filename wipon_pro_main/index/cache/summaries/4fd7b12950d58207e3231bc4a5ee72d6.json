@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Mutations",
+  "summary": "Этот код управляет состоянием аккаунта в приложении на Vue.js. Он получает данные с сервера, обновляет локальное состояние через мутации и предоставляет доступ к данным через getters.",
+  "purpose": "Создаёт централизованное хранилище для управления данными аккаунта и транзакций в приложении",
+  "domain": "state management (Vuex)",
+  "key_behaviors": [
+    "Получает данные аккаунта с сервера",
+    "Обновляет локальное состояние через мутации",
+    "Предоставляет доступ к данным через getters",
+    "Обрабатывает транзакции и их типы",
+    "Использует типизацию для безопасности данных"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через account.api)"
+  ],
+  "input_tokens": 1973,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "163739c30fec881b"
+}

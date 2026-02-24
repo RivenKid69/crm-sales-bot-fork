@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/presenter/feedbacks.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код определяет интерцептор, который преобразует данные перед отправкой ответа клиенту. Он работает с другими частями приложения, чтобы улучшить формат вывода данных.",
+  "purpose": "Упрощает и стандартизирует формат ответов, возвращаемых контроллерами",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Преобразует данные перед отправкой ответа",
+    "Интегрируется с контроллерами через декоратор @UseInterceptors",
+    "Работает с другими частями приложения для обработки данных",
+    "Улучшает читаемость и структуру ответов",
+    "Повышает согласованность формата данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 1466,
+  "output_tokens": 674,
+  "model": "qwen3:14b",
+  "code_hash": "b0e8372d7500cec5"
+}

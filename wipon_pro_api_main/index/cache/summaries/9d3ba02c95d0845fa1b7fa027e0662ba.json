@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/validate-check-data.dto.ts:property:ValidateCheckDataDto:code",
+  "summary": "Этот код создает DTO-класс для валидации данных при проверке предмета. Он проверяет, что обязательные поля заполнены, значения соответствуют требованиям и опциональные поля корректны.",
+  "purpose": "Обеспечивает корректность входных данных для API-запроса проверки предмета",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка обязательных полей (type, code)",
+    "Ограничение значений поля type до определенного списка",
+    "Валидация формата Base64 для изображения",
+    "Поддержка опциональных полей (широта, долгота, хэш и т.д.)",
+    "Генерация документации Swagger для API"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1691,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "9e48673bcae8d196"
+}

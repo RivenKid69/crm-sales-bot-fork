@@ -1,0 +1,16 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:property:ChecksService:KGD_VALUES",
+  "summary": "Это приватное свойство хранит массив строк с ключевыми значениями 'serial_number' и 'excise_code', которые, вероятно, используются для проверки или обработки данных чеков в сервисе.",
+  "purpose": "Позволяет централизованно управлять важными полями, которые нужны для работы сервиса проверки",
+  "domain": "настройки",
+  "key_behaviors": [
+    "Хранит ключевые значения для проверки данных",
+    "Упрощает доступ к важным полям",
+    "Используется в логике обработки чеков"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 4570,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:class:AuthService",
+  "summary": "AuthService управляет процессом входа в систему, создает пользователей по номеру телефона и работает с кодами подтверждения. Он проверяет наличие пользователя, отправляет SMS и обрабатывает токены для авторизации.",
+  "purpose": "Обеспечивает безопасную авторизацию пользователей и управление их аккаунтами",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка существующего пользователя по номеру телефона",
+    "Автоматическая регистрация новых пользователей",
+    "Генерация и проверка кодов подтверждения",
+    "Управление токенами для авторизации",
+    "Отправка SMS для подтверждения"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "FindUsersAuthCodeUseCase",
+    "CreateUsersAuthCodeUseCase",
+    "SmsService",
+    "SetUsersTokenUseCase",
+    "BillingService"
+  ],
+  "input_tokens": 2665,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

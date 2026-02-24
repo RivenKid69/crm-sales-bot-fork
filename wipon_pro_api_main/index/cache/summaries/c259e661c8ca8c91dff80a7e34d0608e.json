@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/presenter/transactions.controller.ts:import:../domain/transactions.service",
+  "summary": "Этот код создает контроллер для управления транзакциями. Он обрабатывает запросы на получение списка транзакций и создание новых транзакций, используя валидацию, аутентификацию и документацию через Swagger.",
+  "purpose": "Обеспечивает API для работы с транзакциями пользователей в приложении",
+  "domain": "база данных, api, авторизация",
+  "key_behaviors": [
+    "Получение списка транзакций пользователя",
+    "Создание новой транзакции",
+    "Использование аутентификации через AuthGuard",
+    "Валидация данных через ValidationPipe",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1932,
+  "output_tokens": 660,
+  "model": "qwen3:14b",
+  "code_hash": "81b780e4aa1aacb8"
+}

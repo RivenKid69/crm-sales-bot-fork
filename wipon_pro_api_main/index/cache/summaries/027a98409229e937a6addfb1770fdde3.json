@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:import:../dto/store-subscription.dto",
+  "summary": "Этот код представляет собой контроллер NestJS, который обрабатывает различные операции с подписками, такие как создание, просмотр активной подписки, покупка и возврат. Он использует валидацию данных, защиту маршрутов и документацию через Swagger.",
+  "purpose": "Обеспечивает функциональность для управления подписками пользователей через REST API с поддержкой аутентификации и валидации данных.",
+  "domain": "подписки, API, авторизация, валидация данных",
+  "key_behaviors": [
+    "Обработка HTTP-запросов (GET, POST) для управления подписками",
+    "Использование AuthGuard для проверки аутентификации пользователя",
+    "Валидация данных с помощью ValidationPipe",
+    "Документация API через Swagger с описанием операций и ответов",
+    "Использование DTO для структурирования входных данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "SubscriptionsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "UserDao"
+  ],
+  "input_tokens": 2786,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

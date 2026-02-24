@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/domain/smsc.service.ts:import:../../../common/services/doomguy/doomguy.service",
+  "summary": "Этот код создает сервис для обработки SMS-Callback уведомлений. Он проверяет подлинность данных с помощью хэша, логирует действия и передает информацию другому сервису.",
+  "purpose": "Обработка и проверка входящих SMS-Callback уведомлений из внешних систем",
+  "domain": "sms-уведомления, валидация данных",
+  "key_behaviors": [
+    "Проверка подлинности данных с помощью SHA1-хэша",
+    "Логирование действий с помощью кастомного логгера",
+    "Передача данных другому сервису для дальнейшей обработки",
+    "Использование конфигурации из app.config для получения токена",
+    "Асинхронная обработка входящих уведомлений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "crypto",
+    "PostCallbackDto",
+    "doomguy.service",
+    "app.config"
+  ],
+  "input_tokens": 1425,
+  "output_tokens": 747,
+  "model": "qwen3:14b",
+  "code_hash": "1dea76578f313352"
+}

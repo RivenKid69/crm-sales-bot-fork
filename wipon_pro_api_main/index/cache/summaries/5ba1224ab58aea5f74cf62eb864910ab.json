@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:method:StoresService: {\n      await ge",
+  "summary": "Этот метод проверяет действительность лицензии магазина и наличие активной подписки у связанного пользователя. Сначала валидирует номер лицензии, затем ищет магазин в базе и проверяет подписку пользователя.",
+  "purpose": "Используется для проверки подлинности магазина и статуса подписки пользователя в системе",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Валидация номера лицензии",
+    "Поиск магазина по лицензии",
+    "Проверка активной подписки пользователя",
+    "Возврат статуса проверки",
+    "Обработка ошибок валидации"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "class-validator",
+    "typeorm"
+  ],
+  "input_tokens": 3084,
+  "output_tokens": 712,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

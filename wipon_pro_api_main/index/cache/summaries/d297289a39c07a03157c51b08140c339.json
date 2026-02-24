@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/domain/regions.service.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис для работы с регионами, который использует репозиторий для получения списка регионов из базы данных. Сервис помечен как injectable, чтобы его можно было использовать в других частях приложения.",
+  "purpose": "Позволяет извлекать данные о регионах из базы данных через TypeORM репозиторий",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получение списка регионов из базы данных",
+    "Использование TypeORM для работы с БД",
+    "Инъекция репозитория через декоратор @InjectRepository",
+    "Реализация паттерна Repository",
+    "Создание injectable сервиса для повторного использования"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1095,
+  "output_tokens": 706,
+  "model": "qwen3:14b",
+  "code_hash": "c5fd1c1a80fd1956"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:../../../common/helpers/datetime",
+  "summary": "Этот код реализует сервис для управления подписками пользователей. Он проверяет активные подписки, активирует новые, обрабатывает возвраты и взаимодействует с системой оплаты и базой данных.",
+  "purpose": "Обеспечивает функционал управления подписками в приложении с возможностью проверки статуса, активации и отслеживания подписок.",
+  "domain": "подписки, авторизация, платежи",
+  "key_behaviors": [
+    "Проверка активной подписки по номеру телефона",
+    "Активация подписки пользователя",
+    "Обработка возврата средств за подписку",
+    "Интеграция с платежной системой",
+    "Взаимодействие с базой данных через репозитории"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "datetime helpers",
+    "subscription.config"
+  ],
+  "input_tokens": 2645,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

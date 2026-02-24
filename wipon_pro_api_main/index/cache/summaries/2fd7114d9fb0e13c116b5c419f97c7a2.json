@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/data/ugds.repository.ts:import:typeorm",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с сущностью UgdDao. Это позволяет выполнять операции с базой данных, такие как чтение, запись и обновление данных.",
+  "purpose": "Позволяет управлять данными сущности UgdDao в базе данных через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Работа с базой данных через TypeORM",
+    "Управление сущностью UgdDao",
+    "Выполнение CRUD-операций",
+    "Использование репозиториев TypeORM",
+    "Интеграция с ORM для работы с БД"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1003,
+  "output_tokens": 709,
+  "model": "qwen3:14b",
+  "code_hash": "2c695faa43a7e4b6"
+}

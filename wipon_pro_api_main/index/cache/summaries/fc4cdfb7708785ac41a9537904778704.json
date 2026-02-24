@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/report.dao.ts:property:ReportDao:item_id",
+  "summary": "Этот код описывает структуру таблицы 'reports' в базе данных. Класс ReportDao содержит поля для хранения информации о отчётах: идентификаторы объектов и пользователей, ссылки на изображения, временные метки создания и обновления, а также дополнительные данные.",
+  "purpose": "Создаёт модель данных для хранения информации об отчётах в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор отчёта (id)",
+    "Связывает отчёт с объектом (item_id) и пользователем (user_id)",
+    "Хранит ссылки на изображения (sticker_uri и label_uri)",
+    "Записывает даты создания и обновления отчёта (created_at и updated_at)",
+    "Хранит дополнительные данные: causer и gtin"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1206,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "b3a8280884d78226"
+}

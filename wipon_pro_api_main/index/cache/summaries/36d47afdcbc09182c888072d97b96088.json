@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:@nestjs/axios",
+  "summary": "Этот код реализует сервис для управления подписками пользователей. Он проверяет наличие активной подписки, обрабатывает покупки, возвращает информацию о подписке и взаимодействует с другими сервисами, такими как billing и устройства.",
+  "purpose": "Управление подписками пользователей, включая проверку активности, покупку и отмену подписок.",
+  "domain": "подписки, авторизация, платежи",
+  "key_behaviors": [
+    "Проверка активной подписки по номеру телефона",
+    "Обработка покупки подписки",
+    "Взаимодействие с сервисом оплаты (billing)",
+    "Использование конфигурации подписок из файла",
+    "Работа с репозиторием подписок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "rxjs"
+  ],
+  "input_tokens": 2576,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

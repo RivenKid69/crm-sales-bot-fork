@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/doomguy/doomguy.service.ts:method:DoomguyService:constructor",
+  "summary": "Этот класс отправляет сообщения в Slack через HTTP-запросы. Он формирует сообщения с данными пользователей, SMS-отчетами и ошибками, отправляя их в разные каналы в зависимости от окружения.",
+  "purpose": "Используется для отправки уведомлений и отчетов в Slack, чтобы команда могла отслеживать действия пользователей, ошибки и статус SMS.",
+  "domain": "утилиты, логирование, уведомления",
+  "key_behaviors": [
+    "Отправка сообщений в Slack через HTTP-запросы",
+    "Формирование сообщений с данными пользователей",
+    "Отправка SMS-отчетов в зависимости от окружения",
+    "Логирование ошибок при отправке сообщений",
+    "Использование разных каналов в Slack для разных окружений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "logger/error-logger",
+    "helpers/datetime",
+    "modules/sms/dto/post-callback.dto"
+  ],
+  "input_tokens": 2493,
+  "output_tokens": 772,
+  "model": "qwen3:14b",
+  "code_hash": "4e3be25ad0adb3a0"
+}

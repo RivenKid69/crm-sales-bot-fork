@@ -1,0 +1,452 @@
+[
+  {
+    "id": 87754,
+    "create_time": "2025-11-21T17:00:58.563Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! я хочу узнать подробнее про \"Комплект стандарт+\""
+  },
+  {
+    "id": 87761,
+    "create_time": "2025-11-21T17:01:12.127Z",
+    "author_type": "ai",
+    "sent_content": "Комплект \"Стандарт+\" включает в себя POS-моноблок, принтер чеков, сканер и денежный ящик. Это готовое место кассира с полной совместимостью с Wipon."
+  },
+  {
+    "id": 87762,
+    "create_time": "2025-11-21T17:01:14.348Z",
+    "author_type": "ai",
+    "sent_content": "Если вас интересует что-то конкретное или есть другие вопросы, дайте знать. Укажите удобное время для короткого звонка 09:00–17:30 — закреплю."
+  },
+  {
+    "id": 92590,
+    "create_time": "2025-11-24T15:35:05.568Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рашид, Добрый день."
+  },
+  {
+    "id": 193696,
+    "create_time": "2025-12-25T13:34:12.193Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 236085,
+    "create_time": "2026-01-08T13:22:10.355Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте! Я рада, что вы получили оборудование.\n\nВижу, что вам нужна помощь с подключением, обучением и подбором кассовой ленты."
+  },
+  {
+    "id": 236086,
+    "create_time": "2026-01-08T13:22:12.885Z",
+    "author_type": "ai",
+    "sent_content": "Менеджер может набрать вас в ближайшее время, чтобы помочь со всеми вопросами и подсказать, какая лента подойдет для вашего принтера. Удобно будет принять звонок?"
+  },
+  {
+    "id": 236091,
+    "create_time": "2026-01-08T13:23:31.163Z",
+    "author_type": "ai",
+    "sent_content": "Отлично! Менеджер свяжется с вами после обеда, как только освободится."
+  },
+  {
+    "id": 193411,
+    "create_time": "2025-12-25T12:33:27.770Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 193394,
+    "create_time": "2025-12-25T12:31:25.983Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 193395,
+    "create_time": "2025-12-25T12:31:28.084Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Могу Вам позвонить и дать полную информацию?"
+  },
+  {
+    "id": 193669,
+    "create_time": "2025-12-25T13:28:07.824Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На халық Вам отправили счет"
+  },
+  {
+    "id": 193670,
+    "create_time": "2025-12-25T13:28:11.242Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "150 000 тг"
+  },
+  {
+    "id": 193675,
+    "create_time": "2025-12-25T13:28:51.373Z",
+    "author_type": "client",
+    "sent_content": "Оплатил🙋‍♂️"
+  },
+  {
+    "id": 193682,
+    "create_time": "2025-12-25T13:29:28.649Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете чек скинуть?"
+  },
+  {
+    "id": 193695,
+    "create_time": "2025-12-25T13:32:20.077Z",
+    "author_type": "client",
+    "sent_content": "Оплата *2009 на сумму:\n149 906.40 ₸\nСовершайте покупки картами Halyk и в экосистеме — и получите повышенный бонус в следующем месяце. Узнать свою категорию в Halyk+"
+  },
+  {
+    "id": 193697,
+    "create_time": "2025-12-25T13:34:27.147Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправлю Вам на каспий за оборудование 199 500 тг"
+  },
+  {
+    "id": 193741,
+    "create_time": "2025-12-25T13:47:16.959Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправили"
+  },
+  {
+    "id": 193766,
+    "create_time": "2025-12-25T13:56:22.522Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В рассрочку 0-0-24"
+  },
+  {
+    "id": 193767,
+    "create_time": "2025-12-25T13:56:30.383Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выбираете"
+  },
+  {
+    "id": 193770,
+    "create_time": "2025-12-25T13:57:07.778Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На следующей неделе заберете тогда оборудование. Мы как раз все приготовим с нового завода Вам положим"
+  },
+  {
+    "id": 193771,
+    "create_time": "2025-12-25T13:57:44.772Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 193772,
+    "create_time": "2025-12-25T13:57:53.027Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Адрес напишу"
+  },
+  {
+    "id": 193774,
+    "create_time": "2025-12-25T13:58:05.739Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "И напишу,  как готово будет"
+  },
+  {
+    "id": 193795,
+    "create_time": "2025-12-25T14:04:05.910Z",
+    "author_type": "client",
+    "sent_content": "Покупка в рассрочку:\n199 500 ₸\nТОО \"PROtorg.kz\"\nПлатеж: 8 313 ₸\nПервый платеж до 25 января"
+  },
+  {
+    "id": 193799,
+    "create_time": "2025-12-25T14:04:55.108Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 193800,
+    "create_time": "2025-12-25T14:05:00.905Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Там обычно чек скачиваете"
+  },
+  {
+    "id": 193826,
+    "create_time": "2025-12-25T14:12:55.982Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 193828,
+    "create_time": "2025-12-25T14:13:11.171Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тогда Рашид Я Вам сообщу, как с нового завоза придет"
+  },
+  {
+    "id": 193831,
+    "create_time": "2025-12-25T14:13:39.557Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "У нас сейчас сканер и принтер этикеток либо завтра или на следующей неделе придет"
+  },
+  {
+    "id": 193832,
+    "create_time": "2025-12-25T14:13:48.902Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Напишу Вам и заберете"
+  },
+  {
+    "id": 193834,
+    "create_time": "2025-12-25T14:14:00.486Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Наш адрес:\nг. Астана, проспект Туран, 19/2, 3 этаж,\nБизнес-центр «Эстра»"
+  },
+  {
+    "id": 194182,
+    "create_time": "2025-12-25T15:08:12.615Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Таким образом будете заходить"
+  },
+  {
+    "id": 194189,
+    "create_time": "2025-12-25T15:09:15.981Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправил Вам"
+  },
+  {
+    "id": 194190,
+    "create_time": "2025-12-25T15:09:25.442Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "смс напишите"
+  },
+  {
+    "id": 194191,
+    "create_time": "2025-12-25T15:09:26.265Z",
+    "author_type": "client",
+    "sent_content": "3464"
+  },
+  {
+    "id": 194193,
+    "create_time": "2025-12-25T15:09:52.634Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все хорошо"
+  },
+  {
+    "id": 207913,
+    "create_time": "2025-12-29T15:23:19.916Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "завтра полный день"
+  },
+  {
+    "id": 207936,
+    "create_time": "2025-12-29T15:25:08.520Z",
+    "author_type": "client",
+    "sent_content": "Хорошо спасибо,завтра с 12.00до 14.00 заберут"
+  },
+  {
+    "id": 207962,
+    "create_time": "2025-12-29T15:27:31.593Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отлично"
+  },
+  {
+    "id": 207968,
+    "create_time": "2025-12-29T15:27:59.588Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете пжл заранее написать, когда Ваш человек соберетесь к нам ехать"
+  },
+  {
+    "id": 207986,
+    "create_time": "2025-12-29T15:29:31.391Z",
+    "author_type": "client",
+    "sent_content": "Он во время своего обеда приедет,вам удобно будет??"
+  },
+  {
+    "id": 208030,
+    "create_time": "2025-12-29T15:33:33.106Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 208032,
+    "create_time": "2025-12-29T15:33:36.812Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Он готово"
+  },
+  {
+    "id": 208036,
+    "create_time": "2025-12-29T15:33:48.614Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ваш человек зайдет, ему вручат"
+  },
+  {
+    "id": 208037,
+    "create_time": "2025-12-29T15:33:52.242Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "и все"
+  },
+  {
+    "id": 92592,
+    "create_time": "2025-11-24T15:35:36.202Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ознакомились с информацией?"
+  },
+  {
+    "id": 92593,
+    "create_time": "2025-11-24T15:35:41.043Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Готовы подключиться?"
+  },
+  {
+    "id": 88203,
+    "create_time": "2025-11-21T17:54:16.777Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тариф и каталог"
+  },
+  {
+    "id": 88207,
+    "create_time": "2025-11-21T17:54:20.924Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 88209,
+    "create_time": "2025-11-21T17:54:25.678Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 88210,
+    "create_time": "2025-11-21T17:54:33.736Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Каталог wipon.pdf"
+  },
+  {
+    "id": 88214,
+    "create_time": "2025-11-21T17:54:50.511Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=BDZVp2qa4f8 Наша программа"
+  },
+  {
+    "id": 88215,
+    "create_time": "2025-11-21T17:55:01.103Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Умные весы"
+  },
+  {
+    "id": 88217,
+    "create_time": "2025-11-21T17:55:28.399Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 88218,
+    "create_time": "2025-11-21T17:55:38.974Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Демо версия\nДемо аккаунт: https://console.wipon.kz/login\nЛогин: +7 777 777 77 77\nПароль: 12345678\nпросклад\nhttps://youtube.com/playlist?list=PLiTiNVf6l29wP_l1rzEngCGdGgzU-XDAt&si=7kDeBeb5_n6ZrTek\nЭто плейлист видео инструкций с Ютуба \n\nПо данной ссылке можете пройти и протестить программу"
+  },
+  {
+    "id": 175843,
+    "create_time": "2025-12-16T19:48:57.534Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте!\nВ преддверии Нового года у Вас есть отличная возможность приобрести кассовое оборудование по выгодной цене в рассрочку на 24 месяца без переплаты, а также подключить систему учета для вашего бизнеса.\n⏰ Спешите — акция действует до Нового года!\nЕсли Вам интересно, напишите нам или позвоните — мы с радостью проконсультируем и ответим на все вопросы.\nНе упустите выгодное предложение вместе с компанией WIPON!"
+  },
+  {
+    "id": 193596,
+    "create_time": "2025-12-25T13:07:54.920Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас отправлю счет на 150 000 тг - за программу"
+  },
+  {
+    "id": 193599,
+    "create_time": "2025-12-25T13:07:59.322Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На халык"
+  },
+  {
+    "id": 207641,
+    "create_time": "2025-12-29T14:55:22.605Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рашид, Здравствуйте. Как Ваши дела? Ваше оборудование готово. Можете сказать своего человеку, могут приехать и забрать"
+  },
+  {
+    "id": 207642,
+    "create_time": "2025-12-29T14:55:35.700Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Наш адрес:\nг. Астана, проспект Туран, 19/2, 3 этаж,\nБизнес-центр «Эстра»"
+  },
+  {
+    "id": 207645,
+    "create_time": "2025-12-29T14:55:49.747Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Работаем до 18.00"
+  },
+  {
+    "id": 207647,
+    "create_time": "2025-12-29T14:56:05.487Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Завтра работаем лор обеда"
+  },
+  {
+    "id": 87945,
+    "create_time": "2025-11-21T17:22:05.500Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам можно позвонить и дать полную информацию?"
+  },
+  {
+    "id": 193585,
+    "create_time": "2025-12-25T13:04:15.191Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "620803300173"
+  },
+  {
+    "id": 193350,
+    "create_time": "2025-12-25T12:25:41.603Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! я хочу узнать подробнее про \"Комплект стандарт+\""
+  },
+  {
+    "id": 193352,
+    "create_time": "2025-12-25T12:25:55.839Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Комплект \"Стандарт+\" включает POS-моноблок, принтер чеков, сканер и денежный ящик. Это готовое место кассира с полной совместимостью с Wipon."
+  },
+  {
+    "id": 193353,
+    "create_time": "2025-12-25T12:25:57.958Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если вам нужно больше деталей или есть другие вопросы, дайте знать. Укажите удобное время для короткого звонка 09:00–17:30 — закреплю."
+  },
+  {
+    "id": 193940,
+    "create_time": "2025-12-25T14:32:11.201Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рашид"
+  },
+  {
+    "id": 193941,
+    "create_time": "2025-12-25T14:32:16.274Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас Вам зарегистрируем кабинет"
+  },
+  {
+    "id": 193942,
+    "create_time": "2025-12-25T14:32:17.499Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправлю на Ваш номер смс"
+  },
+  {
+    "id": 193943,
+    "create_time": "2025-12-25T14:32:24.183Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Как только готовы будете, напишите"
+  },
+  {
+    "id": 193944,
+    "create_time": "2025-12-25T14:32:27.015Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Я Вам отправлю"
+  },
+  {
+    "id": 207868,
+    "create_time": "2025-12-29T15:19:44.244Z",
+    "author_type": "client",
+    "sent_content": "До обеда это до скольки??🙋‍♂️"
+  },
+  {
+    "id": 207910,
+    "create_time": "2025-12-29T15:23:17.617Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ой извините, 31 до обеда"
+  }
+]

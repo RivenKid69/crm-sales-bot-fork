@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/validate-check-data.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код импортирует валидаторы и инструменты для документации из библиотек class-validator и @nestjs/swagger. Он используется для создания DTO-класса, который проверяет данные на валидность и помогает генерировать документацию API.",
+  "purpose": "Обеспечивает валидацию входных данных и создает документацию для API-эндпоинтов",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Ограничение допустимых значений",
+    "Валидация форматов данных",
+    "Генерация документации Swagger",
+    "Поддержка необязательных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1661,
+  "output_tokens": 592,
+  "model": "qwen3:14b",
+  "code_hash": "9e48673bcae8d196"
+}

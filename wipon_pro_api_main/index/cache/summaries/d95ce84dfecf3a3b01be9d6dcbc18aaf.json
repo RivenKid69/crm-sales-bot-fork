@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/checks-data-to-response.ts:import:../format-attributes",
+  "summary": "Этот код преобразует данные чеков из внутреннего формата в структуру, удобную для передачи клиенту. Использует утилиты для форматирования атрибутов и продуктов.",
+  "purpose": "Подготовка данных чеков для отображения в API или интерфейсе пользователя",
+  "domain": "api",
+  "key_behaviors": [
+    "Преобразует объект CheckDao в JSON-ответ",
+    "Форматирует статус товара из числового значения в строку",
+    "Добавляет код товара к серийному номеру",
+    "Обрабатывает как существующие, так и новые чеки",
+    "Использует утилиты из других модулей для обработки данных"
+  ],
+  "dependencies_used": [
+    "CheckDao",
+    "formatItemDataToResponse",
+    "getItemsStatusAttribute",
+    "newAppendProductCodeToItem"
+  ],
+  "input_tokens": 1611,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "a24a1acfc4ff2884"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/presenter/users.controller.ts:method:UsersController:getUser",
+  "summary": "Этот код - контроллер, который обрабатывает запросы на получение, обновление и удаление информации о пользователе. Также есть устаревший эндпоинт для сертификатов, который возвращает ошибку.",
+  "purpose": "Позволяет управлять данными пользователя через HTTP-запросы с защитой авторизации и документацией Swagger",
+  "domain": "управление пользователями",
+  "key_behaviors": [
+    "Получение данных пользователя",
+    "Обновление информации о пользователе",
+    "Удаление пользователя",
+    "Документация через Swagger",
+    "Защита маршрутов черезAuthGuard"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1763,
+  "output_tokens": 586,
+  "model": "qwen3:14b",
+  "code_hash": "1808cadd56fd9cc7"
+}

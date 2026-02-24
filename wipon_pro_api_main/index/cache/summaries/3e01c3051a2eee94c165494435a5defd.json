@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:method:BillingService:is.rand(0, 9);\n   ",
+  "summary": "Этот метод создает и настраивает учетные записи пользователя, проверяя существующие данные и создавая новые, если их нет. Он работает с леджерами, хрониками и разными типами провайдеров (Qiwi, Kaspi и др.).",
+  "purpose": "Инициализация учетных записей пользователя и связанных с ними данных при создании или обновлении пользователя",
+  "domain": "управление пользователями и учетными записями",
+  "key_behaviors": [
+    "Создание леджера пользователя, если он еще не существует",
+    "Генерация хроники леджера с начальной датой",
+    "Обновление данных пользовательских счетов",
+    "Подсчет количества провайдеров для разных платежных систем",
+    "Создание учетных записей для различных типов провайдеров"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase",
+    "SaveAccountsUseCase",
+    "SumLedgerAccountsBalanceUseCase"
+  ],
+  "input_tokens": 2856,
+  "output_tokens": 788,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

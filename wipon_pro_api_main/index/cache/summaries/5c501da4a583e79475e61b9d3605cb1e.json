@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/set-item-and-product-relation.use-case.ts:import:../../data/items.repository",
+  "summary": "Этот код создает сервис, который обновляет связь между товаром и продуктом в базе данных. Он использует репозиторий для поиска товара по ID и изменения его product_id.",
+  "purpose": "Управление связями между товарами и продуктами в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Обновление связи товара и продукта",
+    "Использование репозитория для доступа к данным",
+    "Инъекция зависимостей через NestJS",
+    "Возвращает результат обновления",
+    "Работает с ID товара и продукта"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1107,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "f6e91ad712b2bb73"
+}

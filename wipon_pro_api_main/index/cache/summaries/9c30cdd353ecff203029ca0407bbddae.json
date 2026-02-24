@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:@nestjs/common",
+  "summary": "Этот код отвечает за создание и управление учетными записями пользователей, работу с бухгалтерскими записями и провайдерами. Использует базу данных и специальные классы для обработки транзакций и дат.",
+  "purpose": "Обеспечивает создание и синхронизацию учетных записей пользователей с бухгалтерскими данными и провайдерами.",
+  "domain": "бухгалтерия, управление пользователями, база данных",
+  "key_behaviors": [
+    "Создание и сохранение бухгалтерских записей",
+    "Работа с провайдерами (Qiwi, Kaspi и др.)",
+    "Обработка транзакций и дат",
+    "Использование TypeORM для работы с базой данных",
+    "Интеграция с кейсами для обновления и суммирования балансов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase"
+  ],
+  "input_tokens": 2721,
+  "output_tokens": 785,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

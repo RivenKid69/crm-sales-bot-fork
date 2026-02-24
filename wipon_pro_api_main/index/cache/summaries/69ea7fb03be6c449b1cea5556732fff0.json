@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/dto/post-feedback.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код импортирует валидаторы для проверки данных и инструменты для документации API. Он используется для создания DTO-класса, который проверяет входные данные формы обратной связи и генерирует описание API.",
+  "purpose": "Обеспечивает валидацию данных формы и автоматическую генерацию документации для REST API",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка формата телефона",
+    "Проверка корректности email",
+    "Обязательное поле для текста сообщения",
+    "Проверка JSON формата логов",
+    "Проверка Base64 изображений"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1457,
+  "output_tokens": 598,
+  "model": "qwen3:14b",
+  "code_hash": "507dc6b08d3bd5a6"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/find-ledgers-accounts.use-case.ts:method:FindLedgersAccountsUseCase:handle",
+  "summary": "Этот метод ищет аккаунт в базе данных по идентификатору книги (ledgerId) и провайдеру. Он использует репозиторий для выполнения запроса к таблице аккаунтов.",
+  "purpose": "Позволяет получать информацию об аккаунте для конкретной книги и провайдера",
+  "domain": "работа с базой данных (data access layer)",
+  "key_behaviors": [
+    "Ищет аккаунт по двум параметрам: ledgerId и provider",
+    "Использует TypeORM для работы с базой данных",
+    "Возвращает промис с результатом запроса",
+    "Поддерживает инъекцию зависимостей через NestJS",
+    "Работает с объектом AccountDao"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1180,
+  "output_tokens": 698,
+  "model": "qwen3:14b",
+  "code_hash": "74e57e5526b7c4d1"
+}

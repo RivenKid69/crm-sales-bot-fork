@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-device-code.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает класс-сервис в NestJS, который можно использовать в других частях приложения. Он предназначен для поиска кода устройства, но логика базы данных пока не реализована.",
+  "purpose": "Позволяет другим частям приложения использовать этот сервис для поиска кодов устройств",
+  "domain": "application services",
+  "key_behaviors": [
+    "Можно внедрять в другие классы",
+    "Обрабатывает поиск кода устройства",
+    "Использует декоратор @Injectable",
+    "Содержит заглушку для базы данных",
+    "Реализован как отдельный сервис"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 1003,
+  "output_tokens": 676,
+  "model": "qwen3:14b",
+  "code_hash": "e61dea4d719e75a4"
+}

@@ -1,0 +1,20 @@
+{
+    "subscription_3": "Dear taxpayer! Your access expires after 3 days. Sale of alcoholic beverages wihout excise marks identification tool entails a state fine of up to 600 MCI. \"Wipon for retailers\" app installation ensures the implementation of the Law. Instructions for the access renewal https://wipon.pro/info. Call center: 87719365061, 87719365062",
+    "subscription_2": "Dear taxpayer! Your access expires after 2 days. Sale of alcoholic beverages wihout excise marks identification tool entails a state fine of up to 600 MCI. \"Wipon for retailers\" app installation ensures the implementation of the Law. Instructions for the access renewal https://wipon.pro/info. Call center: 87719365061, 87719365062",
+    "subscription_1": "WIPON: Dear taxpayer! Your access expires after 1 day. Sale of alcoholic beverages wihout excise marks identification tool entails a state fine of up to 600 MCI. \"Wipon for retailers\" app installation ensures the implementation of the Law. Instructions for the access renewal https://wipon.pro/info. T: 87719365061, 87719365062",
+    "subscription_0": "Dear taxpayer! Your access expires today. Sale of alcoholic beverages wihout excise marks identification tool entails a state fine of up to 600 MCI. \"Wipon for retailers\" app installation ensures the implementation of the Law. Instructions for the access renewal https://wipon.pro/info. Call center: 87719365061, 87719365062",
+    "subscription_expired": "Dear taxpayer! Your access expired. Sale of alcoholic beverages wihout excise marks identification tool entails a state fine of up to 600 MCI. \"Wipon for retailers\" app installation ensures the implementation of the Law. Instructions for the access renewal https://wipon.pro/info. Call center: 87719365061, 87719365062",
+    "cachebox_subscription_3": "Dear taxpayer! Your access to the Cashier service will expire in 3 days.",
+    "cachebox_subscription_2": "Dear taxpayer! Your access to the Cashier service will expire in 2 days.",
+    "cachebox_subscription_1": "WIPON: Dear taxpayer! Your access to the Cashier service expires in 1 day.",
+    "cachebox_subscription_0": "Dear taxpayer! Your access to the Cashier service expires today.",
+    "cachebox_subscription_expired": "Dear taxpayer! Your term of access to the Cashier service has expired.",
+    "billing_paid": "Your account has been deposited with :sum tenge. Current amout is :total_balance tenge.",
+    "subscription_activated": "Charged fee {0.cost} tenge. Access is activated from {0.new_start_at} to {0.new_expires_at}",
+    "subscription_not_activated": "You do not have enough money to pay the subscription fee for the service :service. You need to deposit your account with :required_sum tenge. Subscription fee {0.cost} tenge for 365 days.",
+    "service_blocked": "Usage of the service :service is suspended.",
+    "billing_paid_continue": "Current service access :service active from :current_start_at to :current_expires_at. Access will be automatically extended from {0.new_start_at} to {0.new_expires_at}.",
+    "billing_paid_not_continue": "Current service access :service is active from :current_start_at to :current_expires_at. To automatically extend access from {0.new_start_at} to {0.new_expires_at}, you need to deposit your account on a :required_sum. Subscription fee {0.cost} for 365 days." ,
+    "store": "No information filled about the store",
+    "qiwi_instruction": "Стоимость подписки Wipon Pro за 30 дней составляет 500 тенге (или 5 500 тенге за 365 дней). Используйте ваш ID, в приложении, на странице оплаты, как лицевой  счет Qiwi.  Инструкция по оплате находится по ссылке (http://www.wipon.pro/help)"
+}

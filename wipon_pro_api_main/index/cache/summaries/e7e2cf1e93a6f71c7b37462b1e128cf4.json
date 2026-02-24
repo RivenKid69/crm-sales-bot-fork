@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/transactions.module.ts:import:../fcm/fcm.module",
+  "summary": "Этот код импортирует модуль FCM, который используется для отправки уведомлений через Firebase Cloud Messaging. Он подключает сервисы и другие модули, необходимые для работы с транзакциями и подписками.",
+  "purpose": "Обеспечивает отправку уведомлений пользователям через Firebase Cloud Messaging",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Отправка уведомлений через Firebase Cloud Messaging",
+    "Интеграция с сервисами транзакций и подписок",
+    "Использование асинхронной обработки через Bull",
+    "Подключение к модулям пользователей и счетов",
+    "Использование сервисов для бизнес-логики"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/bull"
+  ],
+  "input_tokens": 1463,
+  "output_tokens": 651,
+  "model": "qwen3:14b",
+  "code_hash": "0dfadbebf28f002e"
+}

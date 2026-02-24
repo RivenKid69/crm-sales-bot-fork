@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/new-form-of-saving-store.dto.ts:import:../../../common/validations/is-entity-exists",
+  "summary": "Этот код создает DTO (Data Transfer Object) для валидации данных формы, используя правила проверки из библиотеки class-validator. Он проверяет, что поля формы заполнены, соответствуют формату и существуют в системе.",
+  "purpose": "Обеспечивает корректность данных при создании новой формы сохранения магазина в API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Валидация формата email и номеров",
+    "Проверка существования сущностей в базе",
+    "Генерация документации API через Swagger",
+    "Обязательные и необязательные поля"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 2393,
+  "output_tokens": 662,
+  "model": "qwen3:14b",
+  "code_hash": "52d57c9a1bf1dae6"
+}

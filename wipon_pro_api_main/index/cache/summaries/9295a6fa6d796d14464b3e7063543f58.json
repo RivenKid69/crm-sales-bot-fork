@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/data/auth-codes.repository.ts:method:AuthCodesRepository:findNewestUsersAuthCode",
+  "summary": "Этот класс реализует два метода для работы с кодами аутентификации. Первый метод ищет код по ID пользователя и значению кода, а второй находит самый последний код пользователя по дате создания.",
+  "purpose": "Позволяет проверять наличие кода аутентификации и находить последний созданный код пользователя для верификации",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск кода аутентификации по пользователю и значению кода",
+    "Поиск последнего созданного кода пользователя",
+    "Возвращает null, если код не найден"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "AuthCodeDao"
+  ],
+  "input_tokens": 1240,
+  "output_tokens": 686,
+  "model": "qwen3:14b",
+  "code_hash": "2a0205f15fc42976"
+}

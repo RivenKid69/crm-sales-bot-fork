@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/stores.module.ts:import:./domain/use-cases/find-users-store-by-user-id-and-bin.use-case",
+  "summary": "Этот код создает модуль для работы со 'складами' в приложении. Он использует репозитории, кейсы и сервисы для управления данными, а также подключает другие модули, такие как регионы и подписки.",
+  "purpose": "Модуль нужен для организации логики, связанной со складами, и обеспечивает доступ к данным через контроллеры и сервисы.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с другими модулями (регионы, подписки, пользователи)",
+    "Обрабатывает запросы через контроллеры и сервисы",
+    "Выполняет бизнес-логику через use-cases",
+    "Экспортирует сервисы и use-cases для других модулей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1282,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "110893c6a3ed23c3"
+}

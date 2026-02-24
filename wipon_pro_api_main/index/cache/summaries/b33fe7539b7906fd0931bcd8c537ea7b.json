@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код представляет собой контроллер в NestJS, который обрабатывает различные операции с подписками, такие как создание, получение активной подписки, покупка и возврат средств. Используются декораторы и вспомогательные классы для валидации, аутентификации и трансформации данных.",
+  "purpose": "Управление подписками пользователей, включая их создание, просмотр, покупку и возврат средств.",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "Обработка HTTP-запросов (GET, POST) для управления подписками",
+    "Использование аутентификации и валидации данных",
+    "Трансформация ответов с помощью интерцептора",
+    "Работа с DTO для структурирования входных данных",
+    "Интеграция с сервисом подписок для бизнес-логики"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "SubscriptionsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2580,
+  "output_tokens": 781,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

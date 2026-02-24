@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.module.ts:import:cache-manager-redis-store",
+  "summary": "Этот код настраивает модуль задач, используя Redis для кэширования и подключает сервисы для работы с уведомлениями и HTTP-запросами. Включает задачи, связанные с подписками и лицензиями.",
+  "purpose": "Обеспечивает выполнение задач с кэшированием и интеграцией с внешними сервисами",
+  "domain": "задачи, кэширование, уведомления, HTTP-запросы",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Выполняет задачи по уведомлению пользователей",
+    "Интегрируется с FCM для push-уведомлений",
+    "Использует HTTP-запросы через NestJS",
+    "Организует код в модули для удобства управления"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store",
+    "FcmModule",
+    "UsersModule"
+  ],
+  "input_tokens": 1459,
+  "output_tokens": 774,
+  "model": "qwen3:14b",
+  "code_hash": "174b7772bcb71f6a"
+}

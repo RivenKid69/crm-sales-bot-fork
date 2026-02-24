@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../../../common/helpers/fs",
+  "summary": "Этот код импортирует различные модули и зависимости, необходимые для работы сервиса ChecksService в NestJS. Он использует репозитории, DTO, утилиты и другие сервисы для обработки проверок, изображений, логирования и работы с базой данных.",
+  "purpose": "Обеспечивает функциональность для обработки проверок, управления изображениями, взаимодействия с внешними сервисами и работы с базой данных.",
+  "domain": "база данных, утилиты, api, логирование",
+  "key_behaviors": [
+    "Использует репозитории для работы с базой данных",
+    "Обрабатывает изображения и файлы",
+    "Интерактив с внешними сервисами через HTTP",
+    "Логирует ошибки и события",
+    "Использует DTO для валидации данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston"
+  ],
+  "input_tokens": 4476,
+  "output_tokens": 783,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

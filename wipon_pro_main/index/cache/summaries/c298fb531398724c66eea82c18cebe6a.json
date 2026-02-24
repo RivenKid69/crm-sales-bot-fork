@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:Getters",
+  "summary": "Этот код определяет мутации, геттеры и действия для Vuex-модуля, который управляет данными компании, Ugds, Dgds и типами магазинов. Он загружает данные с API, сохраняет их в состоянии и обновляет интерфейс.",
+  "purpose": "Управление данными компании и связанными с ней сущностями в приложении на Vue.js с использованием Vuex",
+  "domain": "Vuex state management",
+  "key_behaviors": [
+    "Загрузка данных компании из API",
+    "Сохранение данных в состоянии Vuex",
+    "Обновление интерфейса при изменении данных",
+    "Навигация по роутам при отсутствии лицензиата",
+    "Получение и обработка Ugds, Dgds и StoreTypes"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "@/api/company.api",
+    "@/api/ugds.api",
+    "@/api/dgds.api",
+    "@/api/storeTypes.api",
+    "vue-router"
+  ],
+  "input_tokens": 3071,
+  "output_tokens": 705,
+  "model": "qwen3:14b",
+  "code_hash": "34d439fdd0d5a6a8"
+}

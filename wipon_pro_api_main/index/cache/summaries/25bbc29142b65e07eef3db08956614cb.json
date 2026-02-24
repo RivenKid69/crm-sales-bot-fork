@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/version/version.controller.ts:method:VersionController:constructor",
+  "summary": "Этот контроллер обрабатывает запросы на получение версий мобильного и десктопного приложений. Он использует сервис для получения данных и интерцептор для преобразования ответа.",
+  "purpose": "Позволяет клиентам проверять актуальные версии приложений через API",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение версии мобильного приложения по запросу",
+    "Получение версии десктопного приложения по запросу",
+    "Использование сервиса для логики получения версий",
+    "Применение интерцептора для форматирования ответа",
+    "Документация через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "VersionService",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1362,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "c1f412f2bb1df155"
+}

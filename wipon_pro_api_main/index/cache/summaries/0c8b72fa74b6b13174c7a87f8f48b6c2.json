@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:property:BfAuthenticityService:baseBfUrl",
+  "summary": "Это свойство хранит URL-адрес базового API для проверки подлинности товаров. Оно используется для отправки запросов к внешнему сервису, связанному с проверкой подлинности.",
+  "purpose": "Позволяет обращаться к внешнему API для проверки подлинности товаров в производственной среде.",
+  "domain": "авторизация, внешние API",
+  "key_behaviors": [
+    "Хранит URL-адрес внешнего API",
+    "Используется для отправки запросов к сервису проверки подлинности",
+    "Помогает в интеграции с внешними системами",
+    "Упрощает настройку и изменение URL-адреса сервиса",
+    "Используется в производственной среде"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "https",
+    "locutus"
+  ],
+  "input_tokens": 2764,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

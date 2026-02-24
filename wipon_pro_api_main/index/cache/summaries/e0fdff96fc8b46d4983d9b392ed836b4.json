@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/data/store-types.repository.ts:import:typeorm",
+  "summary": "Этот код создает репозиторий для работы с сущностью StoreTypeDao через TypeORM. Класс наследуется от Repository и использует декоратор @EntityRepository для привязки к конкретной сущности.",
+  "purpose": "Позволяет выполнять операции с базой данных для объектов типа StoreTypeDao",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Выполняет CRUD-операции с сущностью",
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Привязывает репозиторий к конкретной сущности StoreTypeDao"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 956,
+  "output_tokens": 687,
+  "model": "qwen3:14b",
+  "code_hash": "eed0db9453330a24"
+}

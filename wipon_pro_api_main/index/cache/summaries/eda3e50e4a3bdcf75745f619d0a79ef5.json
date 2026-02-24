@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/data/products.repository.ts:method:ProductsRepository:findOrCreate",
+  "summary": "Этот метод ищет товар по имени, организации и типу. Если товар не найден, он создаёт новый и сохраняет в базу данных. Если товар уже есть, возвращает его",
+  "purpose": "Обеспечивает наличие товара в системе без дублирования записей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Поиск товара по уникальным параметрам",
+    "Автоматическое создание товара при отсутствии",
+    "Возврат существующего товара при совпадении",
+    "Использование TypeORM для работы с базой",
+    "Обработка асинхронных операций"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "ProductDao"
+  ],
+  "input_tokens": 1122,
+  "output_tokens": 613,
+  "model": "qwen3:14b",
+  "code_hash": "79952baae1eb8eed"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/validate-image.ts:import:validate-image-type",
+  "summary": "Этот код проверяет, является ли файл изображением определённого формата (JPEG, PNG, GIF, SVG). Он использует функцию validateMIMEType для сравнения типа файла с разрешёнными списками.",
+  "purpose": "Убеждается, что загружаемые файлы соответствуют допустимым форматам изображений в приложении",
+  "domain": "валидация файлов",
+  "key_behaviors": [
+    "Проверка MIME-типа файла",
+    "Поддержка популярных форматов изображений",
+    "Возвращает результат проверки в виде булева значения",
+    "Использует внешнюю библиотеку для валидации",
+    "Фильтрует неподдерживаемые типы файлов"
+  ],
+  "dependencies_used": [
+    "validate-image-type"
+  ],
+  "input_tokens": 1005,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "b977f5756077a60f"
+}

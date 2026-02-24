@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/vue.config.js:file",
+  "summary": "Этот файл настраивает Webpack для Vue-проекта. Он загружает переменные окружения из файла .env и добавляет общие SCSS-переменные в все компоненты.",
+  "purpose": "Упрощает работу с переменными окружения и стилевыми настройками в Vue-приложении",
+  "domain": "настройки проекта",
+  "key_behaviors": [
+    "Загрузка переменных окружения из файла .env",
+    "Автоматическое подключение SCSS-переменных в проект",
+    "Настройка Webpack-плагинов",
+    "Конфигурация SCSS-загрузчика",
+    "Интеграция с Vue CLI"
+  ],
+  "dependencies_used": [
+    "dotenv-webpack"
+  ],
+  "input_tokens": 1087,
+  "output_tokens": 671,
+  "model": "qwen3:14b",
+  "code_hash": "018f85efed658c90"
+}

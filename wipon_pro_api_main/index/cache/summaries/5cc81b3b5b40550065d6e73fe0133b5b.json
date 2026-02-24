@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/old-form-of-saving-store-with-region.dto.ts:property:OldFormOfSavingStoreWithRegionDto:license_number",
+  "summary": "Этот класс используется для валидации данных формы, связанной с сохранением информации о магазине и его регионе. Он проверяет, что введенные данные соответствуют определенным правилам, таким как формат БИН, существование региона и типа магазина, а также обязательность определенных полей.",
+  "purpose": "Обеспечивает корректность данных, вводимых пользователем при сохранении информации о магазине",
+  "domain": "валидация данных (API, формы)",
+  "key_behaviors": [
+    "Проверка существования региона и типа магазина",
+    "Проверка формата БИН (12 цифр)",
+    "Обязательное заполнение ключевых полей (region_id, bin и др.)",
+    "Ограничение ввода только строк для адресных полей",
+    "Проверка числовых значений"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsRegionExists",
+    "IsStoreTypeExists",
+    "IsNumeric"
+  ],
+  "input_tokens": 1500,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "2d04bdd774bce734"
+}

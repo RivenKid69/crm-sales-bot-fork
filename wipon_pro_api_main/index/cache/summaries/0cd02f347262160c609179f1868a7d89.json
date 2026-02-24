@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/domain/smsc.service.ts:import:../../../common/logger/request-logger",
+  "summary": "Этот код обрабатывает входящие callback-запросы от SMS-сервиса. Он проверяет подлинность данных с помощью хэша и логирует важные события. Как будто проверяешь подлинность письма по подписи в конверте.",
+  "purpose": "Обеспечивает безопасную обработку и логирование callback-запросов от SMS-провайдера",
+  "domain": "API/Callback-обработка",
+  "key_behaviors": [
+    "Проверка подлинности данных через SHA1-хэш",
+    "Логирование событий через кастомный логгер",
+    "Использование DTO для типизации данных",
+    "Интеграция с внешним сервисом через DoomguyService",
+    "Динамическая загрузка библиотеки crypto"
+  ],
+  "dependencies_used": [
+    "crypto",
+    "request-logger",
+    "app.config",
+    "doomguy.service"
+  ],
+  "input_tokens": 1497,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "1dea76578f313352"
+}

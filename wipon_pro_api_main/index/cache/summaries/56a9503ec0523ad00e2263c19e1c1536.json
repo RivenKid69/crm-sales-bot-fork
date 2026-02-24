@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/cashboxes.module.ts:import:./domain/cashboxes.service",
+  "summary": "Этот код создает модуль NestJS для работы с кассами. Он использует сервисы для управления кассами и отправки уведомлений, контроллер для обработки HTTP-запросов и подключает модули для работы с пользователями и FCM.",
+  "purpose": "Организует работу с кассами и интеграцию с уведомлениями в приложении",
+  "domain": "управление кассами, уведомления, интеграция с FCM",
+  "key_behaviors": [
+    "Использует сервисы для работы с кассами",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Интегрируется с модулем пользователей",
+    "Использует FCM для отправки уведомлений",
+    "Организует логику в отдельном модуле"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "UsersModule",
+    "FcmModule"
+  ],
+  "input_tokens": 1102,
+  "output_tokens": 755,
+  "model": "qwen3:14b",
+  "code_hash": "cfe75fa0e6c1d1f0"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/disassociate-item-from-product.use-case.ts:class:DisassociateItemFromProductUseCase",
+  "summary": "Этот класс используется для отсоединения элемента от продукта, обновляя его product_id в базе данных. Он использует репозиторий для выполнения операции обновления.",
+  "purpose": "Позволяет удалять связь между элементом и продуктом в системе управления товарами или инвентарём",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Обновляет запись элемента, устанавливая product_id в null",
+    "Использует репозиторий для доступа к данным",
+    "Работает с асинхронной операцией обновления",
+    "Принимает идентификатор элемента в качестве параметра",
+    "Возвращает результат операции обновления"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1160,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "0ec239a45070bd75"
+}

@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-users-device-by-at.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который ищет устройство пользователя по типу приложения. Он использует репозиторий для работы с базой данных и может быть внедрен в другие части приложения.",
+  "purpose": "Позволяет получать информацию о устройстве пользователя для дальнейшей обработки в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Поддерживает внедрение зависимостей через @Injectable",
+    "Выполняет поиск устройства по идентификатору пользователя и типу приложения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1143,
+  "output_tokens": 597,
+  "model": "qwen3:14b",
+  "code_hash": "151c83b1ac6e4617"
+}

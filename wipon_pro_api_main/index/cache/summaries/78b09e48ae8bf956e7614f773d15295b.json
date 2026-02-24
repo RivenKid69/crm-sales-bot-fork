@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/buy-subscription.dto.ts:class:BuySubscriptionDto",
+  "summary": "Этот класс используется для передачи данных при покупке подписки. Он проверяет, что тип подписки корректный, и позволяет указать, нужно ли менять текущий тип подписки пользователя",
+  "purpose": "Обеспечивает валидацию данных при покупке подписки через API",
+  "domain": "подписки, e-commerce, API",
+  "key_behaviors": [
+    "Проверка корректного типа подписки (мобильная, десктоп, TSD)",
+    "Опциональный флаг для изменения текущего типа подписки",
+    "Интеграция с Swagger для документации API",
+    "Использование валидации через class-validator",
+    "Использование констант из конфигурации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1237,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "6a718f26e17b4ac1"
+}

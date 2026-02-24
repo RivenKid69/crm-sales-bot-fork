@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/post-or-update-store.dto.ts:property:PostOrUpdateStoreDto:payer_postal_address",
+  "summary": "Этот класс DTO используется для валидации данных при создании или обновлении информации о магазине. Он проверяет, что обязательные поля заполнены, а необязательные (если указаны) являются строками.",
+  "purpose": "Обеспечивает корректность данных перед сохранением в базу или обработкой в сервисах",
+  "domain": "API, валидация данных, бэкенд-сервисы",
+  "key_behaviors": [
+    "Проверка обязательных полей (без @IsOptional)",
+    "Валидация типов данных (строки для полей с @IsString)",
+    "Поддержка необязательных полей через @IsOptional",
+    "Структурирование данных для работы с базой данных",
+    "Использование в REST-запросах для создания/обновления записей"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1377,
+  "output_tokens": 693,
+  "model": "qwen3:14b",
+  "code_hash": "71cd55a752853d66"
+}

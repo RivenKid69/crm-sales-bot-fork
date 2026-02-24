@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/region.dao.ts:class:RegionDao",
+  "summary": "Этот класс описывает сущность 'regions' для хранения информации о регионах. У неё есть названия на трёх языках, координаты и связь с объектом GeoNodeDao.",
+  "purpose": "Используется для хранения данных о географических регионах с поддержкой нескольких языков",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит названия региона на русском, казахском и английском",
+    "Сохраняет географические координаты (широта/долгота)",
+    "Создаёт связь один-к-одному с GeoNodeDao",
+    "Автоматически генерирует уникальный идентификатор",
+    "Работает с базой данных через TypeORM"
+  ],
+  "dependencies_used": [
+    "typeorm/BaseEntity",
+    "typeorm/Column",
+    "typeorm/Entity",
+    "typeorm/OneToOne"
+  ],
+  "input_tokens": 1311,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "11548a555887c851"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/feedback-message.dao.ts:property:FeedbackMessageDao:created_at",
+  "summary": "Этот код описывает структуру таблицы feedback_messages в базе данных. Он определяет поля, такие как id, имя, телефон, email, текст сообщения и даты создания и обновления",
+  "purpose": "Создает модель данных для хранения обратной связи от пользователей в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу в базе данных",
+    "Определяет поля и их типы",
+    "Автоматически заполняет даты создания и обновления",
+    "Связывает с моделью пользователя",
+    "Хранит дополнительные данные в формате JSON"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "UserDao"
+  ],
+  "input_tokens": 1406,
+  "output_tokens": 566,
+  "model": "qwen3:14b",
+  "code_hash": "7d576a3605a7d4a1"
+}

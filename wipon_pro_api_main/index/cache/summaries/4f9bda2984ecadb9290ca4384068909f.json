@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/doomguy/doomguy.service.ts:import:@nestjs/axios",
+  "summary": "Этот код создает сервис для отправки сообщений в Slack через HTTP-запросы. Он использует HttpService из @nestjs/axios для отправки данных по webhook-URL и логирует ошибки с помощью кастомного логгера. Сервис может отправлять сообщения о фидбеке, отчеты по SMS и уведомления о критических ошибках.",
+  "purpose": "Сервис нужен для отправки важной информации в Slack, например, о фидбеке пользователей, статусе SMS или критических ошибках в приложении.",
+  "domain": "утилиты, логирование, интеграции",
+  "key_behaviors": [
+    "Отправка сообщений в Slack через webhook",
+    "Логирование ошибок при отправке",
+    "Использование конфигурации из app.config",
+    "Отправка сообщений о фидбеке, SMS и критических ошибках",
+    "Использование времени Алматы для логирования"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "axios"
+  ],
+  "input_tokens": 2485,
+  "output_tokens": 789,
+  "model": "qwen3:14b",
+  "code_hash": "4e3be25ad0adb3a0"
+}

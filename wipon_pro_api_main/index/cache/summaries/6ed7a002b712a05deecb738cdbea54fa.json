@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/data/devices.repository.ts:method:DevicesRepository:findDeviceByApplicationTypeAndDeviceCode",
+  "summary": "Этот метод ищет устройство по его типу приложения и коду, используя SQL-запрос. Он извлекает данные напрямую из базы, проверяет результат и возвращает устройство, если оно найдено.",
+  "purpose": "Используется для точного поиска устройства по коду и типу приложения, например, при проверке существования устройства в системе.",
+  "domain": "управление устройствами, авторизация",
+  "key_behaviors": [
+    "Использует SQL-запрос для поиска устройства",
+    "Извлекает данные напрямую из базы",
+    "Проверяет результат и возвращает устройство, если оно найдено"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "DeviceDao"
+  ],
+  "input_tokens": 1654,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "ad38b17095e0b890"
+}

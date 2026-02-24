@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../dto/old-form-of-saving-store-with-region.dto",
+  "summary": "Этот код реализует сервис для работы со складами, валидации данных и взаимодействия с другими сущностями. Он использует репозитории, кейсы и DTO для обработки запросов.",
+  "purpose": "Обработка данных о складах, проверка лицензий и связь с регионами, пользователями и подписками",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Проверка лицензии склада и активных подписок пользователя",
+    "Получение информации о складе по ID пользователя",
+    "Обновление или создание данных о складе",
+    "Использование валидации данных через DTO",
+    "Интеграция с другими сервисами через use-cases"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 2985,
+  "output_tokens": 740,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

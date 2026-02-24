@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.controller.ts:import:../../common/decorators/user.decorator",
+  "summary": "Этот код создает контроллер в NestJS, который обрабатывает POST-запросы для генерации PDF-счета. Он использует аутентификацию, получает данные пользователя и информацию из тела запроса, а затем отправляет PDF-файл в ответ.",
+  "purpose": "Обрабатывать запросы на генерацию PDF-счета с защитой от неавторизованных пользователей и отправкой файла в ответ.",
+  "domain": "API",
+  "key_behaviors": [
+    "Обработка POST-запросов на генерацию PDF",
+    "Использование аутентификации через AuthGuard",
+    "Отправка PDF-файла в ответ",
+    "Получение данных пользователя через декоратор @User()",
+    "Использование сервиса PdfService для генерации PDF"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "AuthGuard",
+    "UserDecorator",
+    "UserDao",
+    "GenerateInvoiceDto",
+    "PdfService"
+  ],
+  "input_tokens": 1158,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "b3425c857e12eca8"
+}

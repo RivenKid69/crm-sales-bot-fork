@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/fcm/fcm.service..ts:import:firebase-admin/lib/messaging/messaging-api",
+  "summary": "Этот код создает сервис для отправки уведомлений через Firebase Cloud Messaging (FCM). Он использует библиотеку Firebase Admin и принимает токен устройства и данные сообщения для отправки уведомления.",
+  "purpose": "Позволяет отправлять push-уведомления пользователям мобильных приложений через FCM в NestJS-приложении",
+  "domain": "мобильные уведомления",
+  "key_behaviors": [
+    "Отправка сообщений на устройства по токену",
+    "Использование Firebase Admin для работы с FCM",
+    "Интеграция с NestJS через @Injectable"
+  ],
+  "dependencies_used": [
+    "firebase-admin",
+    "@nestjs/common"
+  ],
+  "input_tokens": 1063,
+  "output_tokens": 661,
+  "model": "qwen3:14b",
+  "code_hash": "6bd6a1686ec3cec5"
+}

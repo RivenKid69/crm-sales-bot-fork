@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/subscription/subscriptionCharge.producer.service.ts:import:bull",
+  "summary": "Этот код создает сервис, который отправляет задачи в очередь для обработки позже. Он использует Bull для управления задачами и NestJS для инъекции зависимости очереди.",
+  "purpose": "Обработка задач в фоновом режиме, например, для оплаты подписок без блокировки основного потока",
+  "domain": "задачи в фоновом режиме, очереди",
+  "key_behaviors": [
+    "Отправка задач в очередь",
+    "Задержка выполнения задачи на 5 минут",
+    "Использование Bull для управления очередями",
+    "Интеграция с NestJS через декораторы",
+    "Асинхронная обработка данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull"
+  ],
+  "input_tokens": 1108,
+  "output_tokens": 619,
+  "model": "qwen3:14b",
+  "code_hash": "556b8107615d53bd"
+}

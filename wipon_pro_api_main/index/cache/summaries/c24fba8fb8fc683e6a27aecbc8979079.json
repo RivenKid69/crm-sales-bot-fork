@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:import:firebase-admin/lib/messaging/messaging-api",
+  "summary": "Этот код обрабатывает задания на отправку уведомлений через FCM (Firebase Cloud Messaging). Он берет данные из очереди, создает уведомление в системе и отправляет его пользователю через Firebase, логируя результаты.",
+  "purpose": "Обработка фоновых задач по отправке уведомлений пользователям в реальном времени",
+  "domain": "messaging",
+  "key_behaviors": [
+    "Обработка задач из очереди Bull",
+    "Отправка FCM уведомлений через Firebase",
+    "Логирование успешных и ошибочных попыток",
+    "Использование сервисов для работы с уведомлениями и FCM",
+    "Работа с кастомным логгером"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin",
+    "notifications-service",
+    "fcm-service"
+  ],
+  "input_tokens": 1589,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

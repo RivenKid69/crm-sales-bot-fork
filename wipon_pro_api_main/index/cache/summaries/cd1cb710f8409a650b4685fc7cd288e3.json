@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/regions/regions.module",
+  "summary": "Этот код настраивает модуль regions в NestJS приложении, подключая базу данных, кэш, международизацию и другие сервисы. Он объединяет различные модули и настраивает зависимости для работы приложения.",
+  "purpose": "Обеспечивает интеграцию модуля regions с базой данных, кэшем, международизацией и другими сервисами для корректной работы приложения.",
+  "domain": "база данных, международизация, кэширование, модули",
+  "key_behaviors": [
+    "Подключение к базе данных через TypeORM",
+    "Настройка международизации с использованием nestjs-i18n",
+    "Интеграция кэша через Redis",
+    "Подключение модулей приложения (авторизация, пользователи, проверки и т.д.)",
+    "Настройка расписания задач и очередей через Bull"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "@nestjs/bull",
+    "cache-manager-redis-store",
+    "@nestjs/schedule"
+  ],
+  "input_tokens": 2639,
+  "output_tokens": 788,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

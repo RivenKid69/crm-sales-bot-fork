@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/link-store-to-license.task.ts:import:../../logger/request-logger",
+  "summary": "Этот код создает задачу, которая периодически связывает магазины с лицензиями в базе данных. Она использует Redis для проверки, выполнялась ли задача ранее, и выполняет SQL-запрос для обновления данных.",
+  "purpose": "Связывает магазины с лицензиями в определенное время, чтобы данные были актуальными.",
+  "domain": "настройки, задачи, база данных",
+  "key_behaviors": [
+    "Проверяет, выполнялась ли задача ранее с помощью Redis",
+    "Выполняет SQL-запрос для связывания магазинов с лицензиями",
+    "Логирует ошибки с помощью кастомного логгера",
+    "Удаляет ключ из Redis после выполнения задачи",
+    "Использует Cron для запуска задачи в определенное время"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/schedule",
+    "cache-manager",
+    "uuid",
+    "typeorm",
+    "request-logger"
+  ],
+  "input_tokens": 1836,
+  "output_tokens": 768,
+  "model": "qwen3:14b",
+  "code_hash": "5f90b69b957bb38f"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/data/auth-codes.repository.ts:method:AuthCodesRepository:findUsersAuthCode",
+  "summary": "Этот код определяет репозиторий для работы с объектами AuthCodeDao. Он содержит два метода: один ищет код авторизации по пользователю и коду, другой находит самый свежий код авторизации для пользователя.",
+  "purpose": "Позволяет проверять существующие коды авторизации и находить последние коды для пользователей",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск кода по пользователю и конкретному коду",
+    "Поиск последнего созданного кода для пользователя",
+    "Возвращает null, если код не найден",
+    "Использует TypeORM для работы с базой данных",
+    "Работает с объектами AuthCodeDao"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "AuthCodeDao"
+  ],
+  "input_tokens": 1301,
+  "output_tokens": 586,
+  "model": "qwen3:14b",
+  "code_hash": "2a0205f15fc42976"
+}

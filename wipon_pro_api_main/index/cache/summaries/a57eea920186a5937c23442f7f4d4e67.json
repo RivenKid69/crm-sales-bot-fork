@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/item.dao.ts:property:ItemDao:bottled_at",
+  "summary": "Это поле хранит дату, когда товар был упакован. Оно обязательно и сохраняется в базе данных как дата.",
+  "purpose": "Позволяет отслеживать точное время упаковки товара для логистики и контроля качества",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит дату упаковки в формате Date",
+    "Обязательное поле (не может быть null)",
+    "Синхронизируется с базой данных через TypeORM",
+    "Используется для сортировки и фильтрации товаров по дате упаковки"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1561,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "f77843b0d688797b"
+}

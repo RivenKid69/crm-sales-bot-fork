@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/device.dao.ts:property:DeviceDao:created_at",
+  "summary": "Свойство created_at автоматически сохраняет дату и время создания записи устройства в базе данных. Оно заполняется системой при добавлении новой записи, без участия пользователя.",
+  "purpose": "Отслеживает момент создания устройства для анализа данных и аудита",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое заполнение датой создания",
+    "Хранение времени в формате Date",
+    "Не требует явного указания при создании записи"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "typeorm/decorators"
+  ],
+  "input_tokens": 1202,
+  "output_tokens": 636,
+  "model": "qwen3:14b",
+  "code_hash": "1b408f28068c7044"
+}

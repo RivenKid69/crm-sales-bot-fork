@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/update-user-accounts-ledger.use-case.ts:method:UpdateUserAccountsLedgerUseCase:handle",
+  "summary": "Этот метод обновляет информацию о счете пользователя в базе данных. Если передан transaction, он использует его для выполнения операции, иначе работает напрямую через репозиторий.",
+  "purpose": "Обновление связанного с пользователем леджера для корректного учета финансовых операций",
+  "domain": "управление данными пользователя",
+  "key_behaviors": [
+    "Обновление поля ledger_id в таблице accounts",
+    "Поддержка транзакций для обеспечения целостности данных",
+    "Использование репозитория для доступа к данным",
+    "Работа с TypeORM для выполнения SQL-запросов",
+    "Позволяет обновлять данные как с транзакцией, так и без нее"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "AccountDao"
+  ],
+  "input_tokens": 1219,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "18189eb693ee96ff"
+}

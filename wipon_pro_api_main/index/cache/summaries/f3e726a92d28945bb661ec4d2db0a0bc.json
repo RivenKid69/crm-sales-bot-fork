@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/checks/checks.module",
+  "summary": "Этот код импортирует и настраивает модуль 'checks' в NestJS приложении, который, вероятно, отвечает за проверки или операции, связанные с проверкой данных или состояния. Он использует зависимости NestJS и других библиотек для интеграции с базой данных и другими сервисами.",
+  "purpose": "Интеграция модуля проверок в приложение для обработки и проверки данных",
+  "domain": "backend-приложение",
+  "key_behaviors": [
+    "Интеграция с базой данных через TypeORM",
+    "Поддержка кэширования через Redis",
+    "Использование международного интерфейса (i18n)",
+    "Подключение к очередям задач (Bull)",
+    "Интеграция с другими модулями приложения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "@nestjs/bull",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 2823,
+  "output_tokens": 764,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

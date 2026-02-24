@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/ugds.api",
+  "summary": "Этот код настроен на управление состоянием в приложении Vue.js с использованием Vuex. Он определяет мутации для обновления данных компании, UGDS, DGDS и типов магазинов, а также действия для получения этих данных с сервера.",
+  "purpose": "Обеспечивает централизованное хранение и управление данными компании и связанными с ней сущностями в приложении",
+  "domain": "state management (Vuex)",
+  "key_behaviors": [
+    "Обновление состояния через мутации",
+    "Получение данных с сервера через API",
+    "Использование getter'ов для доступа к данным",
+    "Работа с роутером для перенаправления пользователей",
+    "Хранение данных в localStorage"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через company.api, ugds.api и др.)",
+    "vue-router"
+  ],
+  "input_tokens": 3011,
+  "output_tokens": 749,
+  "model": "qwen3:14b",
+  "code_hash": "34d439fdd0d5a6a8"
+}

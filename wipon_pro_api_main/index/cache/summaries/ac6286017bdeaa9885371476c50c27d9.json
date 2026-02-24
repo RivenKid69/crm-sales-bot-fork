@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/devices.module.ts:import:./data/devices.repository",
+  "summary": "Этот код создает модуль NestJS для работы с устройствами. Он подключает контроллер, сервисы, репозитории и use-case, а также использует TypeORM для взаимодействия с базой данных и модуль пользователей для интеграции.",
+  "purpose": "Создает структурированный модуль для управления устройствами и их данными в приложении",
+  "domain": "Управление устройствами, база данных, API",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с модулем пользователей",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Реализует бизнес-логику через сервисы и use-case",
+    "Экспортирует use-case для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1426,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "4b0cc84680397452"
+}

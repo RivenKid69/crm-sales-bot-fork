@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:function:getUgdsRequest",
+  "summary": "Эта функция отправляет GET-запрос на сервер по адресу '/ugds' с помощью импортированного объекта request. Она возвращает данные, полученные с этого эндпоинта.",
+  "purpose": "Используется для получения данных с сервера по специфическому URL в приложении",
+  "domain": "api",
+  "key_behaviors": [
+    "Отправляет GET-запрос",
+    "Получает данные с сервера",
+    "Использует централизованный API-клиент"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 934,
+  "output_tokens": 624,
+  "model": "qwen3:14b",
+  "code_hash": "6d515f77964ff50f"
+}

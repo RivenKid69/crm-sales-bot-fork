@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ugd-license.dao.ts:property:UgdLicenseDao:license_number",
+  "summary": "Этот код описывает сущность для хранения информации о лицензиях в базе данных. Класс содержит поля для уникального идентификатора, связей с другими сущностями, статуса, дополнительных настроек и временных меток.",
+  "purpose": "Используется для хранения данных лицензий в базе данных с поддержкой временных меток и дополнительных параметров",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое присвоение уникального ID",
+    "Хранение статуса лицензии",
+    "Запись временных меток создания/обновления/удаления",
+    "Поддержка JSONB для хранения дополнительных параметров",
+    "Связь с другими сущностями через ID"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@Entity",
+    "@PrimaryGeneratedColumn",
+    "@Column",
+    "@CreateDateColumn",
+    "@UpdateDateColumn",
+    "@DeleteDateColumn"
+  ],
+  "input_tokens": 1364,
+  "output_tokens": 768,
+  "model": "qwen3:14b",
+  "code_hash": "8ed685c0c0963c9a"
+}

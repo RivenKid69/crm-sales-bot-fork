@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/stores/stores.module",
+  "summary": "Этот код импортирует и настраивает модуль 'stores.module' в NestJS приложении, включая зависимости, конфигурации и другие модули, необходимые для работы приложения. Он использует TypeORM для работы с базой данных и Redis для кэширования.",
+  "purpose": "Интеграция модуля 'stores' в приложение, обеспечивая его функциональность и взаимодействие с другими компонентами",
+  "domain": "модульное приложение",
+  "key_behaviors": [
+    "Импорт модуля 'stores.module' для его использования в приложении",
+    "Интеграция с TypeORM для работы с базой данных",
+    "Использование Redis для кэширования данных",
+    "Поддержка международизации через i18n",
+    "Настройка кэширования и задач через BullMQ"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "@nestjs/bull",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 2822,
+  "output_tokens": 777,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

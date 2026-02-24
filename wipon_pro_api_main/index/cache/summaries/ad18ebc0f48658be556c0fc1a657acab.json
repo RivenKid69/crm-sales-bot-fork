@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:method:NotificationsService:getUsersNotifications",
+  "summary": "Этот метод получает все уведомления для конкретного пользователя, сортируя их по статусу (прочитано/не прочитано) и дате создания. Он использует репозиторий для поиска данных по ID пользователя.",
+  "purpose": "Позволяет пользователю видеть свои уведомления в правильном порядке",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Получает уведомления конкретного пользователя",
+    "Сортирует по статусу и дате",
+    "Возвращает массив объектов уведомлений",
+    "Использует репозиторий для поиска данных",
+    "Фильтрует по user_id"
+  ],
+  "dependencies_used": [
+    "NotificationsRepository",
+    "UserDao"
+  ],
+  "input_tokens": 2082,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

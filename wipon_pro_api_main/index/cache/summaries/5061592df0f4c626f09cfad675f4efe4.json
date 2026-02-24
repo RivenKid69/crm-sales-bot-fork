@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:../data/subscription.repository",
+  "summary": "Этот код импортирует необходимые зависимости для работы с подписками пользователей. Он использует репозитории, use-cases, сервисы и хелперы для проверки активных подписок, взаимодействия с платежами и обработки ошибок.",
+  "purpose": "Управление подписками пользователей, проверка их активности и взаимодействие с платежными сервисами",
+  "domain": "подписки, авторизация, платежи",
+  "key_behaviors": [
+    "Проверка активной подписки по номеру телефона",
+    "Обработка ошибок при отсутствии пользователя или подписки",
+    "Взаимодействие с платежным сервисом billingService",
+    "Использование TypeORM для работы с базой данных",
+    "Вызов внешних API через HttpService"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "rxjs"
+  ],
+  "input_tokens": 2744,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

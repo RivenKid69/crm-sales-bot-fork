@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/presenter/reports.controller.ts:import:../dto/post-report.dto",
+  "summary": "Этот код определяет контроллер для обработки POST-запросов, связанных с созданием отчетов. Использует валидацию данных, аутентификацию и инструменты для документирования API.",
+  "purpose": "Обеспечивает возможность создания отчетов с проверкой данных и аутентификацией пользователей через API",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запросов для создания отчетов",
+    "Проверка данных с помощью ValidationPipe",
+    "Аутентификация пользователей через AuthGuard",
+    "Документация API через Swagger",
+    "Использование DTO для структурирования входных данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1525,
+  "output_tokens": 654,
+  "model": "qwen3:14b",
+  "code_hash": "52d97f09d0487dda"
+}

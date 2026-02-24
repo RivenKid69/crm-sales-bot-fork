@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/domain/store-types.service.ts:method:StoreTypesService:getAllStoreTypes",
+  "summary": "Этот метод получает все типы магазинов из базы данных, используя репозиторий. Он асинхронно запрашивает данные через TypeORM.",
+  "purpose": "Позволяет получить полный список типов магазинов для отображения или обработки в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получает все записи из таблицы типов магазинов",
+    "Использует TypeORM для работы с базой данных",
+    "Асинхронный метод для неблокирующего запроса",
+    "Инъектируется в другие сервисы через NestJS",
+    "Выполняет простой SELECT-запрос"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1109,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "ff0de80424b5569e"
+}

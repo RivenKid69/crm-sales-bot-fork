@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger.dao.ts:property:LedgerDao:updated_at",
+  "summary": "Это свойство хранит дату и время последнего обновления записи в базе данных. Оно автоматически заполняется текущей датой при любом изменении объекта.",
+  "purpose": "Позволяет отслеживать, когда была последняя модификация записи в таблице ledgers",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматически обновляется при изменении объекта",
+    "Хранит дату в формате Date",
+    "Использует колонку updated_at в таблице",
+    "Работает с типом timestamp в базе",
+    "Помогает в аудите изменений"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@UpdateDateColumn"
+  ],
+  "input_tokens": 1445,
+  "output_tokens": 566,
+  "model": "qwen3:14b",
+  "code_hash": "49807575de7c8de6"
+}

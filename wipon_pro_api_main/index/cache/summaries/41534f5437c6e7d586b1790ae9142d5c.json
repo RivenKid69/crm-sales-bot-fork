@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/send-push-to-expiring-subs.task.ts:import:../../logger/request-logger",
+  "summary": "Этот код создает задачу, которая каждые 9 утра по времени Алматы проверяет подписки, срок которых истекает через 2 дня, и отправляет пользователям уведомления о предстоящем окончании подписки.",
+  "purpose": "Уведомлять пользователей о предстоящем окончании подписки, чтобы они могли продлить её вовремя",
+  "domain": "push-уведомления, подписки, задачи",
+  "key_behaviors": [
+    "Проверка подписок, истекающих через 2 дня",
+    "Отправка push-уведомлений пользователям",
+    "Использование кэша для предотвращения повторного выполнения задачи",
+    "Логирование ошибок при выполнении задачи",
+    "Использование TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/schedule",
+    "cache-manager",
+    "uuid",
+    "luxon",
+    "typeorm",
+    "request-logger"
+  ],
+  "input_tokens": 2338,
+  "output_tokens": 767,
+  "model": "qwen3:14b",
+  "code_hash": "ca33a02fa437abb3"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/ledgers.module.ts:import:./domain/ledgers.service",
+  "summary": "Этот код создает модуль NestJS для управления записями (ledgers). Он использует сервисы из других модулей (пользователей и счетов) и включает собственный контроллер для обработки HTTP-запросов.",
+  "purpose": "Организует логику работы с записями (например, бухгалтерские операции) в приложении",
+  "domain": "Финансовые операции / бухгалтерия",
+  "key_behaviors": [
+    "Интеграция с модулями пользователей и счетов",
+    "Обработка HTTP-запросов через контроллер",
+    "Использование сервиса для работы с записями",
+    "Использование общего сервиса для оплат и расчетов",
+    "Разделение логики на модули для удобства поддержки"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "UsersModule",
+    "AccountsModule"
+  ],
+  "input_tokens": 1148,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "6cd2ef049e79b256"
+}

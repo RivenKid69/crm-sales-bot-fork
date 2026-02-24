@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.controller.ts:import:@nestjs/common",
+  "summary": "Этот код создает контроллер в NestJS для обработки POST-запросов на генерацию PDF-чеков. Он использует аутентификацию, декораторы для передачи данных и отправки ответа в формате PDF",
+  "purpose": "Обрабатывает запросы на создание PDF-чеков с защитой от неавторизованных пользователей",
+  "domain": "api",
+  "key_behaviors": [
+    "Генерация PDF-чеков по запросу",
+    "Проверка аутентификации пользователя",
+    "Отправка PDF-файла в ответ на запрос",
+    "Использование DTO для валидации данных",
+    "Интеграция с сервисом генерации PDF"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "AuthGuard",
+    "UserDecorator",
+    "UserDao",
+    "GenerateInvoiceDto",
+    "PdfService"
+  ],
+  "input_tokens": 1208,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "b3425c857e12eca8"
+}

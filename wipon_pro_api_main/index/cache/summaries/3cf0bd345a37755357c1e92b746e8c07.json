@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/buy-subscription.dto.ts:property:BuySubscriptionDto:type",
+  "summary": "Этот код создает DTO-объект для покупки подписки. Он проверяет, что тип подписки существует в списке разрешенных значений, а флаг изменения типа подписки является булевым.",
+  "purpose": "Обеспечивает валидацию данных при покупке подписки в приложении",
+  "domain": "подписки, платежи",
+  "key_behaviors": [
+    "Проверка обязательного поля типа подписки",
+    "Ограничение значений типа подписки из конфига",
+    "Валидация булевого флага изменения типа",
+    "Генерация документации через Swagger",
+    "Поддержка опциональных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1229,
+  "output_tokens": 698,
+  "model": "qwen3:14b",
+  "code_hash": "6a718f26e17b4ac1"
+}

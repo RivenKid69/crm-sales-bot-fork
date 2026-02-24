@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/subscriptions.module.ts:import:../devices/devices.module",
+  "summary": "Этот код импортирует модуль 'devices.module' и использует его в 'subscriptions.module', чтобы получить доступ к функциональности, связанной с устройствами. Это позволяет использовать use-case, например, для поиска устройств пользователя.",
+  "purpose": "Импорт нужен, чтобы использовать функциональность из другого модуля в текущем модуле.",
+  "domain": "модули и зависимости",
+  "key_behaviors": [
+    "Использует функциональность из другого модуля",
+    "Позволяет использовать use-case из 'devices.module'",
+    "Обеспечивает связь между модулями",
+    "Упрощает доступ к общим функциям",
+    "Позволяет использовать сервисы и контроллеры из другого модуля"
+  ],
+  "dependencies_used": [
+    "devices.module"
+  ],
+  "input_tokens": 1670,
+  "output_tokens": 716,
+  "model": "qwen3:14b",
+  "code_hash": "1dda264d8725753e"
+}

@@ -1,0 +1,398 @@
+[
+  {
+    "id": 92701,
+    "create_time": "2025-11-24T15:47:31.614Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Рахмет, жақсы! ия программанын багасы 150 000 бир жылга,  моноблок 5в 1-240 000"
+  },
+  {
+    "id": 87029,
+    "create_time": "2025-11-21T15:34:57.015Z",
+    "author_type": "client",
+    "sent_content": "Келдік"
+  },
+  {
+    "id": 87347,
+    "create_time": "2025-11-21T16:10:16.720Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.wipon.kz/marketplace/4/"
+  },
+  {
+    "id": 87349,
+    "create_time": "2025-11-21T16:10:38.293Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 87372,
+    "create_time": "2025-11-21T16:14:35.861Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 87373,
+    "create_time": "2025-11-21T16:14:36.284Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "5 в 1 моноблокқа арналған акция осы аптаның соңына дейін жарамды. Бұл акцияны 150 мыңға бағдарламаны сатып алып, алдын ала брондай аласыз"
+  },
+  {
+    "id": 87374,
+    "create_time": "2025-11-21T16:15:22.376Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Біз демалыс күндері сағат 10-нан 17:00-ге дейін жұмыс істейміз"
+  },
+  {
+    "id": 92431,
+    "create_time": "2025-11-24T15:19:22.774Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Айдос, Қайырлы күн! Қалыныз қалай? не шештініз?"
+  },
+  {
+    "id": 112011,
+    "create_time": "2025-11-28T11:16:48.734Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия 10-17 дейин"
+  },
+  {
+    "id": 112323,
+    "create_time": "2025-11-28T12:09:11.219Z",
+    "author_type": "client",
+    "sent_content": "Аа, жарайды"
+  },
+  {
+    "id": 112325,
+    "create_time": "2025-11-28T12:09:22.737Z",
+    "author_type": "client",
+    "sent_content": "Үлгермесек ертең келемін"
+  },
+  {
+    "id": 111881,
+    "create_time": "2025-11-28T10:51:22.566Z",
+    "author_type": "client",
+    "sent_content": "Мен Астанаға келдім, барлығы күшінде ме?"
+  },
+  {
+    "id": 111915,
+    "create_time": "2025-11-28T10:58:59.223Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "өзініз қалайсыз?"
+  },
+  {
+    "id": 111916,
+    "create_time": "2025-11-28T10:59:23.532Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия әрине"
+  },
+  {
+    "id": 111919,
+    "create_time": "2025-11-28T11:00:00.027Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "бүгін келесіз ба?"
+  },
+  {
+    "id": 111960,
+    "create_time": "2025-11-28T11:11:18.831Z",
+    "author_type": "client",
+    "sent_content": "Шүкір, жақсы"
+  },
+  {
+    "id": 111980,
+    "create_time": "2025-11-28T11:13:21.287Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Түсіндім, қашан келе аласыз?"
+  },
+  {
+    "id": 116247,
+    "create_time": "2025-11-29T12:52:47.170Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 116253,
+    "create_time": "2025-11-29T12:53:06.639Z",
+    "author_type": "client",
+    "sent_content": "ИП Hecz MP"
+  },
+  {
+    "id": 116256,
+    "create_time": "2025-11-29T12:53:17.842Z",
+    "author_type": "client",
+    "sent_content": "ИИН: 970224300306"
+  },
+  {
+    "id": 116270,
+    "create_time": "2025-11-29T12:54:19.194Z",
+    "author_type": "client",
+    "sent_content": "6733"
+  },
+  {
+    "id": 116278,
+    "create_time": "2025-11-29T12:55:00.126Z",
+    "author_type": "client",
+    "sent_content": "👍"
+  },
+  {
+    "id": 116279,
+    "create_time": "2025-11-29T12:55:03.707Z",
+    "author_type": "client",
+    "sent_content": "Рақмет!"
+  },
+  {
+    "id": 158814,
+    "create_time": "2025-12-12T12:06:46.775Z",
+    "author_type": "client",
+    "sent_content": "Хабарласа алмай жатыр едім?"
+  },
+  {
+    "id": 159762,
+    "create_time": "2025-12-12T14:06:41.652Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте! \nПросим Вас обратиться в техническую поддержку:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77003007300\nИли можете сразу написать по WhatsApp по ссылке: https://wa.me/77003007300\n\nСәлеметсіз бе!\nТехникалық қолдауға хабарласуыңызды өтінеміз:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77003007300\nНемесе мына сілтеме арқылы WhatsApp-қа тікелей жаза аласыз: https://wa.me/77003007300"
+  },
+  {
+    "id": 206208,
+    "create_time": "2025-12-29T12:10:07.740Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 246543,
+    "create_time": "2026-01-12T12:05:04.465Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте, также отправьте документы ИП Аружан,удостоверение личности, справка о наличии счета с каспи, и чек \nТолько программу возврат?"
+  },
+  {
+    "id": 246557,
+    "create_time": "2026-01-12T12:06:01.015Z",
+    "author_type": "client",
+    "sent_content": "Да, только программу"
+  },
+  {
+    "id": 249882,
+    "create_time": "2026-01-13T10:18:11.759Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "здравствуйте, отправьте чек и заявление"
+  },
+  {
+    "id": 92666,
+    "create_time": "2025-11-24T15:43:47.291Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 92667,
+    "create_time": "2025-11-24T15:43:49.202Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 84868,
+    "create_time": "2025-11-21T00:01:10.212Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! я хочу узнать подробнее про \"Комплект стандарт+\""
+  },
+  {
+    "id": 84869,
+    "create_time": "2025-11-21T00:01:27.287Z",
+    "author_type": "ai",
+    "sent_content": "Комплект \"Стандарт+\" включает в себя POS-моноблок, принтер чеков, сканер и денежный ящик. Он полностью совместим с Wipon и представляет собой готовое место кассира «из коробки»."
+  },
+  {
+    "id": 84870,
+    "create_time": "2025-11-21T00:01:29.501Z",
+    "author_type": "ai",
+    "sent_content": "У вас есть опыт работы с подобными системами или интеграциями?"
+  },
+  {
+    "id": 93071,
+    "create_time": "2025-11-24T16:27:26.409Z",
+    "author_type": "client",
+    "sent_content": "Иә, әрине"
+  },
+  {
+    "id": 111874,
+    "create_time": "2025-11-28T10:50:46.491Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 111876,
+    "create_time": "2025-11-28T10:50:51.087Z",
+    "author_type": "client",
+    "sent_content": "Қалыңыз қалай?"
+  },
+  {
+    "id": 111913,
+    "create_time": "2025-11-28T10:58:43.112Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қайырлы күн, Айдос! жақсы рахмет"
+  },
+  {
+    "id": 111914,
+    "create_time": "2025-11-28T10:58:45.725Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ә"
+  },
+  {
+    "id": 116059,
+    "create_time": "2025-11-29T12:11:10.365Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 116060,
+    "create_time": "2025-11-29T12:11:15.609Z",
+    "author_type": "client",
+    "sent_content": "Жұмыстасыз ба?"
+  },
+  {
+    "id": 116061,
+    "create_time": "2025-11-29T12:11:21.955Z",
+    "author_type": "client",
+    "sent_content": "Біз келе жатырмыз"
+  },
+  {
+    "id": 158460,
+    "create_time": "2025-12-12T11:23:32.209Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 158470,
+    "create_time": "2025-12-12T11:24:09.820Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Саламатсыз ба"
+  },
+  {
+    "id": 206214,
+    "create_time": "2025-12-29T12:10:23.158Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе, мен Айбота, Wipon сатулар бойынша онлайн-ассистентімін. Қалай көмектесе аламын?"
+  },
+  {
+    "id": 206223,
+    "create_time": "2025-12-29T12:11:01.949Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте!\nПросим Вас обратиться в техническую поддержку:\n📞 Тел.: +77470956496\n💬 WhatsApp: +77003007300\nИли можете сразу написать по WhatsApp по ссылке: https://wa.me/77003007300\n\nСәлеметсіз бе!\nТехникалық қолдауға хабарласуыңызды өтінеміз:\n📞 Тел.: +77470956496\n💬 WhatsApp: +77003007300\nНемесе мына сілтеме арқылы WhatsApp-қа тікелей жаза аласыз: https://wa.me/77003007300"
+  },
+  {
+    "id": 206242,
+    "create_time": "2025-12-29T12:11:56.463Z",
+    "author_type": "client",
+    "sent_content": "Қондыруға ертеңге айтайын деп едім"
+  },
+  {
+    "id": 206244,
+    "create_time": "2025-12-29T12:12:01.259Z",
+    "author_type": "client",
+    "sent_content": "Жошы Хан 20"
+  },
+  {
+    "id": 206246,
+    "create_time": "2025-12-29T12:12:05.787Z",
+    "author_type": "client",
+    "sent_content": "PitScoff"
+  },
+  {
+    "id": 250288,
+    "create_time": "2026-01-13T11:33:13.501Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте!"
+  },
+  {
+    "id": 250289,
+    "create_time": "2026-01-13T11:33:15.125Z",
+    "author_type": "client",
+    "sent_content": "Налом оплатил"
+  },
+  {
+    "id": 250335,
+    "create_time": "2026-01-13T11:52:25.173Z",
+    "author_type": "client",
+    "sent_content": "Все ?"
+  },
+  {
+    "id": 250391,
+    "create_time": "2026-01-13T12:10:21.631Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "да все спасибо"
+  },
+  {
+    "id": 254531,
+    "create_time": "2026-01-19T14:33:06.092Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте, возврат на рассмотрении у Руководителя"
+  },
+  {
+    "id": 92695,
+    "create_time": "2025-11-24T15:46:24.778Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 92705,
+    "create_time": "2025-11-24T15:47:51.084Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хабарласасызгой, мен байланыстамин)"
+  },
+  {
+    "id": 86846,
+    "create_time": "2025-11-21T15:14:34.871Z",
+    "author_type": "client",
+    "sent_content": "Біз келе жатырмыз"
+  },
+  {
+    "id": 86860,
+    "create_time": "2025-11-21T15:15:26.682Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "жаксы, мен  офистамын)"
+  },
+  {
+    "id": 112006,
+    "create_time": "2025-11-28T11:16:12.535Z",
+    "author_type": "client",
+    "sent_content": "Демалыс күндері жұмыс жасайсыздар ма?"
+  },
+  {
+    "id": 112352,
+    "create_time": "2025-11-28T12:11:49.919Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жақсы, Бізге жолға шығайын деп жатқан кезде хабар беріңіз)"
+  },
+  {
+    "id": 111963,
+    "create_time": "2025-11-28T11:12:00.820Z",
+    "author_type": "client",
+    "sent_content": "Бүгін үлгермей қалатындай болып тұрмын."
+  },
+  {
+    "id": 121081,
+    "create_time": "2025-12-01T11:52:22.527Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе! Керей Жәнібек Хандар 20, НП 32. Шамамен күнін 15.12.2025 күніне ыңғайластыра берсеңіз."
+  },
+  {
+    "id": 158171,
+    "create_time": "2025-12-12T10:47:58.757Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе!"
+  },
+  {
+    "id": 158175,
+    "create_time": "2025-12-12T10:48:08.419Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе! Сізге қандай ақпарат қажет?"
+  },
+  {
+    "id": 158179,
+    "create_time": "2025-12-12T10:48:38.189Z",
+    "author_type": "client",
+    "sent_content": "Өткен жолғы пописканы басқа ИП ға тіркейінші деп едім"
+  },
+  {
+    "id": 158180,
+    "create_time": "2025-12-12T10:48:49.069Z",
+    "author_type": "ai",
+    "sent_content": "Кешіріңіз, бірақ мен пописка немесе тіркеу сияқты әрекеттерді жүзеге асыра алмаймын. Сізге қандай көмек көрсетуге болады? Мүмкін, мен сіздің бизнесіңізге қатысты ақпарат бере алам?"
+  }
+]

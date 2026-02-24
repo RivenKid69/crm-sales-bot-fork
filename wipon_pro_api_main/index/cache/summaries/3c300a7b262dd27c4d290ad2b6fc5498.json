@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/set-item-and-product-relation.use-case.ts:import:typeorm",
+  "summary": "Этот код создает сервис, который обновляет связь между товаром и продуктом в базе данных. Использует TypeORM для работы с репозиторием и NestJS для инъекции зависимостей.",
+  "purpose": "Обновление связи между элементами (items) и продуктами (products) в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Обновление записи в базе данных по ID",
+    "Использование TypeORM репозитория",
+    "Поддержка инъекции зависимостей через NestJS",
+    "Возвращает результат обновления",
+    "Работает с сущностями через ORM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1141,
+  "output_tokens": 597,
+  "model": "qwen3:14b",
+  "code_hash": "f6e91ad712b2bb73"
+}

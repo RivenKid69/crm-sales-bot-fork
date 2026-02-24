@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/domain/cashboxes.service.ts:import:../../users/domain/use-cases/find-user-by-phone.use-case",
+  "summary": "Этот код представляет сервис, который отправляет уведомления и коды авторизации пользователям через push-сообщения. Он использует DTO для передачи данных и внешние сервисы для поиска пользователей и отправки сообщений.",
+  "purpose": "Отправка кодов авторизации и сообщений пользователям через push-уведомления",
+  "domain": "утилиты, push-уведомления, авторизация",
+  "key_behaviors": [
+    "Отправка кода авторизации через push-сообщение",
+    "Поиск пользователя по номеру телефона",
+    "Отправка произвольных сообщений через push-уведомления",
+    "Обработка ошибок, например, если пользователь не найден",
+    "Возврат статуса успешной или неуспешной отправки"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "PushService",
+    "NotFoundException",
+    "PushAuthcodeDto",
+    "PushMessageDto"
+  ],
+  "input_tokens": 1322,
+  "output_tokens": 750,
+  "model": "qwen3:14b",
+  "code_hash": "152af5f651eacbf3"
+}

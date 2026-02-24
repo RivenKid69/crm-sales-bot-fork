@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/update-user-accounts-ledger.use-case.ts:import:typeorm",
+  "summary": "Этот код создает сервис, который обновляет информацию о счетах пользователя. Он использует TypeORM для работы с базой данных и может работать как с обычными запросами, так и с транзакциями.",
+  "purpose": "Обновление данных о счетах пользователя в системе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Обновление данных в базе через TypeORM",
+    "Поддержка транзакций для безопасного изменения данных",
+    "Использование репозиториев для работы с базой данных",
+    "Работа с объектами DAO для маппинга данных",
+    "Использование инъекции зависимостей для управления репозиториями"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1180,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "18189eb693ee96ff"
+}

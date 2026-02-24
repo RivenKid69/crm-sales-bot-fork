@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/domain/transactions.service.ts:import:../../users/domain/use-cases/find-user-by-id.use-case",
+  "summary": "Этот код импортирует класс TransactionsService, который управляет транзакциями пользователей, используя кейсы для поиска счетов, обработки платежей и взаимодействия с другими сервисами, такими как billing и push.",
+  "purpose": "Обеспечивает обработку транзакций, проверку пользователей и взаимодействие с другими сервисами в приложении.",
+  "domain": "база данных, api, платежи",
+  "key_behaviors": [
+    "Поиск транзакций пользователя",
+    "Обработка перевода между пользователями",
+    "Проверка наличия счета у пользователя",
+    "Интеграция с сервисами billing и push",
+    "Использование кейсов для работы с подписками и балансами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "nestjs-i18n"
+  ],
+  "input_tokens": 2490,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "759ff281f4fed029"
+}

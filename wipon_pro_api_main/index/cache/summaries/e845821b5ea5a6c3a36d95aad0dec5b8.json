@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:method:StoresService://   ? (options = { where: { payer_ema",
+  "summary": "Этот код представляет сервис для работы с магазинами, включая проверку лицензии, получение информации о магазине пользователя и обновление данных. Использует репозитории, use-cases и DTO для взаимодействия с базой данных и бизнес-логикой.",
+  "purpose": "Обеспечивает функциональность для управления магазинами, проверки лицензий и подписок в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Проверка лицензии магазина",
+    "Поиск магазина по пользователю",
+    "Обновление данных магазина",
+    "Использование валидации DTO",
+    "Интеграция с другими сервисами (регионы, подписки)"
+  ],
+  "dependencies_used": [
+    "StoresRepository",
+    "FindRegionByNameUseCase",
+    "CountUsersActiveSubscriptionUseCase",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3076,
+  "output_tokens": 757,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

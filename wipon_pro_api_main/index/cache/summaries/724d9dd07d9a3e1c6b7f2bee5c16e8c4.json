@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/presenter/devices.controller.ts:method:DevicesController:assignDevice",
+  "summary": "Этот контроллер обрабатывает запросы для назначения устройств пользователям и проверки их состояния. Использует аутентификацию, валидацию данных и документацию Swagger.",
+  "purpose": "Позволяет управлять привязкой устройств к пользователям в приложении с защитой от несанкционированного доступа",
+  "domain": "Управление устройствами",
+  "key_behaviors": [
+    "Назначение кода устройства пользователю",
+    "Проверка состояния устройства",
+    "Аутентификация пользователей",
+    "Валидация входных данных",
+    "Генерация API-документации"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "ValidationPipe",
+    "DevicesService"
+  ],
+  "input_tokens": 1825,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "3c3d7e78c2486ad4"
+}

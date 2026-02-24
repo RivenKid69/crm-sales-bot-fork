@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/make-refund.dto.ts:file",
+  "summary": "Этот код создает DTO (объект для передачи данных) для обработки запросов на возврат средств. Он проверяет, что поля 'type' и 'id' заполнены, являются числами и соответствуют разрешенным значениям.",
+  "purpose": "Обеспечивает валидацию данных при возврате подписки через API",
+  "domain": "API, обработка платежей",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Ограничение значений type по конфигурации",
+    "Генерация документации для Swagger",
+    "Проверка числовых значений",
+    "Использование типов для подписок"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1292,
+  "output_tokens": 697,
+  "model": "qwen3:14b",
+  "code_hash": "5ccce823d74ad731"
+}

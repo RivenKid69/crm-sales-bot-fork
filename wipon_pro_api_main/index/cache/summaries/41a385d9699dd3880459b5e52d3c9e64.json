@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/find-users-auth-code.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервисный класс, который использует репозиторий для поиска кода аутентификации пользователя. Класс помечен как инъектируемый, чтобы его можно было использовать в других частях приложения.",
+  "purpose": "Позволяет находить коды аутентификации пользователей для проверки их подлинности",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Использует репозиторий для работы с данными",
+    "Принимает userId и authCode в качестве параметров",
+    "Возвращает результат поиска из репозитория",
+    "Реализует паттерн use case",
+    "Поддерживает инъекцию зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1141,
+  "output_tokens": 680,
+  "model": "qwen3:14b",
+  "code_hash": "c5c3597a1bf68494"
+}

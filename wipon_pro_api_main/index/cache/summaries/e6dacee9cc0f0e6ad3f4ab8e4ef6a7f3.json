@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/xml.ts:file",
+  "summary": "Этот код создает XML из данных. Использует библиотеку fast-xml-parser для преобразования объектов в XML-строку. Функция array2xml пока не реализована, но предназначена для работы с массивами",
+  "purpose": "Преобразование данных в XML-формат для экспорта или передачи по API",
+  "domain": "обработка данных, API",
+  "key_behaviors": [
+    "Конвертация объектов в XML",
+    "Поддержка атрибутов в XML",
+    "Работа с массивами (в разработке)",
+    "Поддержка разных кодировок",
+    "Обработка вложенных структур данных"
+  ],
+  "dependencies_used": [
+    "fast-xml-parser"
+  ],
+  "input_tokens": 1756,
+  "output_tokens": 606,
+  "model": "qwen3:14b",
+  "code_hash": "bc056e2148c96762"
+}

@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:import:../dto/show-active-subscription.dto",
+  "summary": "Этот код - контроллер NestJS, который обрабатывает различные операции с подписками, такие как создание, просмотр, покупка и возврат. Использует DTO для валидации данных и гварды для проверки прав доступа.",
+  "purpose": "Обеспечивает API для управления подписками пользователей в системе",
+  "domain": "подписки, авторизация, API",
+  "key_behaviors": [
+    "Создание новой подписки через POST /subscription",
+    "Получение активной подписки по телефону",
+    "Покупка подписки с аутентификацией",
+    "Возврат подписки в течение 14 дней",
+    "Получение всех подписок пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "SubscriptionsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor",
+    "UserDao"
+  ],
+  "input_tokens": 2726,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

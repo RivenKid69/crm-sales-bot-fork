@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:property:BfAuthenticityService:kgdWiponUrl",
+  "summary": "kgdWiponUrl - это свойство, хранящее URL-адрес внешнего API-сервиса (https://kgd.router.wiponapp.com:5010), который используется для отправки запросов в методе sendBfRequest. Оно представляет собой константную ссылку на внешний ресурс, который используется для взаимодействия с удалённой системой.",
+  "purpose": "Используется для отправки HTTP-запросов на внешний API-сервис, чтобы получить данные о продуктах или проверить их подлинность.",
+  "domain": "api",
+  "key_behaviors": [
+    "Хранит URL-адрес внешнего API-сервиса",
+    "Используется для отправки HTTP-запросов",
+    "Позволяет взаимодействовать с удалённой системой",
+    "Помогает получать данные о продуктах",
+    "Используется в методе sendBfRequest"
+  ],
+  "dependencies_used": [
+    "@nestjs/axios",
+    "cache-manager"
+  ],
+  "input_tokens": 2844,
+  "output_tokens": 767,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/config/redis.config.ts:file",
+  "summary": "Этот файл настраивает подключение к Redis, используя переменные окружения. Он загружает хост и порт из .env файла и делает их доступными для других частей приложения.",
+  "purpose": "Упрощает настройку подключения к Redis без жесткого кодирования параметров",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Загружает переменные окружения через dotenv",
+    "Использует REDIS_HOST и REDIS_PORT из .env",
+    "Экспортирует настройки для использования в других частях приложения"
+  ],
+  "dependencies_used": [
+    "dotenv"
+  ],
+  "input_tokens": 928,
+  "output_tokens": 675,
+  "model": "qwen3:14b",
+  "code_hash": "d424cd9f619b6692"
+}

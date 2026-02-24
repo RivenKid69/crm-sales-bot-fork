@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/ugds.module.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает модуль NestJS, который подключает TypeORM для работы с базой данных. Он связывает репозиторий данных, сервис логики и контроллер для обработки HTTP-запросов.",
+  "purpose": "Организует работу с данными UGD через TypeORM в приложении NestJS",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подключает TypeORM к модулю",
+    "Связывает репозиторий данных с сервисом",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Экспортирует use-case для других модулей",
+    "Разделяет слои: данные, логика, интерфейс"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1266,
+  "output_tokens": 708,
+  "model": "qwen3:14b",
+  "code_hash": "aade1eae54815877"
+}

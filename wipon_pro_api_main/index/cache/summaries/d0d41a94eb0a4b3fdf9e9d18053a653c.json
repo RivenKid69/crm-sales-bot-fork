@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/dto/push-authcode.dto.ts:property:PushAuthcodeDto:auth_code",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для валидации данных, связанных с отправкой кода подтверждения на телефон. Он проверяет, что телефонный номер соответствует формату Казахстана, а код подтверждения не пустой и является строкой.",
+  "purpose": "Обеспечивает корректную валидацию данных при отправке кода подтверждения пользователю",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка формата телефонного номера для Казахстана",
+    "Обязательное заполнение полей",
+    "Проверка типов данных"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1019,
+  "output_tokens": 690,
+  "model": "qwen3:14b",
+  "code_hash": "4b41c1b2998addd3"
+}

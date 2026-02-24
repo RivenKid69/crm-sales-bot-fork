@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/dto/post-callback.dto.ts:import:class-validator",
+  "summary": "Этот код импортирует декораторы из библиотеки class-validator для проверки данных в классе DTO. Каждый декоратор проверяет тип и формат свойства класса, например, @IsInt убедится, что id является числом, а @IsPhoneNumber проверит формат номера телефона.",
+  "purpose": "Обеспечивает валидацию входных данных в API для предотвращения ошибок и обеспечения целостности данных",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка обязательных полей (@IsNotEmpty)",
+    "Валидация типов данных (@IsInt, @IsString)",
+    "Проверка формата телефонного номера (@IsPhoneNumber)",
+    "Разрешение опциональных полей (@IsOptional)",
+    "Хеширование данных (sha1 без валидации)"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1208,
+  "output_tokens": 660,
+  "model": "qwen3:14b",
+  "code_hash": "49e3af4a6401e910"
+}

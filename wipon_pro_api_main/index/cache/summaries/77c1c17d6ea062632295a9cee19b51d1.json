@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/item-data-to-response.ts:function:appendProductCodeToItem",
+  "summary": "Функция форматирует данные товара для ответа, скрывает часть кода товара звёздочками и использует серийный номер как запасной вариант. Она работает с объектами товара и обрабатывает разные случаи отсутствия данных.",
+  "purpose": "Подготовить данные о товаре для вывода в API-ответах, скрывая конфиденциальную информацию",
+  "domain": "API, форматирование данных",
+  "key_behaviors": [
+    "Форматирует данные товара в удобный для API вид",
+    "Маскирует часть кода товара (например, 4 последних символа)",
+    "Использует серийный номер, если код товара отсутствует",
+    "Возвращает null, если оба поля отсутствуют",
+    "Использует вспомогательные функции для обработки данных"
+  ],
+  "dependencies_used": [
+    "ItemDao",
+    "getItemsStatusAttribute",
+    "formatProductDataToResponse",
+    "substr"
+  ],
+  "input_tokens": 1571,
+  "output_tokens": 760,
+  "model": "qwen3:14b",
+  "code_hash": "6740c87ea2c4e889"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../dto/login.dto",
+  "summary": "Этот код импортирует необходимые зависимости для реализации сервиса аутентификации, включая DTO, use-cases, сервисы и конфигурации. Он используется для обработки входа пользователей, управления токенами и кодами подтверждения.",
+  "purpose": "Обеспечивает функционал аутентификации и авторизации пользователей через телефон и коды подтверждения",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Использует DTO для валидации входных данных",
+    "Интегрируется с use-cases для работы с пользователями и кодами",
+    "Работает с сервисами для отправки СМС и управления токенами",
+    "Использует конфигурации для настройки аутентификации",
+    "Поддерживает создание и проверку кодов подтверждения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LoginDto",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService",
+    "authConfig"
+  ],
+  "input_tokens": 2702,
+  "output_tokens": 783,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

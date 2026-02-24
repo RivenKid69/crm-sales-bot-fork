@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/checks.module.ts:import:../../common/services/doomguy/doomguy.service",
+  "summary": "Этот код создает модуль NestJS для обработки проверок (checks). Он подключает базу данных, кэш Redis, HTTP-запросы и другие модули, необходимые для работы с проверками, подписками и пользователями.",
+  "purpose": "Обеспечивает интеграцию проверок с базой данных, кэшированием и другими сервисами приложения",
+  "domain": "приложения",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрирует Redis для кэширования данных",
+    "Подключает модули подписок и пользователей",
+    "Использует HTTP-запросы для внешних сервисов",
+    "Работает с репозиторием проверок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1685,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "1a6069e313ede4d4"
+}

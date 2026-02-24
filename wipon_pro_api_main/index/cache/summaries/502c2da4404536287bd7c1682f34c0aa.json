@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/device.dao.ts:property:DeviceDao:updated_at",
+  "summary": "Свойство 'updated_at' автоматически сохраняет дату и время последнего изменения записи устройства в базе данных. Оно обновляется каждый раз, когда объект DeviceDao сохраняется в БД",
+  "purpose": "Отслеживание времени последнего изменения данных устройства",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое обновление времени при изменении записи",
+    "Хранение даты и времени в формате Date",
+    "Синхронизация с базой данных без ручного кодирования"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@UpdateDateColumn"
+  ],
+  "input_tokens": 1202,
+  "output_tokens": 510,
+  "model": "qwen3:14b",
+  "code_hash": "1b408f28068c7044"
+}

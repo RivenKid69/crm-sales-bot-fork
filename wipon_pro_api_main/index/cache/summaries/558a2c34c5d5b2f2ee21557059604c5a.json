@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:@nestjs/common",
+  "summary": "Этот код представляет собой сервис, который работает со складами, проверяет лицензии, получает данные о складах пользователей и обновляет информацию. Использует валидацию данных и взаимодействует с базой данных через репозитории и use-cases.",
+  "purpose": "Управление данными о складах, проверка активных подписок и связь с регионами/ДГД в приложении",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Проверка лицензии склада",
+    "Получение данных о складе пользователя",
+    "Валидация входных данных",
+    "Поиск регионов и ДГД",
+    "Проверка активных подписок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3073,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

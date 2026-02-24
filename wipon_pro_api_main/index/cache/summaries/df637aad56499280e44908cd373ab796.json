@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/subscriptions.module.ts:import:../../common/services/push/push.producer.service",
+  "summary": "Этот модуль объединяет репозитории, сервисы и контроллеры для работы с подписками пользователей. Он использует TypeORM для взаимодействия с базой данных, Bull для фоновых задач и интегрируется с другими модулями, такими как пользователи, устройства и аккаунты.",
+  "purpose": "Обеспечивает функциональность для управления подписками, уведомлениями и взаимодействием с внешними сервисами.",
+  "domain": "управление подписками, уведомления, интеграции",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с модулями пользователей, устройств и аккаунтов",
+    "Обрабатывает активацию и поиск подписок",
+    "Использует Bull для фоновых задач",
+    "Использует внешние сервисы, такие как push и billing"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/bull",
+    "@nestjs/axios",
+    "UsersModule",
+    "StoresModule",
+    "AccountsModule",
+    "DevicesModule"
+  ],
+  "input_tokens": 1825,
+  "output_tokens": 799,
+  "model": "qwen3:14b",
+  "code_hash": "1dda264d8725753e"
+}

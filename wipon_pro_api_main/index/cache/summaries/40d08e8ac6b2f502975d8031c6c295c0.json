@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/presenter/auth.controller.ts:method:AuthController:auth",
+  "summary": "Этот код создает контроллер для обработки входа в систему. Он принимает данные от пользователя, проверяет их и отправляет запрос в сервис для аутентификации.",
+  "purpose": "Обеспечивает возможность входа в систему через API, проверяя введенные данные и возвращая результат аутентификации.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Принимает данные для входа от пользователя",
+    "Проверяет данные с помощью ValidationPipe",
+    "Использует TransformInterceptor для преобразования ответа",
+    "Возвращает результат аутентификации из AuthService",
+    "Работает с DTO для структурирования входных данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthService",
+    "LoginDto",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1212,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "22ed3babc56c6767"
+}

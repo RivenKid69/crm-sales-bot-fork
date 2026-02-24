@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.module.ts:import:../../../config/redis.config",
+  "summary": "Этот код импортирует модуль NestJS, настраивает Redis для кэширования, подключает FCM и модуль пользователей, а также использует сервисы для выполнения задач, таких как отправка уведомлений и связь лицензий с хранилищами.",
+  "purpose": "Обеспечивает выполнение фоновых задач с использованием Redis и интеграцией с внешними сервисами",
+  "domain": "задачи, кэширование, уведомления, интеграция",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Интегрируется с FCM для отправки уведомлений",
+    "Подключает модуль пользователей",
+    "Выполняет фоновые задачи, такие как отправка уведомлений",
+    "Использует HttpModule для HTTP-запросов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store",
+    "FcmModule",
+    "UsersModule"
+  ],
+  "input_tokens": 1371,
+  "output_tokens": 780,
+  "model": "qwen3:14b",
+  "code_hash": "174b7772bcb71f6a"
+}

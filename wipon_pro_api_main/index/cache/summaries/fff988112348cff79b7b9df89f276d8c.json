@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/feedbacks.module.ts:import:../../common/services/doomguy/doomguy.service",
+  "summary": "Этот код создает модуль для работы с отзывами пользователей. Он подключает контроллер для обработки запросов, сервис для логики и репозиторий для работы с базой данных. Также использует внешние модули для HTTP-запросов и пользовательских данных.",
+  "purpose": "Организует работу с отзывами через API, базу данных и интеграцию с другими частями приложения",
+  "domain": "обратная связь пользователей, API, база данных",
+  "key_behaviors": [
+    "Обработка HTTP-запросов от пользователей",
+    "Работа с базой данных через TypeORM",
+    "Использование внешнего HTTP-клиента",
+    "Интеграция с модулем пользователей",
+    "Использование общего сервиса Doomguy"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "UsersModule"
+  ],
+  "input_tokens": 1299,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "9ba0411130d12230"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/subscriptions.module.ts:import:./domain/use-cases/find-users-active-subscription.use-case",
+  "summary": "Этот код настраивает модуль подписок в NestJS, подключая репозитории, сервисы, контроллеры и другие модули. Он использует TypeORM для работы с базой данных и Bull для обработки задач.",
+  "purpose": "Управление подписками пользователей, включая активацию, поиск и подсчет активных подписок",
+  "domain": "подписки, платежи, уведомления",
+  "key_behaviors": [
+    "Поиск активных подписок пользователя",
+    "Активация подписки",
+    "Подсчет пользователей с активными подписками",
+    "Интеграция с сервисами уведомлений",
+    "Работа с базой данных через TypeORM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/bull",
+    "@nestjs/axios",
+    "typeorm"
+  ],
+  "input_tokens": 1887,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "1dda264d8725753e"
+}

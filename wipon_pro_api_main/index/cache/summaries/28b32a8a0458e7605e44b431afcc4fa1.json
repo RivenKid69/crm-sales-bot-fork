@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/subscription/subscription.service.ts:class:SubscriptionService",
+  "summary": "Это пустой сервисный класс в NestJS, помеченный как @Injectable. Он готов к использованию в других частях приложения, но пока не содержит никакой логики.",
+  "purpose": "Создаёт структуру для реализации функционала подписок в приложении",
+  "domain": "api",
+  "key_behaviors": [
+    "Помечается как injectable для использования в других компонентах",
+    "Служит основой для добавления логики подписок",
+    "Может быть внедрён в контроллеры или другие сервисы"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 898,
+  "output_tokens": 670,
+  "model": "qwen3:14b",
+  "code_hash": "35b0e3cd8d042afe"
+}

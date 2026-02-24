@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/data/products.repository.ts:import:../../../common/dao/product.dao",
+  "summary": "Этот код создает репозиторий для работы с продуктами. Он ищет продукт по имени, организации и типу, и если его нет, создает новый. Это помогает избежать дублирования данных.",
+  "purpose": "Упрощает работу с продуктами в базе данных, обеспечивая уникальность записей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет продукт по нескольким критериям",
+    "Создает продукт, если он не найден",
+    "Использует TypeORM для работы с базой данных",
+    "Реализует паттерн репозитория для управления данными"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1110,
+  "output_tokens": 697,
+  "model": "qwen3:14b",
+  "code_hash": "79952baae1eb8eed"
+}

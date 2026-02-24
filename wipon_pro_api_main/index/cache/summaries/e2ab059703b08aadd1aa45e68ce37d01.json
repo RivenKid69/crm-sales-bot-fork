@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/count-item-by-excise-code.use-case.ts:class:CountItemByExciseCodeUseCase",
+  "summary": "Этот класс используется для подсчёта количества элементов в базе данных по определённому типу и коду. Он получает данные через репозиторий и возвращает результат в виде числа.",
+  "purpose": "Позволяет эффективно получать количество элементов с определённым кодом, например, для аналитики или фильтрации данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подсчитывает элементы по типу и коду",
+    "Использует репозиторий для доступа к данным",
+    "Работает асинхронно",
+    "Инжектит зависимости через NestJS",
+    "Использует TypeORM для взаимодействия с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "ItemsRepository"
+  ],
+  "input_tokens": 1137,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "1c0b1b4c7ac2bdf5"
+}

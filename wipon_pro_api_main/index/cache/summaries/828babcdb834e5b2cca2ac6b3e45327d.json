@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transfer.dto.ts:property:PostTransferDto:to_user_id",
+  "summary": "Этот класс проверяет данные передачи, убедясь, что идентификаторы пользователей и сумма являются числами, а дополнительная информация (если есть) — корректным JSON",
+  "purpose": "Обеспечивает валидацию данных при передаче средств между пользователями",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка, что from_user_id и to_user_id — числа",
+    "Обязательная проверка суммы перевода",
+    "Дополнительная информация может быть JSON-строкой",
+    "Валидация обязательных полей",
+    "Использование кастомной проверки чисел"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsNumeric (из common/validations)"
+  ],
+  "input_tokens": 1232,
+  "output_tokens": 686,
+  "model": "qwen3:14b",
+  "code_hash": "5ea31e4dc0d7d108"
+}

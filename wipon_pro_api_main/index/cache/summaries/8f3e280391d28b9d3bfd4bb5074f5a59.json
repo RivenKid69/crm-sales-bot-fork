@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/guards/check-subscription.guard.ts:method:CheckSubscriptionGuard:canActivate",
+  "summary": "Этот код проверяет, активна ли подписка пользователя перед разрешением доступа к защищённому ресурсу. Если пользователя нет или подписка не активна, выбрасываются ошибки.",
+  "purpose": "Ограничивает доступ к функционалу только пользователям с активной подпиской",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие аутентифицированного пользователя",
+    "Использует use-case для проверки статуса подписки",
+    "Возвращает ошибку 401 при отсутствии пользователя",
+    "Возвращает ошибку 402, если подписка не активна",
+    "Работает как защитный guard в NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "http2"
+  ],
+  "input_tokens": 1270,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "a85a31a16ed2f2ea"
+}

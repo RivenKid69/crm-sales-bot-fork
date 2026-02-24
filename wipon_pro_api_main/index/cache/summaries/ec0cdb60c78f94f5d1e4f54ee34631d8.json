@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/presenter/accounts.controller.ts:class:AccountsController",
+  "summary": "Этот класс - контроллер, который обрабатывает HTTP-запросы для получения информации об аккаунтах пользователей. Он требует аутентификации и использует интерцептор для преобразования данных.",
+  "purpose": "Позволяет безопасно получать данные аккаунтов авторизованных пользователей через API",
+  "domain": "api",
+  "key_behaviors": [
+    "Требует аутентификации через JWT токен",
+    "Использует интерцептор для форматирования ответа",
+    "Документирует API через Swagger",
+    "Получает данные через AccountsService",
+    "Работает с UserDao для получения информации о пользователе"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AccountsService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1321,
+  "output_tokens": 636,
+  "model": "qwen3:14b",
+  "code_hash": "60d205636fc816fd"
+}

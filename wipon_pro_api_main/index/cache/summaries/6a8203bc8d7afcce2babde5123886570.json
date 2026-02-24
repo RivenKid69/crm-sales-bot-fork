@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/guard/auth.guard.ts:method:AuthGuard:validateUser",
+  "summary": "Этот код проверяет, авторизован ли пользователь, используя токен из заголовка запроса. Если токен валиден, пользователь добавляется в объект запроса, и доступ разрешается.",
+  "purpose": "Защищает определённые маршруты, позволяя доступ только авторизованным пользователям.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие заголовка Authorization",
+    "Извлекает токен из заголовка",
+    "Использует use-case для поиска пользователя по токену",
+    "Добавляет пользователя в объект запроса, если он найден",
+    "Вызывает ошибку, если токен отсутствует или недействителен"
+  ],
+  "dependencies_used": [
+    "FindUserByTokenUseCase",
+    "UnauthorizedException",
+    "Request из express"
+  ],
+  "input_tokens": 1174,
+  "output_tokens": 728,
+  "model": "qwen3:14b",
+  "code_hash": "aa5f49446dc9da5b"
+}

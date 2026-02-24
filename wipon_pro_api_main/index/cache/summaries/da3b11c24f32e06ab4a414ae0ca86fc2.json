@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/check.dao.ts:property:CheckDao:longitude",
+  "summary": "Этот код описывает свойство 'longitude' в сущности 'CheckDao', которое хранит долготу геолокационных данных. Оно имеет тип 'double precision' и используется для точного хранения числовых значений.",
+  "purpose": "Хранение точных геолокационных данных для проверки местоположения объекта.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранение числовых значений с высокой точностью",
+    "Использование в геолокационных данных",
+    "Интеграция с другими сущностями через TypeORM"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1180,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "11b70f1d672cf2b2"
+}

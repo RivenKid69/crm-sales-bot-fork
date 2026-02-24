@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/auth.module.ts:import:@nestjs/common",
+  "summary": "Этот код создает модуль авторизации, который использует сервисы и другие модули для обработки входа, управления пользователями, отправки SMS и интеграции с платежами. Он объединяет разные части приложения в единую систему авторизации.",
+  "purpose": "Создает централизованную систему авторизации с поддержкой множества функций",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Интеграция с модулем пользователей для управления аккаунтами",
+    "Использование сервиса для обработки платежей",
+    "Обработка SMS-кодов для подтверждения",
+    "Интеграция с модулями регионов, магазинов и других сущностей",
+    "Экспорт сервиса авторизации для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "UsersModule",
+    "DevicesModule",
+    "AuthCodesModule",
+    "SmsModule",
+    "AccountsModule",
+    "RegionsModule",
+    "DgdsModule",
+    "UgdsModule",
+    "StoresModule"
+  ],
+  "input_tokens": 1361,
+  "output_tokens": 797,
+  "model": "qwen3:14b",
+  "code_hash": "5ce99e3c2ac70170"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/sms.module.ts:import:../../common/services/doomguy/doomguy.service",
+  "summary": "Этот код создает модуль для работы со SMS. Он использует HTTP-запросы, внутренние сервисы и делает SmsService доступным другим частям приложения.",
+  "purpose": "Обеспечивает отправку SMS и интеграцию с внешними сервисами в проекте",
+  "domain": "SMS-коммуникации, утилиты",
+  "key_behaviors": [
+    "Отправка SMS через HTTP-запросы",
+    "Использование общего Doomguy-сервиса для дополнительной логики",
+    "Использование SmscService для взаимодействия с SMS-провайдером",
+    "Экспорт SmsService для использования в других модулях",
+    "Интеграция с контроллером для обработки HTTP-запросов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios"
+  ],
+  "input_tokens": 1124,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "431bdf552fddfd62"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/report.dao.ts:property:ReportDao:sticker_uri",
+  "summary": "Этот код определяет класс ReportDao, который представляет собой таблицу 'reports' в базе данных. Он содержит поля для хранения информации, такой как ID, URI изображений, временные метки и другие данные, связанные с отчетами.",
+  "purpose": "Используется для хранения и управления данными отчетов в базе данных с помощью TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание таблицы 'reports' в базе данных",
+    "Хранение уникального ID для каждого отчета",
+    "Отслеживание времени создания и обновления записей",
+    "Хранение URI изображений (стикеров и ярлыков)",
+    "Хранение дополнительных данных, таких как causer и gtin"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1269,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "b3a8280884d78226"
+}

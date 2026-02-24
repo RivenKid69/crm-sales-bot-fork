@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-users-all-devices-by-at.use-case.ts:import:../../data/devices.repository",
+  "summary": "Этот код создает сервис, который получает все устройства пользователя по типу приложения. Он использует репозиторий для доступа к базе данных и возвращает данные устройств в структурированном виде.",
+  "purpose": "Позволяет получать информацию о устройствах пользователя для отображения или управления в приложении",
+  "domain": "работа с данными, управление пользователями, управление устройствами",
+  "key_behaviors": [
+    "Получение устройств по ID пользователя и типу приложения",
+    "Использование репозитория для доступа к базе данных",
+    "Возврат данных в виде массива объектов DeviceDao",
+    "Инъекция зависимостей через NestJS",
+    "Асинхронное выполнение операции"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DevicesRepository",
+    "DeviceDao"
+  ],
+  "input_tokens": 1120,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "a74feb66414dd89d"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/feedbacks.module.ts:class:FeedbacksModule",
+  "summary": "Этот класс создает модуль в NestJS, который объединяет контроллер, сервис и репозиторий для работы с отзывами. Он использует TypeORM для взаимодействия с базой данных и подключает другие модули и сервисы.",
+  "purpose": "Модуль позволяет управлять отзывами пользователей, взаимодействуя с базой данных и другими частями приложения.",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "подключение к базе данных через TypeORM",
+    "использование внешнего сервиса Doomguy",
+    "интеграция с модулем пользователей",
+    "объединение контроллера и сервиса в один модуль",
+    "поддержка HTTP-запросов через HttpModule"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "UsersModule"
+  ],
+  "input_tokens": 1058,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "9ba0411130d12230"
+}

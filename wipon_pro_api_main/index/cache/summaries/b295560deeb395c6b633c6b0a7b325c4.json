@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:method:AuthService:constructor",
+  "summary": "Этот метод `login` в классе `AuthService` обрабатывает процесс входа пользователя в систему. Он ищет пользователя по номеру телефона, создает его, если он не найден, и проверяет код подтверждения для авторизации.",
+  "purpose": "Обеспечивает безопасный и удобный вход пользователя в систему через телефон и код подтверждения.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Ищет пользователя по номеру телефона",
+    "Создает пользователя, если он не найден",
+    "Проверяет код подтверждения",
+    "Использует сервисы для отправки SMS и работы с_billing",
+    "Управляет токенами и кодами авторизации"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "FindUsersAuthCodeUseCase",
+    "SmsService",
+    "BillingService"
+  ],
+  "input_tokens": 2538,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

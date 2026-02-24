@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/dto/update-user.dto.ts:property:UpdateUserDto:work_phone_number",
+  "summary": "Этот код описывает DTO (Data Transfer Object) для обновления данных пользователя. Он использует валидаторы для проверки формата вводимых данных и добавляет описания для документации API.",
+  "purpose": "Используется для корректного обновления данных пользователя и создания документации API",
+  "domain": "настройки пользователя, API",
+  "key_behaviors": [
+    "Проверка номера телефона по формату",
+    "Проверка корректности email",
+    "Ограничение языка на определенные значения",
+    "Поддержка необязательных полей",
+    "Генерация документации для API"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1659,
+  "output_tokens": 679,
+  "model": "qwen3:14b",
+  "code_hash": "2ba0467ce337274e"
+}

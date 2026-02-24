@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/data/devices.repository.ts:method:DevicesRepository:findUsersAllDevicesByApplicationType",
+  "summary": "Этот код работает с устройствами пользователей: ищет активные устройства, проверяет наличие устройств по типу приложения, привязывает устройства к пользователям и считает количество устройств.",
+  "purpose": "Позволяет управлять и отслеживать устройства пользователей в системе",
+  "domain": "управление устройствами",
+  "key_behaviors": [
+    "Ищет активные устройства за последние 12 месяцев",
+    "Находит устройства по типу приложения",
+    "Привязывает устройства к пользователям",
+    "Считает количество устройств по типу приложения",
+    "Ищет устройства по частичному коду"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "DeviceDao"
+  ],
+  "input_tokens": 1687,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "ad38b17095e0b890"
+}

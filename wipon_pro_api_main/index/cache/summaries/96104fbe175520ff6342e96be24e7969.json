@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/delete-auth-code.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает класс, который удаляет код авторизации по его ID. Он использует репозиторий для взаимодействия с базой данных и возвращает результат удаления через TypeORM.",
+  "purpose": "Удаляет коды авторизации после их использования, чтобы обеспечить безопасность и чистоту данных",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Удаление кода авторизации по ID",
+    "Использование репозитория для работы с базой данных",
+    "Возвращает результат удаления",
+    "Использует TypeORM для операций с БД",
+    "Инъекция зависимостей через @InjectRepository"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@nestjs/typeorm",
+    "AuthCodesRepository"
+  ],
+  "input_tokens": 1011,
+  "output_tokens": 694,
+  "model": "qwen3:14b",
+  "code_hash": "a46ed7184aa24d84"
+}

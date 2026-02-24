@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/ugd-licenses/ugd-licenses.module",
+  "summary": "Этот код импортирует и настраивает модуль 'ugd-licenses.module', который, вероятно, отвечает за управление лицензиями в приложении. Он использует зависимости и настройки из других частей проекта.",
+  "purpose": "Обеспечивает интеграцию модуля управления лицензиями в общую структуру приложения",
+  "domain": "управление лицензиями, модульное приложение",
+  "key_behaviors": [
+    "Интеграция с другими модулями приложения",
+    "Использование настроек из общих файлов",
+    "Поддержка работы с базой данных через TypeORM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 2757,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/find-users-accounts-with-transactions.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который получает данные о счетах пользователей вместе с их транзакциями, фильтрует их по типу (доходы/расходы) и разбивает на страницы. Использует TypeORM для работы с базой данных.",
+  "purpose": "Позволяет эффективно получать и фильтровать данные о счетах с транзакциями для отображения в интерфейсе пользователя",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получение счетов с транзакциями по ID ледгера",
+    "Фильтрация по типу транзакции (доходы/расходы)",
+    "Пагинация результатов",
+    "Использование TypeORM для построения запросов",
+    "Сбор и возврат данных в удобном формате"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "../../../../common/utils/common"
+  ],
+  "input_tokens": 1578,
+  "output_tokens": 761,
+  "model": "qwen3:14b",
+  "code_hash": "aacba026e871d2b2"
+}

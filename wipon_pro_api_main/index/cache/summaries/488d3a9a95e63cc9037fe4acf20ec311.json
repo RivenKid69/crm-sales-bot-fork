@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/domain/cashboxes.service.ts:method:CashboxesService:o: PushMess",
+  "summary": "Этот код отправляет уведомления пользователям через телефон. Использует сервис для поиска пользователя по номеру и другой сервис для отправки сообщений. Если пользователь не найден, выдаёт ошибку.",
+  "purpose": "Позволяет отправлять коды подтверждения и сообщения пользователям через мобильные уведомления",
+  "domain": "мессенджер/уведомления",
+  "key_behaviors": [
+    "Отправка кода активации Pro Касса",
+    "Отправка произвольных сообщений",
+    "Поиск пользователя по номеру телефона",
+    "Обработка ошибок при отсутствии пользователя",
+    "Возврат статуса отправки"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "PushService",
+    "NotFoundException"
+  ],
+  "input_tokens": 1517,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "152af5f651eacbf3"
+}

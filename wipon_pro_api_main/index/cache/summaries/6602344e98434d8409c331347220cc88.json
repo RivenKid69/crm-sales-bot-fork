@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/domain/use-cases/find-ugd-by-dgd-id.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который ищет запись в базе данных по ID. Использует TypeORM для работы с репозиторием и возвращает объект или null, если ничего не найдено.",
+  "purpose": "Позволяет получать данные из базы по уникальному идентификатору в приложении NestJS",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет запись по ID",
+    "Возвращает объект или null",
+    "Использует TypeORM",
+    "Интегрируется с NestJS",
+    "Работает с репозиторием"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1137,
+  "output_tokens": 683,
+  "model": "qwen3:14b",
+  "code_hash": "8c5306aeaf3f1551"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:class:PushConsumer",
+  "summary": "Этот класс обрабатывает задания на отправку уведомлений через FCM. Он получает данные о токене, платформе и сообщении, создает уведомление в базе и отправляет его пользователю через Firebase.",
+  "purpose": "Обработка асинхронных задач по отправке push-уведомлений в фоновом режиме",
+  "domain": "уведомления, мессенджер",
+  "key_behaviors": [
+    "Обработка задач из очереди Bull",
+    "Создание записей об уведомлениях в базе",
+    "Отправка сообщений через Firebase Cloud Messaging",
+    "Логирование ошибок и успешных отправок",
+    "Работа с токенами устройств разных платформ"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin",
+    "messaging-api"
+  ],
+  "input_tokens": 1654,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

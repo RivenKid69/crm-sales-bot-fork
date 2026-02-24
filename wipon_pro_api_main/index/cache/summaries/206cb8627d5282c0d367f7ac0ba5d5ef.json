@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/presenter/users.controller.ts:class:UsersController",
+  "summary": "Этот класс - контроллер, который обрабатывает HTTP-запросы, связанные с пользователями. Он позволяет получать, обновлять и удалять данные пользователя, используя аутентификацию и валидацию данных.",
+  "purpose": "Обеспечивает функциональность для управления пользователями в веб-приложении с защитой от неавторизованных действий",
+  "domain": "управление пользователями",
+  "key_behaviors": [
+    "Получение данных пользователя по ID",
+    "Обновление информации пользователя с валидацией",
+    "Удаление пользователя",
+    "Использование аутентификации для защиты маршрутов",
+    "Трансформация данных перед отправкой клиенту"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "ValidationPipe",
+    "ClassSerializerInterceptor"
+  ],
+  "input_tokens": 1794,
+  "output_tokens": 668,
+  "model": "qwen3:14b",
+  "code_hash": "1808cadd56fd9cc7"
+}

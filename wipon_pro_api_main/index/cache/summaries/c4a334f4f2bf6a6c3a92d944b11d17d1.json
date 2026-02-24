@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/presenter/cashboxes.controller.ts:class:CashboxesController",
+  "summary": "Этот класс - контроллер, который обрабатывает POST-запросы для отправки кодов авторизации и сообщений в кассовые терминалы. Использует защиту по IP и валидацию данных.",
+  "purpose": "Обработка входящих сообщений от платежных систем для кассовых терминалов с защитой от несанкционированного доступа",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Обработка двух типов POST-запросов (authcode и message)",
+    "Фильтрация по IP-адресу через IpFilterGuard",
+    "Валидация данных через ValidationPipe",
+    "Использование трансформера для обработки ответов",
+    "Интеграция с сервисом CashboxesService"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "CashboxesService",
+    "PushAuthcodeDto",
+    "PushMessageDto",
+    "IpFilterGuard",
+    "TransformInterceptor",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1555,
+  "output_tokens": 753,
+  "model": "qwen3:14b",
+  "code_hash": "91982e74914aeef2"
+}

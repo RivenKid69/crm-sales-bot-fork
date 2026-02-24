@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/users.module.ts:import:./domain/use-cases/find-users-ledger.use-case",
+  "summary": "Этот модуль объединяет сервисы и use-cases для работы с пользователями. Он использует TypeORM для взаимодействия с базой данных и позволяет выполнять операции, такие как поиск, создание и обновление пользователей.",
+  "purpose": "Обеспечивает структурированное управление пользователями и их данными в приложении",
+  "domain": "авторизация/управление пользователями",
+  "key_behaviors": [
+    "Поиск пользователя по телефону",
+    "Создание пользователя по телефону",
+    "Обновление токена пользователя",
+    "Поиск пользователя по токену",
+    "Получение истории операций пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1585,
+  "output_tokens": 660,
+  "model": "qwen3:14b",
+  "code_hash": "d061c4155bbeab47"
+}

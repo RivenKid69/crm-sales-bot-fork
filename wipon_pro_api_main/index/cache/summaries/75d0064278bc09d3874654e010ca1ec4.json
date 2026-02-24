@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/devices.service.ts:import:../data/devices.repository",
+  "summary": "Этот код реализует сервис для управления привязкой устройств к пользователям. Он проверяет существование устройства, привязывает его к пользователю и возвращает статус операции.",
+  "purpose": "Обеспечивает логику привязки устройств к пользователям и проверки их наличия в системе",
+  "domain": "управление устройствами",
+  "key_behaviors": [
+    "Проверка существования устройства по коду",
+    "Привязка устройства к пользователю",
+    "Обработка ошибок (NotFoundException, HttpException)",
+    "Обрезка кода устройства до 32 символов",
+    "Проверка принадлежности устройства пользователю"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "locutus/php/strings/substr"
+  ],
+  "input_tokens": 1827,
+  "output_tokens": 688,
+  "model": "qwen3:14b",
+  "code_hash": "03de6843288a4e01"
+}

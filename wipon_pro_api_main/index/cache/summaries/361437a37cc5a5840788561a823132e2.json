@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/domain/use-cases/find-stores-type-by-name.use-case.ts:import:../../../../common/dao/store-type.dao",
+  "summary": "Этот код создает сервис, который ищет тип магазина по его русскому названию. Он использует репозиторий для работы с базой данных и возвращает объект DAO с найденными данными.",
+  "purpose": "Позволяет быстро находить информацию о типе магазина по названию в проекте с базой данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет запись по русскому названию",
+    "Возвращает объект DAO с данными",
+    "Использует TypeORM для работы с БД",
+    "Поддерживает асинхронные операции",
+    "Работает через репозиторий"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1182,
+  "output_tokens": 647,
+  "model": "qwen3:14b",
+  "code_hash": "4c23b46077197d05"
+}

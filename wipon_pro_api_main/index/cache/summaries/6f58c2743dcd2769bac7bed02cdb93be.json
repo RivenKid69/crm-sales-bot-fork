@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/dto/login.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код импортирует валидаторы для проверки данных и инструменты для документации API. Он используется для создания DTO (Data Transfer Object), который описывает структуру входящих данных для эндпоинта авторизации.",
+  "purpose": "Обеспечивает валидацию входных данных и генерацию документации API для эндпоинта входа в систему",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка обязательного номера телефона в формате Казахстана",
+    "Валидация 6-значного кода подтверждения",
+    "Ограничение типа приложения (desktop/mobile_scan)",
+    "Генерация документации через Swagger",
+    "Поддержка опциональных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1330,
+  "output_tokens": 662,
+  "model": "qwen3:14b",
+  "code_hash": "a570ba58be82c9e0"
+}

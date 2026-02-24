@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/presenter/ledgers.controller.ts:import:../../../common/guards/ip-filter.guard",
+  "summary": "Этот код создает контроллер для обработки перевода средств, используя валидацию данных, защиту по IP и преобразование ответов. Он работает как 'кассир', который проверяет документы, фильтрует клиентов и оформляет операцию.",
+  "purpose": "Обеспечивает безопасное и корректное выполнение операции перевода средств через API.",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка данных с помощью ValidationPipe",
+    "Фильтрация по IP-адресу с помощью IpFilterGuard",
+    "Преобразование ответа с помощью TransformInterceptor",
+    "Использование DTO для структурирования входных данных",
+    "Интеграция с сервисом для выполнения логики перевода"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "LedgersService",
+    "PostTransferDto",
+    "IpFilterGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1256,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "b45a5c20f61e8253"
+}

@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.controller.ts:import:../auth/guard/auth.guard",
+  "summary": "Этот код создает контроллер в NestJS, который генерирует PDF-счета. Он защищен аутентификацией, устанавливает заголовки для PDF и использует сервис для создания файла.",
+  "purpose": "Обрабатывает запросы на генерацию PDF-счетов с защитой от неавторизованных доступов",
+  "domain": "PDF-генерация, API, авторизация",
+  "key_behaviors": [
+    "Требует аутентификации через AuthGuard",
+    "Устанавливает заголовки для PDF-файла",
+    "Использует DTO для валидации данных",
+    "Возвращает PDF-файл в ответе",
+    "Использует UserDao для получения данных пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "../auth/guard/auth.guard",
+    "../../common/decorators/user.decorator",
+    "../../common/dao/user.dao",
+    "./dto/generate-invoice.dto",
+    "./pdf.service"
+  ],
+  "input_tokens": 1397,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "b3425c857e12eca8"
+}

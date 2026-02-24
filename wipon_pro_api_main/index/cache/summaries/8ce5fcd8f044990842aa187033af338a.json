@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/count-users-active-subscription.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который считает активные подписки пользователя. Он использует TypeORM для запроса базы данных и возвращает количество активных подписок в виде промиса.",
+  "purpose": "Позволяет проверить, есть ли у пользователя активная подписка на определенный сервис.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Считывает активные подписки пользователя из базы данных",
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Возвращает результат в виде промиса",
+    "Использует инъекцию зависимостей для получения репозитория",
+    "Работает с конкретным пользователем по его ID"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1010,
+  "output_tokens": 715,
+  "model": "qwen3:14b",
+  "code_hash": "75c5050abd21ff28"
+}

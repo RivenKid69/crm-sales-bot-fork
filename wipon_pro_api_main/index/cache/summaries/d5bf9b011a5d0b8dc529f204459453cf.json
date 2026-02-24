@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/domain/ledgers.service.ts:import:@nestjs/common",
+  "summary": "Этот код обрабатывает перевод средств между пользователями, проверяя валидность пользователей, обновляя счета и леджеры, и используя транзакции для обеспечения целостности данных. Он работает с пользовательскими аккаунтами и историей операций.",
+  "purpose": "Обеспечивает корректный перевод средств между пользователями с записью операций в леджеры и обновлением связанных данных.",
+  "domain": "Финансовые операции / бухгалтерия",
+  "key_behaviors": [
+    "Проверка валидности пользователей по ID",
+    "Обновление данных в транзакциях TypeORM",
+    "Создание/обновление записей в ledger_chronic",
+    "Использование BillingService для создания аккаунтов",
+    "Логирование ошибок через кастомный логгер"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "BillingService",
+    "FindUserByIdUseCase",
+    "AccountDao",
+    "LedgerChronicDao"
+  ],
+  "input_tokens": 2798,
+  "output_tokens": 779,
+  "model": "qwen3:14b",
+  "code_hash": "e9c0b294f1e03b7c"
+}

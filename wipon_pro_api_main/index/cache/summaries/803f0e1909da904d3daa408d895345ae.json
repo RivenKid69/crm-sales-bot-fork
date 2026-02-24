@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/new-form-of-saving-store.dto.ts:property:NewFormOfSavingStoreDto:payer_name",
+  "summary": "Этот класс используется для валидации данных формы, которая создает новую запись о магазине. Он проверяет, что все поля заполнены корректно, соответствуют формату и существуют в системе.",
+  "purpose": "Обеспечивает корректность данных перед их сохранением в базе данных, чтобы избежать ошибок и несоответствий",
+  "domain": "валидация данных, API",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Проверка формата BIN (12 цифр)",
+    "Проверка существования сущностей в базе",
+    "Генерация документации API",
+    "Проверка формата лицензионного номера"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "class-transformer",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 2354,
+  "output_tokens": 715,
+  "model": "qwen3:14b",
+  "code_hash": "52d57c9a1bf1dae6"
+}

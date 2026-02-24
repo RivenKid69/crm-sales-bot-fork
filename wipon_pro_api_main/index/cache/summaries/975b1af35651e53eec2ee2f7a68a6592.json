@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/dgds.service.ts:class:DgdsService",
+  "summary": "Этот класс - сервис, который получает список данных из базы через репозиторий. Он использует TypeORM для работы с базой данных и работает по принципу 'получить всё' из таблицы.",
+  "purpose": "Позволяет другим частям приложения получать полный список записей из таблицы DGDS",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получает полный список записей из базы",
+    "Использует TypeORM для работы с БД",
+    "Работает через репозиторий для абстракции доступа к данным"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1109,
+  "output_tokens": 647,
+  "model": "qwen3:14b",
+  "code_hash": "70ce8a0cc378978c"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:vuex",
+  "summary": "Этот код настраивает хранилище состояния (Vuex) для Vue-приложения. Он объединяет несколько модулей (авторизация, компания, аккаунт, подписки) и добавляет логгер для отладки в разработке.",
+  "purpose": "Управление состоянием приложения с возможностью разделения на логические части и отладки",
+  "domain": "state management",
+  "key_behaviors": [
+    "Объединение нескольких модулей в одно хранилище",
+    "Добавление логгера для отладки в разработке",
+    "Типизация состояния и действий",
+    "Предоставление доступа к хранилищу через useStore",
+    "Поддержка типов для мутаций, действий и геттеров"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "initialState",
+    "moduleAuth",
+    "moduleCompany",
+    "moduleAccount",
+    "moduleSubs"
+  ],
+  "input_tokens": 1834,
+  "output_tokens": 677,
+  "model": "qwen3:14b",
+  "code_hash": "5be824242a718057"
+}

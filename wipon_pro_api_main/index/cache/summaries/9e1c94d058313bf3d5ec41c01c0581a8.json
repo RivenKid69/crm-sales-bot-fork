@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/link-store-to-license.task.ts:import:@nestjs/schedule",
+  "summary": "Этот код создает задачу, которая каждые 5 утра по времени Алматы связывает магазины с лицензиями в базе данных. Использует Redis для блокировки, чтобы задача выполнялась только один раз, и логирует ошибки.",
+  "purpose": "Автоматически сопоставлять магазины с лицензиями по определенным правилам в заданное время",
+  "domain": "планирование задач",
+  "key_behaviors": [
+    "Выполняет задачу в определенное время с помощью Cron",
+    "Использует Redis для предотвращения параллельного выполнения",
+    "Обновляет данные в базе данных на основе SQL-запроса",
+    "Логирует ошибки в отдельный логгер",
+    "Удаляет ключ из Redis после выполнения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/schedule",
+    "cache-manager",
+    "uuid",
+    "typeorm"
+  ],
+  "input_tokens": 1954,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "5f90b69b957bb38f"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/find-user-by-token.use-case.ts:method:FindUserByTokenUseCase:constructor",
+  "summary": "Этот код ищет пользователя в базе данных по его API-токену. Если пользователь найден, возвращается его информация, иначе null. Работает как поиск по уникальному ключу в справочнике.",
+  "purpose": "Используется для аутентификации пользователей через токен в системах авторизации",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по API-токену",
+    "Возвращает объект пользователя или null",
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с NestJS через инъекцию зависимостей",
+    "Поддерживает загрузку связанных данных (ledger)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1190,
+  "output_tokens": 686,
+  "model": "qwen3:14b",
+  "code_hash": "d2cc50e6781ff681"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/presenter/notifications.controller.ts:method:NotificationsController:sendMassNotificationToUsers",
+  "summary": "Этот код - контроллер, который обрабатывает различные действия с уведомлениями, такие как получение, отправка, обновление и удаление. Он использует валидацию данных, аутентификацию и преобразование ответов.",
+  "purpose": "Управление уведомлениями пользователей, включая отправку, обновление и удаление.",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "Получение уведомлений пользователя",
+    "Отправка уведомления отдельному пользователю",
+    "Обновление статуса уведомления",
+    "Удаление уведомления",
+    "Отправка массового уведомления"
+  ],
+  "dependencies_used": [
+    "NotificationsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor",
+    "UserDao"
+  ],
+  "input_tokens": 2100,
+  "output_tokens": 724,
+  "model": "qwen3:14b",
+  "code_hash": "693e2857eabd9d27"
+}

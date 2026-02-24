@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:import:../../types/push-job.type",
+  "summary": "Этот код создает обработчик задач для отправки уведомлений через FCM. Он использует сервисы для создания уведомлений и отправки их на устройства, логирует процесс и ошибки.",
+  "purpose": "Обработка задач по отправке push-уведомлений в фоновом режиме",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Обработка задач из очереди 'push_pro-job'",
+    "Создание уведомлений через NotificationsService",
+    "Отправка уведомлений через FCM",
+    "Логирование успешных и ошибочных попыток",
+    "Использование кастомного логгера для отслеживания процесса"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin",
+    "notifications-service",
+    "fcm-service"
+  ],
+  "input_tokens": 1590,
+  "output_tokens": 724,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:class:SubscriptionsController",
+  "summary": "Этот класс - контроллер, который обрабатывает запросы к API для управления подписками. Он позволяет получать активные подписки, покупать новые, делать возвраты и проверять информацию по телефону или BIN.",
+  "purpose": "Обеспечивает функционал для работы с подписками пользователей в приложении",
+  "domain": "подписки, авторизация, платежи",
+  "key_behaviors": [
+    "Получение активной подписки пользователя",
+    "Покупка новой подписки",
+    "Возврат средств за подписку",
+    "Проверка подписки по телефону",
+    "Проверка подписки по BIN"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2770,
+  "output_tokens": 674,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

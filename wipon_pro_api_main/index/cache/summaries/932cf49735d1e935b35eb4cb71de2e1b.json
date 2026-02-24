@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/find-newest-users-auth-code.use-case.ts:method:FindNewestUsersAuthCodeUseCase:constructor",
+  "summary": "Этот код создает класс, который ищет последний код авторизации для конкретного пользователя. Он использует репозиторий для доступа к базе данных и возвращает результат в виде объекта или null, если код не найден.",
+  "purpose": "Позволяет получить последний код авторизации пользователя для проверки или восстановления доступа",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Использует внедрение зависимостей для подключения репозитория",
+    "Ищет данные в базе по ID пользователя",
+    "Возвращает промис с результатом",
+    "Работает с объектами AuthCodeDao",
+    "Используется как отдельный use-case в архитектуре"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "AuthCodesRepository",
+    "AuthCodeDao"
+  ],
+  "input_tokens": 1184,
+  "output_tokens": 699,
+  "model": "qwen3:14b",
+  "code_hash": "3599844b61d70a99"
+}

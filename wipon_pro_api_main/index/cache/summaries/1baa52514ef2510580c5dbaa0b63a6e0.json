@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/dto/post-transfer.dto.ts:file",
+  "summary": "Этот код создает DTO для перевода между пользователями. Он проверяет, что идентификаторы отправителя и получателя не пустые и являются числами.",
+  "purpose": "Обеспечивает валидацию данных при переводе средств между пользователями в приложении",
+  "domain": "API, валидация данных",
+  "key_behaviors": [
+    "Проверка, что поля не пустые",
+    "Проверка, что значения являются числами",
+    "Использует валидаторы для обеспечения корректности данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "is-numeric"
+  ],
+  "input_tokens": 1053,
+  "output_tokens": 672,
+  "model": "qwen3:14b",
+  "code_hash": "b4fecf32c5078b3c"
+}

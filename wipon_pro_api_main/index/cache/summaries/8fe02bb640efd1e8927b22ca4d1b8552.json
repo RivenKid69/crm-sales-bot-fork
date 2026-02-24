@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger.dao.ts:import:./invoice.dao",
+  "summary": "Этот код определяет сущность 'LedgerDao' для работы с базой данных, используя TypeORM. Она содержит поля для хранения информации о счёте-книге, включая связи с пользователями, счётами и счетами-фактурами.",
+  "purpose": "Позволяет хранить и управлять данными о счётах-книгах и их связями с другими сущностями в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание таблицы в базе данных с полями id, user_id, created_at, updated_at и code",
+    "Установление связи один-к-одному с пользователем (UserDao)",
+    "Установление связи один-ко-многим со счётами (AccountDao)",
+    "Установление связи один-к-одному со счетом-фактурой (InvoiceDao)",
+    "Автоматическое управление временными метками (created_at и updated_at)"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "UserDao",
+    "AccountDao",
+    "InvoiceDao"
+  ],
+  "input_tokens": 1410,
+  "output_tokens": 790,
+  "model": "qwen3:14b",
+  "code_hash": "49807575de7c8de6"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/stores.module.ts:class:StoresModule",
+  "summary": "Этот класс - модуль в NestJS, который собирает и настраивает компоненты для работы со 'складами'. Он подключает репозитории, сервисы, use-cases и контроллеры, а также использует другие модули для обеспечения функциональности.",
+  "purpose": "Создаёт структуру для управления данными о складах, используя TypeORM и взаимодействуя с другими частями приложения.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с другими модулями (Regions, Dgds, Subscriptions, Users)",
+    "Предоставляет сервисы и use-cases для работы со складами",
+    "Использует контроллер для обработки HTTP-запросов",
+    "Экспортирует сервисы и use-cases для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1266,
+  "output_tokens": 767,
+  "model": "qwen3:14b",
+  "code_hash": "110893c6a3ed23c3"
+}

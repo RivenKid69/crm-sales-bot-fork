@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:import:@/api/request",
+  "summary": "Этот код импортирует функцию `request` из файла `@/api/request` и использует её для отправки POST-запроса на сервер, чтобы сгенерировать счёт-фактуру в формате PDF. В ответе сервера ожидается файл в формате blob.",
+  "purpose": "Создание и отправка запроса на генерацию PDF-счёта-фактуры с использованием API",
+  "domain": "API",
+  "key_behaviors": [
+    "Отправляет POST-запрос на сервер",
+    "Генерирует PDF-файл счёта-фактуры",
+    "Использует `responseType: 'blob'` для получения файла",
+    "Принимает данные для генерации счёта",
+    "Использует внешний API для выполнения операции"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 814,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "d4c1ee3bd4915178"
+}

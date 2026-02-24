@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:updateCompanyRequest",
+  "summary": "Эти функции отправляют HTTP-запросы для работы с данными компании. getCompanyRequest получает данные, setCompanyRequest создаёт новые, updateCompanyRequest обновляет существующие.",
+  "purpose": "Позволяет управлять данными компании через API-запросы",
+  "domain": "API",
+  "key_behaviors": [
+    "Получение данных компании",
+    "Создание новой компании",
+    "Обновление информации о компании",
+    "Использование HTTP-методов GET/POST",
+    "Работа с централизованным API"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 1020,
+  "output_tokens": 607,
+  "model": "qwen3:14b",
+  "code_hash": "598998612dd7f3e2"
+}

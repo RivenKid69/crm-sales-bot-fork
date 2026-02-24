@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/send-notification.dto.ts:property:SendNotificationDto:message",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для передачи сообщений. Он использует валидаторы, чтобы убедиться, что свойство 'message' не пустое и является строкой.",
+  "purpose": "Обеспечивает корректную валидацию данных при отправке уведомлений через API",
+  "domain": "API, валидация данных",
+  "key_behaviors": [
+    "Проверка, что сообщение не пустое",
+    "Проверка типа данных (строка)",
+    "Используется в контроллерах для обработки входящих данных",
+    "Упрощает обработку ошибок валидации",
+    "Сервисный слой получает только корректные данные"
+  ],
+  "dependencies_used": [
+    "class-validator/IsNotEmpty",
+    "class-validator/IsString"
+  ],
+  "input_tokens": 1002,
+  "output_tokens": 648,
+  "model": "qwen3:14b",
+  "code_hash": "8733612efe98c97d"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:method:SubscriptionsService:f (changeSubType) await th",
+  "summary": "Этот метод проверяет, есть ли у пользователя активная подписка. Сначала ищет пользователя по номеру телефона, потом проверяет, не истекла ли его подписка, и возвращает информацию о ней. Если пользователь или подписка не найдены — возвращает ошибку.",
+  "purpose": "Используется для проверки активной подписки пользователя в системе, например, для ограничения доступа к функциям сервиса",
+  "domain": "управление подписками, авторизация",
+  "key_behaviors": [
+    "Ищет пользователя по номеру телефона",
+    "Проверяет наличие активной подписки",
+    "Возвращает дату окончания подписки",
+    "Генерирует ошибки при отсутствии пользователя или подписки",
+    "Форматирует данные для вывода"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "SubscriptionRepository",
+    "HttpException"
+  ],
+  "input_tokens": 2756,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

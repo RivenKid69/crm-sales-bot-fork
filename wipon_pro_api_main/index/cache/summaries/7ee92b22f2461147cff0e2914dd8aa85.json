@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.module.ts:import:@nestjs/common",
+  "summary": "Этот код создает модуль NestJS, который использует Redis для кэширования данных, подключает HTTP-запросы и модуль товаров. Также включает сервисы для проверки подлинности и общие утилиты.",
+  "purpose": "Обеспечивает модуль для проверки подлинности товаров с поддержкой кэширования и HTTP-запросов",
+  "domain": "кэширование, API, модули NestJS",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Подключает HTTP-запросы через HttpModule",
+    "Интегрируется с модулем товаров",
+    "Предоставляет сервис проверки подлинности",
+    "Использует общий сервис Doomguy"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1304,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "ebbdc38df465fc39"
+}

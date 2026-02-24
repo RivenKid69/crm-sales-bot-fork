@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:../../dao/ledger.dao",
+  "summary": "Этот код отвечает за создание и управление финансовыми счетами пользователя. Он использует DAO для работы с базой данных и use-case для логики обновления и подсчета информации.",
+  "purpose": "Обеспечивает создание и синхронизацию финансовых счетов пользователя в системе",
+  "domain": "база данных, финансовые операции",
+  "key_behaviors": [
+    "Создание новых счетов при отсутствии",
+    "Обновление информации о провайдерах",
+    "Работа с транзакциями через EntityManager",
+    "Использование кастомных хелперов для работы с датой и временем",
+    "Интеграция с внешними сервисами через use-case"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "ledger.dao",
+    "account.dao"
+  ],
+  "input_tokens": 2743,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

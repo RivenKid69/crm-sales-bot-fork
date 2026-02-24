@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.service.ts:import:../../logger/request-logger",
+  "summary": "Этот код создает сервис для выполнения периодических задач: деактивации просроченных подписок и очистки устаревших устройств. Использует кэш для предотвращения параллельного запуска задачи и логирует ошибки.",
+  "purpose": "Обеспечивает автоматическую очистку данных и поддержание актуальности подписок в системе",
+  "domain": "task scheduling, data maintenance",
+  "key_behaviors": [
+    "Деактивирует подписки, истекшие по сроку",
+    "Обновляет устаревшие коды устройств",
+    "Использует Redis для блокировки параллельных запусков",
+    "Логирует ошибки при выполнении задач",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/schedule",
+    "typeorm",
+    "cache-manager",
+    "uuid"
+  ],
+  "input_tokens": 2008,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "07940e833f6f4448"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/data/users.repository.ts:class:UsersRepository",
+  "summary": "Этот класс - репозиторий для работы с пользователями. Он умеет искать пользователей по телефону или ID, создавать новых пользователей и обновлять их токены",
+  "purpose": "Упрощает работу с пользователями в приложении, предоставляя готовые методы для поиска, создания и обновления данных",
+  "domain": "управление пользователями, авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по номеру телефона",
+    "Создание нового пользователя",
+    "Обновление API токена пользователя",
+    "Поиск по ID пользователя",
+    "Загрузка связанного ledger объекта"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1368,
+  "output_tokens": 616,
+  "model": "qwen3:14b",
+  "code_hash": "9e48a8de21591251"
+}

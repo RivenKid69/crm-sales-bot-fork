@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/count-ledger-accounts-providers.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который считает аккаунты в леджере по имени провайдера. Он использует базу данных через репозиторий и работает в рамках фреймворка NestJS.",
+  "purpose": "Позволяет получать количество аккаунтов для конкретного леджера и провайдера",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Считает аккаунты по фильтрам",
+    "Использует инъекцию зависимостей",
+    "Работает с TypeORM репозиторием",
+    "Возвращает число в Promise",
+    "Использует NestJS сервисный декоратор"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1126,
+  "output_tokens": 702,
+  "model": "qwen3:14b",
+  "code_hash": "ef7cb88f856a7280"
+}

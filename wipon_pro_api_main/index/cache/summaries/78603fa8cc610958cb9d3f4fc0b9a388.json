@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:method:SubscriptionsService:'Отсутствует активная подпи",
+  "summary": "Этот метод проверяет, есть ли у пользователя активная подписка по его номеру телефона. Если пользователь найден и у него есть активная подписка, возвращает информацию о ней. Если нет — выдает ошибку.",
+  "purpose": "Используется для проверки наличия активной подписки у пользователя при запросе от внешних систем или интерфейсов.",
+  "domain": "авторизация, подписки, пользователи",
+  "key_behaviors": [
+    "Ищет пользователя по номеру телефона",
+    "Проверяет наличие активной подписки",
+    "Возвращает данные подписки или ошибку",
+    "Использует репозиторий для поиска подписки",
+    "Выдает HTTP-ошибки при отсутствии пользователя или подписки"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "SubscriptionRepository",
+    "HttpException"
+  ],
+  "input_tokens": 2605,
+  "output_tokens": 726,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/users.module.ts:import:./domain/use-cases/set-users-token.use-case",
+  "summary": "Этот код создает модуль NestJS для управления пользователями. Он использует TypeORM для работы с базой данных и объединяет сервисы и кейсы для поиска, создания и обновления пользователей.",
+  "purpose": "Организует логику работы с пользователями в отдельном модуле для удобства управления и повторного использования",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по телефону",
+    "Создание пользователя по телефону",
+    "Обновление токена пользователя",
+    "Поиск пользователя по токену",
+    "Работа с балансом пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1566,
+  "output_tokens": 605,
+  "model": "qwen3:14b",
+  "code_hash": "d061c4155bbeab47"
+}

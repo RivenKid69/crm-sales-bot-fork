@@ -1,0 +1,257 @@
+[
+  {
+    "scenario": "s17_product_confusion",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Здравствуйте, мне сказали у вас хорошая CRM система",
+        "bot": "А в каком бизнесе у вас CRM сейчас не справляется?",
+        "state": "autonomous_discovery",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 8.19
+      },
+      {
+        "turn": 2,
+        "user": "Ну я хочу вести базу клиентов, делать рассылки, воронку продаж настроить",
+        "bot": "А, вы о CRM! У нас есть решение для торговли и сервиса — но у вас, скорее всего, розница или общепит. А какой именно бизнес ведёте?",
+        "state": "autonomous_discovery",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 6.21
+      },
+      {
+        "turn": 3,
+        "user": "А что тогда у вас? Я думал это типа Битрикс24",
+        "bot": "А какой у вас бизнес: магазин, кафе или что-то другое?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 8.1
+      },
+      {
+        "turn": 4,
+        "user": "Ааа, то есть это типа кассы? У меня магазин электроники",
+        "bot": "\"Ага, электроника — сложно с возвратами и гарантиями! А что сейчас у вас больше всего теряете: деньги от обмана или время на ручной учёт?\"",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 2.75
+      },
+      {
+        "turn": 5,
+        "user": "Ну у меня 1 точка пока. А можно и онлайн продажи вести?",
+        "bot": "Ваша точка — отличная основа для старта! А как сейчас организованы онлайн-заказы — через мессенджеры или отдельную платформу? Оставьте, пожалуйста, телефон или email — уточню детали под ваш бизнес.",
+        "state": "autonomous_closing",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 2.47
+      },
+      {
+        "turn": 6,
+        "user": "Понятно. Сколько стоит?",
+        "bot": "Для розницы с базой клиентов и онлайн-заказами подойдёт тариф Lite — 150 000 ₸ в год. Оставьте, пожалуйста, телефон или email — уточню детали под ваш бизнес.",
+        "state": "autonomous_closing",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 8.48
+      },
+      {
+        "turn": 7,
+        "user": "Давайте подключимся, 87001234567",
+        "bot": "Давайте подключим Lite на +77001234567. ИИН нужен для счёта — удобно будет оплатить сразу.",
+        "state": "autonomous_closing",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 43,
+        "is_final": false,
+        "elapsed_s": 7.33
+      }
+    ]
+  },
+  {
+    "scenario": "s20_premature_negotiator",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет, мне нужна касса",
+        "bot": "Для интеграции доступен REST API с документацией. Что ещё интересует по техчасти?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 3.96
+      },
+      {
+        "turn": 2,
+        "user": "Стоп, сначала скажите — какая у вас максимальная скидка?",
+        "bot": "Максимальная скидка для кассы — до 30% на тарифы, если оформляете год вперед. А ваш бизнес — розница или общепит? Это важно, чтобы подобрать нужный тариф.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 5.0
+      },
+      {
+        "turn": 3,
+        "user": "То есть скидки нет? Тогда что вы можете предложить чтобы я выбрал вас?",
+        "bot": "Для вашего бизнеса доступны специальные тариф с бонусами — например, скидка на кассу Wipon и фискализация при оформлении на полгода.",
+        "state": "autonomous_discovery",
+        "intent": "objection_price",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 8.92
+      },
+      {
+        "turn": 4,
+        "user": "Ладно, а что вообще ваша система умеет?",
+        "bot": "Наша система — это всё в одном: касса с фискализацией, учёт товаров/заказов, аналитика продаж и возвраты за 1 клик. Например, можно сразу выставить чек, а потом вернуть деньги — всё по номеру чека или клиенту. А что именно в текущем \"сложности\" вызывает больше всего проблем: учёт?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 3.05
+      },
+      {
+        "turn": 5,
+        "user": "У меня 2 точки, магазин одежды. Сколько будет стоить?",
+        "bot": "Две точки одежды — это уже серьезно. Наши тариф 150 000 ₸ в год на точку.",
+        "state": "autonomous_qualification",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "qualification",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 1.52
+      },
+      {
+        "turn": 6,
+        "user": "Хм ок. Давайте созвонимся",
+        "bot": "Ваша система уже готова подключить обе точки одежды — касса + фискализация + учёт товаров с возвратами по чеку. Оставьте, пожалуйста, телефон или email.",
+        "state": "autonomous_closing",
+        "intent": "callback_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 29,
+        "is_final": false,
+        "elapsed_s": 1.65
+      },
+      {
+        "turn": 7,
+        "user": "Завтра в 11, номер 87021112233",
+        "bot": "Как к вам обращаться? Завтра в 11:00 мы подробно расскажем, как Wipon решает ваш сложности с кассой и учётом — всё настроим за один день. А что именно сейчас больше всего отнимает время: оформление чеков?",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 63,
+        "is_final": true,
+        "elapsed_s": 5.2
+      }
+    ]
+  },
+  {
+    "scenario": "s22_direct_competitor_compare",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Здравствуйте, я выбираю между вами и Poster. Чем вы лучше?",
+        "bot": "Wipon проще в настройке и дешевле Poster — не нужен отдельный сервер, а по функционалу есть складской учёт и проверка алкоголя в тарифе Pro. Кстати, как к вам обращаться?",
+        "state": "greeting",
+        "intent": "competitor_dissatisfied",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.14
+      },
+      {
+        "turn": 2,
+        "user": "У Poster есть бесплатный тариф. У вас такой есть?",
+        "bot": "А какую из ваших точек хотели бы оборудовать первым делом?",
+        "state": "greeting",
+        "intent": "pricing_comparison",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.92
+      },
+      {
+        "turn": 3,
+        "user": "А по функционалу в чём разница? Только честно",
+        "bot": "У Poster нет проверки алкоголя через УКМ — это ключевая разница. У нас в тарифе Pro можно сканировать учётно-контрольные марки прямо в процессе продажи и избежать штрафов.",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 4.58
+      },
+      {
+        "turn": 4,
+        "user": "У меня кафе, 1 точка. Мне нужна интеграция с iiko",
+        "bot": "Ваша точка в кафе подходит для успешного запуска. Сервис Wipon синхронизируется с iiko в реальном времени, что позволяет избежать задержек. Поддержка всех необходимых функций для общепита уже предусмотрена.",
+        "state": "autonomous_closing",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 4.09
+      },
+      {
+        "turn": 5,
+        "user": "А интеграция с Glovo/Wolt есть?",
+        "bot": "А ваш телефон или email, чтобы обсудить детали?",
+        "state": "autonomous_closing",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 4.09
+      },
+      {
+        "turn": 6,
+        "user": "Ок, давайте попробуем. Звоните завтра, 87771119988",
+        "bot": "Для вашего кафе в тарифе Pro можно сразу настроить проверку алкоголя через УКМ — это спасёт от штрафов, а не только фискализирует. Интеграция с iiko уже входит в базовую комплектацию.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 44,
+        "is_final": true,
+        "elapsed_s": 1.94
+      }
+    ]
+  }
+]

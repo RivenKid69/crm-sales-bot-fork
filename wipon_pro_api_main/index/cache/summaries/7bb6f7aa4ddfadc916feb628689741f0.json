@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/domain/billings.service.ts:import:../../../common/dao/ledger.dao",
+  "summary": "Этот код реализует сервис обработки платежей через Qiwi. Он проверяет существование счета, обрабатывает команды 'check' и 'pay', использует базу данных и кэш для хранения данных, логирует действия и возвращает XML-ответы.",
+  "purpose": "Обработка платежных запросов Qiwi и проверка информации о счетах пользователей",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Обработка команд 'check' и 'pay' от Qiwi",
+    "Поиск пользователей и счетов в базе данных",
+    "Использование кэша для хранения данных",
+    "Генерация XML-ответов",
+    "Логирование действий сервиса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "express",
+    "cache-manager",
+    "xml"
+  ],
+  "input_tokens": 2805,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "0dd11b1ca7ca3303"
+}

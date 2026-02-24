@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/domain/ledgers.service.ts:import:../../users/domain/use-cases/find-user-by-id.use-case",
+  "summary": "Этот код обрабатывает перевод средств между пользователями, проверяя их валидность, обновляя данные в базе и логируя ошибки. Он использует сервисы и DAO для выполнения операций.",
+  "purpose": "Обеспечивает корректный перевод средств между пользователями с обновлением записей в базе данных и логированием ошибок.",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка валидности пользователей",
+    "Обновление данных в базе данных",
+    "Логирование ошибок",
+    "Использование транзакций для обеспечения целостности данных",
+    "Создание новых записей в истории операций"
+  ],
+  "dependencies_used": [
+    "NestJS",
+    "TypeORM",
+    "PostTransferDto",
+    "FindUserByIdUseCase",
+    "BillingService"
+  ],
+  "input_tokens": 2735,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "e9c0b294f1e03b7c"
+}

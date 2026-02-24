@@ -1,0 +1,386 @@
+[
+  {
+    "id": 277460,
+    "create_time": "2026-02-09T12:05:26.749Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете отправить адрес для доставки?"
+  },
+  {
+    "id": 277465,
+    "create_time": "2026-02-09T12:06:28.398Z",
+    "author_type": "client",
+    "sent_content": "Павлодарская область, \nг. Аксу, \nс.о. им. Мамаита Омарова, \nс. Енбек, ул. Ақмешіт , 11, н.п. 3 \nМагазин «Ducat» (Дукат)"
+  },
+  {
+    "id": 277478,
+    "create_time": "2026-02-09T12:08:09.239Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "✅"
+  },
+  {
+    "id": 278652,
+    "create_time": "2026-02-10T11:43:52.221Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте. Всё доставили. Спасибо"
+  },
+  {
+    "id": 278671,
+    "create_time": "2026-02-10T11:53:34.845Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 278675,
+    "create_time": "2026-02-10T11:53:55.610Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "С вами связались по поводу обучения?"
+  },
+  {
+    "id": 278677,
+    "create_time": "2026-02-10T11:54:07.506Z",
+    "author_type": "client",
+    "sent_content": "Ещё нет"
+  },
+  {
+    "id": 278678,
+    "create_time": "2026-02-10T11:54:33.290Z",
+    "author_type": "client",
+    "sent_content": "Желательно обучение провести в субботу или воскресенье, если это возможно"
+  },
+  {
+    "id": 278681,
+    "create_time": "2026-02-10T11:55:35.679Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "С вами свяжутся, чтиобы переговорить с вами"
+  },
+  {
+    "id": 278682,
+    "create_time": "2026-02-10T11:55:41.696Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 273893,
+    "create_time": "2026-02-05T10:35:18.742Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Лариса, спасибо за продуктивный разговор!\nВ продолжение нашего разговора отправляю Вам презентацию нашей учетной системы!\n\nНе стесняйтесь задавать дополнительные вопросы или уточнения – я всегда готов ответить на ваши вопросы и помочь вам.\n\nС уважением, Айдан, Ваш личный менеджер"
+  },
+  {
+    "id": 273894,
+    "create_time": "2026-02-05T10:35:42.491Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 273895,
+    "create_time": "2026-02-05T10:35:50.924Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Программа на 1 год подключения 150.000 тг"
+  },
+  {
+    "id": 273896,
+    "create_time": "2026-02-05T10:35:59.722Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно будет оформить все в рассрочку"
+  },
+  {
+    "id": 277044,
+    "create_time": "2026-02-09T10:01:15.606Z",
+    "author_type": "client",
+    "sent_content": "Айдан, здравствуйте. \nМы с Вами разговаривали на прошлой неделе. Я приняла решение всё же приобрести моноблок, сканер и принтер чеков отдельно. \n1. Сориентируйте пожалуйста какой моноблок будет более удобным в использовании и по цене.\n2. ⁠сканер, который считывает маркировку на пивных напитках.\n3. ⁠принтер чеков \n4. ⁠Программа для сканера и склада\n5. ⁠интеграция в программу Каспи терминала и кассы ОФД Каспи.\n6. ⁠Рассрочка- сроки и условия\n7. ⁠Возможность доставки в Село Енбек Павлодарская область"
+  },
+  {
+    "id": 277096,
+    "create_time": "2026-02-09T10:19:28.020Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно и без него обойтись, в самой программе по наименованию находить товар"
+  },
+  {
+    "id": 277057,
+    "create_time": "2026-02-09T10:08:39.244Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!"
+  },
+  {
+    "id": 277069,
+    "create_time": "2026-02-09T10:11:56.743Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Монблок intel core i3 140.000 тг \nСканер проводной 10.000 тг \nПринтер чеков 15.000 тг \nПрограмма 150.000 тг на 1 год подключения \nИнтеграция имеется с Каспи терминалом и с другими банками ( будет стоять наша онлайн касса ) \nРассрочка есть на 3 , 6 и 12 месяцев \nДоставка курьером Индрайв"
+  },
+  {
+    "id": 277073,
+    "create_time": "2026-02-09T10:13:38.761Z",
+    "author_type": "client",
+    "sent_content": "Кассу каспи можно оставить?"
+  },
+  {
+    "id": 277074,
+    "create_time": "2026-02-09T10:14:13.765Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, можно"
+  },
+  {
+    "id": 277076,
+    "create_time": "2026-02-09T10:14:24.488Z",
+    "author_type": "client",
+    "sent_content": "Отлично"
+  },
+  {
+    "id": 277078,
+    "create_time": "2026-02-09T10:15:01.457Z",
+    "author_type": "client",
+    "sent_content": "Принтер этикеток для какой цели нужен?"
+  },
+  {
+    "id": 277081,
+    "create_time": "2026-02-09T10:16:03.119Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Чтобы распечатывать штрих кода с ценниками"
+  },
+  {
+    "id": 277083,
+    "create_time": "2026-02-09T10:16:25.246Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Чтобы можно было наклеить их на товары"
+  },
+  {
+    "id": 277087,
+    "create_time": "2026-02-09T10:16:44.472Z",
+    "author_type": "client",
+    "sent_content": "Какая цена у этого принтера?"
+  },
+  {
+    "id": 277088,
+    "create_time": "2026-02-09T10:17:19.035Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Принтер этикеток 30.000 тг"
+  },
+  {
+    "id": 277097,
+    "create_time": "2026-02-09T10:19:31.735Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "или в категории"
+  },
+  {
+    "id": 277098,
+    "create_time": "2026-02-09T10:20:42.791Z",
+    "author_type": "client",
+    "sent_content": "Хорошо. Тогда оформляем рассрочку на 12 месяцев"
+  },
+  {
+    "id": 277101,
+    "create_time": "2026-02-09T10:21:03.546Z",
+    "author_type": "client",
+    "sent_content": "Без этого принтера"
+  },
+  {
+    "id": 277104,
+    "create_time": "2026-02-09T10:21:23.481Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы выставим вам 2 счета"
+  },
+  {
+    "id": 277106,
+    "create_time": "2026-02-09T10:21:47.206Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1 счет за программу 150.000 тг \n2 счет за оборудование 165.000 тг"
+  },
+  {
+    "id": 277107,
+    "create_time": "2026-02-09T10:21:58.094Z",
+    "author_type": "client",
+    "sent_content": "Доставку индрайвер кто оплачивает?"
+  },
+  {
+    "id": 277108,
+    "create_time": "2026-02-09T10:22:00.638Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для выставления счета , отправьте ИИН ИП и Каспи номер"
+  },
+  {
+    "id": 277109,
+    "create_time": "2026-02-09T10:22:27.708Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставку вы оплачиваете по прибытию"
+  },
+  {
+    "id": 277110,
+    "create_time": "2026-02-09T10:23:06.176Z",
+    "author_type": "client",
+    "sent_content": "ИИН 751018401209\nИП Марченко Л.А\n+77053428818"
+  },
+  {
+    "id": 277111,
+    "create_time": "2026-02-09T10:23:53.947Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставили первый счет"
+  },
+  {
+    "id": 277120,
+    "create_time": "2026-02-09T10:25:00.798Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Как оплату проведете, отправьте чек пожалуйста"
+  },
+  {
+    "id": 277125,
+    "create_time": "2026-02-09T10:27:56.498Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Благодарю за доверие!"
+  },
+  {
+    "id": 277127,
+    "create_time": "2026-02-09T10:28:07.596Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас проведем регистрацию в программе"
+  },
+  {
+    "id": 277128,
+    "create_time": "2026-02-09T10:28:14.975Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ваш номер можем использовать для создания аккаунта"
+  },
+  {
+    "id": 277129,
+    "create_time": "2026-02-09T10:28:22.836Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 277133,
+    "create_time": "2026-02-09T10:28:56.510Z",
+    "author_type": "client",
+    "sent_content": "Забыла спросить про гарантийный срок"
+  },
+  {
+    "id": 277135,
+    "create_time": "2026-02-09T10:29:20.018Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Гарантия 1 год"
+  },
+  {
+    "id": 277139,
+    "create_time": "2026-02-09T10:29:44.126Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправили смс код на ваш номер для регистрации"
+  },
+  {
+    "id": 277146,
+    "create_time": "2026-02-09T10:32:28.966Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Лариса, смс код действует в течении минуты"
+  },
+  {
+    "id": 277147,
+    "create_time": "2026-02-09T10:32:37.076Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам пришло?"
+  },
+  {
+    "id": 277150,
+    "create_time": "2026-02-09T10:32:57.031Z",
+    "author_type": "client",
+    "sent_content": "1540"
+  },
+  {
+    "id": 277155,
+    "create_time": "2026-02-09T10:34:12.716Z",
+    "author_type": "client",
+    "sent_content": "Если честно то после всех событий с мошенниками у меня не доверие к подобным вещам с кодами"
+  },
+  {
+    "id": 277156,
+    "create_time": "2026-02-09T10:34:20.303Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Аккаунт успешно создан✅"
+  },
+  {
+    "id": 277158,
+    "create_time": "2026-02-09T10:34:43.727Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/settings/account/balance\nЛогин 77053428818\nПароль 12345678"
+  },
+  {
+    "id": 277161,
+    "create_time": "2026-02-09T10:35:00.053Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Не переживайте, сообщение поступили от нашей компании Вайпон🤗"
+  },
+  {
+    "id": 277164,
+    "create_time": "2026-02-09T10:35:08.794Z",
+    "author_type": "client",
+    "sent_content": "Благодарю"
+  },
+  {
+    "id": 277166,
+    "create_time": "2026-02-09T10:35:12.340Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нужно было для регистрации"
+  },
+  {
+    "id": 277170,
+    "create_time": "2026-02-09T10:35:33.940Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сегодня соврешат отправку оборудования, перед отправкой с вами свяжутся"
+  },
+  {
+    "id": 277172,
+    "create_time": "2026-02-09T10:35:46.320Z",
+    "author_type": "client",
+    "sent_content": "Спасибо"
+  },
+  {
+    "id": 277175,
+    "create_time": "2026-02-09T10:36:19.002Z",
+    "author_type": "client",
+    "sent_content": "Я могу зайти по ссылке?"
+  },
+  {
+    "id": 277182,
+    "create_time": "2026-02-09T10:37:20.602Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, можете зайти"
+  },
+  {
+    "id": 277184,
+    "create_time": "2026-02-09T10:37:34.287Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Но тариф не активирован, активацию проведут после обучения"
+  },
+  {
+    "id": 277185,
+    "create_time": "2026-02-09T10:37:45.189Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 277962,
+    "create_time": "2026-02-09T15:45:07.015Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите какого цвета моноблок?"
+  },
+  {
+    "id": 277964,
+    "create_time": "2026-02-09T15:45:29.610Z",
+    "author_type": "client",
+    "sent_content": "А какие есть в наличии?"
+  },
+  {
+    "id": 277969,
+    "create_time": "2026-02-09T15:46:06.270Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Белого и черного цвета"
+  },
+  {
+    "id": 277970,
+    "create_time": "2026-02-09T15:46:15.282Z",
+    "author_type": "client",
+    "sent_content": "Чёрный"
+  },
+  {
+    "id": 277972,
+    "create_time": "2026-02-09T15:47:59.964Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  }
+]

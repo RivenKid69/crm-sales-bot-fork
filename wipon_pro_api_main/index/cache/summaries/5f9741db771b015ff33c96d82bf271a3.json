@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/update-notification-status.dto.ts:property:UpdateNotificationStatusDto:is_unread",
+  "summary": "Этот код определяет DTO-класс с булевым свойством 'is_unread', которое проверяется на наличие и тип. Используется для обновления статуса уведомления.",
+  "purpose": "Обеспечивает валидацию данных при обновлении статуса уведомления в API",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка, что поле обязательно заполнено",
+    "Проверка, что значение является булевым",
+    "Генерация документации через Swagger",
+    "Используется в HTTP-запросах",
+    "Обеспечивает типизацию данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1053,
+  "output_tokens": 608,
+  "model": "qwen3:14b",
+  "code_hash": "2966b8806489f000"
+}

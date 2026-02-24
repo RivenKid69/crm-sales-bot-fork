@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transaction.dto.ts:property:PostTransactionDto:contracter_id",
+  "summary": "Этот код проверяет данные транзакции перед сохранением. Он убедится, что все поля заполнены правильно, числа не содержат текст, а значения соответствуют списку допустимых вариантов.",
+  "purpose": "Обеспечивает корректность данных при создании транзакции в платежной системе",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Валидация типов данных (числа, строки)",
+    "Ограничение значений по списку",
+    "Проверка существования ledger",
+    "Поддержка необязательных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsLedgerExists",
+    "IsNumeric"
+  ],
+  "input_tokens": 1479,
+  "output_tokens": 637,
+  "model": "qwen3:14b",
+  "code_hash": "016d7685d03071fe"
+}

@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/data/reports.repository.ts:class:ReportsRepository",
+  "summary": "Этот класс представляет собой репозиторий для работы с сущностью ReportDao через TypeORM. Он позволяет выполнять операции чтения и записи данных в базе",
+  "purpose": "Обеспечивает типизированный доступ к данным отчетов в базе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Реализует базовые операции с данными (CRUD)",
+    "Использует TypeORM для взаимодействия с БД",
+    "Связывает сущность ReportDao с репозиторием"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 983,
+  "output_tokens": 567,
+  "model": "qwen3:14b",
+  "code_hash": "59cfc906aae7f5e9"
+}

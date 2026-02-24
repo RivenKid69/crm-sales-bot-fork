@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../users/domain/users.service",
+  "summary": "Этот код импортирует различные сервисы и use-cases, необходимые для работы с аутентификацией и авторизацией пользователей. Он использует DTO, настраивает токены, отправляет SMS и взаимодействует с базой данных.",
+  "purpose": "Обеспечивает функционал для регистрации, входа и управления пользователями в приложении.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Регистрация новых пользователей по номеру телефона",
+    "Проверка существующих пользователей",
+    "Генерация и отправка кодов подтверждения",
+    "Управление токенами для авторизации",
+    "Интеграция с SMS-сервисом"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LoginDto",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService",
+    "BillingService"
+  ],
+  "input_tokens": 2534,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

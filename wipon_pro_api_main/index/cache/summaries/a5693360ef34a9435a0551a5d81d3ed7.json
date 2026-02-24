@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/presenter/ledgers.controller.ts:class:LedgersController",
+  "summary": "Этот контроллер обрабатывает HTTP-запросы для перевода средств между счетами. Он проверяет IP-адреса, валидирует данные и использует сервис для выполнения логики перевода.",
+  "purpose": "Обеспечивает безопасный и структурированный способ обработки финансовых операций между пользователями",
+  "domain": "Финансовые операции, бухгалтерия",
+  "key_behaviors": [
+    "Обработка POST-запросов на перевод средств",
+    "Фильтрация по IP-адресам",
+    "Валидация данных через DTO",
+    "Использование сервиса для выполнения логики",
+    "Использует интерцептор для преобразования данных"
+  ],
+  "dependencies_used": [
+    "NestJS (Controller, Post, UseGuards, UseInterceptors, UsePipes, ValidationPipe)",
+    "LedgersService",
+    "PostTransferDto",
+    "IpFilterGuard",
+    "TransformInterceptor",
+    "ApiExcludeController"
+  ],
+  "input_tokens": 1320,
+  "output_tokens": 758,
+  "model": "qwen3:14b",
+  "code_hash": "b45a5c20f61e8253"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/domain/use-cases/create-users-auth-code.use-case.ts:method:CreateUsersAuthCodeUseCase:constructor",
+  "summary": "Этот метод создает временный код для пользователя, сохраняя его в базе данных. Код генерируется случайно, устанавливается срок действия и связывается с конкретным пользователем.",
+  "purpose": "Используется для генерации временных кодов, например, для подтверждения email или восстановления пароля.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Генерация случайного кода",
+    "Установка времени истечения кода",
+    "Связывание кода с пользователем",
+    "Сохранение кода в базе данных",
+    "Использование настроек из конфигурации"
+  ],
+  "dependencies_used": [
+    "AuthCodesRepository",
+    "generateAuthCode",
+    "addMinutesFromNow",
+    "authConfig"
+  ],
+  "input_tokens": 1222,
+  "output_tokens": 717,
+  "model": "qwen3:14b",
+  "code_hash": "7a3d308719e73e1e"
+}

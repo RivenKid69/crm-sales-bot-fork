@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/push/push.service.ts:class:PushService",
+  "summary": "PushService отправляет push-уведомления пользователям, проверяя наличие устройства, определяя платформу (Android/iOS), используя токен для уведомлений и учитывая количество непрочитанных сообщений.",
+  "purpose": "Используется для отправки push-уведомлений в мобильных приложениях",
+  "domain": "уведомления, мобильные приложения",
+  "key_behaviors": [
+    "Отправка уведомлений на Android и iOS",
+    "Проверка наличия устройства у пользователя",
+    "Определение платформы устройства",
+    "Подсчёт непрочитанных уведомлений",
+    "Использование внешнего сервиса для отправки сообщений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "NotificationDao",
+    "UserDao",
+    "PushProducerService",
+    "appConfig"
+  ],
+  "input_tokens": 1423,
+  "output_tokens": 726,
+  "model": "qwen3:14b",
+  "code_hash": "8e1f2ccaff4b79a1"
+}

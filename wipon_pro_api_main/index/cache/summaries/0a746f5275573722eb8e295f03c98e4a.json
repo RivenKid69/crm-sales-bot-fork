@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/presenter/accounts.controller.ts:method:AccountsController:constructor",
+  "summary": "Этот код создает контроллер для обработки HTTP-запросов к ресурсу 'accounts'. Он использует защиту авторизации, преобразование данных и документацию Swagger для API.",
+  "purpose": "Обрабатывает запросы на получение информации об аккаунтах пользователей, обеспечивая безопасность и корректное форматирование ответов.",
+  "domain": "api",
+  "key_behaviors": [
+    "Использует AuthGuard для проверки авторизации",
+    "Применяет TransformInterceptor для преобразования данных",
+    "Документирует API с помощью Swagger",
+    "Получает данные пользователя через User-декоратор",
+    "Вызывает метод сервиса для получения аккаунтов"
+  ],
+  "dependencies_used": [
+    "AuthGuard",
+    "TransformInterceptor",
+    "User",
+    "AccountsService"
+  ],
+  "input_tokens": 1139,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "60d205636fc816fd"
+}

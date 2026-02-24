@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/post-or-update-store.dto.ts:import:class-validator",
+  "summary": "Этот код создает класс DTO (Data Transfer Object) для валидации данных при создании или обновлении магазина. Использует декораторы из библиотеки class-validator для проверки типов и опциональности полей.",
+  "purpose": "Обеспечивает корректную валидацию входных данных в API для операций с магазинами",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка типов данных с помощью @IsString",
+    "Указание опциональных полей с помощью @IsOptional",
+    "Структурирование данных для передачи между клиентом и сервером",
+    "Упрощает обработку ошибок валидации в контроллерах",
+    "Служит шаблоном для создания других DTO"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1253,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "71cd55a752853d66"
+}

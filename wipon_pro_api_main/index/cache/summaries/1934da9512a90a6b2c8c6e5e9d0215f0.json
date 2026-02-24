@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/dto/get-ugds-list.dto.ts:property:GetUgdsListDto:dgd_id",
+  "summary": "Этот код определяет свойство 'dgd_id' в DTO-классе, которое может быть необязательным строковым параметром для фильтрации данных. Оно также документируется в Swagger и проверяется на валидность.",
+  "purpose": "Позволяет фильтровать данные UGD по идентификатору DGD в API-запросах",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка типа значения (строка)",
+    "Документация через Swagger",
+    "Необязательный параметр",
+    "Используется для фильтрации данных",
+    "Поддерживает валидацию входных данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1118,
+  "output_tokens": 681,
+  "model": "qwen3:14b",
+  "code_hash": "871c0b6fc8109af0"
+}

@@ -1,0 +1,524 @@
+[
+  {
+    "id": 9077,
+    "create_time": "2025-10-20T08:57:09.148Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!\nБлагодарим за обращение в компанию Wipon.\nМеня зовут Дана , буду Вашим персональным менеджером.\nПодскажите, как могу к Вам обращаться?"
+  },
+  {
+    "id": 12010,
+    "create_time": "2025-10-21T11:19:13.602Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12011,
+    "create_time": "2025-10-21T11:19:25.800Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12017,
+    "create_time": "2025-10-21T11:20:11.022Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Телефонмен жумыс жасау болады"
+  },
+  {
+    "id": 12018,
+    "create_time": "2025-10-21T11:20:22.332Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Дайын намименование болса, бул керемет"
+  },
+  {
+    "id": 12020,
+    "create_time": "2025-10-21T11:20:47.710Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12022,
+    "create_time": "2025-10-21T11:20:59.729Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12025,
+    "create_time": "2025-10-21T11:21:30.034Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12028,
+    "create_time": "2025-10-21T11:22:07.823Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12029,
+    "create_time": "2025-10-21T11:22:20.654Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12030,
+    "create_time": "2025-10-21T11:22:31.044Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12039,
+    "create_time": "2025-10-21T11:24:28.030Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12040,
+    "create_time": "2025-10-21T11:24:32.133Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12042,
+    "create_time": "2025-10-21T11:25:47.999Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, солай болады"
+  },
+  {
+    "id": 12043,
+    "create_time": "2025-10-21T11:26:06.950Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Принтер этикеток кажет па?"
+  },
+  {
+    "id": 12055,
+    "create_time": "2025-10-21T11:29:46.730Z",
+    "author_type": "client",
+    "sent_content": "Жок штрих апарат керек"
+  },
+  {
+    "id": 12056,
+    "create_time": "2025-10-21T11:29:57.732Z",
+    "author_type": "client",
+    "sent_content": "Ол бар"
+  },
+  {
+    "id": 12057,
+    "create_time": "2025-10-21T11:30:16.166Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сканер"
+  },
+  {
+    "id": 12064,
+    "create_time": "2025-10-21T11:32:21.067Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 13075,
+    "create_time": "2025-10-21T17:20:11.565Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мүслима, қандай шешімге келдіңіз?"
+  },
+  {
+    "id": 13076,
+    "create_time": "2025-10-21T17:21:19.713Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 13077,
+    "create_time": "2025-10-21T17:22:15.581Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы 🙌"
+  },
+  {
+    "id": 11740,
+    "create_time": "2025-10-21T10:03:53.160Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизде магазин кайда орналыскан?"
+  },
+  {
+    "id": 11960,
+    "create_time": "2025-10-21T11:00:29.856Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 11961,
+    "create_time": "2025-10-21T11:00:33.537Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 11962,
+    "create_time": "2025-10-21T11:00:38.846Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 11963,
+    "create_time": "2025-10-21T11:00:45.210Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 11971,
+    "create_time": "2025-10-21T11:03:55.898Z",
+    "author_type": "client",
+    "sent_content": "5000 наименованяга окима"
+  },
+  {
+    "id": 11972,
+    "create_time": "2025-10-21T11:04:04.430Z",
+    "author_type": "client",
+    "sent_content": "Асылып калмайма"
+  },
+  {
+    "id": 11973,
+    "create_time": "2025-10-21T11:04:22.836Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия арине"
+  },
+  {
+    "id": 11989,
+    "create_time": "2025-10-21T11:07:43.747Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Биздин программанын ишинде шексиз товарды косу болады"
+  },
+  {
+    "id": 11995,
+    "create_time": "2025-10-21T11:11:58.721Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "асылып калмайд"
+  },
+  {
+    "id": 11996,
+    "create_time": "2025-10-21T11:12:08.964Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизде адрес кандай?"
+  },
+  {
+    "id": 12000,
+    "create_time": "2025-10-21T11:14:45.308Z",
+    "author_type": "client",
+    "sent_content": "Карабұлак"
+  },
+  {
+    "id": 12001,
+    "create_time": "2025-10-21T11:15:23.472Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12002,
+    "create_time": "2025-10-21T11:15:38.281Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12003,
+    "create_time": "2025-10-21T11:15:42.484Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12004,
+    "create_time": "2025-10-21T11:17:28.278Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12006,
+    "create_time": "2025-10-21T11:18:01.769Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12332,
+    "create_time": "2025-10-21T12:57:58.591Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 12333,
+    "create_time": "2025-10-21T12:58:42.809Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12339,
+    "create_time": "2025-10-21T12:59:29.847Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, болады"
+  },
+  {
+    "id": 8947,
+    "create_time": "2025-10-19T23:26:34.471Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 8948,
+    "create_time": "2025-10-19T23:26:34.458Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 8949,
+    "create_time": "2025-10-19T23:26:36.013Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сәлеметсіз бе! Қандай көмегіміз қажет?"
+  },
+  {
+    "id": 8950,
+    "create_time": "2025-10-19T23:26:36.040Z",
+    "author_type": "client",
+    "sent_content": "Сәлеметсіз бе! Маған «Стандарт+» жинағы керек."
+  },
+  {
+    "id": 11454,
+    "create_time": "2025-10-20T20:41:50.249Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 11733,
+    "create_time": "2025-10-21T10:03:17.060Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Дильназ, саламатсыз ба!"
+  },
+  {
+    "id": 11738,
+    "create_time": "2025-10-21T10:03:39.447Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Биздин программа строительный магазинге арналган"
+  },
+  {
+    "id": 11950,
+    "create_time": "2025-10-21T10:57:40.071Z",
+    "author_type": "client",
+    "sent_content": "Шимкентте"
+  },
+  {
+    "id": 11954,
+    "create_time": "2025-10-21T10:59:12.421Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Керемет\" Бизде Шымкент каласында офис ашылган"
+  },
+  {
+    "id": 11955,
+    "create_time": "2025-10-21T10:59:27.718Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сиз биздин офиске келе аласыз ба?"
+  },
+  {
+    "id": 11956,
+    "create_time": "2025-10-21T10:59:54.075Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Немесе биз оборудованиемен озимиз сизге келип, корсете аламыз"
+  },
+  {
+    "id": 11958,
+    "create_time": "2025-10-21T11:00:00.689Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бул тегин болады"
+  },
+  {
+    "id": 12065,
+    "create_time": "2025-10-21T11:32:25.688Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12066,
+    "create_time": "2025-10-21T11:32:28.780Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12067,
+    "create_time": "2025-10-21T11:34:00.061Z",
+    "author_type": "client",
+    "sent_content": "Осы болады"
+  },
+  {
+    "id": 12068,
+    "create_time": "2025-10-21T11:34:31.789Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы"
+  },
+  {
+    "id": 12069,
+    "create_time": "2025-10-21T11:34:44.396Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Программа 150.000 тг\nБеспроводной сканер 17.000 тг"
+  },
+  {
+    "id": 12070,
+    "create_time": "2025-10-21T11:34:57.917Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Болды ма?"
+  },
+  {
+    "id": 12074,
+    "create_time": "2025-10-21T11:36:25.303Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12075,
+    "create_time": "2025-10-21T11:36:37.481Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12077,
+    "create_time": "2025-10-21T11:38:32.179Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бір бағдарлама сатып алсаңыз, бірнеше құрылғыны қосуыңызға болады."
+  },
+  {
+    "id": 12079,
+    "create_time": "2025-10-21T11:38:54.214Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Келес тегин болады"
+  },
+  {
+    "id": 12081,
+    "create_time": "2025-10-21T11:39:22.923Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бул бари 1 магазинде гой?"
+  },
+  {
+    "id": 12082,
+    "create_time": "2025-10-21T11:39:44.449Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12087,
+    "create_time": "2025-10-21T11:40:19.380Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия тегин болады"
+  },
+  {
+    "id": 12089,
+    "create_time": "2025-10-21T11:40:35.585Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 12090,
+    "create_time": "2025-10-21T11:40:46.103Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12092,
+    "create_time": "2025-10-21T11:41:25.853Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, болады"
+  },
+  {
+    "id": 12100,
+    "create_time": "2025-10-21T11:47:43.643Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Муслима, кашан бастаймыз?"
+  },
+  {
+    "id": 12101,
+    "create_time": "2025-10-21T11:48:05.859Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бугин толем жассаныз, обучениеге жазып кояйк сизди"
+  },
+  {
+    "id": 12103,
+    "create_time": "2025-10-21T11:48:20.543Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Менеджер сизге келип, бари орнатады"
+  },
+  {
+    "id": 12105,
+    "create_time": "2025-10-21T11:48:50.231Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12106,
+    "create_time": "2025-10-21T11:48:57.308Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сканер-мен бирге"
+  },
+  {
+    "id": 12107,
+    "create_time": "2025-10-21T11:49:02.499Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12108,
+    "create_time": "2025-10-21T11:49:29.070Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 12109,
+    "create_time": "2025-10-21T11:49:48.130Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия бир кун шыгады"
+  },
+  {
+    "id": 12111,
+    "create_time": "2025-10-21T11:50:17.230Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Установка тегин, тек программа-сы толем жасайсыз болды"
+  },
+  {
+    "id": 12112,
+    "create_time": "2025-10-21T11:50:33.406Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12113,
+    "create_time": "2025-10-21T11:50:39.470Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бул аналитика шыгады"
+  },
+  {
+    "id": 12118,
+    "create_time": "2025-10-21T11:51:06.564Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12119,
+    "create_time": "2025-10-21T11:51:07.625Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Режим кассы"
+  },
+  {
+    "id": 12121,
+    "create_time": "2025-10-21T11:51:30.781Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы, обед-тен кийн хабар кутемиз"
+  },
+  {
+    "id": 12126,
+    "create_time": "2025-10-21T11:51:55.004Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 12127,
+    "create_time": "2025-10-21T11:52:06.132Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 12533,
+    "create_time": "2025-10-21T14:32:49.305Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Муслима, сиз бастыпен хабарласкансыз ба?"
+  }
+]

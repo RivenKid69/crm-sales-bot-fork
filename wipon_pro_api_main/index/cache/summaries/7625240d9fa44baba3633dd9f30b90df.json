@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/update-notification-status.dto.ts:class:UpdateNotificationStatusDto",
+  "summary": "Этот класс используется для передачи данных при обновлении статуса уведомления. Он проверяет, что поле 'is_unread' не пустое и является логическим значением (true/false).",
+  "purpose": "Обеспечивает корректную валидацию данных при обновлении статуса уведомления в API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поле не пустое",
+    "Проверка, что значение является булевым",
+    "Генерация документации для Swagger",
+    "Используется как DTO для передачи данных",
+    "Обеспечивает типизацию входных данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1062,
+  "output_tokens": 618,
+  "model": "qwen3:14b",
+  "code_hash": "2966b8806489f000"
+}

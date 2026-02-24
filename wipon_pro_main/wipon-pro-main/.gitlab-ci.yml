@@ -1,0 +1,5 @@
+include:
+  - project: 'devops/gitlab-ci'
+    ref: main
+    file: 'wipon/wipon-pro-app.yaml'
+  

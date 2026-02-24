@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store.dao.ts:property:StoreDao:payer_postal_address",
+  "summary": "Это класс сущности в TypeORM, представляющий таблицу 'stores' в базе данных. Он описывает структуру таблицы, включая поля, такие как ID, пользователь, регион, адрес, тип магазина и связанные сущности.",
+  "purpose": "Используется для хранения и управления данными о магазинах в базе данных с поддержкой связей и временных меток.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит информацию о магазинах, включая адреса и контактные данные",
+    "Использует временные метки (created_at, updated_at, deleted_at)",
+    "Поддерживает связь один к одному с другими сущностями (StoreType, Dgd, Ugd, User)",
+    "Использует автоматически генерируемый ID как первичный ключ",
+    "Позволяет настраивать длину и типы полей в базе данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreTypeDao",
+    "DgdDao",
+    "UgdDao",
+    "UserDao"
+  ],
+  "input_tokens": 1976,
+  "output_tokens": 791,
+  "model": "qwen3:14b",
+  "code_hash": "f69c06843df0eb5a"
+}

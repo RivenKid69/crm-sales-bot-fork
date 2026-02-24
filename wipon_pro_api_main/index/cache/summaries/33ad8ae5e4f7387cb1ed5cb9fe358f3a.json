@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/presenter/notifications.controller.ts:method:NotificationsController:constructor",
+  "summary": "Этот код - контроллер NestJS, который обрабатывает запросы к уведомлениям пользователей. Он позволяет получать, отправлять, обновлять и удалять уведомления, а также отправлять массовые уведомления.",
+  "purpose": "Создает REST API для управления уведомлениями пользователей в приложении",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения уведомлений",
+    "Отправка отдельных уведомлений через POST",
+    "Обновление статуса уведомлений через PUT",
+    "Удаление уведомлений через DELETE",
+    "Отправка массовых уведомлений через POST"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "NotificationsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2271,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "693e2857eabd9d27"
+}

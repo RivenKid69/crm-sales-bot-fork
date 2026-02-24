@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/domain/feedbacks.service.ts:property:FeedbacksService:Base64_SAVE_SUBDIRECTORY",
+  "summary": "Это приватная константа, которая хранит имя подкаталога 'feedback_messages' для сохранения изображений в формате base64. Используется при обработке обратной связи от пользователей.",
+  "purpose": "Указывает место хранения изображений, отправляемых с отзывами, чтобы избежать путаницы в файловой системе",
+  "domain": "обратная связь",
+  "key_behaviors": [
+    "Хранит имя подкаталога для изображений",
+    "Используется в функции сохранения base64-файлов",
+    "Позволяет легко изменить путь хранения без правки логики",
+    "Работает с внешними хелперами для обработки изображений",
+    "Используется только в текущем классе"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 2391,
+  "output_tokens": 726,
+  "model": "qwen3:14b",
+  "code_hash": "85d4cbefa0fbdee8"
+}

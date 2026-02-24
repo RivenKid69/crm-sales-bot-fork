@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../../common/services/billing/billing.service",
+  "summary": "Этот код импортирует необходимые зависимости для создания сервиса аутентификации, который обрабатывает вход пользователей, генерирует коды подтверждения, устанавливает токены и взаимодействует с другими сервисами, такими как SMS и биллинг.",
+  "purpose": "Обеспечить безопасный и удобный процесс аутентификации пользователей в приложении.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Обработка входа по номеру телефона",
+    "Генерация и проверка кодов подтверждения",
+    "Установка токенов для авторизации",
+    "Взаимодействие с сервисами SMS и биллинга",
+    "Создание и управление пользователями"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService",
+    "BillingService",
+    "SetUsersTokenUseCase"
+  ],
+  "input_tokens": 2624,
+  "output_tokens": 750,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

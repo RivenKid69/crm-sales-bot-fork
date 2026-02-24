@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/dto/login.dto.ts:property:LoginDto:auth_code",
+  "summary": "Этот код описывает DTO (Data Transfer Object) для входа в систему. Он включает валидацию данных, такие как телефонный номер, код подтверждения и тип приложения, и добавляет документацию API.",
+  "purpose": "Обеспечивает корректный ввод данных для авторизации через телефон и код подтверждения",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка телефонного номера по формату Казахстана",
+    "Обязательное поле для номера телефона",
+    "Проверка длины кода подтверждения (6 символов)",
+    "Ограничение значений application_type",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1313,
+  "output_tokens": 650,
+  "model": "qwen3:14b",
+  "code_hash": "a570ba58be82c9e0"
+}

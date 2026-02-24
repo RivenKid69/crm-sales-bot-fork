@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/reports.module.ts:class:ReportsModule",
+  "summary": "Этот класс - модуль NestJS, который объединяет компоненты для работы с отчётами. Он использует TypeORM для работы с базой данных и подключается к модулю пользователей.",
+  "purpose": "Организует логику работы с отчётами, обеспечивая доступ к данным и взаимодействие с другими модулями.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "подключение к базе данных через TypeORM",
+    "интеграция с модулем пользователей",
+    "предоставление сервиса для работы с отчётами",
+    "объявление контроллера для обработки запросов",
+    "структурирование кода в модуль"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UsersModule"
+  ],
+  "input_tokens": 1026,
+  "output_tokens": 708,
+  "model": "qwen3:14b",
+  "code_hash": "bb5f6d6891d20198"
+}

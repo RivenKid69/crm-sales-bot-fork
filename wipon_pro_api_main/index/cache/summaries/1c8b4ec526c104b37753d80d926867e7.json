@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/doomguy/doomguy.service.ts:import:../../../modules/sms/dto/post-callback.dto",
+  "summary": "Этот код создает сервис в NestJS, который отправляет сообщения в Slack через HTTP-запросы. Он использует настройки приложения, логгер ошибок и функции для работы со временем и данными из DTO.",
+  "purpose": "Отправка уведомлений и отчетов в Slack для мониторинга и обработки сообщений, ошибок и SMS-уведомлений в приложении.",
+  "domain": "утилиты, логирование, api",
+  "key_behaviors": [
+    "Отправка сообщений в Slack через HTTP-запросы",
+    "Использование настроек приложения для выбора канала в Slack",
+    "Логирование ошибок с деталями запроса и ответа",
+    "Форматирование сообщений с информацией о пользователях и SMS-отчетах",
+    "Поддержка разных каналов в зависимости от среды (production/staging)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "logger/error-logger",
+    "config/app.config",
+    "helpers/datetime",
+    "modules/sms/dto/post-callback.dto"
+  ],
+  "input_tokens": 2444,
+  "output_tokens": 791,
+  "model": "qwen3:14b",
+  "code_hash": "4e3be25ad0adb3a0"
+}

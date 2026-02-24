@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:../../../modules/accounts/domain/use-cases/update-user-accounts-ledger.use-case",
+  "summary": "Этот код отвечает за создание и управление финансовыми записями (ledger) и учетными записями пользователей. Он использует специальные сервисы для обновления данных, проверяет существующие записи и взаимодействует с базой данных через DAO-объекты.",
+  "purpose": "Обеспечивает корректное создание и обновление финансовых записей и учетных записей пользователей в системе.",
+  "domain": "база данных, финансовые операции, учетные записи",
+  "key_behaviors": [
+    "Создание и обновление записей в леджере",
+    "Проверка существующих записей в базе данных",
+    "Использование специальных use-case для обработки данных",
+    "Работа с транзакциями в базе данных",
+    "Управление учетными записями пользователей"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "ledger.dao",
+    "account.dao",
+    "user.dao"
+  ],
+  "input_tokens": 2737,
+  "output_tokens": 767,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

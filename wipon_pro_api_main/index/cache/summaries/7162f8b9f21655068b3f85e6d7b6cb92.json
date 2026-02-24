@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/get-users-check.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код определяет DTO (объект данных) для фильтрации пользователей по статусу. Он использует валидацию и документацию через Swagger",
+  "purpose": "Позволяет фильтровать пользователей по статусу с проверкой валидности данных и созданием документации API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что значение status из списка ['valid', 'fake', 'atlas']",
+    "Создание документации Swagger для параметра status",
+    "Разрешает не указывать параметр status"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1093,
+  "output_tokens": 617,
+  "model": "qwen3:14b",
+  "code_hash": "8eaa7e0a542eabc6"
+}

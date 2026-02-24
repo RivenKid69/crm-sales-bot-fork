@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/dto/generate-invoice.dto.ts:import:../../../common/validations/is-numeric",
+  "summary": "Этот код импортирует валидаторы для проверки данных в DTO-классе. Он использует декораторы, которые проверяют, что поля не пустые, соответствуют определённым типам и значениям.",
+  "purpose": "Обеспечивает корректность входных данных при генерации счёта",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поле 'type' содержит одно из допустимых значений",
+    "Обязательное заполнение всех полей",
+    "Проверка числовых значений на корректность",
+    "Проверка строковых полей на наличие текста",
+    "Использование кастомной валидации для чисел"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "is-numeric"
+  ],
+  "input_tokens": 1217,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "fcb64ead6704fd66"
+}

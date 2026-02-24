@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/invoice.dao.ts:property:InvoiceDao:amount",
+  "summary": "Класс InvoiceDao представляет собой сущность в базе данных, которая хранит информацию о счетах. Он использует TypeORM для определения полей и связей с другими сущностями, такими как LedgerDao.",
+  "purpose": "Упрощает работу с данными о счетах в приложении, обеспечивая структурированное хранение и связь с другими сущностями",
+  "domain": "База данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор счета (id)",
+    "Связывает счет с записью в книге (ledger_id)",
+    "Хранит информацию о сумме счета с высокой точностью",
+    "Отслеживает даты создания и обновления счета",
+    "Устанавливает связь один к одному с сущностью LedgerDao"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao"
+  ],
+  "input_tokens": 1389,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "44b6761a156d5159"
+}

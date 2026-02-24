@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:import:../dto/show-active-sub-for-erp.dto",
+  "summary": "Этот код импортирует DTO-класс, который используется для передачи данных при обработке запросов, связанных с подписками. Он помогает структурировать и валидировать входные данные в API.",
+  "purpose": "Обеспечивает передачу и валидацию данных при работе с подписками в приложении",
+  "domain": "DTO, API, валидация данных",
+  "key_behaviors": [
+    "Структурирование данных для API-запросов",
+    "Валидация входных данных",
+    "Использование в контроллере для обработки запросов",
+    "Поддержка различных сценариев (например, для ERP-систем)",
+    "Интеграция с другими компонентами приложения"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 2766,
+  "output_tokens": 710,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

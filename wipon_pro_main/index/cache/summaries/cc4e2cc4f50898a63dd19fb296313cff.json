@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:AugmentedActionContext",
+  "summary": "Этот код реализует логику работы с состоянием в Vuex, получает данные о счете и транзакциях с сервера, обновляет состояние и предоставляет доступ к данным через геттеры.",
+  "purpose": "Обеспечивает управление данными счета и транзакций в приложении на Vue.js с использованием Vuex.",
+  "domain": "state management (Vuex)",
+  "key_behaviors": [
+    "Получает данные о счете с сервера через API",
+    "Обновляет состояние приложения с помощью мутаций",
+    "Предоставляет данные через геттеры",
+    "Обрабатывает и фильтрует транзакции",
+    "Использует типизацию для улучшения читаемости и безопасности кода"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через account.api)"
+  ],
+  "input_tokens": 1982,
+  "output_tokens": 687,
+  "model": "qwen3:14b",
+  "code_hash": "163739c30fec881b"
+}

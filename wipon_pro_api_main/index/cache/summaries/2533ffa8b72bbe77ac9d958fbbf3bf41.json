@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/ugd-licenses.module.ts:class:UgdLicensesModule",
+  "summary": "Этот модуль объединяет компоненты для работы с лицензиями UGD. Он подключает базу данных, контроллер для обработки запросов и сервис для логики бизнес-правил.",
+  "purpose": "Организует связанную логику работы с лицензиями в отдельный модуль для удобства управления и повторного использования",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подключает репозиторий для работы с базой данных",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Содержит бизнес-логику в сервисе",
+    "Экспортирует сервис для других модулей",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1201,
+  "output_tokens": 692,
+  "model": "qwen3:14b",
+  "code_hash": "da5e9030b6842889"
+}

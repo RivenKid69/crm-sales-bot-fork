@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/accounts.module.ts:import:./domain/use-cases/sum-ledger-accounts-balance.use-case",
+  "summary": "Этот код создает модуль NestJS для управления финансовыми счетами. Он использует TypeORM для работы с базой данных, включает сервисы, use-cases и контроллеры для обработки операций со счетами и транзакциями.",
+  "purpose": "Обеспечивает структурированную работу с финансовыми счетами и транзакциями в приложении",
+  "domain": "база данных, финансовые операции",
+  "key_behaviors": [
+    "Интеграция с базой данных через TypeORM",
+    "Обработка операций со счетами и транзакциями",
+    "Использование use-cases для бизнес-логики",
+    "Экспорт use-cases для использования в других модулях",
+    "Связь с модулем пользователей (UsersModule)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1583,
+  "output_tokens": 739,
+  "model": "qwen3:14b",
+  "code_hash": "c4b9b766cb1868f1"
+}

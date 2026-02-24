@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../../subscriptions/domain/use-cases/count-users-active-subscription.use-case",
+  "summary": "Этот код реализует сервис для работы со складами, валидирует данные, проверяет лицензии и взаимодействует с другими частями приложения через use-cases и репозитории",
+  "purpose": "Обрабатывает бизнес-логику для управления складами и проверки активных подписок пользователей",
+  "domain": "бизнес-логика, управление складами, подписки",
+  "key_behaviors": [
+    "Валидация входных данных через DTO",
+    "Проверка активных подписок пользователей",
+    "Поиск регионов по названию или ID",
+    "Работа с репозиториями для сохранения и получения данных о складах",
+    "Использование TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3033,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

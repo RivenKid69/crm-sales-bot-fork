@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger-chronic.dao.ts:property:LedgerChronicDao:started_at",
+  "summary": "Это свойство хранит дату и время окончания события в формате timestamp. Оно сохраняется в базе данных как колонка 'finished_at' в таблице ledger_chronics",
+  "purpose": "Используется для отслеживания времени окончания операции в бухгалтерском журнале",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит дату и время окончания события",
+    "Использует формат timestamp для хранения времени",
+    "Связано с таблицей ledger_chronics в базе данных"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1135,
+  "output_tokens": 561,
+  "model": "qwen3:14b",
+  "code_hash": "b62f498bfd6a312f"
+}

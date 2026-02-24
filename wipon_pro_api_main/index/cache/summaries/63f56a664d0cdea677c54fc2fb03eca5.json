@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/sum-ledger-accounts-balance.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который считает общую сумму балансов счетов в определенном леджере. Он использует TypeORM для запроса базы данных и возвращает результат как число.",
+  "purpose": "Позволяет другим частям приложения быстро получать общую сумму балансов для конкретного леджера",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Вычисляет сумму балансов по леджеру",
+    "Использует TypeORM для работы с базой данных",
+    "Возвращает результат как число",
+    "Инжектит репозиторий через NestJS",
+    "Использует SQL-запрос для агрегации данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1126,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "5669ad8ed65702b4"
+}

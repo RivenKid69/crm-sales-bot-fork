@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/domain/use-cases/find-region-by-name.use-case.ts:class:FindRegionByNameUseCase",
+  "summary": "Этот класс ищет регион по его названию на русском языке. Он использует репозиторий для поиска в базе данных и возвращает объект с данными региона.",
+  "purpose": "Позволяет быстро находить информацию о регионе по названию, например, для заполнения выпадающих списков на сайте",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет регион по русскому названию",
+    "Возвращает объект с данными региона",
+    "Использует TypeORM для работы с базой",
+    "Поддерживает асинхронные операции",
+    "Можно внедрять в другие сервисы"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1173,
+  "output_tokens": 675,
+  "model": "qwen3:14b",
+  "code_hash": "8b310433c08e76a6"
+}

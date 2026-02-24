@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/mass-notification.dto.ts:import:class-validator",
+  "summary": "Этот код создает класс для проверки данных перед отправкой уведомлений. Он проверяет, что массив user_ids содержит числа, а message - строку, и оба поля обязательны к заполнению.",
+  "purpose": "Обеспечивает валидацию входных данных при отправке массовых уведомлений",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка, что user_ids - массив чисел",
+    "Обязательное заполнение user_ids",
+    "Проверка, что message - строка",
+    "Обязательное заполнение message",
+    "Использует декораторы для валидации"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1035,
+  "output_tokens": 600,
+  "model": "qwen3:14b",
+  "code_hash": "526df3fb544f3401"
+}

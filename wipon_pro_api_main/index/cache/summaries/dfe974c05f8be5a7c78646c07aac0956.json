@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/validations/is-entity-exists.ts:function:IsItemExists",
+  "summary": "Этот код создает валидатор, который проверяет существует ли товар с заданным ID. Он использует DAO для поиска товара в базе данных и возвращает true, если товар найден.",
+  "purpose": "Убедиться, что вводимый ID товара соответствует существующему элементу в базе данных",
+  "domain": "валидация данных",
+  "key_behaviors": [
+    "Проверка существования товара по ID",
+    "Асинхронная валидация через базу данных",
+    "Интеграция с DAO для доступа к данным",
+    "Реиспользуемый валидатор для разных сценариев",
+    "Работает с объектами класса-validator"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "ItemDao"
+  ],
+  "input_tokens": 2628,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "6765c3cb44480c13"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/devices.service.ts:class:DevicesService",
+  "summary": "Этот класс управляет привязкой устройств к пользователям. Он проверяет существующие коды устройств, привязывает их к пользователям и проверяет, есть ли у пользователя устройства определенного типа.",
+  "purpose": "Обеспечивает корректное назначение и проверку устройств для пользователей в системе",
+  "domain": "управление устройствами, авторизация",
+  "key_behaviors": [
+    "Проверка существования устройства по коду",
+    "Привязка устройства к пользователю",
+    "Проверка наличия устройства у пользователя",
+    "Обработка ошибок при отсутствии устройства",
+    "Форматирование кода устройства"
+  ],
+  "dependencies_used": [
+    "DevicesRepository",
+    "UserDao",
+    "HttpException",
+    "NotFoundException",
+    "substr"
+  ],
+  "input_tokens": 1715,
+  "output_tokens": 709,
+  "model": "qwen3:14b",
+  "code_hash": "03de6843288a4e01"
+}

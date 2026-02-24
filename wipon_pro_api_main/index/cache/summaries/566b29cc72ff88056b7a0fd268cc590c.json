@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.module.ts:import:../../common/services/doomguy/doomguy.service",
+  "summary": "Этот код создает модуль для проверки подлинности товаров, используя кэширование через Redis, HTTP-запросы и сервисы из других частей приложения. Он подключает модуль продуктов и настраивает кэш для хранения данных.",
+  "purpose": "Обеспечивает быструю проверку подлинности товаров с использованием кэширования и внешних API",
+  "domain": "авторизация, логирование, настройки",
+  "key_behaviors": [
+    "Кэширование данных через Redis для ускорения доступа",
+    "Использование HTTP-запросов для внешних сервисов",
+    "Интеграция с модулем товаров",
+    "Использование общего утилитного сервиса Doomguy",
+    "Экспорт сервиса для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1290,
+  "output_tokens": 752,
+  "model": "qwen3:14b",
+  "code_hash": "ebbdc38df465fc39"
+}

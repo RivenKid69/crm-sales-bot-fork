@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/guard/auth.guard.ts:import:express",
+  "summary": "Этот код проверяет, авторизован ли пользователь, используя токен в заголовке запроса. Если токен валиден, пользователь привязывается к запросу, и доступ разрешается.",
+  "purpose": "Защищает маршруты, требующие аутентификации, и проверяет наличие действительного токена.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие заголовка Authorization",
+    "Извлекает токен из заголовка",
+    "Ищет пользователя по токену",
+    "Привязывает пользователя к запросу",
+    "Выдает ошибку, если токен недействителен"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "express"
+  ],
+  "input_tokens": 1235,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "aa5f49446dc9da5b"
+}

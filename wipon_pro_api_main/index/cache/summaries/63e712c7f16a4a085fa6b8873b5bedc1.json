@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-device-code.use-case.ts:class:FindDeviceCodeUseCase",
+  "summary": "Этот класс - сервис, который проверяет, существует ли код устройства в базе данных. Он как библиотекарь, который ищет книгу по названию и говорит, есть ли она в наличии.",
+  "purpose": "Позволяет проверять валидность кода устройства перед выполнением операций, связанных с ним",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет код устройства в базе данных",
+    "Генерирует ошибку, если код не найден",
+    "Используется в бизнес-логике приложения",
+    "Работает как отдельный сервис",
+    "Поддерживает повторное использование в других частях приложения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 933,
+  "output_tokens": 690,
+  "model": "qwen3:14b",
+  "code_hash": "e61dea4d719e75a4"
+}

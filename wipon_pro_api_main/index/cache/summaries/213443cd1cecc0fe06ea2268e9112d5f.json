@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/send-push-to-expiring-subs.task.ts:import:luxon",
+  "summary": "Этот код создает задачу, которая ежедневно отправляет уведомления пользователям с подписками, которые заканчиваются через 2 дня. Использует кэш для предотвращения повторных запусков и работает с базой данных через TypeORM.",
+  "purpose": "Отправлять напоминания пользователям о заканчивающихся подписках",
+  "domain": "push-уведомления, подписки, задачи",
+  "key_behaviors": [
+    "Работает с кэш-системой для предотвращения повторных запусков задачи",
+    "Использует Cron для запуска задачи в определенное время",
+    "Отправляет push-уведомления через PushService",
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Логирует ошибки с помощью кастомного логгера"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/schedule",
+    "cache-manager",
+    "luxon",
+    "typeorm",
+    "uuid"
+  ],
+  "input_tokens": 2307,
+  "output_tokens": 773,
+  "model": "qwen3:14b",
+  "code_hash": "ca33a02fa437abb3"
+}

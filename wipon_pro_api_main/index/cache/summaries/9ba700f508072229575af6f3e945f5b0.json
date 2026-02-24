@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/sms.service.ts:method:SmsService:sendSms",
+  "summary": "Этот метод отправляет SMS с кодом авторизации на указанный номер телефона. В режиме разработки он возвращает true, а в продакшене отправляет HTTP-запрос и логирует ошибки.",
+  "purpose": "Используется для отправки кодов подтверждения пользователям по SMS в системе авторизации",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Отправка SMS только в продакшен-окружении",
+    "Использование конфигурационных файлов для настроек SMS-шлюза",
+    "Логирование ошибок отправки сообщений",
+    "Формирование HTTP-запроса через FormData",
+    "Возврат результата в виде boolean"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "form-data"
+  ],
+  "input_tokens": 1796,
+  "output_tokens": 647,
+  "model": "qwen3:14b",
+  "code_hash": "c49798b41ce5c5e6"
+}

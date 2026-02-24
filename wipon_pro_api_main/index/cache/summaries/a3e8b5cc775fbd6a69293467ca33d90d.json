@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/dto/post-transfer.dto.ts:property:PostTransferDto:to_user_id",
+  "summary": "Этот код определяет свойство to_user_id в DTO-классе, которое проверяется на наличие и числовое значение. Использует валидаторы для обеспечения корректности данных",
+  "purpose": "Гарантирует, что идентификатор получателя (to_user_id) корректен и может быть использован в системе",
+  "domain": "API-валидация",
+  "key_behaviors": [
+    "Проверка на непустое значение",
+    "Проверка числового формата",
+    "Использование кастомного валидатора",
+    "Обеспечение корректности данных",
+    "Подготовка данных для обработки"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "../../../common/validations/is-numeric"
+  ],
+  "input_tokens": 1132,
+  "output_tokens": 699,
+  "model": "qwen3:14b",
+  "code_hash": "b4fecf32c5078b3c"
+}

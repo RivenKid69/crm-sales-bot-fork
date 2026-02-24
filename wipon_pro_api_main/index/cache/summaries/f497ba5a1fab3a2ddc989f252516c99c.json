@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/create-user-by-phone-use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код определяет use-case для создания пользователя по номеру телефона. Он использует репозиторий для взаимодействия с базой данных и возвращает объект пользователя после выполнения операции.",
+  "purpose": "Обеспечивает возможность регистрации новых пользователей через ввод номера телефона в приложении",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Использует @InjectRepository для инъекции репозитория",
+    "Вызывает метод репозитория для создания пользователя",
+    "Возвращает UserDao в качестве результата",
+    "Работает с базой данных через TypeORM",
+    "Реализует бизнес-логику регистрации"
+  ],
+  "dependencies_used": [
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1028,
+  "output_tokens": 708,
+  "model": "qwen3:14b",
+  "code_hash": "a18cabd96a0ffc95"
+}

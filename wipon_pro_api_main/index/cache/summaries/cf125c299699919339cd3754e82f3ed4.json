@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account-transaction.dao.ts:property:AccountTransactionDao:sum",
+  "summary": "Это свойство хранит числовое значение суммы транзакции с точностью до двух знаков после запятой. Использует тип 'numeric' для точных финансовых расчетов.",
+  "purpose": "Позволяет точно хранить и обрабатывать денежные суммы в транзакциях",
+  "domain": "Финансовые операции, бухгалтерия",
+  "key_behaviors": [
+    "Хранение чисел с двумя знаками после запятой",
+    "Поддержка точных финансовых расчетов",
+    "Использование типа 'numeric' вместо 'float'",
+    "Интеграция с ORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1420,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "98365361d7082291"
+}

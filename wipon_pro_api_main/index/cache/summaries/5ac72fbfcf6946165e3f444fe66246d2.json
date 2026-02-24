@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/filters/exceptions.filter.ts:class:ExceptionsFilter",
+  "summary": "Этот класс перехватывает все исключения в приложении NestJS, логирует ошибки сервера и отправляет клиенту стандартизированный ответ с информацией об ошибке.",
+  "purpose": "Обеспечивает единое обработку ошибок во всем приложении и упрощает отладку",
+  "domain": "error handling",
+  "key_behaviors": [
+    "Логирует ошибки сервера (500+)",
+    "Формирует единый JSON-ответ для клиентов",
+    "Использует кастомный логгер для записи ошибок",
+    "Получает данные из запроса (URL, тело, пользователь)",
+    "Обрабатывает как HttpException, так и обычные исключения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "../logger/error-logger"
+  ],
+  "input_tokens": 1535,
+  "output_tokens": 684,
+  "model": "qwen3:14b",
+  "code_hash": "a4c7020389d7afd4"
+}

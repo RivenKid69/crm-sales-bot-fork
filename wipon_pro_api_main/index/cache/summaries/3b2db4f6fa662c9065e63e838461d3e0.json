@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/dto/get-license.dto.ts:import:class-validator",
+  "summary": "Этот код создает класс DTO для передачи данных лицензии. Он проверяет, что поле license_number не пустое и является строкой, а также описывает это поле в документации API.",
+  "purpose": "Обеспечивает валидацию данных и генерацию документации для API-запросов",
+  "domain": "API, валидация",
+  "key_behaviors": [
+    "Проверка непустого значения",
+    "Проверка типа данных (строка)",
+    "Генерация документации Swagger",
+    "Описание поля для разработчиков",
+    "Использование DTO для передачи данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1064,
+  "output_tokens": 643,
+  "model": "qwen3:14b",
+  "code_hash": "60851383e58d9cce"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/data/checks.repository.ts:method:ChecksRepository:countUsersChecks",
+  "summary": "Этот код - репозиторий для работы с чеками пользователей. Он позволяет считать общее количество чеков, уникальные чеки за месяц, а также получать детализацию чеков с информацией о товарах.",
+  "purpose": "Обеспечивает доступ к данным о чеках пользователей для отображения в интерфейсе и аналитики",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подсчёт общего количества чеков пользователя",
+    "Подсчёт уникальных чеков за определённый период",
+    "Получение детализации чеков с информацией о товарах",
+    "Поддержка пагинации для отображения большого количества данных",
+    "Использование TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "typeorm/entity-repository",
+    "typeorm/repository"
+  ],
+  "input_tokens": 2801,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "6ef7aaa354c2b1ba"
+}

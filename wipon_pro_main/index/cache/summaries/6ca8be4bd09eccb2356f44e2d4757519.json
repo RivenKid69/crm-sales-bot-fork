@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:file",
+  "summary": "Этот файл помогает TypeScript понимать, как работать с файлами .vue в проекте Vue 3. Он объявляет, что каждый .vue файл — это компонент Vue с определёнными типами данных.",
+  "purpose": "Позволяет использовать Vue 3 в проектах TypeScript с поддержкой автодополнения и проверки типов.",
+  "domain": "фреймворк, типизация",
+  "key_behaviors": [
+    "поддержка .vue файлов в TypeScript",
+    "объявление типов для компонентов",
+    "работа с Vue 3",
+    "помощь в автодополнении кода",
+    "проверка типов"
+  ],
+  "dependencies_used": [
+    "vue"
+  ],
+  "input_tokens": 918,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "81bc8a731567e4ee"
+}

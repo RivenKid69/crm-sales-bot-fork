@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/presenter/stores.controller.ts:import:../dto/post-or-update-store.dto",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для передачи данных при создании или обновлении магазина. Он используется для структурирования и валидации входных данных в API.",
+  "purpose": "Обеспечивает стандартизированный способ передачи данных между клиентом и сервером при создании или обновлении магазина",
+  "domain": "api",
+  "key_behaviors": [
+    "Структурирует данные для создания/обновления магазина",
+    "Используется в контроллере для валидации входных данных",
+    "Совместим с Swagger для документации API",
+    "Работает с сервисом StoresService для обработки данных",
+    "Используется в HTTP-запросах POST и PUT"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "StoresService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2167,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "3e6aa9ba085d76a5"
+}

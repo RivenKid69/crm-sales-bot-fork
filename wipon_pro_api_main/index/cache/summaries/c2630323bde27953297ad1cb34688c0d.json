@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/data/stores.repository.ts:class:StoresRepository",
+  "summary": "Этот класс создаёт репозиторий для работы с объектами StoreDao в базе данных. Он использует TypeORM для связи между кодом и таблицей в БД, позволяя выполнять операции вроде сохранения, поиска и удаления данных.",
+  "purpose": "Позволяет управлять данными из таблицы StoreDao в базе данных через TypeORM.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "связывает класс StoreDao с таблицей в БД",
+    "позволяет выполнять операции CRUD",
+    "использует TypeORM для работы с БД",
+    "расширяет Repository из TypeORM",
+    "работает с объектами StoreDao"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreDao"
+  ],
+  "input_tokens": 872,
+  "output_tokens": 693,
+  "model": "qwen3:14b",
+  "code_hash": "5bedea6d6b51bb73"
+}

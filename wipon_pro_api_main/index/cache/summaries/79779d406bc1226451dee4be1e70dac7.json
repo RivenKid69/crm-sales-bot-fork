@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../dgds/domain/use-cases/find-dgd-by-id.use-case",
+  "summary": "Этот код импортирует различные сервисы и use-cases, которые используются в классе AuthService для обработки логина пользователя, создания аккаунта, работы с кодами подтверждения, устройствами и другими функциями. Он использует внешние зависимости для взаимодействия с базой данных, отправки SMS и другими сервисами.",
+  "purpose": "Обеспечивает авторизацию пользователей, управление токенами, работу с кодами подтверждения и другими функциями, связанными с аутентификацией.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Обработка логина пользователя",
+    "Создание аккаунта по номеру телефона",
+    "Работа с кодами подтверждения",
+    "Управление токенами",
+    "Интеграция с SMS-сервисом"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LoginDto",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService"
+  ],
+  "input_tokens": 2544,
+  "output_tokens": 770,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

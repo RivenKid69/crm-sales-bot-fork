@@ -1,0 +1,392 @@
+[
+  {
+    "id": 172359,
+    "create_time": "2025-12-15T16:39:39.550Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправили вам доставку"
+  },
+  {
+    "id": 172364,
+    "create_time": "2025-12-15T16:40:17.114Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "3 000 тенге"
+  },
+  {
+    "id": 172368,
+    "create_time": "2025-12-15T16:40:39.663Z",
+    "author_type": "client",
+    "sent_content": "Мне при получении таксисту оплатить?"
+  },
+  {
+    "id": 172380,
+    "create_time": "2025-12-15T16:41:24.388Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 172384,
+    "create_time": "2025-12-15T16:41:46.604Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 172390,
+    "create_time": "2025-12-15T16:42:10.896Z",
+    "author_type": "client",
+    "sent_content": "А когда будет проходит обучение?"
+  },
+  {
+    "id": 172406,
+    "create_time": "2025-12-15T16:43:14.044Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам напишет наш методолог и назначит время"
+  },
+  {
+    "id": 170304,
+    "create_time": "2025-12-15T13:45:33.510Z",
+    "author_type": "client",
+    "sent_content": "У вас своя операционная система, или просто программа, приложение?"
+  },
+  {
+    "id": 170833,
+    "create_time": "2025-12-15T14:38:46.351Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставили вам 2 счета"
+  },
+  {
+    "id": 170836,
+    "create_time": "2025-12-15T14:39:00.172Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "После оплаты отправьте пожалуйста чеки"
+  },
+  {
+    "id": 172183,
+    "create_time": "2025-12-15T16:24:28.882Z",
+    "author_type": "client",
+    "sent_content": "Хотелось бы уточнить есть ли в вашем принтере чеков, фискальный регистратор?"
+  },
+  {
+    "id": 172408,
+    "create_time": "2025-12-15T16:43:22.847Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 169662,
+    "create_time": "2025-12-15T12:29:33.867Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 169663,
+    "create_time": "2025-12-15T12:29:47.627Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 169665,
+    "create_time": "2025-12-15T12:29:56.563Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 169667,
+    "create_time": "2025-12-15T12:30:09.327Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 169670,
+    "create_time": "2025-12-15T12:30:24.510Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 170239,
+    "create_time": "2025-12-15T13:34:27.977Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, конечно"
+  },
+  {
+    "id": 170270,
+    "create_time": "2025-12-15T13:38:47.590Z",
+    "author_type": "client",
+    "sent_content": "Хорошо, а как будет проходить, процесс установки ?"
+  },
+  {
+    "id": 170619,
+    "create_time": "2025-12-15T14:23:37.390Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для принтера этикеток есть рулоны этикеток с размерами 58*40 и 30*20"
+  },
+  {
+    "id": 170636,
+    "create_time": "2025-12-15T14:24:23.377Z",
+    "author_type": "client",
+    "sent_content": "Да подходит"
+  },
+  {
+    "id": 170638,
+    "create_time": "2025-12-15T14:24:37.216Z",
+    "author_type": "client",
+    "sent_content": "30/20"
+  },
+  {
+    "id": 170643,
+    "create_time": "2025-12-15T14:24:57.811Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Супер!"
+  },
+  {
+    "id": 170648,
+    "create_time": "2025-12-15T14:25:26.676Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Стоимость ленты для этикеток - 1 000 \nДля чеков - 300"
+  },
+  {
+    "id": 170653,
+    "create_time": "2025-12-15T14:26:10.355Z",
+    "author_type": "client",
+    "sent_content": "Нам нужны только этикетки"
+  },
+  {
+    "id": 170659,
+    "create_time": "2025-12-15T14:26:38.658Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо, сколько шт?"
+  },
+  {
+    "id": 170664,
+    "create_time": "2025-12-15T14:27:08.157Z",
+    "author_type": "client",
+    "sent_content": "Одну"
+  },
+  {
+    "id": 170666,
+    "create_time": "2025-12-15T14:27:14.891Z",
+    "author_type": "client",
+    "sent_content": "Для первого запуска"
+  },
+  {
+    "id": 170671,
+    "create_time": "2025-12-15T14:27:36.929Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "👌"
+  },
+  {
+    "id": 170690,
+    "create_time": "2025-12-15T14:29:03.467Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для выставления счета нам нужен ИИН ИП и номер для выставления счета \nВыставим 2 счета \n1- за программу - 150 000 \n2- оборудование \nПринтер чеков - 15 000 \nСканер - 10 000 \nПринтер этикеток - 30 000 \nЛента - 1 000 \nИтого - 56 000"
+  },
+  {
+    "id": 170747,
+    "create_time": "2025-12-15T14:34:41.679Z",
+    "author_type": "client",
+    "sent_content": "711124402375"
+  },
+  {
+    "id": 170757,
+    "create_time": "2025-12-15T14:35:12.184Z",
+    "author_type": "client",
+    "sent_content": "87771337138"
+  },
+  {
+    "id": 171608,
+    "create_time": "2025-12-15T15:32:22.111Z",
+    "author_type": "client",
+    "sent_content": "download.pdf"
+  },
+  {
+    "id": 171609,
+    "create_time": "2025-12-15T15:32:22.269Z",
+    "author_type": "client",
+    "sent_content": "download.pdf"
+  },
+  {
+    "id": 171648,
+    "create_time": "2025-12-15T15:37:57.081Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Благодарим за покупку!"
+  },
+  {
+    "id": 171652,
+    "create_time": "2025-12-15T15:38:11.769Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Давайте проведем регистрацию в программе"
+  },
+  {
+    "id": 171672,
+    "create_time": "2025-12-15T15:39:28.812Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На ваш номер придет смс код для подтверждения"
+  },
+  {
+    "id": 171674,
+    "create_time": "2025-12-15T15:39:30.943Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ОТправьте его пожалуйста"
+  },
+  {
+    "id": 171682,
+    "create_time": "2025-12-15T15:40:26.607Z",
+    "author_type": "client",
+    "sent_content": "4213"
+  },
+  {
+    "id": 171698,
+    "create_time": "2025-12-15T15:41:30.889Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Какой адрес доставки?"
+  },
+  {
+    "id": 171716,
+    "create_time": "2025-12-15T15:42:33.398Z",
+    "author_type": "client",
+    "sent_content": "г Конаев, 2 микрорайон 20 дом"
+  },
+  {
+    "id": 172337,
+    "create_time": "2025-12-15T16:38:12.653Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 172350,
+    "create_time": "2025-12-15T16:39:00.676Z",
+    "author_type": "client",
+    "sent_content": "Что насчёт доставки?"
+  },
+  {
+    "id": 172361,
+    "create_time": "2025-12-15T16:39:46.212Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "+7 707 391 1831 такси"
+  },
+  {
+    "id": 169527,
+    "create_time": "2025-12-15T12:19:05.524Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Могу вам позвонить?"
+  },
+  {
+    "id": 169497,
+    "create_time": "2025-12-15T12:17:34.585Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте, пишу с сайта wipon.kz"
+  },
+  {
+    "id": 169499,
+    "create_time": "2025-12-15T12:17:46.430Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте! Как могу помочь вам сегодня?"
+  },
+  {
+    "id": 169511,
+    "create_time": "2025-12-15T12:18:30.202Z",
+    "author_type": "client",
+    "sent_content": "Мы из города Конаев, в данный город есть возможность доставки, установки и настройки оборудования?"
+  },
+  {
+    "id": 169517,
+    "create_time": "2025-12-15T12:18:42.040Z",
+    "author_type": "ai",
+    "sent_content": "Да, в Конаев есть возможность доставки, установки и настройки оборудования. Мы отправляем оборудование в любые города."
+  },
+  {
+    "id": 169519,
+    "create_time": "2025-12-15T12:18:44.300Z",
+    "author_type": "ai",
+    "sent_content": "У вас уже есть представление о том, что именно вам нужно? Укажите, пожалуйста, удобное время для звонка с 09:00 до 17:30 — закреплю."
+  },
+  {
+    "id": 169522,
+    "create_time": "2025-12-15T12:18:58.778Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте!"
+  },
+  {
+    "id": 169529,
+    "create_time": "2025-12-15T12:19:09.198Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 170076,
+    "create_time": "2025-12-15T13:07:42.115Z",
+    "author_type": "client",
+    "sent_content": "А можно узнать, можно ли обойтись без кассового мотоблока, у нас есть стационарный компьютер, если ли возможность установить не наго ?"
+  },
+  {
+    "id": 170504,
+    "create_time": "2025-12-15T14:14:12.616Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы подключимся к оборудованию и проведем установку и настройку"
+  },
+  {
+    "id": 170508,
+    "create_time": "2025-12-15T14:14:35.048Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Программа и приложение ө работает на виндоус"
+  },
+  {
+    "id": 170516,
+    "create_time": "2025-12-15T14:15:26.593Z",
+    "author_type": "client",
+    "sent_content": "Какие необходимы требования компьютера?"
+  },
+  {
+    "id": 170556,
+    "create_time": "2025-12-15T14:17:26.250Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Виндоус 10 операционная система минимум"
+  },
+  {
+    "id": 170566,
+    "create_time": "2025-12-15T14:18:45.211Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно фотографию вашего удостоверения пожалуйста"
+  },
+  {
+    "id": 170576,
+    "create_time": "2025-12-15T14:19:33.784Z",
+    "author_type": "client",
+    "sent_content": "Для каких целей?"
+  },
+  {
+    "id": 170582,
+    "create_time": "2025-12-15T14:19:55.995Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Извините, не туда написал"
+  },
+  {
+    "id": 170586,
+    "create_time": "2025-12-15T14:20:20.387Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ваш компьютер подходит?"
+  },
+  {
+    "id": 172295,
+    "create_time": "2025-12-15T16:35:22.647Z",
+    "author_type": "client",
+    "sent_content": "Сертификат соответствия на программное обеспечение.\nПодтверждение включения модели принтера и ПО в Государственный реестр ККМ РК."
+  },
+  {
+    "id": 172303,
+    "create_time": "2025-12-15T16:35:54.543Z",
+    "author_type": "client",
+    "sent_content": "Можете предоставить данную документацию?"
+  },
+  {
+    "id": 172321,
+    "create_time": "2025-12-15T16:37:07.029Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "фискальлный регистратор имеется в программе"
+  },
+  {
+    "id": 172324,
+    "create_time": "2025-12-15T16:37:19.079Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Это вам предоставят при обучении"
+  }
+]

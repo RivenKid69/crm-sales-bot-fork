@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/data/reports.repository.ts:import:../../../common/dao/report.dao",
+  "summary": "Этот код импортирует классы `EntityRepository` и `Repository` из библиотеки TypeORM и создает репозиторий для работы с сущностью `ReportDao`. Он расширяет базовый класс `Repository`, чтобы добавить специфические функции для этой сущности.",
+  "purpose": "Позволяет управлять данными сущности `ReportDao` через TypeORM, обеспечивая удобный доступ к базе данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Создает репозиторий для сущности `ReportDao`",
+    "Расширяет базовый класс `Repository` для добавления функционала",
+    "Позволяет выполнять операции CRUD с сущностью",
+    "Интегрируется с другими частями приложения через `ReportDao`"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 824,
+  "output_tokens": 747,
+  "model": "qwen3:14b",
+  "code_hash": "59cfc906aae7f5e9"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/item.dao.ts:property:ItemDao:excise_code",
+  "summary": "Этот код описывает сущность 'items' для хранения информации о товарах. У неё есть поля для кода товара, серийного номера, даты производства, статуса и связей с другими сущностями.",
+  "purpose": "Моделирует данные о товарах с возможностью отслеживания их состояния и связей с проверками и продуктами",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор товара",
+    "Отслеживает дату создания и обновления",
+    "Связывает товар с проверками (checks)",
+    "Хранит статус товара (валидный, фейк, atlas)",
+    "Связывает товар с продуктом (product)"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@Entity",
+    "@Column",
+    "@CreateDateColumn",
+    "@OneToMany",
+    "@OneToOne"
+  ],
+  "input_tokens": 1639,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "f77843b0d688797b"
+}

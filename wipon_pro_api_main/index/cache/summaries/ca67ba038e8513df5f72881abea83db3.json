@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/use-cases/find-users-store-by-user-id-and-bin.use-case.ts:import:../../../../common/dao/store.dao",
+  "summary": "Этот код создает сервис, который ищет магазин по ID пользователя и номеру BIN. Он использует базу данных через TypeORM и возвращает данные магазина или null, если ничего не найдено.",
+  "purpose": "Позволяет получать информацию о магазине по уникальным идентификаторам пользователя и бизнеса",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Ищет запись по user_id и buisness_bin",
+    "Возвращает StoreDao или null",
+    "Инжектит репозиторий через NestJS",
+    "Использует DAO для представления данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "StoresRepository",
+    "StoreDao"
+  ],
+  "input_tokens": 1151,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "339c4db44ba468ae"
+}

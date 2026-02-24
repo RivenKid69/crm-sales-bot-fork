@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/data/feedbacks.repository.ts:class:FeedbacksRepository",
+  "summary": "Этот класс представляет собой репозиторий для работы с сущностью FeedbackMessageDao. Он наследуется от Repository и позволяет выполнять операции с базой данных через TypeORM.",
+  "purpose": "Обеспечивает удобный способ взаимодействия с таблицей feedback_messages в базе данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Работа с сущностью FeedbackMessageDao",
+    "Использование TypeORM для доступа к базе данных",
+    "Наследование от Repository для реализации стандартных операций",
+    "Позволяет выполнять CRUD-операции",
+    "Связывает объекты в коде с таблицами в базе данных"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1026,
+  "output_tokens": 642,
+  "model": "qwen3:14b",
+  "code_hash": "9a0df3fb00c9c35a"
+}

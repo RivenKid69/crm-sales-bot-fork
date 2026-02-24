@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/sms.service.ts:import:../../config/app.config",
+  "summary": "Этот код создает сервис для отправки SMS-кодов на телефон. Он использует настройки из конфигурационных файлов и отправляет сообщение через внешний API, логируя ошибки, если что-то идет не так.",
+  "purpose": "Используется для отправки кодов подтверждения пользователям по SMS в режиме production.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Отправляет SMS-коды через внешний API",
+    "Использует конфигурационные настройки для подключения к сервису SMS",
+    "Логирует ошибки при отправке сообщений",
+    "Работает только в production-среде",
+    "Возвращает результат успешной отправки"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "form-data"
+  ],
+  "input_tokens": 1598,
+  "output_tokens": 715,
+  "model": "qwen3:14b",
+  "code_hash": "c49798b41ce5c5e6"
+}

@@ -1,0 +1,28 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../dto/validate-check-data.dto",
+  "summary": "Этот код импортирует различные модули и зависимости, необходимые для работы сервиса проверок (ChecksService). Он использует DTO, репозитории, вспомогательные функции, HTTP-запросы и инструменты для работы с файлами и логированием.",
+  "purpose": "Подготовка всех необходимых зависимостей для обработки проверок, валидации данных и взаимодействия с внешними сервисами",
+  "domain": "валидация данных, обработка изображений, интеграция с API, управление товарами",
+  "key_behaviors": [
+    "Использование DTO для валидации данных",
+    "Работа с репозиториями для доступа к данным",
+    "Интеграция с внешними API через HttpService",
+    "Обработка изображений и файлов",
+    "Логирование ошибок и проверка дискового пространства"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston",
+    "locutus"
+  ],
+  "input_tokens": 4730,
+  "output_tokens": 806,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

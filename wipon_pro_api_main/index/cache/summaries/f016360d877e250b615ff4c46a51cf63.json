@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/dto/get-ugds-list.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код импортирует декораторы для валидации данных и документирования API. Создает DTO-класс с полем dgd_id, которое может быть необязательным строковым фильтром",
+  "purpose": "Позволяет валидировать входные данные и генерировать документацию для API-запроса",
+  "domain": "api",
+  "key_behaviors": [
+    "Валидация строкового значения",
+    "Документация через Swagger",
+    "Необязательное поле",
+    "Фильтрация по dgd_id",
+    "Типизация данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1100,
+  "output_tokens": 579,
+  "model": "qwen3:14b",
+  "code_hash": "871c0b6fc8109af0"
+}

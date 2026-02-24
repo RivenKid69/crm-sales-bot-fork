@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/use-cases/find-users-store.use-case.ts:import:../../data/stores.repository",
+  "summary": "Этот код создает класс, который ищет информацию о магазине по ID пользователя. Он использует репозиторий для взаимодействия с базой данных и возвращает данные в виде объекта StoreDao.",
+  "purpose": "Позволяет получать данные магазина, связанного с конкретным пользователем, для использования в других частях приложения.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет магазин по ID пользователя",
+    "Использует репозиторий для доступа к базе данных",
+    "Возвращает данные в виде объекта StoreDao",
+    "Работает как сервис в архитектуре NestJS",
+    "Использует аннотацию @Injectable для внедрения зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "StoresRepository",
+    "StoreDao"
+  ],
+  "input_tokens": 1041,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "51a95652e2367c69"
+}

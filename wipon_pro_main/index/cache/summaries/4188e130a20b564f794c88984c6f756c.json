@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:file",
+  "summary": "Этот файл содержит функции для работы с API компании. Он позволяет получать данные компании, создавать новую компанию и обновлять информацию о существующей.",
+  "purpose": "Позволяет взаимодействовать с сервером для управления данными компании через HTTP-запросы",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение данных компании по адресу /store",
+    "Создание новой компании через POST-запрос",
+    "Обновление информации компании через /store/update"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 1005,
+  "output_tokens": 511,
+  "model": "qwen3:14b",
+  "code_hash": "598998612dd7f3e2"
+}

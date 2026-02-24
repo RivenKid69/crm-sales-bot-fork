@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:file",
+  "summary": "Этот файл - Vuex-модуль для управления данными компании. Он загружает информацию из API, сохраняет её в состоянии, и позволяет получить доступ к данным через getters. Если лицензиат не найден, пользователь перенаправляется на другую страницу.",
+  "purpose": "Централизованное хранение и управление данными компании в приложении",
+  "domain": "state management",
+  "key_behaviors": [
+    "Загрузка данных компании из API",
+    "Сохранение данных в Vuex-состояние",
+    "Использование localStorage для хранения флагов",
+    "Перенаправление по условию",
+    "Предоставление доступа к данным через getters"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "vue-router",
+    "@/api/*"
+  ],
+  "input_tokens": 3047,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "34d439fdd0d5a6a8"
+}

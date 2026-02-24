@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/presenter/licenses.controller.ts:method:LicensesController:checkTest",
+  "summary": "Этот метод проверяет работу международной локализации, логируя язык запроса и выводя переведенное сообщение из файла локализации",
+  "purpose": "Позволяет тестировать корректность работы системы перевода в приложении",
+  "domain": "локализация (i18n)",
+  "key_behaviors": [
+    "Определяет язык из запроса",
+    "Переводит фиксированную строку",
+    "Логирует язык для отладки",
+    "Не включается в Swagger-документацию",
+    "Использует сервис перевода"
+  ],
+  "dependencies_used": [
+    "I18nService",
+    "I18nLang",
+    "ValidationPipe"
+  ],
+  "input_tokens": 1582,
+  "output_tokens": 694,
+  "model": "qwen3:14b",
+  "code_hash": "c6bfb5217b093c37"
+}

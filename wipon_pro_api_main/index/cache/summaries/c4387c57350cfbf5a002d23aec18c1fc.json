@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/disassociate-item-from-product.use-case.ts:import:typeorm",
+  "summary": "Этот код создает сервис, который отсоединяет предмет от продукта, обнуляя его product_id в базе данных. Использует TypeORM для работы с базой и NestJS для инъекции зависимостей.",
+  "purpose": "Позволяет управлять связями между предметами и продуктами в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Обнуляет product_id у предмета в базе",
+    "Использует TypeORM для выполнения обновления",
+    "Инъектирует репозиторий через NestJS",
+    "Возвращает результат обновления",
+    "Работает с конкретным itemId"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1066,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "0ec239a45070bd75"
+}

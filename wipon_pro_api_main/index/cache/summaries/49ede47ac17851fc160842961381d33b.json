@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/presenter/checks.controller.ts:import:../dto/validate-check-data.dto",
+  "summary": "Этот код создает контроллер для обработки проверок товаров. Он принимает запросы на получение данных, валидацию и загрузку изображений, используя валидацию, аутентификацию и Swagger-документацию",
+  "purpose": "Обработка API-запросов для проверки оригинальности товаров и управления проверками",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения проверок пользователей",
+    "Валидация данных с помощью ValidationPipe",
+    "Использование аутентификации и ограничений скорости через гварды",
+    "Загрузка изображений с помощью FileInterceptor",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/platform-express",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 2738,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "3516f3694956962a"
+}

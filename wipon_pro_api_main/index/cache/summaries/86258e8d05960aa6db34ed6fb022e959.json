@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.module.ts:import:./link-store-to-license.task",
+  "summary": "Этот код создает модуль задач в NestJS, который настраивает кэширование через Redis, подключает модули для работы с FCM и пользователями, и регистрирует сервисы для выполнения задач, таких как отправка уведомлений и связь лицензий с магазинами.",
+  "purpose": "Обеспечивает выполнение фоновых задач с кэшированием и интеграцией с внешними сервисами",
+  "domain": "task management, background jobs",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Интегрируется с FCM для отправки уведомлений",
+    "Работает с модулем пользователей",
+    "Использует HTTP-запросы через NestJS",
+    "Поддерживает выполнение периодических задач"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store",
+    "FcmModule",
+    "UsersModule"
+  ],
+  "input_tokens": 1414,
+  "output_tokens": 764,
+  "model": "qwen3:14b",
+  "code_hash": "174b7772bcb71f6a"
+}

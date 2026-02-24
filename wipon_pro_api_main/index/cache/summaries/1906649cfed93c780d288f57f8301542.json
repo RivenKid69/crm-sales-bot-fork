@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/domain/licenses.service.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис для получения информации о лицензии. Он ищет лицензию по номеру, собирает данные о регионе и связанных узлах, а также формирует ответ с деталями лицензии.",
+  "purpose": "Позволяет получать структурированные данные о лицензии вместе с географической информацией для API-запросов.",
+  "domain": "api",
+  "key_behaviors": [
+    "Поиск лицензии по номеру",
+    "Сбор данных о регионе и географических узлах",
+    "Формирование ответа с деталями лицензии",
+    "Обработка ошибок при отсутствии лицензии",
+    "Использование TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 2021,
+  "output_tokens": 740,
+  "model": "qwen3:14b",
+  "code_hash": "e4c83e40972244dd"
+}

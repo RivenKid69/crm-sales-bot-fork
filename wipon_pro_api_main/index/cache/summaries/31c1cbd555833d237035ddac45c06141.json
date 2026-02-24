@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/find-users-ledger.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который получает данные пользователя и его счета из базы данных. Он использует TypeORM для работы с базой и возвращает информацию о пользователе в виде объекта LedgerDao.",
+  "purpose": "Позволяет получить данные о счетах пользователя для отображения или дальнейшей обработки в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получает пользователя по ID из базы данных",
+    "Загружает связанные данные о счетах (ledger.accounts)",
+    "Возвращает объект ledger или null, если пользователь не найден",
+    "Использует TypeORM для работы с базой данных",
+    "Поддерживает инъекцию зависимостей через NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1210,
+  "output_tokens": 705,
+  "model": "qwen3:14b",
+  "code_hash": "41e784dd45415025"
+}

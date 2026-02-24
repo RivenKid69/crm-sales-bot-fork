@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/dto/get-ugds-list.dto.ts:class:GetUgdsListDto",
+  "summary": "Этот класс служит для передачи данных при получении списка UGDS. Он проверяет, что поле dgd_id является строкой и не обязательно, а также добавляет описание для документации API.",
+  "purpose": "Валидация и документация параметров запроса для фильтрации списка UGDS через API",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что dgd_id является строкой",
+    "Сделание поля dgd_id необязательным",
+    "Добавление описания для Swagger документации",
+    "Фильтрация результатов по dgd_id",
+    "Использование декораторов для валидации и документации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1129,
+  "output_tokens": 647,
+  "model": "qwen3:14b",
+  "code_hash": "871c0b6fc8109af0"
+}

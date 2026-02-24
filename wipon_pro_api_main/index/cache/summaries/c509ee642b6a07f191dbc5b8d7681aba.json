@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/domain/use-cases/find-or-create-product.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который ищет продукт по имени и организации или создает его, если его нет. Использует TypeORM для работы с базой данных.",
+  "purpose": "Упрощает управление продуктами, избегая дублирования данных в системе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет продукт по имени и организации",
+    "Создает продукт, если он не найден",
+    "Использует репозиторий для работы с БД",
+    "Возвращает объект ProductDao",
+    "Поддерживает транзакционность через TypeORM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1136,
+  "output_tokens": 612,
+  "model": "qwen3:14b",
+  "code_hash": "c433a5a65fb408d1"
+}

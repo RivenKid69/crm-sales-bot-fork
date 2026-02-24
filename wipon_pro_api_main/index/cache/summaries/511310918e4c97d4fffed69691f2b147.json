@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.controller.ts:file",
+  "summary": "Этот код создает контроллер в NestJS, который отвечает на GET-запросы по адресу /echo и возвращает объект { status: 'success' }. Он также добавляет описание для документации API через Swagger.",
+  "purpose": "Позволяет проверить, работает ли сервер и правильно ли настроен API",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает GET-запросы на эндпоинт /echo",
+    "Возвращает статус 'success' при успешном вызове",
+    "Добавляет метаданные для документации API",
+    "Использует декораторы NestJS для маршрутизации",
+    "Создает тестовый эндпоинт для проверки работоспособности"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1096,
+  "output_tokens": 581,
+  "model": "qwen3:14b",
+  "code_hash": "a7131b70b5280b26"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/find-ledgers-accounts.use-case.ts:import:../../../../common/dao/account.dao",
+  "summary": "Этот код создает сервис, который ищет информацию о счете по идентификатору книги и провайдеру. Использует репозиторий для работы с базой данных и возвращает объект AccountDao.",
+  "purpose": "Позволяет получать данные о конкретном счете для отображения в интерфейсе или дальнейшей обработки",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет запись по ledger_id и provider",
+    "Использует TypeORM для работы с БД",
+    "Возвращает объект AccountDao",
+    "Поддерживает инъекцию зависимостей",
+    "Работает с репозиторием AccountsRepository"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1170,
+  "output_tokens": 669,
+  "model": "qwen3:14b",
+  "code_hash": "74e57e5526b7c4d1"
+}

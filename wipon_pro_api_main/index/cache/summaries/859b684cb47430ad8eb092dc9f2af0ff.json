@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/dto/update-user.dto.ts:property:UpdateUserDto:phone_number",
+  "summary": "Этот класс DTO используется для обновления информации о пользователе. Он проверяет валидность данных, таких как телефон, email и язык, и документирует API с помощью Swagger.",
+  "purpose": "Обеспечивает корректное обновление данных пользователя через API с валидацией и документацией",
+  "domain": "API, авторизация, настройки",
+  "key_behaviors": [
+    "Валидация телефонных номеров по Казахстану",
+    "Проверка корректности email",
+    "Документация API через Swagger",
+    "Поддержка нескольких языков (ru, kk, en)",
+    "Обязательное поле device с типом userDeviceType"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1656,
+  "output_tokens": 664,
+  "model": "qwen3:14b",
+  "code_hash": "2ba0467ce337274e"
+}

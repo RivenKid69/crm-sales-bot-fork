@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/presenter/licenses.controller.ts:method:LicensesController:constructor",
+  "summary": "Этот контроллер обрабатывает HTTP-запросы для лицензий. Он проверяет авторизацию, валидирует данные, использует переводы и документирует API.",
+  "purpose": "Обеспечивает безопасный доступ к функциям управления лицензиями с валидацией и локализацией",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка авторизации через AuthGuard",
+    "Валидация входных данных через ValidationPipe",
+    "Поддержка многоязычного интерфейса через i18n",
+    "Документация API через Swagger",
+    "Обработка двух типов запросов: получение лицензии и проверка её статуса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "nestjs-i18n",
+    "ValidationPipe",
+    "AuthGuard"
+  ],
+  "input_tokens": 1625,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "c6bfb5217b093c37"
+}

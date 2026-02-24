@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/use-cases/find-dgd-by-name.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который ищет объект по русскому названию в базе данных. Он использует репозиторий для поиска и возвращает результат или null, если ничего не найдено.",
+  "purpose": "Позволяет быстро находить записи по имени в базе данных для использования в других частях приложения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет объект по русскому названию",
+    "Возвращает null при отсутствии результата",
+    "Использует TypeORM репозиторий для доступа к БД",
+    "Поддерживает инъекцию зависимостей",
+    "Работает с DAO объектами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DgdsRepostitory",
+    "DgdDao"
+  ],
+  "input_tokens": 1249,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "7db5273dc1e723d0"
+}

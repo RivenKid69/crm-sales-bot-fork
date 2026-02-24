@@ -1,0 +1,964 @@
+{
+  "version": "1.0",
+  "entries": {
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:@/store": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:@/store",
+      "code_hash": "557490f981d1fa12",
+      "timestamp": 1770870776.3648086,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:file",
+      "code_hash": "b1d3a0ea19d2553a",
+      "timestamp": 1770870776.651181,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:updateCompanyRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:updateCompanyRequest",
+      "code_hash": "531d8fb9dfd19591",
+      "timestamp": 1770870788.0171456,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:@/api/account.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:@/api/account.api",
+      "code_hash": "cb2c5c3512a8ab1c",
+      "timestamp": 1770870789.4279416,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:function:getStoreTypesRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:function:getStoreTypesRequest",
+      "code_hash": "be2a4af921a9c44d",
+      "timestamp": 1770870800.7829754,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:../../initialState": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:../../initialState",
+      "code_hash": "d0137b3d3aecdf67",
+      "timestamp": 1770870802.3982463,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:file",
+      "code_hash": "b4ffdfb5895c9044",
+      "timestamp": 1770870815.2954087,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Actions": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Actions",
+      "code_hash": "bbe8311c44c6348a",
+      "timestamp": 1770870816.7482994,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:../../initialState": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:../../initialState",
+      "code_hash": "dd3857be7a55c089",
+      "timestamp": 1770870829.0733454,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./App.vue": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./App.vue",
+      "code_hash": "3b4f9dbfdaa3f87a",
+      "timestamp": 1770870832.008494,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/subscriptions": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/subscriptions",
+      "code_hash": "5426f3a673e99df1",
+      "timestamp": 1770870843.3837478,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Getters": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Getters",
+      "code_hash": "0fd61a32984eec17",
+      "timestamp": 1770870846.355615,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:",
+      "code_hash": "a0e41971bc090f81",
+      "timestamp": 1770870858.2266755,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/rates.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/rates.ts:file",
+      "code_hash": "7d830a7a3e3090ec",
+      "timestamp": 1770870859.33769,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getAccountRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getAccountRequest",
+      "code_hash": "bea9e3c96dbb754f",
+      "timestamp": 1770870872.5228577,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/router": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/router",
+      "code_hash": "278ff3dac7fac939",
+      "timestamp": 1770870872.6994638,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:function:downloadBlob": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:function:downloadBlob",
+      "code_hash": "bb87ca3983725409",
+      "timestamp": 1770870886.9692185,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:State": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:State",
+      "code_hash": "73bb28ad8239a21f",
+      "timestamp": 1770870887.1772568,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/config/index": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/config/index",
+      "code_hash": "c24fcc8f4379308e",
+      "timestamp": 1770870901.3955038,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:keyof Mut": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:keyof Mut",
+      "code_hash": "0a041b4175f967be",
+      "timestamp": 1770870901.4335065,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:getSubsRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:getSubsRequest",
+      "code_hash": "6597832623269692",
+      "timestamp": 1770870913.7883124,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:../../initialState": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:../../initialState",
+      "code_hash": "a60c941b7cbbcdf7",
+      "timestamp": 1770870915.253794,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getTransactionsRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:function:getTransactionsRequest",
+      "code_hash": "839c7b5d7c8673df",
+      "timestamp": 1770870926.3388562,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:vue-router": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:vue-router",
+      "code_hash": "1d2c04a3dceae197",
+      "timestamp": 1770870929.2092283,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/auth": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/auth",
+      "code_hash": "f0998847e722ebb5",
+      "timestamp": 1770870940.3233511,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts:import:@/config/rates": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts:import:@/config/rates",
+      "code_hash": "c206934fec1f7212",
+      "timestamp": 1770870943.197456,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@kyvg/vue3-notification": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@kyvg/vue3-notification",
+      "code_hash": "90bb7bb764ebb9cb",
+      "timestamp": 1770870954.7121673,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:@/config/rates": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:@/config/rates",
+      "code_hash": "c96af4fde64b9258",
+      "timestamp": 1770870957.0285697,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:file",
+      "code_hash": "4ab1c76da901880b",
+      "timestamp": 1770870967.4468796,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/index.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/config/index.ts:file",
+      "code_hash": "d616d46f05391e96",
+      "timestamp": 1770870970.3265002,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:axios": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:axios",
+      "code_hash": "e232075e5c773922",
+      "timestamp": 1770870981.402406,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:file",
+      "code_hash": "89c56bc812e4e1ea",
+      "timestamp": 1770870984.9576063,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:function:generateInvoice": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:function:generateInvoice",
+      "code_hash": "658eef6860304799",
+      "timestamp": 1770870994.6473217,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:file",
+      "code_hash": "c80ad1c6da62b138",
+      "timestamp": 1770870997.247993,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@kyvg/vue3-notification": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@kyvg/vue3-notification",
+      "code_hash": "1bc9e3a3b4ff4a95",
+      "timestamp": 1770871007.061961,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:import:@/api/request",
+      "code_hash": "2063dd1f74d7a13a",
+      "timestamp": 1770871010.587883,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/jest.config.js:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/jest.config.js:file",
+      "code_hash": "87a4792d696a4eb1",
+      "timestamp": 1770871019.3377094,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:setCompanyRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:setCompanyRequest",
+      "code_hash": "246e1888daf5105e",
+      "timestamp": 1770871021.9297876,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:axios": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:axios",
+      "code_hash": "3cdb49292cc4be69",
+      "timestamp": 1770871033.2898855,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:file",
+      "code_hash": "d8b8b2271824dbc1",
+      "timestamp": 1770871033.3389082,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:commit<K extends keyof": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:commit<K extends keyof",
+      "code_hash": "1615be5eab42c72d",
+      "timestamp": 1770871046.8546603,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/EmptyLayout.vue": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/EmptyLayout.vue",
+      "code_hash": "7a308a96563f4bcd",
+      "timestamp": 1770871047.9380503,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:Getters": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:Getters",
+      "code_hash": "068d692d8a54b3d0",
+      "timestamp": 1770871060.891454,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:ActionsPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:ActionsPayload",
+      "code_hash": "8bc663336951122a",
+      "timestamp": 1770871062.481353,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:file",
+      "code_hash": "fca508cd490e7881",
+      "timestamp": 1770871075.2200735,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Getters": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Getters",
+      "code_hash": "34e7378058d57633",
+      "timestamp": 1770871076.896899,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:file",
+      "code_hash": "1eeadab37a37a864",
+      "timestamp": 1770871085.8702745,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:makeRefund": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:makeRefund",
+      "code_hash": "11c105378d6f39c2",
+      "timestamp": 1770871090.5172598,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:vuex": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:import:vuex",
+      "code_hash": "5c5101dd7ece7013",
+      "timestamp": 1770871099.3929183,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:component:DATAMatrix": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:component:DATAMatrix",
+      "code_hash": "635db13e5fadacf3",
+      "timestamp": 1770871105.77641,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/company.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/company.api",
+      "code_hash": "2f83d8f7cc517b97",
+      "timestamp": 1770871116.071107,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:import:@/api/request",
+      "code_hash": "2fcf3d3e633ce8c9",
+      "timestamp": 1770871119.9706213,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:buySubsRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:buySubsRequest",
+      "code_hash": "5ccbbabadc155f55",
+      "timestamp": 1770871129.883192,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:vuex": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:vuex",
+      "code_hash": "174ec8dacbe73f9e",
+      "timestamp": 1770871134.308788,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:erty in keyof Mutation": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:erty in keyof Mutation",
+      "code_hash": "b087a4f6acb1ba94",
+      "timestamp": 1770871145.4674723,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/storeTypes.api.ts:import:@/api/request",
+      "code_hash": "1355d7400fc3de04",
+      "timestamp": 1770871147.157289,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/base/app.scss": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/base/app.scss",
+      "code_hash": "e70f06d954a9d50e",
+      "timestamp": 1770871161.0981045,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:svg": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:svg",
+      "code_hash": "c3580d3c62c72d95",
+      "timestamp": 1770871162.830084,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:function:getUgdsRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:function:getUgdsRequest",
+      "code_hash": "0a5029d40259323a",
+      "timestamp": 1770871173.8722274,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:getCompanyRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:function:getCompanyRequest",
+      "code_hash": "e27b747677e56d9e",
+      "timestamp": 1770871176.703934,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:ActionsPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:ActionsPayload",
+      "code_hash": "b5ff9fb2388e5526",
+      "timestamp": 1770871187.5233285,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:./routes": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:./routes",
+      "code_hash": "e67519850dcd9576",
+      "timestamp": 1770871192.4287136,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:vuex": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:vuex",
+      "code_hash": "0e49554130bd7546",
+      "timestamp": 1770871201.3978734,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Mutations": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:Mutations",
+      "code_hash": "71b9ce1651256b26",
+      "timestamp": 1770871207.0910547,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:../../initialState": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:../../initialState",
+      "code_hash": "e3afc1d61c294729",
+      "timestamp": 1770871214.5203612,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:vue-axios": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:vue-axios",
+      "code_hash": "20589722fd18c644",
+      "timestamp": 1770871221.6131911,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:file",
+      "code_hash": "0ba354ea676fe386",
+      "timestamp": 1770871227.578784,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:@/api/auth.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:@/api/auth.api",
+      "code_hash": "c1c1a58139aaad75",
+      "timestamp": 1770871233.3488343,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/dgds.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/dgds.api",
+      "code_hash": "70820b6208df700b",
+      "timestamp": 1770871242.4215138,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Actions": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Actions",
+      "code_hash": "726dcd51755797e1",
+      "timestamp": 1770871247.7455678,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/bootstrap-grid/bootstrap-grid.min.css": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/bootstrap-grid/bootstrap-grid.min.css",
+      "code_hash": "e50b966f6d315de4",
+      "timestamp": 1770871256.2321203,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:import:axios": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:import:axios",
+      "code_hash": "b00c73a7ff433bed",
+      "timestamp": 1770871260.960484,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:vue": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:vue",
+      "code_hash": "2a844e21c7b2ed2f",
+      "timestamp": 1770871271.1471574,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:file",
+      "code_hash": "7d934483bf340ab4",
+      "timestamp": 1770871275.3641167,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:file",
+      "code_hash": "e6b821dd0c4d2384",
+      "timestamp": 1770871285.4022887,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:@/store": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:@/store",
+      "code_hash": "06a15a439793ea59",
+      "timestamp": 1770871288.747859,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:ActionsPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:ActionsPayload",
+      "code_hash": "ca0041e07df41443",
+      "timestamp": 1770871297.7860494,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:maska": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:maska",
+      "code_hash": "850b12f78c427fff",
+      "timestamp": 1770871303.006612,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:function:getDgdsRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:function:getDgdsRequest",
+      "code_hash": "d907a0c7f5e0199d",
+      "timestamp": 1770871309.6289656,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:import:@/api/request",
+      "code_hash": "ee9e43f1c33ae351",
+      "timestamp": 1770871316.8391497,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:ActionsPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:ActionsPayload",
+      "code_hash": "6574c3d1dd4c16c2",
+      "timestamp": 1770871325.3178113,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Mutations": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Mutations",
+      "code_hash": "42c179235d2f2989",
+      "timestamp": 1770871331.0366895,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/account": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/account",
+      "code_hash": "2f362b7e072c4362",
+      "timestamp": 1770871339.6896377,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:State": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:State",
+      "code_hash": "33ac9ecb239c96a0",
+      "timestamp": 1770871345.123359,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:file",
+      "code_hash": "8a4705f02a4e435b",
+      "timestamp": 1770871351.652406,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:vuex": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:vuex",
+      "code_hash": "f1bc981274b05647",
+      "timestamp": 1770871358.764682,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/dgds.api.ts:import:@/api/request",
+      "code_hash": "00565fd040be24c0",
+      "timestamp": 1770871365.1123762,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/storeTypes.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/storeTypes.api",
+      "code_hash": "ac0de3bc2e536308",
+      "timestamp": 1770871373.727343,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:ishex": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:function:ishex",
+      "code_hash": "e54fb9c8c8d48fa6",
+      "timestamp": 1770871380.1845257,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./store": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./store",
+      "code_hash": "22c5405f9c6d24e5",
+      "timestamp": 1770871389.0217009,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/download-qr.js:file",
+      "code_hash": "4e9a4f2ee18fb3a5",
+      "timestamp": 1770871393.5368044,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:@/api/subscriptions.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:import:@/api/subscriptions.api",
+      "code_hash": "291f91b2b891300e",
+      "timestamp": 1770871404.0168078,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:MutationPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:MutationPayload",
+      "code_hash": "21b3523030f643be",
+      "timestamp": 1770871408.554769,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:file",
+      "code_hash": "8ff9d06495c6cdd1",
+      "timestamp": 1770871416.112928,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:import:vue": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/shims-vue.d.ts:import:vue",
+      "code_hash": "ae57596d211a7eba",
+      "timestamp": 1770871421.6906111,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/babel.config.js:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/babel.config.js:file",
+      "code_hash": "945435077b1ffdca",
+      "timestamp": 1770871429.5790513,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/ugds.api": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:@/api/ugds.api",
+      "code_hash": "96ffe05d7c3db054",
+      "timestamp": 1770871436.8008094,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/MainLayout.vue": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/layouts/MainLayout.vue",
+      "code_hash": "2422d44de7eca217",
+      "timestamp": 1770871444.3274071,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:file",
+      "code_hash": "62f3eda7383162f3",
+      "timestamp": 1770871451.5420723,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:K exten": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:K exten",
+      "code_hash": "40ac9d459d13b791",
+      "timestamp": 1770871459.734935,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:MutationPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:MutationPayload",
+      "code_hash": "35556417b1fb994a",
+      "timestamp": 1770871466.242374,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.eslintrc.js:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.eslintrc.js:file",
+      "code_hash": "9622f16f27578a4d",
+      "timestamp": 1770871473.0534282,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:import:@/api/request",
+      "code_hash": "9251cde95807cd78",
+      "timestamp": 1770871480.0287545,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./initialState": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./initialState",
+      "code_hash": "b812c9404e1d1d3d",
+      "timestamp": 1770871487.2513933,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:MutationPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:MutationPayload",
+      "code_hash": "b8f58c2decb6e713",
+      "timestamp": 1770871493.868614,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:import:@/api/request",
+      "code_hash": "4799bc3054e38a7f",
+      "timestamp": 1770871501.238243,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:MutationPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:MutationPayload",
+      "code_hash": "78ace1258d2722b7",
+      "timestamp": 1770871508.6285393,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/store": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/store",
+      "code_hash": "5c6f0669e2d0c2a4",
+      "timestamp": 1770871515.5422792,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:import:@/api/request": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/payment.api.ts:import:@/api/request",
+      "code_hash": "73d88d419e029769",
+      "timestamp": 1770871522.5666165,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/store": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/routes.ts:import:@/store",
+      "code_hash": "79d50d2bd61785e5",
+      "timestamp": 1770871529.5557244,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:getUserData": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:getUserData",
+      "code_hash": "d01dbe0b99e2932b",
+      "timestamp": 1770871535.4638963,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:file",
+      "code_hash": "1d2d6b0fdc27bad4",
+      "timestamp": 1770871539.954783,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:getApiTokenRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:getApiTokenRequest",
+      "code_hash": "0ec461b437f19f12",
+      "timestamp": 1770871548.3064742,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/vue.config.js:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/vue.config.js:file",
+      "code_hash": "9f8eaeaf9f9d406a",
+      "timestamp": 1770871553.1997511,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Store": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:Store",
+      "code_hash": "e059cacb069adea4",
+      "timestamp": 1770871563.39353,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:vuex": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:import:vuex",
+      "code_hash": "c92aab0022811b42",
+      "timestamp": 1770871568.4395962,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./router": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./router",
+      "code_hash": "4708c14203a85060",
+      "timestamp": 1770871578.5196867,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/initialState.ts:file",
+      "code_hash": "af20d79386cb979d",
+      "timestamp": 1770871583.6899502,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:vue-router": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:import:vue-router",
+      "code_hash": "f5cdaf4864d658d1",
+      "timestamp": 1770871593.8521209,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:MutationPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:MutationPayload",
+      "code_hash": "e2544c77627fe066",
+      "timestamp": 1770871598.4630864,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:file",
+      "code_hash": "135f4fcd04f1824f",
+      "timestamp": 1770871608.6105313,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:sendVerificationCodeRequest": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/auth.api.ts:function:sendVerificationCodeRequest",
+      "code_hash": "6d558c8c66cfbc74",
+      "timestamp": 1770871612.2544804,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:file",
+      "code_hash": "06c08fba3f9fda21",
+      "timestamp": 1770871622.5680676,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Getters": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:Getters",
+      "code_hash": "6b99f4a5b4cc6999",
+      "timestamp": 1770871626.4930263,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:Getters": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:class:Getters",
+      "code_hash": "3ce37827f96ad789",
+      "timestamp": 1770871636.3841088,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:AugmentedActionContext": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/account/index.ts:class:AugmentedActionContext",
+      "code_hash": "13a954620c597713",
+      "timestamp": 1770871640.043637,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:yof Act": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:yof Act",
+      "code_hash": "9c04141d0e92eef5",
+      "timestamp": 1770871649.4704638,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:ActionsPayload": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:ActionsPayload",
+      "code_hash": "d879ab9846c9f584",
+      "timestamp": 1770871654.6956108,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:",
+      "code_hash": "7a578bdc2c98f6de",
+      "timestamp": 1770871663.5485148,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/router/index.ts:file",
+      "code_hash": "ccd57493774b8c2a",
+      "timestamp": 1770871669.305533,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:State": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:class:State",
+      "code_hash": "cacd1a8d6dd701a0",
+      "timestamp": 1770871678.340678,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:function:sleep": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/utils/helpers.ts:function:sleep",
+      "code_hash": "fbebeeecc1f70169",
+      "timestamp": 1770871682.334817,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.prettierrc.js:file": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/.prettierrc.js:file",
+      "code_hash": "9c3eb7df13e1ad9e",
+      "timestamp": 1770871690.552364,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/company": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:import:./modules/company",
+      "code_hash": "8108c76f05facc08",
+      "timestamp": 1770871696.5426092,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:function:useStore": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/index.ts:function:useStore",
+      "code_hash": "372721ef0d570998",
+      "timestamp": 1770871705.3990881,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/router": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/request.ts:import:@/router",
+      "code_hash": "70923d64c47b31e1",
+      "timestamp": 1770871711.3624835,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    },
+    "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:AugmentedActionContext": {
+      "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/auth/index.ts:class:AugmentedActionContext",
+      "code_hash": "43262d88094ac183",
+      "timestamp": 1770871716.3807902,
+      "model": "qwen3:14b",
+      "version": "1.0"
+    }
+  }
+}

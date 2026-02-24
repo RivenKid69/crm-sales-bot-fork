@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/domain/ugds.service.ts:method:UgdsService:getUgdsList",
+  "summary": "Этот метод получает список объектов UGD из базы данных. Если передан идентификатор DGD, он фильтрует результаты по нему, иначе возвращает все записи.",
+  "purpose": "Позволяет получать данные UGD для отображения или дальнейшей обработки в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Фильтрация по идентификатору DGD",
+    "Возвращает все записи при отсутствии фильтра",
+    "Использует репозиторий для доступа к данным",
+    "Обрабатывает параметры из DTO и запроса",
+    "Возвращает объекты UgdDao с вложенными данными"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UgdsRepository",
+    "GetUgdsListDto",
+    "UgdDao"
+  ],
+  "input_tokens": 1388,
+  "output_tokens": 739,
+  "model": "qwen3:14b",
+  "code_hash": "577ffdfcea2eb4d8"
+}

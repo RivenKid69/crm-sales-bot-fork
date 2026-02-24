@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../ugds/domain/use-cases/find-ugd-by-dgd-id.use-case",
+  "summary": "Этот код импортирует и использует различные use-case и сервисы для реализации функционала аутентификации и авторизации пользователей, включая работу с телефонами, кодами, токенами и другими сущностями.",
+  "purpose": "Обеспечивает безопасный и удобный процесс входа в систему, управления пользователями и их устройствами, а также работу с кодами и токенами для аутентификации.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Реализует логику входа по номеру телефона",
+    "Создает пользователей при необходимости",
+    "Работает с кодами аутентификации",
+    "Управляет токенами и устройствами пользователей",
+    "Использует настройки из конфигурационных файлов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LoginDto",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "FindUsersDeviceByApplicationTypeUseCase",
+    "FindUsersAuthCodeUseCase",
+    "SetUsersTokenUseCase",
+    "FindNewestUsersAuthCodeUseCase",
+    "DeleteUsersAllAuthCodesUseCase",
+    "CreateUsersAuthCodeUseCase"
+  ],
+  "input_tokens": 2569,
+  "output_tokens": 900,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

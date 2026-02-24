@@ -1,0 +1,445 @@
+[
+  {
+    "scenario": "Long B2B Dialog — 18 turns, fact retention stress",
+    "flow": "autonomous",
+    "total_turns": 17,
+    "facts_retained": 3,
+    "facts_lost": 15,
+    "dedup_violations": 0,
+    "total_elapsed_s": 54.11653447151184,
+    "avg_response_len": 203.05882352941177,
+    "history_compact_used": false,
+    "turns": [
+      {
+        "turn": 1,
+        "user": "Добрый день! Меня зовут Алексей Петрович, я из компании НефтеТрансСервис. Нам посоветовали ваш продукт.",
+        "bot": "Добрый день, Алексей Петрович! Рады, что обратились к нам. Чем именно можем помочь вашей компании?",
+        "intent": "greeting",
+        "state": "greeting",
+        "history_len": 1,
+        "history_formatted_len": 214,
+        "cw_turns": 1,
+        "episodic_episodes": 0,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": null
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 7764.032363891602
+      },
+      {
+        "turn": 2,
+        "user": "У нас в компании 450 сотрудников, работаем в логистике и транспорте нефтепродуктов.",
+        "bot": "Хорошо, Алексей Петрович. Расскажите, пожалуйста, что именно вызывает конфликты в команде и как это влияет на вашу работу?",
+        "intent": "situation_provided",
+        "state": "autonomous_discovery",
+        "history_len": 2,
+        "history_formatted_len": 433,
+        "cw_turns": 2,
+        "episodic_episodes": 1,
+        "episodic_pain_points": [
+          "конфликты в команде"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.1,
+        "elapsed_ms": 1126.0473728179932
+      },
+      {
+        "turn": 3,
+        "user": "Основная проблема — весь учёт заявок ведём в Excel вручную, постоянно теряются данные, дубли.",
+        "bot": "Да, это действительно сложная ситуация — вручную вести учёт в Excel приводит к ошибкам и потере данных. С нашей системой вы получите автоматизированный учёт, отчётность и интеграцию с вашими процессами. А какая у вас текущая цель: сократить ошибки, ускорить процессы или повысить прозрачность?",
+        "intent": "situation_provided",
+        "state": "autonomous_qualification",
+        "history_len": 3,
+        "history_formatted_len": 833,
+        "cw_turns": 3,
+        "episodic_episodes": 2,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.05357142857142857,
+        "elapsed_ms": 4089.7765159606934
+      },
+      {
+        "turn": 4,
+        "user": "Да, пробовали пару CRM раньше, но они были слишком сложные для наших ребят.",
+        "bot": "Принял. Сложные системы действительно могут вызывать трудности у сотрудников. В Wipon мы разработали решение с простым интерфейсом и интуитивным управлением, чтобы даже новички могли быстро освоить систему. Как вы думаете, насколько важна для вас простота использования при переходе на новую систему?",
+        "intent": "objection_competitor",
+        "state": "autonomous_presentation",
+        "history_len": 4,
+        "history_formatted_len": 1222,
+        "cw_turns": 4,
+        "episodic_episodes": 4,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.09333333333333334,
+        "elapsed_ms": 4393.352270126343
+      },
+      {
+        "turn": 5,
+        "user": "Бюджет у нас где-то в районе 2 миллионов рублей на год, может чуть больше.",
+        "bot": "[ERROR: 'PolicyContext' object has no attribute 'context_envelope']",
+        "intent": "objection_competitor",
+        "state": "autonomous_objection_handling",
+        "history_len": 4,
+        "history_formatted_len": 1222,
+        "cw_turns": 4,
+        "episodic_episodes": 4,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "employee"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 2441.638708114624
+      },
+      {
+        "turn": 6,
+        "user": "Да, интересно. А как у вас с интеграцией с 1С? Это для нас критично.",
+        "bot": "В Wipon есть интеграция с 1С, что позволит вам сохранить текущие процессы и данные, минимизируя переходные затраты. Это обеспечит синхронизацию учёта, отчётов и операций между системами. А как вы оцениваете важность скорости внедрения для вашей компании?",
+        "intent": "agreement",
+        "state": "autonomous_negotiation",
+        "history_len": 5,
+        "history_formatted_len": 1558,
+        "cw_turns": 5,
+        "episodic_episodes": 5,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 2213.0753993988037
+      },
+      {
+        "turn": 7,
+        "user": "А мобильное приложение есть? Наши водители в разъездах постоянно.",
+        "bot": "Да, время действительно в цене. Могу отправить вам информацию о мобильном приложении и интеграции с 1С — как вам удобнее? Готовы попробовать?",
+        "intent": "objection_no_time",
+        "state": "autonomous_closing",
+        "history_len": 6,
+        "history_formatted_len": 1778,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.09803921568627451,
+        "elapsed_ms": 1301.985502243042
+      },
+      {
+        "turn": 8,
+        "user": "Так, давайте подытожим — что конкретно вы можете предложить для нашей компании?",
+        "bot": "Понял. Мы предлагаем автоматизацию учёта, интеграцию с 1С и мобильное приложение для водителей. Чему вы хотите уделить больше внимания: автоматизацию, интеграцию или мобильность? На какой email прислать информацию?",
+        "intent": "request_brevity",
+        "state": "close",
+        "history_len": 7,
+        "history_formatted_len": 2085,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "НефтеТрансСервис": false
+        },
+        "similarity_to_prev": 0.06666666666666667,
+        "elapsed_ms": 6128.644704818726
+      },
+      {
+        "turn": 9,
+        "user": "А можете ещё раз объяснить мне лично, какие преимущества именно для меня как руководителя?",
+        "bot": "Понял. Для вас — минимум ошибок, быстрая интеграция с 1С и контроль из любой точки. Что для вас важнее: меньше ошибок или быстрый старт? Какой контакт для связи удобнее?",
+        "intent": "request_brevity",
+        "state": "close",
+        "history_len": 8,
+        "history_formatted_len": 2358,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "Алексей": false
+        },
+        "similarity_to_prev": 0.15217391304347827,
+        "elapsed_ms": 2731.130361557007
+      },
+      {
+        "turn": 10,
+        "user": "А у вас тариф зависит от количества пользователей? Сколько нам нужно лицензий?",
+        "bot": "Тарифы зависят от количества торговых точек, а не пользователей — это позволяет гибко масштабироваться. Для вашей компании ~450 человек подойдёт тариф Pro, который охватывает до 5 точек. На какой email прислать подробности?",
+        "intent": "price_question",
+        "state": "close",
+        "history_len": 9,
+        "history_formatted_len": 2673,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "450": true
+        },
+        "similarity_to_prev": 0.05454545454545454,
+        "elapsed_ms": 3240.5240535736084
+      },
+      {
+        "turn": 11,
+        "user": "Напомните, как именно ваш продукт решит наши текущие проблемы?",
+        "bot": "Для вашей сферы — логистика — Wipon обеспечивает контроль за товарами в пути, синхронизацию с 1С и минимизацию ошибок в учёте. Водители могут отслеживать задачи в реальном времени через мобильное приложение. На какой email отправить подробности?",
+        "intent": "clarification_request",
+        "state": "close",
+        "history_len": 10,
+        "history_formatted_len": 2994,
+        "cw_turns": 5,
+        "episodic_episodes": 6,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "excel": false,
+          "ручн": false
+        },
+        "similarity_to_prev": 0.1206896551724138,
+        "elapsed_ms": 3054.6422004699707
+      },
+      {
+        "turn": 12,
+        "user": "Хорошо, а есть кейсы из нашей отрасли? Чтобы мы могли сравнить.",
+        "bot": "Да, это важный момент. На рынке действительно много обещаний без подтверждений. У нас есть кейсы из логистики и отзывы клиентов с похожими задачами. Хотите посмотреть их или попробовать на пробный период? Давайте просто покажу — 15 минут, и всё станет понятнее.",
+        "intent": "objection_trust",
+        "state": "handle_objection",
+        "history_len": 11,
+        "history_formatted_len": 3332,
+        "cw_turns": 5,
+        "episodic_episodes": 7,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "логистик": true,
+          "транспорт": false,
+          "нефт": false
+        },
+        "similarity_to_prev": 0.058823529411764705,
+        "elapsed_ms": 906.8677425384521
+      },
+      {
+        "turn": 13,
+        "user": "Давайте по деньгам — вписываемся в наш бюджет или нет?",
+        "bot": "Минимум 220 000 ₸ в год — можно в рассрочку. Это в 10 раз дешевле, чем потери от ошибок. На какой email прислать расчёт? Может всё-таки глянем демо? Это бесплатно и ни к чему не обязывает.",
+        "intent": "no_problem",
+        "state": "handle_objection",
+        "history_len": 12,
+        "history_formatted_len": 3588,
+        "cw_turns": 5,
+        "episodic_episodes": 8,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "2 миллион": false,
+          "2 млн": false,
+          "бюджет": false
+        },
+        "similarity_to_prev": 0.058823529411764705,
+        "elapsed_ms": 1109.997272491455
+      },
+      {
+        "turn": 14,
+        "user": "А сроки внедрения какие? Нам нужно запуститься до конца квартала.",
+        "bot": "Срок внедрения составляет 1–2 недели, в зависимости от сложности интеграции с вашей текущей системой, включая 1С и мобильное приложение. Это позволяет запустить систему до конца квартала без срывов. А как вы оцениваете текущую нагрузку на вашу IT-инфраструктуру и готовность команды к внедрению?",
+        "intent": "question_implementation",
+        "state": "autonomous_discovery",
+        "history_len": 13,
+        "history_formatted_len": 3962,
+        "cw_turns": 5,
+        "episodic_episodes": 9,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.08823529411764706,
+        "elapsed_ms": 1809.0667724609375
+      },
+      {
+        "turn": 15,
+        "user": "Техподдержка у вас 24/7 или только в рабочее время?",
+        "bot": "Техподдержка доступна круглосуточно, включая выходные. А какую именно задачу вы хотите решить первой с помощью CRM?",
+        "intent": "question_support",
+        "state": "autonomous_qualification",
+        "history_len": 14,
+        "history_formatted_len": 4142,
+        "cw_turns": 5,
+        "episodic_episodes": 9,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.07547169811320754,
+        "elapsed_ms": 2972.0873832702637
+      },
+      {
+        "turn": 16,
+        "user": "Слушайте, а вот наша главная боль которую я описывал в начале — вы точно её решите?",
+        "bot": "Да, мы точно решим проблему потери данных и дублей — наша система автоматизирует учёт, интегрируется с 1С и минимизирует ошибки. Это сократит потери в 10 раз. А как вы хотите начать: с демо или сразу с внедрения?",
+        "intent": "clarification_request",
+        "state": "autonomous_presentation",
+        "history_len": 15,
+        "history_formatted_len": 4451,
+        "cw_turns": 5,
+        "episodic_episodes": 9,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "excel": false,
+          "ручн": false,
+          "заявк": false,
+          "учёт": true
+        },
+        "similarity_to_prev": 0.08888888888888889,
+        "elapsed_ms": 4169.946908950806
+      },
+      {
+        "turn": 17,
+        "user": "Ок, подготовьте мне краткое резюме нашего разговора — что мы обсудили, что решили.",
+        "bot": "Мы обсудили автоматизацию учёта для вашей логистической компании, интеграцию с 1С и внедрение мобильного приложения для водителей. Решение поможет сократить ошибки и потери на 10 раз, а срок внедрения — 1–2 недели. На какой email отправить краткое резюме?",
+        "intent": "summary_request",
+        "state": "autonomous_objection_handling",
+        "history_len": 16,
+        "history_formatted_len": 4802,
+        "cw_turns": 5,
+        "episodic_episodes": 9,
+        "episodic_pain_points": [
+          "конфликты в команде",
+          "теряются данные, дубли"
+        ],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": 450,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {
+          "НефтеТрансСервис": false,
+          "450": false,
+          "Excel": false
+        },
+        "similarity_to_prev": 0.13333333333333333,
+        "elapsed_ms": 4662.827491760254
+      }
+    ]
+  }
+]

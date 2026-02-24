@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/dto/generate-invoice.dto.ts:file",
+  "summary": "Этот файл содержит DTO (Data Transfer Object) для генерации счета. Он проверяет, что данные, которые приходят в API, соответствуют определенным правилам: тип должен быть одним из допустимых, BIN и номер счета — числами, а организация — строкой.",
+  "purpose": "Обеспечивает валидацию входных данных при создании счета, чтобы избежать ошибок и несоответствий",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка, что тип счета соответствует одному из допустимых значений",
+    "Проверка, что BIN и номер счета являются числами",
+    "Проверка, что название организации — строка",
+    "Обязательное заполнение всех полей",
+    "Использование валидаторов из библиотеки class-validator"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "class-transformer"
+  ],
+  "input_tokens": 1194,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "fcb64ead6704fd66"
+}

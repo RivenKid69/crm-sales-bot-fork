@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/presenter/store-types.controller.ts:import:../domain/store-types.service",
+  "summary": "Этот код создает контроллер для обработки HTTP-запросов к эндпоинту /store-types. Он использует сервис для получения данных и интерцептор для преобразования ответа, а также добавляет документацию через Swagger.",
+  "purpose": "Позволяет получить список типов магазинов через REST-интерфейс с поддержкой документации и трансформации данных",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов на эндпоинт /store-types",
+    "Использование сервиса для получения данных",
+    "Применение интерцептора для трансформации ответа",
+    "Добавление документации через Swagger",
+    "Интеграция с NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "StoreTypesService",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1194,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "8df0e2dffcc055cb"
+}

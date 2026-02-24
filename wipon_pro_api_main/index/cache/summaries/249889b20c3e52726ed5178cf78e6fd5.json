@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/decorators/provider.decorator.ts:import:@nestjs/common",
+  "summary": "Этот код определяет кастомный декоратор Provider, который добавляет метаданные к классам или методам. Он использует SetMetadata из NestJS для хранения информации о провайдере.",
+  "purpose": "Позволяет добавлять метаданные для идентификации провайдеров в NestJS-приложении",
+  "domain": "NestJS, декораторы, метаданные",
+  "key_behaviors": [
+    "Создает кастомный декоратор",
+    "Добавляет метаданные 'provider' к классам/методам",
+    "Использует SetMetadata из @nestjs/common",
+    "Позволяет читать метаданные в других частях приложения",
+    "Прост в использовании для аннотирования провайдеров"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 1002,
+  "output_tokens": 723,
+  "model": "qwen3:14b",
+  "code_hash": "fac63a742cee5019"
+}

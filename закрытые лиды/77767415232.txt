@@ -1,0 +1,908 @@
+[
+  {
+    "id": 98736,
+    "create_time": "2025-11-25T18:21:31.330Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте, пишу с сайта wipon.kz"
+  },
+  {
+    "id": 98740,
+    "create_time": "2025-11-25T18:23:17.291Z",
+    "author_type": "client",
+    "sent_content": "Хотела бы узнать подробнее о вашей программе и оборудованию."
+  },
+  {
+    "id": 98741,
+    "create_time": "2025-11-25T18:23:35.440Z",
+    "author_type": "client",
+    "sent_content": "У нас нижнее женское белье."
+  },
+  {
+    "id": 98744,
+    "create_time": "2025-11-25T18:24:05.652Z",
+    "author_type": "client",
+    "sent_content": "Поддерживает ли ваша программа нкт код который вводят с 2026 года"
+  },
+  {
+    "id": 98753,
+    "create_time": "2025-11-25T18:28:19.140Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 98754,
+    "create_time": "2025-11-25T18:28:37.606Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, у нас есть интеграция с НКТ"
+  },
+  {
+    "id": 98757,
+    "create_time": "2025-11-25T18:29:58.948Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Могу вам позвонить для полной консультации ?"
+  },
+  {
+    "id": 98758,
+    "create_time": "2025-11-25T18:30:22.662Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 98788,
+    "create_time": "2025-11-25T18:42:57.005Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Каталог wipon _1_.pdf"
+  },
+  {
+    "id": 98790,
+    "create_time": "2025-11-25T18:43:39.619Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/@Wiponkz/videos\n\nВидео обзор"
+  },
+  {
+    "id": 102526,
+    "create_time": "2025-11-26T15:05:19.369Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 102528,
+    "create_time": "2025-11-26T15:05:24.852Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вчера переговаривали на счет программы"
+  },
+  {
+    "id": 102529,
+    "create_time": "2025-11-26T15:05:28.140Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите что вы решаете на счет этого вопроса ?"
+  },
+  {
+    "id": 102561,
+    "create_time": "2025-11-26T15:07:55.241Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте. Обсуждаем с руководством."
+  },
+  {
+    "id": 102563,
+    "create_time": "2025-11-26T15:08:02.163Z",
+    "author_type": "client",
+    "sent_content": "Вечером дам ответ"
+  },
+  {
+    "id": 104385,
+    "create_time": "2025-11-26T19:25:02.998Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы приняли решение ?"
+  },
+  {
+    "id": 108750,
+    "create_time": "2025-11-27T16:23:01.120Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 108760,
+    "create_time": "2025-11-27T16:23:34.341Z",
+    "author_type": "client",
+    "sent_content": "Скачала приложиние, зарегистрировалась. Скачала приложение для кассы."
+  },
+  {
+    "id": 108768,
+    "create_time": "2025-11-27T16:24:09.871Z",
+    "author_type": "client",
+    "sent_content": "В ютубе столько видео что сразу не могу понять с чего начинать чтобы по этапно выполянь действия"
+  },
+  {
+    "id": 108786,
+    "create_time": "2025-11-27T16:25:55.661Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На телефон ?"
+  },
+  {
+    "id": 108788,
+    "create_time": "2025-11-27T16:26:01.367Z",
+    "author_type": "client",
+    "sent_content": "Ценники 200 шт это за раз можно отправлять или всего 200 шт сформировать"
+  },
+  {
+    "id": 108798,
+    "create_time": "2025-11-27T16:26:24.188Z",
+    "author_type": "client",
+    "sent_content": "Нет, все на компютере"
+  },
+  {
+    "id": 122349,
+    "create_time": "2025-12-01T14:35:11.479Z",
+    "author_type": "client",
+    "sent_content": "Как все оплатят, я вам все скину. Руководитель не отвечает"
+  },
+  {
+    "id": 122947,
+    "create_time": "2025-12-01T15:35:38.174Z",
+    "author_type": "client",
+    "sent_content": "Скажите размеры коробки"
+  },
+  {
+    "id": 122961,
+    "create_time": "2025-12-01T15:37:33.967Z",
+    "author_type": "client",
+    "sent_content": "У нас знакомый ездит хотим узнать у него цену доставки"
+  },
+  {
+    "id": 123281,
+    "create_time": "2025-12-01T16:08:36.225Z",
+    "author_type": "client",
+    "sent_content": "Напишите ваш адрес, приедут заберут сегодня коробку"
+  },
+  {
+    "id": 123289,
+    "create_time": "2025-12-01T16:10:05.889Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 123290,
+    "create_time": "2025-12-01T16:10:08.849Z",
+    "author_type": "client",
+    "sent_content": "Этот адрес"
+  },
+  {
+    "id": 123291,
+    "create_time": "2025-12-01T16:10:14.843Z",
+    "author_type": "client",
+    "sent_content": "?"
+  },
+  {
+    "id": 123307,
+    "create_time": "2025-12-01T16:11:44.909Z",
+    "author_type": "client",
+    "sent_content": "Узнайте пожалуйста, если можно постарайтесь его собрать. Машина сегодня будет выезжать"
+  },
+  {
+    "id": 125467,
+    "create_time": "2025-12-02T09:29:41.921Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 132726,
+    "create_time": "2025-12-04T20:11:34.151Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте, пишу с сайта wipon.kz. У вас на странице указано что интеграция с нкт каталогом. Сегодня когда проходила обучение по вашей программе, выясняется что данной функции у вас нет. Там при создании карточки товара нет соединения с нкт каталогом. Я брала у вас программу только из за этого. Как будем решать данный вопрос?"
+  },
+  {
+    "id": 132783,
+    "create_time": "2025-12-04T20:33:02.739Z",
+    "author_type": "client",
+    "sent_content": "Вы мне тоже говорили что есть данная интеграция а по факту её нет"
+  },
+  {
+    "id": 133183,
+    "create_time": "2025-12-05T09:54:46.687Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 133184,
+    "create_time": "2025-12-05T09:54:46.646Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Интеграция с НКТ есть уже более месяца, НКТ вводится с 1 января 2026 года, но в данный момент в НКТ идут ошибки, которые они исправляют. В связи с этим мы ждём когда ошибки товаров будут исправлены со стороны НКТ."
+  },
+  {
+    "id": 133660,
+    "create_time": "2025-12-05T11:35:54.161Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 236580,
+    "create_time": "2026-01-08T14:46:30.394Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Понимаю ваш вопрос. Детали по отмене подписки и оплаченному тарифу сможет уточнить наш менеджер."
+  },
+  {
+    "id": 236581,
+    "create_time": "2026-01-08T14:46:32.771Z",
+    "author_type": "ai",
+    "sent_content": "Он свяжется с вами в ближайшее время, чтобы обсудить возможные варианты решения."
+  },
+  {
+    "id": 236587,
+    "create_time": "2026-01-08T14:47:04.098Z",
+    "author_type": "ai",
+    "sent_content": "Спасибо за уточнение! Менеджер при звонке учтет, что у вас настроена интеграция с каталогом NKT. Он поможет разобраться с вашим вопросом."
+  },
+  {
+    "id": 255289,
+    "create_time": "2026-01-19T19:22:11.122Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте! \nПросим Вас обратиться в техническую поддержку:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77070202019\nИли можете сразу написать по WhatsApp по ссылке: https://wa.me/77070202019\n\nСәлеметсіз бе!\nТехникалық қолдауға хабарласуыңызды өтінеміз:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77070202019\nНемесе мына сілтеме арқылы WhatsApp-қа тікелей жаза аласыз: https://wa.me/77070202019"
+  },
+  {
+    "id": 256239,
+    "create_time": "2026-01-20T16:03:51.129Z",
+    "author_type": "client",
+    "sent_content": "Есть проблемы, пусть позвонит менеджер"
+  },
+  {
+    "id": 256240,
+    "create_time": "2026-01-20T16:03:52.472Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 256242,
+    "create_time": "2026-01-20T16:03:58.826Z",
+    "author_type": "client",
+    "sent_content": "Срочно"
+  },
+  {
+    "id": 256292,
+    "create_time": "2026-01-20T16:24:45.474Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 256293,
+    "create_time": "2026-01-20T16:24:46.821Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Минуту"
+  },
+  {
+    "id": 256518,
+    "create_time": "2026-01-20T19:05:49.503Z",
+    "author_type": "client",
+    "sent_content": "У нас опять проблемы в программе"
+  },
+  {
+    "id": 256519,
+    "create_time": "2026-01-20T19:06:08.672Z",
+    "author_type": "client",
+    "sent_content": "Расходятся суммы, идёт недостача в деньгах"
+  },
+  {
+    "id": 256534,
+    "create_time": "2026-01-20T19:38:03.399Z",
+    "author_type": "client",
+    "sent_content": "Изъетие наличные в офд сделала сегодня на сумму 7000 тенге. Это что означает, для чего делаем. Как отображается на z отчете"
+  },
+  {
+    "id": 104642,
+    "create_time": "2025-11-26T20:46:00.905Z",
+    "author_type": "client",
+    "sent_content": "Добрый вечер. Да приняли."
+  },
+  {
+    "id": 104646,
+    "create_time": "2025-11-26T20:46:25.326Z",
+    "author_type": "client",
+    "sent_content": "Будем брать у вас оборудование и программу"
+  },
+  {
+    "id": 104650,
+    "create_time": "2025-11-26T20:47:23.992Z",
+    "author_type": "client",
+    "sent_content": "Подскажите ещё бывают ли сбои в программе, зависание или что то такое. Как решается данная ситуация. Служба поддержки как работает"
+  },
+  {
+    "id": 104663,
+    "create_time": "2025-11-26T20:52:02.370Z",
+    "author_type": "client",
+    "sent_content": "Как настраиваем программу"
+  },
+  {
+    "id": 104667,
+    "create_time": "2025-11-26T20:56:34.586Z",
+    "author_type": "client",
+    "sent_content": "У нас в другой программе остатки вытащи в Excel, как будет погружаться товар"
+  },
+  {
+    "id": 105616,
+    "create_time": "2025-11-27T10:18:05.690Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да можем вам предоставить  доступ на демо версию"
+  },
+  {
+    "id": 105618,
+    "create_time": "2025-11-27T10:18:25.432Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/login"
+  },
+  {
+    "id": 105619,
+    "create_time": "2025-11-27T10:18:37.893Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Пройдите по ссылке и можете зарегистрироваться"
+  },
+  {
+    "id": 105621,
+    "create_time": "2025-11-27T10:18:53.834Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/@Wiponkz/videos\n\nЭто наш ютуб канал"
+  },
+  {
+    "id": 108119,
+    "create_time": "2025-11-27T15:20:04.050Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы просмотрели информация ?"
+  },
+  {
+    "id": 108914,
+    "create_time": "2025-11-27T16:36:41.889Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 108917,
+    "create_time": "2025-11-27T16:36:59.323Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 122157,
+    "create_time": "2025-12-01T14:17:12.046Z",
+    "author_type": "client",
+    "sent_content": "ИИН 781001300891, ИП Левивцев А. Ю.\n87059016788"
+  },
+  {
+    "id": 122161,
+    "create_time": "2025-12-01T14:17:42.339Z",
+    "author_type": "client",
+    "sent_content": "Отлично будет если так настроите"
+  },
+  {
+    "id": 122167,
+    "create_time": "2025-12-01T14:18:51.344Z",
+    "author_type": "client",
+    "sent_content": "Хотя с этим нкт каталогом и белым ввозом, наверное и нужно будет"
+  },
+  {
+    "id": 122173,
+    "create_time": "2025-12-01T14:19:35.645Z",
+    "author_type": "client",
+    "sent_content": "А на оборудование?"
+  },
+  {
+    "id": 122187,
+    "create_time": "2025-12-01T14:21:05.352Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 122207,
+    "create_time": "2025-12-01T14:22:53.920Z",
+    "author_type": "client",
+    "sent_content": "Это"
+  },
+  {
+    "id": 122218,
+    "create_time": "2025-12-01T14:24:06.022Z",
+    "author_type": "client",
+    "sent_content": "Сканер и принтер чеков у нас есть отдельно."
+  },
+  {
+    "id": 122226,
+    "create_time": "2025-12-01T14:25:11.790Z",
+    "author_type": "client",
+    "sent_content": "Разъём от USB на них"
+  },
+  {
+    "id": 122236,
+    "create_time": "2025-12-01T14:26:12.209Z",
+    "author_type": "client",
+    "sent_content": "Нет, не правильно меня поняли"
+  },
+  {
+    "id": 122237,
+    "create_time": "2025-12-01T14:26:26.026Z",
+    "author_type": "client",
+    "sent_content": "У нас есть свой принтер и сканер"
+  },
+  {
+    "id": 122239,
+    "create_time": "2025-12-01T14:26:37.104Z",
+    "author_type": "client",
+    "sent_content": "Нам нужен только моноблок"
+  },
+  {
+    "id": 126786,
+    "create_time": "2025-12-02T12:18:50.121Z",
+    "author_type": "client",
+    "sent_content": "Обородувание получили."
+  },
+  {
+    "id": 126789,
+    "create_time": "2025-12-02T12:18:59.263Z",
+    "author_type": "client",
+    "sent_content": "Все в целлости"
+  },
+  {
+    "id": 126793,
+    "create_time": "2025-12-02T12:19:09.871Z",
+    "author_type": "client",
+    "sent_content": "Пока не вклучаю, согревается"
+  },
+  {
+    "id": 126804,
+    "create_time": "2025-12-02T12:20:03.421Z",
+    "author_type": "client",
+    "sent_content": "Нет еще"
+  },
+  {
+    "id": 133578,
+    "create_time": "2025-12-05T11:19:59.788Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "если NTIN уже создан и карточка товара уже есть в НКТ, то её вносить не надо.\nЕсли же производитель и такого товара нет то необходимо подать заявку на сайте nkt.kz"
+  },
+  {
+    "id": 238988,
+    "create_time": "2026-01-09T12:25:12.959Z",
+    "author_type": "client",
+    "sent_content": "Так как программа фактически не использовалась полтора месяца, прошу произвести перерасчёт стоимости годового тарифа и вернуть денежные средства за неиспользованный период. Договор оферты был направлен после оплаты, поэтому условия невозврата не были доведены до меня заранее. В случае отказа буду вынуждена обратиться в органы по защите прав потребителей."
+  },
+  {
+    "id": 238989,
+    "create_time": "2026-01-09T12:25:31.261Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Я понимаю вашу ситуацию."
+  },
+  {
+    "id": 238990,
+    "create_time": "2026-01-09T12:25:33.760Z",
+    "author_type": "ai",
+    "sent_content": "Вопросы, связанные с перерасчетом стоимости и условиями договора, являются индивидуальными и требуют детального рассмотрения. Менеджер свяжется с вами в ближайшее время для обсуждения вашего запроса."
+  },
+  {
+    "id": 254956,
+    "create_time": "2026-01-19T16:38:00.064Z",
+    "author_type": "client",
+    "sent_content": "Как можно удалить один приход товара, делала пробно сама выгрузку товара, потом присоединился ваш менеджер и мы повторно сделали выгрузку, теперь остатки все задвоились."
+  },
+  {
+    "id": 254961,
+    "create_time": "2026-01-19T16:38:47.737Z",
+    "author_type": "client",
+    "sent_content": "Как удалить один приход, там 2873 позиции."
+  },
+  {
+    "id": 254963,
+    "create_time": "2026-01-19T16:39:00.982Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Минуту сейчас"
+  },
+  {
+    "id": 255039,
+    "create_time": "2026-01-19T17:00:10.746Z",
+    "author_type": "client",
+    "sent_content": "Вы мне поможете?"
+  },
+  {
+    "id": 255054,
+    "create_time": "2026-01-19T17:03:29.666Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас вам наберут"
+  },
+  {
+    "id": 255056,
+    "create_time": "2026-01-19T17:03:39.948Z",
+    "author_type": "client",
+    "sent_content": "Хорошо, жду"
+  },
+  {
+    "id": 256747,
+    "create_time": "2026-01-21T10:10:12.757Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 256749,
+    "create_time": "2026-01-21T10:10:19.091Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас с вами свяжутся"
+  },
+  {
+    "id": 261680,
+    "create_time": "2026-01-26T16:39:17.365Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 261681,
+    "create_time": "2026-01-26T16:39:35.047Z",
+    "author_type": "client",
+    "sent_content": "Нужна консультация менеджера"
+  },
+  {
+    "id": 261682,
+    "create_time": "2026-01-26T16:39:50.900Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 261683,
+    "create_time": "2026-01-26T16:39:52.950Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Минуту"
+  },
+  {
+    "id": 261763,
+    "create_time": "2026-01-26T17:16:29.995Z",
+    "author_type": "client",
+    "sent_content": "Мне менеджер наберёт?"
+  },
+  {
+    "id": 261841,
+    "create_time": "2026-01-26T17:34:49.660Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ва сеще не набрали :"
+  },
+  {
+    "id": 261842,
+    "create_time": "2026-01-26T17:34:53.861Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "?"
+  },
+  {
+    "id": 261847,
+    "create_time": "2026-01-26T17:35:53.055Z",
+    "author_type": "client",
+    "sent_content": "Перезвонили, спасибо вопрос решили"
+  },
+  {
+    "id": 261862,
+    "create_time": "2026-01-26T17:40:48.826Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо"
+  },
+  {
+    "id": 102597,
+    "create_time": "2025-11-26T15:13:05.020Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Принял"
+  },
+  {
+    "id": 102599,
+    "create_time": "2025-11-26T15:13:05.930Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ждем"
+  },
+  {
+    "id": 104736,
+    "create_time": "2025-11-26T21:35:02.652Z",
+    "author_type": "client",
+    "sent_content": "Ещё одно момент: у вас есть пробный период программы? 2-3 дня. Чтобы посмотреть и понять, точно ли  она нам подойдет"
+  },
+  {
+    "id": 104740,
+    "create_time": "2025-11-26T21:36:30.389Z",
+    "author_type": "client",
+    "sent_content": "Остатки с другой программы будут в Excel. Как будет происходить загрузка данного товара в новую программу"
+  },
+  {
+    "id": 105161,
+    "create_time": "2025-11-27T09:08:42.722Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте!"
+  },
+  {
+    "id": 105164,
+    "create_time": "2025-11-27T09:09:14.139Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тех поддержка работает каждый день, можно писать на ватсап или звонить"
+  },
+  {
+    "id": 105165,
+    "create_time": "2025-11-27T09:09:35.815Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можно эксель файл импортировать в нашу систему учета"
+  },
+  {
+    "id": 108809,
+    "create_time": "2025-11-27T16:27:06.131Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=Hgi9MeEz1AM\n\nДобавление товара в программе Wipon"
+  },
+  {
+    "id": 108812,
+    "create_time": "2025-11-27T16:27:20.828Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=yXA8h900hkw\n\nКак добавить многотипный товар в Wipon?"
+  },
+  {
+    "id": 108824,
+    "create_time": "2025-11-27T16:28:18.800Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=-g0W9XHfJfY\n\nКак провести продажу в Wipon Desktop | Видеоинструкция\n\nНа главном экране с лева есть кнопка скачать Десктоп"
+  },
+  {
+    "id": 108825,
+    "create_time": "2025-11-27T16:28:54.271Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=2jtkwXvI1IA&t=3s\n\nАналитика в программе учета Wipon - Полный разбор!"
+  },
+  {
+    "id": 108834,
+    "create_time": "2025-11-27T16:29:55.012Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 108863,
+    "create_time": "2025-11-27T16:32:17.372Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 121932,
+    "create_time": "2025-12-01T13:51:19.694Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 121935,
+    "create_time": "2025-12-01T13:51:36.892Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 121938,
+    "create_time": "2025-12-01T13:52:04.799Z",
+    "author_type": "client",
+    "sent_content": "Будем брать данное оборудование, программу и кассовый онлайн"
+  },
+  {
+    "id": 121945,
+    "create_time": "2025-12-01T13:53:07.041Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 121998,
+    "create_time": "2025-12-01T13:58:59.334Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 122069,
+    "create_time": "2025-12-01T14:08:46.286Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 122077,
+    "create_time": "2025-12-01T14:09:30.552Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 122081,
+    "create_time": "2025-12-01T14:10:20.407Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 122091,
+    "create_time": "2025-12-01T14:11:25.553Z",
+    "author_type": "client",
+    "sent_content": "Фискальный имею ввиду"
+  },
+  {
+    "id": 122603,
+    "create_time": "2025-12-01T14:58:13.810Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 122664,
+    "create_time": "2025-12-01T15:04:20.592Z",
+    "author_type": "client",
+    "sent_content": "receipt.pdf"
+  },
+  {
+    "id": 122668,
+    "create_time": "2025-12-01T15:04:47.270Z",
+    "author_type": "client",
+    "sent_content": "Как будет доставка и настройка программы"
+  },
+  {
+    "id": 122669,
+    "create_time": "2025-12-01T15:04:55.717Z",
+    "author_type": "client",
+    "sent_content": "Мы находимся в Костанае"
+  },
+  {
+    "id": 122673,
+    "create_time": "2025-12-01T15:05:44.436Z",
+    "author_type": "client",
+    "sent_content": "Алтынсарина 134А ТД Азия 2. С 10 до 19:00"
+  },
+  {
+    "id": 122681,
+    "create_time": "2025-12-01T15:06:33.679Z",
+    "author_type": "client",
+    "sent_content": "А через кого отправляете?"
+  },
+  {
+    "id": 122682,
+    "create_time": "2025-12-01T15:06:38.372Z",
+    "author_type": "client",
+    "sent_content": "Белый"
+  },
+  {
+    "id": 122692,
+    "create_time": "2025-12-01T15:07:46.053Z",
+    "author_type": "client",
+    "sent_content": "Вы сами в Астане находитесь?"
+  },
+  {
+    "id": 122693,
+    "create_time": "2025-12-01T15:07:50.356Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 122698,
+    "create_time": "2025-12-01T15:08:20.839Z",
+    "author_type": "client",
+    "sent_content": "Офд кассу мы сами регистрацию проходим"
+  },
+  {
+    "id": 122713,
+    "create_time": "2025-12-01T15:09:58.430Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 122718,
+    "create_time": "2025-12-01T15:10:27.401Z",
+    "author_type": "client",
+    "sent_content": "А можно размеры коробки для уточнения стоимости доставки"
+  },
+  {
+    "id": 122734,
+    "create_time": "2025-12-01T15:11:30.844Z",
+    "author_type": "client",
+    "sent_content": "Да я пробный вариант регистрации делала, изучала вашу программу"
+  },
+  {
+    "id": 122741,
+    "create_time": "2025-12-01T15:12:14.107Z",
+    "author_type": "client",
+    "sent_content": "Логин и пароль нужен?"
+  },
+  {
+    "id": 122753,
+    "create_time": "2025-12-01T15:13:04.501Z",
+    "author_type": "client",
+    "sent_content": "Это название нашего магазина"
+  },
+  {
+    "id": 122760,
+    "create_time": "2025-12-01T15:14:27.503Z",
+    "author_type": "client",
+    "sent_content": "Давайте"
+  },
+  {
+    "id": 125528,
+    "create_time": "2025-12-02T09:36:49.644Z",
+    "author_type": "client",
+    "sent_content": "Да забрали, как получу, напишу вам"
+  },
+  {
+    "id": 133196,
+    "create_time": "2025-12-05T09:54:49.101Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте. Хорошо, объясните тогда где именно мы вносим nmin номер при создании карточки, или как его подтягиваем через нац каталог"
+  },
+  {
+    "id": 238647,
+    "create_time": "2026-01-09T11:28:05.843Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте. Когда позвонит нам ваш менеджер"
+  },
+  {
+    "id": 238650,
+    "create_time": "2026-01-09T11:28:30.714Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Менеджер свяжется с вами в ближайшее свободное время."
+  },
+  {
+    "id": 236578,
+    "create_time": "2026-01-08T14:46:11.761Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте. Скажите пожалуйста я бы хотела отказаться от вашей программы, но у нас тариф оплачен на год. Как можем решить данный вопрос."
+  },
+  {
+    "id": 236585,
+    "create_time": "2026-01-08T14:46:39.039Z",
+    "author_type": "client",
+    "sent_content": "Мы в которой программе работает они настроили с нкт каталогом интеграцию"
+  },
+  {
+    "id": 254145,
+    "create_time": "2026-01-19T12:17:32.990Z",
+    "author_type": "client",
+    "sent_content": "Не могу дозвониться до службы поддержки"
+  },
+  {
+    "id": 254151,
+    "create_time": "2026-01-19T12:18:14.732Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте! \nПросим Вас обратиться в техническую поддержку:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77070202019\nИли можете сразу написать по WhatsApp по ссылке: https://wa.me/77070202019\n\nСәлеметсіз бе!\nТехникалық қолдауға хабарласуыңызды өтінеміз:\n📞 Тел.: +77470956496 \n💬 WhatsApp: +77070202019\nНемесе мына сілтеме арқылы WhatsApp-қа тікелей жаза аласыз: https://wa.me/77070202019"
+  },
+  {
+    "id": 254152,
+    "create_time": "2026-01-19T12:18:19.646Z",
+    "author_type": "client",
+    "sent_content": "Хочу сделать перенос товара в вашу программу, кто может сейчас помочь это сделать"
+  },
+  {
+    "id": 254161,
+    "create_time": "2026-01-19T12:19:21.549Z",
+    "author_type": "client",
+    "sent_content": "Пишу не отвечают"
+  },
+  {
+    "id": 254172,
+    "create_time": "2026-01-19T12:20:03.245Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Минуту"
+  },
+  {
+    "id": 255172,
+    "create_time": "2026-01-19T17:28:27.439Z",
+    "author_type": "client",
+    "sent_content": "Когда мне наберут, я жду звонка"
+  },
+  {
+    "id": 255189,
+    "create_time": "2026-01-19T17:36:00.678Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам еще не позвонили ?"
+  },
+  {
+    "id": 255190,
+    "create_time": "2026-01-19T17:36:08.423Z",
+    "author_type": "client",
+    "sent_content": "Нет"
+  },
+  {
+    "id": 255209,
+    "create_time": "2026-01-19T17:47:30.225Z",
+    "author_type": "client",
+    "sent_content": "Вы поможете решить проблему?"
+  },
+  {
+    "id": 255222,
+    "create_time": "2026-01-19T18:04:21.202Z",
+    "author_type": "client",
+    "sent_content": "Мне сегодня перезвонят или нет?"
+  },
+  {
+    "id": 261999,
+    "create_time": "2026-01-26T19:05:50.852Z",
+    "author_type": "client",
+    "sent_content": "может мне еще раз перезвонить менеджер. сейчас буду делать первый раз принимать товар, как правильно это сделать"
+  }
+]

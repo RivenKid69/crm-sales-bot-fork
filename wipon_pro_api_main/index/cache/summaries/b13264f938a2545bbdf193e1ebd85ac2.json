@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/domain/ugd-license.service.ts:import:@nestjs/common",
+  "summary": "Этот код импортирует необходимые зависимости для создания сервиса в NestJS, который работает с базой данных. Он использует TypeORM для выполнения SQL-запросов и получает данные из таблицы ugd_licenses и stores.",
+  "purpose": "Сервис нужен для выполнения сложных SQL-запросов и получения данных из базы, связанных с лицензиями и магазинами.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Выполняет кастомный SQL-запрос для получения лицензий и магазинов",
+    "Использует инъекцию зависимостей для получения репозитория",
+    "Возвращает данные в виде массива объектов",
+    "Работает с таблицами ugd_licenses и stores"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1252,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "57150818572c473e"
+}

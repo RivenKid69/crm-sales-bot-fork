@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../dto/post-or-update-store.dto",
+  "summary": "Этот код представляет собой сервис для работы со складами, который валидирует данные, взаимодействует с базой данных и использует различные use-case для выполнения бизнес-логики. Он использует DTO для передачи данных и TypeORM для работы с БД.",
+  "purpose": "Обрабатывает запросы, связанные с проверкой, обновлением и получением информации о складах.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Валидация данных с помощью DTO",
+    "Работа с базой данных через TypeORM",
+    "Использование use-case для бизнес-логики",
+    "Получение информации о складах по лицензии или пользователю",
+    "Обновление данных склада"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 2966,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

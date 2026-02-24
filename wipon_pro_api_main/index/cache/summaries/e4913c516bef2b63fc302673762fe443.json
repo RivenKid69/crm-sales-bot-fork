@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/fcm/fcm.module.ts:import:../notifications/notifications.module",
+  "summary": "Этот модуль настраивает отправку уведомлений через Firebase Cloud Messaging (FCM). Он использует очередь задач для обработки уведомлений и подключается к модулю уведомлений. Инициализирует Firebase с настройками из конфигурации.",
+  "purpose": "Обеспечивает отправку push-уведомлений через FCM с поддержкой асинхронной обработки через очередь",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Инициализация Firebase с конфигурацией из .env",
+    "Использование Bull для асинхронной обработки уведомлений",
+    "Подключение к модулю уведомлений через forwardRef",
+    "Предоставление сервисов для отправки и получения уведомлений",
+    "Конфигурация очереди 'push_pro' для обработки задач"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "@nestjs/common",
+    "firebase-admin"
+  ],
+  "input_tokens": 1498,
+  "output_tokens": 768,
+  "model": "qwen3:14b",
+  "code_hash": "1bb20cf771b8b2af"
+}

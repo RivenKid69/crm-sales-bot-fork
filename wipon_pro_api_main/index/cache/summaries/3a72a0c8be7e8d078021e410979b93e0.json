@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../../dgds/domain/use-cases/find-dgd-by-name.use-case",
+  "summary": "Этот код реализует сервис для работы со складами, валидации данных и взаимодействия с другими частями приложения. Использует репозитории, use-cases и DTO для обработки запросов.",
+  "purpose": "Обрабатывает операции проверки складов, получения информации о пользователях и обновления данных складов",
+  "domain": "бизнес-логика склада",
+  "key_behaviors": [
+    "Проверка лицензии склада",
+    "Получение информации о складе пользователя",
+    "Обновление данных склада",
+    "Использование валидации данных",
+    "Взаимодействие с другими use-cases"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 2989,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

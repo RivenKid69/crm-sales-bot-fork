@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/assign-device-code.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создаёт сервисный класс в NestJS, который можно использовать в других частях приложения. Декоратор @Injectable() позволяет внедрять этот класс как зависимость в другие компоненты.",
+  "purpose": "Создание повторно используемого сервиса для обработки логики назначения кода устройства",
+  "domain": "application",
+  "key_behaviors": [
+    "Внедрение зависимостей через декоратор @Injectable()",
+    "Реализация use case (случай использования)",
+    "Разделение бизнес-логики от инфраструктуры",
+    "Подготовка к тестированию через инъекцию зависимостей",
+    "Обработка операций с устройствами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 978,
+  "output_tokens": 702,
+  "model": "qwen3:14b",
+  "code_hash": "52b51b79eceaea9e"
+}

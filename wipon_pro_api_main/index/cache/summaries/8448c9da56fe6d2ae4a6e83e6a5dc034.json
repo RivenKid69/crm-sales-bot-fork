@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/payment-fiscalization.task.ts:class:PaymentFiscalizationTask",
+  "summary": "Этот класс периодически проверяет новые платежи и отправляет их на фискализацию (подтверждение для налоговой). Он использует Redis для блокировки задач и TypeORM для работы с базой данных.",
+  "purpose": "Автоматизирует фискализацию платежей в системе для соблюдения налоговых требований",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Периодически проверяет новые платежи в базе данных",
+    "Отправляет данные о платежах на внешний API для фискализации",
+    "Использует Redis для предотвращения одновременного выполнения задачи",
+    "Обновляет статус фискализации в базе данных после отправки",
+    "Логирует ошибки при фискализации"
+  ],
+  "dependencies_used": [
+    "NestJS",
+    "TypeORM",
+    "cache-manager",
+    "uuid",
+    "axios"
+  ],
+  "input_tokens": 2748,
+  "output_tokens": 743,
+  "model": "qwen3:14b",
+  "code_hash": "289855327fc251f7"
+}

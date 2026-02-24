@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth-codes/auth-codes.module.ts:import:./domain/use-cases/delete-users-all-auth-codes.use-case",
+  "summary": "Этот модуль устанавливает структуру для работы с кодами аутентификации, используя TypeORM для взаимодействия с базой данных. Он объединяет несколько операций, таких как создание, поиск и удаление кодов.",
+  "purpose": "Обеспечивает модульную организацию кодов аутентификации и их использование в приложении",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Интеграция с базой данных через TypeORM",
+    "Создание кодов аутентификации",
+    "Поиск кодов по пользователю",
+    "Удаление отдельных кодов",
+    "Удаление всех кодов пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1467,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "9b1763fbc07521ef"
+}

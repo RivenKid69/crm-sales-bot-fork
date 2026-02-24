@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/validations/is-entity-exists.ts:class:IsDgdExistsConstraint",
+  "summary": "Этот код проверяет, существует ли запись в базе данных для определённого ID. Например, он проверяет, есть ли магазин с таким ID или пользователь с таким номером телефона.",
+  "purpose": "Убедиться, что данные, которые вводит пользователь, соответствуют реальным записям в базе данных",
+  "domain": "валидация",
+  "key_behaviors": [
+    "Проверка существования записи по ID",
+    "Асинхронная валидация через базу данных",
+    "Использование декораторов для валидации полей",
+    "Поддержка различных типов данных (числа, строки)",
+    "Интеграция с DAO-слоем для доступа к данным"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "StoreTypeDao",
+    "DgdDao",
+    "UgdDao",
+    "RegionDao",
+    "ItemDao",
+    "UserDao",
+    "LedgerDao"
+  ],
+  "input_tokens": 2584,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "6765c3cb44480c13"
+}

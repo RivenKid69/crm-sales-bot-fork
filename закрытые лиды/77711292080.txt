@@ -1,0 +1,458 @@
+[
+  {
+    "id": 237028,
+    "create_time": "2026-01-08T15:53:35.827Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "салеметсизбе"
+  },
+  {
+    "id": 237050,
+    "create_time": "2026-01-08T15:58:16.525Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 226979,
+    "create_time": "2026-01-06T10:45:31.328Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "168 000 техника\n150 000 программа"
+  },
+  {
+    "id": 226980,
+    "create_time": "2026-01-06T10:45:31.773Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "рассрочка бар ия"
+  },
+  {
+    "id": 226981,
+    "create_time": "2026-01-06T10:45:33.777Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "счет қандай номерге?"
+  },
+  {
+    "id": 226983,
+    "create_time": "2026-01-06T10:45:56.835Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия қиын калькулятормен"
+  },
+  {
+    "id": 227036,
+    "create_time": "2026-01-06T10:52:26.842Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия"
+  },
+  {
+    "id": 233327,
+    "create_time": "2026-01-07T15:51:51.964Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 233328,
+    "create_time": "2026-01-07T15:52:04.284Z",
+    "author_type": "client",
+    "sent_content": "Сәлемеисізбе"
+  },
+  {
+    "id": 233333,
+    "create_time": "2026-01-07T15:53:43.839Z",
+    "author_type": "client",
+    "sent_content": "970405450481"
+  },
+  {
+    "id": 233334,
+    "create_time": "2026-01-07T15:53:55.453Z",
+    "author_type": "client",
+    "sent_content": "ИП Тогжан"
+  },
+  {
+    "id": 233335,
+    "create_time": "2026-01-07T15:54:49.253Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "жақсы\nпрограмма және техника жеке жеке төленеді\nқазір программа үшін жіберемін"
+  },
+  {
+    "id": 233336,
+    "create_time": "2026-01-07T15:55:19.317Z",
+    "author_type": "client",
+    "sent_content": "Жаксы"
+  },
+  {
+    "id": 233337,
+    "create_time": "2026-01-07T15:55:21.198Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1 дүкен ғой ия?"
+  },
+  {
+    "id": 233338,
+    "create_time": "2026-01-07T15:56:09.149Z",
+    "author_type": "client",
+    "sent_content": "Ия"
+  },
+  {
+    "id": 233356,
+    "create_time": "2026-01-07T15:59:33.458Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "150 000 жібердік"
+  },
+  {
+    "id": 233361,
+    "create_time": "2026-01-07T16:00:29.328Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym \n\nосы ссылка техниканы төлеу үшін, 219 000 деп жазасыз и способ оплаты таңдайсыз рассрочка деп\nоплатадан кейін чекті чатқа жіберсеңіз болады"
+  },
+  {
+    "id": 233362,
+    "create_time": "2026-01-07T16:02:09.269Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "бізде ақ және қара монитор бар\nқайсысы қажет?"
+  },
+  {
+    "id": 233363,
+    "create_time": "2026-01-07T16:03:40.431Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "150мыңның чегін де жібере аласыз ба?"
+  },
+  {
+    "id": 233364,
+    "create_time": "2026-01-07T16:05:54.997Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Алматы қаласында қандай адреске доставка қажет?"
+  },
+  {
+    "id": 233365,
+    "create_time": "2026-01-07T16:06:00.381Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "рахмет"
+  },
+  {
+    "id": 233366,
+    "create_time": "2026-01-07T16:06:04.547Z",
+    "author_type": "client",
+    "sent_content": "Ақтын  фотосы барма"
+  },
+  {
+    "id": 233372,
+    "create_time": "2026-01-07T16:06:42.809Z",
+    "author_type": "client",
+    "sent_content": "Бөгенбай батыр 239  Гурман магазин"
+  },
+  {
+    "id": 233373,
+    "create_time": "2026-01-07T16:07:24.013Z",
+    "author_type": "client",
+    "sent_content": "Кара бола берсін"
+  },
+  {
+    "id": 233374,
+    "create_time": "2026-01-07T16:07:44.074Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ия"
+  },
+  {
+    "id": 233375,
+    "create_time": "2026-01-07T16:08:04.714Z",
+    "author_type": "client",
+    "sent_content": "Ок рахмет😘"
+  },
+  {
+    "id": 233378,
+    "create_time": "2026-01-07T16:09:12.099Z",
+    "author_type": "client",
+    "sent_content": "9874"
+  },
+  {
+    "id": 233384,
+    "create_time": "2026-01-07T16:09:41.932Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "регистрация өтілді"
+  },
+  {
+    "id": 233385,
+    "create_time": "2026-01-07T16:09:47.081Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "рахмет"
+  },
+  {
+    "id": 250161,
+    "create_time": "2026-01-13T11:06:31.924Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250184,
+    "create_time": "2026-01-13T11:10:56.354Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ертеңге обучениеге жазылу"
+  },
+  {
+    "id": 250186,
+    "create_time": "2026-01-13T11:11:06.989Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сізге ыңғайлы бола ма?"
+  },
+  {
+    "id": 237030,
+    "create_time": "2026-01-08T15:53:48.526Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "менеджер келе жатыр\nкішкене кешігеді"
+  },
+  {
+    "id": 225999,
+    "create_time": "2026-01-05T20:39:33.742Z",
+    "author_type": "client",
+    "sent_content": "Магазинге кассавый апарад койайын деп едім"
+  },
+  {
+    "id": 226000,
+    "create_time": "2026-01-05T20:39:52.549Z",
+    "author_type": "ai",
+    "sent_content": "Әрине, Wipon-да сіздің дүкеніңізге арналған онлайн-кассалық аппараттар бар. Сіз қай қаладасыз және қандай форматтағы дүкеніңіз бар (мысалы, азық-түлік, киім сатасыз ба)?"
+  },
+  {
+    "id": 226007,
+    "create_time": "2026-01-05T20:40:27.385Z",
+    "author_type": "client",
+    "sent_content": "Алматы қаласы"
+  },
+  {
+    "id": 226008,
+    "create_time": "2026-01-05T20:40:37.664Z",
+    "author_type": "client",
+    "sent_content": "Азық- түлік"
+  },
+  {
+    "id": 226009,
+    "create_time": "2026-01-05T20:40:50.512Z",
+    "author_type": "ai",
+    "sent_content": "Түсінікті, Алматы қаласындағы дүкендерге арналған шешімдеріміз бар. Сіздің дүкеніңіздің форматы қандай, яғни не сатасыз? *Қысқа қоңырау* кезінде сіздің бизнесіңізге ең қолайлы шешімді таңдап аламыз."
+  },
+  {
+    "id": 226011,
+    "create_time": "2026-01-05T20:40:53.637Z",
+    "author_type": "ai",
+    "sent_content": "Түсінікті, азық-түлік дүкендеріне арналған есепке алу және онлайн-кассалық шешімдеріміз бар."
+  },
+  {
+    "id": 226012,
+    "create_time": "2026-01-05T20:40:55.930Z",
+    "author_type": "ai",
+    "sent_content": "Сіздің дүкеніңізге нақты қандай шешім қажет екенін білу үшін, менеджерімізбен *қысқа қоңырау* арқылы сөйлесуді ұсынамын."
+  },
+  {
+    "id": 226020,
+    "create_time": "2026-01-05T20:43:54.817Z",
+    "author_type": "client",
+    "sent_content": "Жаксы"
+  },
+  {
+    "id": 226021,
+    "create_time": "2026-01-05T20:44:14.608Z",
+    "author_type": "ai",
+    "sent_content": "Тамаша! Менеджеріміз сізбен жақын арада қоңырау шалып, дүкеніңіздің қажеттіліктеріне сай үздік шешімді таңдауға көмектеседі."
+  },
+  {
+    "id": 226780,
+    "create_time": "2026-01-06T10:13:30.632Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қосылуды қашан жоспарлайсыз?"
+  },
+  {
+    "id": 226785,
+    "create_time": "2026-01-06T10:14:04.985Z",
+    "author_type": "client",
+    "sent_content": "1-2 кунде келе аласыздарма"
+  },
+  {
+    "id": 226789,
+    "create_time": "2026-01-06T10:14:28.793Z",
+    "author_type": "client",
+    "sent_content": "Суммасы канша болады"
+  },
+  {
+    "id": 226793,
+    "create_time": "2026-01-06T10:14:51.983Z",
+    "author_type": "client",
+    "sent_content": "Улкен магазин емес шағын ғана"
+  },
+  {
+    "id": 226797,
+    "create_time": "2026-01-06T10:15:25.612Z",
+    "author_type": "client",
+    "sent_content": "Програмасын бәрін уйретесіздерме"
+  },
+  {
+    "id": 226800,
+    "create_time": "2026-01-06T10:15:43.062Z",
+    "author_type": "client",
+    "sent_content": "Тавар қосу"
+  },
+  {
+    "id": 226803,
+    "create_time": "2026-01-06T10:15:56.997Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Программаның жылдық бағасы 150 000"
+  },
+  {
+    "id": 226804,
+    "create_time": "2026-01-06T10:16:03.688Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "обучение көп өткізіп жатырмыз\nбүгін қосылсаңыз 8 күні обучение өткізіп береміз"
+  },
+  {
+    "id": 226810,
+    "create_time": "2026-01-06T10:16:38.127Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "әрине\nкеліп оранатамыз"
+  },
+  {
+    "id": 226816,
+    "create_time": "2026-01-06T10:17:03.136Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "денежный ящик және штрихкод шығаратын принтер керек пе?"
+  },
+  {
+    "id": 227248,
+    "create_time": "2026-01-06T11:11:58.475Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "қайсы сізге келеді?"
+  },
+  {
+    "id": 227656,
+    "create_time": "2026-01-06T11:57:03.965Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "тек годовой \nбірақ бізде процентсіз рассрочка бар каспи арқылы"
+  },
+  {
+    "id": 227661,
+    "create_time": "2026-01-06T11:57:20.050Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "айына 12 500 тг программа үшін"
+  },
+  {
+    "id": 233387,
+    "create_time": "2026-01-07T16:10:00.454Z",
+    "author_type": "client",
+    "sent_content": "Сізге де рахмет"
+  },
+  {
+    "id": 233388,
+    "create_time": "2026-01-07T16:10:09.203Z",
+    "author_type": "client",
+    "sent_content": "Сәтті кун болсын"
+  },
+  {
+    "id": 225982,
+    "create_time": "2026-01-05T20:35:06.265Z",
+    "author_type": "client",
+    "sent_content": "Салеметсіз бе"
+  },
+  {
+    "id": 225983,
+    "create_time": "2026-01-05T20:35:11.549Z",
+    "author_type": "client",
+    "sent_content": "https://www.instagram.com/p/DPuWsQVDDUx/?igsh=MWd6ZjdqcDI4NW10bA=="
+  },
+  {
+    "id": 225985,
+    "create_time": "2026-01-05T20:35:31.418Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе, мен Айбота, Wipon сатулар бойынша онлайн-ассистентімін. Сізге қалай көмектесе аламын?"
+  },
+  {
+    "id": 226617,
+    "create_time": "2026-01-06T09:35:51.982Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сәлеметсізбе"
+  },
+  {
+    "id": 226620,
+    "create_time": "2026-01-06T09:36:47.872Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қоңырау шала алмадық"
+  },
+  {
+    "id": 226625,
+    "create_time": "2026-01-06T09:40:05.906Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "- Дүкенді жаппай-ақ, ревизияны оңай және дәл жасау\n- Тауар қалдықтарын бақылау\n- Ақша айналымыңыз және таза пайдаңыз\n- Шатастырмау үшін өнімнің фотосуреттері\n- Поставщиктер мен клиенттердің қарызын бақылау\n- Ең көп сатылатын өнімдер\n- Мобильді қосымша\n- Тегін онлайн касса және OФД\n- Табыстың артуы\n- Интернетсіз жұмыс істеу мүмкіндігі"
+  },
+  {
+    "id": 226671,
+    "create_time": "2026-01-06T09:53:11.370Z",
+    "author_type": "client",
+    "sent_content": "Салеметсіз бе"
+  },
+  {
+    "id": 227066,
+    "create_time": "2026-01-06T10:55:02.155Z",
+    "author_type": "client",
+    "sent_content": "219.000 болмайма"
+  },
+  {
+    "id": 227078,
+    "create_time": "2026-01-06T10:55:54.513Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "бұл комплект бар"
+  },
+  {
+    "id": 233390,
+    "create_time": "2026-01-07T16:10:38.347Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ертең сізге хабарласады\nобучение үшін бос күндерін айтып береді\nыңғайлысын таңдайсыз"
+  },
+  {
+    "id": 233391,
+    "create_time": "2026-01-07T16:10:44.478Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "рахмет😍"
+  },
+  {
+    "id": 247584,
+    "create_time": "2026-01-12T14:28:11.793Z",
+    "author_type": "client",
+    "sent_content": "Салеметсіз бе менеджер жібересіздер ме"
+  },
+  {
+    "id": 247610,
+    "create_time": "2026-01-12T14:31:22.040Z",
+    "author_type": "ai",
+    "sent_content": "Сәлеметсіз бе, мен Айбота, Wipon сатулар бойынша онлайн-ассистентімін. Иә, менеджеріміз сізбен жақын арада хабарласады."
+  },
+  {
+    "id": 250008,
+    "create_time": "2026-01-13T10:35:20.557Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Қайырлы таң! Сізді оффлайн обучениеге қашан тіркеуге болатынын айта аласыз ба?"
+  },
+  {
+    "id": 250484,
+    "create_time": "2026-01-13T12:43:31.231Z",
+    "author_type": "client",
+    "sent_content": "Жаксы болады"
+  },
+  {
+    "id": 250508,
+    "create_time": "2026-01-13T12:56:04.925Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "сагат 16:00 болама?"
+  },
+  {
+    "id": 250532,
+    "create_time": "2026-01-13T13:04:26.019Z",
+    "author_type": "client",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 250535,
+    "create_time": "2026-01-13T13:05:55.849Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "адрес кандай ?"
+  },
+  {
+    "id": 250591,
+    "create_time": "2026-01-13T13:19:46.402Z",
+    "author_type": "client",
+    "sent_content": "Богенбай батыр 239"
+  }
+]

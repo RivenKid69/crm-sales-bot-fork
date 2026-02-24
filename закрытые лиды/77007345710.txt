@@ -1,0 +1,422 @@
+[
+  {
+    "id": 48447,
+    "create_time": "2025-11-06T13:13:31.054Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 48448,
+    "create_time": "2025-11-06T13:13:31.182Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 48449,
+    "create_time": "2025-11-06T13:13:32.767Z",
+    "author_type": "client",
+    "sent_content": "Хочу узнать подробнее про кассовый комплект в рассрочку на 24 месяца."
+  },
+  {
+    "id": 48455,
+    "create_time": "2025-11-06T13:13:47.420Z",
+    "author_type": "ai",
+    "sent_content": "Наш кассовый комплект можно приобрести в рассрочку Kaspi 0-0-24 без переплаты. Стоимость делится равномерно на 24 месяца, что удобно и выгодно."
+  },
+  {
+    "id": 48456,
+    "create_time": "2025-11-06T13:13:49.656Z",
+    "author_type": "ai",
+    "sent_content": "Какой именно комплект вас интересует? Уточните, и я помогу рассчитать сумму ежемесячного платежа."
+  },
+  {
+    "id": 48495,
+    "create_time": "2025-11-06T13:18:12.426Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 48503,
+    "create_time": "2025-11-06T13:18:38.311Z",
+    "author_type": "client",
+    "sent_content": "Про этот комплект можно узнать подробнее"
+  },
+  {
+    "id": 48504,
+    "create_time": "2025-11-06T13:18:53.401Z",
+    "author_type": "ai",
+    "sent_content": "Кассовый комплект Standart включает сенсорный моноблок, сканер с подставкой и принтер чеков. Стоимость составляет 168 000 ₸, рассрочка Kaspi 0-0-12 — 14 000 ₸ в месяц."
+  },
+  {
+    "id": 48505,
+    "create_time": "2025-11-06T13:18:55.635Z",
+    "author_type": "ai",
+    "sent_content": "Также есть расширенный комплект Standart+, который включает денежный ящик и принтер этикеток. Его цена — 219 000 ₸, рассрочка — 18 250 ₸ в месяц."
+  },
+  {
+    "id": 48506,
+    "create_time": "2025-11-06T13:18:57.778Z",
+    "author_type": "ai",
+    "sent_content": "Если вам нужна дополнительная информация, сообщите, пожалуйста."
+  },
+  {
+    "id": 48507,
+    "create_time": "2025-11-06T13:19:40.875Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "подскажите с какого города вы к нам обращаетесь?"
+  },
+  {
+    "id": 48516,
+    "create_time": "2025-11-06T13:23:06.816Z",
+    "author_type": "ai",
+    "sent_content": "Кассовый комплект Standart включает сенсорный моноблок, сканер с подставкой и принтер чеков. Стоимость составляет 168 000 ₸, рассрочка Kaspi 0-0-12 — 14 000 ₸ в месяц."
+  },
+  {
+    "id": 48936,
+    "create_time": "2025-11-06T14:28:39.974Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Демо аккаунт по Просклад wipon, где можете ознакомиться с функционалом программы:\nДемо аккаунт: https://console.wipon.kz/\nЛогин: +7 777 777 77 77\nПароль: 12345678\n \nЕсли через телефон, можете скачать приложение WIPON\nи зайти через тот же логин пароль\n\nнаш инстаграмм  https://www.instagram.com/wipon.kz/  \nнаш ютуб канал  https://www.youtube.com/@Wiponkz/videos"
+  },
+  {
+    "id": 48996,
+    "create_time": "2025-11-06T14:33:02.670Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=BDZVp2qa4f8"
+  },
+  {
+    "id": 48997,
+    "create_time": "2025-11-06T14:33:06.438Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Краткий видеообзор программы Wipon"
+  },
+  {
+    "id": 49000,
+    "create_time": "2025-11-06T14:33:21.531Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 54414,
+    "create_time": "2025-11-07T14:15:19.621Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Какой адрес доставки?"
+  },
+  {
+    "id": 54424,
+    "create_time": "2025-11-07T14:15:50.800Z",
+    "author_type": "client",
+    "sent_content": "Караганда. Ержанова 63. Магазин. Пряник"
+  },
+  {
+    "id": 54525,
+    "create_time": "2025-11-07T14:24:58.664Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "👍"
+  },
+  {
+    "id": 56553,
+    "create_time": "2025-11-07T20:58:49.014Z",
+    "author_type": "client",
+    "sent_content": "Спасибо!"
+  },
+  {
+    "id": 63702,
+    "create_time": "2025-11-12T16:27:06.138Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На счет этого момента мы уточним"
+  },
+  {
+    "id": 48916,
+    "create_time": "2025-11-06T14:26:29.769Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Каталог _сентябрь 3_.pdf"
+  },
+  {
+    "id": 49406,
+    "create_time": "2025-11-06T15:04:42.615Z",
+    "author_type": "client",
+    "sent_content": "Подскажите диагональ экрана этого моноблока по акции?"
+  },
+  {
+    "id": 49416,
+    "create_time": "2025-11-06T15:05:55.515Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "15,6"
+  },
+  {
+    "id": 49420,
+    "create_time": "2025-11-06T15:06:42.037Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 54132,
+    "create_time": "2025-11-07T13:43:17.348Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! Да я ознакомились. Поясните пожалуйста ещё раз по поводу доставки и как с установкой и обучением?"
+  },
+  {
+    "id": 54142,
+    "create_time": "2025-11-07T13:44:36.592Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставку мы отправляем по индрайву,с Астаны"
+  },
+  {
+    "id": 54148,
+    "create_time": "2025-11-07T13:45:17.290Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Далее удаленно подключаемся к оборудованию и проводим обучение управляя оборудованием"
+  },
+  {
+    "id": 54154,
+    "create_time": "2025-11-07T13:46:02.081Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тоже самое как и рядом будет сидеть человек"
+  },
+  {
+    "id": 54155,
+    "create_time": "2025-11-07T13:46:17.037Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "По Астане доставка у нас бесплатно"
+  },
+  {
+    "id": 54176,
+    "create_time": "2025-11-07T13:47:49.479Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам понравилось наше предложение?"
+  },
+  {
+    "id": 54185,
+    "create_time": "2025-11-07T13:49:17.139Z",
+    "author_type": "client",
+    "sent_content": "Удалённо я могу работать и следить за работй  и с ноутбука и с телефона?"
+  },
+  {
+    "id": 54190,
+    "create_time": "2025-11-07T13:50:08.199Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, конечно"
+  },
+  {
+    "id": 54192,
+    "create_time": "2025-11-07T13:51:10.322Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы получаете бесплатную интеграцию с pos-терминалом, онлайн-кассой - wipon-кассой (если необходима фискализация товара), техническую поддержку, бесплатное приложение для предпринимателя Wipon, в которой вы можете смотреть всю информацию, находясь в любой точки мира."
+  },
+  {
+    "id": 54198,
+    "create_time": "2025-11-07T13:52:06.071Z",
+    "author_type": "client",
+    "sent_content": "Давайте оформим"
+  },
+  {
+    "id": 55150,
+    "create_time": "2025-11-07T15:43:07.034Z",
+    "author_type": "client",
+    "sent_content": "Когда сможете отправить?"
+  },
+  {
+    "id": 55189,
+    "create_time": "2025-11-07T15:46:05.233Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас уточню у логистов"
+  },
+  {
+    "id": 55221,
+    "create_time": "2025-11-07T15:49:27.837Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Логисты сказали что из за погодных условий отправят в понедельник"
+  },
+  {
+    "id": 60175,
+    "create_time": "2025-11-12T08:53:38.433Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте! Мы приобрели у вас оборудование  и программу. Какие дальнейшие действия по установке и программе?"
+  },
+  {
+    "id": 60176,
+    "create_time": "2025-11-12T08:55:07.805Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте!"
+  },
+  {
+    "id": 60177,
+    "create_time": "2025-11-12T08:55:17.348Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас передам ваш номер нашим менеджерам"
+  },
+  {
+    "id": 60405,
+    "create_time": "2025-11-12T09:31:28.236Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.instagram.com/stories/highlights/17850818370420423/"
+  },
+  {
+    "id": 60438,
+    "create_time": "2025-11-12T09:33:56.052Z",
+    "author_type": "client",
+    "sent_content": "Моноблок который я купила процессор i5  должен был быть мне говорили"
+  },
+  {
+    "id": 63335,
+    "create_time": "2025-11-12T15:32:50.333Z",
+    "author_type": "client",
+    "sent_content": "Можете мне ответить ,какой моноблок мне продали и какой прислали. Почему Нет накладной где указаны модели и цены?"
+  },
+  {
+    "id": 63341,
+    "create_time": "2025-11-12T15:33:27.721Z",
+    "author_type": "client",
+    "sent_content": "Говорили i5 процессор а прислали i3"
+  },
+  {
+    "id": 48652,
+    "create_time": "2025-11-06T13:56:50.351Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 52824,
+    "create_time": "2025-11-07T11:01:32.404Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте!"
+  },
+  {
+    "id": 52825,
+    "create_time": "2025-11-07T11:01:37.906Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Как ваши дела?"
+  },
+  {
+    "id": 52833,
+    "create_time": "2025-11-07T11:02:44.097Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите, у вас получилось ознакомиться с нашим предложением?"
+  },
+  {
+    "id": 54202,
+    "create_time": "2025-11-07T13:53:01.355Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 54214,
+    "create_time": "2025-11-07T13:55:32.737Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Из оборудования  - \nМоноблок - 130 000 \nПринтер чеков  - 13 500\nСканер беспроводной - 15 500\nПринтер этикеток 28 000"
+  },
+  {
+    "id": 54216,
+    "create_time": "2025-11-07T13:55:51.274Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 54217,
+    "create_time": "2025-11-07T13:56:00.838Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Есть такой сканер проводной Зебра"
+  },
+  {
+    "id": 54218,
+    "create_time": "2025-11-07T13:56:09.684Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Самый качественный"
+  },
+  {
+    "id": 54220,
+    "create_time": "2025-11-07T13:56:24.681Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 54221,
+    "create_time": "2025-11-07T13:56:59.302Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 54222,
+    "create_time": "2025-11-07T13:57:21.190Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для выставления счета на нужен ИИН ИП и номер телефона"
+  },
+  {
+    "id": 54285,
+    "create_time": "2025-11-07T14:04:48.241Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам моноблок какого цвета?"
+  },
+  {
+    "id": 54348,
+    "create_time": "2025-11-07T14:08:06.800Z",
+    "author_type": "client",
+    "sent_content": "Черный"
+  },
+  {
+    "id": 54362,
+    "create_time": "2025-11-07T14:08:55.333Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо, ждем ИИН ИП и номер телефона"
+  },
+  {
+    "id": 54366,
+    "create_time": "2025-11-07T14:09:23.199Z",
+    "author_type": "client",
+    "sent_content": "Сканер не надо"
+  },
+  {
+    "id": 54371,
+    "create_time": "2025-11-07T14:10:11.012Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 54374,
+    "create_time": "2025-11-07T14:11:05.596Z",
+    "author_type": "client",
+    "sent_content": "780204450052"
+  },
+  {
+    "id": 54375,
+    "create_time": "2025-11-07T14:11:14.686Z",
+    "author_type": "client",
+    "sent_content": "87073055165"
+  },
+  {
+    "id": 54377,
+    "create_time": "2025-11-07T14:12:07.337Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас выставим счет на 150 000 тенге за программу"
+  },
+  {
+    "id": 54396,
+    "create_time": "2025-11-07T14:13:26.453Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "И за оборудование - 171 500"
+  },
+  {
+    "id": 56350,
+    "create_time": "2025-11-07T19:00:58.837Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "отправили курьера, если успеет до 10 завезет сегодня, если нет то завтра утром"
+  },
+  {
+    "id": 56351,
+    "create_time": "2025-11-07T19:01:16.184Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "+7 776 663 5559 номер водителя"
+  },
+  {
+    "id": 56355,
+    "create_time": "2025-11-07T19:04:38.558Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 60391,
+    "create_time": "2025-11-12T09:29:44.196Z",
+    "author_type": "client",
+    "sent_content": "Можете сказать хотя бы сначала куда вставляется шнур питания?"
+  }
+]

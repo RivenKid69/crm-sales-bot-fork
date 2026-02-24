@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:cache-manager-redis-store",
+  "summary": "Этот код настраивает модуль кэширования с использованием Redis в приложении NestJS. Он подключает кэш и настраивает соединение с Redis-сервером через конфигурационные файлы.",
+  "purpose": "Позволяет ускорить доступ к часто используемым данным за счёт кэширования в Redis.",
+  "domain": "кэширование",
+  "key_behaviors": [
+    "Использует Redis в качестве хранилища кэша",
+    "Настройки подключения берутся из конфигурационных файлов",
+    "Интегрируется с модулем кэширования NestJS",
+    "Поддерживает высокую производительность и масштабируемость",
+    "Автоматически подключается к серверу Redis"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 2801,
+  "output_tokens": 736,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

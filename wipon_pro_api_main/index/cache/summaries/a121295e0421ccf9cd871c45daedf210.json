@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/doomguy/doomguy.service.ts:property:DoomguyService:_hookUrl",
+  "summary": "Это приватное свойство хранит URL вебхука Slack для отправки уведомлений. Используется для отправки сообщений в каналы Slack при разных событиях (например, ошибки, обратная связь, SMS-отчеты).",
+  "purpose": "Позволяет отправлять уведомления в Slack для мониторинга и оперативного реагирования на события в приложении",
+  "domain": "уведомления, логирование",
+  "key_behaviors": [
+    "Хранит URL для отправки сообщений в Slack",
+    "Используется в методах для отправки уведомлений в зависимости от события",
+    "Работает с разными каналами в зависимости от окружения (production/staging)",
+    "Используется в связке с HTTP-запросами для отправки данных в Slack",
+    "Используется в критических сценариях, таких как ошибки и обратная связь"
+  ],
+  "dependencies_used": [
+    "@nestjs/axios",
+    "appConfig",
+    "createCustomErrorLogger"
+  ],
+  "input_tokens": 2602,
+  "output_tokens": 778,
+  "model": "qwen3:14b",
+  "code_hash": "4e3be25ad0adb3a0"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/save-accounts.use-case.ts:method:SaveAccountsUseCase:handle",
+  "summary": "Этот метод сохраняет массив аккаунтов в базу данных. Если транзакция не указана, он использует репозиторий, иначе работает через переданный менеджер транзакций.",
+  "purpose": "Позволяет сохранять данные аккаунтов с возможностью использования транзакций для обеспечения целостности данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохраняет массив объектов AccountDao",
+    "Поддерживает транзакции через EntityManager",
+    "Использует репозиторий при отсутствии транзакции",
+    "Возвращает сохранённые данные",
+    "Работает с TypeORM для взаимодействия с базой"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1172,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "5817af3179c3c297"
+}

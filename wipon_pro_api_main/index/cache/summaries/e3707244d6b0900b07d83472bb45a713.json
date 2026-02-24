@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/dto/post-feedback.dto.ts:property:PostFeedbackDto:phone_number",
+  "summary": "Этот код описывает DTO (Data Transfer Object) для отправки обратной связи. Он проверяет данные: телефон, имя, email, текст сообщения, логи и фото, используя валидаторы и документацию Swagger.",
+  "purpose": "Обеспечивает валидацию данных при отправке обратной связи через API",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка телефонного номера по формату Казахстана",
+    "Обязательное поле для текста сообщения",
+    "Проверка формата email",
+    "Валидация JSON для логов",
+    "Проверка Base64 для фото"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1459,
+  "output_tokens": 681,
+  "model": "qwen3:14b",
+  "code_hash": "507dc6b08d3bd5a6"
+}

@@ -1,0 +1,62 @@
+@import "./colors";
+
+$body-bg: $primary-light-2;
+$body-bg-light: $secondary-light-3;
+$header-bg: $primary-dark-2;
+
+// Buttons
+$btn-wd-100: 100%;
+$btn-primary: $primary;
+$btn-primary-hover: $primary-light-1;
+$btn-primary-pressed: $primary-dark-2;
+
+$btn-secondary: #fff;
+$btn-secondary-hover: $primary-light-2;
+$btn-secondary-pressed: $secondary-light-3;
+
+$btn-danger: $danger;
+$btn-danger-hover: $danger-light-1;
+$btn-danger-pressed: $danger-light-2;
+
+$btn-disabled: $secondary-light-2;
+$border-radius: 0.625rem;
+
+$btn-padding-x: 0.625rem;
+$btn-padding-x-lg: 0.625rem;
+$btn-padding-y: 0.375rem;
+$btn-padding-y-lg: 0.625rem;
+
+// Forms
+$input-color: $dark;
+$input-bg: $white;
+$input-border: $white;
+$input-disabled-color: $secondary-light-2;
+$input-focus-border-color: $primary;
+$input-focus-danger-border-color: $danger;
+$input-border-width: 1px;
+
+$label-margin-bottom: 0.75rem;
+$label-color: $secondary-color;
+$error-text-color: $danger;
+$error-text-margin-top: 0.5rem;
+$input-padding-y: 0.625rem;
+$input-padding-x-md: 0.625rem;
+$input-font-size: 1rem;
+
+// Auth-Forms
+$auth-form-wd: 424px;
+$auth-form-inner-padding: 2rem;
+$auth-form-btn-wd: $btn-wd-100;
+
+// Notifications
+$notify-success-bg: $success-light-2;
+$notify-success-border: $success-light-1;
+
+$notify-error-bg: $danger-light-2;
+$notify-error-border: $danger-light-1;
+
+// Modal
+$modal-inner-padding: 1.5rem;
+$modal-header-padding-x: $modal-inner-padding;
+$modal-header-padding-y: $modal-inner-padding;
+$modal-wd: 491px;

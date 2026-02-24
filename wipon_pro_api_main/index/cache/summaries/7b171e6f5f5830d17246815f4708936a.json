@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/buy-subscription.dto.ts:file",
+  "summary": "Этот файл определяет DTO (Data Transfer Object) для покупки подписки. Он проверяет, что тип подписки корректный (мобильный, десктоп или TSD), а также позволяет указать, нужно ли менять тип подписки перед покупкой.",
+  "purpose": "Обеспечивает валидацию данных при покупке подписки в API",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка корректного типа подписки",
+    "Валидация булевого флага изменения типа подписки",
+    "Генерация документации через Swagger",
+    "Обязательное поле типа подписки",
+    "Опциональное поле изменения типа"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1251,
+  "output_tokens": 670,
+  "model": "qwen3:14b",
+  "code_hash": "6a718f26e17b4ac1"
+}

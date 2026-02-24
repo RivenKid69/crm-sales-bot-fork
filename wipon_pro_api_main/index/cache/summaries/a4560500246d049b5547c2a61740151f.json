@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/data/items.repository.ts:class:ItemsRepository",
+  "summary": "Этот класс представляет собой репозиторий для работы с сущностью ItemDao в TypeORM. Он наследуется от Repository и позволяет выполнять операции с базой данных.",
+  "purpose": "Обеспечивает доступ к базе данных для управления объектами ItemDao",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Реализует доступ к данным через TypeORM",
+    "Позволяет выполнять CRUD-операции",
+    "Использует аннотацию @EntityRepository для привязки к сущности"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "ItemDao"
+  ],
+  "input_tokens": 933,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "7b82f828d1de1255"
+}

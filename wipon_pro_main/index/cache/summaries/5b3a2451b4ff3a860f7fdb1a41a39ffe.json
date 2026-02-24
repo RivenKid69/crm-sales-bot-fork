@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:makeRefund",
+  "summary": "Эта функция отправляет POST-запрос на сервер для возврата средств, используя путь /subscription/refund и передавая данные, необходимые для обработки возврата.",
+  "purpose": "Используется для обработки возврата средств по подписке в проекте.",
+  "domain": "платежи",
+  "key_behaviors": [
+    "отправка POST-запроса",
+    "работа с данными для возврата",
+    "интеграция с API",
+    "обращение к серверу",
+    "обработка подписок"
+  ],
+  "dependencies_used": [
+    "request"
+  ],
+  "input_tokens": 913,
+  "output_tokens": 661,
+  "model": "qwen3:14b",
+  "code_hash": "39f9bb99ebd1bf53"
+}

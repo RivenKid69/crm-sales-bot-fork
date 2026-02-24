@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/ugd-licenses.module.ts:import:./data/ugd-license.repository",
+  "summary": "Этот код создает модуль NestJS, который подключает базу данных через TypeORM, связывает контроллер для обработки HTTP-запросов и сервис для работы с лицензиями. Он позволяет другим частям приложения использовать сервис лицензий.",
+  "purpose": "Обеспечивает работу с лицензиями через API и базу данных в приложении",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "Подключается к базе данных через TypeORM",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Предоставляет логику работы с лицензиями в сервисе",
+    "Экспортирует сервис для использования в других модулях",
+    "Разделяет данные, бизнес-логику и API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1200,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "da5e9030b6842889"
+}

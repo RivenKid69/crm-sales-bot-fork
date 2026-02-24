@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/update-user-accounts-ledger.use-case.ts:import:../../data/accounts.repository",
+  "summary": "Этот код создает сервис для обновления информации о счетах пользователя. Он использует репозиторий для работы с базой данных и может работать как самостоятельно, так и в рамках транзакции.",
+  "purpose": "Обновление связи пользователя с его счетом в системе, с поддержкой транзакций",
+  "domain": "управление пользователями и счетами",
+  "key_behaviors": [
+    "Обновляет идентификатор счета пользователя",
+    "Поддерживает работу в транзакциях",
+    "Использует инъекцию зависимостей",
+    "Работает с базой данных через TypeORM",
+    "Использует DAO для взаимодействия с данными"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "AccountDao"
+  ],
+  "input_tokens": 1233,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "18189eb693ee96ff"
+}

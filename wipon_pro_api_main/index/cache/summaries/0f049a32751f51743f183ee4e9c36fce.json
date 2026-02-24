@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/presenter/regions.controller.ts:class:RegionsController",
+  "summary": "Этот класс — контроллер, который получает список регионов из сервиса и возвращает его пользователю. Он использует интерцептор для преобразования данных и документирует API с помощью Swagger.",
+  "purpose": "Позволяет получить список доступных регионов через HTTP-запрос",
+  "domain": "api",
+  "key_behaviors": [
+    "Получает список регионов из сервиса",
+    "Использует интерцептор для преобразования данных",
+    "Документирует API с помощью Swagger",
+    "Обрабатывает GET-запросы на эндпоинт /regions",
+    "Интегрируется с другими частями приложения через сервис"
+  ],
+  "dependencies_used": [
+    "RegionsService",
+    "TransformInterceptor",
+    "ApiOperation",
+    "ApiTags",
+    "Controller",
+    "Get",
+    "UseInterceptors"
+  ],
+  "input_tokens": 994,
+  "output_tokens": 723,
+  "model": "qwen3:14b",
+  "code_hash": "8b671451b7dba67f"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/make-refund.dto.ts:import:../../../common/validations/is-numeric",
+  "summary": "Этот код импортирует валидаторы и настройки для проверки данных. Он используется для проверки числовых значений и их соответствия определенным типам подписки.",
+  "purpose": "Обеспечивает валидацию числовых данных и их соответствие допустимым значениям в приложении",
+  "domain": "валидация, настройки",
+  "key_behaviors": [
+    "Проверка, что значение не пустое",
+    "Проверка, что значение является числом",
+    "Проверка, что значение соответствует одному из допустимых типов подписки",
+    "Добавление документации к API через Swagger",
+    "Использование настроек из файла конфигурации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "class-transformer",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1203,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "5ccce823d74ad731"
+}

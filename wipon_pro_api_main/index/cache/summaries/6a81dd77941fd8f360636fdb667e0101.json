@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/excise-hashes/data/excise-hashes.repository.ts:class:ExciseHashesRepository",
+  "summary": "Этот класс создаёт репозиторий для работы с данными ExciseHashesDao в базе данных. Он использует TypeORM для выполнения операций чтения/записи.",
+  "purpose": "Позволяет удобно взаимодействовать с таблицей ExciseHashes в базе данных через объектно-ориентированный интерфейс",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Выполнение SQL-запросов через ORM",
+    "Работа с сущностями базы данных",
+    "Управление жизненным циклом объектов",
+    "Поддержка транзакций",
+    "Автоматическое отображение между объектами и таблицами"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1069,
+  "output_tokens": 642,
+  "model": "qwen3:14b",
+  "code_hash": "a1bedb8c1ff3eec1"
+}

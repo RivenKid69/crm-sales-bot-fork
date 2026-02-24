@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:method:NotificationsService:createUsersNotification",
+  "summary": "Этот класс управляет уведомлениями: отправляет, удаляет, обновляет статус, получает и создаёт уведомления для пользователей",
+  "purpose": "Обеспечивает полный цикл работы с уведомлениями в приложении",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Отправляет уведомления через push-сервис",
+    "Получает уведомления пользователя из базы данных",
+    "Обновляет статус уведомления (прочитано/не прочитано)",
+    "Удаляет уведомления пользователя",
+    "Создаёт новые уведомления и сохраняет их в базе"
+  ],
+  "dependencies_used": [
+    "NotificationsRepository",
+    "PushService",
+    "FindUserByIdUseCase",
+    "UserDao",
+    "NotificationDao"
+  ],
+  "input_tokens": 2054,
+  "output_tokens": 631,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

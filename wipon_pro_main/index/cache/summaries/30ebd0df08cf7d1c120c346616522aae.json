@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/subscriptions/index.ts:class:",
+  "summary": "Этот код — Vuex-модуль для управления подписками. Он хранит данные о подписках, позволяет получать их из API, фильтровать активные подписки и управлять выбранным тарифом.",
+  "purpose": "Обеспечивает централизованное управление данными о подписках в приложении",
+  "domain": "подписки, SaaS, управление тарифами",
+  "key_behaviors": [
+    "Получение данных подписок из API",
+    "Фильтрация активных подписок",
+    "Установка выбранных тарифов",
+    "Обновление данных о счетах",
+    "Сортировка подписок по дате окончания"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через subscriptions.api)"
+  ],
+  "input_tokens": 2847,
+  "output_tokens": 712,
+  "model": "qwen3:14b",
+  "code_hash": "80d89ee0c49ebfd8"
+}

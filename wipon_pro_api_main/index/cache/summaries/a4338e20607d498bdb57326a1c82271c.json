@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/data/feedbacks.repository.ts:import:../../../common/dao/feedback-message.dao",
+  "summary": "Этот код создает репозиторий для работы с сущностью FeedbackMessageDao через TypeORM. Он позволяет выполнять операции чтения/записи данных в базе",
+  "purpose": "Обеспечивает доступ к данным о сообщениях обратной связи через ORM-слоя",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание репозитория для сущности",
+    "Использование TypeORM для работы с БД",
+    "Реализация CRUD-операций",
+    "Связь с DAO-классом",
+    "Управление жизненным циклом сущностей"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1002,
+  "output_tokens": 683,
+  "model": "qwen3:14b",
+  "code_hash": "9a0df3fb00c9c35a"
+}

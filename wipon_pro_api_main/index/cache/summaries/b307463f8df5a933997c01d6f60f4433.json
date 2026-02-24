@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:method:SubscriptionsService:SubForErpDto) {\n    const us",
+  "summary": "Этот метод проверяет, есть ли у пользователя активная подписка по его номеру телефона. Если пользователь не найден или подписки нет, возвращает ошибку. Иначе показывает дату окончания и статус подписки.",
+  "purpose": "Позволяет проверить активную подписку пользователя для отображения в интерфейсе или API",
+  "domain": "подписки, пользователи, авторизация",
+  "key_behaviors": [
+    "Ищет пользователя по номеру телефона",
+    "Проверяет наличие активной подписки",
+    "Возвращает ошибку 422 если пользователь не найден",
+    "Возвращает ошибку 404 если подписки нет",
+    "Форматирует дату окончания подписки"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "SubscriptionRepository",
+    "HttpException"
+  ],
+  "input_tokens": 2783,
+  "output_tokens": 679,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

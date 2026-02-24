@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/cashboxes.module.ts:import:@nestjs/common",
+  "summary": "Этот код импортирует и настраивает модуль NestJS для работы с кассами. Он использует сервисы для логики, контроллер для обработки запросов и подключает другие модули для взаимодействия с пользователями и уведомлениями.",
+  "purpose": "Создает структурированный модуль для управления кассами в приложении.",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Использует сервисы для логики",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Подключает модули пользователей и уведомлений",
+    "Организует компоненты в модуль",
+    "Использует внешние зависимости"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "UsersModule",
+    "FcmModule"
+  ],
+  "input_tokens": 1053,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "cfe75fa0e6c1d1f0"
+}

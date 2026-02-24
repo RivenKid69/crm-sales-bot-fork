@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/presenter/users.controller.ts:method:UsersController:deleteUser",
+  "summary": "Этот метод удаляет пользователя из системы. Он работает по DELETE-запросу, требует аутентификации и возвращает статус операции. Использует сервис для выполнения логики удаления.",
+  "purpose": "Позволяет авторизованному пользователю удалить свой аккаунт или аккаунт другого пользователя, если есть соответствующие права.",
+  "domain": "авторизация, управление пользователями",
+  "key_behaviors": [
+    "Удаляет пользователя по ID",
+    "Требует аутентификации через AuthGuard",
+    "Возвращает статус операции",
+    "Использует UsersService для выполнения логики удаления",
+    "Интегрируется с Swagger для документирования API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "AuthGuard",
+    "UsersService",
+    "UserDao",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1663,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "1808cadd56fd9cc7"
+}

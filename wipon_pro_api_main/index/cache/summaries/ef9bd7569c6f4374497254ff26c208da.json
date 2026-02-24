@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:method:PushConsumer:readOperationJob",
+  "summary": "Этот метод обрабатывает задания из очереди 'push_pro' для отправки уведомлений. Он извлекает данные из задания, создает уведомление и отправляет его через FCM (Firebase Cloud Messaging) на указанный токен устройства.",
+  "purpose": "Обработка асинхронных задач по отправке push-уведомлений пользователям",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Обработка заданий из очереди Bull",
+    "Отправка FCM-уведомлений через Firebase",
+    "Логирование успешных и ошибочных операций",
+    "Использование сервисов для создания уведомлений",
+    "Асинхронная обработка задач"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin",
+    "notificationsService",
+    "fcmService"
+  ],
+  "input_tokens": 1628,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

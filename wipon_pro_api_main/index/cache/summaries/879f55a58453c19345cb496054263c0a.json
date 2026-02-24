@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account.dao.ts:property:AccountDao:deleted_at",
+  "summary": "Этот код описывает сущность AccountDao в TypeORM, которая представляет таблицу 'accounts' в базе данных. Она содержит поля для хранения информации об аккаунте, включая баланс, даты создания, обновления и удаления, а также связи с другими сущностями, такими как LedgerDao и AccountTransactionDao.",
+  "purpose": "Эта сущность используется для хранения и управления данными об аккаунтах в приложении, обеспечивая возможность работы с балансами, транзакциями и связями между сущностями.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит информацию об аккаунте, включая баланс и даты действий",
+    "Поддерживает мягкое удаление через поле deleted_at",
+    "Устанавливает связь с LedgerDao через поле ledger_id",
+    "Связывает аккаунт с транзакциями через AccountTransactionDao",
+    "Использует автоматически генерируемый идентификатор для уникального определения аккаунта"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao",
+    "AccountTransactionDao"
+  ],
+  "input_tokens": 1359,
+  "output_tokens": 809,
+  "model": "qwen3:14b",
+  "code_hash": "550426ffa65ba1f2"
+}

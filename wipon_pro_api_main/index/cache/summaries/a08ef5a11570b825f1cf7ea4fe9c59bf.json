@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/accounts.module.ts:import:./domain/use-cases/find-ledgers-accounts.use-case",
+  "summary": "Этот код создает модуль для работы со счетами в приложении. Он использует TypeORM для взаимодействия с базой данных, включает сервисы и use-cases для обработки логики, а также контроллер для обработки HTTP-запросов.",
+  "purpose": "Организует работу со счетами, транзакциями и балансами в финансовой системе",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Обрабатывает бизнес-логику через use-cases",
+    "Предоставляет API через контроллер",
+    "Использует сервисы для управления данными",
+    "Экспортирует use-cases для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1589,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "c4b9b766cb1868f1"
+}

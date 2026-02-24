@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:../../../common/dao/subscription.dao",
+  "summary": "Этот код создает сервис для управления подписками пользователей. Он проверяет активные подписки, ищет пользователей по номеру телефона, работает с базой данных и обрабатывает платежи.",
+  "purpose": "Управление жизненным циклом подписок пользователей в приложении",
+  "domain": "подписки, авторизация, платежи",
+  "key_behaviors": [
+    "Проверка активных подписок пользователя",
+    "Поиск пользователя по номеру телефона",
+    "Работа с базой данных через TypeORM",
+    "Обработка платежей через billingService",
+    "Активация подписок и возврат средств"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "@nestjs/axios",
+    "rxjs"
+  ],
+  "input_tokens": 2748,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

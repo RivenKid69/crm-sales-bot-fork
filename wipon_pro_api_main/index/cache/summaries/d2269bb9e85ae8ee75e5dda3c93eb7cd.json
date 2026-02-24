@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/domain/ugd-license.service.ts:class:UgdLicenseService",
+  "summary": "Этот класс - сервис, который выполняет сложный SQL-запрос к базе данных, соединяя таблицы лицензий и магазинов. Он ищет лицензии со статусом 'Действительный', которые не привязаны к магазинам и соответствуют определенным условиям.",
+  "purpose": "Сервис нужен для поиска лицензий, которые соответствуют определенным критериям и не привязаны к магазинам.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Выполняет SQL-запрос к базе данных",
+    "Соединяет таблицы 'ugd_licenses' и 'stores'",
+    "Фильтрует лицензии по статусу 'Действительный'",
+    "Ищет лицензии, не привязанные к магазинам",
+    "Возвращает массив объектов с ID лицензии и магазина"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "UgdLicenseRepository",
+    "StoreDao"
+  ],
+  "input_tokens": 1338,
+  "output_tokens": 797,
+  "model": "qwen3:14b",
+  "code_hash": "57150818572c473e"
+}

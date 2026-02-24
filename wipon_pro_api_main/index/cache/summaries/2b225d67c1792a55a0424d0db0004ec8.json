@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/dto/login.dto.ts:property:LoginDto:application_type",
+  "summary": "Этот код описывает DTO (Data Transfer Object) для входа в систему. Он включает обязательный телефонный номер, необязательный код авторизации и необязательный тип приложения, который может быть только 'desktop' или 'mobile_scan'.",
+  "purpose": "Используется для валидации данных при входе в систему через телефон и код подтверждения",
+  "domain": "авторизация, API",
+  "key_behaviors": [
+    "Проверка валидности казахстанского номера телефона",
+    "Обязательное поле для телефона",
+    "Ограничение длины кода авторизации",
+    "Ограничение значений для типа приложения",
+    "Генерация документации через Swagger"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1311,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "a570ba58be82c9e0"
+}

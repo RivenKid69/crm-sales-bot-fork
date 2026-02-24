@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/xml.ts:import:fast-xml-parser",
+  "summary": "Этот код использует библиотеку 'fast-xml-parser' для создания XML из объектов. Также есть функция, которая частично реализована для преобразования массивов в XML, основанная на оригинальном PHP-коде",
+  "purpose": "Преобразование данных в XML-формат для обмена информацией или хранения",
+  "domain": "данные, API, обработка информации",
+  "key_behaviors": [
+    "Создание XML из объектов",
+    "Поддержка атрибутов в XML",
+    "Кодирование в UTF-8 или Windows-1251",
+    "Работа с вложенными структурами данных",
+    "Частичная реализация функции для массивов"
+  ],
+  "dependencies_used": [
+    "fast-xml-parser"
+  ],
+  "input_tokens": 1739,
+  "output_tokens": 709,
+  "model": "qwen3:14b",
+  "code_hash": "bc056e2148c96762"
+}

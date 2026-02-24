@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/presenter/checks.controller.ts:import:../../auth/guard/auth.guard",
+  "summary": "Этот код - контроллер NestJS, который обрабатывает различные запросы, связанные с проверками товаров. Он использует валидацию данных, аутентификацию, загрузку файлов и документацию API через Swagger.",
+  "purpose": "Обработка запросов к эндпоинтам, связанным с проверкой товаров, с защитой и документацией API",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET и POST запросов к эндпоинтам",
+    "Использование валидации данных через ValidationPipe",
+    "Интеграция с аутентификацией и ограничениями по скорости",
+    "Загрузка изображений через FileInterceptor",
+    "Документация API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "@nestjs/platform-express",
+    "ChecksService",
+    "AuthGuard",
+    "CheckSubscriptionGuard",
+    "UserRateLimitGuard",
+    "CheckApiKeyGuard",
+    "TransformInterceptor",
+    "FileInterceptor"
+  ],
+  "input_tokens": 2795,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "3516f3694956962a"
+}

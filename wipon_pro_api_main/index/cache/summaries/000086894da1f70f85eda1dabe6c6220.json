@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/data/users.repository.ts:method:UsersRepository:findUserByPhoneNumber",
+  "summary": "Этот код - репозиторий для работы с пользователями. Он может искать пользователей по телефону или ID, создавать новых пользователей и управлять API-токенами.",
+  "purpose": "Обеспечивает базовые операции для работы с пользователями в системе, включая авторизацию через токены",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по номеру телефона",
+    "Создание нового пользователя",
+    "Поиск пользователя по ID",
+    "Управление API-токенами",
+    "Обновление токена пользователя"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1348,
+  "output_tokens": 627,
+  "model": "qwen3:14b",
+  "code_hash": "9e48a8de21591251"
+}

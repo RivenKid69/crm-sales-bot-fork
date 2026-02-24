@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account.dao.ts:property:AccountDao:transactions",
+  "summary": "Этот код описывает модель данных для сущности 'accounts' в базе данных. Он определяет поля, такие как ID, баланс, временные метки и связи с другими сущностями, такими как 'ledger' и 'transactions'.",
+  "purpose": "Создает структуру таблицы для хранения информации об аккаунтах в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Генерирует уникальный идентификатор для аккаунта",
+    "Хранит временные метки (создание, обновление, удаление)",
+    "Связывает аккаунт с леджером",
+    "Хранит баланс аккаунта",
+    "Связывает аккаунт с транзакциями"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao",
+    "AccountTransactionDao"
+  ],
+  "input_tokens": 1521,
+  "output_tokens": 706,
+  "model": "qwen3:14b",
+  "code_hash": "550426ffa65ba1f2"
+}

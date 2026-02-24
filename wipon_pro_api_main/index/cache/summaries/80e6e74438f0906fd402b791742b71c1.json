@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/domain/cashboxes.service.ts:method:CashboxesService:pushAuthCode",
+  "summary": "Этот метод отправляет push-уведомления пользователям по их номеру телефона. Он использует коды авторизации и сообщения для уведомления пользователей, например, для активации кассы или отправки сообщений.",
+  "purpose": "Отправка push-уведомлений пользователям для уведомления о кодах авторизации или других сообщениях.",
+  "domain": "утилиты, уведомления, авторизация",
+  "key_behaviors": [
+    "Отправка кода авторизации через push-уведомления",
+    "Отправка произвольных сообщений через push-уведомления",
+    "Поиск пользователя по номеру телефона",
+    "Возврат статуса отправки сообщения (успех или провал)",
+    "Генерация ошибки, если пользователь не найден"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "PushService"
+  ],
+  "input_tokens": 1370,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "152af5f651eacbf3"
+}

@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/decorators/user.decorator.ts:import:@nestjs/common",
+  "summary": "Этот код создаёт декоратор User, который извлекает объект пользователя из HTTP-запроса. Он использует ExecutionContext для доступа к запросу и возвращает данные пользователя из request.user.",
+  "purpose": "Упрощает доступ к информации о текущем пользователе в контроллерах NestJS",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Извлекает данные пользователя из HTTP-запроса",
+    "Использует ExecutionContext для получения контекста запроса",
+    "Возвращает объект user из запроса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 982,
+  "output_tokens": 604,
+  "model": "qwen3:14b",
+  "code_hash": "7ca99905bcaadd86"
+}

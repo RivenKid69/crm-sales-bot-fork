@@ -1,0 +1,103 @@
+[
+  {
+    "scenario": "s10a_natural_discovery",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет",
+        "bot": "Привет! Меня зовут Айбота, персональный консультант Wipon. Расскажите, что именно вас интересует в системе для вашего бизнеса?",
+        "state": "greeting",
+        "intent": "greeting",
+        "action": "greet_back",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.82
+      },
+      {
+        "turn": 2,
+        "user": "Мне знакомый посоветовал, у меня магазин продуктов",
+        "bot": "А как сейчас ведёте учёт товаров? Например, на бумаге, в Excel?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.06
+      },
+      {
+        "turn": 3,
+        "user": "Да в ауезовском районе, маленький магазин",
+        "bot": "А, продуктовый магазин в Ауезовском! Как часто закупаете товар? Например, раз в неделю или реже?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.15
+      },
+      {
+        "turn": 4,
+        "user": "2 продавца, я сам тоже иногда за кассой стою",
+        "bot": "А вручную все записи ведёте или хотя бы в Excel? Как часто бывает, что товар заканчивается?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 4.89
+      },
+      {
+        "turn": 5,
+        "user": "Ну пока на калькуляторе считаем если честно)) Каспи QR есть",
+        "bot": "Да, у нас есть тариф Mini — касса + фискализация за 5 000 ₸/мес. А что сейчас сложнее всего в работе с Каспи QR?",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.79
+      },
+      {
+        "turn": 6,
+        "user": "А у вас прям касса или софт на телефон?",
+        "bot": "У нас есть оба варианта: Wipon Mini — это касса на телефон (как Каспи, но с полноценным софтом для учёта), а есть и отдельный фискальный регистратор (железная касса с экраном). А что сейчас главное теряете из-за ручного счёта: время или деньги?",
+        "state": "autonomous_presentation",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 5.21
+      },
+      {
+        "turn": 7,
+        "user": "Интересно. А сколько это стоит?",
+        "bot": "Для вашего магазина идеально подойдёт тариф Mini — касса на телефон (как Каспи, но с учётом товаров и продаж). Стоит 5 000 ₸ в месяц.",
+        "state": "autonomous_negotiation",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 8.28
+      },
+      {
+        "turn": 8,
+        "user": "Хм, надо подумать. А можно попозже вернуться к разговору?",
+        "bot": "Поняла, если появится что-то новое или вопросы — пиши, всегда готова помочь.",
+        "state": "autonomous_negotiation",
+        "intent": "objection_think",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.0
+      }
+    ]
+  }
+]

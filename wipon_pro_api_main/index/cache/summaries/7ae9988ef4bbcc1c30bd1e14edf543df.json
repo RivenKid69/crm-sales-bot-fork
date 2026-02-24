@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:../../../modules/accounts/domain/use-cases/count-ledger-accounts-providers.use-case",
+  "summary": "Этот код отвечает за создание и управление финансовыми записями (ledger) пользователей, а также синхронизацию данных с различными провайдерами, такими как Qiwi, Kaspi и др. Использует базу данных и специальные утилиты для работы с датами и транзакциями.",
+  "purpose": "Обеспечивает создание и синхронизацию финансовых записей пользователей с внешними сервисами и провайдерами.",
+  "domain": "управление финансами, транзакции, учетные записи",
+  "key_behaviors": [
+    "Создает и сохраняет финансовые записи (ledger) для пользователей",
+    "Синхронизирует данные с провайдерами (Qiwi, Kaspi, Alfabank и др.)",
+    "Использует транзакции для безопасной работы с базой данных",
+    "Работает с датами и временем для определения начальных периодов",
+    "Использует специальные use-case для обработки данных и сохранения изменений"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "ledger.dao",
+    "account.dao",
+    "user.dao"
+  ],
+  "input_tokens": 2811,
+  "output_tokens": 818,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

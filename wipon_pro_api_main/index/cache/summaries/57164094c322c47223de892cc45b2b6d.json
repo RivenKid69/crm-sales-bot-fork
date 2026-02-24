@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/items.module.ts:import:./domain/use-cases/set-item-and-product-relation.use-case",
+  "summary": "Этот код создает модуль NestJS, который подключает базу данных через TypeORM и регистрирует несколько сервисов для работы с товарами. Модуль позволяет создавать, искать, связывать и разрывать связи между товарами и продуктами.",
+  "purpose": "Организует логику работы с товарами и их отношениями в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание новых товаров",
+    "Поиск товаров по коду акциза",
+    "Связывание товаров с продуктами",
+    "Разрыв связей между товарами и продуктами",
+    "Интеграция с базой данных через TypeORM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1421,
+  "output_tokens": 656,
+  "model": "qwen3:14b",
+  "code_hash": "65f90da87e1e7913"
+}

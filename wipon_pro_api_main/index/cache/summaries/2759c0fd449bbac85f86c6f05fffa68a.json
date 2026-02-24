@@ -1,0 +1,28 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../../../common/helpers/validate-image",
+  "summary": "Этот код импортирует различные модули и сервисы, необходимые для работы с проверками (checks) в приложении. Он использует внешние зависимости, такие как NestJS, TypeORM, HTTP-сервисы и вспомогательные функции для работы с изображениями и временем.",
+  "purpose": "Обеспечивает функциональность для обработки, хранения и валидации проверок, связанных с товарами и пользователями.",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с HTTP-сервисами для взаимодействия с внешними API",
+    "Обрабатывает изображения и файлы с помощью вспомогательных функций",
+    "Использует валидацию данных через DTO",
+    "Работает с временем и датами для генерации отчетов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston",
+    "locutus"
+  ],
+  "input_tokens": 4478,
+  "output_tokens": 814,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

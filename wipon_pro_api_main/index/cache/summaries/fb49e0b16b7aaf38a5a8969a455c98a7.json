@@ -1,0 +1,17 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/config/auth.config.ts:file",
+  "summary": "Этот файл содержит настройки для кодов аутентификации, такие как время ожидания между отправками, срок действия кодов и другие параметры. Все значения указаны в секундах.",
+  "purpose": "Настройка поведения системы аутентификации через временные ограничения кодов",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Ограничение частоты отправки кодов (sendCooldown)",
+    "Срок действия кода (lifetime)",
+    "Время неизменности кода (immutabilityLifetime)",
+    "Длительность тестового кода (testAuthCodeEmpty)"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 1005,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "1da310bb11d68993"
+}

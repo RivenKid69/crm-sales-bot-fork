@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/presenter/checks.controller.ts:import:../dto/store-checks-picture.dto",
+  "summary": "Этот код представляет собой контроллер NestJS, который обрабатывает различные HTTP-запросы, связанные с проверкой товаров. Он использует DTO для валидации данных, декораторы для извлечения информации из запроса и защитники для обеспечения безопасности.",
+  "purpose": "Обработка API-запросов, связанных с проверкой товаров, включая получение данных, валидацию и загрузку изображений с защитой доступа.",
+  "domain": "API",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения проверок пользователей",
+    "Валидация данных с использованием DTO и ValidationPipe",
+    "Загрузка изображений через FileInterceptor",
+    "Использование защитников для проверки подписки, API-ключа и ограничения скорости",
+    "Форматирование ответов с помощью TransformInterceptor"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/platform-express",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 2834,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "3516f3694956962a"
+}

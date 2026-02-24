@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../../../common/helpers/dataToResponse/checks-data-to-response",
+  "summary": "Этот код импортирует различные модули, сервисы и утилиты, необходимые для обработки проверок (checks) в приложении. Он использует репозитории, DTO, внешние API и вспомогательные функции для работы с данными, изображениями и логированием.",
+  "purpose": "Обеспечивает обработку и управление проверками в приложении, включая работу с данными, изображениями, внешними сервисами и логированием.",
+  "domain": "база данных, утилиты, api, логирование",
+  "key_behaviors": [
+    "Использует репозитории для работы с базой данных",
+    "Обрабатывает данные через DTO",
+    "Интегрируется с внешними API",
+    "Работает с изображениями и файлами",
+    "Логирует ошибки и события"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "winston"
+  ],
+  "input_tokens": 4524,
+  "output_tokens": 785,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.controller.ts:class:AppController",
+  "summary": "Этот класс - контроллер, который обрабатывает GET-запросы на маршрут '/echo'. Когда пользователь заходит по этому адресу, возвращается объект { status: 'success' }, чтобы показать, что сервер работает.",
+  "purpose": "Позволяет быстро проверить, запущен ли сервер и работает ли приложение",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает GET-запросы на маршрут '/echo'",
+    "Возвращает статус 'success' при успешном обращении",
+    "Добавляет описание endpoints через Swagger",
+    "Не использует внутренние зависимости проекта",
+    "Служит как простой health-check для сервера"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1069,
+  "output_tokens": 668,
+  "model": "qwen3:14b",
+  "code_hash": "a7131b70b5280b26"
+}

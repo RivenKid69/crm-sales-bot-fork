@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/accounts.service.ts:method:AccountsService:getUsersAccounts",
+  "summary": "Этот метод получает информацию о счетах пользователя, используя его данные из системы. Он сначала находит связанный с пользователем леджер, а затем форматирует данные о счетах для отображения.",
+  "purpose": "Позволяет получить структурированный список счетов пользователя для отображения в интерфейсе или дальнейшей обработки",
+  "domain": "управление пользователями и финансовыми данными",
+  "key_behaviors": [
+    "Извлекает леджер пользователя из системы",
+    "Форматирует данные о счетах в удобный для использования вид",
+    "Обрабатывает случаи, когда леджер не найден",
+    "Использует репозитории и use-case для получения данных",
+    "Маппит сущности в DTO для ответа"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "AccountsRepository",
+    "FindUsersLedgerUseCase",
+    "AccountDao",
+    "LedgerDao",
+    "UserDao"
+  ],
+  "input_tokens": 1473,
+  "output_tokens": 766,
+  "model": "qwen3:14b",
+  "code_hash": "fdb479782a52e2aa"
+}

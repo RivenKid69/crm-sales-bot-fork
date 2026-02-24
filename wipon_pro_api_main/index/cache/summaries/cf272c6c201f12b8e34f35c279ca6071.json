@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/subscription.dao.ts:property:SubscriptionDao:paid_bin",
+  "summary": "Этот код описывает сущность 'SubscriptionDao' для хранения информации о подписках пользователей. Использует TypeORM для работы с базой данных и содержит поля, такие как ID, статус активности, тип подписки и даты создания и обновления.",
+  "purpose": "Хранение данных о подписках пользователей в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор подписки",
+    "Отслеживает активность подписки",
+    "Записывает даты создания и обновления",
+    "Поддерживает мягкое удаление через deleted_at",
+    "Использует TypeORM для взаимодействия с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1262,
+  "output_tokens": 668,
+  "model": "qwen3:14b",
+  "code_hash": "08dac1712468bc24"
+}

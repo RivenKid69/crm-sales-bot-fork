@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/notification.dao.ts:property:NotificationDao:created_at",
+  "summary": "Этот код определяет структуру таблицы 'notifications' в базе данных. Класс NotificationDao содержит поля для хранения текста уведомления, пользователя, статуса прочтения и временных меток (создано, обновлено, удалено).",
+  "purpose": "Используется для хранения информации об уведомлениях в базе данных",
+  "domain": "база данных, уведомления",
+  "key_behaviors": [
+    "Хранит текст уведомления",
+    "Отслеживает статус прочтения",
+    "Автоматически записывает временные метки",
+    "Связывает уведомления с пользователями",
+    "Поддерживает мягкое удаление через deleted_at"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@Entity",
+    "@Column",
+    "@CreateDateColumn",
+    "@UpdateDateColumn",
+    "@DeleteDateColumn"
+  ],
+  "input_tokens": 1311,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "dca48e73b4438d66"
+}

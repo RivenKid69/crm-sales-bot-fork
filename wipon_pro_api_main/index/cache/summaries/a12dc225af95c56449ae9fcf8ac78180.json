@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/buy-subscription.dto.ts:property:BuySubscriptionDto:change_subscription_type",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для покупки подписки. Он проверяет, что тип подписки корректный, и позволяет указать, нужно ли менять текущий тип подписки перед покупкой.",
+  "purpose": "Обеспечивает валидацию данных и документацию API для покупки подписки",
+  "domain": "API, подписки",
+  "key_behaviors": [
+    "Проверяет, что тип подписки из допустимого списка",
+    "Разрешает необязательный флаг изменения типа подписки",
+    "Добавляет описание параметров для документации API",
+    "Использует валидацию данных перед обработкой запроса",
+    "Поддерживает работу с различными типами подписок"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1256,
+  "output_tokens": 704,
+  "model": "qwen3:14b",
+  "code_hash": "6a718f26e17b4ac1"
+}

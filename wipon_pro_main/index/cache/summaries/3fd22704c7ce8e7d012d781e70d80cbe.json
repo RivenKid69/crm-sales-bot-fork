@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/account.api.ts:import:@/api/request",
+  "summary": "Этот код импортирует функцию `request` из файла `@/api/request` и использует её для создания запросов к API. Он определяет две функции: `getAccountRequest` и `getTransactionsRequest`, которые отправляют GET-запросы на определённые URL.",
+  "purpose": "Этот код позволяет получать данные с сервера, такие как информация о счёте и транзакции, используя HTTP-запросы.",
+  "domain": "api",
+  "key_behaviors": [
+    "Отправка GET-запросов на сервер",
+    "Получение данных о счёте",
+    "Получение данных о транзакциях",
+    "Использование общего метода `request` для взаимодействия с API",
+    "Упрощение повторяющегося кода для запросов"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 806,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "0500daef3f629ee3"
+}

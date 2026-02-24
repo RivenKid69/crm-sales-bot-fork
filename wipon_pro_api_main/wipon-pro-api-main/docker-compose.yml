@@ -1,0 +1,22 @@
+version: '3.7'
+
+services:
+  nest:
+    image: wipon-pro-api
+    scale: ${SCALE_NUM}
+    restart: unless-stopped
+    command: npm run start:prod
+    volumes:
+      - ./static:/usr/src/app/dist/static
+      - /usr/src/app/node_modules
+    env_file:
+      - .env
+    ports:
+      - 127.0.0.1:3001-300${SCALE_NUM}:3000
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.23.0.0/16

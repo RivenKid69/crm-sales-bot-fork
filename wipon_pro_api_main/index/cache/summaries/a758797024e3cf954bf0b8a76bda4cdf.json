@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/dgds.module.ts:import:./data/dgds.repostitory",
+  "summary": "Этот код создает модуль NestJS для работы с сущностью 'dgds'. Он подключает базу данных через TypeORM, содержит логику обработки данных и HTTP-эндпоинты для взаимодействия с ней.",
+  "purpose": "Организует доступ к данным, бизнес-логику и API-методы для работы с сущностью dgds",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "Подключение к базе данных через TypeORM",
+    "Обработка запросов поиска по имени и ID",
+    "Предоставление сервиса для работы с данными",
+    "Создание HTTP-эндпоинтов через контроллер",
+    "Экспорт use-case для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1322,
+  "output_tokens": 722,
+  "model": "qwen3:14b",
+  "code_hash": "daecdf2120ab401e"
+}

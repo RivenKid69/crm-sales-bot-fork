@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.controller.ts:import:@nestjs/swagger",
+  "summary": "Этот код создает контроллер в NestJS с эндпоинтом '/echo', который возвращает статус 'success'. Использует Swagger для документирования API и описывает, что делает этот эндпоинт.",
+  "purpose": "Позволяет проверить работоспособность сервера и создать документацию для API",
+  "domain": "API",
+  "key_behaviors": [
+    "Создает тестовый эндпоинт для проверки сервера",
+    "Генерирует документацию через Swagger",
+    "Использует декораторы для маршрутизации",
+    "Возвращает простой JSON-ответ",
+    "Описывает цели эндпоинта в документации"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1078,
+  "output_tokens": 661,
+  "model": "qwen3:14b",
+  "code_hash": "a7131b70b5280b26"
+}

@@ -1,0 +1,548 @@
+[
+  {
+    "id": 247853,
+    "create_time": "2026-01-12T15:13:12.427Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Напишите какое оборудование вам нужно"
+  },
+  {
+    "id": 247873,
+    "create_time": "2026-01-12T15:17:14.872Z",
+    "author_type": "client",
+    "sent_content": "Можем ли мы принтер чека убрать, но сканер чеков поменять на беспроводной?"
+  },
+  {
+    "id": 247876,
+    "create_time": "2026-01-12T15:18:36.172Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, конечно!"
+  },
+  {
+    "id": 247881,
+    "create_time": "2026-01-12T15:19:07.632Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "191 000 тенге"
+  },
+  {
+    "id": 247889,
+    "create_time": "2026-01-12T15:21:32.207Z",
+    "author_type": "client",
+    "sent_content": "Счет выставите?"
+  },
+  {
+    "id": 247891,
+    "create_time": "2026-01-12T15:22:21.834Z",
+    "author_type": "client",
+    "sent_content": "После оплаты , пока идет оборудование мы же сможем через ноут у себя забивать товар ?"
+  },
+  {
+    "id": 247893,
+    "create_time": "2026-01-12T15:22:27.816Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На какой номер выставить счет?"
+  },
+  {
+    "id": 247894,
+    "create_time": "2026-01-12T15:22:48.658Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для выставления счета нужен так же ИИН ИП"
+  },
+  {
+    "id": 247895,
+    "create_time": "2026-01-12T15:23:07.654Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, конечно"
+  },
+  {
+    "id": 247899,
+    "create_time": "2026-01-12T15:24:03.360Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставим 2 счета - \nПрограмма - 150 000 \nОборудование - 191 000"
+  },
+  {
+    "id": 247900,
+    "create_time": "2026-01-12T15:24:07.694Z",
+    "author_type": "client",
+    "sent_content": "Давайте еще раз уточним\nМоноблок\nСканер штрих кода беспроводной\nПринтер чека \nДенежный ящик"
+  },
+  {
+    "id": 247957,
+    "create_time": "2026-01-12T15:28:42.886Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, все верно"
+  },
+  {
+    "id": 247966,
+    "create_time": "2026-01-12T15:29:39.747Z",
+    "author_type": "client",
+    "sent_content": "На моноблоке с обратной стороны есть табло с высвечиваемоц  суммой?"
+  },
+  {
+    "id": 247972,
+    "create_time": "2026-01-12T15:30:18.136Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 247973,
+    "create_time": "2026-01-12T15:30:20.769Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 247974,
+    "create_time": "2026-01-12T15:30:29.138Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 247975,
+    "create_time": "2026-01-12T15:30:31.110Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Они идут такие"
+  },
+  {
+    "id": 248354,
+    "create_time": "2026-01-12T16:28:52.454Z",
+    "author_type": "client",
+    "sent_content": "Только в программе же этой?"
+  },
+  {
+    "id": 248357,
+    "create_time": "2026-01-12T16:29:05.968Z",
+    "author_type": "client",
+    "sent_content": "Когда?"
+  },
+  {
+    "id": 248359,
+    "create_time": "2026-01-12T16:29:35.044Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 248399,
+    "create_time": "2026-01-12T16:34:18.251Z",
+    "author_type": "client",
+    "sent_content": "Доступ у меня уже есть? Я могу там разбираться пока сама?"
+  },
+  {
+    "id": 248405,
+    "create_time": "2026-01-12T16:34:49.355Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да"
+  },
+  {
+    "id": 248419,
+    "create_time": "2026-01-12T16:36:04.145Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите на какой день Вас записать на онлайн обучение ?"
+  },
+  {
+    "id": 248471,
+    "create_time": "2026-01-12T16:43:48.702Z",
+    "author_type": "client",
+    "sent_content": "Позже скажу"
+  },
+  {
+    "id": 248473,
+    "create_time": "2026-01-12T16:43:57.443Z",
+    "author_type": "client",
+    "sent_content": "Как заходить и куда?"
+  },
+  {
+    "id": 248482,
+    "create_time": "2026-01-12T16:45:58.611Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/login"
+  },
+  {
+    "id": 229881,
+    "create_time": "2026-01-06T16:58:54.964Z",
+    "author_type": "client",
+    "sent_content": "Хочу узнать подробнее про комплект \"Стандарт\" в рассрочку на 24 месяца."
+  },
+  {
+    "id": 229886,
+    "create_time": "2026-01-06T16:59:11.321Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Условия по комплекту *Стандарт* и вариантам рассрочки индивидуальны и зависят от вашего формата."
+  },
+  {
+    "id": 229887,
+    "create_time": "2026-01-06T16:59:13.905Z",
+    "author_type": "ai",
+    "sent_content": "Менеджер сможет подробно проконсультировать вас по всем деталям и подобрать подходящий вариант на коротком звонке."
+  },
+  {
+    "id": 229978,
+    "create_time": "2026-01-06T17:11:45.104Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 247983,
+    "create_time": "2026-01-12T15:31:29.546Z",
+    "author_type": "client",
+    "sent_content": "Сколько берут индрайверы?"
+  },
+  {
+    "id": 247986,
+    "create_time": "2026-01-12T15:31:38.823Z",
+    "author_type": "client",
+    "sent_content": "Без табло"
+  },
+  {
+    "id": 247995,
+    "create_time": "2026-01-12T15:32:42.125Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, верно"
+  },
+  {
+    "id": 248000,
+    "create_time": "2026-01-12T15:33:08.786Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Примерно до 15 000"
+  },
+  {
+    "id": 248029,
+    "create_time": "2026-01-12T15:36:47.746Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оформляем заказ? 🤗"
+  },
+  {
+    "id": 248041,
+    "create_time": "2026-01-12T15:37:20.143Z",
+    "author_type": "client",
+    "sent_content": "850131450448"
+  },
+  {
+    "id": 248036,
+    "create_time": "2026-01-12T15:37:09.962Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 248046,
+    "create_time": "2026-01-12T15:37:45.872Z",
+    "author_type": "client",
+    "sent_content": "Наличка без фискального чека?"
+  },
+  {
+    "id": 248048,
+    "create_time": "2026-01-12T15:37:53.427Z",
+    "author_type": "client",
+    "sent_content": "Настроить так можно?"
+  },
+  {
+    "id": 248049,
+    "create_time": "2026-01-12T15:38:10.010Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправка оборудования будет в четверг, приедет новая партия"
+  },
+  {
+    "id": 248051,
+    "create_time": "2026-01-12T15:38:12.767Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, конечно"
+  },
+  {
+    "id": 248054,
+    "create_time": "2026-01-12T15:38:32.279Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "77778952032   на данный номер выставить счет?"
+  },
+  {
+    "id": 248070,
+    "create_time": "2026-01-12T15:39:48.860Z",
+    "author_type": "client",
+    "sent_content": "Да. Тогда я могу за программу сейчас оплатить, что могли мы здесь уже работать? А оборудование в среду тогда выставите счет ?"
+  },
+  {
+    "id": 248072,
+    "create_time": "2026-01-12T15:40:14.954Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 248085,
+    "create_time": "2026-01-12T15:40:57.064Z",
+    "author_type": "client",
+    "sent_content": "Номер этот"
+  },
+  {
+    "id": 248086,
+    "create_time": "2026-01-12T15:40:57.556Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "После оплаты  отправьте пожалуйста чек"
+  },
+  {
+    "id": 248116,
+    "create_time": "2026-01-12T15:46:25.656Z",
+    "author_type": "client",
+    "sent_content": "А с Алматы КамАЗом можете отправить ?"
+  },
+  {
+    "id": 248117,
+    "create_time": "2026-01-12T15:46:38.285Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/register  \n\n\nПо данной"
+  },
+  {
+    "id": 248120,
+    "create_time": "2026-01-12T15:47:01.525Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ссылке можете пройти регистрацию в программе"
+  },
+  {
+    "id": 248123,
+    "create_time": "2026-01-12T15:47:14.573Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "К сожалению так не отправляем("
+  },
+  {
+    "id": 248127,
+    "create_time": "2026-01-12T15:47:45.653Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Или я могу вас зарегистрировать"
+  },
+  {
+    "id": 248143,
+    "create_time": "2026-01-12T15:51:07.651Z",
+    "author_type": "client",
+    "sent_content": "Можете вы)"
+  },
+  {
+    "id": 248144,
+    "create_time": "2026-01-12T15:51:41.770Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо, вам придет смс код"
+  },
+  {
+    "id": 248145,
+    "create_time": "2026-01-12T15:51:51.164Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Для подтверждения"
+  },
+  {
+    "id": 248146,
+    "create_time": "2026-01-12T15:51:52.644Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Напишите его пожалуйста"
+  },
+  {
+    "id": 248612,
+    "create_time": "2026-01-12T17:06:32.681Z",
+    "author_type": "client",
+    "sent_content": "У вас нет обучающего ролика?"
+  },
+  {
+    "id": 248616,
+    "create_time": "2026-01-12T17:07:06.111Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=BDZVp2qa4f8\n\nКраткий видеообзор программы Wipon"
+  },
+  {
+    "id": 229979,
+    "create_time": "2026-01-06T17:12:03.140Z",
+    "author_type": "ai",
+    "sent_content": "На коротком звонке менеджер сможет детально рассказать про *комплект Стандарт* и подобрать решение с учетом особенностей вашего бизнеса."
+  },
+  {
+    "id": 229980,
+    "create_time": "2026-01-06T17:12:05.597Z",
+    "author_type": "ai",
+    "sent_content": "Для кого вы ищете решение — для розничного магазина, кафе или сферы услуг?"
+  },
+  {
+    "id": 229995,
+    "create_time": "2026-01-06T17:12:48.164Z",
+    "author_type": "client",
+    "sent_content": "Магазин"
+  },
+  {
+    "id": 229997,
+    "create_time": "2026-01-06T17:13:04.640Z",
+    "author_type": "ai",
+    "sent_content": "Отлично, наши решения хорошо подходят для магазинов. Менеджер сможет подобрать оптимальный вариант комплекта *Стандарт* и условия рассрочки с учетом специфики вашей торговой точки."
+  },
+  {
+    "id": 230000,
+    "create_time": "2026-01-06T17:13:07.043Z",
+    "author_type": "ai",
+    "sent_content": "Из какого вы города или региона?"
+  },
+  {
+    "id": 230016,
+    "create_time": "2026-01-06T17:17:40.181Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/watch?v=BDZVp2qa4f8\n\nКраткий видеообзор программы Wipon"
+  },
+  {
+    "id": 230018,
+    "create_time": "2026-01-06T17:17:45.695Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "💼 Программа учёта WIPON — всё для вашего бизнеса\nWIPON — это современная система учёта для розничной и оптово-розничной торговли, которая объединяет всё необходимое для управления продажами, складом и персоналом.\n\n🔹 Основные возможности\nПоддержка розничной и оптово-розничной торговли с возможностью выставления разных цен.\n\nГибкая ценовая политика — установка оптовых и розничных цен.\n\nУведомления по остаткам — система напомнит, если количество товара на складе меньше заданного значения.\n\nУчёт товаров и остатков с созданием карточек товаров.\n\nДобавление и ведение базы контрагентов и клиентов.\n\nСкидки клиентам — индивидуально.\n\n🛠 Интеграции и оборудование\nБесплатная онлайн-касса в комплекте.\n\nИнтеграция с POS-терминалами.\n\nМобильное приложение для работы и контроля в любое время.\n\n👥 Работа с персоналом\nДобавление сотрудников с разграничением прав доступа.\n\nНастройка, какие функции доступны каждому сотруднику (продавец, администратор и др.).\n\nОтслеживание работы сотрудников через мобильное приложение.\n\n📊 Аналитика и управление\nАнализ продаж: выявление самых прибыльных и самых продаваемых товаров.\n\nПоддержка размерной сетки и различных типов товаров (однотипные, многотипные).\n\nВозможность добавления услуг в систему.\n\nОперации: перемещение, возврат, ревизия.\n\nКонтроль персонала.\n\n\n💬 Поддержка\nПостоянная техподдержка на протяжении всего времени использования программы."
+  },
+  {
+    "id": 248152,
+    "create_time": "2026-01-12T15:52:28.650Z",
+    "author_type": "client",
+    "sent_content": "Опасно 🤣"
+  },
+  {
+    "id": 248153,
+    "create_time": "2026-01-12T15:52:30.176Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Отправил код"
+  },
+  {
+    "id": 248156,
+    "create_time": "2026-01-12T15:53:04.299Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Просто для подтверждения номера"
+  },
+  {
+    "id": 248161,
+    "create_time": "2026-01-12T15:54:07.599Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете сами пройти регистрацию)"
+  },
+  {
+    "id": 248170,
+    "create_time": "2026-01-12T15:55:24.524Z",
+    "author_type": "client",
+    "sent_content": "Прохожу"
+  },
+  {
+    "id": 248171,
+    "create_time": "2026-01-12T15:55:33.348Z",
+    "author_type": "client",
+    "sent_content": "Но там нет специализации моей"
+  },
+  {
+    "id": 248173,
+    "create_time": "2026-01-12T15:55:57.690Z",
+    "author_type": "client",
+    "sent_content": "Бытовая химия и косметика\nТам либо косметика и парфюмерия\nЛибо товары для дома"
+  },
+  {
+    "id": 248176,
+    "create_time": "2026-01-12T15:56:23.316Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Должно быть, но если нету, то можно выбрать похожую"
+  },
+  {
+    "id": 248177,
+    "create_time": "2026-01-12T15:56:34.587Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тут ничего страшного"
+  },
+  {
+    "id": 248288,
+    "create_time": "2026-01-12T16:14:38.890Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Нет, не нужно"
+  },
+  {
+    "id": 248193,
+    "create_time": "2026-01-12T15:58:53.913Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Получилось пройти регистрацию?"
+  },
+  {
+    "id": 248198,
+    "create_time": "2026-01-12T15:59:39.358Z",
+    "author_type": "client",
+    "sent_content": "Способ доставки что ставить?"
+  },
+  {
+    "id": 248202,
+    "create_time": "2026-01-12T16:00:09.929Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Там все не нужно заполнять"
+  },
+  {
+    "id": 248207,
+    "create_time": "2026-01-12T16:00:21.495Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Только то что красное"
+  },
+  {
+    "id": 248210,
+    "create_time": "2026-01-12T16:01:07.056Z",
+    "author_type": "client",
+    "sent_content": "Там код окэд вышел почему то дополнительный , не тот немного"
+  },
+  {
+    "id": 248217,
+    "create_time": "2026-01-12T16:02:31.004Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо, исправим"
+  },
+  {
+    "id": 248220,
+    "create_time": "2026-01-12T16:03:05.547Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 248222,
+    "create_time": "2026-01-12T16:03:58.255Z",
+    "author_type": "client",
+    "sent_content": "Все зарегистрированы"
+  },
+  {
+    "id": 248223,
+    "create_time": "2026-01-12T16:03:58.958Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Понятно, я запрошу чтобы поменяли вам"
+  },
+  {
+    "id": 248228,
+    "create_time": "2026-01-12T16:04:33.173Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Супер! С вами свяжется менеджер по поводу обучения"
+  },
+  {
+    "id": 248257,
+    "create_time": "2026-01-12T16:09:01.627Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 248258,
+    "create_time": "2026-01-12T16:09:04.649Z",
+    "author_type": "client",
+    "sent_content": "Здесь что нужно"
+  },
+  {
+    "id": 248266,
+    "create_time": "2026-01-12T16:10:58.229Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Любую можно выбрать, странно что 2 создались"
+  },
+  {
+    "id": 248270,
+    "create_time": "2026-01-12T16:11:33.387Z",
+    "author_type": "client",
+    "sent_content": "Продлить или выбрано нажать"
+  },
+  {
+    "id": 248274,
+    "create_time": "2026-01-12T16:12:54.066Z",
+    "author_type": "client",
+    "sent_content": "?"
+  },
+  {
+    "id": 248280,
+    "create_time": "2026-01-12T16:13:27.510Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все, при обучении вам подскажут как действовать далее"
+  },
+  {
+    "id": 248284,
+    "create_time": "2026-01-12T16:13:48.431Z",
+    "author_type": "client",
+    "sent_content": "Здесь не нужно нажимать??"
+  }
+]

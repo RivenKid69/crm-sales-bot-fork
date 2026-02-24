@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/auth-codes/auth-codes.module",
+  "summary": "Этот код импортирует и настраивает модуль `auth-codes.module`, который, вероятно, отвечает за работу с кодами авторизации, такими как SMS-коды или временные токены для подтверждения действий.",
+  "purpose": "Обеспечивает функционал для генерации, хранения и проверки кодов, используемых в процессе авторизации или подтверждения действий пользователя.",
+  "domain": "авторизация, утилиты, безопасность",
+  "key_behaviors": [
+    "Работа с кодами подтверждения (например, SMS-коды)",
+    "Интеграция с другими модулями, такими как `AuthModule` и `UsersModule`",
+    "Поддержка хранения и проверки кодов в базе данных",
+    "Использование Redis для кэширования временных кодов",
+    "Синхронизация с другими сервисами через задачи (tasks)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "cache-manager-redis-store",
+    "@nestjs/bull"
+  ],
+  "input_tokens": 2761,
+  "output_tokens": 794,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

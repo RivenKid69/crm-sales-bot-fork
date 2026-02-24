@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/presenter/transactions.controller.ts:import:../../../common/decorators/full-url.decorator",
+  "summary": "Этот код определяет контроллер для обработки транзакций в приложении. Он использует декораторы и сервисы для обработки HTTP-запросов, валидации данных и аутентификации пользователей.",
+  "purpose": "Контроллер обрабатывает запросы, связанные с транзакциями, такие как получение списка транзакций пользователя и создание новых транзакций.",
+  "domain": "база данных, api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения транзакций пользователя",
+    "Обработка POST-запросов для создания транзакций и переводов",
+    "Использование валидации данных через ValidationPipe",
+    "Использование аутентификации через AuthGuard и TransactionGuard",
+    "Использование декораторов для документирования API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "TransactionsService",
+    "AuthGuard",
+    "User",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1738,
+  "output_tokens": 780,
+  "model": "qwen3:14b",
+  "code_hash": "81b780e4aa1aacb8"
+}

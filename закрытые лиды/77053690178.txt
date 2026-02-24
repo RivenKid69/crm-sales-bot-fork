@@ -1,0 +1,314 @@
+[
+  {
+    "id": 267519,
+    "create_time": "2026-01-29T09:13:21.727Z",
+    "author_type": "client",
+    "sent_content": "Хочу кассовый моноблок Wipon 5 в 1 и программу учета"
+  },
+  {
+    "id": 267522,
+    "create_time": "2026-01-29T09:14:22.833Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!\nБлагодарим за обращение в компанию Wipon.\nМеня зовут Айжаным, буду Вашим персональным менеджером.\nПодскажите пожалуйста, в каком городе вы находитесь и какой у вас вид бизнеса?"
+  },
+  {
+    "id": 267524,
+    "create_time": "2026-01-29T09:15:37.531Z",
+    "author_type": "client",
+    "sent_content": "Подскажите у нас ИП на упрощенке мы не ведем 1 С ? Этот моноблок подойдет?"
+  },
+  {
+    "id": 267527,
+    "create_time": "2026-01-29T09:16:26.110Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "да подойдет\n\nподскажите пожалуйста, в каком городе вы находитесь и какой у вас вид бизнеса?"
+  },
+  {
+    "id": 267528,
+    "create_time": "2026-01-29T09:16:45.092Z",
+    "author_type": "client",
+    "sent_content": "Экибпстуз"
+  },
+  {
+    "id": 267530,
+    "create_time": "2026-01-29T09:18:26.248Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "какой бизнес?"
+  },
+  {
+    "id": 267532,
+    "create_time": "2026-01-29T09:19:08.154Z",
+    "author_type": "client",
+    "sent_content": "Сантехника"
+  },
+  {
+    "id": 267559,
+    "create_time": "2026-01-29T09:27:58.572Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "150 000 программа годовое обслуживание\n240 000 моноблок 5в1"
+  },
+  {
+    "id": 267561,
+    "create_time": "2026-01-29T09:28:21.783Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "выставим два счета на номер +7 747 906 9525\nотправите чеки после оплаты пожалуйста"
+  },
+  {
+    "id": 267567,
+    "create_time": "2026-01-29T09:32:28.501Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "напишите пожалуйста точный адрес доставки"
+  },
+  {
+    "id": 267568,
+    "create_time": "2026-01-29T09:32:49.512Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "и отправите второй чек"
+  },
+  {
+    "id": 267575,
+    "create_time": "2026-01-29T09:34:42.138Z",
+    "author_type": "client",
+    "sent_content": "На 150 т отправьте"
+  },
+  {
+    "id": 267576,
+    "create_time": "2026-01-29T09:34:47.586Z",
+    "author_type": "client",
+    "sent_content": "Отменен"
+  },
+  {
+    "id": 267578,
+    "create_time": "2026-01-29T09:35:56.764Z",
+    "author_type": "client",
+    "sent_content": "Произошла ошибка"
+  },
+  {
+    "id": 267585,
+    "create_time": "2026-01-29T09:37:50.907Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "благодарим \nоплата принята"
+  },
+  {
+    "id": 267666,
+    "create_time": "2026-01-29T09:50:42.225Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "оплата принята\n\nсейчас я проведу регистрацию вашего аккаунта\nна какой номер регистрировать? номер послужит логином для входа"
+  },
+  {
+    "id": 267668,
+    "create_time": "2026-01-29T09:51:37.648Z",
+    "author_type": "client",
+    "sent_content": "+77479069525"
+  },
+  {
+    "id": 267669,
+    "create_time": "2026-01-29T09:52:06.493Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "отправим смс код\nподскажите 4 цифры"
+  },
+  {
+    "id": 267706,
+    "create_time": "2026-01-29T10:01:43.530Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "на этот номер придет"
+  },
+  {
+    "id": 267731,
+    "create_time": "2026-01-29T10:08:37.161Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "отправила повторно\nдействует пару минут"
+  },
+  {
+    "id": 267735,
+    "create_time": "2026-01-29T10:10:13.201Z",
+    "author_type": "client",
+    "sent_content": "6271"
+  },
+  {
+    "id": 267736,
+    "create_time": "2026-01-29T10:10:44.548Z",
+    "author_type": "client",
+    "sent_content": "Не доставлено пишет"
+  },
+  {
+    "id": 267739,
+    "create_time": "2026-01-29T10:11:00.379Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "регистрация прошла успешно"
+  },
+  {
+    "id": 268790,
+    "create_time": "2026-01-29T17:15:53.066Z",
+    "author_type": "client",
+    "sent_content": "Когда доставка будет ?"
+  },
+  {
+    "id": 268791,
+    "create_time": "2026-01-29T17:16:00.389Z",
+    "author_type": "client",
+    "sent_content": "Скащали с 4-5"
+  },
+  {
+    "id": 268793,
+    "create_time": "2026-01-29T17:16:17.868Z",
+    "author_type": "client",
+    "sent_content": "С 4-5"
+  },
+  {
+    "id": 268800,
+    "create_time": "2026-01-29T17:17:58.172Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте"
+  },
+  {
+    "id": 268803,
+    "create_time": "2026-01-29T17:18:18.736Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "отправили, едет"
+  },
+  {
+    "id": 268804,
+    "create_time": "2026-01-29T17:18:25.414Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "не переживайте водитель с вами свяжется"
+  },
+  {
+    "id": 268813,
+    "create_time": "2026-01-29T17:20:59.180Z",
+    "author_type": "client",
+    "sent_content": "Созванились"
+  },
+  {
+    "id": 268814,
+    "create_time": "2026-01-29T17:21:02.724Z",
+    "author_type": "client",
+    "sent_content": "Спасибо"
+  },
+  {
+    "id": 267594,
+    "create_time": "2026-01-29T09:38:51.093Z",
+    "author_type": "client",
+    "sent_content": "Экибастуз, улица Дуйсенбаева 32 магазин Окей."
+  },
+  {
+    "id": 267598,
+    "create_time": "2026-01-29T09:39:05.721Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "вам не нужен принтер этикеток и денежный ящик?"
+  },
+  {
+    "id": 267600,
+    "create_time": "2026-01-29T09:39:16.251Z",
+    "author_type": "client",
+    "sent_content": "Нет"
+  },
+  {
+    "id": 267601,
+    "create_time": "2026-01-29T09:39:16.548Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "принтер этикеток нужен чтобы распечатать штрихкоды на товары, на которых их нет"
+  },
+  {
+    "id": 267603,
+    "create_time": "2026-01-29T09:39:39.076Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо"
+  },
+  {
+    "id": 267604,
+    "create_time": "2026-01-29T09:39:42.877Z",
+    "author_type": "client",
+    "sent_content": "А принтер сколько стит?"
+  },
+  {
+    "id": 267609,
+    "create_time": "2026-01-29T09:40:06.770Z",
+    "author_type": "client",
+    "sent_content": "Просто куда пгставить он большой?"
+  },
+  {
+    "id": 267613,
+    "create_time": "2026-01-29T09:40:39.736Z",
+    "author_type": "client",
+    "sent_content": "И цена"
+  },
+  {
+    "id": 267619,
+    "create_time": "2026-01-29T09:41:41.605Z",
+    "author_type": "client",
+    "sent_content": "Пооучается он нужен тоже будет"
+  },
+  {
+    "id": 267620,
+    "create_time": "2026-01-29T09:41:46.096Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "30 000 тг"
+  },
+  {
+    "id": 267622,
+    "create_time": "2026-01-29T09:42:04.046Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 267623,
+    "create_time": "2026-01-29T09:42:06.581Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 267626,
+    "create_time": "2026-01-29T09:43:00.415Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "выставить счет?"
+  },
+  {
+    "id": 267627,
+    "create_time": "2026-01-29T09:43:23.345Z",
+    "author_type": "client",
+    "sent_content": "Добавтье  принтер"
+  },
+  {
+    "id": 267629,
+    "create_time": "2026-01-29T09:43:46.015Z",
+    "author_type": "client",
+    "sent_content": "А счет можно же через терминал"
+  },
+  {
+    "id": 267630,
+    "create_time": "2026-01-29T09:44:03.915Z",
+    "author_type": "client",
+    "sent_content": "Да"
+  },
+  {
+    "id": 267637,
+    "create_time": "2026-01-29T09:44:41.811Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "хорошо"
+  },
+  {
+    "id": 267659,
+    "create_time": "2026-01-29T09:48:42.742Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "выставили, отправите чек"
+  },
+  {
+    "id": 267742,
+    "create_time": "2026-01-29T10:11:17.268Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ваш логин 77479069525\nпароль 12345678\n\nпосле обучения можно будет поменять пароль"
+  },
+  {
+    "id": 267744,
+    "create_time": "2026-01-29T10:11:33.758Z",
+    "author_type": "client",
+    "sent_content": "Хорошо"
+  },
+  {
+    "id": 267750,
+    "create_time": "2026-01-29T10:12:24.294Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "в ближайшие дни с вами свяжутся менеджера по доставке👍 благодарим за доверие"
+  }
+]

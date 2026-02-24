@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/presenter/notifications.controller.ts:import:../../../common/dao/user.dao",
+  "summary": "Этот код создает контроллер для управления уведомлениями в приложении. Он обрабатывает запросы на получение, отправку, обновление и удаление уведомлений, используя аутентификацию и валидацию данных.",
+  "purpose": "Позволяет пользователям управлять своими уведомлениями через REST API с защитой и проверкой данных",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение уведомлений пользователя",
+    "Отправка новых уведомлений",
+    "Обновление статуса уведомлений",
+    "Удаление уведомлений",
+    "Массовая рассылка уведомлений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "notifications.service",
+    "user.decorator",
+    "auth.guard"
+  ],
+  "input_tokens": 2307,
+  "output_tokens": 694,
+  "model": "qwen3:14b",
+  "code_hash": "693e2857eabd9d27"
+}

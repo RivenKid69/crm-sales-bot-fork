@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/domain/ledgers.service.ts:import:../../../common/dao/account.dao",
+  "summary": "Этот код реализует сервис для обработки переводов между пользователями. Он проверяет валидность пользователей, обновляет их счета и леджеры, работает с транзакциями и логирует ошибки.",
+  "purpose": "Обеспечивает безопасную обработку финансовых переводов между пользователями с валидацией и транзакционной изоляцией",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка корректности ID отправителя и получателя",
+    "Обновление данных счетов и леджеров в транзакции",
+    "Создание/обновление записей ledger-хроники",
+    "Интеграция с сервисом биллинга",
+    "Логирование ошибок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "BillingService",
+    "FindUserByIdUseCase",
+    "AccountDao",
+    "LedgerChronicDao"
+  ],
+  "input_tokens": 2769,
+  "output_tokens": 751,
+  "model": "qwen3:14b",
+  "code_hash": "e9c0b294f1e03b7c"
+}

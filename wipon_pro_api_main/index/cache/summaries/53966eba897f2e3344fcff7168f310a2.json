@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/middleware/check-subscription.middleware.ts:file",
+  "summary": "Этот код - промежуточный обработчик, который проверяет, активна ли подписка пользователя. Если подписка просрочена или отсутствует, возвращает ошибку. Иначе позволяет продолжить выполнение запроса.",
+  "purpose": "Ограничивает доступ к функционалу, требующему активной подписки",
+  "domain": "подписки, авторизация",
+  "key_behaviors": [
+    "Проверяет статус подписки пользователя",
+    "Возвращает ошибку с сообщением об отсутствии активной подписки",
+    "Использует переводы через i18n",
+    "Использует общий enum для статусов ответов",
+    "Передает управление дальше, если подписка активна"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "i18n",
+    "SubscriptionUseCases",
+    "StatusesEnum",
+    "ErrorPresenter"
+  ],
+  "input_tokens": 1380,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "c74be6e5d6bed1b6"
+}

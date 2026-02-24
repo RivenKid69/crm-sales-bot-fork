@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/license.dao.ts:import:typeorm",
+  "summary": "Этот код создаёт сущность 'LicenseDao' для базы данных с помощью TypeORM. Она хранит информацию о лицензиях, включая уникальный номер, статус, дополнительные настройки и временные метки создания/обновления. Также есть связь с другой сущностью GeoNodeToLicensesDao.",
+  "purpose": "Используется для хранения и управления данными о лицензиях в приложении с поддержкой отношений между сущностями",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный номер лицензии",
+    "Отслеживает статус лицензии",
+    "Поддерживает JSON-поля для настроек",
+    "Записывает даты создания и обновления",
+    "Связывает лицензии с узлами через GeoNodeToLicensesDao"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1281,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "d7b10891b5fe40da"
+}

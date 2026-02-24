@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/ip-filter.guard.ts:class:IpFilterGuard",
+  "summary": "IpFilterGuard проверяет IP-адрес запроса и разрешает доступ только если IP в списке разрешенных. В production блокирует запросы с неразрешенных IP, в других окружениях пропускает все запросы.",
+  "purpose": "Ограничивает доступ к эндпоинтам по IP-адресам для повышения безопасности в production окружении",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие IP-адреса в запросе",
+    "Использует конфигурацию из app.config и ip-filter.config",
+    "Блокирует доступ по IP в production окружении",
+    "Использует Reflector для получения метаданных provider",
+    "Возвращает ошибки 400, 403 или 500 при нарушении условий"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/core",
+    "rxjs"
+  ],
+  "input_tokens": 1375,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "1a1b14ac734e6416"
+}

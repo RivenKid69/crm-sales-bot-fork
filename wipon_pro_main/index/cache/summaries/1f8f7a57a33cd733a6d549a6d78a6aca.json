@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:./router",
+  "summary": "Этот код подключает основные зависимости и настройки для Vue-приложения: маршрутизацию, хранилище состояния, стили, Axios для HTTP-запросов, маски ввода и уведомления. Он готовит приложение к запуску.",
+  "purpose": "Настроить и запустить Vue-приложение с необходимыми функциями и библиотеками.",
+  "domain": "фронтенд",
+  "key_behaviors": [
+    "Инициализация приложения Vue",
+    "Подключение маршрутизации",
+    "Интеграция хранилища состояния",
+    "Настройка Axios для HTTP-запросов",
+    "Добавление уведомлений и масок ввода"
+  ],
+  "dependencies_used": [
+    "vue",
+    "vue-axios",
+    "axios",
+    "maska",
+    "@kyvg/vue3-notification"
+  ],
+  "input_tokens": 1146,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "ee8d8e5e1812cbe1"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/product-data-to-response.ts:function:formatProductDataToResponse",
+  "summary": "Эта функция преобразует объект ProductDao в упрощённый формат для ответа, оставляя только поля name, type и organization. Если входной объект пуст, возвращает null.",
+  "purpose": "Подготовка данных для отправки в API-ответы в формате, понятном клиенту",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверяет наличие входного объекта",
+    "Выбирает только нужные поля из ProductDao",
+    "Возвращает null при отсутствии данных",
+    "Формирует объект для передачи клиенту",
+    "Использует простой формат без лишних данных"
+  ],
+  "dependencies_used": [
+    "ProductDao"
+  ],
+  "input_tokens": 1049,
+  "output_tokens": 682,
+  "model": "qwen3:14b",
+  "code_hash": "0c575e621ce1d4d0"
+}

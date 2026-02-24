@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.service.ts:class:PdfService",
+  "summary": "Этот класс отвечает за генерацию PDF-чеков. Он формирует данные для чека (даты, цены, номера) и должен создавать PDF-файл, но основная логика сейчас закомментирована",
+  "purpose": "Используется для создания электронных чеков при оплате подписок",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Форматирование даты в разных форматах",
+    "Генерация уникального номера чека",
+    "Подготовка данных для PDF-чека",
+    "Поддержка разных типов подписок",
+    "Конвертация чисел в прописные слова"
+  ],
+  "dependencies_used": [
+    "fs",
+    "path",
+    "ejs",
+    "html-pdf-node",
+    "html-pdf"
+  ],
+  "input_tokens": 3176,
+  "output_tokens": 723,
+  "model": "qwen3:14b",
+  "code_hash": "9f9f22739ed08564"
+}

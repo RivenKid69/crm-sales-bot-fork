@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/dto/post-report.dto.ts:import:../../../common/validations/is-entity-exists",
+  "summary": "Этот код определяет класс DTO (Data Transfer Object) для создания отчета. Он использует валидаторы для проверки данных, таких как числа, строки и наличие сущности в базе данных, и добавляет документацию через Swagger.",
+  "purpose": "Обеспечивает валидацию и документацию для данных, передаваемых при создании отчета в API.",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что item_id является числом и существует в базе данных",
+    "Проверка, что causer, gtin, sticker_photo и label_photo являются строками или base64",
+    "Добавление документации для Swagger с описанием каждого поля",
+    "Поддержка необязательных полей",
+    "Использование кастомного валидатора IsItemExists для проверки существования сущности"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "class-transformer",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1374,
+  "output_tokens": 751,
+  "model": "qwen3:14b",
+  "code_hash": "4f81e8444d096783"
+}

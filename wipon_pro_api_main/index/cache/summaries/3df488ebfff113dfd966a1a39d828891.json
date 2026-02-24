@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/domain/use-cases/find-ugd-by-dgd-id.use-case.ts:class:FindUgdByDgdIdUseCase",
+  "summary": "Этот класс ищет запись в базе данных по идентификатору DGD. Он использует репозиторий для поиска и возвращает результат или null, если ничего не найдено.",
+  "purpose": "Позволяет быстро находить конкретную запись в базе данных по уникальным данным",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет объект по числовому/строковому идентификатору",
+    "Возвращает null если запись не найдена",
+    "Использует репозиторий для доступа к данным",
+    "Работает с объектами UGD (User Generated Data)",
+    "Поддерживает асинхронные операции"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UgdsRepository"
+  ],
+  "input_tokens": 1258,
+  "output_tokens": 713,
+  "model": "qwen3:14b",
+  "code_hash": "8c5306aeaf3f1551"
+}

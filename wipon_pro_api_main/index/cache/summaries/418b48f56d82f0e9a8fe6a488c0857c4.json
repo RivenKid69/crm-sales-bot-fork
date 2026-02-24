@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:@nestjs/axios",
+  "summary": "Этот код представляет собой сервис, который обрабатывает логику проверок товаров. Он использует репозитории, DTO, внешние API, инструменты для работы с изображениями, файлами и логированием.",
+  "purpose": "Обрабатывает бизнес-логику проверок, взаимодействует с базой данных и внешними сервисами",
+  "domain": "база данных, api, утилиты",
+  "key_behaviors": [
+    "Работает с проверками товаров и их данными",
+    "Использует внешние API для взаимодействия с другими сервисами",
+    "Обрабатывает изображения и файлы",
+    "Использует репозитории для работы с базой данных",
+    "Интегрируется с логированием и валидацией данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston"
+  ],
+  "input_tokens": 4588,
+  "output_tokens": 775,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/use-cases/find-dgd-by-name.use-case.ts:class:FindDgdByNameUseCase",
+  "summary": "Этот класс ищет объект по русскому названию в базе данных. Как будто вы ищете человека по имени в телефонной книге, но вместо книги — база данных.",
+  "purpose": "Позволяет быстро находить конкретный объект по его названию в проекте",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет объект по русскому названию",
+    "Возвращает объект или null, если не найдено",
+    "Использует репозиторий для доступа к базе",
+    "Асинхронная операция",
+    "Работает с DAO-объектами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1211,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "7db5273dc1e723d0"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/cashboxes.module.ts:class:CashboxesModule",
+  "summary": "Этот класс - модуль NestJS, который собирает сервисы и контроллеры для работы с кассами. Он использует другие модули для взаимодействия с пользователями и отправки уведомлений.",
+  "purpose": "Создаёт структурированную область для работы с кассами, используя сервисы и модули проекта.",
+  "domain": "база данных, утилиты",
+  "key_behaviors": [
+    "объединяет сервисы и контроллеры",
+    "использует другие модули",
+    "поддерживает работу с кассами",
+    "отправляет уведомления",
+    "взаимодействует с пользователями"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "UsersModule",
+    "FcmModule"
+  ],
+  "input_tokens": 1031,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "cfe75fa0e6c1d1f0"
+}

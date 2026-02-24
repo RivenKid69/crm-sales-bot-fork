@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@/assets/style/bootstrap-grid/bootstrap-grid.min.css",
+  "summary": "Этот код инициализирует приложение Vue, подключает маршрутизацию, хранилище, стили и утилиты, такие как Axios и маски для ввода данных. Также добавляет уведомления и монтирует приложение на страницу.",
+  "purpose": "Подготовить и запустить Vue-приложение с необходимыми зависимостями и настройками.",
+  "domain": "фронтенд-разработка, приложения на Vue",
+  "key_behaviors": [
+    "Инициализация приложения Vue",
+    "Подключение маршрутизации и хранилища",
+    "Использование Axios для HTTP-запросов",
+    "Добавление масок для ввода данных",
+    "Интеграция уведомлений"
+  ],
+  "dependencies_used": [
+    "vue",
+    "vue-axios",
+    "axios",
+    "maska",
+    "@kyvg/vue3-notification"
+  ],
+  "input_tokens": 1022,
+  "output_tokens": 740,
+  "model": "qwen3:14b",
+  "code_hash": "ee8d8e5e1812cbe1"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/main.ts:import:./common/filters/exceptions.filter",
+  "summary": "Этот код настраивает и запускает сервер приложения NestJS, добавляя middleware, обработчики ошибок, интерсепторы и настраивая Swagger для документирования API.",
+  "purpose": "Используется для инициализации сервера и настройки его функциональности перед запуском.",
+  "domain": "api",
+  "key_behaviors": [
+    "Настройка Swagger для документирования API",
+    "Использование интерсептора для управления версиями API",
+    "Обработка глобальных ошибок через ExceptionsFilter",
+    "Настройка middleware для обработки JSON и URL-кодированных данных",
+    "Настройка CORS и глобального префикса для маршрутов"
+  ],
+  "dependencies_used": [
+    "@nestjs/core",
+    "express",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1274,
+  "output_tokens": 717,
+  "model": "qwen3:14b",
+  "code_hash": "32969d35d6034143"
+}

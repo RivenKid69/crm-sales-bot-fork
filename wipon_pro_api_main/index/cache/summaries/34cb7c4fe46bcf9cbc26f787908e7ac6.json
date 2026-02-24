@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/check.dao.ts:property:CheckDao:sticker_photo",
+  "summary": "Свойство sticker_photo хранит URL или путь к изображению стикера, связанного с проверкой. Оно является строковым полем в таблице checks базы данных.",
+  "purpose": "Позволяет привязывать изображения к проверкам",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит путь или URL к изображению",
+    "Связано с проверкой (check)",
+    "Используется для отображения стикера в интерфейсе",
+    "Поддерживает работу с медиафайлами",
+    "Позволяет идентифицировать изображение, связанное с конкретной проверкой"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1248,
+  "output_tokens": 696,
+  "model": "qwen3:14b",
+  "code_hash": "11b70f1d672cf2b2"
+}

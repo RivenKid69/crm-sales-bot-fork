@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/sum-ledger-accounts-balance.use-case.ts:class:SumLedgerAccountsBalanceUseCase",
+  "summary": "Этот класс считает общую сумму балансов всех счетов в определенном леджере. Он использует базу данных для поиска счетов по ID леджера и суммирует их балансы.",
+  "purpose": "Позволяет быстро получить общую сумму средств на всех счетах определенного леджера для финансовых расчетов",
+  "domain": "Финансовые операции, бухгалтерия",
+  "key_behaviors": [
+    "Выполняет SQL-запрос для поиска счетов по ID леджера",
+    "Суммирует числовые значения балансов",
+    "Возвращает результат как число",
+    "Использует TypeORM для работы с базой данных",
+    "Работает асинхронно"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "TypeORM"
+  ],
+  "input_tokens": 1232,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "5669ad8ed65702b4"
+}

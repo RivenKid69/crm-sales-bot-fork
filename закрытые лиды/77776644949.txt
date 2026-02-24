@@ -1,0 +1,620 @@
+[
+  {
+    "id": 247460,
+    "create_time": "2026-01-12T14:14:04.126Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247462,
+    "create_time": "2026-01-12T14:14:15.584Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247572,
+    "create_time": "2026-01-12T14:27:14.614Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247573,
+    "create_time": "2026-01-12T14:27:18.198Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247565,
+    "create_time": "2026-01-12T14:26:33.761Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В дальнейшем штучные товарлар болса, керек болады"
+  },
+  {
+    "id": 247566,
+    "create_time": "2026-01-12T14:26:36.917Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сканермен ынгайлы болады"
+  },
+  {
+    "id": 247568,
+    "create_time": "2026-01-12T14:26:52.152Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Проводной 10.000 тг\nБеспроводной 15.000 тг"
+  },
+  {
+    "id": 247575,
+    "create_time": "2026-01-12T14:27:24.783Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, солайда болады"
+  },
+  {
+    "id": 247583,
+    "create_time": "2026-01-12T14:28:05.826Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, выход USB"
+  },
+  {
+    "id": 247586,
+    "create_time": "2026-01-12T14:28:18.537Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, арине"
+  },
+  {
+    "id": 247589,
+    "create_time": "2026-01-12T14:28:24.950Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247603,
+    "create_time": "2026-01-12T14:30:11.781Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Когда будете добавлять товар, интернет керек болады"
+  },
+  {
+    "id": 247605,
+    "create_time": "2026-01-12T14:30:24.090Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В дальнейшем можно отключить и работать без интернета"
+  },
+  {
+    "id": 247607,
+    "create_time": "2026-01-12T14:30:33.034Z",
+    "author_type": "client",
+    "sent_content": "+"
+  },
+  {
+    "id": 249263,
+    "create_time": "2026-01-12T20:31:58.554Z",
+    "author_type": "client",
+    "sent_content": "Оплату в рассрочку принимаете?"
+  },
+  {
+    "id": 249560,
+    "create_time": "2026-01-13T09:09:49.704Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день! Да, принимаем"
+  },
+  {
+    "id": 249569,
+    "create_time": "2026-01-13T09:11:37.035Z",
+    "author_type": "client",
+    "sent_content": "Каспйи?"
+  },
+  {
+    "id": 249648,
+    "create_time": "2026-01-13T09:34:07.108Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Через Каспи и Халык"
+  },
+  {
+    "id": 249650,
+    "create_time": "2026-01-13T09:35:03.419Z",
+    "author_type": "client",
+    "sent_content": "Ежемесячный платеж 42К, на 12 месяцев?"
+  },
+  {
+    "id": 249677,
+    "create_time": "2026-01-13T09:42:10.437Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если не добавлять сканер, то да"
+  },
+  {
+    "id": 250563,
+    "create_time": "2026-01-13T13:13:38.130Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250571,
+    "create_time": "2026-01-13T13:14:41.443Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сиз бизге Каспи номер жане ИИН ИП жиберинизши"
+  },
+  {
+    "id": 250572,
+    "create_time": "2026-01-13T13:14:45.575Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Биз удаленный счет жиберемиз"
+  },
+  {
+    "id": 250581,
+    "create_time": "2026-01-13T13:16:37.982Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250583,
+    "create_time": "2026-01-13T13:17:23.464Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, рассрочкамен"
+  },
+  {
+    "id": 250587,
+    "create_time": "2026-01-13T13:18:13.228Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 251085,
+    "create_time": "2026-01-13T16:10:16.978Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252204,
+    "create_time": "2026-01-14T09:52:56.862Z",
+    "author_type": "client",
+    "sent_content": "Доброе утро"
+  },
+  {
+    "id": 252205,
+    "create_time": "2026-01-14T09:53:03.732Z",
+    "author_type": "client",
+    "sent_content": "Произвели оплату"
+  },
+  {
+    "id": 252216,
+    "create_time": "2026-01-14T09:54:26.524Z",
+    "author_type": "client",
+    "sent_content": "До обеда должны забрать  аппаратуру, подгоните гарантийный талон и накладные на товар?"
+  },
+  {
+    "id": 252221,
+    "create_time": "2026-01-14T09:55:36.464Z",
+    "author_type": "client",
+    "sent_content": "И говорили что в подарок еще что то добавите"
+  },
+  {
+    "id": 252224,
+    "create_time": "2026-01-14T09:56:42.348Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Здравствуйте. К сожалению мы не принимаем звонки по whatsapp.\nПозвоните пожалуйста в Call-center отдела продаж по номеру 87473001300 или напишите свой вопрос и мы обязательно Вам ответим."
+  },
+  {
+    "id": 246029,
+    "create_time": "2026-01-12T10:42:05.840Z",
+    "author_type": "client",
+    "sent_content": "Здравствуйте, пишу с сайта wipon.kz"
+  },
+  {
+    "id": 246031,
+    "create_time": "2026-01-12T10:42:19.930Z",
+    "author_type": "ai",
+    "sent_content": "Здравствуйте, это Айбота, онлайн-ассистент Wipon по продажам. Рада помочь! С чем связан ваш интерес к Wipon?"
+  },
+  {
+    "id": 246032,
+    "create_time": "2026-01-12T10:42:27.837Z",
+    "author_type": "client",
+    "sent_content": "Пусть консультант перезвонит подалуйста"
+  },
+  {
+    "id": 246033,
+    "create_time": "2026-01-12T10:42:43.362Z",
+    "author_type": "ai",
+    "sent_content": "Менеджер свяжется с вами в ближайшее свободное время."
+  },
+  {
+    "id": 246036,
+    "create_time": "2026-01-12T10:43:42.978Z",
+    "author_type": "client",
+    "sent_content": "Рахмет"
+  },
+  {
+    "id": 246038,
+    "create_time": "2026-01-12T10:43:57.451Z",
+    "author_type": "ai",
+    "sent_content": "Оқасы жоқ! Менеджер жақын арада хабарласады."
+  },
+  {
+    "id": 246519,
+    "create_time": "2026-01-12T12:01:35.477Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день!\nБлагодарим за обращение в компанию Wipon.\nМеня зовут Айдан, буду Вашим персональным менеджером.\nПодскажите, как могу к Вам обращаться?"
+  },
+  {
+    "id": 246521,
+    "create_time": "2026-01-12T12:01:49.943Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Дарын, подскажите, когда могу с вами связаться?"
+  },
+  {
+    "id": 246596,
+    "create_time": "2026-01-12T12:16:04.836Z",
+    "author_type": "client",
+    "sent_content": "Можете позвонить"
+  },
+  {
+    "id": 246603,
+    "create_time": "2026-01-12T12:16:36.608Z",
+    "author_type": "client",
+    "sent_content": "Я свободен"
+  },
+  {
+    "id": 247295,
+    "create_time": "2026-01-12T13:51:38.126Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 247297,
+    "create_time": "2026-01-12T13:51:48.026Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 250766,
+    "create_time": "2026-01-13T14:57:16.850Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Во время обучения можете добавить"
+  },
+  {
+    "id": 250767,
+    "create_time": "2026-01-13T14:57:26.393Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам покажут как добавить сотрудника"
+  },
+  {
+    "id": 250769,
+    "create_time": "2026-01-13T14:57:50.132Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "За оборудование получилось оплатить?"
+  },
+  {
+    "id": 250773,
+    "create_time": "2026-01-13T14:58:28.308Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250776,
+    "create_time": "2026-01-13T15:00:00.270Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставку вам до Атырау нужно, правильно?"
+  },
+  {
+    "id": 250777,
+    "create_time": "2026-01-13T15:00:11.512Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставка бесплатная в городах Алматы, Астана и Шымкент"
+  },
+  {
+    "id": 250779,
+    "create_time": "2026-01-13T15:00:23.567Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В другие города платная доставка"
+  },
+  {
+    "id": 250787,
+    "create_time": "2026-01-13T15:02:31.995Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250788,
+    "create_time": "2026-01-13T15:02:39.651Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250799,
+    "create_time": "2026-01-13T15:06:01.341Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Через Индрайв доставка будет около 25тыс , так как большая коробка"
+  },
+  {
+    "id": 250801,
+    "create_time": "2026-01-13T15:06:25.280Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250804,
+    "create_time": "2026-01-13T15:06:45.691Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250805,
+    "create_time": "2026-01-13T15:07:28.284Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Хорошо. Туран 19/2, БЦ Estra 3 этаж"
+  },
+  {
+    "id": 250806,
+    "create_time": "2026-01-13T15:07:38.838Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 250811,
+    "create_time": "2026-01-13T15:10:26.060Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 250812,
+    "create_time": "2026-01-13T15:10:44.925Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "60 х 60"
+  },
+  {
+    "id": 250813,
+    "create_time": "2026-01-13T15:10:50.814Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250824,
+    "create_time": "2026-01-13T15:13:08.447Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да 10-15 кг"
+  },
+  {
+    "id": 250892,
+    "create_time": "2026-01-13T15:27:26.687Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подскажите на четверг обучение назначить можем?"
+  },
+  {
+    "id": 250910,
+    "create_time": "2026-01-13T15:32:51.261Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250924,
+    "create_time": "2026-01-13T15:39:04.517Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 251289,
+    "create_time": "2026-01-13T16:42:34.728Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы до 7 будем"
+  },
+  {
+    "id": 251293,
+    "create_time": "2026-01-13T16:43:33.423Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Если сегодня заберут, то нужно провести будет оплату. Так как после оплаты будут формировать гарантийный талон и накладную на товар"
+  },
+  {
+    "id": 251297,
+    "create_time": "2026-01-13T16:44:10.700Z",
+    "author_type": "client",
+    "sent_content": "Окей"
+  },
+  {
+    "id": 247305,
+    "create_time": "2026-01-12T13:52:03.452Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Это Вайпон Квадро 365.000 тг\nПрограмма 150.000 тг \nОбщ 515.000 тг"
+  },
+  {
+    "id": 247341,
+    "create_time": "2026-01-12T13:56:25.128Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247344,
+    "create_time": "2026-01-12T13:56:45.427Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 247357,
+    "create_time": "2026-01-12T13:58:30.248Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 250649,
+    "create_time": "2026-01-13T14:03:12.987Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Номер жибересиз бе?"
+  },
+  {
+    "id": 250661,
+    "create_time": "2026-01-13T14:16:14.403Z",
+    "author_type": "client",
+    "sent_content": "87021407131"
+  },
+  {
+    "id": 250669,
+    "create_time": "2026-01-13T14:19:55.211Z",
+    "author_type": "client",
+    "sent_content": "740902403216"
+  },
+  {
+    "id": 250673,
+    "create_time": "2026-01-13T14:20:23.545Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Иин бола ма"
+  },
+  {
+    "id": 250674,
+    "create_time": "2026-01-13T14:20:33.451Z",
+    "author_type": "client",
+    "sent_content": "Осыго"
+  },
+  {
+    "id": 250707,
+    "create_time": "2026-01-13T14:38:57.985Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жаксы, выставляем счет"
+  },
+  {
+    "id": 250708,
+    "create_time": "2026-01-13T14:40:49.026Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "2 счет болек жиберемиз\n1 счет 150.000 тг программа бойынша\n2 счет 365.000 тг за оборудование"
+  },
+  {
+    "id": 250709,
+    "create_time": "2026-01-13T14:43:06.867Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym\nЗа оборудование можете оплатить по ссылке. Сумма 365.000 тг"
+  },
+  {
+    "id": 250710,
+    "create_time": "2026-01-13T14:43:13.632Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оба счета можете в рассрочку оплатить"
+  },
+  {
+    "id": 250714,
+    "create_time": "2026-01-13T14:45:22.123Z",
+    "author_type": "client",
+    "sent_content": "Второй счет оправтье"
+  },
+  {
+    "id": 250814,
+    "create_time": "2026-01-13T15:11:23.912Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250716,
+    "create_time": "2026-01-13T14:45:26.317Z",
+    "author_type": "client",
+    "sent_content": "Одну оплатили"
+  },
+  {
+    "id": 250721,
+    "create_time": "2026-01-13T14:45:57.076Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Второй счет по ссылке можете оплатить"
+  },
+  {
+    "id": 250722,
+    "create_time": "2026-01-13T14:46:09.677Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ссыку можно переотправить"
+  },
+  {
+    "id": 250726,
+    "create_time": "2026-01-13T14:48:24.967Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Как оплату проведете, отправьте чек пожалуйста"
+  },
+  {
+    "id": 250727,
+    "create_time": "2026-01-13T14:49:31.442Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250728,
+    "create_time": "2026-01-13T14:49:36.496Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас создадим аккаунт в программе. Для регистрации могу ваш номер использовать?"
+  },
+  {
+    "id": 250729,
+    "create_time": "2026-01-13T14:49:49.070Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Номер телефона будет логином для входа в систему"
+  },
+  {
+    "id": 250730,
+    "create_time": "2026-01-13T14:50:09.838Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас"
+  },
+  {
+    "id": 250738,
+    "create_time": "2026-01-13T14:52:51.419Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Выставили счет удаленный"
+  },
+  {
+    "id": 250740,
+    "create_time": "2026-01-13T14:53:41.197Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250743,
+    "create_time": "2026-01-13T14:54:04.278Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250746,
+    "create_time": "2026-01-13T14:54:32.297Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250747,
+    "create_time": "2026-01-13T14:54:37.333Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "На ваш номер телефона, отправили смс для регистрации"
+  },
+  {
+    "id": 250748,
+    "create_time": "2026-01-13T14:54:43.169Z",
+    "author_type": "client",
+    "sent_content": "."
+  },
+  {
+    "id": 250754,
+    "create_time": "2026-01-13T14:55:47.019Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, можно будет дополнительно добавить номер"
+  },
+  {
+    "id": 250755,
+    "create_time": "2026-01-13T14:56:01.521Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Регистрация прошла успешно✅"
+  },
+  {
+    "id": 250759,
+    "create_time": "2026-01-13T14:56:31.285Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/settings/account/balance\nЛогин 77776644949\nПароль 12345678"
+  },
+  {
+    "id": 250760,
+    "create_time": "2026-01-13T14:56:41.671Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250761,
+    "create_time": "2026-01-13T14:56:43.339Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 250764,
+    "create_time": "2026-01-13T14:56:52.091Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Пароль во время обучения вам поменяют"
+  }
+]

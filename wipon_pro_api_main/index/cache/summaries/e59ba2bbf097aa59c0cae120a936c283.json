@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/presenter/subscriptions.controller.ts:import:../../../common/decorators/provider.decorator",
+  "summary": "Этот код создает контроллер для управления подписками пользователей. Он обрабатывает запросы на создание, просмотр и возврат подписок, используя валидацию данных и аутентификацию.",
+  "purpose": "Позволяет управлять подписками пользователей через REST API с защитой и валидацией данных",
+  "domain": "авторизация, платежи, api",
+  "key_behaviors": [
+    "Обработка HTTP-запросов (GET/POST)",
+    "Валидация данных через DTO",
+    "Аутентификация пользователей",
+    "Работа с подписками через сервис",
+    "Фильтрация по IP-адресу"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "SubscriptionsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2763,
+  "output_tokens": 723,
+  "model": "qwen3:14b",
+  "code_hash": "23b71057f396e8cb"
+}

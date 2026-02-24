@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/old-form-of-saving-store-without-region.dto.ts:property:OldFormOfSavingStoreWithoutRegionDto:name",
+  "summary": "Этот код описывает DTO (Data Transfer Object) для передачи и валидации данных о магазине без региона. Он использует декораторы для проверки корректности вводимых значений.",
+  "purpose": "Используется для валидации данных при создании или обновлении информации о магазине без региона в системе.",
+  "domain": "валидация, API, формы",
+  "key_behaviors": [
+    "Проверка наличия обязательных полей",
+    "Проверка существования сущностей (DGD, UGD, тип магазина)",
+    "Проверка формата вводимых данных (например, BIN должен содержать 12 цифр)",
+    "Поддержка необязательных полей",
+    "Использование кастомных валидаторов для проверки данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsInt",
+    "IsNotEmpty",
+    "IsOptional",
+    "IsString",
+    "Matches",
+    "IsDgdExists",
+    "IsStoreTypeExists",
+    "IsUgdExists",
+    "IsNumeric"
+  ],
+  "input_tokens": 1319,
+  "output_tokens": 785,
+  "model": "qwen3:14b",
+  "code_hash": "5e6a2cbd52565243"
+}

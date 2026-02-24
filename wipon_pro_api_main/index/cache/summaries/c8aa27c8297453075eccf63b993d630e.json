@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/push.consumer.ts:import:../../logger/request-logger",
+  "summary": "Этот код создает обработчик задач для отправки уведомлений через FCM (Firebase Cloud Messaging). Он использует библиотеку Bull для обработки задач в фоновом режиме и логирует действия с помощью кастомного логгера.",
+  "purpose": "Обработка задач по отправке уведомлений в фоновом режиме и логирование их выполнения.",
+  "domain": "уведомления, api, фоновые задачи",
+  "key_behaviors": [
+    "Обработка задач из очереди 'push_pro-job'",
+    "Отправка уведомлений через FCM",
+    "Логирование успешных и неудачных попыток отправки",
+    "Использование кастомного логгера для отслеживания действий",
+    "Интеграция с сервисами уведомлений и FCM"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "firebase-admin",
+    "request-logger"
+  ],
+  "input_tokens": 1440,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "2a9d59a8f14ccf0e"
+}

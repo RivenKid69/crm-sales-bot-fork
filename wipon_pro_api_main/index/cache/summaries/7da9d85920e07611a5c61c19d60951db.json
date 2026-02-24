@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/presenter/devices.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код создает контроллер для управления устройствами в приложении. Он использует декораторы NestJS для обработки HTTP-запросов, валидации данных и аутентификации пользователей.",
+  "purpose": "Обрабатывает запросы на назначение и проверку устройств, обеспечивая безопасность и корректность данных.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запроса для назначения кода устройства",
+    "Обработка GET-запроса для проверки устройства",
+    "Использование валидации данных через ValidationPipe",
+    "Использование аутентификации через AuthGuard",
+    "Использование интерцептора для преобразования данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "DevicesService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1630,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "3c3d7e78c2486ad4"
+}

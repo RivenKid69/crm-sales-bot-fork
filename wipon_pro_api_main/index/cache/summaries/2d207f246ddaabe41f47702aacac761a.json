@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/presenter/ugds.controller.ts:method:UgdsController:getUgdsList",
+  "summary": "Этот метод создает эндпоинт для получения списка Ugds-данных. Он принимает данные из тела запроса и параметра запроса, использует сервис для получения данных и применяет интерцептор для преобразования ответа.",
+  "purpose": "Позволяет получать список Ugds-записей через HTTP-запрос",
+  "domain": "API",
+  "key_behaviors": [
+    "Обрабатывает GET-запросы по адресу /ugds",
+    "Использует DTO для валидации входных данных",
+    "Принимает параметр dgd_id из URL",
+    "Использует сервис для получения данных",
+    "Применяет интерцептор для преобразования ответа"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "UgdsService",
+    "TransformInterceptor",
+    "GetUgdsListDto"
+  ],
+  "input_tokens": 1339,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "06ee7151fdb9e47b"
+}

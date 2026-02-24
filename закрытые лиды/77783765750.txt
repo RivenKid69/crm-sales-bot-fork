@@ -1,0 +1,386 @@
+[
+  {
+    "id": 252154,
+    "create_time": "2026-01-14T09:36:21.108Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Саламатсыз ба!"
+  },
+  {
+    "id": 252155,
+    "create_time": "2026-01-14T09:36:24.872Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия арине"
+  },
+  {
+    "id": 252158,
+    "create_time": "2026-01-14T09:37:07.311Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сол набор 219.000 тг \nпрограмма 150.000 тг"
+  },
+  {
+    "id": 252161,
+    "create_time": "2026-01-14T09:38:06.408Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252162,
+    "create_time": "2026-01-14T09:38:40.771Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия, 2 счет рассрочкамен жиберемиз"
+  },
+  {
+    "id": 252163,
+    "create_time": "2026-01-14T09:39:05.244Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252164,
+    "create_time": "2026-01-14T09:39:05.769Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1 счет программа бойынша\n2 счет ооборудование бойынша"
+  },
+  {
+    "id": 252165,
+    "create_time": "2026-01-14T09:39:10.579Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252166,
+    "create_time": "2026-01-14T09:39:53.273Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жылына толем болады"
+  },
+  {
+    "id": 252167,
+    "create_time": "2026-01-14T09:39:58.504Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сопровождение болады гой"
+  },
+  {
+    "id": 252168,
+    "create_time": "2026-01-14T09:39:59.794Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Тех поддержка"
+  },
+  {
+    "id": 252170,
+    "create_time": "2026-01-14T09:40:30.568Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Немесе, 1 жылдан кийн егер программа унамаса, ауыстыру болады"
+  },
+  {
+    "id": 252171,
+    "create_time": "2026-01-14T09:40:59.280Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Биздин оборудование-ге любой программа орнату болады"
+  },
+  {
+    "id": 252201,
+    "create_time": "2026-01-14T09:51:31.696Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Подключение жасаймыз па?"
+  },
+  {
+    "id": 252202,
+    "create_time": "2026-01-14T09:51:58.163Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252207,
+    "create_time": "2026-01-14T09:53:27.323Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия"
+  },
+  {
+    "id": 252211,
+    "create_time": "2026-01-14T09:53:50.517Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252212,
+    "create_time": "2026-01-14T09:53:57.300Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Бирак казир принтер этикеток жок онын багасы алып тасту болады"
+  },
+  {
+    "id": 252213,
+    "create_time": "2026-01-14T09:54:02.984Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Олар сизге керек емес"
+  },
+  {
+    "id": 252214,
+    "create_time": "2026-01-14T09:54:07.732Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Общепитке"
+  },
+  {
+    "id": 252215,
+    "create_time": "2026-01-14T09:54:16.837Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252217,
+    "create_time": "2026-01-14T09:54:30.214Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок\nПринтер чеков\nСканер\nДенежный ящик\n189.000 тг"
+  },
+  {
+    "id": 252218,
+    "create_time": "2026-01-14T09:55:06.689Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252219,
+    "create_time": "2026-01-14T09:55:09.158Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ИИН ИП керек, счет жиберу ушин"
+  },
+  {
+    "id": 252220,
+    "create_time": "2026-01-14T09:55:25.315Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252225,
+    "create_time": "2026-01-14T09:57:15.319Z",
+    "author_type": "client",
+    "sent_content": "950205401363"
+  },
+  {
+    "id": 252226,
+    "create_time": "2026-01-14T09:57:56.741Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "1 счет 150.000 тг жибердик"
+  },
+  {
+    "id": 252228,
+    "create_time": "2026-01-14T09:58:17.178Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252232,
+    "create_time": "2026-01-14T09:59:48.872Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym\nЗа оборудование можете оплатить по ссылке. Сумма 189.000 тг"
+  },
+  {
+    "id": 252235,
+    "create_time": "2026-01-14T10:00:48.803Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252238,
+    "create_time": "2026-01-14T10:01:19.408Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Шымкент каласында"
+  },
+  {
+    "id": 252239,
+    "create_time": "2026-01-14T10:01:25.112Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия"
+  },
+  {
+    "id": 252240,
+    "create_time": "2026-01-14T10:01:29.346Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252248,
+    "create_time": "2026-01-14T10:02:27.821Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Екинши чек жибере аласыз ба"
+  },
+  {
+    "id": 252251,
+    "create_time": "2026-01-14T10:04:13.081Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Моноблок кара немесе ак па?"
+  },
+  {
+    "id": 252252,
+    "create_time": "2026-01-14T10:04:28.405Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252262,
+    "create_time": "2026-01-14T10:08:46.840Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Адрес бола ма"
+  },
+  {
+    "id": 252264,
+    "create_time": "2026-01-14T10:09:27.292Z",
+    "author_type": "client",
+    "sent_content": "Областная прокуратура"
+  },
+  {
+    "id": 252265,
+    "create_time": "2026-01-14T10:10:25.882Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Точный адрес бола ма"
+  },
+  {
+    "id": 252266,
+    "create_time": "2026-01-14T10:10:37.824Z",
+    "author_type": "client",
+    "sent_content": "Каз"
+  },
+  {
+    "id": 251837,
+    "create_time": "2026-01-13T19:58:39.644Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 251846,
+    "create_time": "2026-01-13T20:17:49.093Z",
+    "author_type": "client",
+    "sent_content": "?"
+  },
+  {
+    "id": 251714,
+    "create_time": "2026-01-13T18:34:09.561Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 251715,
+    "create_time": "2026-01-13T18:35:23.608Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Саламатсыз ба"
+  },
+  {
+    "id": 251716,
+    "create_time": "2026-01-13T18:35:26.734Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия бар"
+  },
+  {
+    "id": 251717,
+    "create_time": "2026-01-13T18:35:40.939Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 251718,
+    "create_time": "2026-01-13T18:35:42.816Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизде кандай бизнес?"
+  },
+  {
+    "id": 251719,
+    "create_time": "2026-01-13T18:35:49.525Z",
+    "author_type": "client",
+    "sent_content": "Столоввй"
+  },
+  {
+    "id": 251721,
+    "create_time": "2026-01-13T18:38:51.711Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сизге оборудование бойынша каталог жибердик"
+  },
+  {
+    "id": 251722,
+    "create_time": "2026-01-13T18:39:49.198Z",
+    "author_type": "client",
+    "sent_content": "Общепитка Кайсы дурыс"
+  },
+  {
+    "id": 251723,
+    "create_time": "2026-01-13T18:40:07.553Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 251724,
+    "create_time": "2026-01-13T18:40:22.762Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 251733,
+    "create_time": "2026-01-13T18:43:03.180Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 251741,
+    "create_time": "2026-01-13T18:49:38.134Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ия"
+  },
+  {
+    "id": 251742,
+    "create_time": "2026-01-13T18:49:52.022Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 252299,
+    "create_time": "2026-01-14T10:27:40.819Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Жибересиз ба?"
+  },
+  {
+    "id": 252300,
+    "create_time": "2026-01-14T10:28:05.132Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир регистрация откиземиз. Сиздин номер регистрация жасау ушин колдану бола ма?"
+  },
+  {
+    "id": 252302,
+    "create_time": "2026-01-14T10:28:30.415Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252304,
+    "create_time": "2026-01-14T10:28:50.063Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Аккаунт жасаймыз"
+  },
+  {
+    "id": 252306,
+    "create_time": "2026-01-14T10:29:08.400Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 252307,
+    "create_time": "2026-01-14T10:29:11.678Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Казир караймыз"
+  },
+  {
+    "id": 252309,
+    "create_time": "2026-01-14T10:29:25.012Z",
+    "author_type": "client",
+    "sent_content": "1579"
+  },
+  {
+    "id": 252311,
+    "create_time": "2026-01-14T10:29:26.551Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сиздин номерге смс код жибердик"
+  },
+  {
+    "id": 252328,
+    "create_time": "2026-01-14T10:32:38.176Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://console.wipon.kz/settings/account/balance\nЛогин 77783765750\nПароль 12345678"
+  }
+]

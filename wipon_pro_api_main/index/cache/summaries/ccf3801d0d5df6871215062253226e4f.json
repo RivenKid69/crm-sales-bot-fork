@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/feedback-message.dao.ts:property:FeedbackMessageDao:user_id",
+  "summary": "Этот код описывает структуру таблицы 'feedback_messages' в базе данных. Она хранит информацию о сообщениях обратной связи: имя, телефон, email, текст, фото и связь с пользователем",
+  "purpose": "Используется для хранения и управления данными об обратной связи от пользователей в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит текст сообщения и контактные данные пользователя",
+    "Отслеживает статус прочтения сообщения",
+    "Связывает сообщение с конкретным пользователем",
+    "Записывает даты создания и обновления",
+    "Хранит логи приложения в формате JSON"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "UserDao"
+  ],
+  "input_tokens": 1455,
+  "output_tokens": 650,
+  "model": "qwen3:14b",
+  "code_hash": "7d576a3605a7d4a1"
+}

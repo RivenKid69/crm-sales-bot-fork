@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/fcm/fcm.module.ts:import:@nestjs/common",
+  "summary": "Этот код импортирует необходимые зависимости для создания модуля FCM в NestJS. Он использует Firebase Admin SDK для работы с FCM, Bull для асинхронной обработки задач, а также интегрируется с модулем уведомлений и сервисами для отправки сообщений.",
+  "purpose": "Обеспечивает интеграцию с Firebase Cloud Messaging и поддержку асинхронной обработки уведомлений в приложении",
+  "domain": "уведомления, api, база данных",
+  "key_behaviors": [
+    "Инициализация Firebase с использованием конфигурации из .env",
+    "Использование Bull для асинхронной обработки задач",
+    "Интеграция с модулем уведомлений",
+    "Поддержка отправки уведомлений через FCM",
+    "Использование конфигурационного сервиса для получения данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/config",
+    "@nestjs/bull",
+    "firebase-admin"
+  ],
+  "input_tokens": 1354,
+  "output_tokens": 779,
+  "model": "qwen3:14b",
+  "code_hash": "1bb20cf771b8b2af"
+}

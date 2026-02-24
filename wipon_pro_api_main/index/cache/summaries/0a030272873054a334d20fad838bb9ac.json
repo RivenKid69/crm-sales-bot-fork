@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/domain/reports.service.ts:import:../../../common/dao/user.dao",
+  "summary": "Этот код создает сервис для обработки отчетов. Он сохраняет изображения, обновляет данные в базе и использует транзакции для безопасной работы с файлами.",
+  "purpose": "Обрабатывает создание и обновление отчетов с изображениями в системе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохраняет изображения в базу данных",
+    "Обновляет данные отчетов в БД",
+    "Использует транзакции для безопасности",
+    "Удаляет старые файлы при обновлении",
+    "Логирует ошибки через кастомный логгер"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "fs",
+    "path"
+  ],
+  "input_tokens": 2508,
+  "output_tokens": 712,
+  "model": "qwen3:14b",
+  "code_hash": "608441468e01b302"
+}

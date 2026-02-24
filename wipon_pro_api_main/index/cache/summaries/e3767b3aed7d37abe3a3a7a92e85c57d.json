@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/domain/transactions.service.ts:import:../../subscriptions/domain/use-cases/count-users-active-subscription.use-case",
+  "summary": "Этот код импортирует классы и сервисы для обработки транзакций, включая работу с пользователями, подписками, балансами и платежами. Использует кейсы для поиска аккаунтов и подписок, а также сервисы для взаимодействия с базой данных и уведомлениями.",
+  "purpose": "Обработка транзакций, управление подписками и взаимодействие с пользователями в финансовой системе",
+  "domain": "транзакции, подписки, платежи, уведомления",
+  "key_behaviors": [
+    "Обработка переводов между пользователями",
+    "Проверка существования пользователя и его счета",
+    "Работа с подписками и активацией",
+    "Использование сервиса биллинга и уведомлений",
+    "Взаимодействие с базой данных через TypeORM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "nestjs-i18n"
+  ],
+  "input_tokens": 2674,
+  "output_tokens": 769,
+  "model": "qwen3:14b",
+  "code_hash": "759ff281f4fed029"
+}

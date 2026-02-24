@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/subscriptionCharge.consumer.ts:class:SubscriptionChargeConsumer",
+  "summary": "Этот класс обрабатывает задания по оплате подписок. Он ищет пользователя, проверяет активную подписку, списывает деньги с баланса и активирует подписку, если всё прошло успешно.",
+  "purpose": "Обработка асинхронных задач по пополнению подписок пользователей",
+  "domain": "платежи, подписки",
+  "key_behaviors": [
+    "Обработка задач из очереди Bull",
+    "Поиск пользователя по ID",
+    "Проверка активной подписки",
+    "Списание средств с баланса",
+    "Активация подписки после успешной оплаты"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "typeorm",
+    "@nestjs/common"
+  ],
+  "input_tokens": 1932,
+  "output_tokens": 693,
+  "model": "qwen3:14b",
+  "code_hash": "3ed7f67e58569a57"
+}

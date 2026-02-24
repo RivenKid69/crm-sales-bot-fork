@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:import:../../common/services/doomguy/doomguy.service",
+  "summary": "Этот код реализует сервис для проверки подлинности товаров через внешние API (Bf и KGD Wipon). Он отправляет HTTP-запросы, обрабатывает ответы и сохраняет информацию о товарах в системе.",
+  "purpose": "Проверка подлинности товаров и синхронизация данных с внешними системами",
+  "domain": "API интеграция, валидация данных",
+  "key_behaviors": [
+    "Отправка HTTP-запросов на внешние API",
+    "Кэширование результатов для оптимизации",
+    "Использование конфигурационных файлов",
+    "Обработка и парсинг ответов от API",
+    "Интеграция с внутренними сервисами (например, DoomguyService)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager",
+    "locutus/php/strings/substr",
+    "https"
+  ],
+  "input_tokens": 2918,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

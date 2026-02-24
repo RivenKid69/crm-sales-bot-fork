@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/sms.service.ts:import:../../common/logger/error-logger",
+  "summary": "Этот код отправляет SMS-коды для авторизации через внешний API. Если приложение не в production-режиме, код пропускается. При ошибках логируется сообщение с деталями.",
+  "purpose": "Отправка кодов подтверждения пользователю и логирование ошибок при отправке SMS",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Отправка SMS через внешний API только в production",
+    "Логирование ошибок с детализацией статуса и сообщения",
+    "Использование конфигурационных файлов для настроек",
+    "Асинхронная отправка сообщений с обработкой ответа",
+    "Использование FormData для подготовки HTTP-запроса"
+  ],
+  "dependencies_used": [
+    "form-data",
+    "error-logger"
+  ],
+  "input_tokens": 1809,
+  "output_tokens": 695,
+  "model": "qwen3:14b",
+  "code_hash": "c49798b41ce5c5e6"
+}

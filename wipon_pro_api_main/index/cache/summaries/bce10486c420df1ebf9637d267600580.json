@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/domain/ugds.service.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который получает список данных из базы через репозиторий. Он использует DTO для параметров запроса и работает с объектами UgdDao.",
+  "purpose": "Обеспечивает доступ к данным через базу с возможностью фильтрации по ID",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Получает данные из базы через TypeORM",
+    "Поддерживает фильтрацию по dgd_id",
+    "Использует DTO для параметров запроса",
+    "Работает с репозиторием для доступа к данным",
+    "Возвращает массив объектов UgdDao"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1382,
+  "output_tokens": 660,
+  "model": "qwen3:14b",
+  "code_hash": "577ffdfcea2eb4d8"
+}

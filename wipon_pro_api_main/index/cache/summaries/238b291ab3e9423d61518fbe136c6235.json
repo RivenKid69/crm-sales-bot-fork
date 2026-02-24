@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/dto/post-report.dto.ts:property:PostReportDto:causer",
+  "summary": "Этот DTO используется для валидации данных при создании отчета. Он проверяет, что item_id существует и является числом, а фото в формате base64, и добавляет документацию для API",
+  "purpose": "Обеспечивает корректность данных при создании отчета в системе",
+  "domain": "валидация данных, API",
+  "key_behaviors": [
+    "Проверка существования item_id в базе",
+    "Валидация числовых полей",
+    "Проверка формата base64 для фото",
+    "Документация через Swagger",
+    "Опциональные поля для дополнительной информации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1514,
+  "output_tokens": 692,
+  "model": "qwen3:14b",
+  "code_hash": "4f81e8444d096783"
+}

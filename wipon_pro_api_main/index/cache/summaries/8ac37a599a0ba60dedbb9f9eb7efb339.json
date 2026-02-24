@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/excise-hashes/domain/use-cases/find-or-create-excise-hash.use-case.ts:method:FindOrCreateExciseHashUseCase:constructor",
+  "summary": "Этот метод ищет хэш в базе данных. Если его нет, создает новый запись с этим хэшем. Возвращает данные хэша.",
+  "purpose": "Убеждается, что хэш сохранен в базе данных, избегая дубликатов",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет существующий хэш в базе",
+    "Создает новый хэш, если его нет",
+    "Возвращает объект с данными хэша",
+    "Использует репозиторий для работы с базой",
+    "Работает асинхронно"
+  ],
+  "dependencies_used": [
+    "@Injectable",
+    "@InjectRepository",
+    "ExciseHashesRepository",
+    "ExciseHashesDao"
+  ],
+  "input_tokens": 1266,
+  "output_tokens": 706,
+  "model": "qwen3:14b",
+  "code_hash": "c31ce003cb10bdfa"
+}

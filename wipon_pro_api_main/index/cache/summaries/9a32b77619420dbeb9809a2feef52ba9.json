@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/data/notifications.repository.ts:class:NotificationsRepository",
+  "summary": "Этот класс представляет собой репозиторий для работы с уведомлениями в базе данных. Он расширяет функционал TypeORM и связывает модель NotificationDao с таблицей в БД.",
+  "purpose": "Обеспечивает доступ к данным уведомлений и позволяет выполнять операции с ними через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Связывает модель NotificationDao с таблицей в БД",
+    "Расширяет базовый класс Repository",
+    "Позволяет выполнять CRUD-операции",
+    "Использует декоратор @EntityRepository"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1023,
+  "output_tokens": 658,
+  "model": "qwen3:14b",
+  "code_hash": "0bedf68bfaa24b4e"
+}

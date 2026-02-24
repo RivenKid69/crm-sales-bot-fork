@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/transaction.guard.ts:import:../../config/app.config",
+  "summary": "Этот код проверяет, есть ли у запроса допустимый токен для транзакций. Если токен отсутствует или не совпадает с настроенным, вызывается ошибка доступа.",
+  "purpose": "Защищает эндпоинты, обрабатывающие транзакции, от неавторизованных запросов",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие токена в заголовке запроса",
+    "Сравнивает токен с настроенным значением",
+    "Вызывает ошибку, если токен отсутствует или неверен",
+    "Работает с HTTP-запросами через Express",
+    "Использует конфигурационные настройки из app.config"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "express"
+  ],
+  "input_tokens": 1187,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "8b2b0537c1fdd073"
+}

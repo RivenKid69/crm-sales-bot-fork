@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ledger.dao.ts:import:typeorm",
+  "summary": "Этот код определяет сущность 'LedgerDao' для таблицы 'ledgers' в базе данных. Она содержит поля, такие как id, user_id, даты создания и обновления, а также связи с другими сущностями, такими как UserDao, AccountDao и InvoiceDao.",
+  "purpose": "Создаёт модель данных для таблицы 'ledgers', которая используется для хранения информации о счетах в приложении.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое присвоение уникального ID",
+    "Связь с пользователем через user_id",
+    "Отслеживание времени создания и обновления записи",
+    "Связь с таблицами accounts и invoices",
+    "Использование аннотаций TypeORM для описания структуры таблицы"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "UserDao",
+    "AccountDao",
+    "InvoiceDao"
+  ],
+  "input_tokens": 1467,
+  "output_tokens": 746,
+  "model": "qwen3:14b",
+  "code_hash": "49807575de7c8de6"
+}

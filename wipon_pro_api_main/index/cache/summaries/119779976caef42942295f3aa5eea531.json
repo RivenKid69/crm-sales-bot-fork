@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/domain/use-cases/find-region-by-name.use-case.ts:import:../../data/regions.repository",
+  "summary": "Этот код создает сервис, который ищет регион по его названию на русском языке. Использует репозиторий для работы с базой данных и возвращает объект с данными региона.",
+  "purpose": "Позволяет быстро находить информацию о регионе по названию, например, для заполнения выпадающих списков на сайте",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет регион по названию на русском языке",
+    "Использует репозиторий для взаимодействия с базой данных",
+    "Возвращает объект с данными региона или undefined, если регион не найден"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "RegionsRepository",
+    "RegionDao"
+  ],
+  "input_tokens": 1066,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "8b310433c08e76a6"
+}

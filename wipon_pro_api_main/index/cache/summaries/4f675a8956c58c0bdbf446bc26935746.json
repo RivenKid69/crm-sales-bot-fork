@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ugd.dao.ts:import:typeorm",
+  "summary": "Этот код создает сущность в базе данных с помощью TypeORM. Она хранит информацию о UGD, включая идентификатор, названия на разных языках, и связи с другими сущностями, такими как Store и Dgd.",
+  "purpose": "Это нужно для хранения и управления данными о UGD в базе данных, связывая их с другими объектами.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу в базе данных с именем 'ugds'",
+    "Хранит идентификатор, названия на разных языках",
+    "Связывает UGD с Store и Dgd через отношения one-to-one",
+    "Использует автоматически генерируемый идентификатор",
+    "Использует внешний ключ для связи с Dgd"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreDao",
+    "DgdDao"
+  ],
+  "input_tokens": 1154,
+  "output_tokens": 751,
+  "model": "qwen3:14b",
+  "code_hash": "bac098048cd95bdb"
+}

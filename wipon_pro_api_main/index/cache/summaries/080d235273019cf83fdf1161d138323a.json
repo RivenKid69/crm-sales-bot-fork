@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/billings.module.ts:import:./domain/billings.service",
+  "summary": "Этот код создает модуль NestJS для управления оплатами. Он использует кэширование через Redis, подключается к модулям пользователей и аккаунтов, и содержит сервисы для работы с оплатами и SSL.",
+  "purpose": "Обеспечивает функциональность для обработки платежей с кэшированием и интеграцией с другими модулями",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Интегрируется с модулями пользователей и аккаунтов",
+    "Содержит сервис для работы с оплатами",
+    "Использует SSL-сервис для безопасных соединений",
+    "Регистрирует контроллер для обработки HTTP-запросов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1316,
+  "output_tokens": 720,
+  "model": "qwen3:14b",
+  "code_hash": "ddc128a566174f32"
+}

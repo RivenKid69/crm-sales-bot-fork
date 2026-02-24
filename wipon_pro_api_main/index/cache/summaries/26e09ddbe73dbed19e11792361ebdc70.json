@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:method:ChecksService:validateChecksData",
+  "summary": "Этот код представляет собой сервис, который обрабатывает данные проверок, взаимодействует с базой данных, внешними API, сохраняет изображения и проверяет информацию о товарах. Он использует различные утилиты для работы с файлами, временем и валидацией данных.",
+  "purpose": "Обработка и валидация данных проверок, управление изображениями и связями между товарами и проверками",
+  "domain": "база данных, утилиты, api",
+  "key_behaviors": [
+    "Взаимодействие с базой данных через репозитории",
+    "Проверка и валидация данных проверок",
+    "Сохранение и обработка изображений",
+    "Интеграция с внешними API",
+    "Работа с файловой системой и временем"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "check-disk-space",
+    "locutus",
+    "winston"
+  ],
+  "input_tokens": 4597,
+  "output_tokens": 770,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

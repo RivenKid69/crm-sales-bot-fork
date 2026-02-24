@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/presenter/cashboxes.controller.ts:import:../../../common/guards/ip-filter.guard",
+  "summary": "Этот код создает контроллер для обработки запросов к кассовым аппаратам. Он использует защиту по IP-адресам и валидацию данных, принимаемых от клиентов.",
+  "purpose": "Ограничивает доступ к критически важным функциям кассы только доверенным IP-адресам и проверяет корректность входных данных",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Фильтрация трафика по IP-адресам",
+    "Валидация данных с помощью ValidationPipe",
+    "Обработка двух типов запросов (авторизация и сообщения)",
+    "Трансформация ответов с помощью интерсептора",
+    "Использование специфичного провайдера 'prokassa'"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "IpFilterGuard",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1570,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "91982e74914aeef2"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/presenter/notifications.controller.ts:import:../dto/mass-notification.dto",
+  "summary": "Этот код представляет собой контроллер для работы с уведомлениями в приложении. Он обрабатывает различные HTTP-запросы, такие как получение, отправка, обновление и удаление уведомлений, используя аутентификацию и валидацию данных.",
+  "purpose": "Позволяет управлять уведомлениями через REST API с поддержкой аутентификации, валидации и документации Swagger.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка HTTP-запросов (GET, POST, PUT, DELETE)",
+    "Использование аутентификации через AuthGuard",
+    "Валидация данных с помощью ValidationPipe",
+    "Интеграция с Swagger для документации API",
+    "Использование интерцептора для преобразования данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "NotificationsService",
+    "AuthGuard",
+    "ValidationPipe",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 2267,
+  "output_tokens": 756,
+  "model": "qwen3:14b",
+  "code_hash": "693e2857eabd9d27"
+}

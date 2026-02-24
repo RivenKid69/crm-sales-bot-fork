@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transfer.dto.ts:import:class-validator",
+  "summary": "Этот код импортирует валидаторы для проверки данных в DTO-классе, убедившись, что числа корректны, а JSON-строки соответствуют формату. Использует внешние и внутренние валидаторы для обеспечения качества данных.",
+  "purpose": "Обеспечивает валидацию данных перед их обработкой в API-запросах",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка числовых полей на корректность",
+    "Обязательная проверка наличия данных",
+    "Валидация JSON-строк для необязательных полей",
+    "Использование как внешних, так и внутренних валидаторов",
+    "Поддержка необязательных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "is-numeric"
+  ],
+  "input_tokens": 1182,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "5ea31e4dc0d7d108"
+}

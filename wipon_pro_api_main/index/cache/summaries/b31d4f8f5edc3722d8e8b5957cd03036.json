@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/excise-hashes/domain/use-cases/find-or-create-excise-hash.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис, который ищет хэш в базе данных или создает его, если он не найден. Использует TypeORM для работы с базой данных.",
+  "purpose": "Обеспечивает управление данными хэшей в приложении, избегая дублирования записей.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет существующий хэш в базе данных",
+    "Создает новый хэш, если он не найден",
+    "Возвращает объект DAO с данными хэша",
+    "Использует TypeORM для взаимодействия с БД",
+    "Работает как отдельный сервис в архитектуре NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1276,
+  "output_tokens": 710,
+  "model": "qwen3:14b",
+  "code_hash": "c31ce003cb10bdfa"
+}

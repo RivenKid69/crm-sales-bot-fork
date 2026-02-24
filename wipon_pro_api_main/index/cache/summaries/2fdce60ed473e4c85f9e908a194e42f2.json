@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/logger/error-logger.ts:import:winston",
+  "summary": "Этот код использует библиотеку winston для создания логгера ошибок. Он формирует имя файла лога с датой и сохраняет ошибки в файл, а также выводит их в консоль, если это не продакшн-среда.",
+  "purpose": "Логировать ошибки в проекте для последующего анализа и отладки",
+  "domain": "логирование",
+  "key_behaviors": [
+    "Создает логгер для ошибок",
+    "Формирует имя файла лога с датой",
+    "Сохраняет ошибки в файл",
+    "Выводит ошибки в консоль в режиме разработки",
+    "Использует формат JSON для логов"
+  ],
+  "dependencies_used": [
+    "winston"
+  ],
+  "input_tokens": 1116,
+  "output_tokens": 706,
+  "model": "qwen3:14b",
+  "code_hash": "c8bcdca1c27f56ea"
+}

@@ -1,0 +1,698 @@
+[
+  {
+    "id": 22494,
+    "create_time": "2025-10-29T12:55:29.971Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 22250,
+    "create_time": "2025-10-29T12:32:22.766Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 22263,
+    "create_time": "2025-10-29T12:33:37.544Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "этот моноблок не маленький параметры отличные принтер чека и сканер встроенный"
+  },
+  {
+    "id": 21337,
+    "create_time": "2025-10-29T09:02:59.997Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга доброе утро!"
+  },
+  {
+    "id": 21338,
+    "create_time": "2025-10-29T09:03:47.824Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "на следующей неделе это оборудование придет параметры отличные!"
+  },
+  {
+    "id": 21339,
+    "create_time": "2025-10-29T09:03:51.655Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 21340,
+    "create_time": "2025-10-29T09:04:20.139Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 22497,
+    "create_time": "2025-10-29T12:56:06.246Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы хотите такой?"
+  },
+  {
+    "id": 22477,
+    "create_time": "2025-10-29T12:53:22.274Z",
+    "author_type": "client",
+    "sent_content": "Этот нет"
+  },
+  {
+    "id": 22823,
+    "create_time": "2025-10-29T14:05:45.638Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "на витрине один остался если Вы готовы купить могу Вам его оформить?"
+  },
+  {
+    "id": 22869,
+    "create_time": "2025-10-29T14:09:57.628Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23002,
+    "create_time": "2025-10-29T14:24:53.755Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 23016,
+    "create_time": "2025-10-29T14:27:13.765Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://www.youtube.com/shorts/F9lF-KOSzZw"
+  },
+  {
+    "id": 23020,
+    "create_time": "2025-10-29T14:27:31.270Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "квадро весы я Вам ссылку скинул"
+  },
+  {
+    "id": 23021,
+    "create_time": "2025-10-29T14:27:36.595Z",
+    "author_type": "client",
+    "sent_content": "Этого видео есть"
+  },
+  {
+    "id": 23033,
+    "create_time": "2025-10-29T14:28:35.512Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "ссылку я Вам скинул"
+  },
+  {
+    "id": 23060,
+    "create_time": "2025-10-29T14:30:33.775Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Это самое лучшее оборудование и самое продаваемое у нас"
+  },
+  {
+    "id": 23067,
+    "create_time": "2025-10-29T14:31:10.355Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "видео у Вас открывается?"
+  },
+  {
+    "id": 23070,
+    "create_time": "2025-10-29T14:31:18.816Z",
+    "author_type": "client",
+    "sent_content": "Открыла"
+  },
+  {
+    "id": 23103,
+    "create_time": "2025-10-29T14:34:54.152Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "посмотрели видео?"
+  },
+  {
+    "id": 23166,
+    "create_time": "2025-10-29T14:39:23.934Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "мой совет квадро лучшее решение все в одном параметры самые лучшие,  имеется дисплей покупателя в последующем qr код для оплаты можно выводить на экран и клиент видит что приобретает, грузоподьемность высокая корпус из высокопрочного материала"
+  },
+  {
+    "id": 23201,
+    "create_time": "2025-10-29T14:42:24.795Z",
+    "author_type": "client",
+    "sent_content": "Посмотрела"
+  },
+  {
+    "id": 23215,
+    "create_time": "2025-10-29T14:42:54.925Z",
+    "author_type": "client",
+    "sent_content": "Сейчас освобожусь"
+  },
+  {
+    "id": 23593,
+    "create_time": "2025-10-29T15:26:11.075Z",
+    "author_type": "client",
+    "sent_content": "Вот эти 2шт квадро .чтоб характеристики такие какие написаны были только."
+  },
+  {
+    "id": 23597,
+    "create_time": "2025-10-29T15:27:02.373Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, будут такие же характеристики"
+  },
+  {
+    "id": 23601,
+    "create_time": "2025-10-29T15:27:21.731Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23602,
+    "create_time": "2025-10-29T15:27:23.831Z",
+    "author_type": "client",
+    "sent_content": "1шт"
+  },
+  {
+    "id": 23606,
+    "create_time": "2025-10-29T15:27:40.760Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23610,
+    "create_time": "2025-10-29T15:28:04.290Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ок"
+  },
+  {
+    "id": 23611,
+    "create_time": "2025-10-29T15:28:13.798Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23612,
+    "create_time": "2025-10-29T15:28:20.610Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам 1го сканера хватит?"
+  },
+  {
+    "id": 23615,
+    "create_time": "2025-10-29T15:28:28.195Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23620,
+    "create_time": "2025-10-29T15:29:02.300Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Випон ОФД после установки оборудования"
+  },
+  {
+    "id": 23621,
+    "create_time": "2025-10-29T15:29:08.186Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все верно"
+  },
+  {
+    "id": 23622,
+    "create_time": "2025-10-29T15:29:28.905Z",
+    "author_type": "client",
+    "sent_content": "Каспи рассрочка есть"
+  },
+  {
+    "id": 23623,
+    "create_time": "2025-10-29T15:29:32.511Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Все, хорошо"
+  },
+  {
+    "id": 23628,
+    "create_time": "2025-10-29T15:29:57.710Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, имеется"
+  },
+  {
+    "id": 23631,
+    "create_time": "2025-10-29T15:30:00.549Z",
+    "author_type": "client",
+    "sent_content": "В какой день нам придёт в Ука ?"
+  },
+  {
+    "id": 23634,
+    "create_time": "2025-10-29T15:30:09.114Z",
+    "author_type": "client",
+    "sent_content": "Я туда приеду встречу"
+  },
+  {
+    "id": 23647,
+    "create_time": "2025-10-29T15:31:20.117Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23648,
+    "create_time": "2025-10-29T15:31:22.215Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "В понедельник отправим вам доставкой"
+  },
+  {
+    "id": 23652,
+    "create_time": "2025-10-29T15:31:47.088Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, обязательно"
+  },
+  {
+    "id": 23653,
+    "create_time": "2025-10-29T15:31:55.197Z",
+    "author_type": "client",
+    "sent_content": "Счёт на 8 747 22 08 088\nОльга К."
+  },
+  {
+    "id": 23658,
+    "create_time": "2025-10-29T15:32:09.539Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Доставкой отправляем через Индрайв"
+  },
+  {
+    "id": 23659,
+    "create_time": "2025-10-29T15:32:23.939Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете ИИН ИП отправить"
+  },
+  {
+    "id": 23672,
+    "create_time": "2025-10-29T15:33:53.551Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Дя создание гарантийного талона"
+  },
+  {
+    "id": 23683,
+    "create_time": "2025-10-29T15:35:14.176Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Сейчас выставим счет за программу 220.000 тг"
+  },
+  {
+    "id": 23689,
+    "create_time": "2025-10-29T15:35:37.029Z",
+    "author_type": "client",
+    "sent_content": "Кочергина О.В.\n900822451791"
+  },
+  {
+    "id": 23696,
+    "create_time": "2025-10-29T15:36:25.270Z",
+    "author_type": "client",
+    "sent_content": "Общей суммой выставите"
+  },
+  {
+    "id": 23701,
+    "create_time": "2025-10-29T15:37:06.418Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "https://pay.kaspi.kz/pay/gcysl1ym\nЗа оборудование можете оплатить по ссылке. Сумма 754.000 тг"
+  },
+  {
+    "id": 23708,
+    "create_time": "2025-10-29T15:38:15.850Z",
+    "author_type": "client",
+    "sent_content": "Я же через рассрочку мне общей суммой нужно"
+  },
+  {
+    "id": 23711,
+    "create_time": "2025-10-29T15:38:38.554Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы общей суммой не можем выставить"
+  },
+  {
+    "id": 23713,
+    "create_time": "2025-10-29T15:38:52.637Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Так как от двух компаний выставляем счет"
+  },
+  {
+    "id": 23722,
+    "create_time": "2025-10-29T15:39:50.532Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вы можете два счета оплатить рассрочкой по отдельности"
+  },
+  {
+    "id": 23726,
+    "create_time": "2025-10-29T15:40:24.676Z",
+    "author_type": "client",
+    "sent_content": "Мой заказ какой то чек есть составленный"
+  },
+  {
+    "id": 23729,
+    "create_time": "2025-10-29T15:40:34.969Z",
+    "author_type": "client",
+    "sent_content": "Или накладная"
+  },
+  {
+    "id": 23736,
+    "create_time": "2025-10-29T15:40:59.742Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Накладная на товар будет"
+  },
+  {
+    "id": 23737,
+    "create_time": "2025-10-29T15:41:06.394Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "И гарантийный талон"
+  },
+  {
+    "id": 23739,
+    "create_time": "2025-10-29T15:41:22.626Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы упакуем их и вместе с оборудованием вам отправим"
+  },
+  {
+    "id": 23744,
+    "create_time": "2025-10-29T15:42:11.267Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23762,
+    "create_time": "2025-10-29T15:43:40.561Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Формировние накладной и гарантийного талона идет после оплаты"
+  },
+  {
+    "id": 23768,
+    "create_time": "2025-10-29T15:44:04.109Z",
+    "author_type": "client",
+    "sent_content": "Доставка сколько стоит ?\nЕсли через индрайвер сразу мне в магазин тогда можно отправить\nГород Алтай (Зыряновск )ВКО\nУл.Астана 71 магазин Сова"
+  },
+  {
+    "id": 23773,
+    "create_time": "2025-10-29T15:44:19.771Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Мы можем после оплаты отправить вам по ватсап накладную и гарантийный таллон"
+  },
+  {
+    "id": 23779,
+    "create_time": "2025-10-29T15:44:41.758Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Да, можно будет"
+  },
+  {
+    "id": 23781,
+    "create_time": "2025-10-29T15:44:54.297Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Оплату за доставку вы совершаете по приезду курьера"
+  },
+  {
+    "id": 23799,
+    "create_time": "2025-10-29T15:46:07.762Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 23818,
+    "create_time": "2025-10-29T15:47:29.212Z",
+    "author_type": "client",
+    "sent_content": "download.pdf"
+  },
+  {
+    "id": 23825,
+    "create_time": "2025-10-29T15:48:08.699Z",
+    "author_type": "client",
+    "sent_content": "Я на НДС мне документы сделаете"
+  },
+  {
+    "id": 23942,
+    "create_time": "2025-10-29T16:00:55.441Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "За программу смогли оплату провести?"
+  },
+  {
+    "id": 23950,
+    "create_time": "2025-10-29T16:02:08.163Z",
+    "author_type": "client",
+    "sent_content": "За программу счёт выставите я оплачу наличкой"
+  },
+  {
+    "id": 23952,
+    "create_time": "2025-10-29T16:02:15.438Z",
+    "author_type": "client",
+    "sent_content": "С голд"
+  },
+  {
+    "id": 23979,
+    "create_time": "2025-10-29T16:05:01.150Z",
+    "author_type": "client",
+    "sent_content": "download.pdf"
+  },
+  {
+    "id": 24038,
+    "create_time": "2025-10-29T16:12:00.776Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "приняли 🤝"
+  },
+  {
+    "id": 24509,
+    "create_time": "2025-10-29T17:04:16.949Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга учетную систему на какой номер телефона регистрировать?"
+  },
+  {
+    "id": 24552,
+    "create_time": "2025-10-29T17:10:57.140Z",
+    "author_type": "client",
+    "sent_content": "На мой этот номер"
+  },
+  {
+    "id": 24712,
+    "create_time": "2025-10-29T17:25:23.756Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга на Ваш номер придет смс от вайпон 4 цифры напишите мне"
+  },
+  {
+    "id": 24720,
+    "create_time": "2025-10-29T17:26:34.548Z",
+    "author_type": "client",
+    "sent_content": "Накладную отправьте"
+  },
+  {
+    "id": 24755,
+    "create_time": "2025-10-29T17:29:15.693Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга накладная будет вместе с оборудованием т.к товар еще нет в базе"
+  },
+  {
+    "id": 24760,
+    "create_time": "2025-10-29T17:29:48.226Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "мне можете смс отправить пока учетную систему на вас зарегистрирую"
+  },
+  {
+    "id": 24762,
+    "create_time": "2025-10-29T17:29:51.424Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 24764,
+    "create_time": "2025-10-29T17:30:12.012Z",
+    "author_type": "client",
+    "sent_content": "Я не какие коды не буду диктовать пока товар непоучу"
+  },
+  {
+    "id": 24768,
+    "create_time": "2025-10-29T17:30:35.186Z",
+    "author_type": "client",
+    "sent_content": "Как вы его продали тогда если его нет в базе"
+  },
+  {
+    "id": 24776,
+    "create_time": "2025-10-29T17:31:03.208Z",
+    "author_type": "client",
+    "sent_content": "Доставка до нас сколько стоить будет"
+  },
+  {
+    "id": 24778,
+    "create_time": "2025-10-29T17:31:09.411Z",
+    "author_type": "client",
+    "sent_content": "Так и не ответили"
+  },
+  {
+    "id": 24782,
+    "create_time": "2025-10-29T17:31:59.976Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга, фискальный чек сойдет ?"
+  },
+  {
+    "id": 24784,
+    "create_time": "2025-10-29T17:32:20.896Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Накладную отправим с товаром"
+  },
+  {
+    "id": 24791,
+    "create_time": "2025-10-29T17:32:56.476Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 24792,
+    "create_time": "2025-10-29T17:33:01.400Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам можно позвонить?"
+  },
+  {
+    "id": 24793,
+    "create_time": "2025-10-29T17:33:27.694Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 24945,
+    "create_time": "2025-10-29T17:49:19.622Z",
+    "author_type": "client",
+    "sent_content": "Какие документы отправите на программу ?лицензия"
+  },
+  {
+    "id": 24967,
+    "create_time": "2025-10-29T17:51:31.634Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "договор оферты чуть позже я Вам скину электронный вид с печатью, а при доставке оригинал в коробку положу"
+  },
+  {
+    "id": 24974,
+    "create_time": "2025-10-29T17:52:46.937Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Публичная оферта Prosklad _1_ _1_ _1_.pdf"
+  },
+  {
+    "id": 25026,
+    "create_time": "2025-10-29T18:01:06.831Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 25030,
+    "create_time": "2025-10-29T18:02:01.653Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 25032,
+    "create_time": "2025-10-29T18:02:08.970Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 25034,
+    "create_time": "2025-10-29T18:02:40.493Z",
+    "author_type": "client",
+    "sent_content": "Никакой печати"
+  },
+  {
+    "id": 25036,
+    "create_time": "2025-10-29T18:02:52.088Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Эта информация нужна для маркетинга, чтобы пускать таргетированную рекламу по городам"
+  },
+  {
+    "id": 25037,
+    "create_time": "2025-10-29T18:03:08.504Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Можете не беспокоиться по этому поводу"
+  },
+  {
+    "id": 25038,
+    "create_time": "2025-10-29T18:03:15.173Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 25039,
+    "create_time": "2025-10-29T18:03:19.502Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 25044,
+    "create_time": "2025-10-29T18:04:31.418Z",
+    "author_type": "client",
+    "sent_content": "Где в Алмате офис у Вас"
+  },
+  {
+    "id": 25047,
+    "create_time": "2025-10-29T18:05:37.676Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "в Алматы ул.Толеби 73"
+  },
+  {
+    "id": 25051,
+    "create_time": "2025-10-29T18:05:47.839Z",
+    "author_type": "Sale_Manager",
+    "sent_content": ""
+  },
+  {
+    "id": 25056,
+    "create_time": "2025-10-29T18:06:35.673Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 25057,
+    "create_time": "2025-10-29T18:06:57.093Z",
+    "author_type": "client",
+    "sent_content": "Я отправлю человека от моего имени заключит договор на месте"
+  },
+  {
+    "id": 31102,
+    "create_time": "2025-10-31T09:03:18.775Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга доброе утро! Как дела у Вас?"
+  },
+  {
+    "id": 31103,
+    "create_time": "2025-10-31T09:03:24.837Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Вам оборудование доставили?"
+  },
+  {
+    "id": 34166,
+    "create_time": "2025-10-31T15:14:23.187Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга Вам доставили оборудование:"
+  },
+  {
+    "id": 34572,
+    "create_time": "2025-10-31T16:13:32.036Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Ольга я Вас записал на обучение с Вами свяжутся наши специалисты чтоб Вам назначить время, как привезут мне напишите чтоб зарегистрировать"
+  },
+  {
+    "id": 99653,
+    "create_time": "2025-11-26T09:11:56.949Z",
+    "author_type": "Sale_Manager",
+    "sent_content": "Добрый день"
+  },
+  {
+    "id": 99147,
+    "create_time": "2025-11-25T21:02:59.570Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 99148,
+    "create_time": "2025-11-25T21:03:43.896Z",
+    "author_type": "client",
+    "sent_content": "Никаких накладных"
+  },
+  {
+    "id": 99149,
+    "create_time": "2025-11-25T21:03:54.724Z",
+    "author_type": "client",
+    "sent_content": "Ни серьификата ничего"
+  },
+  {
+    "id": 99154,
+    "create_time": "2025-11-25T21:06:39.708Z",
+    "author_type": "client",
+    "sent_content": "Ни гарантийного талона"
+  },
+  {
+    "id": 99155,
+    "create_time": "2025-11-25T21:07:21.293Z",
+    "author_type": "client",
+    "sent_content": ""
+  },
+  {
+    "id": 99156,
+    "create_time": "2025-11-25T21:07:29.821Z",
+    "author_type": "client",
+    "sent_content": "Совсем другие"
+  }
+]

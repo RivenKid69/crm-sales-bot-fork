@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:import:@/api/request",
+  "summary": "Этот код импортирует функцию `request` из файла `@/api/request` и использует её для отправки GET-запроса на эндпоинт `/ugds`. Это позволяет получать данные с сервера.",
+  "purpose": "Используется для получения данных с сервера через API-запрос",
+  "domain": "api",
+  "key_behaviors": [
+    "отправка GET-запроса",
+    "получение данных с сервера",
+    "использование внешнего модуля",
+    "простой и понятный синтаксис",
+    "работа с API-эндпоинтами"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 786,
+  "output_tokens": 678,
+  "model": "qwen3:14b",
+  "code_hash": "6d515f77964ff50f"
+}

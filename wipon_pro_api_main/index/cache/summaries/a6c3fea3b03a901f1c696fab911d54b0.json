@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/data/ugd-license.repository.ts:import:typeorm",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с сущностью UgdLicenseDao. Это похоже на каталог в библиотеке, где можно искать, добавлять и удалять книги.",
+  "purpose": "Позволяет выполнять операции с данными (CRUD) для сущности UgdLicenseDao через TypeORM.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Создает репозиторий для сущности UgdLicenseDao",
+    "Позволяет выполнять CRUD-операции",
+    "Использует EntityRepository для связывания с сущностью",
+    "Расширяет базовый класс Repository TypeORM"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1010,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "080aaa32bb41d00e"
+}

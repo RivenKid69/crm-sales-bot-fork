@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/dto/post-callback.dto.ts:file",
+  "summary": "Этот файл определяет DTO (Data Transfer Object) для валидации данных, которые приходят в API при обработке callback-запроса. Он использует декораторы для проверки типов и форматов полей, таких как номер телефона и целые числа",
+  "purpose": "Обеспечивает корректную валидацию данных, поступающих в API, чтобы избежать ошибок и обеспечить целостность информации",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка обязательных полей (id, phone, status)",
+    "Проверка формата казахстанского номера телефона",
+    "Валидация типов данных (числа, строки)",
+    "Поддержка необязательных полей (time, err)",
+    "Использование sha1 для проверки целостности данных"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1088,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "49e3af4a6401e910"
+}

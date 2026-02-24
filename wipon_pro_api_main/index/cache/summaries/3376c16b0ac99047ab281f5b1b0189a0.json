@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/data/regions.repository.ts:import:typeorm",
+  "summary": "Этот код создает репозиторий для работы с сущностью RegionDao через TypeORM. Он позволяет читать, создавать и обновлять данные в базе для этой сущности.",
+  "purpose": "Позволяет организовать доступ к данным о регионах в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Чтение данных из базы",
+    "Создание новых записей",
+    "Обновление существующих данных",
+    "Удаление записей",
+    "Маппинг между сущностями и базой"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 995,
+  "output_tokens": 641,
+  "model": "qwen3:14b",
+  "code_hash": "2ec10256eb701e2d"
+}

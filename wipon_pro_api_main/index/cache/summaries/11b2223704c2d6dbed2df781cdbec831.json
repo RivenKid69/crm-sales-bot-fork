@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.module.ts:import:./pdf.controller",
+  "summary": "Этот код создает модуль NestJS для работы с PDF. Он использует контроллер для обработки запросов и сервис для логики, а также подключает модуль пользователей.",
+  "purpose": "Организует PDF-функциональность в отдельный модуль для повторного использования и разделения кода",
+  "domain": "модули и контроллеры (NestJS)",
+  "key_behaviors": [
+    "Создает модуль NestJS",
+    "Использует контроллер для обработки HTTP-запросов",
+    "Использует сервис для бизнес-логики",
+    "Подключает другой модуль (UsersModule)",
+    "Разделяет функциональность в отдельный модуль"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "UsersModule"
+  ],
+  "input_tokens": 1013,
+  "output_tokens": 708,
+  "model": "qwen3:14b",
+  "code_hash": "1d54d696c84b5457"
+}

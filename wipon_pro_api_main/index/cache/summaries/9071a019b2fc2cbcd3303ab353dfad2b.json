@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../users/domain/use-cases/find-user-by-token.use-case",
+  "summary": "Этот код импортирует класс `FindUserByTokenUseCase`, который позволяет находить пользователя по токену. Он используется для проверки аутентификации и получения информации о пользователе на основе токена.",
+  "purpose": "Позволяет проверять пользователя по токену для аутентификации и авторизации",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по токену",
+    "Используется для проверки аутентификации",
+    "Интегрируется с другими сервисами для управления пользователями"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "FindUserByTokenUseCase"
+  ],
+  "input_tokens": 2683,
+  "output_tokens": 677,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

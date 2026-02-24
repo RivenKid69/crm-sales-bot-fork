@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:import:cache-manager",
+  "summary": "Этот код реализует сервис для проверки подлинности товаров через внешние API. Использует кэширование для хранения результатов запросов и логирование для отслеживания активности.",
+  "purpose": "Позволяет проверять подлинность товаров, используя внешние сервисы и кэширование для оптимизации производительности.",
+  "domain": "авторизация/валидация товаров",
+  "key_behaviors": [
+    "Отправка HTTP-запросов для проверки подлинности товаров",
+    "Использование кэширования для хранения результатов запросов",
+    "Интеграция с другими сервисами, такими как Doomguy и FindOrCreateProductUseCase",
+    "Логирование активности для отслеживания ошибок и запросов",
+    "Поддержка работы с конфигурационными файлами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager",
+    "locutus/php/strings/substr"
+  ],
+  "input_tokens": 2881,
+  "output_tokens": 763,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:function:buySubsRequest",
+  "summary": "Эта функция отправляет запрос на покупку подписки, используя данные, переданные в неё. Она взаимодействует с сервером через API, чтобы выполнить операцию покупки.",
+  "purpose": "Используется для покупки подписки в приложении, например, в мобильном приложении или веб-сервисе.",
+  "domain": "платежи",
+  "key_behaviors": [
+    "отправляет POST-запрос на сервер",
+    "принимает данные для покупки",
+    "работает с API",
+    "взаимодействует с сервером",
+    "используется для обработки покупок"
+  ],
+  "dependencies_used": [
+    "request"
+  ],
+  "input_tokens": 876,
+  "output_tokens": 677,
+  "model": "qwen3:14b",
+  "code_hash": "39f9bb99ebd1bf53"
+}

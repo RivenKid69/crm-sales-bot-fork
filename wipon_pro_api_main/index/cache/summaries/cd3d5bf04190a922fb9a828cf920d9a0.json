@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.controller.ts:method:AppController:echo",
+  "summary": "Этот код создает простой эндпоинт, который возвращает сообщение 'status: success' при обращении к нему через HTTP-запрос. Он используется для проверки, работает ли сервер.",
+  "purpose": "Позволяет быстро проверить доступность сервера и корректность его работы",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает GET-запросы по адресу /echo",
+    "Возвращает JSON-ответ с состоянием 'success'",
+    "Использует декораторы для описания эндпоинта",
+    "Не зависит от внешних сервисов",
+    "Служит как тестовый эндпоинт"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1072,
+  "output_tokens": 575,
+  "model": "qwen3:14b",
+  "code_hash": "a7131b70b5280b26"
+}

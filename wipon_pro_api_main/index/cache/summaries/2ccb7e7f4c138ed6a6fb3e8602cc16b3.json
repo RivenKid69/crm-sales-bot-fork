@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/check.dao.ts:property:CheckDao:created_at",
+  "summary": "Этот код описывает структуру таблицы 'checks' в базе данных с помощью TypeORM. Он определяет поля, такие как id, item_id, user_id, и даты создания и обновления, а также связь с другой таблицей 'items'.",
+  "purpose": "Этот код используется для создания и управления записями в таблице 'checks' в базе данных, связывая их с другими сущностями, такими как 'items'.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматически сохраняет дату создания записи",
+    "Автоматически сохраняет дату последнего обновления записи",
+    "Создаёт связь с таблицей 'items' через поле item_id",
+    "Использует типы данных, подходящие для геолокации (latitude, longitude)",
+    "Использует внешние ключи для связи между таблицами"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "ItemDao"
+  ],
+  "input_tokens": 1234,
+  "output_tokens": 757,
+  "model": "qwen3:14b",
+  "code_hash": "11b70f1d672cf2b2"
+}

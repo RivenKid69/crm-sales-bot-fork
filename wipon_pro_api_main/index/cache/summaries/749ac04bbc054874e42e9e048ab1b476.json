@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-sub-for-erp.dto.ts:property:ShowActiveSubForErpDto:phone_number",
+  "summary": "Этот код проверяет, что телефонный номер соответствует формату Казахстана, а BIN — это непустая строка. Это как проверка данных в форме перед отправкой.",
+  "purpose": "Убедиться, что данные, полученные от пользователя, корректны и соответствуют требованиям системы",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка формата телефонного номера Казахстана",
+    "Обязательное заполнение поля телефонного номера",
+    "Проверка, что BIN является строкой",
+    "Обязательное заполнение поля BIN",
+    "Использование валидации перед обработкой данных"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1039,
+  "output_tokens": 638,
+  "model": "qwen3:14b",
+  "code_hash": "5147ad91835160a1"
+}

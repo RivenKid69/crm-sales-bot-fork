@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/assign-device-code.use-case.ts:file",
+  "summary": "Этот код создает класс, который может быть использован в приложении как сервис. Он пустой, но готов к заполнению логикой, например, для назначения кода устройству.",
+  "purpose": "Сервис для выполнения бизнес-логики по назначению кода устройству в приложении",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "Инъекция в другие компоненты",
+    "Пустой метод для будущей логики",
+    "Используется как use-case",
+    "Может быть расширен функционалом",
+    "Служит шаблоном для новых сервисов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 968,
+  "output_tokens": 615,
+  "model": "qwen3:14b",
+  "code_hash": "52b51b79eceaea9e"
+}

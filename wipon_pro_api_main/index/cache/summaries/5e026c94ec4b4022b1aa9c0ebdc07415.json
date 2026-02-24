@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/sms.module.ts:import:./sms.service",
+  "summary": "Этот модуль объединяет сервисы для работы с SMS. Он использует HttpModule для связи с внешним API и включает в себя сервисы для отправки сообщений и других функций.",
+  "purpose": "Обеспечивает отправку SMS и взаимодействие с внешними сервисами в приложении",
+  "domain": "communication",
+  "key_behaviors": [
+    "Интеграция с внешним API через HttpModule",
+    "Использование SmsService для отправки сообщений",
+    "Использование SmscService для обработки SMS",
+    "Использование DoomguyService для дополнительных функций",
+    "Экспорт SmsService для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios"
+  ],
+  "input_tokens": 1101,
+  "output_tokens": 707,
+  "model": "qwen3:14b",
+  "code_hash": "431bdf552fddfd62"
+}

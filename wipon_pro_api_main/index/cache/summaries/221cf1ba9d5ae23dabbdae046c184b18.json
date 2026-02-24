@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/notification.dao.ts:import:typeorm",
+  "summary": "Этот код определяет сущность 'notifications' для работы с базой данных с помощью TypeORM. Он описывает структуру таблицы, включая поля, такие как ID, текст уведомления, флаг прочтения и даты создания, обновления и удаления.",
+  "purpose": "Создает модель данных для хранения и управления уведомлениями в базе данных с использованием TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое присвоение ID",
+    "Хранение текста уведомления",
+    "Отслеживание прочтения уведомления",
+    "Автоматическое заполнение даты создания и обновления",
+    "Поддержка мягкого удаления"
+  ],
+  "dependencies_used": [
+    "typeorm/BaseEntity",
+    "typeorm/Column",
+    "typeorm/CreateDateColumn",
+    "typeorm/DeleteDateColumn",
+    "typeorm/Entity",
+    "typeorm/PrimaryGeneratedColumn",
+    "typeorm/UpdateDateColumn"
+  ],
+  "input_tokens": 1295,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "dca48e73b4438d66"
+}

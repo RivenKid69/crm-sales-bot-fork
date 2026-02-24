@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/get-users-transactions.dto.ts:import:@nestjs/swagger",
+  "summary": "Этот код определяет DTO-класс для фильтрации транзакций пользователей. Он использует валидаторы для проверки данных и декораторы для документации API.",
+  "purpose": "Обеспечивает корректную валидацию параметров запроса и генерацию документации для API-эндпоинта",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверяет, что page является числом",
+    "Ограничивает type значениями 'income' или 'expense'",
+    "Генерирует документацию в Swagger для параметров",
+    "Разрешает опциональные параметры",
+    "Формирует описание для API-документации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1180,
+  "output_tokens": 692,
+  "model": "qwen3:14b",
+  "code_hash": "c3b672b62c595eb9"
+}

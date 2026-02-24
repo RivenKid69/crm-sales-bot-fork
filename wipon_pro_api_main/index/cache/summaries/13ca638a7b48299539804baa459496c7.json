@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.module.ts:import:../../../modules/fcm/fcm.module",
+  "summary": "Этот модуль объединяет сервисы задач, настройки кэша через Redis и интеграцию с FCM и пользовательскими модулями. Он позволяет выполнять фоновые задачи и управлять кэшированием данных.",
+  "purpose": "Обеспечивает выполнение фоновых задач, кэширование данных и интеграцию с внешними сервисами",
+  "domain": "background tasks and caching",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Интегрируется с FCM для отправки уведомлений",
+    "Работает с пользователями через UsersModule",
+    "Выполняет периодические задачи, например, уведомления о заканчивающихся подписках",
+    "Использует HttpModule для HTTP-запросов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store",
+    "FcmModule",
+    "UsersModule"
+  ],
+  "input_tokens": 1474,
+  "output_tokens": 757,
+  "model": "qwen3:14b",
+  "code_hash": "174b7772bcb71f6a"
+}

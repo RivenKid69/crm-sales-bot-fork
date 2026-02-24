@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/devices.module.ts:import:./domain/use-cases/find-users-device-by-at",
+  "summary": "Этот код создает модуль для управления устройствами в приложении. Он использует TypeORM для работы с базой данных и объединяет сервисы, контроллеры и логику поиска устройств.",
+  "purpose": "Организует устройство-ориентированную логику для использования в других частях приложения",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Объединяет сервисы и use-cases для работы с устройствами",
+    "Экспортирует use-cases для других модулей",
+    "Интегрирует контроллер для обработки HTTP-запросов",
+    "Использует внешний модуль UsersModule для взаимодействия с пользователями"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1387,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "4b0cc84680397452"
+}

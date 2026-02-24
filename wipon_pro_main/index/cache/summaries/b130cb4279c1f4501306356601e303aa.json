@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/subscriptions.api.ts:import:@/api/request",
+  "summary": "Этот код импортирует функцию 'request' из модуля '@/api/request' и создает три функции для работы с подписками: получение всех подписок, покупка подписки и возврат средств. Каждая функция отправляет HTTP-запрос на определенный эндпоинт.",
+  "purpose": "Обеспечивает взаимодействие с API для управления подписками и платежами",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение списка всех подписок",
+    "Покупка подписки через API",
+    "Обработка возврата средств",
+    "Использование общего HTTP-клиента 'request'",
+    "Работа с JSON-данными"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 1048,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "39f9bb99ebd1bf53"
+}

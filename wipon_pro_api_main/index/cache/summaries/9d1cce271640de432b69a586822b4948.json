@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/data/users.repository.ts:import:typeorm",
+  "summary": "Этот код определяет репозиторий для работы с пользователями через TypeORM. Он предоставляет методы для поиска, создания и обновления пользователей в базе данных.",
+  "purpose": "Упрощает доступ к данным пользователей и управление ими в приложении",
+  "domain": "база данных, управление пользователями",
+  "key_behaviors": [
+    "Поиск пользователя по номеру телефона",
+    "Создание пользователя по номеру телефона",
+    "Поиск пользователя по ID",
+    "Обновление API-токена пользователя",
+    "Поиск пользователя по токену"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1363,
+  "output_tokens": 656,
+  "model": "qwen3:14b",
+  "code_hash": "9e48a8de21591251"
+}

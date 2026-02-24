@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/presenter/users.controller.ts:import:../../../common/decorators/user.decorator",
+  "summary": "Этот код - контроллер для управления пользователями. Он обрабатывает запросы на получение, обновление и удаление данных пользователя, используя аутентификацию и валидацию данных.",
+  "purpose": "Позволяет управлять пользовательскими данными с защитой от неавторизованных действий",
+  "domain": "управление пользователями",
+  "key_behaviors": [
+    "Получение данных пользователя",
+    "Обновление информации пользователя",
+    "Удаление пользователя",
+    "Использование аутентификации",
+    "Валидация данных через DTO"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1759,
+  "output_tokens": 681,
+  "model": "qwen3:14b",
+  "code_hash": "1808cadd56fd9cc7"
+}

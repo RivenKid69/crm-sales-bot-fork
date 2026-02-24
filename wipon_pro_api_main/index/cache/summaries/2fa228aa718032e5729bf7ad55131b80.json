@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account.dao.ts:property:AccountDao:ledger_id",
+  "summary": "Этот код описывает модель данных для таблицы 'accounts' в базе данных. Он хранит информацию об аккаунтах, включая баланс, связь с леджером и транзакции, а также временные метки создания, обновления и удаления.",
+  "purpose": "Используется для отображения таблицы аккаунтов в базе данных через ORM TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит баланс аккаунта",
+    "Связывает аккаунт с леджером",
+    "Отслеживает время создания/обновления/удаления",
+    "Хранит историю транзакций",
+    "Поддерживает мягкое удаление"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao",
+    "AccountTransactionDao"
+  ],
+  "input_tokens": 1520,
+  "output_tokens": 697,
+  "model": "qwen3:14b",
+  "code_hash": "550426ffa65ba1f2"
+}

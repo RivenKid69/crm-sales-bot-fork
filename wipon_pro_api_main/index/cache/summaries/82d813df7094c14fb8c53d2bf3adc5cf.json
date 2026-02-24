@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/data/feedbacks.repository.ts:import:typeorm",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с сущностью FeedbackMessageDao. Он позволяет выполнять операции с базой данных, такие как сохранение, чтение и обновление данных.",
+  "purpose": "Обеспечивает доступ к данным сущности FeedbackMessageDao через TypeORM, упрощая взаимодействие с базой данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает репозиторий для сущности FeedbackMessageDao",
+    "Использует TypeORM для работы с базой данных",
+    "Позволяет выполнять операции CRUD (создание, чтение, обновление, удаление)",
+    "Интегрируется с другими частями приложения через DAO (Data Access Object)",
+    "Упрощает управление данными в базе"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 940,
+  "output_tokens": 750,
+  "model": "qwen3:14b",
+  "code_hash": "9a0df3fb00c9c35a"
+}

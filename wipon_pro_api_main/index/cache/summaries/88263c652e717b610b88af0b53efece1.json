@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/data/notifications.repository.ts:import:../../../common/dao/notification.dao",
+  "summary": "Этот код создает репозиторий для работы с сущностью NotificationDao через TypeORM. Он наследуется от базового класса Repository, чтобы обеспечить доступ к данным в базе.",
+  "purpose": "Позволяет управлять данными сущности NotificationDao в базе данных через TypeORM.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "создание репозитория для сущности",
+    "наследование от базового класса Repository",
+    "подключение к базе данных через TypeORM"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 859,
+  "output_tokens": 653,
+  "model": "qwen3:14b",
+  "code_hash": "0bedf68bfaa24b4e"
+}

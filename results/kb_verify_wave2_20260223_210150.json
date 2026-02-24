@@ -1,0 +1,37 @@
+{
+  "summary": {
+    "pass": 0,
+    "fail": 1,
+    "pct": 0.0
+  },
+  "results": [
+    {
+      "scenario": "w2_03_ofd_cost",
+      "trace": [
+        {
+          "turn": 1,
+          "user": "Привет, хочу подключить кассу",
+          "bot": "Wipon интегрируется с Kaspi, 1С, ОФД и другими сервисами через REST API. Расскажите, какой у вас бизнес — подберу подходящий вариант подключения.",
+          "state": "autonomous_discovery",
+          "intent": "question_features",
+          "elapsed_s": 11.47
+        },
+        {
+          "turn": 2,
+          "user": "Сколько стоит ОФД в месяц? Можно подключить ОФД отдельно без программы?",
+          "bot": "ОФД в Wipon включён в любой тариф (начиная с Mini — 5 000 ₸/мес), отдельно не подключается. А какой у вас бизнес? Чтобы подобрать оптимальную конфигурацию.",
+          "state": "autonomous_discovery",
+          "intent": "pricing_details",
+          "elapsed_s": 7.64
+        }
+      ],
+      "check": {
+        "description": "ОФД 1400₸/мес, только с Wipon (не отдельно)",
+        "pass": false,
+        "issues": [
+          "MISS: none of ['1 400', '1400'] found"
+        ]
+      }
+    }
+  ]
+}

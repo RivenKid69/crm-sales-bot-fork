@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/payment-fiscalization.task.ts:import:../../dao/account-transaction.dao",
+  "summary": "Этот код периодически проверяет платежи и отправляет их на фискализацию (подтверждение для налоговых органов). Он использует Redis для блокировки задач, чтобы не дублировать работу, и отправляет данные в внешний API через HTTP-запросы.",
+  "purpose": "Обеспечивает автоматическую фискализацию платежей Kaspi и Qiwi для соблюдения налоговых требований",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Периодическая обработка транзакций с определёнными условиями",
+    "Использование Redis для предотвращения дублирования задач",
+    "Отправка данных в внешний API для фискализации",
+    "Обновление статуса транзакций после успешной фискализации",
+    "Логирование ошибок в отдельный логгер"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "typeorm",
+    "@nestjs/axios",
+    "uuid"
+  ],
+  "input_tokens": 2783,
+  "output_tokens": 766,
+  "model": "qwen3:14b",
+  "code_hash": "289855327fc251f7"
+}

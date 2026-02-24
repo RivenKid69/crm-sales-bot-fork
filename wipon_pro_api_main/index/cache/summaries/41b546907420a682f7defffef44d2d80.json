@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/regions/presenter/regions.controller.ts:import:../domain/regions.service",
+  "summary": "Этот код создает контроллер для работы с регионами. Он использует сервис для получения списка регионов и интерсептор для преобразования данных. Также добавлены Swagger-аннотации для документирования API.",
+  "purpose": "Позволяет получать список регионов через HTTP-запрос и документировать этот эндпоинт в Swagger.",
+  "domain": "api",
+  "key_behaviors": [
+    "Получает список регионов через сервис",
+    "Использует интерсептор для преобразования данных",
+    "Добавляет Swagger-документацию для эндпоинта",
+    "Обрабатывает GET-запросы на '/regions'",
+    "Использует NestJS для создания контроллера"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "TransformInterceptor",
+    "RegionsService"
+  ],
+  "input_tokens": 1040,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "8b671451b7dba67f"
+}

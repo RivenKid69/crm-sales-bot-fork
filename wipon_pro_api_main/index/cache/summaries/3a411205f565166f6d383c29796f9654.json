@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/reports/presenter/reports.controller.ts:method:ReportsController:constructor",
+  "summary": "Этот метод обрабатывает POST-запросы для создания отчета. Он использует валидацию данных, аутентификацию и преобразование ответа, чтобы сохранить информацию о проверенном элементе.",
+  "purpose": "Позволяет пользователям отправлять отчеты, проверенные системой, с защитой от неавторизованных действий.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запросов для создания отчета",
+    "Использование валидации данных через ValidationPipe",
+    "Использование аутентификации через AuthGuard",
+    "Преобразование ответа с помощью TransformInterceptor",
+    "Интеграция с Swagger для документирования API"
+  ],
+  "dependencies_used": [
+    "NestJS Controller",
+    "ValidationPipe",
+    "AuthGuard",
+    "TransformInterceptor",
+    "Swagger"
+  ],
+  "input_tokens": 1346,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "52d97f09d0487dda"
+}

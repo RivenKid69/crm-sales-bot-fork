@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/store-subscription.dto.ts:property:StoreSubscriptionDto:lifetime",
+  "summary": "Этот код описывает объект данных (DTO) для создания подписки. Он проверяет, что телефонный номер существует в системе и соответствует формату Казахстана, а также что срок подписки (если указан) является положительным целым числом.",
+  "purpose": "Обеспечивает валидацию данных при создании подписки пользователя",
+  "domain": "подписки, авторизация",
+  "key_behaviors": [
+    "Проверка существования телефона в базе пользователей",
+    "Валидация формата казахстанского номера телефона",
+    "Обязательное поле для телефона",
+    "Ограничение срока подписки минимальным значением 1",
+    "Опциональное поле для срока подписки"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsPhoneExistsInUsers"
+  ],
+  "input_tokens": 1171,
+  "output_tokens": 723,
+  "model": "qwen3:14b",
+  "code_hash": "b6357451b8af90fe"
+}

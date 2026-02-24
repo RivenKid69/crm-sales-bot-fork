@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/update-user-accounts-ledger.use-case.ts:import:../../../../common/dao/account.dao",
+  "summary": "Этот код создает сервис, который обновляет информацию о счете пользователя. Он может делать это напрямую или внутри транзакции, используя репозитории и менеджер транзакций.",
+  "purpose": "Обновление данных счета пользователя в финансовой системе с поддержкой транзакций",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Обновляет данные счета пользователя по его ID",
+    "Поддерживает работу внутри транзакции",
+    "Использует репозитории для взаимодействия с базой данных",
+    "Работает с объектами DAO для маппинга данных",
+    "Подходит для операций, требующих целостности данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "account.dao"
+  ],
+  "input_tokens": 1169,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "18189eb693ee96ff"
+}

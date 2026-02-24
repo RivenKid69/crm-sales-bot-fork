@@ -1,0 +1,269 @@
+[
+  {
+    "scenario": "s3_aggressive_pushy",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Короче мне нужна касса, сколько стоит, без воды",
+        "bot": "Вам подойдёт Wipon Mini — онлайн-касса с фискализацией за 5 000 ₸/месяц.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 4.52
+      },
+      {
+        "turn": 2,
+        "user": "Я спросил цену. Не надо мне ваших вопросов, просто цена",
+        "bot": "Касса Wipon Mini — 5 000 ₸ в месяц. А что именно ломается в текущей системе?",
+        "state": "autonomous_discovery",
+        "intent": "no_need",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 8.02
+      },
+      {
+        "turn": 3,
+        "user": "Дорого. У конкурентов дешевле. Последний шанс — скидка есть?",
+        "bot": "Скидки у нас нет, но Mini включает кассу + облако + фискальный регистратор в одном тарифе — у них такого комплекта точно не будет.",
+        "state": "autonomous_negotiation",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.78
+      },
+      {
+        "turn": 4,
+        "user": "Значит нет скидки? Тогда зачем мне ваш продукт?",
+        "bot": "Вам Wipon Mini — онлайн-касса с фискализацией за 5 000 ₸ в месяц, всё в одном тарифе. А что именно с текущей системой не так, что мешает работать быстрее?",
+        "state": "autonomous_negotiation",
+        "intent": "objection_no_need",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.74
+      },
+      {
+        "turn": 5,
+        "user": "Ладно убедили. Давайте быстрее оформляйте",
+        "bot": "Понимаю, что времени мало. Могу просто прислать краткую информацию — посмотрите когда будет время.",
+        "state": "soft_close",
+        "intent": "fallback_close",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": null,
+        "is_final": true,
+        "elapsed_s": 0.02
+      }
+    ]
+  },
+  {
+    "scenario": "s9_freeloader",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет! Мне нужна касса, но денег сейчас нет совсем",
+        "bot": "Понимаю, денег нет — сложно. У нас касса Mini стоит 5 000 ₸ в месяц, с фискализацией и всем необходимым. А какая у вас точка — магазин, ларек или что-то другое?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 5.03
+      },
+      {
+        "turn": 2,
+        "user": "А бесплатный период есть?",
+        "bot": "А у вас уже есть телефон или почта, чтобы оформить?",
+        "state": "autonomous_closing",
+        "intent": "demo_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 30,
+        "is_final": false,
+        "elapsed_s": 1.87
+      },
+      {
+        "turn": 3,
+        "user": "А можно хотя бы месяц бесплатно попробовать?",
+        "bot": "Месяц попробовать — хорошая идея!А что именно вас волнует в текущей работе, чтобы проверить, как касса решит вашу проблему?",
+        "state": "autonomous_closing",
+        "intent": "objection_timing",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 28,
+        "is_final": false,
+        "elapsed_s": 6.41
+      },
+      {
+        "turn": 4,
+        "user": "А рассрочка 0-0-12 через Каспи есть?",
+        "bot": "Для модели Mini доступна рассрочка 0-0-12 через Kaspi Bank на условиях 5 000 ₸ в месяц без дополнительных переплат. Пожалуйста, уточните номер телефона Kaspi, чтобы я могла помочь с оформлением. Оставите контакт для связи?",
+        "state": "autonomous_closing",
+        "intent": "payment_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 27,
+        "is_final": false,
+        "elapsed_s": 6.81
+      },
+      {
+        "turn": 5,
+        "user": "Ладно а если я приведу клиентов вам, дадите бесплатно?",
+        "bot": "А так не работает — привести клиентов. Но есть рассрочка без переплат: платите по 5 000 ₸/мес через Каспи, а я сейчас оформлю для вас. Оставьте номер телефона, чтобы я подтвердила условия? Готовы подключить?",
+        "state": "autonomous_closing",
+        "intent": "negotiate_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 25,
+        "is_final": false,
+        "elapsed_s": 6.43
+      },
+      {
+        "turn": 6,
+        "user": "Окей, а какой самый минимальный тариф?",
+        "bot": "По стоимости сориентирую в ₸. Дам точный расчёт под ваш кейс в чате.",
+        "state": "autonomous_closing",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 24,
+        "is_final": false,
+        "elapsed_s": 4.24
+      },
+      {
+        "turn": 7,
+        "user": "Думаю можно попробовать. Как подключиться?",
+        "bot": "Отлично, давайте организуем. Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф.",
+        "state": "soft_close",
+        "intent": "demo_request",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": 53,
+        "is_final": false,
+        "elapsed_s": 6.75
+      },
+      {
+        "turn": 8,
+        "user": "ИИН 920304500678, каспи 87081234567",
+        "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+        "state": "soft_close",
+        "intent": "contact_provided",
+        "action": "acknowledge_and_continue",
+        "spin_phase": null,
+        "lead_score": 85,
+        "is_final": false,
+        "elapsed_s": 2.85
+      }
+    ]
+  },
+  {
+    "scenario": "s10a_natural_discovery",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет",
+        "bot": "Привет! Меня зовут Айбота, ваш персональный консультант по Wipon. Расскажите, пожалуйста, чем именно вас заинтересовала наша система?",
+        "state": "greeting",
+        "intent": "greeting",
+        "action": "greet_back",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.41
+      },
+      {
+        "turn": 2,
+        "user": "Мне знакомый посоветовал, у меня магазин продуктов",
+        "bot": "Ого, продуктовый магазин — это классно! А что сейчас больше всего утомляет в учёте? То ли сроки годности сбивают с толку, то ли товар куда-то пропадает?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.48
+      },
+      {
+        "turn": 3,
+        "user": "Да в ауезовском районе, маленький магазин",
+        "bot": "А в магазине много товара с короткими сроками годности? Сейчас как-то приходится следить за этим вручную?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.59
+      },
+      {
+        "turn": 4,
+        "user": "2 продавца, я сам тоже иногда за кассой стою",
+        "bot": "Вот это да, 3 человека — это компактно! А как сейчас с товаром на короткие сроки справляетесь — на листочках?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 6.1
+      },
+      {
+        "turn": 5,
+        "user": "Ну пока на калькуляторе считаем если честно)) Каспи QR есть",
+        "bot": "Каспи QR у вас уже есть — классно! А как сейчас с остальным товаром: например, молочка или мясо, которое быстро портится, как отслеживаете, чтобы не пропало? У нас в системе автоматически ставятся напоминки о сроках годности.",
+        "state": "autonomous_presentation",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 6.88
+      },
+      {
+        "turn": 6,
+        "user": "А у вас прям касса или софт на телефон?",
+        "bot": "У нас есть Wipon — касса на телефон + полный софт для учёта, всё в одном приложении. А что важнее для вас: контроль за сроками годности?",
+        "state": "autonomous_presentation",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 5.78
+      },
+      {
+        "turn": 7,
+        "user": "Интересно. А сколько это стоит?",
+        "bot": "Для вас подойдёт тариф Mini — 5 000 ₸ в месяц. Это касса на телефоне + автоматический контроль за сроками годности и остатками.",
+        "state": "autonomous_negotiation",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 9,
+        "is_final": false,
+        "elapsed_s": 8.7
+      },
+      {
+        "turn": 8,
+        "user": "Хм, надо подумать. А можно попозже вернуться к разговору?",
+        "bot": "Конечно, давайте обсудим позже — когда будете готовы, просто напишите.",
+        "state": "autonomous_negotiation",
+        "intent": "objection_think",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.28
+      }
+    ]
+  }
+]

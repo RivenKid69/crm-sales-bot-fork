@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/accounts.module.ts:import:./domain/use-cases/save-accounts.use-case",
+  "summary": "Этот код создает модуль NestJS для работы со счетами, используя TypeORM для взаимодействия с базой данных и реализуя бизнес-логику через use-case классы. Модуль объединяет репозитории, сервисы, контроллеры и экспортирует ключевые функции для других частей приложения.",
+  "purpose": "Организует логику работы со счетами, обеспечивая разделение данных, бизнес-правил и API-эндпоинтов",
+  "domain": "база данных, финансовые операции, API",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Реализует бизнес-логику через use-case классы",
+    "Объединяет репозитории, сервисы и контроллеры в одном модуле",
+    "Экспортирует use-case для использования в других модулях",
+    "Интегрируется с модулем пользователей (UsersModule)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1610,
+  "output_tokens": 781,
+  "model": "qwen3:14b",
+  "code_hash": "c4b9b766cb1868f1"
+}

@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/presenter/devices.controller.ts:import:../dto/assign-device-code.dto",
+  "summary": "Этот код создает контроллер для управления устройствами. Он обрабатывает POST-запросы для назначения кода устройства и GET-запросы для проверки устройства, используя аутентификацию и валидацию данных.",
+  "purpose": "Обеспечивает функционал назначения и проверки устройств для авторизованных пользователей",
+  "domain": "авторизация, управление устройствами",
+  "key_behaviors": [
+    "Обработка POST-запросов для назначения кода устройства",
+    "Проверка устройства через GET-запрос",
+    "Использование аутентификации через AuthGuard",
+    "Валидация данных через ValidationPipe",
+    "Генерация документации API через Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "DevicesService",
+    "AssignDeviceCodeDto",
+    "CheckDeviceDto",
+    "UserDao",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1870,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "3c3d7e78c2486ad4"
+}

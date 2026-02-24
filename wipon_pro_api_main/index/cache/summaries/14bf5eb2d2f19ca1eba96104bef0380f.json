@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/validate-check-data.dto.ts:property:ValidateCheckDataDto:latitude",
+  "summary": "Это DTO-класс, который используется для валидации данных при проверке предмета. Он содержит обязательные и необязательные поля, такие как тип, код, геолокация и изображение, и отображается в документации API.",
+  "purpose": "Обеспечивает структурированный и валидированный способ передачи данных для проверки предмета через API",
+  "domain": "валидация данных, API",
+  "key_behaviors": [
+    "Проверяет тип данных с помощью декораторов class-validator",
+    "Отображает информацию в Swagger документации",
+    "Поддерживает обязательные и необязательные поля",
+    "Работает с геолокацией и изображениями в Base64",
+    "Используется для передачи данных между клиентом и сервером"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1685,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "9e48673bcae8d196"
+}

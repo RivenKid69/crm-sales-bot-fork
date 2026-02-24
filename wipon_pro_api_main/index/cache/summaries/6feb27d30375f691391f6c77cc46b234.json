@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/dto/generate-invoice.dto.ts:class:GenerateInvoiceDto",
+  "summary": "Этот класс проверяет данные для создания счета. Он убедится, что тип подписки корректный, BIN и номер счета числа, а организация - не пустая строка",
+  "purpose": "Проверка входных данных при генерации счета для корректности и безопасности",
+  "domain": "валидация данных, счета",
+  "key_behaviors": [
+    "Проверяет, что тип подписки из разрешенных вариантов",
+    "Убеждается, что BIN и номер счета - числа",
+    "Проверяет, что организация - не пустая строка",
+    "Обязательная валидация всех полей",
+    "Использует кастомные валидаторы для проверки данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsIn",
+    "IsNotEmpty",
+    "IsString",
+    "IsNumeric"
+  ],
+  "input_tokens": 1181,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "fcb64ead6704fd66"
+}

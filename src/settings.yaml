@@ -96,6 +96,10 @@ enhanced_retrieval:
   min_complexity_length: 30
   rrf_k: 60
   rewrite_min_words: 4
+  factual_state_backfill_max_chars: 1200
+  reranker_top_k: 5
+  reranker_skip_on_direct_factual: true
+  reranker_preserve_exact_on_factual: true
 
 # -----------------------------------------------------------------------------
 # GENERATOR (Генерация ответов)

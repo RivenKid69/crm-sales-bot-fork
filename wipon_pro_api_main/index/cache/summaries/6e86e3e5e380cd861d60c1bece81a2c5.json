@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/dto/check-device.dto.ts:import:class-validator",
+  "summary": "Этот код создает DTO (объект для передачи данных) с полем application_type, которое проверяется на наличие и тип строки. Также добавляется описание для документации API.",
+  "purpose": "Используется для валидации входных данных и генерации документации API в NestJS приложениях",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка что поле не пустое",
+    "Проверка что значение строка",
+    "Добавление описания для Swagger документации",
+    "Обязательное поле в API",
+    "Структурирование данных для передачи"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1068,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "64ad94082b028cb5"
+}

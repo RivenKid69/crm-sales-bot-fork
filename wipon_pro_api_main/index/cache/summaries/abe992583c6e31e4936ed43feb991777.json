@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/presenter/accounts.controller.ts:import:../../../common/dao/user.dao",
+  "summary": "Этот код создает контроллер для получения информации о счетах пользователей. Он использует аутентификацию, преобразование данных и документацию API.",
+  "purpose": "Позволяет безопасно получать данные о счетах авторизованных пользователей через HTTP-запросы",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов на получение счетов",
+    "Требует аутентификации через AuthGuard",
+    "Использует TransformInterceptor для форматирования ответа",
+    "Добавляет документацию через Swagger",
+    "Работает с UserDao для получения данных пользователя"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AccountsService",
+    "AuthGuard",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1311,
+  "output_tokens": 641,
+  "model": "qwen3:14b",
+  "code_hash": "60d205636fc816fd"
+}

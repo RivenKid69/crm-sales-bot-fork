@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/store-subscription.dto.ts:property:StoreSubscriptionDto:phone_number",
+  "summary": "Этот код проверяет данные для создания подписки. Телефон должен быть валидным, существовать в базе и быть заполненным. Опционально можно указать срок действия подписки как число не меньше 1",
+  "purpose": "Обеспечивает корректный ввод данных при регистрации подписки через телефон",
+  "domain": "подписки, авторизация",
+  "key_behaviors": [
+    "Проверка формата казахстанского номера телефона",
+    "Проверка существования телефона в базе данных",
+    "Обязательное поле для заполнения",
+    "Проверка числового значения для срока действия",
+    "Установка минимального значения для срока действия"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsPhoneExistsInUsers"
+  ],
+  "input_tokens": 1160,
+  "output_tokens": 676,
+  "model": "qwen3:14b",
+  "code_hash": "b6357451b8af90fe"
+}

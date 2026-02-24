@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:import:../../common/dao/product.dao",
+  "summary": "Этот код импортирует различные модули и сервисы для работы с продуктами и аутентификацией. Он использует HTTP-запросы, кэширование, логирование и другие утилиты для взаимодействия с внешними API и обработки данных.",
+  "purpose": "Обеспечивает аутентификацию и получение информации о продуктах через внешние API, используя кэширование и логирование для повышения производительности и отладки.",
+  "domain": "api",
+  "key_behaviors": [
+    "Отправка HTTP-запросов к внешним API",
+    "Кэширование результатов для ускорения работы",
+    "Логирование запросов и ответов",
+    "Обработка и парсинг ответов от API",
+    "Использование настроек из конфигурационных файлов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager",
+    "locutus/php/strings/substr",
+    "https"
+  ],
+  "input_tokens": 2760,
+  "output_tokens": 773,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

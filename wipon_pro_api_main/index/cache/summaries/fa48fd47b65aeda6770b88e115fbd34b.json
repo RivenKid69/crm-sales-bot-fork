@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/post-or-update-store.dto.ts:property:PostOrUpdateStoreDto:payer_email",
+  "summary": "Этот класс описывает данные для создания или обновления информации о магазине. Он содержит обязательные и необязательные поля, такие как адреса, BIN, лицензии и контактная информация.",
+  "purpose": "Используется для валидации данных при создании или редактировании информации о магазине в API",
+  "domain": "валидация, api, база данных",
+  "key_behaviors": [
+    "Валидация строковых полей с помощью @IsString",
+    "Обозначение необязательных полей через @IsOptional",
+    "Определение структуры данных для магазина",
+    "Содержит поля для адресов, BIN, лицензий и контактной информации",
+    "Используется как DTO (Data Transfer Object) между клиентом и сервером"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1358,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "71cd55a752853d66"
+}

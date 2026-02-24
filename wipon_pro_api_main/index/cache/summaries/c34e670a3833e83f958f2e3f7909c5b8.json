@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/guards/check-subscription.guard.ts:import:rxjs",
+  "summary": "Этот код проверяет, активна ли подписка пользователя. Если подписка не активна, он блокирует доступ и возвращает ошибку. Использует NestJS и RxJS для проверки прав и обработки запросов.",
+  "purpose": "Ограничивает доступ к определённым маршрутам только пользователям с активной подпиской",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие пользователя в запросе",
+    "Проверяет статус подписки через use-case",
+    "Возвращает ошибку, если подписка не активна",
+    "Использует NestJS для обработки HTTP-запросов",
+    "Использует RxJS для асинхронной обработки данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "http2"
+  ],
+  "input_tokens": 1250,
+  "output_tokens": 715,
+  "model": "qwen3:14b",
+  "code_hash": "a85a31a16ed2f2ea"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/ugd.dao.ts:property:UgdDao:dgd",
+  "summary": "Этот код описывает сущность UgdDao в базе данных, которая хранит информацию об объектах с уникальным идентификатором, названиями на разных языках и связями с другими сущностями StoreDao и DgdDao.",
+  "purpose": "Используется для хранения данных о UGD и их связи с другими объектами в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу в базе данных с именем 'ugds'",
+    "Использует автоматически генерируемый идентификатор (id)",
+    "Хранит названия на русском, казахском и английском языках",
+    "Связывает Ugd с Store через OneToOne",
+    "Связывает Ugd с Dgd через внешний ключ dgd_id"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreDao",
+    "DgdDao"
+  ],
+  "input_tokens": 1381,
+  "output_tokens": 742,
+  "model": "qwen3:14b",
+  "code_hash": "bac098048cd95bdb"
+}

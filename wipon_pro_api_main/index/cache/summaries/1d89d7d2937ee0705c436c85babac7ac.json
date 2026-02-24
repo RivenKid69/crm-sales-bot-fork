@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/payment-fiscalization.task.ts:import:cache-manager",
+  "summary": "Этот код реализует задачу автоматической фискализации платежей. Он периодически проверяет новые транзакции, отправляет их на внешний API для фискализации и обновляет статус в базе данных.",
+  "purpose": "Автоматическая фискализация платежей для соблюдения налоговых требований",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Периодически проверяет новые транзакции в базе данных",
+    "Отправляет данные о транзакциях на внешний API для фискализации",
+    "Обновляет статус фискализации в базе данных",
+    "Использует Redis для синхронизации и предотвращения повторных выполнений задачи",
+    "Логирует ошибки при фискализации"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "uuid",
+    "@nestjs/schedule",
+    "typeorm",
+    "@nestjs/axios"
+  ],
+  "input_tokens": 2754,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "289855327fc251f7"
+}

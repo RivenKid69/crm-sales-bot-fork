@@ -1,0 +1,269 @@
+[
+  {
+    "scenario": "s3_aggressive_pushy",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Короче мне нужна касса, сколько стоит, без воды",
+        "bot": "Минимальная касса Wipon Mini стоит 5 000 ₸/мес. Это онлайн-касса с фискализацией, продажами, наличкой и безналичкой — всё готово сразу.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 5.09
+      },
+      {
+        "turn": 2,
+        "user": "Я спросил цену. Не надо мне ваших вопросов, просто цена",
+        "bot": "Касса Mini — это онлайн-касса с фискализацией, продажами и приёмом наличных/безналичных платежей. 5 000 ₸/мес — полный пакет без скрытых платежей. А что у вас сейчас с фискализацией — есть касса или всё \"на коленке\"?",
+        "state": "autonomous_discovery",
+        "intent": "no_need",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 8.31
+      },
+      {
+        "turn": 3,
+        "user": "Дорого. У конкурентов дешевле. Последний шанс — скидка есть?",
+        "bot": "У нас Mini — 5 000 ₸/мес, всё готово сразу: касса, фискалка, приём платежей без геморроя. А что именно мешает вам сейчас быстрее всего?",
+        "state": "autonomous_negotiation",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.62
+      },
+      {
+        "turn": 4,
+        "user": "Значит нет скидки? Тогда зачем мне ваш продукт?",
+        "bot": "Понимаю, что времени мало. Могу просто прислать краткую информацию — посмотрите когда будет время.",
+        "state": "soft_close",
+        "intent": "fallback_close",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": null,
+        "is_final": true,
+        "elapsed_s": 0.28
+      }
+    ]
+  },
+  {
+    "scenario": "s9_freeloader",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Привет! Мне нужна касса, но денег сейчас нет совсем",
+        "bot": "Для кассы у нас есть Mini — всего 5 000 ₸ в месяц. А что у вас за бизнес?",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 4.9
+      },
+      {
+        "turn": 2,
+        "user": "А бесплатный период есть?",
+        "bot": "А чем занимается ваш бизнес? Оставьте, пожалуйста, телефон или email.",
+        "state": "autonomous_closing",
+        "intent": "demo_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 34,
+        "is_final": false,
+        "elapsed_s": 2.03
+      },
+      {
+        "turn": 3,
+        "user": "А можно хотя бы месяц бесплатно попробовать?",
+        "bot": "Пока что у нас такого нет, но давайте подберём подходящий вариант с учётом вашего бюджета. А что, если начать с небольшой подписки — например, касса плюс фискализация всего за 5 000 ₸ в месяц? Это даёт полноценный старт без крупных вложений.",
+        "state": "autonomous_closing",
+        "intent": "objection_timing",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 33,
+        "is_final": false,
+        "elapsed_s": 6.82
+      },
+      {
+        "turn": 4,
+        "user": "А рассрочка 0-0-12 через Каспи есть?",
+        "bot": "Рассрочка 0-0-12 доступна на все тариф Каспи. Например, на Mini — всего 5 000 ₸ в месяц, а выплачивать можно будет по 5 000 ₸/мес раз в год.",
+        "state": "autonomous_closing",
+        "intent": "payment_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 31,
+        "is_final": false,
+        "elapsed_s": 5.27
+      },
+      {
+        "turn": 5,
+        "user": "Ладно а если я приведу клиентов вам, дадите бесплатно?",
+        "bot": "Интересная идея! Но бесплатный тариф у нас нет — зато есть рассрочка 0-0-12 на все подписки. Например, Mini — 5 000 ₸/мес, платите раз в год.",
+        "state": "autonomous_closing",
+        "intent": "negotiate_terms",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 29,
+        "is_final": false,
+        "elapsed_s": 5.38
+      },
+      {
+        "turn": 6,
+        "user": "Окей, а какой самый минимальный тариф?",
+        "bot": "Самый минимальный тариф — Mini за 5 000 ₸/мес, включает кассу и фискализацию. А в каком формате удобнее получить счёт — на почту или в WhatsApp? Оставьте, пожалуйста, адрес электронной почты или номер телефона.",
+        "state": "autonomous_closing",
+        "intent": "pricing_details",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 28,
+        "is_final": false,
+        "elapsed_s": 2.83
+      },
+      {
+        "turn": 7,
+        "user": "Думаю можно попробовать. Как подключиться?",
+        "bot": "Ваше решение ценится, рада, что вы задумались о таком важном инструменте для бизнеса. Если позже понадобится помощь или уточнения — обращайтесь, готова всегда поддержать!",
+        "state": "soft_close",
+        "intent": "demo_request",
+        "action": "soft_close",
+        "spin_phase": null,
+        "lead_score": 56,
+        "is_final": false,
+        "elapsed_s": 5.32
+      },
+      {
+        "turn": 8,
+        "user": "ИИН 920304500678, каспи 87081234567",
+        "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+        "state": "soft_close",
+        "intent": "contact_provided",
+        "action": "acknowledge_and_continue",
+        "spin_phase": null,
+        "lead_score": 89,
+        "is_final": false,
+        "elapsed_s": 2.24
+      }
+    ]
+  },
+  {
+    "scenario": "s10b_enterprise_discovery",
+    "trace": [
+      {
+        "turn": 1,
+        "user": "Добрый день",
+        "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Что конкретно интересует в нашей системе для вашего бизнеса?",
+        "state": "greeting",
+        "intent": "greeting",
+        "action": "greet_back",
+        "spin_phase": null,
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.19
+      },
+      {
+        "turn": 2,
+        "user": "У нас сеть магазинов косметики, 5 точек в Астане",
+        "bot": "Понятно! 5 магазинов косметики — это уже серьёзная сеть. Расскажите, а что сейчас больше всего напрягает в учёте товара и работе касс?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 1.5
+      },
+      {
+        "turn": 3,
+        "user": "Сейчас используем 1С, но она постоянно глючит",
+        "bot": "А, 1С глючит на 5 точках? У нас синхронизация в реальном времени — никаких задержек. А что именно тормозит: скорость касс?",
+        "state": "autonomous_discovery",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "discovery",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 2.33
+      },
+      {
+        "turn": 4,
+        "user": "Нет, 1С Розница. Проблема в том что данные не синхронизируются между точками",
+        "bot": "В Wipon данные между точками синхронизируются оперативно. Если у вас есть конкретные вопросы по 1С — например, связанные с частотой сбоев или сложностью конфигурации, уточните, пожалуйста, детали.",
+        "state": "autonomous_presentation",
+        "intent": "info_provided",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 0,
+        "is_final": false,
+        "elapsed_s": 3.04
+      },
+      {
+        "turn": 5,
+        "user": "А у вас как с этим? Данные реально в реальном времени видны?",
+        "bot": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon.",
+        "state": "autonomous_presentation",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 5,
+        "is_final": false,
+        "elapsed_s": 7.52
+      },
+      {
+        "turn": 6,
+        "user": "И сотрудники на местах не смогут подтасовать данные?",
+        "bot": "В Wipon защита данных реализована на уровне банковских стандартов. Каждая операция получает уникальный идентификатор, что исключает возможность её подделки. Что касается скорости поиска отчётов: в системе предусмотрены инструменты для быстрого доступа к документам непосредственно из интерфейса кассы.",
+        "state": "autonomous_presentation",
+        "intent": "objection_risk",
+        "action": "autonomous_respond",
+        "spin_phase": "presentation",
+        "lead_score": 4,
+        "is_final": false,
+        "elapsed_s": 6.08
+      },
+      {
+        "turn": 7,
+        "user": "Звучит хорошо. Сколько будет стоить на 5 точек?",
+        "bot": "Для 5 точек подойдёт тариф — 700 000 ₸/год. Он включает синхронизацию между всеми магазинами и защиту данных на уровне банков. А как сейчас организована кассовая отчётность в каждой точке?",
+        "state": "autonomous_negotiation",
+        "intent": "agreement",
+        "action": "autonomous_respond",
+        "spin_phase": "negotiation",
+        "lead_score": 7,
+        "is_final": false,
+        "elapsed_s": 2.76
+      },
+      {
+        "turn": 8,
+        "user": "Давайте созвонимся на этой неделе, обсудим детально",
+        "bot": "Давайте на этой неделе обсудим всё детально. Оставьте, пожалуйста, телефон или email.",
+        "state": "autonomous_closing",
+        "intent": "callback_request",
+        "action": "autonomous_respond",
+        "spin_phase": "closing",
+        "lead_score": 32,
+        "is_final": false,
+        "elapsed_s": 1.8
+      },
+      {
+        "turn": 9,
+        "user": "Четверг после обеда, мой номер 87012345678",
+        "bot": "Четверг в 14:00 — отлично! Как к вам обращаться? Мы свяжемся прямо по вашему номеру, чтобы не терять время.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "spin_phase": null,
+        "lead_score": 65,
+        "is_final": true,
+        "elapsed_s": 1.76
+      }
+    ]
+  }
+]

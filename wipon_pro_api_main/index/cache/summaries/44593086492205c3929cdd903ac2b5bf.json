@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/send-notification.dto.ts:file",
+  "summary": "Этот код определяет DTO-класс для отправки уведомлений, используя валидационные декораторы, чтобы убедиться, что сообщение не пустое и является строкой.",
+  "purpose": "Обеспечивает корректную валидацию данных перед отправкой уведомления в системе.",
+  "domain": "API, валидация данных",
+  "key_behaviors": [
+    "Проверка, что сообщение не пустое",
+    "Проверка типа данных (строка)",
+    "Использование декораторов для валидации",
+    "Сервисный класс для передачи данных",
+    "Подготовка данных к обработке"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "typescript"
+  ],
+  "input_tokens": 1011,
+  "output_tokens": 696,
+  "model": "qwen3:14b",
+  "code_hash": "8733612efe98c97d"
+}

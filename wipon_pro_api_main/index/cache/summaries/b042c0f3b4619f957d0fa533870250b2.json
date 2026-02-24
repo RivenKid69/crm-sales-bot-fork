@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/data/checks.repository.ts:import:../../../common/helpers/dataToResponse/checks-data-to-response",
+  "summary": "Этот код - репозиторий для работы с проверками (checks) в базе данных. Он умеет считать проверки по пользователю, получать уникальные проверки и загружать проверки с деталями товаров.",
+  "purpose": "Обеспечивает доступ к данным проверок для отображения в интерфейсе пользователя и аналитики",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Считает общее количество проверок за месяц",
+    "Находит уникальные проверки по пользователю",
+    "Загружает проверки с деталями товаров",
+    "Поддерживает пагинацию для отображения данных",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "check.dao",
+    "common.utils.common",
+    "dataToResponse.checks-data-to-response"
+  ],
+  "input_tokens": 2826,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "6ef7aaa354c2b1ba"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/dto/get-users-check.dto.ts:property:GetUsersChecksDto:status",
+  "summary": "Этот код создает свойство 'status' в DTO-классе, которое позволяет фильтровать пользователей по статусу. Оно может принимать значения 'valid', 'fake' или 'atlas' и не является обязательным.",
+  "purpose": "Используется для фильтрации данных в API-запросах к пользователю",
+  "domain": "api",
+  "key_behaviors": [
+    "Опциональное поле (может отсутствовать)",
+    "Ограничивает значения только тремя вариантами",
+    "Отображается в документации API",
+    "Проверяет корректность введенных данных",
+    "Используется в запросах к серверу"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "nestjs/swagger"
+  ],
+  "input_tokens": 1065,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "8eaa7e0a542eabc6"
+}

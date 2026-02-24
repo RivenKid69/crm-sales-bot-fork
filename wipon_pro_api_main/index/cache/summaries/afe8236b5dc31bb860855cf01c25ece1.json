@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/presenter/checks.controller.ts:import:../../../common/dao/user.dao",
+  "summary": "Этот код создает контроллер для обработки запросов, связанных с проверкой товаров. Он использует валидацию данных, аутентификацию, загрузку файлов и документацию через Swagger.",
+  "purpose": "Обработка API-запросов для проверки оригинальности товаров, управления подписками и загрузки изображений",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения проверок пользователей",
+    "Обработка POST-запросов для проверки товаров и загрузки изображений",
+    "Использование валидации данных через ValidationPipe",
+    "Интеграция с Swagger для документации API",
+    "Использование аутентификации и ограничений скорости через guards"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "@nestjs/platform-express",
+    "ChecksService",
+    "AuthGuard",
+    "UserDao",
+    "FileInterceptor"
+  ],
+  "input_tokens": 2737,
+  "output_tokens": 750,
+  "model": "qwen3:14b",
+  "code_hash": "3516f3694956962a"
+}

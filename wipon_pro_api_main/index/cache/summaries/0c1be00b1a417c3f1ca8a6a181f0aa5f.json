@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account-transaction.dao.ts:import:./account.dao",
+  "summary": "Этот код определяет сущность для хранения информации о транзакциях в базе данных. Использует декораторы TypeORM для описания полей и связей между таблицами.",
+  "purpose": "Создание модели данных для работы с транзакциями в финансовой системе",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу account_transactions в базе данных",
+    "Определяет поля: id, сумма, временные метки, связь с аккаунтом",
+    "Использует JSONB для хранения неструктурированных данных",
+    "Устанавливает связь 'многие к одному' с AccountDao",
+    "Поддерживает числовые типы с заданной точностью"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "AccountDao"
+  ],
+  "input_tokens": 1495,
+  "output_tokens": 708,
+  "model": "qwen3:14b",
+  "code_hash": "98365361d7082291"
+}

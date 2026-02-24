@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/presenter/billings.controller.ts:import:@nestjs/common",
+  "summary": "Этот код создает контроллер для обработки платежей через разные сервисы (Qiwi, Kaspi и т.д.). Он использует декораторы NestJS для маршрутизации и защиты, а также интерцепторы для обработки ответов.",
+  "purpose": "Обработка HTTP-запросов для различных платежных систем с защитой и трансформацией данных",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Обработка платежей через Qiwi, Kaspi, Kassa24 и другие сервисы",
+    "Фильтрация IP-адресов с помощью IpFilterGuard",
+    "Использование интерцептора TransformInterceptor для трансформации ответов",
+    "Использование декоратора @Provider для указания провайдера платежа",
+    "Исключение контроллера из документации Swagger с помощью @ApiExcludeController"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1800,
+  "output_tokens": 748,
+  "model": "qwen3:14b",
+  "code_hash": "595d99ff0e49fa97"
+}

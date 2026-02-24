@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../users/domain/use-cases/create-user-by-phone-use-case",
+  "summary": "Этот код импортирует различные сервисы и use-cases, которые используются в процессе авторизации пользователя. Он позволяет находить, создавать и управлять пользователями, проверять коды подтверждения, отправлять SMS и управлять токенами.",
+  "purpose": "Обеспечивает функционал авторизации и управления пользователями в приложении.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по номеру телефона",
+    "Создание пользователя по номеру телефона",
+    "Проверка кода подтверждения",
+    "Генерация и управление токенами",
+    "Отправка SMS на телефон пользователя"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "FindUsersAuthCodeUseCase",
+    "SmsService",
+    "SetUsersTokenUseCase"
+  ],
+  "input_tokens": 2542,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

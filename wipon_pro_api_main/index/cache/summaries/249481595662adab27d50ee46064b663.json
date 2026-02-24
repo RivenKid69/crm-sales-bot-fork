@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/data/notifications.repository.ts:import:typeorm",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM, а также подключает DAO-класс для уведомлений. Он создаёт репозиторий, который позволяет работать с уведомлениями в базе данных.",
+  "purpose": "Обеспечивает доступ к данным уведомлений через TypeORM для выполнения операций CRUD",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использование TypeORM для работы с базой данных",
+    "Связь с DAO-классом уведомлений",
+    "Реализация репозитория для управления уведомлениями",
+    "Поддержка операций с базой данных",
+    "Интеграция с другими частями приложения"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 991,
+  "output_tokens": 694,
+  "model": "qwen3:14b",
+  "code_hash": "0bedf68bfaa24b4e"
+}

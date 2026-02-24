@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/region.dao.ts:property:RegionDao:latitude",
+  "summary": "Этот код описывает сущность 'RegionDao', которая хранит информацию о регионах. У нее есть поля для названия на разных языках, координат и связи с объектом GeoNodeDao.",
+  "purpose": "Используется для хранения данных о регионах с поддержкой нескольких языков и географических координат",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит название региона на русском, казахском и английском языках",
+    "Сохраняет широту и долготу региона",
+    "Создает связь один-к-одному с GeoNodeDao",
+    "Автоматически генерирует уникальный идентификатор",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "GeoNodeDao"
+  ],
+  "input_tokens": 1296,
+  "output_tokens": 667,
+  "model": "qwen3:14b",
+  "code_hash": "11548a555887c851"
+}

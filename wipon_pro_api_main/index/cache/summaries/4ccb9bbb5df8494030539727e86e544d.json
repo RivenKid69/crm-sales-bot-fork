@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../../regions/domain/use-cases/find-region-by-id.use-case",
+  "summary": "Этот код реализует сервис для работы со складами, валидации данных и взаимодействия с базой данных. Использует TypeORM для запросов и кейсы для поиска регионов и ДГД.",
+  "purpose": "Обрабатывает запросы по проверке лицензий, получению информации о складах и обновлению данных",
+  "domain": "управление складами и бизнес-данными",
+  "key_behaviors": [
+    "Валидация входных данных через DTO",
+    "Поиск регионов и ДГД по названию",
+    "Работа с базой данных через TypeORM",
+    "Получение информации о складах по пользователю",
+    "Проверка активных подписок у пользователей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3040,
+  "output_tokens": 736,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

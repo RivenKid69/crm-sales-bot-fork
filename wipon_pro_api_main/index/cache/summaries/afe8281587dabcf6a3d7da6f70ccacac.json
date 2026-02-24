@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/use-cases/activate-users-subscription.use-case.ts:import:../../../../common/services/push/push.service",
+  "summary": "Этот код - сервис, который активирует подписку пользователя. Он отключает старую подписку, создает новую с указанным сроком, отправляет уведомление о активации и работает с базой данных через TypeORM.",
+  "purpose": "Управление подписками пользователей с возможностью отправки уведомлений",
+  "domain": "подписки, уведомления, база данных",
+  "key_behaviors": [
+    "Отключение активной подписки пользователя",
+    "Создание новой подписки с указанным сроком",
+    "Отправка уведомления через push-сервис",
+    "Работа с базой данных через TypeORM",
+    "Поддержка нескольких типов подписок"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "nestjs-i18n"
+  ],
+  "input_tokens": 2054,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "349f18e3da29c9c0"
+}

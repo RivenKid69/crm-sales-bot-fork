@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/presenter/feedbacks.controller.ts:method:FeedbacksController:constructor",
+  "summary": "Этот код создает контроллер для обработки запросов на отправку обратной связи. Он использует защиту авторизации, преобразование данных и работает с сервисом обратной связи.",
+  "purpose": "Обрабатывает POST-запросы для отправки обратной связи, проверяя авторизацию пользователя и используя DTO для валидации данных.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запросов на отправку обратной связи",
+    "Использование AuthGuard для проверки авторизации",
+    "Применение TransformInterceptor для преобразования данных",
+    "Использование DTO для валидации входных данных",
+    "Интеграция с FeedbacksService для логики бизнес-правил"
+  ],
+  "dependencies_used": [
+    "AuthGuard",
+    "TransformInterceptor",
+    "FeedbacksService",
+    "PostFeedbackDto",
+    "UserDecorator"
+  ],
+  "input_tokens": 1270,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "b0e8372d7500cec5"
+}

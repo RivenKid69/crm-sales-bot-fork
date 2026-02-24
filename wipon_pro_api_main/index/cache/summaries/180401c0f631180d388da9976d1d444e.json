@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-users-all-active-devices.use-case.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает сервис в NestJS, который использует TypeORM для получения всех активных устройств пользователя из базы данных. Он использует репозиторий DevicesRepository для выполнения запроса.",
+  "purpose": "Позволяет получать данные об активных устройствах пользователя для дальнейшего использования в приложении.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует NestJS для создания сервиса",
+    "Использует TypeORM для работы с базой данных",
+    "Получает активные устройства пользователя",
+    "Возвращает данные в виде промиса",
+    "Использует репозиторий для выполнения запроса"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1032,
+  "output_tokens": 705,
+  "model": "qwen3:14b",
+  "code_hash": "334dc0b132f6351c"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/dgd.dao.ts:import:typeorm",
+  "summary": "Этот код определяет сущность DgdDao с помощью TypeORM, которая хранит данные с названиями на русском, казахском и английском языках, а также устанавливает связи с другими сущностями StoreDao и UgdDao.",
+  "purpose": "Создает модель данных для хранения информации с многоязычными названиями и связями в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу 'dgds' в базе данных",
+    "Хранит названия на трех языках",
+    "Устанавливает связь один к одному с StoreDao",
+    "Устанавливает связь один к одному с UgdDao",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1224,
+  "output_tokens": 726,
+  "model": "qwen3:14b",
+  "code_hash": "7235eb794e1f6925"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/domain/use-cases/find-ugd-by-dgd-id.use-case.ts:import:../../../../common/dao/ugd.dao",
+  "summary": "Этот код создает сервис, который ищет запись UGD по ID DGD с помощью репозитория. Если запись не найдена, возвращается null.",
+  "purpose": "Позволяет быстро получать данные UGD по связанному DGD ID в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет данные по числовому/строковому ID",
+    "Возвращает null при отсутствии результата",
+    "Использует TypeORM репозиторий для доступа к БД",
+    "Работает с объектами UgdDao",
+    "Поддерживает асинхронные операции"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1215,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "8c5306aeaf3f1551"
+}

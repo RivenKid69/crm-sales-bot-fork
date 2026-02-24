@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/dto/login.dto.ts:import:class-validator",
+  "summary": "Этот код определяет DTO-класс для обработки данных входа. Он использует валидаторы для проверки телефона, кода подтверждения и типа приложения, а также добавляет описания для документации API.",
+  "purpose": "Обеспечивает валидацию данных при входе и помогает создавать документацию API для эндпоинта авторизации.",
+  "domain": "авторизация, API",
+  "key_behaviors": [
+    "Проверка обязательного телефона в формате Казахстана",
+    "Валидация 6-значного кода подтверждения",
+    "Ограничение типа приложения значениями 'desktop' или 'mobile_scan'",
+    "Генерация документации API через Swagger",
+    "Поддержка опциональных полей"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1340,
+  "output_tokens": 699,
+  "model": "qwen3:14b",
+  "code_hash": "a570ba58be82c9e0"
+}

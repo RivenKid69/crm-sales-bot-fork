@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/ugds.api.ts:file",
+  "summary": "Этот файл создает функцию для получения данных с сервера по адресу '/ugds' с помощью GET-запроса. Он использует вспомогательную функцию request для отправки запроса.",
+  "purpose": "Позволяет получить данные из API для отображения в приложении",
+  "domain": "api",
+  "key_behaviors": [
+    "Отправляет GET-запрос на сервер",
+    "Получает данные с эндпоинта /ugds",
+    "Использует централизованный API-клиент"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 937,
+  "output_tokens": 609,
+  "model": "qwen3:14b",
+  "code_hash": "6d515f77964ff50f"
+}

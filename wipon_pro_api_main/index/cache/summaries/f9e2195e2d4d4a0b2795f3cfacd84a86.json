@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/validations/is-entity-exists.ts:function:IsRegionExists",
+  "summary": "Этот код проверяет, существует ли регион с заданным ID в базе данных. Он использует DAO-класс RegionDao для поиска регионов и возвращает true, если регион найден.",
+  "purpose": "Убедиться, что вводимые данные содержат действительный ID региона",
+  "domain": "валидация данных",
+  "key_behaviors": [
+    "Проверка существования региона по ID",
+    "Использование DAO для взаимодействия с базой данных",
+    "Асинхронная проверка",
+    "Интеграция с фреймворком валидации",
+    "Работа с объектами в формате DTO"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "RegionDao"
+  ],
+  "input_tokens": 2521,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "6765c3cb44480c13"
+}

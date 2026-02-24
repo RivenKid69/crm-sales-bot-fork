@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/domain/ugd-license.service.ts:import:typeorm",
+  "summary": "Этот код создает сервис, который использует TypeORM для выполнения сложного SQL-запроса, объединяющего таблицы лицензий и магазинов. Сервис использует репозиторий и менеджер базы данных для получения данных.",
+  "purpose": "Обрабатывает специфические запросы к базе данных, которые не покрываются стандартными репозиториями",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Выполнение кастомных SQL-запросов",
+    "Использование репозиториев TypeORM",
+    "Объединение данных из разных таблиц",
+    "Фильтрация по статусу и другим полям",
+    "Возврат результатов в определенном формате"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1416,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "57150818572c473e"
+}

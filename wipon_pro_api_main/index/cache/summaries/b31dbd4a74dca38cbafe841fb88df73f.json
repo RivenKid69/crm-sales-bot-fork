@@ -1,0 +1,16 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/static/logs/test.ts:file",
+  "summary": "Это пустой TypeScript-файл, который может служить шаблоном для будущего кода. В нём пока нет функций или логики.",
+  "purpose": "Используется как пример структуры файла или место для добавления кода позже",
+  "domain": "пример/шаблон",
+  "key_behaviors": [
+    "Пустой файл",
+    "Служит шаблоном",
+    "Не содержит функциональности"
+  ],
+  "dependencies_used": [],
+  "input_tokens": 861,
+  "output_tokens": 484,
+  "model": "qwen3:14b",
+  "code_hash": "e3b0c44298fc1c14"
+}

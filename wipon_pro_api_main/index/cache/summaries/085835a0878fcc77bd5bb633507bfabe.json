@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/domain/checks.service.ts:import:../../../common/helpers/save-image",
+  "summary": "Этот код импортирует необходимые модули, сервисы, репозитории и хелперы для работы с проверками (checks) в приложении. Он использует DTO, настройки, логику для работы с изображениями и внешние сервисы.",
+  "purpose": "Обеспечивает функциональность для обработки проверок, хранения данных, работы с изображениями и взаимодействия с внешними сервисами.",
+  "domain": "база данных, утилиты, api, логирование",
+  "key_behaviors": [
+    "Использует репозитории для работы с базой данных",
+    "Обрабатывает изображения и сохраняет их на диск",
+    "Интерагирует с внешними сервисами через HTTP-запросы",
+    "Использует DTO для валидации данных",
+    "Логирует ошибки и обрабатывает исключения"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "fs",
+    "path",
+    "check-disk-space",
+    "winston"
+  ],
+  "input_tokens": 4528,
+  "output_tokens": 794,
+  "model": "qwen3:14b",
+  "code_hash": "d6783ee5404b7867"
+}

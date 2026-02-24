@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/presenter/accounts.controller.ts:import:../../auth/guard/auth.guard",
+  "summary": "Этот код создает контроллер для работы с аккаунтами пользователей. Он защищает маршрут с помощью аутентификации, трансформирует ответы и добавляет документацию через Swagger.",
+  "purpose": "Контроллер обеспечивает безопасный доступ к данным аккаунтов и предоставляет API для получения информации о пользователях.",
+  "domain": "api",
+  "key_behaviors": [
+    "Защита маршрута с помощью аутентификации",
+    "Трансформация ответов с помощью интерцептора",
+    "Добавление документации через Swagger",
+    "Получение данных аккаунтов пользователя",
+    "Использование сервиса для работы с аккаунтами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "TransformInterceptor",
+    "AccountsService",
+    "UserDao"
+  ],
+  "input_tokens": 1179,
+  "output_tokens": 724,
+  "model": "qwen3:14b",
+  "code_hash": "60d205636fc816fd"
+}

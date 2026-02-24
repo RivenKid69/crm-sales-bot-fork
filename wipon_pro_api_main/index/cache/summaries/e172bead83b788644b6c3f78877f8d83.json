@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/data/licenses.repository.ts:import:../../../common/dao/license.dao",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с сущностью LicenseDao. Он позволяет выполнять операции с базой данных, такие как сохранение, чтение и удаление данных.",
+  "purpose": "Обеспечивает удобный способ взаимодействия с таблицей license в базе данных через объектно-ориентированный интерфейс",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Работа с сущностями через репозиторий",
+    "Использование TypeORM для управления базой данных",
+    "Поддержка операций CRUD (создание, чтение, обновление, удаление)"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 975,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "8715ba6ea44ff7d4"
+}

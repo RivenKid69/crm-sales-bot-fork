@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:method:BillingService:constructor",
+  "summary": "Этот метод создает и настраивает учетные записи для пользователя, проверяя существующие данные и создавая новые, если их нет. Он работает с леджерами, хрониками и различными провайдерами для учета транзакций.",
+  "purpose": "Инициализация системы учета для пользователя при его регистрации или при необходимости создания новых счетов.",
+  "domain": "бухгалтерия, финансовые операции",
+  "key_behaviors": [
+    "Создание леджера для пользователя, если он еще не существует",
+    "Инициализация хроники леджера с датой начала",
+    "Обновление учетных записей пользователя на основе леджера",
+    "Подсчет количества операторов для разных провайдеров",
+    "Создание учетных записей для каждого провайдера"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase",
+    "SaveAccountsUseCase",
+    "SumLedgerAccountsBalanceUseCase"
+  ],
+  "input_tokens": 2779,
+  "output_tokens": 781,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

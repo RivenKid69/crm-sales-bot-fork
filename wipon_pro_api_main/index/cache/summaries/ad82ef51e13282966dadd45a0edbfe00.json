@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../users/domain/use-cases/set-users-token.use-case",
+  "summary": "Этот код импортирует классы и сервисы, необходимые для реализации функционала аутентификации. Он использует кейсы для работы с пользователями, устройствами, кодами подтверждения и другими сервисами, такими как SMS и биллинг.",
+  "purpose": "Обеспечивает интеграцию и использование различных сервисов для реализации процесса аутентификации и управления пользователями",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Использует кейсы для поиска и создания пользователей",
+    "Работает с кодами подтверждения и токенами",
+    "Интегрирует SMS-сервис для отправки сообщений",
+    "Использует настройки из конфигурационных файлов",
+    "Взаимодействует с сервисами биллинга и хранения данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LoginDto",
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "SmsService",
+    "BillingService"
+  ],
+  "input_tokens": 2705,
+  "output_tokens": 780,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

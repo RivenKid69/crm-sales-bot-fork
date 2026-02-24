@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:method:SubscriptionsService:: UserDao) {\n  ",
+  "summary": "Этот метод проверяет, есть ли у пользователя активная подписка по номеру телефона. Сначала ищет пользователя, потом проверяет наличие активной подписки в базе данных и возвращает информацию о ней или ошибку, если ничего не найдено.",
+  "purpose": "Используется для проверки статуса подписки пользователя перед предоставлением доступа к функционалу приложения",
+  "domain": "управление подписками",
+  "key_behaviors": [
+    "Поиск пользователя по номеру телефона",
+    "Проверка наличия активной подписки",
+    "Возврат информации о подписке или ошибки",
+    "Использование репозитория для работы с подписками",
+    "Обработка ошибок при отсутствии пользователя или подписки"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "SubscriptionRepository",
+    "HttpException"
+  ],
+  "input_tokens": 2696,
+  "output_tokens": 726,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

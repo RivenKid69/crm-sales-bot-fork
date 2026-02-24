@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/presenter/dgds.controller.ts:method:DgdsController:constructor",
+  "summary": "Этот код создает контроллер для обработки GET-запросов к эндпоинту '/dgds'. Он использует сервис DgdsService для получения данных и интерцептор TransformInterceptor для преобразования ответа. Добавлены метаданные Swagger для документирования API.",
+  "purpose": "Позволяет получать список объектов Dgds через HTTP-запрос и форматировать ответ согласно требованиям клиентов",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает GET-запросы к '/dgds'",
+    "Использует DgdsService для получения данных",
+    "Применяет TransformInterceptor к ответу",
+    "Добавляет Swagger-теги для документации",
+    "Возвращает список Dgds в формате, удобном для клиентов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "DgdsService",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1213,
+  "output_tokens": 741,
+  "model": "qwen3:14b",
+  "code_hash": "027c2ba1f53d9fad"
+}

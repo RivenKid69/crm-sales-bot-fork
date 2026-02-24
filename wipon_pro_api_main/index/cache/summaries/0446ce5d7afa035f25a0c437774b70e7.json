@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store-type.dao.ts:class:StoreTypeDao",
+  "summary": "Этот класс описывает сущность 'store_types' в базе данных. У неё есть уникальный идентификатор и названия на русском, казахском и английском языках, а также связь с классом StoreDao",
+  "purpose": "Используется для хранения информации о типах магазинов и их связи с другими сущностями",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание уникального идентификатора для каждой записи",
+    "Хранение названия на трёх языках",
+    "Установление связи один к одному с классом StoreDao"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreDao"
+  ],
+  "input_tokens": 1104,
+  "output_tokens": 700,
+  "model": "qwen3:14b",
+  "code_hash": "4d6156095f0b2253"
+}

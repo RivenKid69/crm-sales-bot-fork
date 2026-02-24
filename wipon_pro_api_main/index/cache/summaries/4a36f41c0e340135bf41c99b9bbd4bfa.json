@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/count-ledger-accounts-providers.use-case.ts:class:CountLedgerAccountsProvidersUseCase",
+  "summary": "Этот класс считает количество аккаунтов в определённом леджере, принадлежащих конкретному провайдеру. Он использует репозиторий для доступа к данным и возвращает число.",
+  "purpose": "Позволяет быстро получить количество аккаунтов определённого провайдера в конкретном леджере для аналитики или отчётов",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Считает аккаунты по фильтрам ledger_id и provider",
+    "Использует TypeORM для работы с базой данных",
+    "Поддерживает внедрение зависимостей через NestJS",
+    "Возвращает результат как число",
+    "Асинхронно выполняет запрос"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1146,
+  "output_tokens": 718,
+  "model": "qwen3:14b",
+  "code_hash": "ef7cb88f856a7280"
+}

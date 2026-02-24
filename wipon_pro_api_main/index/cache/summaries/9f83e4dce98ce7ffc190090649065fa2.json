@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:../../../modules/accounts/domain/use-cases/sum-ledger-accounts-balance.use-case",
+  "summary": "Этот код отвечает за создание и управление финансовыми счетами пользователя, проверяя наличие записей в бухгалтерском учете и создавая новые, если они отсутствуют. Использует специальные инструменты для работы с базой данных и вычисления балансов.",
+  "purpose": "Обеспечивает корректное создание и обновление финансовых счетов для пользователей в системе бухгалтерского учета",
+  "domain": "бухгалтерский учет, финансовые операции",
+  "key_behaviors": [
+    "Создание новых записей в бухгалтерском учете, если они отсутствуют",
+    "Обновление данных о счетах пользователя",
+    "Работа с базой данных через TypeORM",
+    "Использование специальных use-case для вычисления балансов и количества операторов",
+    "Поддержка транзакций для обеспечения целостности данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase",
+    "SaveAccountsUseCase",
+    "SumLedgerAccountsBalanceUseCase"
+  ],
+  "input_tokens": 2761,
+  "output_tokens": 810,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

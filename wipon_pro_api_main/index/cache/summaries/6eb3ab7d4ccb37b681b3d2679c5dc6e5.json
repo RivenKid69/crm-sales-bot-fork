@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/presenter/sms.controller.ts:import:../domain/smsc.service",
+  "summary": "Этот код создает контроллер для обработки POST-запросов на эндпоинт '/smsc/callback'. Он использует DTO для валидации данных и передает их в сервис для обработки.",
+  "purpose": "Обработка входящих SMS-запросов от внешних систем и передача их на обработку в сервис.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка POST-запросов на '/smsc/callback'",
+    "Использование DTO для валидации данных",
+    "Использование интерцептора для преобразования данных",
+    "Интеграция с сервисом для обработки данных",
+    "Исключение контроллера из документации Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "ValidationPipe",
+    "TransformInterceptor",
+    "PostCallbackDto",
+    "SmscService"
+  ],
+  "input_tokens": 1093,
+  "output_tokens": 733,
+  "model": "qwen3:14b",
+  "code_hash": "7cceea5fdf18ad59"
+}

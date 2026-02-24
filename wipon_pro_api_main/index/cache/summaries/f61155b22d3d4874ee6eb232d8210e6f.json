@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/subscription.dao.ts:property:SubscriptionDao:id",
+  "summary": "Этот код описывает структуру таблицы 'subscriptions' в базе данных. Он определяет поля для хранения информации о подписках, включая идентификатор, статус, данные о платеже и временные метки",
+  "purpose": "Используется для хранения данных о подписках пользователей в приложении",
+  "domain": "подписки, SaaS, платежи",
+  "key_behaviors": [
+    "Создает таблицу в базе данных",
+    "Хранит идентификатор подписки",
+    "Отслеживает активность подписки",
+    "Сохраняет информацию о платежной карте",
+    "Записывает временные метки (создание, обновление, удаление)"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "typeorm/decorators"
+  ],
+  "input_tokens": 1274,
+  "output_tokens": 634,
+  "model": "qwen3:14b",
+  "code_hash": "08dac1712468bc24"
+}

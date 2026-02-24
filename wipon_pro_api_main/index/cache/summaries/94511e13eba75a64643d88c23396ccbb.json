@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/tasks.module.ts:import:./tasks.service",
+  "summary": "Этот код создает модуль для управления задачами в приложении. Он использует кэш Redis, интегрируется с FCM для уведомлений и подключается к модулям пользователей и HTTP-запросам.",
+  "purpose": "Обеспечивает выполнение фоновых задач, таких как отправка уведомлений и связь лицензий с хранилищами",
+  "domain": "task scheduling",
+  "key_behaviors": [
+    "Использует Redis для кэширования данных",
+    "Отправляет push-уведомления через FCM",
+    "Работает с пользователями из UsersModule",
+    "Выполняет HTTP-запросы через HttpModule",
+    "Обрабатывает задачи по таймеру"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/axios",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 1451,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "174b7772bcb71f6a"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/notifications.module.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает модуль для работы с уведомлениями в приложении. Он использует TypeORM для работы с базой данных, подключает модули пользователей и FCM, и содержит сервисы для отправки уведомлений.",
+  "purpose": "Обеспечивает логику и инфраструктуру для отправки и хранения уведомлений в приложении",
+  "domain": "уведомления, мессенджер",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Интегрируется с FCM для push-уведомлений",
+    "Экспортирует сервис для использования в других модулях",
+    "Подключает модуль пользователей для работы с данными"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "UsersModule",
+    "FcmModule"
+  ],
+  "input_tokens": 1256,
+  "output_tokens": 751,
+  "model": "qwen3:14b",
+  "code_hash": "472bfba0612d5b93"
+}

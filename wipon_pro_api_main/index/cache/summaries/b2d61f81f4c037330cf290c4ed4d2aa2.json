@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/use-cases/save-accounts.use-case.ts:import:../../../../common/dao/account.dao",
+  "summary": "Этот код создает сервис для сохранения данных аккаунтов. Он может сохранять аккаунты как обычно, так и в рамках транзакции, используя репозиторий для работы с базой данных",
+  "purpose": "Позволяет сохранять данные аккаунтов в базу данных, обеспечивая поддержку транзакций",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Сохраняет массив аккаунтов в базу данных",
+    "Поддерживает работу в рамках транзакции",
+    "Использует репозиторий для взаимодействия с базой данных",
+    "Работает с объектами AccountDao",
+    "Использует TypeORM для управления транзакциями"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 1050,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "5817af3179c3c297"
+}

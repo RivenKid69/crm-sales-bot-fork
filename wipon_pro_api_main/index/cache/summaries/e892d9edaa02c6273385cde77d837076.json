@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/item-data-to-response.ts:import:./product-data-to-response",
+  "summary": "Этот код формирует данные о товаре в удобном для передачи формате. Он берет информацию из объекта ItemDao, обрабатывает атрибуты и возвращает структурированный объект с полями id, product, status и другими данными.",
+  "purpose": "Используется для подготовки данных к выводу в API или интерфейс пользователя",
+  "domain": "api",
+  "key_behaviors": [
+    "Форматирует данные товара в структурированный объект",
+    "Маскирует часть кода товара (например, ***1234)",
+    "Использует вспомогательные функции для обработки атрибутов",
+    "Возвращает null, если данные отсутствуют или не подходят",
+    "Использует внешнюю библиотеку для обработки строк"
+  ],
+  "dependencies_used": [
+    "locutus"
+  ],
+  "input_tokens": 1591,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "6740c87ea2c4e889"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-sub-for-erp.dto.ts:import:class-validator",
+  "summary": "Этот код импортирует валидаторы из библиотеки class-validator, которые используются для проверки данных в классе DTO. Он проверяет, что телефонный номер и BIN не пустые и соответствуют определенным форматам.",
+  "purpose": "Обеспечить корректность данных, передаваемых в API, и предотвратить ошибки из-за некорректного ввода",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка, что телефонный номер валиден для Казахстана",
+    "Проверка, что поля не пустые",
+    "Проверка, что BIN является строкой",
+    "Упрощает обработку ошибок в API",
+    "Увеличивает надежность и безопасность приложения"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 1053,
+  "output_tokens": 608,
+  "model": "qwen3:14b",
+  "code_hash": "5147ad91835160a1"
+}

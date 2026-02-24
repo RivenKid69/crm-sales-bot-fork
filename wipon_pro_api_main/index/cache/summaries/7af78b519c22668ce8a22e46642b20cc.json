@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/xml.ts:function:<any>, xm",
+  "summary": "Этот код преобразует объекты и массивы в XML-формат. В TypeScript реализована только часть функционала, а функция array2xml пока пустая. В оригинальном PHP-коде она обрабатывает вложенные массивы и добавляет атрибуты",
+  "purpose": "Генерация XML-документов из структурированных данных для обмена данными между системами",
+  "domain": "XML-генерация, API-ответы, данные для экспорта",
+  "key_behaviors": [
+    "Конвертация объектов в XML",
+    "Обработка вложенных массивов",
+    "Добавление атрибутов к XML-элементам",
+    "Поддержка кодировок UTF-8 и Windows-1251",
+    "Работа с разными типами данных"
+  ],
+  "dependencies_used": [
+    "fast-xml-parser"
+  ],
+  "input_tokens": 1729,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "bc056e2148c96762"
+}

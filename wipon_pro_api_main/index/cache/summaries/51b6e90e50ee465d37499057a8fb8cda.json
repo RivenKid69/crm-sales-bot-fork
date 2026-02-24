@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/presenter/accounts.controller.ts:import:@nestjs/common",
+  "summary": "Этот код создает контроллер в NestJS для получения информации об аккаунтах пользователей. Он использует аутентификацию, трансформирует ответы и добавляет документацию через Swagger.",
+  "purpose": "Позволяет безопасно получать данные аккаунтов авторизованных пользователей через REST API",
+  "domain": "api",
+  "key_behaviors": [
+    "Аутентификация через AuthGuard",
+    "Трансформация ответов с помощью интерцептора",
+    "Документация через Swagger UI",
+    "Получение данных пользователя через декоратор @User()",
+    "Использование сервиса AccountsService для логики получения данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AccountsService",
+    "AuthGuard",
+    "UserDao",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1258,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "60d205636fc816fd"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/presenter/devices.controller.ts:class:DevicesController",
+  "summary": "Этот контроллер обрабатывает запросы, связанные с устройствами. Он позволяет привязать код устройства к пользователю и проверить его, используя аутентификацию и валидацию данных.",
+  "purpose": "Обеспечивает безопасное взаимодействие с устройствами через API для авторизации и проверки устройств пользователей",
+  "domain": "устройства, авторизация",
+  "key_behaviors": [
+    "Привязка кода устройства к пользователю",
+    "Проверка устройства пользователя",
+    "Использование JWT-токенов для аутентификации",
+    "Валидация входных данных",
+    "Формирование документации API через Swagger"
+  ],
+  "dependencies_used": [
+    "NestJS (Controller, Get, Post, UseGuards, UseInterceptors, UsePipes, ValidationPipe)",
+    "Swagger (ApiBearerAuth, ApiTags, ApiOperation, ApiBody, ApiOkResponse)",
+    "DevicesService",
+    "AuthGuard",
+    "TransformInterceptor",
+    "UserDao"
+  ],
+  "input_tokens": 1789,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "3c3d7e78c2486ad4"
+}

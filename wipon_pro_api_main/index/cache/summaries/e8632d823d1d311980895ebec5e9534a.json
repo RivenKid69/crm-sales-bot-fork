@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/version/version.controller.ts:import:@nestjs/swagger",
+  "summary": "Этот код создает контроллер для проверки версий мобильных и настольных приложений. Он использует Swagger для документирования API и интерцептор для преобразования ответов.",
+  "purpose": "Позволяет получать текущие версии приложений и документировать API-эндпоинты",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка версии мобильного приложения через URL-параметр",
+    "Проверка версии настольного приложения через URL-параметр",
+    "Использование Swagger для документирования API",
+    "Применение интерцептора для преобразования ответов",
+    "Использование сервиса для получения версий приложений"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1297,
+  "output_tokens": 709,
+  "model": "qwen3:14b",
+  "code_hash": "c1f412f2bb1df155"
+}

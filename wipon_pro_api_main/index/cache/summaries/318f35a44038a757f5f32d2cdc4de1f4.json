@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/presenter/licenses.controller.ts:method:LicensesController:getLicense",
+  "summary": "Этот контроллер обрабатывает HTTP-запросы для получения и проверки лицензий. Он использует аутентификацию, валидацию данных, переводы и имеет несколько эндпоинтов для разных действий.",
+  "purpose": "Обеспечивает доступ к функциональности лицензий через API с защитой и валидацией данных",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET-запросов для получения лицензии",
+    "Использование аутентификации через AuthGuard",
+    "Валидация данных с помощью ValidationPipe",
+    "Поддержка международных переводов через I18nService",
+    "Имеет отдельные эндпоинты для проверки и тестирования"
+  ],
+  "dependencies_used": [
+    "AuthGuard",
+    "ValidationPipe",
+    "I18nService",
+    "TransformInterceptor",
+    "LicensesService"
+  ],
+  "input_tokens": 1551,
+  "output_tokens": 740,
+  "model": "qwen3:14b",
+  "code_hash": "c6bfb5217b093c37"
+}

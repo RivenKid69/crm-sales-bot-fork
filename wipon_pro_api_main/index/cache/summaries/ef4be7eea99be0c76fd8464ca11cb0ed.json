@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:method:BillingService: number,\n    r",
+  "summary": "Этот метод создает и настраивает финансовые счета для пользователя, проверяя существующие записи в бухгалтерском учете и создавая новые, если их нет. Он использует различные сервисы для обновления данных и подсчета провайдеров.",
+  "purpose": "Инициализация финансовой структуры пользователя для отслеживания транзакций и баланса",
+  "domain": "бухгалтерский учет, платежи",
+  "key_behaviors": [
+    "Создание нового леджера для пользователя при его отсутствии",
+    "Инициализация хроники леджера с датой начала",
+    "Обновление учета пользовательских счетов",
+    "Подсчет количества провайдеров для различных платежных систем",
+    "Сохранение данных в базу с использованием транзакций"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase",
+    "SaveAccountsUseCase",
+    "SumLedgerAccountsBalanceUseCase"
+  ],
+  "input_tokens": 2816,
+  "output_tokens": 789,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

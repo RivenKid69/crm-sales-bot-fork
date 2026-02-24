@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/store/modules/company/index.ts:import:vuex",
+  "summary": "Этот код настраивает Vuex-модуль для управления данными компании. Он получает данные с API, сохраняет их в состоянии, обновляет локальное хранилище и перенаправляет пользователя при необходимости.",
+  "purpose": "Централизованное управление данными компании в приложении",
+  "domain": "state management",
+  "key_behaviors": [
+    "Получение данных с API (компания, UGDS, DGDS)",
+    "Обновление состояния Vuex",
+    "Синхронизация с localStorage",
+    "Перенаправление по маршрутам при ошибке",
+    "Работа с типизированными действиями и мутациями"
+  ],
+  "dependencies_used": [
+    "vuex",
+    "axios (через api/*.api)"
+  ],
+  "input_tokens": 3043,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "34d439fdd0d5a6a8"
+}

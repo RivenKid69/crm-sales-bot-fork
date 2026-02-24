@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:method:BfAuthenticityService:constructor",
+  "summary": "Этот метод отправляет запрос к внешнему API для проверки подлинности товара и создает или находит продукт в системе на основе полученных данных. Он использует кэш, логирование и другие сервисы для выполнения задачи.",
+  "purpose": "Проверить подлинность товара через внешний API и создать или найти соответствующий продукт в системе",
+  "domain": "авторизация/проверка подлинности товаров",
+  "key_behaviors": [
+    "Отправляет HTTP-запросы к внешнему API",
+    "Использует кэш для хранения данных",
+    "Создает или находит продукт в системе",
+    "Парсит и обрабатывает ответы от API",
+    "Логирует действия для отслеживания процесса"
+  ],
+  "dependencies_used": [
+    "HttpService (для HTTP-запросов)",
+    "FindOrCreateProductUseCase (для работы с продуктами)",
+    "Cache (для кэширования данных)",
+    "DoomguyService (для дополнительных функций)",
+    "appConfig и bfConfig (для настроек)"
+  ],
+  "input_tokens": 2966,
+  "output_tokens": 790,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

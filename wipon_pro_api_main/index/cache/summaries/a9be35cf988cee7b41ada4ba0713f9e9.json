@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/check-api-key.guard.ts:import:../../config/app.config",
+  "summary": "Этот код - защитный механизм (guard) в NestJS, который проверяет валидность API-ключа у авторизованного пользователя. Он использует данные из базы и генерирует ключ на основе URL, тела запроса и кода устройства.",
+  "purpose": "Обеспечивает безопасность API, проверяя, что ключ соответствует текущему пользователю и устройству.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверяет наличие пользователя в системе",
+    "Генерирует API-ключ на основе данных запроса и устройства",
+    "Сравнивает переданный ключ с сгенерированным",
+    "Возвращает ошибку, если ключ неверный или подписка отсутствует",
+    "Использует CRC32 и MD5 для хеширования данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "express",
+    "locutus/php/strings/crc32",
+    "locutus/php/strings/substr"
+  ],
+  "input_tokens": 2830,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "e3ef3a07b02c2c82"
+}

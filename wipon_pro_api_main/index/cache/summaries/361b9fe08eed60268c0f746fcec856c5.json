@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/domain/use-cases/find-or-create-item.use-case.ts:class:FindOrCreateItemUseCase",
+  "summary": "Этот класс ищет элемент в базе данных по типу и коду. Если элемент найден, он возвращает его. Если нет — создаёт новый с текущими датами создания и обновления.",
+  "purpose": "Обеспечивает уникальное создание или получение элемента, чтобы избежать дублирования данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет элемент по заданным критериям",
+    "Создаёт элемент, если он не найден",
+    "Использует текущие даты для полей created_at и updated_at",
+    "Работает с репозиторием для взаимодействия с базой данных",
+    "Возвращает объект ItemDao"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "ItemsRepository",
+    "ItemDao"
+  ],
+  "input_tokens": 1123,
+  "output_tokens": 729,
+  "model": "qwen3:14b",
+  "code_hash": "590047becf005a07"
+}

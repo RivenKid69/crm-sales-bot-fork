@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/dto/post-transfer.dto.ts:class:PostTransferDto",
+  "summary": "Этот класс используется для валидации данных при переводе между пользователями. Он проверяет, что идентификаторы отправителя и получателя не пустые и являются числами.",
+  "purpose": "Обеспечивает корректность данных при переводе средств между пользователями в приложении",
+  "domain": "валидация данных, API-запросы, бизнес-логика",
+  "key_behaviors": [
+    "Проверка, что поля from_user_id и to_user_id не пустые",
+    "Проверка, что значения являются числами",
+    "Использование валидации из общих модулей",
+    "Подготовка данных для дальнейшей обработки",
+    "Обработка ошибок валидации"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsNumeric (из common/validations)"
+  ],
+  "input_tokens": 1131,
+  "output_tokens": 674,
+  "model": "qwen3:14b",
+  "code_hash": "b4fecf32c5078b3c"
+}

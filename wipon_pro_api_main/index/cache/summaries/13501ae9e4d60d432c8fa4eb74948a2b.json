@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/domain/accounts.service.ts:method:AccountsService:formatAccountsToResponse",
+  "summary": "Метод `formatAccountsToResponse` преобразует массив объектов счетов и данные о леджере в удобный для отображения формат. Он добавляет код леджера к каждому счету и возвращает массив сформатированных объектов.",
+  "purpose": "Упрощает отображение информации о счетах пользователя в интерфейсе приложения",
+  "domain": "база данных, утилиты",
+  "key_behaviors": [
+    "Преобразует данные из DAO в удобный формат",
+    "Добавляет код леджера к каждому счету",
+    "Возвращает массив сформатированных объектов",
+    "Использует данные из другого сервиса",
+    "Обрабатывает отсутствие данных"
+  ],
+  "dependencies_used": [
+    "AccountDao",
+    "LedgerDao"
+  ],
+  "input_tokens": 1316,
+  "output_tokens": 709,
+  "model": "qwen3:14b",
+  "code_hash": "fdb479782a52e2aa"
+}

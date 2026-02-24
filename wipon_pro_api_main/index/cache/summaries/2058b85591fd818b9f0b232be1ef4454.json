@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/new-form-of-saving-store.dto.ts:file",
+  "summary": "Этот код - DTO (Data Transfer Object) для создания новой формы сохранения магазина. Он проверяет данные, поступающие в API, на корректность с помощью валидаций, например, что поля не пустые, формат email правильный, номера бинов имеют 12 цифр и т.д.",
+  "purpose": "Обеспечивает валидацию данных при создании новой формы сохранения магазина в системе",
+  "domain": "API, валидация данных",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Валидация формата email",
+    "Проверка длины и формата бинов (12 цифр)",
+    "Проверка существования сущностей (DGD, UGD)",
+    "Генерация документации Swagger"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 2429,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "52d57c9a1bf1dae6"
+}

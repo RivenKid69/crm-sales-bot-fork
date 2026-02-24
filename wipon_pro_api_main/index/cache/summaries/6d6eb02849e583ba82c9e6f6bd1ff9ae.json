@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugd-licenses/ugd-licenses.controller.ts:import:./domain/ugd-license.service",
+  "summary": "Этот код создает контроллер в NestJS, который обрабатывает POST-запросы по адресу '/ugd-licenses/test' и использует сервис для выполнения тестовой операции.",
+  "purpose": "Позволяет тестировать функциональность сервиса через HTTP-запросы",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает POST-запросы",
+    "Использует сервис для выполнения логики",
+    "Привязывает URL-маршрут к методу",
+    "Использует DI для инъекции сервиса",
+    "Создает REST-эндпоинт для тестирования"
+  ],
+  "dependencies_used": [
+    "@nestjs/common"
+  ],
+  "input_tokens": 1084,
+  "output_tokens": 603,
+  "model": "qwen3:14b",
+  "code_hash": "aeda1afdccb78ecd"
+}

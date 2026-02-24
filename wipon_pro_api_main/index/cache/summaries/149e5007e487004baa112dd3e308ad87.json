@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/excise-hashes.dao.ts:property:ExciseHashesDao:saved_at",
+  "summary": "Этот код определяет сущность для хранения хэшей в базе данных. У нее есть уникальный идентификатор, сам хэш и дата сохранения. Класс отображается на таблицу 'excise-hashs', где 'saved_at' хранит дату и время сохранения записи.",
+  "purpose": "Используется для хранения хэшей с меткой времени их сохранения в базе данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое присвоение уникального ID",
+    "Хранение хэшей в виде строки",
+    "Запись времени сохранения в формате даты",
+    "Использование TypeORM для маппинга на таблицу"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1068,
+  "output_tokens": 720,
+  "model": "qwen3:14b",
+  "code_hash": "dd1c102a8479e6c0"
+}

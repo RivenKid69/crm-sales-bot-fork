@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/pdf/pdf.service.ts:import:express",
+  "summary": "Этот код создает сервис для генерации счетов-фактур. В нем есть методы для подготовки данных и (в комментариях) генерации PDF, но основная логика пока не реализована",
+  "purpose": "Обработка создания счетов для подписок в системе",
+  "domain": "база данных, утилиты",
+  "key_behaviors": [
+    "Подготовка данных для счета",
+    "Форматирование дат и цен",
+    "Генерация уникального номера счета",
+    "Поддержка разных типов подписок",
+    "Работа с файловой системой"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "express",
+    "path",
+    "fs"
+  ],
+  "input_tokens": 3168,
+  "output_tokens": 699,
+  "model": "qwen3:14b",
+  "code_hash": "9f9f22739ed08564"
+}

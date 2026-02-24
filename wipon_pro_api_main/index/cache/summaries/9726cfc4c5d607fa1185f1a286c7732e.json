@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/dto/post-or-update-store.dto.ts:property:PostOrUpdateStoreDto:buisness_store_name",
+  "summary": "Этот код описывает DTO (Data Transfer Object) для создания или обновления информации о магазине. Он использует валидацию, чтобы убедиться, что обязательные поля заполнены, а необязательные, например, bin, являются строками, если они есть.",
+  "purpose": "Обеспечивает корректный формат данных при создании или обновлении информации о магазине в API",
+  "domain": "валидация данных, API, бизнес-логика",
+  "key_behaviors": [
+    "Проверка обязательных полей (например, license_number)",
+    "Разрешение необязательных строковых полей (например, payer_bin)",
+    "Структурирование данных магазина (адреса, юридическое название)",
+    "Использование типов данных (числа, строки)",
+    "Подготовка данных для сохранения в базу"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "TypeScript"
+  ],
+  "input_tokens": 1386,
+  "output_tokens": 749,
+  "model": "qwen3:14b",
+  "code_hash": "71cd55a752853d66"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/tasks/payment-fiscalization.task.ts:import:uuid",
+  "summary": "Этот код импортирует необходимые зависимости для работы с кэшем, HTTP-запросами, базой данных и генерацией уникальных идентификаторов. Он используется в задаче фискализации платежей, которая периодически обрабатывает транзакции и отправляет их на внешний API.",
+  "purpose": "Подготовка окружения для фискализации платежей, включая работу с кэшем, базой данных и HTTP-запросами",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Использует кэш для предотвращения параллельного выполнения задачи",
+    "Отправляет данные транзакций на внешний API",
+    "Работает с базой данных через TypeORM",
+    "Генерирует уникальные идентификаторы с помощью библиотеки uuid",
+    "Использует HTTP-запросы через NestJS HttpService"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "cache-manager",
+    "uuid",
+    "@nestjs/schedule",
+    "@nestjs/axios",
+    "typeorm"
+  ],
+  "input_tokens": 2783,
+  "output_tokens": 796,
+  "model": "qwen3:14b",
+  "code_hash": "289855327fc251f7"
+}

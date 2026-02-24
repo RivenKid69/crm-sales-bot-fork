@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/product.dao.ts:property:ProductDao:name",
+  "summary": "Этот код описывает структуру таблицы 'products' в базе данных. Каждый продукт имеет уникальный идентификатор, тип, название, организацию и связь с объектом 'ItemDao'.",
+  "purpose": "Используется для хранения информации о продуктах и их связи с другими сущностями в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создаёт таблицу 'products' в базе данных",
+    "Хранит основные свойства продукта (название, тип, организация)",
+    "Устанавливает связь один-к-одному с объектом 'ItemDao'",
+    "Автоматически генерирует уникальный ID для каждого продукта",
+    "Использует аннотации TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "ItemDao"
+  ],
+  "input_tokens": 1167,
+  "output_tokens": 617,
+  "model": "qwen3:14b",
+  "code_hash": "e8e21d09ba6dff9d"
+}

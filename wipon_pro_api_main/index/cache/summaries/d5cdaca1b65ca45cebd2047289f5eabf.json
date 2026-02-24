@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/items.module.ts:import:./domain/use-cases/count-item-by-excise-code.use-case",
+  "summary": "Этот модуль настраивает работу с предметами в приложении. Он подключает базу данных через TypeORM и предоставляет несколько функций для работы с предметами: создание, поиск, подсчет по коду, связь с продуктами.",
+  "purpose": "Организует логику работы с предметами в приложении, чтобы другие части кода могли использовать эти функции",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание новых предметов",
+    "Поиск предметов по коду",
+    "Подсчет предметов по коду акциза",
+    "Связь предметов с продуктами",
+    "Отвязка предметов от продуктов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1410,
+  "output_tokens": 683,
+  "model": "qwen3:14b",
+  "code_hash": "65f90da87e1e7913"
+}

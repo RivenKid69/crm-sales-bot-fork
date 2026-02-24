@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/domain/transactions.service.ts:import:../dto/post-transfer.dto",
+  "summary": "Этот код импортирует необходимые зависимости для работы с транзакциями пользователей. Он использует кейсы для поиска аккаунтов, обработки транзакций, управления подписками и взаимодействия с сервисами, такими как billing и push.",
+  "purpose": "Обеспечивает обработку транзакций, проверку пользователей и управление подписками в приложении.",
+  "domain": "база данных, api, утилиты",
+  "key_behaviors": [
+    "Поиск транзакций пользователя",
+    "Обработка перевода между пользователями",
+    "Проверка наличия пользователя и его счета",
+    "Управление подписками и активацией",
+    "Использование сервисов billing и push"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "luxon",
+    "nestjs-i18n"
+  ],
+  "input_tokens": 2474,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "759ff281f4fed029"
+}

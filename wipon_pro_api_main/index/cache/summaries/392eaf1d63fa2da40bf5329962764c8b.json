@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/send-notification.dto.ts:class:SendNotificationDto",
+  "summary": "Этот класс проверяет, что сообщение не пустое и является строкой перед отправкой уведомления. Он использует специальные пометки для валидации данных.",
+  "purpose": "Убедиться, что данные для уведомления корректны перед их использованием",
+  "domain": "API, валидация данных",
+  "key_behaviors": [
+    "Проверка, что сообщение не пустое",
+    "Проверка типа данных (строка)",
+    "Используется для передачи данных между слоями приложения",
+    "Простой пример DTO (объект данных)",
+    "Помогает избежать ошибок с некорректными данными"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 994,
+  "output_tokens": 682,
+  "model": "qwen3:14b",
+  "code_hash": "8733612efe98c97d"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/domain/auth.service.ts:import:../../../common/dao/user.dao",
+  "summary": "Этот код импортирует различные сервисы и use-cases для работы с пользователями, устройствами, кодами авторизации и другими сущностями. Он используется в классе AuthService для обработки логина и других операций, связанных с аутентификацией.",
+  "purpose": "Обеспечивает логику аутентификации и авторизации пользователей в приложении.",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Поиск пользователя по номеру телефона",
+    "Создание пользователя при отсутствии",
+    "Генерация и проверка кодов авторизации",
+    "Работа с токенами для аутентификации",
+    "Интеграция с SMS-сервисом и биллингом"
+  ],
+  "dependencies_used": [
+    "FindUserByPhoneUseCase",
+    "CreateUserByPhoneUseCase",
+    "FindUsersAuthCodeUseCase",
+    "SmsService",
+    "BillingService"
+  ],
+  "input_tokens": 2534,
+  "output_tokens": 753,
+  "model": "qwen3:14b",
+  "code_hash": "808fa8055bf1c4ae"
+}

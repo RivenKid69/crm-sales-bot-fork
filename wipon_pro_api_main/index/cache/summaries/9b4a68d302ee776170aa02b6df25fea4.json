@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/data/store-types.repository.ts:import:../../../common/dao/store-type.dao",
+  "summary": "Этот код импортирует классы EntityRepository и Repository из библиотеки TypeORM и создает репозиторий для работы с сущностью StoreTypeDao. Класс StoreTypesRepository расширяет базовый репозиторий, чтобы добавить специфичные методы для этой сущности.",
+  "purpose": "Позволяет управлять данными StoreTypeDao в базе данных через TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание репозитория для сущности StoreTypeDao",
+    "Использование TypeORM для взаимодействия с БД",
+    "Расширение базового репозитория для добавления кастомной логики"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 984,
+  "output_tokens": 717,
+  "model": "qwen3:14b",
+  "code_hash": "eed0db9453330a24"
+}

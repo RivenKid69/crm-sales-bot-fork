@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/accounts/presenter/accounts.controller.ts:method:AccountsController:getUsersAccounts",
+  "summary": "Этот метод получает информацию об аккаунтах пользователя после аутентификации. Использует интерцептор для преобразования данных и документирует API через Swagger.",
+  "purpose": "Позволяет авторизованным пользователям получать данные их аккаунтов в безопасном и структурированном виде",
+  "domain": "авторизация, api, база данных",
+  "key_behaviors": [
+    "Требует JWT-токена для доступа",
+    "Преобразует данные с помощью интерцептора",
+    "Документирует API через Swagger",
+    "Использует сервис для получения данных из базы",
+    "Работает с объектом пользователя"
+  ],
+  "dependencies_used": [
+    "AuthGuard",
+    "TransformInterceptor",
+    "AccountsService",
+    "User decorator",
+    "Swagger"
+  ],
+  "input_tokens": 1262,
+  "output_tokens": 713,
+  "model": "qwen3:14b",
+  "code_hash": "60d205636fc816fd"
+}

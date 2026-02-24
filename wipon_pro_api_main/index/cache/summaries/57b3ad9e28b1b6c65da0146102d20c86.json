@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/domain/use-cases/find-ugd-by-dgd-id.use-case.ts:import:../../data/ugds.repository",
+  "summary": "Этот код создает сервис, который ищет данные по идентификатору в базе. Он использует репозиторий для поиска и возвращает результат или null, если ничего не найдено.",
+  "purpose": "Позволяет быстро получать конкретные данные из базы по уникальному идентификатору",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет запись по числовому/строковому ID",
+    "Возвращает объект или null при отсутствии данных",
+    "Использует TypeORM для работы с базой",
+    "Поддерживает инъекцию зависимостей",
+    "Работает с DAO-объектами"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1233,
+  "output_tokens": 686,
+  "model": "qwen3:14b",
+  "code_hash": "8c5306aeaf3f1551"
+}

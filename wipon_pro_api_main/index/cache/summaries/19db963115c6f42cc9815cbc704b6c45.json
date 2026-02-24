@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/dto/post-transfer.dto.ts:import:../../../common/validations/is-numeric",
+  "summary": "Этот код импортирует валидаторы для проверки данных в DTO-классе. Он гарантирует, что поля from_user_id и to_user_id не пустые и содержат числа.",
+  "purpose": "Обеспечивает корректность данных при передаче средств между пользователями в API",
+  "domain": "валидация данных в API",
+  "key_behaviors": [
+    "Проверка непустых полей",
+    "Валидация числовых значений",
+    "Использование кастомного валидатора",
+    "Применение правил к свойствам DTO",
+    "Обеспечение целостности данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsNumeric (из common/validations)"
+  ],
+  "input_tokens": 1113,
+  "output_tokens": 701,
+  "model": "qwen3:14b",
+  "code_hash": "b4fecf32c5078b3c"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/doomguy/doomguy.service.ts:method:DoomguyService:executeCurl",
+  "summary": "Этот метод отправляет HTTP POST-запросы в Slack через вебхук и возвращает статус успеха. При ошибке логирует сообщение и детали ответа.",
+  "purpose": "Используется для отправки уведомлений в Slack каналы при различных событиях в приложении.",
+  "domain": "мessaging/notifications",
+  "key_behaviors": [
+    "Отправляет сообщения в Slack через вебхук",
+    "Логирует ошибки при сбое соединения",
+    "Использует конфигурационные настройки окружения",
+    "Поддерживает разные каналы для разных окружений (production/staging)",
+    "Возвращает статус выполнения (успех/провал)"
+  ],
+  "dependencies_used": [
+    "@nestjs/axios",
+    "logger/error-logger",
+    "config/app.config",
+    "helpers/datetime"
+  ],
+  "input_tokens": 2520,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "4e3be25ad0adb3a0"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/account.dao.ts:property:AccountDao:created_at",
+  "summary": "Этот код описывает структуру таблицы 'accounts' в базе данных, определяя поля, такие как ID, баланс, даты создания и обновления, связь с другими таблицами и дополнительные настройки.",
+  "purpose": "Создаёт модель данных для хранения информации об аккаунтах в базе данных с поддержкой связей и временных меток",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создаёт таблицу 'accounts' в базе данных",
+    "Хранит информацию о балансе и пользователях",
+    "Отслеживает даты создания, обновления и удаления",
+    "Поддерживает связь с таблицей 'ledger'",
+    "Связывает транзакции с аккаунтами"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao",
+    "AccountTransactionDao"
+  ],
+  "input_tokens": 1460,
+  "output_tokens": 672,
+  "model": "qwen3:14b",
+  "code_hash": "550426ffa65ba1f2"
+}

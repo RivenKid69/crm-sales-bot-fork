@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/notifications.module.ts:class:NotificationsModule",
+  "summary": "Этот класс - модуль NestJS, который собирает все компоненты для работы с уведомлениями. Он подключает базу данных, сервисы и контроллеры, необходимые для отправки уведомлений через FCM.",
+  "purpose": "Организует логику уведомлений в приложении, обеспечивая связь между базой данных, сервисами и внешними системами вроде FCM.",
+  "domain": "уведомления, push-сообщения, база данных",
+  "key_behaviors": [
+    "Интеграция с базой данных через TypeORM",
+    "Обработка уведомлений через FCM",
+    "Экспорт сервиса для использования в других модулях",
+    "Разделение логики на контроллеры, сервисы и репозитории",
+    "Использование модулей пользователей и FCM"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UsersModule",
+    "FcmModule"
+  ],
+  "input_tokens": 1296,
+  "output_tokens": 765,
+  "model": "qwen3:14b",
+  "code_hash": "472bfba0612d5b93"
+}

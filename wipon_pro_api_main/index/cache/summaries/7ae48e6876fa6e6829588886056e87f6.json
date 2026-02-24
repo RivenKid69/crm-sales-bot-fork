@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/ledgers.module.ts:import:./presenter/ledgers.controller",
+  "summary": "Этот код создает модуль NestJS для работы со счетами-фактурами. Он подключает модули пользователей и счетов, использует сервисы для логики и контроллер для обработки запросов.",
+  "purpose": "Создает структуру модуля для управления счетами-фактурами, объединяя сервисы и контроллеры",
+  "domain": "бухгалтерия, финансовые операции",
+  "key_behaviors": [
+    "Использует модули UsersModule и AccountsModule",
+    "Использует сервисы LedgersService и BillingService",
+    "Обрабатывает HTTP-запросы через LedgersController",
+    "Организует логику в отдельном модуле",
+    "Не имеет внутренних зависимостей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LedgersService",
+    "BillingService",
+    "UsersModule",
+    "AccountsModule"
+  ],
+  "input_tokens": 1105,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "6cd2ef049e79b256"
+}

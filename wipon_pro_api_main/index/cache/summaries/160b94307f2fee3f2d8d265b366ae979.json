@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/dto/check-device.dto.ts:file",
+  "summary": "Этот файл определяет DTO-класс для проверки устройства. Он использует валидацию и документацию через Swagger для поля application_type, которое должно быть не пустым и представлять собой строку.",
+  "purpose": "Обеспечивает валидацию и документацию для данных, передаваемых в API при проверке устройства.",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка, что поле не пустое",
+    "Проверка, что поле является строкой",
+    "Добавление описания поля для Swagger",
+    "Использование в API для передачи данных",
+    "Упрощает работу с валидацией в NestJS"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1048,
+  "output_tokens": 591,
+  "model": "qwen3:14b",
+  "code_hash": "64ad94082b028cb5"
+}

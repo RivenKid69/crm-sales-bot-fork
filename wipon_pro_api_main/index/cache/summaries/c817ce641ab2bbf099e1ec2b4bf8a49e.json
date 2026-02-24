@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/item.dao.ts:property:ItemDao:status",
+  "summary": "Этот код описывает сущность 'items' в базе данных, которая хранит информацию о товарах, включая их атрибуты, статус и связи с другими сущностями, такими как 'Check' и 'Product'.",
+  "purpose": "Создает модель данных для хранения информации о товарах и их связях в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор товара (id)",
+    "Связывает товар с продуктом через product_id",
+    "Отслеживает даты создания и обновления записи",
+    "Хранит статус товара (valid/fake/atlas)",
+    "Управляет отношениями с другими сущностями (Check и Product)"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1610,
+  "output_tokens": 721,
+  "model": "qwen3:14b",
+  "code_hash": "f77843b0d688797b"
+}

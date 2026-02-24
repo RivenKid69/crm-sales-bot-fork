@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/billings/presenter/billings.controller.ts:import:../../../common/interceptor/transform.interceptor",
+  "summary": "Этот код создает контроллер для обработки платежей через разные сервисы (Qiwi, Kaspi и т.д.). Использует интерсептор для преобразования ответов и защиту по IP-адресу.",
+  "purpose": "Обработка платежей от разных провайдеров с защитой и форматированием ответов",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Обработка платежей через Qiwi, Kaspi, Kassa24 и другие",
+    "Форматирование ответов с помощью TransformInterceptor",
+    "Ограничение доступа по IP-адресу",
+    "Использование декораторов для маршрутов",
+    "Работа с сервисом BillingsService"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "TransformInterceptor"
+  ],
+  "input_tokens": 1857,
+  "output_tokens": 609,
+  "model": "qwen3:14b",
+  "code_hash": "595d99ff0e49fa97"
+}

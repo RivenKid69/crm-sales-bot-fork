@@ -24,6 +24,14 @@ states:
       price_question: spin_situation
       question_features: spin_situation
       question_integrations: spin_situation
+      question_support: spin_situation
+      question_equipment: spin_situation
+      question_reports: spin_situation
+      question_ofd: spin_situation
+      question_fiscal: spin_situation
+      question_scalability: spin_situation
+      payment_terms: spin_situation
+      situation_provided: spin_situation
       agreement: spin_situation
       info_provided: spin_situation
       comparison: spin_situation

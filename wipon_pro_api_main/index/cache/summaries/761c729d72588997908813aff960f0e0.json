@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:import:../../helpers/datetime",
+  "summary": "Этот код отвечает за создание и управление финансовыми записями (ledger) для пользователей. Он проверяет, существует ли запись, создает новую при необходимости, и обновляет информацию о счетах, используя различные сервисы и DAO-классы.",
+  "purpose": "Обеспечивает корректное создание и обновление финансовых данных пользователей в системе",
+  "domain": "Финансовые операции, бухгалтерия",
+  "key_behaviors": [
+    "Создание новых записей в ledger при отсутствии",
+    "Обновление информации о счетах пользователя",
+    "Работа с транзакциями и базой данных через DAO",
+    "Использование специальных утилит для работы с датами",
+    "Интеграция с различными провайдерами (Qiwi, Kaspi и др.)"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "typeorm/EntityManager",
+    "typeorm/IsNull"
+  ],
+  "input_tokens": 2737,
+  "output_tokens": 762,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

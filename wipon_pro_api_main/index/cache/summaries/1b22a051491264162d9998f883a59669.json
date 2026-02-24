@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/store-types.module.ts:class:StoreTypesModule",
+  "summary": "Этот модуль NestJS объединяет репозиторий для работы с базой данных, сервис для бизнес-логики и контроллер для обработки запросов, связанных с типами магазинов.",
+  "purpose": "Организует работу с данными о типах магазинов в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подключается к базе данных через TypeORM",
+    "Предоставляет сервис для работы с данными",
+    "Содержит контроллер для обработки HTTP-запросов",
+    "Экспортирует use-case для поиска типов магазинов по названию",
+    "Разделяет логику, репозитории и представление"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1229,
+  "output_tokens": 724,
+  "model": "qwen3:14b",
+  "code_hash": "b88826e8d76cd27c"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/checks/presenter/checks.controller.ts:method:ChecksController:validateCheckData",
+  "summary": "Этот контроллер обрабатывает различные операции, связанные с проверками товаров, включая получение списка проверок, проверку оригинальности, загрузку изображений и статистику. Он использует валидацию данных, аутентификацию и защиту от злоупотреблений.",
+  "purpose": "Обеспечивает API для управления проверками товаров, включая проверку оригинальности, загрузку изображений и статистику.",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение списка проверок пользователя",
+    "Проверка товаров на оригинальность",
+    "Загрузка изображений для проверок",
+    "Аутентификация через подписку и API-ключ",
+    "Ограничение скорости запросов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/platform-express",
+    "ValidationPipe",
+    "FileInterceptor",
+    "AuthGuard"
+  ],
+  "input_tokens": 2849,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "3516f3694956962a"
+}

@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/sms/domain/smsc.service.ts:import:../../../config/app.config",
+  "summary": "Этот код обрабатывает уведомления от SMS-сервиса, проверяет их подлинность с помощью хэша и отправляет данные в другой сервис. Он использует логирование для отслеживания действий и настройки из конфига.",
+  "purpose": "Обеспечивает безопасное обработку и передачу данных из SMS-уведомлений в систему",
+  "domain": "утилиты, обработка уведомлений",
+  "key_behaviors": [
+    "Проверка подлинности данных через SHA1-хэш",
+    "Логирование событий в реальном времени",
+    "Использование конфигурационных настроек",
+    "Отправка данных в другой сервис",
+    "Динамическая загрузка библиотеки crypto"
+  ],
+  "dependencies_used": [
+    "crypto",
+    "PostCallbackDto",
+    "createCustomLogger",
+    "appConfig",
+    "DoomguyService"
+  ],
+  "input_tokens": 1488,
+  "output_tokens": 749,
+  "model": "qwen3:14b",
+  "code_hash": "1dea76578f313352"
+}

@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/cashboxes/presenter/cashboxes.controller.ts:import:@nestjs/swagger",
+  "summary": "Этот код создает контроллер для обработки POST-запросов, связанных с кассами. Он использует валидацию данных, фильтрацию по IP и скрыт от документации Swagger.",
+  "purpose": "Обработка сообщений и кодов аутентификации от внешней системы Prokassa с защитой и валидацией данных",
+  "domain": "платежи, API-интеграция",
+  "key_behaviors": [
+    "Фильтрация трафика по IP-адресам",
+    "Валидация входных данных с помощью ValidationPipe",
+    "Использование интерцептора для преобразования данных",
+    "Скрытие контроллера от документации Swagger",
+    "Интеграция с сервисом обработки касс"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "CashboxesService",
+    "PushAuthcodeDto",
+    "PushMessageDto",
+    "IpFilterGuard",
+    "TransformInterceptor",
+    "ValidationPipe"
+  ],
+  "input_tokens": 1481,
+  "output_tokens": 763,
+  "model": "qwen3:14b",
+  "code_hash": "91982e74914aeef2"
+}

@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/presenter/users.controller.ts:import:../dto/update-user.dto",
+  "summary": "Этот код представляет контроллер NestJS, который обрабатывает HTTP-запросы для управления пользователями, такие как получение, обновление и удаление. Использует аутентификацию, валидацию данных и документацию Swagger для API.",
+  "purpose": "Обеспечивает безопасное и структурированное взаимодействие с пользователями через REST API.",
+  "domain": "api",
+  "key_behaviors": [
+    "Обработка GET, PUT и DELETE запросов для управления пользователями",
+    "Использование аутентификации через AuthGuard",
+    "Валидация данных с помощью ValidationPipe",
+    "Документация API через Swagger",
+    "Использование интерцепторов для трансформации данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "UsersService",
+    "UserDao",
+    "UpdateUserDto"
+  ],
+  "input_tokens": 1666,
+  "output_tokens": 735,
+  "model": "qwen3:14b",
+  "code_hash": "1808cadd56fd9cc7"
+}

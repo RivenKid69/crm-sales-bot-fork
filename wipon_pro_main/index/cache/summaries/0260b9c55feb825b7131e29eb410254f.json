@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:import:@kyvg/vue3-notification",
+  "summary": "Этот код настраивает приложение Vue 3, подключает маршрутизатор, хранилище, Axios для HTTP-запросов, маски ввода и уведомления. Он также добавляет стили и готов к запуску приложения.",
+  "purpose": "Подготовка Vue-приложения к запуску с необходимыми библиотеками и настройками.",
+  "domain": "фронтенд, приложения, vue",
+  "key_behaviors": [
+    "Инициализация приложения Vue 3",
+    "Подключение маршрутизатора и хранилища",
+    "Использование Axios для HTTP-запросов",
+    "Добавление масок ввода и уведомлений",
+    "Подключение стилей и настройка глобальных свойств"
+  ],
+  "dependencies_used": [
+    "vue",
+    "vue-axios",
+    "axios",
+    "maska",
+    "@kyvg/vue3-notification"
+  ],
+  "input_tokens": 1129,
+  "output_tokens": 747,
+  "model": "qwen3:14b",
+  "code_hash": "ee8d8e5e1812cbe1"
+}

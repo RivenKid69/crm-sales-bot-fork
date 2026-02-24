@@ -996,6 +996,7 @@ intent_taxonomy:
     semantic_domain: pricing
     fallback_action: answer_with_pricing
     priority: high
+    bypass_disambiguation: true
 
   pricing_comparison:
     category: question
@@ -1133,6 +1134,7 @@ intent_taxonomy:
     semantic_domain: product
     fallback_action: answer_with_facts
     priority: high
+    bypass_disambiguation: true
 
   question_integrations:
     category: question
@@ -1140,6 +1142,7 @@ intent_taxonomy:
     semantic_domain: product
     fallback_action: answer_with_facts
     priority: high
+    bypass_disambiguation: true
 
   question_technical:
     category: question
@@ -1168,6 +1171,7 @@ intent_taxonomy:
     semantic_domain: product
     fallback_action: answer_with_facts
     priority: medium
+    bypass_disambiguation: true
 
   question_implementation:
     category: question

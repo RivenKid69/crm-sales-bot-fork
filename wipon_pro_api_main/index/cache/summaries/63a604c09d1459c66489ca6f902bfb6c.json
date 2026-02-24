@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/interceptor/version.interceptor.ts:file",
+  "summary": "Этот код добавляет заголовки в HTTP-ответы, указывая текущие версии мобильного и десктопного приложений. Он использует значения из конфигурации для установки этих заголовков.",
+  "purpose": "Позволяет клиентам узнать текущие версии приложений, которые поддерживает сервер",
+  "domain": "API",
+  "key_behaviors": [
+    "Добавляет заголовки с версиями в каждый ответ",
+    "Использует конфигурационные переменные для определения версий",
+    "Работает как промежуточный обработчик в NestJS"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "rxjs",
+    "express"
+  ],
+  "input_tokens": 1196,
+  "output_tokens": 696,
+  "model": "qwen3:14b",
+  "code_hash": "81ab5120fa26bc8e"
+}

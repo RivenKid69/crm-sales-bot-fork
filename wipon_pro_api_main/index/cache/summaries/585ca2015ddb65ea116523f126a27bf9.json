@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/dgds/domain/dgds.service.ts:import:../data/dgds.repostitory",
+  "summary": "Этот код создаёт сервис, который получает список объектов dgds из базы данных. Сервис использует репозиторий для работы с данными и может быть внедрён в другие части приложения.",
+  "purpose": "Позволяет извлекать данные из базы для отображения или обработки в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Позволяет получать список всех записей dgds",
+    "Поддерживает внедрение зависимостей",
+    "Работает асинхронно",
+    "Разделяет логику доступа к данным и бизнес-логику"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1137,
+  "output_tokens": 704,
+  "model": "qwen3:14b",
+  "code_hash": "70ce8a0cc378978c"
+}

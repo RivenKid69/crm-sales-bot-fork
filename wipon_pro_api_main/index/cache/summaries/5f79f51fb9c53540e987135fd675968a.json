@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/domain/ledgers.service.ts:import:../../../common/services/billing/billing.service",
+  "summary": "Этот код обрабатывает перевод средств между пользователями. Проверяет валидность пользователей, обновляет их счета и логирует операции через транзакции в базе данных.",
+  "purpose": "Обеспечивает безопасный перевод средств между пользователями с логированием и проверкой данных",
+  "domain": "платежи",
+  "key_behaviors": [
+    "Проверка корректности ID отправителя и получателя",
+    "Обновление данных счетов в транзакции",
+    "Создание записей в логах операций",
+    "Использование сервиса биллинга для обработки аккаунтов",
+    "Обработка ошибок через кастомный логгер"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "typeorm",
+    "billing.service"
+  ],
+  "input_tokens": 2780,
+  "output_tokens": 703,
+  "model": "qwen3:14b",
+  "code_hash": "e9c0b294f1e03b7c"
+}

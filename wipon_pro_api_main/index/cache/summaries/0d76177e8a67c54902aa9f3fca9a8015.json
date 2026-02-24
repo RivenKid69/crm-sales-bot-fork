@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/dto/login.dto.ts:file",
+  "summary": "Этот код создает объект данных (DTO) для входа в систему. Он проверяет телефонный номер, код подтверждения и тип приложения, используя валидацию и документацию Swagger.",
+  "purpose": "Используется для приема и проверки данных при входе пользователя в систему через телефон",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка корректности казахстанского номера телефона",
+    "Валидация длины кода подтверждения (6 символов)",
+    "Ограничение типов приложений (desktop/mobile_scan)",
+    "Поддержка необязательных полей",
+    "Генерация документации API через Swagger"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1314,
+  "output_tokens": 635,
+  "model": "qwen3:14b",
+  "code_hash": "a570ba58be82c9e0"
+}

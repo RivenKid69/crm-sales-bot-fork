@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/report.dao.ts:import:typeorm",
+  "summary": "Этот код создаёт модель данных для таблицы 'reports' в базе данных. Класс ReportDao описывает структуру таблицы с полями id, item_id, user_id и другими атрибутами, используя декораторы из библиотеки TypeORM.",
+  "purpose": "Позволяет приложению работать с таблицей reports в базе данных через ORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создание таблицы в базе данных",
+    "Автоматическое присвоение уникального ID",
+    "Хранение времён создания и обновления записей",
+    "Связь полей класса с колонками таблицы",
+    "Поддержка типов данных (числа, строки, даты)"
+  ],
+  "dependencies_used": [
+    "typeorm/Column",
+    "typeorm/CreateDateColumn",
+    "typeorm/Entity",
+    "typeorm/PrimaryGeneratedColumn",
+    "typeorm/UpdateDateColumn"
+  ],
+  "input_tokens": 1318,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "b3a8280884d78226"
+}

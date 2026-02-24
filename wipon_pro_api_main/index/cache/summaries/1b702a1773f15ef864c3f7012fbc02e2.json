@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/dto/send-notification.dto.ts:import:class-validator",
+  "summary": "Этот код импортирует валидаторы из библиотеки class-validator и создает класс DTO для отправки уведомлений. Декораторы @IsNotEmpty и @IsString проверяют, что свойство message не пустое и является строкой.",
+  "purpose": "Обеспечивает валидацию данных при получении уведомлений в API",
+  "domain": "API",
+  "key_behaviors": [
+    "Проверка непустых строк",
+    "Создание структуры DTO",
+    "Автоматическая обработка ошибок",
+    "Санитизация входных данных",
+    "Типизация свойств"
+  ],
+  "dependencies_used": [
+    "class-validator"
+  ],
+  "input_tokens": 986,
+  "output_tokens": 602,
+  "model": "qwen3:14b",
+  "code_hash": "8733612efe98c97d"
+}

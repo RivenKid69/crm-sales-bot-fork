@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/interceptor/transform.interceptor.ts:class:TransformInterceptor",
+  "summary": "Этот класс - интерсептор в NestJS, который преобразует объекты в простые данные перед отправкой ответа. Он использует classToPlain для перевода классов в обычные объекты, что помогает избежать проблем с сериализацией.",
+  "purpose": "Используется для корректного преобразования сложных объектов в формат, понятный клиенту при работе с API",
+  "domain": "api",
+  "key_behaviors": [
+    "Преобразует классы в простые объекты",
+    "Работает с ответами от контроллеров",
+    "Использует RxJS для обработки потоков данных"
+  ],
+  "dependencies_used": [
+    "class-transformer",
+    "rxjs"
+  ],
+  "input_tokens": 1129,
+  "output_tokens": 693,
+  "model": "qwen3:14b",
+  "code_hash": "87251ef0ed7b12c7"
+}

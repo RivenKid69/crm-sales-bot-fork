@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/billing/billing.service.ts:method:BillingService:ount = new AccountD",
+  "summary": "Этот метод создает и настраивает учетные записи и леджеры для пользователя, проверяя, существуют ли они, и создавая при необходимости. Он также инициализирует хроники леджера и подсчитывает операторов для разных платежных систем.",
+  "purpose": "Обеспечивает инициализацию и настройку учетных записей и леджеров для пользователя в системе бухгалтерии.",
+  "domain": "бухгалтерия, платежи, управление пользователями",
+  "key_behaviors": [
+    "Создание леджера пользователя при его отсутствии",
+    "Инициализация хроники леджера с начальной датой",
+    "Обновление учетных записей пользователя",
+    "Подсчет количества операторов для различных платежных систем",
+    "Работа с транзакциями и сохранение данных в базе"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "luxon",
+    "nestjs/common",
+    "UpdateUserAccountsLedgerUseCase",
+    "CountLedgerAccountsProvidersUseCase",
+    "SaveAccountsUseCase",
+    "SumLedgerAccountsBalanceUseCase"
+  ],
+  "input_tokens": 2700,
+  "output_tokens": 799,
+  "model": "qwen3:14b",
+  "code_hash": "c7abacedcd06e337"
+}

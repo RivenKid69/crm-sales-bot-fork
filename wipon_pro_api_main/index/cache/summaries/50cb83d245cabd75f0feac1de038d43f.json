@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/feedbacks/presenter/feedbacks.controller.ts:import:../../auth/guard/auth.guard",
+  "summary": "Этот код создает контроллер в NestJS для обработки POST-запросов на отправку обратной связи. Использует аутентификацию, валидацию данных и документацию через Swagger.",
+  "purpose": "Обеспечивает безопасную отправку обратной связи с проверкой пользователя и документацией API",
+  "domain": "api",
+  "key_behaviors": [
+    "Требует аутентификации через AuthGuard",
+    "Использует DTO для валидации тела запроса",
+    "Применяет интерцептор для трансформации ответа",
+    "Добавляет документацию через Swagger",
+    "Использует сервис для обработки логики обратной связи"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "AuthGuard",
+    "TransformInterceptor",
+    "FeedbacksService",
+    "UserDao"
+  ],
+  "input_tokens": 1427,
+  "output_tokens": 725,
+  "model": "qwen3:14b",
+  "code_hash": "b0e8372d7500cec5"
+}

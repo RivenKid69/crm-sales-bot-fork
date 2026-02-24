@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/bf-authenticity/bf-authenticity.service.ts:import:locutus/php/strings/substr",
+  "summary": "Этот код импортирует функцию substr из библиотеки locutus, которая используется для извлечения подстроки из строки. Это может быть полезно, когда нужно обрезать или выделить часть текста.",
+  "purpose": "Использовать функционал substr для работы со строками в проекте.",
+  "domain": "утилиты",
+  "key_behaviors": [
+    "извлечение подстроки",
+    "работа со строками",
+    "поддержка PHP-функционала в TypeScript"
+  ],
+  "dependencies_used": [
+    "locutus"
+  ],
+  "input_tokens": 2758,
+  "output_tokens": 653,
+  "model": "qwen3:14b",
+  "code_hash": "c80e55ca7369f0cf"
+}

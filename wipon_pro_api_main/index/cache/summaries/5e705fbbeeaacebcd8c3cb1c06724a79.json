@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/notification.dao.ts:property:NotificationDao:is_unread",
+  "summary": "Этот код определяет свойство 'is_unread' в сущности 'notifications', которое отслеживает, прочитано ли уведомление. Оно хранится как булево значение и по умолчанию устанавливается в true, если не указано иное.",
+  "purpose": "Используется для отслеживания статуса прочтения уведомления пользователем",
+  "domain": "уведомления",
+  "key_behaviors": [
+    "Хранит булево значение (true/false)",
+    "Имеет значение по умолчанию true",
+    "Связано с конкретным уведомлением через user_id",
+    "Используется для фильтрации прочитанных/не прочитанных уведомлений",
+    "Интегрируется с другими полями сущности NotificationDao"
+  ],
+  "dependencies_used": [
+    "typeorm/Column"
+  ],
+  "input_tokens": 1347,
+  "output_tokens": 709,
+  "model": "qwen3:14b",
+  "code_hash": "dca48e73b4438d66"
+}

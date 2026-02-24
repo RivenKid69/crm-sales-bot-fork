@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/guards/check-api-key.guard.ts:import:../utils/md5",
+  "summary": "Этот код проверяет валидность API-ключа для авторизации. Он проверяет, существует ли пользователь, проверяет подписку через устройства и генерирует хэш для сравнения с переданным ключом",
+  "purpose": "Обеспечивает защиту API-маршрутов через проверку валидности API-ключа пользователя",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка существования пользователя",
+    "Генерация хэша API-ключа на основе данных запроса",
+    "Сравнение переданного API-ключа с сгенерированным",
+    "Проверка подписки пользователя через устройства",
+    "Возврат ошибки при несоответствии ключа"
+  ],
+  "dependencies_used": [
+    "rxjs",
+    "express",
+    "locutus/php/strings/crc32",
+    "locutus/php/strings/substr"
+  ],
+  "input_tokens": 2919,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "e3ef3a07b02c2c82"
+}

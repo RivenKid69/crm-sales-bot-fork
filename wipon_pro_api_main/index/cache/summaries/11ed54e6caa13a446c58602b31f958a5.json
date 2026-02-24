@@ -1,0 +1,25 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/domain/subscriptions.service.ts:import:../../../common/services/billing/billing.service",
+  "summary": "Этот код реализует сервис для управления подписками пользователей. Он проверяет активные подписки, взаимодействует с базой данных, использует настройки и обрабатывает ошибки через HTTP-исключения",
+  "purpose": "Обеспечивает функционал для работы с подписками в приложении, например, проверка активности, покупка и отмена подписок",
+  "domain": "база данных, авторизация, утилиты",
+  "key_behaviors": [
+    "Проверка активной подписки по номеру телефона",
+    "Взаимодействие с репозиторием подписок",
+    "Использование настроек подписок из конфигурации",
+    "Обработка ошибок через HttpException",
+    "Интеграция с внешними сервисами через HttpService"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/axios",
+    "typeorm",
+    "common/helpers/datetime",
+    "common/utils/common"
+  ],
+  "input_tokens": 2633,
+  "output_tokens": 759,
+  "model": "qwen3:14b",
+  "code_hash": "1873ebfd5da33136"
+}

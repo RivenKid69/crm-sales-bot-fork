@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node_licenses.dao.ts:property:GeoNodeToLicensesDao:geoNode",
+  "summary": "Этот код описывает сущность для хранения связи между географическими узлами и лицензиями. Она содержит координаты, уникальные идентификаторы и связи с другими объектами.",
+  "purpose": "Связывает геолокационные данные с лицензиями для управления правами на территории",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит координаты географических точек",
+    "Связывает лицензии с конкретными узлами",
+    "Использует составной первичный ключ",
+    "Поддерживает отношения 'многие к одному'",
+    "Работает с пространственными данными"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "GeoNodeDao",
+    "LicenseDao"
+  ],
+  "input_tokens": 1364,
+  "output_tokens": 696,
+  "model": "qwen3:14b",
+  "code_hash": "e26ea19e46064133"
+}

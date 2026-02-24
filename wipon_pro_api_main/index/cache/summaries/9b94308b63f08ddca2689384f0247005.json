@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/users/domain/use-cases/find-user-by-phone.use-case.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис, который ищет пользователя по номеру телефона. Он использует репозиторий для доступа к данным и возвращает объект пользователя, если он найден.",
+  "purpose": "Позволяет находить пользователя по телефону для авторизации или профиля",
+  "domain": "авторизация, пользователи",
+  "key_behaviors": [
+    "Ищет пользователя по номеру телефона",
+    "Использует репозиторий для доступа к БД",
+    "Возвращает объект пользователя",
+    "Поддерживает инъекцию зависимостей",
+    "Работает асинхронно"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "UsersRepository",
+    "UserDao"
+  ],
+  "input_tokens": 1092,
+  "output_tokens": 685,
+  "model": "qwen3:14b",
+  "code_hash": "13ac87f72b795d2a"
+}

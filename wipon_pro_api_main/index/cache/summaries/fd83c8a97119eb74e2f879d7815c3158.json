@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/devices/domain/use-cases/find-users-all-devices-by-at.use-case.ts:method:FindUsersAllDevicesByAtUseCase:constructor",
+  "summary": "Этот код создает класс, который ищет все устройства пользователя по типу приложения. Он использует репозиторий для получения данных и возвращает их в виде объектов DeviceDao.",
+  "purpose": "Позволяет получить список устройств пользователя по типу приложения для дальнейшего использования в приложении",
+  "domain": "управление устройствами и данными пользователей",
+  "key_behaviors": [
+    "Ищет устройства по ID пользователя и типу приложения",
+    "Использует TypeORM репозиторий для доступа к данным",
+    "Возвращает результат в виде массива объектов DeviceDao"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "DevicesRepository",
+    "DeviceDao"
+  ],
+  "input_tokens": 1100,
+  "output_tokens": 699,
+  "model": "qwen3:14b",
+  "code_hash": "a74feb66414dd89d"
+}

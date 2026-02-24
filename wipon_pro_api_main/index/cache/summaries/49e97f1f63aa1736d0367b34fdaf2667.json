@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store.dao.ts:property:StoreDao:deleted_at",
+  "summary": "Этот код описывает сущность StoreDao, которая представляет таблицу 'stores' в базе данных. Она содержит поля для хранения информации о магазинах, включая данные пользователя, адрес, лицензии и связи с другими сущностями, такими как StoreTypeDao, DgdDao, UgdDao и UserDao",
+  "purpose": "Создает модель данных для хранения информации о магазинах и их связей с другими сущностями в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор магазина (id)",
+    "Связывает магазин с пользователем через user_id",
+    "Хранит информацию об адресе, лицензиях и типе магазина",
+    "Использует soft delete через поле deleted_at",
+    "Создает отношения один к одному с другими сущностями"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 2125,
+  "output_tokens": 746,
+  "model": "qwen3:14b",
+  "code_hash": "f69c06843df0eb5a"
+}

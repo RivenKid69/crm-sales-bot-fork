@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/data/products.repository.ts:class:ProductsRepository",
+  "summary": "Этот класс помогает работать с продуктами в базе данных. Он проверяет, существует ли продукт с определенными параметрами, и если нет, создает его. Это полезно, чтобы не дублировать данные.",
+  "purpose": "Обеспечить уникальность продуктов в базе данных, избегая повторных записей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Ищет продукт по имени, организации и типу",
+    "Создает новый продукт, если он не найден",
+    "Возвращает существующий продукт, если он уже есть",
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Работает с объектами ProductDao"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1138,
+  "output_tokens": 684,
+  "model": "qwen3:14b",
+  "code_hash": "79952baae1eb8eed"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/buy-subscription.dto.ts:import:../../../config/subscription.config",
+  "summary": "Этот код импортирует валидаторы из библиотеки class-validator и использует их для проверки данных в DTO-классе, который используется при покупке подписки. Также импортируются константы из файла настроек подписки и используется библиотека Swagger для генерации документации API",
+  "purpose": "Обеспечивает валидацию данных и документацию для API-запроса на покупку подписки",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка обязательных полей",
+    "Ограничение значений полей",
+    "Валидация типов данных",
+    "Генерация документации Swagger",
+    "Использование конфигурационных значений"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1246,
+  "output_tokens": 705,
+  "model": "qwen3:14b",
+  "code_hash": "6a718f26e17b4ac1"
+}

@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/products.module.ts:import:@nestjs/typeorm",
+  "summary": "Этот код создает модуль NestJS для работы с продуктами. Он подключает TypeORM для работы с базой данных и регистрирует логику поиска или создания продукта.",
+  "purpose": "Организует доступ к данным о продуктах и предоставляет функционал для их управления",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Использует TypeORM для взаимодействия с базой данных",
+    "Реализует бизнес-логику поиска/создания продуктов"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1087,
+  "output_tokens": 670,
+  "model": "qwen3:14b",
+  "code_hash": "7ea3ca95f930682b"
+}

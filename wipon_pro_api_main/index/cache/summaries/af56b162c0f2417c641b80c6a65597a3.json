@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-sub-for-erp.dto.ts:class:ShowActiveSubForErpDto",
+  "summary": "Этот класс проверяет данные, которые приходят в API, особенно телефонный номер и БИН. Он убеждается, что телефонный номер соответствует формату Казахстана, а БИН не пустой и является строкой",
+  "purpose": "Обеспечивает корректную валидацию данных при получении запросов в API",
+  "domain": "API, валидация данных",
+  "key_behaviors": [
+    "Проверка формата казахстанского номера телефона",
+    "Проверка наличия и формата БИН",
+    "Обеспечение корректного формата входных данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsNotEmpty",
+    "IsPhoneNumber",
+    "IsString"
+  ],
+  "input_tokens": 1073,
+  "output_tokens": 618,
+  "model": "qwen3:14b",
+  "code_hash": "5147ad91835160a1"
+}

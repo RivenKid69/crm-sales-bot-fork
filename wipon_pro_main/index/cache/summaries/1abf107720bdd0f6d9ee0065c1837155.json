@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/api/company.api.ts:import:@/api/request",
+  "summary": "Этот код импортирует функцию `request` из файла `@/api/request` и использует её для отправки HTTP-запросов на сервер. Он определяет три функции: `getCompanyRequest` для получения данных, `setCompanyRequest` для создания данных и `updateCompanyRequest` для обновления данных.",
+  "purpose": "Эти функции позволяют взаимодействовать с сервером для получения, создания и обновления информации о компании.",
+  "domain": "api",
+  "key_behaviors": [
+    "Получение данных с сервера",
+    "Создание новых данных на сервере",
+    "Обновление существующих данных на сервере",
+    "Использование одного и того же метода `request` для всех операций",
+    "Простой и понятный интерфейс для работы с API"
+  ],
+  "dependencies_used": [
+    "@/api/request"
+  ],
+  "input_tokens": 858,
+  "output_tokens": 728,
+  "model": "qwen3:14b",
+  "code_hash": "598998612dd7f3e2"
+}

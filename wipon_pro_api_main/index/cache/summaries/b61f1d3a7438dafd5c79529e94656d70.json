@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:../data/stores.repository",
+  "summary": "Этот код реализует сервис для работы со складами. Он проверяет лицензии, получает информацию о складах пользователей, обновляет данные и использует валидацию и репозитории для работы с базой данных.",
+  "purpose": "Управление данными складов, проверка лицензий и взаимодействие с другими частями приложения через use cases и репозитории",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Проверка валидности лицензии",
+    "Получение информации о складе пользователя",
+    "Обновление данных склада",
+    "Использование валидации через class-validator",
+    "Работа с репозиториями и use cases"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3010,
+  "output_tokens": 737,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

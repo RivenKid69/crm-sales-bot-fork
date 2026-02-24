@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/checks-data-to-response.ts:interface:UsersChecks",
+  "summary": "Этот код преобразует данные чеков из внутреннего формата в структуру, удобную для передачи клиентам. Использует вспомогательные функции для форматирования полей и обработки данных.",
+  "purpose": "Стандартизировать формат данных чеков при отправке ответов API",
+  "domain": "API",
+  "key_behaviors": [
+    "Преобразует объект CheckDao в интерфейс UsersChecks",
+    "Обрабатывает случаи отсутствия данных (возвращает null)",
+    "Использует вспомогательные функции для форматирования полей",
+    "Добавляет код товара к серийному номеру",
+    "Конвертирует статус в строковое представление"
+  ],
+  "dependencies_used": [
+    "CheckDao",
+    "formatItemDataToResponse",
+    "getItemsStatusAttribute",
+    "newAppendProductCodeToItem"
+  ],
+  "input_tokens": 1596,
+  "output_tokens": 739,
+  "model": "qwen3:14b",
+  "code_hash": "a24a1acfc4ff2884"
+}

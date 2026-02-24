@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/services/consumer/subscriptionCharge.consumer.ts:import:typeorm",
+  "summary": "Этот код обрабатывает задания по оплате подписок пользователей. Он использует библиотеку Bull для асинхронной обработки задач, проверяет активные подписки, взаимодействует с базой данных через TypeORM и управляет оплатой через сервис billingService.",
+  "purpose": "Обработка оплаты подписок пользователей в фоновом режиме для избежания блокировки основного потока приложения",
+  "domain": "платежи, подписки",
+  "key_behaviors": [
+    "Обработка заданий из очереди 'billing_pro-job'",
+    "Проверка существования пользователя в базе данных",
+    "Проверка активной подписки у пользователя",
+    "Выполнение транзакции для оплаты и активации подписки",
+    "Логирование процесса выполнения задания"
+  ],
+  "dependencies_used": [
+    "@nestjs/bull",
+    "bull",
+    "@nestjs/common",
+    "typeorm",
+    "rxjs"
+  ],
+  "input_tokens": 2011,
+  "output_tokens": 749,
+  "model": "qwen3:14b",
+  "code_hash": "3ed7f67e58569a57"
+}

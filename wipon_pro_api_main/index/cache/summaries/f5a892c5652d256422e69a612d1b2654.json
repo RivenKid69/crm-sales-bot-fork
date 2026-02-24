@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/dto/show-active-subscription.dto.ts:import:class-validator",
+  "summary": "Этот код создает DTO-класс для валидации номера телефона. Использует проверки на непустоту и формат номера Казахстана, а также добавляет описание для документации API.",
+  "purpose": "Обеспечивает корректный ввод и проверку номера телефона в API для подписки",
+  "domain": "api",
+  "key_behaviors": [
+    "Проверка что поле не пустое",
+    "Валидация формата казахстанского номера",
+    "Генерация документации через Swagger",
+    "Обязательное поле в запросе",
+    "Структурированный DTO для передачи данных"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1063,
+  "output_tokens": 584,
+  "model": "qwen3:14b",
+  "code_hash": "5aa2a8ef42649136"
+}

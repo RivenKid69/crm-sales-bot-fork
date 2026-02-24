@@ -1,0 +1,18 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/feedback-message.dao.ts:property:FeedbackMessageDao:is_unread",
+  "summary": "Это булево поле (true/false) отслеживает, был ли прочитан отзыв пользователя. Хранится в базе как колонка 'is_unread' и используется для фильтрации непрочитанных сообщений",
+  "purpose": "Позволяет системе определять, какие отзывы требуют внимания",
+  "domain": "система обратной связи",
+  "key_behaviors": [
+    "Индикатор прочтения сообщения",
+    "Фильтрация непрочитанных отзывов",
+    "Упрощает управление сообщениями в интерфейсе администратора"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 1392,
+  "output_tokens": 683,
+  "model": "qwen3:14b",
+  "code_hash": "7d576a3605a7d4a1"
+}

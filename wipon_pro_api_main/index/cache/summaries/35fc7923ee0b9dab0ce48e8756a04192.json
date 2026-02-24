@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/version/version.controller.ts:method:VersionController:getDesktopVersion",
+  "summary": "Этот метод получает текущую версию настольного приложения по запросу пользователя и возвращает её в определённом формате",
+  "purpose": "Позволяет пользователям проверять актуальность версии настольного приложения",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает GET-запрос по адресу /version/desktop",
+    "Получает версию из параметра запроса 'version'",
+    "Использует сервис для получения данных о версии",
+    "Возвращает данные в формате versionResponseType",
+    "Интегрируется с Swagger для документирования API"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "VersionService"
+  ],
+  "input_tokens": 1188,
+  "output_tokens": 692,
+  "model": "qwen3:14b",
+  "code_hash": "c1f412f2bb1df155"
+}

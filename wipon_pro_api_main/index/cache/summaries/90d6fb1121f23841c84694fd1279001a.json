@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/notifications/domain/notifications.service.ts:import:@nestjs/common",
+  "summary": "Этот код создает сервис для работы с уведомлениями. Он позволяет отправлять, удалять, обновлять и получать уведомления для пользователей, а также отправлять массовые уведомления.",
+  "purpose": "Управление уведомлениями пользователей, включая отправку, обновление и массовую рассылку.",
+  "domain": "уведомления, пользователи, API",
+  "key_behaviors": [
+    "Отправка уведомлений отдельному пользователю",
+    "Получение уведомлений пользователя",
+    "Обновление статуса уведомления (прочитано/не прочитано)",
+    "Удаление уведомления",
+    "Отправка массовых уведомлений нескольким пользователям"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "NotificationsRepository",
+    "PushService",
+    "FindUserByIdUseCase"
+  ],
+  "input_tokens": 1894,
+  "output_tokens": 754,
+  "model": "qwen3:14b",
+  "code_hash": "58fd26c00b519e50"
+}

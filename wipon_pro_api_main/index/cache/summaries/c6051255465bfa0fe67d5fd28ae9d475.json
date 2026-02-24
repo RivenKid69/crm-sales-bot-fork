@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node_licenses.dao.ts:import:typeorm",
+  "summary": "Этот код создает сущность базы данных, которая связывает географические узлы (geo node) с лицензиями. Она хранит координаты и ссылки на связанные объекты.",
+  "purpose": "Управление связями между геолокационными данными и лицензиями в базе данных",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит координаты геоузла",
+    "Связывает лицензии с геоузлами",
+    "Использует составной первичный ключ",
+    "Поддерживает отношения 'многие к одному'",
+    "Работает с TypeORM для маппинга на таблицы"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LicenseDao",
+    "GeoNodeDao"
+  ],
+  "input_tokens": 1345,
+  "output_tokens": 723,
+  "model": "qwen3:14b",
+  "code_hash": "e26ea19e46064133"
+}

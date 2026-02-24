@@ -1,0 +1,267 @@
+[
+  {
+    "scenario": "Repetition Stress — dedup check over 12 turns",
+    "flow": "autonomous",
+    "total_turns": 12,
+    "facts_retained": 0,
+    "facts_lost": 0,
+    "dedup_violations": 1,
+    "total_elapsed_s": 52.07480549812317,
+    "avg_response_len": 221.5,
+    "history_compact_used": false,
+    "turns": [
+      {
+        "turn": 1,
+        "user": "Привет, расскажите о вашем продукте.",
+        "bot": "Привет! Мы предлагаем программу для автоматизации бизнеса — от учёта товаров и продаж до бухгалтерии и отчётности. Она работает онлайн и оффлайн, подходит для разных сфер, включая розницу, сервисы и склады. Какой тип бизнеса вы ведёте, и какую именно задачу вы сейчас хотите решить?",
+        "intent": "question_features",
+        "state": "autonomous_discovery",
+        "history_len": 1,
+        "history_formatted_len": 331,
+        "cw_turns": 1,
+        "episodic_episodes": 1,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.0,
+        "elapsed_ms": 1766.5348052978516
+      },
+      {
+        "turn": 2,
+        "user": "А какие есть основные функции?",
+        "bot": "Программа позволяет автоматизировать учёт товаров, продажи, закупки, кассу, документооборот и аналитику. Поддерживает работу в режиме онлайн и оффлайн, подходит для магазинов, кафе, аптек, складов и других типов бизнеса.",
+        "intent": "question_features",
+        "state": "autonomous_discovery",
+        "history_len": 2,
+        "history_formatted_len": 595,
+        "cw_turns": 2,
+        "episodic_episodes": 1,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.08620689655172414,
+        "elapsed_ms": 3337.758779525757
+      },
+      {
+        "turn": 3,
+        "user": "Интересно. А расскажите подробнее про возможности.",
+        "bot": "Программа автоматизирует учёт товаров, продажи, кассу и отчётность. Поддерживает работу онлайн и оффлайн, подходит для разных сфер бизнеса. Также интегрируется с кассовым оборудованием и позволяет управлять складом и клиентами.",
+        "intent": "question_features",
+        "state": "autonomous_discovery",
+        "history_len": 3,
+        "history_formatted_len": 886,
+        "cw_turns": 3,
+        "episodic_episodes": 2,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.3333333333333333,
+        "elapsed_ms": 1920.358419418335
+      },
+      {
+        "turn": 4,
+        "user": "Хорошо, а ещё какой функционал есть?",
+        "bot": "Программа включает автоматизацию учёта, кассу, документооборот, аналитику и управление складом. Поддерживает работу в режиме онлайн и оффлайн, интегрируется с кассовым оборудованием. Также есть функции управления клиентами и интеграция с системами оплаты.",
+        "intent": "question_features",
+        "state": "autonomous_discovery",
+        "history_len": 4,
+        "history_formatted_len": 1191,
+        "cw_turns": 4,
+        "episodic_episodes": 2,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.22727272727272727,
+        "elapsed_ms": 3337.639570236206
+      },
+      {
+        "turn": 5,
+        "user": "Понятно. А какие ещё есть фичи которые вы не упомянули?",
+        "bot": "Программа поддерживает работу с несколькими точками, позволяет менять цены по всей сети, имеет пробный период и возможность оплаты в рассрочку. Также доступны тарифы с разным функционалом — от базового до расширенного. Интересно увидеть решение?",
+        "intent": "question_features",
+        "state": "autonomous_qualification",
+        "history_len": 5,
+        "history_formatted_len": 1505,
+        "cw_turns": 5,
+        "episodic_episodes": 2,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.12962962962962962,
+        "elapsed_ms": 2968.5235023498535
+      },
+      {
+        "turn": 6,
+        "user": "А чем вы лучше конкурентов?",
+        "bot": "Наше решение объединяет учёт, кассу и отчётность в одном интерфейсе, работает онлайн и оффлайн, поддерживает несколько точек и интегрируется с кассовым оборудованием. Также доступны тарифы с разным функционалом, пробный период и рассрочка. Могу показать на примере — буквально 10 минут.",
+        "intent": "objection_competitor",
+        "state": "autonomous_qualification",
+        "history_len": 6,
+        "history_formatted_len": 1832,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.1896551724137931,
+        "elapsed_ms": 7967.971086502075
+      },
+      {
+        "turn": 7,
+        "user": "А если сравнить с другими CRM — в чём преимущество?",
+        "bot": "Наше решение объединяет учёт, кассу и отчётность в одном интерфейсе, работает онлайн и оффлайн, поддерживает несколько точек и интегрируется с кассовым оборудованием. Также доступны тарифы с разным функционалом, пробный период и рассрочка. Хотите посмотреть как это решается на демо?",
+        "intent": "request_references",
+        "state": "autonomous_qualification",
+        "history_len": 7,
+        "history_formatted_len": 2180,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.6904761904761905,
+        "elapsed_ms": 10050.458669662476
+      },
+      {
+        "turn": 8,
+        "user": "Почему именно вас стоит выбрать а не другое решение?",
+        "bot": "У нас тарифы от 5 000₸/мес (Mini) до 500 000₸/год (Pro). Lite — 150 000₸/год, Standard — 220 000₸/год. На каком этапе развития ваш бизнес?",
+        "intent": "comparison",
+        "state": "autonomous_objection_handling",
+        "history_len": 8,
+        "history_formatted_len": 2384,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.03508771929824561,
+        "elapsed_ms": 3451.5092372894287
+      },
+      {
+        "turn": 9,
+        "user": "Какие есть тарифы?",
+        "bot": "У нас 4 основных тарифа: Mini (5 000₸/мес), Lite (150 000₸/год), Standard (220 000₸/год), Pro (500 000₸/год). Какой из них вас больше интересует?",
+        "intent": "pricing_details",
+        "state": "autonomous_negotiation",
+        "history_len": 9,
+        "history_formatted_len": 2561,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.09523809523809523,
+        "elapsed_ms": 3608.70361328125
+      },
+      {
+        "turn": 10,
+        "user": "А сколько стоит? Есть бесплатный тариф?",
+        "bot": "У нас есть бесплатный тариф — Mini, но он подходит только для тестирования. Основные тарифы: Lite — 150 000₸/год (1-2 точки), Standard — 220 000₸/год (до 3 точек), Pro — 500 000₸/год (до 5 точек). Сколько у вас точек?",
+        "intent": "price_question",
+        "state": "autonomous_closing",
+        "history_len": 10,
+        "history_formatted_len": 2831,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.125,
+        "elapsed_ms": 4746.057033538818
+      },
+      {
+        "turn": 11,
+        "user": "А цена за пользователя какая?",
+        "bot": "Цены зависят от количества точек: Mini — 5 000₸/мес (1 точка), Lite — 150 000₸/год (1–2 точки), Standard — 220 000₸/год (до 3 точек), Pro — 500 000₸/год (до 5 точек). Сколько у вас торговых точек?",
+        "intent": "price_question",
+        "state": "close",
+        "history_len": 11,
+        "history_formatted_len": 3070,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.4186046511627907,
+        "elapsed_ms": 3257.0183277130127
+      },
+      {
+        "turn": 12,
+        "user": "Резюмируйте всё что вы мне рассказали.",
+        "bot": "У нас 4 тарифа: Mini (5 000₸/мес), Lite (150 000₸/год), Standard (220 000₸/год), Pro (500 000₸/год). Бесплатный Mini — только для тестирования. Сколько у вас точек?",
+        "intent": "summary_request",
+        "state": "close",
+        "history_len": 12,
+        "history_formatted_len": 3286,
+        "cw_turns": 5,
+        "episodic_episodes": 3,
+        "episodic_pain_points": [],
+        "episodic_client_data": {
+          "company_name": null,
+          "company_size": null,
+          "industry": null,
+          "role": "it"
+        },
+        "fact_checks": {},
+        "similarity_to_prev": 0.20930232558139536,
+        "elapsed_ms": 5661.714553833008
+      }
+    ]
+  }
+]

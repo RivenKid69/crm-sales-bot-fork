@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store.dao.ts:property:StoreDao:radius",
+  "summary": "Этот код описывает сущность 'StoreDao' в TypeORM, которая представляет таблицу 'stores' в базе данных. Она содержит множество полей, таких как ID, пользователь, регион, город, название магазина, BIN, лицензия и другие, а также связывает другие сущности через отношения OneToOne.",
+  "purpose": "Создает модель данных для хранения информации о магазинах в базе данных с возможностью связи с другими сущностями.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит информацию о магазинах с полями, такими как ID, пользователь, регион, город и т.д.",
+    "Использует аннотации TypeORM для определения структуры таблицы и полей.",
+    "Создает связи OneToOne с другими сущностями, такими как StoreTypeDao, DgdDao, UgdDao и UserDao.",
+    "Использует автоматически генерируемый ID и временные метки (created_at, updated_at, deleted_at).",
+    "Поддерживает настройку полей с типами, ограничениями и значениями по умолчанию."
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "StoreTypeDao",
+    "DgdDao",
+    "UgdDao",
+    "UserDao"
+  ],
+  "input_tokens": 2017,
+  "output_tokens": 836,
+  "model": "qwen3:14b",
+  "code_hash": "f69c06843df0eb5a"
+}

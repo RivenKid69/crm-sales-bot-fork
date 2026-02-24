@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_main/wipon-pro-main/src/main.ts:file",
+  "summary": "Этот файл запускает веб-приложение на Vue.js. Он подключает маршрутизацию, состояние приложения, стили, инструменты для HTTP-запросов, маскировку полей ввода и уведомления.",
+  "purpose": "Инициализация и настройка основного приложения на Vue.js",
+  "domain": "фронтенд / одностраничные приложения (SPA)",
+  "key_behaviors": [
+    "Создание экземпляра Vue-приложения",
+    "Интеграция маршрутизации (router)",
+    "Подключение HTTP-клиента (axios) для работы с API",
+    "Добавление маскировки для полей ввода (maska)",
+    "Настройка уведомлений (Notifications)"
+  ],
+  "dependencies_used": [
+    "vue",
+    "vue-axios",
+    "axios",
+    "maska",
+    "@kyvg/vue3-notification"
+  ],
+  "input_tokens": 1243,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "ee8d8e5e1812cbe1"
+}

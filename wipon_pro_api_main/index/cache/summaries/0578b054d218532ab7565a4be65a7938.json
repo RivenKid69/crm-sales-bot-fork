@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node.dao.ts:property:GeoNodeDao:parent_id",
+  "summary": "Этот код описывает сущность 'GeoNodeDao' в TypeORM, которая представляет собой таблицу в базе данных. Она содержит поля, такие как id, region_id, parent_id, имена на разных языках, координаты, даты создания и обновления, а также связи с другими сущностями.",
+  "purpose": "Эта сущность используется для хранения информации о географических узлах и их связях с лицензиями и регионами в базе данных.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранит уникальный идентификатор (id)",
+    "Связывает узел с регионом через region_id",
+    "Хранит имена на русском, английском и казахском языках",
+    "Хранит географические координаты (latitude и longitude)",
+    "Использует связи OneToMany и OneToOne для взаимодействия с другими сущностями"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "GeoNodeToLicensesDao",
+    "RegionDao"
+  ],
+  "input_tokens": 1390,
+  "output_tokens": 787,
+  "model": "qwen3:14b",
+  "code_hash": "fab82ca42099d334"
+}

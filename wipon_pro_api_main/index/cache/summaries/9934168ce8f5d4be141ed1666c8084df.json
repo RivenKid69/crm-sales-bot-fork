@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ugds/presenter/ugds.controller.ts:method:UgdsController:constructor",
+  "summary": "Этот код создает контроллер для обработки GET-запросов, которые получают список объектов Ugds. Он использует DTO для валидации данных и работает с сервисом для получения информации.",
+  "purpose": "Позволяет клиентам получать список Ugds с фильтрацией по параметрам",
+  "domain": "api",
+  "key_behaviors": [
+    "Обрабатывает GET-запросы на эндпоинт /ugds",
+    "Использует DTO для валидации тела запроса",
+    "Применяет интерцептор для преобразования данных",
+    "Интегрируется с Swagger для документирования API",
+    "Работает с сервисом для получения данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/swagger",
+    "UgdsService",
+    "TransformInterceptor",
+    "GetUgdsListDto"
+  ],
+  "input_tokens": 1311,
+  "output_tokens": 730,
+  "model": "qwen3:14b",
+  "code_hash": "06ee7151fdb9e47b"
+}

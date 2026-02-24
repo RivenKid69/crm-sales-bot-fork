@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/data/products.repository.ts:import:typeorm",
+  "summary": "Этот код создает репозиторий для работы с продуктами в базе данных. Он ищет продукт по имени, организации и типу, и если его нет, создает новый. Использует TypeORM для взаимодействия с БД.",
+  "purpose": "Упрощает работу с продуктами в базе данных, обеспечивая логику поиска и создания записей",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Поиск продукта по уникальным параметрам",
+    "Автоматическое создание если продукт не найден",
+    "Использование TypeORM для работы с БД",
+    "Работа с объектами ProductDao",
+    "Асинхронная обработка запросов"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1156,
+  "output_tokens": 711,
+  "model": "qwen3:14b",
+  "code_hash": "79952baae1eb8eed"
+}

@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/items/items.module.ts:import:./domain/use-cases/find-or-create-item.use-case",
+  "summary": "Этот код создает модуль в NestJS, который подключает репозиторий для работы с базой данных и несколько функций (use case), связанных с предметами. Модуль позволяет другим частям приложения использовать эти функции.",
+  "purpose": "Организует логику работы с предметами в отдельном модуле для удобства и повторного использования.",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Подключение к базе данных через TypeORM",
+    "Использование use case для создания и поиска предметов",
+    "Подсчет предметов по коду",
+    "Связь и развязка предметов с продуктами",
+    "Экспорт use case для использования в других модулях"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1310,
+  "output_tokens": 717,
+  "model": "qwen3:14b",
+  "code_hash": "65f90da87e1e7913"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/stores/domain/stores.service.ts:import:class-validator",
+  "summary": "Этот код реализует сервис для работы со складами, валидации данных и взаимодействия с базой данных. Использует классы NestJS, репозитории и use-case для обработки запросов.",
+  "purpose": "Обработка операций по проверке лицензий, обновлению данных складов и взаимодействию с пользователями",
+  "domain": "бизнес-логика, данные, валидация",
+  "key_behaviors": [
+    "Валидация данных с помощью class-validator",
+    "Работа с базой данных через TypeORM",
+    "Использование use-case для поиска регионов и ДГД",
+    "Получение информации о складах и пользователях",
+    "Проверка активных подписок у пользователей"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm",
+    "class-validator"
+  ],
+  "input_tokens": 3004,
+  "output_tokens": 744,
+  "model": "qwen3:14b",
+  "code_hash": "8947498414180813"
+}

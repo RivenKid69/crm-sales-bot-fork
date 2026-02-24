@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/presenter/ledgers.controller.ts:import:@nestjs/common",
+  "summary": "Этот код создает контроллер для обработки запросов на перевод средств. Он использует валидацию данных, фильтрацию по IP и преобразование ответов, а также скрыт от документации Swagger.",
+  "purpose": "Обработка API-запросов для перевода средств между счетами с защитой и обработкой данных",
+  "domain": "api",
+  "key_behaviors": [
+    "Валидация входных данных через DTO",
+    "Фильтрация запросов по IP-адресу",
+    "Преобразование данных ответа",
+    "Использование сервиса для работы с данными",
+    "Скрытие контроллера от документации Swagger"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "LedgersService",
+    "PostTransferDto",
+    "Provider",
+    "IpFilterGuard",
+    "TransformInterceptor",
+    "@nestjs/swagger"
+  ],
+  "input_tokens": 1329,
+  "output_tokens": 727,
+  "model": "qwen3:14b",
+  "code_hash": "b45a5c20f61e8253"
+}

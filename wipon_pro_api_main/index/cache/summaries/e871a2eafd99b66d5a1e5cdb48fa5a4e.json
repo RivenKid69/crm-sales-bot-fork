@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/licenses.module.ts:import:./presenter/licenses.controller",
+  "summary": "Этот код создает модуль NestJS для работы с лицензиями. Он использует TypeORM для подключения к базе данных, сервис для обработки логики и контроллер для взаимодействия с пользователем. Также подключает модуль пользователей.",
+  "purpose": "Создает структурированный модуль для управления лицензиями в приложении",
+  "domain": "база данных, управление лицензиями",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрирует сервис для бизнес-логики",
+    "Обрабатывает HTTP-запросы через контроллер",
+    "Подключает модуль пользователей",
+    "Организует код по слоям (данные, бизнес-логика, интерфейс)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm"
+  ],
+  "input_tokens": 1165,
+  "output_tokens": 738,
+  "model": "qwen3:14b",
+  "code_hash": "d90d3f9bc79ba5ee"
+}

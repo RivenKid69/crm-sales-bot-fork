@@ -1,0 +1,26 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/auth/guard/auth.guard.ts:method:AuthGuard:constructor",
+  "summary": "Этот код проверяет наличие и валидность токена в заголовке запроса. Если токен существует, он ищет пользователя по токену и привязывает его к запросу. Если токена нет или пользователь не найден — возвращает ошибку доступа.",
+  "purpose": "Защищает маршруты, позволяя доступ только авторизованным пользователям",
+  "domain": "авторизация",
+  "key_behaviors": [
+    "Проверка наличия заголовка Authorization",
+    "Извлечение токена из заголовка",
+    "Поиск пользователя по токену",
+    "Привязка пользователя к объекту запроса",
+    "Возврат ошибки, если токен неверный или отсутствует"
+  ],
+  "dependencies_used": [
+    "CanActivate",
+    "ExecutionContext",
+    "Injectable",
+    "UnauthorizedException",
+    "Observable",
+    "FindUserByTokenUseCase",
+    "Request"
+  ],
+  "input_tokens": 1339,
+  "output_tokens": 745,
+  "model": "qwen3:14b",
+  "code_hash": "aa5f49446dc9da5b"
+}

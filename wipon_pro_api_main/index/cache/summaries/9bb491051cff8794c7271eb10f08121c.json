@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/product.dao.ts:property:ProductDao:organization",
+  "summary": "Этот код описывает сущность 'products' для хранения информации о товарах. У нее есть поля для хранения типа, названия, организации и флага экспорта, а также связь с сущностью ItemDao.",
+  "purpose": "Используется для хранения данных о товарах в базе данных и их связи с другими объектами",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Создает таблицу products в базе данных",
+    "Хранит информацию о типе, названии и организации товара",
+    "Устанавливает связь один-к-одному с ItemDao",
+    "Автоматически генерирует уникальный идентификатор",
+    "Отслеживает, экспортирован ли товар"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "ItemDao"
+  ],
+  "input_tokens": 1158,
+  "output_tokens": 632,
+  "model": "qwen3:14b",
+  "code_hash": "e8e21d09ba6dff9d"
+}

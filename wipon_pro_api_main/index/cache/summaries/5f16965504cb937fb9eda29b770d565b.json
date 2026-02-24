@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/products/domain/use-cases/find-or-create-product.use-case.ts:method:FindOrCreateProductUseCase:constructor",
+  "summary": "Этот код - сервис, который ищет продукт по имени и организациям, а если его нет - создает новый. Использует репозиторий для работы с базой данных и возвращает объект ProductDao.",
+  "purpose": "Позволяет гарантировать наличие продукта в системе, создавая его при необходимости",
+  "domain": "Управление продуктами (например, в интернет-магазине)",
+  "key_behaviors": [
+    "Ищет продукт по параметрам",
+    "Создает новый продукт при отсутствии",
+    "Использует репозиторий для доступа к данным",
+    "Возвращает объект ProductDao",
+    "Работает асинхронно через Promise"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "ProductsRepository",
+    "ProductDao"
+  ],
+  "input_tokens": 1102,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "c433a5a65fb408d1"
+}

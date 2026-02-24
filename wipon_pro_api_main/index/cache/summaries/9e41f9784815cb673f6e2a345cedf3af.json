@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/transactions/dto/post-transaction.dto.ts:property:PostTransactionDto:user_id",
+  "summary": "Этот код определяет DTO (Data Transfer Object) для транзакции, где каждое поле проверяется на валидность с помощью декораторов. Например, user_id должен быть числом, provider — из определенного списка, а contracter_id — должен существовать в системе",
+  "purpose": "Обеспечивает корректность данных при передаче информации о транзакции между клиентом и сервером",
+  "domain": "платежи, транзакции",
+  "key_behaviors": [
+    "Проверка типов данных (числа, строки, JSON)",
+    "Ограничение значений по списку (например, для provider)",
+    "Проверка существования сущности (contracter_id)",
+    "Обязательные поля (например, user_id)",
+    "Поддержка необязательных полей (timestamp, raw_info)"
+  ],
+  "dependencies_used": [
+    "class-validator",
+    "IsIn",
+    "IsInt",
+    "IsJSON",
+    "IsNotEmpty",
+    "IsNumber",
+    "IsNumberString",
+    "IsOptional",
+    "IsString",
+    "IsLedgerExists"
+  ],
+  "input_tokens": 1485,
+  "output_tokens": 719,
+  "model": "qwen3:14b",
+  "code_hash": "016d7685d03071fe"
+}

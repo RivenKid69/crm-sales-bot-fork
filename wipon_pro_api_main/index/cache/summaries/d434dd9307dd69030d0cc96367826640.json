@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/helpers/dataToResponse/product-data-to-response.ts:import:../../dao/product.dao",
+  "summary": "Этот код преобразует данные о продукте из внутреннего формата (ProductDao) в простой объект для отправки в ответе. Если продукт не найден, возвращает null.",
+  "purpose": "Подготовка данных для вывода в API-ответах",
+  "domain": "api",
+  "key_behaviors": [
+    "Преобразует поля name, type, organization из DAO-объекта",
+    "Проверяет наличие данных перед возвратом",
+    "Возвращает null при отсутствии продукта",
+    "Создаёт новый объект без лишних свойств",
+    "Используется для стандартизации ответов API"
+  ],
+  "dependencies_used": [
+    "ProductDao"
+  ],
+  "input_tokens": 1049,
+  "output_tokens": 587,
+  "model": "qwen3:14b",
+  "code_hash": "0c575e621ce1d4d0"
+}

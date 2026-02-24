@@ -1,0 +1,27 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/subscriptions.module.ts:import:./domain/subscriptions.service",
+  "summary": "Этот код импортирует модуль NestJS, который отвечает за управление подписками. Он использует репозитории, сервисы, контроллеры и другие модули для обработки данных и логики подписок.",
+  "purpose": "Создает модуль для управления подписками пользователей, включая взаимодействие с базой данных, уведомлениями и другими сервисами.",
+  "domain": "база данных, уведомления, сервисы, api",
+  "key_behaviors": [
+    "Использует TypeORM для работы с базой данных",
+    "Интегрируется с другими модулями (пользователи, устройства, аккаунты)",
+    "Обрабатывает бизнес-логику подписок",
+    "Использует Bull для асинхронных задач",
+    "Взаимодействует с внешними сервисами (Push, Billing)"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "@nestjs/bull",
+    "@nestjs/axios",
+    "UsersModule",
+    "StoresModule",
+    "AccountsModule",
+    "DevicesModule"
+  ],
+  "input_tokens": 1760,
+  "output_tokens": 787,
+  "model": "qwen3:14b",
+  "code_hash": "1dda264d8725753e"
+}

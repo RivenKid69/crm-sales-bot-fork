@@ -1,0 +1,24 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/store-types/presenter/store-types.controller.ts:class:StoreTypesController",
+  "summary": "Этот класс — контроллер, который получает список типов магазинов. Он использует сервис для получения данных и интерцептор для преобразования ответа. Декораторы добавляют документацию через Swagger.",
+  "purpose": "Позволяет получать список типов магазинов через HTTP-запрос и документировать этот эндпоинт для других разработчиков.",
+  "domain": "api",
+  "key_behaviors": [
+    "Получает список типов магазинов",
+    "Использует сервис для логики",
+    "Преобразует ответ с помощью интерцептора",
+    "Добавляет документацию через Swagger",
+    "Обрабатывает GET-запросы на эндпоинт /store-types"
+  ],
+  "dependencies_used": [
+    "StoreTypesService",
+    "TransformInterceptor",
+    "ApiOperation",
+    "ApiOkResponse",
+    "ApiTags"
+  ],
+  "input_tokens": 1058,
+  "output_tokens": 732,
+  "model": "qwen3:14b",
+  "code_hash": "8df0e2dffcc055cb"
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/licenses/domain/licenses.service.ts:import:../data/licenses.repository",
+  "summary": "Этот код - сервис, который ищет лицензию по номеру, проверяет её наличие, собирает данные о регионе и формирует ответ для API. Он использует репозитории и DAO для работы с базой данных.",
+  "purpose": "Позволяет получать информацию о лицензии вместе с географическими данными через API",
+  "domain": "api",
+  "key_behaviors": [
+    "Ищет лицензию по номеру",
+    "Проверяет наличие лицензии и выбрасывает ошибку, если её нет",
+    "Собирает данные о регионе и городе из связанных объектов",
+    "Формирует структурированный ответ для API",
+    "Использует TypeORM для работы с базой данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "typeorm"
+  ],
+  "input_tokens": 2002,
+  "output_tokens": 731,
+  "model": "qwen3:14b",
+  "code_hash": "e4c83e40972244dd"
+}

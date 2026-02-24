@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/subscriptions/data/subscription.repository.ts:import:typeorm",
+  "summary": "Этот код создает репозиторий для работы с подписками пользователей. Он может искать последнюю активную подписку пользователя и деактивировать её, ставя отметку о удалении.",
+  "purpose": "Управление подписками пользователей в приложении",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Поиск последней подписки пользователя по ID",
+    "Отключение подписки с отметкой времени удаления",
+    "Использование TypeORM для работы с базой данных",
+    "Возврат null если подписка не найдена",
+    "Обновление статуса подписки в базе данных"
+  ],
+  "dependencies_used": [
+    "typeorm/EntityRepository",
+    "typeorm/Repository"
+  ],
+  "input_tokens": 1219,
+  "output_tokens": 593,
+  "model": "qwen3:14b",
+  "code_hash": "df84cb522be37e97"
+}

@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/interceptor/transform.interceptor.ts:import:rxjs",
+  "summary": "Этот код создает интерсептор в NestJS, который преобразует объекты в простые объекты (без метаданных) перед отправкой ответа. Использует RxJS для работы с потоками данных и class-transformer для преобразования классов.",
+  "purpose": "Автоматически сериализует данные, возвращаемые контроллерами, для корректной передачи через API",
+  "domain": "api",
+  "key_behaviors": [
+    "Преобразует объекты в plain-объекты (удаляет метаданные)",
+    "Использует RxJS для обработки асинхронных данных",
+    "Работает как интерсептор в NestJS",
+    "Поддерживает кастомизацию преобразования через комментарии",
+    "Обрабатывает разные типы возвращаемых данных"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "class-transformer",
+    "rxjs",
+    "rxjs/operators"
+  ],
+  "input_tokens": 1222,
+  "output_tokens": 714,
+  "model": "qwen3:14b",
+  "code_hash": "87251ef0ed7b12c7"
+}

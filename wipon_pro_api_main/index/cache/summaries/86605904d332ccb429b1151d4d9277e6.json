@@ -1,0 +1,23 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/app.module.ts:import:./modules/billings/billings.module",
+  "summary": "Этот код импортирует и настраивает модуль billings в NestJS приложении, объединяя его с другими модулями, такими как база данных, кэширование и международизация. Он позволяет управлять функциональностью, связанной с биллингом.",
+  "purpose": "Интегрирует модуль биллинга в общую структуру приложения для обработки финансовых операций и отчетов",
+  "domain": "api",
+  "key_behaviors": [
+    "Интеграция с базой данных через TypeORM",
+    "Поддержка международного интерфейса через i18n",
+    "Использование Redis для кэширования данных",
+    "Синхронизация с другими модулями, такими как пользователи и транзакции"
+  ],
+  "dependencies_used": [
+    "@nestjs/common",
+    "@nestjs/typeorm",
+    "nestjs-i18n",
+    "@nestjs/bull",
+    "cache-manager-redis-store"
+  ],
+  "input_tokens": 2736,
+  "output_tokens": 763,
+  "model": "qwen3:14b",
+  "code_hash": "e95abcb62388c1dd"
+}

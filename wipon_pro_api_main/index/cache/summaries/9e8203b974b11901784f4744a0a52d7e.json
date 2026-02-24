@@ -1,0 +1,19 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/geo-node.dao.ts:property:GeoNodeDao:latitude",
+  "summary": "Свойство latitude хранит широту географического узла в виде числа с плавающей точкой. Оно используется для точного определения местоположения объекта на карте.",
+  "purpose": "Позволяет точно определять географическое положение узла в системе",
+  "domain": "геолокация, картография",
+  "key_behaviors": [
+    "Хранит числовые значения с плавающей точкой",
+    "Используется для определения координат на карте",
+    "Работает с TypeORM для сохранения в базу данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "@Column"
+  ],
+  "input_tokens": 1556,
+  "output_tokens": 545,
+  "model": "qwen3:14b",
+  "code_hash": "fab82ca42099d334"
+}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/store.dao.ts:property:StoreDao:license_remapping_at",
+  "summary": "Этот код описывает сущность StoreDao, которая представляет таблицу 'stores' в базе данных. Она содержит поля для хранения информации о магазинах, включая дату последнего изменения лицензии (license_remapping_at), и использует TypeORM для работы с базой данных.",
+  "purpose": "Хранение и управление данными о магазинах, включая информацию о лицензиях и связях с другими сущностями",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Хранение информации о магазинах",
+    "Использование TypeORM для маппинга сущности на таблицу",
+    "Связь с другими сущностями через OneToOne",
+    "Автоматическое управление датами создания, обновления и удаления",
+    "Хранение даты последнего изменения лицензии (license_remapping_at)"
+  ],
+  "dependencies_used": [
+    "typeorm"
+  ],
+  "input_tokens": 2129,
+  "output_tokens": 752,
+  "model": "qwen3:14b",
+  "code_hash": "f69c06843df0eb5a"
+}

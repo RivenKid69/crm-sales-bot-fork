@@ -1,0 +1,21 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/common/dao/invoice.dao.ts:property:InvoiceDao:updated_at",
+  "summary": "Этот код описывает сущность 'invoices' в базе данных, которая хранит информацию о счетах. Класс InvoiceDao содержит поля, такие как ID, связь с ledger, статус, сумма и даты создания и обновления.",
+  "purpose": "Используется для хранения и управления данными о счетах в базе данных через ORM TypeORM",
+  "domain": "база данных",
+  "key_behaviors": [
+    "Автоматическое присвоение ID при создании записи",
+    "Связь с другой сущностью LedgerDao через поле ledger_id",
+    "Хранение даты создания и обновления записи",
+    "Поддержка типов данных, таких как строка, число и дата",
+    "Использование аннотаций TypeORM для маппинга на таблицу базы данных"
+  ],
+  "dependencies_used": [
+    "typeorm",
+    "LedgerDao"
+  ],
+  "input_tokens": 1437,
+  "output_tokens": 740,
+  "model": "qwen3:14b",
+  "code_hash": "44b6761a156d5159"
+}

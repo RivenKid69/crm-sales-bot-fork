@@ -1,0 +1,29 @@
+{
+  "entity_id": "/home/corta/crm_sales_bot/wipon_pro_api_main/wipon-pro-api-main/src/modules/ledgers/domain/ledgers.service.ts:import:../dto/post-transfer.dto",
+  "summary": "Этот код обрабатывает перевод средств между пользователями. Проверяет валидность пользователей, обновляет счета и логирует операции в базе данных с использованием транзакций.",
+  "purpose": "Обеспечивает безопасный перевод средств между пользователями с валидацией и логированием",
+  "domain": "Финансовые операции / бухгалтерия",
+  "key_behaviors": [
+    "Проверка корректности ID отправителя и получателя",
+    "Обновление счетов пользователей в рамках транзакции",
+    "Логирование операций в таблице ledger_chronic",
+    "Создание новых записей в ledger_chronic при необходимости",
+    "Использование сервиса billingService для дополнительных действий"
+  ],
+  "dependencies_used": [
+    "HttpException",
+    "Injectable",
+    "PostTransferDto",
+    "FindUserByIdUseCase",
+    "getManager",
+    "AccountDao",
+    "LedgerChronicDao",
+    "greaterThan",
+    "BillingService",
+    "createCustomErrorLogger"
+  ],
+  "input_tokens": 2703,
+  "output_tokens": 771,
+  "model": "qwen3:14b",
+  "code_hash": "e9c0b294f1e03b7c"
+}
