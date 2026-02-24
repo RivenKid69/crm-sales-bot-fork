@@ -209,10 +209,14 @@ class CascadeRetriever:
             # Проверяем нужны ли префиксы (FRIDA использует префиксы для лучшего качества)
             self._use_prefixes = "FRIDA" in embedder_model.upper()
 
-            # Индексируем все секции
-            # Для FRIDA добавляем префикс search_document:
+            # Индексируем все секции.
+            # Для FRIDA добавляем metadata-aware префикс search_document.
             if self._use_prefixes:
-                texts = [f"search_document: {s.facts}" for s in self.kb.sections]
+                texts = [
+                    f"search_document: [{s.category}/{s.topic}] "
+                    f"({', '.join(s.keywords[:5])}). {s.facts}"
+                    for s in self.kb.sections
+                ]
             else:
                 texts = [s.facts for s in self.kb.sections]
 
@@ -425,23 +429,17 @@ class CascadeRetriever:
             )
             return []
 
-        # Этап 1: Semantic match (если включено)
+        # Всегда запускаем все 3 этапа и объединяем через RRF.
+        semantic_results: List[SearchResult] = []
         if self.use_embeddings and self.embedder:
-            results = self._semantic_search(query, sections, top_k)
-            if results:
-                return results
+            semantic_results = self._semantic_search(query, sections, top_k=top_k * 3)
+        exact_results = self._exact_search(query, sections)
+        lemma_results = self._lemma_search(query, sections)
 
-        # Этап 2: Exact match
-        results = self._exact_search(query, sections)
-        if results:
-            return results[:top_k]
+        if not semantic_results and not exact_results and not lemma_results:
+            return []
 
-        # Этап 3: Lemma match
-        results = self._lemma_search(query, sections)
-        if results:
-            return results[:top_k]
-
-        return []
+        return self._rrf_merge([semantic_results, exact_results, lemma_results], k=60)[:top_k]
 
     def search_with_stats(
         self,
@@ -474,38 +472,59 @@ class CascadeRetriever:
         sections = self.kb.sections
 
         # Этап 1: Semantic match
+        semantic_results: List[SearchResult] = []
         if self.use_embeddings and self.embedder:
             start = time.perf_counter()
-            results = self._semantic_search(query, sections, top_k)
+            semantic_results = self._semantic_search(query, sections, top_k=top_k * 3)
             stats["semantic_time_ms"] = (time.perf_counter() - start) * 1000
-
-            if results:
-                stats["stage_used"] = "semantic"
-                stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
-                return results, stats
 
         # Этап 2: Exact match
         start = time.perf_counter()
-        results = self._exact_search(query, sections)
+        exact_results = self._exact_search(query, sections)
         stats["exact_time_ms"] = (time.perf_counter() - start) * 1000
-
-        if results:
-            stats["stage_used"] = "exact"
-            stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
-            return results[:top_k], stats
 
         # Этап 3: Lemma match
         start = time.perf_counter()
-        results = self._lemma_search(query, sections)
+        lemma_results = self._lemma_search(query, sections)
         stats["lemma_time_ms"] = (time.perf_counter() - start) * 1000
 
-        if results:
-            stats["stage_used"] = "lemma"
+        if not semantic_results and not exact_results and not lemma_results:
             stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
-            return results[:top_k], stats
+            return [], stats
 
+        results = self._rrf_merge([semantic_results, exact_results, lemma_results], k=60)[:top_k]
+        stats["stage_used"] = "hybrid"
         stats["total_time_ms"] = (time.perf_counter() - start_total) * 1000
-        return [], stats
+        return results, stats
+
+    def _rrf_merge(
+        self,
+        result_lists: List[List[SearchResult]],
+        k: int = 60,
+    ) -> List[SearchResult]:
+        scores: Dict[str, float] = {}
+        best_result: Dict[str, SearchResult] = {}
+
+        for results in result_lists:
+            for rank, result in enumerate(results):
+                key = f"{result.section.category}/{result.section.topic}"
+                rrf_score = 1.0 / (k + rank + 1)
+                scores[key] = scores.get(key, 0.0) + rrf_score
+                if key not in best_result or result.score > best_result[key].score:
+                    best_result[key] = result
+
+        merged: List[SearchResult] = []
+        for key in sorted(scores, key=scores.get, reverse=True):
+            result = best_result[key]
+            merged.append(SearchResult(
+                section=result.section,
+                score=scores[key],
+                stage=result.stage,
+                matched_keywords=result.matched_keywords,
+                matched_lemmas=result.matched_lemmas,
+            ))
+
+        return merged
 
     def _exact_search(
         self,

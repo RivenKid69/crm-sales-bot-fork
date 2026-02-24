@@ -2036,6 +2036,7 @@ class ResponseGenerator:
                     recently_used_keys=recently_used,
                     history=history,
                     secondary_intents=self._get_secondary_intents(working_context),
+                    collected_data=working_context.get("collected_data", {}),
                 )
             except Exception as e:
                 logger.error("Enhanced retrieval failed in prepare_response_context", error=str(e))
@@ -2255,6 +2256,7 @@ class ResponseGenerator:
                     recently_used_keys=recently_used,
                     history=context.get("history", []),
                     secondary_intents=self._get_secondary_intents(context),
+                    collected_data=context.get("collected_data", {}),
                 )
             except Exception as e:
                 logger.error("Enhanced retrieval failed, falling back", error=str(e))
@@ -3855,19 +3857,37 @@ class ResponseGenerator:
         return best
 
     def _enforce_enterprise_tis_quote(self, response: str, context: Dict[str, Any]) -> str:
-        """Force deterministic TIS quote for 5+ points in pricing turns."""
+        """Force deterministic TIS quote when user explicitly asks about ТИС or needs >5 points."""
         points = self._extract_points_from_context(context)
-        if points <= 5:
+        if points < 2:
             return response
 
         user_low = str(context.get("user_message", "") or "").lower()
         intent_low = str(context.get("intent", "") or "").lower()
+
+        # Only force ТИС quote when:
+        # 1. User explicitly mentions "ТИС" in their message, OR
+        # 2. More than 5 points (Pro max = 5, so >5 requires ТИС)
+        # For 2-5 points, don't override if user asks about specific tariff (Mini/Lite/Standard/Pro)
+        user_asks_tis = bool(re.search(r'\bтис\b', user_low))
+        user_asks_named_tariff = bool(re.search(
+            r'\b(?:mini|lite|standard|pro|мини|лайт|стандарт)\b', user_low
+        ))
+
+        if points <= 5 and not user_asks_tis:
+            # User has ≤5 points and didn't mention ТИС — let regular flow handle it
+            return response
+        if user_asks_named_tariff and not user_asks_tis:
+            # User asks about a specific tariff — don't override with ТИС
+            return response
+
         pricing_markers = (
             "цена", "стоимость", "сколько", "тариф", "ориентир", "прайс", "по деньгам",
         )
         asks_pricing = (
             intent_low in {"price_question", "pricing_details", "pricing_comparison"}
             or any(marker in user_low for marker in pricing_markers)
+            or user_asks_tis
         )
         if not asks_pricing:
             return response
@@ -4211,51 +4231,19 @@ class ResponseGenerator:
             result,
             flags=re.IGNORECASE,
         )
-        # Strip ANY sentence containing "демо" — Wipon has no demo
+        # Strip ANY sentence containing "демо" — Wipon has no demo version
+        # BUT keep "7-дневный тестовый период" mentions (KB has trial info)
         result = re.sub(
-            r'[^.!?]*демо\w*[^.!?]*[.!?]?\s*',
-            '',
-            result,
-            flags=re.IGNORECASE,
-        )
-        # Strip sentences with test/trial offers — Wipon has no trial or test access
-        result = re.sub(
-            r'[^.!?]*(?:'
-            r'тестов\w+\s+(?:доступ|период|верси\w+)|'
-            r'пробн\w+\s+(?:период|верси\w+|доступ)|'
-            r'(?:попробовать|протестировать)\s+бесплатно|'
-            r'бесплатн\w+\s+(?:тест|пробн|доступ|период)\w*'
-            r')[^.!?]*[.!?]?\s*',
+            r'[^.!?]*демо(?:нстраци\w+|[-\s]?верси\w+|[-\s]?доступ\w*|[-\s]?режим\w*)[^.!?]*[.!?]?\s*',
             '',
             result,
             flags=re.IGNORECASE,
         )
 
-        # Strip fabricated hardware pricing (bot fabricates "терминал Paycom за 500000₸")
-        result = re.sub(
-            r'[^.!?]*(?:терминал|оборудовани\w+|устройств\w+)\s+\w+\s+'
-            r'(?:за|от|по)\s+\d[\d\s]*(?:₸|тг|тенге)'
-            r'[^.!?]*[.!?]?\s*',
-            '',
-            result,
-            flags=re.IGNORECASE,
-        )
-        # Strip fabricated monthly calculations for yearly tariffs
-        # Bot divides yearly price by 12 and presents it as monthly (e.g. 18333₸/мес)
-        # Only valid monthly price is 5000₸ (Mini)
-        _FAKE_MONTHLY = re.compile(
-            r'(\d[\d\s]*)\s*(?:₸|тг|тенге)\s*(?:в\s+месяц|/мес)',
-            re.IGNORECASE,
-        )
-        for m in reversed(list(_FAKE_MONTHLY.finditer(result))):
-            price_raw = m.group(1).replace(' ', '').replace('\u00a0', '')
-            if price_raw.isdigit() and int(price_raw) != 5000:
-                # Any monthly price that isn't 5000 is fabricated
-                sent_start = result.rfind('.', 0, m.start())
-                sent_start = sent_start + 1 if sent_start >= 0 else 0
-                sent_end_m = re.search(r'[.!?]', result[m.end():])
-                sent_end = m.end() + sent_end_m.end() if sent_end_m else len(result)
-                result = result[:sent_start] + result[sent_end:]
+        # NOTE: Hardware pricing strip and monthly calculation strip REMOVED.
+        # KB now has real equipment prices (POS i3=140000, scanners, printers, etc.)
+        # and Kaspi installment monthly amounts. The _has_price_hallucination method
+        # (which checks against retrieved_facts) handles ungrounded prices.
         # Strip fabricated phone numbers (bot should NEVER give phone numbers)
         # Catches: "телефону: +7 701...", "номер: 8 700 500...", "звоните 87..."
         result = re.sub(

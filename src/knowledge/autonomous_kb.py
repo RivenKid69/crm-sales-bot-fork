@@ -7,7 +7,7 @@ categories defined in the current state's kb_categories field.
 
 Zero LLM calls, zero ML overhead — just dict lookups + concatenation.
 
-Token budget: ~6K tokens (~25K chars) per turn.
+Token budget: ~2.5K tokens (~10K chars) per turn.
 
 Fact rotation: accepts recently_used_keys to deprioritize sections that
 were already shown in recent turns. Fresh sections appear first in the
@@ -20,8 +20,8 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Max characters for KB facts (~6K tokens for Ministral 3 14B)
-MAX_KB_CHARS = 25_000
+# Max characters for KB facts (state backfill).
+MAX_KB_CHARS = 10_000
 
 
 def load_facts_for_state(
@@ -29,6 +29,7 @@ def load_facts_for_state(
     flow_config,
     kb=None,
     recently_used_keys: Set[str] = None,
+    collected_data: Optional[dict] = None,
 ) -> Tuple[str, List[Dict[str, str]], List[str]]:
     """
     Load KB facts directly for the given state's kb_categories.
@@ -39,6 +40,8 @@ def load_facts_for_state(
         kb: KnowledgeBase instance (loaded from retriever if None)
         recently_used_keys: Set of "category/topic" keys used in recent turns.
             These sections are deprioritized (moved after fresh sections).
+        collected_data: Optional conversation context (collected slots) used
+            to boost sections with overlapping keywords.
 
     Returns:
         Tuple of (facts_text, urls_list, fact_keys_used):
@@ -84,9 +87,21 @@ def load_facts_for_state(
     fresh = [s for s in all_sections if f"{s.category}/{s.topic}" not in recently_used_keys]
     seen = [s for s in all_sections if f"{s.category}/{s.topic}" in recently_used_keys]
 
-    # Sort each group by priority DESC (higher priority first)
-    fresh.sort(key=lambda s: s.priority, reverse=True)
-    seen.sort(key=lambda s: s.priority, reverse=True)
+    # Context-aware sorting: boost sections relevant to collected dialogue data.
+    context_words = set()
+    if collected_data:
+        for value in collected_data.values():
+            if isinstance(value, str):
+                context_words.update(w.lower() for w in value.split() if len(w) > 2)
+
+    def sort_key(section):
+        overlap = 0
+        if context_words:
+            overlap = len({k.lower() for k in section.keywords} & context_words)
+        return (section.priority, overlap)
+
+    fresh.sort(key=sort_key, reverse=True)
+    seen.sort(key=sort_key, reverse=True)
 
     # Fresh content appears first in token window
     all_sections = fresh + seen

@@ -22,6 +22,7 @@ from src.settings import settings
 
 from .autonomous_kb import MAX_KB_CHARS, load_facts_for_state
 from .category_router import CategoryRouter
+from .reranker import get_reranker
 from .retriever import SKIP_RETRIEVAL_INTENTS, SearchResult, get_retriever
 
 T = TypeVar("T", bound=BaseModel)
@@ -50,6 +51,11 @@ class DecompositionResult(BaseModel):
 class QueryRewriter:
     """Rewrites follow-up questions into standalone retrieval queries."""
 
+    _STOP_WORDS = frozenset({
+        "и", "в", "на", "с", "по", "а", "но", "что", "как", "это",
+        "не", "да", "ну", "же", "ли", "бы", "у", "к", "о", "из", "за",
+        "то", "мы", "вы", "он", "она", "они", "я", "мне", "для",
+    })
     _FOLLOW_UP_PRONOUN_RE = re.compile(
         r"\b(?:это|они|такой|туда|там|его|её|ее)\b",
         re.IGNORECASE,
@@ -101,7 +107,21 @@ class QueryRewriter:
             return original
 
         cleaned = self._clean_rewrite(rewritten)
-        return cleaned or original
+        if not cleaned:
+            return original
+
+        # Safety: reject rewrites that dropped most key terms from the original query.
+        orig_words = set(original.lower().split()) - self._STOP_WORDS
+        rew_words = set(cleaned.lower().split()) - self._STOP_WORDS
+        overlap = len(orig_words & rew_words) / len(orig_words) if orig_words else 1.0
+        if orig_words and overlap < 0.3:
+            logger.warning(
+                "QueryRewriter diverged, using original",
+                original=original,
+                rewritten=cleaned,
+            )
+            return original
+        return cleaned
 
     def _format_last_turns(self, history: List[Dict[str, Any]]) -> str:
         lines: List[str] = []
@@ -369,14 +389,32 @@ class EnhancedRetrievalPipeline:
         recently_used_keys: Optional[Set[str]] = None,
         history: Optional[List[Dict[str, Any]]] = None,
         secondary_intents: Optional[List[str]] = None,
+        collected_data: Optional[dict] = None,
     ) -> Tuple[str, List[Dict[str, str]], List[str]]:
         recently_used = set(recently_used_keys or set())
         history = history or []
 
         # [0] Fast path for non-factual intents.
         if intent in SKIP_RETRIEVAL_INTENTS:
+            # Don't skip retrieval if user message contains explicit question markers
+            # E.g. "у меня 2 точки. Что посоветуете — Lite или Standard?" → situation_provided
+            # but has a question → needs KB facts.
+            _msg_lower = (user_message or "").lower()
+            # Simple but effective: any "?" in message = question → don't skip retrieval.
+            # Plus minimal keyword fallback for messages without "?".
+            _has_question = '?' in _msg_lower or bool(re.search(
+                r'(?:сколько|какие?|какой|расскажите|посоветуй|почём|цен[аы]|стоимост'
+                r'|можно\s+ли|надо\s+ли|нужно\s+ли|есть\s+ли'
+                r'|poster|постер|iiko|r-keeper|р-кипер|1[cс]\b'
+                r'|битрикс|тариф|mini|lite|standard|тис\b'
+                r'|лучше|хуже|отличи|разниц|сравн|перейти|переход'
+                r'|хочу\s+(?:узнать|понять)|интересует|подскаж)',
+                _msg_lower,
+            ))
+            if _has_question:
+                pass  # Fall through to full retrieval — message has explicit question
             # If ANY secondary intent needs KB data → DON'T skip
-            if secondary_intents and not set(secondary_intents).issubset(self._SOCIAL_ONLY_SECONDARY):
+            elif secondary_intents and not set(secondary_intents).issubset(self._SOCIAL_ONLY_SECONDARY):
                 pass  # Fall through to full retrieval
             else:
                 return load_facts_for_state(
@@ -384,6 +422,7 @@ class EnhancedRetrievalPipeline:
                     flow_config=flow_config,
                     kb=kb,
                     recently_used_keys=recently_used,
+                    collected_data=collected_data,
                 )
 
         retriever = get_retriever()
@@ -396,14 +435,113 @@ class EnhancedRetrievalPipeline:
         if self.category_router is not None and rewritten_query:
             categories = self.category_router.route(rewritten_query)
 
+        # [2a] Ensure "pricing" category is included when tariff/price terms appear.
+        # CategoryRouter may route "расскажите про тариф Mini" → "features" only,
+        # missing the pricing section. Force-include "pricing" when tariff names
+        # or explicit price words are in the query.
+        if categories is not None:
+            # Check BOTH rewritten_query and original user_message for keywords
+            _q_low = ((rewritten_query or "") + " " + (user_message or "")).lower()
+            _needs_pricing = bool(re.search(
+                r'(?:тариф|mini|lite|standard|pro|тис|мини|лайт|стандарт|про\b'
+                r'|цен[аы]|стоимост|сколько\s+стои|почём|прайс|расценк'
+                r'|оборудовани|комплект|моноблок|pos|принтер|сканер|вес[аы]'
+                r'|офд|ofd|фискал|обучени|тренинг)',
+                _q_low,
+            ))
+            if _needs_pricing and "pricing" not in categories:
+                categories = list(categories) + ["pricing"]
+            # Also include "equipment" for hardware questions
+            _needs_equipment = bool(re.search(
+                r'(?:оборудовани|моноблок|pos|принтер|сканер|вес[аы]|комплект|ящик'
+                r'|терминал|tsd|тсд)',
+                _q_low,
+            ))
+            if _needs_equipment and "equipment" not in categories:
+                categories = list(categories) + ["equipment"]
+            # Include "fiscal" for OFD questions
+            _needs_fiscal = bool(re.search(
+                r'(?:офд|ofd|фискал|фиск\b)',
+                _q_low,
+            ))
+            if _needs_fiscal and "fiscal" not in categories:
+                categories = list(categories) + ["fiscal"]
+            # Include "support" for support/training questions
+            _needs_support = bool(re.search(
+                r'(?:поддержк|обучени|тренинг|техподдержк)',
+                _q_low,
+            ))
+            if _needs_support and "support" not in categories:
+                categories = list(categories) + ["support"]
+            # Include "integrations" for marketplace/bank/1C/API questions
+            _needs_integrations = bool(re.search(
+                r'(?:маркетплейс|ozon|wildberries|озон|вайлдберриз'
+                r'|kaspi\s*магазин|каспи\s*магазин|halyk\s*market|халык\s*маркет'
+                r'|kaspi\s*qr|каспи\s*qr|nfc|бесконтактн'
+                r'|интеграци|маркировк|ismet|исмет|data\s*matrix'
+                r'|эсф|снт|электронн\w+\s+счёт|электронн\w+\s+счет'
+                r'|смешанн\w+\s+оплат|комбинированн\w+\s+оплат'
+                r'|api\b|webhook|rest\s+api)',
+                _q_low,
+            ))
+            if _needs_integrations and "integrations" not in categories:
+                categories = list(categories) + ["integrations"]
+            # Include "employees" for staff/cashier questions
+            _needs_employees = bool(re.search(
+                r'(?:сотрудник|кассир|персонал|штат\w*|смен[аы]\b'
+                r'|права\s+доступ|ограничи\w+\s+доступ|контрол\w+\s+кассир'
+                r'|зарплат|кадров)',
+                _q_low,
+            ))
+            if _needs_employees and "employees" not in categories:
+                categories = list(categories) + ["employees"]
+            # Include "inventory" for warehouse/revision questions
+            _needs_inventory = bool(re.search(
+                r'(?:ревизи|инвентаризац|склад\w*\b|остатк\w*\b'
+                r'|серийн\w+\s+номер|imei|партии|сроки\s+годност)',
+                _q_low,
+            ))
+            if _needs_inventory and "inventory" not in categories:
+                categories = list(categories) + ["inventory"]
+            # Include "mobile" for mobile/phone/offline questions
+            _needs_mobile = bool(re.search(
+                r'(?:мобильн|с\s+телефон|офлайн|оффлайн|без\s+интернет'
+                r'|android|ios|планшет|push\s*уведомлен)',
+                _q_low,
+            ))
+            if _needs_mobile and "mobile" not in categories:
+                categories = list(categories) + ["mobile"]
+            # Include "analytics" for analytics/reports questions
+            _needs_analytics = bool(re.search(
+                r'(?:аналитик|abc.анализ|маржинальн|себестоимост'
+                r'|отчёт\w*\s+по\s+(?:прибыл|продаж|кассир|сотрудник))',
+                _q_low,
+            ))
+            if _needs_analytics and "analytics" not in categories:
+                categories = list(categories) + ["analytics"]
+
         # [3] Base query retrieval.
         base_results: List[SearchResult] = []
         if rewritten_query:
             base_results = retriever.search(
                 rewritten_query,
                 categories=categories,
-                top_k=self.top_k_per_sub_query,
+                top_k=20,
             )
+
+        # [3.5] Dual-query retrieval: merge rewritten query with original query.
+        original_stripped = (user_message or "").strip()
+        if (
+            rewritten_query
+            and original_stripped
+            and rewritten_query != original_stripped
+        ):
+            original_results = retriever.search(
+                original_stripped,
+                categories=categories,
+                top_k=10,
+            )
+            base_results = self.multi_query_retriever.merge_rankings([base_results, original_results])
 
         # [4] Decomposition + multi-query RRF merge.
         ranked_results = base_results
@@ -416,6 +554,11 @@ class EnhancedRetrievalPipeline:
                     top_k_per_query=self.top_k_per_sub_query,
                 )
                 ranked_results = self.multi_query_retriever.merge_rankings([base_results, *sub_results])
+
+        # [4.5] Cross-encoder reranking over hybrid candidates.
+        reranker = get_reranker()
+        if reranker.is_available() and len(ranked_results) > 1:
+            ranked_results = reranker.rerank(rewritten_query, ranked_results[:20], top_k=5)
 
         # [5] Long-context reorder before text formatting.
         reordered_results = LongContextReorder.reorder(ranked_results)
@@ -439,6 +582,7 @@ class EnhancedRetrievalPipeline:
             flow_config=flow_config,
             kb=kb,
             recently_used_keys=state_recently_used,
+            collected_data=collected_data,
         )
         remaining = self.max_kb_chars - len(query_facts_text)
         if query_facts_text:

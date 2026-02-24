@@ -1,0 +1,1687 @@
+{
+  "summary": {
+    "queries_total": 30,
+    "top_k": 5,
+    "queries_changed_top5": 30,
+    "queries_changed_top5_rate": 1.0,
+    "avg_overlap_at_5": 3.0667,
+    "avg_before_latency_ms": 180.97,
+    "avg_after_latency_ms": 184.47,
+    "before_empty_results": 0,
+    "after_empty_results": 0
+  },
+  "queries": [
+    {
+      "query": "сколько стоит Mini на 5 точек?",
+      "before_latency_ms": 189.35,
+      "after_latency_ms": 189.58,
+      "before_keys": [
+        "pricing/pricing_mini_tariff_1391",
+        "pricing/pricing_wipon_mini_intro_1809",
+        "pricing/pricing_wipon_mini_info_1670",
+        "pricing/pricing_mini_small_shop_1397",
+        "pricing/pricing_mini_5000_786"
+      ],
+      "after_keys": [
+        "pricing/pricing_tariff_mini_427",
+        "pricing/pricing_5000_tariff_787",
+        "pricing/pricing_wipon_mini_2164",
+        "pricing/pricing_mini_tariff_1391",
+        "pricing/pricing_mini_small_shop_1397"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "lemma",
+        "lemma",
+        "semantic",
+        "semantic"
+      ],
+      "before_snippets": [
+        "Тариф Mini — базовый формат учёта для одной торговой точки.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Точки: 1 • Включено: онлайн-касса с фиска...",
+        "Wipon Mini — стартовый тариф для простой торговой точки.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Точки: 1 • Назначение: простые продажи  Это...",
+        "Wipon Mini — базовая версия программы для простого торгового сценария.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Точки: 1 • Сценарий: простые п...",
+        "Mini для небольшой точки — базовый тариф с кассовыми функциями.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Включено: касса, чеки, продажи • ОФД:...",
+        "Тариф Mini за 5 000 ₸/месяц — базовая программная конфигурация Wipon.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Включено: онлайн-касса, фискали..."
+      ],
+      "after_snippets": [
+        "Тариф Mini — базовый ежемесячный тариф Wipon для одной торговой точки.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Торговые точки: 1 • Номенклату...",
+        "Тариф Wipon Mini — базовое решение для небольшой торговой точки.  ПАРАМЕТРЫ: • Тариф: Wipon Mini • Формат: онлайн-касса и учёт продаж • Н...",
+        "Тариф Wipon Mini — минимальный программный тариф для старта.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Торговые точки: 1 • Номенклатура: до 5 0...",
+        "Тариф Mini — базовый формат учёта для одной торговой точки.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Точки: 1 • Включено: онлайн-касса с фиска...",
+        "Mini для небольшой точки — базовый тариф с кассовыми функциями.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Включено: касса, чеки, продажи • ОФД:..."
+      ],
+      "overlap_at_5": 2,
+      "added_keys": [
+        "pricing/pricing_5000_tariff_787",
+        "pricing/pricing_tariff_mini_427",
+        "pricing/pricing_wipon_mini_2164"
+      ],
+      "removed_keys": [
+        "pricing/pricing_mini_5000_786",
+        "pricing/pricing_wipon_mini_info_1670",
+        "pricing/pricing_wipon_mini_intro_1809"
+      ]
+    },
+    {
+      "query": "у меня 2 магазина, сейчас на Poster",
+      "before_latency_ms": 182.86,
+      "after_latency_ms": 186.4,
+      "before_keys": [
+        "features/features_second_store_account_1654",
+        "equipment/equipment_pos_duo_clothing_1817",
+        "products/products_clothing_chain_1605",
+        "equipment/equipment_second_screen_1538",
+        "equipment/equipment_kit_chain_1295"
+      ],
+      "after_keys": [
+        "equipment/equipment_monoblock_recommendation_823",
+        "equipment/equipment_clothing_964",
+        "products/products_wipon_retail_multistore_1260",
+        "equipment/equipment_kit_chain_1295",
+        "equipment/equipment_beer_shop_960"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Второй магазин в Wipon — подключение дополнительных точек к одному аккаунту.  ПАРАМЕТРЫ: • Второй магазин: да, в одном аккаунте • Синхрон...",
+        "POS DUO для магазина одежды — два экрана для кассира и покупателя.  ПАРАМЕТРЫ: • Модель: POS DUO • Экраны: для кассира и покупателя • При...",
+        "Wipon для сети магазинов одежды — тариф Pro с несколькими складами и точками.  ПАРАМЕТРЫ: • Рекомендуемый тариф: Pro • Склады: до 5 • Тор...",
+        "В Wipon доступна двухэкранная касса POS DUO для отображения чека покупателю.  ПАРАМЕТРЫ: • Доступна модель: POS DUO с двумя экранами",
+        "Комплект для сети магазинов — Standard+ с POS DUO.  ПАРАМЕТРЫ: • Рекомендация: Standard+ с POS DUO • Экран покупателя: повышает доверие и..."
+      ],
+      "after_snippets": [
+        "Рекомендация по моноблоку — подбор по типу бизнеса.  ПАРАМЕТРЫ: • Продуктовый магазин: POS i3 или POS DUO • Кафе с большим потоком: POS P...",
+        "Для магазина одежды чаще рекомендуют Wipon POS DUO: кассиру удобно работать, а покупатель видит покупки на отдельном экране.  ПАРАМЕТРЫ:...",
+        "Мультискладской учёт в Wipon Розница поддерживается на тарифах Standard и Pro для сетей с несколькими магазинами и складами.  ПАРАМЕТРЫ:...",
+        "Комплект для сети магазинов — Standard+ с POS DUO.  ПАРАМЕТРЫ: • Рекомендация: Standard+ с POS DUO • Экран покупателя: повышает доверие и...",
+        "Для пивного магазина рекомендован Wipon POS DUO: два экрана ускоряют расчёт и показывают сумму покупателю.  ПАРАМЕТРЫ: • Рекомендация: Wi..."
+      ],
+      "overlap_at_5": 1,
+      "added_keys": [
+        "equipment/equipment_beer_shop_960",
+        "equipment/equipment_clothing_964",
+        "equipment/equipment_monoblock_recommendation_823",
+        "products/products_wipon_retail_multistore_1260"
+      ],
+      "removed_keys": [
+        "equipment/equipment_pos_duo_clothing_1817",
+        "equipment/equipment_second_screen_1538",
+        "features/features_second_store_account_1654",
+        "products/products_clothing_chain_1605"
+      ]
+    },
+    {
+      "query": "расскажите про Mini",
+      "before_latency_ms": 190.75,
+      "after_latency_ms": 191.67,
+      "before_keys": [
+        "pricing/pricing_mini_small_store_1814",
+        "pricing/pricing_mini_no_hardware_788",
+        "pricing/pricing_mini_includes_1884",
+        "pricing/pricing_upgrade_from_mini_1815",
+        "pricing/pricing_mini_no_inventory_1914"
+      ],
+      "after_keys": [
+        "pricing/pricing_tariff_mini_427",
+        "products/products_wipon_mini_399",
+        "pricing/pricing_mini_no_hardware_788",
+        "pricing/pricing_upgrade_mini_standard_1224",
+        "pricing/pricing_wipon_mini_program_597"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "semantic",
+        "semantic",
+        "lemma",
+        "semantic"
+      ],
+      "before_snippets": [
+        "Mini рассчитан на маленькие торговые точки.  ПАРАМЕТРЫ: • Целевая точка: маленький магазин • Включено: продажи, чеки, касса • Формат: баз...",
+        "Тариф Mini — программный сценарий, который можно использовать без покупки новой кассы.  ПАРАМЕТРЫ: • Доступ: работа через компьютер или ч...",
+        "Тариф Mini — базовый тариф с ограниченным функционалом.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Торговые точки: 1 • Номенклатура: до 5 000 по...",
+        "Переход с Mini на старшие тарифы — доступен в любой момент.  ПАРАМЕТРЫ: • Переход: Mini → Lite/Standard • Время перехода: любое • Данные:...",
+        "В тарифе Mini нет складского учёта: складские функции начинаются с Lite.  ПАРАМЕТРЫ: • Mini: касса и продажи • Склад: с тарифа Lite • Фор..."
+      ],
+      "after_snippets": [
+        "Тариф Mini — базовый ежемесячный тариф Wipon для одной торговой точки.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Торговые точки: 1 • Номенклату...",
+        "Wipon Mini — базовый тариф с онлайн-кассой и фискализацией чеков.  ПАРАМЕТРЫ: • Онлайн-касса: включена • Фискализация чеков: да • Учёт пр...",
+        "Тариф Mini — программный сценарий, который можно использовать без покупки новой кассы.  ПАРАМЕТРЫ: • Доступ: работа через компьютер или ч...",
+        "Переход с Mini на Standard — доступен без потери накопленных данных.  ПАРАМЕТРЫ: • Апгрейд: можно выполнить в любой момент • Направление:...",
+        "Wipon Mini — базовый программный тариф для небольшой торговой точки.  ПАРАМЕТРЫ: • Цена: 5 000 ₸/месяц • Формат: программный тариф (без о..."
+      ],
+      "overlap_at_5": 1,
+      "added_keys": [
+        "pricing/pricing_tariff_mini_427",
+        "pricing/pricing_upgrade_mini_standard_1224",
+        "pricing/pricing_wipon_mini_program_597",
+        "products/products_wipon_mini_399"
+      ],
+      "removed_keys": [
+        "pricing/pricing_mini_includes_1884",
+        "pricing/pricing_mini_no_inventory_1914",
+        "pricing/pricing_mini_small_store_1814",
+        "pricing/pricing_upgrade_from_mini_1815"
+      ]
+    },
+    {
+      "query": "а интеграции?",
+      "before_latency_ms": 188.99,
+      "after_latency_ms": 191.88,
+      "before_keys": [
+        "integrations/integrations_modules_489",
+        "pricing/pricing_integration_iiko_tis_2174",
+        "tis/tis_bank_integration_1242",
+        "regions/regions_almaty_oneday_2063",
+        "integrations/tis_integrations_210"
+      ],
+      "after_keys": [
+        "tis/tis_bank_integration_1242",
+        "integrations/integrations_online_shop_1065",
+        "integrations/integrations_bank_851",
+        "pricing/pricing_integration_iiko_tis_2174",
+        "integrations/tis_integrations_210"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Интеграция модулей Wipon — склад, финансы, закупки и касса работают вместе.  ПАРАМЕТРЫ: • Модули: склад, финансы, закупки и касса • Обнов...",
+        "Интеграция iiko с ТИС — отдельная годовая услуга.  ПАРАМЕТРЫ: • Цена: 50 000 ₸/год • Назначение: интеграция iiko + ТИС • Тип: дополнитель...",
+        "ТИС интегрируется с банками и POS-терминалами для учёта безналичных оплат.  ПАРАМЕТРЫ: • Интеграция: с POS-терминалами и эквайрингами • У...",
+        "В г. Алматы можем провести консультацию и внедрение автоматизации  ПАРАМЕТРЫ: • Город: Алматы • Услуги: консультация и внедрение за 1 ден...",
+        "Интеграции Wipon ТИС — подключение учётных и торговых систем.  ПАРАМЕТРЫ: • Поддерживаемые системы: 1С, iiko, r_keeper, Poster • Маркетпл..."
+      ],
+      "after_snippets": [
+        "ТИС интегрируется с банками и POS-терминалами для учёта безналичных оплат.  ПАРАМЕТРЫ: • Интеграция: с POS-терминалами и эквайрингами • У...",
+        "Интеграция Wipon с онлайн-каналом продаж — поддерживается через доступные маркетплейсы.  ПАРАМЕТРЫ: • Доступные площадки: Kaspi и Halyk M...",
+        "Банковские интеграции Wipon — подключение эквайринга и фиксация оплат.  ПАРАМЕТРЫ: • Банки: Kaspi, Halyk, Jusan и другие • Платёж: данные...",
+        "Интеграция iiko с ТИС — отдельная годовая услуга.  ПАРАМЕТРЫ: • Цена: 50 000 ₸/год • Назначение: интеграция iiko + ТИС • Тип: дополнитель...",
+        "Интеграции Wipon ТИС — подключение учётных и торговых систем.  ПАРАМЕТРЫ: • Поддерживаемые системы: 1С, iiko, r_keeper, Poster • Маркетпл..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "integrations/integrations_bank_851",
+        "integrations/integrations_online_shop_1065"
+      ],
+      "removed_keys": [
+        "integrations/integrations_modules_489",
+        "regions/regions_almaty_oneday_2063"
+      ]
+    },
+    {
+      "query": "нужен переход с r-keeper",
+      "before_latency_ms": 186.9,
+      "after_latency_ms": 184.94,
+      "before_keys": [
+        "pricing/pricing_integration_rkeeper_tis_2173",
+        "tis/retail_tax_return_307",
+        "tis/retail_tax_from_tis_276",
+        "tis/retail_tax_wrong_oked_264",
+        "tis/retail_tax_nds_after_278"
+      ],
+      "after_keys": [
+        "tis/tis_nds_property_sale_310",
+        "support/support_migrate_beksar_1019",
+        "integrations/tis_1c_iiko_213",
+        "tis/retail_tax_return_307",
+        "tis/tis_to_too_596"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "semantic",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Интеграция Rkeeper с ТИС — отдельная годовая услуга.  ПАРАМЕТРЫ: • Цена: 60 000 ₸/год • Назначение: интеграция Rkeeper + ТИС • Тип: допол...",
+        "Повторный переход на СНР розничного налога возможен после устранения причин выхода и подачи нового заявления.  ПАРАМЕТРЫ: • Возможность:...",
+        "Переход с ТИС на СНР розничного налога возможен: сначала снять ТИС с учёта, затем подать уведомление на переход.  ПАРАМЕТРЫ: • Возможност...",
+        "Если ОКЭД не подходит, нужно сменить код на разрешённый, привести фактическую деятельность в соответствие и только потом подавать переход...",
+        "Автоматический переход на СНР розничного невозможен: требуется заявление в кабинете налогоплательщика; при переходе НДС снимается автомат..."
+      ],
+      "after_snippets": [
+        "При продаже имущества выше 600 000 МРП на СНР обязателен переход на ОСН и регистрация по НДС.  ПАРАМЕТРЫ: • Если продали дороже 600 000 М...",
+        "Миграция с Бексар на Wipon — перенос остатков и цен с настройкой.  ПАРАМЕТРЫ: • Перенос: остатки и цены • Настройка: полная • Результат:...",
+        "Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.  ПАРАМЕТРЫ: • Синхронизация: продажи, остатки и заказы • Под...",
+        "Повторный переход на СНР розничного налога возможен после устранения причин выхода и подачи нового заявления.  ПАРАМЕТРЫ: • Возможность:...",
+        "При переходе с ИП на ТОО ТИС не применяется: нужен другой формат учёта.  ПАРАМЕТРЫ: • Для кого: ТИС действует только для ИП • При переход..."
+      ],
+      "overlap_at_5": 1,
+      "added_keys": [
+        "integrations/tis_1c_iiko_213",
+        "support/support_migrate_beksar_1019",
+        "tis/tis_nds_property_sale_310",
+        "tis/tis_to_too_596"
+      ],
+      "removed_keys": [
+        "pricing/pricing_integration_rkeeper_tis_2173",
+        "tis/retail_tax_from_tis_276",
+        "tis/retail_tax_nds_after_278",
+        "tis/retail_tax_wrong_oked_264"
+      ]
+    },
+    {
+      "query": "чем вы лучше iiko?",
+      "before_latency_ms": 183.22,
+      "after_latency_ms": 186.8,
+      "before_keys": [
+        "competitors/vs_others",
+        "tis/tis_restaurant_iiko_194",
+        "integrations/tis_1c_iiko_213",
+        "competitors/competitors_beksar_867",
+        "pricing/pricing_integration_iiko_tis_2174"
+      ],
+      "after_keys": [
+        "competitors/vs_others",
+        "tis/tis_restaurant_iiko_194",
+        "competitors/competitors_general_870",
+        "integrations/tis_integrations_210",
+        "competitors/competitors_beksar_867"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Сравнение Wipon с конкурентами — обзор ключевых отличий по внедрению и функционалу.  ПАРАМЕТРЫ: • Формат: обзорная секция (navigator) • П...",
+        "Для ресторана и кафе на упрощёнке ТИС применяется, интеграция с IIKO поддерживается.  ПАРАМЕТРЫ: • Подходит: да, для ИП на упрощёнке • II...",
+        "Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.  ПАРАМЕТРЫ: • Синхронизация: продажи, остатки и заказы • Под...",
+        "Сравнение с Beksar — акцент на облачной архитектуре и встроенных интеграциях Wipon.  ПАРАМЕТРЫ: • Формат системы: облачная • Интеграции:...",
+        "Интеграция iiko с ТИС — отдельная годовая услуга.  ПАРАМЕТРЫ: • Цена: 50 000 ₸/год • Назначение: интеграция iiko + ТИС • Тип: дополнитель..."
+      ],
+      "after_snippets": [
+        "Сравнение Wipon с конкурентами — обзор ключевых отличий по внедрению и функционалу.  ПАРАМЕТРЫ: • Формат: обзорная секция (navigator) • П...",
+        "Для ресторана и кафе на упрощёнке ТИС применяется, интеграция с IIKO поддерживается.  ПАРАМЕТРЫ: • Подходит: да, для ИП на упрощёнке • II...",
+        "Преимущества Wipon — обзор причин выбора платформы относительно других систем.  ПАРАМЕТРЫ: • Формат: облачная система учёта и касса в одн...",
+        "Интеграции Wipon ТИС — подключение учётных и торговых систем.  ПАРАМЕТРЫ: • Поддерживаемые системы: 1С, iiko, r_keeper, Poster • Маркетпл...",
+        "Сравнение с Beksar — акцент на облачной архитектуре и встроенных интеграциях Wipon.  ПАРАМЕТРЫ: • Формат системы: облачная • Интеграции:..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "competitors/competitors_general_870",
+        "integrations/tis_integrations_210"
+      ],
+      "removed_keys": [
+        "integrations/tis_1c_iiko_213",
+        "pricing/pricing_integration_iiko_tis_2174"
+      ]
+    },
+    {
+      "query": "есть ли интеграция с 1С?",
+      "before_latency_ms": 152.03,
+      "after_latency_ms": 156.76,
+      "before_keys": [
+        "integrations/integrations_1c_export_1716",
+        "integrations/1c",
+        "integrations/integrations_1c_1476",
+        "integrations/tis_1c_iiko_213",
+        "integrations/tis_integrations_210"
+      ],
+      "after_keys": [
+        "integrations/1c",
+        "integrations/integrations_1c_export_1716",
+        "integrations/tis_1c_iiko_213",
+        "integrations/integrations_1c_1476",
+        "integrations/tis_integrations_210"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "exact",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Контур обмена Wipon и 1С — через выгрузку данных, без прямой синхронизации.  ПАРАМЕТРЫ: • Прямая интеграция: нет • Доступно: экспорт данн...",
+        "Интеграция Wipon с 1С — обмен данными и упрощение бухучёта.  ПАРАМЕТРЫ: • Выгрузка: данных в 1С • Импорт: справочников из 1С • Синхрониза...",
+        "Интеграция Wipon с 1С — обмен данными с бухгалтерским контуром доступен.  ПАРАМЕТРЫ: • Система: 1С • Статус: интеграция доступна • Назнач...",
+        "Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.  ПАРАМЕТРЫ: • Синхронизация: продажи, остатки и заказы • Под...",
+        "Интеграции Wipon ТИС — подключение учётных и торговых систем.  ПАРАМЕТРЫ: • Поддерживаемые системы: 1С, iiko, r_keeper, Poster • Маркетпл..."
+      ],
+      "after_snippets": [
+        "Интеграция Wipon с 1С — обмен данными и упрощение бухучёта.  ПАРАМЕТРЫ: • Выгрузка: данных в 1С • Импорт: справочников из 1С • Синхрониза...",
+        "Контур обмена Wipon и 1С — через выгрузку данных, без прямой синхронизации.  ПАРАМЕТРЫ: • Прямая интеграция: нет • Доступно: экспорт данн...",
+        "Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.  ПАРАМЕТРЫ: • Синхронизация: продажи, остатки и заказы • Под...",
+        "Интеграция Wipon с 1С — обмен данными с бухгалтерским контуром доступен.  ПАРАМЕТРЫ: • Система: 1С • Статус: интеграция доступна • Назнач...",
+        "Интеграции Wipon ТИС — подключение учётных и торговых систем.  ПАРАМЕТРЫ: • Поддерживаемые системы: 1С, iiko, r_keeper, Poster • Маркетпл..."
+      ],
+      "overlap_at_5": 5,
+      "added_keys": [],
+      "removed_keys": []
+    },
+    {
+      "query": "как работает офлайн режим?",
+      "before_latency_ms": 160.96,
+      "after_latency_ms": 165.76,
+      "before_keys": [
+        "equipment/equipment_offline_mode_995",
+        "stability/stability_offline_mode_807",
+        "mobile/mobile_offline_phone_1719",
+        "stability/stability_offline_001",
+        "stability/stability_offline_mode_379"
+      ],
+      "after_keys": [
+        "stability/stability_offline_mode_379",
+        "stability/stability_internet_off_745",
+        "stability/stability_offline_001",
+        "equipment/equipment_offline_mode_995",
+        "stability/stability_offline_mode_807"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "exact",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Офлайн-режим кассы — работа без интернета с последующей синхронизацией.  ПАРАМЕТРЫ: • Работа без интернета: да • Чеки: пробиваются в офла...",
+        "Офлайн-пробитие чеков — работа кассы без интернета с автоматическим обновлением данных.  ПАРАМЕТРЫ: • Офлайн-режим: есть • Пробитие чеков...",
+        "Офлайн-работа с телефона — сохранение данных с последующей синхронизацией.  ПАРАМЕТРЫ: • Наличие: да • Без сети: данные сохраняются • При...",
+        "Офлайн-режим Wipon — продажи продолжаются без интернета с последующей синхронизацией.  ПАРАМЕТРЫ: • Работа без интернета: да • Сохранение...",
+        "Офлайн-режим Wipon — продажи возможны без постоянного интернета.  ПАРАМЕТРЫ: • Работа офлайн: да • Интернет обязателен для: открытия/закр..."
+      ],
+      "after_snippets": [
+        "Офлайн-режим Wipon — продажи возможны без постоянного интернета.  ПАРАМЕТРЫ: • Работа офлайн: да • Интернет обязателен для: открытия/закр...",
+        "Отключение интернета — касса не останавливается и продолжает работать в офлайн-режиме.  ПАРАМЕТРЫ: • Поведение при обрыве сети: работа пр...",
+        "Офлайн-режим Wipon — продажи продолжаются без интернета с последующей синхронизацией.  ПАРАМЕТРЫ: • Работа без интернета: да • Сохранение...",
+        "Офлайн-режим кассы — работа без интернета с последующей синхронизацией.  ПАРАМЕТРЫ: • Работа без интернета: да • Чеки: пробиваются в офла...",
+        "Офлайн-пробитие чеков — работа кассы без интернета с автоматическим обновлением данных.  ПАРАМЕТРЫ: • Офлайн-режим: есть • Пробитие чеков..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "stability/stability_internet_off_745"
+      ],
+      "removed_keys": [
+        "mobile/mobile_offline_phone_1719"
+      ]
+    },
+    {
+      "query": "нужен ли ОФД?",
+      "before_latency_ms": 161.32,
+      "after_latency_ms": 165.91,
+      "before_keys": [
+        "fiscal/fiscal_ofd_only_1135",
+        "support/support_ecp_required_1035",
+        "fiscal/fiscal_ofd_charge_625",
+        "pricing/pricing_mini_without_pos_1888",
+        "products/products_wipon_ofd_469"
+      ],
+      "after_keys": [
+        "support/support_ecp_required_1035",
+        "fiscal/fiscal_ofd_only_1135",
+        "pricing/pricing_mini_without_pos_1888",
+        "fiscal/fiscal_ofd_paid_1104",
+        "products/products_wipon_ofd_469"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Нет, ОФД работает только вместе с программой Wipon.  ПАРАМЕТРЫ: • ОФД отдельно: не подключается • Требование: использование с Wipon",
+        "ЭЦП для регистрации кассы — обязательное требование для подключения ОФД.  ПАРАМЕТРЫ: • Требуется: ЭЦП • Для чего: регистрация кассы и под...",
+        "ОФД оплачивается ежемесячно — 1 400 ₸. Списание происходит автоматически.  ПАРАМЕТРЫ: • Цена ОФД: 1 400 ₸/месяц • Списание: автоматическое",
+        "Тариф Mini можно использовать без POS-оборудования при обязательной фискальной настройке и отправке чеков в ОФД.  ПАРАМЕТРЫ: • Сценарий б...",
+        "Wipon ОФД — сервис передачи фискальных данных с кассы в КГД.  ПАРАМЕТРЫ: • Основная функция: передача фискальных данных • Получатель данн..."
+      ],
+      "after_snippets": [
+        "ЭЦП для регистрации кассы — обязательное требование для подключения ОФД.  ПАРАМЕТРЫ: • Требуется: ЭЦП • Для чего: регистрация кассы и под...",
+        "Нет, ОФД работает только вместе с программой Wipon.  ПАРАМЕТРЫ: • ОФД отдельно: не подключается • Требование: использование с Wipon",
+        "Тариф Mini можно использовать без POS-оборудования при обязательной фискальной настройке и отправке чеков в ОФД.  ПАРАМЕТРЫ: • Сценарий б...",
+        "ОФД платный, оплачивается отдельно от тарифа.  ПАРАМЕТРЫ: • ОФД: платный • Оплата: отдельно от тарифа",
+        "Wipon ОФД — сервис передачи фискальных данных с кассы в КГД.  ПАРАМЕТРЫ: • Основная функция: передача фискальных данных • Получатель данн..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "fiscal/fiscal_ofd_paid_1104"
+      ],
+      "removed_keys": [
+        "fiscal/fiscal_ofd_charge_625"
+      ]
+    },
+    {
+      "query": "есть ли мобильное приложение?",
+      "before_latency_ms": 163.82,
+      "after_latency_ms": 167.56,
+      "before_keys": [
+        "mobile/mobile_remote_app_770",
+        "mobile/mobile_app_exists_565",
+        "mobile/mobile_phone_only_732",
+        "products/mobile_app",
+        "mobile/mobile_app_for_ip_568"
+      ],
+      "after_keys": [
+        "mobile/mobile_remote_app_770",
+        "mobile/mobile_phone_only_732",
+        "mobile/mobile_app_exists_565",
+        "mobile/mobile_warehouse_478",
+        "mobile/mobile_work_phone_624"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Мобильное приложение для удалённого контроля — доступ к продажам и остаткам со смартфона.  ПАРАМЕТРЫ: • Наличие приложения: да • Платформ...",
+        "Мобильное приложение Wipon — управление учётом и бизнесом со смартфона.  ПАРАМЕТРЫ: • Наличие приложения: да • Назначение: учёт и управле...",
+        "Работа только с телефона — мобильный и веб-доступ для управления бизнесом.  ПАРАМЕТРЫ: • Наличие: да • Каналы доступа: мобильное приложен...",
+        "Мобильное приложение Wipon — управление бизнесом с телефона и смартфона.  ПАРАМЕТРЫ: • Доступность: на телефон/смартфон поставить можно •...",
+        "Мобильное приложение для ИП и МСБ — полный базовый набор для торговли.  ПАРАМЕТРЫ: • Целевая аудитория: ИП, малый и средний бизнес • Нали..."
+      ],
+      "after_snippets": [
+        "Мобильное приложение для удалённого контроля — доступ к продажам и остаткам со смартфона.  ПАРАМЕТРЫ: • Наличие приложения: да • Платформ...",
+        "Работа только с телефона — мобильный и веб-доступ для управления бизнесом.  ПАРАМЕТРЫ: • Наличие: да • Каналы доступа: мобильное приложен...",
+        "Мобильное приложение Wipon — управление учётом и бизнесом со смартфона.  ПАРАМЕТРЫ: • Наличие приложения: да • Назначение: учёт и управле...",
+        "Складской учёт с телефона — управление складскими операциями через мобильное приложение.  ПАРАМЕТРЫ: • Наличие: да • Функции: управление...",
+        "Работа с телефона — управление бизнесом через мобильное приложение без привязки к ПК.  ПАРАМЕТРЫ: • Наличие: да • Доступно: продажи, оста..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "mobile/mobile_warehouse_478",
+        "mobile/mobile_work_phone_624"
+      ],
+      "removed_keys": [
+        "mobile/mobile_app_for_ip_568",
+        "products/mobile_app"
+      ]
+    },
+    {
+      "query": "как вести инвентаризацию?",
+      "before_latency_ms": 173.65,
+      "after_latency_ms": 199.78,
+      "before_keys": [
+        "inventory/inventory_stocktaking_474",
+        "inventory/inventory_revision_001",
+        "inventory/inventory_loss_tracking_802",
+        "inventory/inventory_revision_673",
+        "inventory/inventory_revision_1504"
+      ],
+      "after_keys": [
+        "inventory/inventory_stocktaking_474",
+        "inventory/inventory_revision_wipon_377",
+        "inventory/inventory_beginner_480",
+        "features/inventory",
+        "inventory/inventory_revision_673"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Инвентаризация (сверка остатков) в Wipon — сверка фактических остатков с учётными.  ПАРАМЕТРЫ: • Сверка фактических и учётных остатков: д...",
+        "Ревизия (инвентаризация) в Wipon — без Excel и ручных сверок, автоматический подсчёт.  ПАРАМЕТРЫ: • Ревизия в программе: да, без Excel •...",
+        "Отслеживание потерь на складе в Wipon — ревизия показывает расхождения и недостачи.  ПАРАМЕТРЫ: • Расхождения между остатками и фактом: в...",
+        "Проведение ревизии в Wipon — пересчёт товаров с автоматическим подсчётом излишков и недостач.  ПАРАМЕТРЫ: • Ревизия в программе: да • Под...",
+        "Проведение ревизии в Wipon — выбор склада и сканирование товаров для сверки остатков.  ПАРАМЕТРЫ: • Раздел: Ревизия • Выбор склада: да •..."
+      ],
+      "after_snippets": [
+        "Инвентаризация (сверка остатков) в Wipon — сверка фактических остатков с учётными.  ПАРАМЕТРЫ: • Сверка фактических и учётных остатков: д...",
+        "Инвентаризация в Wipon без остановки продаж — выбор товаров, автосохранение, готовый акт.  ПАРАМЕТРЫ: • Инвентаризация без остановки прод...",
+        "Wipon для новичков в складском учёте — максимально простой интерфейс.  ПАРАМЕТРЫ: • Подходит для новичков: да • Интерфейс: максимально пр...",
+        "Складской учёт в Wipon — полный цикл управления товарами, остатками и складскими операциями.  ПАРАМЕТРЫ: • Учёт: товары, остатки, закупки...",
+        "Проведение ревизии в Wipon — пересчёт товаров с автоматическим подсчётом излишков и недостач.  ПАРАМЕТРЫ: • Ревизия в программе: да • Под..."
+      ],
+      "overlap_at_5": 2,
+      "added_keys": [
+        "features/inventory",
+        "inventory/inventory_beginner_480",
+        "inventory/inventory_revision_wipon_377"
+      ],
+      "removed_keys": [
+        "inventory/inventory_loss_tracking_802",
+        "inventory/inventory_revision_001",
+        "inventory/inventory_revision_1504"
+      ]
+    },
+    {
+      "query": "можно ли принимать Kaspi QR?",
+      "before_latency_ms": 176.99,
+      "after_latency_ms": 180.58,
+      "before_keys": [
+        "integrations/integrations_kaspi_qr_1173",
+        "pricing/pricing_kaspi_qr_payment_1690",
+        "pricing/pricing_kaspi_qr_1891",
+        "tis/retail_tax_kaspi_accountant_296",
+        "tis/tis_credit_sales_216"
+      ],
+      "after_keys": [
+        "integrations/integrations_kaspi_qr_1173",
+        "tis/tis_kaspi_kassa_195",
+        "pricing/pricing_kaspi_qr_payment_1690",
+        "tis/tis_credit_sales_216",
+        "tis/retail_tax_kaspi_accountant_296"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Kaspi QR в кассе Wipon — приём оплаты по Kaspi QR поддерживается в кассовом сценарии.  ПАРАМЕТРЫ: • Канал: Kaspi QR • Статус: поддерживае...",
+        "Оплата через Kaspi возможна по счёту или QR.  ПАРАМЕТРЫ: • Вариант оплаты: счёт • Вариант оплаты: QR • Канал: Kaspi  Клиент выбирает удоб...",
+        "Быстрая оплата тарифа Wipon через Kaspi доступна по QR или Kaspi-номеру.  ПАРАМЕТРЫ: • Вариант оплаты: QR • Вариант оплаты: Kaspi-номер •...",
+        "Оплата через Kaspi и QR на СНР считается безналом, а при продажах юрлицам применяется ставка 8%.  ПАРАМЕТРЫ: • Каспи и QR: считается безн...",
+        "В ТИС кредитные продажи и рассрочка учитываются, если оплата проходит через Kaspi Магазин, Kaspi QR или POS.  ПАРАМЕТРЫ: • Возможность: д..."
+      ],
+      "after_snippets": [
+        "Kaspi QR в кассе Wipon — приём оплаты по Kaspi QR поддерживается в кассовом сценарии.  ПАРАМЕТРЫ: • Канал: Kaspi QR • Статус: поддерживае...",
+        "Если у вас Kaspi-касса, для перехода на ТИС её нужно снять с учёта и заменить кассой из комплекта, чтобы избежать задвоения чеков.  ПАРАМ...",
+        "Оплата через Kaspi возможна по счёту или QR.  ПАРАМЕТРЫ: • Вариант оплаты: счёт • Вариант оплаты: QR • Канал: Kaspi  Клиент выбирает удоб...",
+        "В ТИС кредитные продажи и рассрочка учитываются, если оплата проходит через Kaspi Магазин, Kaspi QR или POS.  ПАРАМЕТРЫ: • Возможность: д...",
+        "Оплата через Kaspi и QR на СНР считается безналом, а при продажах юрлицам применяется ставка 8%.  ПАРАМЕТРЫ: • Каспи и QR: считается безн..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "tis/tis_kaspi_kassa_195"
+      ],
+      "removed_keys": [
+        "pricing/pricing_kaspi_qr_1891"
+      ]
+    },
+    {
+      "query": "тариф Lite что включает?",
+      "before_latency_ms": 194.86,
+      "after_latency_ms": 200.93,
+      "before_keys": [
+        "pricing/pricing_lite_includes_1885",
+        "pricing/pricing_lite_detailed_1219",
+        "pricing/pricing_tariff_lite_428",
+        "pricing/pricing_wipon_lite_2165",
+        "pricing/pricing_lite_employees_1913"
+      ],
+      "after_keys": [
+        "pricing/pricing_tariff_lite_428",
+        "pricing/pricing_wipon_lite_2165",
+        "pricing/pricing_lite_detailed_1219",
+        "pricing/pricing_lite_includes_1885",
+        "support/support_training_included_1495"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "lemma",
+        "semantic",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Тариф Lite — годовой тариф для малого бизнеса с одной торговой точкой.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номенклату...",
+        "Тариф Lite — годовой тариф Wipon для малого бизнеса.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номенклатура: без ограничени...",
+        "Тариф Lite — годовой тариф Wipon для малого бизнеса с одной торговой точкой.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номе...",
+        "Тариф Wipon Lite — годовой тариф для малого бизнеса.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номенклатура: без ограничени...",
+        "В тарифе Lite заявлен режим без лимита сотрудников с настройкой ролей и прав доступа.  ПАРАМЕТРЫ: • Лимит сотрудников: без ограничений •..."
+      ],
+      "after_snippets": [
+        "Тариф Lite — годовой тариф Wipon для малого бизнеса с одной торговой точкой.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номе...",
+        "Тариф Wipon Lite — годовой тариф для малого бизнеса.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номенклатура: без ограничени...",
+        "Тариф Lite — годовой тариф Wipon для малого бизнеса.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номенклатура: без ограничени...",
+        "Тариф Lite — годовой тариф для малого бизнеса с одной торговой точкой.  ПАРАМЕТРЫ: • Цена: 150 000 ₸/год • Торговые точки: 1 • Номенклату...",
+        "Обучение в Wipon включено в тарифы Lite, Standard и Pro и проводится на запуске без доплаты.  ПАРАМЕТРЫ: • Включено: Lite, Standard, Pro..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "support/support_training_included_1495"
+      ],
+      "removed_keys": [
+        "pricing/pricing_lite_employees_1913"
+      ]
+    },
+    {
+      "query": "сколько стоит Standard в год?",
+      "before_latency_ms": 185.28,
+      "after_latency_ms": 189.62,
+      "before_keys": [
+        "pricing/pricing_standard_renewal_1897",
+        "pricing/pricing_standard_detailed_1220",
+        "pricing/pricing_tariff_standart_429",
+        "pricing/pricing_standard_includes_1886",
+        "pricing/pricing_standard_kit_606"
+      ],
+      "after_keys": [
+        "pricing/pricing_standard_renewal_1897",
+        "pricing/pricing_tariff_standart_429",
+        "pricing/pricing_standard_kit_606",
+        "pricing/pricing_standard_detailed_1220",
+        "pricing/pricing_kit_standard_2182"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "semantic",
+        "semantic"
+      ],
+      "before_snippets": [
+        "Продление Standard выполняется по годовому циклу.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Формат: годовое продление • Досрочная оплата: возмо...",
+        "Тариф Standard — программный тариф Wipon для малого и растущего бизнеса.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Лимиты: неограниченные товар...",
+        "Тариф Standart — годовой тариф Wipon для растущего бизнеса.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Торговые точки: 3 • Номенклатура: без огр...",
+        "Тариф Standard — программный тариф Wipon для малого и растущего бизнеса.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Лимиты: неограниченные товар...",
+        "Комплект Standard — базовый набор физического кассового оборудования для рабочего места кассира.  ПАРАМЕТРЫ: • Цена: 168 000 ₸ (единоразо..."
+      ],
+      "after_snippets": [
+        "Продление Standard выполняется по годовому циклу.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Формат: годовое продление • Досрочная оплата: возмо...",
+        "Тариф Standart — годовой тариф Wipon для растущего бизнеса.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Торговые точки: 3 • Номенклатура: без огр...",
+        "Комплект Standard — базовый набор физического кассового оборудования для рабочего места кассира.  ПАРАМЕТРЫ: • Цена: 168 000 ₸ (единоразо...",
+        "Тариф Standard — программный тариф Wipon для малого и растущего бизнеса.  ПАРАМЕТРЫ: • Цена: 220 000 ₸/год • Лимиты: неограниченные товар...",
+        "Комплект Standard — базовый набор физического кассового оборудования для рабочего места кассира.  ПАРАМЕТРЫ: • Цена: 168 000 ₸ (единоразо..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "pricing/pricing_kit_standard_2182"
+      ],
+      "removed_keys": [
+        "pricing/pricing_standard_includes_1886"
+      ]
+    },
+    {
+      "query": "есть рассрочка?",
+      "before_latency_ms": 192.75,
+      "after_latency_ms": 193.42,
+      "before_keys": [
+        "pricing/pricing_installment_950",
+        "pricing/pricing_installment_program_equipment_1111",
+        "pricing/pricing_installment_1676",
+        "pricing/pricing_installment_equipment_1930",
+        "equipment/equipment_offer_list_1037"
+      ],
+      "after_keys": [
+        "pricing/pricing_installment_950",
+        "pricing/pricing_installment_program_equipment_1111",
+        "pricing/pricing_installment_program_1275",
+        "pricing/pricing_equipment_installment_953",
+        "pricing/pricing_installment_tariff_951"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Рассрочка в Wipon — оплата частями для программы и оборудования.  ПАРАМЕТРЫ: • Тарифы: можно оформить в рассрочку • Оборудование: можно о...",
+        "Рассрочка на программу и оборудование — оформляется через банки-партнёры.  ПАРАМЕТРЫ: • Тарифы: доступны в рассрочку • Оборудование: дост...",
+        "Рассрочка на оборудование — оформляется через Kaspi.  ПАРАМЕТРЫ: • Канал: Kaspi • Условия: 0-0-12 • Переплата: без переплаты  Это стандар...",
+        "Рассрочка на оборудование оформляется через Kaspi.  ПАРАМЕТРЫ: • Канал: Kaspi • Условия: 0-0-12 • Переплата: без переплаты  Используется...",
+        "Список предлагаемого оборудования — все категории с возможностью рассрочки.  ПАРАМЕТРЫ: • Моноблоки: да • Сканеры: да • Принтеры чеков: д..."
+      ],
+      "after_snippets": [
+        "Рассрочка в Wipon — оплата частями для программы и оборудования.  ПАРАМЕТРЫ: • Тарифы: можно оформить в рассрочку • Оборудование: можно о...",
+        "Рассрочка на программу и оборудование — оформляется через банки-партнёры.  ПАРАМЕТРЫ: • Тарифы: доступны в рассрочку • Оборудование: дост...",
+        "Рассрочка на программу ТИС — отдельный вариант оплаты.  ПАРАМЕТРЫ: • ТИС в рассрочку: 265 000 ₸/год • Ежемесячный эквивалент: 22 084 ₸/ме...",
+        "Оборудование Wipon оформляется в рассрочку с оплатой частями, и такой же формат доступен для тарифов.  ПАРАМЕТРЫ: • Оборудование: доступн...",
+        "И тарифы, и оборудование Wipon можно оформить в рассрочку с оплатой частями.  ПАРАМЕТРЫ: • Тариф: доступна оплата частями • Оборудование:..."
+      ],
+      "overlap_at_5": 2,
+      "added_keys": [
+        "pricing/pricing_equipment_installment_953",
+        "pricing/pricing_installment_program_1275",
+        "pricing/pricing_installment_tariff_951"
+      ],
+      "removed_keys": [
+        "equipment/equipment_offer_list_1037",
+        "pricing/pricing_installment_1676",
+        "pricing/pricing_installment_equipment_1930"
+      ]
+    },
+    {
+      "query": "можно для сети из 10 точек?",
+      "before_latency_ms": 177.6,
+      "after_latency_ms": 181.72,
+      "before_keys": [
+        "products/products_retail_chain_651",
+        "pricing/pricing_chain_stores_1228",
+        "products/products_multiple_stores_466",
+        "products/products_chain_stores_1011",
+        "products/products_small_shop_444"
+      ],
+      "after_keys": [
+        "pricing/pricing_chain_stores_1228",
+        "products/products_multiple_stores_466",
+        "products/products_chain_stores_1011",
+        "features/features_multi_locations_639",
+        "products/products_retail_chain_651"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Wipon для сетей магазинов — централизованное управление всеми точками.  ПАРАМЕТРЫ: • Применимость: работает с сетями • Управление: все то...",
+        "Для сети магазинов в Wipon используют Pro с поддержкой до 5 складов и централизованного управления.  ПАРАМЕТРЫ: • Рекомендованный тариф:...",
+        "Управление несколькими торговыми точками в Wipon — единый кабинет для сети.  ПАРАМЕТРЫ: • Формат: один аккаунт • Масштаб: несколько точек...",
+        "Wipon для сети точек — централизованное управление из одного кабинета.  ПАРАМЕТРЫ: • База: единая • Контроль: аналитика по сети • Управле...",
+        "Wipon работает и для небольшой торговой точки, и для сети, при этом лимитов по товарам и сотрудникам нет.  ПАРАМЕТРЫ: • Масштаб: маленьки..."
+      ],
+      "after_snippets": [
+        "Для сети магазинов в Wipon используют Pro с поддержкой до 5 складов и централизованного управления.  ПАРАМЕТРЫ: • Рекомендованный тариф:...",
+        "Управление несколькими торговыми точками в Wipon — единый кабинет для сети.  ПАРАМЕТРЫ: • Формат: один аккаунт • Масштаб: несколько точек...",
+        "Wipon для сети точек — централизованное управление из одного кабинета.  ПАРАМЕТРЫ: • База: единая • Контроль: аналитика по сети • Управле...",
+        "Управление несколькими точками в Wipon — работа с сетью магазинов из одной системы.  ПАРАМЕТРЫ: • Несколько точек: поддерживается • Данны...",
+        "Wipon для сетей магазинов — централизованное управление всеми точками.  ПАРАМЕТРЫ: • Применимость: работает с сетями • Управление: все то..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "features/features_multi_locations_639"
+      ],
+      "removed_keys": [
+        "products/products_small_shop_444"
+      ]
+    },
+    {
+      "query": "у нас кофейня, нужен учет остатков",
+      "before_latency_ms": 177.57,
+      "after_latency_ms": 182.52,
+      "before_keys": [
+        "products/products_coffee_shop_980",
+        "inventory/inventory_cafe_alcohol_712",
+        "equipment/equipment_coffee_shop_971",
+        "products/products_bakery_747",
+        "products/products_cafe_coffee_1548"
+      ],
+      "after_keys": [
+        "products/products_coffee_shop_980",
+        "products/products_cafe_coffee_1548",
+        "equipment/equipment_coffee_shop_971",
+        "products/products_bakery_747",
+        "inventory/inventory_procurement_purpose_491"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Ограничения Wipon для кофеен — учёт рецептов и ингредиентов не поддерживается.  ПАРАМЕТРЫ: • Применимость: не подходит для кофеен с учёто...",
+        "Учёт алкоголя в Wipon — маркировка и СНТ для кафе и баров.  ПАРАМЕТРЫ: • Учёт алкоголя: поддерживается • Маркировка: оформляется корректн...",
+        "Для кофейни и кафе в Wipon возможен базовый кассовый сценарий без рецептурного учёта и ингредиентов.  ПАРАМЕТРЫ: • Учёт рецептов и ингред...",
+        "Wipon для пекарни/кулинарии — базовый торговый учёт с оговорками по производству.  ПАРАМЕТРЫ: • Есть: остатки, продажи, возвраты • Ограни...",
+        "Wipon для кафе/кофейни работает как касса и торговый учёт при отсутствии рецептур и калькуляции.  ПАРАМЕТРЫ: • Условие: без калькуляции и..."
+      ],
+      "after_snippets": [
+        "Ограничения Wipon для кофеен — учёт рецептов и ингредиентов не поддерживается.  ПАРАМЕТРЫ: • Применимость: не подходит для кофеен с учёто...",
+        "Wipon для кафе/кофейни работает как касса и торговый учёт при отсутствии рецептур и калькуляции.  ПАРАМЕТРЫ: • Условие: без калькуляции и...",
+        "Для кофейни и кафе в Wipon возможен базовый кассовый сценарий без рецептурного учёта и ингредиентов.  ПАРАМЕТРЫ: • Учёт рецептов и ингред...",
+        "Wipon для пекарни/кулинарии — базовый торговый учёт с оговорками по производству.  ПАРАМЕТРЫ: • Есть: остатки, продажи, возвраты • Ограни...",
+        "Учёт закупок в Wipon — фиксация поступлений, контроль остатков и управление поставками.  ПАРАМЕТРЫ: • Фиксация поступлений товаров: да •..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "inventory/inventory_procurement_purpose_491"
+      ],
+      "removed_keys": [
+        "inventory/inventory_cafe_alcohol_712"
+      ]
+    },
+    {
+      "query": "нужна касса для аптеки и маркировка",
+      "before_latency_ms": 196.9,
+      "after_latency_ms": 195.25,
+      "before_keys": [
+        "products/products_pharmacy_1407",
+        "products/products_pharmacy_638",
+        "products/products_pharmacy_full_2278",
+        "products/products_pharmacy_1545",
+        "equipment/equipment_pharmacy_970"
+      ],
+      "after_keys": [
+        "products/products_pharmacy_1407",
+        "products/products_pharmacy_1545",
+        "equipment/equipment_pharmacy_970",
+        "products/products_pharmacy_marking_1414",
+        "products/products_pharmacy_full_2278"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "exact",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Wipon для аптеки — полный комплекс: программа учёта + онлайн-касса с ОФД, маркировка и сроки годности.  ПАРАМЕТРЫ: • Назначение: программ...",
+        "Wipon для аптек — учёт товаров, касса, остатки и маркировка.  ПАРАМЕТРЫ: • Применимость: подходит для аптек • Учёт товаров: да • Касса: в...",
+        "Для аптек Wipon объединяет учёт, маркировку, онлайн-кассу и ОФД в одной системе без сторонних сервисов.  ПАРАМЕТРЫ: • Учёт товаров: да •...",
+        "Wipon для аптеки — приёмка, учёт сроков годности, маркировка и касса с ОФД в одной программе.  ПАРАМЕТРЫ: • Приёмка товара: да • Сроки го...",
+        "Оборудование для аптеки — комплекты для маркировки и быстрого обслуживания.  ПАРАМЕТРЫ: • STANDARD+: сенсорный моноблок, сканер, принтер..."
+      ],
+      "after_snippets": [
+        "Wipon для аптеки — полный комплекс: программа учёта + онлайн-касса с ОФД, маркировка и сроки годности.  ПАРАМЕТРЫ: • Назначение: программ...",
+        "Wipon для аптеки — приёмка, учёт сроков годности, маркировка и касса с ОФД в одной программе.  ПАРАМЕТРЫ: • Приёмка товара: да • Сроки го...",
+        "Оборудование для аптеки — комплекты для маркировки и быстрого обслуживания.  ПАРАМЕТРЫ: • STANDARD+: сенсорный моноблок, сканер, принтер...",
+        "Wipon для аптеки с маркировкой — полная поддержка маркированных лекарств и учёта серий.  ПАРАМЕТРЫ: • Маркировка: приёмка маркированных т...",
+        "Для аптек Wipon объединяет учёт, маркировку, онлайн-кассу и ОФД в одной системе без сторонних сервисов.  ПАРАМЕТРЫ: • Учёт товаров: да •..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "products/products_pharmacy_marking_1414"
+      ],
+      "removed_keys": [
+        "products/products_pharmacy_638"
+      ]
+    },
+    {
+      "query": "система для общепита с кухней",
+      "before_latency_ms": 181.46,
+      "after_latency_ms": 183.63,
+      "before_keys": [
+        "products/products_canteen_1415",
+        "products/products_culinary_608",
+        "products/products_restaurant_2049",
+        "products/products_cafe_621",
+        "products/products_grocery_store_1412"
+      ],
+      "after_keys": [
+        "equipment/equipment_cafe_384",
+        "products/products_cafe_coffee_1548",
+        "products/products_canteen_1415",
+        "products/products_restaurant_2049",
+        "tis/tis_restaurant_iiko_194"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "lemma",
+        "lemma",
+        "exact"
+      ],
+      "before_snippets": [
+        "Для столовой Wipon подходит как касса и учёт продаж без кухни и калькуляции, но не подходит при производстве блюд.  ПАРАМЕТРЫ: • Без кухн...",
+        "Wipon для кулинарии и пекарни — система для продаж и учёта готовой продукции.  ПАРАМЕТРЫ: • Не входит: автоматизация производства • Входи...",
+        "Для ресторана Wipon используют как кассу и контроль продаж на Lite/Standard, но без управления кухней, меню и рецептурами.  ПАРАМЕТРЫ: •...",
+        "Wipon для кафе и точек общепита — касса, учёт и аналитика в одной системе.  ПАРАМЕТРЫ: • Применимость: подходит для кафе и точек общепита...",
+        "Для продуктового магазина Mini/Lite закрывают базовый контур, а при складе и нескольких кассах нужен Standard с комплектом STANDARD или D..."
+      ],
+      "after_snippets": [
+        "Для кафе и общепита есть готовые варианты оборудования Wipon.  ПАРАМЕТРЫ: • Рекомендованные модели: Wipon POS Duo, POS Premium • Готовые...",
+        "Wipon для кафе/кофейни работает как касса и торговый учёт при отсутствии рецептур и калькуляции.  ПАРАМЕТРЫ: • Условие: без калькуляции и...",
+        "Для столовой Wipon подходит как касса и учёт продаж без кухни и калькуляции, но не подходит при производстве блюд.  ПАРАМЕТРЫ: • Без кухн...",
+        "Для ресторана Wipon используют как кассу и контроль продаж на Lite/Standard, но без управления кухней, меню и рецептурами.  ПАРАМЕТРЫ: •...",
+        "Для ресторана и кафе на упрощёнке ТИС применяется, интеграция с IIKO поддерживается.  ПАРАМЕТРЫ: • Подходит: да, для ИП на упрощёнке • II..."
+      ],
+      "overlap_at_5": 2,
+      "added_keys": [
+        "equipment/equipment_cafe_384",
+        "products/products_cafe_coffee_1548",
+        "tis/tis_restaurant_iiko_194"
+      ],
+      "removed_keys": [
+        "products/products_cafe_621",
+        "products/products_culinary_608",
+        "products/products_grocery_store_1412"
+      ]
+    },
+    {
+      "query": "как обучаете кассиров?",
+      "before_latency_ms": 184.85,
+      "after_latency_ms": 191.15,
+      "before_keys": [
+        "support/support_cashier_training_time_1652",
+        "support/support_cashier_training_time_1727",
+        "fiscal/fiscal_nkt_cashier_training_2219",
+        "support/support_cashier_onboarding_1089",
+        "regions/regions_astana_training_2022"
+      ],
+      "after_keys": [
+        "support/support_cashier_onboarding_1089",
+        "fiscal/fiscal_nkt_cashier_training_2219",
+        "support/support_cashier_training_1028",
+        "pricing/pricing_employee_training_1288",
+        "employees/employees_efficiency_487"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "semantic",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Обучение кассира в Wipon — короткое за счёт простого интерфейса.  ПАРАМЕТРЫ: • Время: обычно 20-30 минут • Интерфейс: простой • Цель: быс...",
+        "Время обучения кассира — короткое за счёт простого интерфейса Wipon.  ПАРАМЕТРЫ: • Ориентир: 20-30 минут • Фактор: простой интерфейс • Ре...",
+        "Нет. В Wipon для кассира ничего не меняется. Он работает с товарами как раньше, а вся логика НКТ встроена внутрь системы.  ПАРАМЕТРЫ: • О...",
+        "Обучение кассиров при установке Wipon — показ работы с кассой и программой.  ПАРАМЕТРЫ: • Этап: при установке оборудования • Содержание:...",
+        "В Астане проводится обучение по работе с кассовым оборудованием и Wipon.  ПАРАМЕТРЫ: • Город: Астана • Услуга: обучение по кассовому обор..."
+      ],
+      "after_snippets": [
+        "Обучение кассиров при установке Wipon — показ работы с кассой и программой.  ПАРАМЕТРЫ: • Этап: при установке оборудования • Содержание:...",
+        "Нет. В Wipon для кассира ничего не меняется. Он работает с товарами как раньше, а вся логика НКТ встроена внутрь системы.  ПАРАМЕТРЫ: • О...",
+        "Обучение кассиров при переходе на Wipon — показываем работу с системой.  ПАРАМЕТРЫ: • Формат: обучение кассиров • Содержание: показ работ...",
+        "Обучение сотрудников в источнике разделено на тарифную доступность и отдельную сервисную услугу.  ПАРАМЕТРЫ: • Mini: обучение программе н...",
+        "Аналитика эффективности кассиров — ключевые KPI и контроль ошибок.  ПАРАМЕТРЫ: • Метрики: продажи и средний чек по каждому кассиру • Конт..."
+      ],
+      "overlap_at_5": 2,
+      "added_keys": [
+        "employees/employees_efficiency_487",
+        "pricing/pricing_employee_training_1288",
+        "support/support_cashier_training_1028"
+      ],
+      "removed_keys": [
+        "regions/regions_astana_training_2022",
+        "support/support_cashier_training_time_1652",
+        "support/support_cashier_training_time_1727"
+      ]
+    },
+    {
+      "query": "какой срок внедрения?",
+      "before_latency_ms": 194.85,
+      "after_latency_ms": 209.08,
+      "before_keys": [
+        "support/support_implementation_time_2001",
+        "support/support_implementation_network_2002",
+        "support/support_installation_time_1739",
+        "regions/regions_delivery_time_888",
+        "support/support_installation_after_payment_1680"
+      ],
+      "after_keys": [
+        "support/support_implementation_time_2001",
+        "support/support_implementation_network_2002",
+        "regions/regions_delivery_time_888",
+        "tis/tis_connection_615",
+        "support/support_quick_connect_601"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Срок внедрения Wipon масштабируется от 1-2 часов для одной точки до 3-5 рабочих дней для сети с интеграциями.  ПАРАМЕТРЫ: • Одна точка: 1...",
+        "Внедрение Wipon для сети 5+ точек — параллельная настройка с менеджером.  ПАРАМЕТРЫ: • Срок: 3–5 рабочих дней • Условие: наличие менеджер...",
+        "Полная настройка Wipon — стандартная длительность первичного запуска.  ПАРАМЕТРЫ: • Среднее время: 30-40 минут • Контур: полная первичная...",
+        "Срок доставки 1–5 рабочих дней в зависимости от города. В Алматы, Астану и Шымкент — 1–2 дня.  ПАРАМЕТРЫ: • Общий срок доставки: 1–5 рабо...",
+        "После оплаты базовая установка и настройка стартуют сразу и занимают 30-40 минут.  ПАРАМЕТРЫ: • Начало: сразу после оплаты • Длительность..."
+      ],
+      "after_snippets": [
+        "Срок внедрения Wipon масштабируется от 1-2 часов для одной точки до 3-5 рабочих дней для сети с интеграциями.  ПАРАМЕТРЫ: • Одна точка: 1...",
+        "Внедрение Wipon для сети 5+ точек — параллельная настройка с менеджером.  ПАРАМЕТРЫ: • Срок: 3–5 рабочих дней • Условие: наличие менеджер...",
+        "Срок доставки 1–5 рабочих дней в зависимости от города. В Алматы, Астану и Шымкент — 1–2 дня.  ПАРАМЕТРЫ: • Общий срок доставки: 1–5 рабо...",
+        "Подключение ТИС занимает 1-2 дня и включает настройку кассы, терминала и регистрацию.  ПАРАМЕТРЫ: • Срок: 1–2 дня • Включает: настройку к...",
+        "Срок подключения Wipon составляет от нескольких часов до 1-2 дней в зависимости от сложности настройки и готовности оборудования.  ПАРАМЕ..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "support/support_quick_connect_601",
+        "tis/tis_connection_615"
+      ],
+      "removed_keys": [
+        "support/support_installation_after_payment_1680",
+        "support/support_installation_time_1739"
+      ]
+    },
+    {
+      "query": "работаете в Алматы?",
+      "before_latency_ms": 202.54,
+      "after_latency_ms": 206.92,
+      "before_keys": [
+        "regions/regions_almaty_equipment_2009",
+        "regions/regions_almaty_998",
+        "regions/regions_almaty_office_address_2014",
+        "regions/regions_almaty_office_2018",
+        "regions/regions_almaty_showroom_2013"
+      ],
+      "after_keys": [
+        "regions/regions_almaty_998",
+        "regions/coverage",
+        "regions/regions_almaty_office_2018",
+        "regions/regions_almaty_training_2011",
+        "products/products_almaty_full_1040"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "В Алматы есть всё самое необходимое оборудование для вашего бизнеса. У нас  ПАРАМЕТРЫ: • Город: Алматы • Оборудование: доступно есть моно...",
+        "Доставим и настроим кассы и программу учёта Wipon. Поможем запустить работу и дадим поддержку на месте.  ПАРАМЕТРЫ: • Город: Алматы • Усл...",
+        "Наш офис в Алматы находится по адресу: ул. Толе би, 73 а, 2-й этаж, офис  ПАРАМЕТРЫ: • Город: Алматы • Адрес: ул. Толе би, 73 а 218. Прих...",
+        "Да, в Алматы у нас есть офис. Вы можете прийти, посмотреть оборудование  ПАРАМЕТРЫ: • Город: Алматы • Офис: есть и получить консультацию...",
+        "Да, в Алматы вы можете прийти в наш офис и лично посмотреть все модели касс  ПАРАМЕТРЫ: • Город: Алматы • Формат: личный просмотр моделей..."
+      ],
+      "after_snippets": [
+        "Доставим и настроим кассы и программу учёта Wipon. Поможем запустить работу и дадим поддержку на месте.  ПАРАМЕТРЫ: • Город: Алматы • Усл...",
+        "География работы Wipon охватывает всю территорию Республики Казахстан.  ПАРАМЕТРЫ: • Покрытие: весь Казахстан • Регистрация: онлайн из лю...",
+        "Да, в Алматы у нас есть офис. Вы можете прийти, посмотреть оборудование  ПАРАМЕТРЫ: • Город: Алматы • Офис: есть и получить консультацию...",
+        "Да, конечно! При заказе оборудования и программного обеспечения в Алматы  ПАРАМЕТРЫ: • Город: Алматы • Обучение: доступно при заказе наши...",
+        "Wipon для магазина в Алматы — программа и оборудование с внедрением под ключ.  ПАРАМЕТРЫ: • Контур: учёт и автоматизация торговли • Обору..."
+      ],
+      "overlap_at_5": 2,
+      "added_keys": [
+        "products/products_almaty_full_1040",
+        "regions/coverage",
+        "regions/regions_almaty_training_2011"
+      ],
+      "removed_keys": [
+        "regions/regions_almaty_equipment_2009",
+        "regions/regions_almaty_office_address_2014",
+        "regions/regions_almaty_showroom_2013"
+      ]
+    },
+    {
+      "query": "хочу перейти с umag",
+      "before_latency_ms": 205.34,
+      "after_latency_ms": 211.96,
+      "before_keys": [
+        "competitors/competitors_umag_switch_866",
+        "support/support_migrate_umag_1018",
+        "support/support_umag_onboarding_1025",
+        "competitors/competitors_umag_865",
+        "support/support_export_umag_1021"
+      ],
+      "after_keys": [
+        "competitors/competitors_umag_switch_866",
+        "competitors/competitors_umag_865",
+        "support/support_migrate_umag_1018",
+        "support/support_export_umag_1021",
+        "support/support_umag_onboarding_1025"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "before_snippets": [
+        "Переход с UMAG на Wipon — бесплатный перенос базы и остатков с сопровождением миграции.  ПАРАМЕТРЫ: • Перенос данных: бесплатно • Что пер...",
+        "Миграция с Umag на Wipon — перенос номенклатуры без паузы в работе.  ПАРАМЕТРЫ: • Действие: выгрузка номенклатуры из Umag • Результат: за...",
+        "Сопровождение при переходе с Umag на Wipon — подключение, перенос и обучение.  ПАРАМЕТРЫ: • Подключение: помощь с кассой • Перенос: данны...",
+        "Сравнение с UMAG — позиционирование Wipon как облачной системы с локальными интеграциями.  ПАРАМЕТРЫ: • Формат системы: облачная • Интегр...",
+        "Экспорт базы товаров из Umag в Wipon — перенос без потерь.  ПАРАМЕТРЫ: • Источник: Umag • Результат: загрузка базы товаров в Wipon • Каче..."
+      ],
+      "after_snippets": [
+        "Переход с UMAG на Wipon — бесплатный перенос базы и остатков с сопровождением миграции.  ПАРАМЕТРЫ: • Перенос данных: бесплатно • Что пер...",
+        "Сравнение с UMAG — позиционирование Wipon как облачной системы с локальными интеграциями.  ПАРАМЕТРЫ: • Формат системы: облачная • Интегр...",
+        "Миграция с Umag на Wipon — перенос номенклатуры без паузы в работе.  ПАРАМЕТРЫ: • Действие: выгрузка номенклатуры из Umag • Результат: за...",
+        "Экспорт базы товаров из Umag в Wipon — перенос без потерь.  ПАРАМЕТРЫ: • Источник: Umag • Результат: загрузка базы товаров в Wipon • Каче...",
+        "Сопровождение при переходе с Umag на Wipon — подключение, перенос и обучение.  ПАРАМЕТРЫ: • Подключение: помощь с кассой • Перенос: данны..."
+      ],
+      "overlap_at_5": 5,
+      "added_keys": [],
+      "removed_keys": []
+    },
+    {
+      "query": "у меня 3 кассира, как ограничить права доступа?",
+      "before_latency_ms": 195.93,
+      "after_latency_ms": 180.08,
+      "before_keys": [
+        "employees/employees_access_limit_671",
+        "employees/employees_access_restrict_1169",
+        "employees/employees_restrict_analytics_1642",
+        "employees/employees_access_config_001",
+        "employees/employees_access_levels_1073"
+      ],
+      "after_keys": [
+        "employees/employees_different_rights_1768",
+        "employees/employees_access_limit_671",
+        "employees/employees_access_restrict_1169",
+        "employees/employees_restrict_analytics_1642",
+        "employees/employees_reports_restrict_1186"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Ограничение прав сотрудников — настройка доступа по ролям и обязанностям.  ПАРАМЕТРЫ: • Права доступа: индивидуально на сотрудника • Роль...",
+        "Разделение доступа кассир/администратор — настройка прав по ролям.  ПАРАМЕТРЫ: • Наличие: да • Кассир: доступ только к кассе • Администра...",
+        "Ограничение аналитики и склада для кассира — настраивается через права пользователя.  ПАРАМЕТРЫ: • Наличие: да • Что ограничивается: отчё...",
+        "Индивидуальная настройка доступа кассира — кассовые функции без доступа к лишним данным.  ПАРАМЕТРЫ: • Доступ по разделам: настраиваемый...",
+        "Уровни доступа сотрудников — ролевая модель с отдельными правами.  ПАРАМЕТРЫ: • Наличие уровней доступа: да • Роли: владелец, администрат..."
+      ],
+      "after_snippets": [
+        "Разные права для разных продавцов — поддерживается индивидуальная настройка.  ПАРАМЕТРЫ: • Наличие: да • Настройка прав: для каждого сотр...",
+        "Ограничение прав сотрудников — настройка доступа по ролям и обязанностям.  ПАРАМЕТРЫ: • Права доступа: индивидуально на сотрудника • Роль...",
+        "Разделение доступа кассир/администратор — настройка прав по ролям.  ПАРАМЕТРЫ: • Наличие: да • Кассир: доступ только к кассе • Администра...",
+        "Ограничение аналитики и склада для кассира — настраивается через права пользователя.  ПАРАМЕТРЫ: • Наличие: да • Что ограничивается: отчё...",
+        "Ограничение доступа к отчётам — отчётность доступна не всем ролям.  ПАРАМЕТРЫ: • Наличие ограничения: да • Кассир: только касса • Отчёты:..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "employees/employees_different_rights_1768",
+        "employees/employees_reports_restrict_1186"
+      ],
+      "removed_keys": [
+        "employees/employees_access_config_001",
+        "employees/employees_access_levels_1073"
+      ]
+    },
+    {
+      "query": "как выгрузить отчеты в Excel?",
+      "before_latency_ms": 170.92,
+      "after_latency_ms": 167.56,
+      "before_keys": [
+        "analytics/analytics_excel_export_1113",
+        "features/features_excel_export_746",
+        "analytics/analytics_export_excel_1782",
+        "fiscal/fiscal_tax_report_1789",
+        "analytics/analytics_export_pdf_1487"
+      ],
+      "after_keys": [
+        "features/features_excel_export_746",
+        "analytics/analytics_excel_export_1113",
+        "analytics/analytics_export_excel_1782",
+        "analytics/analytics_export_pdf_1487",
+        "analytics/analytics_reports_001"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Да, любой отчёт можно выгрузить в Excel для дальнейшего анализа.  ПАРАМЕТРЫ: • Экспорт: Excel • Применение: дальнейший анализ",
+        "Экспорт отчётов в Wipon — выгрузка данных в Excel или PDF.  ПАРАМЕТРЫ: • Excel: да, любой отчёт • PDF: да, любой отчёт • Назначение: для...",
+        "Отчёты Wipon можно экспортировать в Excel.  ПАРАМЕТРЫ: • Экспорт: Excel • Объект: отчёты",
+        "В Отчётах выберите период и выгрузите данные по налогам.  ПАРАМЕТРЫ: • Раздел: Отчёты • Действие: выбор периода и выгрузка",
+        "Экспорт аналитических отчётов в Wipon доступен в Excel и PDF одной кнопкой.  ПАРАМЕТРЫ: • Форматы экспорта: Excel, PDF • Запуск: одной кн..."
+      ],
+      "after_snippets": [
+        "Экспорт отчётов в Wipon — выгрузка данных в Excel или PDF.  ПАРАМЕТРЫ: • Excel: да, любой отчёт • PDF: да, любой отчёт • Назначение: для...",
+        "Да, любой отчёт можно выгрузить в Excel для дальнейшего анализа.  ПАРАМЕТРЫ: • Экспорт: Excel • Применение: дальнейший анализ",
+        "Отчёты Wipon можно экспортировать в Excel.  ПАРАМЕТРЫ: • Экспорт: Excel • Объект: отчёты",
+        "Экспорт аналитических отчётов в Wipon доступен в Excel и PDF одной кнопкой.  ПАРАМЕТРЫ: • Форматы экспорта: Excel, PDF • Запуск: одной кн...",
+        "Всё уже встроено в Wipon. Фильтры, категории, отчёты — всё видно сразу без выгрузки в Excel.  ПАРАМЕТРЫ: • Наличие отчётов: встроены в си..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "analytics/analytics_reports_001"
+      ],
+      "removed_keys": [
+        "fiscal/fiscal_tax_report_1789"
+      ]
+    },
+    {
+      "query": "нужна синхронизация с маркетплейсами",
+      "before_latency_ms": 166.15,
+      "after_latency_ms": 167.69,
+      "before_keys": [
+        "integrations/integrations_marketplace_sync_1735",
+        "integrations/marketplaces",
+        "integrations/integrations_auto_sync_001",
+        "analytics/analytics_auto_sync_122",
+        "integrations/integrations_marketplace_online_001"
+      ],
+      "after_keys": [
+        "integrations/integrations_marketplace_sync_1735",
+        "integrations/integrations_marketplaces_744",
+        "integrations/marketplaces",
+        "analytics/analytics_auto_sync_122",
+        "integrations/integrations_online_store_631"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "exact",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Синхронизация Wipon с маркетплейсами в этом сценарии — прямой интеграции нет, используются доступные альтернативные каналы.  ПАРАМЕТРЫ: •...",
+        "Интеграции Wipon с маркетплейсами — синхронизация товаров, заказов и остатков.  ПАРАМЕТРЫ: • Kaspi.kz: синхронизация товаров, заказов, ос...",
+        "Автосинхронизация маркетплейсов в Wipon — загрузка данных без ручного ввода.  ПАРАМЕТРЫ: • Поступление данных: автоматически • Остатки: о...",
+        "Склад, касса и отчёты синхронизируются автоматически. Данные совпадают, ручные сверки не нужны.  ПАРАМЕТРЫ: • Синхронизация: автоматическ...",
+        "Интеграции Wipon с маркетплейсами — автоматический обмен заказами и чеками.  ПАРАМЕТРЫ: • Подключения: Kaspi Магазин и Halyk Market • Пер..."
+      ],
+      "after_snippets": [
+        "Синхронизация Wipon с маркетплейсами в этом сценарии — прямой интеграции нет, используются доступные альтернативные каналы.  ПАРАМЕТРЫ: •...",
+        "Интеграции маркетплейсов в Wipon — автоматический учёт заказов и оплат.  ПАРАМЕТРЫ: • Площадки: Kaspi.kz и Halyk Market • Данные: заказы...",
+        "Интеграции Wipon с маркетплейсами — синхронизация товаров, заказов и остатков.  ПАРАМЕТРЫ: • Kaspi.kz: синхронизация товаров, заказов, ос...",
+        "Склад, касса и отчёты синхронизируются автоматически. Данные совпадают, ручные сверки не нужны.  ПАРАМЕТРЫ: • Синхронизация: автоматическ...",
+        "Интеграция Wipon с онлайн-площадками — Kaspi Магазин и Halyk Market.  ПАРАМЕТРЫ: • Площадки: Kaspi Магазин и Halyk Market • Синхронизация..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "integrations/integrations_marketplaces_744",
+        "integrations/integrations_online_store_631"
+      ],
+      "removed_keys": [
+        "integrations/integrations_auto_sync_001",
+        "integrations/integrations_marketplace_online_001"
+      ]
+    },
+    {
+      "query": "интересуют отличия тарифов Mini Lite Standard",
+      "before_latency_ms": 167.57,
+      "after_latency_ms": 175.33,
+      "before_keys": [
+        "pricing/pricing_lite_vs_standard_1871",
+        "pricing/pricing_lite_vs_standard_1223",
+        "pricing/pricing_upgrade_from_mini_1815",
+        "pricing/pricing_tariff_clothing_989",
+        "pricing/pricing_choose_tariff_1899"
+      ],
+      "after_keys": [
+        "pricing/pricing_choose_tariff_1899",
+        "products/products_beauty_salon_1409",
+        "pricing/pricing_upgrade_from_mini_1815",
+        "pricing/pricing_upgrade_mini_standard_1224",
+        "pricing/pricing_lite_vs_standard_1871"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma",
+        "semantic"
+      ],
+      "before_snippets": [
+        "Lite и Standard отличаются лимитами и глубиной функционала.  ПАРАМЕТРЫ: • Lite: 150 000 ₸/год, 1 торговая точка, 0 прайс-листов • Standar...",
+        "Lite и Standard в Wipon различаются числом точек и прайс-листов при одинаково неограниченной номенклатуре.  ПАРАМЕТРЫ: • Lite: 150 000 ₸/...",
+        "Переход с Mini на старшие тарифы — доступен в любой момент.  ПАРАМЕТРЫ: • Переход: Mini → Lite/Standard • Время перехода: любое • Данные:...",
+        "Для магазина одежды Mini подходит для базовой кассы, а Lite/Standard/Pro — для артикулов, размерной матрицы и отчётности.  ПАРАМЕТРЫ: • M...",
+        "Подбор тарифа в Wipon строится по формату бизнеса: Mini для одной точки, Lite для малого бизнеса, Standard для нескольких точек, Pro для..."
+      ],
+      "after_snippets": [
+        "Подбор тарифа в Wipon строится по формату бизнеса: Mini для одной точки, Lite для малого бизнеса, Standard для нескольких точек, Pro для...",
+        "Для салона красоты в Wipon Mini или Lite применяют при услугах, а при продаже материалов выбирают Standard.  ПАРАМЕТРЫ: • Только услуги:...",
+        "Переход с Mini на старшие тарифы — доступен в любой момент.  ПАРАМЕТРЫ: • Переход: Mini → Lite/Standard • Время перехода: любое • Данные:...",
+        "Переход с Mini на Standard — доступен без потери накопленных данных.  ПАРАМЕТРЫ: • Апгрейд: можно выполнить в любой момент • Направление:...",
+        "Lite и Standard отличаются лимитами и глубиной функционала.  ПАРАМЕТРЫ: • Lite: 150 000 ₸/год, 1 торговая точка, 0 прайс-листов • Standar..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "pricing/pricing_upgrade_mini_standard_1224",
+        "products/products_beauty_salon_1409"
+      ],
+      "removed_keys": [
+        "pricing/pricing_lite_vs_standard_1223",
+        "pricing/pricing_tariff_clothing_989"
+      ]
+    },
+    {
+      "query": "сколько стоит комплект оборудования?",
+      "before_latency_ms": 172.19,
+      "after_latency_ms": 178.17,
+      "before_keys": [
+        "pricing/pricing_bundles_152",
+        "pricing/pricing_standard_kit_606",
+        "pricing/pricing_equipment_separate_1273",
+        "pricing/pricing_minimum_kit_1274",
+        "equipment/equipment_kit_cheaper_1294"
+      ],
+      "after_keys": [
+        "pricing/pricing_bundles_152",
+        "pricing/pricing_standard_kit_606",
+        "pricing/pricing_pro_kit_659",
+        "pricing/pricing_equipment_program_separate_1105",
+        "pricing/pricing_minimum_kit_1274"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Комплекты оборудования — готовые наборы техники для быстрого запуска кассы.  ПАРАМЕТРЫ: • Диапазон цен: 168 000-219 000 ₸ (единоразово) •...",
+        "Комплект Standard — базовый набор физического кассового оборудования для рабочего места кассира.  ПАРАМЕТРЫ: • Цена: 168 000 ₸ (единоразо...",
+        "Оборудование и тариф программы в Wipon оплачиваются отдельно.  ПАРАМЕТРЫ: • Программа: отдельная тарифная оплата • Оборудование: отдельна...",
+        "Минимальный комплект для старта — Standard за 168 000 ₸ с POS i3, сканером и принтером чеков.  ПАРАМЕТРЫ: • Комплект: Standard • Состав:...",
+        "Самый дешёвый комплект — Standard по минимальной цене.  ПАРАМЕТРЫ: • Комплект: Standard • Стоимость: 168 000 ₸"
+      ],
+      "after_snippets": [
+        "Комплекты оборудования — готовые наборы техники для быстрого запуска кассы.  ПАРАМЕТРЫ: • Диапазон цен: 168 000-219 000 ₸ (единоразово) •...",
+        "Комплект Standard — базовый набор физического кассового оборудования для рабочего места кассира.  ПАРАМЕТРЫ: • Цена: 168 000 ₸ (единоразо...",
+        "Комплект PRO — готовый кассовый комплект оборудования для точек с высоким оборотом и интенсивным потоком покупателей.  ПАРАМЕТРЫ: • Цена:...",
+        "Программа и оборудование — отдельные позиции даже при покупке комплекта.  ПАРАМЕТРЫ: • Оборудование: покупается отдельно • Программа: под...",
+        "Минимальный комплект для старта — Standard за 168 000 ₸ с POS i3, сканером и принтером чеков.  ПАРАМЕТРЫ: • Комплект: Standard • Состав:..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "pricing/pricing_equipment_program_separate_1105",
+        "pricing/pricing_pro_kit_659"
+      ],
+      "removed_keys": [
+        "equipment/equipment_kit_cheaper_1294",
+        "pricing/pricing_equipment_separate_1273"
+      ]
+    },
+    {
+      "query": "можно ли работать без интернета и пробивать чеки?",
+      "before_latency_ms": 167.11,
+      "after_latency_ms": 170.72,
+      "before_keys": [
+        "stability/stability_offline_mode_807",
+        "stability/stability_offline_check_721",
+        "equipment/equipment_offline_mode_995",
+        "stability/stability_offline_work_804",
+        "stability/stability_offline_sync_1109"
+      ],
+      "after_keys": [
+        "stability/stability_offline_mode_379",
+        "stability/stability_offline_mode_807",
+        "equipment/equipment_offline_mode_995",
+        "stability/stability_offline_check_721",
+        "stability/stability_offline_sync_1109"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "lemma",
+        "lemma",
+        "lemma",
+        "lemma"
+      ],
+      "before_snippets": [
+        "Офлайн-пробитие чеков — работа кассы без интернета с автоматическим обновлением данных.  ПАРАМЕТРЫ: • Офлайн-режим: есть • Пробитие чеков...",
+        "Пробитие чека без интернета — касса работает автономно и отправляет данные после восстановления связи.  ПАРАМЕТРЫ: • Офлайн-пробитие чеко...",
+        "Офлайн-режим кассы — работа без интернета с последующей синхронизацией.  ПАРАМЕТРЫ: • Работа без интернета: да • Чеки: пробиваются в офла...",
+        "Частые отключения интернета — касса продолжает пробивать чеки в офлайн-режиме.  ПАРАМЕТРЫ: • Офлайн-режим: доступен • Работа без сети: че...",
+        "Офлайн-синхронизация кассы — чеки пробиваются без сети и отправляются после подключения.  ПАРАМЕТРЫ: • Работа офлайн: да • Операции офлай..."
+      ],
+      "after_snippets": [
+        "Офлайн-режим Wipon — продажи возможны без постоянного интернета.  ПАРАМЕТРЫ: • Работа офлайн: да • Интернет обязателен для: открытия/закр...",
+        "Офлайн-пробитие чеков — работа кассы без интернета с автоматическим обновлением данных.  ПАРАМЕТРЫ: • Офлайн-режим: есть • Пробитие чеков...",
+        "Офлайн-режим кассы — работа без интернета с последующей синхронизацией.  ПАРАМЕТРЫ: • Работа без интернета: да • Чеки: пробиваются в офла...",
+        "Пробитие чека без интернета — касса работает автономно и отправляет данные после восстановления связи.  ПАРАМЕТРЫ: • Офлайн-пробитие чеко...",
+        "Офлайн-синхронизация кассы — чеки пробиваются без сети и отправляются после подключения.  ПАРАМЕТРЫ: • Работа офлайн: да • Операции офлай..."
+      ],
+      "overlap_at_5": 4,
+      "added_keys": [
+        "stability/stability_offline_mode_379"
+      ],
+      "removed_keys": [
+        "stability/stability_offline_work_804"
+      ]
+    },
+    {
+      "query": "интересует Wipon Desktop и Wipon Kassa, в чем разница?",
+      "before_latency_ms": 184.44,
+      "after_latency_ms": 180.88,
+      "before_keys": [
+        "products/wipon_kassa",
+        "products/wipon_desktop",
+        "products/products_difference_1009",
+        "products/products_wipon_kassa_definition_460",
+        "products/products_small_business_800"
+      ],
+      "after_keys": [
+        "products/wipon_kassa",
+        "equipment/equipment_online_kassa_797",
+        "products/wipon_desktop",
+        "products/products_wipon_kassa_definition_460",
+        "competitors/competitors_1c_868"
+      ],
+      "before_stages": [
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic",
+        "semantic"
+      ],
+      "after_stages": [
+        "exact",
+        "exact",
+        "exact",
+        "semantic",
+        "semantic"
+      ],
+      "before_snippets": [
+        "Wipon Kassa — бесплатная онлайн-касса для малого и среднего и крупного бизнеса в Казахстане.  ПАРАМЕТРЫ: • Касса + ОФД: в одном интерфейс...",
+        "Wipon Desktop — программа учёта товаров и продаж для Windows ПК.  ПАРАМЕТРЫ: • Учёт: полный учёт товаров, остатков, закупок • Торговые то...",
+        "Отличия Wipon — собственный кассовый и сервисный контур без посредников.  ПАРАМЕТРЫ: • Включено: собственная касса и бесплатный ОФД • Вкл...",
+        "Wipon Касса — централизованное кассовое решение для малого и среднего бизнеса в Казахстане.  ПАРАМЕТРЫ: • Приём оплаты: да • Пробитие фис...",
+        "Wipon Kassa для малого и среднего бизнеса — простой кассовый контур без лишней сложности.  ПАРАМЕТРЫ: • Целевая аудитория: МСБ • Подход:..."
+      ],
+      "after_snippets": [
+        "Wipon Kassa — бесплатная онлайн-касса для малого и среднего и крупного бизнеса в Казахстане.  ПАРАМЕТРЫ: • Касса + ОФД: в одном интерфейс...",
+        "Wipon Kassa — централизованное кассовое решение для малого и среднего бизнеса в Казахстане.  ПАРАМЕТРЫ: • Приём оплаты: да • Фискальные ч...",
+        "Wipon Desktop — программа учёта товаров и продаж для Windows ПК.  ПАРАМЕТРЫ: • Учёт: полный учёт товаров, остатков, закупок • Торговые то...",
+        "Wipon Касса — централизованное кассовое решение для малого и среднего бизнеса в Казахстане.  ПАРАМЕТРЫ: • Приём оплаты: да • Пробитие фис...",
+        "Сравнение с 1С — Wipon ориентирован на быстрый запуск без доработок программистом.  ПАРАМЕТРЫ: • Настройка: без привлечения программиста..."
+      ],
+      "overlap_at_5": 3,
+      "added_keys": [
+        "competitors/competitors_1c_868",
+        "equipment/equipment_online_kassa_797"
+      ],
+      "removed_keys": [
+        "products/products_difference_1009",
+        "products/products_small_business_800"
+      ]
+    }
+  ]
+}

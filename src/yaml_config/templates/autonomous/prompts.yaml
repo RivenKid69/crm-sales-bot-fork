@@ -51,11 +51,11 @@ templates:
 
       {safety_rules}
 
-      === ФАКТЫ О ПРОДУКТЕ ===
-      {retrieved_facts}
-
       Диалог:
       {history}
+
+      === ФАКТЫ ДЛЯ ОТВЕТА ===
+      {retrieved_facts}
 
       Клиент: "{user_message}"
 
@@ -73,9 +73,6 @@ templates:
 
       {safety_rules}
 
-      === БАЗА ЗНАНИЙ О ПРОДУКТЕ ===
-      {retrieved_facts}
-
       === ПОЛНЫЙ ДИАЛОГ ===
       {history}
 
@@ -89,6 +86,9 @@ templates:
       {do_not_ask}
       {objection_instructions}
       {do_not_repeat_responses}
+
+      === ФАКТЫ ДЛЯ ОТВЕТА (отвечай СТРОГО по ним) ===
+      {retrieved_facts}
 
       Клиент: "{user_message}"
 
@@ -148,9 +148,6 @@ templates:
 
       {safety_rules}
 
-      === БАЗА ЗНАНИЙ ===
-      {retrieved_facts}
-
       === ДИАЛОГ ===
       {history}
 
@@ -164,6 +161,9 @@ templates:
       {do_not_ask}
       {available_questions}
       {do_not_repeat_responses}
+
+      === ФАКТЫ ДЛЯ ОТВЕТА (отвечай СТРОГО по ним) ===
+      {retrieved_facts}
 
       Клиент: "{user_message}"
 
@@ -184,14 +184,14 @@ templates:
       {system}
       Ты — опытный sales-консультант компании Wipon.
 
-      === БАЗА ЗНАНИЙ О ПРОДУКТЕ ===
-      {retrieved_facts}
-
       === ПОЛНЫЙ ДИАЛОГ ===
       {history}
 
       === ИЗВЕСТНЫЕ ДАННЫЕ О КЛИЕНТЕ ===
       {collected_data}
+
+      === БАЗА ЗНАНИЙ О ПРОДУКТЕ ===
+      {retrieved_facts}
 
       {do_not_repeat_responses}
 
@@ -215,14 +215,14 @@ templates:
       {system}
       Ты — опытный sales-консультант компании Wipon.
 
-      === БАЗА ЗНАНИЙ О ПРОДУКТЕ ===
-      {retrieved_facts}
-
       === ПОЛНЫЙ ДИАЛОГ ===
       {history}
 
       === ИЗВЕСТНЫЕ ДАННЫЕ О КЛИЕНТЕ ===
       {collected_data}
+
+      === БАЗА ЗНАНИЙ О ПРОДУКТЕ ===
+      {retrieved_facts}
 
       {do_not_repeat_responses}
 

@@ -53,7 +53,7 @@ retriever:
     lemma: 0.15
 
   # Количество результатов по умолчанию
-  default_top_k: 2
+  default_top_k: 5
 
 # -----------------------------------------------------------------------------
 # RERANKER (Переоценка результатов при низком score)
@@ -76,7 +76,7 @@ reranker:
 # -----------------------------------------------------------------------------
 category_router:
   # Включить LLM-классификацию категорий перед поиском
-  enabled: true
+  enabled: false
 
   # Количество категорий для возврата
   top_k: 3
@@ -90,8 +90,8 @@ category_router:
 # ENHANCED RETRIEVAL (Autonomous query-driven retrieval)
 # -----------------------------------------------------------------------------
 enhanced_retrieval:
-  max_kb_chars: 25000
-  top_k_per_sub_query: 3
+  max_kb_chars: 10000
+  top_k_per_sub_query: 5
   max_sub_queries: 4
   min_complexity_length: 30
   rrf_k: 60
