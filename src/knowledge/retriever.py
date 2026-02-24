@@ -124,6 +124,12 @@ class CascadeRetriever:
     2. Exact match — поиск keyword как подстроки в запросе
     3. Lemma match — сравнение лемматизированных множеств
     """
+    _FACTUAL_QUERY_RE = re.compile(
+        r"(?:\?|сколько|какие?|какой|расскажите|посоветуй|поч[её]м|цен[аы]|стоимост"
+        r"|можно\s+ли|есть\s+ли|как\s+работает|как\s+это\s+работает|чем\s+отлич"
+        r"|какие\s+банки|какой\s+тариф|какие\s+тарифы|рассрочк|офд|маркировк|1[cс]\b)",
+        re.IGNORECASE,
+    )
 
     def __init__(
         self,
@@ -255,9 +261,10 @@ class CascadeRetriever:
         """
         if not message or not message.strip():
             return ""
+        _looks_factual = bool(self._FACTUAL_QUERY_RE.search(message or ""))
 
         # Интенты не требующие поиска — возвращаем сразу
-        if intent and intent in SKIP_RETRIEVAL_INTENTS:
+        if intent and intent in SKIP_RETRIEVAL_INTENTS and not _looks_factual:
             return ""
 
         # Используем default_top_k из settings если не указано
@@ -278,15 +285,17 @@ class CascadeRetriever:
                     logger.warning(
                         "Unknown intent for INTENT_TO_CATEGORY mapping",
                         intent=intent,
-                        fallback="using default categories: faq, features"
+                        fallback="using broad search for factual query"
                     )
-                    categories = ["faq", "features"]  # Fallback категории
+                    categories = None if _looks_factual else ["faq", "features"]
 
         # Если reranker включён — берём больше кандидатов
         search_top_k = self.rerank_candidates if self.reranker_enabled else top_k
 
         # Ищем
         results = self.search(message, categories=categories, top_k=search_top_k)
+        if not results and categories is not None and _looks_factual:
+            results = self.search(message, categories=None, top_k=search_top_k)
 
         if not results:
             return ""
@@ -337,9 +346,10 @@ class CascadeRetriever:
         """
         if not message or not message.strip():
             return "", []
+        _looks_factual = bool(self._FACTUAL_QUERY_RE.search(message or ""))
 
         # Интенты не требующие поиска — возвращаем сразу
-        if intent and intent in SKIP_RETRIEVAL_INTENTS:
+        if intent and intent in SKIP_RETRIEVAL_INTENTS and not _looks_factual:
             return "", []
 
         if top_k is None:
@@ -353,10 +363,12 @@ class CascadeRetriever:
                     if intent_categories:
                         categories = intent_categories
                 else:
-                    categories = ["faq", "features"]
+                    categories = None if _looks_factual else ["faq", "features"]
 
         search_top_k = self.rerank_candidates if self.reranker_enabled else top_k
         results = self.search(message, categories=categories, top_k=search_top_k)
+        if not results and categories is not None and _looks_factual:
+            results = self.search(message, categories=None, top_k=search_top_k)
 
         if not results:
             return "", []

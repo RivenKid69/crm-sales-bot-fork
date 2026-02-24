@@ -1,0 +1,1475 @@
+{
+  "report": {
+    "dialogs": 20,
+    "baseline_turns": 65,
+    "after_turns": 97,
+    "baseline_audit": {
+      "all_violations": 2,
+      "hard_violations": 1,
+      "turns_with_violations": 2,
+      "factual_turns": 26,
+      "factual_turns_with_violations": 1,
+      "violation_types": {
+        "hallucinated_past_action": 1,
+        "unrequested_business_assumption": 1
+      }
+    },
+    "after_audit": {
+      "all_violations": 8,
+      "hard_violations": 6,
+      "turns_with_violations": 8,
+      "factual_turns": 55,
+      "factual_turns_with_violations": 7,
+      "violation_types": {
+        "mid_conversation_greeting": 1,
+        "unrequested_business_assumption": 1,
+        "hallucinated_past_action": 6
+      }
+    },
+    "verifier_usage": {
+      "used": 52,
+      "changed": 0,
+      "verdict:not_run": 45,
+      "verdict:fail": 47,
+      "verdict:error": 1,
+      "verdict:pass": 4
+    }
+  },
+  "dialogs": [
+    {
+      "id": 1,
+      "title": "## Диалог 1",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет. У нас сеть кофеен, 5 точек в Алматы.",
+          "bot": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант.",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Сейчас ведем часть учета в Excel и постоянно путаемся в остатках.",
+          "bot": "Понятно, Excel действительно не подходит для учета в рознице — там легко ошибиться в остатках и терять прибыль. Кстати, а как часто у вас возникают проблемы с отчетами по товарам или с синхронизацией данных между точками? Это тоже важно, чтобы подобрать решение под ваши нужды.",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "answer_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Думаем переходить в течение месяца, но бюджет ограничен.",
+          "bot": "Пожалуйста, не за что! Ваша забота о точности — уже первый шаг к правильному решению. Давайте я подберу вариант с учетом вашего бюджета — какой из дней на этой неделе удобнее для демо в 10:00 или 16:00? На какой email прислать информацию?",
+          "state": "close",
+          "intent": "budget_approved",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Если для 5 точек, какой тариф у вас обычно берут и сколько стоит?",
+          "bot": "Спасибо, это очень важно для меня — чтобы ваш переход прошёл гладко. Для пяти точек у нас стандартный тариф идеально с бесплатным обучением и техподдержкой в рабочее время. Когда удобно созвониться?",
+          "state": "success",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 5,
+          "user": "А если оплачивать сразу на 2 года, есть ли скидка или спецусловия?",
+          "bot": "При предоплате на 2 или 5 лет по Wipon доступны специальные условия со скидкой.",
+          "state": "success",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 6,
+          "user": "Что именно входит в этот тариф для сети?",
+          "bot": "Тариф Pro — максимальный тариф учетной системы Wipon для крупного бизнеса, сетей магазинов и оптовых компаний.",
+          "state": "success",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "## Диалог 2",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте. Работаем на Poster, 2 магазина.",
+          "bot": "На Poster уже работаете — удобно, когда система знакомая. Сколько человек в команде по двум магазинам? Это поможет подобрать функционал Wipon максимально под ваши нужды.",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "В целом система ок, но много ручной работы с отчетами и банком.",
+          "bot": "Поняла, спасибо! А именно какие отчёты дают больше всего рутины — финансовые, по продажам или по товарообороту? Это важно, чтобы показать, как Wipon автоматизирует их за секунды.",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Еще часто расходятся остатки между точками.",
+          "bot": "Складской учёт в Wipon — полный цикл управления товарами, остатками и складскими операциями.",
+          "state": "escalated",
+          "intent": "problem_technical",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Если переходить с Poster на Wipon, в чем практические плюсы?",
+          "bot": "Преимущества банковской интеграции в Wipon — скорость, синхронизация и прозрачность.",
+          "state": "escalated",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Есть ли интеграция с 1С и банками, чтобы без двойного ввода?",
+          "bot": "Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.",
+          "state": "escalated",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 6,
+          "user": "И как по стоимости для 2 точек?",
+          "bot": "Пожалуйста, не за что! А вот по стоимости для двух точек — у нас гибкая система тарифов, зависящая от объёма операций и нужного функционала. Давайте уточню у коллег, какие варианты подойдут именно вам, чтобы сразу предложить выгодное решение.",
+          "state": "escalated",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "## Диалог 3",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день. У нас ресторан, сейчас на iiko.",
+          "bot": "Переход с одной системы на другую всегда требует внимания к деталям. Скажите, пожалуйста, сколько человек работает в вашем ресторане, включая администрацию и персонал зала?",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Хотим оставить кухню как есть, но улучшить учет и отчеты.",
+          "bot": "А кухню оставить без изменений — правильный подход, чтобы не терять время. Вот что важно: какую именно часть учета вы хотите улучшить в первую очередь — закупки, инвентаризацию или формирование отчетов для налоговиков?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "explain_analytics_features",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Важно, чтобы не потерять данные при переходе.",
+          "bot": "При смене системы потери данных становятся реальной проблемой, но мы решаем её заранее. У нас есть бесплатный импорт из iiko, который сохраняет все актуальные данные без ручного переноса. Стоимость перехода может вызывать вопросы, но экономия на подобных процессах часто приводит к ошибкам в отчётности или штрафам за неверные сданные электронные счета-фактуры. Скажите, какой именно объём данных вы планируете мигрировать: только меню и заказы или ещё и складские остатки? Коллега из техотдела разбирается в этом лучше — хотите, перезвонит?",
+          "state": "handle_objection",
+          "intent": "objection_change_management",
+          "action": "handle_objection",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Что по интеграции с iiko и 1С у вас есть?",
+          "bot": "Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.",
+          "state": "spin_problem",
+          "intent": "question_integrations",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "И какой тариф обычно подходит для 3 точек?",
+          "bot": "Вы хотите перейти с iiko на Wipon для 3 точек, сохраняя текущую работу кухни без изменений, но при этом улучшить учёт и отчёты. Важно понять, какой именно тариф именно для общего количества пользователей и объёма данных (меню+заказы или ещё склад) в этих 3 точках одновременно — или отдельно по каждой?",
+          "state": "spin_implication",
+          "intent": "situation_provided",
+          "action": "summarize_and_clarify",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "## Диалог 4",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "У нас аптека, одна точка, много позиций и сроки годности.",
+          "bot": "Сроки годности и много позиций — это реальная головная боль для аптеки, особенно без автоматизации. Сколько у вас сотрудников в аптеке? Это важно для подбора правильной версии Wipon.",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Сейчас тяжело контролировать партии и просрочку.",
+          "bot": "Пожалуйста, не за что! Давайте разберёмся, как Wipon решает именно вашу проблему с контролем партий и просрочек — многие аптеки уже оценили, как это экономит время и деньги. А что конкретно сейчас у вас вызывает больше всего проблем: ручной ввод данных или поиск просроченных товаров в актуальный момент?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нужно, чтобы была маркировка и нормальный учет остатков.",
+          "bot": "Понятно, маркировка и учёт остатков — это то, что напрямую влияет на актуальность данных и минимизацию потерь. Скажите, пожалуйста, сколько сотрудников в вашей аптеке будет ежедневно работать с системой Wipon?",
+          "state": "escalated",
+          "intent": "problem_technical",
+          "action": "explain_fiscal_requirements",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Какой тариф под аптеку вы рекомендуете и сколько он стоит?",
+          "bot": "Для аптеки в Wipon используют Standard (220 000 ₸/год) или Pro (500 000 ₸/год) для маркировки и расширенного учёта.",
+          "state": "escalated",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Есть ли поддержка по настройке на старте?",
+          "bot": "Стартовый набор для работы — минимум оборудования для начала.",
+          "state": "escalated",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "## Диалог 5",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Уточню по поддержке. Мы работаем до позднего вечера.",
+          "bot": "А, точно! Вернёмся к этому вопросу. Хотите уточнить, какие часы поддержки у нас в Wipon или какие именно условия работы интересуют?",
+          "state": "greeting",
+          "intent": "correct_info",
+          "action": "acknowledge_go_back",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Иногда проблемы всплывают после 22:00 и в выходные.",
+          "bot": "Понятно, я не хочу отнимать у вас время. Отправлю основные часы работы поддержки и условия по электронной почте — так удобнее. Укажите, пожалуйста, ваш адрес электронной почты.",
+          "state": "handle_objection",
+          "intent": "objection_no_time",
+          "action": "continue_conversation",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Какой у вас реальный график техподдержки?",
+          "bot": "Алкоголь и акцизные марки в Wipon — поддержка продажи алкогольной продукции.",
+          "state": "spin_situation",
+          "intent": "question_support",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Есть ли обучение сотрудников при запуске?",
+          "bot": "Сразу скажу, у нас обучение сотрудников не входит в стандартный пакет — это отдельная услуга, которую мы подбираем под вашу команду. Обычно это индивидуальные онлайн-сессии или очные встречи с нашими специалистами, чтобы все кассиры освоили систему и рабочие процессы. А вы уже определились, сколько человек будет работать с Wipon? Это поможет мне понять, какой формат обучения предложить.",
+          "state": "spin_situation",
+          "intent": "question_implementation",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "error",
+          "factual_verifier_reason_codes": [
+            "llm_error"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Для Mini обучение тоже входит или отдельно?",
+          "bot": "Обучение включено в тарифах Lite, Standard и Pro; для Mini оформляется отдельно.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "## Диалог 6",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Мы с женой часто не в магазине, контроль нужен с телефона.",
+          "bot": "Удобно управлять магазином удалённо, это действительно экономит время. Сколько человек обычно работают с покупателями в вашем магазине?",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Сейчас удаленно почти ничего не видно, только касса по факту.",
+          "bot": "Понятно, сейчас важно, чтобы всё было под контролем даже без физического присутствия. В Wipon можно отслеживать не только продажи, но и движение товара, отчёты по продавцам и даже видео с камер — всё в одном месте. А что именно вы не можете сейчас видеть удалённо, кроме кассовых операций? Например, остатки товара, активность сотрудников или что-то ещё?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нужно видеть выручку, остатки, отчеты по точкам.",
+          "bot": "Да, без контроля над остатками и отчётами сложно принимать быстрые решения. Скажите, сколько человек обычно работает в вашем магазине, чтобы я поняла, как настроить Wipon для всей команды?",
+          "state": "escalated",
+          "intent": "problem_technical",
+          "action": "explain_analytics_features",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "У вас мобильное приложение есть на iOS и Android?",
+          "bot": "Да, у нас есть бесплатное мобильное приложение Wipon для iOS и Android — удобно управлять магазином прямо с телефона. В нём можно в реальном времени видеть продажи, остатки товара, получать уведомления о важных событиях и формировать отчёты. А на какой платформе вам удобнее всего начать?",
+          "state": "escalated",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "pass",
+          "factual_verifier_reason_codes": [
+            "pass"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Можно ли в приложении вести клиентов и поставщиков?",
+          "bot": "Учёт поставщиков и закупок в Wipon — добавление поставщиков и ведение закупок.",
+          "state": "escalated",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "## Диалог 7",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Мы ИП на упрощенке, растем и боимся упереться в лимиты.",
+          "bot": "Так. Ограничения — это действительно сложно, особенно когда бизнес растёт. А сколько человек сейчас работает в вашей команде, чтобы понимать масштаб и подобрать оптимальное решение?",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "explain_tis_solution",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Коллеги советуют смотреть ТИС, но не до конца понятно зачем.",
+          "bot": "ТИС применяется предпринимателями на упрощёнке, которым нужно легально наращивать обороты без перехода на ТОО.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 3,
+          "user": "Если коротко, что дает ТИС в ежедневной работе?",
+          "bot": "Функционал ТИС включает учёт доходов и расходов, склад, продажи, кадры, маркировку и отчётность.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Сколько стоит ТИС на 1 точку и каждая следующая?",
+          "bot": "Пожалуйста, не за что! Вот что важно: когда бизнес растёт, ограничения по кассе или отчётности часто становятся камнем преткновения.",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 5,
+          "user": "Можно ли оплатить сразу на 2 года?",
+          "bot": "При предоплате на 2 или 5 лет по Wipon доступны специальные условия со скидкой.",
+          "state": "spin_implication",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "## Диалог 8",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "У нас часть продаж идет через Kaspi и Halyk Market.",
+          "bot": "А, понятно! Продажи через агрегаторы — это удобно, но часто требует дополнительного контроля над маржой и логистикой. Кстати, как часто у вас возникают сложности с синхронизацией остатков или отчетами по этим каналам?",
+          "state": "spin_situation",
+          "intent": "info_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Сейчас менеджер руками переносит заказы в учет, это боль.",
+          "bot": "Раздельные системы — это реальная головная боль, особенно когда заказы из агрегаторов не попадают в учет автоматически. У Wipon есть готовое решение для прямой интеграции с Kaspi и Halyk Market, которое синхронизирует заказы, остатки и отчеты без ручного вмешательства. А какие именно отчеты по агрегаторам вам приходится готовить вручную чаще всего — по продажам или по возвратам?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нужна автоматическая синхронизация заказов и оплат.",
+          "bot": "Синхронизация склада и онлайн-продаж в Wipon — обновление данных в реальном времени.",
+          "state": "escalated",
+          "intent": "problem_technical",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Есть ли у вас интеграции с Kaspi и Halyk Market?",
+          "bot": "Интеграция Wipon с Kaspi.kz и Halyk Market — автоматическая загрузка онлайн-продаж.",
+          "state": "escalated",
+          "intent": "question_integrations",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Заказы и чеки будут попадать в систему автоматически?",
+          "bot": "Да, в Wipon заказы и чеки из Kaspi и Halyk Market загружаются автоматически — без ручного ввода. Это значит, что все данные: количество продаж, суммы, даже возвраты — сразу попадают в учёт и отчёты, не отвлекая ваш персонал. Сколько примерно заказов в день приходится через эти площадки, чтобы точнее оценить, как быстро система адаптируется под ваш поток?",
+          "state": "escalated",
+          "intent": "question_integrations",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "pass",
+          "factual_verifier_reason_codes": [
+            "pass"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "## Диалог 9",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Еще вопрос по железу. У нас частично уже есть оборудование.",
+          "bot": "А, понятно! Расскажите, пожалуйся, какое оборудование уже установлено у вас — например, кассовые аппараты, сканеры штрихкодов или терминалы оплаты. Это поможет понять, что из Wipon можно подключить сразу, а что потребует замены или доработки.",
+          "state": "spin_situation",
+          "intent": "info_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Не хотим покупать все заново, если можно использовать текущее.",
+          "bot": "А я поняла, важно сохранить текущие инвестиции в оборудование. Скажите, какие именно устройства уже работают у вас — например, фискальный регистратор, сканеры или терминалы — чтобы мы точнее подобрали совместимые компоненты Wipon.",
+          "state": "soft_close",
+          "intent": "rejection",
+          "action": "say_goodbye",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Правильно понимаю, тариф программы и оборудование у вас отдельно?",
+          "bot": "Правильно, у нас всё разделено: программа и оборудование покупаются отдельно. Это позволяет выбрать именно те тариф и устройства, которые подходят под ваш бизнес. Например, если у вас уже есть совместимое оборудование, можно подключить только программу и сэкономить. А какие именно задачи стоят перед вами сейчас — например, отчётность, автоматизация торговли или работа с ОФД?",
+          "state": "spin_situation",
+          "intent": "pricing_details",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "pass",
+          "factual_verifier_reason_codes": [
+            "pass"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Что точно входит в стоимость тарифа, а что оплачивается отдельно?",
+          "bot": "Оборудование и тариф программы в Wipon оплачиваются отдельно.",
+          "state": "spin_situation",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing_direct",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "И есть ли рассрочка на оборудование?",
+          "bot": "Рассрочка на программу и оборудование — оформляется через банки-партнёры.",
+          "state": "spin_situation",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "## Диалог 10",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Хотим понять по акциям. Сейчас выбираем между вами и конкурентом.",
+          "bot": "Сравнение Wipon с конкурентами — обзор ключевых отличий по внедрению и функционалу.",
+          "state": "spin_situation",
+          "intent": "comparison",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 2,
+          "user": "Если берем не на год, а на 2 года, будут ли спецусловия?",
+          "bot": "Пожалуйста, не за что! Для нас важно, чтобы ваш бизнес получил именно то, что ему нужно. Скажите, а сколько у вас сейчас точек продаж и какие инструменты уже используете для учета?",
+          "state": "spin_situation",
+          "intent": "agreement",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли сезонные акции или скидка для текущих клиентов?",
+          "bot": "Спасибо, что уточнили. Сейзонные акции мы точно рассматриваем — у меня есть информация, которую можно отправить сейчас. А что касается выбора на 2 года, давайте разберёмся с вашим количеством точек и актуальными инструментами, чтобы подобрать оптимальное предложение. Коллега из техотдела разбирается в этом лучше — хотите, перезвонит?",
+          "state": "handle_objection",
+          "intent": "objection_no_time",
+          "action": "handle_objection",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Где фиксируются финальные условия по оплате?",
+          "bot": "История смен в Wipon — фиксация данных по каждой кассовой смене.",
+          "state": "spin_situation",
+          "intent": "question_implementation",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "## Диалог 11",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "По 1С уточню детальнее.",
+          "bot": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Расскажите, что вас интересует?",
+          "state": "greeting",
+          "intent": "correct_info",
+          "action": "acknowledge_go_back",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Нам важно, чтобы продажи и остатки уходили в 1С без ручной выгрузки каждый день.",
+          "bot": "В Wipon интеграция с 1С происходит через API с автоматическим синхронизацией продаж и остатков без ручного вмешательства. Важно уточнить, какая версия 1С используется у вас — 7.7 или 8.3, чтобы подобрать оптимальный формат обмена данными. Сколько торговых точек у вас сейчас работает с 1С?",
+          "state": "spin_situation",
+          "intent": "info_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Сейчас бухгалтер жалуется на двойной ввод.",
+          "bot": "Спасибо, понимаю, как это раздражает — двойной ввод точно лишняя головная боль. Расскажите подробнее, в каких именно местах возникает эта проблема: при вводе продаж, при корректировке остатков или на этапе закрытия смены?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Какая именно синхронизация с 1С доступна у вас?",
+          "bot": "Интеграция Wipon с 1С — обмен данными и упрощение бухучёта.",
+          "state": "spin_implication",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Нужен ли отдельный программист на настройку?",
+          "bot": "Расскажите, что вас интересует по Wipon?",
+          "state": "spin_need_payoff",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "## Диалог 12",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Мы планируем 3 склада и розницу + мелкий опт.",
+          "bot": "Рада слышать, что думаете над развитием — это ключ к успешному бизнесу. Сколько человек работает с клиентами на текущий момент? Это поможет подобрать оптимальную настройку Wipon для вашей команды.",
+          "state": "spin_situation",
+          "intent": "info_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Сейчас в одной системе это живет плохо, цены путаются.",
+          "bot": "Пожалуйста, не за что! В вашем случае это действительно критично: когда цены путаются, это не просто ошибка — это потеря доверия клиентов и лишние споры. Расскажите, пожалуйста, чаще всего где именно это происходит — при оформлении заказа или уже на кассе?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нужны разные цены и нормальный межскладской учет.",
+          "bot": "Складской учёт в Wipon — полный цикл управления товарами, остатками и складскими операциями.",
+          "state": "escalated",
+          "intent": "problem_technical",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Какой тариф лучше под такой сценарий?",
+          "bot": "Для магазина одежды в Wipon рекомендован тариф Standard с учётом размеров, цветов и артикулов.",
+          "state": "escalated",
+          "intent": "question_features",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Правильно понимаю, что Standard до 3 складов?",
+          "bot": "Для магазина с двумя кассами в Wipon используют Lite или Standard по масштабу бизнеса и сложности операций.",
+          "state": "escalated",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "## Диалог 13",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Отдельно про сотрудников.",
+          "bot": "А вы работаете с большим штатом или у вас небольшой коллектив сотрудников? Важно понять, как сейчас организованы процессы — например, через Excel, бумажные табеля или уже какую-то систему.",
+          "state": "spin_situation",
+          "intent": "info_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Команда растет, нужно разграничение прав и базовый кадровый учет.",
+          "bot": "Спасибо за уточнение. Для роста команды важно, чтобы доступ к данным и обязанности сотрудников были четко структурированы, чтобы избежать путаницы и ошибок. Скажите, а какие именно задачи по кадровому учету у вас сейчас вызывают больше всего вопросов или сложностей? Например, оформление приказов, учет рабочего времени или что-то другое?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Плюс желательно видеть эффективность по кассирам.",
+          "bot": "Пожалуйста, не за что! Вот что важно понять: когда эффективность кассиров зависит только от памяти или личных заметок, это значит, что любая ошибка — будь то недосмотр или перерасход — остается незамеченной до конца смены. А это уже не просто неудобство, а прямые потери для бизнеса. Хотите посмотреть как это можно решить?",
+          "state": "spin_implication",
+          "intent": "info_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "В каких тарифах это доступно?",
+          "bot": "По странице тарифов обучение отражено и в матрице, и в блоке дополнительных услуг.",
+          "state": "spin_need_payoff",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Есть ли ограничения по количеству сотрудников?",
+          "bot": "Лимит товаров в Wipon — на тарифах Lite, Standart и Pro количество товаров не ограничено.",
+          "state": "presentation",
+          "intent": "question_scalability",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "## Диалог 14",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Бывает, что интернет падает в пиковые часы.",
+          "bot": "В Wipon касса продолжает работать даже без интернета — ваши продажи не прервутся. Все данные сохраняются и синхронизируются автоматически, как только связь восстановится. Вот что важно: какие именно операции вам критически нужны в офлайн-режиме — например, печатать чеки или обновлять остатки товара?",
+          "state": "handle_objection",
+          "intent": "objection_team_resistance",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "pass",
+          "factual_verifier_reason_codes": [
+            "pass"
+          ]
+        },
+        {
+          "turn": 2,
+          "user": "Нам критично не терять продажи и чеки.",
+          "bot": "Понятно, потеря чеков и продаж — это реальная угроза бизнесу. В Wipon касса в офлайн-режиме продолжает формировать чеки и фиксировать продажи, даже если интернет выпадает. Сколько кассовых аппаратов у вас работает сейчас? Это поможет подобрать оптимальную конфигурацию для вашей точки.",
+          "state": "handle_objection",
+          "intent": "objection_scale",
+          "action": "explain_fiscal_requirements",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Как Wipon ведет себя в офлайне?",
+          "bot": "Офлайн-работа Wipon — продолжение работы без интернета с последующей синхронизацией.",
+          "state": "spin_situation",
+          "intent": "question_offline",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Что происходит с отправкой данных в ОФД после восстановления?",
+          "bot": "Офлайн-продажи и ОФД в Wipon — локальная запись продаж с автоматической отправкой в ОФД.",
+          "state": "spin_situation",
+          "intent": "question_offline",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "## Диалог 15",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Рассматриваем Mini как старт, но боимся упереться в ограничения.",
+          "bot": "Лимит товаров в Wipon — на тарифах Lite, Standart и Pro количество товаров не ограничено.",
+          "state": "handle_objection",
+          "intent": "objection_scale",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 2,
+          "user": "Скажите честно, какие ограничения у Mini самые критичные?",
+          "bot": "Лимит сотрудников по тарифам — зависит от выбранного тарифного плана.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 3,
+          "user": "Возвраты, отчеты, склад — что там доступно/недоступно?",
+          "bot": "Аналитика по складу в Wipon — отчёты по остаткам, движениям, недостачам, обороту и списаниям.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Если быстро перерастем Mini, насколько сложно перейти на Lite/Standard?",
+          "bot": "Для продуктового магазина Mini/Lite закрывают базовый контур, а при складе и нескольких кассах нужен Standard с комплектом STANDARD или DUO.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "## Диалог 16",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Сравниваем Lite и Standard для магазина у дома.",
+          "bot": "Разобраться в разнице Lite и Standard — это правильно, у каждого тариф сильные стороны. Кстати, сколько человек работает в вашем магазине у дома? Это поможет подобрать оптимальную комплектацию.",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Точек сейчас 1, но в течение года хотим открыть вторую.",
+          "bot": "Пожалуйста, не за что! Вот что важно: при открытии второй точки часто возникает проблема с одновременной работой касс на разных площадках — как избежать путаницы с товарами и продажами. Скажите, а как сейчас организована работа с инвентаризацией?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нужен склад, аналитика и интеграция с банком.",
+          "bot": "Маркировка интегрирована в модули Wipon — склад, касса, продажи, закупки и аналитика.",
+          "state": "spin_implication",
+          "intent": "question_integrations",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Что рациональнее взять сразу: Lite или Standard?",
+          "bot": "Для салона красоты в Wipon Mini или Lite применяют при услугах, а при продаже материалов выбирают Standard.",
+          "state": "spin_need_payoff",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "И по цене напомните обе опции.",
+          "bot": "Для двух торговых точек берут Standard или комбинируют Lite с доп.",
+          "state": "presentation",
+          "intent": "price_question",
+          "action": "answer_with_pricing_direct",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "## Диалог 17",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "У нас уже 6 точек, и мы дальше масштабируемся.",
+          "bot": "Ого, шесть точек — уже серьёзная сеть, приятно, что растёте! Сколько сотрудников в команде работает по всем магазинам вместе?",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Нужно единое управление и понятная модель расширения.",
+          "bot": "Пожалуйста, не за что! Это как раз то, для чего мы и созданы — помогать бизнесу расти без головной боли. А что именно сейчас мешает вам видеть все точки из одного окна и быстро масштабироваться?",
+          "state": "spin_problem",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Какой у вас путь масштабирования после Standard и Pro?",
+          "bot": "Рекомендация по комплекту оборудования — Standard для старта, Pro для сети.",
+          "state": "spin_implication",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Что по стоимости для 6 точек и как считается доплата за точки?",
+          "bot": "Пожалуйста, не стоит за это! Ваша задача важнее — расти эффективно, а не тратить силы на хаос. Вот что важно: для шести точек мы предлагаем пакет \"ТИС Plus\" с единой панелью контроля за всеми магазинами, а доплата за каждую дополнительную точку — фиксированная ставка за облако и техподдержку. А какие именно отчёты и функции вам критичны для ежедневного управления? Хотите покажу как это работает?",
+          "state": "spin_need_payoff",
+          "intent": "situation_provided",
+          "action": "acknowledge_and_continue",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "## Диалог 18",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Если стартуем с нуля, как выглядит запуск под ключ?",
+          "bot": "Регистрация ИП через Wipon Consulting — запуск бизнеса под ключ.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 2,
+          "user": "Нужно оборудование, установка, обучение и ввод в работу.",
+          "bot": "В стоимость комплекта уже входят и настройка оборудования, и обучение.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 3,
+          "user": "Сколько обычно занимает подключение и первый рабочий день?",
+          "bot": "Подключение ТИС занимает 1-2 дня и включает настройку кассы, терминала и регистрацию.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Обучение кассиров входит в запуск?",
+          "bot": "Обучение при подключении — входит в пакет запуска Wipon.",
+          "state": "spin_situation",
+          "intent": "question_features",
+          "action": "clarify_one_question",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "## Диалог 19",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Мы раньше были на X2POS, сейчас думаем финально уйти на Wipon.",
+          "bot": "Спасибо за доверие! А какой сейчас у вас средний чековый размер и сколько торговых точек работает на X2POS? Это важно, чтобы подобрать Wipon с учётом ваших объёмов.",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "answer_with_facts",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Боимся, что команда будет долго привыкать.",
+          "bot": "Плавный переход — ключевой момент. Обучение по Wipon занимает обычно 1-2 рабочих дня на сотрудника благодаря интуитивному интерфейсу. Если у вашей команды уже есть опыт работы с X2POS, адаптация может пройти ещё быстрее. Кроме того, в течение первых трёх месяцев после запуска мы бесплатно проводим обучение для всей команды — это включено в стоимость подписки.",
+          "state": "handle_objection",
+          "intent": "objection_change_management",
+          "action": "handle_objection",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нужно, чтобы переход был с сопровождением, а не \"разбирайтесь сами\".",
+          "bot": "С переходом всё организовано просто: мы предоставляем персонального куратора на первые семь дней. Он приезжает в ваш магазин, демонстрирует основные функции системы и помогает оперативно решать возникающие вопросы. Это не просто консультации — реальное сопровождение, которое снижает риски простоев из-за ошибок в настройке и обходится выгоднее, чем простои из-за технических проблем. Кроме того, обновления программы происходят автоматически, без вмешательства сотрудников. Чтобы уточнить детали сопровождения для вашей сети, сообщите, сколько у вас точек.",
+          "state": "spin_situation",
+          "intent": "objection_scale",
+          "action": "handle_objection",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Есть ли у вас сопровождение при миграции и адаптация персонала?",
+          "bot": "Частые вопросы о Wipon — обзорная секция по базовым вопросам подключения и работы.",
+          "state": "spin_situation",
+          "intent": "question_mobile",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Какой канал поддержки самый быстрый в первые недели?",
+          "bot": "Быстрая продажа в Wipon — моментальное пробитие товаров для магазинов с высоким потоком.",
+          "state": "spin_situation",
+          "intent": "question_support",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "## Диалог 20",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Финальный вопрос: хотим принять решение на этой неделе.",
+          "bot": "Частые вопросы о Wipon — обзорная секция по базовым вопросам подключения и работы.",
+          "state": "greeting",
+          "intent": "decision_maker_identified",
+          "action": "answer_with_facts",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 2,
+          "user": "У нас 2 точки, нужен учет, банк-интеграции, обучение и мобильный контроль.",
+          "bot": "Рада, что вы так оперативно принимаете решение — это уже половина успеха! Подскажите, а какая именно задача по учёту сейчас у вас стоит как приоритетная: нужно ли наладить автоматизацию продаж, складской учёт или именно финансовую отчётность с банком?",
+          "state": "spin_situation",
+          "intent": "situation_provided",
+          "action": "continue_current_goal",
+          "factual_verifier_used": false,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "not_run",
+          "factual_verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Сводно: какой тариф и какая годовая стоимость в нашем кейсе?",
+          "bot": "Тариф Wipon ТИС — отдельный продукт с несколькими сроками оплаты.",
+          "state": "spin_problem",
+          "intent": "pricing_details",
+          "action": "answer_with_pricing",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 4,
+          "user": "Что нужно от нас для быстрого старта?",
+          "bot": "Скорость подключения Wipon Kassa — быстрый старт после регистрации.",
+          "state": "spin_problem",
+          "intent": "question_features",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        },
+        {
+          "turn": 5,
+          "user": "Можно ли сразу запланировать демо и подключение?",
+          "bot": "Подключение Wipon за один день возможно в стандартных кейсах при готовности к установке.",
+          "state": "close",
+          "intent": "demo_request",
+          "action": "answer_and_continue",
+          "factual_verifier_used": true,
+          "factual_verifier_changed": false,
+          "factual_verifier_verdict": "fail",
+          "factual_verifier_reason_codes": [
+            "initial_fail",
+            "rewrite_failed"
+          ]
+        }
+      ]
+    }
+  ]
+}

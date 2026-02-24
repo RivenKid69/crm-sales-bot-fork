@@ -38,7 +38,7 @@ retriever:
   embedder_model: "ai-forever/FRIDA"
 
   # Устройство для эмбеддингов: "cpu" или "cuda"
-  embedder_device: "cpu"
+  embedder_device: "cuda"
 
   # Пороги для каждого этапа каскада
   thresholds:
@@ -100,6 +100,18 @@ enhanced_retrieval:
   reranker_top_k: 5
   reranker_skip_on_direct_factual: true
   reranker_preserve_exact_on_factual: true
+
+# -----------------------------------------------------------------------------
+# FACTUAL VERIFIER (Same-model isolated faithfulness check)
+# -----------------------------------------------------------------------------
+factual_verifier:
+  enabled: true
+  scope: "factual_only"
+  max_facts_chars: 7000
+  temperature: 0.1
+  max_claims: 6
+  rewrite_on_fail: true
+  fallback_on_failed_rewrite: false
 
 # -----------------------------------------------------------------------------
 # GENERATOR (Генерация ответов)
@@ -325,6 +337,7 @@ feature_flags:
   objection_handler: false    # Продвинутая обработка возражений
   cta_generator: true         # Генерация Call-to-Action
   autonomous_flow: true       # LLM-driven sales flow
+  response_factual_verifier: true  # Isolated same-model factual verifier
 
 # -----------------------------------------------------------------------------
 # PHONE VALIDATION (Валидация телефонных номеров)

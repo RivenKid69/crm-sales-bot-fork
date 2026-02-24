@@ -16,7 +16,6 @@ from src.settings import settings
 from src.logger import logger
 from src.feature_flags import flags
 from src.response_diversity import diversity_engine
-from src.response_boundary_validator import boundary_validator
 from src.question_dedup import question_dedup_engine
 from src.generator_autonomous import (
     SAFETY_RULES_V2 as AUTONOMOUS_SAFETY_RULES_V2,
@@ -509,25 +508,27 @@ class ResponseGenerator:
     # Lowered from 0.80 to 0.70 after adding punctuation normalization
     SIMILARITY_THRESHOLD = 0.70
 
-    # KB-empty handoff response pools (class-level to avoid recreation per call)
+    # KB-empty response pools (class-level to avoid recreation per call)
     _KB_EMPTY_CONTACT_KNOWN = [
-        "Уточню у коллег и вернусь с ответом.",
-        "Хороший вопрос — уточню у команды и напишу вам.",
-        "Этот момент уточню у коллег и вернусь.",
-        "Передам ваш вопрос коллеге — он свяжется с вами.",
-        "Точный ответ уточню и напишу, как только узнаю.",
-        "Проверю у коллег и сразу напишу вам.",
+        "В текущем фрагменте БД нет подтвержденного факта по этому пункту. Уточните, пожалуйста, какой тариф или интеграцию сравниваем.",
+        "По доступным фактам БД ответа на этот параметр нет. Назовите продукт или сценарий — отвечу строго по базе.",
+        "В предоставленных фактах БД не хватает данных для прямого ответа. Уточните вопрос, и я отвечу только по базе.",
     ]
     _KB_EMPTY_CONTACT_UNKNOWN = [
-        "Хороший вопрос — уточню у команды. Как с вами связаться?",
-        "Уточню у коллег — оставьте номер, вам напишут.",
-        "Передам вопрос коллеге. На какой номер перезвонить?",
-        "Этот момент лучше уточнить у коллег. Оставьте контакт — свяжемся.",
-        "Уточню у коллег. Удобнее позвонить или написать?",
-        "Дам точный ответ через коллегу — оставьте номер или почту?",
-        "Передам вопрос коллеге. Как вас набрать?",
-        "Это уточню у команды — оставьте контакт, чтобы вернуться с ответом быстро.",
+        "В текущем фрагменте БД нет подтвержденного факта по этому пункту. Уточните, пожалуйста, какой тариф или интеграцию сравниваем.",
+        "По доступным фактам БД ответа на этот параметр нет. Назовите продукт или сценарий — отвечу строго по базе.",
+        "В предоставленных фактах БД не хватает данных для прямого ответа. Уточните вопрос, и я отвечу только по базе.",
     ]
+    _COLLEAGUE_FALLBACK_RE = re.compile(
+        r"(?:уточню\s+у\s+коллег|вернусь\s+с\s+ответом|коллега\s+позвонит|передам\s+вопрос\s+коллег)",
+        re.IGNORECASE,
+    )
+    _FACT_TERM_RE = re.compile(r"[a-zA-Zа-яА-ЯёЁ0-9-]{3,}")
+    _FACT_STOP_WORDS = frozenset({
+        "как", "что", "это", "где", "когда", "какой", "какая", "какие", "какое",
+        "мне", "вам", "для", "про", "или", "если", "есть", "можно", "нужно",
+        "стоит", "цена", "стоимость", "сколько", "подскажите", "расскажите",
+    })
 
     _CREDENTIAL_PATTERNS = [
         re.compile(
@@ -575,8 +576,19 @@ class ResponseGenerator:
             "requested_action": None,
             "selected_template_key": None,
             "validation_events": [],
+            "factual_verifier_used": False,
+            "factual_verifier_changed": False,
+            "factual_verifier_verdict": "not_run",
+            "factual_verifier_reason_codes": [],
         }
         self._last_response_embedding: Optional[List[float]] = None
+        self._last_factual_verifier_meta: Dict[str, Any] = {
+            "factual_verifier_used": False,
+            "factual_verifier_changed": False,
+            "factual_verifier_verdict": "not_run",
+            "factual_verifier_reason_codes": [],
+        }
+        self._factual_verifier = None
 
         # CategoryRouter: LLM-классификация категорий перед поиском
         self.category_router = None
@@ -1392,7 +1404,10 @@ class ResponseGenerator:
             snippet = m.group(0)
             if re.search(r'\bТИС\b', snippet, re.IGNORECASE):
                 continue
-            result = result.replace(snippet, "Точную стоимость для дополнительных точек уточню у коллег. ")
+            result = result.replace(
+                snippet,
+                "Для дополнительных точек в этом фрагменте БД нет подтверждённой формулы расчёта. ",
+            )
 
         # Collapse malformed "/год/точка" style artifacts.
         result = re.sub(
@@ -1809,6 +1824,25 @@ class ResponseGenerator:
         """Return metadata from the latest generate() call."""
         return dict(self._last_generation_meta)
 
+    def _reset_factual_verifier_meta(self) -> None:
+        self._last_factual_verifier_meta = {
+            "factual_verifier_used": False,
+            "factual_verifier_changed": False,
+            "factual_verifier_verdict": "not_run",
+            "factual_verifier_reason_codes": [],
+        }
+
+    def _ensure_factual_verifier(self):
+        if self._factual_verifier is not None:
+            return self._factual_verifier
+        try:
+            from src.factual_verifier import FactualVerifier
+            self._factual_verifier = FactualVerifier(self.llm)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("FactualVerifier init failed", error=str(exc))
+            self._factual_verifier = None
+        return self._factual_verifier
+
     def get_last_response_embedding(self) -> Optional[List[float]]:
         """Embedding последнего сгенерированного ответа (кэш)."""
         return self._last_response_embedding
@@ -1905,29 +1939,29 @@ class ResponseGenerator:
     @staticmethod
     def _is_direct_factual_request(intent: str, user_message: str) -> bool:
         """Return True for direct factual asks that must be answered before discovery probing."""
-        normalized_intent = str(intent or "").lower().strip()
-        if not normalized_intent:
-            return False
-
-        factual_intent = (
-            normalized_intent.startswith(("question_", "price_", "pricing_", "comparison", "cost_", "roi_"))
-            or normalized_intent in {"payment_terms", "company_info_question", "experience_question"}
-        )
-        if not factual_intent:
-            return False
-
         msg = str(user_message or "").strip().lower()
         if not msg:
             return False
-        if "?" in msg:
-            return True
-        return bool(re.search(
+        textual_factual = bool(re.search(
             r"(?:сколько|какие?|какой|расскажите|посоветуй|поч[её]м|цен[аы]|стоимост"
             r"|можно\s+ли|есть\s+ли|как\s+работает|как\s+это\s+работает|чем\s+отлич"
             r"|какие\s+банки|какой\s+тариф|какие\s+тарифы|рассрочк|офд|маркировк|1[cс]\b)",
             msg,
             re.IGNORECASE,
         ))
+        if "?" not in msg and not textual_factual:
+            return False
+
+        normalized_intent = str(intent or "").lower().strip()
+        if not normalized_intent:
+            # Early turns often have noisy/empty intent; rely on explicit user ask.
+            return True
+
+        factual_intent = (
+            normalized_intent.startswith(("question_", "price_", "pricing_", "comparison", "cost_", "roi_"))
+            or normalized_intent in {"payment_terms", "company_info_question", "experience_question"}
+        )
+        return factual_intent or textual_factual
 
     def _select_template_key(self, intent: str, action: str, context: Dict[str, Any]) -> str:
         """
@@ -2266,10 +2300,15 @@ class ResponseGenerator:
             max_retries = self.max_retries
 
         # Reset metadata for this generation attempt.
+        self._reset_factual_verifier_meta()
         self._last_generation_meta = {
             "requested_action": action,
             "selected_template_key": None,
             "validation_events": [],
+            "factual_verifier_used": False,
+            "factual_verifier_changed": False,
+            "factual_verifier_verdict": "not_run",
+            "factual_verifier_reason_codes": [],
         }
 
         # Получаем релевантные факты из базы знаний
@@ -2286,6 +2325,10 @@ class ResponseGenerator:
                 "selected_template_key": "policy_attack_guard",
                 "validation_events": [],
                 "fact_keys": [],
+                "factual_verifier_used": False,
+                "factual_verifier_changed": False,
+                "factual_verifier_verdict": "not_run",
+                "factual_verifier_reason_codes": [],
             }
             self._add_to_response_history(response)
             return response
@@ -2384,6 +2427,10 @@ class ResponseGenerator:
                 "selected_template_key": "kb_empty_handoff",
                 "validation_events": [],
                 "fact_keys": [],
+                "factual_verifier_used": False,
+                "factual_verifier_changed": False,
+                "factual_verifier_verdict": "not_run",
+                "factual_verifier_reason_codes": [],
             }
             return self._kb_empty_handoff(context)
 
@@ -3135,7 +3182,7 @@ class ResponseGenerator:
                     + user_message[:120]
                     + "\". Не уклоняйся фразой 'Расскажите подробнее о вашем бизнесе'."
                     " Ответь ПРЯМО на вопрос клиента, используя факты из базы знаний."
-                    " Если точного ответа нет — честно скажи 'уточню у коллег'."
+                    " Если точного ответа в фактах нет — так и напиши, без передачи коллегам."
                 )
                 continue
 
@@ -3197,6 +3244,7 @@ class ResponseGenerator:
                     "selected_template_key": selected_template_key,
                     "validation_events": validation_events,
                     "fact_keys": _fact_keys,
+                    **self._last_factual_verifier_meta,
                 }
                 return processed
 
@@ -3233,6 +3281,7 @@ class ResponseGenerator:
             "selected_template_key": selected_template_key,
             "validation_events": validation_events,
             "fact_keys": _fact_keys,
+            **self._last_factual_verifier_meta,
         }
         return processed
 
@@ -3791,62 +3840,51 @@ class ResponseGenerator:
         retrieved_facts: str,
     ) -> Tuple[str, List[Dict[str, Any]]]:
         """
-        Apply all post-processing layers, including final response boundary validation.
+        Apply post-processing layers.
         """
         processed = self._apply_diversity(response, context)
         processed = self._ensure_apology(processed, context)
 
         validation_events: List[Dict[str, Any]] = []
-        validation_context = {
-            "intent": context.get("intent", ""),
-            "action": requested_action,
-            "state": context.get("state", ""),
-            "selected_template": selected_template_key,
-            "retrieved_facts": retrieved_facts,
-            "user_message": context.get("user_message", ""),
-            "collected_data": context.get("collected_data", {}),
-            "history": context.get("history", []),
-        }
-        validation_result = boundary_validator.validate_response(
-            processed,
-            context=validation_context,
-            llm=self.llm,
-        )
-        processed = validation_result.response
-        validation_events = validation_result.validation_events
 
-        # Re-run price/tariff fixes + _clean on validator output: retry/regen produces
-        # new LLM text that hasn't been through the price-fixing pipeline.
-        if validation_result.retry_used or validation_result.fallback_used:
-            _rf = str(retrieved_facts or "")
-            # Strip markdown before price fixes (LLM may wrap in **bold**)
-            processed = re.sub(r'\*{1,3}', '', processed)
-            processed = self._fix_price_period_confusion(processed)
-            processed = self._fix_tariff_point_count(processed)
-            processed = self._fix_tis_pricing(processed)
-            processed = self._strip_fake_per_point_surcharges(processed)
-            processed = self._fix_false_integration_denial(processed)
-            processed = self._fix_tariff_price_mismatch(processed)
-            processed = self._fix_price_period_confusion(processed)
-            processed = self._inject_missing_period(processed)
-            processed = self._fix_global_tariff_price_consistency(processed)
-            processed = self._fix_collapsed_price_range(processed)
-            processed = self._fix_tech_hallucinations(processed, _rf)
-            _um = context.get("user_message", "")
-            processed = self._strip_misrouted_subd_answer(processed, _um)
-            if self._has_price_hallucination(processed, _rf):
-                processed = self._strip_hallucinated_prices(processed, _rf)
-            processed = self._strip_ungrounded_modules(processed, _rf)
-            processed = self._strip_ungrounded_integrations(processed, _rf)
-            # Strip false trial/test period claims — Wipon has no trial
-            # (sentences containing "тестовый период" claims are stripped in _strip_fabricated_claims)
-            processed = self._clean(processed)
+        # Isolated same-model factual verifier for factual turns.
+        _is_factual_scope = bool(
+            self._is_direct_factual_request(
+                str(context.get("intent", "") or ""),
+                str(context.get("user_message", "") or ""),
+            )
+        )
+        self._reset_factual_verifier_meta()
+        if _is_factual_scope and str(retrieved_facts or "").strip():
+            verifier = self._ensure_factual_verifier()
+            if verifier is not None and verifier.is_enabled():
+                vr = verifier.verify_and_rewrite(
+                    user_message=str(context.get("user_message", "") or ""),
+                    candidate_response=processed,
+                    retrieved_facts=str(retrieved_facts or ""),
+                    intent=str(context.get("intent", "") or ""),
+                    state=str(context.get("state", "") or ""),
+                )
+                self._last_factual_verifier_meta = {
+                    "factual_verifier_used": vr.verifier_used,
+                    "factual_verifier_changed": vr.changed,
+                    "factual_verifier_verdict": vr.verifier_verdict,
+                    "factual_verifier_reason_codes": list(vr.reason_codes),
+                }
+                validation_events.append(
+                    {
+                        "stage": "factual_verifier",
+                        "used": vr.verifier_used,
+                        "changed": vr.changed,
+                        "verdict": vr.verifier_verdict,
+                        "reason_codes": list(vr.reason_codes),
+                    }
+                )
+                if vr.final_response:
+                    processed = vr.final_response
 
         # Strip markdown formatting from autonomous responses (plain text chat)
-        _is_autonomous = bool(
-            self._flow
-            and self._flow.name == "autonomous"
-        )
+        _is_autonomous = bool(self._flow and self._flow.name == "autonomous")
         if _is_autonomous:
             processed = self._strip_markdown(processed)
             processed = self._fix_language_mismatch(
@@ -3886,6 +3924,12 @@ class ResponseGenerator:
         )
         if should_strip:
             processed = self._strip_trailing_question(processed)
+
+        processed = self._enforce_no_colleague_fallback(
+            response=processed,
+            retrieved_facts=str(retrieved_facts or ""),
+            user_message=str(context.get("user_message", "") or ""),
+        )
 
         return processed, validation_events
 
@@ -4403,8 +4447,8 @@ class ResponseGenerator:
         result = re.sub(r'\s{2,}', ' ', result).strip()
         if len(result) > 15:
             return result
-        # If stripping removed everything, use a safe fallback instead of original
-        return "Оставьте, пожалуйста, телефон или email — мой коллега позвонит и подберёт оптимальный тариф."
+        # If stripping removed everything, return a deterministic DB-safe phrase.
+        return "По предоставленным фактам БД нет подтверждённого ответа в текущем виде. Уточните, пожалуйста, тариф или интеграцию."
 
     @staticmethod
     def _enforce_word_limit(text: str, max_words: int = 55) -> str:
@@ -4582,15 +4626,84 @@ class ResponseGenerator:
         intent = str(context.get("intent", "") or "").lower()
         state = str(context.get("state", "") or "").lower()
         if intent in {"contact_provided", "callback_request", "demo_request"}:
-            return (
-                "Спасибо! Мой коллега позвонит вам "
-                "в ближайшее время."
-            )
+            return "Спасибо! Контакт сохранён. По базе могу сразу ответить по тарифам, интеграциям и условиям."
         if "price" in intent or "pricing" in intent:
-            return "Точную стоимость под ваш формат бизнеса уточню у коллег."
+            return "По базе стоимость зависит от тарифа и числа точек. Назовите параметры, и дам точный ответ из БД."
         if state.startswith("autonomous_"):
             return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант."
         return "Расскажите, что вас интересует по Wipon?"
+
+    @classmethod
+    def _fact_terms(cls, text: str) -> set:
+        terms = set()
+        for token in cls._FACT_TERM_RE.findall(str(text or "").lower()):
+            if token in cls._FACT_STOP_WORDS:
+                continue
+            terms.add(token)
+        return terms
+
+    @staticmethod
+    def _normalize_fact_sentence(text: str) -> str:
+        value = re.sub(r"\s{2,}", " ", str(text or "")).strip(" \t-•*")
+        if value and value[-1] not in ".!?":
+            value += "."
+        return value
+
+    def _db_grounded_response_from_facts(self, user_message: str, retrieved_facts: str) -> str:
+        chunks = re.split(r"\n+\s*---\s*\n+", str(retrieved_facts or ""))
+        sentences: List[str] = []
+        for chunk in chunks:
+            for raw in re.split(r"(?<=[.!?])\s+|\n+", chunk):
+                line = self._normalize_fact_sentence(raw)
+                if len(line) < 5:
+                    continue
+                if line.startswith("http://") or line.startswith("https://"):
+                    continue
+                if re.fullmatch(r"[\w.-]+(?:/[\w.-]+)+\.?", line):
+                    continue
+                if "/" in line and len(line.split()) <= 2:
+                    continue
+                sentences.append(line)
+
+        if not sentences:
+            return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
+
+        query_terms = self._fact_terms(user_message)
+        wants_numeric = bool(re.search(r"(?:цена|стоим|тариф|₸|тенге|сколько|\d)", user_message or "", re.IGNORECASE))
+
+        scored = []
+        seen = set()
+        for idx, sentence in enumerate(sentences):
+            key = sentence.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            sent_terms = self._fact_terms(sentence)
+            overlap = len(query_terms & sent_terms) if query_terms else 0
+            numeric_bonus = 2 if wants_numeric and re.search(r"(?:₸|тенге|тг|\d{2,}|цена|стоим|тариф)", sentence, re.IGNORECASE) else 0
+            compact_bonus = 1 if 5 <= len(sentence.split()) <= 28 else 0
+            score = overlap * 3 + numeric_bonus + compact_bonus
+            scored.append((score, idx, sentence))
+
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        selected = [item[2] for item in scored[:2]] or sentences[:2]
+        result = " ".join(selected).strip()
+        result = self._COLLEAGUE_FALLBACK_RE.sub("", result)
+        result = re.sub(r"\s{2,}", " ", result).strip(" ,.;")
+        if not result:
+            return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
+        return self._normalize_fact_sentence(result)
+
+    def _enforce_no_colleague_fallback(self, response: str, retrieved_facts: str, user_message: str) -> str:
+        text = str(response or "").strip()
+        if not text:
+            return text
+        if not self._COLLEAGUE_FALLBACK_RE.search(text):
+            return text
+        return self._db_grounded_response_from_facts(
+            user_message=str(user_message or ""),
+            retrieved_facts=str(retrieved_facts or ""),
+        )
 
     # =========================================================================
     # НОВОЕ: Deduplication методы
@@ -4892,10 +5005,15 @@ class ResponseGenerator:
     def reset(self) -> None:
         """Сбросить историю ответов для нового диалога."""
         self._response_history.clear()
+        self._reset_factual_verifier_meta()
         self._last_generation_meta = {
             "requested_action": None,
             "selected_template_key": None,
             "validation_events": [],
+            "factual_verifier_used": False,
+            "factual_verifier_changed": False,
+            "factual_verifier_verdict": "not_run",
+            "factual_verifier_reason_codes": [],
         }
 
     # Mapping: objection intent → framework type

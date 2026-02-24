@@ -138,6 +138,7 @@ class FeatureFlags:
         "response_boundary_validator": True,      # Final boundary validation before sending response
         "response_boundary_retry": True,          # Single targeted retry on detected violations
         "response_boundary_fallback": True,       # Deterministic fallback if retry still violates boundary
+        "response_factual_verifier": True,        # Same-model isolated factual verifier on autonomous factual turns
 
         # === Question Deduplication: Prevent Re-asking Already Answered Questions ===
         "question_deduplication": True,           # Фильтрация вопросов по collected_data
@@ -271,6 +272,9 @@ class FeatureFlags:
         # Response Boundary Validator groups
         "response_boundary_all": [
             "response_boundary_validator", "response_boundary_retry", "response_boundary_fallback"
+        ],
+        "response_factual_verifier_all": [
+            "response_factual_verifier"
         ],
         # Lost Question Fix groups
         "lost_question_fix": [
@@ -517,6 +521,11 @@ class FeatureFlags:
     def response_boundary_fallback(self) -> bool:
         """Включён ли deterministic fallback в Response Boundary Validator"""
         return self.is_enabled("response_boundary_fallback")
+
+    @property
+    def response_factual_verifier(self) -> bool:
+        """Включён ли isolated same-model factual verifier"""
+        return self.is_enabled("response_factual_verifier")
 
     # =========================================================================
     # Context Policy flags (PLAN_CONTEXT_POLICY.md)
